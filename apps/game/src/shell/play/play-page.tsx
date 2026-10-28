@@ -12,6 +12,7 @@ import { ageOf } from "./ages";
 import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
+import { BuildOrdersRow } from "../build-orders/build-orders-row";
 
 /**
  * Play (the owner's pick, B · Ages): the step the player most likely came for, widest, with the page's one gold verb;
@@ -45,16 +46,14 @@ export const PlayPage = () => {
 
 /**
  * The ages holding a game besides the lead, in Play's order; and Blitz's always once its slots and the season's calendar
- * answered, with the calendar's next game when it has no game anywhere, the lead included, or none left in the season (an
- * outage of either stands as its gap, never as "none").
+ * answered (an outage of either stands as its gap, never as "none"), so its way to the build orders is always there, a
+ * Blitz in the lead or not.
  */
 const agesShown = (board: PlayBoard, gaps: readonly SourceGap[]): PlayMode[] =>
   PLAY_MODES.filter(
     (mode) =>
       board.ages[mode].length > 0 ||
-      (mode === "blitz" &&
-        board.lead?.mode !== "blitz" &&
-        !gaps.some((gap) => gap.service === "slots" || gap.service === "season")),
+      (mode === "blitz" && !gaps.some((gap) => gap.service === "slots" || gap.service === "season")),
   );
 
 /** The lead; the directory's failure, the wait, or the quiet card in its place. */
@@ -105,7 +104,10 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
     </div>
   );
 
-/** One age's column: its painting and its name, then its games in its well (Blitz's, with none: its next game). */
+/**
+ * One age's column: its painting and its name, then its games in its well (Blitz's, with none and no Blitz in the lead:
+ * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders.
+ */
 const AgeColumn = ({
   mode,
   facts,
@@ -121,8 +123,9 @@ const AgeColumn = ({
       {items.length > 0 ? (
         <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
       ) : (
-        <NextBlitz next={facts.nextBlitz} now={facts.now} />
+        facts.board?.lead?.mode !== "blitz" && <NextBlitz next={facts.nextBlitz} now={facts.now} />
       )}
+      {mode === "blitz" && <BuildOrdersRow />}
     </AppAgeColumn>
   );
 };

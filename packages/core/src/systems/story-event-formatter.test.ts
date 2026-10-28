@@ -648,7 +648,7 @@ describe("a capture", () => {
     return { ...presentation, realm: realm.replace(/ founded$/, "") };
   };
 
-  const aftermath = "Its armies and incoming deliveries went with it";
+  const aftermath = "Its armies and deliveries went with it";
 
   it("names who took which structure from whom, and what went with it, in one line", () => {
     const { title, description, realm } = captured("0xa1", null);

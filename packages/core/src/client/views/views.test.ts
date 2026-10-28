@@ -1,16 +1,20 @@
 import { ContractAddress, getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { hash } from "starknet";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 import { ClientConfigManager, createGameViews, type GameViews } from "../../index";
+import { setBlockTimestampSource } from "../../utils/timestamp";
 import { NativeFactStore } from "../native-fact-store";
 import type { GameClient } from "../game-client";
 import explorerFixture from "../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
+import preset from "../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
 const GAME_ID = 28;
 const PLAYER = ContractAddress(0xabc);
 const RIVAL = ContractAddress(0xdef);
 
 describe("game views", () => {
+  afterEach(() => setBlockTimestampSource(null));
+
   it("lists a player's structures by category then entity id, seen as theirs", () => {
     const { store, views } = createHarness();
     seedStructure(store, { entityId: 30, owner: PLAYER, category: StructureType.Hyperstructure, x: 5, y: 5 });
@@ -27,6 +31,26 @@ describe("game views", () => {
     ]);
     expect(views.allRealms().map((realm) => realm.entity_id)).toEqual([20n, 7n, 12n]);
     expect(views.hyperstructureIds(PLAYER)).toEqual([30]);
+  });
+
+  it("lists a Frontier realm founded before the season's first day once that day gives it a site", () => {
+    const { store, views } = createHarness();
+    seedFrontierRules(store, { startMainAt: 100, spacing: 10 });
+    seedStructure(store, { entityId: 12, owner: PLAYER, category: StructureType.Realm, x: 1, y: 1 });
+
+    setBlockTimestampSource(() => 99);
+    expect(views.structures(PLAYER)).toEqual([]);
+    expect(views.realms(PLAYER)).toEqual([]);
+
+    setBlockTimestampSource(() => 100);
+    // Realm 12's region is the twelfth of the first day's row, ten tiles wide: its centre is (115, 5).
+    const site = { x: 115, y: 5, alt: false };
+    expect(views.structures(PLAYER).map(({ entityId, position }) => ({ entityId, position }))).toEqual([
+      { entityId: 12, position: site },
+    ]);
+    expect(views.realms(PLAYER).map(({ entityId, position }) => ({ entityId, position }))).toEqual([
+      { entityId: 12, position: site },
+    ]);
   });
 
   it("reads a structure's explorers with stamina, home, and ownership relative to the viewer", () => {
@@ -114,6 +138,34 @@ const seedStructure = (
       },
     },
   ]);
+
+/** A Frontier game's rules: hour-long day units from `startMainAt`, regions `spacing` tiles wide. */
+const seedFrontierRules = (store: NativeFactStore, input: { startMainAt: number; spacing: number }) =>
+  store.applyFacts([
+    { model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: GAME_ID, day_unit_seconds: 3600 } },
+    {
+      model: "SettlementRules",
+      key: "0x101",
+      value: { game_id: GAME_ID, registration_start: 1, registration_limit: 2, spacing: input.spacing, mode: "Single" },
+    },
+    {
+      model: "GameRegistry",
+      key: "0x102",
+      value: {
+        game_id: GAME_ID,
+        preset_id: 3,
+        name: "1",
+        start_settling_at: "1",
+        start_main_at: String(input.startMainAt),
+        end_at: "1000000",
+        settled: false,
+        ready: true,
+        dev_mode_on: false,
+        end_grace_seconds: 0,
+        seed: "1",
+      },
+    },
+  ] as never);
 
 const seedExplorer = (
   store: NativeFactStore,

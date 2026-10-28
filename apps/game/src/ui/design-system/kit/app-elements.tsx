@@ -101,6 +101,37 @@ const AppButtonFace = ({
   </button>
 );
 
+/** A button that is only its icon, square: its label is its name to assistive technology and its tip on hover. */
+export const AppIconButton = ({
+  icon,
+  label,
+  kind = "quiet",
+  tone,
+  disabled,
+  onClick,
+}: {
+  icon: IconMeaning;
+  label: string;
+  kind?: "secondary" | "quiet";
+  tone?: "bad";
+  disabled?: boolean;
+  onClick: () => void;
+}) => (
+  <button
+    type="button"
+    className="app-button"
+    data-kind={kind}
+    data-size="icon"
+    data-tone={tone}
+    aria-label={label}
+    title={label}
+    disabled={disabled}
+    onClick={onClick}
+  >
+    <Icon name={icon} size={20} />
+  </button>
+);
+
 /** A field: its label above, its value, a line under it that helps or, in the bad tone, says what is wrong. */
 export const AppField = ({
   label,
@@ -528,27 +559,27 @@ export const AppFigure = ({
 
 /**
  * Something the page must say: its icon where one tells it at a glance, its line, why, and what the player can do about
- * it (Try again where trying again can help; Update, Later).
+ * it (Try again where trying again can help; Update, Later). Where its icon and actions already say it all (Install),
+ * it has no line, only a name for assistive technology, so it stays one row in a desktop's bar and above a phone's tabs.
  */
 export const AppNotice = ({
   tone,
   icon,
-  line,
-  why,
   actions,
+  ...words
 }: {
   tone?: Tone;
   icon?: IconMeaning;
-  line: string;
-  why?: ReactNode;
   actions?: ReactNode;
-}) => (
-  <div className="app-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
+} & ({ line: string } | { label: string })) => (
+  <div
+    className="app-notice"
+    data-tone={tone}
+    role={tone === "bad" ? "alert" : "status"}
+    aria-label={"label" in words ? words.label : undefined}
+  >
     {icon && <Icon name={icon} size={22} />}
-    <span className="app-notice__words">
-      <span>{line}</span>
-      {why && <span className="app-notice__why">{why}</span>}
-    </span>
+    {"line" in words && <span className="app-notice__words">{words.line}</span>}
     {actions}
   </div>
 );

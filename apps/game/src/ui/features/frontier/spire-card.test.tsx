@@ -29,7 +29,9 @@ import {
   setBlockTimestampSource,
 } from "@bibliothecadao/eternum";
 import { TileOccupier } from "@bibliothecadao/types";
+import { useArmyPanelOpens } from "./army/army-opens";
 import { useSelectionCard } from "./frontier-selection-sheet";
+import { useOnePanel } from "./hud/one-panel";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay as spireFixture } from "./spire-fixture";
 
 const ARMY = SPIRE_ARMY;
@@ -50,7 +52,7 @@ const renderHud = (store: ReturnType<typeof spireDay>["store"], viewer = "0x111"
   const enter = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const research = vi.fn();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  const Hud = () => useSelectionCard({ realm, onResearch: research })?.sheet ?? null;
+  const Hud = () => useSelectionCard({ realm, onResearch: research, onArmyBack: () => {} })?.sheet ?? null;
   const host = document.createElement("div");
   const root = createRoot(host);
   act(() =>
@@ -107,7 +109,7 @@ describe("a realm's spire, from the player's path", () => {
       ]);
       // What entering commits the army to, before it goes: the rest of the day, with no way back up.
       expect(hud.host.querySelector("[data-spire-commitment]")?.textContent).toMatch(
-        /^Entering keeps Army( \d+)? in that depth for the rest of the day \(.+ left\): there is no way back up$/,
+        /^Army( \d+)? stays until the day ends \(.+\)$/,
       );
 
       await hud.press("Enter Ethereal II");
@@ -128,7 +130,7 @@ describe("a realm's spire, from the player's path", () => {
       );
       const at = store.entityOccupancy(1, ARMY)!;
       expect(expeditionDepth(rules, { y: at.row })).toBe(2);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II until the day ends/);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? is in Ethereal II today/);
       expect(hud.depths()).toEqual([]);
     } finally {
       hud.unmount();
@@ -159,7 +161,7 @@ describe("a realm's spire, from the player's path", () => {
       const [first, second] = hud.depths();
       expect(first).toEqual({ depth: "Ethereal I", line: "Its landing is taken", button: "Enter", enabled: false });
       expect(second.depth).toBe("Ethereal II");
-      expect(second.line).toMatch(/^Needs 40 stamina, has 3\d$/);
+      expect(second.line).toMatch(/^Needs 40 stamina, have 3\d$/);
       expect(second.enabled).toBe(false);
     } finally {
       hud.unmount();
@@ -188,7 +190,7 @@ describe("a realm's spire, from the player's path", () => {
     try {
       // No army selected and none beside: what to do, and every depth's price still shown.
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: away.spire }));
-      expect(hud.sheet()!.textContent).toContain("Select one of your armies beside the spire to enter a depth");
+      expect(hud.sheet()!.textContent).toContain("Select an army beside the spire");
       expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
         { line: "30 stamina", enabled: false },
         { line: "40 stamina", enabled: false },
@@ -196,7 +198,7 @@ describe("a realm's spire, from the player's path", () => {
       ]);
       // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
       tapSpireWithArmy(away.spire);
-      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must stand beside the spire to enter/);
+      expect(hud.sheet()!.textContent).toMatch(/Army( \d+)? must be beside the spire/);
       expect(hud.host.querySelector("[data-spire-commitment]")).toBeNull();
       expect(
         hud
@@ -209,13 +211,98 @@ describe("a realm's spire, from the player's path", () => {
     }
   });
 
+  /**
+   * The desktop HUD's panels as it composes them: the selection's card, and the army's panel that selecting one of
+   * the realm's armies opens, through the one panel.
+   */
+  const renderDesktopHud = (store: ReturnType<typeof spireDay>["store"]) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+    const Hud = () => {
+      const card = useSelectionCard({ realm, onResearch: () => undefined, onArmyBack: () => {} });
+      const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
+      useArmyPanelOpens(realm, () => openSurface("army"), true);
+      return (
+        <>
+          <button type="button" onClick={() => openSurface("research")}>
+            Research
+          </button>
+          {surface && <section data-kit-sheet aria-label={surface} />}
+          {showsCard && card?.sheet}
+        </>
+      );
+    };
+    const host = document.createElement("div");
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
+          <Hud />
+        </GameProvider>,
+      ),
+    );
+    const sheets = () =>
+      [...host.querySelectorAll("[data-kit-sheet]")].map((sheet) => sheet.getAttribute("aria-label"));
+    const enterButtons = () =>
+      [...host.querySelectorAll<HTMLButtonElement>("[data-spire-depths] button")]
+        .filter((button) => button.textContent === "Enter")
+        .map((button) => !button.disabled);
+    const press = (label: string) =>
+      act(() =>
+        [...host.querySelectorAll<HTMLButtonElement>("button")]
+          .find((button) => button.getAttribute("aria-label") === label || button.textContent === label)!
+          .click(),
+      );
+    return { sheets, enterButtons, press, unmount: () => act(() => root.unmount()) };
+  };
+
+  it.each(["on", "beside"] as const)(
+    "opens the spire's card, not the army's panel, for its army selected %s the spire, by its tile or from the dock",
+    (standing) => {
+      const { store, armyTile } = spireDay({ standing });
+      const hud = renderDesktopHud(store);
+      try {
+        // A tap on the army's tile selects the army: deployed onto the spire, that is the spire's own tile.
+        act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: armyTile }));
+        expect(hud.sheets()).toEqual(["Spire"]);
+        expect(hud.enterButtons()).toEqual([true, true]);
+        // Research stands alone over it, and the card waits put away.
+        hud.press("Research");
+        expect(hud.sheets()).toEqual(["research"]);
+
+        // Picked from the dock, with no tile, the army opens the same card.
+        act(() => useUIStore.getState().selectOnMap(null));
+        act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: null }));
+        expect(hud.sheets()).toEqual(["Spire"]);
+        // Closed, the card lets go of the army, so nothing opens it again.
+        hud.press("Close");
+        expect(hud.sheets()).toEqual([]);
+        expect(useUIStore.getState().entityActions.selectedEntityId).toBeNull();
+      } finally {
+        hud.unmount();
+      }
+    },
+  );
+
+  it("opens the army's panel, and no spire card, for its army selected away from the spire", () => {
+    const { store, armyTile } = spireDay({ standing: "away" });
+    const hud = renderDesktopHud(store);
+    try {
+      act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: ARMY, tile: armyTile }));
+      expect(hud.sheets()).toEqual(["army"]);
+    } finally {
+      hud.unmount();
+    }
+  });
+
   it("tells another player whose spire it is, and offers them nothing", () => {
     const { store, spire } = spireDay();
     const hud = renderHud(store, "0x222");
     try {
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: spire }));
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
-      expect(hud.sheet()!.textContent).toContain("Another realm's spire: only that realm's armies enter it");
+      expect(hud.sheet()!.textContent).toContain("Another realm's spire");
       expect(hud.depths()).toEqual([]);
     } finally {
       hud.unmount();

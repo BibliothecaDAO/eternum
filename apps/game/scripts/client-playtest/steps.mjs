@@ -14,8 +14,8 @@ import {
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
-import { judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
-import { judgeHudLayout } from "./hud-layout.mjs";
+import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
+import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -613,8 +613,8 @@ function armySelected({ seen, played }) {
 
 /**
  * Centres the army and explores a tile beside it as a player does: on a desktop, hovers its neighbours until one's
- * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one offers
- * Explore on the order bar and confirms it, other offers cancelled.
+ * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one's order
+ * bar names Explore and taps that tile again, which sends it, other offers cancelled.
  */
 async function exploreBesideArmy({ browser, extraScreenshot }) {
   const army = await focusTheReadiestArmy(browser);
@@ -632,14 +632,16 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
     for (const offset of NEIGHBOUR_RING) {
+      const pinnedAt = browser.observe().now;
       browser.tap(offset);
-      const verb = orderVerb(browser.buttonTexts());
+      const verb = orderVerb(browser.orderBar());
       offered.push(verb);
       if (verb === "Explore") {
         const before = extraScreenshot("before");
         const pressedAt = browser.observe().now;
-        browser.press("Enter");
-        return { army, offered, pressedAt, before, target: offset };
+        // The phone's own confirmation (owner, 27 October 2026: "double tapping to explore on mobile"): the same tile again.
+        browser.tap(offset);
+        return { army, offered, pinnedAt, pressedAt, before, target: offset };
       }
     }
     if (offered.some(Boolean)) break;
@@ -1367,6 +1369,119 @@ const LAB_AFTER_BATTLE_STEPS = [
   { name: "hover-army", play: hoverTheArmyAtRest, settleMs: 0, verify: survivorPlateOpens },
 ];
 
+/**
+ * The owner's army after its fight, nothing selected, at each zoom step from the closest to the farthest (owner,
+ * 2026-10-27: "at a certain zoom level I cant get the hover modal"): its token stands over its own model, and the pointer
+ * anywhere on its model, feet to head, opens its plate, at every step. The page reports its world (dev overlays), so the
+ * model is hovered where the renderer draws it.
+ */
+const LAB_HOVER_ZOOM_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+  { name: "hover-every-zoom", play: hoverTheArmyAtEveryZoom, settleMs: 0, verify: armyAnswersAtEveryZoom },
+];
+/**
+ * The spire's game on high ground (owner, 2026-10-27: "when exploring a tile thats not empty the tile selection to move
+ * bugs"): with the army selected, every tile it is offered is lit above all of the snow, rock and tundra under it, so no
+ * lit tile is cut or hidden by its own ground. The page reports its world (dev overlays): the plates as drawn and the
+ * ground the renderer samples.
+ */
+const LAB_HIGH_GROUND_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "lit-tiles-on-ground", play: readTheLitTiles, settleMs: 0, verify: litTilesClearTheirGround },
+];
+/** Every lit plate's height beside the highest ground under its face, read on a 0.1 grid out to its corners. */
+const LIT_PLATES = `JSON.stringify((() => {
+  const world = window.__gameRenderer?.worldmapScene;
+  if (!world) return null;
+  const terrain = world.getTerrainSurface();
+  return world.highlightHexManager.getDebugState().plates.map(({ x, y, z }) => {
+    let ground = -Infinity;
+    for (let dx = -0.9; dx <= 0.9001; dx += 0.1)
+      for (let dz = -0.9; dz <= 0.9001; dz += 0.1)
+        if (Math.hypot(dx, dz) <= 0.9001) ground = Math.max(ground, terrain.sampleSurface(x + dx, z + dz).height);
+    return { x, z, y, ground };
+  });
+})())`;
+
+/** The selected army's lit tiles, read as drawn, once their roll-in has ended. */
+async function readTheLitTiles({ browser, extraScreenshot }) {
+  await sleep(HOVER_SETTLE_MS);
+  extraScreenshot("lit");
+  return { plates: browser.read(LIT_PLATES) };
+}
+
+/** Every lit plate lies above the highest ground under it. */
+function litTilesClearTheirGround({ played }) {
+  const { plates } = played;
+  if (!plates) return failed("the page does not report its world (window.__gameRenderer): no plate measured");
+  if (plates.length === 0) return failed("the selected army is offered no lit tile");
+  const buried = plates.filter((plate) => plate.y <= plate.ground);
+  const clearance = Math.min(...plates.map((plate) => plate.y - plate.ground));
+  return buried.length === 0
+    ? completed({ plates: plates.length, clearance })
+    : failed(`${buried.length} of ${plates.length} lit plates lie under their own ground`, { buried, clearance });
+}
+
+/** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
+const MODEL_SHARES = [0.2, 0.6, 1];
+/** Wheel notches from the closest zoom past which the farthest must have been reached. */
+const ZOOM_STEPS_MAX = 14;
+
+/** The picked army's label in a plate reading. */
+const pickedArmyLabel = (seen) => seen?.things?.find((thing) => thing.key === `army:${PICKED_ARMY}`) ?? null;
+
+/** Lets the army go, zooms all the way in, then at each notch out reads its token and hovers its model, feet to head. */
+async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
+  for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
+  browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
+  await sleep(ZOOM_SETTLE_MS);
+  const page = browser.read("JSON.stringify({ width: innerWidth, height: innerHeight })");
+  const offsetOf = ({ x, y }) => [Math.round(x - page.width / 2), Math.round(y - page.height / 2)];
+  const zooms = [];
+  for (let notch = 0; notch <= ZOOM_STEPS_MAX; notch += 1) {
+    browser.hover(POINTER_PARKED);
+    await sleep(HOVER_SETTLE_MS);
+    const distance = browser.observe().worldmapDistance;
+    const rest = pickedArmyLabel(browser.read(PLATES_EXPRESSION));
+    const hovers = [];
+    for (const share of rest?.over ? MODEL_SHARES : []) {
+      const { tile, top } = rest.over;
+      browser.hover(offsetOf({ x: tile.x + (top.x - tile.x) * share, y: tile.y + (top.y - tile.y) * share }));
+      await sleep(HOVER_SETTLE_MS * 2);
+      hovers.push({ share, opened: pickedArmyLabel(browser.read(PLATES_EXPRESSION))?.open === true });
+    }
+    extraScreenshot(`zoom-${notch}`);
+    const against = againstTheirThings({ things: rest ? [rest] : [] });
+    zooms.push({ distance, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
+    if (Math.abs(distance - FARTHEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE) break;
+    browser.run(["eval", "void window.__playtest.wheel(100, 1)"]);
+    await sleep(ZOOM_SETTLE_MS);
+  }
+  return { zooms };
+}
+
+/** From the closest zoom to the farthest, the army's token over its model and its plate open wherever its model is hovered. */
+function armyAnswersAtEveryZoom({ played }) {
+  const { zooms } = played;
+  const near = (distance, target) => Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE;
+  if (!near(zooms[0]?.distance, CLOSEST_CAMERA_DISTANCE) || !near(zooms.at(-1)?.distance, FARTHEST_CAMERA_DISTANCE))
+    return failed("the camera did not step from the closest zoom to the farthest", played);
+  const undrawn = zooms.filter((zoom) => zoom.hovers.length === 0);
+  if (undrawn.length > 0)
+    return failed(`army ${PICKED_ARMY}'s token or model is not read at ${undrawn.length} zooms`, {
+      ...played,
+      undrawn,
+    });
+  const off = zooms.filter((zoom) => !zoom.rest || zoom.offModel);
+  if (off.length > 0) return failed(`army ${PICKED_ARMY}'s token stands off its model at ${off.length} zooms`, played);
+  const closed = zooms.filter((zoom) => zoom.hovers.some((hover) => !hover.opened));
+  return closed.length === 0
+    ? completed(played)
+    : failed(`hovering army ${PICKED_ARMY}'s model opens no plate at ${closed.length} zooms`, { ...played, closed });
+}
+
 // The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
 const MERGE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -1582,17 +1697,22 @@ async function continueIntoTheNewDay({ browser }) {
   return { before, after: browser.read(DAY_END_STATE) };
 }
 
-function cameraOnTheNewSite({ played }) {
-  const { before, after } = played;
-  if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
-  const on = after.camera;
-  if (!on || Math.abs(on.col - LAB_DAY_3_SITE.col) > 1 || Math.abs(on.row - LAB_DAY_3_SITE.row) > 1)
-    return failed(
-      `the camera looks at ${JSON.stringify(on)}, not the realm's day-3 site ${JSON.stringify(LAB_DAY_3_SITE)}`,
-      played,
-    );
-  return completed({ before: before.camera, after: on, site: LAB_DAY_3_SITE });
-}
+/** The screen back up on the new day with the camera on the realm's site that day. */
+const cameraOnSite =
+  (site, day) =>
+  ({ played }) => {
+    const { before, after } = played;
+    if (after.phase !== "day") return failed(`the screen is still on the day's end (${after.phase})`, played);
+    const on = after.camera;
+    if (!on || Math.abs(on.col - site.col) > 1 || Math.abs(on.row - site.row) > 1)
+      return failed(
+        `the camera looks at ${JSON.stringify(on)}, not the realm's ${day} site ${JSON.stringify(site)}`,
+        played,
+      );
+    return completed({ before: before.camera, after: on, site });
+  };
+
+const cameraOnTheNewSite = cameraOnSite(LAB_DAY_3_SITE, "day-3");
 
 /**
  * The owner's phone (owner, 2026-10-25: "eventually I go back to mobile and it doesnt reload the map I get a black
@@ -1789,25 +1909,54 @@ function mapDrawsAsBeforeSleep(played, night) {
   return completed({ awake, drawn: played });
 }
 
+/** Reads the day's end through its phases until its summary shows or the day is back up, for at most `timeoutMs`. */
+function waitForADayTurn(timeoutMs) {
+  return async ({ browser }) => {
+    const before = browser.read(DAY_END_STATE);
+    const phases = [before.phase];
+    let shown = before;
+    const startedAt = Date.now();
+    while (Date.now() - startedAt < timeoutMs) {
+      await sleep(POLL_MS);
+      shown = browser.read(DAY_END_STATE);
+      if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
+      if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
+    }
+    await sleep(CAMERA_REPORT_MS);
+    return { before, after: browser.read(DAY_END_STATE), phases };
+  };
+}
+
 /** Waits for the day's end a device arriving in a new day goes through, and reads where the camera then looks. */
-async function waitForTheNewDay({ browser }) {
-  const before = browser.read(DAY_END_STATE);
-  const phases = [before.phase];
-  let shown = before;
-  const startedAt = Date.now();
-  while (Date.now() - startedAt < DAY_END_PASS_MS) {
-    await sleep(POLL_MS);
-    shown = browser.read(DAY_END_STATE);
-    if (phases.at(-1) !== shown.phase) phases.push(shown.phase);
-    if (shown.card !== null || (phases.length > 1 && shown.phase === "day")) break;
-  }
-  await sleep(CAMERA_REPORT_MS);
-  return { before, after: browser.read(DAY_END_STATE), phases };
+function waitForTheNewDay(context) {
+  return waitForADayTurn(DAY_END_PASS_MS)(context);
 }
 
 function cameraOnTheNewSiteWithNoSummary({ played }) {
   if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) for a day not played`, played);
   const camera = cameraOnTheNewSite({ played });
+  return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
+}
+
+/** The lab opens the game 30 s before day 1, and the turn's mist and black follow: past both, whatever the boot took. */
+const SEASON_OPENS_WAIT_MS = 60_000;
+/**
+ * A player in the season before its first day (src/lab/game/season-opens-scenario.ts), as dev's game 6 was entered on
+ * 10-26: the map draws while their realm has no site yet, then day 1's turn plays, with no summary for a day before the
+ * season, and leaves the camera on the realm's first site.
+ */
+const LAB_SEASON_OPENS_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "into-day-1", play: waitForADayTurn(SEASON_OPENS_WAIT_MS), settleMs: 0, verify: dayOneTurnedOntoTheRealm },
+];
+/** Realm 7's site on day 1 of the lab's calendar: its region's column, the first row of regions (contract hexes). */
+const LAB_DAY_1_SITE = { col: 650, row: 50 };
+const cameraOnTheFirstSite = cameraOnSite(LAB_DAY_1_SITE, "day-1");
+
+function dayOneTurnedOntoTheRealm({ played }) {
+  if (played.phases.length < 2) return failed("day 1 began with no turn played", played);
+  if (played.after.card !== null) return failed(`a summary shows (${played.after.card}) before any day`, played);
+  const camera = cameraOnTheFirstSite({ played });
   return camera.status === "completed" ? completed({ ...camera, phases: played.phases }) : camera;
 }
 
@@ -1902,6 +2051,8 @@ export const STEP_SETS = {
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
+  "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-turn-slow": { game: labDayTurn("day-turn-slow"), steps: labDayTurnSteps(RECORDED_DAY_2) },
@@ -1917,6 +2068,7 @@ export const STEP_SETS = {
   "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
   "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
+  "lab-season-opens": { game: labDayTurn("season-opens"), steps: LAB_SEASON_OPENS_STEPS },
   "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
   "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
   "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
@@ -2028,9 +2180,6 @@ const DESKTOP_ORDERS = "a desktop orders from the map at once: the queued next o
 /** The run plays at a desktop's width (the HUD's left column and contextual orders). */
 const onADesktop = () => VIEWPORT.width >= DESKTOP_MIN_WIDTH;
 
-/** The desktop width the HUD composes for (DESKTOP_MIN_PX). */
-const DESKTOP_MIN_WIDTH = 1024;
-
 /**
  * Centres the army, finds tiles beside it that offer an order, taps and confirms the first (the first order) and, once
  * its send is held at the network, acts with the others: the tile after the first stays beside the army when it stands
@@ -2096,7 +2245,7 @@ async function scanTheRing(browser, army) {
   for (const offset of NEIGHBOUR_RING) {
     browser.tap(offset);
     const stillPicked = browser.observe().pressed.includes(army);
-    scanned.push({ offset, verb: stillPicked ? orderVerb(browser.buttonTexts()) : null });
+    scanned.push({ offset, verb: stillPicked ? orderVerb(browser.orderBar()) : null });
     if (!stillPicked) await pickArmy(browser, army);
   }
   browser.press("Escape");
@@ -2154,11 +2303,10 @@ async function queueThenOpenTheRealm({ browser, targets, extraScreenshot }) {
 /** The order bar's next order, as a screen reader names its chip: "Next order Queued". */
 const nextOrderShown = (browser) => browser.read(`Boolean(document.querySelector('[aria-label="Next order Queued"]'))`);
 
-/** What the order bar offers after a tap: its verb, "short" when it shows a cost not covered (the verb is hidden), or null. */
-function orderVerb(buttonTexts) {
-  const verb = buttonTexts.map((text) => /^(Explore|Move)/.exec(text)?.[1]).find(Boolean);
-  if (verb) return verb;
-  return buttonTexts.some((text) => text.startsWith("Cancel")) ? "short" : null;
+/** What the order bar offers after a tap: the order its row names, "short" when a cost of it is not covered, or null. */
+function orderVerb(bar) {
+  if (!bar) return null;
+  return bar.short ? "short" : bar.verb;
 }
 
 async function waitUntil(check, timeoutMs) {

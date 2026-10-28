@@ -1,4 +1,4 @@
-import { RESEARCH_TREE, fromResearch, STORE_MAKERS } from "@/ui/design-system/kit/words";
+import { STORE_MAKERS } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
 import {
@@ -7,35 +7,16 @@ import {
   type NativeFactStore,
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
-import {
-  BuildingType,
-  formatCount,
-  formatPercent,
-  formatRate,
-  RESOURCE_PRECISION,
-  ResourcesIds,
-} from "@bibliothecadao/types";
+import { BuildingType, formatCount, formatRate, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { buildingName } from "../build/building-names";
 import { makePicks } from "../research/sides-taken";
 
 /** What Frontier's stores are made by: each product's building, and the research row whose make side raises it. */
 const MAKERS = {
-  [ResourcesIds.Wheat]: {
-    category: BuildingType.ResourceWheat,
-    row: research.ROW_FARM,
-    side: RESEARCH_TREE.sides.fields[0],
-  },
-  [ResourcesIds.Labor]: {
-    category: BuildingType.ResourceLabor,
-    row: research.ROW_WORKSHOP,
-    side: RESEARCH_TREE.sides.tools[0],
-  },
-  [ResourcesIds.Knight]: {
-    category: BuildingType.ResourceKnightT1,
-    row: research.ROW_BARRACKS,
-    side: RESEARCH_TREE.sides.drill[0],
-  },
+  [ResourcesIds.Wheat]: { category: BuildingType.ResourceWheat, row: research.ROW_FARM },
+  [ResourcesIds.Labor]: { category: BuildingType.ResourceLabor, row: research.ROW_WORKSHOP },
+  [ResourcesIds.Knight]: { category: BuildingType.ResourceKnightT1, row: research.ROW_BARRACKS },
 } as const;
 type MadeResource = keyof typeof MAKERS;
 
@@ -48,34 +29,15 @@ export const standingBuildings = (store: NativeFactStore, realmId: number, categ
   return category === BuildingType.ResourceLabor ? Math.max(0, count - 1) : count;
 };
 
-/** What research adds to one building of a product's type: its make side, its picks, and the share they add. */
-export type ResearchShare = { side: string; picks: number; share: number };
+/** The picks on the make side (Fields, Tools, Drill) that raise a product's building. */
+export const madePicks = (resource: MadeResource, learned: bigint): number => makePicks(learned, MAKERS[resource].row);
 
-/** The share a product's make side adds with the given research, from the board's step; none before a pick. */
-export const researchShare = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  resource: MadeResource,
-  learned: bigint,
-): ResearchShare | undefined => {
-  const { row, side } = MAKERS[resource];
-  const picks = makePicks(learned, row);
-  if (picks === 0) return undefined;
-  const step = store.require("BoardRules", { game_id: realm.game_id }).output_step_bps;
-  return { side, picks, share: (picks * step) / 10_000 };
-};
-
-/** The research reason for a building's rate, without repeating the calculation. */
-export const outputWhy = (research: ResearchShare | undefined): string | undefined =>
-  research && fromResearch(formatPercent(research.share, { signed: true }), research.side);
-
-/** What all of a type's standing buildings make: their product, its rate a second, and the side that raises it. */
-type BuildingsMake = { resource: MadeResource; perSecond: number; research?: ResearchShare };
+/** What all of a type's standing buildings make: their product and its rate a second. */
+type BuildingsMake = { resource: MadeResource; perSecond: number };
 
 /**
- * What every standing building of a type makes together, the one figure its card shows ("+25/min"), with the research
- * side behind it for the card's why. None for a type that makes nothing stored, or while the realm's research is
- * unknown (never the unresearched rate).
+ * What every standing building of a type makes together, the one figure its card shows ("+25/min"). None for a type
+ * that makes nothing stored, or while the realm's research is unknown (never the unresearched rate).
  */
 export const buildingsMake = (
   store: NativeFactStore,
@@ -87,13 +49,8 @@ export const buildingsMake = (
   );
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (resource === undefined || learned === undefined) return undefined;
-  const research = researchShare(store, realm, resource, learned);
-  const each = buildingOutput(store, realm, category, research?.picks ?? 0);
-  return {
-    resource,
-    perSecond: each.total * standingBuildings(store, safeInteger(realm.entity_id), category),
-    research,
-  };
+  const each = buildingOutput(store, realm, category, madePicks(resource, learned));
+  return { resource, perSecond: each.total * standingBuildings(store, safeInteger(realm.entity_id), category) };
 };
 
 /**
@@ -127,8 +84,7 @@ const makersLine = (
   standing: string,
   count: number,
 ): string => {
-  const research = researchShare(store, realm, resource, learned);
-  const each = buildingOutput(store, realm, MAKERS[resource].category, research?.picks ?? 0);
+  const each = buildingOutput(store, realm, MAKERS[resource].category, madePicks(resource, learned));
   return STORE_MAKERS.buildings(standing, formatRate(each.total * count));
 };
 

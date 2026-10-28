@@ -177,8 +177,8 @@ describe("reinforcing a structure from an adjacent army", () => {
     const view = reinforce({ 0: paladins, 1: paladins, 2: paladins, 3: paladins });
     view.choose("Inner Wall");
     view.sendMax();
-    expect(view.text()).toContain("Troop mismatch");
-    expect(view.text()).toContain("Tier T1 Knight ≠ Tier T2 Paladin");
+    expect(view.text()).toContain("Troops differ");
+    expect(view.text()).toContain("T1 Knight ≠ T2 Paladin");
     expect(view.transfer()?.disabled).toBe(true);
     view.unmount();
   });
@@ -195,7 +195,7 @@ describe("a destination already at its deployment cap", () => {
     const full = troops(cap());
     const view = reinforce({ 0: full, 1: full, 2: full, 3: full });
     expect(view.errors()).toEqual([]);
-    expect(view.text()).toContain("Deployment cap reached for guard slot");
+    expect(view.text()).toContain("is full:");
     expect(view.send().textContent).toBe("Transfer Troops");
     expect(view.send().disabled).toBe(true);
     view.unmount();
@@ -204,7 +204,7 @@ describe("a destination already at its deployment cap", () => {
   it("says calmly that a full army takes no more, before any amount or press", () => {
     const view = reinforce({}, troops(cap()));
     expect(view.errors()).toEqual([]);
-    expect(view.text()).toContain("Deployment cap reached for destination explorer");
+    expect(view.text()).toContain("The army is full");
     expect(view.send().textContent).toBe("Transfer Troops");
     expect(view.send().disabled).toBe(true);
     view.unmount();

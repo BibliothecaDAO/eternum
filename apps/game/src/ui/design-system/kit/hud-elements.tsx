@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, STAMINA, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -77,11 +77,13 @@ export const HudButton = forwardRef<
     icon?: IconMeaning;
     /** Its order is on its way: this word in place of its own, and no second press. */
     busy?: string;
+    /** Its action is out of reach now (a refill short of LORDS): its words and line in red. */
+    tone?: "bad";
     /** Its action. One that returns the send's promise holds the button until the send settles: no second press. */
     onClick?: (event: MouseEvent<HTMLButtonElement>) => unknown;
     children?: ReactNode;
   } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick">
->(({ kind, size = "md", icon, busy, children, disabled, onClick, ...rest }, ref) => {
+>(({ kind, size = "md", icon, busy, tone, children, disabled, onClick, ...rest }, ref) => {
   const sending = useSending();
   const waits = busy !== undefined || sending.now;
   return (
@@ -94,6 +96,7 @@ export const HudButton = forwardRef<
       className="ui-button"
       data-kind={kind}
       data-size={size}
+      data-tone={tone}
       onClick={(event) => sending.press(() => onClick?.(event))}
     >
       {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
@@ -700,12 +703,17 @@ export const HudTabs = <K extends string | number>({
   </div>
 );
 
-/** A small tag: a count in the age's accent, or a state in its tone. */
+/**
+ * A small tag: a count in the age's accent, or a state in its tone. With `onPress` it is a press at a chip's size, framed
+ * as a button, for an action that stands among the tags (the army card's Refill).
+ */
 export const HudChip = ({
   tone,
   icons,
   label,
   tip,
+  onPress,
+  disabled = false,
   children,
 }: {
   tone?: Tone;
@@ -715,25 +723,48 @@ export const HudChip = ({
   label?: string;
   /** A fuller line for the hover than the chip's words, where the facts have one. */
   tip?: string;
+  /** Its action: the chip is then a button. */
+  onPress?: () => void;
+  disabled?: boolean;
   children: ReactNode;
-}) => (
-  <span
-    className="ui-chip"
-    data-tone={tone}
-    data-tip={tip}
-    role={label === undefined ? undefined : "img"}
-    aria-label={label === undefined ? undefined : `${label} ${textOf(children)}`}
-  >
-    {icons && icons.length > 0 && (
-      <span className="ui-chip__icons" aria-hidden="true">
-        {icons.map((icon) => (
-          <Icon key={icon} name={icon} size={16} />
-        ))}
-      </span>
-    )}
-    {children}
-  </span>
-);
+}) => {
+  const name = label === undefined ? undefined : `${label} ${textOf(children)}`;
+  const inside = (
+    <>
+      {icons && icons.length > 0 && (
+        <span className="ui-chip__icons" aria-hidden="true">
+          {icons.map((icon) => (
+            <Icon key={icon} name={icon} size={16} />
+          ))}
+        </span>
+      )}
+      {children}
+    </>
+  );
+  return onPress ? (
+    <button
+      type="button"
+      className="ui-chip"
+      data-tone={tone}
+      data-tip={tip}
+      aria-label={name}
+      disabled={disabled}
+      onClick={onPress}
+    >
+      {inside}
+    </button>
+  ) : (
+    <span
+      className="ui-chip"
+      data-tone={tone}
+      data-tip={tip}
+      role={name === undefined ? undefined : "img"}
+      aria-label={name}
+    >
+      {inside}
+    </span>
+  );
+};
 
 /** The words a chip's children say, for its name: its strings and numbers, joined. */
 const textOf = (node: ReactNode): string =>
@@ -908,6 +939,7 @@ export const HudRow = ({
   selected = false,
   state,
   disabled,
+  busy,
   tip,
   onClick,
 }: {
@@ -925,6 +957,8 @@ export const HudRow = ({
   selected?: boolean;
   state?: string;
   disabled?: boolean;
+  /** What the row's press started is under way (an army being deployed into a slot). */
+  busy?: boolean;
   /** What the row stands for in full, on the app's hover (a research row's next tier). */
   tip?: string;
   onClick?: () => void;
@@ -939,6 +973,7 @@ export const HudRow = ({
             className="ui-row__choose"
             aria-label={label}
             aria-pressed={selected}
+            aria-busy={busy}
             disabled={disabled}
             onClick={onClick}
           >
@@ -1192,22 +1227,9 @@ export const HudEventRow = ({
  * A line the game says about the screen it sits in: a refusal, a warning, a success, and why. A failure the player can
  * recover from carries Try again (`retry`), so the recovery sits on the line that names what failed.
  */
-export const HudNotice = ({
-  tone,
-  line,
-  why,
-  retry,
-}: {
-  tone?: Tone;
-  line: string;
-  why?: string;
-  retry?: () => unknown;
-}) => (
+export const HudNotice = ({ tone, line, retry }: { tone?: Tone; line: string; retry?: () => unknown }) => (
   <div className="ui-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
-    <span className="flex flex-col">
-      <span>{line}</span>
-      {why && <span className="ui-notice__why">{why}</span>}
-    </span>
+    <span>{line}</span>
     {retry && (
       <span className="ui-notice__retry">
         <HudButton kind="secondary" size="sm" onClick={retry}>
@@ -1723,9 +1745,9 @@ export const HudBubble = ({
 );
 
 /**
- * How full a thing is, in a tone; `filling` while it refills (stamina). Given as a `share` from 0 to 1 (production, a
- * load), it reads as a percentage; given as an `amount` (an army's stamina), it reads as that amount of its maximum,
- * so a reader of the meter gets the amount itself, as the phone's stamina segments give it (unknown reads as nothing).
+ * How full a thing is, in a tone; `filling` while it refills. Given as a `share` from 0 to 1 (production, a load), it
+ * reads as a percentage; given as an `amount` (labor held of its storage), it reads as that amount of its maximum, so a
+ * reader of the meter gets the amount itself, as HudStamina gives it (unknown reads as nothing). Stamina is HudStamina.
  */
 export const HudMeter = ({
   share,
@@ -1754,6 +1776,58 @@ export const HudMeter = ({
       <i style={{ width: `${Math.min(1, Math.max(0, fill)) * 100}%` }} />
     </span>
   );
+};
+
+/** An army's or a guard's stamina as its bar draws it: held, its maximum, and what one explore costs. */
+export type StaminaBar = { current: number; max: number; perExplore: number };
+
+/**
+ * Every stamina bar (an army's card, token, row and map plate, a slot's start, a guard): the meter cut into a segment
+ * per explore its maximum holds, so a full bar counts the tiles it can explore and each explore's worth of maximum
+ * Logistics adds is one more segment (the owner, 26 October: "split the bar in 20 stamina ? like on mobile ?"). A
+ * maximum the explore cost does not divide ends in a shorter segment. It reads as the amount itself; an empty track
+ * while unknown.
+ */
+export const HudStamina = ({
+  stamina,
+  tone = "good",
+  filling = false,
+}: {
+  stamina: StaminaBar | undefined;
+  tone?: Tone;
+  filling?: boolean;
+}) => (
+  <span
+    role="meter"
+    aria-label={STAMINA}
+    aria-valuenow={stamina?.current}
+    aria-valuemin={0}
+    aria-valuemax={stamina?.max}
+    className="flex w-full gap-0.5"
+  >
+    {staminaSegments(stamina).map(({ size, fill }, index) => (
+      <span
+        key={index}
+        className="ui-meter"
+        data-tone={tone}
+        data-filling={filling || undefined}
+        style={{ flexGrow: size, flexBasis: 0 }}
+      >
+        <i style={{ width: `${fill * 100}%` }} />
+      </span>
+    ))}
+  </span>
+);
+
+/** A stamina bar's segments: each one's length (1 is one explore) and fill, 0 to 1; one empty while unknown. */
+const staminaSegments = (stamina: StaminaBar | undefined): { size: number; fill: number }[] => {
+  if (!stamina || stamina.max <= 0 || stamina.perExplore <= 0) return [{ size: 1, fill: 0 }];
+  const { current, max, perExplore } = stamina;
+  return Array.from({ length: Math.ceil(max / perExplore) }, (_, index) => {
+    const start = index * perExplore;
+    const length = Math.min(perExplore, max - start);
+    return { size: length / perExplore, fill: Math.min(1, Math.max(0, (current - start) / length)) };
+  });
 };
 
 /** What a relic works on: its chip takes that kind's colour. */

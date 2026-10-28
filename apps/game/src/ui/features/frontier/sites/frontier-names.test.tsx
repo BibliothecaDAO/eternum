@@ -12,8 +12,6 @@ import { frontierCoachSteps } from "../next-up/frontier-coach";
 import type { NextUpFacts } from "../next-up/next-up-facts";
 import { attackTargetName } from "./site-marks";
 import { SiteCardView } from "./site-card-view";
-import { FightResultCard } from "./fight-result-card";
-import { fightResultOf } from "./fight-result";
 import { SiteReceipt } from "./site-receipt";
 import { campBeside, SITE, SITE_TILE } from "./site-fixture";
 
@@ -53,21 +51,6 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     owner: { address: 0n, ownerName: "", guildName: "" },
     frontierBeast: beast,
   });
-  const result = fightResultOf(
-    {
-      targetId: SITE,
-      tile: { col: 40, row: 12 },
-      site: "Camp",
-      armyId: 201,
-      armyArt: "knight-t1",
-      army: 1498,
-      homeId: 7,
-      clearXp: 82,
-      guardIdentity: identity,
-    },
-    { army: { before: 1498, after: 1400 }, guard: { before: 1100, after: 0 } },
-    () => ({ pay: { icon: "labor", amount: 550, storeFull: false }, xp: 82 }),
-  );
   const clear = {
     ...site,
     clear: { explorer_id: 201n, home_id: 7n, reward: { resource_type: 37, amount: 550_000_000_000n } },
@@ -117,7 +100,6 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
         onClose={() => {}}
       />,
     ),
-    result: publicText(<FightResultCard result={result!} onClose={() => {}} />),
     receipt: publicText(<SiteReceipt selected={{ site: clear }} />),
   };
   for (const [surface, text] of Object.entries(words)) {

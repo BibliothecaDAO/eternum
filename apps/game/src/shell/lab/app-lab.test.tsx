@@ -92,8 +92,10 @@ const renderLab = async (path: string) => {
 
 it.each([
   ["connect/start", "Send code"],
+  ["connect/start-refused", "has an account"],
   ["connect/code", "maelis@realms.test"],
-  ["connect/discord", "Discord finished in another window?"],
+  ["connect/code-refused", "Too many tries with that code"],
+  ["connect/discord", "Discord finished elsewhere?"],
   ["connect/name", "Claim name"],
   ["doorway/sign-in", "Sign in to play."],
   ["doorway/map", "Stolsli"],

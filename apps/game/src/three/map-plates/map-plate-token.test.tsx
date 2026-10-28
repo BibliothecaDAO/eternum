@@ -11,7 +11,7 @@ const army: ArmyPlate = {
   owner: "Tamsin",
   homeName: "Niziz",
   troops: { type: "paladin", tier: 3, count: 1400 },
-  stamina: { current: 30, max: 120 },
+  stamina: { current: 30, max: 120, perExplore: 20 },
 };
 
 const realm: StructurePlate = {
@@ -43,7 +43,11 @@ const rift: StructurePlate = {
 
 describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens)", () => {
   it("reads an army's tier, troops and stamina, a structure's strongest guard tier and whole guard", () => {
-    expect(tokenReading(army)).toMatchObject({ strength: { tier: 3, count: 1400 }, stamina: 0.25, undefended: false });
+    expect(tokenReading(army)).toMatchObject({
+      strength: { tier: 3, count: 1400 },
+      stamina: { current: 30, max: 120, perExplore: 20 },
+      undefended: false,
+    });
     expect(tokenReading(realm)).toMatchObject({ strength: { tier: 3, count: 1154 }, stamina: null, undefended: false });
     // A site's token tells its guard, never what it holds (owner, 2026-10-20: "dont display the rift essence").
     expect(tokenReading(rift)).toEqual({

@@ -18,7 +18,7 @@ export const ConstructionGate = () => (
     <HudPanel collapsible={false} className="relative w-full max-w-xl">
       <div className="flex flex-col items-center gap-6 p-4 text-hud-gold">
         <EternumWordsLogo className="mx-auto w-40 fill-current stroke-current" />
-        <p className="text-hud-display text-hud-ink">Blitz is being crafted, and will be available soon…</p>
+        <p className="text-hud-display text-hud-ink">Blitz is coming soon…</p>
         <div className="flex flex-wrap justify-center gap-3">
           <HudButton kind="primary" icon="discord" onClick={open(communityPlace("Discord").href)}>
             Discord

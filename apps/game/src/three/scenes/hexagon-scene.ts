@@ -48,6 +48,7 @@ import {
   Plane,
   PlaneGeometry,
   PointLight,
+  type Ray,
   Raycaster,
   Scene,
   Texture,
@@ -57,7 +58,7 @@ import {
 import { type MapControls } from "three/addons/controls/MapControls.js";
 import { incrementWorldmapRenderCounter } from "../perf/worldmap-render-diagnostics";
 import { SceneName } from "../types";
-import { inOpenMapArea, openMapArea } from "../utils/labels/hud-clearance";
+import { openMapArea } from "../utils/labels/hud-clearance";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { CameraView } from "./camera-view";
@@ -131,8 +132,6 @@ export abstract class HexagonScene {
   protected cameraAngle = CAMERA_CONFIG.defaultAngle;
   protected currentCameraView = CameraView.Medium; // Content band resolved from the camera distance
   private animationCameraTarget: Vector3 = new Vector3();
-  private readonly hoverGroundPlane = new Plane(new Vector3(0, 1, 0), 0);
-  private readonly hoverGroundIntersection = new Vector3();
   private animationVisibilityContext?: AnimationVisibilityContext;
   private readonly animationVisibilityDistance = 140;
   private cameraTransitionState = createCameraTransitionState();
@@ -224,13 +223,10 @@ export abstract class HexagonScene {
         changed: () => this.notifyControlsChanged(),
       }),
     );
-    this.interactiveHexManager = new InteractiveHexManager(
-      this.scene,
-      { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) },
-      this.hexSpace,
-    );
+    const sceneTerrain: TerrainSurface = { sampleSurface: (x, z) => this.getTerrainSurface().sampleSurface(x, z) };
+    this.interactiveHexManager = new InteractiveHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.worldUpdateListener = new WorldUpdateListener(this.game);
-    this.highlightHexManager = new HighlightHexManager(this.scene, this.hexSpace);
+    this.highlightHexManager = new HighlightHexManager(this.scene, sceneTerrain, this.hexSpace);
     this.thunderBoltManager = new ThunderBoltManager(
       this.scene,
       this.controls,
@@ -392,50 +388,31 @@ export abstract class HexagonScene {
       this.onHexagonMouseMove(null);
       return;
     }
-    const hoveredHex = this.interactiveHexManager.onMouseMove(raycaster);
-    if (hoveredHex) {
-      this.onHexagonMouseMove(hoveredHex);
-      return;
-    }
-
-    const fallbackHex = this.tryArmyRaycastFallback(raycaster);
-    if (fallbackHex) {
-      this.onHexagonMouseMove({
-        hexCoords: fallbackHex,
-        position: this.hexSpace.positionForHex(fallbackHex),
-      });
-      return;
-    }
-
-    const groundPlaneFallback = this.tryGroundPlaneHoverFallback(raycaster);
-    if (groundPlaneFallback) {
-      this.onHexagonMouseMove(groundPlaneFallback);
-      return;
-    }
-
-    this.onHexagonMouseMove(null);
+    const hoveredHex = this.pickPointerHex(raycaster);
+    this.interactiveHexManager.showHover(hoveredHex?.hexCoords ?? null);
+    this.onHexagonMouseMove(hoveredHex);
   }
 
-  private tryGroundPlaneHoverFallback(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
-    const intersection = raycaster.ray.intersectPlane(this.hoverGroundPlane, this.hoverGroundIntersection);
-    if (!intersection) {
-      return null;
-    }
+  /**
+   * The tile under the pointer, the one a hover lights and a click or a right-click acts on: the tile of a thing drawn
+   * under the pointer (`pickStandingThing`), whose model covers the tile behind it on screen, else the tile whose ground
+   * the pointer is on.
+   */
+  protected pickPointerHex(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
+    const standing = this.pickStandingThing(raycaster.ray);
+    if (standing) return { hexCoords: standing, position: this.interactiveHexManager.surfacePosition(standing) };
+    return this.interactiveHexManager.pick(raycaster);
+  }
 
-    const hexCoords = this.hexSpace.hexForPosition(intersection);
-    if (!this.interactiveHexManager.isHexInteractive(hexCoords)) {
-      return null;
-    }
-
-    return {
-      hexCoords,
-      position: this.hexSpace.positionForHex(hexCoords),
-    };
+  /** The tile of the thing standing on the map that the pointer's ray meets first; none in a scene without such things. */
+  protected pickStandingThing(_ray: Ray): HexPosition | null {
+    void _ray;
+    return null;
   }
 
   private handleDoubleClick(_event: MouseEvent, raycaster: Raycaster): void {
     useUIStore.getState().closeContextMenu();
-    const clickedHex = this.interactiveHexManager.onClick(raycaster);
+    const clickedHex = this.pickPointerHex(raycaster);
     if (clickedHex) {
       this.onHexagonDoubleClick(clickedHex.hexCoords);
     }
@@ -443,29 +420,13 @@ export abstract class HexagonScene {
 
   private handleClick(_event: MouseEvent, raycaster: Raycaster): void {
     useUIStore.getState().closeContextMenu();
-    const clickedHex = this.resolveClickedHex(raycaster);
-    this.onHexagonClick(clickedHex?.hexCoords ?? null);
-  }
-
-  private resolveClickedHex(raycaster: Raycaster): { hexCoords: HexPosition; position: Vector3 } | null {
-    const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    if (clickedHex) {
-      return clickedHex;
-    }
-    // Fallback: try direct army model raycasting when hex picking fails
-    const fallbackHex = this.tryArmyRaycastFallback(raycaster);
-    return fallbackHex ? { hexCoords: fallbackHex, position: this.hexSpace.positionForHex(fallbackHex) } : null;
+    this.onHexagonClick(this.pickPointerHex(raycaster)?.hexCoords ?? null);
   }
 
   private handleRightClick(event: MouseEvent, raycaster: Raycaster): void {
     const store = useUIStore.getState();
     store.closeContextMenu();
-    const clickedHex = this.interactiveHexManager.onClick(raycaster);
-    if (clickedHex) {
-      this.onHexagonRightClick(event, clickedHex.hexCoords);
-    } else {
-      this.onHexagonRightClick(event, null);
-    }
+    this.onHexagonRightClick(event, this.pickPointerHex(raycaster)?.hexCoords ?? null);
   }
 
   private setupGUI(): void {
@@ -994,19 +955,6 @@ export abstract class HexagonScene {
   }
 
   /**
-   * A point of this scene the HUD covers (a phone's sheet over the plot it opened for) is brought to the centre of the
-   * map's open area; one in sight keeps the camera where the player put it.
-   */
-  protected keepInOpenMap(point: Vector3): void {
-    this.camera.updateMatrixWorld();
-    const projected = point.clone().project(this.camera);
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    const onScreen = { x: ((projected.x + 1) / 2) * viewport.width, y: ((1 - projected.y) / 2) * viewport.height };
-    if (inOpenMapArea(onScreen, viewport)) return;
-    this.centerOnOpenMap(point);
-  }
-
-  /**
    * Moves the camera onto one of this scene's own hexes, keeping its view angle. The world map takes map positions
    * instead (moveCameraToMapPosition).
    */
@@ -1326,14 +1274,6 @@ export abstract class HexagonScene {
   protected abstract onHexagonClick(hexCoords: HexPosition | null): void;
   protected abstract onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void;
 
-  /**
-   * Fallback selection path when hex-based ground plane picking fails.
-   * Override in subclasses to try direct army model raycasting.
-   */
-  protected tryArmyRaycastFallback(_raycaster: Raycaster): HexPosition | null {
-    void _raycaster;
-    return null;
-  }
   public abstract setup(context?: SceneSetupContext): void | Promise<void>;
   /** Resolves once the scene has something worth showing; a flight holds the outgoing frame until then. */
   public whenPresentable(): Promise<void> {

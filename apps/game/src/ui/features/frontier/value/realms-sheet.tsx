@@ -19,10 +19,10 @@ import {
   REALM_NUMBER,
   REALMS,
   REALMS_ELSEWHERE,
+  REALM_LABOR,
   dayLeft,
   fitOf,
   realmsADay,
-  realmsGiveLabor,
 } from "@/ui/design-system/kit/words";
 
 import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
@@ -31,8 +31,9 @@ import type { RealmLaborPlan, RealmLaborState } from "./realm-labor";
 const REALM_COUNT = 8000;
 
 /**
- * Realms (value screens, b): the Realms the account has claimed labor with, which gave theirs today and which are
- * ready, one Claim all, and Add a Realm by its number (the relay checks it sits in the linked wallet). A Realm a claim
+ * Realms (value screens, b): what one Realm gives, always in its head (with no wallet linked it is still a sheet about
+ * Realms), the Realms the account has claimed labor with, which gave theirs today and which are ready, one Claim all,
+ * and Add a Realm by its number (the relay checks it sits in the linked wallet). A Realm a claim
  * found no longer in the wallet says so and is left out of the claim. A full labor store shows what fits and leads with
  * the Realm board, where labor is spent; once all are claimed the wait runs to the day's end.
  */
@@ -69,14 +70,16 @@ export const RealmsSheet = ({
   onClose: () => void;
 }) => (
   <HudSheet label={REALMS} onClose={onClose}>
-    <p className="text-center">{realmsGiveLabor(perRealm, cap)}</p>
-    {wallet !== null && (
-      <span className="flex justify-end">
+    <span className="flex justify-end gap-2">
+      <HudChip icons={["realm", "labor"]} label={REALM_LABOR}>
+        {formatShort(perRealm, { signed: true })}
+      </HudChip>
+      {wallet !== null && (
         <HudChip icons={["backpack"]} label={REALMS}>
           {shortAddress(wallet)}
         </HudChip>
-      </span>
-    )}
+      )}
+    </span>
     {wallet === null ? (
       <>
         <HudNotice tone="warn" line={NO_WALLET} />

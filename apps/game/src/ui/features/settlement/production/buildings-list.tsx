@@ -79,7 +79,7 @@ export const BuildingsList = ({
   return (
     <div className="flex flex-col gap-1.5">
       {productions.length === 0 ? (
-        <p className="text-hud-muted">Build production buildings first to start producing resources.</p>
+        <p className="text-hud-muted">No production buildings yet</p>
       ) : (
         productions.map((production) => (
           <HudRow

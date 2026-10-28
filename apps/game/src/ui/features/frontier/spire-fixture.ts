@@ -5,6 +5,8 @@ import { campBeside } from "./sites/site-fixture";
 
 /** The fixture realm's army, and the second of day 0 the fixture is read at. */
 export const SPIRE_ARMY = 201;
+/** The key of the army's tile row, as the spire's day places it: a game that moves the army rewrites this row. */
+export const SPIRE_ARMY_TILE_KEY = "0x904";
 export const SPIRE_DAY_NOW = 350;
 
 const depthRules = (depth: number, entry: number) => ({
@@ -31,14 +33,14 @@ const depthRules = (depth: number, entry: number) => ({
 
 /**
  * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched and entry costs of
- * 30, 40 and 50 stamina, as Frontier prices them, and its army standing beside the spire or three tiles off it,
+ * 30, 40 and 50 stamina, as Frontier prices them, and its army standing beside the spire, on its tile or three tiles off it,
  * holding the stamina given. The spire card's tests and the game lab's spire both play it.
  */
 export const spireDay = ({
   stamina = 100n,
   standing = "beside",
   spacing,
-}: { stamina?: bigint; standing?: "beside" | "away"; spacing?: number } = {}) => {
+}: { stamina?: bigint; standing?: "beside" | "on" | "away"; spacing?: number } = {}) => {
   const { store } = campBeside("Camp", true, stamina);
   // The regions' width: the deploy fixture's small one unless the game needs Frontier's own.
   if (spacing !== undefined)
@@ -52,8 +54,11 @@ export const spireDay = ({
   const rules = readExpeditionRules(store, 1)!;
   const spire = expeditionSpireTile(rules, store.require("Structure", { game_id: 1, entity_id: 7 }), SPIRE_DAY_NOW)!;
   const [beside] = getNeighborHexes(spire.col, spire.row);
-  const armyTile =
-    standing === "beside" ? { col: beside.col, row: beside.row } : { col: spire.col + 3, row: spire.row };
+  const armyTile = {
+    beside: { col: beside.col, row: beside.row },
+    on: { col: spire.col, row: spire.row },
+    away: { col: spire.col + 3, row: spire.row },
+  }[standing];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 46n) } },
@@ -63,7 +68,7 @@ export const spireDay = ({
     { model: "TileOccupancy", key: "0x75", value: null },
     {
       model: "TileOccupancy",
-      key: "0x904",
+      key: SPIRE_ARMY_TILE_KEY,
       value: { game_id: 1, alt: false, ...armyTile, entity_id: SPIRE_ARMY, category: 15, is_structure: false },
     },
   ] as never);

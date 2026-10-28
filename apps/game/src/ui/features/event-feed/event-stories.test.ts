@@ -1,6 +1,14 @@
 import { expect, it } from "vitest";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { type EventsFilter, eventsReads, oneStoryPerAction, selectEventStories } from "./event-stories";
+import {
+  type EventsFilter,
+  eventsReads,
+  type FeedLens,
+  feedReads,
+  oneStoryPerAction,
+  selectEventStories,
+  selectFeedStories,
+} from "./event-stories";
 
 /** A story at `at`, its own transaction unless one is given, between the players its payload names. */
 const story = (
@@ -130,4 +138,49 @@ it("reads under Important the player's fights, raids, captures, crates and relic
 it("reads under All one read of the world's newest stories, whoever the viewer is", () => {
   expect(eventsReads("all", "0x1", [900])).toEqual([{ limit: 350 }]);
   expect(eventsReads("all", null, [])).toEqual([{ limit: 350 }]);
+});
+
+/** The ids Frontier's Feed shows through a lens, as player 0x1. */
+const feedIds = (stories: ProcessedStoryEvent[], lens: FeedLens) =>
+  selectFeedStories(stories, lens, "0x1").map(({ id }) => id);
+
+it("shows in the Feed's Important anyone's fights, clears and chests, and in Mine the player's own, routine too", () => {
+  // Owner, 27 October: "All / Important (battles but not just mine), then mine".
+  const stories = [
+    fight("their-fight", 60, "0x7", "0x8"),
+    story("their-clear", 50, "SitePayout", "0x8", { site_id: 5 }),
+    story("my-explore", 40, "ExplorationReward", "0x1", {}),
+    fight("my-fight", 30, "0x1", "0x2"),
+    story("their-explore", 20, "ExplorationReward", "0x7", {}),
+    story("their-chest", 10, "RewardChestOpened", "0x9", {}),
+  ];
+  expect(feedIds(stories, "all")).toEqual([
+    "their-fight",
+    "their-clear",
+    "my-explore",
+    "my-fight",
+    "their-explore",
+    "their-chest",
+  ]);
+  // Notable stories, anyone's; never a routine explore, the player's or another's.
+  expect(feedIds(stories, "important")).toEqual(["their-fight", "their-clear", "my-fight", "their-chest"]);
+  // The player's own, whatever it is: their explore and their fight, nobody else's.
+  expect(feedIds(stories, "mine")).toEqual(["my-explore", "my-fight"]);
+  // A fight the player was attacked in is theirs too.
+  expect(feedIds([fight("attacked", 5, "0x7", "0x1")], "mine")).toEqual(["attacked"]);
+});
+
+it("reads for the Feed's lenses the world, each notable kind from anyone, or the player's own", () => {
+  expect(feedReads("all", "0x1")).toEqual([{ limit: 350 }]);
+  expect(feedReads("important", "0x1").map(({ story, owner }) => [story, owner])).toEqual([
+    ["BattleEvent", undefined],
+    ["RaidEvent", undefined],
+    ["StructureCapturedStory", undefined],
+    ["SitePayout", undefined],
+    ["RewardChestOpened", undefined],
+    ["RelicChestOpened", undefined],
+  ]);
+  expect(feedReads("mine", "0x1")).toEqual([{ limit: 100, owner: "0x1" }]);
+  // A spectator holds nothing of their own to read.
+  expect(feedReads("mine", null)).toEqual([]);
 });

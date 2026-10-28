@@ -30,9 +30,7 @@ const automationOf = (producedResources: ResourcesIds[]) => {
 };
 
 it("tells a realm whose farm and huts produce on their own that there is nothing to automate, not that nothing produces", () => {
-  expect(automationOf([ResourcesIds.Wheat, ResourcesIds.Labor])).toBe(
-    "Nothing to automate here yet: Wheat and Labor produce on their own. Build a resource building to automate what it makes.",
-  );
+  expect(automationOf([ResourcesIds.Wheat, ResourcesIds.Labor])).toBe("Nothing to automate yet");
 });
 
 it("offers a resource building's output to automate", () => {

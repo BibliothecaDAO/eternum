@@ -73,8 +73,7 @@ export const VOICE_RULES: readonly VoiceRule[] = [
   },
   {
     rule: "A number, never a formula",
-    instead:
-      'the one number a player gets; a hover may say why in a short line ("+25% from Fields"), never the sum behind it',
+    instead: "the one number a player gets, with the research behind it as its gem, never the sum behind it",
     bad: "+25/min · 4 × +6.3/min (5 + 25% Fields)",
     good: "+25/min",
     // Two figures joined by ×, + or = between spaces (a template's ${…} reads as a figure), or a price's base: "4 × 6.3",
@@ -100,5 +99,11 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     instead: "one line that names what is counted, no filler",
     bad: "You currently do not have enough wheat to deploy this army",
     good: "Needs 300 wheat, have 120",
+  },
+  {
+    rule: "No subtext",
+    instead: "the control, the number and the action; no line under them to explain them",
+    bad: "Steps out on the bright tile. Tap another lit tile beside the realm to move it there.",
+    good: "Deploy",
   },
 ];

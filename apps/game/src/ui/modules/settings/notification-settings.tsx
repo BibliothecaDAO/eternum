@@ -30,7 +30,7 @@ export const NotificationSettings = () => {
           value={level ?? ""}
           options={[
             ...(level ? [] : [{ value: "" as const, label: "—", disabled: true }]),
-            ...LEVELS.map((id) => ({ value: id, label: LEVEL_WORDS[id].word })),
+            ...LEVELS.map((id) => ({ value: id, label: LEVEL_WORDS[id] })),
           ]}
           disabled={preferences.status !== "ready"}
           onChange={(next) => next && void preferences.save(next)}

@@ -14,14 +14,14 @@ it("selects with short presses, then sends a held destination to the scene's ord
     handleClick: (event: MouseEvent, raycaster: Raycaster) => void;
     handleRightClick: (event: MouseEvent, raycaster: Raycaster) => void;
     handleDoubleClick: (event: MouseEvent, raycaster: Raycaster) => void;
-    interactiveHexManager: { onClick: ReturnType<typeof vi.fn> };
+    interactiveHexManager: { pick: ReturnType<typeof vi.fn> };
     onHexagonClick: ReturnType<typeof vi.fn>;
     onHexagonRightClick: ReturnType<typeof vi.fn>;
     onHexagonDoubleClick: ReturnType<typeof vi.fn>;
   };
   const unit = { col: 1, row: 2 };
   const destination = { col: 2, row: 2 };
-  scene.interactiveHexManager = { onClick: vi.fn(() => ({ hexCoords: unit, position: new Vector3() })) };
+  scene.interactiveHexManager = { pick: vi.fn(() => ({ hexCoords: unit, position: new Vector3() })) };
   scene.onHexagonClick = vi.fn();
   scene.onHexagonRightClick = vi.fn();
   scene.onHexagonDoubleClick = vi.fn();
@@ -59,7 +59,7 @@ it("selects with short presses, then sends a held destination to the scene's ord
     expect(scene.onHexagonRightClick).not.toHaveBeenCalled();
     expect(scene.onHexagonDoubleClick).not.toHaveBeenCalled();
 
-    scene.interactiveHexManager.onClick.mockReturnValue({ hexCoords: destination, position: new Vector3() });
+    scene.interactiveHexManager.pick.mockReturnValue({ hexCoords: destination, position: new Vector3() });
     pointer("pointerdown");
     vi.advanceTimersByTime(500);
     pointer("pointerup");

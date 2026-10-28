@@ -88,9 +88,7 @@ it("names both sides of a capture once identity answers, and the neutral side at
       at: 0,
     }),
     (line) =>
-      expect(line).toBe(
-        "jeanchristophemehrcl took Stolsli from Maelis. Its armies and incoming deliveries went with it.",
-      ),
+      expect(line).toBe("jeanchristophemehrcl took Stolsli from Maelis. Its armies and deliveries went with it."),
   );
 });
 

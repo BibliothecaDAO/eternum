@@ -307,3 +307,54 @@ test("the schedule opens exactly the game the calendar names next, at the moment
     { name: named!.name, closesAt: named!.closesAt },
   ]);
 });
+
+// The only running Frontier date change is reconciled from both contracts, not approved by the PUT body.
+test("reconciles the approved extension only after both chains agree, with retries and Blitz unchanged", async () => {
+  const approved = (await import("../../../config/source/frontier/extension.json")).default;
+  const now = (approved.oldEnd - 3600) * 1000;
+  const before = {
+    phase: "frontier" as const,
+    startsAt: new Date(approved.start * 1000).toISOString(),
+    endsAt: new Date(approved.oldEnd * 1000).toISOString(),
+  };
+  const after = { ...before, endsAt: new Date(approved.end * 1000).toISOString() };
+  const blitz = { phase: "blitz" as const, startsAt: "2026-10-21T10:30:00.000Z", endsAt: "2026-10-28T10:30:00.000Z" };
+  const ordinary = new D1CalendarStore(database.db);
+  await ordinary.set(before, approved.start * 1000 - 1);
+  await ordinary.set(blitz, approved.start * 1000 - 1);
+  await expect(ordinary.set(after, now)).rejects.toThrow("Frontier extension calendar differs");
+  const verify = vi
+    .fn()
+    .mockRejectedValueOnce(new Error("extension_not_confirmed_on_both_chains"))
+    .mockResolvedValue({ worldBlock: 50, ledgerBlock: 60 });
+  const guarded = new D1CalendarStore(database.db, verify);
+  await expect(guarded.set(after, now)).rejects.toThrow("extension_not_confirmed_on_both_chains");
+  expect(await guarded.list()).toEqual([before, blitz]);
+  expect(await guarded.set(after, now)).toEqual(after);
+  expect(await guarded.set(after, now)).toEqual(after);
+  expect(verify).toHaveBeenCalledTimes(3);
+  expect(await guarded.list()).toEqual([after, blitz]);
+  // A fresh store sees persisted dates, and arbitrary future edits still use the fixed-end rule.
+  expect(await new D1CalendarStore(database.db).list()).toEqual([after, blitz]);
+  await expect(
+    guarded.set({ ...after, endsAt: new Date((approved.end + 80 * 3600) * 1000).toISOString() }, now),
+  ).rejects.toThrow("A started Frontier season's end is fixed");
+});
+
+test("refuses a calendar changed while extension confirmation was in flight", async () => {
+  const approved = (await import("../../../config/source/frontier/extension.json")).default;
+  const before = {
+    phase: "frontier" as const,
+    startsAt: new Date(approved.start * 1000).toISOString(),
+    endsAt: new Date(approved.oldEnd * 1000).toISOString(),
+  };
+  const ordinary = new D1CalendarStore(database.db);
+  await ordinary.set(before, approved.start * 1000 - 1);
+  const guarded = new D1CalendarStore(database.db, async () => {
+    await database.db.prepare("UPDATE season_phases SET ends_at = ends_at + 1 WHERE phase = 'frontier'").run();
+  });
+  await expect(
+    guarded.set({ ...before, endsAt: new Date(approved.end * 1000).toISOString() }, (approved.oldEnd - 1) * 1000),
+  ).rejects.toThrow("The calendar changed; reload and edit again");
+  expect(Date.parse((await guarded.list())[0]!.endsAt)).toBe(approved.oldEnd * 1000 + 1);
+});

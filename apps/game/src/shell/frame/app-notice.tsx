@@ -99,7 +99,7 @@ export const useAppNotice = ({ offersInstall }: { offersInstall: boolean }) => {
     return (
       <AppNotice
         icon="download"
-        line={APP_STATE_WORDS.onHomeScreen}
+        label={APP_STATE_WORDS.onHomeScreen}
         actions={
           <>
             <AppButton

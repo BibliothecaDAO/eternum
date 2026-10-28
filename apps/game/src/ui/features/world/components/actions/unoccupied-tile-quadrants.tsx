@@ -10,9 +10,7 @@ import { HudButton, HudChip, HudPanel, HudRow } from "@/ui/design-system/kit/hud
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, TroopType } from "@bibliothecadao/types";
-
-const unoccupiedTileTroopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
+import { BiomeType, TROOP_TYPES, TroopType } from "@bibliothecadao/types";
 
 const unoccupiedTileTroopConfig: Record<
   TroopType,
@@ -43,7 +41,7 @@ const resolveBiomeBonusCardTone = (bonus: number) => {
 };
 
 const buildBiomeTroopBonusCards = (biome: BiomeType) => {
-  return unoccupiedTileTroopTypes.map((troopType) => {
+  return TROOP_TYPES.map((troopType) => {
     const config = unoccupiedTileTroopConfig[troopType];
     const bonus = configManager.getBiomeCombatBonus(troopType, biome);
     const tone = resolveBiomeBonusCardTone(bonus);

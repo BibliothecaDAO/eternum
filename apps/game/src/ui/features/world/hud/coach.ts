@@ -89,17 +89,17 @@ export const coachSteps = (state: CoachState): CoachStep[] => {
 };
 
 /** An army to raise: at the realm with the most troops on hand, or, with none anywhere, a barracks to build first. */
-export const raiseStep = ({ troopsOnHand, grants }: Pick<CoachState, "troopsOnHand" | "grants">): CoachStep =>
+export const raiseStep = ({ troopsOnHand }: Pick<CoachState, "troopsOnHand">): CoachStep =>
   troopsOnHand
     ? {
         key: "coach:raise",
-        line: `Raise an army at ${troopsOnHand.realmName} (${formatCount(troopsOnHand.stack.count, "troop")} on hand): it explores for +${formatExact(grants.exploreTile)} points a tile.`,
+        line: `${troopsOnHand.realmName}: ${formatCount(troopsOnHand.stack.count, "troop")} ready`,
         verb: "Raise an army",
         act: { kind: "raise", realmId: troopsOnHand.realmId, troops: troopsOnHand.stack },
       }
     : {
         key: "coach:barracks",
-        line: "No troops on hand: build a barracks to train them.",
+        line: "No troops on hand",
         verb: "Build a barracks",
         act: { kind: "build" },
       };
@@ -115,7 +115,7 @@ const armyToExplore = (armies: readonly CoachArmy[]): CoachArmy | undefined => {
 
 const openCrateStep = ({ army, target }: Pair, grants: PointsGrants): CoachStep => ({
   key: `coach:open-crate:${target.hex.col}:${target.hex.row}`,
-  line: `Your army is beside ${target.name}: open it for +${formatExact(grants.openRelicCrate)} points.`,
+  line: `Beside ${target.name}: +${formatExact(grants.openRelicCrate)} points`,
   verb: "Open the crate",
   act: { kind: "open-crate", armyId: army.entityId, hex: target.hex },
 });
@@ -125,13 +125,13 @@ const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
   return army.selected
     ? {
         key: `coach:explore:${army.entityId}:selected`,
-        line: `Click a tile beside your army to explore it: ${points}.`,
+        line: "Right-click a tile beside your army",
         verb: null,
         act: null,
       }
     : {
         key: `coach:explore:${army.entityId}`,
-        line: `Your army can explore: ${points}.`,
+        line: `Your army can explore: ${points}`,
         verb: "Select the army",
         act: { kind: "go", armyId: army.entityId, target: null },
       };
@@ -169,7 +169,7 @@ const goFor = (
     return [
       {
         key: `${key}:level-up`,
-        line: `${target.name} would wipe out your army. Level up ${army.home.name} first: a bigger realm raises a bigger army.`,
+        line: `${target.name} is too strong: level up ${army.home.name}`,
         verb: null,
         act: { kind: "level-up", realmId: army.home.realmId, name: army.home.name },
       },
@@ -194,19 +194,19 @@ const goWords = (kind: CoachTarget["kind"], name: string, grants: PointsGrants) 
   if (kind === "crate") {
     const points = `+${formatExact(grants.openRelicCrate)} points`;
     return {
-      line: `Open ${name}: ${points}.`,
+      line: `Open ${name}: ${points}`,
       verb: "Show the crate",
-      onMap: `Move your army next to ${name}, then right-click it: ${points}.`,
+      onMap: `Move beside ${name}, then right-click it`,
     };
   }
   const [line, points] =
     kind === "site"
       ? [`Take ${name} from The Vanguard`, `+${formatExact(grants.claimCampFromBandits)} points`]
-      : [`Take ${name}`, `+${formatExact(grants.claimHyperstructureFromBandits)} points, then points every second`];
+      : [`Take ${name}`, `+${formatExact(grants.claimHyperstructureFromBandits)} points`];
   return {
-    line: `${line}: ${points}.`,
+    line: `${line}: ${points}`,
     verb: `Show ${name}`,
-    onMap: `Move your army next to ${name}, then right-click it to attack: ${points}.`,
+    onMap: `Move beside ${name}, then right-click to attack`,
   };
 };
 

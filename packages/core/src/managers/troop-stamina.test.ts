@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
+import { TROOP_TIERS, TroopTier, TroopType, type Troops } from "@bibliothecadao/types";
 import { affordableAt, musterStamina, staminaAt, type TroopStaminaRules } from "./troop-stamina";
 
 /** One game's rules, as its SliceRules carries them: knights hold 120 at T1 and regain 20 a tick. */
@@ -109,7 +109,7 @@ describe("stamina under one game's rules", () => {
   });
 
   it("musters every tier full at its trained Logistics, or inherits the previous occupant's regenerating bar", () => {
-    for (const tier of [TroopTier.T1, TroopTier.T2, TroopTier.T3]) {
+    for (const tier of TROOP_TIERS) {
       const troop = { category: TroopType.Knight, tier };
       expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 0, 60)).toEqual({ amount: 120, max: 120 });
       expect(musterStamina({ slot: 0, inherited: null }, troop, 101, rules, 2, 60)).toEqual({ amount: 170, max: 170 });

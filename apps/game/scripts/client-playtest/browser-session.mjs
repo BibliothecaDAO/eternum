@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
-import { HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
 
 const AGENT_BROWSER_RETRIES = 2;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2_000;
@@ -69,7 +69,7 @@ export function createBrowserSession(session, { headed, profile }) {
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     screenshot: (path) => run(["screenshot", path]),
     observe: () => read(OBSERVE_EXPRESSION),
-    buttonTexts: () => read(BUTTON_TEXTS_EXPRESSION),
+    orderBar: () => read(ORDER_BAR_EXPRESSION),
     armies: () => read(ARMIES_EXPRESSION),
     hudLayout: () => read(HUD_LAYOUT_EXPRESSION),
     close: () => run(["close"], { allowFailure: true }),
@@ -142,7 +142,13 @@ const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[ari
 })))`;
 
 // A button's text ends with its key hint; the leading words are its name.
-const BUTTON_TEXTS_EXPRESSION = `JSON.stringify([...document.querySelectorAll("button")].map((button) => button.textContent.trim()).filter(Boolean))`;
+/** The order bar a phone's tap pinned: the order its row names, and whether a cost of it is short; null with none. */
+const ORDER_BAR_EXPRESSION = `JSON.stringify((() => {
+  const bar = [...document.querySelectorAll("section[aria-label]")].find((section) =>
+    /^(Explore|Move)$/.test(section.getAttribute("aria-label")),
+  );
+  return bar ? { verb: bar.getAttribute("aria-label"), short: Boolean(bar.querySelector('[data-tone="bad"]')) } : null;
+})())`;
 
 /** A busy machine times out CDP calls now and then; a read can be asked again, an action cannot. */
 function isTransientFailure(commandArgs, result) {
@@ -201,6 +207,17 @@ export async function openPageDevTools(browser) {
     close: () => socket.close(),
   };
 }
+
+/**
+ * A phone's touch below a desktop's width, none at a desktop's (DevTools' Emulation.setTouchEmulationEnabled): with it
+ * `(pointer: coarse)` matches and the page counts touch points, as on a phone. Headless Chrome has no pointer at all, so
+ * without it a phone-width page draws no phone rule (a finger's size). A page's mouse commands still play as before.
+ */
+const touchEmulation = (width) => ({ enabled: width < DESKTOP_MIN_WIDTH, maxTouchPoints: 5 });
+
+/** That touch on the driven page, held while `devTools` stays open. */
+export const touchAtPhoneWidth = (devTools, width) =>
+  devTools.send("Emulation.setTouchEmulationEnabled", touchEmulation(width));
 
 /**
  * Every JSON-RPC POST the page makes to a node (the shard's, the L2's), by host (the play POST is

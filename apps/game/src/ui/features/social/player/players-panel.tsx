@@ -126,7 +126,7 @@ export const PlayersPanel = ({
     <div className="flex flex-col p-2">
       {activityError && (
         <p role="alert" className="mb-2 text-hud-body text-hud-bad">
-          Points breakdown is unavailable. It is read again when points change.
+          Points breakdown is unavailable.
         </p>
       )}
       {mode.ui.showEndSeasonButton && <EndSeasonButton className="mb-2 w-full" />}

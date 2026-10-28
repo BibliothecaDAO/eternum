@@ -1,3 +1,4 @@
+pub mod approved_frontier_extension;
 pub mod chests;
 pub mod contract;
 

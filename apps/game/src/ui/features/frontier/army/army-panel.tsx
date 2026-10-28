@@ -2,17 +2,16 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { formatExact, formatFigure, formatShort, StructureType } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudMeter, HudPortrait, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import {
-  ARMY_DETAIL,
-  BACK,
-  RESEARCH_TREE,
-  STAMINA,
-  tierNumeral,
-  TROOPS,
-  UPGRADING,
-  XP,
-} from "@/ui/design-system/kit/words";
+  HudButton,
+  HudChip,
+  HudMeter,
+  HudPortrait,
+  HudStamina,
+  HudTier,
+  HudTierStep,
+} from "@/ui/design-system/kit/hud-elements";
+import { ARMY_DETAIL, BACK, RESEARCH_TREE, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -25,12 +24,12 @@ const KINDS: { key: ScoutKind; icon: IconMeaning }[] = [
 ];
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status: its troops,
- * when its stamina is full again and what each tile explored sends home on one line over the stamina bar, with the
- * refill; its four attributes as tiles (each its tier and what it gives, a press opening its level-up); its XP with
- * how XP is earned on its hover, and Level up: the primary once the XP buys a level, else a way to see what it will
- * buy. Level up turns the same place to the four choices, each with what it gives next and its XP, Scouting's kind,
- * and the verb, with a way back.
+ * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status, beside its
+ * portrait in two rows: its troops, what each tile explored sends home and the refill, then its stamina line; its four attributes
+ * as tiles (each its tier and what it gives, a press
+ * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once the XP buys a level,
+ * else a way to see what it will buy. Level up turns the same place to the four choices, each with what it gives next
+ * and its XP, Scouting's kind, and the verb, with a way back.
  */
 export const ArmyDetail = ({
   army,
@@ -40,10 +39,10 @@ export const ArmyDetail = ({
   onLevelUp,
 }: {
   army: ArmyView;
-  /** The refill's control on the stamina row. */
+  /** The refill's control, at the end of the chips' row, so the stamina line keeps its width. */
   refill?: ReactNode;
   sending: boolean;
-  /** Opens on the choices (the lab's second step). */
+  /** Opens on the choices: the picked army's Level up on a phone, and the lab's second step. */
   choosing?: boolean;
   onLevelUp: (attribute: AttributeKey, kind: ScoutKind | undefined) => unknown;
 }) => {
@@ -85,17 +84,13 @@ export const ArmyDetail = ({
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
         <HudPortrait icon={army.art} label={TROOPS} />
-        <div className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-          <StatusLine army={army} />
-          <span className="flex w-full items-center gap-2 text-hud-label tabular-nums text-hud-muted">
-            <Icon name="stamina" size={16} />
-            <span className="min-w-16 flex-1">
-              <HudMeter amount={army.stamina} tone="good" label={STAMINA} />
-            </span>
-            {`${formatExact(army.stamina.current)}/${formatExact(army.stamina.max)}`}
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <span className="flex items-center gap-2">
+            <StatusChips army={army} />
+            {refill && <span className="ml-auto flex">{refill}</span>}
           </span>
+          <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
         </div>
-        {refill}
       </div>
       <div className="grid grid-cols-4 gap-1.5">
         {army.attributes.map((attribute) => (
@@ -107,21 +102,34 @@ export const ArmyDetail = ({
   );
 };
 
-/**
- * Over the stamina bar, on one line (the owner, 22 October): the army's troops, when its stamina is full again, and what
- * each tile explored sends home (none in a game whose reveals pay none).
- */
-const StatusLine = ({ army }: { army: ArmyView }) => (
+/** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
+const StatusChips = ({ army }: { army: ArmyView }) => (
   <span className="flex flex-wrap items-center gap-1.5">
     <HudChip icons={["troops"]} label={TROOPS}>
       {formatShort(army.troops)}
     </HudChip>
-    {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
     {army.revealYield !== null && (
       <HudChip icons={["essence", "labor"]} label={ARMY_DETAIL.revealPaysLabel}>
         {army.revealYield === undefined ? "—" : ARMY_DETAIL.revealPays(formatShort(army.revealYield))}
       </HudChip>
     )}
+  </span>
+);
+
+/**
+ * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
+ * full again.
+ */
+const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
+  <span data-stamina-line className="flex items-center gap-2">
+    <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
+      <Icon name="stamina" size={14} />
+      {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
+    </span>
+    <span className="min-w-0 flex-1">
+      <HudStamina stamina={stamina} />
+    </span>
+    {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
   </span>
 );
 
@@ -166,10 +174,7 @@ const XpLine = ({ army }: { army: ArmyView }) =>
     </span>
   );
 
-/**
- * The XP held, with how XP is earned on its hover, Level up (lit while the XP buys a level-up, with no count: the
- * choices say which), and the bar to the next level-up.
- */
+/** The XP held, with how XP is earned on its hover, Level up, and the bar to the next level-up. */
 const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
   <div className="flex flex-col gap-1.5">
     <div className="flex items-end justify-between gap-2">
@@ -185,13 +190,21 @@ const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void })
       </span>
       <span className="flex items-center gap-2">
         <XpLine army={army} />
-        <HudButton kind={army.affordable > 0 ? "primary" : "secondary"} size="sm" icon="upgrade" onClick={onLevelUp}>
-          {army.affordable > 0 ? ARMY_DETAIL.levelUp : ARMY_DETAIL.levelUps}
-        </HudButton>
+        <LevelUpButton affordable={army.affordable > 0} onPress={onLevelUp} />
       </span>
     </div>
     {army.goal && <HudMeter share={army.goal.share} tone={army.affordable > 0 ? "good" : undefined} label={XP} />}
   </div>
+);
+
+/**
+ * Level up: the primary while the XP buys a level-up, with no count (the choices say which), else a way to see what it
+ * will buy. The army card's and a phone's picked army's.
+ */
+export const LevelUpButton = ({ affordable, onPress }: { affordable: boolean; onPress: () => void }) => (
+  <HudButton kind={affordable ? "primary" : "secondary"} size="sm" icon="upgrade" onClick={onPress}>
+    {affordable ? ARMY_DETAIL.levelUp : ARMY_DETAIL.levelUps}
+  </HudButton>
 );
 
 /** One level-up: the attribute, its next level, what it gives next, its XP. */

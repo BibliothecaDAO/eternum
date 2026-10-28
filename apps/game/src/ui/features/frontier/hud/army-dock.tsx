@@ -10,10 +10,10 @@ import { DEPLOY, DEPLOY_FILLS_FIRST, DEPLOYING } from "@/ui/design-system/kit/wo
 
 import { attributeBadgeTarget } from "../attributes/attributes";
 import type { SlotStart } from "../deploy/deploy-plan";
-import { slotStartWords } from "../deploy/slot-start";
+import { slotStartLine } from "../deploy/slot-start";
 import { useDeployPlan } from "../deploy/use-deploy-plan";
 import { useWellRefill } from "../sites/well-refill";
-import { ArmyList, ArmyRow } from "./army-row";
+import { ArmyList, ArmyRow, OpenSlotRow } from "./army-row";
 import { ArmyToken, OpenSlot } from "./army-token";
 import type { DockArmy } from "./dock-armies";
 
@@ -205,15 +205,15 @@ const DeploySlot = ({
   wide?: boolean;
 }) => {
   const deploying = useInFlight("deploy", safeInteger(realm.entity_id)) !== undefined;
-  const words = slot && slotStartWords(slot);
+  const line = slot && slotStartLine(slot);
+  const Slot = wide ? OpenSlotRow : OpenSlot;
   return (
-    <OpenSlot
+    <Slot
       label={DEPLOY}
       filling={first && deploying ? DEPLOYING : undefined}
       pulse={pulse}
-      wide={wide}
       waits={slot && waits ? { number: slot.number, words: DEPLOY_FILLS_FIRST(waits.number) } : undefined}
-      start={slot?.start && words ? { bar: slot.start, words: `${words.line}. ${words.why}.` } : undefined}
+      start={slot?.start && line ? { bar: slot.start, words: `${line}.` } : undefined}
       onDeploy={() => openArmyDeployment({ structureId: safeInteger(realm.entity_id), isExplorer: true })}
     />
   );

@@ -106,7 +106,7 @@ const theMap = (stamina: bigint, phone = false) => {
     projection,
     surface,
     camera: new THREE.PerspectiveCamera(),
-    mapPlates: { placeOrderLine: () => null },
+    mapPlates: { placeOrderLine: () => null, thingHitBy: () => null },
     army: ARMY,
     player: 0x111n,
     tileUnder: () => pointed.hex,
@@ -258,7 +258,7 @@ describe("a Shrine or a Well beside the selected army, on the world map", () => 
 
   it("says to move next to a site beyond the army's step; a right-click there sends nothing", async () => {
     const map = theMap(30n);
-    expect(map.hover(FAR_SHRINE_TILE)).toEqual({ line: "Too far: move next to it", cost: null });
+    expect(map.hover(FAR_SHRINE_TILE)).toEqual({ line: "Too far: move closer", cost: null });
     await map.rightClick(FAR_SHRINE_TILE);
     expect(map.submitted).toEqual([]);
     expect(standing(map.store, FAR_SHRINE_TILE)).toBe(true);

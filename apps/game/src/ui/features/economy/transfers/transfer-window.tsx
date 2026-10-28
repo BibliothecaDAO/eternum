@@ -345,7 +345,7 @@ const Goods = ({
     <>
       <p className="text-hud-muted">
         {destinationIds.length === 0
-          ? `${formatExact(sides.donkeysHave)} donkeys at ${sides.sourceName} · pick where to send`
+          ? `${formatExact(sides.donkeysHave)} donkeys at ${sides.sourceName}`
           : `${landsText(landsIn)} · ${formatExact(donkeys)} of ${formatExact(sides.donkeysHave)} donkeys`}
       </p>
       <GoodsGrid
@@ -429,7 +429,7 @@ const sendWords = ({
   if (goods === 0) return "Choose what to send";
   if (donkeys.needed > donkeys.held) {
     const pair = formatHeldAgainst(donkeys.held, donkeys.needed);
-    return `Not enough donkeys: these loads need ${pair.need}, ${pair.held} here`;
+    return `Needs ${pair.need} donkeys, ${pair.held} here`;
   }
   const to = destinations > 1 ? ` to ${destinations} holdings` : "";
   const repeat = every === null ? "" : ` · every ${every} min`;
@@ -499,9 +499,8 @@ const tellOutcomes = (outcomes: ShipmentOutcome[]) => {
     const to = outcome.shipment.destinationName;
     if (outcome.status === "refused")
       toast.failed(outcome.error, "The game refused it.", { description: `Nothing reached ${to}.` });
-    if (outcome.status === "unknown")
-      toast.warning(`No answer for ${to} yet: it may still arrive. Check Arrivals before sending it again.`);
-    if (outcome.status === "busy") toast.warning(`A transfer to ${to} is still on its way to the chain.`);
+    if (outcome.status === "unknown") toast.warning(`No answer for ${to} yet: check Arrivals`);
+    if (outcome.status === "busy") toast.warning(`Still sending to ${to}`);
   }
 };
 

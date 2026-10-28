@@ -115,9 +115,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           record.ready = await waitFor(b, `${FEED} !== undefined`, READY_MS);
           if (!record.ready) continue;
           await sleep(3_000);
-          // The recorded day can open on its "Day 2 done" card over the Feed; a player continues past it first.
+          // The recorded day can open on its "Day 2 done" card over the Feed; a player continues past it first, and the
+          // HUD takes no press until its dawn has lifted (day-end-screen.tsx: the moment ends, its layer goes).
           if (b.evaluate(mark("Continue")))
             record.presses.push({ press: "the day card's Continue", status: press(b, "Continue") });
+          await waitFor(b, `document.querySelector("[data-day-end]") === null`, READY_MS);
           await sleep(1_000);
           b.run("screenshot", join(out, `${device.name}-open.png`));
           record.feedBox = b.evaluate(`JSON.stringify(${FEED}.getBoundingClientRect())`);

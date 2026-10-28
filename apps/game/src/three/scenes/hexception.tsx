@@ -820,12 +820,24 @@ export default class HexceptionScene extends HexagonScene {
     super.destroy();
   }
 
+  /**
+   * The building whose ghost follows the pointer, waiting for the plot a click picks. A ghost pinned to a plot is the
+   * build sheet's to place, so a click there picks or lets go like any other.
+   */
+  private ghostFollowingPointer() {
+    return this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
+  }
+
   protected async onHexagonClick(hexCoords: HexPosition | null): Promise<void> {
-    if (hexCoords === null) return;
+    if (hexCoords === null) {
+      // Empty ground lets go of the building or plot tapped before (owner, 27 October 2026: "empty ground lets go"),
+      // unless a building's ghost follows the pointer, waiting for its plot.
+      if (!this.ghostFollowingPointer()) this.state.setSelectedBuildingHex(null);
+      return;
+    }
 
     const normalizedCoords = { col: hexCoords.col, row: hexCoords.row };
-    // A pinned ghost is the build sheet's to place; a tap picks another plot.
-    const buildingType = this.pinnedPlot ? null : this.buildingPreview?.getPreviewBuilding();
+    const buildingType = this.ghostFollowingPointer();
 
     const account = useAccountStore.getState().account;
     const canConstruct = !!account && canIssueOrders() && actNowRefusal() === null;
@@ -904,22 +916,7 @@ export default class HexceptionScene extends HexagonScene {
         this.state.setLeftNavigationView(LeftView.EntityView);
         if (canConstruct) this.openPlotConstruction(normalizedCoords);
       }
-      this.keepPlotInSight(normalizedCoords);
     }
-  }
-
-  /**
-   * The card a tapped plot opens (the build sheet, a building's, the castle's) stands over a phone's foot (owner, 26
-   * October 2026: layout A): once it stands, a plot it covers comes up into the board left open above it.
-   */
-  private keepPlotInSight(plot: HexPosition): void {
-    // The card opens on the render after the tap; the open area is read once it stands.
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        const { x, y, z } = this.hexSpace.positionForHex(plot);
-        this.keepInOpenMap(new Vector3(x, y, z));
-      }),
-    );
   }
 
   /** The unpinned ghost follows the pointer, red over a plot it cannot stand on. */
@@ -980,7 +977,7 @@ export default class HexceptionScene extends HexagonScene {
       ),
       this.camera,
     );
-    const hex = this.interactiveHexManager.onClick(raycaster)?.hexCoords;
+    const hex = this.interactiveHexManager.pick(raycaster)?.hexCoords;
     return hex ? this.openPlotConstruction(hex) : false;
   }
 

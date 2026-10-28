@@ -60,11 +60,10 @@ import { BuildingType, getNeighborHexes, siteName, TileOccupier } from "@bibliot
 import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
-import { fightEnded } from "./sites/fight-result";
 
-/** The selection's card as the HUD draws it. */
-const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
-  useSelectionCard(props)?.sheet ?? null;
+/** The selection's card as the HUD draws it; no fight here clears a target, so none hands the HUD back to an army. */
+const FrontierSelectionSheet = (props: Omit<Parameters<typeof useSelectionCard>[0], "onArmyBack">) =>
+  useSelectionCard({ ...props, onArmyBack: () => {} })?.sheet ?? null;
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -320,7 +319,7 @@ it("stands Research alone over the spire card, and shows the next selection's ca
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
   const Hud = () => {
-    const card = useSelectionCard({ realm, onResearch: () => undefined });
+    const card = useSelectionCard({ realm, onResearch: () => undefined, onArmyBack: () => {} });
     const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
     return (
       <>
@@ -436,14 +435,14 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
       ] as never),
     );
     expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day rollover");
+    expect(host.textContent).toContain("Expires at day's end");
     await act(async () => {
       elapsedMs = 1_000;
       useChainTimeStore.getState().tick();
     });
     expect(useChainTimeStore.getState().nowMs).toBe(351_000);
     expect(host.textContent).toContain("17 LORDS");
-    expect(host.textContent).toContain("Expires at day rollover");
+    expect(host.textContent).toContain("Expires at day's end");
     expect(host.textContent).not.toContain("Chain time is not known yet");
     await act(async () => {
       elapsedMs = 49_999;
@@ -456,7 +455,7 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
     });
     expect(useChainTimeStore.getState().nowMs).toBe(400_000);
     expect(host.textContent).toContain("0 LORDS");
-    expect(host.textContent).toContain("Reservation expired");
+    expect(host.textContent).toContain("Expired");
     await act(async () => useChainTimeStore.getState().anchor({ timestamp: 350_000, source: "herald-head" }));
     const open = [...host.querySelectorAll("button")].find((button) => button.textContent === "Open")!;
     expect(open.disabled).toBe(false);
@@ -479,108 +478,6 @@ it("selects a Frontier chest, follows missing metadata and expiry across clock t
     useAccountStore.setState({ account: null });
     performanceNow.mockRestore();
     useChainTimeStore.setState(previousClock);
-  }
-});
-
-it.each([
-  ["Camp", "Troll", "beast-troll", siteName(SITE)],
-  ["Beasts", "Wraith", "beast-wraith", siteName(SITE)],
-  ["Rift", "Rift", "beast-dark-fey", siteName(SITE)],
-  ["Army", "Army", "attack", "Army"],
-] as const)(
-  "titles the %s result sheet as its card was, by the site's map name, and closes it on Escape",
-  (site, name, art, title) => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store } = campBeside();
-    tiles.current = [];
-    useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
-    fightEnded({
-      targetId: SITE,
-      tile: { col: 4, row: 5 },
-      site,
-      guardIdentity: { name, art },
-      verdict: "army-lost",
-      armyArt: "knight-t1",
-      army: { before: 1_000, after: 0 },
-      guard: { before: 1_000, after: 572 },
-      gained: null,
-    });
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-          <FrontierSelectionSheet realm={null} onResearch={() => undefined} />
-        </GameProvider>,
-      ),
-    );
-    expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe(title);
-
-    act(() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
-
-    expect(host.querySelector("[data-kit-sheet]")).toBeNull();
-    expect(useUIStore.getState().mapSelection).toEqual({
-      kind: "army",
-      entityId: 201,
-      tile: null,
-    });
-    act(() => root.unmount());
-    useUIStore.getState().selectOnMap(null);
-  },
-);
-
-it("opens a new pick's own card at once over a fight's result, which stands only in its own tile's card", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store } = campBeside();
-  useAccountStore.setState({ account: { address: "0x111" } as never });
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } });
-  fightEnded({
-    targetId: SITE,
-    tile: { col: 4, row: 5 },
-    site: "Camp",
-    guardIdentity: { name: "Troll", art: "beast-troll" },
-    verdict: "army-lost",
-    armyArt: "knight-t1",
-    army: { before: 1_000, after: 0 },
-    guard: { before: 1_000, after: 572 },
-    gained: null,
-  });
-  // The HUD's way: the selection's card, through the one panel that decides what stands.
-  const Hud = () => {
-    const card = useSelectionCard({ realm: null, onResearch: () => undefined });
-    const { showsCard } = useOnePanel(card?.key ?? null);
-    return showsCard ? card!.sheet : null;
-  };
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  const sheet = () => host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null;
-  try {
-    await act(async () =>
-      root.render(
-        <GameProvider value={{ store } as never} account={{ address: "0x111" } as never}>
-          <Hud />
-        </GameProvider>,
-      ),
-    );
-    expect(sheet()).toBe(siteName(SITE));
-    // Another target: its own card, with nothing to close first.
-    tiles.current = [{ occupierType: TileOccupier.Spire, occupierId: 0, hexCoords: { col: 8, row: 9, alt: false } }];
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 8, row: 9 } }));
-    expect(sheet()).toBe("Spire");
-    // An ordinary tile: nothing stands, the result does not come back over the map.
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 11, row: 2 } }));
-    expect(sheet()).toBeNull();
-    // Back on the fight's tile, its card shows the result again.
-    await act(async () => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: { col: 4, row: 5 } }));
-    expect(sheet()).toBe(siteName(SITE));
-  } finally {
-    act(() => {
-      fightEnded(null);
-      root.unmount();
-    });
-    useUIStore.getState().selectOnMap(null);
-    useAccountStore.setState({ account: null });
-    tiles.current = [];
   }
 });
 
@@ -609,17 +506,21 @@ it("the map's actual transfer selection shows the survivor before the player con
       ),
     );
     expect(host.querySelector('[role="dialog"]')?.getAttribute("aria-label")).toBe("Transfer troops");
-    // The cards say it: Army 1 leaves, its 200 XP lost (100 unspent, 100 in an upgrade) struck out; Army 2 stays with
-    // the stamina the merge leaves it.
-    expect(host.querySelector("s")?.textContent).toBe("200 XP");
-    expect(host.textContent).toContain("100/120→7");
+    // Army 1 loses its 200 total XP (100 unspent, 100 in an upgrade); Army 2 keeps its progression and merged stamina.
+    const expectMergePreview = () => {
+      expect(host.querySelector('[aria-label="Army 1 total XP"]')?.textContent).toBe("Total XP200→0");
+      expect(host.querySelector('[aria-label="Army 2 total XP"]')?.textContent).toBe("Total XP0→0");
+      expect(host.querySelector(".ui-notice")?.textContent).toBe("Army 1 loses its XP and upgrades.");
+      expect(host.querySelector("s")).toBeNull();
+      expect(host.textContent).toContain("100/120→7");
+    };
+    expectMergePreview();
     expect(swap).not.toHaveBeenCalled();
     const confirm = [...host.querySelectorAll("button")].find((button) => button.textContent === "Merge into Army 2")!;
     await act(async () => confirm.click());
     expect(swap).not.toHaveBeenCalled();
-    // The second press says what happens, and no sentence stands over the cards.
-    expect(host.querySelector(".ui-notice")).toBeNull();
-    expect(host.querySelector("s")?.textContent).toBe("200 XP");
+    // Confirming the loss preserves the preview; only the final press sends the transfer.
+    expectMergePreview();
     const final = [...host.querySelectorAll("button")].find(
       (button) => button.textContent === "Lose 200 XP, merge into Army 2",
     )!;

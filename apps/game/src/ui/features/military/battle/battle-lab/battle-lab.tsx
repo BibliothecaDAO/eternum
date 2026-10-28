@@ -1,7 +1,6 @@
 import { env } from "@/../env";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePlayerName, usePlayerNames } from "@/hooks/use-player-profile";
 import { LoadingAnimation } from "@/ui/design-system/molecules/loading-animation";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -20,11 +19,8 @@ import { ActorType, BiomeType, ContractAddress, getLayeredAttackDistance, ID } f
 import { useEffect, useMemo, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 
-import {
-  buildAttackStaminaRequirementLabel,
-  buildAttackStaminaWarning,
-  resolveAttackStaminaState,
-} from "../attack-stamina-state";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { resolveAttackStaminaState } from "../attack-stamina-state";
 import { attackerSideRange, defenderSideRange } from "../battle-range";
 import { RaidContainer } from "../raid-container";
 import { TargetType } from "../types";
@@ -84,9 +80,7 @@ export const BattleLab = ({
 
   const gameMode = useGameModeConfig();
   const names = usePlayerNames();
-  const selectedHex = useUIStore((s) => s.selectedHex);
   const closeSurface = usePopoverStore((s) => s.closeSurface);
-  const deselectEntity = useUIStore((s) => s.deselectEntity);
 
   const attackerEntityId = selected?.id ?? (0 as ID);
   const targetHex = targetRef?.hex ?? { x: 0, y: 0 };
@@ -127,12 +121,12 @@ export const BattleLab = ({
   // and structure-guard flags drive the ranged structure reduction / Knight modifiers. In sim mode
   // there is no map distance, so it falls back to adjacent (range 1).
   const liveAttackDistance = useMemo(() => {
-    if (mode !== "live" || !selectedHex || !target || !selected || !targetRef) return 1;
+    if (mode !== "live" || !target || !selected || !targetRef) return 1;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: selected.alt },
+      { col: selected.hex.x, row: selected.hex.y, alt: selected.alt },
       { col: target.hex.x, row: target.hex.y, alt: targetRef.alt },
     );
-  }, [mode, selectedHex, selected, targetRef, target]);
+  }, [mode, selected, targetRef, target]);
 
   const combatContext = useMemo(
     () => ({
@@ -249,12 +243,14 @@ export const BattleLab = ({
     if (rangedClaimBlocked) return "Move Adjacent to Claim";
     if (isAttackerOnCooldown) return "On Battle Cooldown";
     if (isEdited || nonDefaultParams) return "Reset to act";
-    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
     if (!hasAttacker) return "No Troops Present";
     return attackStaminaState.actionLabel;
   })();
 
-  const warning = attackStaminaState.isBlocked && !isEdited ? buildAttackStaminaWarning(attackStaminaState) : undefined;
+  const warning =
+    attackStaminaState.isBlocked && !isEdited
+      ? staminaShortfall(attackStaminaState.currentStamina, attackStaminaState.requiredStamina)
+      : undefined;
 
   // Raid is available for an explorer attacker vs a structure target.
   const isExplorerAttacker = mode === "live" && snapshot?.attackerType === "army";
@@ -263,7 +259,7 @@ export const BattleLab = ({
   const raidActive = state.attackType === "raid" && showRaidToggle;
 
   const onAttack = async () => {
-    if (mode !== "live" || !selected || !targetRef || !selectedHex || !target || actionDisabled || !snapshot) return;
+    if (mode !== "live" || !selected || !targetRef || !target || actionDisabled || !snapshot) return;
     try {
       setLoading(true);
       playUnitCommandSound("attack");
@@ -290,7 +286,6 @@ export const BattleLab = ({
           structure_id: target.id,
         });
       }
-      deselectEntity();
       closeSurface();
     } catch (error) {
       toast.failed(error, "The attack failed.");
@@ -328,6 +323,7 @@ export const BattleLab = ({
         ) : raidActive ? (
           <RaidContainer
             attackerEntityId={attackerEntityId}
+            attackerHex={{ col: selected!.hex.x, row: selected!.hex.y }}
             target={target!}
             targetResources={targetResources}
             attackerActiveRelicEffects={attackerRelicEffects}
@@ -335,11 +331,6 @@ export const BattleLab = ({
           />
         ) : (
           <div className="mx-auto flex max-w-5xl flex-col gap-4 p-4">
-            {configManager.rollsCombatDice(state.defenderAlt) && (
-              <p className="text-hud-body text-hud-muted">
-                Each side rolls a d20 for +1% to +20% damage; ranges run from the attacker's worst roll to its best.
-              </p>
-            )}
             <label className="flex items-center gap-2 text-hud-body text-hud-muted">
               <HudCheck
                 checked={state.defenderAlt}
@@ -404,11 +395,7 @@ export const BattleLab = ({
             {!state.hasDefender ? (
               <HudNotice
                 tone="good"
-                line={
-                  rangedClaimBlocked
-                    ? "No defending troops — move adjacent to claim. Ranged attacks clear guards but cannot claim structures."
-                    : "No defending troops — this target can be claimed without a battle."
-                }
+                line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
               />
             ) : (
               prediction && <OutcomeBanner outcomes={prediction.outcomes} />

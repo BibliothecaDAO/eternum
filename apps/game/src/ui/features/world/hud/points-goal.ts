@@ -19,7 +19,7 @@ export const goalLine = (lengthSeconds: number | null): string =>
     : "Most points wins";
 
 /**
- * The goal and what scores, in one compact line: the top bar's hover and the start banner. "Most points in 1h wins ·
+ * The goal and what scores, in one compact line: the top bar's hover. "Most points in 1h wins ·
  * tile +5 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per second".
  */
 export const goalScoring = (lengthSeconds: number | null, grants: PointsGrants): string =>
@@ -36,6 +36,9 @@ const useMatchLengthSeconds = (): number | null => {
   const { gameStartMainAt, gameEndAt } = useFactView(seasonClockView);
   return gameStartMainAt && gameEndAt && Number.isFinite(gameEndAt) ? gameEndAt - gameStartMainAt : null;
 };
+
+/** The running game's goal alone, "Most points in 1h wins": the start banner's line. */
+export const useGoalLine = (): string => goalLine(useMatchLengthSeconds());
 
 /** The running game's goal and scoring in one compact line, from its clock and its rules. */
 export const usePointsGoal = (): string => {

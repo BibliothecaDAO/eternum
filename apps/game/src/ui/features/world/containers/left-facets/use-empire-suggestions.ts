@@ -5,6 +5,7 @@ import { playerStructuresView, seasonClockView } from "@/sync/fact-views";
 
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentBlockTimestamp, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
+import { useActiveBuildOrder, useBuildOrderAccount } from "@/hooks/use-build-orders";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useStructuresWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/use-structures-with-metadata";
 import { configManager, TileManager } from "@bibliothecadao/eternum";
@@ -12,26 +13,19 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { StructureType } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import {
-  readBlitzRealmSuggestions,
-  type BlitzSuggestionDraft,
-  type EmpireSuggestionAction,
-} from "@bibliothecadao/eternum/automation";
+import { readBlitzRealmSuggestions, type BlitzSuggestionDraft } from "@bibliothecadao/eternum/automation";
+import { blitzBuildingIcon } from "@/ui/features/build-orders/build-order-icons";
 
 export interface EmpireSuggestion extends Omit<BlitzSuggestionDraft, "priority"> {
   icon: IconMeaning;
 }
 
-/** Each step's painting: what it builds, or the realm's level-up. */
-const ACTION_ICONS: Record<EmpireSuggestionAction, IconMeaning> = {
-  "build-copper": "copper",
-  "build-coal": "coal",
-  "build-military": "barracks",
-  "build-wheat": "farm",
-  "build-wood": "wood",
-  "build-worker-hut": "workers-hut",
-  "deploy-army": "deploy",
-  upgrade: "upgrade",
+/** Each step's painting: what it builds, its army, or the realm's level-up. */
+const suggestionIcon = (draft: BlitzSuggestionDraft): IconMeaning => {
+  if (draft.action === "upgrade") return "upgrade";
+  if (draft.action === "deploy-army") return "deploy";
+  if (draft.buildingTypeHint === undefined) throw new Error(`A build step names no building: ${draft.id}`);
+  return blitzBuildingIcon(draft.buildingTypeHint);
 };
 
 /** The realms' next steps in the order their kind comes first: a level-up, a hut, the order's buildings, its army. */
@@ -63,13 +57,13 @@ export const decorateSuggestion = (draft: BlitzSuggestionDraft): EmpireSuggestio
 
   return {
     ...suggestion,
-    icon: ACTION_ICONS[draft.action],
+    icon: suggestionIcon(draft),
   };
 };
 
 /**
- * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the default build order): only a
- * step that can be taken now, a build by the same path the construction window uses.
+ * Every realm's next step in a running Blitz (core's buildBlitzRealmSuggestions on the player's active build order, or
+ * the default; none while a signed-in account's orders are unread): only a step that can be taken now, a build by the same path the construction window uses.
  */
 export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const {
@@ -78,6 +72,9 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   const mode = useGameModeConfig();
   const facts = useNativeFacts(["Guard", "ResourceBalance", "ResourceProduction", "ResourceWeight"]);
   const resolvedWorldGameMode = useResolvedWorldGameMode();
+  // Every surface that shows the steps reads the account's orders: the desktop panel and the phone's Attention alike.
+  useBuildOrderAccount();
+  const order = useActiveBuildOrder();
   const currentBlockTimestamp = useCurrentBlockTimestamp();
   const tick = useCurrentDefaultTick();
   const playerStructures = useFactView(playerStructuresView);
@@ -97,6 +94,8 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
   });
 
   return useMemo(() => {
+    // An account whose orders are not read yet, or failed to be, follows no order: the panel says why.
+    if (!order) return [];
     return metadata
       .flatMap((structure): BlitzSuggestionDraft[] => {
         if (structure.category !== StructureType.Realm) return [];
@@ -109,9 +108,10 @@ export const useEmpireSuggestions = (): EmpireSuggestion[] => {
           tiles: TileManager.forStructure(facts.store, systemCalls, structure.entityId),
           mode,
           tick,
+          order,
         });
       })
       .toSorted(compareSuggestionDrafts)
       .map(decorateSuggestion);
-  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick]);
+  }, [metadata, systemCalls, mode, isBlitzActive, facts, tick, order]);
 };

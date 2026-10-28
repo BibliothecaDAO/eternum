@@ -5,12 +5,10 @@ import { workerRequest, WorkerRequestError } from "./worker-request";
 import { isAppleMobile, isInstalledPwa } from "./browser-capabilities";
 
 export function localNotificationCapability(): string | null {
-  if (isAppleMobile() && !isInstalledPwa())
-    return "Install the game on your Home Screen and open it there to enable notifications.";
+  if (isAppleMobile() && !isInstalledPwa()) return "Install the game to your Home Screen.";
   if (!window.isSecureContext || typeof Notification === "undefined" || !("serviceWorker" in navigator))
     return "Device notifications are unavailable in this browser.";
-  if (Notification.permission === "denied")
-    return "Notifications are blocked. Change this site's permission in your browser settings.";
+  if (Notification.permission === "denied") return "Notifications are blocked in this browser.";
   return null;
 }
 
@@ -83,13 +81,7 @@ function requestNotificationReply<A>(
     Schema.Struct({ ok: Schema.Literal(true), value }),
     Schema.Struct({ ok: Schema.Literal(false), error: Schema.String }),
   ]);
-  return workerRequest(
-    worker,
-    message,
-    reply,
-    5_000,
-    "The game worker did not respond. Apply the latest game update and retry.",
-  ).pipe(
+  return workerRequest(worker, message, reply, 5_000, "The game worker did not respond.").pipe(
     Effect.flatMap((response) =>
       response.ok
         ? Effect.succeed(response.value)

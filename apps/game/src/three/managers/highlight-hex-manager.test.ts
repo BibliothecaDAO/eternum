@@ -69,6 +69,7 @@ Object.defineProperty(URL, "createObjectURL", {
 });
 
 const { HighlightHexManager } = await import("./highlight-hex-manager");
+const { FLAT_TERRAIN_SURFACE } = await import("@/three/terrain/terrain-surface");
 const gsap = (await import("gsap")).default;
 
 // A hex sits at (col, 0, row), so a drawn instance reads back as the hex it marks.
@@ -109,8 +110,8 @@ const finishRollIn = () => gsap.updateRoot((animationClock += 10));
 
 describe("HighlightHexManager material ownership", () => {
   it("keeps instanced highlight material state isolated per manager", () => {
-    const first = new HighlightHexManager(new THREE.Scene());
-    const second = new HighlightHexManager(new THREE.Scene());
+    const first = new HighlightHexManager(new THREE.Scene(), FLAT_TERRAIN_SURFACE);
+    const second = new HighlightHexManager(new THREE.Scene(), FLAT_TERRAIN_SURFACE);
 
     first.updateHighlightPulse(0.2);
     second.updateHighlightPulse(0.8);
@@ -130,7 +131,7 @@ describe("HighlightHexManager material ownership", () => {
 describe("HighlightHexManager drawing a selection", () => {
   const select = (descriptors: ReturnType<typeof step>[]) => {
     const scene = new THREE.Scene();
-    const manager = new HighlightHexManager(scene, gridSpace);
+    const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
     manager.highlightHexes(descriptors as never);
     finishRollIn();
     return { scene, manager };
@@ -138,7 +139,7 @@ describe("HighlightHexManager drawing a selection", () => {
 
   it("rolls a new selection's hexes in from nothing", () => {
     const scene = new THREE.Scene();
-    const manager = new HighlightHexManager(scene, gridSpace);
+    const manager = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
 
     manager.highlightHexes([step(1, 0), step(2, 0)] as never);
     expect(drawnHexes(scene)).toEqual(["1,0@0.01", "2,0@0.01"]);
@@ -190,5 +191,85 @@ describe("HighlightHexManager drawing a selection", () => {
 
     expect(drawnHexes(scene)).toEqual([]);
     expect(drawnHexes(scene, FRONTIER_RENDER_ORDER)).toEqual([]);
+  });
+});
+
+describe("HighlightHexManager laying a lit hex on the ground", () => {
+  const ENDPOINT_RENDER_ORDER = 6;
+  const RENDER_ORDERS = [ROUTE_RENDER_ORDER, ENDPOINT_RENDER_ORDER, FRONTIER_RENDER_ORDER];
+
+  /** Ground whose height at (x, z) is `heightAt(x, z)`. */
+  const groundOf = (heightAt: (x: number, z: number) => number) => ({
+    sampleSurface: (x: number, z: number) => ({ biome: null, height: heightAt(x, z), normal: [0, 1, 0] as const }),
+  });
+
+  /** The height of every plate drawn on any layer. */
+  const plateHeights = (scene: THREE.Scene) =>
+    RENDER_ORDERS.flatMap((renderOrder) => {
+      const mesh = scene.children.find(
+        (child): child is THREE.InstancedMesh =>
+          child instanceof THREE.InstancedMesh && child.renderOrder === renderOrder,
+      )!;
+      const matrix = new THREE.Matrix4();
+      return Array.from({ length: mesh.count }, (_, index) => {
+        mesh.getMatrixAt(index, matrix);
+        return new THREE.Vector3().setFromMatrixPosition(matrix).y;
+      });
+    });
+
+  /** The highest ground anywhere under a plate centred on (x, z), read on a fine grid over its face. */
+  const highestGroundUnderPlate = (heightAt: (x: number, z: number) => number, x: number, z: number) => {
+    let highest = -Infinity;
+    for (let dx = -0.95; dx <= 0.95; dx += 0.05)
+      for (let dz = -0.95; dz <= 0.95; dz += 0.05)
+        if (Math.hypot(dx, dz) <= 0.95) highest = Math.max(highest, heightAt(x + dx, z + dz));
+    return highest;
+  };
+
+  const light = (heightAt: (x: number, z: number) => number, descriptors: ReturnType<typeof step>[]) => {
+    const scene = new THREE.Scene();
+    const manager = new HighlightHexManager(scene, groundOf(heightAt), gridSpace);
+    manager.highlightHexes(descriptors as never);
+    finishRollIn();
+    return { scene, manager };
+  };
+
+  it("lays an explore target on a mound above all of its ground, the mound's top included", () => {
+    // A mound 0.31 high on the hex at (4, 0), as the playtest's snow tiles rise; the old plates lay flat at 0.2.
+    const mound = (x: number, z: number) => Math.max(0.08, 0.31 - 0.2 * Math.hypot(x - 4, z));
+    const { scene } = light(mound, [step(4, 0, "Explore")]);
+
+    const heights = plateHeights(scene);
+    expect(heights).toHaveLength(2);
+    for (const height of heights) expect(height).toBeGreaterThan(highestGroundUnderPlate(mound, 4, 0));
+  });
+
+  it("lays a move target on low ground just above it, not at one height for every hex", () => {
+    const { scene } = light(() => 0.06, [step(1, 0), step(2, 0)]);
+
+    for (const height of plateHeights(scene)) {
+      expect(height).toBeGreaterThan(0.06);
+      expect(height).toBeLessThan(0.15);
+    }
+  });
+
+  it("lays a plate on a sunken unexplored tile level with the ground around it", () => {
+    // The unexplored tile at (6, 0) lies at 0; the explored ground around its rim stands at 0.25.
+    const pit = (x: number, z: number) => (Math.hypot(x - 6, z) < 0.88 ? 0 : 0.25);
+    const { scene } = light(pit, [step(6, 0, "Explore")]);
+
+    for (const height of plateHeights(scene)) expect(height).toBeGreaterThan(0.25);
+  });
+
+  it("lays the lit hexes on their ground again when terrain lands after they were lit", () => {
+    let groundHeight = 0;
+    const { scene, manager } = light(() => groundHeight, [step(1, 0), step(2, 0, "Explore")]);
+    expect(Math.max(...plateHeights(scene))).toBeLessThan(0.1);
+
+    groundHeight = 0.28;
+    manager.refreshTerrainPlacement();
+
+    for (const height of plateHeights(scene)) expect(height).toBeGreaterThan(0.28);
+    expect(drawnHexes(scene)).toEqual(["1,0@0.92", "2,0@0.98"]);
   });
 });

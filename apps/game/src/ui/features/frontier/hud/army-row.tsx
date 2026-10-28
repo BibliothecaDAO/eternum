@@ -1,11 +1,11 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
-import type { StaminaBar } from "@/lib/army-stamina/segments";
+import { ARMIES, ARMY, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
-import { HomecomingReturn, StaminaReading, xpLine, type XpGoal } from "./army-token";
+import { HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
@@ -66,17 +66,63 @@ export const ArmyRow = ({
         </span>
       </span>
     }
-    detail={
-      <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
-        <span>{troops === undefined ? "—" : troopCount(troops)}</span>
-        <StaminaReading stamina={stamina} />
-      </span>
-    }
+    detail={<RowDetail words={troops === undefined ? "—" : troopCount(troops)} stamina={stamina} />}
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
-    trail={canBuyTier ? <SemanticIcon name="picks" size={20} data-tip={UPGRADE} /> : null}
+    trail={<RowTrail>{canBuyTier && <SemanticIcon name="picks" size={20} data-tip={UPGRADE} />}</RowTrail>}
     selected={selected}
     onClick={onPick}
   />
+);
+
+/**
+ * An open slot on a desktop's list, as a row like an army's: its dashed ring, Deploy (or the army a later slot waits
+ * for, or the word for an army on its way), and the stamina the slot starts its army on. A press opens Deploy; a slot
+ * Deploy does not fill next opens nothing. A phone's dock draws the same slot as a token (OpenSlot).
+ */
+export const OpenSlotRow = ({
+  label,
+  pulse,
+  filling,
+  start,
+  waits,
+  onDeploy,
+}: {
+  label: string;
+  pulse: boolean;
+  filling?: string;
+  start?: { bar: StaminaBar; words: string };
+  waits?: { number: number; words: string };
+  onDeploy: () => void;
+}) => (
+  <HudRow
+    lead={<SlotRing pulse={pulse} filling={filling} waits={waits} />}
+    label={filling ?? label}
+    title={filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
+    detail={start && filling === undefined ? <RowDetail stamina={start.bar} /> : undefined}
+    trail={<RowTrail />}
+    disabled={filling !== undefined || waits !== undefined}
+    busy={filling !== undefined}
+    tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
+    onClick={waits ? undefined : onDeploy}
+  />
+);
+
+/**
+ * A list row's line under its name: its words take what the stamina leaves, the stamina one column as wide on every
+ * row, so every bar on the list starts at one x and is as long (owner, 27 October).
+ */
+const RowDetail = ({ words, stamina }: { words?: string; stamina: StaminaBar | undefined }) => (
+  <span className="flex items-center gap-2 whitespace-nowrap tabular-nums">
+    <span className="min-w-0 flex-1 truncate">{words}</span>
+    <span className="flex w-28 shrink-0">
+      <StaminaReading stamina={stamina} />
+    </span>
+  </span>
+);
+
+/** A list row's trail, the same place on every row whether it holds the card fan or nothing. */
+const RowTrail = ({ children }: { children?: ReactNode }) => (
+  <span className="flex size-5 items-center justify-center">{children}</span>
 );
 
 /**

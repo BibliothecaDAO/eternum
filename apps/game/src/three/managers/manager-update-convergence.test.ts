@@ -6,7 +6,6 @@ import {
   isCommittedManagerChunk,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 
 describe("createCoalescedAsyncUpdateRunner", () => {
@@ -129,28 +128,6 @@ describe("createAsyncPassFence", () => {
     expect(fence.isCurrent(initialSnapshot)).toBe(false);
     expect(fence.isCurrent(refreshedSnapshot)).toBe(false);
     expect(fence.isCurrent(fence.capture())).toBe(true);
-  });
-});
-
-describe("waitForVisualSettle", () => {
-  it("resolves on the next animation frame when scheduler is provided", async () => {
-    const raf = vi.fn<(callback: FrameRequestCallback) => number>((callback) => {
-      callback(16);
-      return 1;
-    });
-
-    await waitForVisualSettle((callback) => raf(callback));
-    expect(raf).toHaveBeenCalledTimes(1);
-  });
-
-  it("falls back to timeout scheduling when animation frame scheduler is unavailable", async () => {
-    const setTimeoutScheduler = vi.fn<(callback: () => void) => number>((callback) => {
-      callback();
-      return 1;
-    });
-
-    await waitForVisualSettle(null, setTimeoutScheduler);
-    expect(setTimeoutScheduler).toHaveBeenCalledTimes(1);
   });
 });
 

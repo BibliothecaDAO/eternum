@@ -11,13 +11,9 @@ import { knownAmount } from "@/ui/utils/utils";
 import { buildablePlotCount, configManager, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
-import { useGoToFrontierPlace } from "../frontier-home";
-import { exploreFix } from "../frontier-reveal-yield";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { type CastleMakes, type CastleSide, CastleView } from "./castle-view";
+import { CastleResearch, type CastleSide, CastleView } from "./castle-view";
 import { useResearchTree } from "../research/research-facts";
-import { NodeTile } from "../research/research-panel";
-import type { TreeNode } from "../research/research-tree";
 
 /** Whether the player tapped their own realm's keep in the realm view. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
@@ -48,7 +44,6 @@ export const CastleUpgrade = ({
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
-  const goToPlace = useGoToFrontierPlace(realm);
   const tree = useResearchTree(realm);
   if (!levelUp) return null;
   const held = (resource: number) =>
@@ -58,7 +53,7 @@ export const CastleUpgrade = ({
     <CastleView
       now={castleSide(setup.store, realm.game_id, levelUp.currentLevel)}
       next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel)}
-      makes={castleMakes(setup.store, realm, held(ResourcesIds.Labor))}
+      laborRate={castleLaborRate(setup.store, realm)}
       research={
         tree && (
           <CastleResearch nodes={tree.nodes.filter(({ branch }) => branch === "castle")} onOpen={onResearchPage} />
@@ -78,10 +73,6 @@ export const CastleUpgrade = ({
               realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
             ),
           },
-          fix: exploreFix(short.resource, () => {
-            onClose();
-            goToPlace(true);
-          }),
         }) ||
         (levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined)
       }
@@ -110,36 +101,16 @@ const castleSide = (store: NativeFactStore, gameId: number, level: number): Cast
 };
 
 /**
- * What the castle itself makes and holds: a realm is provisioned with its own labor producer at the labor rule's realm
- * rate (the contract's provision_realm_economy), apart from any Workshop on the board, and the castle's storage holds it.
+ * The labor the castle itself makes a minute: a realm is provisioned with its own labor producer at the labor rule's
+ * realm rate (the contract's provision_realm_economy), apart from any Workshop on the board.
  */
-const castleMakes = (
-  store: NativeFactStore,
-  realm: NativeRows["Structure"],
-  laborHeld: number | undefined,
-): CastleMakes => {
+const castleLaborRate = (store: NativeFactStore, realm: NativeRows["Structure"]): string => {
   const perSecond = store.require("ResourceRule", {
     game_id: realm.game_id,
     resource_type: ResourcesIds.Labor,
   }).realm_rate;
-  const storage = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(
-    ResourcesIds.Labor,
-  );
-  return {
-    rate: formatRate(Number(perSecond) / RESOURCE_PRECISION),
-    held: laborHeld,
-    storage: wholeOrUnknown(storage),
-  };
+  return formatRate(Number(perSecond) / RESOURCE_PRECISION);
 };
-
-/** The castle's own research (the Shrine, the Well, the reaches), each tile opening it on the Research page. */
-const CastleResearch = ({ nodes, onOpen }: { nodes: readonly TreeNode[]; onOpen: (node: string) => void }) => (
-  <div className="grid grid-cols-3 gap-1.5">
-    {nodes.map((node) => (
-      <NodeTile key={node.key} node={node} picked={false} onPick={() => onOpen(node.key)} />
-    ))}
-  </div>
-);
 
 /** The castle is priced in labor (and Essence on presets that ask it); anything else is loud. */
 const castlePriceKind = (resource: number): PriceKind => {

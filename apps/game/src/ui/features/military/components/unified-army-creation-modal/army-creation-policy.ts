@@ -96,7 +96,7 @@ export function describeTroopSource(name: string, inputs: readonly { resource: R
 /** None on hand: "No Knight T1 on hand.", or while a barracks trains them, when a full army is ready. */
 function describeEmptyTroop(supply: TroopSupply): string {
   if (supply.perHour > 0 && supply.secondsToFullArmy !== null) {
-    return `No ${supply.name} yet: a full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}.`;
+    return `No ${supply.name} yet: full army in ${formatWait(Math.ceil(supply.secondsToFullArmy))}`;
   }
   return `No ${supply.name} on hand.`;
 }

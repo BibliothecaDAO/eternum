@@ -2,13 +2,13 @@ import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothec
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { ARMY, comesHomeAtDayEnd, STAMINA, TIER_WORDS, TROOPS, XP, xpToward } from "@/ui/design-system/kit/words";
-import { type StaminaBar, staminaSegments } from "@/lib/army-stamina/segments";
+import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 
-// A token grows past its height only for the last hour's Homecoming line.
+// A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
+// token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
 const TOKEN =
-  "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl py-1";
-const CARD = "relative flex w-full shrink-0 flex-col items-center gap-1 rounded-xl px-2 py-2";
+  "relative flex min-h-hud-frontier-token w-14 shrink-0 flex-col items-center justify-start gap-1 rounded-xl py-1";
 
 /** What XP buys next: the attribute tier's XP price and the tier it reaches, 2 (uncommon) to 5 (legendary). */
 export type XpGoal = { price: number; tier: number };
@@ -18,7 +18,9 @@ export type XpGoal = { price: number; tier: number };
  * army spends; there is no level, so with every attribute at legendary it says the balance alone.
  */
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal ? xpToward(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1]) : `${XP} ${formatAmount(xp)}`;
+  goal
+    ? xpTowardTip(formatAmount(xp), formatCharge(goal.price), TIER_WORDS[goal.tier - 1])
+    : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
@@ -83,7 +85,7 @@ export const ArmyToken = ({
           </span>
         )}
       </span>
-      <StaminaSegments stamina={stamina} />
+      <TokenStamina stamina={stamina} />
       <span
         role="img"
         aria-label={`${TROOPS} ${formatAmount(troops)}`}
@@ -107,15 +109,15 @@ export const ArmyToken = ({
 };
 
 /**
- * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
- * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
- * A slot Deploy does not fill next shows its army's number in the ring and opens nothing.
+ * An open army slot on a phone's dock: a plus in a dashed ring that opens Deploy, and under it the stamina the slot
+ * starts its army on, in the same segments an army's token carries, said in words when asked. The first one pulses
+ * while no army is out. A slot Deploy does not fill next shows its army's number in the ring and opens nothing. A
+ * desktop's list draws the same slot as a row (OpenSlotRow).
  */
 export const OpenSlot = ({
   label,
   pulse,
   filling,
-  wide = false,
   start,
   waits,
   onDeploy,
@@ -124,60 +126,46 @@ export const OpenSlot = ({
   pulse: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
-  /** Desktop's full card: the plus with Deploy beside it. */
-  wide?: boolean;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
   start?: { bar: StaminaBar; words: string };
   /** A later free slot: its army number and why Deploy cannot fill it yet. */
   waits?: { number: number; words: string };
   onDeploy: () => void;
-}) => {
-  const waiting = waits !== undefined;
-  const body = (
-    <>
-      <span
-        className={cn(
-          "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
-          waiting ? "text-hud-muted" : "text-hud-ink",
-          (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
-        )}
-      >
-        {waiting ? waits.number : filling === undefined ? "+" : "…"}
-      </span>
-      {wide && (
-        <span className={cn("text-hud-strong", waiting ? "text-hud-muted" : "text-hud-ink")}>
-          {filling ?? (waits ? `${ARMY} ${waits.number}` : label)}
-        </span>
-      )}
-      {start &&
-        filling === undefined &&
-        (wide ? <StaminaReading stamina={start.bar} /> : <StaminaSegments stamina={start.bar} />)}
-    </>
-  );
-  const look = cn(wide ? cn(CARD, "!flex-row justify-center") : TOKEN, "border border-hud-line bg-hud-surface");
-  return waiting && wide ? (
-    <div
-      role="group"
-      aria-label={`${ARMY} ${waits.number}`}
-      data-tip={start?.words}
-      className={cn(look, "border-dashed")}
-    >
-      {body}
-    </div>
-  ) : (
-    <button
-      type="button"
-      aria-label={filling ?? waits?.words ?? label}
-      aria-busy={filling !== undefined}
-      disabled={filling !== undefined || waiting}
-      data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
-      onClick={onDeploy}
-      className={cn(look, waiting && "border-dashed")}
-    >
-      {body}
-    </button>
-  );
-};
+}) => (
+  <button
+    type="button"
+    aria-label={filling ?? waits?.words ?? label}
+    aria-busy={filling !== undefined}
+    disabled={filling !== undefined || waits !== undefined}
+    data-tip={filling === undefined ? [start?.words, waits?.words].filter(Boolean).join(" ") || undefined : undefined}
+    onClick={onDeploy}
+    className={cn(TOKEN, "border border-hud-line bg-hud-surface", waits && "border-dashed")}
+  >
+    <SlotRing pulse={pulse} filling={filling} waits={waits} />
+    {start && filling === undefined && <TokenStamina stamina={start.bar} />}
+  </button>
+);
+
+/** An open slot's dashed ring: a plus, "…" while an army is on its way into it, or the number of a slot that waits. */
+export const SlotRing = ({
+  pulse,
+  filling,
+  waits,
+}: {
+  pulse: boolean;
+  filling?: string;
+  waits?: { number: number };
+}) => (
+  <span
+    className={cn(
+      "flex size-10 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-hud-line text-hud-title",
+      waits ? "text-hud-muted" : "text-hud-ink",
+      (pulse || filling !== undefined) && "animate-pulse border-hud-line-strong",
+    )}
+  >
+    {waits ? waits.number : filling === undefined ? "+" : "…"}
+  </span>
+);
 
 /**
  * In the day's last hour, what an army's Homecoming sends home when the day ends, on its own token (under its troops)
@@ -195,37 +183,22 @@ export const HomecomingReturn = ({ troops }: { troops: number }) => (
   </span>
 );
 
-/** A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120"), as a row and a slot read it. */
+/**
+ * A desktop row's stamina: the bar in segments, and its exact count beside it ("58/120") in a column wide enough for
+ * "150/150", so a full bar and an emptier one end their bars at the same place.
+ */
 export const StaminaReading = ({ stamina }: { stamina: StaminaBar | undefined }) => (
   <span className="flex flex-1 items-center gap-2">
     <span className="min-w-8 flex-1">
-      <StaminaSegments stamina={stamina} />
+      <HudStamina stamina={stamina} />
     </span>
-    <span>{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
+    <span className="min-w-14 text-right">{`${formatAmount(stamina?.current)}/${formatAmount(stamina?.max)}`}</span>
   </span>
 );
 
-/** The stamina bar: a segment per explore the army's maximum holds (staminaSegments), an empty track while unknown. */
-const StaminaSegments = ({ stamina }: { stamina: StaminaBar | undefined }) => {
-  const segments = staminaSegments(stamina);
-  return (
-    <span
-      role="meter"
-      aria-label={STAMINA}
-      aria-valuenow={stamina?.current}
-      aria-valuemin={0}
-      aria-valuemax={stamina?.max}
-      className="flex w-full gap-0.5 px-1.5"
-    >
-      {(segments.length > 0 ? segments : [{ size: 1, fill: 0 }]).map(({ size, fill }, index) => (
-        <i
-          key={index}
-          className="h-1 overflow-hidden rounded-sm bg-hud-divider"
-          style={{ flexGrow: size, flexBasis: 0 }}
-        >
-          <b className="block h-full bg-hud-good" style={{ width: `${fill * 100}%` }} />
-        </i>
-      ))}
-    </span>
-  );
-};
+/** A token's stamina: the kit's bar, inset from the token's edge. */
+const TokenStamina = ({ stamina }: { stamina: StaminaBar | undefined }) => (
+  <span className="w-full px-1.5">
+    <HudStamina stamina={stamina} />
+  </span>
+);

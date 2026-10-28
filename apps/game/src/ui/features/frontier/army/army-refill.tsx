@@ -6,19 +6,31 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { DockArmy } from "../hud/dock-armies";
 import { useRealmLords } from "../value/use-realm-lords";
-import { RefillButton, RefillConfirm } from "./refill";
+import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "./refill";
 
 /**
- * An army's Refill over the game's facts: the button priced at its missing points from the realm's LORDS, its confirm,
- * and refill_stamina. Nothing for a full bar or one not known yet.
+ * An army's Refill over the game's facts, priced at its missing points from the realm's LORDS: the order bar's button,
+ * the army card's chip or a phone's picked army's stamina; its confirm, and refill_stamina. Nothing for a bar not known
+ * yet; for a full one, only the stamina.
  */
-export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows["Structure"] }) => {
+export const ArmyRefill = ({
+  army,
+  realm,
+  look = "button",
+}: {
+  army: DockArmy;
+  realm: NativeRows["Structure"];
+  /** The order bar's button, the army card's chip, or the stamina beside a phone's picked army. */
+  look?: "button" | "chip" | "stamina";
+}) => {
   const { setup, account } = useGame();
   const held = useRealmLords(realm);
   const { confirming, ask, close } = useConfirmFor(army.explorerId);
   const refilling = useInFlight("refill", army.explorerId) !== undefined;
   const stamina = army.stamina;
-  if (!stamina || stamina.current >= stamina.max) return null;
+  if (!stamina) return null;
+  const price = Math.ceil(stamina.max - stamina.current);
+  const control = { held, refilling, onRefill: ask };
 
   /** The confirm closes as the refill leaves; the army's Refill carries the wait, and a refusal says why. */
   const refill = async () => {
@@ -37,8 +49,10 @@ export const ArmyRefill = ({ army, realm }: { army: DockArmy; realm: NativeRows[
 
   return (
     <>
-      <RefillButton price={Math.ceil(stamina.max - stamina.current)} held={held} refilling={refilling} onRefill={ask} />
-      {confirming && (
+      {look === "stamina" && <StaminaRefill stamina={stamina} {...control} />}
+      {look === "chip" && price > 0 && <RefillChip price={price} {...control} />}
+      {look === "button" && price > 0 && <RefillButton price={price} {...control} />}
+      {confirming && price > 0 && (
         <RefillConfirm
           stamina={stamina}
           held={held}

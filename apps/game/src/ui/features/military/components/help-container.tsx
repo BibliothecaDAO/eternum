@@ -1,4 +1,3 @@
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { configManager } from "@bibliothecadao/eternum";
 import { ActorType, ID } from "@bibliothecadao/types";
@@ -43,7 +42,6 @@ export const HelpContainer = ({
     }
   }, [transferType]);
 
-  const deselectEntity = useUIStore((state) => state.deselectEntity);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
 
   // Get the current entities we're working with based on direction state
@@ -74,12 +72,6 @@ export const HelpContainer = ({
   })();
 
   const transferDirection = derivedTransferDirection;
-
-  // Handle transfer completion
-  const handleTransferComplete = () => {
-    deselectEntity();
-    closeSurface();
-  };
 
   // Handle toggling transfer direction when both entities support it
   const handleToggleDirection = () => {
@@ -128,7 +120,7 @@ export const HelpContainer = ({
               selectedEntityId={currentSelected.id}
               targetEntityId={currentTarget.id}
               transferDirection={transferDirection}
-              onTransferComplete={handleTransferComplete}
+              onTransferComplete={closeSurface}
             />
           ) : (
             <TransferTroopsContainer
@@ -137,7 +129,7 @@ export const HelpContainer = ({
               selectedHex={currentSelected.hex}
               targetHex={currentTarget.hex}
               transferDirection={transferDirection}
-              onTransferComplete={handleTransferComplete}
+              onTransferComplete={closeSurface}
               onToggleDirection={handleToggleDirection}
               canToggleDirection={allowBothDirections}
             />

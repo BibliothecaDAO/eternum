@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -33,6 +34,8 @@ vi.mock("@/ui/features/social", async () => ({
 const { readExpeditionRules } = await import("@bibliothecadao/eternum");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
+const { useUIStore } = await import("@/hooks/store/use-ui-store");
+const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierHud } = await import("./frontier-hud");
 
 /** The frame's width, as the layout reads it: a desktop from 1024 px, told to the layout when it changes. */
@@ -149,12 +152,13 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
   await act(async () => feed()!.click());
   expect(page()).not.toBeNull();
-  // Owner, 26 October 2026: "Agree about the three event lenses rework for the clutter": Important and All, as in Blitz,
-  // opening on All, the world's history.
+  // Owner, 27 October 2026: "All / Important (battles but not just mine), then mine": All first and lit, then
+  // Important, then Mine.
   const lenses = [...page()!.querySelectorAll('[aria-label="Show"] button')];
   expect(lenses.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
-    ["Important", "false"],
     ["All", "true"],
+    ["Important", "false"],
+    ["Mine", "false"],
   ]);
   expect(feed()!.getAttribute("aria-current")).toBe("page");
   // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; its ×
@@ -306,4 +310,104 @@ it("opens a phone's Menu as a page on the place bar, its title with no close of 
   expect(document.querySelector(".ui-sheet")).toBeNull();
   await act(async () => menu().click());
   expect(page()).toBeNull();
+});
+
+it("keeps the extended season live past its old end and reloads its final day from fresh facts", async () => {
+  const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
+  const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
+  const { configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => Response.json({ blocked: [], entries: [] })),
+  );
+  const approved = approvedExtension;
+  let currentTime = approved.start;
+  const advance = async (now: number) =>
+    act(async () => {
+      currentTime = now;
+      useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
+      useBlockTimestampStore.getState().tick();
+    });
+  const boot = async (now: number) => {
+    await act(async () => root.render(null));
+    await act(async () =>
+      root.render(
+        <MemoryRouter>
+          <QueryClientProvider client={new QueryClient()}>
+            <LabGame
+              preset={5}
+              facts={(store) => {
+                useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
+                currentTime = now;
+                setBlockTimestampSource(() => currentTime);
+                useBlockTimestampStore.setState({ currentBlockTimestamp: now });
+                return [
+                  LABOR_RULES,
+                  {
+                    model: "GameRegistry",
+                    key: "0x3",
+                    value: {
+                      ...store.require("GameRegistry", { game_id: 1 }),
+                      start_main_at: String(approved.start),
+                      start_settling_at: String(approved.start),
+                      end_at: String(approved.end),
+                      seed: approved.seed,
+                      settled: false,
+                    },
+                  },
+                  {
+                    model: "SliceRules",
+                    key: "0x100",
+                    value: {
+                      ...store.require("SliceRules", { game_id: 1 }),
+                      day_unit_seconds: approved.dayUnit,
+                    },
+                  },
+                ];
+              }}
+            >
+              {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+            </LabGame>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+  };
+  viewport.set(1440);
+  await boot(approved.oldEnd - 1);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 10");
+  await advance(approved.oldEnd);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.textContent).not.toContain("Game finished");
+  await boot(approved.oldEnd);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.textContent).not.toContain("Game finished");
+  expect(configManager.getSeasonConfig().endAt).toBe(approved.end);
+  await boot(approved.end - 1);
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 15");
+  expect(host.textContent).not.toContain("Game finished");
+  await advance(approved.end);
+  expect(host.textContent).toContain("Game finished");
+  await boot(approved.end);
+  expect(host.textContent).toContain("Game finished");
+  expect(host.querySelector('button[aria-label="Today"]')).toBeNull();
+});
+
+it("tells a spectator on a phone that they are spectating, where a player's purse stands, as the desktop's top bar does", async () => {
+  viewport.set(390);
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  await renderHud();
+  const spectatingChip = () =>
+    [...host.querySelectorAll("button")].find((button) => button.textContent === "Spectating") ?? null;
+  expect(spectatingChip()).toBeNull();
+
+  // The signed-in owner entered the game to spectate it (`?spectate=true`), as spectator-session latches it.
+  overrideSpectateIntent(true);
+  try {
+    await act(async () => useUIStore.setState({ isSpectating: true }));
+    expect(spectatingChip()).not.toBeNull();
+  } finally {
+    overrideSpectateIntent(false);
+    await act(async () => useUIStore.setState({ isSpectating: false }));
+  }
 });

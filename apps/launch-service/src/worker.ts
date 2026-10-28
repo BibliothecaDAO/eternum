@@ -40,7 +40,7 @@ const launchStoresOf = (env: LaunchEnv, chainId?: string | null) => {
   return {
     launches,
     slots: new D1SlotStore(env.DB, launches, env.VALUE_RELAY, slotResolver(env.VALUE_RELAY, env.IDENTITY)),
-    calendar: new D1CalendarStore(env.DB),
+    calendar: new D1CalendarStore(env.DB, () => env.VALUE_RELAY.verifyFrontierExtension()),
   };
 };
 

@@ -1,18 +1,10 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudChip, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import {
-  CLOSE,
-  ESSENCE,
-  LABOR,
-  RESEARCH,
-  RESEARCH_TREE,
-  RESEARCHING,
-  type Tier,
-  tierNumeral,
-} from "@/ui/design-system/kit/words";
-import { formatAmount, formatExact, formatShort } from "@bibliothecadao/types";
+import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier, tierNumeral } from "@/ui/design-system/kit/words";
+import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
 import { type Branch, firstMissing, type Need, needLine, type NodeState, type TreeNode } from "./research-tree";
@@ -27,17 +19,14 @@ import { type Branch, firstMissing, type Need, needLine, type NodeState, type Tr
  */
 export const ResearchPanel = ({
   nodes,
-  essence,
-  labor,
   picked,
   onPick,
   sending,
   fixFor,
   onResearch,
+  onClose,
 }: {
   nodes: readonly TreeNode[];
-  essence: number;
-  labor: number;
   /** The node whose choice is open; null with the choice put away. */
   picked: string | null;
   onPick: (key: string | null) => void;
@@ -47,7 +36,10 @@ export const ResearchPanel = ({
   fixFor: (need: Need, node: TreeNode) => Fix | undefined;
   /** Research the node's next tier, with the side picked (0 where it has none). */
   onResearch: (node: TreeNode, side: number) => unknown;
+  /** Puts the page away, as every panel closes: its X, Escape or back. */
+  onClose: () => void;
 }) => {
+  useSheetCloses(onClose);
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
   const tile = (item: TreeNode) => (
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
@@ -58,8 +50,8 @@ export const ResearchPanel = ({
     <HudPanel
       title={RESEARCH}
       icon="research"
+      cue={<HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
       collapsible={false}
-      cue={<HeldCue essence={essence} labor={labor} />}
       className="pointer-events-auto flex min-h-0 flex-1 flex-col"
       bodyClassName="flex min-h-0 flex-1 flex-col"
     >
@@ -126,14 +118,37 @@ const Gate = ({ met, word }: { met: boolean; word: string }) => (
   </span>
 );
 
-/** A node as a tile: its painting with its state's mark, its name under it, then its tier's gem or its price. */
-export const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boolean; onPick: () => void }) => {
+/**
+ * A node as a tile: its painting with its state's mark, its name under it, then its tier's gem or its price. A compact
+ * tile (a row of them on the castle's card) keeps its painting, mark and name, which a phone cannot hover for (audit
+ * 10-27: the castle's five tiles had no names); its price is on its hover and on the Research page it opens.
+ */
+export const NodeTile = ({
+  node,
+  picked,
+  compact = false,
+  onPick,
+}: {
+  node: TreeNode;
+  picked: boolean;
+  compact?: boolean;
+  onPick: () => void;
+}) => {
   const look = STATE_LOOK[node.state];
+  const reading =
+    node.maxTier === 4 ? (
+      <HudTier tier={tierOf(node)} />
+    ) : (
+      <span className="text-hud-label tabular-nums text-hud-muted">
+        {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
+      </span>
+    );
   return (
     <button
       type="button"
       onClick={onPick}
       aria-pressed={picked}
+      data-tip={compact ? tileTip(node) : undefined}
       data-node={node.key}
       data-state={node.state}
       className={cn(
@@ -143,23 +158,21 @@ export const NodeTile = ({ node, picked, onPick }: { node: TreeNode; picked: boo
         picked && "outline outline-2 outline-offset-1 outline-hud-accent",
       )}
     >
-      <Icon name={node.icon} size={36} />
-      <span className={cn("text-hud-label leading-tight", look.text)}>{node.name}</span>
-      {node.maxTier === 4 ? (
-        <HudTier tier={tierOf(node)} />
-      ) : (
-        <span className="text-hud-label tabular-nums text-hud-muted">
-          {node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}
-        </span>
-      )}
+      <Icon name={node.icon} size={compact ? 32 : 36} />
+      <span className={cn("text-hud-label leading-tight", compact && "break-words", look.text)}>{node.name}</span>
+      {!compact && reading}
       {look.icon && (
-        <span className="absolute right-1 top-1">
-          <Icon name={look.icon} size={16} />
+        <span className={cn("absolute", compact ? "right-0.5 top-0.5" : "right-1 top-1")}>
+          <Icon name={look.icon} size={compact ? 12 : 16} />
         </span>
       )}
     </button>
   );
 };
+
+/** A compact tile's hover: its name, then its state or its price. */
+const tileTip = (node: TreeNode) =>
+  `${node.name} · ${node.state === "done" ? RESEARCH_TREE.states.done : RESEARCH_TREE.price(formatAmount(node.price?.essence))}`;
 
 /** The picked node's choice, at the panel's foot: what its next tier gives or which side it takes, its price, Research. */
 const NodeChoice = ({
@@ -297,15 +310,3 @@ const LevelLine = ({ node }: { node: TreeNode }) => {
 
 /** A tiered row's tier as the kit counts it, common (1) to legendary (5). */
 const tierOf = (node: TreeNode) => (node.tier + 1) as Tier;
-
-/** The realm's Essence and labor, the panel's cue. */
-const HeldCue = ({ essence, labor }: { essence: number; labor: number }) => (
-  <span className="flex gap-1">
-    <HudChip icons={["essence"]} label={ESSENCE}>
-      {formatShort(essence)}
-    </HudChip>
-    <HudChip icons={["labor"]} label={LABOR}>
-      {formatShort(labor)}
-    </HudChip>
-  </span>
-);

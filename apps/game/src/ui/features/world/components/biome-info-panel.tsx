@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { biomeBonusText, formatBiomeBonus } from "@/ui/features/military";
 import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, TroopType } from "@bibliothecadao/types";
+import { BiomeType, TROOP_TYPES, TroopType } from "@bibliothecadao/types";
 
 enum BiomeFilenames {
   Bare = "bare.png",
@@ -86,7 +86,6 @@ interface BiomeInfoPanelProps {
 }
 
 export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps) => {
-  const troopTypes = useMemo(() => [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin], []);
   const [isExpanded, setIsExpanded] = useState(!collapsed);
 
   useEffect(() => {
@@ -95,7 +94,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
 
   const troopBonuses = useMemo(
     () =>
-      troopTypes.map((troopType) => {
+      TROOP_TYPES.map((troopType) => {
         const config = troopConfig[troopType];
         const bonus = configManager.getBiomeCombatBonus(troopType, biome);
         const styles = getBonusStyles(bonus);
@@ -107,7 +106,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
           summaryTextClass: bonus > 1 ? "text-hud-good" : bonus < 1 ? "text-hud-bad" : "text-hud-ink",
         };
       }),
-    [biome, troopTypes],
+    [biome],
   );
 
   const handleToggle = () => {

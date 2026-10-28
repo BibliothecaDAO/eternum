@@ -409,7 +409,7 @@ describe("HoverLabelManager", () => {
       owner: "Maelis",
       homeName: "Stolsli",
       troops: { type: "knight", tier: 1, count: 4015 },
-      stamina: { current: 106, max: 120 },
+      stamina: { current: 106, max: 120, perExplore: 20 },
     };
     const clearedCamp: StructurePlate = {
       kind: "structure",

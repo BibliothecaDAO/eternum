@@ -1,65 +1,53 @@
 import {
   BuildingType,
+  buildingName,
   formatExact,
   formatPopulationInWords,
-  ResourcesIds,
-  TroopTier,
   type ID,
+  type ResourcesIds,
+  type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { type BuildOrder, type BuildOrderGoal, type BuildOrderStep, DEFAULT_BUILD_ORDER } from "./build-order";
+import {
+  blitzBuildingResource,
+  type BuildOrder,
+  type BuildOrderStep,
+  buildOrderTarget,
+  DEFAULT_BUILD_ORDER,
+} from "./build-order";
 
-export type EmpireSuggestionAction =
-  | "build-copper"
-  | "build-coal"
-  | "build-military"
-  | "build-wheat"
-  | "build-wood"
-  | "build-worker-hut"
-  | "deploy-army"
-  | "upgrade";
+export type EmpireSuggestionAction = "build" | "deploy-army" | "upgrade";
 
-export type BlitzBuildKey = "copper" | "coal" | "military" | "wheat" | "wood" | "workerHut";
-
-type BlitzBuildability = {
+export type BlitzBuildability = {
   canBuild: boolean;
   reason?: string;
   /** The realm's population has no room for it: the construction rule's own verdict. */
   needsRoom: boolean;
 };
 
-export type BlitzBuildingCounts = {
-  copper: number;
-  coal: number;
-  crossbowmanT1: number;
-  knightT1: number;
-  paladinT1: number;
-  wheat: number;
-  wood: number;
-  workerHut: number;
+/** One tier of the troop the realm's biome favours: the building that trains it and the troops it trains. */
+export type BlitzTroopTier = { building: BuildingType; resource: ResourcesIds };
+
+/** The troop the realm's biome favours: the troop its order's barracks and armies mean. */
+export type BlitzTroop = {
+  type: TroopType;
+  tiers: Record<TroopTier, BlitzTroopTier>;
 };
 
-export type BlitzMilitaryTarget = {
-  buildingType: BuildingType;
-  count: number;
-  label: string;
-  resource: ResourcesIds;
-  /** The T1 troop its barracks trains. */
-  troopType: TroopType;
-  bonusPercent?: number;
-};
+/** A living field army: its troop and tier. */
+export type BlitzArmy = { type: TroopType; tier: TroopTier };
 
-/** The realm's field armies, as the order's army step reads them: their troop is the military target's. */
+/** The realm's field armies, as the order's army steps read them. */
 export type BlitzArmyState = {
-  /** Its living field armies. */
-  armies: number;
+  /** Its living field armies: all of them fill its slots, and an army step counts those of its own troop and tier. */
+  armies: readonly BlitzArmy[];
   /** Its field army slots. */
   maxArmies: number;
-  /** Whole troops of that kind on hand. */
-  troops: number;
-  /** The most troops of that kind one army holds at the realm's level: a full army. */
-  fullArmy: number;
+  /** Whole troops of a kind on hand. */
+  troopsOnHand: (resource: ResourcesIds) => number;
+  /** The most troops of a tier one army holds at the realm's level: a full army. */
+  fullArmy: (tier: TroopTier) => number;
 };
 
 export type BlitzRealmSuggestionInput = {
@@ -69,13 +57,15 @@ export type BlitzRealmSuggestionInput = {
   isBlitzActive: boolean;
   canAffordUpgrade: boolean;
   hasAvailableBuildingTile: boolean;
-  buildingCounts: BlitzBuildingCounts;
+  /** How many of a building the realm has. */
+  built: (building: BuildingType) => number;
+  /** Whether the realm can build it now, as the construction window judges it. */
+  buildability: (building: BuildingType) => BlitzBuildability;
   population: number;
   populationCapacity: number;
-  militaryTarget?: BlitzMilitaryTarget | null;
-  /** Its field armies of the military target's troop; none without a target. */
-  army: BlitzArmyState | null;
-  buildability: Record<BlitzBuildKey, BlitzBuildability>;
+  /** The troop its biome favours; none where no troop has a biome edge. */
+  troop: BlitzTroop | null;
+  army: BlitzArmyState;
 };
 
 export type BlitzSuggestionDraft = {
@@ -92,68 +82,8 @@ export type BlitzSuggestionDraft = {
   priority: number;
 };
 
-const BUILD_TARGETS: Record<
-  BlitzBuildKey,
-  {
-    action: EmpireSuggestionAction;
-    buildingType: BuildingType;
-    label: string;
-    priority: number;
-    resource?: ResourcesIds;
-  }
-> = {
-  wheat: {
-    action: "build-wheat",
-    buildingType: BuildingType.ResourceWheat,
-    label: "Build wheat farm",
-    priority: 10,
-    resource: ResourcesIds.Wheat,
-  },
-  wood: {
-    action: "build-wood",
-    buildingType: BuildingType.ResourceWood,
-    label: "Build wood camp",
-    priority: 20,
-    resource: ResourcesIds.Wood,
-  },
-  coal: {
-    action: "build-coal",
-    buildingType: BuildingType.ResourceCoal,
-    label: "Build coal mine",
-    priority: 30,
-    resource: ResourcesIds.Coal,
-  },
-  copper: {
-    action: "build-copper",
-    buildingType: BuildingType.ResourceCopper,
-    label: "Build copper mine",
-    priority: 40,
-    resource: ResourcesIds.Copper,
-  },
-  military: {
-    action: "build-military",
-    buildingType: BuildingType.None,
-    label: "Build T1 military",
-    priority: 60,
-  },
-  workerHut: {
-    action: "build-worker-hut",
-    buildingType: BuildingType.WorkersHut,
-    label: "Build worker hut",
-    priority: 5,
-  },
-};
-
-/** An order's building, as the realm's own count and build target name it. */
-type OrderBuilding = Exclude<BuildOrderGoal, "army">;
-const ORDER_KEYS: Record<OrderBuilding, BlitzBuildKey> = {
-  farm: "wheat",
-  wood: "wood",
-  coal: "coal",
-  copper: "copper",
-  hut: "workerHut",
-  military: "military",
-};
+/** The realms' next steps across realms, by kind: a level up, a hut, a build, an army. */
+const PRIORITY = { upgrade: 0, hut: 5, build: 10, deploy: 50 } as const;
 
 const createBaseSuggestion = (
   input: BlitzRealmSuggestionInput,
@@ -171,59 +101,25 @@ const createBaseSuggestion = (
   priority,
 });
 
-const createBuildSuggestion = (
-  input: BlitzRealmSuggestionInput,
-  key: BlitzBuildKey,
-  reason: string,
-): BlitzSuggestionDraft => {
-  const target = BUILD_TARGETS[key];
-  if (key === "military" && input.militaryTarget) {
-    return {
-      ...createBaseSuggestion(input, target.action, `Build ${input.militaryTarget.label}`, target.priority, reason),
-      buildingTypeHint: input.militaryTarget.buildingType,
-      resourceHint: input.militaryTarget.resource,
-    };
-  }
-  return {
-    ...createBaseSuggestion(input, target.action, target.label, target.priority, reason),
-    buildingTypeHint: target.buildingType,
-    resourceHint: target.resource,
-  };
-};
-
 /** A build the realm can submit now: a free plot and the cost held, as the construction window would send it. */
 const resolveBuildSuggestion = (
   input: BlitzRealmSuggestionInput,
-  key: BlitzBuildKey,
+  building: BuildingType,
   reason: string,
-): BlitzSuggestionDraft | null =>
-  input.hasAvailableBuildingTile && input.buildability[key]?.canBuild === true
-    ? createBuildSuggestion(input, key, reason)
-    : null;
-
-/** How many of a target are built, in words: "1 of 4 built". */
-const builtOf = (count: number, target: number): string => `${count} of ${target} built`;
+): BlitzSuggestionDraft | null => {
+  if (!input.hasAvailableBuildingTile || !input.buildability(building).canBuild) return null;
+  const priority = building === BuildingType.WorkersHut ? PRIORITY.hut : PRIORITY.build;
+  return {
+    ...createBaseSuggestion(input, "build", `Build ${buildingName(building, false)}`, priority, reason),
+    buildingTypeHint: building,
+    resourceHint: blitzBuildingResource(building),
+  };
+};
 
 const resolveUpgradeSuggestion = (input: BlitzRealmSuggestionInput): BlitzSuggestionDraft | null =>
-  input.canAffordUpgrade ? createBaseSuggestion(input, "upgrade", "Level up realm", 0, "It can level up now.") : null;
-
-/** What a step counts, in words: "Wood camps", "Knight T1 buildings". */
-const STEP_NAMES: Record<Exclude<OrderBuilding, "military">, string> = {
-  farm: "Wheat farms",
-  wood: "Wood camps",
-  coal: "Coal mines",
-  copper: "Copper mines",
-  hut: "Worker huts",
-};
-const stepName = (input: BlitzRealmSuggestionInput, building: OrderBuilding): string =>
-  building === "military" ? `${input.militaryTarget?.label ?? "T1 military"} buildings` : STEP_NAMES[building];
-
-/** How many of a building the realm has; a realm with no military worth its biome has none to build. */
-const builtFor = (input: BlitzRealmSuggestionInput, building: OrderBuilding): number | null => {
-  const key = ORDER_KEYS[building];
-  if (key !== "military") return input.buildingCounts[key];
-  return input.militaryTarget ? input.militaryTarget.count : null;
-};
+  input.canAffordUpgrade
+    ? createBaseSuggestion(input, "upgrade", "Level up realm", PRIORITY.upgrade, "It can level up now.")
+    : null;
 
 /**
  * A step's verdict for the realm: it passes (met, or under way by itself), it holds the order (it waits on what the
@@ -235,53 +131,86 @@ type StepVerdict = "passes" | "holds" | BlitzSuggestionDraft;
  * A building step: built, or the build itself; a worker hut first when the realm's population has no room for it, and
  * only then, so housing never comes before a step that does not need it.
  */
-const resolveBuildingStep = (input: BlitzRealmSuggestionInput, building: OrderBuilding, count: number): StepVerdict => {
-  const built = builtFor(input, building);
-  if (built === null || built >= count) return "passes";
-  const key = ORDER_KEYS[building];
-  const progress = `${stepName(input, building)}: ${builtOf(built, count)}.`;
-  const take = input.buildability[key].needsRoom
+const resolveBuildingStep = (input: BlitzRealmSuggestionInput, building: BuildingType, count: number): StepVerdict => {
+  const built = input.built(building);
+  if (built >= count) return "passes";
+  const progress = `${buildingName(building, false)}: ${built} of ${count} built.`;
+  const take = input.buildability(building).needsRoom
     ? resolveBuildSuggestion(
         input,
-        "workerHut",
+        BuildingType.WorkersHut,
         `${progress} ${formatPopulationInWords(input.population, input.populationCapacity)}: a worker hut makes room.`,
       )
-    : resolveBuildSuggestion(input, key, progress);
+    : resolveBuildSuggestion(input, building, progress);
   return take ?? "holds";
 };
 
+/** A barracks step: the biome troop's building at the tier; a realm whose biome favours no troop has none to build. */
+const resolveBarracksStep = (input: BlitzRealmSuggestionInput, tier: TroopTier, count: number): StepVerdict =>
+  input.troop ? resolveBuildingStep(input, input.troop.tiers[tier].building, count) : "passes";
+
 /**
- * An army step: the realm's barracks, then the army deployed once a full one is on hand. The barracks' troops are the
- * production automation's to train, so until a full army stands the step passes and the order goes on building; a step
- * the realm cannot field (no free slot) passes too.
+ * An army step: the biome troop's barracks at the tier, then the army deployed once a full one of that tier is on hand.
+ * It is met by armies of that troop and tier only; every army fills a slot. The barracks' troops are the production
+ * automation's to train, so until a full army stands the step passes and the order goes on building; a step the realm
+ * cannot field (no free slot) passes too.
  */
-const resolveArmyStep = (input: BlitzRealmSuggestionInput, count: number): StepVerdict => {
-  const { army, militaryTarget } = input;
-  if (!army || !militaryTarget || army.armies >= count || army.armies >= army.maxArmies) return "passes";
-  if (army.fullArmy > 0 && army.troops >= army.fullArmy) return createDeploySuggestion(input, militaryTarget, army);
-  return militaryTarget.count === 0 ? resolveBuildingStep(input, "military", 1) : "passes";
+const resolveArmyStep = (input: BlitzRealmSuggestionInput, tier: TroopTier, count: number): StepVerdict => {
+  const { army, troop } = input;
+  if (!troop || army.armies.length >= army.maxArmies) return "passes";
+  if (fieldedArmies(army, troop.type, tier) >= count) return "passes";
+  const { building, resource } = troop.tiers[tier];
+  const full = army.fullArmy(tier);
+  const onHand = army.troopsOnHand(resource);
+  if (full > 0 && onHand >= full) return createDeploySuggestion(input, troop, tier, onHand, full);
+  return input.built(building) === 0 ? resolveBuildingStep(input, building, 1) : "passes";
 };
 
-/** The army deployed: a full army of the realm's own troop, which its barracks trains, for the deployment to open on. */
+/** How many of the realm's living armies are of a troop at a tier. */
+const fieldedArmies = (army: BlitzArmyState, type: TroopType, tier: TroopTier): number =>
+  army.armies.filter((fielded) => fielded.type === type && fielded.tier === tier).length;
+
+/** The army deployed: a full army of the realm's own troop at the tier, for the deployment to open on. */
 const createDeploySuggestion = (
   input: BlitzRealmSuggestionInput,
-  target: BlitzMilitaryTarget,
-  army: BlitzArmyState,
-): BlitzSuggestionDraft => ({
-  ...createBaseSuggestion(
-    input,
-    "deploy-army",
-    "Deploy an army",
-    50,
-    `${target.label}: ${formatExact(army.troops)} on hand, a full army of ${formatExact(army.fullArmy)}.`,
-  ),
-  buildingTypeHint: target.buildingType,
-  resourceHint: target.resource,
-  troops: { type: target.troopType, tier: TroopTier.T1, count: army.fullArmy },
-});
+  troop: BlitzTroop,
+  tier: TroopTier,
+  onHand: number,
+  full: number,
+): BlitzSuggestionDraft => {
+  const { building, resource } = troop.tiers[tier];
+  return {
+    ...createBaseSuggestion(
+      input,
+      "deploy-army",
+      "Deploy an army",
+      PRIORITY.deploy,
+      `${buildingName(building, false)}: ${formatExact(onHand)} on hand, a full army of ${formatExact(full)}.`,
+    ),
+    buildingTypeHint: building,
+    resourceHint: resource,
+    troops: { type: troop.type, tier, count: full },
+  };
+};
 
-const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
-  step.goal === "army" ? resolveArmyStep(input, step.count) : resolveBuildingStep(input, step.goal, step.count);
+/**
+ * A level up the order places: done once the realm is past its rank; at its rank, the level up when the realm can pay
+ * for it, else the order waits for it.
+ */
+const resolveLevelUpStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict =>
+  step.rank < input.realmLevel ? "passes" : (resolveUpgradeSuggestion(input) ?? "holds");
+
+const resolveStep = (input: BlitzRealmSuggestionInput, step: BuildOrderStep): StepVerdict => {
+  const target = buildOrderTarget(step.goal);
+  if (target.kind === "building") return resolveBuildingStep(input, target.building, step.count);
+  if (target.kind === "barracks") return resolveBarracksStep(input, target.tier, step.count);
+  if (target.kind === "army") return resolveArmyStep(input, target.tier, step.count);
+  return resolveLevelUpStep(input, step);
+};
+
+/** Whether the order places the realm's level up at its rank itself, so it waits its turn instead of coming first. */
+const ordersLevelUp = (input: BlitzRealmSuggestionInput, order: BuildOrder): boolean =>
+  order.steps.some((step) => step.goal === "levelUp" && step.rank === input.realmLevel);
 
 /**
  * The order's next step for the realm: the first step of its rank or lower that does not pass, offered only once it
@@ -298,14 +227,15 @@ const resolveOrderSuggestion = (input: BlitzRealmSuggestionInput, order: BuildOr
 };
 
 /**
- * A realm's one next step in a running Blitz: level up whenever it can, then the order's next step. The default order
- * is the owner's.
+ * A realm's one next step in a running Blitz: level up whenever it can (unless the order places that level up itself),
+ * then the order's next step. The default order is the owner's.
  */
 export const buildBlitzRealmSuggestions = (
   input: BlitzRealmSuggestionInput,
   order: BuildOrder = DEFAULT_BUILD_ORDER,
 ): BlitzSuggestionDraft[] => {
   if (!input.isBlitzActive) return [];
-  const suggestion = resolveUpgradeSuggestion(input) ?? resolveOrderSuggestion(input, order);
+  const levelUpFirst = ordersLevelUp(input, order) ? null : resolveUpgradeSuggestion(input);
+  const suggestion = levelUpFirst ?? resolveOrderSuggestion(input, order);
   return suggestion ? [suggestion] : [];
 };

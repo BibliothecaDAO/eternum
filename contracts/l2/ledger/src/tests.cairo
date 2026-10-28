@@ -2525,3 +2525,193 @@ fn preview_rejects_settled_registration() {
     apply_results(@fixture, ranked_players(1));
     fixture.ledger.preview_mmr(SLOT_KEY, ranked_players(1));
 }
+
+fn extension_fixture(start: u64, end: u64, seed: felt252, pool: u256) -> Fixture {
+    use game_ledger::approved_frontier_extension as approved;
+    let fixture = deploy_fixture(default_preset());
+    fund_and_approve_player(@fixture, ADMIN(), pool);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture
+        .ledger
+        .register_preset(
+            approved::PRESET_ID,
+            Preset {
+                day_unit_seconds: approved::DAY_UNIT, claim_window_seconds: approved::CLAIM_WINDOW, ..default_preset(),
+            },
+            test_bands(),
+            test_items(),
+        );
+    start_cheat_block_timestamp(fixture.ledger_address, start);
+    fixture.ledger.fund_frontier(approved::CHAIN_ID, 1, approved::PRESET_ID, start, end, seed, pool);
+    fixture
+}
+
+fn approved_extension_fixture() -> Fixture {
+    use game_ledger::approved_frontier_extension as approved;
+    extension_fixture(approved::START, approved::OLD_END, approved::SEED, 1000000 * 1000000000000000000)
+}
+
+#[test]
+fn frontier_extension_preserves_custody_blitz_reports_and_retry_after_upgrade() {
+    use game_ledger::approved_frontier_extension as approved;
+    let fixture = approved_extension_fixture();
+    let before = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+    let blitz = fixture.ledger.get_season(1);
+    let slot = fixture.ledger.get_slot(SLOT_KEY);
+    let held = fixture.lords.balance_of(fixture.ledger_address);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.report_withdrawal(approved::CHAIN_ID, 1, 'pending', 91 * 1000000000000000000);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    IUpgradeableDispatcher { contract_address: fixture.ledger_address }.upgrade(get_class_hash(fixture.ledger_address));
+    fixture.ledger.extend_frontier(approved::CHAIN_ID, 1);
+    let after = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+    assert!(after.end == approved::END && after.start == before.start && after.seed == before.seed);
+    assert!(after.pool == before.pool && after.paid == before.paid && !after.closed);
+    assert!(after.preset_id == before.preset_id && fixture.lords.balance_of(fixture.ledger_address) == held);
+    let mut original_blitz = array![];
+    blitz.serialize(ref original_blitz);
+    let mut current_blitz = array![];
+    fixture.ledger.get_season(1).serialize(ref current_blitz);
+    assert!(original_blitz.span() == current_blitz.span());
+    assert!(fixture.ledger.get_slot(SLOT_KEY).end == slot.end);
+    fixture.ledger.extend_frontier(approved::CHAIN_ID, 1);
+    start_cheat_block_timestamp(fixture.ledger_address, approved::OLD_END);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.pay(approved::CHAIN_ID, 1, 'pending', player(0), 91 * 1000000000000000000);
+    assert!(fixture.lords.balance_of(player(0)) == 91 * 1000000000000000000);
+    assert!(fixture.ledger.frontier_unlocked(approved::CHAIN_ID, 1) < before.pool);
+    start_cheat_block_timestamp(fixture.ledger_address, approved::END);
+    assert!(fixture.ledger.frontier_unlocked(approved::CHAIN_ID, 1) == before.pool);
+    assert!(
+        fixture.ledger.frontier_claim_deadline(approved::CHAIN_ID, 1) == approved::END + approved::CLAIM_WINDOW.into(),
+    );
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.extend_frontier(approved::CHAIN_ID, 1);
+    assert!(fixture.ledger.get_frontier(approved::CHAIN_ID, 1).paid == 91 * 1000000000000000000);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn frontier_extension_rejects_unauthorized_wrong_target_and_late_first_attempt() {
+    use game_ledger::approved_frontier_extension as approved;
+    let fixture = approved_extension_fixture();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.extend_frontier(approved::CHAIN_ID, 1).is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    assert!(safe.extend_frontier('other', 1).is_err());
+    assert!(safe.extend_frontier(approved::CHAIN_ID, 2).is_err());
+    start_cheat_block_timestamp(fixture.ledger_address, approved::START - 1);
+    assert!(safe.extend_frontier(approved::CHAIN_ID, 1).is_err());
+    start_cheat_block_timestamp(fixture.ledger_address, approved::OLD_END);
+    assert!(safe.extend_frontier(approved::CHAIN_ID, 1).is_err());
+    assert!(fixture.ledger.get_frontier(approved::CHAIN_ID, 1).end == approved::OLD_END);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn frontier_extension_refuses_to_lower_unlock_below_paid_custody() {
+    use game_ledger::approved_frontier_extension as approved;
+    let fixture = approved_extension_fixture();
+    start_cheat_block_timestamp(fixture.ledger_address, approved::OLD_END - 1);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    let pool = fixture.ledger.get_frontier(approved::CHAIN_ID, 1).pool;
+    fixture.ledger.report_withdrawal(approved::CHAIN_ID, 1, 'paid', pool);
+    fixture.ledger.pay(approved::CHAIN_ID, 1, 'paid', player(0), pool);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    assert!(
+        IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
+            .extend_frontier(approved::CHAIN_ID, 1)
+            .is_err(),
+    );
+    let after = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+    assert!(after.end == approved::OLD_END && after.paid == pool && after.pool == pool);
+    assert!(fixture.lords.balance_of(player(0)) == pool);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn frontier_extension_refuses_changed_funded_identity() {
+    for case in 0_u8..4 {
+        use game_ledger::approved_frontier_extension as approved;
+        let fixture = extension_fixture(
+            approved::START + if case == 0 {
+                120
+            } else {
+                0
+            },
+            approved::OLD_END + if case == 0 {
+                120
+            } else if case == 1 {
+                160 * 3600
+            } else {
+                0
+            },
+            approved::SEED + if case == 2 {
+                1
+            } else {
+                0
+            },
+            1000000 * 1000000000000000000 + if case == 3 {
+                1
+            } else {
+                0
+            },
+        );
+        let before = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+        assert!(
+            IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
+                .extend_frontier(approved::CHAIN_ID, 1)
+                .is_err(),
+        );
+        assert!(fixture.ledger.get_frontier(approved::CHAIN_ID, 1).end == before.end);
+    }
+}
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn frontier_extension_refuses_missing_closed_or_changed_preset() {
+    for case in 0_u8..5 {
+        use game_ledger::approved_frontier_extension as approved;
+        let fixture = approved_extension_fixture();
+        let mut season = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
+        if case == 0 {
+            season.funded = false;
+        }
+        if case == 1 {
+            season.closed = true;
+        }
+        if case == 2 {
+            season.preset_id = 1;
+        }
+        if case < 3 {
+            let mut data = array![];
+            season.serialize(ref data);
+            snforge_std::store(
+                fixture.ledger_address,
+                snforge_std::map_entry_address(selector!("frontier_days"), array![approved::CHAIN_ID, 1].span()),
+                data.span(),
+            );
+        } else {
+            let mut preset = fixture.ledger.get_preset(approved::PRESET_ID);
+            if case == 3 {
+                preset.day_unit_seconds = 3600;
+            } else {
+                preset.claim_window_seconds = 3600;
+            }
+            let mut data = array![];
+            preset.serialize(ref data);
+            snforge_std::store(
+                fixture.ledger_address,
+                snforge_std::map_entry_address(selector!("presets"), array![approved::PRESET_ID.into()].span()),
+                data.span(),
+            );
+        }
+        assert!(
+            IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
+                .extend_frontier(approved::CHAIN_ID, 1)
+                .is_err(),
+        );
+    }
+}

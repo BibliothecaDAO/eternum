@@ -23,7 +23,9 @@ export interface LaunchEnv extends LaunchVars {
   IDENTITY_HTTP: Fetcher;
   IDENTITY: import("@realms-world/value-ledger").ShardDirectory &
     import("@realms-world/value-ledger").RegistrationIdentity;
-  VALUE_RELAY: import("./paid-blitz").BlitzValuePort;
+  VALUE_RELAY: import("./paid-blitz").BlitzValuePort & {
+    verifyFrontierExtension(): Promise<unknown>;
+  };
   /** The one registrar that executes launches, one at a time. */
   REGISTRAR: DurableObjectNamespace<import("./registrar").Registrar>;
   /** The deployed version, so a deploy can tell its own answers from its predecessor's. */

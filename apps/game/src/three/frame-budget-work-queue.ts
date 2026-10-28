@@ -40,7 +40,6 @@ interface QueuedWork {
 }
 
 const DEFAULT_FRAME_BUDGET_MS = 6;
-const DRAIN_FRAME_FALLBACK_MS = 100;
 const LOADING_FRAME_BUDGET_MS = 24;
 const CRITICAL_BURST_LIMIT = 8;
 const VISIBLE_BURST_LIMIT = 4;
@@ -85,8 +84,7 @@ export class FrameBudgetWorkQueue implements FrameBudgetWorkScheduler {
     this.loadingFrameBudgetMs = options.loadingFrameBudgetMs ?? LOADING_FRAME_BUDGET_MS;
     this.isLoading = options.isLoading ?? (() => false);
     this.now = options.now ?? (() => performance.now());
-    this.requestDrainCallback =
-      options.requestDrain ?? ((callback) => requestFrameOrTimeout(callback, DRAIN_FRAME_FALLBACK_MS));
+    this.requestDrainCallback = options.requestDrain ?? ((callback) => requestFrameOrTimeout(callback));
     this.onLongTask = options.onLongTask;
   }
 

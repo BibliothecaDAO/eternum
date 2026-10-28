@@ -271,13 +271,12 @@ function CurrentPanel() {
       <h2 className="text-hud-title">Today’s full panel · example City</h2>
       <ResearchPanel
         nodes={readResearchTree(MID_REALM)}
-        essence={MID_REALM.essence}
-        labor={MID_REALM.labor}
         picked={picked}
         onPick={setPicked}
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={() => undefined}
+        onClose={() => undefined}
       />
     </section>
   );

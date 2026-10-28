@@ -1,8 +1,7 @@
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { useStoredBiome } from "@/hooks/helpers/use-tile-at";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
-import { HudButton, HudChip, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudMeter, HudPanel, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { isStaminaRecharging, STAMINA_RECHARGING_TEXT_CLASS } from "@/ui/shared/lib/stamina-visuals";
@@ -38,6 +37,7 @@ import { useMemo, useState } from "react";
 import { ActiveRelicEffects } from "../../world/components/entities/active-relic-effects";
 import { AttackTarget, TargetType } from "./types";
 import { formatTypeAndBonuses } from "./combat-utils";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { RaidResult } from "./raid-result";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -49,12 +49,15 @@ enum RaidOutcome {
 
 export const RaidContainer = ({
   attackerEntityId,
+  attackerHex,
   target,
   targetResources,
   attackerActiveRelicEffects = [],
   targetActiveRelicEffects = [],
 }: {
   attackerEntityId: ID;
+  /** The attacker's own tile, never the map's selected one: a selected army can show another tile's card. */
+  attackerHex: { col: number; row: number };
   target: AttackTarget;
   targetResources: Array<{ resourceId: number; amount: number }>;
   attackerActiveRelicEffects: RelicEffect[];
@@ -76,7 +79,6 @@ export const RaidContainer = ({
   const [showRaidResult, setShowRaidResult] = useState(false);
   const [raidTransactionHash, setRaidTransactionHash] = useState<string | null>(null);
 
-  const selectedHex = useUIStore((state) => state.selectedHex);
   const timestamp = useCurrentDefaultTick();
   const targetTroops = useMemo(
     () =>
@@ -107,6 +109,11 @@ export const RaidContainer = ({
         category: army.troops.category as TroopType,
         tier: army.troops.tier as TroopTier,
         stamina: StaminaManager.getStamina(army.troops, timestamp),
+        staminaMax: StaminaManager.getMaxStamina(
+          army.troops.category as TroopType,
+          army.troops.tier as TroopTier,
+          army.troops.staminaMax,
+        ),
         battle_cooldown_end: army.troops.battle_cooldown_end,
       },
     };
@@ -224,14 +231,13 @@ export const RaidContainer = ({
   }, [targetResources, remainingCapacity]);
 
   const onRaid = async () => {
-    if (!selectedHex) return;
     setShowRaidResult(true);
     await onExplorerVsStructureRaid();
   };
 
   const onExplorerVsStructureRaid = async () => {
-    if (!selectedHex || stealableResources.length === 0) return;
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    if (stealableResources.length === 0) return;
+    const direction = getDirectionBetweenAdjacentHexes(attackerHex, { col: target.hex.x, row: target.hex.y });
     if (direction === null) return;
 
     // Convert resources to the format expected by the contract
@@ -264,12 +270,10 @@ export const RaidContainer = ({
 
   const buttonMessage = useMemo(() => {
     if (!attackerArmyData) return "No Troops Present";
-    if (attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req)
-      return `Not Enough Stamina (${combatConfig.stamina_attack_req} Required)`;
     if (target?.targetType !== TargetType.Structure) return "Only structures can be raided";
     if (stealableResources.length === 0) return "No resources raidable";
     return "Raid!";
-  }, [attackerArmyData, combatConfig, target, stealableResources]);
+  }, [attackerArmyData, target, stealableResources]);
 
   const canRaid = useMemo(() => {
     return (
@@ -292,10 +296,7 @@ export const RaidContainer = ({
             </h3>
             <div className="text-center py-6 flex flex-col items-center">
               <div className="text-hud-display mb-4">🛡️</div>
-              <div className="text-hud-display text-hud-bad mb-2">Target cannot be raided!</div>
-              <p className="text-hud-accent mb-4 max-w-md mx-auto">
-                You can only raid structures owned by other players that contain resources.
-              </p>
+              <p className="text-hud-accent mb-4 max-w-md mx-auto">Only other players' structures with resources.</p>
             </div>
           </div>
         </HudPanel>
@@ -362,14 +363,17 @@ export const RaidContainer = ({
                                   Current Stamina:
                                 </span>
                                 <span className="w-28">
-                                  <HudMeter
-                                    share={Math.min(1, Number(attackerArmyData.troops.stamina.amount) / 100)}
+                                  <HudStamina
+                                    stamina={{
+                                      current: Number(attackerArmyData.troops.stamina.amount),
+                                      max: attackerArmyData.troops.staminaMax,
+                                      perExplore: configManager.getExploreStaminaCost(),
+                                    }}
                                     tone={
                                       Number(attackerArmyData.troops.stamina.amount) >= combatConfig.stamina_attack_req
                                         ? "good"
                                         : "bad"
                                     }
-                                    label="Stamina"
                                     filling={attackerRecharging}
                                   />
                                 </span>
@@ -698,7 +702,7 @@ export const RaidContainer = ({
                           ) : (
                             <div className="text-center py-8 text-hud-muted flex flex-col items-center">
                               <span className="text-hud-display mb-2">🚫</span>
-                              <p>No resources available to raid in this structure.</p>
+                              <p>Nothing to raid here.</p>
                             </div>
                           )}
                         </div>
@@ -719,7 +723,11 @@ export const RaidContainer = ({
                   <div className="mt-2 text-hud-body text-hud-muted flex items-center gap-2">
                     {attackerArmyData && attackerArmyData.troops.stamina.amount < combatConfig.stamina_attack_req && (
                       <span className="flex items-center gap-1">
-                        <span>⚡</span> Wait for stamina to recharge ({combatConfig.stamina_attack_req} required)
+                        <span>⚡</span>{" "}
+                        {staminaShortfall(
+                          Number(attackerArmyData.troops.stamina.amount),
+                          Number(combatConfig.stamina_attack_req),
+                        )}
                       </span>
                     )}
                     {!attackerArmyData && (
@@ -739,12 +747,6 @@ export const RaidContainer = ({
                     )}
                   </div>
                 )}
-              </div>
-
-              {/* Help Text */}
-              <div className="text-hud-label text-hud-cue text-center mt-2 max-w-lg mx-auto">
-                Raids allow you to steal resources from enemy structures. Success chance depends on your troops, terrain
-                advantages, and defender forces.
               </div>
             </>
           )}

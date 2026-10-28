@@ -285,7 +285,6 @@ const DrawingChest = ({
           style={{ width: `${(passed / CHEST_DRAW_BLOCKS) * 100}%` }}
         />
       </div>
-      <p className="relative w-[80%] text-center text-app-body text-app-muted">{REWARD_WORDS.drawFair}</p>
     </>
   );
 };

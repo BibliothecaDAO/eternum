@@ -29,15 +29,24 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
- * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor.
+ * it, and a refused tile explains why; the player's own army or holding is the map's to select (a hold transfers). Sites keep the army as actor. On a phone,
+ * with the realm selected, a lit tile beside it opens Deploy aimed there (owner, 27 October 2026: "when I click on the
+ * castle then on a tile next to it it should bring up the deploy on that tile", in every mode; a desktop keeps
+ * right-click: "change is phone only for now").
+ *
+ * On a desktop, an order the army can't take now still opens, with the reason and its verb disabled: an attack its
+ * stamina can't pay yet opens the attack's own preview, any other refused order the order's preview (owner, 27 October
+ * 2026: "having an army selected and right clicking a tile should always bring the action").
  */
-type TapOrder = "pin" | "go" | "attack" | "transfer" | "site-card" | "why";
+type TapOrder = "pin" | "go" | "attack" | "deploy" | "site-card" | "why" | "refused";
 
 export const orderOnTap = ({
   path,
   armySelected,
   site,
   ownSpire,
+  onPhone,
+  refused,
   hud,
 }: {
   path: ActionPath[] | undefined;
@@ -45,6 +54,9 @@ export const orderOnTap = ({
   site: boolean;
   /** The tile is the selected army's realm's spire today. */
   ownSpire: boolean;
+  onPhone: boolean;
+  /** Why the rules gave the army no order here: an attack short of stamina, or any other order; none when they said nothing. */
+  refused?: "attack" | "order";
   /** Where the HUD carries the verb: whether this tile is the order already pinned, and whether the rules refused one. */
   hud?: { pinned: boolean; refused: boolean };
 }): TapOrder | null => {
@@ -52,9 +64,11 @@ export const orderOnTap = ({
   if (pinsOrder(path)) return hud?.pinned ? "go" : "pin";
   const actionType = path && ActionPaths.getActionType(path);
   if (actionType === ActionType.Attack) return "attack";
-  if (hud && actionType === ActionType.Help) return "transfer";
+  if (onPhone && actionType === ActionType.CreateArmy) return "deploy";
   if (armySelected && site) return "site-card";
-  return hud?.refused ? "why" : null;
+  if (hud?.refused) return "why";
+  if (onPhone || !armySelected || !refused) return null;
+  return refused === "attack" ? "attack" : "refused";
 };
 
 /** A right-click that a finger's hold gave (the touch recognizer sends a hold as one), not a mouse's. */

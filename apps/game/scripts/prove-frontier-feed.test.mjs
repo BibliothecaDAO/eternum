@@ -8,8 +8,8 @@ const FEED_PANEL = `<section aria-label="Feed"><div class="ui-event">Krump explo
 
 /**
  * A rail and its Feed place as the proof's browser meets them: the Feed's × (`close`: "works", "inert" or "missing")
- * and a place that opens the Feed again. Each click lands as a player's would, or fails as the browser says when the
- * control is covered.
+ * and a place that opens the Feed again. The pointer meets each control at its centre, or with `covered` a layer over
+ * the whole screen (a day end's lifting dawn), which the browser would click instead.
  */
 const browser = ({ close = "works", covered = false } = {}) => {
   const panel = FEED_PANEL.replace(
@@ -20,17 +20,22 @@ const browser = ({ close = "works", covered = false } = {}) => {
     runScripts: "outside-only",
   });
   const { document } = dom.window;
-  // jsdom lays nothing out; every control here is on screen.
+  // jsdom lays nothing out; every control here is on screen, and the pointer meets the one the proof marked.
   dom.window.HTMLElement.prototype.getClientRects = () => [{}];
+  const layer = document.createElement("div");
+  layer.className = "absolute inset-0 bg-hud-night";
+  document.elementFromPoint = () => (covered ? layer : document.querySelector("[data-proof-press]"));
   const rail = document.querySelector("[data-rail-home]");
   const shots = [];
+  const clicks = [];
   return {
     shots,
+    clicks,
     evaluate: (script) => dom.window.eval(script),
     run: (command, target) => {
       if (command === "screenshot") return shots.push(target);
       if (command !== "click") return undefined;
-      if (covered) throw new Error("Element is covered by another element");
+      clicks.push(target);
       const control = document.querySelector(target);
       if (control.getAttribute("aria-label") === "Close the feed" && close === "works") rail.innerHTML = "";
       if (control.getAttribute("aria-label") === "Feed" && !rail.firstChild) rail.innerHTML = panel;
@@ -55,8 +60,10 @@ it("fails a Feed without its × (review: a missing × left the proof complete)",
   expect(await prove(browser({ close: "missing" }))).toEqual(["missing"]);
 });
 
-it("fails a × a player cannot press, as the browser says", async () => {
-  expect(await prove(browser({ covered: true }))).toEqual(["click: Element is covered by another element"]);
+it("fails a × a layer covers, and never clicks the layer (a day end's dawn swallowed the click, and the press led)", async () => {
+  const b = browser({ covered: true });
+  expect(await prove(b)).toEqual(["click: covered by div.absolute.inset-0.bg-hud-night"]);
+  expect(b.clicks).toEqual([]);
 });
 
 it("fails a × that leaves the Feed open", async () => {

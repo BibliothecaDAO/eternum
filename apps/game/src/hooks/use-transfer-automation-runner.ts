@@ -136,13 +136,13 @@ export const useTransferAutomationRunner = () => {
                 }
 
                 if (!isEntityOwnedByAccount(store, sourceId, account.address)) {
-                  toast.warning("Scheduled transfer skipped: source structure is no longer owned.");
+                  toast.warning("Transfer skipped: source no longer yours.");
                   scheduleNext(entry.id, nowMs);
                   continue;
                 }
 
                 if (!isEntityOwnedByAccount(store, destId, account.address)) {
-                  toast.warning("Scheduled transfer skipped: destination structure is no longer owned.");
+                  toast.warning("Transfer skipped: destination no longer yours.");
                   scheduleNext(entry.id, nowMs);
                   continue;
                 }
@@ -159,8 +159,8 @@ export const useTransferAutomationRunner = () => {
                   if (!validTransfer) {
                     toast.warning(
                       mode.id === "blitz"
-                        ? "Scheduled transfer skipped: troops can only move between your owned structures in Blitz."
-                        : "Scheduled transfer skipped: troops can only move Realm ↔ Realm.",
+                        ? "Transfer skipped: only between your structures."
+                        : "Transfer skipped: troops move only Realm ↔ Realm.",
                     );
                     scheduleNext(entry.id, nowMs);
                     continue;

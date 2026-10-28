@@ -56,7 +56,7 @@ const MapViewSwitch = ({
             key: "realm",
             label: structureName(StructureType.Realm),
             disabled: !canOpenLocal,
-            title: canOpenLocal ? undefined : "Select a structure to open its realm view",
+            title: canOpenLocal ? undefined : "Select a structure first",
           },
           { key: "world", label: WORLD },
         ]}

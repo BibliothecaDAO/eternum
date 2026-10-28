@@ -4,7 +4,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
-import { exploreStaminaOf, type StaminaBar } from "@/lib/army-stamina/segments";
+import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
+import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -14,6 +15,7 @@ import { useMemo } from "react";
 
 import { ARMY } from "@/ui/design-system/kit/words";
 
+import type { AttributeKey } from "../army/army-detail";
 import { affordableUpgrades, attributeTiers, nextTierGoal } from "../attributes/attributes";
 
 const ARMY_MODELS = ["ArmySlot", "ArmyProgress", "ExplorerTroops", "TileOccupancy", "EntityName"] as const;
@@ -29,8 +31,8 @@ export type DockArmy = {
   xp: number | undefined;
   /** The attribute tier its XP buys next: its XP price and the tier it reaches; none at legendary or while unknown. */
   xpGoal: { price: number; tier: number } | undefined;
-  /** Its four attribute tiers (Battle, Logistics, Scouting, Homecoming), 1 to 5; unknown while its progress is. */
-  tiers: readonly [number, number, number, number] | undefined;
+  /** Its tier in each attribute, 1 to 5, by its field on the progress; unknown while its progress is. */
+  tiers: Record<AttributeKey, number> | undefined;
   stamina: StaminaBar | undefined;
   secondsToFull: number | undefined;
   troops: number;

@@ -4,7 +4,6 @@ import { type MouseEvent, useEffect, useMemo, useState } from "react";
 
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useNowSeconds, useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudActions, HudButton, HudCheck, HudIconButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
@@ -15,11 +14,14 @@ import { configManager, getGuardsByStructure, getTroopResourceId, StaminaManager
 import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 
-import { buildAttackStaminaRequirementLabel, resolveAttackStaminaState } from "./attack-stamina-state";
-import { formatAcross, survivalOf, type SideRange } from "./battle-range";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { resolveAttackStaminaState } from "./attack-stamina-state";
+import { keptAcross } from "./battle-range";
 import { CombatModal } from "./combat-modal";
+import { troopMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { Icon } from "@/ui/design-system/icon";
+import { FightSide } from "@/ui/features/frontier/sites/fight-side";
 import { combatTitle, describeFightCost, forecastAttack } from "./fight-forecast";
-import { readSurvivalAdvice } from "./survival-advice";
 import { useAttackTargetData } from "./hooks/use-attack-target";
 import { AttackTarget, TargetType } from "./types";
 
@@ -80,10 +82,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   ]);
 
   const accountName = usePlayerDisplayName(account?.address);
-  const selectedHex = useUIStore((state) => state.selectedHex);
+  // The attacker's own tile, never the map's selected one: a selected army can show another tile's card.
+  const attackerHex = useMemo(() => ({ col: attacker.hex.x, row: attacker.hex.y }), [attacker.hex.x, attacker.hex.y]);
   const openSurface = usePopoverStore((state) => state.openSurface);
   const closeSurface = usePopoverStore((state) => state.closeSurface);
-  const deselectEntity = useUIStore((state) => state.deselectEntity);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   // Opt-in toggle: when on, the Claim action also garrisons the surviving troops. Off by default.
@@ -125,12 +127,11 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   // Hex distance from the attacker to the target. Crossbowmen can poke at range 2; everything else
   // is adjacency-only, so this drives which guards may fire and whether a structure can be claimed.
   const targetDistance = useMemo(() => {
-    if (!selectedHex) return Infinity;
     return getLayeredAttackDistance(
-      { ...selectedHex, alt: attacker.alt },
+      { ...attackerHex, alt: attacker.alt },
       { col: target.hex.x, row: target.hex.y, alt: target.alt },
     );
-  }, [selectedHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
+  }, [attackerHex, attacker.alt, target.alt, target.hex.x, target.hex.y]);
 
   // When a structure is the aggressor, only guards whose attack range reaches the target can fire.
   const eligibleStructureGuards = useMemo(
@@ -152,7 +153,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackerStamina = attackerArmyData
     ? StaminaManager.getStamina(attackerArmyData.troops, executionSecond).amount
     : undefined;
-  const attackerStaminaValue = attackerStamina === undefined ? undefined : Number(attackerStamina);
   const requiredAttackStamina = Number(combatConfig.stamina_attack_req);
   const readyAt = attackerArmyData
     ? StaminaManager.getAffordableAt(attackerArmyData.troops, requiredAttackStamina, executionSecond)
@@ -215,19 +215,8 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
   const attackerSide = fight?.sides?.attacker ?? null;
   const defenderSide = fight?.sides?.defender ?? null;
-  // The army falls at every roll: Attack steps back and the forecast says what would survive.
+  // The army falls at every roll: Attack steps back.
   const certainLoss = fight?.certainLoss ?? false;
-  // What would survive it, within what the player can raise.
-  const survivalAdvice = useMemo(() => {
-    if (!fight?.extraToSurvive || !attackerArmyData) return null;
-    const armyId = attackerType === AttackerType.Army ? attacker.id : null;
-    return readSurvivalAdvice(
-      facts.store,
-      { id: armyId, troops: attackerArmyData.troops },
-      fight.extraToSurvive,
-      executionSecond,
-    );
-  }, [fight, attackerArmyData, attackerType, attacker.id, facts, executionSecond]);
 
   // Capture and garrison are judged on the attacker's worst roll, so the atomic claim never counts on luck.
   const attackerRemaining = attackerSide ? attackerSide.worst.remaining : attackerTroopsTotal;
@@ -307,14 +296,17 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const attackDisabled =
     rangedClaimBlocked || cooldownBlocksAttack || attackStaminaState.isBlocked || !attackerArmyData;
 
-  const isLowStamina = attackStaminaState.isBlocked;
-
   const attackButtonLabel = (() => {
     if (rangedClaimBlocked) return "Move adjacent to claim";
     if (attackerType === AttackerType.Structure && !activeGuard) return "No guard in range";
     if (!attackerArmyData) return "No troops selected";
     if (cooldownBlocksAttack) return "On cooldown";
-    if (attackStaminaState.isBlocked) return buildAttackStaminaRequirementLabel(attackStaminaState);
+    if (attackStaminaState.isBlocked)
+      return staminaShortfall(
+        attackStaminaState.currentStamina,
+        attackStaminaState.requiredStamina,
+        staminaWaitSeconds ?? undefined,
+      );
     if (!hasDefenders) return "Claim";
     return attackStaminaState.actionLabel;
   })();
@@ -332,10 +324,10 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
   const runWorldmapAttack = async (
     performCall: (ctx: { direction: number | null; resolvedTarget: AttackTarget }) => Promise<unknown>,
   ) => {
-    if (!selectedHex || !targetData || attackDisabled) return;
+    if (!targetData || attackDisabled) return;
     // Range-2 pokes are not adjacent, so direction is null for them; only the adjacency-only
     // garrison multicall requires it, and it guards for null itself.
-    const direction = getDirectionBetweenAdjacentHexes(selectedHex, { col: target.hex.x, row: target.hex.y });
+    const direction = getDirectionBetweenAdjacentHexes(attackerHex, { col: target.hex.x, row: target.hex.y });
     const resolvedTarget = targetData;
 
     try {
@@ -344,7 +336,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
       playUnitCommandSound("attack");
       await performCall({ direction, resolvedTarget });
 
-      deselectEntity();
       closeSurface();
     } catch (error) {
       toast.failed(error, "The attack failed.");
@@ -421,39 +412,6 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
     return formatExact(Math.round(value));
   };
 
-  const casualtyLine = (label: string, side: SideRange) => {
-    const survival = survivalOf(side);
-    return (
-      <div className="rounded-md border border-hud-line bg-hud-well px-3 py-2">
-        <div className="flex items-center justify-between">
-          <span className="text-hud-label text-hud-muted">{label}</span>
-          <span
-            className={cn(
-              "text-hud-label",
-              survival === "Eliminated" ? "text-hud-bad" : survival === "Survives" ? "text-hud-good" : "text-hud-warn",
-            )}
-          >
-            {survival}
-          </span>
-        </div>
-        <div className="mt-1 flex items-center justify-between gap-3">
-          <span className="flex items-center gap-1">
-            <span className="text-hud-label text-hud-cue">Losses</span>
-            <span className="text-hud-strong">
-              {formatAcross(side.worst.losses, side.best.losses, formatTroopValue)}
-            </span>
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="text-hud-label text-hud-cue">Remaining</span>
-            <span className="text-hud-strong">
-              {formatAcross(side.worst.remaining, side.best.remaining, formatTroopValue)}
-            </span>
-          </span>
-        </div>
-      </div>
-    );
-  };
-
   if (structureGuards === undefined) return <div>Loading guards…</div>;
 
   return (
@@ -469,28 +427,32 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
         <div className="py-6 text-center text-hud-body text-hud-muted">No target detected.</div>
       ) : (
         <div className="space-y-1.5">
-          {rollsDice && (
-            <p className="text-hud-label text-hud-muted">
-              Each side rolls a d20 for +1% to +20% damage; ranges run from your worst roll to your best.
-            </p>
-          )}
           {targetArmyData ? (
-            attackerSide &&
-            defenderSide && (
-              <>
-                {casualtyLine("Your forces", attackerSide)}
-                {casualtyLine(isStructureTarget ? "Active guard" : "Enemy army", defenderSide)}
-                {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
-              </>
-            )
+            <>
+              {/* Both sides in every state: without a forecast (short of stamina, on cooldown, out of range) each keeps
+                  a dash, and the state is the line under them with Attack held. */}
+              <div className="flex gap-2">
+                <FightSide
+                  label="Your forces"
+                  mark={attackerArmyData && <Icon name={troopMeaning(attackerArmyData.troops)} size={24} />}
+                  before={attackerArmyData ? Math.round(attackerTroopsTotal) : undefined}
+                  kept={attackerSide ? keptAcross(attackerSide) : undefined}
+                  side="ours"
+                />
+                <FightSide
+                  label={isStructureTarget ? "Active guard" : "Enemy army"}
+                  mark={<Icon name={troopMeaning(targetArmyData.troops)} size={24} />}
+                  before={Math.round(defenderTroopsTotal)}
+                  kept={defenderSide ? keptAcross(defenderSide) : undefined}
+                  side="theirs"
+                />
+              </div>
+              {fightCost && <p className="text-hud-label text-hud-cue">{fightCost}</p>}
+            </>
           ) : (
             <HudNotice
               tone="good"
-              line={
-                rangedClaimBlocked
-                  ? "No defending troops. Move adjacent to claim this structure."
-                  : "No defending troops. You can claim without resistance."
-              }
+              line={rangedClaimBlocked ? "No defenders: move adjacent to claim" : "No defenders: claim it"}
             />
           )}
 
@@ -520,18 +482,12 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
           {attackDisabled && (
             <HudNotice
               tone="bad"
-              line={attackButtonLabel}
-              why={
-                [
-                  cooldownBlocksAttack && attackerCooldownRemaining > 0
-                    ? `${formatWait(attackerCooldownRemaining)} remaining`
-                    : null,
-                  isLowStamina ? `Current: ${attackerStaminaValue ?? "—"} / Required: ${requiredAttackStamina}` : null,
-                  isLowStamina && staminaWaitSeconds !== null ? `Ready in: ${formatWait(staminaWaitSeconds)}` : null,
-                ]
-                  .filter(Boolean)
-                  .join(" · ") || undefined
-              }
+              line={[
+                attackButtonLabel,
+                cooldownBlocksAttack && attackerCooldownRemaining > 0 ? formatWait(attackerCooldownRemaining) : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")}
             />
           )}
         </div>
@@ -549,11 +505,7 @@ export const QuickAttackPreview = ({ attacker, target }: QuickAttackPreviewProps
 
       {certainLoss && (
         <div className="modal-no-drag mt-2">
-          <HudNotice
-            tone="bad"
-            line="Certain loss: your army is wiped out at any roll."
-            why={survivalAdvice ? `${survivalAdvice[0].toUpperCase()}${survivalAdvice.slice(1)}.` : undefined}
-          />
+          <HudNotice tone="bad" line="Certain loss at any roll" />
         </div>
       )}
 

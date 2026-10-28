@@ -4,6 +4,7 @@ import * as THREE from "three";
 import { describe, expect, it } from "vitest";
 
 import { HighlightHexManager } from "../managers/highlight-hex-manager";
+import { FLAT_TERRAIN_SURFACE } from "../terrain/terrain-surface";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 
 const ARMY = 7;
@@ -65,7 +66,7 @@ const finishRollIn = () => gsap.updateRoot((animationClock += 10));
 describe("SelectedArmyOrders on a selected army", () => {
   it("adds the hexes a stamina refill pays for, in place, at the head that crosses the cost", () => {
     const scene = new THREE.Scene();
-    const highlights = new HighlightHexManager(scene, gridSpace);
+    const highlights = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
     const army = createRefillingArmy(22);
     const orders = new SelectedArmyOrders({
       reach: army.reach,

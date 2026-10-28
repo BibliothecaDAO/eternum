@@ -58,9 +58,6 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       const isDynamicImportError = isDynamicImportChunkError(this.state.error);
       const title = isDynamicImportError ? "Game update detected" : "Something went wrong";
-      const description = isDynamicImportError
-        ? "A game update changed some files while this tab was open. Reload to fetch the latest assets."
-        : "An unexpected error occurred. The development team has been notified.";
       const buttonLabel = isDynamicImportError ? "Reload Latest Assets" : "Reload Game";
 
       return (
@@ -69,7 +66,6 @@ export class ErrorBoundary extends Component<Props, State> {
             <HudPanel collapsible={false} className="max-w-md">
               <div className="flex flex-col items-center gap-4 p-2 text-center">
                 <h2 className="text-hud-display text-hud-ink">{title}</h2>
-                <p className="text-hud-body text-hud-muted">{description}</p>
                 <HudButton
                   kind="primary"
                   onClick={() => {

@@ -68,11 +68,17 @@ const rows = () =>
 const gems = () => [...card().querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
 const button = (text: RegExp) => [...host.querySelectorAll("button")].find((each) => text.test(each.textContent ?? ""));
 
-it("says what all the Farms make as one number, with research's share only as its why", () => {
-  draw(research.ROW_FARM, { makes: { icon: "wheat", rate: "+25/min", why: "+25% from Fields" } });
-  const made = [...card().querySelectorAll("[data-tip]")].find((each) => each.textContent === "+25/min")!;
-  expect(made.getAttribute("data-tip")).toBe("+25% from Fields");
-  expect(card().textContent).toContain("4 standing");
+it("says what all the Farms make as one number, and their research only as gems", () => {
+  draw(research.ROW_FARM, { makes: { icon: "wheat", rate: "+25/min" } });
+  expect(card().textContent).toContain("+25/min");
+  // How many stand, counted as buildings (owner, 27 October: "6 buildings instead of 6 standing").
+  expect(card().textContent).toContain("4 buildings");
+  expect(card().textContent).not.toContain("standing");
+  // The research behind the rate is the gem on the painting's corner, never words for it (owner, 27 October: "why no
+  // gems instead of the text ?", "the III as a badge to the barracks icon"), not even on a hover.
+  expect(card().querySelector("[data-badged] .ui-tier")?.textContent).toBe("III");
+  expect(card().textContent).not.toMatch(/ from (Fields|Tools|Drill)/);
+  expect(card().querySelector('[data-tip*=" from "]')).toBeNull();
   // Never a formula on the card (owner, 26 October: "its a game not a math demo").
   expect(card().textContent).not.toMatch(/×|\(\d|\d \+ \d/);
 });
@@ -97,15 +103,42 @@ it("keeps Research, dimmed, when the labor storage cannot hold the tier's price,
   const { onResearch, onFix } = draw(research.ROW_BARRACKS);
   const verb = button(/^Research Drill$/)!;
   expect(verb.disabled).toBe(true);
-  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · a Kingdom holds it");
+  expect(host.querySelector('[role="status"]')!.textContent).toBe("Labor storage 18,000 / 24,000 · Kingdom");
   act(() => verb.click());
   expect(onResearch).not.toHaveBeenCalled();
   act(() => button(/^Level up the castle$/)!.click());
   expect(onFix).toHaveBeenCalled();
 });
 
+it("says the Essence the Workshops need against what is held, beside Research dimmed, and nothing else", () => {
+  // The game offers no fix for a price held short of: the line is the whole answer (owner, 27 October).
+  act(() =>
+    root.render(
+      <BuildingCardView
+        name="Workshop"
+        icon="workshop"
+        standing={3}
+        makes={undefined}
+        node={nodeOf({ ...MID_REALM, essence: 1_000 }, research.ROW_WORKSHOP)}
+        sending={false}
+        fix={() => undefined}
+        onResearch={vi.fn()}
+        demolish={<button type="button">Delete</button>}
+        onClose={() => undefined}
+      />,
+    ),
+  );
+  const verb = button(/^Research Tools$/)!;
+  expect(verb.disabled).toBe(true);
+  const foot = verb.closest(".ui-window__foot")!;
+  expect(foot.textContent).toMatch(/^Needs [\d,.K]+ Essence, have 1,000Research Tools$/);
+  expect(foot.querySelectorAll("button")).toHaveLength(1);
+});
+
 it("shows a training building's one figure, what every new army starts with, now and next", () => {
   draw(research.ROW_WAR_HALL, { standing: 1 });
+  expect(card().textContent).toContain("1 building");
+  expect(card().textContent).not.toContain("1 buildings");
   expect(rows()).toEqual([["Battle", "0% damage", "→", "+10% damage"]]);
   expect(button(/^Research$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.

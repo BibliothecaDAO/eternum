@@ -1,9 +1,12 @@
 import type { ID } from "@bibliothecadao/types";
 import { memo } from "react";
 import { createRoot, type Root } from "react-dom/client";
-import { type Camera, Matrix4, Vector3 } from "three";
+import { type Camera, Matrix4, type Ray, Vector3 } from "three";
 
 import "./map-plates.css";
+import { ARMY_MODEL_TOP, ARMY_PLATE_HEIGHT } from "../constants/army-constants";
+import { HEX_SIZE } from "../constants/scene-constants";
+import { PLATE_CLEARANCE } from "../managers/structure-visible-presentation";
 import { hudColumnRects } from "../utils/labels/hud-clearance";
 import { placePlates, plateSize, type OrderLineAsk, type PlateThing } from "./map-plate-layout";
 import type { MapPlate } from "./map-plate-model";
@@ -69,6 +72,23 @@ const KIND_PRIORITY = { army: 8, structure: 5 } as const;
 const RELAYOUT_MS = 500;
 /** The HUD's bar across the top of the screen: the order line stays under it. */
 const SCREEN_TOP = 56;
+/** The float error of a ray aimed exactly at a model's edge: that edge still holds. */
+const ROUNDING = 1e-9;
+/**
+ * A thing's outline as the pointer meets it: half its breadth, and how far its label point stands over the model's top.
+ * An army is half a tile wide, up to the tallest army as drawn; a structure stands across its tile, up to its roof. The
+ * ground seen between a model's top and its token is the tile behind, and the token takes no pointer (owner,
+ * 2026-10-20: "we click the tile and that's it"), so neither belongs to the thing (owner, 2026-10-27: "right clicking
+ * here I'd expect the army to move").
+ */
+interface Outline {
+  halfWidth: number;
+  overTop: number;
+}
+const OUTLINES: Record<MapPlate["kind"], Outline> = {
+  army: { halfWidth: 0.5, overTop: ARMY_PLATE_HEIGHT - ARMY_MODEL_TOP },
+  structure: { halfWidth: (HEX_SIZE * Math.sqrt(3)) / 2, overTop: PLATE_CLEARANCE },
+};
 
 /**
  * The map's labels over the world renderer (map labels, the owner's plan D of 2026-10-19: "icons everywhere, full plate
@@ -192,6 +212,21 @@ export class MapPlateLayer {
     this.lastLayoutAt = now;
     this.lastFrame = { camera, width, height };
     this.layout(camera, width, height);
+  }
+
+  /**
+   * The label point of the thing the ray meets first (map labels, owner 2026-10-27: "at a certain zoom level I cant get
+   * the hover modal"): the pointer on a model is on its thing at every zoom, not on the tile behind the model, and the
+   * pointer over the model, on the ground it shows there, is on that ground's tile (`OUTLINES`). Null where the ray
+   * meets none.
+   */
+  public thingHitBy(ray: Ray): Vector3 | null {
+    let nearest: { distance: number; position: Vector3 } | null = null;
+    for (const { position, plate } of this.entries.values()) {
+      const distance = outlineHit(ray, position, OUTLINES[plate.kind]);
+      if (distance !== null && (nearest === null || distance < nearest.distance)) nearest = { distance, position };
+    }
+    return nearest?.position ?? null;
   }
 
   /** How many things carry a label (a token, or its plate opened). */
@@ -402,6 +437,29 @@ const LabelSlot = memo(function LabelSlot({
     </div>
   );
 });
+
+/**
+ * How far along the ray it meets a thing's outline, or null where it passes by. A model seen from the camera covers the
+ * upright panel through its tile's middle that faces the camera, as wide as the model and from the ground up to its
+ * top: the ray crosses that panel within its breadth of the label point's vertical, and between the ground and the top.
+ * A column round the vertical would also claim the ground seen over the model's head, behind it.
+ */
+const outlineHit = (ray: Ray, labelPoint: Vector3, outline: Outline): number | null => {
+  const { origin, direction } = ray;
+  const across = Math.hypot(direction.x, direction.z);
+  if (across === 0) return null;
+  // The panel faces the ray: its normal is the ray's way across the ground.
+  const facing = ((labelPoint.x - origin.x) * direction.x + (labelPoint.z - origin.z) * direction.z) / across;
+  const distance = facing / across;
+  if (distance < 0) return null;
+  const height = origin.y + direction.y * distance;
+  const aside = Math.hypot(
+    origin.x + direction.x * distance - labelPoint.x,
+    origin.z + direction.z * distance - labelPoint.z,
+  );
+  const top = labelPoint.y - outline.overTop;
+  return height >= -ROUNDING && height <= top + ROUNDING && aside <= outline.halfWidth + ROUNDING ? distance : null;
+};
 
 const sameKeys = (a: ReadonlySet<string>, b: ReadonlySet<string>) =>
   a.size === b.size && [...a].every((key) => b.has(key));

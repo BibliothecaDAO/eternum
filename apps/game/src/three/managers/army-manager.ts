@@ -1,4 +1,5 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
 import { activeMapLayer } from "@/three/map-layer";
@@ -64,9 +65,9 @@ import type {
   ArmySpatialRenderable,
   WorldSpatialProjection,
 } from "@bibliothecadao/eternum/game-sync";
-import { BiomeType, ID, TroopTier, TroopType } from "@bibliothecadao/types";
+import { BiomeType, ID, TROOP_TIERS, TROOP_TYPES, TroopTier, TroopType } from "@bibliothecadao/types";
 import { getEntityName } from "@bibliothecadao/eternum";
-import { Color, Euler, Raycaster, Scene, Vector3 } from "three";
+import { Color, Euler, Scene, Vector3 } from "three";
 import { env } from "../../../env";
 import type { AttachmentTransform, CosmeticAttachmentTemplate } from "../cosmetics";
 import { CosmeticAttachmentManager, resolveArmyCosmetic, resolveArmyMountTransforms } from "../cosmetics";
@@ -119,7 +120,6 @@ import {
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 import { getRendererDiagnosticActiveMode } from "../renderer-diagnostics";
 import { scheduleFrameBudgetWork, type FrameBudgetWorkScheduler } from "../frame-budget-work-queue";
@@ -291,8 +291,6 @@ export class ArmyManager {
     // Keep chunk stride aligned with world chunk size so visibility/fetch math matches.
     this.chunkStride = Math.max(1, chunkStride ?? Math.floor(this.renderChunkSize.width / 2));
     this.visibilityManager = visibilityManager;
-    this.onMouseMove = this.onMouseMove.bind(this);
-    this.onRightClick = this.onRightClick.bind(this);
     this.hexagonScene = hexagonScene;
     this.fxManager = new FXManager(scene, 1);
     this.attachmentManager = new CosmeticAttachmentManager(scene);
@@ -730,8 +728,8 @@ export class ArmyManager {
     const centerCol = Math.floor((bounds.minCol + bounds.maxCol) / 2);
     const centerRow = Math.floor((bounds.minRow + bounds.maxRow) / 2);
 
-    const troopTypes: TroopType[] = [TroopType.Knight, TroopType.Crossbowman, TroopType.Paladin];
-    const troopTiers: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
+    const troopTypes = TROOP_TYPES;
+    const troopTiers = TROOP_TIERS;
 
     const getTroopType = (index: number): TroopType => {
       if (params.mixTypes) {
@@ -805,25 +803,6 @@ export class ArmyManager {
     console.log(
       `[Debug Spawner] Cleared ${count} debug armies. Total armies remaining: ${this.armyPresentations.size}`,
     );
-  }
-
-  public onMouseMove(raycaster: Raycaster) {
-    return this.raycastNearestArmyEntityId(raycaster);
-  }
-
-  public onRightClick(raycaster: Raycaster) {
-    const entityId = this.raycastNearestArmyEntityId(raycaster) as ID | undefined;
-    return entityId !== undefined && this.armyPresentations.get(entityId)?.isMine ? entityId : undefined;
-  }
-
-  private raycastNearestArmyEntityId(raycaster: Raycaster): number | undefined {
-    const proceduralHit = this.proceduralArmyCharacterLayer.raycastNearest(raycaster);
-    const legacyHit = this.armyModel.raycastNearest(raycaster);
-    if (proceduralHit && (!legacyHit || proceduralHit.distance <= legacyHit.distance)) {
-      return proceduralHit.entityId;
-    }
-    if (legacyHit?.instanceId === undefined || !legacyHit.mesh.userData.entityIdMap) return undefined;
-    return legacyHit.mesh.userData.entityIdMap.get(legacyHit.instanceId);
   }
 
   private resolveOwnerName(address: bigint, preferredName?: string, fallbackName?: string): string {
@@ -965,7 +944,7 @@ export class ArmyManager {
       prepareForUpdate: () => this.armyModel.loadPromise,
       shouldAcceptRequest: shouldAcceptManagerChunkRequest,
       state: this.resolveChunkUpdateRuntimeState(),
-      waitForSettle: waitForVisualSettle,
+      waitForSettle: nextFrameOrTimeout,
     });
   }
 
@@ -1305,6 +1284,7 @@ export class ArmyManager {
           watched: watchedSide(this.store, army.owner.address),
         },
         this.resolveHomeRealmName(army),
+        configManager.getExploreStaminaCost(),
       ),
     });
   }

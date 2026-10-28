@@ -176,16 +176,16 @@ const usePublishAct = (act: (() => void) | null) => {
 };
 
 /**
- * A realm's level-up step as its hook reads it, whichever realm it is: the same readiness, send and lock as its card,
- * after the reason the step asks for it when it has one.
+ * A realm's level-up step as its hook reads it, whichever realm it is: the same readiness, send and lock as its card;
+ * its line is the reason the step asks for it, until the level-up is sent or refused, which its state says.
  */
 const LevelUpStep = ({ realmId, name, why, kind }: { realmId: ID; name: string; why?: string; kind: StepKind }) => {
   const levelUp = useRealmLevelUp(realmId);
   if (!levelUp) return null;
-  const state = levelUpLine(levelUp, name);
+  const settled = levelUp.loading || levelUp.refusal;
   return (
     <StepBody
-      line={why ? `${why} ${state}` : state}
+      line={why && !settled ? why : levelUpLine(levelUp, name)}
       verb={levelUp.word}
       busy={levelUp.loading}
       disabled={!levelUp.ready}

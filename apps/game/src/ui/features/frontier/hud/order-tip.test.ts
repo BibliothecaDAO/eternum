@@ -11,6 +11,7 @@ const tip = (
     explored: boolean;
     refusal: OrderRefusal;
     staminaWait: number;
+    staminaHeld: number;
     food: { wheat: number; fish: number };
     site: Parameters<typeof orderTip>[0]["site"];
   }> = {},
@@ -22,6 +23,7 @@ const tip = (
     explored: true,
     refusal: undefined,
     staminaWait: undefined,
+    staminaHeld: undefined,
     site: undefined,
     ...more,
   });
@@ -77,21 +79,16 @@ describe("what a right-click on a tile does, said before the click", () => {
   });
 
   it("says why the planner gave no order, in its own reason", () => {
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 24 })).toBe(
-      "Needs 21 stamina, ready in 24s",
-    );
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 130 })).toBe(
-      "Needs 21 stamina, ready in 2m 10s",
-    );
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 }, staminaWait: 3_600 })).toBe(
-      "Needs 21 stamina, ready in 1h",
-    );
-    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina");
+    const short = { refusal: { reason: "stamina", need: 21 } as const, staminaHeld: 9 };
+    expect(line(undefined, { ...short, staminaWait: 24 })).toBe("Needs 21 stamina, have 9 · in 24s");
+    expect(line(undefined, { ...short, staminaWait: 130 })).toBe("Needs 21 stamina, have 9 · in 2m 10s");
+    expect(line(undefined, { ...short, staminaWait: 3_600 })).toBe("Needs 21 stamina, have 9 · in 1h");
+    expect(line(undefined, { refusal: { reason: "stamina", need: 21 } })).toBe("Needs 21 stamina, have —");
     expect(line(undefined, { refusal: { reason: "food" } })).toBe("Not enough food for the army");
     expect(line(undefined, { refusal: { reason: "off-limits" } })).toBe("Only unclaimed structures can be attacked");
     expect(line(undefined, { refusal: { reason: "no-transfer" } })).toBe("This game allows no transfer here");
     expect(line(undefined, { refusal: { reason: "occupied" } })).toBe("No army can enter this tile");
-    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move next to it");
+    expect(line(undefined, { refusal: { reason: "too-far" } })).toBe("Too far: move closer");
   });
 
   it("claims no distance the planner did not: fog it said nothing of is unexplored, a revealed tile is silent", () => {

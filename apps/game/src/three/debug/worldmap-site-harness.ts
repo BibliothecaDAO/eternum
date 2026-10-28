@@ -12,6 +12,7 @@ import type { MapPlateLayer } from "../map-plates/map-plate-layer";
 import WorldmapScene from "../scenes/worldmap";
 import { PointerOrderTip } from "../scenes/worldmap-order-tip";
 import { SceneName } from "../types";
+import { WORLD_HEX_SPACE } from "../utils/utils";
 
 /** The address the recorded calls go to; nothing listens there. */
 export const HARNESS_WORLD = "0x5e5e";
@@ -81,7 +82,7 @@ export const mountWorldmapSiteHarness = ({
   projection: WorldSpatialProjection;
   surface: HTMLElement;
   camera: Camera;
-  mapPlates: Pick<MapPlateLayer, "placeOrderLine">;
+  mapPlates: Pick<MapPlateLayer, "placeOrderLine" | "thingHitBy">;
   army: number;
   player: bigint;
   /** The scene hex (normalized) under the pointer, from the input manager's raycaster. */
@@ -101,7 +102,7 @@ export const mountWorldmapSiteHarness = ({
     camera,
     mapPlates,
     inputManager,
-    interactiveHexManager: { onClick: (ray: Raycaster) => hit(ray) },
+    interactiveHexManager: { pick: (ray: Raycaster) => hit(ray), surfacePosition: WORLD_HEX_SPACE.positionForHex },
     worldSpatialProjection: projection,
     armyManager: { isArmySelectable: () => true },
     exploredTiles: new Map(),

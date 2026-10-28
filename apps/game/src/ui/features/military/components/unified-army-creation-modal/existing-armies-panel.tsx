@@ -5,7 +5,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { knownAmount } from "@/ui/utils/utils";
-import { getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
+import { configManager, getTroopResourceId, StaminaManager } from "@bibliothecadao/eternum";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 import { useExplorersByStructure } from "@/hooks/helpers/use-armies";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
@@ -13,7 +13,7 @@ import { type ArmyInfo, type ID, type TroopTier, type TroopType, formatAmount } 
 
 import { memo, useMemo, useState } from "react";
 import { useConfirmFor, useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
-import { HudConfirm, HudIconButton, HudMeter } from "@/ui/design-system/kit/hud-elements";
+import { HudConfirm, HudIconButton, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { TierChip } from "../../utils/tier-chip";
 import { toast } from "@/ui/features/event-feed/notify";
 
@@ -80,8 +80,6 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
     );
   }, [army.troops]);
 
-  const staminaPercent = stamina && maxStamina > 0 ? Math.min(100, (Number(stamina.amount) / maxStamina) * 100) : 0;
-
   const troopResource = useMemo(
     () => (army.troops ? getTroopResourceId(army.troops.category as TroopType, army.troops.tier as TroopTier) : null),
     [army.troops],
@@ -126,9 +124,14 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
           title={`Stamina ${Number(stamina.amount)}/${maxStamina}`}
         >
           <span className="shrink-0 text-hud-label text-hud-muted">Stamina</span>
-          {/* A neutral bar: low stamina is a state to read, not an alarm. */}
           <span className="min-w-0 flex-1">
-            <HudMeter share={staminaPercent / 100} label="Stamina" />
+            <HudStamina
+              stamina={{
+                current: Number(stamina.amount),
+                max: maxStamina,
+                perExplore: configManager.getExploreStaminaCost(),
+              }}
+            />
           </span>
           <span className="shrink-0 text-hud-label tabular-nums text-hud-muted">
             {Number(stamina.amount)}/{maxStamina}
@@ -154,7 +157,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
             onConfirm={handleConfirmDelete}
             onBack={close}
           >
-            <span className="text-hud-body text-hud-muted">Its troops are lost; a deployed army never goes home.</span>
+            <span className="text-hud-body text-hud-muted">Its troops are lost.</span>
           </HudConfirm>
         </div>
       )}

@@ -297,7 +297,7 @@ describe("Connect with Discord", () => {
     const ui = await mount("/", NEXT);
     try {
       await pressDiscord(ui);
-      expect(ui.container.textContent).toContain("Discord finished in another window? Enter the code it shows.");
+      expect(ui.container.textContent).toContain("Discord finished elsewhere? Enter its code.");
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");

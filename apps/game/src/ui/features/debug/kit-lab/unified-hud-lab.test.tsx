@@ -11,7 +11,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   useIdentitySession: () => ({ status: "signed-out", session: null }),
 }));
 
-const { DEFAULT_BUILD_ORDER } = await import("@bibliothecadao/eternum/automation");
+const { BUILD_ORDER_WORDS } = await import("@/ui/design-system/kit/words");
 const { UnifiedHudLab } = await import("./unified-hud-lab");
 const { usePopoverStore } = await import("@/hooks/store/use-popover-store");
 
@@ -52,7 +52,7 @@ const labAt = (view: string) => (
 );
 const forecast = () => document.querySelector('[data-popover-panel="quick-attack"]');
 
-it("draws the game's own Build order panel in a Blitz player's rail, its order named at its head", async () => {
+it("draws the game's own Build order panel in a Blitz player's rail, the order it follows chosen at its head", async () => {
   await act(async () =>
     root.render(
       <MemoryRouter initialEntries={["/unified/blitz"]}>
@@ -66,7 +66,9 @@ it("draws the game's own Build order panel in a Blitz player's rail, its order n
   );
   const panel = host.querySelector('section[aria-label="Build order"]');
   expect(panel).not.toBeNull();
-  expect(panel!.querySelector("header")?.textContent).toContain(DEFAULT_BUILD_ORDER.name);
+  expect(panel!.querySelector('button[aria-label="Order to follow"]')?.textContent).toBe(
+    BUILD_ORDER_WORDS.theGamesOrder,
+  );
   expect(panel!.textContent).not.toContain("djizus");
 });
 

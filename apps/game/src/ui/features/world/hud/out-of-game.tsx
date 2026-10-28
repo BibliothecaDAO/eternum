@@ -5,7 +5,7 @@ import { type FactView, playerScopeApplied } from "@/sync/fact-views";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
 /** What the HUD tells a player whose last realm has fallen. */
-export const OUT_OF_GAME = "You hold no realm. Watch until the end.";
+export const OUT_OF_GAME = "You hold no realm.";
 
 /**
  * Whether the signed-in player is out of this game: they entered it, and hold no realm now, whatever else they still

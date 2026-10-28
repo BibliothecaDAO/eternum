@@ -894,6 +894,51 @@ describe("identity Worker", () => {
     expect((await stranger.request(`/api/profiles?accounts=${tooMany}`)).status).toBe(400);
   });
 
+  it("keeps an account's build orders by revision, refuses one the game cannot read, and shows them to their owner only", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, "build-orders@realms.test");
+    const owner = (await browser.session())!.user.realmsId;
+    const coalRush = {
+      name: "Coal rush",
+      steps: [
+        { rank: "City", goal: "coal", count: 2 },
+        { rank: "City", goal: "levelUp" },
+      ],
+    };
+    const book = (order: unknown) => ({ orders: [{ id: "o1", order }], active: "o1" });
+    const save = (revision: number, order: unknown) =>
+      browser.request("/api/build-orders", { body: { owner, revision, book: book(order) } });
+
+    expect(await (await browser.request("/api/build-orders")).json()).toEqual({
+      owner,
+      revision: 0,
+      book: { orders: [], active: null },
+    });
+    expect(await (await save(0, coalRush)).json()).toEqual({ owner, revision: 1, book: book(coalRush) });
+    expect((await save(0, coalRush)).status).toBe(409);
+    const unreadable = await save(1, { ...coalRush, steps: [{ rank: "City", goal: "mill", count: 2 }] });
+    expect([unreadable.status, await unreadable.json()]).toEqual([
+      400,
+      {
+        error: "invalid_build_orders",
+        message:
+          "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
+      },
+    ]);
+    expect(((await (await browser.request("/api/build-orders")).json()) as { revision: number }).revision).toBe(1);
+    // An order of T2 and T3 steps is kept as made.
+    const ironRush = {
+      name: "Iron rush",
+      steps: [
+        { rank: "City", goal: "ironwood", count: 1 },
+        { rank: "Kingdom", goal: "knightT2", count: 1 },
+        { rank: "Kingdom", goal: "armyT3", count: 1 },
+      ],
+    };
+    expect(await (await save(1, ironRush)).json()).toEqual({ owner, revision: 2, book: book(ironRush) });
+    expect((await createBrowser().request("/api/build-orders")).status).toBe(401);
+  });
+
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();
     await signInWithCode(browser, "preferences@realms.test");

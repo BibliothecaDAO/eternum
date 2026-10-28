@@ -18,8 +18,8 @@ describe("getTroopTransferBlockReason", () => {
 
   it.each([
     ["owner", 1n, null],
-    ["ally", 2n, "Cannot reinforce: Explorer home and target must have the same owner"],
-    ["stranger", 3n, "Cannot reinforce: Explorer home and target must have the same owner"],
+    ["ally", 2n, "Cannot reinforce: different owners"],
+    ["stranger", 3n, "Cannot reinforce: different owners"],
   ])("checks target ownership for a %s reinforcement", (_relation, targetOwner, expected) => {
     expect(
       getTroopTransferBlockReason({
@@ -52,7 +52,7 @@ describe("getTroopTransferBlockReason", () => {
         guardSlot: BALANCE_TRANSFER_SLOT,
       });
     expect(balanceTransfer(303)).toBeNull();
-    expect(balanceTransfer(404)).toBe("Cannot use structure balance: Explorer is not owned by this structure");
+    expect(balanceTransfer(404)).toBe("Not this structure's army");
   });
 });
 

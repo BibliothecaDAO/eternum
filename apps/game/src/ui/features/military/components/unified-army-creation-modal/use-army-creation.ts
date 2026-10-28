@@ -26,6 +26,8 @@ import {
   ID,
   ResourcesIds,
   TickIds,
+  TROOP_TIERS,
+  TROOP_TYPES,
   TroopTier,
   TroopType,
   formatAmount,
@@ -70,9 +72,6 @@ interface ArmyCreationOptions {
   fixedContext?: boolean;
   onSubmit?: () => void;
 }
-
-const TROOP_TYPES: TroopType[] = [TroopType.Crossbowman, TroopType.Knight, TroopType.Paladin];
-const TROOP_TIERS: TroopTier[] = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
 export const useArmyCreation = ({
   structureId: activeStructureId,
@@ -379,18 +378,16 @@ export const useArmyCreation = ({
 
   const defenseSlotErrorMessage = !armyType
     ? !isDefenseSlotCompatible && selectedGuardLabel
-      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} currently contains ${selectedGuardLabel}. Reinforce it with the same troop type and tier.`
+      ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} holds ${selectedGuardLabel}`
       : selectedSlotCooldown > 0
-        ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} was wiped out and is rebuilding for ${formatWait(selectedSlotCooldown)}.`
+        ? `Slot ${DISPLAYED_SLOT_NUMBER_MAP[guardSlot as keyof typeof DISPLAYED_SLOT_NUMBER_MAP]} rebuilds in ${formatWait(selectedSlotCooldown)}`
         : isDefenseSlotCreationBlocked
-          ? "All defense slots are occupied. Select an occupied slot to reinforce or remove one to free space."
+          ? "All defense slots are occupied."
           : null
     : null;
 
   const defenseSlotInfoMessage =
-    !armyType && isDefenseTroopLocked && selectedGuardLabel
-      ? `Reinforcing ${selectedGuardLabel}. Other troop types are locked for this slot.`
-      : null;
+    !armyType && isDefenseTroopLocked && selectedGuardLabel ? `Reinforcing ${selectedGuardLabel}` : null;
 
   const isDefenseActionDisabled =
     !armyType &&

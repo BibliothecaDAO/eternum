@@ -1,0 +1,15 @@
+{
+  "chainId": "0x50524f44554354494f4e5f31386530376435323330633539393933",
+  "gameId": 1,
+  "presetId": 5,
+  "name": "frontier-1792575960",
+  "start": 1792575960,
+  "oldEnd": 1793151960,
+  "end": 1793439960,
+  "seed": "0x5b0a63f717733291c17fc3ecf7ead6e4bd6ae7157150430908152aad0d4ef09",
+  "dayUnit": 14400,
+  "claimWindow": 604800,
+  "poolLords": 1000000,
+  "release": 4,
+  "previousLedgerClass": "0x1fc1d7a67f775e2dd65be2d64738facd508213afd8628c156cce024ac4efda1"
+}

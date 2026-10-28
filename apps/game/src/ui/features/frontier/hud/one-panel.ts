@@ -1,8 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-import { closeFightResult } from "../sites/fight-result";
 import type { HudSurface } from "./frontier-nav";
 
 /**
@@ -13,9 +12,13 @@ import type { HudSurface } from "./frontier-nav";
  *
  * - a surface lets go of the tapped tile and its card, and closes the deploy order;
  * - a new card (a new tap) closes the surface and the deploy order;
- * - on a phone, a new pick on the map (an army, or the tile its order or transfer is pinned on) closes the surface, so
- *   the action row that answers the pick stands where the surface stood;
- * - the deploy order closes the surface and stands over the card.
+ * - on a phone, a new pick on the map (an army, a structure, the tile its order is pinned on, or any tile tapped)
+ *   closes the surface, so the map answers the tap where the surface stood (audit 10-27: pages stayed open over a
+ *   tap on the map);
+ * - the deploy order closes the surface and stands over the card;
+ * - the deploy order is its realm's: a pick of anything else, or letting the realm go, closes it (owner, 27 October
+ *   2026: "when i click this but then click another army without deploying we should close the deploy and bring up the
+ *   selected army").
  *
  * A card a later panel stands over stays hidden until the selection opens another (`card` is the card's key, null while
  * the selection opens none). A surface stands over any card showing when it opens, whether the press let go of its
@@ -37,7 +40,9 @@ export const useOnePanel = (
   // see nothing on the right panel sometimes").
   const [feedOpen, setFeedOpen] = useState(true);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
-  const pick = useUIStore((state) => mapPick(state.entityActions));
+  const pick = useUIStore((state) => mapPick(state.entityActions, state.selectedHex));
+  const selected = useUIStore((state) => state.entityActions.selectedEntityId ?? null);
+  const deployingFrom = useUIStore((state) => state.pendingMilitaryAction?.structureId ?? null);
   // What the last render saw, and whether a surface opened since: what opened is what changed.
   const [seen, setSeen] = useState<{ card: string | null; deploying: boolean; pick: string | null }>({
     card: null,
@@ -70,6 +75,14 @@ export const useOnePanel = (
     }
   }
 
+  // A new selection that is not the deploy order's realm puts the order away.
+  const selectedBefore = useRef(selected);
+  useEffect(() => {
+    const reselected = selected !== selectedBefore.current;
+    selectedBefore.current = selected;
+    if (reselected && deploying && (selected === null || Number(selected) !== deployingFrom)) closeDeployOrder();
+  }, [selected, deploying, deployingFrom]);
+
   const showsCard = card !== null && card !== hidden;
   // A card opened over a deploy order closes the order.
   useEffect(() => {
@@ -90,24 +103,21 @@ export const useOnePanel = (
 };
 
 /**
- * What the map has picked for the action row to answer: the army selected, and the tile its order or transfer is
- * pinned on. Null while nothing is picked.
+ * What the map has picked: the army or structure selected and the tile its order is pinned on, or with none, the tile
+ * the player tapped (a tap on empty ground, letting go of what was selected, picks that tile). Null while nothing is.
  */
-const mapPick = ({
-  selectedEntityId,
-  hoveredHex,
-}: {
-  selectedEntityId: unknown;
-  hoveredHex: { col: number; row: number } | null;
-}): string | null =>
-  selectedEntityId === null || selectedEntityId === undefined
-    ? null
-    : `${String(selectedEntityId)}@${hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : ""}`;
+const mapPick = (
+  { selectedEntityId, hoveredHex }: { selectedEntityId: unknown; hoveredHex: { col: number; row: number } | null },
+  selectedHex: { col: number; row: number } | null,
+): string | null => {
+  if (selectedEntityId === null || selectedEntityId === undefined)
+    return selectedHex ? `tile@${selectedHex.col},${selectedHex.row}` : null;
+  return `${String(selectedEntityId)}@${hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : ""}`;
+};
 
-/** The tapped tile, plot or building let go, with its card and an attack result standing in it. */
+/** The tapped tile, plot or building let go, with its card. */
 const letGoOfTheTile = () => {
   const ui = useUIStore.getState();
-  closeFightResult();
   ui.closeSelectedTile();
   ui.setSelectedBuildingHex(null);
 };

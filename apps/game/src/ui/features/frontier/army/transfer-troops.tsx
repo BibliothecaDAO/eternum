@@ -14,7 +14,7 @@ import {
   HudTierChip,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
-import { TRANSFER_TROOPS, XP } from "@/ui/design-system/kit/words";
+import { TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { configManager, multiplyByPrecision } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -65,7 +65,7 @@ export const useSelectedTransfer = (realm: NativeRows["Structure"] | null): Tran
  * 26 October 2026: the quick splits are "not needed since the player do it from the map"). The one control is the
  * amount sent, from none up to all the picked army holds, typed or dragged, and it opens at all: a merge (owner, the
  * same evening: "why doesnt it go from 0 to 600 with 600 (max picked)"). The cards say what happens, not a paragraph:
- * each army's troops, stamina and XP now and after, and an army a merge empties faded with its XP struck out. The one
+ * each army's troops, stamina and total XP now and after, and an army a merge empties faded. The one
  * verb names the army that stays. The game moves troops between alike armies only, within the receiving realm's limit.
  */
 export const TransferTroopsSheet = ({
@@ -201,17 +201,23 @@ const TransferAmount = ({
 
   if (!alike) return <HudNotice tone="warn" line={TRANSFER_TROOPS.unalike(picked.label, tapped.label)} />;
   // A full merge whose progress is known: the army that stays and the one that leaves.
-  const merge = fullMerge && plan.known ? { survivor: tapped, loser: picked } : null;
-  // The XP a merge loses with the army that leaves: its own and what its upgrades cost, the figure the confirm weighs.
-  const lostXp = plan.sourceValue ?? 0;
-  const side = (army: DockArmy) => (
-    <ArmySide
-      army={army}
-      after={after(army)}
-      lostXp={army === merge?.loser ? lostXp : undefined}
-      staminaAfter={army === merge?.survivor ? mergedStamina : undefined}
-    />
-  );
+  const merge =
+    fullMerge && plan.known && plan.sourceValue !== undefined
+      ? { survivor: tapped, loser: picked, lostXp: plan.sourceValue }
+      : null;
+  const side = (army: DockArmy) => {
+    const totalXp = army === picked ? plan.sourceValue : plan.targetValue;
+    return (
+      <ArmySide
+        army={army}
+        after={after(army)}
+        totalXp={totalXp}
+        xpAfter={plan.known ? (army === merge?.loser ? 0 : totalXp) : undefined}
+        leaves={army === merge?.loser}
+        staminaAfter={army === merge?.survivor ? mergedStamina : undefined}
+      />
+    );
+  };
 
   return (
     <div className="flex flex-col gap-3">
@@ -221,6 +227,7 @@ const TransferAmount = ({
         <Icon name="transfer" size={28} />
         {side(tapped)}
       </div>
+      {merge && merge.lostXp > 0 && <HudNotice tone="warn" line={TRANSFER_TROOPS.losesProgress(merge.loser.label)} />}
       {/* How many the picked army sends: typed, or dragged between none and all it holds, each end labelled. */}
       <div className="flex items-center gap-2">
         <AmountInput
@@ -253,7 +260,7 @@ const TransferAmount = ({
             ? TRANSFER_TROOPS.pick
             : merge
               ? confirmed
-                ? TRANSFER_TROOPS.confirmMerge(lostXp, merge.survivor.label)
+                ? TRANSFER_TROOPS.confirmMerge(merge.lostXp, merge.survivor.label)
                 : TRANSFER_TROOPS.merge(merge.survivor.label)
               : TRANSFER_TROOPS.move(sent, tapped.label)}
         </HudButton>
@@ -263,23 +270,24 @@ const TransferAmount = ({
 };
 
 /**
- * One army in the transfer: its portrait and name, its stamina, its XP, what it holds now and after. An army a merge
- * empties leaves the map and its XP is lost: its portrait fades, and its card strikes out the XP lost, its upgrades'
- * cost included. The army that stays shows the stamina the merge leaves it, when that is less than it has.
+ * Both cards count XP the same way: unspent XP plus the value of their upgrades. A full transfer removes the source's
+ * progress; the target keeps its own unchanged. A partial transfer keeps both progress bundles.
  */
 const ArmySide = ({
   army,
   after,
-  lostXp,
+  totalXp,
+  xpAfter,
+  leaves,
   staminaAfter,
 }: {
   army: DockArmy;
   after: number;
-  /** The XP lost with this army, which a merge empties; undefined for an army that stays. */
-  lostXp: number | undefined;
+  totalXp: number | undefined;
+  xpAfter: number | undefined;
+  leaves: boolean;
   staminaAfter: number | undefined;
 }) => {
-  const leaves = lostXp !== undefined;
   return (
     <div className="flex flex-col items-center gap-1 rounded-lg border border-hud-line bg-hud-well p-2">
       <span
@@ -303,12 +311,23 @@ const ArmySide = ({
           )}
         </span>
       )}
-      {leaves ? (
-        <s className="text-hud-label tabular-nums text-hud-bad">{`${formatAmount(lostXp)} ${XP}`}</s>
-      ) : (
-        army.xp !== undefined && (
-          <span className="text-hud-label tabular-nums text-hud-gold">{`${formatAmount(army.xp)} ${XP}`}</span>
-        )
+      {totalXp !== undefined && (
+        <span
+          role="group"
+          aria-label={TRANSFER_TROOPS.totalXpFor(army.label)}
+          className="flex flex-col items-center text-hud-label tabular-nums"
+        >
+          <span className="text-hud-muted">{TRANSFER_TROOPS.totalXp}</span>
+          <span className="flex items-center gap-1">
+            <span className="text-hud-muted">{formatAmount(totalXp)}</span>
+            {xpAfter !== undefined && (
+              <>
+                <span className="text-hud-muted">→</span>
+                <span className={leaves ? "text-hud-bad" : "text-hud-gold"}>{formatAmount(xpAfter)}</span>
+              </>
+            )}
+          </span>
+        </span>
       )}
       <span className="flex items-center gap-1 tabular-nums">
         <HudTierChip tier={army.troopsFact.tier === "T3" ? 3 : army.troopsFact.tier === "T2" ? 2 : 1} />

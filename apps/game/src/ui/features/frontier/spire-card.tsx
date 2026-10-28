@@ -9,9 +9,11 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
+import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
+  armyAtItsSpire,
   configManager,
   entityMapPosition,
   expeditionDayEndsAt,
@@ -35,21 +37,39 @@ const SPIRE_MODELS = ["ArmySlot", "ExplorerTroops", "Structure", "RealmKnowledge
 type Spire = { col: number; row: number; deepest: number; realm: NativeRows["Structure"] };
 
 /**
- * The lit spire on the tile the player tapped, with its realm; null on any other tile. Research draws it by rule and
- * no occupancy marks it, so it is found from the same rules the map draws it by.
+ * The lit spire the selection is about, with its realm: the one on the tile the player tapped, else the one the
+ * selected army stands on or beside (useSelectedArmySpire); null otherwise. Research draws it by rule and no occupancy
+ * marks it, so it is found from the same rules the map draws it by.
  */
 export const useSelectedSpire = (): Spire | null => {
   const { setup } = useGame();
   const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.selectedHex);
   const now = useCurrentBlockTimestamp();
+  const armySpire = useSelectedArmySpire();
   useNativeRevision(SPIRE_MODELS);
-  if (!isMapView || !selected) return null;
-  return (
+  if (!isMapView) return null;
+  const tapped =
+    selected &&
     expeditionSpires(setup.store, configManager.getActiveGameId(), now).find(
       (spire) => spire.col === selected.col && spire.row === selected.row,
-    ) ?? null
-  );
+    );
+  return tapped || armySpire;
+};
+
+/**
+ * The spire of the selected army's realm while the army stands on it or beside it: entering a depth is what an army
+ * there is for, so selecting it opens the spire's card. An army deployed onto its spire's own tile is selected by any
+ * tap on that tile, so without this its card, and Enter, never opened.
+ */
+export const useSelectedArmySpire = (): Spire | null => {
+  const { setup } = useGame();
+  const { isMapView } = useQuery();
+  const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
+  const now = useCurrentBlockTimestamp();
+  useNativeRevision(SPIRE_MODELS);
+  if (!isMapView || selectedId === null) return null;
+  return armyAtItsSpire(setup.store, configManager.getActiveGameId(), selectedId, now);
 };
 
 /**
@@ -110,7 +130,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
     const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
     const stamina = actor.stamina?.current;
     if (stamina === undefined) return { cost, why: null, open: false };
-    if (stamina < cost) return { cost, why: SPIRE_WORDS.needs(formatCharge(cost), formatCharge(stamina)), open: false };
+    if (stamina < cost) return { cost, why: staminaShortfall(stamina, cost), open: false };
     if (store.get("TileOccupancy", landing)) return { cost, why: SPIRE_WORDS.landingTaken, open: false };
     return { cost, why: null, open: true };
   };

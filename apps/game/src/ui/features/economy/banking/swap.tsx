@@ -286,9 +286,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           isAmm={true}
         />
       )}
-      {isVillageAndMilitaryResource && (
-        <HudNotice tone="bad" line="Military resources cannot be traded from village structures." />
-      )}
+      {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
       {canSwap && !canCarry && (
         <HudNotice
           tone="bad"

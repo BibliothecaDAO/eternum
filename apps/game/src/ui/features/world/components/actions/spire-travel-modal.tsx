@@ -47,18 +47,13 @@ export const SpireTravelModal = ({
     >
       <div className="flex flex-col gap-4 text-gold/90">
         {crossing.kind === "unknown" ? (
-          <p className="text-sm text-gold/70">
-            This army's position is unknown here, so the crossing cannot be checked.
-          </p>
+          <p className="text-sm text-gold/70">This army's position is unknown.</p>
         ) : crossing.kind === "clear" ? (
           <div className="flex items-start gap-3 rounded border border-cyan-300/25 bg-cyan-500/10 p-3">
             <SemanticIcon name="relics" className="mt-0.5 h-4 w-4 text-cyan-200" />
             <div className="flex flex-col gap-1">
               <p className="text-sm font-semibold text-cyan-100">Your hex on {sideName} is clear</p>
-              <p className="text-xs text-gold/70">
-                The army crosses to the same hex on {sideName}. It keeps its position and its stamina. The crossing
-                costs {formatCharge(essenceCost)} Essence from its home structure, on the way back too.
-              </p>
+              <p className="text-xs text-gold/70">Costs {formatCharge(essenceCost)} Essence each way</p>
             </div>
           </div>
         ) : (
@@ -68,9 +63,6 @@ export const SpireTravelModal = ({
               <p className="text-sm font-semibold text-red-100">
                 {crossing.by === "army" ? "An army holds your hex on " : "A structure holds your hex on "}
                 {sideName}
-              </p>
-              <p className="text-xs text-gold/70">
-                A crossing needs that hex free. Move one hex along the spire and try again, or clear it first.
               </p>
             </div>
           </div>

@@ -3,7 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { RuinChestMoment } from "../chest/ruin-chest-moment";
-import { SiteCardView } from "./site-card-view";
+import { type SiteVerb, SiteCardView } from "./site-card-view";
+import type { SiteFight } from "./site-card-plan";
+import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -24,7 +26,7 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("reads the attack as its result will: each side before and after, what it comes to, and what the clear pays", () => {
+  it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
     const onAttack = vi.fn();
     act(() =>
       root.render(
@@ -38,7 +40,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
@@ -48,10 +49,12 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Troll']")!;
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack clears itTroll");
+    // The owner, 26 October 2026: "moving the clear rewards in the 'this attack clears it' -> This attack earns xxx".
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack earns+550+82 XP");
+    expect(card.querySelector(".ui-sheet__body header .opacity-50")).toBeNull();
     const sides = [...card.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
-    expect(sides).toEqual(["5,000 →4,820you lose 180 (3.6%)", "1,100 →0you kill 1,100 (100%)"]);
-    expect(card.textContent).toContain("When cleared");
+    expect(sides).toEqual(["5,000 →4,820", "1,100 →0"]);
+    expect(card.textContent).not.toContain("When cleared");
     expect(card.textContent).toContain("+550");
     expect(card.textContent).toContain("+82 XP");
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
@@ -61,7 +64,7 @@ describe("a guarded site's card", () => {
     expect(onAttack).toHaveBeenCalled();
   });
 
-  it("stands Details at the foot's left and Attack alone at its right, and opens the whole fight's figures", () => {
+  it("holds only Realm and Attack in its foot, Attack alone at the right, and no whole fight's figures (owner, 10-27)", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -74,7 +77,6 @@ describe("a guarded site's card", () => {
             exchanges: 3,
             troopsLost: 180,
             guardLeft: 740,
-            whole: { troopsLost: 610, guardKilled: 1_300, stamina: 90 },
           }}
           pay={{ icon: "wood", amount: 650, fits: 120 }}
           xp={90}
@@ -86,36 +88,15 @@ describe("a guarded site's card", () => {
     );
     const foot = document.querySelector("section[role=dialog] footer.ui-actions")!;
     const words = [...foot.querySelectorAll("button")].map((button) => button.textContent);
-    // The way out and Details on the left, Attack last: the shared actions rule puts the last alone on the right.
-    expect(words).toEqual(["Details", "Realm", "Attack"]);
+    // The way out on the left, Attack last: the shared actions rule puts the last alone on the right.
+    expect(words).toEqual(["Realm", "Attack"]);
     expect(foot.lastElementChild?.textContent).toBe("Attack");
-    const details = [...foot.querySelectorAll("button")][0]!;
-    expect(details.getAttribute("aria-expanded")).toBe("false");
+    expect(document.body.textContent).not.toContain("Details");
     expect(document.body.textContent).not.toContain("The whole fight");
-
-    act(() => details.click());
-    expect(details.getAttribute("aria-expanded")).toBe("true");
-    const whole = [...document.querySelectorAll("section[role=dialog] dl dt, section[role=dialog] dl dd")].map(
-      (cell) => cell.textContent,
-    );
-    expect(whole).toEqual([
-      "Attacks",
-      "3 · The guard falls",
-      "You lose",
-      "−610",
-      "You kill",
-      "1,300 / 1,300",
-      "Stamina",
-      "90",
-    ]);
-    expect(document.body.textContent).toContain("When cleared");
-    expect(document.body.textContent).not.toContain("Cleared in");
-
-    act(() => details.click());
     expect(document.querySelector("section[role=dialog] dl")).toBeNull();
   });
 
-  it("shows a loss in amber with the guard left, dims a ruin's chest, and keeps Attack, in red, saying the army will be lost", () => {
+  it("heads a loss in red with the guard left, dims a ruin's chest, and keeps Attack, in red", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -128,7 +109,6 @@ describe("a guarded site's card", () => {
             exchanges: 3,
             troopsLost: 1_200,
             guardLeft: 2_300,
-            whole: { troopsLost: 1_200, guardKilled: 1_100, stamina: 90 },
           }}
           pay={null}
           chest={{ tier: 3, lords: 128 }}
@@ -139,10 +119,11 @@ describe("a guarded site's card", () => {
       ),
     );
     const card = document.querySelector("section[aria-label='Ruin']")!;
-    expect(card.textContent).toContain("Basilisk");
-    // The site's painting and the guard's side.
+    // The site's painting and the guard's side name the Basilisk.
     expect(card.querySelectorAll('[data-icon="beast-basilisk"]')).toHaveLength(2);
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Your army is lostBasilisk · Ruin");
+    // The headline says the loss, and the chest this attack does not win stands dimmed beside it.
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("Your army is lost+128Rare");
+    expect(card.querySelector(".ui-sheet__body header .opacity-50")?.textContent).toBe("+128Rare");
     expect(card.querySelector('[data-icon="troops"]')).toBeNull();
     expect(card.querySelector('[data-tip="Knight"]')).not.toBeNull();
     expect(card.textContent).toContain("2,300");
@@ -153,10 +134,62 @@ describe("a guarded site's card", () => {
     const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
     expect(attack.disabled).toBe(false);
     expect(attack.dataset.kind).toBe("danger");
+    // The headline already says it: no line under Attack says it again.
+    expect(document.querySelector('[role="status"]')).toBeNull();
+  });
+
+  it("holds the clear's reward dimmed under a guard that holds, and warns under Attack when the whole fight loses the army", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Camp"
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
+          army={{ ...army, troops: 1_200 }}
+          guard={3_400}
+          fight={{
+            outcome: "loses",
+            exchanges: 3,
+            troopsLost: 400,
+            guardLeft: 3_000,
+          }}
+          pay={{ icon: "labor", amount: 550 }}
+          xp={82}
+          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    const header = document.querySelector(".ui-sheet__body header")!;
+    expect(header.textContent).toBe("The guard holds+550+82 XP");
+    expect(header.querySelector(".opacity-50")?.textContent).toBe("+550+82 XP");
     expect(document.querySelector('[role="status"]')?.textContent).toBe("Army will be lost");
   });
 
-  it("says what fits when the store would overflow, with Realm to make room; never blocks the attack", () => {
+  it("says only that the attack clears a site that pays nothing", () => {
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Camp"
+          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
+          army={army}
+          guard={1_100}
+          fight={{
+            outcome: "wins",
+            exchanges: 1,
+            troopsLost: 180,
+            guardLeft: 0,
+          }}
+          pay={null}
+          xp={undefined}
+          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(document.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack clears it");
+  });
+
+  it("earns what fits, marked Full, when the store would overflow, with Realm to make room; never blocks the attack", () => {
     const onRealm = vi.fn();
     act(() =>
       root.render(
@@ -170,7 +203,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550, fits: 120 }}
           xp={82}
@@ -180,7 +212,9 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector("section[aria-label='Troll']")!.textContent).toContain("+120");
+    const header = document.querySelector(".ui-sheet__body header")!;
+    expect(header.textContent).toBe("This attack earns+120Full+82 XP");
+    expect(header.querySelector('[data-tip="Storage full: the rest did not fit"]')).not.toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -203,7 +237,6 @@ describe("a guarded site's card", () => {
             exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
-            whole: { troopsLost: 180, guardKilled: 1_100, stamina: 30 },
           }}
           pay={{ icon: "labor", amount: 550 }}
           xp={82}
@@ -213,7 +246,7 @@ describe("a guarded site's card", () => {
       ),
     );
     expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, has 10 · 40m");
+    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
   });
 });
 
@@ -264,7 +297,6 @@ describe("a guarded site's card with no army chosen", () => {
                 exchanges: 2,
                 troopsLost: 456,
                 guardLeft: 492,
-                whole: { troopsLost: 912, guardKilled: 1_100, stamina: 60 },
               },
               onPick,
             },
@@ -277,7 +309,6 @@ describe("a guarded site's card with no army chosen", () => {
                 exchanges: 1,
                 troopsLost: 154,
                 guardLeft: 1_028,
-                whole: { troopsLost: 154, guardKilled: 72, stamina: 30 },
               },
               onPick: () => {},
             },
@@ -321,7 +352,6 @@ describe("Enter on a guarded site's card", () => {
         exchanges: 1,
         troopsLost: 180,
         guardLeft: fight === "wins" ? 0 : 900,
-        whole: { troopsLost: 180, guardKilled: fight === "wins" ? 1_100 : 200, stamina: 30 },
       }}
       pay={{ icon: "labor", amount: 550 }}
       xp={82}
@@ -427,7 +457,7 @@ it("says where an army comes from when the realm has none out, in the place of t
     ),
   );
   expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
-  expect(document.body.textContent).toContain("No army out: deploy one from the realm");
+  expect(document.body.textContent).toContain("No army out: deploy one");
   expect(document.body.textContent).not.toContain("Pick an army");
 });
 
@@ -448,4 +478,87 @@ it("titles a single roaming Wraith by its species", () => {
     ),
   );
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
+});
+
+describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {
+  const holds: SiteFight = { outcome: "wins", exchanges: 3, troopsLost: 180, guardLeft: 740 };
+  const clears: SiteFight = { outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 };
+  const attack: SiteVerb = { kind: "attack", stamina: 30, onAttack: () => {} };
+  /** Each state: the forecast the card holds, its step, the two sides' figures kept, the line and whether Attack runs. */
+  const STATES: {
+    state: string;
+    fight: SiteFight | undefined;
+    verb: SiteVerb;
+    kept: [string, string];
+    line: (word: string) => string | undefined;
+    attacks: boolean;
+  }[] = [
+    {
+      state: "in reach, clearing it",
+      fight: clears,
+      verb: attack,
+      kept: ["4,820", "0"],
+      line: () => undefined,
+      attacks: true,
+    },
+    {
+      state: "in reach, the guard holds",
+      fight: holds,
+      verb: attack,
+      kept: ["4,820", "740"],
+      line: () => undefined,
+      attacks: true,
+    },
+    {
+      state: "too far",
+      fight: undefined,
+      verb: { kind: "far" },
+      kept: ["—", "—"],
+      line: (word) => `Too far from the ${word}`,
+      attacks: false,
+    },
+    {
+      state: "short of stamina",
+      fight: holds,
+      verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } },
+      kept: ["4,820", "740"],
+      line: () => "Needs 30 stamina, have 10 · in 40m",
+      attacks: false,
+    },
+    {
+      state: "refused",
+      fight: { outcome: "refused" },
+      verb: { ...attack, refused: "The army is on battle cooldown" },
+      kept: ["—", "—"],
+      line: () => "The army is on battle cooldown",
+      attacks: true,
+    },
+  ];
+  const TARGETS = Object.keys(TARGET_MARKS) as AttackTargetKind[];
+
+  for (const target of TARGETS)
+    for (const { state, fight, verb, kept, line, attacks } of STATES)
+      it(`draws both sides for ${target}, ${state}, with its line and its step`, () => {
+        act(() =>
+          root.render(
+            <SiteCardView
+              site={target}
+              beast={undefined}
+              army={army}
+              guard={1_100}
+              fight={fight}
+              pay={null}
+              xp={undefined}
+              verb={verb}
+              onClose={() => {}}
+            />,
+          ),
+        );
+        const sides = [...document.querySelectorAll('section[role=dialog] [role="img"]')].map((side) =>
+          side.getAttribute("aria-label"),
+        );
+        expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
+        expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
+        expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
+      });
 });

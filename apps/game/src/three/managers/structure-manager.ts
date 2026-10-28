@@ -1,4 +1,5 @@
 import { FrontierModel, frontierModelKind } from "../structures/frontier-model";
+import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { realmModelIndex, isWonderModelPath } from "../structures/realm-design";
 import { MineKinds, structureName } from "@bibliothecadao/types";
 import { configManager, siteDisplayName, siteKindOf, type SiteKind } from "@bibliothecadao/eternum";
@@ -91,7 +92,6 @@ import {
   MANAGER_UNCOMMITTED_CHUNK,
   shouldAcceptManagerChunkRequest,
   shouldRunManagerChunkUpdate,
-  waitForVisualSettle,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
 import { buildStructurePlate, guardsToTell } from "../map-plates/map-plate-model";
@@ -700,12 +700,13 @@ export class StructureManager {
     if (!guards) return structure;
     const now = getBlockTimestamp().currentDefaultTick;
     const bySlot = new Map(guards.map(({ slot, troops }) => [slot, getGuardStaminaSnapshot(troops, now)]));
+    const perExplore = configManager.getExploreStaminaCost();
     return {
       ...structure,
       guardArmies: structure.guardArmies.map((guard) => {
         const stamina = bySlot.get(guard.slot);
         return stamina && stamina.max > 0
-          ? { ...guard, stamina: { current: stamina.current, max: stamina.max } }
+          ? { ...guard, stamina: { current: stamina.current, max: stamina.max, perExplore } }
           : guard;
       }),
     };
@@ -1145,7 +1146,7 @@ export class StructureManager {
       options,
       shouldAcceptRequest: shouldAcceptManagerChunkRequest,
       state: this.resolveChunkUpdateRuntimeState(),
-      waitForSettle: waitForVisualSettle,
+      waitForSettle: nextFrameOrTimeout,
     });
   }
 

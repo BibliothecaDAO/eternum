@@ -6,6 +6,7 @@ import {
   type SeasonPhase,
   type SeasonPhaseName,
 } from "./calendar";
+import approved from "../../../config/source/frontier/extension.json";
 
 interface PhaseRow {
   phase: SeasonPhaseName;
@@ -21,7 +22,10 @@ const toPhase = (row: PhaseRow): SeasonPhase => ({
 });
 
 export class D1CalendarStore implements CalendarStore {
-  constructor(private readonly db: D1Database) {}
+  constructor(
+    private readonly db: D1Database,
+    private readonly verifyExtension?: () => Promise<unknown>,
+  ) {}
 
   async list(): Promise<SeasonPhase[]> {
     const { results } = await this.db.prepare("SELECT * FROM season_phases ORDER BY starts_at, phase").all<PhaseRow>();
@@ -36,7 +40,19 @@ export class D1CalendarStore implements CalendarStore {
       .prepare("SELECT * FROM season_phases WHERE phase = ?")
       .bind(phase.phase)
       .first<PhaseRow>();
-    rejectChangeToStartedPhase(current, startsAt, endsAt, now);
+    const extension =
+      phase.phase === "frontier" && startsAt === approved.start * 1000 && endsAt === approved.end * 1000;
+    if (extension) {
+      if (
+        !current ||
+        current.starts_at !== startsAt ||
+        ![approved.oldEnd * 1000, endsAt].includes(current.ends_at) ||
+        !this.verifyExtension
+      )
+        throw new CalendarConflict("Frontier extension calendar differs");
+      // The private value service reads both confirmed contracts, never a caller-supplied proof.
+      await this.verifyExtension();
+    } else rejectChangeToStartedPhase(current, startsAt, endsAt, now);
     if (phase.phase === "frontier") assertFrontierSeason(startsAt, endsAt);
     if (!(endsAt > now)) throw new CalendarConflict(PHASE_END_ERROR);
     // Written only if the row is still as read, so a concurrent edit cannot slip past the started-phase rule.
@@ -54,8 +70,8 @@ export class D1CalendarStore implements CalendarStore {
 }
 
 /**
- * A running phase keeps its start. A started Frontier season also keeps its end: its game exists with a duration to
- * that end, and the owner ruled against moving a running game's end. A started Blitz window may end sooner or later.
+ * A running phase keeps its start. Frontier keeps its end unless the approved extension is confirmed on both chains.
+ * A started Blitz window may end sooner or later.
  */
 const rejectChangeToStartedPhase = (current: PhaseRow | null, startsAt: number, endsAt: number, now: number) => {
   // A phase that has not started, or has ended, is free: the next season is a new start and end on the same row.

@@ -868,9 +868,10 @@ async function inventory() {
     for (const path of sourceFiles(dir)) {
       const file = relative(root === "client" ? GAME : join(REPO, "packages/core"), path);
       if (LEFT_OUT.test(`/${file}`)) continue;
-      const found = scanSource(readFileSync(path, "utf8"), path, context);
       const own = WORDS_MODULE.includes(file);
-      for (const each of found) if (!own || each.category.startsWith("voice")) hits.push({ root, file, ...each });
+      const found = scanSource(readFileSync(path, "utf8"), path, context);
+      const kept = (each) => !own || each.category.startsWith("voice");
+      for (const each of found) if (kept(each)) hits.push({ root, file, ...each });
     }
   }
   for (const path of sourceFiles(RULES)) {

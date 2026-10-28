@@ -90,7 +90,7 @@ describe("troop supply", () => {
   });
   it("says when a full army is ready while a barracks trains a troop the realm has none of", () => {
     expect(resolveTroopAvailabilityReason({ capacityRemaining: 3000, available: 0, supply: training })).toBe(
-      "No Knight T1 yet: a full army in 2h 10m.",
+      "No Knight T1 yet: full army in 2h 10m",
     );
   });
   it("has no availability reason while a troop can be chosen", () => {

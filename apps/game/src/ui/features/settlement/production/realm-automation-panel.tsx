@@ -8,8 +8,8 @@ import {
 } from "@/hooks/store/use-automation-store";
 import { PROCESS_INTERVAL_MS } from "@bibliothecadao/eternum/automation";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
-import { aggregateConsumptionPerSecond, configManager } from "@bibliothecadao/eternum";
-import { ResourcesIds, formatFigure, formatPercent } from "@bibliothecadao/types";
+import { aggregateConsumptionPerSecond, configManager, getTroopResourceId } from "@bibliothecadao/eternum";
+import { ResourcesIds, TROOP_TIERS, TROOP_TYPES, TroopTier, formatFigure, formatPercent } from "@bibliothecadao/types";
 import {
   HudButton,
   HudEmpty,
@@ -43,14 +43,11 @@ const clampPercent = (value: number): number => {
   if (value > MAX_RESOURCE_ALLOCATION_PERCENT) return MAX_RESOURCE_ALLOCATION_PERCENT;
   return Math.round(value);
 };
-const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>([
-  ResourcesIds.KnightT2,
-  ResourcesIds.CrossbowmanT2,
-  ResourcesIds.PaladinT2,
-  ResourcesIds.KnightT3,
-  ResourcesIds.CrossbowmanT3,
-  ResourcesIds.PaladinT3,
-]);
+const ARMY_T2_T3_RESOURCES = new Set<ResourcesIds>(
+  TROOP_TYPES.flatMap((type) =>
+    TROOP_TIERS.filter((tier) => tier !== TroopTier.T1).map((tier) => getTroopResourceId(type, tier)),
+  ),
+);
 
 const formatPerCycle = (value: number): string =>
   !Number.isFinite(value) || Math.abs(value) < 0.0001 ? "0/c" : `${formatFigure(value, { signed: true })}/c`;
@@ -511,7 +508,6 @@ export const RealmAutomationPanel = ({
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-hud-muted">Move a slider or apply a preset, then save.</p>
         {isOverallocated && (
           <HudNotice tone="bad" line={`Resolve over-allocation for ${overallocatedLabels.join(", ")} before saving.`} />
         )}
@@ -532,7 +528,7 @@ export const RealmAutomationPanel = ({
             </HudButton>
           ))}
         </div>
-        {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes pending. Save to apply automation updates." />}
+        {hasLocalChanges && <HudNotice tone="warn" line="Unsaved changes" />}
 
         {/* The usage and each resource's allocation are HUD panels: cards, as the Transfer window draws its columns. */}
         <HudPanel label="Resource usage" title="Resource usage" collapsible={false}>

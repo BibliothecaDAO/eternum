@@ -69,30 +69,21 @@
 .mp-plate__meter {
   flex: 1;
   min-width: 36px;
-  height: 4px;
-  border-radius: var(--hud-radius-round);
-  background: var(--hud-well);
-}
-.mp-plate__meter > i {
-  display: block;
-  height: 100%;
-  border-radius: var(--hud-radius-round);
-  background: var(--mp-side);
 }
 
-/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. A stamina bar is in its
-   side's colour, filled to its level. */
+/* An army at rest: its stamina as a tight bar under its troops, the plate's width, no number. */
 .mp-plate__stamina {
   display: block;
-  height: 3px;
   margin: 1px 0 2px;
-  border-radius: var(--hud-radius-round);
+}
+.mp-plate__stamina .ui-meter {
+  height: 3px;
+}
+/* Every stamina bar on the map (HudStamina's segments) is in its side's colour, filled to its level, on the well. */
+.mp .ui-meter {
   background: var(--hud-well);
 }
-.mp-plate__stamina > i {
-  display: block;
-  height: 100%;
-  border-radius: var(--hud-radius-round);
+.mp .ui-meter[data-tone] > i {
   background: var(--mp-side);
 }
 

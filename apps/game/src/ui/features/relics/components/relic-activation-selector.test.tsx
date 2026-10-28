@@ -166,7 +166,7 @@ it("opens the held relic and activates it with native inline troops, without tak
 it("warns before a stamina relic is spent on an army whose stamina is full", async () => {
   await openInventory(game({ Inline: { amount: 120n, settled_at: 350, remainder: 0 } }));
   expect(document.body.textContent).toContain("Stamina is full");
-  expect(document.body.textContent).toContain("it helps only if the army spends stamina while it works");
+  expect(document.body.textContent).toContain("Stamina is full");
 });
 
 it("keeps missing army facts unavailable, reports them in development, and resumes when they arrive", async () => {

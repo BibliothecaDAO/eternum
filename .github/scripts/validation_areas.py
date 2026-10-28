@@ -142,7 +142,9 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
-        "deploy/release/**",
+        # The release files this area reads: the release id (deploy/first) and the shard settings (deploy/athanor).
+        "deploy/release/native-release.ts",
+        "deploy/release/*.json",
         "deploy/shard/**",
         "packages/**",
         "config/**",

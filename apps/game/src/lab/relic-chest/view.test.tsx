@@ -85,14 +85,14 @@ it("focuses and opens a funded Frontier chest, then records zero after rollover 
   vi.spyOn(performance, "now").mockReturnValue(later);
   await act(async () => useChainTimeStore.getState().tick());
   expect(host.textContent).toContain("17 LORDS");
-  expect(host.textContent).not.toContain("Reservation expired");
+  expect(host.textContent).not.toContain("Expired");
   await click("Open");
   expect(renderer.open).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "lords", amount: 17 }));
   expect(host.textContent).toContain("17 LORDS paid to the army's realm");
   await click("Reset chest");
   await click("Advance to day rollover");
   await click("Focus chest");
-  expect(host.textContent).toContain("Reservation expired");
+  expect(host.textContent).toContain("Expired");
   await click("Open");
   expect(renderer.open).toHaveBeenLastCalledWith(expect.objectContaining({ kind: "lords", amount: 0 }));
   expect(host.textContent).toContain("No LORDS paid");

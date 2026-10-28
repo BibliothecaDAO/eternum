@@ -1,6 +1,5 @@
 import { describe, expect, it } from "vitest";
 import {
-  resolveNearestIntersection,
   resolveMovementProgressUpdate,
   resolveRotationUpdate,
   shouldSwitchModelForPosition,
@@ -110,15 +109,5 @@ describe("resolveJourneyProgressUpdate", () => {
     });
     expect(result.nextProgress).toBe(1);
     expect(result.isComplete).toBe(true);
-  });
-});
-
-describe("resolveNearestIntersection", () => {
-  it("keeps only the nearest hit instead of sorting the full result set", () => {
-    const nearest = resolveNearestIntersection(undefined, { distance: 8, mesh: "a", instanceId: 1 });
-    const closer = resolveNearestIntersection(nearest, { distance: 3, mesh: "b", instanceId: 2 });
-    const farther = resolveNearestIntersection(closer, { distance: 10, mesh: "c", instanceId: 3 });
-
-    expect(farther).toEqual({ distance: 3, mesh: "b", instanceId: 2 });
   });
 });

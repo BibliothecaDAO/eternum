@@ -573,13 +573,12 @@ const NoticeSection = () => (
           tone="bad"
           icon="network-off"
           line="You are offline."
-          why="The last values stay on screen."
           actions={<AppButton kind="secondary">Try again</AppButton>}
         />
         <AppNotice tone="warn" line="Link a payout wallet to join a paid Blitz." />
         <AppNotice
           icon="download"
-          line="Realms on your home screen"
+          label="Realms on your home screen"
           actions={
             <>
               <AppButton kind="quiet">Later</AppButton>

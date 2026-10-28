@@ -62,11 +62,12 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
 - **Cancelling.** SIGINT or SIGTERM stops a client build in progress at once, otherwise cancels at the next checkpoint,
   and unwinds through the same path as a normal end: the current step is kept with what it attempted and the error, the
   run's transcript and `summary.json` are written, and everything is released.
-- **The page's size.** 1920 by 1080 unless `--viewport <width>x<height>` asks for another (`390x844` plays a phone). On
-  the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout check does
-  (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, none with content past its
-  edge, every control reachable where it is in view (a row scrolled out of its panel is not seen, so not tested), at
-  most seven parts in each region, and on a desktop the minimap.
+- **The page's size.** 1920 by 1080 unless `--viewport <width>x<height>` asks for another (`390x844` plays a phone, with
+  a phone's touch: under 1024 wide `(pointer: coarse)` matches, as `capture:hud-lab` and every `runProof` proof shoot
+  their phone sizes). On the map, the `hud-layout` step reads every part the HUD draws and judges it as the lab's layout
+  check does (`scripts/client-playtest/hud-layout.mjs`): each part whole on the page, none over another, none with
+  content past its edge, every control reachable where it is in view (a row scrolled out of its panel is not seen, so
+  not tested), at most seven parts in each region, and on a desktop the minimap.
 - **As a spectator** (default), from a fresh browser profile (cold cache): enter on the map (a Frontier session opens
   there, the realm one press away), the HUD's layout, map idle, pan (WASD), zoom out and in, the season (its board
   drawn, then closed: from a desktop's Season place, in the rail; from a phone's Menu), the Feed's first story that is a
@@ -76,10 +77,10 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
-  open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
-  desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders use
-  the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
-  map at once, so its steps are blocked there; play them with `--viewport 390x844`.
+  open and close production, the next order's life (below), explore twice (tap a tile beside the army, then tap it
+  again; on a desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map.
+  Orders use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes
+  from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -158,28 +159,34 @@ army, and the army two regions below, shown in Ethereal II; play it at `--viewpo
 `--steps lab-merge-keeps-picked`, `--steps lab-merge-keeps-tapped` and `--steps lab-after-battle` (the same game with
 two of the realm's armies merged through **Transfer troops**, under either survivor rule, or with the owner's army after
 its fight standing on the camp it cleared: each army's tile, found under its token, hovered with nothing selected must
-open that army's plate, and an emptied tile none), `--steps lab-day-turn`, `--steps lab-day-later`,
-`--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day 2 ending,
-`/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded history of
-that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's own day 2
-(slow: history answers only after the moment went on, and the summary opens then; short: a page of stories late in day 2
-leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto the realm's
-day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the player
-already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the day-3
-site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2 ends the tab's
-window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its socket open, then
-brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more than half black
-past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps, the silent stream
-must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a spectator's realm view as
-first met: the map held still, the first press of Realm, the realm held still, back to the map, Realm again, and the
-realm's address loaded again; each step reports its downloads by kind with their bytes on the wire, the GPU work its
-frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where the drawn scene changed
-and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports the same as `bootWindow`),
-`--steps lab-realm-load` (the same on the lab's built Kingdom, `/lab/game?scenario=painted-buildings`, reopened on its
-realm with `&scene=hex`), `--steps blitz-realm-load` (the same on the newest live Blitz game), `--out <root>` (default
-`.context/playtest`), `--trace` (a Chrome trace of each run's boot, from before the game page opens to the world being
-interactive), `--compare <summary.json>` (fails when boot regresses), `--headed`. Paths are taken from where the command
-is run.
+open that army's plate, and an emptied tile none), `--steps lab-hover-zoom` (the army after its fight, with nothing
+selected and the dev overlays on, at each wheel step from the closest zoom to the farthest: its token must stand over
+its own model, and the pointer on its model at its feet, middle and top must open its plate), `--steps lab-high-ground`
+(`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
+picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
+`--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
+2 ending, `/lab/game?scenario=day-turn` in the session or `scenario=day-later` before it opened, over prod's recorded
+history of that day, the map opened where the realm stood on day 2: the summary's totals must be the recorded player's
+own day 2 (slow: history answers only after the moment went on, and the summary opens then; short: a page of stories
+late in day 2 leaves its start unread, and the card shows dashes and says why), and Continue must bring the camera onto
+the realm's day-3 site), `--steps lab-day-later-quiet` and `--steps lab-day-later-played-on` (day 2 not played, or the
+player already played on in day 3 on another device: no summary, and the day's end still brings the camera onto the
+day-3 site), `--steps lab-season-opens` (a player in the season 30 s before its first day, their realm founded but on no
+site yet: the map must draw with no error, then day 1's turn must play, with no summary, and leave the camera on the
+realm's first site), `--steps lab-day-turn-asleep` (the owner's phone, at `--viewport 390x844`: a minute before day 2
+ends the tab's window is minimized and the page frozen, its WebGL context lost and Herald's stream silent with its
+socket open, then brought back past the end; on WebGL the page must boot again and the map draw, its middle band no more
+than half black past what it was, the loss's two error lines its outcome; on WebGPU, whose device this machine keeps,
+the silent stream must be dropped and resumed; then the summary and Continue as above), `--steps realm-load` (a
+spectator's realm view as first met: the map held still, the first press of Realm, the realm held still, back to the
+map, Realm again, and the realm's address loaded again; each step reports its downloads by kind with their bytes on the
+wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where
+the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports
+the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
+`/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps blitz-realm-load` (the same
+on the newest live Blitz game), `--out <root>` (default `.context/playtest`), `--trace` (a Chrome trace of each run's
+boot, from before the game page opens to the world being interactive), `--compare <summary.json>` (fails when boot
+regresses), `--headed`. Paths are taken from where the command is run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
