@@ -248,7 +248,7 @@ it("keeps missing army facts unavailable, reports them in development, and resum
         key: "0x9",
         value: {
           ...state.store.require("ArmySlot", { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 }),
-          stamina: { amount: "120", settled_at: "350", remainder: 0 },
+          stamina: { amount: "140", settled_at: "350", remainder: 0 },
         },
       },
     ] as never),

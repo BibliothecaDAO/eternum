@@ -89,7 +89,7 @@ export const paintedBuildingsScenario = (): LabScenario => {
       value: {
         game_id: 1,
         structure_id: 7,
-        learned: String((2n << 46n) | 2n | (2n << 7n) | (2n << 14n) | (2n << 21n)),
+        learned: String((2n << 46n) | 3n | (3n << 7n) | (3n << 14n) | (3n << 21n)),
       },
     },
     ...types.map((category, index) => ({

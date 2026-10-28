@@ -207,7 +207,7 @@ it.each(["", "712"])("lets a refused Realm claimant found with a new choice (%s)
     await found();
     expect(settlement.calls).toEqual([]);
     expect(input().disabled).toBe(false);
-    expect(host.textContent).toContain("Choose another Realm or leave the number blank to found a free home.");
+    expect(host.textContent).toContain("Choose another Realm or leave blank.");
     await choose(alternative);
     await found();
     expect(sent).toEqual(alternative === "" ? [711] : [711, 712]);
