@@ -105,7 +105,7 @@ import {
 } from "./army-slot-auditor";
 import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
 import { presentResult } from "@/three/presented-results";
-import { orderedRouteFor, resolveMovementPath } from "./army-move-path";
+import { isRoutable, orderedRouteFor, resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
@@ -1861,7 +1861,10 @@ export class ArmyManager {
 
     const orderedRoute = this.takeOrderedRoute(entityId, armyData.hexCoords, hexCoords);
     const shouldUseWorkerPath =
-      !orderedRoute && maxHex !== undefined && shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
+      !orderedRoute &&
+      maxHex !== undefined &&
+      isRoutable(armyData.hexCoords, hexCoords, maxHex) &&
+      shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
     if (!shouldUseWorkerPath) {
       incrementWorldmapRenderCounter("workerFindPathBypasses");
     }

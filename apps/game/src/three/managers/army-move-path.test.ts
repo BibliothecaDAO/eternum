@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderedRouteFor, resolveMovementPath } from "./army-move-path";
+import { isRoutable, orderedRouteFor, resolveMovementPath } from "./army-move-path";
 
 describe("resolveMovementPath", () => {
   const start = { id: "start" };
@@ -39,5 +39,19 @@ describe("orderedRouteFor", () => {
   it("has no route for an army no order was given", () => {
     expect(orderedRouteFor(undefined, hex(1, 1), hex(3, 2))).toBeNull();
     expect(orderedRouteFor([hex(1, 1)], hex(1, 1), hex(1, 1))).toBeNull();
+  });
+});
+
+describe("isRoutable", () => {
+  const hex = (x: number, y: number) => ({ getNormalized: () => ({ x, y }) });
+
+  it("asks for a route within the army's reach", () => {
+    expect(isRoutable(hex(10, 10), hex(13, 10), 5)).toBe(true);
+    expect(isRoutable(hex(10, 10), hex(15, 10), 5)).toBe(true);
+  });
+
+  it("asks for none past it, as entering a depth a region down is", () => {
+    expect(isRoutable(hex(10, 10), hex(16, 10), 5)).toBe(false);
+    expect(isRoutable(hex(10, 10), hex(10, 210), 40)).toBe(false);
   });
 });
