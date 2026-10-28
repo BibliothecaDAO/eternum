@@ -6,7 +6,7 @@ import { useLocation, useParams } from "react-router-dom";
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppNotice, AppPanel, AppTicket } from "@/ui/design-system/kit/app-elements";
-import { JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { DEVCON as DEVCON_NAME, JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
@@ -151,14 +151,22 @@ const DailyClaim = ({ golden }: { golden: boolean }) => (
 );
 
 /**
- * Every step of the landing stands on Frontier's mist, alone, with no places. Its one verb sits under the thumb on a
+ * Every step of the landing stands on Frontier's mist, alone, with no places; Back leads to Play. Its one verb sits under the thumb on a
  * phone (the foot row) and under what it acts on on a desktop, as the Blitz lobby places its own.
  */
 const DevconFrame = ({ notice, foot, children }: { notice?: ReactNode; foot: ReactNode; children: ReactNode }) => {
   const phone = useLayout() === "phone";
   const verb = <div className="flex justify-center">{foot}</div>;
   return (
-    <PageFrame painting="frontier-mist" stage tabs={false} notice={notice} foot={phone ? verb : undefined}>
+    <PageFrame
+      back="/"
+      title={DEVCON_NAME}
+      painting="frontier-mist"
+      stage
+      tabs={false}
+      notice={notice}
+      foot={phone ? verb : undefined}
+    >
       <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
         {children}
         {!phone && verb}

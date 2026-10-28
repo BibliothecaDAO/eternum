@@ -123,6 +123,6 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
 });
 
-it("promises the Labor the Devcon preset grants each day", () => {
-  expect(frontierDevconPreset.labor).toEqual({ amount: DEVCON.laborPerDay });
+it("promises the Labor, and a golden ticket's Essence, that the Devcon preset grants each day", () => {
+  expect(frontierDevconPreset.labor).toEqual({ amount: DEVCON.laborPerDay, goldenEssence: DEVCON.goldenEssencePerDay });
 });
