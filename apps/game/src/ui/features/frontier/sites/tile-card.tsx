@@ -1,4 +1,4 @@
-import { type IconMeaning } from "@/ui/design-system/icon";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { playUnitCommandSound } from "@/audio/unit-command-audio";
 import { useGame } from "@/hooks/context/game-context";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -26,7 +26,7 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { fightVerdict, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { fightVerdict, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
@@ -54,10 +54,6 @@ const SITE_MODELS = [
 ] as const;
 
 /** The resources a clear pays home, by the icon the card draws them with. */
-const PAY_ICONS: Partial<Record<ResourcesIds, IconMeaning>> = {
-  [ResourcesIds.Labor]: "labor",
-  [ResourcesIds.Essence]: "essence",
-};
 
 /** What the tile card attacks: a standing site through its guard, or another player's army. */
 type AttackTarget =
@@ -289,8 +285,9 @@ const useSiteChoices = (selected: AttackTarget, wanted: boolean): SiteChoice[] =
 
 /** What a camp or rift pays home and what of it fits; a ruin pays its chest, beasts only XP. */
 const sitePay = (plan: SiteCardPlan) => {
-  const icon = plan.payout && PAY_ICONS[plan.payout.resourceId];
-  return plan.payout && icon ? { icon, amount: plan.payout.amount, fits: plan.payout.fits } : null;
+  return plan.payout
+    ? { icon: resourceMeaning(plan.payout.resourceId), amount: plan.payout.amount, fits: plan.payout.fits }
+    : null;
 };
 
 /**

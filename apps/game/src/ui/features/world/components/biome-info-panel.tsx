@@ -1,4 +1,3 @@
-import { ResourcesIds } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useEffect, useMemo, useState } from "react";
 

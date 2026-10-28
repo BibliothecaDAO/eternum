@@ -55,7 +55,7 @@ import { useEffect, useMemo, useState } from "react";
 import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
-import { FRONTIER_STORES, madeStore } from "../stores";
+import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
 import { type BuildOption, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
@@ -247,15 +247,9 @@ export const BuildSheet = ({
   );
 };
 
-const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
-  [ResourcesIds.Labor]: "labor",
-  [ResourcesIds.Wheat]: "wheat",
-  [ResourcesIds.Essence]: "essence",
-};
-
-/** A price's resource as the kit draws it; a building priced in anything else is loud. */
+/** A price's resource as the kit draws it, the realm store that holds it; a building priced in anything else is loud. */
 const priceKind = (resource: number): PriceKind => {
-  const kind = PRICE_KINDS[resource];
+  const kind = STORE_KINDS.find((store) => FRONTIER_STORES[store].resource === resource);
   if (!kind) throw new Error(`A Frontier building is priced in resource ${resource}`);
   return kind;
 };

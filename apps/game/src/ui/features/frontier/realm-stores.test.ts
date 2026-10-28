@@ -1,5 +1,5 @@
 import { readExpeditionRules, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { frontierDay } from "./deploy/deploy-fixture";

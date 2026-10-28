@@ -8,11 +8,12 @@ export type TroopStaminaRules = NativeRows["SliceRules"]["troop_stamina_config"]
 
 /** A troop's starting and maximum stamina under one game's rules. */
 export const troopStaminaLimits = (rules: TroopStaminaRules, troopType: TroopType, troopTier: TroopTier) => {
-  const maximum = {
+  const maxima: Record<TroopType, TroopStaminaRules["stamina_knight_max"]> = {
     [TroopType.Knight]: rules.stamina_knight_max,
     [TroopType.Crossbowman]: rules.stamina_crossbowman_max,
     [TroopType.Paladin]: rules.stamina_paladin_max,
-  }[troopType];
+  };
+  const maximum = maxima[troopType];
   const tier = troopTierIndex(troopTier);
   if (maximum === undefined) throw new Error("Unknown troop category");
   return { staminaInitial: Number(rules.stamina_initial), staminaMax: Number(maximum) + tier * 20 };
