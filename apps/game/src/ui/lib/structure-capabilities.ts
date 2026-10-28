@@ -4,8 +4,8 @@ import {
   type StructureCategoryLike,
 } from "@/lib/structure-type-utils";
 import type { GameModeId } from "@/config/game-modes";
-import { ID, StructureType } from "@bibliothecadao/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { ID, type ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { configManager, isMilitaryResource } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 type SlotValue = bigint | number | null | undefined;
@@ -82,6 +82,10 @@ export const categoryCan = (category: StructureCategoryLike, capability: keyof C
   const row = known === null ? undefined : (CATEGORY_CAPABILITIES[known] as CategoryCapabilities | undefined);
   return row?.[capability] === true;
 };
+
+/** A village pools and trades no troops (economy.cairo's assert_liquidity_resource): every market panel asks this. */
+export const refusesTroopTrade = (category: StructureCategoryLike, resource: ResourcesIds): boolean =>
+  normalizeStructureCategory(category) === StructureType.Village && isMilitaryResource(resource);
 
 /** The categories that can do it, for a list filtered by kind. */
 export const categoriesThatCan = (capability: keyof CategoryCapabilities): StructureType[] =>

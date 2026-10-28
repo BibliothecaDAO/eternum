@@ -1,8 +1,9 @@
+import { refusesTroopTrade } from "@/ui/lib/structure-capabilities";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useUISound } from "@/audio";
 import { useConfirmsLoss } from "@/hooks/helpers/use-confirm-for";
 import { HudButton, HudConfirm, HudIconButton, HudNotice, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { priceEach } from "@/ui/design-system/kit/words";
+import { priceEach, VILLAGE_TROOP_TRADE_REFUSED } from "@/ui/design-system/kit/words";
 import { PopoverPanel } from "@/ui/design-system/molecules/popover";
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { ResourceBar } from "@/ui/features/economy/banking/resource-bar";
@@ -15,7 +16,6 @@ import {
   divideByPrecision,
   getBalance,
   getClosestBank,
-  isMilitaryResource,
   MarketManager,
   multiplyByPrecision,
 } from "@bibliothecadao/eternum";
@@ -28,7 +28,6 @@ import {
   Resources,
   resources,
   ResourcesIds,
-  StructureType,
   formatCharge,
   LORDS,
   resourceName,
@@ -220,9 +219,10 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
   };
 
   const closestBank = getClosestBank(entityId, store);
-  const isVillageAndMilitaryResource =
-    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category ===
-      StructureType.Village && isMilitaryResource(resourceId);
+  const isVillageAndMilitaryResource = refusesTroopTrade(
+    store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: entityId })?.base.category,
+    resourceId,
+  );
   const swapLabel = `Swap ${isBuyResource ? LORDS : chosenResourceName} for ${isBuyResource ? chosenResourceName : LORDS}`;
   // The swap acts at once; in Frontier it asks first, with what it takes and gives.
   const pressSwap = () => (confirmsLoss ? setOpenConfirmation(true) : onSwap());
@@ -286,7 +286,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
           isAmm={true}
         />
       )}
-      {isVillageAndMilitaryResource && <HudNotice tone="bad" line="Villages cannot trade military resources." />}
+      {isVillageAndMilitaryResource && <HudNotice tone="bad" line={VILLAGE_TROOP_TRADE_REFUSED} />}
       {canSwap && !canCarry && (
         <HudNotice
           tone="bad"

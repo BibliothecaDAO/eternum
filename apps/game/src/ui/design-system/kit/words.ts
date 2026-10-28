@@ -347,6 +347,8 @@ export const FIGHT_WORDS = {
   holds: "The guard holds",
   attacks: "Attacks",
 } as const;
+/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
+export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 

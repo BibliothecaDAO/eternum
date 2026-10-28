@@ -1,9 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import {
   canTransferMilitaryInventoryBetweenStructures,
   categoriesThatCan,
   categoryCan,
+  refusesTroopTrade,
   canTransferMilitaryInventoryFromStructure,
   isVillageLikeStructureCategory,
   resolveStructureUiCapabilities,
@@ -173,5 +174,12 @@ describe("Eternum military transfer rules", () => {
     expect(categoryCan(BigInt(StructureType.Village), "craftsRelics")).toBe(true);
     expect(categoryCan(undefined, "builds")).toBe(false);
     expect(categoryCan(99, "builds")).toBe(false);
+  });
+
+  it("refuses a village's trade in troops, and nothing else, as the contract's liquidity rule does", () => {
+    expect(refusesTroopTrade(StructureType.Village, ResourcesIds.KnightT2)).toBe(true);
+    expect(refusesTroopTrade(StructureType.Village, ResourcesIds.Wood)).toBe(false);
+    expect(refusesTroopTrade(StructureType.Realm, ResourcesIds.KnightT2)).toBe(false);
+    expect(refusesTroopTrade(StructureType.Camp, ResourcesIds.Paladin)).toBe(false);
   });
 });
