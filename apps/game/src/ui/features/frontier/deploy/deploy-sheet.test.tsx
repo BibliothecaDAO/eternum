@@ -15,8 +15,10 @@ vi.mock("../frontier-home", async (original) => ({
   ...(await original<typeof import("../frontier-home")>()),
   useGoToFrontierPlace: () => (expedition: boolean) => place.goTo.push(expedition),
 }));
+// The production clock the sheet reads; a test moves it to watch a store fill.
+const clock = vi.hoisted(() => ({ tick: 3 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
-  useCurrentDefaultTick: () => 3,
+  useCurrentDefaultTick: () => clock.tick,
   useCurrentArmiesTick: () => 3,
   useNowSeconds: () => 350,
 }));
@@ -35,6 +37,7 @@ import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  clock.tick = 3;
   place.map = true;
   place.goTo.length = 0;
   useUIStore.getState().setPendingMilitaryAction(null);
@@ -295,10 +298,10 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("with no troops at home while the Barracks make them, says when the next is home and offers no Build", () => {
+  it("with no troops at home while the Barracks make them, counts down to the next and offers Deploy once it is in", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
-    // 360 knights an hour: the next is home in 10 seconds.
+    // Barracks training 360 knights an hour without end (the unlimited-output sentinel), from none at tick 3.
     store.applyFacts([
       noTroops,
       {
@@ -310,15 +313,27 @@ describe("the Deploy sheet", () => {
           resource_type: 26,
           building_count: 1,
           production_rate: String((360n * BigInt(RESOURCE_PRECISION)) / 3_600n),
-          output_amount_left: "0",
+          output_amount_left: String((1n << 128n) - 1n),
           last_settled_at: 3,
         },
       },
     ] as never);
-    const { host, root } = render(store, row);
-    expect(deployButton(host)).toBeUndefined();
-    expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home · in 10s");
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
+    const { host, root, draw } = render(store, row);
+    const notice = () => host.querySelector(".ui-notice")?.textContent ?? null;
+    const build = () => [...host.querySelectorAll("button")].some((button) => button.textContent === "Build");
+    expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 10s", false, undefined]);
+
+    // Half a knight made: the wait is what is left of it.
+    clock.tick = 8;
+    draw();
+    expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 5s", false, undefined]);
+
+    // The knight is in, as promised: the notice goes and Deploy is offered.
+    clock.tick = 13;
+    draw();
+    expect(notice()).toBeNull();
+    expect(build()).toBe(false);
+    expect(deployButton(host)).toBeDefined();
     act(() => root.unmount());
     host.remove();
   });

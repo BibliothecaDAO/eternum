@@ -53,7 +53,7 @@ export const DeploySheet = ({
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
   const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
-  const troopsPerHour = useRealmStores(realm, rules)?.troops.perHour;
+  const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
   const deploy = async () => {
@@ -78,7 +78,7 @@ export const DeploySheet = ({
       amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
       onCount={setCount}
       start={plan?.next ?? undefined}
-      troopsWait={troopsPerHour ? secondsUntilHeld(0, 1, troopsPerHour) : undefined}
+      troopsWait={nextTroopIn}
       wheatCost={preview?.wheatCost}
       tile={plan?.next && center ? (direction === null ? "none" : "open") : undefined}
       canDeploy={Boolean(plan?.troops && preview && direction !== null && plan.next)}
