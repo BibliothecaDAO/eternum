@@ -297,9 +297,10 @@ describe("Frontier confirmed season history", () => {
           metadata: { deepest_depth: 2, order: 5 },
         },
       };
-      const read = (model: string) => [{ key: "1", value: { game_id: "1", ...values[model] } }];
+      const read = (model: string) => (values[model] ? [{ key: "1", value: { game_id: "1", ...values[model] } }] : []);
       const board = buildFrontierLeaderboard(read, "1", history);
       expect(board.entries[0]).toMatchObject({
+        campaign: null,
         chests_earned: 6,
         sites_cleared: { total: 5, camps: 1, ruins: 4 },
         rewards: { lords: "8050", labor: "500000000000", essence: "0" },
