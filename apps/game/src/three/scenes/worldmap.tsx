@@ -26,6 +26,7 @@ import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import { whenModelPreparationSettles } from "@/three/model-preparation";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
+import type { RendererOverlayPass } from "@/three/renderer-backend";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -293,6 +294,8 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
+import { announcedRewardChestBeats, onRewardChestRequest } from "./worldmap-reward-chest-request";
+import { chestRarityGlow } from "../rewards/chest-rarity-glow";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
 import {
@@ -929,6 +932,7 @@ export default class WorldmapScene extends WarpTravel {
     this.minimapCameraMoveThrottled?.();
   };
   private stopChestOpenRequests?: () => void;
+  private stopRewardChestRequests?: () => void;
   private armySelectRequestHandler = () => {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
@@ -1909,6 +1913,10 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
+    });
+    this.stopRewardChestRequests = onRewardChestRequest((request) => {
+      if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+      void this.chestManager.presentAtScreenCentre(announcedRewardChestBeats(request), chestRarityGlow(request.rarity));
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);
@@ -4672,6 +4680,11 @@ export default class WorldmapScene extends WarpTravel {
     this.resetZoomHardeningRuntimeState();
   }
 
+  /** A reward's chest staged over the map, drawn after it in passes of its own (RewardStage). */
+  public override getRewardStagePasses(): RendererOverlayPass[] {
+    return this.chestManager.getRewardStagePasses();
+  }
+
   onSwitchOff(nextSceneName?: SceneName) {
     this.logInteractionDebug("switch_off_invoked", {
       nextSceneName,
@@ -4680,6 +4693,8 @@ export default class WorldmapScene extends WarpTravel {
     });
     this.applyWorldmapSceneExitProjection(nextSceneName);
     this.mapPlates.setVisible(false);
+    // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
+    this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
@@ -8598,6 +8613,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests?.();
+    this.stopRewardChestRequests?.();
     this.clearCache();
 
     this.hoverLabelManager.dispose();

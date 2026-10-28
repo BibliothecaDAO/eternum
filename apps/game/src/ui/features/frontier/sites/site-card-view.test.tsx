@@ -2,7 +2,6 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { RuinChestMoment } from "../chest/ruin-chest-moment";
 import { type SiteVerb, SiteCardView } from "./site-card-view";
 import type { SiteFight } from "./site-card-plan";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
@@ -396,18 +395,6 @@ describe("a guarded site's card for an army out of reach", () => {
     );
     expect(onMove).toHaveBeenCalled();
     expect(document.querySelector('[role="status"]')?.textContent).toBe("Too far from the Rift");
-  });
-});
-
-describe("a cleared ruin's chest", () => {
-  it("opens a ruin's chest with its exact LORDS and tier, and goes on with a tap", () => {
-    const onClose = vi.fn();
-    act(() => root.render(<RuinChestMoment tier={5} lords={640} xp={145} troopsLost={1_250} onClose={onClose} />));
-    const moment = host.querySelector("button[aria-label='Ruin']")!;
-    expect(moment.querySelector('[aria-label="640 LORDS"]')).not.toBeNull();
-    expect(moment.querySelector(".ui-rarity")?.textContent).toBe("Legendary");
-    act(() => (moment as HTMLButtonElement).click());
-    expect(onClose).toHaveBeenCalled();
   });
 });
 

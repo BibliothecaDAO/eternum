@@ -20,7 +20,10 @@ import {
 } from "./reward-summoning-effects";
 
 const smooth = (start: number, end: number, time: number) => MathUtils.smoothstep(time, start, end);
+/** How long a chest takes to arrive, its summon, in seconds. */
 const SUMMONING_DURATION = 1;
+/** How long an opened chest stays before it is absorbed and gone, in seconds. */
+const ABSORBED_AFTER = 2.7;
 
 /** The entire reward tile erupts, summons its chest, then returns to the biome after opening. */
 export class RewardSummoning {
@@ -197,7 +200,7 @@ export class RewardSummoning {
   }
 
   get isAbsorbed(): boolean {
-    return this.openedAt !== null && this.elapsed - this.openedAt >= 2.7;
+    return this.openedAt !== null && this.elapsed - this.openedAt >= ABSORBED_AFTER;
   }
 
   update(delta: number, animationTime = this.elapsed + delta): void {
@@ -313,7 +316,7 @@ export class RewardSummoning {
     const rise = smooth(0, SUMMONING_DURATION * 0.25, this.elapsed);
     const sink = smooth(1.85, 2.65, departure);
     const quake = Math.sin(this.elapsed * 65) * (1 - rise) * 0.018;
-    this.object.visible = departure < 2.7;
+    this.object.visible = departure < ABSORBED_AFTER;
     this.object.position.copy(this.ground);
     this.object.position.y += -0.38 * (1 - rise) - sink * 1.45;
     this.object.position.x += quake;

@@ -1,5 +1,5 @@
 import { RewardLabChestPresentation, type ChestPalette } from "./reward-lab-presentation";
-import { ChestRewardReveal } from "../rewards/chest-reward-reveal";
+import { ChestRewardReveal, chestRewardPrizes } from "../rewards/chest-reward-reveal";
 import { RiftPresentation } from "../rewards/rift-presentation";
 import { resolveRewardNightAmount } from "../rewards/reward-lighting";
 import { CSS2DRenderer } from "three/addons/renderers/CSS2DRenderer.js";
@@ -222,7 +222,7 @@ class RewardReviewScene implements RewardLab {
       actor.summoning.open();
       actor.reward?.dispose();
       // Preview rewards only; live openings use the three IDs from the game event.
-      actor.reward = new ChestRewardReveal({ kind: "relics", relics: [41, 43, 39] });
+      actor.reward = new ChestRewardReveal(chestRewardPrizes({ kind: "relics", relics: [41, 43, 39] }));
       actor.object.add(actor.reward.label);
     }
     this.needsRender = true;

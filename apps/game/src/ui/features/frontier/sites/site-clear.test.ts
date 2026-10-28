@@ -24,6 +24,7 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { ClearedRuinChest } from "../chest/cleared-ruin-chest";
+import { onRewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
 import { campBeside, SITE } from "./site-fixture";
 import { closeRuinChest, playSiteClear, useRuinChest } from "./site-clear-moment";
 import { payoutSprites, type SiteClear } from "./site-outcome";
@@ -49,7 +50,7 @@ describe("a cleared site", () => {
 
 describe("the site-cleared moment", () => {
   it.each([5, 0])(
-    "carries a ruin receipt paying %s LORDS through the listener, flight and mounted result",
+    "carries a ruin receipt paying %s LORDS through the listener, flight and a chest that goes by itself",
     (amount) => {
       const { store, site } = campBeside("Ruin");
       game.setup = { store } as GameClientSetup;
@@ -104,7 +105,7 @@ describe("the site-cleared moment", () => {
           }),
         );
         expect(burst).not.toHaveBeenCalled();
-        expect(host.querySelector('[aria-label="Ruin"]')).toBeNull();
+        expect(host.querySelector('[role="status"]')).toBeNull();
         act(() =>
           store.applyEvent({
             model: "BattleEvent",
@@ -121,14 +122,29 @@ describe("the site-cleared moment", () => {
         );
         expect(burst).toHaveBeenCalledTimes(1);
         expect(flights).toEqual([expect.objectContaining({ announce: amount, count: 6, delayMs: 300 })]);
+        const requested: unknown[] = [];
+        const stopRequests = onRewardChestRequest((request) => requested.push(request));
         act(() => vi.advanceTimersByTime(300));
-        const result = host.querySelector<HTMLButtonElement>('[aria-label="Ruin"]');
-        expect(result).not.toBeNull();
-        expect(result!.querySelector(`[aria-label="${amount} LORDS"]`)).not.toBeNull();
-        expect(result!.textContent).toContain("−90");
+        stopRequests();
         expect(plays).toEqual(["combat.victory", "site.clear"]);
-        act(() => result!.click());
-        expect(host.querySelector('[aria-label="Ruin"]')).toBeNull();
+        // The world map stages the chest at the screen's centre in its tier's glow, giving what the clear paid; the
+        // site fixture's ruin chest is the contract's tier 3, Epic, and the clear cost 90 troops.
+        expect(requested).toEqual([
+          {
+            rarity: 4,
+            // The LORDS are the moment's hero, counted up under the chest; the rest rises small from its lid.
+            lords: amount,
+            prizes: [expect.objectContaining({ name: "XP" }), { icon: "skull", name: "troops", figure: "−90" }],
+          },
+        ]);
+        // Nothing of it is on the page: no panel, nothing to press, every click reaches the map.
+        expect(host.innerHTML).toBe("");
+        const probeHost = document.createElement("div");
+        const probe = createRoot(probeHost);
+        const Probe = () => createElement("i", { "data-open": String(useRuinChest() !== null) });
+        act(() => probe.render(createElement(Probe)));
+        expect(probeHost.querySelector("i")?.dataset.open).toBe("false");
+        act(() => probe.unmount());
       } finally {
         stop();
         act(() => {
@@ -162,17 +178,15 @@ describe("the site-cleared moment", () => {
     expect(toasts).toEqual(["+550 Labor"]);
   });
 
-  it("opens a ruin's chest as that fight's result, which stays until it is closed; no other site has one", () => {
-    const opening = () => {
-      let value: ReturnType<typeof useRuinChest> = null;
-      const Probe = () => {
-        value = useRuinChest();
-        return null;
-      };
-      const root = createRoot(document.createElement("div"));
+  it("opens a ruin's chest as that fight's result, until its moment closes it; no other site has one", () => {
+    const opening = (): ReturnType<typeof useRuinChest> => {
+      const probeHost = document.createElement("div");
+      const root = createRoot(probeHost);
+      const Probe = () => createElement("i", { "data-opening": JSON.stringify(useRuinChest()) });
       act(() => root.render(createElement(Probe)));
+      const read = JSON.parse(probeHost.querySelector("i")!.dataset.opening!);
       act(() => root.unmount());
-      return value;
+      return read;
     };
     playSiteClear({ clear: CAMP, troopsLost: 420, at: { x: 1, y: 1 }, burst: () => {} });
     vi.advanceTimersByTime(300);

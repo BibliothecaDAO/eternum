@@ -134,6 +134,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
   const controller = {
     getCurrentCameraView: () => undefined,
     getInteractionOverlayScene: () => new Scene(),
+    getRewardStagePasses: () => [],
     getScene: () => scene,
     hasActiveLabelAnimations: () => false,
     setWeatherAtmosphereState: () => {},

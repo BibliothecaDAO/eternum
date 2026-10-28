@@ -1616,8 +1616,8 @@ const FIGHT_STATE = `JSON.stringify({
       Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
     ];
   })(),
-  // The chest with the LORDS it paid: the clear's moment, a status or (before it played by itself) a button.
-  chest: Boolean(document.querySelector('[role="status"] [aria-label$=" LORDS"], button[aria-label="Ruin"] [aria-label$=" LORDS"]')),
+  // The chest with the LORDS it paid: the clear's moment at the centre of the screen, its LORDS shown once the lid opens.
+  chest: Boolean(document.querySelector('[data-chest-moment] [aria-label$=" LORDS"]')),
 })`;
 
 /** Picks the army from the HUD, as the Armies list or the dock does, reading where the camera looked before and after. */

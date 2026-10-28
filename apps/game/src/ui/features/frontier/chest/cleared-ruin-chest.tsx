@@ -1,37 +1,45 @@
 import { useGame } from "@/hooks/context/game-context";
-import type { Tier } from "@/ui/design-system/kit/words";
+import type { ChestPrize } from "@/three/rewards/chest-reward-reveal";
+import { requestRewardChest } from "@/three/scenes/worldmap-reward-chest-request";
+import { type Tier, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { AnimatePresence } from "framer-motion";
+import { formatShort, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { useEffect } from "react";
 
 import { siteClearXp } from "../sites/site-card-plan";
 import { closeRuinChest, useRuinChest } from "../sites/site-clear-moment";
-import { RuinChestMoment } from "./ruin-chest-moment";
 
 /**
- * A cleared ruin's result over the game's facts: its chest opens with its moment (its tier and the LORDS it paid, from
- * its clear receipt), the XP the clear paid and the troops it cost, until the player taps it away.
+ * A cleared ruin's chest, opened as Blitz's chests open (owner, 28 October 2026: "I want a real animation, like the
+ * chest opening in blitz, but on the center of the screen"): the world map stages it at the screen's centre, where it
+ * arrives, opens in its tier's glow and gives what the clear paid, then goes by itself: its LORDS the moment's hero,
+ * counted up large under it (ChestLordsMoment), the clear's XP and the troops it cost small from its lid. Nothing to
+ * press, no panel; the map stays in play.
  */
 export const ClearedRuinChest = () => {
   const opening = useRuinChest();
   const { setup } = useGame();
   const chest = opening && ruinChest(setup.store, opening.siteId);
-  return (
-    <AnimatePresence>
-      {opening && chest && (
-        <RuinChestMoment
-          key={opening.shownAt}
-          tier={chest.tier}
-          lords={chest.lords}
-          xp={clearedSiteXp(setup.store, opening.siteId)}
-          troopsLost={opening.troopsLost}
-          onClose={closeRuinChest}
-        />
-      )}
-    </AnimatePresence>
-  );
+  const tier = chest?.tier;
+  const lords = chest?.lords;
+  useEffect(() => {
+    if (!opening || tier === undefined || lords === undefined) return;
+    requestRewardChest({
+      rarity: tier,
+      lords,
+      prizes: ruinChestPrizes(clearedSiteXp(setup.store, opening.siteId), opening.troopsLost),
+    });
+    closeRuinChest();
+  }, [opening, tier, lords, setup.store]);
+  return null;
 };
+
+/** What a ruin's chest gives beside its LORDS, shown small under them: the clear's XP and the troops it cost. */
+const ruinChestPrizes = (xp: number | undefined, troopsLost: number): ChestPrize[] => [
+  ...(xp !== undefined ? [{ name: XP, figure: `${formatShort(xp, { signed: true })} ${XP}` }] : []),
+  ...(troopsLost > 0 ? [{ icon: "skull" as const, name: TROOPS, figure: `−${formatShort(troopsLost)}` }] : []),
+];
 
 /** A cleared ruin's tier and actual credited amount; unavailable until the clear receipt is known. */
 const ruinChest = (store: NativeFactStore, siteId: number): { tier: Tier; lords: number } | undefined => {
