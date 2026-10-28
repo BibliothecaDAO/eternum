@@ -89,7 +89,7 @@
     },
     "apps/realms": {
       "entry": [
-        "server/worker.ts", "scripts/campaign-codes.ts"
+        "server/worker.ts"
       ],
       "ignoreDependencies": [
         "cloudflare"

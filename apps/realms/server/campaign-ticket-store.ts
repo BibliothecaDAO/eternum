@@ -3,7 +3,7 @@ import { Context, Data, Effect, Layer } from "effect";
 import { CAMPAIGNS, TIER_ONCHAIN } from "./campaigns";
 import type { CampaignKey, TicketTier } from "./campaigns";
 
-export interface CampaignTicket {
+interface CampaignTicket {
   campaign: CampaignKey;
   owner: string;
   tier: TicketTier;
