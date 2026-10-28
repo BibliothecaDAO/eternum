@@ -9,6 +9,40 @@ permissions:
 # GitHub compiles no world contracts: their build, checks and test suite run once per pull request, on the machine
 # that lands it, as contracts/l3/check-native.sh. What stays here is quick and needs no world build.
 jobs:
+  service-class-sizes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      matrix:
+        include:
+          - package: game_ledger
+            directory: contracts/l2/ledger
+            tool-versions: .tool-versions
+            required: GameLedger RealmsCollectible
+          - package: realms_vrf_verifier
+            directory: contracts/l3/vrf-verifier
+            tool-versions: contracts/l3/world-native/.tool-versions
+            required: Verifier
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: software-mansion/setup-scarb@v1
+        with:
+          tool-versions: ${{ matrix.tool-versions }}
+          scarb-lock: ${{ matrix.directory }}/Scarb.lock
+      - name: Test class-size enforcement
+        run: node --test contracts/utils/check-class-sizes.test.mjs
+      - name: Build and check every service class
+        env:
+          CLASS_DIRECTORY: ${{ matrix.directory }}
+          CLASS_PACKAGE: ${{ matrix.package }}
+          REQUIRED_CLASSES: ${{ matrix.required }}
+        run: |
+          scarb --manifest-path "$CLASS_DIRECTORY/Scarb.toml" build
+          node contracts/utils/check-class-sizes.mjs "$CLASS_DIRECTORY/target/dev" "$CLASS_PACKAGE" $REQUIRED_CLASSES
+
   player-account:
     runs-on: ubuntu-latest
     timeout-minutes: 15
