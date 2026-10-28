@@ -16,7 +16,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
-  "merge-keeps-picked": mergeScenario("picked"),
+  "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
