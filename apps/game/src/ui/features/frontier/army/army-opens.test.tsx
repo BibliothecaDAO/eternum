@@ -18,7 +18,6 @@ const { RESOURCE_PRECISION, ResourcesIds } = await import("@bibliothecadao/types
 const active = await import("@/sync/active-game-client");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-lab");
-const { ARMY_ATTRIBUTES } = await import("./army-detail");
 
 /** The lab realm's army out. */
 const ARMY = 90;
@@ -144,8 +143,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
   it("shows the picked army's four sides beside its token, its stamina over Level up, and no details button", async () => {
     await renderHud();
     await select(ARMY);
-    // Every attribute the game levels (the list picked-army.test holds to the schema), each at the lab army's Common.
-    expect(sides()).toEqual(Object.values(ARMY_ATTRIBUTES).map(({ name }) => `${name} I`));
+    // The fixture has Common attributes except untrained Scouting.
+    expect(sides()).toEqual(["Battle I", "Logistics I", "Scouting 0", "Homecoming I"]);
     expect(staminaButton().textContent).toBe("90/150");
     expect(levelUp().textContent).toBe("Level up");
     // One way to the card: the token, which wears the army's XP, number and troops.
@@ -161,7 +160,7 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   });
 
-  it("opens the refill's confirm from the stamina, once the realm holds its price", async () => {
+  it("opens the refill's confirm from the stamina, once the realm holds at least one LORDS", async () => {
     const store = await renderHud();
     await select(ARMY);
     // The lab realm holds no LORDS: the stamina reads in red and takes no press.
@@ -171,12 +170,12 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
       "90/150",
     ]);
 
-    await act(async () => store.applyFacts([realmLords(500)] as never));
+    await act(async () => store.applyFacts([realmLords(40)] as never));
     expect([staminaButton().disabled, staminaButton().dataset.tone]).toEqual([false, undefined]);
     await act(async () => staminaButton().click());
     const confirm = host.querySelector("[data-kit-sheet]")!;
     expect([...confirm.querySelectorAll("button")].map((button) => button.textContent)).toEqual(
-      expect.arrayContaining(["Cancel", "Refill"]),
+      expect.arrayContaining(["Cancel", "Refill · 40 LORDS"]),
     );
   });
 
@@ -187,10 +186,23 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(host.querySelector("[data-kit-sheet] [data-army-step='choose']")).not.toBeNull();
     await closePanel();
 
-    // Its XP spent, the button reads Level-ups and opens the card.
+    // Its points spent, the button reads Level-ups and opens the card; lifetime XP remains.
     const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: ARMY });
     await act(async () =>
-      store.applyFacts([{ model: "ArmyProgress", key: "0x9a2", value: { ...progress, xp: 0 } }] as never),
+      store.applyFacts([
+        {
+          model: "ArmyProgress",
+          key: "0x9a2",
+          value: {
+            ...progress,
+            common_points: 0,
+            uncommon_points: 0,
+            rare_points: 0,
+            epic_points: 0,
+            legendary_points: 0,
+          },
+        },
+      ] as never),
     );
     expect(levelUp().textContent).toBe("Level-ups");
     await act(async () => levelUp().click());

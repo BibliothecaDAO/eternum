@@ -68,7 +68,11 @@ function launch(preset: ReturnType<typeof registration>, gameId = 1, rosterSize 
       seed: "1",
     }),
     rowEvent("GameOverrides", [String(gameId)], overrides),
-    rowEvent("GameRelease", [String(gameId)], { release_id: "1", preset_commitment: preset.commitment }),
+    rowEvent("GameRelease", [String(gameId)], {
+      release_id: "1",
+      created_release_id: 1,
+      preset_commitment: preset.commitment,
+    }),
   ];
 }
 
@@ -141,9 +145,10 @@ describe("verified preset configuration facts", () => {
     for (const [trained, maximum, explores, attacks] of [
       [0, 120, 6, 4],
       [1, 140, 7, 4],
-      [2, 170, 8, 5],
-      [3, 210, 10, 7],
-      [4, 270, 13, 9],
+      [2, 165, 8, 5],
+      [3, 195, 9, 6],
+      [4, 230, 11, 7],
+      [5, 270, 13, 9],
     ] as const) {
       const bar = musterStamina({ slot: 0, inherited: null }, troop, 100, stamina, trained, tick);
       expect(bar).toEqual({ amount: maximum, max: maximum });
@@ -373,7 +378,11 @@ describe("verified preset configuration facts", () => {
     applyRegistration(world, preset);
     const registered = world.fold.checkpoint();
     const invalid = launch(preset);
-    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 999n });
+    invalid[invalid.length - 1] = rowEvent("GameRelease", ["1"], {
+      release_id: 1n,
+      created_release_id: 1,
+      preset_commitment: 999n,
+    });
     expect(() => world.native.applyReceipt(world.fold, receipt(invalid), 11, 0)).toThrow(
       "differs from registered preset",
     );

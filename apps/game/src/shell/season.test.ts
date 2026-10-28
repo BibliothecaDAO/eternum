@@ -14,6 +14,7 @@ const season = (gameId: number, startMainAt: number, ownRealm: boolean): Directo
       registered: ownRealm,
       settled: ownRealm,
       roster_wallet: null,
+      held_realm_id: null,
       structures: ownRealm
         ? [{ entity_id: 1, category: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
         : [],

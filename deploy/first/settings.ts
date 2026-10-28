@@ -7,6 +7,8 @@ export type Environment = "dev" | "production";
 export const root = resolve(import.meta.dir, "../..");
 export { environments };
 export type Target = (typeof environments)[Environment];
+/** The environment's Blitz preset, or null where it runs Frontier only: its book names no Blitz preset. */
+export const blitzPresetOf = (target: Target): number | null => ("blitzPreset" in target ? target.blitzPreset : null);
 /** A static site the Cloudflare half publishes to Pages: its project and the address that serves it. */
 export interface PagesSite {
   pages: string;

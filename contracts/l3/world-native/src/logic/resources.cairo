@@ -32,8 +32,8 @@ pub fn weight(key: ResourceKey) -> Weight {
     state.resources.weights.read((key.game_id, key.entity_id))
 }
 
-/// A board realm keeps each of wheat, labor and troops up to its castle's base: that many deploys of its castle level's
-/// cap. Every other store, and every store off a board, has no limit of its own.
+/// Board realms have separate wheat/labor and troop bases. Every other store, and every store off a board, has no
+/// limit.
 #[inline(never)]
 pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if !has_castle_limit(resource_type) {
@@ -45,21 +45,32 @@ pub fn store_limit(key: ResourceKey, resource_type: u8) -> Option<u128> {
     if base.category != crate::taxonomy::REALM_CATEGORY {
         return None;
     }
-    let cap = crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level);
-    let castle_base = Into::<u32, u128>::into(cap)
-        * Into::<u8, u128>::into(board.castle_store_deploys)
-        * crate::rules::RESOURCE_PRECISION;
-    let row = if resource_type == crate::resources::WHEAT {
-        Some(crate::research::ROW_FARM)
-    } else if resource_type == crate::resources::LABOR {
-        Some(crate::research::ROW_WORKSHOP)
+    let cap: u128 = if resource_type == crate::resources::WHEAT || resource_type == crate::resources::LABOR {
+        let cap = match base.level {
+            0 => board.settlement_resource_cap,
+            1 => board.city_resource_cap,
+            2 => board.kingdom_resource_cap,
+            3 => board.empire_resource_cap,
+            _ => panic!("invalid structure level"),
+        };
+        cap.into()
     } else {
-        None
+        Into::<u32, u128>::into(crate::troops::deployment_cap(preset.rules.troop_limit_config.read(), base.level))
+            * Into::<u8, u128>::into(board.troop_store_deploys)
     };
-    let stores: u128 = row
-        .map(|row| crate::research::picks(crate::logic::research::learned(key), row, crate::research::CHOICE_STORE))
-        .unwrap_or(0)
-        .into();
+    let castle_base = cap * crate::rules::RESOURCE_PRECISION;
+    let stores = if resource_type == crate::resources::WHEAT {
+        crate::research::picks(
+            crate::logic::research::learned(key), crate::research::ROW_FARM, crate::research::CHOICE_STORE,
+        )
+    } else if resource_type == crate::resources::LABOR {
+        crate::research::picks(
+            crate::logic::research::learned(key), crate::research::ROW_WORKSHOP, crate::research::CHOICE_STORE,
+        )
+    } else {
+        0
+    };
+    let stores: u128 = stores.into();
     Some(castle_base * (10000 + stores * board.storage_step_bps.into()) / 10000)
 }
 

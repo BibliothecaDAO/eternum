@@ -79,7 +79,7 @@ it("ingests only completed records while retaining withdrawals in the same confi
       {
         model: "LordsWithdrawal",
         keys: ["8", "0xdef"],
-        values: ["0x321", "9"],
+        values: ["0x321", "9", "0", "0"],
         transactionHash: "0xdef",
         confirmedAt: 1000,
       },

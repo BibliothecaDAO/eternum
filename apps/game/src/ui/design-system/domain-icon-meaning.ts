@@ -5,6 +5,9 @@ import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-
 import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
 
+/** Frontier's wordmark, shared by its landing and campaign-ticket preview. */
+export const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
+
 /** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
 const storyMeanings = {
   BattleEvent: "attack",
@@ -45,7 +48,9 @@ const storyMeanings = {
   TroopsTransferred: "military",
   LordsWithdrawn: "lords",
   TierBought: "research",
-} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", IconMeaning>;
+  SkillPointSpent: "research",
+  SiteUsed: "claim",
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
 
 /** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
 export function storyMeaning(story: string): IconMeaning {

@@ -75,7 +75,7 @@ it("reads a season and a preset in the interface's order, prices and pools exact
   // claim window.
   const preset = [String(500n * WEI), "0", "2000", "500", "1000", "9600", String(500n * WEI), "0", String(450n * WEI)];
   const tail = ["0", "1", "1000", "200", "45", "32", "150", "60", "3600"];
-  expect(decodeLedgerPreset([...preset, ...tail])).toMatchObject({
+  expect(decodeLedgerPreset([...preset, ...tail, "10", "7000"])).toMatchObject({
     entryFee: String(500n * WEI),
     protocolCut: 2000,
     chestLords: 500,
@@ -101,7 +101,7 @@ it("reads a result and what an opened chest delivered, in the interface's order"
 });
 
 it("decodes the Frontier backing and preset calendar once with exact widths and strict bools", () => {
-  const funded = ["1", "100", "200", "17", "0", "3", "0", "1", "9", "0xabc"];
+  const funded = ["1", "100", "200", "17", "0", "3", "0", "1", "9", "0xabc", "0", "0", "0", "0"];
   expect(decodeFrontierSeason(funded)).toMatchObject({
     start: 100,
     end: 200,
@@ -113,7 +113,7 @@ it("decodes the Frontier backing and preset calendar once with exact widths and 
   });
   expect(() => decodeFrontierSeason(Array(10).fill("0"))).toThrow("invalid_frontier_season");
   expect(() => decodeFrontierSeason([...funded.slice(0, 7), "2", ...funded.slice(8)])).toThrow();
-  const preset = Array.from({ length: 18 }, () => "0");
+  const preset = Array.from({ length: 20 }, () => "0");
   preset[4] = "2000";
   preset[16] = "60";
   preset[17] = "3600";
@@ -141,14 +141,18 @@ it("bounds each u256 limb and safe integer before conversion", () => {
 });
 
 it("decodes absent, reported and paid withdrawals without losing the high amount limb", () => {
-  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0"])).toBeNull();
-  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1"])).toEqual({
+  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0", "0", "0"])).toBeNull();
+  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1", "0", "0"])).toEqual({
+    prizeRank: 0,
+    prizeCount: 0,
     paid: false,
     seasonId: 7,
     wallet: "0",
     amount: String((1n << 128n) + 1n),
   });
-  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0"])).toEqual({
+  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0", "0", "0"])).toEqual({
+    prizeRank: 0,
+    prizeCount: 0,
     paid: true,
     seasonId: 7,
     wallet: "0xabc",
@@ -162,7 +166,7 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     ["0", "7", "0", "0", "0"],
     ["0", "7", "0", "0", String(1n << 128n)],
   ])
-    expect(() => decodeWithdrawalPayment(fields)).toThrow();
+    expect(() => decodeWithdrawalPayment([...fields, "0", "0"])).toThrow();
 });
 
 it("decodes the complete chest shape and rejects absent or malformed records", () => {

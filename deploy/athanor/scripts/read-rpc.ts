@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { isIP } from "node:net";
 import { hash } from "starknet";
 import { openProver, type StampProvider } from "../vrf/native";
@@ -120,6 +120,14 @@ function writeRefusals() {
   );
 }
 
+/**
+ * While this file exists in the shard's public configuration, the proxy refuses every write and keeps answering reads:
+ * the boundary of a final backup, where the value relay still reads its receipts and pays them. backup.py quiesce
+ * creates it and reopen removes it; its verify recognises the refusal by this message.
+ */
+export const WRITES_CLOSED_FILE = "/config/writes-closed";
+export const WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup";
+
 function refuse(code: number, message: string, status = 200, data?: object): Response {
   logRefusal({ code, message, status, ...data });
   return Response.json(
@@ -154,6 +162,7 @@ export function startReadRpc(
   stamper: StampProvider,
   trustedProxy?: string,
   hostname = "0.0.0.0",
+  writesClosed = () => existsSync(WRITES_CLOSED_FILE),
 ) {
   const node = privateNode(upstream);
   if (trustedProxy && !isIP(trustedProxy)) throw new Error("RPC_TRUSTED_PROXY must be one IP address");
@@ -189,6 +198,7 @@ export function startReadRpc(
         inFlightAccounts,
         readAccountClass,
         seaters,
+        writesClosed,
       );
       if (timingAllowed) response.headers.set("Timing-Allow-Origin", "*");
       return response;
@@ -236,6 +246,7 @@ async function handlePublicRequest(
   inFlightAccounts: Set<string>,
   readAccountClass: AccountClassReader,
   seaters: ReadonlySet<bigint>,
+  writesClosed: () => boolean,
 ): Promise<Response> {
   const preparation: Preparation = {
     deadline: performance.now() + PREPARATION_TIMEOUT_MS,
@@ -261,6 +272,7 @@ async function handlePublicRequest(
   if (calls.some(isWrite) && calls.some((call) => !isWrite(call))) {
     return refuse(-32600, "Mixed read and write batch refused");
   }
+  if (calls.some(isWrite) && writesClosed()) return refuse(-32010, WRITES_CLOSED_MESSAGE, 503);
   const operations = calls.filter((call) => !isRead(call) && !isGameRequest(call, identity));
   if (operations.length && (!client || !allowance(client, operations.length))) {
     return refuse(-32005, "Account operation rate exceeded", 429);

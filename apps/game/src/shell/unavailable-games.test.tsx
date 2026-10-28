@@ -24,7 +24,12 @@ const season = {
   clock: { start_main_at: 0, end_at: 100 },
   player_count: 1,
   roster_count: 0,
-  player_state: { registered: true, roster_wallet: null, structures: [{ category: 1, realm_id: 3098, level: 1 }] },
+  player_state: {
+    registered: true,
+    roster_wallet: null,
+    held_realm_id: null,
+    structures: [{ category: 1, realm_id: 3098, level: 1 }],
+  },
 } as unknown as DirectoryGame;
 
 const lead = (verb: "play" | "resume") => (game: DirectoryGame) => {

@@ -556,36 +556,25 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  /** Upgrades one attribute of an army by one tier, paid from its XP; a Scouting tier names the kind it raises. */
-  public async buy_tier(
+  /** Spends an army's point on one rank, or on stamina alone. */
+  public async spend_skill_point(
     props: SystemProps.SystemSigner & {
       explorerId: number;
-      attribute: "Battle" | "Logistics" | "Scouting" | "Homecoming";
-      scoutingKind?: "Camp" | "Rift" | "Beasts";
+      choice: NativeCommandPayloads["SpendSkillPoint"]["choice"];
     },
   ) {
     return this.submitCommand(
       props.signer,
-      {
-        kind: "BuyTier",
-        value: {
-          explorer_id: props.explorerId,
-          attribute: { kind: props.attribute, value: undefined },
-          kind:
-            props.scoutingKind === undefined
-              ? { kind: "None", value: undefined }
-              : { kind: "Some", value: { kind: props.scoutingKind, value: undefined } },
-        },
-      },
-      TransactionType.BUY_TIER,
+      { kind: "SpendSkillPoint", value: { explorer_id: props.explorerId, choice: props.choice } },
+      TransactionType.SPEND_SKILL_POINT,
     );
   }
 
-  /** Fills an army's stamina to its maximum for one LORDS a missing point, from its realm's LORDS. */
-  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number }) {
+  /** Buys the chosen whole stamina points for one LORDS each from the army's realm. */
+  public async refill_stamina(props: SystemProps.SystemSigner & { explorerId: number; amount: number }) {
     return this.submitCommand(
       props.signer,
-      { kind: "RefillStamina", value: { explorer_id: props.explorerId } },
+      { kind: "RefillStamina", value: { explorer_id: props.explorerId, amount: props.amount } },
       TransactionType.REFILL_STAMINA,
     );
   }
@@ -602,13 +591,12 @@ export class EternumProvider extends EventEmitter {
     );
   }
 
-  public async settle_season(props: SystemProps.SystemSigner & { name: string; selectedRealm?: number }) {
+  public async settle_season(props: SystemProps.SystemSigner & { selectedRealm?: number }) {
     return this.submitCommand(
       props.signer,
       {
         kind: "SettleSeason",
         value: {
-          name: props.name,
           selected_realm:
             props.selectedRealm === undefined
               ? { kind: "None", value: undefined }
@@ -664,6 +652,7 @@ export class EternumProvider extends EventEmitter {
           directions: props.directions,
           category: props.building_category,
           use_simple: props.use_simple,
+          scouting_kind: props.scouting_kind,
         },
       },
       TransactionType.CREATE_BUILDING,
@@ -707,6 +696,7 @@ export class EternumProvider extends EventEmitter {
         kind: "CreateExplorer",
         value: {
           structure_id: props.for_structure_id,
+          slot: props.slot,
           category: props.category,
           tier: props.tier,
           amount: props.amount,

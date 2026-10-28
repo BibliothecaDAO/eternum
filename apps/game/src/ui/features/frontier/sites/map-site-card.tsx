@@ -49,7 +49,7 @@ export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRend
 /**
  * A Shrine's or Well's card (the owner's pick B, 28 October 2026: "ok for B"): a row for the selected army as one use
  * will leave it (a Well's refill on its stamina bar, never past its maximum, with the explores it buys; a Shrine's XP
- * with the attribute tier it then buys), and a foot saying what the site gives, as its hover does, beside Use where the
+ * with the rank of the next skill point it earns), and a foot saying what the site gives, as its hover does, beside Use where the
  * army's orders offer it (the action planner's Use, the right-click's order), or Move and its cost until the army
  * stands beside it. With no army selected, what it gives alone: select an army, then the site (owner, 28 October 2026:
  * "agree with no picker"). The site is spent by that use, so the card closes as its tile empties.
@@ -159,7 +159,7 @@ const useUserArmy = (explorerId: number | undefined): DockArmy | undefined => {
 
 /**
  * The army a use acts on, as it will stand after it: a Well's refill on its stamina bar, or a Shrine's XP with the
- * attribute tier it then buys.
+ * rank of the next skill point it earns.
  */
 const SiteUser = ({ army, kind, gain }: { army: DockArmy; kind: MapSiteKind; gain: number | undefined }) => (
   <div data-site-user className="flex items-center gap-3">
@@ -188,7 +188,7 @@ const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: n
   );
 };
 
-/** The army's XP before and after the Shrine, and the attribute tier that XP then buys, when it buys one. */
+/** The army's XP before and after the Shrine, and the rank of its next skill point, when the gain reaches it. */
 const ShrineAfter = ({
   xp,
   goal,
@@ -204,7 +204,7 @@ const ShrineAfter = ({
       <HudChip>
         {formatShortChange(xp, after)} {XP}
       </HudChip>
-      {goal && after !== undefined && after >= goal.price && <HudTier tier={goal.tier as Tier} />}
+      {goal && after !== undefined && after >= goal.at && <HudTier tier={goal.rank as Tier} />}
     </span>
   );
 };

@@ -15,7 +15,7 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
     player_count: 24,
     roster_count: 24,
     clock: { start_settling_at: 0, start_main_at: 0, end_at: 9_000, end_grace_seconds: 0 },
-    player_state: { registered: false, settled: false, roster_wallet: null, structures: [] },
+    player_state: { registered: false, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
     ...over,
   }) as DirectoryGame;
 
@@ -38,10 +38,24 @@ describe("the lobby's Blitz rows", () => {
           ready: false,
           status: "Registration",
           clock: { start_settling_at: 0, start_main_at: 1_600, end_at: 9_000, end_grace_seconds: 0 },
-          player_state: { registered: false, settled: false, roster_wallet: "0x4a1", structures: [] },
+          player_state: {
+            registered: false,
+            settled: false,
+            roster_wallet: "0x4a1",
+            held_realm_id: null,
+            structures: [],
+          },
         }),
         blitz(1, {}),
-        blitz(2, { player_state: { registered: false, settled: false, roster_wallet: "0x4a1", structures: [] } }),
+        blitz(2, {
+          player_state: {
+            registered: false,
+            settled: false,
+            roster_wallet: "0x4a1",
+            held_realm_id: null,
+            structures: [],
+          },
+        }),
         blitz(4, { status: "Settled" }),
         { ...blitz(5, {}), mode: "frontier" },
       ],
@@ -66,7 +80,7 @@ describe("the lobby's Blitz rows", () => {
 it("keeps ended Blitz games available to watch until their settled result lists", () => {
   const ended = blitz(7, {
     status: "Ended",
-    player_state: { registered: true, settled: true, roster_wallet: "0x4a1", structures: [] },
+    player_state: { registered: true, settled: true, roster_wallet: "0x4a1", held_realm_id: null, structures: [] },
   });
   const rows = blitzRows([ended], []);
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", startsAt: null }]);
@@ -88,7 +102,13 @@ describe("a Blitz's keys on the ledger", () => {
 });
 
 describe("the game that seats a wallet", () => {
-  const seat = (wallet: string | null) => ({ registered: true, settled: false, roster_wallet: wallet, structures: [] });
+  const seat = (wallet: string | null) => ({
+    registered: true,
+    settled: false,
+    roster_wallet: wallet,
+    held_realm_id: null,
+    structures: [],
+  });
   const games = [
     blitz(7, { slotId: 3, player_state: seat("0x04a1") }),
     blitz(8, { slotId: 3, player_state: seat(null) }),

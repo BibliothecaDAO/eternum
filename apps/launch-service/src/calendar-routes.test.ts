@@ -62,7 +62,12 @@ test("names none once no game fits before the window ends, and none without a Bl
   const window = blitzWindow(day(9), day(11));
   expect((await read([window], day(10, 23))).nextBlitz).toBeNull();
   expect((await read([window], day(12))).nextBlitz).toBeNull();
-  const frontier: SeasonPhase = { phase: "frontier", startsAt: day(0).toISOString(), endsAt: day(70).toISOString() };
+  const frontier: SeasonPhase = {
+    phase: "frontier",
+    presetId: 5,
+    startsAt: day(0).toISOString(),
+    endsAt: day(70).toISOString(),
+  };
   expect((await read([frontier], day(9, 10))).nextBlitz).toBeNull();
 });
 

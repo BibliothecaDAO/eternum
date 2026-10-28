@@ -205,7 +205,12 @@ fn reinforcement_requires_target_ownership_for_realms_and_villages_without_home_
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: 10 * RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: 10 * RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,
@@ -313,7 +318,7 @@ fn troop_actions_emit_one_unique_story_each_and_rejections_emit_none() {
     let (d, home, first, second) = setup();
     let mut spy = spy_events();
     let created = CreateExplorer {
-        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 2,
+        slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 2,
     };
     assert!(execute(d, Command::CreateExplorer(created), 140));
     let third = *IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home).at(2);
@@ -485,7 +490,7 @@ fn occupied_explorer_destination_rejects_without_rewriting_the_tile_or_spending(
         d,
         Command::CreateExplorer(
             CreateExplorer {
-                structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
             },
         ),
         80,

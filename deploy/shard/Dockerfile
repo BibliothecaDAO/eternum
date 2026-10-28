@@ -77,6 +77,8 @@ RUN mkdir /tools && curl --fail --location --retry 3 \
     | tar -xz --strip-components=1 -C /tools
 WORKDIR /app
 COPY contracts/l3/world-native/src/days.cairo contracts/l3/world-native/src/days.cairo
+COPY contracts/l3/world-native/src/approved_frontier_extension.cairo contracts/l3/world-native/src/approved_frontier_extension.cairo
+COPY contracts/l3/world-native/src/frontier_prizes.cairo contracts/l3/world-native/src/frontier_prizes.cairo
 COPY contracts/l2/ledger/ contracts/l2/ledger/
 COPY contracts/l2/mmr/ contracts/l2/mmr/
 COPY contracts/l2/collectibles/ contracts/l2/collectibles/

@@ -81,8 +81,12 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
         unavailable ??= deposit.failure;
         continue;
       }
+      if (BigInt(balance.pool) < BigInt(deposit.success) / 10n ** 18n) {
+        unavailable ??= new RelayFailure({ operation: "frontier_pool_publication_pending" });
+        continue;
+      }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
-      if (BigInt(balance.pool) * 10n ** 18n !== BigInt(deposit.success) && !isCleared(progress, poolRow)) {
+      if (BigInt(balance.pool) !== BigInt(deposit.success) / 10n ** 18n && !isCleared(progress, poolRow)) {
         yield* recordFault(store, { row: poolRow, fact: poolRow });
         return `frontier_pool_mismatch:${balance.chainId}:${balance.gameId}`;
       }
@@ -210,6 +214,8 @@ const matchesPaidClaim = (receipt: Withdrawal | null, paid: PaidClaim) =>
   BigInt(receipt.chainId) === BigInt(paid.chainId) &&
   BigInt(receipt.transactionHash) === BigInt(paid.transactionHash) &&
   receipt.seasonId === paid.seasonId &&
+  receipt.prizeRank === paid.prizeRank &&
+  receipt.prizeCount === paid.prizeCount &&
   BigInt(receipt.amount) === BigInt(paid.amount);
 const matchesPostedResult = (result: BlitzResult | null, posted: BlitzCommitment) =>
   result !== null &&
@@ -221,7 +227,7 @@ const hex = (value: string) => `0x${BigInt(value).toString(16)}`;
 
 /** The paid claim's ledger fields, and nothing block-dependent, so a replay at a new anchor is the same fact. */
 const paidClaimFact = (paid: PaidClaim) =>
-  `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}`;
+  `paidClaims:${hex(paid.chainId)}:${hex(paid.transactionHash)}:${paid.seasonId}:${BigInt(paid.amount)}:${hex(paid.wallet)}:${hex(paid.paymentTransactionHash)}:${paid.prizeRank}:${paid.prizeCount}`;
 /** The posted result's ledger fields. */
 const postedResultFact = (posted: BlitzCommitment) =>
   `postedResults:${hex(posted.chainId)}:${posted.gameId}:${hex(posted.commitment)}`;
@@ -236,7 +242,7 @@ const observedFact = (ledger: string, mismatch: Mismatch) => `${ledger}|${mismat
 const receiptEvidence = (receipt: Withdrawal | null) =>
   receipt === null
     ? "receipt:none"
-    : `receipt:${hex(receipt.chainId)}:${hex(receipt.transactionHash)}:${receipt.seasonId}:${BigInt(receipt.amount)}:${hex(receipt.realmsId)}`;
+    : `receipt:${hex(receipt.chainId)}:${hex(receipt.transactionHash)}:${receipt.seasonId}:${BigInt(receipt.amount)}:${hex(receipt.realmsId)}:${receipt.prizeRank}:${receipt.prizeCount}`;
 const resultEvidence = (result: BlitzResult | null) =>
   result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 

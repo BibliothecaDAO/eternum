@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_ARMY, SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
@@ -70,8 +71,6 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "Structure", key: "0x71", value: null },
     { model: "ExpeditionSite", key: "0x72", value: null },
     { model: "Guard", key: "0x73", value: null },
-    { model: "GameRelease", key: "0x1ab0", value: { game_id: 1, release_id: 1, preset_commitment: "0x1ab" } },
-    // Every army has its progress from the command that made it (progression::create).
     progressionRules(),
     armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
@@ -140,14 +139,14 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
 /** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
 export const PROGRESS_KEYS = { rules: "0x1ab94", spireArmy: "0x1ab92" } as const;
 
-/** The game's progression rules, as its preset writes them (lab thresholds: a few XP buy a level). */
+/** The game's progression rules, from the Frontier preset. */
 export const progressionRules = (): LabFact => ({
   model: "ArmyProgressionRules",
   key: PROGRESS_KEYS.rules,
-  value: { game_id: 1, reveal_xp: 1, fixed_xp: 1, uncommon_xp: 2, rare_xp: 3, epic_xp: 4, legendary_xp: 5 },
+  value: frontierArmyRules(),
 });
 
-/** An army's progress, as progression::create writes it for every army it makes: common tiers, the XP given. */
+/** The lab army's XP and trained sides, with no unspent skill points. */
 export const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
   model: "ArmyProgress",
   key,
@@ -155,9 +154,14 @@ export const armyProgress = (key: string, explorerId: number, xp: number): LabFa
     game_id: 1,
     explorer_id: String(explorerId),
     xp,
+    common_points: 0,
+    uncommon_points: 0,
+    rare_points: 0,
+    epic_points: 0,
+    legendary_points: 0,
     battle: 1,
     logistics: 1,
-    scouting: 1,
+    scouting: 0,
     scouting_kinds: 0,
     homecoming: 1,
   },

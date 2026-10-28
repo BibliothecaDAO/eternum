@@ -41,8 +41,7 @@ import {
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
-import { resolveBlitzSeason } from "./blitz-season";
-import { seconds } from "./dates";
+import { setupSeason } from "./blitz-season";
 import { PublicError, reportFailure } from "./errors";
 
 export interface Deployment {
@@ -116,11 +115,13 @@ async function collectInputs(context: Deployment) {
   validateInputs(inputs, context.target);
   context.store.write("inputs.json", inputs);
   reload(context);
-  context.output(
-    `Frontier ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}; Blitz ${inputs.blitzStart} to ${inputs.blitzEnd}.`,
-  );
+  context.output(seasonSummary(inputs));
 }
 const waiting = (detail: string) => ({ done: false, waiting: detail, detail });
+/** The seasons setup was given, as it reads them back to the operator. */
+const seasonSummary = (inputs: Inputs) =>
+  `Frontier preset ${inputs.frontierPresetId} ${inputs.frontierStart} to ${inputs.frontierEnd}, pool ${inputs.amount}; ` +
+  (inputs.blitzStart ? `Blitz ${inputs.blitzStart} to ${inputs.blitzEnd}.` : "no Blitz.");
 export function preparationSteps(context: Deployment): Step[] {
   let readSetup: ReturnType<typeof setupPresenceReader> | undefined;
   return [
@@ -286,26 +287,20 @@ export function preparationSteps(context: Deployment): Step[] {
       inspect: async () => {
         if (!context.assets || !context.provider || !context.keys || !context.inputs)
           return waiting("Contracts have not been deployed yet");
-        const season = await resolveBlitzSeason(
-          context.provider,
-          context.assets.ledger,
-          seconds(context.inputs.blitzStart),
-          seconds(context.inputs.blitzEnd),
-        );
+        const season = await setupSeason(context.provider, context.target, context.assets.ledger, context.inputs);
         const calls = setupCalls(
           context.target,
           context.assets,
           accountIdentity(context.keys.monitor).address,
-          seconds(context.inputs.blitzStart),
-          seconds(context.inputs.blitzEnd),
-          season.id,
+          Number(context.inputs.frontierPresetId),
+          season.blitz,
         );
         context.output("Reading collectible metadata on mainnet.");
         readSetup ??= setupPresenceReader(context.provider);
         const present = await Promise.all(calls.map((call) => readSetup!(call, season.head)));
         return {
           done: present.every(Boolean),
-          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared; Blitz dates exactly as entered`,
+          detail: `${present.filter(Boolean).length}/${calls.length} setup results present; only missing calls will be prepared${season.blitz ? "; Blitz dates exactly as entered" : "; Frontier only, no Blitz"}`,
         };
       },
       apply: async () => {
@@ -462,10 +457,7 @@ export async function main(args = process.argv.slice(2)) {
   const unlock = apply ? store.lock() : () => {};
   try {
     if (apply && !saved) store.write("deployment.json", { environment });
-    if (context.inputs)
-      context.output(
-        `Frontier ${context.inputs.frontierStart} to ${context.inputs.frontierEnd}, pool ${context.inputs.amount}; Blitz ${context.inputs.blitzStart} to ${context.inputs.blitzEnd}.`,
-      );
+    if (context.inputs) context.output(seasonSummary(context.inputs));
     context.output(
       apply
         ? "Applying missing first-deployment steps."

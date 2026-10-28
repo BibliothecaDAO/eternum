@@ -5,11 +5,16 @@ import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 export const includesArmyRestedNotification = (level: NotificationLevel): boolean =>
   NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf("standard");
 
-/** The alert for one army of one game, the moment its stamina is full; it lives two minutes like every alert. */
+/**
+ * An army of the player's is rested: one alert a day per player and game, the first time one of their armies is full
+ * that day (a Frontier game day, else a UTC date), so armies that rest at three times the speed still buzz once. It
+ * names one army, since others may still be recovering. It lives two minutes like every alert.
+ */
 export function buildArmyRestedNotification(input: {
   chainId: string;
   gameId: number;
-  armyId: number;
+  /** The day it is for: the Frontier day's index, or the UTC date's number in a game without days. */
+  day: number;
   fullAt: number;
   owner: string;
   gameName: string;
@@ -19,10 +24,10 @@ export function buildArmyRestedNotification(input: {
   return parseNotificationPayload(
     {
       version: 1,
-      id: `rested:v1:${input.chainId}:${input.gameId}:${input.armyId}:${input.fullAt}`,
+      id: `rested:v2:${input.chainId}:${input.gameId}:${input.day}:${input.owner}`,
       owner: input.owner,
-      title: "Your army is rested",
-      body: `${input.gameName}: stamina is full and your army is ready to march.`,
+      title: "An army is rested",
+      body: `${input.gameName}: its stamina is full.`,
       target: gamePath({ chainId: input.chainId, gameId: input.gameId }),
       createdAt: input.fullAt,
       expiresAt: input.fullAt + 120_000,

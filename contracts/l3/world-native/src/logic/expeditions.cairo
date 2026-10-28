@@ -1,4 +1,4 @@
-use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::expeditions::*;
 use crate::troops::Coord;
 
@@ -45,8 +45,12 @@ fn write_site(key: crate::resources::ResourceKey, site: ExpeditionSite) {
 }
 
 pub fn depth_rules_at(game_id: u32, coord: Coord) -> DepthRules {
+    depth_rules(game_id, depth_at(game_id, coord))
+}
+
+pub fn depth_at(game_id: u32, coord: Coord) -> u8 {
     let spacing = crate::logic::settlement::rules(game_id).spacing;
-    depth_rules(game_id, (coord.y / spacing % 4).try_into().unwrap())
+    (coord.y / spacing % 4).try_into().unwrap()
 }
 
 pub fn depth_rules(game_id: u32, depth: u8) -> DepthRules {
@@ -63,33 +67,53 @@ pub fn discovery(key: ExpeditionDiscoveryKey) -> Option<ExpeditionDiscovery> {
         .map(
             |
                 empty_reveals,
-            | ExpeditionDiscovery { empty_reveals, ruin_found: state.map_rules.ruin_found.read(storage_key) },
+            | ExpeditionDiscovery { empty_reveals, ruin_cleared: state.map_rules.ruin_cleared.read(ruin_key(key)) },
         )
 }
 
-fn is_ruin(discovery: crate::discovery::Discovery) -> bool {
-    match discovery {
-        crate::discovery::Discovery::Ruin(_) => true,
-        _ => false,
+fn ruin_key(key: ExpeditionDiscoveryKey) -> (u32, u64, u64) {
+    (key.game_id, crate::entity_ids::namespace(key.structure_id).into(), key.epoch)
+}
+
+pub fn ruin_disappeared(key: crate::resources::ResourceKey) -> bool {
+    let state = crate::state::read();
+    let storage_key = (key.game_id, key.entity_id);
+    if state.structures.structures.entry(storage_key).base.read().category != crate::taxonomy::RUIN_CATEGORY {
+        return false;
     }
+    let Some(chest) = state.structures.site_chests.read(storage_key) else {
+        return false;
+    };
+    state
+        .map_rules
+        .ruin_cleared
+        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), chest.reservation_day))
+}
+
+pub fn close_ruins(key: ExpeditionDiscoveryKey) {
+    let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
+    assert!(!previous.ruin_cleared, "realm already cleared a ruin today");
+    write_discovery(key, ExpeditionDiscovery { ruin_cleared: true, ..previous });
 }
 
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
-    let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_found: false });
+    let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
     let next = ExpeditionDiscovery {
         empty_reveals: if result == crate::discovery::Discovery::None {
             previous.empty_reveals + 1
         } else {
             0
         },
-        ruin_found: previous.ruin_found || is_ruin(result),
+        ruin_cleared: previous.ruin_cleared,
     };
+    write_discovery(key, next);
+}
+
+fn write_discovery(key: ExpeditionDiscoveryKey, next: ExpeditionDiscovery) {
     let storage_key = (key.game_id, key.structure_id, key.epoch);
     let state = crate::state::write();
     state.map_rules.empty_reveals.write(storage_key, Some(next.empty_reveals));
-    if next.ruin_found != previous.ruin_found {
-        state.map_rules.ruin_found.write(storage_key, true);
-    }
+    state.map_rules.ruin_cleared.write(ruin_key(key), next.ruin_cleared);
     let mut keys = array![];
     key.serialize(ref keys);
     let mut values = array![];

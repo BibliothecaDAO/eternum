@@ -4,6 +4,8 @@ import os
 from pathlib import Path
 import sys
 import shard
+import season
+import teardown
 from operator_token import operator_environment
 
 COMMANDS = {
@@ -15,8 +17,10 @@ COMMANDS = {
 def run(command, arguments):
     if command not in COMMANDS:
         raise ValueError("Use a listed shard command")
-    if command in ("teardown", "season") and arguments != ["dev"]:
-        raise ValueError(f"{command.capitalize()} is available only for dev")
+    if command == "teardown":
+        teardown.parse_arguments(arguments)
+    if command == "season":
+        season.parse_arguments(arguments)
     executable = str(Path(__file__).with_name(COMMANDS[command]))
     os.execve(sys.executable, [sys.executable, executable, *arguments], {**os.environ, **operator_environment()})
 

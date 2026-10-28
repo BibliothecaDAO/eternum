@@ -4,13 +4,6 @@ import { decodeNotification } from "./validation";
 export const NOTIFICATION_LEVELS = ["off", "important", "standard", "all"] as const;
 export type NotificationLevel = (typeof NOTIFICATION_LEVELS)[number];
 
-export const NOTIFICATION_LEVEL_DESCRIPTIONS: Record<NotificationLevel, string> = {
-  off: "No game notifications.",
-  important: "Battles, structure captures, day-end reminders and direct messages involving you.",
-  standard: "Important activity, settlements, buildings, upgrades, rewards and arrivals.",
-  all: "Standard activity plus production, transfers and troop activity.",
-};
-
 export const includesDirectMessageNotification = (level: NotificationLevel): boolean => level !== "off";
 
 export interface NotificationPreferences {

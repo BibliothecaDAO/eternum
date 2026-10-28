@@ -9,23 +9,23 @@ const input = {
   createdAt: 1_000,
 };
 
-it("builds thematic, privacy-safe DM copy with a per-thread collapse tag", () => {
+it("names the sender, never the message, with a per-thread collapse tag", () => {
   expect(buildDirectMessageNotification(input, 1_100)).toEqual({
     version: 1,
     id: `direct-message:${input.messageId}`,
     tag: `direct-thread:${input.threadId}`,
     owner: "0x2",
-    title: "A raven from Lady Ada",
-    body: "A private message awaits your reply in Realms.",
+    title: "Message from Lady Ada",
+    body: "Open Realms to read it.",
     target: "/",
     createdAt: 1_000,
     expiresAt: 121_000,
   });
 });
 
-it("uses a themed anonymous sender without accepting private content or invalid owners", () => {
+it("names an unnamed sender plainly, without accepting private content or invalid owners", () => {
   expect(buildDirectMessageNotification({ ...input, senderDisplayName: undefined }, 1_100).title).toBe(
-    "A raven from another ruler",
+    "Message from another player",
   );
   expect(() => parseDirectMessageNotificationInput({ ...input, content: "secret" })).toThrow();
   expect(() => parseDirectMessageNotificationInput({ ...input, recipientOwner: "player-two" })).toThrow();

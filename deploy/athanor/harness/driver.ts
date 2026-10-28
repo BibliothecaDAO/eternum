@@ -546,17 +546,13 @@ async function settleEternumBot({
   game: HarnessGame;
   provider: HarnessProvider;
 }): Promise<TrackedTransaction> {
-  const name = `bot-${harnessAccount.botId.toString().padStart(3, "0")}`;
   return trackTransaction({
     actionIndex: 0,
     botId: harnessAccount.botId,
     gameId: game.gameId,
     kind: "settle",
     provider,
-    send: () =>
-      game.submit(harnessAccount.account, () =>
-        game.settle(harnessAccount.account, harnessAccount.owner, name, "eternum"),
-      ),
+    send: () => game.submit(harnessAccount.account, () => game.settle(harnessAccount.account)),
     stage: "setup",
   });
 }
@@ -587,6 +583,7 @@ async function createBotExplorer({
     send: () =>
       game.submit(harnessAccount.account, () =>
         actions.createExplorerArmy({
+          slot: 0,
           structureId: structure.structureId,
           troopType,
           troopTier: TroopTier.T1,

@@ -59,7 +59,11 @@ pub fn validate(preset: PresetDefinition) {
     assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
+        assert!(labor.golden_amount != 0, "zero golden labor grant");
         let _ = labor.amount * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.campaign_essence * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
     if let Some(chests) = preset.economy.chests {
         assert!(
@@ -78,14 +82,16 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
+        let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
         assert!(
             progression.reveal_xp != 0
                 && progression.fixed_xp != 0
-                && progression.uncommon_xp != 0
-                && progression.rare_xp != 0
-                && progression.epic_xp != 0
-                && progression.legendary_xp != 0,
-            "empty progression rules",
+                && progression.common_xp > 0
+                && progression.uncommon_xp > progression.common_xp
+                && progression.rare_xp > progression.uncommon_xp
+                && progression.epic_xp > progression.rare_xp
+                && progression.legendary_xp > progression.epic_xp,
+            "invalid progression thresholds",
         );
     }
     assert!(

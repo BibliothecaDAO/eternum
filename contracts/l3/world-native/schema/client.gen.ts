@@ -1,22 +1,28 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e";
+export const nativeFactSchemaIdentity = "0ce1949d00478066c27292de613ff22aee76f6f2d74294a2d159501f3f014423";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
-  "BATTLE_UNCOMMON_BPS": 1000,
-  "BATTLE_RARE_BPS": 3000,
-  "BATTLE_EPIC_BPS": 6000,
+  "SKILL_POINT_REFILL_BASE": 10,
+  "SKILL_POINT_REFILL_STEP": 10,
+  "BATTLE_COMMON_BPS": 1000,
+  "BATTLE_UNCOMMON_BPS": 2500,
+  "BATTLE_RARE_BPS": 4500,
+  "BATTLE_EPIC_BPS": 7000,
   "BATTLE_LEGENDARY_BPS": 10000,
-  "LOGISTICS_UNCOMMON_STAMINA": 20,
-  "LOGISTICS_RARE_STAMINA": 50,
-  "LOGISTICS_EPIC_STAMINA": 90,
+  "LOGISTICS_COMMON_STAMINA": 20,
+  "LOGISTICS_UNCOMMON_STAMINA": 45,
+  "LOGISTICS_RARE_STAMINA": 75,
+  "LOGISTICS_EPIC_STAMINA": 110,
   "LOGISTICS_LEGENDARY_STAMINA": 150,
-  "SCOUTING_UNCOMMON_BPS": 1000,
+  "SCOUTING_COMMON_BPS": 1000,
+  "SCOUTING_UNCOMMON_BPS": 1500,
   "SCOUTING_RARE_BPS": 2000,
-  "SCOUTING_EPIC_BPS": 3000,
-  "SCOUTING_LEGENDARY_BPS": 4000,
-  "HOMECOMING_UNCOMMON_BPS": 300,
-  "HOMECOMING_RARE_BPS": 900,
-  "HOMECOMING_EPIC_BPS": 1800,
+  "SCOUTING_EPIC_BPS": 2500,
+  "SCOUTING_LEGENDARY_BPS": 3000,
+  "HOMECOMING_COMMON_BPS": 300,
+  "HOMECOMING_UNCOMMON_BPS": 800,
+  "HOMECOMING_RARE_BPS": 1400,
+  "HOMECOMING_EPIC_BPS": 2100,
   "HOMECOMING_LEGENDARY_BPS": 3000,
   "MAX_BLITZ_ROSTER_PLAYERS": 24,
   "DUEL_ROSTER_PLAYERS": 2,
@@ -43,7 +49,6 @@ export const nativeRuleConstants = {
   "HYPERSTRUCTURE_MULTIPLIERS": 32768,
   "PRODUCTION_START": 131072,
   "WELL_STAMINA": 60,
-  "TIER_STAMINA_REFILL": 30,
   "FRONTIER_REPORT_GRACE_SECONDS": 3600
 } as const;
 export const nativeResearchConstants = {
@@ -161,11 +166,12 @@ export const nativeStoryVariants = [
   "GuardDeleteStory",
   "TroopsTransferred",
   "LordsWithdrawn",
-  "TierBought",
+  "SkillPointSpent",
   "SitePayout",
   "SpireDiscovered",
   "RewardChestOpened",
-  "RelicActivated"
+  "RelicActivated",
+  "SiteUsed"
 ] as const;
 export type NativeStoryVariant = (typeof nativeStoryVariants)[number];
 export interface NativeRows {
@@ -181,16 +187,17 @@ export interface NativeRows {
   SeasonWinThreshold: { readonly game_id: number; readonly points: bigint };
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly percent: bigint; readonly percent_max: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
-  ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly fixed_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
+  ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly fixed_xp: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
-  ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_found: boolean };
-  LaborRules: { readonly game_id: number; readonly amount: bigint; readonly account_daily_limit: number };
-  LaborGrant: { readonly realm_id: number; readonly day: bigint; readonly game_id: number; readonly account: bigint; readonly home: bigint; readonly amount: bigint };
-  ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number };
+  ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
+  LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
+  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
+  ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
+  FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint; readonly pack: "War" | "Explore" | "Produce" | "Fortress"; readonly lucky: boolean };
-  LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint };
+  LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint; readonly prize_rank: number; readonly prize_count: number };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
   DepositRules: { readonly game_id: number; readonly paused: boolean; readonly realm_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number };
   WithdrawalRules: { readonly game_id: number; readonly paused: boolean; readonly bank_fee_bps: number; readonly velords_fee_bps: number; readonly season_fee_bps: number; readonly client_fee_bps: number; readonly velords_recipient: bigint; readonly season_recipient: bigint; readonly retention: readonly ({ readonly troop_percent: number; readonly resource_percent: number })[] };
@@ -220,11 +227,13 @@ export interface NativeRows {
   VillageRules: { readonly game_id: number; readonly troop_delay_ticks: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly resource_pool: readonly ({ readonly resource_type: number; readonly weight: bigint })[] };
   VillagePass: { readonly game_id: number; readonly pass_id: number; readonly owner: bigint; readonly village_id: bigint };
   VillagePool: { readonly game_id: number; readonly opened: number; readonly available: readonly ({ readonly coords: readonly ({ readonly alt: boolean; readonly x: number; readonly y: number })[] })[] };
+  SettledRealm: { readonly game_id: number; readonly realm_id: number; readonly home: bigint };
+  CampaignHome: { readonly game_id: number; readonly home: bigint; readonly campaign_id: bigint; readonly tier: number };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint; readonly realm_id: bigint; readonly metadata_1: bigint; readonly metadata_2: bigint; readonly metadata_3: bigint; readonly pass_kind: number };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint; readonly player: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly data: bigint };
   TileOccupancy: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number; readonly entity_id: bigint; readonly category: number; readonly is_structure: boolean };
-  ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly scouting_kinds: number; readonly homecoming: number };
+  ArmyProgress: { readonly game_id: number; readonly explorer_id: bigint; readonly xp: number; readonly common_points: number; readonly uncommon_points: number; readonly rare_points: number; readonly epic_points: number; readonly legendary_points: number; readonly battle: number; readonly logistics: number; readonly scouting: number; readonly homecoming: number; readonly scouting_kinds: number };
   ArmySlot: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly slot: number; readonly explorer_id: bigint; readonly stamina: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } };
   ExplorerTroops: { readonly game_id: number; readonly explorer_id: bigint; readonly owner: bigint; readonly troops: { readonly category: "Knight" | "Paladin" | "Crossbowman"; readonly tier: "T1" | "T2" | "T3"; readonly count: bigint; readonly stamina: { readonly Inline: { readonly amount: bigint; readonly settled_at: number; readonly remainder: number } } | { readonly Slot: number }; readonly boosts: { readonly incr_damage_dealt_percent_num: number; readonly incr_damage_dealt_end_at: number; readonly decr_damage_gotten_percent_num: number; readonly decr_damage_gotten_end_at: number; readonly incr_stamina_regen_percent_num: number; readonly incr_stamina_regen_seconds_left: number; readonly incr_explore_reward_percent_num: number; readonly incr_explore_reward_end_at: number }; readonly battle_cooldown_end: number } };
   ExpeditionSite: { readonly game_id: number; readonly entity_id: bigint; readonly category: number; readonly initial_guard_count: bigint; readonly alt: boolean; readonly col: number; readonly row: number; readonly clear: ({ readonly explorer_id: bigint; readonly home_id: bigint; readonly reward: ({ readonly resource_type: number; readonly amount: bigint }) | null }) | null };
@@ -237,7 +246,7 @@ export interface NativeRows {
   ResourceArrival: { readonly game_id: number; readonly entity_id: bigint; readonly day: bigint; readonly slot: number; readonly resources: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   RealmKnowledge: { readonly game_id: number; readonly structure_id: bigint; readonly learned: bigint };
   ResearchPrice: { readonly game_id: number; readonly row: number; readonly tier: number; readonly essence: bigint; readonly labor: bigint };
-  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly castle_store_deploys: number };
+  BoardRules: { readonly game_id: number; readonly demolition_refund_bps: number; readonly workshop_rate: bigint; readonly output_step_bps: number; readonly storage_step_bps: number; readonly population_step_bps: number; readonly ration_step: bigint; readonly training_gate_tier: number; readonly troop_store_deploys: number; readonly settlement_resource_cap: number; readonly city_resource_cap: number; readonly kingdom_resource_cap: number; readonly empire_resource_cap: number };
   BuildingRule: { readonly game_id: number; readonly category: number; readonly population_cost: number; readonly capacity_grant: number; readonly simple_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[]; readonly complex_cost: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   Building: { readonly game_id: number; readonly structure_id: bigint; readonly inner_col: number; readonly inner_row: number; readonly category: number; readonly paused: boolean; readonly labor_paid: bigint };
   StructureBuildings: { readonly game_id: number; readonly entity_id: bigint; readonly packed_counts_1: bigint; readonly packed_counts_2: bigint; readonly packed_counts_3: bigint; readonly population: { readonly current: number; readonly max: number } };
@@ -253,7 +262,7 @@ export interface NativeRows {
   UpgradeLimits: { readonly game_id: number; readonly realm_max: number; readonly village_max: number };
   UpgradeRecipe: { readonly game_id: number; readonly level: number; readonly costs: readonly ({ readonly resource_type: number; readonly amount: bigint })[] };
   DepthRules: { readonly game_id: number; readonly depth: number; readonly reveal_percent: number; readonly site_guard_lower: number; readonly site_guard_upper: number; readonly reveal_site_neighbors: boolean; readonly entry_stamina: number; readonly chest: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly ruin_guard_lower: number; readonly ruin_guard_upper: number; readonly guard_step: number; readonly beast_weak_lower: number; readonly beast_weak_upper: number; readonly beast_strong_lower: number; readonly beast_strong_upper: number };
-  GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint };
+  GameRelease: { readonly game_id: number; readonly release_id: number; readonly preset_commitment: bigint; readonly created_release_id: number };
   GameRegistry: { readonly game_id: number; readonly name: bigint; readonly preset_id: number; readonly settled: boolean; readonly ready: boolean; readonly dev_mode_on: boolean; readonly start_settling_at: bigint; readonly start_main_at: bigint; readonly end_at: bigint; readonly end_grace_seconds: number; readonly seed: bigint };
   GameOverrides: { readonly game_id: number; readonly registration_start: number; readonly biome_climate: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly map: ({ readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number }) | null; readonly map_center_offset: number };
   SliceRules: { readonly game_id: number; readonly battle_config: { readonly regular_immunity_ticks: number; readonly village_immunity_ticks: number; readonly village_raid_immunity_ticks: number; readonly cooldown_seconds: number }; readonly map_config: { readonly shards_mines_win_probability: number; readonly shards_mines_fail_probability: number; readonly camp_win_probability: number; readonly camp_fail_probability: number; readonly bitcoin_mine_win_probability: number; readonly bitcoin_mine_fail_probability: number; readonly hyps_win_prob: number; readonly hyps_fail_prob: number; readonly hyps_fail_prob_increase_p_hex: number; readonly hyps_fail_prob_increase_p_fnd: number; readonly relic_discovery_interval_sec: number; readonly relic_hex_dist_from_center: number }; readonly biome_climate_config: { readonly elevation_scale_bps: number; readonly moisture_scale_bps: number; readonly elevation_bias_bps: number; readonly moisture_bias_bps: number; readonly elevation_seed: number; readonly moisture_seed: number }; readonly tick_config: { readonly armies_tick_in_seconds: bigint; readonly delivery_tick_in_seconds: bigint; readonly bitcoin_phase_in_seconds: bigint }; readonly troop_damage_config: { readonly damage_raid_percent_num: number; readonly damage_biome_bonus_num: number; readonly damage_scaling_factor: bigint; readonly t1_damage_value: bigint; readonly t2_damage_multiplier: bigint; readonly t3_damage_multiplier: bigint }; readonly troop_stamina_config: { readonly stamina_gain_per_tick: number; readonly stamina_initial: number; readonly stamina_bonus_value: number; readonly stamina_knight_max: number; readonly stamina_paladin_max: number; readonly stamina_crossbowman_max: number; readonly stamina_attack_req: number; readonly stamina_defense_req: number; readonly stamina_explore_stamina_cost: number; readonly stamina_travel_stamina_cost: number; readonly stamina_explore_wheat_cost: number; readonly stamina_explore_fish_cost: number; readonly stamina_travel_wheat_cost: number; readonly stamina_travel_fish_cost: number; readonly damage_stamina_refund: boolean; readonly capture_stamina_refund: number }; readonly troop_limit_config: { readonly guard_resurrection_delay: number; readonly light_guard_lower_bound: number; readonly light_guard_upper_bound: number; readonly heavy_guard_lower_bound: number; readonly heavy_guard_upper_bound: number; readonly settlement_deployment_cap: number; readonly city_deployment_cap: number; readonly kingdom_deployment_cap: number; readonly empire_deployment_cap: number; readonly t1_tier_strength: number; readonly t2_tier_strength: number; readonly t3_tier_strength: number; readonly t1_tier_modifier: number; readonly t2_tier_modifier: number; readonly t3_tier_modifier: number; readonly settlement_armies: number; readonly city_armies: number; readonly kingdom_armies: number; readonly empire_armies: number; readonly settlement_guard_slots: number; readonly city_guard_slots: number; readonly kingdom_guard_slots: number; readonly empire_guard_slots: number; readonly starting_guard: number; readonly camp_armies: number; readonly explore_reward_strength_cap: number }; readonly capacity_config: { readonly troop_capacity: number; readonly donkey_capacity: number; readonly storehouse_boost_capacity: number }; readonly structure_capacity_config: { readonly realm_capacity: bigint; readonly village_capacity: bigint; readonly hyperstructure_capacity: bigint; readonly fragment_mine_capacity: bigint; readonly bank_structure_capacity: bigint; readonly camp_capacity: bigint; readonly bitcoin_mine_capacity: bigint }; readonly building_config: { readonly base_population: number; readonly base_cost_percent_increase: number }; readonly bitcoin_mine_config: { readonly enabled: boolean; readonly prize_per_phase: bigint; readonly min_labor_per_contribution: bigint; readonly owner_cut_bps: number }; readonly victory_points_grant_config: { readonly hyp_points_per_second: number; readonly claim_hyperstructure_points: number; readonly claim_otherstructure_points: number; readonly explore_tiles_points: number; readonly relic_open_points: number }; readonly map_center_offset: number; readonly spire_travel_essence_cost: bigint; readonly command_mask: bigint; readonly mode_rules: number; readonly day_unit_seconds: number; readonly entry_rule: number; readonly faith_enabled: boolean; readonly speed_config: { readonly donkey_sec_per_km: number; readonly donkey_sec_per_km_troops: number } };
@@ -277,8 +286,9 @@ export interface NativeKeys {
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
   LaborRules: { readonly game_id: number };
-  LaborGrant: { readonly realm_id: number; readonly day: bigint };
+  LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   ChestRules: { readonly game_id: number };
+  FrontierPrize: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint };
@@ -312,6 +322,8 @@ export interface NativeKeys {
   VillageRules: { readonly game_id: number };
   VillagePass: { readonly game_id: number; readonly pass_id: number };
   VillagePool: { readonly game_id: number };
+  SettledRealm: { readonly game_id: number; readonly realm_id: number };
+  CampaignHome: { readonly game_id: number; readonly home: bigint };
   EntryEntitlement: { readonly game_id: number; readonly owner: bigint };
   PlayerEntry: { readonly game_id: number; readonly owner: bigint };
   TileOpt: { readonly game_id: number; readonly alt: boolean; readonly col: number; readonly row: number };
@@ -525,7 +537,9 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "reveal_xp": "u32",
+      "reveal_xp_per_depth": "u32",
       "fixed_xp": "u32",
+      "common_xp": "u32",
       "uncommon_xp": "u32",
       "rare_xp": "u32",
       "epic_xp": "u32",
@@ -560,7 +574,7 @@ export const nativeFactModels = {
       "structure_id": "u64",
       "epoch": "u64",
       "empty_reveals": "u8",
-      "ruin_found": "boolean"
+      "ruin_cleared": "boolean"
     },
     "absence": {
       "parent": "Structure",
@@ -580,22 +594,25 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "amount": "u128",
-      "account_daily_limit": "u32"
+      "campaign_essence": "u128",
+      "golden_amount": "u128",
+      "golden_essence": "u128"
     }
   },
   "LaborGrant": {
     "keys": [
-      "realm_id",
+      "game_id",
+      "home",
       "day"
     ],
-    "scope": "deployment",
+    "scope": "game",
     "fields": {
-      "realm_id": "u32",
-      "day": "u64",
       "game_id": "u32",
-      "account": "felt",
       "home": "u64",
-      "amount": "u128"
+      "day": "u64",
+      "account": "felt",
+      "amount": "u128",
+      "essence": "u128"
     }
   },
   "ChestRules": {
@@ -613,7 +630,23 @@ export const nativeFactModels = {
         "epic": "u16",
         "legendary": "u16"
       },
-      "claim_window_seconds": "u32"
+      "claim_window_seconds": "u32",
+      "pool_bps": "u16",
+      "top_n": "u16"
+    }
+  },
+  "FrontierPrize": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "pool": "u128",
+      "issued": "u128",
+      "count": {
+        "option": "u16"
+      }
     }
   },
   "LordsBudget": {
@@ -677,7 +710,9 @@ export const nativeFactModels = {
       "game_id": "u32",
       "claim_id": "felt",
       "account": "felt",
-      "amount": "u128"
+      "amount": "u128",
+      "prize_rank": "u16",
+      "prize_count": "u16"
     }
   },
   "RelicDiscovery": {
@@ -1191,6 +1226,31 @@ export const nativeFactModels = {
       ]
     }
   },
+  "SettledRealm": {
+    "keys": [
+      "game_id",
+      "realm_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "realm_id": "u32",
+      "home": "u64"
+    }
+  },
+  "CampaignHome": {
+    "keys": [
+      "game_id",
+      "home"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "home": "u64",
+      "campaign_id": "felt",
+      "tier": "u8"
+    }
+  },
   "EntryEntitlement": {
     "keys": [
       "game_id",
@@ -1263,11 +1323,16 @@ export const nativeFactModels = {
       "game_id": "u32",
       "explorer_id": "u64",
       "xp": "u32",
+      "common_points": "u32",
+      "uncommon_points": "u32",
+      "rare_points": "u32",
+      "epic_points": "u32",
+      "legendary_points": "u32",
       "battle": "u8",
       "logistics": "u8",
       "scouting": "u8",
-      "scouting_kinds": "u8",
-      "homecoming": "u8"
+      "homecoming": "u8",
+      "scouting_kinds": "u16"
     }
   },
   "ArmySlot": {
@@ -1582,7 +1647,11 @@ export const nativeFactModels = {
       "population_step_bps": "u16",
       "ration_step": "u128",
       "training_gate_tier": "u8",
-      "castle_store_deploys": "u8"
+      "troop_store_deploys": "u8",
+      "settlement_resource_cap": "u32",
+      "city_resource_cap": "u32",
+      "kingdom_resource_cap": "u32",
+      "empire_resource_cap": "u32"
     }
   },
   "BuildingRule": {
@@ -1874,7 +1943,8 @@ export const nativeFactModels = {
     "fields": {
       "game_id": "u32",
       "release_id": "u32",
-      "preset_commitment": "felt"
+      "preset_commitment": "felt",
+      "created_release_id": "u32"
     }
   },
   "GameRegistry": {
@@ -2113,6 +2183,7 @@ export const nativeSyncScopes = {
   "LaborRules": "shared",
   "ArmyProgressionRules": "shared",
   "LordsBudget": "shared",
+  "FrontierPrize": "shared",
   "FrontierDiscoveryRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",
@@ -2154,6 +2225,16 @@ export const nativeSyncScopes = {
   "RealmTraits": {
     "realmTraits": [
       "realm_id"
+    ]
+  },
+  "SettledRealm": {
+    "entities": [
+      "home"
+    ]
+  },
+  "CampaignHome": {
+    "entities": [
+      "home"
     ]
   },
   "EntryEntitlement": {

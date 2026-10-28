@@ -15,7 +15,11 @@ export class WalletNotDeployedError extends Error {}
 
 /** Offchain verification is allowed only after the environment chain explicitly reports that the account is absent. */
 export const verifyWalletOnL2 =
-  (env: { ENVIRONMENT: import("@realms-world/chain").ValueEnvironment; L2_RPC_URL: string }): VerifyWalletSignature =>
+  (env: {
+    ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
+    L2_RPC_URL: string;
+    MARKETPLACE_API_URL: string;
+  }): VerifyWalletSignature =>
   async (message, signature, address, deployment) => {
     const { chainId } = identityL2Configuration(env);
     if (message.domain.chainId !== chainId) throw new Error("identity_proof_chain_mismatch");

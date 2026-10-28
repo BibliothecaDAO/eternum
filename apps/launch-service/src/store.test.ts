@@ -1,3 +1,4 @@
+import { D1CalendarStore } from "./calendar-store";
 import { frontierPreset } from "../../../config/source/frontier/native";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { frontierSeasonEnd } from "./test-dates";
@@ -101,11 +102,17 @@ test("a launch interrupted while running is resumed, not queued twice", async ()
 });
 
 /** The calendar uses the Frontier preset season length. */
-const season = (startsAt: string) => ({ phase: "frontier" as const, startsAt, endsAt: frontierSeasonEnd(startsAt) });
+const season = (startsAt: string) => ({
+  phase: "frontier" as const,
+  presetId: 5,
+  startsAt,
+  endsAt: frontierSeasonEnd(startsAt),
+});
 
 test("one Frontier season is created once by every tick and continued like any failed run", async () => {
   const store = new D1LaunchStore(database.db, testChain());
   const seasonStart = "2027-01-01T00:00:00.000Z";
+  await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const queued = await scheduleFrontierSeason(store, season(seasonStart));
   expect(queued.name).toBe("frontier-1798761600");
   expect(await scheduleFrontierSeason(store, season(seasonStart))).toMatchObject({ id: queued.id, status: "queued" });
@@ -136,6 +143,7 @@ test("one Frontier season is created once by every tick and continued like any f
   });
   expect(await store.list("madara.frontier")).toHaveLength(1);
 
+  await new D1CalendarStore(database.db).set(season("2027-04-30T00:00:00.000Z"), Date.parse("2027-04-29T00:00:00Z"));
   const next = await scheduleFrontierSeason(store, season("2027-04-30T00:00:00.000Z"));
   expect(next.id).not.toBe(queued.id);
   expect((await store.startNext(Date.now()))?.id).toBe(next.id);
@@ -145,11 +153,13 @@ test("every game run's name is listed per environment and chain, whatever its st
   const seasonStart = "2027-01-01T00:00:00.000Z";
   const chain = new D1LaunchStore(database.db, testChain("0x1"));
   const other = new D1LaunchStore(database.db, testChain("0x2"));
+  await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const done = await scheduleFrontierSeason(chain, season(seasonStart));
   await completeFreeFixture(chain, (await chain.startNext(Date.now()))!.id, frontierSummary(done.name, seasonStart));
+  await new D1CalendarStore(database.db).set(season("2027-04-30T00:00:00.000Z"), Date.parse("2027-04-29T00:00:00Z"));
   const next = await scheduleFrontierSeason(chain, season("2027-04-30T00:00:00.000Z"));
   await chain.enqueue("game", { environment: "madara.blitz", gameName: "bltz-7" });
-  const elsewhere = await scheduleFrontierSeason(other, season(seasonStart));
+  const elsewhere = await scheduleFrontierSeason(other, season("2027-04-30T00:00:00.000Z"));
   expect((await chain.gameNames("madara.frontier")).sort()).toEqual([done.name, next.name].sort());
   expect(await other.gameNames("madara.frontier")).toEqual([elsewhere.name]);
 });
@@ -166,6 +176,7 @@ test("retirement preserves history while unfinished live work remains observable
     gameId: 7,
     finalizeAt: Math.floor(Date.now() / 1_000) - 1,
   });
+  await new D1CalendarStore(database.db).set(season(seasonStart), Date.parse(seasonStart) - 1);
   const oldSeason = await scheduleFrontierSeason(oldChain, season(seasonStart));
 
   // Another official chain shares the D1; its work remains isolated.

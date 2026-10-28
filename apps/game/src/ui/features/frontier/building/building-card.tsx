@@ -5,7 +5,7 @@ import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudCost, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Tier } from "@/ui/design-system/kit/words";
+import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -21,7 +21,7 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import { firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
+import { researchSideNode, firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -52,7 +52,7 @@ export const BuildingCard = ({
   const actions = useResearchActions(realm, onResearchPage);
   const demolish = useDemolish(realm, building);
   const row = researchRowOf(building.category);
-  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 4);
+  const node = tree?.nodes.find((each) => each.row === row && each.maxTier === 5);
   const orders: BuildingOrders = {
     sending: node !== undefined && actions.sending(node),
     fix: (need) => (node && tree ? actions.fixFor(need, node, tree.nodes) : undefined),
@@ -134,7 +134,8 @@ export const BuildingCardView = ({
   onClose: () => void;
 }) => {
   const [side, setSide] = useState(0);
-  const next = orders && node && node.state !== "done" ? node : undefined;
+  const chosen = node && researchSideNode(node, side);
+  const next = orders && chosen && chosen.state !== "done" ? chosen : undefined;
   return (
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
@@ -160,15 +161,15 @@ export const BuildingCardView = ({
         </div>
         {node && (
           <CompareRows
-            now={<HudTier tier={tierOf(node.tier)} />}
-            next={next && <HudTier tier={tierOf(next.tier + 1)} />}
+            now={<HudTier tier={tierOf(chosen!.tier)} />}
+            next={next?.nextTier ? <HudTier tier={next.nextTier} /> : undefined}
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
               now: figure.now,
-              next: next && figure.next,
-              grows: next !== undefined && (!next.sides || index === side),
-              onPick: next?.sides ? () => setSide(index) : undefined,
+              next: orders && figure.next,
+              grows: orders !== undefined && (!node.sides || index === side),
+              onPick: orders && node.sides ? () => setSide(index) : undefined,
             }))}
           />
         )}
@@ -186,8 +187,8 @@ export const BuildingCardView = ({
   );
 };
 
-/** A row's tiers learned (0 to 4) as the tier its gem shows (Common I to Legendary V). */
-const tierOf = (tier: number) => Math.min(5, tier + 1) as Tier;
+/** A row's research rank, from untrained 0 through Legendary V. */
+const tierOf = (tier: number) => Math.min(5, tier) as Rank;
 
 /** The next tier's Research in the card's foot, with its price; or, while it cannot run, why, with the fix. */
 const ResearchFoot = ({

@@ -56,7 +56,8 @@ export type SiteVerb =
     }
   | { kind: "move"; prices: readonly Price[]; onMove: () => void }
   | { kind: "short"; stamina: Cost }
-  | { kind: "far" };
+  | { kind: "far" }
+  | { kind: "blocked"; reason: string };
 
 /**
  * A guarded site's card (wireframe 06), read as its result will read (the owner's option A), headed as the owner picked
@@ -77,6 +78,7 @@ export const SiteCardView = ({
   fight,
   pay,
   chest,
+  ruinChoice,
   xp,
   verb,
   receipt,
@@ -94,6 +96,7 @@ export const SiteCardView = ({
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
+  ruinChoice?: { depth: string };
   xp: number | undefined;
   verb: SiteVerb | null;
   receipt?: ReactNode;
@@ -146,6 +149,14 @@ export const SiteCardView = ({
           {reward}
         </span>
       </header>
+      {ruinChoice && (
+        <dl className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-hud-label">
+          <dt className="text-hud-muted">{ruinChoice.depth} · Disappears</dt>
+          <dd className="text-hud-ink" data-tip="Your first ruin clear removes every other ruin, across all depths.">
+            First ruin clear or day end
+          </dd>
+        </dl>
+      )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
       <Verb
@@ -333,6 +344,7 @@ export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFl
  * or, under Move, that the site is out of reach.
  */
 const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
+  if (verb.kind === "blocked") return { line: verb.reason, warns: true };
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
   return { line: warns ? ARMY_WILL_BE_LOST : verb.kind === "move" ? tooFarFrom(site) : undefined, warns };
 };
@@ -348,6 +360,8 @@ const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
       return <HudCost line={costLine([{ of: "stamina", amount: verb.stamina }])} />;
     case "move":
       return <HudCost line={costLine(verb.prices)} />;
+    case "blocked":
+      return null;
     default:
       return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
   }

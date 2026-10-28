@@ -6,6 +6,8 @@ import type { MonitorPorts } from "./ports";
 it("keeps checked-through block and page continuation across ticks without rereading old claims", async () => {
   let progress: MonitorProgress = { halted: null };
   const receipt = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 1,
     transactionHash: "0xabc",
@@ -67,6 +69,8 @@ it("keeps checked-through block and page continuation across ticks without rerea
 it("an exact row reset skips only that claim, still faults on the next unchecked claim, and survives a rewind", async () => {
   let progress: MonitorProgress = { halted: null };
   const rows = ["0xabc", "0xdef"].map((transactionHash) => ({
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     seasonId: 1,
     transactionHash,
@@ -190,6 +194,8 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
     const ledger = {
       paid: [
         {
+          prizeRank: 0,
+          prizeCount: 0,
           chainId: "0x1",
           transactionHash: "0xabc",
           seasonId: 1,
@@ -225,7 +231,16 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
       shard: {
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
-          Effect.succeed({ chainId, transactionHash, seasonId: 1, amount: "1", realmsId: "0x2", confirmedAt: 1 }),
+          Effect.succeed({
+            prizeRank: 0,
+            prizeCount: 0,
+            chainId,
+            transactionHash,
+            seasonId: 1,
+            amount: "1",
+            realmsId: "0x2",
+            confirmedAt: 1,
+          }),
         result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {

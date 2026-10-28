@@ -8,12 +8,7 @@ pub fn rules(game_id: u32) -> Option<ArmyProgressionRules> {
 
 #[inline(never)]
 pub fn read(key: ExplorerKey) -> Option<ArmyProgress> {
-    let progress = crate::state::read().troops.progress.read((key.game_id, key.explorer_id));
-    if progress.battle == 0 {
-        None
-    } else {
-        Some(progress)
-    }
+    crate::state::read().troops.progress.read((key.game_id, key.explorer_id))
 }
 
 #[inline(never)]
@@ -31,7 +26,7 @@ pub fn create(key: ExplorerKey, learned: u64) -> ArmyProgress {
 
 #[inline(never)]
 pub fn write(key: ExplorerKey, progress: ArmyProgress) {
-    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), progress);
+    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), Some(progress));
     let mut keys = array![];
     key.serialize(ref keys);
     let mut values = array![];
@@ -45,13 +40,7 @@ pub fn write(key: ExplorerKey, progress: ArmyProgress) {
 
 pub fn destroy(key: ExplorerKey) {
     require(key);
-    crate::state::write()
-        .troops
-        .progress
-        .write(
-            (key.game_id, key.explorer_id),
-            ArmyProgress { xp: 0, battle: 0, logistics: 0, scouting: 0, scouting_kinds: 0, homecoming: 0 },
-        );
+    crate::state::write().troops.progress.write((key.game_id, key.explorer_id), None);
     let mut keys = array![];
     key.serialize(ref keys);
     crate::logic::troops::TroopState::emit(
@@ -74,16 +63,22 @@ pub fn own_stamina_max(
 pub fn award_xp(key: ExplorerKey, award: XpAward) {
     let rules = rules(key.game_id).expect('missing progression rules');
     let mut progress = require(key);
-    progress.xp += match award {
-        XpAward::Reveal => rules.reveal_xp,
+    let amount = match award {
+        XpAward::Reveal(coord) => {
+            let depth: u32 = crate::logic::expeditions::depth_at(key.game_id, coord).into();
+            rules.reveal_xp + depth * rules.reveal_xp_per_depth
+        },
         XpAward::Clear(strength) => crate::progression::clear_xp(strength),
     };
+    crate::progression::earn_xp(ref progress, rules, amount);
     write(key, progress);
 }
 
 /// A shrine's XP: a fixed amount, whatever its quality.
-pub fn grant_fixed_xp(key: ExplorerKey) {
+pub fn grant_fixed_xp(key: ExplorerKey) -> u32 {
     let mut progress = require(key);
-    progress.xp += rules(key.game_id).expect('missing progression rules').fixed_xp;
+    let amount = rules(key.game_id).expect('missing progression rules').fixed_xp;
+    crate::progression::earn_xp(ref progress, rules(key.game_id).expect('missing progression rules'), amount);
     write(key, progress);
+    amount
 }

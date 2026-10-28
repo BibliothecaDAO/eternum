@@ -102,6 +102,7 @@ const claimCall = (contractAddress: string, { withdrawal, wallet }: PayableClaim
     withdrawal.transactionHash,
     ...(phase === "pay" ? [wallet] : []),
     ...amountOf(withdrawal.amount),
+    ...(phase === "report" ? [String(withdrawal.prizeRank), String(withdrawal.prizeCount)] : []),
   ],
 });
 const verifyReportedDebt = async (credentials: Credentials, rows: readonly PayableClaim[]) => {
@@ -110,7 +111,13 @@ const verifyReportedDebt = async (credentials: Credentials, rows: readonly Payab
       const saved = await Effect.runPromise(
         ledgerPaymentRead(credentials.rpcUrl, credentials.contractAddress)(withdrawal),
       );
-      if (!saved || saved.seasonId !== withdrawal.seasonId || BigInt(saved.amount) !== BigInt(withdrawal.amount))
+      if (
+        !saved ||
+        saved.seasonId !== withdrawal.seasonId ||
+        BigInt(saved.amount) !== BigInt(withdrawal.amount) ||
+        saved.prizeRank !== withdrawal.prizeRank ||
+        saved.prizeCount !== withdrawal.prizeCount
+      )
         throw paymentFailure("Ledger: conflicting withdrawal report");
     }),
   );
@@ -122,7 +129,7 @@ const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[
     payable: PayableClaim[] = [],
     waiting: ClaimOutcome[] = [];
   for (const row of rows) {
-    const key = `${row.withdrawal.chainId}:${row.withdrawal.seasonId}`;
+    const key = `${row.withdrawal.chainId}:${row.withdrawal.seasonId}:${row.withdrawal.prizeRank > 0}`;
     if (!budgets.has(key)) budgets.set(key, await availableBudget(context, row.withdrawal, head.number));
     const available = budgets.get(key);
     if (available === undefined) throw new Error("batch_budget_missing");
@@ -147,8 +154,11 @@ const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, bl
   ]);
   const funded = decodeFrontierSeason(season);
   if (unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
-  if (funded.closed) return null;
-  const amount = BigInt(ledgerU256(unlocked[0]!, unlocked[1]!)) - BigInt(funded.paid);
+  if (funded.closed && withdrawal.prizeRank === 0) return null;
+  const amount =
+    withdrawal.prizeRank > 0
+      ? BigInt(funded.prizePool) - BigInt(funded.prizePaid)
+      : BigInt(ledgerU256(unlocked[0]!, unlocked[1]!)) - BigInt(funded.paid);
   return amount < 0n ? 0n : amount;
 };
 const amountOf = (amount: string) => [String(BigInt(amount) & (2n ** 128n - 1n)), String(BigInt(amount) >> 128n)];

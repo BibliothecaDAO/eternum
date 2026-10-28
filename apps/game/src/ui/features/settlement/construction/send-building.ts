@@ -47,12 +47,14 @@ export const sendBuilding = ({
   type,
   plot,
   useSimpleCost,
+  scoutingKind,
   from,
 }: {
   realmId: number;
   type: BuildingType;
   plot: HexPosition;
   useSimpleCost: boolean;
+  scoutingKind?: 0 | 1 | 2;
   from?: SentFrom;
 }): Promise<string | null> =>
   sendOnce("plot", plotKey(realmId, plot), { type, plot: { col: plot.col, row: plot.row } }, async () => {
@@ -61,6 +63,7 @@ export const sendBuilding = ({
       buildingType: type,
       hex: plot,
       useSimpleCost,
+      scoutingKind,
     });
     if (from?.isOpen()) from.close();
     return sent;

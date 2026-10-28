@@ -1,7 +1,6 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { TileOccupier } from "@bibliothecadao/types";
 
-import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { type LabScenario, wire } from "./lab-chain";
 import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
@@ -20,22 +19,7 @@ export const sitesScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
-  const xp = frontierPreset.progression;
-  if (!xp) throw new Error("The Frontier preset has no XP rules");
   store.applyFacts([
-    {
-      model: "ArmyProgressionRules",
-      key: PROGRESS_KEYS.rules,
-      value: {
-        game_id: 1,
-        reveal_xp: xp.revealXp,
-        fixed_xp: xp.fixedXp,
-        uncommon_xp: xp.uncommonXp,
-        rare_xp: xp.rareXp,
-        epic_xp: xp.epicXp,
-        legendary_xp: xp.legendaryXp,
-      },
-    },
     {
       model: "ExplorerTroops",
       key: "0x74",

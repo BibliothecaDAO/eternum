@@ -30,8 +30,7 @@ AREAS = {
         "scripts/check-forbidden-hosts*",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
-        "apps/launch-service/migrations/0007_game_entry.sql",
-        "apps/launch-service/migrations/0008_unproven_blitz_entries.sql",
+        "apps/launch-service/migrations/**",
         "apps/launch-service/wrangler.jsonc",
         "packages/**",
         "config/**",
@@ -51,6 +50,7 @@ AREAS = {
         "deploy/athanor/scripts/directory.py",
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
+        "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
         "deploy/first/environments.json",
@@ -97,11 +97,13 @@ AREAS = {
         "contracts/common/addresses/**"
     ],
     "native": [
+        ".tool-versions",
+        "contracts/l2/ledger/**",
+        "contracts/l2/collectibles/**",
         ".github/workflows/test-native.yml",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
-        "apps/launch-service/migrations/0007_game_entry.sql",
-        "apps/launch-service/migrations/0008_unproven_blitz_entries.sql",
+        "apps/launch-service/migrations/**",
         "apps/launch-service/wrangler.jsonc",
         "contracts/l3/**",
         "contracts/common/addresses/**",
@@ -120,6 +122,9 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
+        "apps/realms/server/realm-holdings.ts",
+        "apps/realms/server/l2.ts",
         "deploy/release/**",
         "deploy/shard/**",
         "scripts/generate-realm-metadata.py"
@@ -142,6 +147,9 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
+        "apps/realms/server/realm-holdings.ts",
+        "apps/realms/server/l2.ts",
         # The release files this area reads: the release id (deploy/first) and the shard settings (deploy/athanor).
         "deploy/release/native-release.ts",
         "deploy/release/*.json",
@@ -185,6 +193,7 @@ AREAS = {
     "docs": [
         ".github/workflows/test-docs.yml",
         "apps/game-docs/**",
+        "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
         "deploy/first/environments.json",

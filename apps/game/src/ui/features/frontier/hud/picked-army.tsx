@@ -1,6 +1,6 @@
 import { Icon } from "@/ui/design-system/icon";
 import { HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { PICKED_ARMY, type Tier, tierNumeral } from "@/ui/design-system/kit/words";
+import { PICKED_ARMY, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 import { ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
@@ -21,15 +21,14 @@ export type PickedArmyView = Pick<
   | "stamina"
   | "secondsToFull"
   | "troops"
-  | "canBuyTier"
+  | "canSpendSkillPoint"
   | "tiers"
 >;
 
 /**
  * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: D, its stamina
  * over Level up): its token, a tap opening its card; its four sides with their tiers, which the token does not show;
- * then its stamina, which is its refill, over Level up, and Spire where it stands at its spire. Level up opens the card on its choices while the XP buys a
- * level, else the card. A tap on an empty tile lets the army go, and the dock comes back.
+ * then its stamina, which is its refill, over Level up, and Spire where it stands at its spire. Level up opens the card on its choices while a skill point can be spent, else the card. A tap on an empty tile lets the army go, and the dock comes back.
  */
 export const PickedArmy = ({
   army,
@@ -55,7 +54,7 @@ export const PickedArmy = ({
       xpGoal={army.xpGoal}
       stamina={army.stamina}
       troops={army.troops}
-      canBuyTier={army.canBuyTier}
+      canSpendSkillPoint={army.canSpendSkillPoint}
       selected
       flyTarget={attributeBadgeTarget(army.explorerId)}
       onPick={onDetails}
@@ -65,7 +64,7 @@ export const PickedArmy = ({
     </span>
     <span className="grid w-24 shrink-0 gap-1.5">
       {refill}
-      <LevelUpButton affordable={army.canBuyTier} onPress={onLevelUp} />
+      <LevelUpButton affordable={army.canSpendSkillPoint} onPress={onLevelUp} />
       {spire}
     </span>
   </HudPanel>
@@ -78,11 +77,11 @@ const Sides = ({ tiers }: { tiers: Record<AttributeKey, number> }) => (
       <span
         key={key}
         role="img"
-        aria-label={`${name} ${tierNumeral(tiers[key] as Tier)}`}
+        aria-label={`${name} ${tierNumeral(tiers[key] as Rank)}`}
         className="flex flex-col items-center gap-1"
       >
         <Icon name={mark} size={28} />
-        <HudTier tier={tiers[key] as Tier} />
+        <HudTier tier={tiers[key] as Rank} />
       </span>
     ))}
   </span>

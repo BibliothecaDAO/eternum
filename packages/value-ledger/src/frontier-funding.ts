@@ -4,11 +4,14 @@ import { decodeFrontierSeason, decodeLedgerPreset, readConfirmedLedgerHead } fro
 
 /** Immutable confirmed GameRegistry, ChestRules and SliceRules facts. */
 export interface FrontierFundingTerms {
+  presetId: number;
   start: number;
   end: number;
   seed: string;
   dayUnit: number;
   claimWindow: number;
+  chestPoolBps: number;
+  topN: number;
 }
 
 /** Unfunded views revert; unreadable or different custody cannot bind a receipt. */
@@ -31,7 +34,12 @@ export async function readFrontierFunding(
   );
   const preset = decodeLedgerPreset(await read("get_preset", [String(season.presetId)]));
   assertFrontierPreset(preset, native);
-  if (season.start !== native.start || season.end !== native.end || BigInt(season.seed) !== BigInt(native.seed))
+  if (
+    season.presetId !== native.presetId ||
+    season.start !== native.start ||
+    season.end !== native.end ||
+    BigInt(season.seed) !== BigInt(native.seed)
+  )
     throw new Error("frontier_funding_differs_from_game");
   return { ...season, claimDeadline: season.end + preset.claimWindow, confirmedBlock: head };
 }
@@ -39,14 +47,22 @@ export async function readFrontierFunding(
 /** Compare the immutable day rules before funding and when checking an existing pool. */
 export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPreset>, native: FrontierFundingTerms) {
   if (
-    ![native.start, native.end, native.dayUnit, native.claimWindow].every(Number.isSafeInteger) ||
+    ![native.start, native.end, native.dayUnit, native.claimWindow, native.topN, native.chestPoolBps].every(
+      Number.isSafeInteger,
+    ) ||
     native.start < 0 ||
     native.dayUnit <= 0 ||
+    native.topN < 1 ||
+    native.topN > 100 ||
+    native.chestPoolBps <= 0 ||
+    native.chestPoolBps > 10000 ||
     native.claimWindow <= 0 ||
     native.end <= native.start ||
     BigInt(native.seed) <= 0n ||
     preset.dayUnit !== native.dayUnit ||
     preset.claimWindow !== native.claimWindow ||
+    preset.frontierChestBps !== native.chestPoolBps ||
+    preset.frontierTopN !== native.topN ||
     BigInt(native.end - native.start) % (20n * BigInt(native.dayUnit)) !== 0n
   )
     throw new Error("frontier_funding_differs_from_game");

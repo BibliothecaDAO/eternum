@@ -401,6 +401,7 @@ const inputs: Inputs = {
   discordClientId: "fake-discord-id",
   discordClientSecret: "fake-discord-secret",
   amount: "1000000",
+  frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
   frontierEnd: "2027-01-21T00:00:00Z",
   blitzStart: "2027-01-01T00:00:00Z",

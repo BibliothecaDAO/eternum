@@ -3,4 +3,4 @@
  * half registers it on the running shard, and the Cloudflare half advances the running Frontier games to it before the
  * client that expects it goes live.
  */
-export const NATIVE_RELEASE_ID = 4;
+export const NATIVE_RELEASE_ID = 5;

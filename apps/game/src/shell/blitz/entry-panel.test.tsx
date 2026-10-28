@@ -248,3 +248,13 @@ it.each(["staging", "production"])(
     ]);
   },
 );
+
+it("offers no mint when the ledger is paid in LORDS: a short wallet sees what it lacks, and nothing to mint", async () => {
+  const short = await mount({
+    ...TERMS,
+    lordsToken: "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
+    lords: 320n * WEI,
+  });
+  expect(short.textContent).toContain("Need 180 more LORDS");
+  expect(wordsOf(short).filter((words) => words?.startsWith("Mint"))).toEqual([]);
+});

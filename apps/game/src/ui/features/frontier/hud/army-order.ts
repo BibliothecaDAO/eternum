@@ -12,6 +12,8 @@ import {
   divideByPrecision,
   getBalance,
   ResourceManager,
+  readRevealXp,
+  FELT_CENTER,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -88,7 +90,7 @@ export const useOrderAt = (target: { col: number; row: number } | null): ArmyOrd
           : undefined,
     },
     wheat: { cost: wheatCost, held: wheatHeld, wait: secondsUntilHeld(wheatHeld, wheatCost, wheatPerHour) },
-    xp: explore ? setup.store.get("ArmyProgressionRules", { game_id: gameId })?.reveal_xp : undefined,
+    xp: explore ? readRevealXp(setup.store, gameId, { y: target.row + FELT_CENTER() }) : undefined,
   };
 };
 

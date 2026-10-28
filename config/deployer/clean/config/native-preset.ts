@@ -3,6 +3,8 @@ import {
   nativeRuleConstants as presetRule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
+import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
+import { nativeProgressionRules } from "../../../source/common/progression";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -83,7 +85,7 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     command_mask: preset.commandMask,
-    day_unit_seconds: preset.dayUnitSeconds,
+    day_unit_seconds: seasonDayUnitSeconds(preset),
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
     faith_enabled: faith.enabled,
@@ -189,7 +191,11 @@ function buildStructures(config: Config, preset: ReturnType<typeof nativePresetF
             population_step_bps: board.populationStepBps,
             ration_step: scaled(board.rationStep, precision),
             training_gate_tier: board.trainingGateTier,
-            castle_store_deploys: board.castleStoreDeploys,
+            troop_store_deploys: board.troopStoreDeploys,
+            settlement_resource_cap: board.resourceStoreCaps[0],
+            city_resource_cap: board.resourceStoreCaps[1],
+            kingdom_resource_cap: board.resourceStoreCaps[2],
+            empire_resource_cap: board.resourceStoreCaps[3],
           }),
     research: preset.research.map(({ row, tier, essenceCost, laborCost }) => ({
       row,
@@ -286,6 +292,15 @@ function buildEconomy(
   if (chests === undefined || (chests !== null) !== (preset.dayUnitSeconds !== 0))
     throw new Error("Explicit chest rules are required for expedition presets only");
   if (chests !== null) {
+    if (
+      !Number.isInteger(chests.poolBps) ||
+      chests.poolBps <= 0 ||
+      chests.poolBps >= 10_000 ||
+      !Number.isInteger(chests.topN) ||
+      chests.topN < 1 ||
+      chests.topN > 100
+    )
+      throw new Error("Invalid Frontier prize split");
     const shares = [
       chests.shares.common,
       chests.shares.uncommon,
@@ -308,18 +323,23 @@ function buildEconomy(
     throw new Error("Explicit progression rules are required for expedition presets only");
   if (
     progression &&
-    Object.values(progression).some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff_ffff)
+    Object.entries(progression).some(
+      ([key, value]) =>
+        !Number.isSafeInteger(value) || value < (key === "revealXpPerDepth" ? 0 : 1) || value > 0xffff_ffff,
+    )
   )
     throw new Error("Progression XP values must be positive u32 integers");
+  if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
+    throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
     (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
-        !Number.isSafeInteger(labor.accountDailyLimit) ||
-        labor.accountDailyLimit < 0 ||
-        labor.accountDailyLimit > 0xffff_ffff))
+        !Number.isSafeInteger(labor.goldenAmount) ||
+        labor.goldenAmount <= 0 ||
+        [labor.campaignEssence, labor.goldenEssence].some((amount) => !Number.isSafeInteger(amount) || amount < 0)))
   )
     throw new Error("Invalid Realm labor rules");
   return {
@@ -328,20 +348,15 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             amount: BigInt(preset.labor.amount),
-            account_daily_limit: preset.labor.accountDailyLimit,
+            campaign_essence: BigInt(preset.labor.campaignEssence),
+            golden_amount: BigInt(preset.labor.goldenAmount),
+            golden_essence: BigInt(preset.labor.goldenEssence),
           }),
     discovery: buildDiscovery(preset),
     progression:
       progression === null
         ? new CairoOption(CairoOptionVariant.None)
-        : new CairoOption(CairoOptionVariant.Some, {
-            reveal_xp: progression.revealXp,
-            fixed_xp: progression.fixedXp,
-            uncommon_xp: progression.uncommonXp,
-            rare_xp: progression.rareXp,
-            epic_xp: progression.epicXp,
-            legendary_xp: progression.legendaryXp,
-          }),
+        : new CairoOption(CairoOptionVariant.Some, nativeProgressionRules(progression)),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)
@@ -349,6 +364,8 @@ function buildEconomy(
             price_ceiling: BigInt(chests.priceCeiling),
             shares: chests.shares,
             claim_window_seconds: chests.claimWindowSeconds,
+            pool_bps: chests.poolBps,
+            top_n: chests.topN,
           }),
     trade: { max_count: config.trade.maxCount },
     banks: {
@@ -413,13 +430,12 @@ export function buildNativePreset(config: Config, presetId: number) {
     exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
-  if (preset.clockScale) scaleSeasonClocks(definition, preset.clockScale);
+  if (preset.clockScale !== undefined) scaleActivityClocks(definition, preset.clockScale.activity);
   return definition;
 }
 
-/** A fixture preset plays its mode's season this many times faster: a shorter day, faster army ticks, more output. */
-function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  definition.rules.day_unit_seconds = clockScaled(definition.rules.day_unit_seconds, scale, "day_unit_seconds");
+/** Activity scales stamina recovery and production without changing the day calendar. */
+function scaleActivityClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
   definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
     definition.rules.tick_config.armies_tick_in_seconds,
     scale,
@@ -435,12 +451,6 @@ function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, sca
     throw new Error("A scaled season requires a workshop rate");
   board.workshop_rate *= BigInt(scale);
   for (const mine of definition.resources.mine_kinds) mine.config.production_rate *= BigInt(scale);
-}
-
-/** A span of a scaled preset's season, in seconds: its mode's span divided by the clock scale, never rounded. */
-export function clockScaled(seconds: number, scale: number, name: string): number {
-  if (!Number.isInteger(seconds / scale)) throw new Error(`${name} ${seconds} does not divide by clock scale ${scale}`);
-  return seconds / scale;
 }
 
 function validateMineConfig(config: Config): void {

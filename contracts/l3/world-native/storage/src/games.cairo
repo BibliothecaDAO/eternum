@@ -46,6 +46,7 @@ pub struct GamesStorage<
     pub presets: Map<felt252, TPreset>,
     pub releases: Map<u32, Release>,
     pub game_releases: Map<u32, u32>,
+    pub game_creation_releases: Map<u32, u32>,
     pub current_release: u32,
     pub arrivals: crate::arrivals::ArrivalStateStorage<TResourceAmount>,
     pub bitcoin: crate::bitcoin::BitcoinStateStorage<TPhase, TContribution, TMineFunding>,

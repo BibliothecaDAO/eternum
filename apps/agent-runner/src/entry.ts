@@ -92,6 +92,7 @@ const ensureExplorers = async (
   for (const spawn of spawns) {
     if (client.views.explorers(spawn.structureId).length > 0) continue;
     await client.actions.createExplorerArmy({
+      slot: 0,
       structureId: spawn.structureId,
       troopType: troopTypes.get(spawn.structureId)!,
       troopTier: TroopTier.T1,

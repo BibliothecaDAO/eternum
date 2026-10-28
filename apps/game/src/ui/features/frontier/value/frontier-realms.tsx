@@ -1,70 +1,43 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
-
-import { SETTINGS_PATH } from "@/shell/profile/settings-route";
-import { REALM_NOT_CLAIMED } from "@/ui/design-system/kit/words";
+import { useAlertsAsk } from "@/shell/profile/alerts-ask";
 import { toast } from "@/ui/features/event-feed/notify";
-
 import { RealmsSheet } from "./realms-sheet";
 import type { useRealmLabor } from "./use-realm-labor";
 
-/**
- * Realms over the game's facts: the known Realms' labor today, one Claim all (every ready Realm in one request to the
- * relay, which grants those still in the wallet and names the others), and Add a Realm, which is that Realm's first
- * claim. Nothing shows before the facts are known.
- */
 export const FrontierRealms = ({
   labor,
   onRealm,
   onClose,
 }: {
   labor: ReturnType<typeof useRealmLabor>;
-  /** To the Realm board, where labor is spent. */
   onRealm: () => void;
   onClose: () => void;
 }) => {
-  const navigate = useNavigate();
   const [sending, setSending] = useState(false);
-  const [adding, setAdding] = useState(false);
+  const ask = useAlertsAsk();
   if (!labor) return null;
-
-  const claimAll = async () => {
+  const claim = async () => {
     setSending(true);
     try {
-      await labor.claim(labor.plan.rows.filter((row) => row.state === "ready").map((row) => row.realm.realmId));
+      await labor.claim();
     } catch (error) {
       toast.failed(error, "The labor could not be claimed.");
     } finally {
       setSending(false);
     }
   };
-
-  const add = async (realmId: number) => {
-    setAdding(true);
-    try {
-      // A Realm added by its number and refused was never the wallet's to add.
-      if ((await labor.claim([realmId])).length > 0) toast.error(REALM_NOT_CLAIMED);
-    } catch {
-      toast.error(REALM_NOT_CLAIMED);
-    } finally {
-      setAdding(false);
-    }
-  };
-
   return (
     <RealmsSheet
-      wallet={labor.wallet}
       plan={labor.plan}
-      perRealm={labor.perRealm}
-      cap={labor.cap}
-      labor={labor.held}
+      dailyAmount={labor.dailyAmount}
+      dailyEssence={labor.dailyEssence}
+      mark={labor.mark}
       secondsLeft={labor.secondsLeft}
+      nextDay={labor.nextDay}
+      ask={ask}
       sending={sending}
-      adding={adding}
-      onClaim={() => void claimAll()}
-      onAdd={(realmId) => void add(realmId)}
+      onClaim={() => void claim()}
       onRealm={onRealm}
-      onLinkWallet={() => navigate(SETTINGS_PATH)}
       onClose={onClose}
     />
   );

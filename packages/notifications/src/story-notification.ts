@@ -20,7 +20,7 @@ export function buildStoryNotification(input: {
   const { story, payload } = read;
   const createdAt = storyNotificationCreatedAt(input.value);
   if (createdAt + 120_000 <= input.now) return null;
-  const copy = storyNotificationCopy(story, payload, input.value, input.recipient);
+  const copy = storyNotificationCopy(story, payload, input.recipient);
   return parseNotificationPayload(
     {
       version: 1,
@@ -40,12 +40,11 @@ export function buildStoryNotification(input: {
 export function storyNotificationCopy(
   story: string,
   payload: Record<string, unknown>,
-  value: Record<string, unknown>,
   recipient?: string,
 ): NotificationCopy {
   const rule = storyNotificationRule(story);
   if ("excluded" in rule) throw new Error(`Not a notified story: ${story}`);
-  return rule.copy({ payload, value, recipient });
+  return rule.copy({ payload, recipient });
 }
 
 /**

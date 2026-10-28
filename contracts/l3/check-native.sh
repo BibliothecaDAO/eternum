@@ -22,6 +22,8 @@ bun "$account/check-class-hash.ts"
 
 # Pin the owned verification algorithm before compiling the world that dispatches to it.
 (cd "$verifier" && scarb build)
+node --test contracts/utils/check-class-sizes.test.mjs
+node contracts/utils/check-class-sizes.mjs "$verifier/target/dev" realms_vrf_verifier Verifier
 bun "$verifier/scripts/pin-class.ts" --check
 (cd "$verifier" && "$runner" test)
 

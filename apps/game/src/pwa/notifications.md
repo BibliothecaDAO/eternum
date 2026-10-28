@@ -20,16 +20,16 @@ automatic sends; hiding or leaving the game clears the lease, and expiry covers 
 Preview-only devices retain local delivery. Both paths share logical identity and durable claims.
 
 Direct-message push begins only after chat persistence. The realtime service sends the identity server message/thread
-identity, recipient, sender display name and timestamp, but never private message content. The device sees a themed
-“raven” alert, repeated messages collapse per thread, Off suppresses them, and the game foreground lease keeps them in
+identity, recipient, sender display name and timestamp, but never private message content. The device sees a "Message
+from …" alert, repeated messages collapse per thread, Off suppresses them, and the game foreground lease keeps them in
 the live chat UI while the player is active. DM delivery requires explicit consent on a compatible device. Existing
 subscriptions can enable DM alerts in Settings; the server excludes registrations that have not completed that upgrade.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
-game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Local payloads expire
-after two minutes. Game entry always uses the normal bootstrap. Clicks focus an existing matching game without
-navigating it, or open a separate entry flow; an existing game's transactions are never interrupted by forced
-navigation.
+game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Alerts expire after two
+minutes; a Day open push lives until an hour before its day ends. Game entry always uses the normal bootstrap. Clicks
+focus an existing matching game without navigating it, or open a separate entry flow; an existing game's transactions
+are never interrupted by forced navigation.
 
 Shared logical identity groups paired battle and delayed-transfer records by their action identity. The native emitters
 and notification rules must agree on perspective and ordering; behavior tests cover mirrored records and distinct

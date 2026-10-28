@@ -1,5 +1,6 @@
 import { buildMysteryChestPreset, chestPresets } from "../../../../contracts/l2/ledger/scripts/chest-preset.js";
 import { nativePresetForId, nativePresetIdFor } from "../../../source/native";
+import { seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { CallData, uint256 } from "starknet";
 import environments from "../../../../deploy/first/environments.json";
 import type { DeploymentGameType } from "../types";
@@ -9,6 +10,8 @@ const LORDS = 10n ** 18n;
 export interface LedgerEconomicPreset {
   day_unit_seconds: number;
   claim_window_seconds: number;
+  frontier_top_n: number;
+  frontier_chest_bps: number;
   entry_fee: ReturnType<typeof uint256.bnToUint256>;
   protocol_cut_bps: number;
   chest_lords_bps: number;
@@ -68,8 +71,10 @@ export function buildLedgerEconomicPreset(
       k: 50,
       regression_bps: 150,
     },
-    day_unit_seconds: native.dayUnitSeconds,
+    day_unit_seconds: seasonDayUnitSeconds(native),
     claim_window_seconds: native.chests?.claimWindowSeconds ?? 0,
+    frontier_top_n: native.chests?.topN ?? 0,
+    frontier_chest_bps: native.chests?.poolBps ?? 0,
   };
 }
 

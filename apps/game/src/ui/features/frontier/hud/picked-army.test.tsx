@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
-import schema from "../../../../../../../contracts/l3/world-native/schema/schema.json";
+import bindings from "../../../../../../../contracts/l3/world-native/schema/bindings.json";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it } from "vitest";
 
-import { ARMY_ATTRIBUTES } from "../army/army-detail";
+import { ATTRIBUTE_LIST } from "../army/army-detail";
 import { PickedArmy } from "./picked-army";
 
-/** The attributes an army levels, as the generated game schema lists them (progression::Attribute, BuyTier's). */
-const schemaAttributes = schema.types["world_native::progression::Attribute"].variants.map(({ name }) => name);
+/** The attributes an army levels, as the generated game schema lists them (progression::SkillPointUse, excluding its Stamina purchase). */
+const schemaAttributes = bindings.commandAbi
+  .find((entry) => entry.name === "world_native::progression::SkillPointUse")!
+  .variants!.map(({ name }) => name)
+  .filter((name) => name !== "Stamina");
 
 /** A distinct rank for each attribute, by its schema name, so a side showing another's rank is caught. */
 const RANKS: Record<string, number> = { Battle: 2, Logistics: 3, Scouting: 4, Homecoming: 5 };
@@ -32,7 +35,7 @@ const render = (tiers: Record<string, number>) => {
           stamina: { current: 60, max: 150, perExplore: 20 },
           secondsToFull: 0,
           troops: 100,
-          canBuyTier: false,
+          canSpendSkillPoint: false,
           tiers: tiers as never,
         }}
         refill={null}
@@ -46,8 +49,19 @@ const render = (tiers: Record<string, number>) => {
 
 describe("a phone's picked army", () => {
   it("knows every attribute the game's schema lets an army level, no more and no fewer", () => {
-    expect(Object.keys(ARMY_ATTRIBUTES)).toEqual(schemaAttributes);
+    expect(ATTRIBUTE_LIST.map(({ attribute }) => attribute)).toEqual(schemaAttributes);
     expect(Object.keys(RANKS)).toEqual(schemaAttributes);
+  });
+
+  it("shows untrained attributes at rank 0 without a Common gem", () => {
+    const view = render(Object.fromEntries(schemaAttributes.map((name) => [name.toLowerCase(), 0])));
+    for (const name of schemaAttributes) {
+      const side = view.host.querySelector(`[data-picked-army] [aria-label="${name} 0"]`)!;
+      expect(side).not.toBeNull();
+      expect(side.querySelector('.ui-tier[data-tier="0"]')?.getAttribute("aria-label")).toBe("Untrained");
+      expect(side.querySelector(".ui-tier")?.textContent).toBe("");
+    }
+    view.unmount();
   });
 
   it("shows every attribute in the schema beside the token, each with its own rank", () => {

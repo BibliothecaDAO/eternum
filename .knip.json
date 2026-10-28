@@ -27,6 +27,7 @@
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/warm-native-classes.ts",
         "deploy/athanor/scripts/read-rpc.ts",
+        "deploy/athanor/scripts/season-dates.ts",
         "deploy/athanor/scripts/account-rpc-smoke.ts"
       ],
       "paths": {

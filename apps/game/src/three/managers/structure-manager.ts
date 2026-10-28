@@ -593,7 +593,7 @@ export class StructureManager {
       entityId: renderable.entityId,
       structureName:
         structureComponent && this.store
-          ? getStructureName(structureComponent).name
+          ? getStructureName(structureComponent, this.store).name
           : renderInfo.type === StructureType.Realm || renderInfo.type === StructureType.Hyperstructure
             ? structureName(renderInfo.type)
             : siteDisplayName(renderable.entityId),

@@ -60,7 +60,8 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
   const settle_season = (props: Parameters<typeof provider.settle_season>[0]) => provider.settle_season(props);
   const enter_depth = (props: Parameters<typeof provider.enter_depth>[0]) => provider.enter_depth(props);
   const research = (props: Parameters<typeof provider.research>[0]) => provider.research(props);
-  const buy_tier = (props: Parameters<typeof provider.buy_tier>[0]) => provider.buy_tier(props);
+  const spend_skill_point = (props: Parameters<typeof provider.spend_skill_point>[0]) =>
+    provider.spend_skill_point(props);
   const refill_stamina = (props: Parameters<typeof provider.refill_stamina>[0]) => provider.refill_stamina(props);
   const withdraw_lords = (props: Parameters<typeof provider.withdraw_lords>[0]) => provider.withdraw_lords(props);
 
@@ -419,7 +420,7 @@ export function createSystemCalls({ provider, authHandler }: { provider: any; au
     settle_season: withAuth(settle_season),
     enter_depth: withAuth(enter_depth),
     research: withAuth(research),
-    buy_tier: withAuth(buy_tier),
+    spend_skill_point: withAuth(spend_skill_point),
     refill_stamina: withAuth(refill_stamina),
     withdraw_lords: withAuth(withdraw_lords),
     bridge_deposit_into_realm: withAuth(bridge_deposit_into_realm),

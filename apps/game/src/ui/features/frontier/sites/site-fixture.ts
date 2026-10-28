@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { BiomeType, BiomeTypeToId, getNeighborHexes, StructureType, TileOccupier } from "@bibliothecadao/types";
 import type { SiteKind } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -48,9 +49,38 @@ const SITE_CATEGORY: Record<SiteKind, StructureType> = {
 
 export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStamina = 100n) => {
   const { store } = frontierDay();
+  const guardCount = kind === "Beasts" ? 1000n : 1100n;
   const noDice =
     preset.rules.mode_rules & ~(nativeRuleConstants.COMBAT_DICE | nativeRuleConstants.COMBAT_DICE_ETHEREAL);
   store.applyFacts([
+    set("0x901", "DepthRules", {
+      game_id: 1,
+      depth: 1,
+      reveal_percent: 15,
+      site_guard_lower: 3000,
+      site_guard_upper: 5000,
+      reveal_site_neighbors: false,
+      entry_stamina: 30,
+      chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
+      ruin_guard_lower: 6000,
+      ruin_guard_upper: 10500,
+      guard_step: 100,
+      beast_weak_lower: 900,
+      beast_weak_upper: 1050,
+      beast_strong_lower: 1350,
+      beast_strong_upper: 1650,
+    }),
+    set("0x101", "LordsBudget", {
+      game_id: 1,
+      pool: "1000000",
+      pool_left: "1000000",
+      open: "0",
+      day: "0",
+      price: "50",
+      rolled_shares: "0",
+      yesterday_shares: "0",
+      yesterday_ticks: "0",
+    }),
     set("0x100", "SliceRules", {
       ...preset.rules,
       game_id: 1,
@@ -75,7 +105,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
       game_id: 1,
       entity_id: SITE,
       category: SITE_CATEGORY[kind],
-      initial_guard_count: String(1_100n * PRECISION),
+      initial_guard_count: String(guardCount * PRECISION),
       ...SITE_TILE,
       clear: null,
     }),
@@ -88,7 +118,7 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
             game_id: 1,
             structure_id: SITE,
             slot: 0,
-            troops: troops(1_100n, 0n),
+            troops: troops(guardCount, 0n),
             destroyed_tick: 0,
           }),
         ]
@@ -182,15 +212,7 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
       },
       command_mask: String(BigInt(preset.rules.command_mask) | BigInt(nativeCommandBits.InteractSite)),
     }),
-    set("0x101", "ArmyProgressionRules", {
-      game_id: 1,
-      reveal_xp: 2,
-      fixed_xp: 200,
-      uncommon_xp: 100,
-      rare_xp: 200,
-      epic_xp: 400,
-      legendary_xp: 800,
-    }),
+    set("0x101", "ArmyProgressionRules", frontierArmyRules()),
     ...revealed.map((tile, index) =>
       set(`0x20${index}`, "TileOpt", { game_id: 1, alt: false, col: tile.col, row: tile.row, data: grass }),
     ),

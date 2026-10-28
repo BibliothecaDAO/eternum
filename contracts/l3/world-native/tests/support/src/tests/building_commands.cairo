@@ -91,7 +91,11 @@ pub fn board_rules() -> crate::buildings::BoardRules {
         population_step_bps: 2500,
         ration_step: crate::rules::RESOURCE_PRECISION / 4,
         training_gate_tier: 2,
-        castle_store_deploys: 2,
+        troop_store_deploys: 2,
+        settlement_resource_cap: 6000,
+        city_resource_cap: 30000,
+        kingdom_resource_cap: 90000,
+        empire_resource_cap: 180000,
     }
 }
 pub fn research_price(
@@ -109,7 +113,9 @@ pub fn building_world(board: Option<crate::buildings::BoardRules>) -> (super::De
 }
 pub fn create(home: ResourceKey, category: u8) -> Command {
     Command::CreateBuilding(
-        CreateBuilding { structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true },
+        CreateBuilding {
+            scouting_kind: 0, structure_id: home.entity_id, directions: array![0_u8].span(), category, use_simple: true,
+        },
     )
 }
 pub fn east() -> BuildingKey {
@@ -252,6 +258,11 @@ pub fn board_output(deployment: super::Deployment, home: ResourceKey, category: 
 pub /// A board realm with its castle, every command open, room for many buildings and plenty of Essence and labor.
  fn research_world() -> (super::Deployment, ResourceKey, crate::presets::PresetDefinition) {
     let mut preset = building_preset(Some(board_rules()));
+    let (_, frontier) = super::preset_projection::current_definition("frontier");
+    preset.structures.buildings = frontier.structures.buildings;
+    preset
+        .structures
+        .board = Some(crate::buildings::BoardRules { workshop_rate: 20, ..frontier.structures.board.unwrap() });
     preset.rules.command_mask = 0xffffffffffffffffffffffffffffffff;
     preset.rules.building_config.base_population = 40;
     // Farms and barracks make 40 a second, so each quarter of the base is whole.
@@ -290,7 +301,11 @@ pub fn research(home: ResourceKey, row: u8, choice: u8) -> Command {
 pub fn build_toward(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
+            scouting_kind: 0,
+            structure_id: home.entity_id,
+            directions: array![direction].span(),
+            category,
+            use_simple: true,
         },
     )
 }

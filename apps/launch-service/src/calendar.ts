@@ -1,4 +1,6 @@
-import { FRONTIER_ARMIES_TICK_SECONDS, FRONTIER_DAY_UNIT_SECONDS } from "../../../config/source/frontier/clock";
+import { nativePresets } from "../../../config/source/native";
+import { clockScaled, seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
+import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/clock";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 
 /**
@@ -7,11 +9,13 @@ import { seasonSeconds } from "../../../packages/core/src/utils/days";
  */
 export type SeasonPhaseName = "frontier" | "blitz";
 
-export interface SeasonPhase {
-  phase: SeasonPhaseName;
+interface PhaseDates {
   startsAt: string;
   endsAt: string;
 }
+
+export type FrontierSeasonPhase = PhaseDates & { phase: "frontier"; presetId: number };
+export type SeasonPhase = FrontierSeasonPhase | (PhaseDates & { phase: "blitz"; presetId?: never });
 
 /**
  * The next Blitz game the schedule opens (`nextBlitzGame`, schedule.ts): its slot's name, its start, when its entry
@@ -26,7 +30,7 @@ export interface NextBlitzGame {
 
 export interface CalendarStore {
   list(): Promise<SeasonPhase[]>;
-  /** Sets a phase's dates: a phase not running moves freely; a running one keeps its start, and Frontier its end. */
+  /** Sets dates and Frontier's preset; a running or queued Frontier season retains its identity. */
   set(phase: SeasonPhase, now: number): Promise<SeasonPhase>;
 }
 
@@ -34,20 +38,22 @@ export class CalendarConflict extends Error {}
 
 export const PHASE_END_ERROR = "A phase must end in the future";
 
-const FRONTIER_BAG_MS = seasonSeconds(1, FRONTIER_DAY_UNIT_SECONDS) * 1_000;
-const FRONTIER_TICK_MS = FRONTIER_ARMIES_TICK_SECONDS * 1_000;
-
 /** A Frontier season starts on an armies tick and contains a positive whole number of bags. */
-export const assertFrontierSeason = (startsAt: number, endsAt: number) => {
-  if (FRONTIER_TICK_MS <= 0) throw new Error("Frontier has no armies tick");
+export const assertFrontierSeason = (startsAt: number, endsAt: number, presetId: number) => {
+  const preset = nativePresets[presetId];
+  if (!Number.isSafeInteger(presetId) || !preset || preset.gameType !== "frontier")
+    throw new CalendarConflict("Select a registered Frontier preset");
+  const scale = preset.clockScale?.activity ?? 1;
+  const bagMs = seasonSeconds(1, seasonDayUnitSeconds(preset)) * 1_000;
+  const tickMs = clockScaled(FRONTIER_ARMIES_TICK_SECONDS, scale, "armies_tick") * 1_000;
+  if (tickMs <= 0) throw new Error("Frontier has no armies tick");
   if (![startsAt, endsAt].every(Number.isSafeInteger)) throw new CalendarConflict("Invalid season dates");
-  if (startsAt % FRONTIER_TICK_MS !== 0)
-    throw new CalendarConflict(`A Frontier season starts on a ${FRONTIER_TICK_MS / 1_000} s tick`);
+  if (startsAt % tickMs !== 0) throw new CalendarConflict(`A Frontier season starts on a ${tickMs / 1_000} s tick`);
   const duration = endsAt - startsAt;
-  if (duration > 0 && duration % FRONTIER_BAG_MS === 0) return;
-  const lowerBags = Math.max(1, Math.floor(duration / FRONTIER_BAG_MS));
-  const lowerEnd = new Date(startsAt + lowerBags * FRONTIER_BAG_MS).toISOString();
-  const upperEnd = new Date(startsAt + (lowerBags + 1) * FRONTIER_BAG_MS).toISOString();
+  if (duration > 0 && duration % bagMs === 0) return;
+  const lowerBags = Math.max(1, Math.floor(duration / bagMs));
+  const lowerEnd = new Date(startsAt + lowerBags * bagMs).toISOString();
+  const upperEnd = new Date(startsAt + (lowerBags + 1) * bagMs).toISOString();
   throw new CalendarConflict(
     `A Frontier season lasts whole bags of days; nearest valid ends: ${lowerEnd}, ${upperEnd}`,
   );

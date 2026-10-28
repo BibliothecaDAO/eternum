@@ -388,6 +388,23 @@ const main = async () => {
         run("wait", SETTLE_MS);
         if (waitFor) run("wait", waitFor);
         if (name === "frontier-merge") run("wait", '[role="dialog"][aria-label="Transfer troops"]');
+        if (name === "frontier-army-refill") {
+          run("wait", '[aria-label="Stamina to refill"]');
+          run("focus", '[aria-label="Stamina to refill"]');
+          run("press", "Home");
+          for (let point = 0; point < 25; point++) run("press", "ArrowRight");
+          const text = JSON.parse(
+            run("eval", `document.querySelector('[role="dialog"][aria-label="Refill"]').innerText`),
+          );
+          if (!text.includes("20 → 45") || !text.includes("1,240 → 1,215") || !text.includes("Refill · 25 LORDS"))
+            throw new Error(`${shot}: partial refill balances differ`);
+          writeFileSync(join(values.out, `${shot}-interaction.json`), JSON.stringify({ amount: 25, text }, null, 2));
+        }
+        if (name === "frontier-season") {
+          run("wait", "--text", "Top 10");
+          const text = JSON.parse(run("eval", "document.body.innerText"));
+          if (!text.includes("700,000") || !text.includes("300,000")) throw new Error(`${shot}: season pots differ`);
+        }
         const drawn = JSON.parse(run("eval", `Boolean(document.querySelector('[data-lab="${mark}"]'))`));
         if (!drawn) missing.push(shot);
         run("screenshot", join(values.out, `${shot}.png`));

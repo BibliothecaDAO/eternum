@@ -61,7 +61,7 @@ export const spireDay = ({
   }[standing];
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
-    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 46n) } },
+    { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 48n) } },
     depthRules(1, 30),
     depthRules(2, 40),
     depthRules(3, 50),

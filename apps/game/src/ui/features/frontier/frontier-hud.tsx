@@ -48,6 +48,7 @@ import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { SeasonWithdraw } from "./value/season-withdraw";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useCampaignMark } from "./value/campaign-home";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
@@ -423,7 +424,7 @@ const ActingArmy = ({
       refill={<ArmyRefill army={army} realm={realm} look="stamina" />}
       spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
       onDetails={() => onOpenArmy(army.explorerId)}
-      onLevelUp={() => onOpenArmy(army.explorerId, army.canBuyTier)}
+      onLevelUp={() => onOpenArmy(army.explorerId, army.canSpendSkillPoint)}
     />
   );
 };
@@ -530,9 +531,11 @@ const FrontierRealmPanel = ({
   const lords = useRealmLords(own ?? realm);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
+  const mark = useCampaignMark(realm);
   return (
     <RealmPanel
       name={name}
+      mark={mark}
       level={realm.base.level}
       highest={configManager.getMaxLevel(StructureType.Realm)}
       population={population}

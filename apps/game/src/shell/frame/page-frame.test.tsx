@@ -25,7 +25,7 @@ const SIZES = [
  */
 const TAB_PATHS = new Set(["/", "/season", "/scroll", "/profile", "/nothing-here", "/results/0x111"]);
 /** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (a Blitz lobby). */
-const STEP_PATHS = ["/blitz/0x111"];
+const STEP_PATHS = ["/blitz/0x111", "/join/devcon", "/join/devcon/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /**

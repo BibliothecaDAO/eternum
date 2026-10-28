@@ -89,12 +89,14 @@ pub fn preset_commitment(game: GameRegistry) -> felt252 {
 }
 
 pub fn emit_release(game_id: u32, release_id: u32, preset_commitment: felt252) {
+    // Zero identifies games created before creation releases were recorded.
+    let created_release_id = crate::state::read().game_creation_releases.read(game_id);
     emit_game_fact(
         RowSet {
             version: 1,
             model: 'GameRelease',
             keys: array![game_id.into()].span(),
-            values: array![release_id.into(), preset_commitment].span(),
+            values: array![release_id.into(), preset_commitment, created_release_id.into()].span(),
         },
     );
 }

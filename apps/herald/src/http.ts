@@ -204,7 +204,11 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
         const gameId = leaderboardMatch[1];
         const timestamp = state.chainTimestamp();
         if (timestamp <= 0) return jsonResponse({ error: "chain_clock_unavailable" }, 503);
-        return jsonResponse(await leaderboard(gameId, timestamp));
+        const head = state.confirmedBlock();
+        const board = await leaderboard(gameId, timestamp);
+        const response = jsonResponse(board);
+        response.headers.set("X-Confirmed-Block", String(head));
+        return response;
       } catch (error) {
         return jsonResponse({ error: error instanceof Error ? error.message : String(error) }, 503);
       }

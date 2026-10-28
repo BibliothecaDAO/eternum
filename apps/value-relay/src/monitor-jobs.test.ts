@@ -135,6 +135,8 @@ describe.each(["paidClaims", "postedResults"] as const)(
     const ledger = {
       paid: [
         {
+          prizeRank: 0,
+          prizeCount: 0,
           chainId: "0x1",
           transactionHash: "0xabc",
           seasonId: 1,
@@ -163,7 +165,16 @@ describe.each(["paidClaims", "postedResults"] as const)(
       shard: {
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
-          Effect.succeed({ chainId, transactionHash, seasonId: 1, amount: "1", realmsId: "0x2", confirmedAt: 1 }),
+          Effect.succeed({
+            prizeRank: 0,
+            prizeCount: 0,
+            chainId,
+            transactionHash,
+            seasonId: 1,
+            amount: "1",
+            realmsId: "0x2",
+            confirmedAt: 1,
+          }),
         result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {

@@ -98,3 +98,8 @@ describe("a building's painting", () => {
     expect(() => buildingMeaning(BuildingType.None)).toThrow("has no painting");
   });
 });
+
+it("keeps the research painting for historical tier purchases and current skill-point spending", () => {
+  expect(storyMeaning("TierBought")).toBe("research");
+  expect(storyMeaning("SkillPointSpent")).toBe("research");
+});

@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -105,15 +106,7 @@ const openWith = (
     {
       model: "ArmyProgressionRules",
       key: "0x1af10",
-      value: {
-        game_id: 1,
-        reveal_xp: 2,
-        fixed_xp: 200,
-        uncommon_xp: 100,
-        rare_xp: 200,
-        epic_xp: 400,
-        legendary_xp: 800,
-      },
+      value: frontierArmyRules(),
     },
     {
       model: "ArmyProgress",
@@ -122,6 +115,11 @@ const openWith = (
         game_id: 1,
         explorer_id: "201",
         xp,
+        common_points: 0,
+        uncommon_points: 0,
+        rare_points: 0,
+        epic_points: 0,
+        legendary_points: 0,
         battle: tier,
         logistics: tier,
         scouting: tier,
@@ -176,22 +174,31 @@ describe('the army a Well or Shrine acts on (owner, 28 October 2026: "ok for B")
     });
   });
 
-  it("shows a Shrine's XP before and after, and the attribute tier that XP then buys", () => {
+  it("shows a Shrine's XP before and after, and the next skill point it earns", () => {
     expect(openWith("Shrine", { stamina: 100n, xp: 40 })).toEqual({
-      row: "Army 140 → 240 XPII",
+      row: "Army 140 → 240 XPI",
       meter: null,
-      gem: "Uncommon",
+      gem: "Common",
       foot: "+200 XP",
     });
   });
 
-  it("shows no tier when the Shrine's XP still falls short of the next one's price", () => {
-    // Every attribute at Epic: the next tier, Legendary, costs 800.
-    expect(openWith("Shrine", { stamina: 100n, xp: 40, tier: 4 })).toEqual({
-      row: "Army 140 → 240 XP",
+  it("shows no rank when the Shrine's XP still falls short of its next skill point", () => {
+    // The next point is Legendary at 1,500 XP; 800 plus this Shrine remains short.
+    expect(openWith("Shrine", { stamina: 100n, xp: 800, tier: 4 })).toEqual({
+      row: "Army 1800 → 1K XP",
       meter: null,
       gem: null,
       foot: "+200 XP",
     });
+  });
+});
+
+it("shows the next Shrine skill point even when every attribute is already V", () => {
+  expect(openWith("Shrine", { stamina: 100n, xp: 40, tier: 5 })).toEqual({
+    row: "Army 140 → 240 XPI",
+    meter: null,
+    gem: "Common",
+    foot: "+200 XP",
   });
 });
