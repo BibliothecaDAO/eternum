@@ -94,18 +94,25 @@ fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128)
     let old_first_day = crate::days::day_of(game, 4800, 360);
     start_cheat_block_timestamp(d.games, old_first_day.end);
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
+    let labor_rate = interact_with_state(
+        d.games,
+        || crate::logic::resources::production(ResourceKey { game_id: home.game_id, entity_id: home.home }, LABOR)
+            .production_rate,
+    );
+    assert_eq!(labor_rate, 84_000_000);
+    let labor_limit = 6000 * RESOURCE_PRECISION;
     let mut today = crate::days::day_of(game, unit, 360);
     for day in 1_u64..10 {
         start_cheat_block_timestamp(d.games, today.end - 1);
         assert!(operator.grant_labor(home, day, d.actor).is_err());
         start_cheat_block_timestamp(d.games, today.end);
         let labor_before = balance(d, home, LABOR);
+        let produced = Into::<u64, u128>::into(today.end - today.start) * labor_rate.into();
+        let accrued = core::cmp::min(labor_limit, labor_before + produced);
+        let expected_grant = core::cmp::min(expected_amount * RESOURCE_PRECISION, labor_limit - accrued);
         let next = operator.grant_labor(home, day, d.actor).unwrap();
-        if day == 1 {
-            assert_eq!(next.amount, expected_amount * RESOURCE_PRECISION);
-        }
-        assert!(next.amount <= expected_amount * RESOURCE_PRECISION);
-        assert_eq!(balance(d, home, LABOR), labor_before + next.amount);
+        assert_eq!(next.amount, expected_grant);
+        assert_eq!(balance(d, home, LABOR), accrued + expected_grant);
         assert_eq!(next.essence, expected_essence * RESOURCE_PRECISION);
         assert_eq!(
             balance(d, home, ESSENCE),
