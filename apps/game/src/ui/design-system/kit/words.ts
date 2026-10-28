@@ -391,7 +391,8 @@ export const UPGRADING = "Upgrading…";
 export const BUILDING_FIGURES = {
   eachMakes: (noun: string) => `${noun} each makes`,
   castleMakes: (noun: string) => `${noun} the castle makes`,
-  standing: "standing",
+  /** How many of a type stand on the realm: "1 building", "6 buildings" (owner, 27 October: not "6 standing"). */
+  standing: (count: number) => formatCount(count, "building"),
   eachAdds: `${POPULATION} each adds`,
   eachTakes: `${POPULATION} each takes`,
   startsAt: (attribute: string) => `${attribute} new armies start at`,
@@ -476,8 +477,6 @@ export const ARMIES = "Armies";
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
 export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
-/** Why research raises a building's output, without the calculation behind it. */
-export const fromResearch = (share: string, side: string) => `${share} from ${side}`;
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {

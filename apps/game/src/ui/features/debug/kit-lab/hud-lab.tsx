@@ -5,13 +5,14 @@ import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/t
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudIconButton, HudNotice, HudSheet, HudTier } from "@/ui/design-system/kit/hud-elements";
+import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
   DEPLOY_FILLS_FIRST,
   OFFLINE,
   PAYOUTS_PAUSED,
   startsOn,
+  type Tier,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
   YOU,
@@ -274,56 +275,91 @@ const DAY_DONE = {
 };
 
 type LabTile = Parameters<typeof BuildView>[0]["tiles"][number];
-/** A building card for the lab: its painting and name, what it gives and takes, and where it stands. */
+/** A building card for the lab: its painting and name, what it gives, its gems, what it takes, where it stands. */
 const tile = (
   key: string,
   icon: LabTile["icon"],
   name: string,
   gives: LabTile["gives"],
+  gems: LabTile["gems"],
   takes: number,
   standing: LabTile["standing"],
-): LabTile => ({ key, icon, name, tip: "", gives, takes, standing });
-const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"]) =>
-  ({ kind: "price", labor, short }) as const;
-/** An open training building at Uncommon: new armies start one tier up in its attribute. */
-const TRAINS = { icon: "order-rage", value: <HudTier tier={2} /> } as const;
-/** A training building at Common: new armies start at I in its attribute. */
-const COMMON_TRAINS = { icon: "order-rage", value: <HudTier tier={1} /> } as const;
+): LabTile => ({ key, icon, name, tip: "", gives, gems, takes, standing });
+/** A row's one gem, or its two sides' (make side first). */
+const gem = (tier: Tier): LabTile["gems"] => [{ tier }];
+const sides = (make: [LabTile["icon"], Tier], other: [LabTile["icon"], Tier]): LabTile["gems"] =>
+  [make, other].map(([side, tier]) => ({ side, tier }));
+const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
+  ({ kind: "price", labor, short, raised }) as const;
 /** A training building waiting for the Barracks at Rare (III). */
 const LOCKED = { kind: "locked", gate: 3 } as const;
 
 /**
- * A city's build sheet: eight buildings, the War hall and Hearth already standing, a fifth farm at 6,800 labor, the
- * Workshop 3h 10m from its 10,000.
+ * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
+ * side, Barracks once on Drill, the War hall and Hearth already standing, a fifth farm at 6,800 labor, and a second
+ * Workshop at 34,000, raised by the one standing and 16 hours from held.
  */
 const BUILD_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+6.3/min" }, 1, price(6_800)),
+  tile(
+    "farm",
+    "farm",
+    "Farm",
+    { icon: "wheat", value: "+6.3/min" },
+    sides(["fields", 3], ["granary", 1]),
+    1,
+    price(6_800),
+  ),
   tile(
     "workshop",
     "workshop",
     "Workshop",
     { icon: "labor", value: "+0.83/min" },
+    sides(["tools", 3], ["storehouse", 1]),
     1,
-    price(10_000, { of: "labor", wait: 3 * HOUR + 10 * 60 }),
+    price(34_000, { of: "labor", wait: 16 * HOUR }, "Costs more with each one standing: 1"),
   ),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(6_800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(5_100)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], TRAINS, 2, { kind: "built" }),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...TRAINS, icon: "order-skill" }, 2, price(3_000)),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...TRAINS, icon: "order-detection" }, 2, price(3_000)),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...TRAINS, icon: "order-enlightenment" }, 2, { kind: "built" }),
+  tile(
+    "barracks",
+    "barracks",
+    "Barracks",
+    { icon: "troops", value: "+13/min" },
+    sides(["drill", 2], ["rations", 2]),
+    3,
+    price(6_800),
+  ),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(2), 2, { kind: "built" }),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(2), 2, price(3_000)),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(2), 2, price(3_000)),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(2), 2, { kind: "built" }),
 ];
 /** A fresh realm: the training buildings locked behind the Barracks at Rare. */
 const EARLY_TILES: LabTile[] = [
-  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, 1, price(800)),
-  tile("workshop", "workshop", "Workshop", { icon: "labor", value: "+0.83/min" }, 1, price(2_000)),
-  tile("barracks", "barracks", "Barracks", { icon: "troops", value: "+1.7/min" }, 3, price(800)),
-  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, 0, price(300)),
+  tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 1], ["granary", 1]), 1, price(800)),
+  tile(
+    "workshop",
+    "workshop",
+    "Workshop",
+    { icon: "labor", value: "+0.83/min" },
+    sides(["tools", 1], ["storehouse", 1]),
+    1,
+    price(2_000),
+  ),
+  tile(
+    "barracks",
+    "barracks",
+    "Barracks",
+    { icon: "troops", value: "+1.7/min" },
+    sides(["drill", 1], ["rations", 1]),
+    3,
+    price(800),
+  ),
+  tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(300)),
   // The training buildings are still at Common (I), each locked behind the Barracks.
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], COMMON_TRAINS, 2, LOCKED),
-  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { ...COMMON_TRAINS, icon: "order-skill" }, 2, LOCKED),
-  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { ...COMMON_TRAINS, icon: "order-detection" }, 2, LOCKED),
-  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { ...COMMON_TRAINS, icon: "order-enlightenment" }, 2, LOCKED),
+  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, LOCKED),
+  tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, LOCKED),
+  tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, LOCKED),
+  tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, LOCKED),
 ];
 const CASTLE_SIDE = (level: number, limit: number) => ({
   level,
@@ -1325,19 +1361,19 @@ const LAB_BUILDINGS = {
     category: BuildingType.ResourceWheat,
     row: research.ROW_FARM,
     standing: 4,
-    makes: { icon: "wheat", rate: "+25/min", why: "+25% from Fields" },
+    makes: { icon: "wheat", rate: "+25/min" },
   },
   barracks: {
     category: BuildingType.ResourceKnightT1,
     row: research.ROW_BARRACKS,
     standing: 3,
-    makes: { icon: "troops", rate: "+10/min", why: "+50% from Drill" },
+    makes: { icon: "troops", rate: "+10/min" },
   },
   "workshop-short": {
     category: BuildingType.ResourceLabor,
     row: research.ROW_WORKSHOP,
     standing: 3,
-    makes: { icon: "labor", rate: "+15/min", why: "+50% from Tools" },
+    makes: { icon: "labor", rate: "+15/min" },
     essence: SHORT_ESSENCE,
   },
   "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },

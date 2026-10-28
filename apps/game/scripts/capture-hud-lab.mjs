@@ -121,6 +121,50 @@ const fightSidesProblems = (sides) => {
 /** The narrowest phone held (360), a common one and the widest, and a laptop. */
 const FIGHT_SIZES = [[360, 800], ...PHONES, [430, 932], [1440, 900]];
 const FIGHT_FITS = { sizes: FIGHT_SIZES, read: READ_FIGHT_SIDES, rule: fightSidesProblems };
+/** The build sheet's narrowest phone, a common one, the widest, and a laptop: three cards to a row at every size. */
+const BUILD_SIZES = [
+  [360, 780],
+  [390, 844],
+  [430, 932],
+  [1440, 900],
+];
+
+/** Each build card: its name, its gems, and every part of its foot drawn past the card's edge or cut by its own box. */
+const READ_BUILD_CARDS = `(() => [...document.querySelectorAll(".ui-card")].map((card) => {
+  const box = card.getBoundingClientRect();
+  const clipped = [...card.querySelectorAll(".ui-card__foot *")].filter((part) => {
+    const at = part.getBoundingClientRect();
+    if (at.width === 0) return false;
+    const past = at.left < box.left + 1 || at.right > box.right - 1 || at.top < box.top || at.bottom > box.bottom;
+    return past || (part.clientWidth > 0 && part.scrollWidth > part.clientWidth + 1);
+  });
+  return {
+    name: card.querySelector(".ui-card__title")?.textContent ?? "",
+    gems: card.querySelectorAll(".ui-tier").length,
+    sides: [...card.querySelectorAll("[data-side]")].map((side) => side.getAttribute("data-side") + " " + (side.querySelector(".ui-tier")?.textContent ?? "no gem")),
+    clipped: [...new Set(clipped.map((part) => part.textContent))],
+  };
+}))()`;
+
+/**
+ * A build card reads whole at every size (owner, 27 October: its words clipped at the card's edge on a phone), and
+ * says its research with gems, never words for it ("why no gems instead of the text ?"): a gem on each side of a row
+ * that has two (Farm, Workshop, Barracks), else its type's one gem.
+ */
+const SIDED = new Set(["Farm", "Workshop", "Barracks"]);
+const buildCardProblems = (cards) => {
+  if (cards.length === 0) return ["no build card drawn"];
+  return cards.flatMap(({ name, gems, sides, clipped }) => [
+    ...(SIDED.has(name)
+      ? sides.length === 2 && gems === 2 && sides.every((side) => !side.endsWith("no gem"))
+        ? []
+        : [`${name} shows ${sides.join(", ") || "no side"} (${gems} gems), not a gem per side`]
+      : gems === 1 && sides.length === 0
+        ? []
+        : [`${name} shows ${gems} gems`]),
+    ...clipped.map((part) => `${name}: "${part}" is clipped`),
+  ]);
+};
 
 /**
  * Each surface: the lab page that draws it, the mark the page puts on it, its sizes when not just 1920×1080, what it
@@ -178,7 +222,14 @@ export const SURFACES = [
     ...FITS,
   })),
   { name: "frontier-research", path: "/lab/kit/hud/research", mark: "frontier", sizes: CARDS },
-  { name: "frontier-build-locked", path: "/lab/kit/hud/build-early", mark: "frontier", sizes: CARDS },
+  ...["build", "build-early"].map((state) => ({
+    name: `frontier-${state}`,
+    path: `/lab/kit/hud/${state}`,
+    mark: "frontier",
+    sizes: BUILD_SIZES,
+    read: READ_BUILD_CARDS,
+    rule: buildCardProblems,
+  })),
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },

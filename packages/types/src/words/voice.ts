@@ -73,8 +73,7 @@ export const VOICE_RULES: readonly VoiceRule[] = [
   },
   {
     rule: "A number, never a formula",
-    instead:
-      'the one number a player gets; a hover may say why in a short line ("+25% from Fields"), never the sum behind it',
+    instead: "the one number a player gets, with the research behind it as its gem, never the sum behind it",
     bad: "+25/min · 4 × +6.3/min (5 + 25% Fields)",
     good: "+25/min",
     // Two figures joined by ×, + or = between spaces (a template's ${…} reads as a figure), or a price's base: "4 × 6.3",
