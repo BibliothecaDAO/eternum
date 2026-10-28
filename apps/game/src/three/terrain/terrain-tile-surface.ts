@@ -11,6 +11,7 @@ import {
   vec3,
 } from "three/tsl";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
+import { TERRAIN_WATER_LEVEL } from "./terrain-water";
 
 /** Study: 0 is the shipped ground, 1 gives each biome's ground its own surface. One uniform, no new material. */
 export const tileSurfaceStrength = uniform(0);
@@ -53,5 +54,9 @@ export function applyTileSurface(
     .mul(snowHollow)
     .mul(float(1).sub(cracked.mul(0.75)))
     .mul(tileShade);
-  return mix(groundColor, signed, tileSurfaceStrength);
+  // Ground just above the water line is wet (the mesh already uses every vertex buffer WebGPU allows: read the height
+  // from the position, never a new attribute): darker and cooler, a band that follows the coast's contour.
+  const wet = smoothstep(TERRAIN_WATER_LEVEL + 0.07, TERRAIN_WATER_LEVEL + 0.005, positionLocal.y);
+  const shore = mix(signed, signed.mul(vec3(0.62, 0.68, 0.7)), wet);
+  return mix(groundColor, shore, tileSurfaceStrength);
 }

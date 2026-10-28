@@ -290,6 +290,7 @@ export const ProceduralTerrainDebugView = () => {
                 <option value="surface">Surface</option>
                 <option value="relief">Surface + relief</option>
                 <option value="tiles">Surface + stepped tiles</option>
+                <option value="seed">Drawn from the seed</option>
               </select>
             </label>
             <label className="flex flex-col gap-1 text-sm">

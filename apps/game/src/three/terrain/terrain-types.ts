@@ -55,8 +55,11 @@ export interface TerrainPageRequest {
   tileLook?: TerrainTileLook;
 }
 
-/** surface: a ground signature per biome; relief: plus its landform; tiles: plus stepped plateaus with rims. */
-export type TerrainTileLook = "surface" | "relief" | "tiles";
+/**
+ * surface: a ground signature per biome; relief: plus its landform; tiles: plus stepped plateaus with rims; seed: the
+ * height drawn from the contract's own elevation (continuous across hexes), with relief and surface on top.
+ */
+export type TerrainTileLook = "surface" | "relief" | "tiles" | "seed";
 
 export interface TerrainSurfaceSample {
   biome: BiomeType | null;

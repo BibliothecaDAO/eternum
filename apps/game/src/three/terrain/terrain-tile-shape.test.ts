@@ -1,4 +1,4 @@
-import { NEUTRAL_BIOME_CLIMATE } from "@bibliothecadao/eternum";
+import { Biome, NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { terrainHexToWorld } from "./terrain-coordinates";
@@ -31,7 +31,7 @@ const request = (tileLook?: TerrainTileLook): TerrainPageRequest => {
 };
 
 describe("tile looks", () => {
-  it.each(["relief", "tiles"] as const)("leaves no crack where %s tiles meet", (look) => {
+  it.each(["relief", "tiles", "seed"] as const)("leaves no crack where %s tiles meet", (look) => {
     const positions = prepareTerrainPage(request(look)).buffers.positions;
     const heightsAt = new Map<string, number[]>();
     for (let vertex = 0; vertex < positions.length; vertex += 3) {
@@ -68,5 +68,43 @@ describe("tile looks", () => {
       return Math.max(...heights) - Math.min(...heights);
     };
     expect(spread(relief)).toBeGreaterThan(spread(today) + 0.1);
+  });
+
+  describe("drawn from the seed", () => {
+    /** A 16×16 patch whose biomes are the contract's own for this climate, as the game asks for them. */
+    const seeded = (climate: BiomeClimateConfig): TerrainPageRequest => {
+      const cells: TerrainCellInput[] = [];
+      for (let row = 0; row < 16; row++) {
+        for (let col = 0; col < 16; col++) {
+          const biome = Biome.getBiome(col, row, climate);
+          cells.push({ col, row, biome, previewBiome: biome, occupied: false, explored: true });
+        }
+      }
+      return { ...request("seed"), cells, climate, pageKey: `seeded-${climate.elevation_seed}` };
+    };
+    const climate = { ...NEUTRAL_BIOME_CLIMATE, elevation_seed: 137, moisture_seed: 991 };
+
+    it("draws the same tiles for the same seed and coordinates, and other tiles for another seed", () => {
+      const first = prepareTerrainPage(seeded(climate));
+      expect(prepareTerrainPage(seeded(climate)).buffers.positions).toEqual(first.buffers.positions);
+      const other = prepareTerrainPage(seeded({ ...climate, elevation_seed: 4242 }));
+      expect(other.buffers.positions).not.toEqual(first.buffers.positions);
+    });
+
+    it("stands every tile at the height its contract elevation gives: seas below land, peaks above", () => {
+      const field = new TerrainField(seeded(climate));
+      const centres = seeded(climate).cells.map((cell) => {
+        const { x, z } = terrainHexToWorld(cell.col, cell.row);
+        return {
+          elevation: Biome.sampleEnvironment(cell.col, cell.row, climate).elevation,
+          height: field.sampleSurface(x, z).height,
+        };
+      });
+      const sorted = centres.toSorted((left, right) => left.elevation - right.elevation);
+      const lowest = sorted.slice(0, 20).map(({ height }) => height);
+      const highest = sorted.slice(-20).map(({ height }) => height);
+      expect(Math.max(...lowest)).toBeLessThan(Math.min(...highest));
+      expect(new Set(seeded(climate).cells.map((cell) => cell.biome)).size).toBeGreaterThan(4);
+    });
   });
 });

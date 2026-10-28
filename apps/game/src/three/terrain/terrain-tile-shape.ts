@@ -77,3 +77,29 @@ function smoothstep(edge0: number, edge1: number, value: number): number {
   const t = Math.min(1, Math.max(0, (value - edge0) / (edge1 - edge0)));
   return t * t * (3 - 2 * t);
 }
+
+/**
+ * Height drawn from the contract's elevation (0 to 1), monotone through its biome levels: deep ocean (< 0.17) lowest,
+ * beaches (0.26 to 0.31) crossing the water line, mountains (> 0.56) rising fastest. The same elevation picks the biome,
+ * so a coast slopes into its sea and a peak stands above its foothills.
+ */
+const SEED_HEIGHT_CURVE: ReadonlyArray<readonly [number, number]> = [
+  [0, -0.42],
+  [0.17, -0.24],
+  [0.26, -0.09],
+  [0.31, 0.02],
+  [0.42, 0.1],
+  [0.5, 0.2],
+  [0.56, 0.32],
+  [1, 1.02],
+];
+
+export function resolveSeedHeight(elevation: number): number {
+  for (let index = 1; index < SEED_HEIGHT_CURVE.length; index++) {
+    const [high, highHeight] = SEED_HEIGHT_CURVE[index];
+    if (elevation > high) continue;
+    const [low, lowHeight] = SEED_HEIGHT_CURVE[index - 1];
+    return lowHeight + ((elevation - low) / (high - low)) * (highHeight - lowHeight);
+  }
+  return SEED_HEIGHT_CURVE[SEED_HEIGHT_CURVE.length - 1][1];
+}

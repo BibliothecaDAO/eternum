@@ -8,6 +8,7 @@ import {
   resolveTileRelief,
   resolveTileReliefReach,
   resolveTilePlateauWeight,
+  resolveSeedHeight,
 } from "./terrain-tile-shape";
 import { SurfaceBasaltTransition } from "./terrain-basalt-transition";
 import { sampleBasaltSurface } from "./terrain-basalt";
@@ -607,9 +608,11 @@ export class TerrainField {
     const secondary = new Color(descriptor.secondary);
     const sample = {
       baseHeight:
-        descriptor.baseHeight +
-        (environment.elevation - 0.5) * descriptor.elevationScale +
-        this.resolveMacroLandformOffset(center.x, center.z, direction),
+        this.request.tileLook === "seed"
+          ? resolveSeedHeight(environment.elevation)
+          : descriptor.baseHeight +
+            (environment.elevation - 0.5) * descriptor.elevationScale +
+            this.resolveMacroLandformOffset(center.x, center.z, direction),
       biome,
       biomeId: BiomeTypeToId[biome],
       centerX: center.x,
@@ -667,7 +670,7 @@ export class TerrainField {
     candidates: readonly CellFieldSample[],
   ): number {
     const look = this.request.tileLook;
-    if ((look !== "relief" && look !== "tiles") || candidates.length === 0) return baseHeight;
+    if (!look || look === "surface" || candidates.length === 0) return baseHeight;
     const byDistance = candidates
       .map((candidate) => ({ candidate, distance: Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ) }))
       .toSorted((left, right) => left.distance - right.distance);
@@ -682,7 +685,7 @@ export class TerrainField {
       totalWeight += weight;
     }
     const landform = totalWeight === 0 ? 0 : (relief / totalWeight) * resolveTileReliefReach(nearest.distance);
-    if (look === "relief") return baseHeight + landform;
+    if (look !== "tiles") return baseHeight + landform;
     let plateau = 0;
     let plateauWeight = 0;
     for (const { candidate, distance } of byDistance) {

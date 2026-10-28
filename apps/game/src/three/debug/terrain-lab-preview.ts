@@ -110,7 +110,7 @@ const REDUCED_PROP_SCALE = 0.7;
 function resolveTileLookRequest(
   preview: Pick<TerrainLabPreview, "tileLook" | "props">,
 ): Pick<TerrainPageRequest, "tileLook" | "subdivisions" | "propDensityMultiplier" | "propScaleMultiplier"> {
-  const shaped = preview.tileLook === "relief" || preview.tileLook === "tiles";
+  const shaped = preview.tileLook === "relief" || preview.tileLook === "tiles" || preview.tileLook === "seed";
   return {
     ...(preview.tileLook === "today" ? {} : { tileLook: preview.tileLook }),
     ...(shaped ? { subdivisions: 4 } : {}),
