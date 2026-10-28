@@ -276,6 +276,7 @@ function CurrentPanel() {
         sending={new Set()}
         fixFor={() => undefined}
         onResearch={() => undefined}
+        onClose={() => undefined}
       />
     </section>
   );

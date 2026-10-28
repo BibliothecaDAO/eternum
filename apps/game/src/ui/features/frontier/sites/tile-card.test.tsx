@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
+  useCurrentBlockTimestamp: () => 350,
   useCurrentArmiesTick: () => 3,
   useCurrentDefaultTick: () => 350,
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
@@ -25,9 +26,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { ResourcesIds, siteName } from "@bibliothecadao/types";
-import { closeFightResult, useFightResult } from "./fight-result";
-import { FightResultCard } from "./fight-result-card";
+import { siteName } from "@bibliothecadao/types";
+import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router-dom";
+import { useArmyPanelOpens } from "../army/army-opens";
+import { useOnePanel } from "../hud/one-panel";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
@@ -39,18 +42,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  closeFightResult();
   resetGameSyncStoryEvents();
   setBlockTimestampSource(null);
   useUIStore.getState().selectOnMap(null);
   useUIStore.getState().updateEntityActionActionPaths(new Map());
 });
-
-/** The fight's result as the HUD's sheet shows it, beside the card that sent the attack. */
-const Result = () => {
-  const result = useFightResult();
-  return result && <FightResultCard result={result} onClose={closeFightResult} />;
-};
 
 const whole = (troops: number) => String(BigInt(troops) * 1_000_000_000n);
 let battles = 0;
@@ -73,41 +69,42 @@ const battleArrives = (army: [number, number], guard: [number, number], defender
     { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
   );
 
-/** The clear's payout, reaching the client in the winning battle's transaction: the reward the contract set. */
-const payoutArrives = (reward: { resource_type: number; amount: string } | null) =>
-  acceptGameSyncStoryEvent(
-    {
-      model: "StoryEvent",
-      key: `0xpayout${battles}`,
-      value: {
-        game_id: "0x1",
-        owner: "0x111",
-        entity_id: SITE,
-        story: { SitePayout: { structure_id: 7, explorer_id: 201, site_id: SITE, category: 9, reward } },
-        timestamp: 350,
-        event_position: { block_number: 9, transaction_hash: "0x1", transaction_index: 0, event_index: battles++ },
-      },
-    },
-    { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
-  );
+/** Whether the map's selection is an army acting on the fixture's camp, which opens the camp's card. */
+const actsOnTheSite = (selection: ReturnType<typeof useUIStore.getState>["mapSelection"]) =>
+  selection?.kind === "army" &&
+  typeof selection.tile === "object" &&
+  selection.tile?.col === SITE_TILE.col &&
+  selection.tile.row === SITE_TILE.row;
 
-/** The realm's labor store as a payout leaves it when it could not take all of it: at its own limit. */
-const fillLaborStore = (store: ReturnType<typeof campBeside>["store"]) => {
-  const limit =
-    BigInt(store.require("SliceRules", { game_id: 1 }).troop_limit_config.settlement_deployment_cap) *
-    BigInt(store.require("BoardRules", { game_id: 1 }).castle_store_deploys) *
-    1_000_000_000n;
-  store.applyFacts([
-    {
-      model: "ResourceBalance",
-      key: "0x79",
-      value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Labor, balance: String(limit) },
-    },
-  ] as never);
+/**
+ * The card inside the HUD's arbitration, as frontier-hud.tsx wires it: the one panel (a new card puts the army's panel
+ * away), the army's panel opening on selection (a desktop's), and the card's way back to the army. The army's panel
+ * stands in as a marked section.
+ */
+const InTheHud = ({
+  desktop,
+  realm,
+  ...card
+}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & Omit<
+  ComponentProps<typeof TileCard>,
+  "onArmyBack"
+>) => {
+  const onTheSite = useUIStore((state) => actsOnTheSite(state.mapSelection));
+  const { surface, openSurface, showsCard } = useOnePanel(onTheSite ? "target" : null, !desktop);
+  const armyPanel = useArmyPanelOpens(realm, () => openSurface("army"), desktop);
+  return (
+    <>
+      {showsCard && <TileCard {...card} onArmyBack={armyPanel.returnTo} />}
+      {surface === "army" && <section aria-label="Army details" />}
+    </>
+  );
 };
 
-/** The card over the fixture's camp, its army beside it or moved away to stand out of reach. */
-const renderCard = (army: "beside" | "far") => {
+/**
+ * The card over the fixture's camp, its army beside it or moved away to stand out of reach: alone, or inside a
+ * desktop's or a phone's HUD.
+ */
+const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, site, structure } = campBeside();
   const standsAt = { game_id: 1, alt: false, col: 60, row: 12, entity_id: 201, category: 15, is_structure: false };
@@ -128,8 +125,18 @@ const renderCard = (army: "beside" | "far") => {
         value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
-        <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} />
-        <Result />
+        {hud ? (
+          <MemoryRouter>
+            <InTheHud
+              desktop={hud === "desktop"}
+              realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+              selected={{ kind: "site", site, structure, tile }}
+              onClose={() => {}}
+            />
+          </MemoryRouter>
+        ) : (
+          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} onArmyBack={() => {}} />
+        )}
       </GameProvider>,
     ),
   );
@@ -229,7 +236,7 @@ describe("the tile card", () => {
           value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
           account={{ address: "0x111" } as never}
         >
-          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
+          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} onArmyBack={() => {}} />
         </GameProvider>,
       ),
     );
@@ -329,166 +336,133 @@ describe("an attack in flight on the tile card", () => {
   });
 });
 
-describe("the result of the player's attack", () => {
+describe("after the player's attack (owner, 27 October 2026: 'the post fight cards are pretty useless')", () => {
   const gone = (model: string, key: string) => ({ model, key, value: null });
   const ARMY_GONE = [gone("ExplorerTroops", "0x74"), gone("TileOccupancy", "0x75")];
-  const SITE_OUT_OF_SCOPE = [gone("Structure", "0x71"), gone("ExpeditionSite", "0x72"), gone("Guard", "0x73")];
+  /** The army's selection, acting on the site's tile, as the site's card is opened for it. */
+  const ON_THE_SITE = { kind: "army", entityId: 201, tile: SITE_TILE } as const;
+  const selection = () => useUIStore.getState().mapSelection;
+  const selectedArmy = () => useUIStore.getState().entityActions.selectedEntityId;
+  /** No card of how the fight went: the Feed tells it (feed-line.test.tsx). */
+  const noResult = (host: HTMLElement) => expect(host.textContent).not.toMatch(/Victory|Army lost/);
+  const armyPanel = (host: HTMLElement) => host.querySelector('[aria-label="Army details"]');
+  const siteCard = (host: HTMLElement) => host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
+  const clears = () => battleArrives([1_498, 1_318], [1_100, 0]);
 
-  /** An attack sent from the card; `lands` writes what the action did, then its outcome arrives as applied. */
-  const attackThatLands = async (lands: (store: ReturnType<typeof renderCard>["store"]) => void) => {
+  /**
+   * In a HUD, the army selected on the map, then the camp's card opened for it; an attack sent from the card, then
+   * `meanwhile` (what the player does while it is on its way), `lands` (what the action did) and its outcome, applied.
+   */
+  const attackThatLands = async (
+    lands: (store: ReturnType<typeof renderCard>["store"]) => void,
+    { hud = "desktop", meanwhile = () => {} }: { hud?: "desktop" | "phone"; meanwhile?: () => void } = {},
+  ) => {
     let apply: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
-    const card = renderCard("beside");
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    const card = renderCard("beside", hud);
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: "own" }));
+    expect(armyPanel(card.host) !== null).toBe(hud === "desktop");
+    act(() => useUIStore.getState().selectOnMap(ON_THE_SITE));
+    expect(armyPanel(card.host)).toBeNull();
     await act(async () => card.button("Attack")!.click());
+    act(meanwhile);
     act(() => lands(card.store));
     await act(async () => apply(APPLIED));
-    const result = () => card.host.querySelector<HTMLButtonElement>("button[aria-label^='Troll:']");
-    return { ...card, result };
+    return card;
   };
 
-  it("is none when both sides stand: the site's own card stays, its Attack there to press again", async () => {
-    const { host, result, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
-    expect(result()).toBeNull();
-    expect(host.querySelector("button[aria-label*='Guard holds']")).toBeNull();
+  it("keeps the site's card when both sides stand, its Attack there to press again", async () => {
+    const { host, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
+    expect(selection()).toEqual(ON_THE_SITE);
     expect(button("Attack")).toBeDefined();
+    noResult(host);
     unmount();
   });
 
-  it("is the army's loss, with the guard as the battle left it, when the army falls and its site is still known", async () => {
-    const { result, unmount } = await attackThatLands((store) => {
+  it("opens the still-selected army's panel again on a desktop after a clear, with no card of the fight", async () => {
+    const { host, unmount } = await attackThatLands(clears);
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    expect(siteCard(host)).toBeNull();
+    noResult(host);
+    unmount();
+  });
+
+  it("gives a phone back its army after a clear: selected on its own tile for the action row, no panel over the map", async () => {
+    const { host, unmount } = await attackThatLands(clears, { hud: "phone" });
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(armyPanel(host)).toBeNull();
+    expect(siteCard(host)).toBeNull();
+    noResult(host);
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they let go of the army", async () => {
+    const { host, unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(null),
+    });
+    expect(selection()).toBeNull();
+    expect(armyPanel(host)).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they picked another army", async () => {
+    const other = { kind: "army", entityId: 202, tile: "own" } as const;
+    const { host, unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(other),
+    });
+    expect(selection()).toEqual(other);
+    expect(armyPanel(host)).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they picked another tile for the army", async () => {
+    const elsewhere = { kind: "army", entityId: 201, tile: { col: SITE_TILE.col + 2, row: SITE_TILE.row } } as const;
+    const { unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(elsewhere),
+    });
+    expect(selection()).toEqual(elsewhere);
+    unmount();
+  });
+
+  it("hands it back on a clear whose battle record has not reached the screen, the site standing cleared", async () => {
+    const { host, unmount } = await attackThatLands((store) =>
+      store.applyFacts([
+        {
+          model: "ExpeditionSite",
+          key: "0x72",
+          value: {
+            ...store.require("ExpeditionSite", { game_id: 1, entity_id: SITE }),
+            clear: { explorer_id: 201, home_id: 7, reward: null },
+          },
+        },
+      ] as never),
+    );
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    unmount();
+  });
+
+  it("shows no card of a lost army: the map lets the army go itself, and the Feed says it was lost", async () => {
+    const { host, unmount } = await attackThatLands((store) => {
       battleArrives([1_498, 0], [1_100, 1_028]);
       store.applyFacts(ARMY_GONE as never);
     });
-    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
+    expect(selection()).toEqual(ON_THE_SITE);
+    noResult(host);
     unmount();
   });
 
-  it("is still the army's loss, and pays nothing, when the army's death takes its region out of the store in the same write", async () => {
-    const { result, unmount } = await attackThatLands((store) => {
-      battleArrives([1_498, 0], [1_100, 1_028]);
-      store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never);
-    });
-    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label="Troll 1,100 → 1,028"]')).not.toBeNull();
-    expect(result()!.textContent).not.toContain("+550");
-    expect(result()!.querySelector('[aria-label^="XP"]')).toBeNull();
-    unmount();
-  });
-
-  it("says only that the army was lost when the region left and no record of the battle arrived", async () => {
-    const { result, unmount } = await attackThatLands((store) =>
-      store.applyFacts([...ARMY_GONE, ...SITE_OUT_OF_SCOPE] as never),
-    );
-    expect(result()?.getAttribute("aria-label")).toBe("Troll: Army lost");
-    expect(result()!.querySelector('[aria-label="Army 1,498 → 0"]')).not.toBeNull();
-    expect(result()!.querySelector('[aria-label^="troops"]')).toBeNull();
-    expect(result()!.textContent).not.toContain("+");
-    unmount();
-  });
-
-  it("claims nothing when the site's rows are gone, the army stands and no record of the battle arrived", async () => {
-    const { result, unmount } = await attackThatLands((store) => store.applyFacts(SITE_OUT_OF_SCOPE as never));
-    expect(result()).toBeNull();
-    unmount();
-  });
-
-  it("is a victory only on the record of an army that stands over a fallen guard, paying what the payout record names", async () => {
-    const { result, unmount } = await attackThatLands(() => {
-      battleArrives([1_498, 1_318], [1_100, 0]);
-      // The card's preview said 550 labor; the record of what the contract paid says 700, and the card says that.
-      payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(700) });
-    });
-    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
-    expect(result()!.querySelector('[aria-label="Army 1,498 → 1,318"]')).not.toBeNull();
-    expect(result()!.textContent).toContain("+700");
-    expect(result()!.textContent).not.toContain("550");
-    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
-    expect(result()!.querySelector('[aria-label="Storage Full"]')).toBeNull();
-    unmount();
-  });
-
-  it("marks the reward Full when the store that took it stands at its limit after the fight", async () => {
-    const { result, unmount } = await attackThatLands((store) => {
-      battleArrives([1_498, 1_318], [1_100, 0]);
-      payoutArrives({ resource_type: ResourcesIds.Labor, amount: whole(550) });
-      fillLaborStore(store);
-    });
-    expect(result()!.textContent).toContain("+550");
-    expect(result()!.querySelector('[aria-label="Storage Full"]')?.getAttribute("data-tip")).toBe(
-      "Storage full: the rest did not fit",
-    );
-    unmount();
-  });
-
-  it("shows a victory's XP alone when no payout record of the clear arrived", async () => {
-    const { result, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
-    expect(result()?.getAttribute("aria-label")).toBe("Troll: Victory");
-    expect(result()!.textContent).toMatch(/\+[\d,]+ XP/);
-    expect(result()!.textContent).not.toContain("550");
-    unmount();
-  });
-
-  it("reports no fight for an attack the game refused, whatever happens to either side afterwards", async () => {
+  it("changes nothing for an attack the game refused, whatever happens to either side afterwards", async () => {
     waitForAction.mockResolvedValue({ hash: "0x1", block: 9, status: "REVERTED", revertReason: "Army is resting" });
     const { host, store, button, unmount } = renderCard("beside");
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    act(() => useUIStore.getState().selectOnMap(ON_THE_SITE));
     await act(async () => button("Attack")!.click());
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Army is resting");
-    // The army ends its day, and the site's guard changes: neither is this attack's doing.
     act(() => store.applyFacts([...ARMY_GONE, gone("Guard", "0x73")] as never));
-    expect(host.querySelector("button[aria-label^='Troll:']")).toBeNull();
+    expect(selection()).toEqual(ON_THE_SITE);
+    noResult(host);
     unmount();
-  });
-});
-
-describe("an attack on another player's army", () => {
-  it("is the army's loss when mine falls and its region leaves the store, never a victory over rows that are gone", async () => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store } = campBeside();
-    const other = otherArmyAt(store, 42, 12);
-    useAccountStore.setState({ account: { address: "0x111" } as never });
-    let apply: (outcome: unknown) => void = () => {};
-    waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
-    const attack = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
-    const tile = { hexCoords: { col: 42, row: 12, alt: false }, biome: 11, occupierId: 301 };
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    act(() =>
-      root.render(
-        <GameProvider
-          value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
-          account={{ address: "0x111" } as never}
-        >
-          <TileCard
-            selected={{ kind: "army", army: other, tile: tile as unknown as TileSpatialRenderable }}
-            onClose={() => {}}
-          />
-          <Result />
-        </GameProvider>,
-      ),
-    );
-    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
-    await act(async () =>
-      [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!.click(),
-    );
-    act(() => {
-      battleArrives([1_498, 0], [300, 120], 301);
-      store.applyFacts([
-        { model: "ExplorerTroops", key: "0x74", value: null },
-        { model: "TileOccupancy", key: "0x75", value: null },
-        { model: "ExplorerTroops", key: "0x90", value: null },
-      ] as never);
-    });
-    await act(async () => apply(APPLIED));
-    const result = host.querySelector("button[aria-label^='Army:']")!;
-    expect(result.getAttribute("aria-label")).toBe("Army: Army lost");
-    expect(result.querySelector('[aria-label="troops 300 → 120"]')).not.toBeNull();
-    act(() => root.unmount());
-    host.remove();
   });
 });
 

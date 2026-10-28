@@ -37,6 +37,8 @@ const VIEWS = {
     start: true,
   },
   "blitz-attack": { preset: 2, spectating: false, finished: false, army: true, attack: true },
+  // The same attack with the army at 5 stamina: no forecast, the sides with a dash and the shortfall under them.
+  "blitz-attack-short": { preset: 2, spectating: false, finished: false, army: true, attack: true, tired: true },
   frontier: { preset: 5, spectating: false, finished: false, army: false, attack: false },
   "frontier-army": { preset: 5, spectating: false, finished: false, army: true, attack: false },
   "blitz-spectator": { preset: 2, spectating: true, finished: false, army: false, attack: false },
@@ -54,7 +56,7 @@ export const UNIFIED_VIEWS = (Object.keys(VIEWS) as View[]).map((name) => ({
 
 /**
  * Dev only: the in-game HUD as the game mounts it (a desktop's columns, a phone's compact HUD), every mode's, on the
- * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-build, blitz-start, frontier, frontier-army,
+ * lab's game, at /lab/kit/unified/<view>: blitz, blitz-attack, blitz-attack-short, blitz-build, blitz-start, frontier, frontier-army,
  * blitz-spectator, blitz-finished, blitz-out, blitz-out-watching. Frontier's states on the same HUD are the Frontier HUD
  * lab's, /lab/kit/hud/<state>.
  */
@@ -69,6 +71,7 @@ const ViewLab = ({ view }: { view: View }) => {
   const stocked = "stocked" in VIEWS[view];
   const start = "start" in VIEWS[view];
   const out = "out" in VIEWS[view];
+  const tired = "tired" in VIEWS[view];
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(frontier ? "frontier" : "blitz");
@@ -76,6 +79,7 @@ const ViewLab = ({ view }: { view: View }) => {
     <>
       <div
         aria-hidden
+        data-lab="unified"
         className="fixed inset-0 bg-[radial-gradient(ellipse_at_center,theme(colors.kit.line),theme(colors.kit.ground))]"
       />
       <LabGame
@@ -84,7 +88,10 @@ const ViewLab = ({ view }: { view: View }) => {
         finished={finished}
         facts={
           army
-            ? (store) => [...labArmyOut(store), ...(attack ? enemyArmyBeside(store) : [])]
+            ? (store) => [
+                ...labArmyOut(store, tired ? TIRED_STAMINA : LAB_ARMY_STAMINA),
+                ...(attack ? enemyArmyBeside(store) : []),
+              ]
             : stocked
               ? stockedRealm
               : out
@@ -95,13 +102,19 @@ const ViewLab = ({ view }: { view: View }) => {
       >
         {(store) => {
           const rules = frontier ? readExpeditionRules(store, 1) : null;
-          return frontier ? (
-            rules && <FrontierHud rules={rules} />
-          ) : (
+          return (
             <>
-              <ArenaHud />
-              {attack && <AttackForecast store={store} />}
-              {start && <GameStartNews />}
+              {frontier ? (
+                rules && <FrontierHud rules={rules} />
+              ) : (
+                <>
+                  <ArenaHud />
+                  {attack && <AttackForecast store={store} />}
+                  {start && <GameStartNews />}
+                </>
+              )}
+              {/* The surfaces a HUD control opens, drawn where the game's world layout draws them. */}
+              <SurfaceHost />
             </>
           );
         }}
@@ -172,7 +185,10 @@ const lastRealmLost = (store: NativeFactStore): unknown[] => {
 /** The lab realm's army out today: beside the realm's site, 5,000 Knights, 90 stamina, and 260 XP, which buys a tier. */
 export const LAB_ARMY_ID = 90;
 
-export const labArmyOut = (store: NativeFactStore): unknown[] => {
+const LAB_ARMY_STAMINA = "90";
+const TIRED_STAMINA = "5";
+
+export const labArmyOut = (store: NativeFactStore, stamina = LAB_ARMY_STAMINA): unknown[] => {
   const site = structureMapPosition(store, store.require("Structure", { game_id: 1, entity_id: 7 }));
   if (!site) throw new Error("The lab realm has no site today");
   return [
@@ -186,7 +202,7 @@ export const labArmyOut = (store: NativeFactStore): unknown[] => {
         troops: {
           ...ROW_SET.expected.value.troops,
           count: String(5_000n * 1_000_000_000n),
-          stamina: { Inline: { amount: "90", settled_at: "350000", remainder: "0" } },
+          stamina: { Inline: { amount: stamina, settled_at: "350000", remainder: "0" } },
         },
       },
     },
@@ -268,7 +284,7 @@ const AttackForecast = ({ store }: { store: NativeFactStore }) => {
     const opened = usePopoverStore.getState().surface;
     return () => usePopoverStore.setState((now) => (now.surface === opened ? { openId: null, surface: null } : now));
   }, [store]);
-  return <SurfaceHost />;
+  return null;
 };
 
 const LAB_PROGRESS = { game_id: 1, xp: 260, battle: 1, logistics: 1, scouting: 1, scouting_kinds: 0, homecoming: 1 };

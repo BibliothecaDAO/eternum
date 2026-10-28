@@ -61,9 +61,9 @@ export interface SiteCardPlan {
 }
 
 /**
- * The fight ahead, in two scales that never mix. The outcome, its count of attacks and `whole` speak of the whole
- * fight, attack after attack. The troops lost and the guard left speak of the one attack the Attack button sends now,
- * so they are the figures its result will show.
+ * The fight ahead, in two scales that never mix. The outcome and its count of attacks speak of the whole fight,
+ * attack after attack. The troops lost and the guard left speak of the one attack the Attack button sends now, so they
+ * are the figures its result will show.
  */
 export type SiteFight =
   | { outcome: "refused" }
@@ -72,8 +72,6 @@ export type SiteFight =
       exchanges: number;
       troopsLost: number;
       guardLeft: number;
-      /** Over every attack the fight takes: the troops the army loses, the guard it kills, the stamina it spends. */
-      whole: { troopsLost: number; guardKilled: number; stamina: number };
     };
 
 export const readSiteCard = (
@@ -162,14 +160,6 @@ const fittingPayout = (
   return { resourceId: reward.resourceType, amount: raw, fits };
 };
 
-/** Whether a realm's store of a resource stands at its own limit now; never for a store that has none. */
-export const storeAtLimit = (store: NativeFactStore, realmId: number, resourceId: ResourcesIds): boolean => {
-  const manager = new ResourceManager(store, realmId, configManager.getActiveGameId());
-  if (manager.storeLimit(resourceId) === undefined) return false;
-  const held = manager.balanceWithProduction(getBlockTimestamp().currentDefaultTick, resourceId);
-  return held?.hasReachedMaxCapacity === true;
-};
-
 const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   type: troops.category as TroopType,
   tier: troops.tier as TroopTier,
@@ -214,11 +204,6 @@ const forecastFightAt = (
     exchanges: forecast.exchanges,
     troopsLost: Number(forecast.firstExchange.attackerLoss / PRECISION),
     guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
-    whole: {
-      troopsLost: Number(forecast.attackerLoss / PRECISION),
-      guardKilled: Number(forecast.defenderLoss / PRECISION),
-      stamina: Number(forecast.staminaSpent),
-    },
   };
 };
 

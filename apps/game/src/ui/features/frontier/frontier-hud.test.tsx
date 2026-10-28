@@ -34,6 +34,8 @@ vi.mock("@/ui/features/social", async () => ({
 const { readExpeditionRules } = await import("@bibliothecadao/eternum");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
+const { useUIStore } = await import("@/hooks/store/use-ui-store");
+const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierHud } = await import("./frontier-hud");
 
 /** The frame's width, as the layout reads it: a desktop from 1024 px, told to the layout when it changes. */
@@ -150,11 +152,12 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
   await act(async () => feed()!.click());
   expect(page()).not.toBeNull();
-  // Owner, 27 October 2026: "On the feed all should be swapped with important (which is mine, not important tbh) since
-  // its all opened by default": All first and lit, then Mine.
+  // Owner, 27 October 2026: "All / Important (battles but not just mine), then mine": All first and lit, then
+  // Important, then Mine.
   const lenses = [...page()!.querySelectorAll('[aria-label="Show"] button')];
   expect(lenses.map((button) => [button.textContent, button.getAttribute("aria-pressed")])).toEqual([
     ["All", "true"],
+    ["Important", "false"],
     ["Mine", "false"],
   ]);
   expect(feed()!.getAttribute("aria-current")).toBe("page");
@@ -388,4 +391,23 @@ it("keeps the extended season live past its old end and reloads its final day fr
   await boot(approved.end);
   expect(host.textContent).toContain("Game finished");
   expect(host.querySelector('button[aria-label="Today"]')).toBeNull();
+});
+
+it("tells a spectator on a phone that they are spectating, where a player's purse stands, as the desktop's top bar does", async () => {
+  viewport.set(390);
+  window.history.replaceState(null, "", "/g/0x1ab9/1/map?col=1&row=1");
+  await renderHud();
+  const spectatingChip = () =>
+    [...host.querySelectorAll("button")].find((button) => button.textContent === "Spectating") ?? null;
+  expect(spectatingChip()).toBeNull();
+
+  // The signed-in owner entered the game to spectate it (`?spectate=true`), as spectator-session latches it.
+  overrideSpectateIntent(true);
+  try {
+    await act(async () => useUIStore.setState({ isSpectating: true }));
+    expect(spectatingChip()).not.toBeNull();
+  } finally {
+    overrideSpectateIntent(false);
+    await act(async () => useUIStore.setState({ isSpectating: false }));
+  }
 });

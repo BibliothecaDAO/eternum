@@ -1,5 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useBuildOrderFailure } from "@/hooks/use-build-orders";
+import { BuildOrderFailure } from "@/ui/features/build-orders/build-order-failure";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { canIssueOrders, useActNowRefusal } from "@/utils/can-issue-orders";
 import { SuggestionChip } from "./suggestion-chip";
@@ -10,6 +12,7 @@ import type { EmpireSuggestion } from "./use-empire-suggestions";
 
 export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
   const suggestions = useEmpireSuggestions();
+  const failed = useBuildOrderFailure() !== null;
   const { handleSuggestionClick, pendingSuggestionIds } = useSuggestionActions();
   const selected = useRef<HTMLDivElement>(null);
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -24,6 +27,7 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
   return (
     <section className="w-[360px] max-w-full space-y-2 p-3" aria-label="Suggested actions">
       <h2 className="border-b border-gold/25 pb-2 text-sm font-semibold">Suggested actions</h2>
+      <BuildOrderFailure />
       {refusal && (
         <p role="status" className="text-sm font-semibold text-gold">
           {refusal}
@@ -47,7 +51,7 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
           )}
         </div>
       ))}
-      {suggestions.length === 0 && <p className="text-xs">No suggested actions right now.</p>}
+      {suggestions.length === 0 && !failed && <p className="text-xs">No suggested actions right now.</p>}
     </section>
   );
 }

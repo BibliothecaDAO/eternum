@@ -1,5 +1,6 @@
 import { reloadBuildOrders, saveBuildOrders, useBuildOrderAccount, useBuildOrders } from "@/hooks/use-build-orders";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { buildOrderGoalIcon } from "@/ui/features/build-orders/build-order-icons";
 import {
   AppButton,
   AppChip,
@@ -12,8 +13,10 @@ import {
 } from "@/ui/design-system/kit/app-elements";
 import { BACK, BUILD_ORDER_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import {
-  BUILD_ORDER_GOALS,
+  BUILD_ORDER_GOAL_GROUPS,
   BUILD_ORDER_LIMITS,
+  buildOrderGoalName,
+  type BuildOrderGoalGroup,
   buildOrderJson,
   buildOrderPrompt,
   DEFAULT_BUILD_ORDER,
@@ -30,18 +33,6 @@ import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
 import { addStep, canAdd, moveStep, removeStep, setCount, stepsOfRank } from "./order-edits";
-
-/** Each goal's painting, as its card and the palette show it. */
-const GOAL_ICONS: Record<BuildOrderGoal, IconMeaning> = {
-  farm: "farm",
-  wood: "wood",
-  coal: "coal",
-  copper: "copper",
-  hut: "workers-hut",
-  barracks: "barracks",
-  army: "deploy",
-  levelUp: "upgrade",
-};
 
 /**
  * What the page shows besides the list, held in its address so Back leaves an editor for the list: an order being
@@ -85,10 +76,11 @@ export const BuildOrdersPage = () => {
   useBuildOrderAccount();
   const view = useView();
   const desktop = useLayout() === "desktop";
+  const signIn = useSignInNotice();
   const open = view.kind === "list" ? <FollowedOrder /> : <OpenView view={view} />;
   if (desktop)
     return (
-      <PageFrame back="/" title={BUILD_ORDER_WORDS.page}>
+      <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn}>
         <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
           <div className="flex flex-col gap-4">
             <OrderList />
@@ -99,13 +91,17 @@ export const BuildOrdersPage = () => {
       </PageFrame>
     );
   return view.kind === "list" ? (
-    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} foot={<ListActions />}>
+    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn} foot={<ListActions />}>
       <OrderList />
     </PageFrame>
   ) : (
     open
   );
 };
+
+/** The page's one word to a signed-out player, in the frame's notice place: orders are saved once they sign in. */
+const useSignInNotice = (): ReactNode =>
+  useBuildOrders().status === "signed-out" ? <AppNotice line={BUILD_ORDER_WORDS.signInToSave} /> : undefined;
 
 /**
  * An open order or paste: on a desktop, a panel beside the list ending on Back and its step; on a phone, the page
@@ -125,6 +121,7 @@ const ViewFrame = ({
 }) => {
   const open = useOpen();
   const phone = useLayout() === "phone";
+  const signIn = useSignInNotice();
   const panel = (
     <AppPanel title={title} icon={icon}>
       <div className="flex flex-col gap-4">
@@ -141,7 +138,7 @@ const ViewFrame = ({
     </AppPanel>
   );
   return phone ? (
-    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} foot={step}>
+    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} notice={signIn} foot={step}>
       {panel}
     </PageFrame>
   ) : (
@@ -204,7 +201,6 @@ const OrderList = () => {
   const full = orders.length >= BUILD_ORDER_LIMITS.orders;
   return (
     <div className="flex flex-col gap-3">
-      {!signedIn && <AppNotice line={BUILD_ORDER_WORDS.signInToSave} />}
       {notice && <RequestNotice status={status} line={notice} retry={reloadBuildOrders} />}
       {full && <AppNotice line={BUILD_ORDER_WORDS.full(BUILD_ORDER_LIMITS.orders)} />}
       <AppPanel title={BUILD_ORDER_WORDS.yourOrders} icon="build" flush>
@@ -219,7 +215,7 @@ const OrderList = () => {
         ))}
         <OrderRow
           order={{ ...DEFAULT_BUILD_ORDER, name: BUILD_ORDER_WORDS.theGamesOrder }}
-          active={!book?.active}
+          active={signedIn && !book?.active}
           onUse={signedIn ? () => use(null) : undefined}
           action={
             <AppIconButton
@@ -297,8 +293,8 @@ const FollowedOrder = () => {
             <h3 className="text-app-label text-app-muted">{rank}</h3>
             {stepsOfRank(order, key).map(({ step, index }) => (
               <span key={index} className="flex items-center gap-2 text-app-body text-app-ink">
-                <Icon name={GOAL_ICONS[step.goal]} size={32} />
-                {BUILD_ORDER_WORDS.goals[step.goal]}
+                <Icon name={buildOrderGoalIcon(step.goal)} size={32} />
+                {buildOrderGoalName(step.goal)}
                 {step.goal !== "levelUp" && <b className="text-app-gold">{step.count}</b>}
               </span>
             ))}
@@ -389,21 +385,16 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
       </AppTabs>
       <section className="flex flex-col gap-2" aria-label={BUILD_ORDER_WORDS.addTo(REALM_LEVELS[rank])}>
         <h3 className="text-app-label text-app-muted">{BUILD_ORDER_WORDS.addTo(REALM_LEVELS[rank])}</h3>
-        <div className="flex flex-wrap gap-2">
-          {BUILD_ORDER_GOALS.map((goal) => (
-            <AppButton
-              key={goal}
-              kind="secondary"
-              icon={GOAL_ICONS[goal]}
-              disabled={!canAdd(order, rank, goal)}
-              onClick={() => setOrder(addStep(order, rank, goal))}
-            >
-              {BUILD_ORDER_WORDS.goals[goal]}
-            </AppButton>
-          ))}
-        </div>
+        {BUILD_ORDER_GOAL_GROUPS.map((group) => (
+          <GoalGroup
+            key={group.label}
+            group={group}
+            isOffered={(goal) => canAdd(order, rank, goal)}
+            onAdd={(goal) => setOrder(addStep(order, rank, goal))}
+          />
+        ))}
       </section>
-      {problem && <AppNotice tone="warn" line={problem} />}
+      {problem && order.steps.length > 0 && <AppNotice tone="warn" line={problem} />}
       <div className="flex flex-wrap gap-2">
         <AppButton
           kind="quiet"
@@ -427,11 +418,50 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
         )}
       </div>
       {note && <AppNotice line={note} />}
-      {status === "signed-out" && <AppNotice line={BUILD_ORDER_WORDS.signInToSave} />}
       {notice && <RequestNotice status={status} line={notice} retry={book ? save : reloadBuildOrders} />}
     </ViewFrame>
   );
 };
+
+/** A table's columns, by how many heads it has. */
+const TABLE_COLUMNS: Record<number, string> = { 2: "grid-cols-2", 3: "grid-cols-3" };
+
+/**
+ * One group of goals to add: each its painting and name, or in a table, as the construction panel draws troops, its
+ * head over its column and its tier on its face.
+ */
+const GoalGroup = ({
+  group: { label, goals, heads },
+  isOffered,
+  onAdd,
+}: {
+  group: BuildOrderGoalGroup;
+  isOffered: (goal: string) => boolean;
+  onAdd: (goal: string) => void;
+}) => (
+  <div className="flex flex-col gap-1" role="group" aria-label={label}>
+    <h4 className="text-app-label text-app-muted">{label}</h4>
+    <div className={`grid gap-2 ${heads ? TABLE_COLUMNS[heads.length] : "grid-cols-2 sm:grid-cols-3"}`}>
+      {heads?.map((head) => (
+        <span key={head} className="text-center text-app-label text-app-muted">
+          {head}
+        </span>
+      ))}
+      {goals.map((goal, index) => (
+        <AppButton
+          key={goal}
+          kind="secondary"
+          icon={buildOrderGoalIcon(goal)}
+          aria-label={buildOrderGoalName(goal)}
+          disabled={!isOffered(goal)}
+          onClick={() => onAdd(goal)}
+        >
+          {heads ? `T${Math.floor(index / heads.length) + 1}` : buildOrderGoalName(goal)}
+        </AppButton>
+      ))}
+    </div>
+  </div>
+);
 
 /** One step: its building's painting and name, how many (a level up has no count), and its place in the rank. */
 const StepCard = ({
@@ -449,10 +479,10 @@ const StepCard = ({
   onLater: () => void;
   onRemove: () => void;
 }) => {
-  const name = BUILD_ORDER_WORDS.goals[goal];
+  const name = buildOrderGoalName(goal);
   return (
     <AppRow
-      lead={<Icon name={GOAL_ICONS[goal]} size={32} />}
+      lead={<Icon name={buildOrderGoalIcon(goal)} size={32} />}
       title={name}
       trail={
         <span className="flex items-center gap-2">

@@ -1,10 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { canIssueOrders } from "@/utils/can-issue-orders";
+import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { SETTINGS } from "@/ui/design-system/kit/words";
 import { useGameChat } from "@/ui/features/world/containers/hud-chat-window";
+import { IdentityChip } from "@/ui/features/world/containers/top-header/identity-chip";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { SettingsPanel } from "@/ui/modules/settings/settings";
@@ -75,6 +76,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
+  const spectating = useUIStore(isWatching);
   const realm = useFrontierRealm();
   // On a visit the dock shows the visited realm's armies; no order renders for a realm the player does not own.
   const visit = useRealmVisit();
@@ -93,6 +95,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       setResearchPick(node);
       setSurface("research");
     },
+    onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
   const {
@@ -110,7 +113,16 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
   // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
-  const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"), desktop);
+  const [armyChoosing, setArmyChoosing] = useState(false);
+  const armyPanel = useArmyPanelOpens(
+    visit ? null : realm,
+    (choosing) => {
+      setArmyChoosing(choosing);
+      setSurface("army");
+    },
+    desktop,
+  );
+  const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
@@ -143,19 +155,25 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {storeCards?.open && storeCards.card}
     </>
   );
-  const purse = realm && !visit && (
-    <RealmPurse
-      realm={realm}
-      laborWaiting={realmLabor?.plan.total ?? 0}
-      onWithdraw={() => setSurface("withdraw")}
-      onRealms={() => setSurface("realms")}
-    />
+  // A phone's purse: the player's realm's LORDS; a spectator sees there what the desktop's top bar says of them.
+  const purse = spectating ? (
+    <IdentityChip compact />
+  ) : (
+    realm &&
+    !visit && (
+      <RealmPurse
+        realm={realm}
+        laborWaiting={realmLabor?.plan.total ?? 0}
+        onWithdraw={() => setSurface("withdraw")}
+        onRealms={() => setSurface("realms")}
+      />
+    )
   );
   const page =
     surface === "research" && realm ? (
-      <FrontierResearch key={researchPick} realm={realm} pick={researchPick} />
+      <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
     ) : surface === "season" ? (
-      <FrontierSeason rules={rules} onVisited={close} />
+      <FrontierSeason rules={rules} onVisited={close} onClose={close} />
     ) : surface === "menu" ? (
       <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;
@@ -178,7 +196,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const dock = dockRealm && <DockFor rules={rules} realm={dockRealm} onOpenArmy={desktop ? openArmy : pickArmy} />;
   const sheets = (
     <>
-      <FrontierSurfaces realm={realm} />
+      <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && (
@@ -191,7 +209,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
           onClose={close}
         />
       )}
-      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} onClose={close} />}
+      {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -365,8 +383,8 @@ const FrontierPhoneHud = ({
 /**
  * A phone's action row, the one row over the place bar that says what the pick lets the player do now (owner, 22 October
  * 2026: mobile direction A): with an order pending, its costs and verb; with the next order queued, its bar; with an
- * army picked, the army, how to give it an order and its details; otherwise nothing. A desktop has none: its orders go
- * from the map, and the army's state is its panel's.
+ * army picked, the army (a tap opens its card), its four sides, its stamina as its refill, and Level up; otherwise
+ * nothing. A desktop has none: its orders go from the map, and the army's state is its panel's.
  */
 const ArmyAction = ({
   rules,
@@ -375,8 +393,8 @@ const ArmyAction = ({
 }: {
   rules: ExpeditionRules;
   realm: NativeRows["Structure"];
-  /** Opens an army's panel (useArmyPanelOpens); none on a visit. */
-  onOpenArmy?: (explorerId: number) => void;
+  /** Opens an army's panel (useArmyPanelOpens), on its level-up choices when `choosing`; none on a visit. */
+  onOpenArmy?: (explorerId: number, choosing?: boolean) => void;
 }) => {
   const armies = useDockArmies(realm);
   const order = useArmyOrder();
@@ -388,7 +406,15 @@ const ArmyAction = ({
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy) return <PickedArmy army={acting} onDetails={() => onOpenArmy(acting.explorerId)} />;
+  if (acting && onOpenArmy)
+    return (
+      <PickedArmy
+        army={acting}
+        refill={<ArmyRefill army={acting} realm={realm} look="stamina" />}
+        onDetails={() => onOpenArmy(acting.explorerId)}
+        onLevelUp={() => onOpenArmy(acting.explorerId, acting.canBuyTier)}
+      />
+    );
   return null;
 };
 

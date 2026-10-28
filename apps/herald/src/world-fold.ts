@@ -73,6 +73,28 @@ const checkpointRow = ([entityId, row]: [string, StoredModelRow]): FoldCheckpoin
 });
 
 /**
+ * The games whose results are final: settled, and closed by their season rule or by a complete Blitz result. The fold
+ * evicts their gameplay rows once their review snapshot is frozen. `rows` reads one model's rows, keys and values merged.
+ */
+export function finalizedGames(rows: (model: string) => readonly DecodedRecord[]): string[] {
+  const rules = new Map(rows("SliceRules").map((value) => [BigInt(value.game_id as string).toString(), value]));
+  const results = new Set(
+    rows("BlitzResult")
+      .filter((value) => value.complete === true)
+      .map((value) => BigInt(value.game_id as string).toString()),
+  );
+  return rows("GameRegistry")
+    .filter((value) => {
+      if (value.settled !== true) return false;
+      const gameId = BigInt(value.game_id as string).toString();
+      const config = rules.get(gameId);
+      if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
+      return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
+    })
+    .map((value) => BigInt(value.game_id as string).toString());
+}
+
+/**
  * A checkpoint is only restorable when it was folded from exactly the registry's persistent model set: a model added
  * to the sync manifest has rows in history the checkpoint never saw, so the fold must be rebuilt from genesis.
  * Returns the human-readable difference, or undefined when the sets match.
@@ -436,23 +458,7 @@ export class WorldFold {
   }
 
   public finalizedGameIds(): readonly string[] {
-    const rules = new Map(
-      this.modelRows("SliceRules").map(({ value }) => [BigInt(value.game_id as string).toString(), value]),
-    );
-    const results = new Set(
-      this.modelRows("BlitzResult")
-        .filter(({ value }) => value.complete === true)
-        .map(({ value }) => BigInt(value.game_id as string).toString()),
-    );
-    return this.modelRows("GameRegistry")
-      .filter(({ value }) => {
-        if (value.settled !== true) return false;
-        const gameId = BigInt(value.game_id as string).toString();
-        const config = rules.get(gameId);
-        if (!config) throw new Error(`Finalized game ${gameId} has no rules`);
-        return (Number(config.mode_rules) & nativeRuleConstants.SEASON_CLOSE) !== 0 || results.has(gameId);
-      })
-      .map(({ value }) => BigInt(value.game_id as string).toString());
+    return finalizedGames((model) => this.modelRows(model).map(({ value }) => value));
   }
 
   /** Drops each finalized game's rows beyond its directory and standings; call once its review snapshot is frozen. */

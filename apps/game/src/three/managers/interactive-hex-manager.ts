@@ -10,17 +10,18 @@ import * as THREE from "three";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { type HoverVisualPalette } from "./worldmap-interaction-palette";
 
-import { FLAT_TERRAIN_SURFACE, type TerrainSurface } from "@/three/terrain/terrain-surface";
+import {
+  FLAT_TERRAIN_SURFACE,
+  hexRimOffsets,
+  highestGroundAt,
+  type TerrainSurface,
+} from "@/three/terrain/terrain-surface";
 
 /** The band floats just above the sampled ground so relief cannot swallow it. */
 const INTERACTIVE_HEX_SURFACE_OFFSET = 0.03;
 const INTERACTIVE_PICK_Y = 0;
-// Where the ground is read under a hex's band: its six corners and six edge middles.
-const BAND_EDGE_SAMPLES = Array.from({ length: 12 }, (_, index) => {
-  const angle = (Math.PI / 6) * index;
-  const radius = HEX_SIZE * 0.95 * (index % 2 === 0 ? Math.cos(Math.PI / 6) : 1);
-  return [radius * Math.cos(angle), radius * Math.sin(angle)] as const;
-});
+// Where the ground is read under a hex's band: its centre, six corners and six edge middles.
+const BAND_GROUND_SAMPLES = [[0, 0] as const, ...hexRimOffsets(HEX_SIZE * 0.95)];
 const RAY_PARALLEL_EPSILON = 1e-6;
 
 type InteractiveHexHoverVisualMode = HoverVisualMode;
@@ -511,11 +512,7 @@ export class InteractiveHexManager {
    */
   private bandY(x: number, z: number): number {
     if (!this.surfaceVisible) return this.surfaceY(x, z);
-    let highest = this.terrain.sampleSurface(x, z).height;
-    for (const [dx, dz] of BAND_EDGE_SAMPLES) {
-      highest = Math.max(highest, this.terrain.sampleSurface(x + dx, z + dz).height);
-    }
-    return highest + INTERACTIVE_HEX_SURFACE_OFFSET;
+    return highestGroundAt(this.terrain, x, z, BAND_GROUND_SAMPLES) + INTERACTIVE_HEX_SURFACE_OFFSET;
   }
 
   private resolveHexFromPoint(point: THREE.Vector3) {

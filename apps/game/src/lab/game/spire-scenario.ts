@@ -9,7 +9,16 @@ import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-na
 import { frontierPreset } from "../../../../../config/source/frontier/native";
 import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./lab-chain";
 
-const GRASS = BigInt(BiomeTypeToId[BiomeType.Grassland]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
+/** A revealed tile's packed data: its biome alone. */
+const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
+
+/** The biome each revealed tile of a lab game lies in, by its position. */
+type LabGround = (hex: { col: number; row: number }) => BiomeType;
+
+const GRASSLAND: LabGround = () => BiomeType.Grassland;
+/** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
+const HIGH_GROUND: LabGround = ({ col, row }) =>
+  [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
 
 const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
@@ -36,7 +45,7 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
  * its 1,498-knight army beside it holding 100 stamina, the land around the realm revealed, on Frontier's rules. The chain answers EnterDepth as movement.cairo's enter_depth applies it: the army leaves
  * its tile for the one straight below it, one region down per depth, revealed, and pays the depth's entry stamina.
  */
-export const spireScenario = (): LabScenario => {
+export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
   // The HUD's whole game (its buildings, rules and recipes) on the spire's day.
   // Frontier's own regions, a hundred tiles wide (config/source/frontier/native.ts).
   const store = installLabGame(LAB_GAME.presetId, false, () => spireDay({ spacing: 100 }));
@@ -46,7 +55,7 @@ export const spireScenario = (): LabScenario => {
   const tile = (key: string, col: number, row: number): LabFact => ({
     model: "TileOpt",
     key,
-    value: { game_id: 1, alt: false, col, row, data: GRASS.toString() },
+    value: { game_id: 1, alt: false, col, row, data: tileData(ground({ col, row })).toString() },
   });
   store.applyFacts([
     { model: "SliceRules", key: "0x100", value: frontierRules(store.require("SliceRules", { game_id: 1 })) },
@@ -106,6 +115,13 @@ export const spireScenario = (): LabScenario => {
     },
   };
 };
+
+/**
+ * The spire's game on high ground (/lab/game?scenario=high-ground): the same realm, army and revealed land, every
+ * revealed tile snow, bare rock or tundra, so the army's lit tiles lie on ground that rises above the old flat plates,
+ * and its explore targets are sunken unexplored tiles inside that ground.
+ */
+export const highGroundScenario = (): LabScenario => spireScenario(HIGH_GROUND);
 
 /** A tile beside the one given, revealed and empty: where a lab game stands a second thing by the spire's army. */
 export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; row: number }) => {

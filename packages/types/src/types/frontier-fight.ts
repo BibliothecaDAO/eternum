@@ -1,6 +1,6 @@
 import { VICTORY, ARMY_LOST, GUARD_HOLDS } from "../words";
 
-export type FightVerdict = "victory" | "army-lost" | "guard-holds";
+type FightVerdict = "victory" | "army-lost" | "guard-holds";
 export const VERDICT_WORDS: Record<FightVerdict, string> = {
   victory: VICTORY,
   "army-lost": ARMY_LOST,
