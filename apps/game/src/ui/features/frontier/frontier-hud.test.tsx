@@ -107,16 +107,18 @@ const renderHud = () =>
 const LABOR_RULES = {
   model: "LaborRules",
   key: "0x1ab",
-  value: { game_id: 1, amount: "1000", account_daily_limit: 5 },
+  value: { game_id: 1, amount: "1000", campaign_essence: "0", golden_amount: "1000", golden_essence: "0" },
 };
 
-it("opens Realms from a desktop realm panel whose Realms have no labor waiting, so a new player can add one", async () => {
+it("opens Realm Labor from the desktop panel and explains why a free home has no claim", async () => {
   viewport.set(1440);
   await renderHud();
-  const realms = [...host.querySelectorAll("button")].find((button) => button.getAttribute("aria-label") === "Realms");
+  const realms = [...host.querySelectorAll("button")].find(
+    (button) => button.getAttribute("aria-label") === "Realm Labor",
+  );
   expect(realms).toBeDefined();
   await act(async () => realms!.click());
-  expect(host.querySelector('form[aria-label="Add a Realm"]')).not.toBeNull();
+  expect(host.textContent).toContain("No daily Labor claim");
 });
 
 it("keeps one chat connection and its unread count from desktop to phone and back, through the Frontier HUD", async () => {

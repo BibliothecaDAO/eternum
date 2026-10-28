@@ -35,6 +35,7 @@ export async function reconcileCalendar(proof: Proof, origin: string, operatorTo
     throw new Error("Extension calendar must be production");
   if (!operatorToken) throw new Error("OPERATOR_TOKEN is required for calendar reconciliation");
   const dates = {
+    presetId: approved.presetId,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
@@ -46,8 +47,13 @@ export async function reconcileCalendar(proof: Proof, origin: string, operatorTo
     body: JSON.stringify(dates),
   });
   if (!response.ok) throw new Error(`Calendar reconciliation refused (${response.status})`);
-  const body = (await response.json()) as { phase?: string; startsAt?: string; endsAt?: string };
-  if (body.phase !== "frontier" || body.startsAt !== dates.startsAt || body.endsAt !== dates.endsAt)
+  const body = (await response.json()) as { phase?: string; presetId?: number; startsAt?: string; endsAt?: string };
+  if (
+    body.phase !== "frontier" ||
+    body.presetId !== dates.presetId ||
+    body.startsAt !== dates.startsAt ||
+    body.endsAt !== dates.endsAt
+  )
     throw new Error("Calendar write did not confirm approved dates");
   const readback = await network(new URL("/api/factory/calendar", origin), {
     redirect: "error",
@@ -57,7 +63,12 @@ export async function reconcileCalendar(proof: Proof, origin: string, operatorTo
   if (!readback.ok) throw new Error("Calendar readback unavailable; rerun reconciliation");
   const calendar = (await readback.json()) as { phases: (typeof body)[] };
   const frontier = calendar.phases.filter((p) => p.phase === "frontier");
-  if (frontier.length !== 1 || frontier[0]!.startsAt !== dates.startsAt || frontier[0]!.endsAt !== dates.endsAt)
+  if (
+    frontier.length !== 1 ||
+    frontier[0]!.presetId !== dates.presetId ||
+    frontier[0]!.startsAt !== dates.startsAt ||
+    frontier[0]!.endsAt !== dates.endsAt
+  )
     throw new Error("Calendar readback differs; rerun reconciliation");
   return frontier[0];
 }

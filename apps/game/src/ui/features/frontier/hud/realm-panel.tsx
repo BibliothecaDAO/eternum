@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/types";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
+import { HudChip, HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
 import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
@@ -16,6 +16,7 @@ import type { ReactNode } from "react";
 
 import { RankSteps } from "../realm/rank-steps";
 import type { RealmPopulation } from "../realm/realm-population";
+import type { CampaignMark } from "../value/campaign-home";
 import { RealmsChip } from "../value/lords-purse";
 import { LandingDelta, STORE_TONES, STORES, type StoreReading, storeLine } from "./status-strip";
 
@@ -39,6 +40,7 @@ export const RealmPanel = ({
   storeCards,
   onWithdraw,
   onRealms,
+  mark,
 }: {
   name: string;
   level: number | undefined;
@@ -62,6 +64,8 @@ export const RealmPanel = ({
   };
   onWithdraw?: () => void;
   onRealms?: () => void;
+  /** The campaign that founded the home, worn beside its rank by every viewer. */
+  mark?: CampaignMark | null;
 }) => (
   <HudPanel
     label={REALM}
@@ -86,6 +90,7 @@ export const RealmPanel = ({
           {rankName(level)}
         </span>
       )}
+      {mark && <HudChip icons={["realm"]}>{mark.line}</HudChip>}
       {population && <PopulationReading population={population} />}
       {onRealms && (
         <span className="ml-auto">

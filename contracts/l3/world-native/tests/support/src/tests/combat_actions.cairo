@@ -70,6 +70,7 @@ pub fn setup_with_cooldown(
                 d,
                 Command::CreateExplorer(
                     CreateExplorer {
+                        slot: 0,
                         structure_id: key.entity_id,
                         category: 0,
                         tier: 0,

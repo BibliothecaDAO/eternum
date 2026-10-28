@@ -134,7 +134,12 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,
@@ -147,6 +152,7 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let origin = troops.explorer(key).unwrap().coord;
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
     let destination = neighbor(origin, 0);
     let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
     let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
@@ -170,7 +176,12 @@ fn eternum_exploration_does_not_create_a_camp() {
             d,
             Command::CreateExplorer(
                 CreateExplorer {
-                    structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                    slot: 0,
+                    structure_id: home.entity_id,
+                    category: 0,
+                    tier: 0,
+                    amount: RESOURCE_PRECISION,
+                    direction: 0,
                 },
             ),
             80,
@@ -187,6 +198,7 @@ fn eternum_exploration_does_not_create_a_camp() {
     assert!(!occupant.is_structure);
     assert_eq!(occupant.entity_id, explorer_id);
     assert_eq!(troops.explorer(key).unwrap().coord, destination);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
 }
 
 #[test]
@@ -204,7 +216,12 @@ fn blitz_exploration_stores_both_inclusive_camp_guard_endpoints() {
                 d,
                 Command::CreateExplorer(
                     CreateExplorer {
-                        structure_id: home.entity_id, category: 0, tier: 0, amount: RESOURCE_PRECISION, direction: 0,
+                        slot: 0,
+                        structure_id: home.entity_id,
+                        category: 0,
+                        tier: 0,
+                        amount: RESOURCE_PRECISION,
+                        direction: 0,
                     },
                 ),
                 80,

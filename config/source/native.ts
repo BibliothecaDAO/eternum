@@ -1,4 +1,5 @@
 import { buildingIds, frontierPreset } from "./frontier/native";
+import { frontierDevconPreset } from "./frontier/devcon";
 import { blitzPreset } from "./blitz/native";
 import { eternumPreset } from "./eternum/native";
 import { duelPreset } from "./duel/native";
@@ -25,7 +26,7 @@ const modes: Record<GameType, NativePreset> = {
 const frontierAcceleratedPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_ACCELERATED_PRESET_ID,
-  clockScale: 120,
+  clockScale: { days: 120, activity: 120 },
 };
 
 const frontierFixturePreset: NativePreset = {
@@ -63,13 +64,17 @@ const frontierPlaygroundPreset: NativePreset = {
 };
 
 export const nativePresets: Record<number, NativePreset> = Object.fromEntries(
-  [...Object.values(modes), frontierAcceleratedPreset, frontierFixturePreset, frontierPlaygroundPreset].map(
-    (preset) => {
-      if (nativeGameModeOf(preset.id) !== preset.gameType)
-        throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
-      return [preset.id, preset];
-    },
-  ),
+  [
+    ...Object.values(modes),
+    frontierDevconPreset,
+    frontierAcceleratedPreset,
+    frontierFixturePreset,
+    frontierPlaygroundPreset,
+  ].map((preset) => {
+    if (nativeGameModeOf(preset.id) !== preset.gameType)
+      throw new Error(`Native preset ${preset.id} plays ${preset.gameType}, not ${nativeGameModeOf(preset.id)}`);
+    return [preset.id, preset];
+  }),
 );
 
 export function nativePresetForId(id: number): NativePreset {

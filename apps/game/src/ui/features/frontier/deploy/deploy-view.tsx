@@ -38,6 +38,7 @@ export const DeployView = ({
   amount,
   onCount,
   start,
+  slots,
   troopsWait,
   wheatCost,
   tile,
@@ -56,6 +57,7 @@ export const DeployView = ({
   onCount: (count: number) => void;
   /** The slot the army fills and the bar it starts on there; none while every slot holds an army or it is unknown. */
   start: SlotStart | undefined;
+  slots: { allowed: number; open: SlotStart[] | undefined; onPick: (slot: number) => void };
   /** Seconds until the realm's next troop is home; none while nothing makes troops. */
   troopsWait: number | undefined;
   wheatCost: number | undefined;
@@ -80,6 +82,33 @@ export const DeployView = ({
         disabled={amount.most === 0}
         onChange={onCount}
       />
+    </div>
+    <div role="group" aria-label="Army slots" className="flex flex-wrap gap-2">
+      {Array.from({ length: slots.allowed }, (_, slot) => {
+        const available = slots.open?.find((entry) => entry.slot === slot);
+        return (
+          <button
+            key={slot}
+            type="button"
+            aria-label={`Army ${slot + 1}`}
+            aria-pressed={start?.slot === slot}
+            disabled={!available || sending}
+            onClick={() => slots.onPick(slot)}
+            className="flex flex-col gap-1 rounded border border-hud-line p-2 text-hud-ink aria-pressed:border-hud-line-strong aria-pressed:bg-hud-surface disabled:opacity-50"
+          >
+            <span>Army {slot + 1}</span>
+            <span>
+              {available?.start
+                ? `${available.start.current}/${available.start.max} stamina`
+                : available
+                  ? "No troops"
+                  : slots.open
+                    ? "Deployed"
+                    : "Loading…"}
+            </span>
+          </button>
+        );
+      })}
     </div>
     {start?.start && troopsAtHome !== 0 && <StaminaReading stamina={start.start} />}
     {troopsAtHome === 0 ? (

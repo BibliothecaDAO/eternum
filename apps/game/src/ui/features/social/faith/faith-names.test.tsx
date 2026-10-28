@@ -41,7 +41,7 @@ it.each([
     held.rows = {
       faithfulStructures: [],
       wonderFaith: [],
-      structures: [{ entity_id: wonder, owner, metadata: { has_wonder: true, realm_id: 0 } }],
+      structures: [{ display_name: "Wonder", entity_id: wonder, owner, metadata: { has_wonder: true, realm_id: 0 } }],
     };
     const host = document.createElement("div");
     const root = createRoot(host);

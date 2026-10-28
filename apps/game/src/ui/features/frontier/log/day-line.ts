@@ -7,11 +7,10 @@ import {
   LABOR,
   revealLine,
   xpGainedLine,
-  xpSpentLine,
 } from "@/ui/design-system/kit/words";
-import { configManager, findGain } from "@bibliothecadao/eternum";
+import { configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
@@ -33,7 +32,7 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
  * how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its number. Null for
  * a story that only repeats another (a building's placement beside its payment); any other story keeps its title.
  * Each story that moved XP says how much, as the contract counted it: a reveal's `reveal_xp`, a clear's XP from the
- * guard its site started with, a level-up's price.
+ * guard its site started with, a point spent keeps XP unchanged.
  */
 export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string | null => {
   const payload = story.storyPayload;
@@ -41,13 +40,11 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
     case "BattleEvent":
       return fightLogLine(story, store) ?? story.presentation.title;
     case "ExplorationReward":
-      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, store);
+      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
     case "SitePayout":
       return withClearXp(story.presentation.title, payload.site_id, store);
-    case "TierBought":
-      return payload.price === undefined
-        ? story.presentation.title
-        : xpSpentLine(story.presentation.title, formatCharge(Number(payload.price)));
+    case "SkillPointSpent":
+      return story.presentation.title;
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "BuildingPlacementStory":
@@ -61,10 +58,11 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
   }
 };
 
-/** A reveal's line with the XP every Frontier reveal gives its army; the line alone while the rules are unknown. */
-const withRevealXp = (line: string, store: NativeFactStore): string => {
-  const rules = store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
-  return rules ? xpGainedLine(line, formatExact(rules.reveal_xp)) : line;
+/** The recorded tile keeps historical XP correct after an army changes depth or leaves the map. */
+const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): string => {
+  if (!coord || typeof coord !== "object" || !("y" in coord)) return line;
+  const xp = readRevealXp(store, configManager.getActiveGameId(), { y: Number(coord.y) });
+  return xp === undefined ? line : xpGainedLine(line, formatExact(xp));
 };
 
 /** A clear's line with the XP it paid: the site's starting guard sets it, so it needs the site's row; else the title. */

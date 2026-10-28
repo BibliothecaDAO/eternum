@@ -1,4 +1,5 @@
 import { identityClient, notificationOwnerOf, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { deviceTimeZone } from "@/ui/design-system/kit/words";
 import { parseWebPushSubscription } from "@bibliothecadao/notifications";
 import type { PushNotificationDevice } from "./notification-database";
 import { notificationWorkerRequest } from "./local-notification-client";
@@ -54,6 +55,8 @@ export async function enablePushNotifications(
       if (gameAlerts || directMessages) await syncPushGameForeground(owner);
       window.dispatchEvent(new Event("pushRegistrationChanged"));
       assertCurrentOwner(owner);
+      // The first push proves alerts arrive; alerts stay on if it cannot be sent.
+      if (gameAlerts) await identityClient.sendAlertsOn(owner, device.id).catch(() => undefined);
     } catch (error) {
       // Persist local revocation first, so an offline detach cannot display an old account's push.
       try {
@@ -143,7 +146,10 @@ async function readInstalledPushDevice(
   }
 }
 
-/** Refreshes the server lease that prevents automatic push while any game window is visible. */
+/**
+ * Refreshes the server lease that prevents automatic push while any game window is visible, and tells the server this
+ * device's time zone, so a push names its times and keeps its quiet hours by the player's own clock.
+ */
 export async function syncPushGameForeground(owner: string, signal?: AbortSignal): Promise<void> {
   signal?.throwIfAborted();
   assertCurrentOwner(owner);
@@ -152,7 +158,7 @@ export async function syncPushGameForeground(owner: string, signal?: AbortSignal
   const foreground = await notificationWorkerRequest(owner, "game-foreground-status", {}, signal);
   signal?.throwIfAborted();
   assertCurrentOwner(owner);
-  await identityClient.setPushGameForeground(owner, device.id, foreground);
+  await identityClient.setPushGameForeground(owner, device.id, foreground, deviceTimeZone());
 }
 
 async function completeAutomaticSetup(

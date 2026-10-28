@@ -28,7 +28,7 @@ import { createPortal } from "react-dom";
 
 import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, STAMINA, type Tier, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import { BACK, CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -798,15 +798,19 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
  * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
  * colour with its numeral, Common I to Legendary V.
  */
-export const HudTier = ({ tier }: { tier: Tier }) => (
-  <span className="ui-tier" data-tier={tier} role="img" aria-label={TIER_WORDS[tier - 1]}>
-    {tierNumeral(tier)}
+export const HudTier = ({ tier }: { tier: Rank }) => (
+  <span className="ui-tier" data-tier={tier} role="img" aria-label={tier === 0 ? "Untrained" : TIER_WORDS[tier - 1]}>
+    {tier === 0 ? null : tierNumeral(tier)}
   </span>
 );
 
 /** A tier's next step, from the gem it holds to the next one's. */
-export const HudTierStep = ({ from, to }: { from: Tier; to: Tier }) => (
-  <span className="ui-tier-step" role="img" aria-label={`${TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}>
+export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
+  <span
+    className="ui-tier-step"
+    role="img"
+    aria-label={`${from === 0 ? "Untrained" : TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}
+  >
     <HudTier tier={from} />
     <span aria-hidden>→</span>
     <HudTier tier={to} />

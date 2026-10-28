@@ -19,7 +19,7 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
     // The fixture's preset explores for 30 stamina: a 150 bar is five explores.
-    expect(plan.next).toEqual({
+    expect(plan.open[0]).toEqual({
       slot: 1,
       number: 2,
       inherited: false,
@@ -76,19 +76,24 @@ describe("Frontier's deploy", () => {
         model: "ArmyProgress",
         key: "0x82",
         value: {
+          common_points: 0,
+          uncommon_points: 0,
+          rare_points: 0,
+          epic_points: 0,
+          legendary_points: 0,
           game_id: 1,
           explorer_id: 80,
           xp: 0,
           battle: 1,
           logistics: 1,
-          scouting: 1,
+          scouting: 0,
           scouting_kinds: 0,
           homecoming: 4,
         },
       },
     ] as never);
-    // An epic Homecoming returns 18% of its 100 whole troops.
-    expect(planOf(store, row)!.troops!.atHome).toBe(438);
+    // An epic Homecoming returns 21% of its 100 whole troops.
+    expect(planOf(store, row)!.troops!.atHome).toBe(441);
   });
 
   it("deploys onto the picked tile while it stays open, else the first open one, never onto unknown or taken ground", () => {
@@ -118,13 +123,14 @@ describe("Frontier's deploy", () => {
     const { store, row } = frontierDay();
     const troops = planOf(store, row)!.troops!;
     const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" } as never));
-    await deployArmy({ createExplorerArmy }, row, troops, 120, 2);
+    await deployArmy({ createExplorerArmy }, row, troops, 120, 2, 2);
     expect(createExplorerArmy).toHaveBeenCalledWith({
       structureId: 7,
       troopType: TroopType.Knight,
       troopTier: TroopTier.T1,
       troopCount: 120,
       spawnDirection: 2,
+      slot: 2,
     });
   });
 });

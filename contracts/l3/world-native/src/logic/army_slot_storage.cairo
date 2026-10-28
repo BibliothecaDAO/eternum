@@ -67,22 +67,19 @@ pub fn resolve(key: ExplorerKey, mut explorer: ExplorerTroops, refill: Option<St
 }
 
 pub fn allocate(
-    key: ExplorerKey, home: u64, epoch: u64, allowance: u8, initial: Stamina, maximum: u64,
+    key: ExplorerKey, home: u64, epoch: u64, allowance: u8, slot: u8, initial: Stamina, maximum: u64,
 ) -> StaminaSource {
-    for slot in 0..allowance {
-        let slot_key = ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot };
-        let value = read(slot_key);
-        if value.is_none() || value.unwrap().explorer_id == 0 {
-            let mut stamina = match value {
-                Some(value) => value.stamina,
-                None => initial,
-            };
-            stamina.clamp(maximum);
-            write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
-            return StaminaSource::Slot(slot);
-        }
-    }
-    panic!("explorer limit reached")
+    assert!(slot < allowance, "army slot beyond allowance");
+    let slot_key = ArmySlotKey { game_id: key.game_id, structure_id: home, epoch, slot };
+    let value = read(slot_key);
+    assert!(value.is_none() || value.unwrap().explorer_id == 0, "army slot occupied");
+    let mut stamina = match value {
+        Some(value) => value.stamina,
+        None => initial,
+    };
+    stamina.clamp(maximum);
+    write(slot_key, ArmySlot { explorer_id: key.explorer_id, stamina });
+    StaminaSource::Slot(slot)
 }
 
 pub fn persist(key: ExplorerKey, previous: ExplorerRecord, mut troops: Troops) -> Troops {

@@ -614,7 +614,7 @@ def armies(w):
             a["clears"].append((SITE.get(num(b["category"]), b["category"]), s["at"]))
             a["clear_xp"] += gained
             a["xp"] += gained
-        elif s["kind"] == "TierBought":
+        elif s["kind"] == "SkillPointSpent":
             a = out[num(b["explorer_id"])]
             price = num(b["price"])
             if a["xp"] < price:  # a Shrine leaves no story: the fewest that pay for this level-up

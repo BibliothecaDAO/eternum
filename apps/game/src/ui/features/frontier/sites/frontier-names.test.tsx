@@ -4,7 +4,7 @@ import { expect, it } from "vitest";
 import { getGameModeConfig } from "@/config/game-modes";
 import { Plate } from "@/three/map-plates/map-plates";
 import { buildStructurePlate } from "@/three/map-plates/map-plate-model";
-import { RESEARCH_TREE, ARMY_DETAIL } from "@/ui/design-system/kit/words";
+import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
 import { buildStoryEventPresentation, frontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
@@ -84,7 +84,6 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     selectionLabel: attackTargetName("Camp", identity),
     unknownGuard: attackTargetName("Camp"),
     scouting: RESEARCH_TREE.kinds.camp,
-    armyEarn: ARMY_DETAIL.earn.clear,
     coach: coach.map(({ line, verb }) => `${line} ${verb}`).join(" "),
     events: events.map(({ title, description }) => `${title} ${description}`).join(" "),
     card: publicText(
@@ -107,7 +106,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
     expect(text, surface).not.toMatch(/\bcamps?\b/i);
     expect(text, surface).not.toContain("Troll Troll");
   }
-  expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
+  expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(words.kindLine.match(/Troll/g)).toHaveLength(1);
   expect(events[0].title).toBe(`${siteDisplayName(SITE)} cleared`);
   // A discovery names the site as its clear does; what guards it is the kind beside it.
@@ -118,7 +117,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
 it("retains site proper names and Camp for Blitz kind lines and lists", () => {
   const { structure } = campBeside();
   const mode = getGameModeConfig(2);
-  expect(mode.structure.getName(structure).name).toBe(siteDisplayName(Number(structure.entity_id)));
+  expect(mode.structure.getName(structure, {} as never).name).toBe(siteDisplayName(Number(structure.entity_id)));
   expect(mode.structure.getTypeName(StructureType.Camp)).toBe("Camp");
   expect(kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural).toBe("Camps");
 });

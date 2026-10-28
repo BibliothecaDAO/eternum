@@ -44,7 +44,11 @@ const realm = (board: boolean, wheat: bigint) => {
             population_step_bps: 2500,
             ration_step: PRECISION / 4n,
             training_gate_tier: 2,
-            castle_store_deploys: 2,
+            troop_store_deploys: 2,
+            settlement_resource_cap: 6000,
+            city_resource_cap: 18000,
+            kingdom_resource_cap: 40000,
+            empire_resource_cap: 80000,
           }),
         ]
       : []),
@@ -66,9 +70,9 @@ describe("troop raise cost", () => {
     const barracks = (learned: bigint) =>
       store.applyFacts([upsert("0x8", "RealmKnowledge", { game_id: 1, structure_id: 7, learned })]);
     // research.cairo: the Barracks tier at bit 14, its choices from bit 17, Rations = 1.
-    barracks((2n << 14n) | (1n << 17n) | (1n << 18n));
+    barracks(2n << 17n);
     expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(6n * PRECISION);
-    barracks((2n << 14n) | (1n << 18n));
+    barracks((1n << 14n) | (1n << 17n));
     expect(readTroopRaiseCost(store, 1, 7, 26, 4, 100)![0]!.amount).toBe(7n * PRECISION);
   });
 

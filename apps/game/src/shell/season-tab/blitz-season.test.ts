@@ -65,7 +65,7 @@ const game = (id: number, start: number, slotId: number | null, wallet: string |
     mode: "blitz",
     clock: { start_main_at: start },
     slotId,
-    player_state: { registered: true, settled: true, roster_wallet: wallet, structures: [] },
+    player_state: { registered: true, settled: true, roster_wallet: wallet, held_realm_id: null, structures: [] },
   }) as unknown as DirectoryGame;
 
 it("lists the player's own paid Blitz games newest first, each with the wallet the roster froze for their seat", () => {

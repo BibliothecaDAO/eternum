@@ -186,6 +186,7 @@ describe("herald HTTP", () => {
 
 it("serves the prepared leaderboard aggregate without paging history", async () => {
   const response = await handler(new Request("http://herald/games/7/leaderboard"));
+  expect(response.headers.get("X-Confirmed-Block")).toBe("12");
   expect(response.status).toBe(200);
   expect(response.headers.get("access-control-allow-origin")).toBe("*");
   expect(await response.json()).toEqual({ mode: "points", game_id: "7", entries: [] });
@@ -444,7 +445,9 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   depth = 2;
   head = 13;
   release([]);
-  expect(await (await pending).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
+  const completed = await pending;
+  expect(completed.headers.get("X-Confirmed-Block")).toBe("12");
+  expect(await completed.json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);

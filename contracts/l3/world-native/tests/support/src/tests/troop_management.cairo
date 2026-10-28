@@ -46,6 +46,7 @@ pub fn setup_homes() -> (super::Deployment, ResourceKey, ResourceKey, u64, u64) 
                 d,
                 Command::CreateExplorer(
                     CreateExplorer {
+                        slot: 0,
                         structure_id: home.entity_id,
                         category: 0,
                         tier: 0,

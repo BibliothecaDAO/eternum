@@ -3,9 +3,11 @@ import type { Account, RpcProvider } from "starknet";
 import { configureLedger, setupCalls, setupPresenceReader } from "./ledger";
 import { environments, type Inputs } from "./settings";
 import type { PrivateStore } from "./private-store";
+/** A Blitz season window for the environments that run Blitz. */
+const BLITZ_WINDOW = { start: 4000, end: 9000, seasonId: 1 };
 
 const assets = { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" };
-const calls = setupCalls(environments.dev, assets, "0x33", 4000, 9000, 1);
+const calls = setupCalls(environments.dev, assets, "0x33", 5, BLITZ_WINDOW);
 const metadata = calls.filter((call) => call.entrypoint === "set_attrs_raw_to_ipfs_cid");
 const head = 16_200_000;
 
@@ -78,7 +80,7 @@ test("apply starts every presence read together", async () => {
     environments.dev,
     assets,
     "0x33",
-    { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z" } as Inputs,
+    { blitzStart: "2027-01-01T00:00:00Z", blitzEnd: "2027-02-01T00:00:00Z", frontierPresetId: "5" } as Inputs,
     {} as PrivateStore,
     () => {},
     read,

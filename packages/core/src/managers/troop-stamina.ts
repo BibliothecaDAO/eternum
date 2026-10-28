@@ -157,7 +157,7 @@ export function openArmySlots(
 /**
  * The bar a new army of this troop starts on, at the second, under the game's rules: the one rule both modes read
  * before raising one. In a game with army slots (Frontier), in the slot, when its realm has trained Logistics to
- * `trainedLogistics` tiers above common (the Supply yard's row). In a game without (`slot` null: Blitz, Eternum), the
+ * `trainedLogistics` rank (the Supply yard's row). In a game without (`slot` null: Blitz, Eternum), the
  * game's initial stamina under its own troop and tier's maximum, as the contract grants a new army (live-qa-night-2
  * B-2: a Blitz army started at 30/120 and nothing said so).
  */
@@ -175,7 +175,7 @@ export function musterStamina(
   }
   // A new slot occupant starts at its realm's trained Logistics, regardless of its troop tier.
   const staminaMax =
-    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics + 1);
+    troopStaminaLimits(rules, troop.category, TroopTier.T1).staminaMax + logisticsStamina(trainedLogistics);
   // A slot's first army of the day starts full at its own maximum.
   if (!slot.inherited) return { amount: staminaMax, max: staminaMax };
   const newArmy: Troops = {

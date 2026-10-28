@@ -19,6 +19,7 @@ export interface ArmyDeploymentTarget {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  slot?: number;
   /** The troop stack the order named (Next up's "1,000 troops on hand"): the form opens on that troop at that count. */
   troops?: TroopStack;
 }
@@ -45,7 +46,9 @@ export function openArmyDeployment(target: ArmyDeploymentTarget, place?: ArmyDep
     return;
   }
   const ui = useUIStore.getState();
-  ui.setPendingMilitaryAction(target);
+  const current = ui.pendingMilitaryAction;
+  const sameExplorerDeploy = target.isExplorer && current?.isExplorer && current.structureId === target.structureId;
+  ui.setPendingMilitaryAction({ ...target, slot: target.slot ?? (sameExplorerDeploy ? current.slot : undefined) });
   ui.setLeftNavigationView(LeftView.MilitaryView);
 }
 

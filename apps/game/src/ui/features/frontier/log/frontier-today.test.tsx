@@ -2,18 +2,24 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { expect, it, vi } from "vitest";
 
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 
 /** The watched realm's owner; the viewer is a spectator, signed in to no account. */
 const OWNER = 0x5eed0154n;
 const NOW = 60;
-const asked = vi.hoisted(() => ({ owners: [] as Array<string | undefined>, failed: false, retried: 0 }));
+const asked = vi.hoisted(() => ({
+  owners: [] as Array<string | undefined>,
+  failed: false,
+  retried: 0,
+  siteBenefits: false,
+}));
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => NOW }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: new NativeFactStore() } }) }));
 vi.mock("../hud/dock-armies", () => ({
-  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canBuyTier: true }] : []),
+  useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canSpendSkillPoint: true }] : []),
 }));
 // History answers for the owner it is asked about: the watched player cleared a camp today.
 vi.mock("@/hooks/store/use-story-events-store", () => ({
@@ -31,16 +37,34 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
       };
     return {
       data: theirs
-        ? [
-            {
-              id: "clear",
-              story: "SitePayout",
-              owner: `0x${OWNER.toString(16)}`,
-              timestampMs: 30_000,
-              storyPayload: { category: StructureType.Camp, reward: null },
-              presentation: { title: "Embergrasp cleared" },
-            },
-          ]
+        ? asked.siteBenefits
+          ? [{ Shrine: 200 }, { Well: 5 }].map((benefit, index) => {
+              const storyPayload = { explorer_id: 9, coord: { x: 3, y: 4 }, benefit };
+              return {
+                id: `site-use-${index}`,
+                story: "SiteUsed",
+                owner: `0x${OWNER.toString(16)}`,
+                timestampMs: 30_000,
+                storyPayload,
+                presentation: buildStoryEventPresentation({
+                  storyType: "SiteUsed",
+                  storyPayload,
+                  entityId: 9,
+                  ownerAddress: `0x${OWNER.toString(16)}`,
+                  viewerAddress: `0x${OWNER.toString(16)}`,
+                } as never),
+              };
+            })
+          : [
+              {
+                id: "clear",
+                story: "SitePayout",
+                owner: `0x${OWNER.toString(16)}`,
+                timestampMs: 30_000,
+                storyPayload: { category: StructureType.Camp, reward: null },
+                presentation: { title: "Embergrasp cleared" },
+              },
+            ]
         : [],
       isPending: false,
       isSuccess: true,
@@ -96,5 +120,31 @@ it("leaves every total unknown when the history read fails, with Retry, never si
     asked.failed = false;
     act(() => root.unmount());
     host.remove();
+  }
+});
+
+it("Today loads the owner's shrine and well use from history, with the exact recorded benefits", () => {
+  Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  asked.failed = false;
+  asked.siteBenefits = true;
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    act(() =>
+      root.render(
+        <FrontierToday
+          rules={{ dayUnitSeconds: 100, seed: 1n, startMainAt: 0 } as never}
+          realm={{ entity_id: 7, owner: OWNER } as never}
+          onClose={() => undefined}
+        />,
+      ),
+    );
+    expect(host.textContent).toContain("Shrine used, +200 XP");
+    expect(host.textContent).toContain("Well used, +5 stamina");
+    expect(host.textContent).not.toContain("+60 stamina");
+    expect(host.querySelector('[role="img"][aria-label="Sites cleared 0"]')).not.toBeNull();
+  } finally {
+    act(() => root.unmount());
+    asked.siteBenefits = false;
   }
 });

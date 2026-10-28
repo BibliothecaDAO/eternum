@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "2fbdecd09f961d7b387524eef591d8a0185c2dea59c7c334560c9789a444149e",
+  "schemaIdentity": "0ce1949d00478066c27292de613ff22aee76f6f2d74294a2d159501f3f014423",
   "commandAbi": [
     {
       "type": "interface",
@@ -296,8 +296,8 @@
           "type": "world_native::research::Research"
         },
         {
-          "name": "BuyTier",
-          "type": "world_native::progression::BuyTier"
+          "name": "SpendSkillPoint",
+          "type": "world_native::progression::SpendSkillPoint"
         },
         {
           "name": "InteractSite",
@@ -317,6 +317,10 @@
       "type": "struct",
       "name": "world_native::commands::CreateExplorer",
       "members": [
+        {
+          "name": "slot",
+          "type": "core::integer::u8"
+        },
         {
           "name": "structure_id",
           "type": "core::integer::u64"
@@ -484,10 +488,6 @@
       "name": "world_native::realms::SettleSeason",
       "members": [
         {
-          "name": "name",
-          "type": "core::felt252"
-        },
-        {
           "name": "selected_realm",
           "type": "core::option::Option::<core::integer::u32>"
         }
@@ -622,6 +622,10 @@
         {
           "name": "use_simple",
           "type": "core::bool"
+        },
+        {
+          "name": "scouting_kind",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1343,25 +1347,21 @@
     },
     {
       "type": "struct",
-      "name": "world_native::progression::BuyTier",
+      "name": "world_native::progression::SpendSkillPoint",
       "members": [
         {
           "name": "explorer_id",
           "type": "core::integer::u64"
         },
         {
-          "name": "attribute",
-          "type": "world_native::progression::Attribute"
-        },
-        {
-          "name": "kind",
-          "type": "core::option::Option::<world_native::progression::ScoutingKind>"
+          "name": "choice",
+          "type": "world_native::progression::SkillPointUse"
         }
       ]
     },
     {
       "type": "enum",
-      "name": "world_native::progression::Attribute",
+      "name": "world_native::progression::SkillPointUse",
       "variants": [
         {
           "name": "Battle",
@@ -1373,25 +1373,15 @@
         },
         {
           "name": "Scouting",
-          "type": "()"
+          "type": "world_native::progression::ScoutingKind"
         },
         {
           "name": "Homecoming",
           "type": "()"
-        }
-      ]
-    },
-    {
-      "type": "enum",
-      "name": "core::option::Option::<world_native::progression::ScoutingKind>",
-      "variants": [
-        {
-          "name": "Some",
-          "type": "world_native::progression::ScoutingKind"
         },
         {
-          "name": "None",
-          "type": "()"
+          "name": "Stamina",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -1433,6 +1423,10 @@
       "members": [
         {
           "name": "explorer_id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "amount",
           "type": "core::integer::u64"
         }
       ]
@@ -1545,10 +1539,14 @@
     },
     {
       "name": "LaborGrant",
-      "scope": "deployment"
+      "scope": "game"
     },
     {
       "name": "ChestRules",
+      "scope": "game"
+    },
+    {
+      "name": "FrontierPrize",
       "scope": "game"
     },
     {
@@ -1681,6 +1679,14 @@
     },
     {
       "name": "VillagePool",
+      "scope": "game"
+    },
+    {
+      "name": "SettledRealm",
+      "scope": "game"
+    },
+    {
+      "name": "CampaignHome",
       "scope": "game"
     },
     {

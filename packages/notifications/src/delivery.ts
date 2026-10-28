@@ -12,9 +12,13 @@ export interface LocalNotificationPayload {
   target: string;
   createdAt: number;
   expiresAt: number;
-  kind?: "day-end";
-  dayEnd?: { endsAt: number; asOf: number; tomorrowSeconds: number };
+  /** A Day open push lives until an hour before its day ends; every other alert lives two minutes. */
+  kind?: "day-open";
 }
+
+const ALERT_LIFETIME_MS = 120_000;
+/** Longer than any game day, so a Day open push can wait for a phone that is out of reach for most of its day. */
+const DAY_OPEN_LIFETIME_MS = 48 * 3_600_000;
 
 const notificationSchema = Schema.Struct({
   version: Schema.Literal(1),
@@ -26,44 +30,23 @@ const notificationSchema = Schema.Struct({
   target: Schema.String.check(Schema.makeFilter(isNotificationTarget)),
   createdAt: Schema.Int,
   expiresAt: Schema.Int,
-  kind: Schema.optional(Schema.Literal("day-end")),
-  dayEnd: Schema.optional(Schema.Unknown),
+  kind: Schema.optional(Schema.Literal("day-open")),
 });
-const dayEndSchema = Schema.Struct({
-  endsAt: Schema.Int.check(Schema.isGreaterThan(0)),
-  asOf: Schema.Int,
-  tomorrowSeconds: Schema.Int.check(Schema.isGreaterThan(0)),
-});
-const notificationDaySchema = Schema.Struct({
-  ...notificationSchema.fields,
-  dayEnd: Schema.optional(dayEndSchema),
-}).check(
-  Schema.makeFilter(
-    (payload) =>
-      (payload.kind === "day-end") === (payload.dayEnd !== undefined) &&
-      (!payload.dayEnd ||
-        (payload.dayEnd.endsAt - payload.dayEnd.asOf === 3600 &&
-          payload.createdAt === payload.dayEnd.asOf * 1000 &&
-          payload.expiresAt === payload.createdAt + 1000)),
-  ),
-);
 
 /** A display envelope only; no entity rows or arbitrary navigation URLs cross this boundary. */
 export function parseNotificationPayload(value: unknown, now: number): LocalNotificationPayload {
-  const input = decodeNotification(notificationSchema, value, "invalid_notification");
-  const payload = decodeNotification(notificationDaySchema, input, "invalid_day_end_reminder");
-  const current = notificationDaySchema.check(
+  const payload = decodeNotification(notificationSchema, value, "invalid_notification");
+  const current = notificationSchema.check(
     Schema.makeFilter(
       (item) =>
         item.createdAt <= now + 30_000 &&
         item.expiresAt > now &&
         item.expiresAt > item.createdAt &&
-        item.expiresAt - item.createdAt <= 120_000 &&
-        (item.dayEnd === undefined || item.createdAt <= now),
+        item.expiresAt - item.createdAt <= (item.kind === "day-open" ? DAY_OPEN_LIFETIME_MS : ALERT_LIFETIME_MS),
     ),
   );
   decodeNotification(current, payload, "expired_notification");
-  const bounded = notificationDaySchema.check(
+  const bounded = notificationSchema.check(
     Schema.makeFilter((item) => new TextEncoder().encode(JSON.stringify(item)).byteLength <= 3072),
   );
   return decodeNotification(bounded, payload, "notification_too_large");

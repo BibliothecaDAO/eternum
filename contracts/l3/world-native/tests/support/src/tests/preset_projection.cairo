@@ -75,6 +75,8 @@ pub fn assert_all_zero_chest_rules_refuse_registration() {
         .chests =
             Some(
                 crate::relics::ChestRules {
+                    pool_bps: 7000,
+                    top_n: 10,
                     price_ceiling: 0,
                     claim_window_seconds: 0,
                     shares: crate::relics::ChestTiers { common: 0, uncommon: 0, rare: 0, epic: 0, legendary: 0 },

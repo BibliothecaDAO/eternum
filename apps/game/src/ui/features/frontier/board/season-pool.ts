@@ -4,9 +4,9 @@ import type { SeasonPoolFigures } from "./season-list";
 
 /*
  * A Frontier season's LORDS, as the shard holds them. The pool is the tokens deposited on the ledger for the season,
- * published to the game once (the budget row's `pool`, in whole LORDS); until then it is zero, no ruin holds a chest
- * and nothing can be withdrawn. A chest pays its tier's shares at the day's price, which the budget row freezes when
- * the day opens. No preset names a pool, and none names a price a chest is paid at.
+ * published to the game once (the budget row's `pool`, in whole LORDS); until then it is zero and no ruin can pay.
+ * Ruins show their chest before funding; only a successful clear spends the pool. A chest pays its tier's shares at the day's price, which the budget row freezes when
+ * the day opens and the preset only caps. No preset names a pool, and none names a price a chest is paid at.
  */
 
 type Budget = Pick<NativeRows["LordsBudget"], "pool" | "day" | "price">;
@@ -60,7 +60,7 @@ export interface SeasonLords {
  * none is published. Without today's price there is no chest to quote.
  */
 export const seasonLordsOf = (
-  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined },
+  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined; prize?: { pool: bigint; topN: number } },
   season: Span,
   today: (Span & { index: number }) | null,
 ): SeasonLords => {
@@ -70,6 +70,7 @@ export const seasonLordsOf = (
   return {
     pool: {
       lords: Number(budget.pool),
+      ...(facts.prize ? { prize: { lords: Number(facts.prize.pool), topN: facts.prize.topN } } : {}),
       today: today ? Number(releasedInDay(budget.pool, season, today)) : undefined,
     },
     chest: chestRules && price !== null ? commonChestAt(chestRules.shares, price) : undefined,

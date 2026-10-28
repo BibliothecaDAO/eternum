@@ -15,7 +15,7 @@ export const frontierReceiptBindings = (
   heraldUrl: string,
 ) => ({
   realmsIdForAccount: (account: string) => identity.realmsIdForAccount(account),
-  frontierSeason: (gameId: number, confirmedAt: number) =>
+  frontierSeason: (gameId: number, confirmedAt: number, prizeRank: number) =>
     relayOperation("resolve_frontier_funding", async () => {
       const snapshot = await readConfirmedSnapshot(reader.connection, heraldUrl, gameId, [
         "GameRegistry",
@@ -33,8 +33,12 @@ export const frontierReceiptBindings = (
         { chainId: reader.connection.chainId, gameId },
         frontierTerms(snapshot),
       );
-      if (pool * 10n ** 18n !== BigInt(funding.pool)) throw new Error("frontier_pool_differs_from_ledger");
-      if (!Number.isSafeInteger(confirmedAt) || confirmedAt < 0 || confirmedAt >= funding.claimDeadline)
+      if (pool !== BigInt(funding.pool) / 10n ** 18n) throw new Error("frontier_pool_differs_from_ledger");
+      if (
+        !Number.isSafeInteger(confirmedAt) ||
+        confirmedAt < 0 ||
+        (prizeRank === 0 ? confirmedAt >= funding.claimDeadline : confirmedAt < funding.end)
+      )
         throw new Error("withdrawal_created_outside_claim_window");
       return gameId;
     }),

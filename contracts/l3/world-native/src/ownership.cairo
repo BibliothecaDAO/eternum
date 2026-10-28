@@ -63,11 +63,12 @@ pub enum Story {
     GuardDeleteStory: crate::troop_management::GuardSlot,
     TroopsTransferred: crate::troop_management::TransferTroops,
     LordsWithdrawn: crate::relics::LordsWithdrawal,
-    TierBought: crate::progression::TierBought,
+    SkillPointSpent: crate::progression::SkillPointSpent,
     SitePayout: crate::expeditions::SitePayout,
     SpireDiscovered: crate::exploration_rewards::ExtractedReward,
     RewardChestOpened: crate::relics::RewardChestOpened,
     RelicActivated: crate::relics::RelicActivated,
+    SiteUsed: crate::relics::SiteUsed,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

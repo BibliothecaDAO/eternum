@@ -480,6 +480,37 @@ it("titles a single roaming Wraith by its species", () => {
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
 });
 
+it("explains the daily ruin choice and disables an unfunded attack", () => {
+  act(() =>
+    root.render(
+      <SiteCardView
+        site="Ruin"
+        beast={undefined}
+        army={army}
+        guard={1000}
+        fight={undefined}
+        pay={null}
+        chest={{ tier: 4, lords: 500 }}
+        xp={80}
+        ruinChoice={{ depth: "Ethereal II" }}
+        verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
+        onClose={() => {}}
+      />,
+    ),
+  );
+  expect(host.textContent).toContain("Ethereal II");
+  expect(host.textContent).toContain("First ruin clear or day end");
+  expect(host.querySelector("dd")?.getAttribute("data-tip")).toBe(
+    "Your first ruin clear removes every other ruin, across all depths.",
+  );
+  expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
+  const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+    (button) => button.textContent === "Attack",
+  )!;
+  expect(attack.disabled).toBe(true);
+  act(() => attack.click());
+});
+
 describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {
   const holds: SiteFight = { outcome: "wins", exchanges: 3, troopsLost: 180, guardLeft: 740 };
   const clears: SiteFight = { outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 };

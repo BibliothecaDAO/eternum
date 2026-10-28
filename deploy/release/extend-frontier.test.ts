@@ -29,13 +29,14 @@ test("prepares the atomic admin upgrade and extension, never a funding or Blitz 
 test("reconciliation sends nothing until both clocks agree and safely retries a lost response", async () => {
   const dates = {
     phase: "frontier",
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
   let applied = false;
   const network = mock(async (_url: unknown, init?: RequestInit) => {
     if (init?.method === "PUT") {
-      expect(JSON.parse(String(init.body))).toEqual({ startsAt: dates.startsAt, endsAt: dates.endsAt });
+      expect(JSON.parse(String(init.body))).toEqual({ presetId: 5, startsAt: dates.startsAt, endsAt: dates.endsAt });
       if (!applied) {
         applied = true;
         throw new Error("response lost");
@@ -74,6 +75,7 @@ test("refuses an unapproved target or missing operator token before any calendar
 test("requires a matching fresh calendar readback after an acknowledged write", async () => {
   const dates = {
     phase: "frontier",
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
@@ -87,4 +89,21 @@ test("requires a matching fresh calendar readback after an acknowledged write", 
   await expect(
     reconcileCalendar({ ...proof, ledgerEnd: approved.end }, "https://play.realms.party", "operator", network),
   ).rejects.toThrow("Calendar readback differs");
+});
+
+test.each(["write", "readback"])("extension reconciliation refuses a different preset in the %s", async (stage) => {
+  const confirmed = { ...proof, ledgerEnd: approved.end };
+  const dates = {
+    phase: "frontier",
+    presetId: approved.presetId,
+    startsAt: new Date(approved.start * 1000).toISOString(),
+    endsAt: new Date(approved.end * 1000).toISOString(),
+  };
+  const network = mock(async (_url: unknown, init?: RequestInit) => {
+    if (init?.method === "PUT") return Response.json({ ...dates, presetId: stage === "write" ? 6 : dates.presetId });
+    return Response.json({ phases: [{ ...dates, presetId: 6 }] });
+  }) as unknown as typeof fetch;
+  await expect(reconcileCalendar(confirmed, "https://play.realms.party", "operator", network)).rejects.toThrow(
+    stage === "write" ? "Calendar write did not confirm" : "Calendar readback differs",
+  );
 });

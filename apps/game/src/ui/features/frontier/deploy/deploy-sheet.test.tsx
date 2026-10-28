@@ -109,6 +109,84 @@ const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
+  it("shows every slot, requires a choice, and sends the higher fresh slot instead of the tired lower slot", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    store.applyFacts([
+      {
+        model: "ArmySlot",
+        key: "0x91",
+        value: {
+          game_id: 1,
+          structure_id: 7,
+          epoch: "0",
+          slot: 1,
+          explorer_id: 0,
+          stamina: { amount: "7", settled_at: "3", remainder: 0 },
+        },
+      },
+    ] as never);
+    const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { createExplorerArmy },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+    } as unknown as GameClient);
+    const { host, root } = render(store, row);
+    try {
+      const slots = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Army slots"] button')];
+      expect(slots).toHaveLength(3);
+      expect(slots[0].disabled).toBe(true);
+      expect(slots[1].textContent).toContain("7/150 stamina");
+      expect(slots[2].textContent).toContain("150/150 stamina");
+      expect(deployButton(host)).toBeUndefined();
+      act(() => slots[0].click());
+      expect(deployButton(host)).toBeUndefined();
+      act(() => slots[2].click());
+      expect(slots[2].getAttribute("aria-pressed")).toBe("true");
+      press(host, "Max");
+      await act(async () => deployButton(host)!.click());
+      expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  });
+
+  it("stops offering Deploy when the chosen slot becomes occupied without selecting another slot", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    const { host, root } = render(store, row);
+    try {
+      click(host.querySelector('button[aria-label="Army 3"]')!);
+      expect(deployButton(host)).toBeDefined();
+      act(() =>
+        store.applyFacts([
+          {
+            model: "ArmySlot",
+            key: "0x92",
+            value: {
+              game_id: 1,
+              structure_id: 7,
+              epoch: "0",
+              slot: 2,
+              explorer_id: 99,
+              stamina: { amount: "150", settled_at: "3", remainder: 0 },
+            },
+          },
+        ] as never),
+      );
+      expect(deployButton(host)).toBeUndefined();
+      expect(host.querySelector('[aria-label="Army slots"] [aria-pressed="true"]')).toBeNull();
+      expect((host.querySelector('button[aria-label="Army 2"]') as HTMLButtonElement).disabled).toBe(false);
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  });
+
   it("opens at no troops, with Max and a slider for the count, and deploys the count typed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
@@ -122,6 +200,7 @@ describe("the Deploy sheet", () => {
     } as unknown as GameClient);
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     // 420 knights at home and 1,000 wheat at 2 a troop: all 420 can go.
     expect(outOf(host)).toBe("of 420");
     // No troops yet, so nothing to deploy; with 420 at most, +500 would only be Max.
@@ -153,6 +232,7 @@ describe("the Deploy sheet", () => {
         troopType: TroopType.Knight,
         troopTier: TroopTier.T1,
         troopCount: 120,
+        slot: 1,
       }),
     );
     expect(onClose).toHaveBeenCalledOnce();
@@ -176,6 +256,7 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root } = render(store, row, onClose);
     press(host, "Max");
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     await act(async () => {
       deployButton(host)!.click();
       deployButton(host)!.click();
@@ -183,7 +264,7 @@ describe("the Deploy sheet", () => {
     expect(createExplorerArmy).toHaveBeenCalledTimes(1);
     // The sheet closed as the command left; the wait is the dock slot's from here.
     expect(onClose).toHaveBeenCalledOnce();
-    expect(inFlight("deploy", 7)).toBe(true);
+    expect(inFlight("deploy", 7)).toBe(1);
     // Opened again before the outcome, it cannot send a second army.
     expect([...host.querySelectorAll("button")].find((button) => button.textContent === "Deploying…")?.disabled).toBe(
       true,
@@ -207,6 +288,7 @@ describe("the Deploy sheet", () => {
       },
     ] as never);
     const { host, root } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     // 100 wheat deploys 50 of the 420 troops: Max takes what the wheat allows, and the count reads out of 50, not
     // "that fit", since the castle has room.
     expect(outOf(host)).toBe("of 50");
@@ -261,7 +343,8 @@ describe("the Deploy sheet", () => {
     const { store, row } = frontierDay();
     store.applyFacts(facts as never);
     const { host, root } = render(store, row);
-    // Slot 1 (Army 1) holds an army: the next army fills slot 2, as the contract fills the lowest free slot.
+    click(host.querySelector('button[aria-label="Army 2"]')!);
+    // Slot 1 holds an army; the player chose Army 2.
     expect(startReading(host)).toEqual({ number, meter });
     act(() => root.unmount());
     host.remove();
@@ -288,6 +371,7 @@ describe("the Deploy sheet", () => {
     const { store, row } = frontierDay();
     store.applyFacts([noTroops] as never);
     const { host, root } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(deployButton(host)).toBeUndefined();
     expect(host.querySelector(".ui-notice")!.textContent).toBe("No troops at home");
     const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
@@ -319,6 +403,7 @@ describe("the Deploy sheet", () => {
       },
     ] as never);
     const { host, root, draw } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     const notice = () => host.querySelector(".ui-notice")?.textContent ?? null;
     const build = () => [...host.querySelectorAll("button")].some((button) => button.textContent === "Build");
     expect([notice(), build(), deployButton(host)]).toEqual(["No troops at home · in 10s", false, undefined]);
@@ -342,15 +427,17 @@ describe("the Deploy sheet", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     ring.taken = 0;
     const { store, row } = frontierDay();
-    const createExplorerArmy = vi.fn(() => Promise.resolve());
+    const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
     installActiveGameClient({
       connect() {},
       disconnect() {},
       dispose() {},
       actions: { createExplorerArmy },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
     } as unknown as GameClient);
     const map = shownOnMap();
     const { host, root, draw } = render(store, row);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     expect(host.querySelector('[aria-label="Deploy tile"]')).toBeNull();
     expect(host.textContent).not.toMatch(/tile/i);
     // The taken tile is passed over: the map marks the first open one.
@@ -382,6 +469,7 @@ describe("the Deploy sheet", () => {
     order(Direction.WEST);
     const { host, root } = render(store, row);
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.WEST });
+    click(host.querySelector('button[aria-label="Army 2"]')!);
     act(() => order(Direction.EAST));
     expect(map.asked.at(-1)).toEqual({ structureId: 7, direction: Direction.EAST });
     act(() => root.unmount());
@@ -389,3 +477,5 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 });
+
+const click = (button: Element) => act(() => (button as HTMLButtonElement).click());

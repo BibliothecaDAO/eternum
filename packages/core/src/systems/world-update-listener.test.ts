@@ -78,34 +78,6 @@ describe("native scene updates", () => {
     stop();
   });
 
-  it("reads an army's Upgrade in either enum form, and refuses one it cannot name", () => {
-    const { store, listener } = fixture();
-    const chosen = vi.fn();
-    listener.Attributes.onTierBought(chosen);
-    const story = (attribute: unknown) =>
-      store.applyEvent({
-        model: "StoryEvent",
-        key: "receipt-key",
-        value: {
-          game_id: 1,
-          order: "4",
-          index: 0,
-          timestamp: 100,
-          story: {
-            TierBought: { explorer_id: 7, attribute, tier: 3, price: 200 },
-          },
-        },
-      });
-    story("Scouting");
-    story({ Battle: {} });
-    expect(chosen.mock.calls.map(([update]) => update)).toEqual([
-      { explorerId: 7, attribute: "Scouting", tier: 3, price: 200 },
-      { explorerId: 7, attribute: "Battle", tier: 3, price: 200 },
-    ]);
-    expectReported(() => story("Luck"), "Malformed tier purchase");
-    expect(chosen).toHaveBeenCalledTimes(2);
-  });
-
   it("carries a cleared site's payout with the tile and losses of the battle the contract emits after it", () => {
     const { store, listener } = fixture();
     const payout = vi.fn();

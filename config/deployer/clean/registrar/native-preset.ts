@@ -15,7 +15,8 @@ import { CallData, CairoOption, CairoOptionVariant, hash, shortString, type Acco
 import type { Config } from "@bibliothecadao/types";
 import { worldView } from "@bibliothecadao/eternum";
 import { buildCreateGameParams, type CreateGamePayloadInput } from "./preset";
-import { buildNativePreset, clockScaled } from "../config/native-preset";
+import { buildNativePreset } from "../config/native-preset";
+import { clockScaled } from "../../../source/common/season-clock";
 import { waitForSuccess } from "../shared/declare";
 import type { NativeWorldManifest, RegistrarWorld } from "../world/native/types";
 import { nativeGamesAbi, nativeWorldSchema } from "../world/native/manifest";
@@ -119,9 +120,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
 function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
-  const tick = preset.clockScale
-    ? clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale, "armies tick")
-    : config.tick.armiesTickIntervalInSeconds;
+  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale?.activity ?? 1, "armies tick");
   return Math.ceil(input.startMainAt / tick) * tick;
 }
 
@@ -138,7 +137,11 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const loaded = configurationOf(structuredClone(stored), `config/generated/${preset.gameType}.madara.json`);
   const config = preset.balance ? mergeConfigPatches<Config>(loaded, preset.balance) : loaded;
   // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
-  if (preset.clockScale)
-    config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");
+  if (preset.clockScale !== undefined)
+    config.season.durationSeconds = clockScaled(
+      config.season.durationSeconds,
+      preset.clockScale.days,
+      "season duration",
+    );
   return config;
 }

@@ -105,6 +105,12 @@ const acknowledgementSchema = Schema.Record(Schema.String, Schema.Unknown);
 /** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
 const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
 export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
+/** An account's ticket to a campaign, told to that account only. */
+const campaignTicketSchema = Schema.Struct({
+  campaign: Schema.String,
+  tier: Schema.Literals(["regular", "golden"]),
+});
+export type CampaignTicket = typeof campaignTicketSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -341,6 +347,13 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, decode(savedBuildOrdersSchema));
   };
 
+  /** Takes the account's one ticket to a campaign, from its flyer's code or none; again, the same ticket. */
+  const redeemCampaignTicket = async (campaign: string, code: string | null): Promise<CampaignTicket> =>
+    readJson(
+      await request("/campaigns/redeem", { method: "POST", body: JSON.stringify({ campaign, code }) }),
+      decode(campaignTicketSchema),
+    );
+
   const pushRequest = async <T>(
     action: string,
     decode: (value: unknown) => T,
@@ -381,6 +394,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     saveNotificationPreferences,
     getBuildOrders,
     saveBuildOrders,
+    redeemCampaignTicket,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),
@@ -395,13 +409,17 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
           id,
         },
       ),
-    setPushGameForeground: (owner: string, id: string, foreground: boolean) =>
+    /** Whether a game is in view on this device, and the device's time zone, which a push's times and quiet hours use. */
+    setPushGameForeground: (owner: string, id: string, foreground: boolean, timeZone: string) =>
       pushRequest(
         "foreground",
         decode(Schema.Struct({ foreground: Schema.Boolean })),
-        { owner, id, foreground },
+        { owner, id, foreground, timeZone },
         { keepalive: true },
       ),
+    /** The device's first push, "Alerts are on", sent the moment its game alerts turn on. */
+    sendAlertsOn: (owner: string, id: string) =>
+      pushRequest("alerts-on", decode(Schema.Struct({ status: Schema.String })), { owner, id }),
     revokePushSubscription: (id: string, token: string) =>
       pushRequest("revoke", decode(Schema.Struct({ revoked: Schema.Boolean })), { id, token }),
   };

@@ -13,10 +13,9 @@ export interface ChestTiers {
 export interface NativePreset {
   id: number;
   /**
-   * A fixture preset's season clocks run this many times faster than its mode's: the day, army ticks and production.
-   * The harness registers a fixture preset on first use; the launcher never offers one.
+   * Days and activity scale independently. Activity accelerates army ticks and per-second production.
    */
-  clockScale?: number;
+  clockScale?: { days: number; activity: number };
   /**
    * What a fixture preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
    * Applied wherever a preset's configuration is loaded.
@@ -53,10 +52,11 @@ export interface NativePreset {
     populationStepBps: number;
     /** Wheat a Rations pick takes off each deployed troop. */
     rationStep: number;
-    /** The Barracks tier a training building needs. */
+    /** Total Barracks purchases needed to construct training. */
     trainingGateTier: number;
-    /** The castle base is this many full deploys of its level. */
-    castleStoreDeploys: number;
+    /** Troop storage in full deployments; wheat/labor base caps by realm level, in whole units. */
+    troopStoreDeploys: number;
+    resourceStoreCaps: readonly [number, number, number, number];
   };
   /** One price per research row tier above common; rows are research.cairo's ROW_* ids. */
   research: readonly { row: number; tier: number; essenceCost: number; laborCost: number }[];
@@ -69,17 +69,21 @@ export interface NativePreset {
     wellBps: number;
     emptyRevealLimit: number;
   };
-  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and each tier's price. */
+  /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and the five cumulative skill-point thresholds. */
   progression: null | {
     revealXp: number;
+    revealXpPerDepth: number;
     fixedXp: number;
+    commonXp: number;
     uncommonXp: number;
     rareXp: number;
     epicXp: number;
     legendaryXp: number;
   };
-  labor: null | { amount: number; accountDailyLimit: number };
+  labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
   chests: null | {
+    poolBps: number;
+    topN: number;
     priceCeiling: number;
     shares: ChestTiers;
     claimWindowSeconds: number;

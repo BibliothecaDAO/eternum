@@ -10,7 +10,9 @@ pub // Every value is a fully typed command. Missing entities and unavailable li
 fn typed_commands() -> Array<Command> {
     array![
         Command::CreateExplorer(
-            crate::commands::CreateExplorer { structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0 },
+            crate::commands::CreateExplorer {
+                slot: 0, structure_id: 999999, category: 0, tier: 0, amount: 1, direction: 0,
+            },
         ),
         Command::Explore(crate::commands::Explore { explorer_id: 999999, direction: 0 }),
         Command::Battle(
@@ -27,7 +29,7 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::LevelUp(999999), Command::SettleBlitzRoster, Command::ProvisionRealm(999999),
         Command::CreateReservedHyperstructure(crate::troops::Coord { alt: false, x: 2000000, y: 2000000 }),
-        Command::SettleSeason(crate::realms::SettleSeason { name: 'route', selected_realm: None }),
+        Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
         Command::SettleVillage(crate::village::SettleVillage { pass_id: 1, connected_realm_entity_id: 999999 }),
         Command::ReceiveVillageArmy(999999),
         Command::BurnStructureResources(
@@ -79,7 +81,7 @@ fn typed_commands() -> Array<Command> {
         ),
         Command::CreateBuilding(
             crate::buildings::CreateBuilding {
-                structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
+                scouting_kind: 0, structure_id: 999999, directions: array![0_u8].span(), category: 0, use_simple: false,
             },
         ),
         Command::DestroyBuilding(
@@ -234,9 +236,9 @@ fn typed_commands() -> Array<Command> {
         Command::SetEntityName(crate::names::SetEntityName { entity_id: 999999, name: 'route' }),
         Command::EnterDepth(crate::commands::EnterDepth { explorer_id: 999999, depth: 0 }),
         Command::Research(crate::research::Research { structure_id: 999999, row: 0, choice: 0 }),
-        Command::BuyTier(
-            crate::progression::BuyTier {
-                explorer_id: 999999, attribute: crate::progression::Attribute::Battle, kind: None,
+        Command::SpendSkillPoint(
+            crate::progression::SpendSkillPoint {
+                explorer_id: 999999, choice: crate::progression::SkillPointUse::Battle,
             },
         ),
         Command::InteractSite(
@@ -244,7 +246,7 @@ fn typed_commands() -> Array<Command> {
                 explorer_id: 999999, coord: crate::troops::Coord { alt: false, x: 2000000, y: 2000000 },
             },
         ),
-        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999 }),
+        Command::RefillStamina(crate::relics::RefillStamina { explorer_id: 999999, amount: 1 }),
         Command::WithdrawLords(crate::relics::WithdrawLords { structure_id: 999999, amount: 1 }),
     ]
 }
@@ -314,7 +316,12 @@ pub fn explorer_case(explore: bool) -> (Deployment, TestAction, u64) {
     }
     let create = Command::CreateExplorer(
         crate::commands::CreateExplorer {
-            structure_id: home.entity_id, category: 0, tier: 0, amount: crate::rules::RESOURCE_PRECISION, direction: 0,
+            slot: 0,
+            structure_id: home.entity_id,
+            category: 0,
+            tier: 0,
+            amount: crate::rules::RESOURCE_PRECISION,
+            direction: 0,
         },
     );
     let command = if explore {
@@ -354,9 +361,7 @@ pub fn season_case() -> (Deployment, TestAction, u64) {
     super::resource_commands::set_fixture(
         d.games, selector!("realms"), selector!("traits"), array![1].span(), 0x4000001_u32,
     );
-    let command = Command::SettleSeason(
-        crate::realms::SettleSeason { name: 'root-independent', selected_realm: Some(1) },
-    );
+    let command = Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) });
     (d, TestAction { game_id, actor: d.actor, command }, 350)
 }
 pub fn live_loot_case(raid: bool, insufficient: bool, full: bool) -> (Deployment, TestAction) {

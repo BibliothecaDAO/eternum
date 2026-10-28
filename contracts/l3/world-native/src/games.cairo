@@ -73,38 +73,66 @@ pub mod Games {
     impl LedgerOperator of crate::entry::ILedgerOperator<ContractState> {
         fn ledger_operator(self: @ContractState) -> ContractAddress {
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
             )
         }
         fn set_ledger_operator(ref self: ContractState, operator: ContractAddress) {
             crate::entry::ILedgerOperatorDispatcherTrait::set_ledger_operator(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 operator,
             );
         }
-        fn publish_frontier_pool(ref self: ContractState, game_id: u32, amount: u128) {
+        fn publish_frontier_pool(ref self: ContractState, game_id: u32, amount: u128, prize_pool: u128) {
             crate::entry::ILedgerOperatorDispatcherTrait::publish_frontier_pool(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
                 game_id,
                 amount,
+                prize_pool,
             );
         }
+        fn top_up_frontier_pool(ref self: ContractState, game_id: u32, amount: u128) {
+            crate::entry::ILedgerOperatorDispatcherTrait::top_up_frontier_pool(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                amount,
+            )
+        }
+        fn frontier_prize(self: @ContractState, game_id: u32) -> crate::entry::FrontierPrize {
+            crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+            )
+        }
+        fn post_frontier_top(ref self: ContractState, game_id: u32, winners: Array<starknet::ContractAddress>) {
+            crate::entry::ILedgerOperatorDispatcherTrait::post_frontier_top(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                winners,
+            )
+        }
+        fn award_frontier_prize(ref self: ContractState, game_id: u32, rank: u16) {
+            crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                rank,
+            )
+        }
         fn grant_labor(
-            ref self: ContractState, realms: Array<crate::entry::LaborRealm>, day: u64, account: ContractAddress,
-        ) -> Array<crate::entry::LaborGrant> {
+            ref self: ContractState, home: crate::entry::LaborHome, day: u64, account: ContractAddress,
+        ) -> crate::entry::LaborGrant {
             crate::entry::ILedgerOperatorDispatcherTrait::grant_labor(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
-                realms,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                home,
                 day,
                 account,
             )
         }
         fn labor_grant(
-            self: @ContractState, realm: crate::entry::LaborRealm, day: u64,
+            self: @ContractState, home: crate::entry::LaborHome, day: u64,
         ) -> Option<crate::entry::LaborGrant> {
             crate::entry::ILedgerOperatorDispatcherTrait::labor_grant(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().placement },
-                realm,
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                home,
                 day,
             )
         }
@@ -162,6 +190,9 @@ pub mod Games {
                 key,
                 entitlement,
             );
+        }
+        fn settled_realm(self: @ContractState, game_id: u32, realm_id: u32) -> u64 {
+            crate::state::read().settlements.held_realm_homes.read((game_id, realm_id))
         }
         fn entry_entitlement(
             self: @ContractState, key: crate::settlement::EntryKey,

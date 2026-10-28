@@ -149,7 +149,7 @@ it("opens the held relic and activates it with native inline troops, without tak
   const state = game();
   const confirm = await openInventory(state);
   expect(document.body.textContent).toContain("Activate Stamina I");
-  expect(document.body.textContent).toContain("Army of Stolsli");
+  expect(document.body.textContent).toContain("Army of Temtinos");
   expect(document.body.textContent).not.toContain(String(ARMY_ID));
   expect(document.body.textContent).not.toContain("Stamina is full");
   await act(async () => confirm.click());
@@ -221,12 +221,17 @@ it("keeps missing army facts unavailable, reports them in development, and resum
         model: "ArmyProgress",
         key: "0xa9",
         value: {
+          common_points: 0,
+          uncommon_points: 0,
+          rare_points: 0,
+          epic_points: 0,
+          legendary_points: 0,
           game_id: 1,
           explorer_id: ARMY_ID,
           xp: 0,
           battle: 1,
           logistics: 1,
-          scouting: 1,
+          scouting: 0,
           scouting_kinds: 0,
           homecoming: 1,
         },
@@ -243,7 +248,7 @@ it("keeps missing army facts unavailable, reports them in development, and resum
         key: "0x9",
         value: {
           ...state.store.require("ArmySlot", { game_id: 1, structure_id: 7, epoch: 0n, slot: 0 }),
-          stamina: { amount: "120", settled_at: "350", remainder: 0 },
+          stamina: { amount: "140", settled_at: "350", remainder: 0 },
         },
       },
     ] as never),

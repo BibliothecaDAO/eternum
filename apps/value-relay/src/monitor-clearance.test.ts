@@ -15,11 +15,22 @@ const auditedRow = (stream: Stream) => {
   let reads = 0;
   let pauses = 0;
   const shard: { receipt: Withdrawal; result: BlitzResult; decision: boolean } = {
-    receipt: { chainId: "0x1", transactionHash: "0xabc", seasonId: 1, amount: "100", realmsId: "0x2", confirmedAt: 1 },
+    receipt: {
+      prizeRank: 0,
+      prizeCount: 0,
+      chainId: "0x1",
+      transactionHash: "0xabc",
+      seasonId: 1,
+      amount: "100",
+      realmsId: "0x2",
+      confirmedAt: 1,
+    },
     result: { chainId: "0x1", gameId: 1, commitment: "0x12", rows: [] },
     decision: false,
   };
   const paid = {
+    prizeRank: 0,
+    prizeCount: 0,
     chainId: "0x1",
     transactionHash: "0xabc",
     seasonId: 1,

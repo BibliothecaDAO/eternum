@@ -1,13 +1,13 @@
-import dev from "../../../contracts/common/addresses/dev.json";
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
-import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
+import { identityL2Configuration, identityProvider, verifyIdentityChain, fetchIdentityRpc } from "./l2";
 import { decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
 const env = {
   ENVIRONMENT: "staging" as const,
   L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
+  MARKETPLACE_API_URL: "https://market.test/api/marketplace",
 };
 afterEach(() => vi.restoreAllMocks());
 it("requires a known environment and only its HTTPS Alchemy endpoint without exposing credentials", () => {
@@ -41,17 +41,7 @@ it("refuses a provider on another chain before any Realm or wallet read", async 
   await expect(verifyWalletOnL2(env)(message, ["0x1", "0x2"], "0x123")).rejects.toThrow("identity_l2_chain_mismatch");
   expect(deployments).not.toHaveBeenCalled();
   await expect(verifyIdentityChain(identityProvider(env), env)).rejects.toThrow("identity_l2_chain_mismatch");
-  await expect(realmOwnerOf(env, "7")).rejects.toThrow("identity_l2_chain_mismatch");
   expect(calls).not.toHaveBeenCalled();
-});
-it("reads Realm ownership on the configured chain with full u256 calldata", async () => {
-  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
-  const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x123"]);
-  expect(await realmOwnerOf(env, String(2n ** 128n + 4n))).toBe("0x123");
-  expect(calls).toHaveBeenCalledWith(
-    { contractAddress: dev.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
-    "latest",
-  );
 });
 it("accepts mainnet SIWS and refuses another proof chain without a signature or deployment read", async () => {
   vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
@@ -82,6 +72,39 @@ it("fails Worker environment decoding before serving any route when its environm
     expect(String(error)).toContain("L2_RPC_URL");
     expect(String(error)).not.toContain("private");
   }
+});
+
+it("reads through the marketplace relay, and through our own RPC only when the relay cannot answer for the chain", async () => {
+  const relay = `${env.MARKETPLACE_API_URL}/rpc`;
+  let relayAnswer: () => Response | Promise<Response>;
+  const transport = vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const { id } = JSON.parse(String(init?.body)) as { id: number };
+    if (String(input) === relay) return relayAnswer();
+    return Response.json({ jsonrpc: "2.0", id, result: ["0x5"] });
+  });
+  const ownerOf = () =>
+    identityProvider(env).callContract({ contractAddress: "0x1", entrypoint: "owner_of", calldata: [] }, "latest");
+  const asked = () => transport.mock.calls.map(([input]) => String(input));
+
+  relayAnswer = () => Response.json({ jsonrpc: "2.0", id: 1, result: ["0x7"] });
+  expect(await ownerOf()).toEqual(["0x7"]);
+  expect(asked()).toEqual([relay]);
+
+  for (const failing of [
+    () => Response.json({ jsonrpc: "2.0", id: 1, error: { code: -32601, message: "Unsupported wallet RPC method." } }),
+    () => Response.json({ error: { code: "RATE_LIMITED" } }, { status: 429 }),
+    () => Promise.reject(new TypeError("fetch failed")),
+  ]) {
+    transport.mockClear();
+    relayAnswer = failing;
+    expect(await ownerOf()).toEqual(["0x5"]);
+    expect(asked()).toEqual([relay, env.L2_RPC_URL]);
+  }
+
+  transport.mockClear();
+  relayAnswer = () => Response.json({ jsonrpc: "2.0", id: 1, error: { code: 40, message: "Contract error" } });
+  await expect(ownerOf()).rejects.toThrow("Contract error");
+  expect(asked()).toEqual([relay]);
 });
 
 it("refuses RPC redirects using the real Worker-compatible manual mode", async () => {
@@ -133,6 +156,7 @@ it("requires the generated push pair but no Discord or duplicated constants", ()
     RESEND_API_KEY: "test-email",
     WEB_PUSH_VAPID_PUBLIC_KEY: "public-test-key",
     WEB_PUSH_VAPID_PRIVATE_KEY: "private-test-key",
+    MARKETPLACE_API_URL: "https://market.test/api/marketplace",
   };
   const decoded = decodeIdentityEnv(settings);
   expect(socialProvidersOf(decoded)).toEqual({});
@@ -141,6 +165,6 @@ it("requires the generated push pair but no Discord or duplicated constants", ()
     privateKey: "private-test-key",
     subject: "mailto:ops@realms.party",
   });
-  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"])
+  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY", "MARKETPLACE_API_URL"])
     expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
 });

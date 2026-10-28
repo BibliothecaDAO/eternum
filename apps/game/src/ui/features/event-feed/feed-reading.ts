@@ -1,7 +1,7 @@
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { beastMeaning, structureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { ARMY_ATTRIBUTES, type Attribute } from "@/ui/features/frontier/army/army-detail";
+import { attributeMark, type AttributeKey } from "@/ui/features/frontier/army/army-detail";
 import { configManager, findGain, readFrontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -111,15 +111,15 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
           icon: troopMeaning({ category: String(payload.category), tier: String(payload.tier) }),
         },
       };
-    case "TierBought":
+    case "SkillPointSpent":
       return {
         actor,
-        verb: "trained",
+        verb: "spent a point",
         act: "research",
         // The attribute and its tier as the story says them: "Logistics uncommon".
         object: {
           name: story.presentation.title,
-          icon: ARMY_ATTRIBUTES[String(payload.attribute) as Attribute]?.mark,
+          icon: skillPointIcon(payload.choice),
         },
       };
     case "TroopsTransferred":
@@ -193,4 +193,9 @@ const siteObject = (entityId: unknown, store: NativeFactStore): ToldReading["obj
     name: siteDisplayName(id),
     icon: beast ? beastMeaning(beast.beast) : site ? structureMeaning(site.category) : "beasts",
   };
+};
+
+const skillPointIcon = (choice: unknown): IconMeaning => {
+  const name = typeof choice === "string" ? choice : Object.keys((choice ?? {}) as object)[0];
+  return name === "Stamina" ? "stamina" : attributeMark(String(name).toLowerCase() as AttributeKey);
 };

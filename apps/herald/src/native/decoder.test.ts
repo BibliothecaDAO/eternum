@@ -19,13 +19,19 @@ describe("native row decoder", () => {
     const fold = new WorldFold(decoder.registry);
     ingestion.applyReceipt(
       fold,
-      receipt([rowEvent("GameRelease", ["1"], { release_id: 1n, preset_commitment: 42n }), setFixture.raw]),
+      receipt([
+        rowEvent("GameRelease", ["1"], { release_id: 1n, created_release_id: 1n, preset_commitment: 42n }),
+        setFixture.raw,
+      ]),
       10,
       0,
     );
     ingestion.applyReceipt(
       fold,
-      receipt([rowEvent("GameRelease", ["1"], { release_id: 2n, preset_commitment: 42n }), memberFixture.raw]),
+      receipt([
+        rowEvent("GameRelease", ["1"], { release_id: 2n, created_release_id: 1n, preset_commitment: 42n }),
+        memberFixture.raw,
+      ]),
       11,
       0,
     );
@@ -34,7 +40,10 @@ describe("native row decoder", () => {
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        receipt([
+          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
+          deleteFixture.raw,
+        ]),
         12,
         0,
       ),
@@ -44,7 +53,10 @@ describe("native row decoder", () => {
     expect(() =>
       ingestion.applyReceipt(
         fold,
-        receipt([rowEvent("GameRelease", ["1"], { release_id: 3n, preset_commitment: 42n }), deleteFixture.raw]),
+        receipt([
+          rowEvent("GameRelease", ["1"], { release_id: 3n, created_release_id: 1n, preset_commitment: 42n }),
+          deleteFixture.raw,
+        ]),
         12,
         0,
       ),
@@ -53,7 +65,7 @@ describe("native row decoder", () => {
   it("keys LORDS withdrawals by transaction hash in both overlays", () => {
     const { native, fold } = setup();
     const rewards = ["9007199254740993", "9007199254740994"].map((claimId) =>
-      rowEvent("LordsWithdrawal", ["1", claimId], { account: "0x111", amount: 200 }),
+      rowEvent("LordsWithdrawal", ["1", claimId], { account: "0x111", amount: 200, prize_rank: 0, prize_count: 0 }),
     );
     const overlay = fold.overlay();
     native.applyReceipt(overlay, receipt(rewards), null, 0);

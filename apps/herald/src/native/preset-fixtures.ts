@@ -56,6 +56,6 @@ export function presetLaunch(
       seed: 1,
     }),
     rowEvent("GameOverrides", [game], overrides),
-    rowEvent("GameRelease", [game], { release_id: 1, preset_commitment: preset.commitment }),
+    rowEvent("GameRelease", [game], { release_id: 1, created_release_id: 1, preset_commitment: preset.commitment }),
   ];
 }

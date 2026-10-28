@@ -1,5 +1,5 @@
 import { afterEach, expect, it, vi } from "vitest";
-import { buildDayEndReminder, type PushEnvelope } from "@bibliothecadao/notifications";
+import { buildDayOpen, type PushEnvelope } from "@bibliothecadao/notifications";
 import { buildPushPayload } from "@block65/webcrypto-web-push";
 import { sendPush } from "./web-push";
 
@@ -7,15 +7,22 @@ vi.mock("@block65/webcrypto-web-push", () => ({ buildPushPayload: vi.fn() }));
 afterEach(() => vi.restoreAllMocks());
 
 const now = 1_800_000_000_000;
+// A day that opens now and lasts 5 hours: its push is kept until an hour before it ends.
+const expiresAt = now + 4 * 3_600_000;
 const notification = () =>
-  buildDayEndReminder({
+  buildDayOpen({
     chainId: "0xa",
     worldAddress: "0x123",
     gameId: 1,
-    day: 0,
+    gameName: "Devcon",
+    day: 1,
+    opensAt: now,
+    endsAt: now + 5 * 3_600_000,
+    last: false,
     owner: "0x1",
-    endsAt: now / 1000 + 3600,
-    tomorrowSeconds: 12 * 3600,
+    claim: null,
+    sendAt: now,
+    timeZone: null,
   });
 const envelope = (): PushEnvelope => ({
   version: 1,
@@ -26,23 +33,23 @@ const envelope = (): PushEnvelope => ({
 const vapid = { publicKey: "public", privateKey: "private", subject: "mailto:push@realms.world" };
 const device = { endpoint: "https://push.test/one", p256dh: "key", auth: "auth" };
 
-it("uses immediate-only push TTL for the reminder rather than storing it for two minutes", async () => {
+it("asks the push service to keep a Day open push until an hour before its day ends", async () => {
   vi.spyOn(Date, "now").mockReturnValue(now);
   vi.mocked(buildPushPayload).mockResolvedValue({ method: "POST", headers: {}, body: "encrypted" } as never);
   const fetchPush = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
   expect(await sendPush(vapid, device, envelope(), fetchPush)).toBe("accepted");
   expect(buildPushPayload).toHaveBeenCalledWith(
-    expect.objectContaining({ options: { ttl: 0, urgency: "high" } }),
+    expect.objectContaining({ options: { ttl: 4 * 3600 - 1, urgency: "high" } }),
     expect.anything(),
     vapid,
   );
   expect(fetchPush).toHaveBeenCalledOnce();
 });
 
-it("drops a reminder if encryption crosses its delivery deadline", async () => {
+it("drops a push if encryption crosses its delivery deadline", async () => {
   const clock = vi.spyOn(Date, "now").mockReturnValue(now);
   vi.mocked(buildPushPayload).mockImplementation(async () => {
-    clock.mockReturnValue(now + 1000);
+    clock.mockReturnValue(expiresAt);
     return { method: "POST", headers: {}, body: "encrypted" } as never;
   });
   const fetchPush = vi.fn();
@@ -51,7 +58,7 @@ it("drops a reminder if encryption crosses its delivery deadline", async () => {
 });
 
 it("abandons a stalled push request at expiry so later alarms are not held behind it", async () => {
-  vi.spyOn(Date, "now").mockReturnValue(now + 999);
+  vi.spyOn(Date, "now").mockReturnValue(expiresAt - 1);
   vi.mocked(buildPushPayload).mockResolvedValue({ method: "POST", headers: {}, body: "encrypted" } as never);
   const fetchPush: typeof fetch = (_input, init) =>
     new Promise((_resolve, reject) => {

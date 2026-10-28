@@ -18,7 +18,7 @@ const storeWithRelease = (releaseId: number) => {
       {
         model: "GameRelease",
         key: hash.computePoseidonHashOnElements([1n]),
-        value: { game_id: 1, release_id: id, preset_commitment: "0x789" },
+        value: { game_id: 1, release_id: id, created_release_id: releaseId, preset_commitment: "0x789" },
       },
     ]);
   writeRelease(releaseId);

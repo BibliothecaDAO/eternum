@@ -18,11 +18,14 @@ import { buildNativePreset } from "../config/native-preset";
 import {
   FRONTIER_ACCELERATED_PRESET_ID,
   FRONTIER_PRESET_ID,
+  FRONTIER_DEVCON_PRESET_ID,
   FRONTIER_FIXTURE_PRESET_ID,
   FRONTIER_PLAYGROUND_PRESET_ID,
   nativeGameModeOf,
 } from "../../../source/common/native-preset-modes";
+import { orderLengths, seasonSeconds } from "../../../../packages/core/src/utils/days";
 import { nativePresetIdFor } from "../../../source/native";
+import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds } from "../../../../packages/types/src/constants";
 import {
   buildNativePresetRegistration,
@@ -63,6 +66,7 @@ describe("native presets", () => {
         [2, "madara.blitz"],
         [3, "madara.eternum"],
         [5, "madara.frontier"],
+        [FRONTIER_DEVCON_PRESET_ID, "madara.frontier"],
       ] as const) {
         log.mockClear();
         await registerEnvironmentPreset({ presetId, environmentId, dryRun: true, nativeManifest: manifestPath });
@@ -90,6 +94,8 @@ describe("native presets", () => {
         price_ceiling: 50n,
         shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
         claim_window_seconds: 604800,
+        pool_bps: 7000,
+        top_n: 10,
       });
     }
   });
@@ -141,12 +147,34 @@ describe("native presets", () => {
     }
   });
 
-  test("held-Realm labor is fixed per shard calendar day and leaves the account ceiling unruled", () => {
+  test("held-Realm labor is fixed per game day without a golden campaign bonus", () => {
     for (const id of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
-      expect(preset.economy.labor.unwrap()).toEqual({ amount: 1000n, account_daily_limit: 0 });
+      expect(preset.economy.labor.unwrap()).toEqual({
+        amount: 1000n,
+        campaign_essence: 0n,
+        golden_amount: 1000n,
+        golden_essence: 0n,
+      });
     }
     for (const id of [2, 3, 4]) expect(buildNativePreset(configuration(id), id).economy.labor.isNone()).toBe(true);
+  });
+  test.each([-1, 0.5, Number.NaN])("refuses invalid daily home grants (%s)", (invalid) => {
+    const labor = nativePresets[FRONTIER_DEVCON_PRESET_ID]!.labor!;
+    for (const field of ["amount", "campaignEssence", "goldenAmount", "goldenEssence"] as const) {
+      const previous = labor[field];
+      try {
+        labor[field] = invalid;
+        expect(() =>
+          buildNativePreset(
+            loadNativePresetConfiguration("madara.frontier", FRONTIER_DEVCON_PRESET_ID),
+            FRONTIER_DEVCON_PRESET_ID,
+          ),
+        ).toThrow("Invalid Realm labor rules");
+      } finally {
+        labor[field] = previous;
+      }
+    }
   });
   test.each([2, 4])(
     "a fixed-roster realm (preset %i) starts with 1,000 T1 troops garrisoned and 1,000 in reserve, its type dealt",
@@ -169,15 +197,31 @@ describe("native presets", () => {
       price_ceiling: 50n,
       shares: { common: 1, uncommon: 2, rare: 4, epic: 10, legendary: 20 },
       claim_window_seconds: 604800,
+      pool_bps: 7000,
+      top_n: 10,
     });
-    expect(preset.settlement.depths.map(({ chest }) => Object.values(chest))).toEqual([
-      [5000, 2700, 1400, 600, 300],
-      [4000, 3000, 1700, 900, 400],
-      [3000, 3000, 2200, 1200, 600],
-      [2000, 3000, 2500, 1600, 900],
-    ]);
     expect(config.season.durationSeconds).toBe(0);
   });
+
+  test.each([FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID, FRONTIER_FIXTURE_PRESET_ID])(
+    "Frontier preset %i removes one chest rarity at each depth and preserves the remaining proportions",
+    (id) => {
+      const preset = buildNativePreset(loadNativePresetConfiguration("madara.frontier", id), id);
+      const tables = preset.settlement.depths.map(({ chest }) => chest);
+      expect(tables).toEqual([
+        { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
+        { common: 0, uncommon: 0, rare: 5500, epic: 3000, legendary: 1500 },
+        { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
+      ]);
+      for (const [depth, table] of tables.entries()) {
+        const weights = [table.common, table.uncommon, table.rare, table.epic, table.legendary];
+        expect(weights.every(Number.isInteger)).toBe(true);
+        expect(weights.reduce((sum, weight) => sum + weight, 0)).toBe(10000);
+        expect(weights.slice(0, depth)).toEqual(Array(depth).fill(0));
+      }
+    },
+  );
 
   test("every preset supplies its cooldown explicitly, independent of the stamina clock", () => {
     for (const [network, id, expected] of [
@@ -291,33 +335,44 @@ describe("native presets", () => {
         [BigInt(price.essence) / precision, BigInt(price.labor) / precision],
       ]),
     );
-    expect(preset.structures.research).toHaveLength(37);
+    expect(preset.structures.research).toHaveLength(45);
     expect(prices).toMatchObject({
-      [`${research.ROW_FARM}:1`]: [1000n, 1000n],
-      [`${research.ROW_FARM}:4`]: [30000n, 20000n],
-      [`${research.ROW_WORKSHOP}:2`]: [8000n, 6000n],
-      [`${research.ROW_BARRACKS}:3`]: [48000n, 24000n],
-      [`${research.ROW_HUT}:4`]: [15000n, 10000n],
-      [`${research.ROW_WAR_HALL}:1`]: [12000n, 3000n],
-      [`${research.ROW_HEARTH}:4`]: [360000n, 60000n],
+      [`${research.ROW_FARM}:1`]: [500n, 500n],
+      [`${research.ROW_FARM}:5`]: [30000n, 20000n],
+      [`${research.ROW_WORKSHOP}:3`]: [8000n, 6000n],
+      [`${research.ROW_BARRACKS}:4`]: [48000n, 24000n],
+      [`${research.ROW_HUT}:5`]: [15000n, 10000n],
+      [`${research.ROW_WAR_HALL}:1`]: [6000n, 1500n],
+      [`${research.ROW_WAR_HALL}:2`]: [16000n, 3000n],
+      [`${research.ROW_HEARTH}:5`]: [360000n, 60000n],
       [`${research.ROW_SHRINE}:1`]: [2000n, 0n],
       [`${research.ROW_WELL}:1`]: [6000n, 0n],
-      [`${research.ROW_DEPTH}:1`]: [160000n, 0n],
-      [`${research.ROW_DEPTH}:2`]: [400000n, 0n],
-      [`${research.ROW_DEPTH}:3`]: [900000n, 0n],
+      [`${research.ROW_DEPTH}:1`]: [100000n, 0n],
+      [`${research.ROW_DEPTH}:2`]: [250000n, 0n],
+      [`${research.ROW_DEPTH}:3`]: [500000n, 0n],
     });
     expect(preset.structures.board.unwrap()).toMatchObject({
-      output_step_bps: 2500,
-      storage_step_bps: 5000,
-      population_step_bps: 2500,
-      ration_step: precision / 4n,
+      output_step_bps: 2000,
+      storage_step_bps: 4000,
+      population_step_bps: 2000,
+      ration_step: precision / 5n,
       training_gate_tier: 2,
-      castle_store_deploys: 2,
+      troop_store_deploys: 2,
+      settlement_resource_cap: 6000,
+      city_resource_cap: 18000,
+      kingdom_resource_cap: 40000,
+      empire_resource_cap: 80000,
     });
     expect(preset.structures.buildings).toHaveLength(research.HEARTH);
     for (const category of [research.WAR_HALL, research.SUPPLY_YARD, research.SCOUTS_LODGE, research.HEARTH]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
-      expect([rule.population_cost, rule.simple_cost]).toEqual([2, [{ resource_type: 23, amount: 3000n * precision }]]);
+      expect([rule.population_cost, rule.simple_cost]).toEqual([
+        2,
+        [
+          { resource_type: 38, amount: 6000n * precision },
+          { resource_type: 23, amount: 1500n * precision },
+        ],
+      ]);
     }
     for (const category of [31, 34]) {
       const rule = preset.structures.buildings.find((row) => row.category === category)!.rule;
@@ -489,12 +544,14 @@ describe("native presets", () => {
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
+      common_xp: 75,
       reveal_xp: 2,
+      reveal_xp_per_depth: 1,
       fixed_xp: 200,
-      uncommon_xp: 100,
-      rare_xp: 200,
-      epic_xp: 400,
-      legendary_xp: 800,
+      uncommon_xp: 200,
+      rare_xp: 400,
+      epic_xp: 800,
+      legendary_xp: 1500,
     });
     expect(design.settlement.realms.resources).toEqual([
       { resource_type: 26, amount: 1_500_000_000_000n },
@@ -725,7 +782,7 @@ describe("fixed Regular Blitz rosters", () => {
 
 describe("scaled Frontier presets", () => {
   test("all Frontier modes require the operator's duration and retain their own day unit", () => {
-    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
+    for (const presetId of [FRONTIER_PRESET_ID, FRONTIER_DEVCON_PRESET_ID, FRONTIER_ACCELERATED_PRESET_ID]) {
       const config = loadNativePresetConfiguration("madara.frontier", presetId);
       expect(config.season.durationSeconds).toBe(0);
       const durationSeconds = 40 * buildNativePreset(config, presetId).rules.day_unit_seconds;
@@ -734,6 +791,120 @@ describe("scaled Frontier presets", () => {
           .durationSeconds,
       ).toBe(durationSeconds);
     }
+  });
+
+  test("world and ledger registration agree on every Frontier preset's effective day and real claim window", () => {
+    for (const [presetId, dayUnit] of [
+      [FRONTIER_PRESET_ID, 14_400],
+      [FRONTIER_DEVCON_PRESET_ID, 7_200],
+      [FRONTIER_ACCELERATED_PRESET_ID, 120],
+      [FRONTIER_FIXTURE_PRESET_ID, 14_400],
+      [FRONTIER_PLAYGROUND_PRESET_ID, 14_400],
+    ]) {
+      const world = buildNativePreset(loadNativePresetConfiguration("madara.frontier", presetId), presetId);
+      const ledger = buildLedgerEconomicPreset("frontier", { presetId });
+      expect(world.rules.day_unit_seconds).toBe(dayUnit);
+      expect(ledger.day_unit_seconds).toBe(dayUnit);
+      expect(world.economy.chests.unwrap()).toMatchObject({ claim_window_seconds: 604_800 });
+      expect(ledger.claim_window_seconds).toBe(604_800);
+    }
+  });
+
+  test("rejects fractional, zero and inexact clock scales instead of rounding a contract boundary", () => {
+    for (const scale of [0, -1, 1.5]) expect(() => clockScaled(120, scale, "tick")).toThrow("positive integer");
+    expect(() => clockScaled(120, 7, "tick")).toThrow("tick 120 does not divide by clock scale 7");
+    expect(clockScaled(0, 3, "unset duration")).toBe(0);
+  });
+});
+
+describe("Devcon's fast Frontier preset", () => {
+  const load = (id: number) => loadNativePresetConfiguration("madara.frontier", id);
+  const definition = (id: number) => buildNativePreset(load(id), id);
+
+  test("triples all production and stamina recovery without changing starters, ordinary costs or action rewards", () => {
+    const normal = definition(FRONTIER_PRESET_ID);
+    const fast = definition(FRONTIER_DEVCON_PRESET_ID);
+    expect(nativeGameModeOf(FRONTIER_DEVCON_PRESET_ID)).toBe("frontier");
+    expect(nativePresetIdFor("frontier")).toBe(FRONTIER_PRESET_ID);
+    expect(fast.rules.tick_config.armies_tick_in_seconds).toBe(40);
+    expect(fast.rules.troop_stamina_config).toEqual(normal.rules.troop_stamina_config);
+    expect(fast.settlement.realms.resources).toEqual(normal.settlement.realms.resources);
+    expect(fast.structures.buildings).toEqual(normal.structures.buildings);
+    expect(fast.structures.upgrades).toEqual(normal.structures.upgrades);
+    expect(fast.economy.progression).toEqual(normal.economy.progression);
+    expect(fast.resources.resources).toEqual(
+      normal.resources.resources.map((resource) => ({
+        ...resource,
+        realm_rate: resource.realm_rate * 3n,
+        village_rate: resource.village_rate * 3n,
+      })),
+    );
+    expect(fast.structures.camps.labor_rate).toBe(normal.structures.camps.labor_rate * 3n);
+    expect(fast.structures.board.unwrap()).toMatchObject({ workshop_rate: 168_000_000n });
+    expect(fast.resources.mine_kinds).toEqual(
+      normal.resources.mine_kinds.map((mine) => ({
+        ...mine,
+        config: { ...mine.config, production_rate: mine.config.production_rate * 3n },
+      })),
+    );
+    expect(nativePresets[FRONTIER_PRESET_ID]!.labor!.amount).toBe(1_000);
+    expect(fast.economy.labor.unwrap()).toEqual({
+      amount: 1_000n,
+      campaign_essence: 1_000n,
+      golden_amount: 2_000n,
+      golden_essence: 2_000n,
+    });
+    expect(fast.structures.research.filter(({ row }) => row === research.ROW_DEPTH).map(({ price }) => price)).toEqual([
+      { essence: 20_000_000_000_000n, labor: 0n },
+      { essence: 50_000_000_000_000n, labor: 0n },
+      { essence: 100_000_000_000_000n, labor: 0n },
+    ]);
+    expect(fast.structures.research.filter(({ row }) => row !== research.ROW_DEPTH)).toEqual(
+      normal.structures.research.filter(({ row }) => row !== research.ROW_DEPTH),
+    );
+  });
+
+  test("every seeded bag has five 4–12-hour days while activity stays at three times normal", () => {
+    const preset = nativePresets[FRONTIER_DEVCON_PRESET_ID]!;
+    const unit = seasonDayUnitSeconds(preset);
+    expect(unit).toBe(7_200);
+    for (let order = 0; order < 96; order++) {
+      const lengths = orderLengths(order).map((length) => length * unit);
+      expect([...lengths].sort((a, b) => a - b)).toEqual([4, 6, 8, 10, 12].map((hours) => hours * 3_600));
+      expect(lengths[0]).toBeGreaterThanOrEqual(6 * 3_600);
+      expect(lengths.reduce((total, seconds) => total + seconds, 0)).toBe(40 * 3_600);
+    }
+    expect(seasonSeconds(2, unit)).toBe(80 * 3_600);
+    expect(definition(FRONTIER_DEVCON_PRESET_ID).rules.tick_config.armies_tick_in_seconds).toBe(40);
+  });
+
+  test("encodes a separate immutable preset and the approved noon-to-evening 80-hour game", () => {
+    const presetId = FRONTIER_DEVCON_PRESET_ID;
+    const fast = definition(presetId);
+    const registration = buildNativePresetRegistration(fast, presetId, manifestPath);
+    expect(registration.commitment).not.toBe(
+      buildNativePresetRegistration(definition(FRONTIER_PRESET_ID), FRONTIER_PRESET_ID, manifestPath).commitment,
+    );
+    expect(registration.calldata[0]).toBe(String(presetId));
+    const startMainAt = Date.parse("2026-11-03T06:30:00Z") / 1_000;
+    const durationSeconds = 80 * 3_600;
+    const params = buildNativeGameParams(load(presetId), {
+      gameName: "frontier-devcon-2026",
+      presetId,
+      startMainAt,
+      chainTimestamp: startMainAt - 86_400,
+      durationSeconds,
+      devModeOn: false,
+      singleRealmMode: false,
+      twoPlayerMode: false,
+      useMapOverride: false,
+    });
+    expect(params.preset_id).toBe(6);
+    expect(params.start_main_at).toBe(1_793_687_400);
+    expect(params.duration_seconds).toBe(288_000);
+    expect(startMainAt + durationSeconds).toBe(Date.parse("2026-11-06T14:30:00Z") / 1_000);
+    expect(durationSeconds / (20 * fast.rules.day_unit_seconds)).toBe(2);
+    expect(startMainAt % fast.rules.tick_config.armies_tick_in_seconds).toBe(0);
   });
 });
 
@@ -784,13 +955,13 @@ describe("the Frontier playground preset", () => {
       (sum, { price }) => sum + whole(price.essence),
       0,
     );
-    expect(essenceForEveryTier).toBe(4_076_500);
+    expect(essenceForEveryTier).toBe(3_510_250);
     expect(start.get(ResourcesIds.Essence)).toBeGreaterThan(essenceForEveryTier);
     // A castle stores two full deploys of its level; a Settlement's stores hold what the realm starts with, no more.
     const config = load(FRONTIER_PLAYGROUND_PRESET_ID);
     const settlementStore =
       config.troop.limit.settlementDeploymentCap *
-      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.castleStoreDeploys;
+      nativePresets[FRONTIER_PLAYGROUND_PRESET_ID]!.board!.troopStoreDeploys;
     for (const resource of [ResourcesIds.Labor, ResourcesIds.Wheat, ResourcesIds.Knight])
       expect(start.get(resource)).toBe(settlementStore);
   });

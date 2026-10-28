@@ -7,6 +7,8 @@ import type { LedgerPayDecision } from "@realms-world/identity";
 
 export type RelayEffect<A> = Effect.Effect<A, RelayFailure>;
 export interface Withdrawal {
+  prizeRank: number;
+  prizeCount: number;
   blockNumber?: number;
   chainId: string;
   seasonId: number;
@@ -92,15 +94,13 @@ export interface LaborGrant {
   gameId: number;
   account: string;
   home: string;
+  /** The Labor granted, and a golden ticket's home's Essence (else zero), as the contract recorded them. */
   amount: string;
+  essence: string;
 }
-export interface LaborClaimResult {
-  grants: (LaborGrant & { realmId: string })[];
-  refused: { realmId: string; reason: "realm_not_owned" }[];
-}
-export const MAX_LABOR_REALMS = 100;
 export interface LaborClaim {
-  realms: readonly { gameId: number; realmId: string; home: string }[];
+  gameId: number;
+  home: string;
   chainId: string;
   day: number;
   realmsId: string;
@@ -135,22 +135,26 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant[]>;
+    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant>;
   };
   identity: {
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;
     linkedWallet(realmsId: string): RelayEffect<string | null>;
   };
   ledger: {
-    payment(
-      withdrawal: Withdrawal,
-    ): RelayEffect<{ paid: boolean; seasonId: number; wallet: string; amount: string } | null>;
+    payment(withdrawal: Withdrawal): RelayEffect<{
+      paid: boolean;
+      seasonId: number;
+      wallet: string;
+      amount: string;
+      prizeRank: number;
+      prizeCount: number;
+    } | null>;
     voided(withdrawal: Withdrawal): RelayEffect<boolean>;
     reportMany(withdrawals: readonly Withdrawal[]): RelayEffect<ClaimOutcome[]>;
     payMany(rows: readonly PayableClaim[]): RelayEffect<ClaimOutcome[]>;
     postResult(result: BlitzResult): RelayEffect<void>;
   };
-  realms: { ownerOf(realmId: string): RelayEffect<string> };
 }
 export interface MonitorPorts {
   identity: {

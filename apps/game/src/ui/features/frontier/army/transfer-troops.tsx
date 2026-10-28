@@ -260,7 +260,7 @@ const TransferAmount = ({
             ? TRANSFER_TROOPS.pick
             : merge
               ? confirmed
-                ? TRANSFER_TROOPS.confirmMerge(merge.lostXp, merge.survivor.label)
+                ? TRANSFER_TROOPS.confirmMerge(merge.survivor.label)
                 : TRANSFER_TROOPS.merge(merge.survivor.label)
               : TRANSFER_TROOPS.move(sent, tapped.label)}
         </HudButton>
@@ -270,7 +270,7 @@ const TransferAmount = ({
 };
 
 /**
- * Both cards count XP the same way: unspent XP plus the value of their upgrades. A full transfer removes the source's
+ * Both cards count XP the same way: lifetime XP. A full transfer removes the source's
  * progress; the target keeps its own unchanged. A partial transfer keeps both progress bundles.
  */
 const ArmySide = ({

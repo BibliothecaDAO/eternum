@@ -1,8 +1,5 @@
 import { CallData, uint256 } from "starknet";
 
-// Dev deployment uses ledger IDs 1/2; production registration preserves the native preset ID.
-export const frontierLedgerPresetId = (environment, nativePresetId) => (environment === "dev" ? 2 : nativePresetId);
-
 export function buildFrontierFundingCalls(ledger, lords, settings) {
   return [
     {

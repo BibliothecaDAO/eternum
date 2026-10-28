@@ -104,6 +104,33 @@ it("never lists deployment check games or counts them as Frontier seasons", () =
   expect(directory.games.map(({ game_id }) => game_id)).toEqual([2]);
 });
 
+it("restores a player's held Realm registration before a settlement exists", () => {
+  const { fold, native } = world();
+  const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
+  const entry = () => buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!;
+  expect(entry().held_realm_id).toBeNull();
+  native.applyReceipt(
+    fold,
+    receipt([
+      rowEvent("EntryEntitlement", ["1", "0x111"], {
+        realm_id: 711n,
+        pass_kind: 2n,
+        metadata_1: 0n,
+        metadata_2: 0n,
+        metadata_3: 0n,
+      }),
+    ]),
+    11,
+    0,
+  );
+  expect(entry().held_realm_id).toBe(711);
+  expect(entry().settled).toBe(false);
+  expect(
+    buildNativeDirectory({ ...input, playerAddress: "0x222" }).games.find((game) => game.game_id === 1)!.player_state!
+      .held_realm_id,
+  ).toBeNull();
+});
+
 describe("native directory and leaderboard", () => {
   it("keeps each player's frozen payout wallet after the game ends and has none for a nonmember", () => {
     const { fold, native } = world();
@@ -157,6 +184,7 @@ describe("native directory and leaderboard", () => {
         registered: true,
         settled: true,
         roster_wallet: "0x3e8",
+        held_realm_id: null,
         structures: [
           { entity_id: 7, category: 1, level: 0, realm_id: 0, coord_x: 7, coord_y: 0, resources_packed: "0" },
           { entity_id: 8, category: 5, level: 0, realm_id: 0, coord_x: 8, coord_y: 0, resources_packed: "0" },
@@ -616,8 +644,10 @@ it.each(["Frontier", "check-frontier-abc"])(
   "finalizes %s and keeps custody facts through checkpoint recovery",
   (name) => {
     const state = world();
-    const models = ["ChestRules", "LordsBudget", "LordsWithdrawal"];
+    const models = ["ChestRules", "LordsBudget", "LordsWithdrawal", "FrontierPrize"];
     const chests = {
+      pool_bps: 7000,
+      top_n: 10,
       price_ceiling: 50n,
       claim_window_seconds: 604800n,
       shares: { common: 1n, uncommon: 2n, rare: 4n, epic: 10n, legendary: 20n },
@@ -643,7 +673,8 @@ it.each(["Frontier", "check-frontier-abc"])(
           ),
           rowEvent("ChestRules", ["1"], chests),
           rowEvent("LordsBudget", ["1"], budget),
-          rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n }),
+          rowEvent("FrontierPrize", ["1"], { pool: 300n, issued: 0n, count: new CairoOption(CairoOptionVariant.None) }),
+          rowEvent("LordsWithdrawal", ["1", "85"], { account: 273n, amount: 100n, prize_rank: 0, prize_count: 0 }),
           gameEvent("1", "1", "0", "5", name),
         ]),
       ),
@@ -660,7 +691,9 @@ it.each(["Frontier", "check-frontier-abc"])(
     expect(restored.snapshot("1", 12, models).models).toEqual(before);
     state.native.applyReceipt(
       restored,
-      receipt([rowEvent("LordsWithdrawal", ["1", "86"], { account: 273n, amount: 50n })]),
+      receipt([
+        rowEvent("LordsWithdrawal", ["1", "86"], { account: 273n, amount: 50n, prize_rank: 1, prize_count: 10 }),
+      ]),
       12,
       0,
     );

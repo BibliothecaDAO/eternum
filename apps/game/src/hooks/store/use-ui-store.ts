@@ -29,6 +29,7 @@ type PendingMilitaryAction = {
   isExplorer: boolean;
   direction?: Direction;
   initialGuardSlot?: number;
+  slot?: number;
   troops?: TroopStack;
 };
 

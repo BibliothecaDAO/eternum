@@ -77,6 +77,8 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
   const block = await Effect.runPromise(f.ports.eventsPage(10, 10, null));
   expect(block.withdrawals).toEqual([
     {
+      prizeRank: 0,
+      prizeCount: 0,
       blockNumber: 10,
       chainId: "0x1",
       seasonId: 3,
@@ -392,6 +394,8 @@ it("pays a withdrawal the relics logic emits under its own event enum, read from
   );
   const withdrawal = await Effect.runPromise(fixture().ports.withdrawal("0x1", "0xabc"));
   expect(withdrawal).toEqual({
+    prizeRank: 0,
+    prizeCount: 0,
     blockNumber: 10,
     chainId: "0x1",
     seasonId: 3,

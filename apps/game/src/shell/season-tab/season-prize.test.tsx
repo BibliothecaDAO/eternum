@@ -1,4 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LEDGER_PRESET_FIELD_COUNT } from "@realms-world/value-ledger/codecs";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import type { Call } from "starknet";
@@ -75,10 +76,10 @@ import { type SeasonPrize, seasonPrizeKey } from "./blitz-season";
 
 const WEI = 10n ** 18n;
 /**
- * The ledger's preset as get_preset answers it, 18 felts: a tenth of the participants paid, each place half the one
+ * The ledger's preset as get_preset answers it: a tenth of the participants paid, each place half the one
  * above; no price matters here. It carries no season length: a season's end is its own.
  */
-const PRESET = ["0", "0", "0", "0", "1000", "5000", ...Array.from({ length: 12 }, () => "0")];
+const PRESET = ["0", "0", "0", "0", "1000", "5000", ...Array<string>(LEDGER_PRESET_FIELD_COUNT - 6).fill("0")];
 const NOW = Math.floor(Date.now() / 1000);
 const unmounts: (() => Promise<void>)[] = [];
 
@@ -89,7 +90,7 @@ const blitz = (gameId: number, start: number, slotId = gameId, wallet = "0x4a1")
   mode: "blitz",
   clock: { start_main_at: start },
   slotId,
-  player_state: { registered: true, settled: true, roster_wallet: wallet, structures: [] },
+  player_state: { registered: true, settled: true, roster_wallet: wallet, held_realm_id: null, structures: [] },
 });
 
 const mount = async (seed?: (client: QueryClient) => void) => {

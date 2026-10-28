@@ -68,7 +68,10 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         site_reward(RIFT_CATEGORY, site).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
-    assert!(site_reward(BEASTS_CATEGORY, site).is_none());
+    assert_eq!(
+        site_reward(BEASTS_CATEGORY, site).unwrap(),
+        crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 4 },
+    );
     assert!(site_reward(RUIN_CATEGORY, site).is_none());
 }
 
@@ -109,50 +112,56 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
 
 #[test]
 fn every_guarded_site_keeps_terrain_and_receipt_and_removes_structure_and_guards() {
-    for (entity_id, category, occupier) in array![
-        (1_u64, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
-        (2_u64, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
-        (3_u64, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
-        (4_u64, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
-    ] {
-        let key = crate::resources::ResourceKey { game_id: 1, entity_id };
-        let coord = crate::troops::Coord { alt: false, x: entity_id.try_into().unwrap(), y: 10 };
-        let tile = crate::geometry::tile_key(key.game_id, coord);
-        crate::logic::map::MapState::reveal(tile, 5);
-        let terrain = crate::logic::map::tile(tile);
-        crate::logic::map::MapState::occupy(tile, entity_id, occupier, true);
-        create_site_structure(key, category);
-        for slot in 0_u8..4 {
-            crate::logic::guards::GuardState::save(
-                crate::guards::GuardKey { game_id: key.game_id, structure_id: entity_id, slot },
-                crate::guards::Guard { destroyed_tick: 10, ..Default::default() },
-            );
-        }
-        crate::logic::expeditions::create_site(
-            key, array![Troops { count: 100 * RESOURCE_PRECISION, ..Default::default() }].span(),
-        );
-        let result = crate::expeditions::SiteClear { explorer_id: 20, home_id: 30, reward: None };
-        crate::logic::expeditions::clear_site(key, result);
-        let site = crate::logic::expeditions::expedition_site(key).unwrap();
-        assert_eq!(site.clear, Some(result));
-        assert_eq!(site.category, category);
-        assert_eq!(crate::logic::map::tile(tile), terrain);
-        assert!(crate::logic::structures::structure(key).is_none());
-        assert_eq!(crate::logic::structures::owner(key), 0.try_into().unwrap());
-        for slot in 0_u8..4 {
-            assert_eq!(
-                crate::logic::guards::guard(
-                    crate::guards::GuardKey { game_id: key.game_id, structure_id: entity_id, slot },
-                ),
-                Default::default(),
-            );
-        }
-        assert_eq!((site.col, site.row, site.alt), (coord.x, coord.y, coord.alt));
-        assert!(crate::logic::map::occupancy(tile).is_none());
-        crate::logic::map::MapState::occupy(tile, 20, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
-        assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
-        crate::logic::map::MapState::vacate(tile, 20);
-    }
+    let d = super::setup(true);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            for (entity_id, category, occupier) in array![
+                (1_u64, crate::taxonomy::CAMP_CATEGORY, crate::taxonomy::CAMP_OCCUPIER),
+                (2_u64, crate::taxonomy::RIFT_CATEGORY, crate::taxonomy::RIFT_OCCUPIER),
+                (3_u64, crate::taxonomy::RUIN_CATEGORY, crate::taxonomy::RUIN_OCCUPIER),
+                (4_u64, crate::taxonomy::BEASTS_CATEGORY, crate::taxonomy::BEASTS_OCCUPIER),
+            ] {
+                let key = crate::resources::ResourceKey { game_id: 1, entity_id };
+                let coord = crate::troops::Coord { alt: false, x: entity_id.try_into().unwrap(), y: 10 };
+                let tile = crate::geometry::tile_key(key.game_id, coord);
+                crate::logic::map::MapState::reveal(tile, 5);
+                let terrain = crate::logic::map::tile(tile);
+                crate::logic::map::MapState::occupy(tile, entity_id, occupier, true);
+                create_site_structure(key, category);
+                for slot in 0_u8..4 {
+                    crate::logic::guards::GuardState::save(
+                        crate::guards::GuardKey { game_id: key.game_id, structure_id: entity_id, slot },
+                        crate::guards::Guard { destroyed_tick: 10, ..Default::default() },
+                    );
+                }
+                crate::logic::expeditions::create_site(
+                    key, array![Troops { count: 100 * RESOURCE_PRECISION, ..Default::default() }].span(),
+                );
+                let result = crate::expeditions::SiteClear { explorer_id: 20, home_id: 30, reward: None };
+                crate::logic::expeditions::clear_site(key, result);
+                let site = crate::logic::expeditions::expedition_site(key).unwrap();
+                assert_eq!(site.clear, Some(result));
+                assert_eq!(site.category, category);
+                assert_eq!(crate::logic::map::tile(tile), terrain);
+                assert!(crate::logic::structures::structure(key).is_none());
+                assert_eq!(crate::logic::structures::owner(key), 0.try_into().unwrap());
+                for slot in 0_u8..4 {
+                    assert_eq!(
+                        crate::logic::guards::guard(
+                            crate::guards::GuardKey { game_id: key.game_id, structure_id: entity_id, slot },
+                        ),
+                        Default::default(),
+                    );
+                }
+                assert_eq!((site.col, site.row, site.alt), (coord.x, coord.y, coord.alt));
+                assert!(crate::logic::map::occupancy(tile).is_none());
+                crate::logic::map::MapState::occupy(tile, 20, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
+                assert_eq!(crate::logic::expeditions::expedition_site(key), Some(site));
+                crate::logic::map::MapState::vacate(tile, 20);
+            }
+        },
+    );
 }
 
 #[test]
@@ -169,4 +178,25 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
     crate::logic::expeditions::clear_site(key, result);
     crate::logic::map::MapState::occupy(tile, 2, crate::taxonomy::EXPLORER_KNIGHT_T1_OCCUPIER, false);
     crate::logic::expeditions::clear_site(key, result);
+}
+
+#[test]
+fn beast_labor_matches_recorded_guards_and_each_depth_without_an_extra_multiplier() {
+    for (guards, labor) in array![
+        (309_u128, 77250000000_u128), (537, 134250000000), (300, 75000000000), (350, 87500000000), (900, 225000000000),
+        (1050, 262500000000), (2400, 600000000000), (2800, 700000000000), (6000, 1500000000000), (7000, 1750000000000),
+    ] {
+        let site = ExpeditionSite {
+            category: BEASTS_CATEGORY,
+            alt: false,
+            col: 0,
+            row: 0,
+            initial_guard_count: guards * RESOURCE_PRECISION,
+            clear: None,
+        };
+        assert_eq!(
+            site_reward(BEASTS_CATEGORY, site).unwrap(),
+            crate::resources::ResourceAmount { resource_type: LABOR, amount: labor },
+        );
+    }
 }

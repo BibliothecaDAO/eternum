@@ -1,3 +1,4 @@
+import { campaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
 import { exploreScenario } from "./explore-scenario";
@@ -29,6 +30,8 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
   "season-opens": seasonOpensScenario,
+  devcon: campaignScenario("regular"),
+  "devcon-golden": campaignScenario("golden"),
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

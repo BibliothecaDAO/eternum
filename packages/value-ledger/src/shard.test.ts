@@ -213,7 +213,7 @@ it("tells a seat the RPC refused from one it forwarded without a readable reply"
   expect(await operator.sendSeat(pins, 4n)).toBe("0x777");
 });
 
-it("sends all held Realms in one labor mutation through the generated Games ABI", async () => {
+it("grants daily Labor to one settled home through the generated Games ABI", async () => {
   const operator = new ShardOperator({
     chainId: "0x1",
     rpcUrl: "https://shard.test",
@@ -222,7 +222,7 @@ it("sends all held Realms in one labor mutation through the generated Games ABI"
     privateKey: "0x1",
   });
   const args = {
-    realms: Array.from({ length: 5 }, (_, index) => ({ game_id: 7, realm_id: 8 + index, home: 2n ** 55n + 9n })),
+    home: { game_id: 7, home: 2n ** 55n + 9n },
     day: 30,
     account: "0x123",
   };
@@ -231,7 +231,7 @@ it("sends all held Realms in one labor mutation through the generated Games ABI"
   expect(rpc.execute.mock.calls[0]![0]).toEqual({
     contractAddress: "0x10",
     entrypoint: "grant_labor",
-    calldata: new CallData(abi).compile("grant_labor", args),
+    calldata: ["7", "36028797018963977", "30", "291"],
   });
 });
 

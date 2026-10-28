@@ -94,6 +94,7 @@ pub mod RegistrarState {
             assert!(game_id != 0 && game_id < 0xffffffff, "game identity space exhausted");
             let release_id = self.data.current_release.read();
             self.data.game_releases.write(game_id, release_id);
+            self.data.game_creation_releases.write(game_id, release_id);
             self.register_roster(game_id, params.roster);
             self.data.registrar.seaters.write(game_id, params.seater);
             let game = build_game(params, rules.entry_rule);

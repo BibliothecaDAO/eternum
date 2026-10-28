@@ -9,7 +9,10 @@ const run = (gameName, environment, status, gameId, kind = "game") => ({
   status,
   createdAt: new Date(now - gameName.length * 60_000).toISOString(),
   artifacts: { gameId },
-  recovery: { canContinue: status === "attention" },
+  recovery: {
+    canContinue: status === "attention",
+    canDelete: kind === "game" && environment !== "madara.frontier" && status === "attention",
+  },
 });
 
 const ENVIRONMENTS = {
@@ -22,7 +25,7 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 120),
       probe("value", "Value relay", "degraded", 1420),
     ],
-    phases: [{ phase: "frontier", startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
+    phases: [{ phase: "frontier", presetId: 5, startsAt: "2026-10-15T20:00:00Z", endsAt: "2026-10-22T20:00:00Z" }],
     slots: [
       {
         chainId: "0x6230",
@@ -58,7 +61,7 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 91),
       probe("value", "Value relay", "up", 230),
     ],
-    phases: [{ phase: "frontier", startsAt: "2026-11-01T18:00:00Z", endsAt: "2026-11-29T18:00:00Z" }],
+    phases: [{ phase: "frontier", presetId: 6, startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }],
     slots: [],
     runs: [run("frontier-1761933600", "madara.frontier", "queued", undefined)],
     workers: { version: "a90e…", revision: "b015a52b6c9" },

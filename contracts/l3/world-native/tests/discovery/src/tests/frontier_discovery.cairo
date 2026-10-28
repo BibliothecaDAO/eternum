@@ -92,11 +92,13 @@ fn frontier_floor_and_ruin_are_home_day_scoped_and_only_player_discoveries_chang
     assert_eq!(crate::logic::expeditions::discovery(key).unwrap().empty_reveals, 7);
     crate::logic::expeditions::record_discovery(key, Discovery::Ruin(CHEST));
     let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_found), (0, true));
+    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
     crate::logic::expeditions::record_discovery(key, Discovery::None);
     crate::logic::expeditions::record_discovery(key, Discovery::Camp);
     let row = crate::logic::expeditions::discovery(key).unwrap();
-    assert_eq!((row.empty_reveals, row.ruin_found), (0, true));
+    assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
+    crate::logic::expeditions::close_ruins(key);
+    assert!(crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
     assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
     assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
 }

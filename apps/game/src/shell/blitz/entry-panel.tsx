@@ -1,6 +1,7 @@
 import { DOORWAY_WORDS, ENTRY_WORDS, mintTestTokenWord, PROFILE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { formatExact, formatCharge } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { isTestLords } from "@realms-world/chain";
 import { lazy, type ReactNode, Suspense, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -202,15 +203,16 @@ const EntryPanel = ({
             {ENTRY_WORDS.payAndJoin}
           </AppButton>
         ))}
-      {!signing && <MintTestToken token={terms.lordsToken} owner={owner} onMinted={onSent} />}
+      {!signing && isTestLords(terms.lordsToken) && (
+        <MintTestToken token={terms.lordsToken} owner={owner} onMinted={onSent} />
+      )}
     </Plate>
   );
 };
 
 /**
- * Every environment's ledger is paid in a test token with no value: the wallet that pays mints some to itself through
- * that token's own public mint, so an entry can be paid. One signature of its own; the wallet's balance is read again
- * once it lands.
+ * A ledger paid in a test token: the wallet that pays mints some to itself through that token's own public mint, so an
+ * entry can be paid. One signature of its own; the wallet's balance is read again once it lands. LORDS has no mint.
  */
 const MintTestToken = ({ token, owner, onMinted }: { token: string; owner: string; onMinted: () => void }) => {
   const [signing, setSigning] = useState(false);

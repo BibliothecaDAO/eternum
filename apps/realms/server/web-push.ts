@@ -13,6 +13,9 @@ interface PushDevice {
   auth: string;
 }
 
+/** The longest one push service may take to answer: a stalled one must not hold every later alert for hours. */
+const SEND_TIMEOUT_MS = 10_000;
+
 /** What the push service did with one message: kept it, forgot the device, asked to retry, or refused it. */
 type PushOutcome = "accepted" | "expired" | "retry" | "rejected";
 
@@ -37,7 +40,7 @@ export const sendPush = async (
     headers: message.headers,
     body: message.body,
     redirect: "manual",
-    signal: AbortSignal.timeout(remaining),
+    signal: AbortSignal.timeout(Math.min(remaining, SEND_TIMEOUT_MS)),
   });
   if (response.ok) return "accepted";
   if (response.status === 404 || response.status === 410) return "expired";

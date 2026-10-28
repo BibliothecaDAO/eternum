@@ -22,6 +22,8 @@ afterEach(() => {
 });
 
 test.each([
+  "wrong preset",
+  "wrong end",
   "game",
   "chain",
   "lost mint reply",
@@ -67,7 +69,12 @@ test.each([
       if (operation === "deposit" && funded) throw new Error("season already funded");
       nonce++;
       submitted.push(calls);
-      if (operation === "deposit") funded = true;
+      if (operation === "deposit") {
+        const calldata = calls[1]!.calldata;
+        if (!Array.isArray(calldata)) throw new Error("Funding must use compiled calldata");
+        expect(calldata[2]).toBe("6");
+        funded = true;
+      }
       held = calls[0]!.entrypoint === "mint" ? 1000n * WEI : 0n;
       if (!interrupted && (changes === `lost ${operation} reply` || changes === `lagged ${operation} reply`)) {
         interrupted = true;
@@ -80,30 +87,44 @@ test.each([
   spyOn(main, "signer").mockReturnValue(account as unknown as Account);
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
-    presetId: 2,
+    chestPoolBps: 7000,
+    topN: 10,
+    presetId: changes === "wrong preset" ? 5 : 6,
     start: startSeconds,
-    end: startSeconds + 20 * 86400,
+    end: startSeconds + 40 * 7200 + (changes === "wrong end" ? 40 : 0),
     seed: "1",
-    dayUnit: 86400,
+    dayUnit: 7200,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockImplementation(async (_provider, _ledger, _key, _native, block) => {
     if (!stateAt(block).funded) throw new Error("frontier_funding_missing");
     return {
-      pool: String(1000n * WEI),
+      pool: String(700n * WEI),
+      prizePool: String(300n * WEI),
+      prizePaid: "0",
       paid: "0",
       closed: false,
-      presetId: 2,
+      presetId: 6,
       seed: "1",
       start: startSeconds,
-      end: startSeconds + 20 * 86400,
+      end: startSeconds + 40 * 7200,
       claimDeadline: startSeconds + 21 * 86400,
       confirmedBlock: 1,
     };
   });
   globalThis.fetch = (async (url, _init) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
+    if (path === "/api/factory/calendar")
+      return Response.json({
+        phases: [
+          {
+            phase: "frontier",
+            presetId: 6,
+            startsAt: start,
+            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
+          },
+        ],
+      });
     if (path === "/games")
       return Response.json({
         games: [{ game_id: gameId, mode: "frontier", clock: { start_main_at: startSeconds } }],
@@ -121,13 +142,18 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
     },
   } as unknown as main.Deployment;
   const step = seasonSteps(context).find((step) => step.name === "Frontier deposit")!;
+  if (changes.startsWith("wrong ")) {
+    await expect(step.apply()).rejects.toThrow("differs from calendar");
+    expect(submitted).toEqual([]);
+    return;
+  }
   if (changes !== "game" && changes !== "chain") {
     await expect(runSteps([step], true, () => {})).rejects.toThrow(
       changes.endsWith("reply") ? "reply lost" : "before submission",
@@ -164,10 +190,10 @@ test.each([
   });
 });
 
-test.each([
-  ["lacks the deposit", 0n, ["mint", "approve", "fund_frontier"]],
-  ["holds the deposit", 1000n * WEI, ["approve", "fund_frontier"]],
-] as const)("Cold-admin funding mints test LORDS to the cold admin only when it %s", async (_case, held, calls) => {
+const REAL_LORDS = "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
+
+/** The cold admin's Frontier deposit on a ledger paid in `lords`, the admin holding `held`: the call file it is given. */
+async function coldFunding(lords: string, held: bigint) {
   const base = mkdtempSync(join(tmpdir(), "frontier-cold-"));
   temporary.push(base);
   mkdirSync(join(base, "repo"));
@@ -193,17 +219,29 @@ test.each([
     world: { address: "0x20" },
   }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
-    presetId: 5,
+    chestPoolBps: 7000,
+    topN: 10,
+    presetId: 6,
     start: startSeconds,
-    end: startSeconds + 20 * 86400,
+    end: startSeconds + 40 * 7200,
     seed: "1",
-    dayUnit: 86400,
+    dayUnit: 7200,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
   globalThis.fetch = (async (url) => {
     const path = new URL(String(url)).pathname;
-    if (path === "/api/factory/calendar") return Response.json({ phases: [{ phase: "frontier", startsAt: start }] });
+    if (path === "/api/factory/calendar")
+      return Response.json({
+        phases: [
+          {
+            phase: "frontier",
+            presetId: 6,
+            startsAt: start,
+            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
+          },
+        ],
+      });
     if (path === "/games")
       return Response.json({ games: [{ game_id: 1, mode: "frontier", clock: { start_main_at: startSeconds } }] });
     if (path === "/manifest") return Response.json({ chainId: "0x10" });
@@ -213,29 +251,56 @@ test.each([
     apply: true,
     target: { ...environments.dev, coldAdmin: true },
     inputs: { frontierStart: start, amount: "1000", admin: coldAdmin },
-    assets: { ledger: "0x1", lords: "0x2" },
+    assets: { ledger: "0x1", lords },
     store,
     output: () => {},
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "86400", "86400"];
-        if (entrypoint === "lords") return ["0x2"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
+        if (entrypoint === "lords") return [lords];
         throw new Error("Unexpected ledger read");
       },
     },
   } as unknown as main.Deployment;
-  await seasonSteps(context)
+  const deposit = seasonSteps(context)
     .find((step) => step.name === "Frontier deposit")!
     .apply();
-  const written = store.read<{ account: string; calls: Call[] }>("cold-funding.json")!;
-  expect(balanceOwners).toEqual([coldAdmin]);
-  expect(written.account).toBe(coldAdmin);
+  return {
+    deposit,
+    balanceOwners,
+    coldAdmin,
+    written: () => store.read<{ account: string; calls: Call[] }>("cold-funding.json"),
+  };
+}
+
+test.each([
+  ["lacks the deposit", 0n, ["mint", "approve", "fund_frontier"]],
+  ["holds the deposit", 1000n * WEI, ["approve", "fund_frontier"]],
+] as const)("Cold-admin funding mints test LORDS to the cold admin only when it %s", async (_case, held, calls) => {
+  const run = await coldFunding("0x2", held);
+  await run.deposit;
+  const written = run.written()!;
+  expect(run.balanceOwners).toEqual([run.coldAdmin]);
+  expect(written.account).toBe(run.coldAdmin);
+  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe("6");
   expect(written.calls.map((call) => call.entrypoint)).toEqual([...calls]);
   if (held === 0n)
     expect(written.calls[0]).toEqual({
       contractAddress: "0x2",
       entrypoint: "mint",
-      calldata: [BigInt(coldAdmin).toString(), String(1000n * WEI), "0"],
+      calldata: [BigInt(run.coldAdmin).toString(), String(1000n * WEI), "0"],
     });
+});
+
+test("Cold-admin funding on LORDS never mints: an admin short of the deposit is refused, with no call file", async () => {
+  const run = await coldFunding(REAL_LORDS, 999n * WEI);
+  await expect(run.deposit).rejects.toThrow("The payer holds less LORDS than the deposit; send it LORDS first");
+  expect(run.written()).toBeUndefined();
+});
+
+test("Cold-admin funding on LORDS the admin holds approves and funds, nothing else", async () => {
+  const run = await coldFunding(REAL_LORDS, 1000n * WEI);
+  await run.deposit;
+  expect(run.written()!.calls.map((call) => call.entrypoint)).toEqual(["approve", "fund_frontier"]);
 });

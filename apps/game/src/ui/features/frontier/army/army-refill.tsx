@@ -33,12 +33,12 @@ export const ArmyRefill = ({
   const control = { held, refilling, onRefill: ask };
 
   /** The confirm closes as the refill leaves; the army's Refill carries the wait, and a refusal says why. */
-  const refill = async () => {
+  const refill = async (amount: number) => {
     const signer = account.account;
     if (!signer) return;
     try {
       await sendOnce("refill", army.explorerId, true, async () => {
-        const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId });
+        const sent = await setup.systemCalls.refill_stamina({ signer, explorerId: army.explorerId, amount });
         close();
         return sent;
       });
@@ -51,13 +51,13 @@ export const ArmyRefill = ({
     <>
       {look === "stamina" && <StaminaRefill stamina={stamina} {...control} />}
       {look === "chip" && price > 0 && <RefillChip price={price} {...control} />}
-      {look === "button" && price > 0 && <RefillButton price={price} {...control} />}
+      {look === "button" && price > 0 && <RefillButton {...control} />}
       {confirming && price > 0 && (
         <RefillConfirm
           stamina={stamina}
           held={held}
           sending={refilling}
-          onRefill={() => void refill()}
+          onRefill={(amount) => void refill(amount)}
           onCancel={close}
         />
       )}

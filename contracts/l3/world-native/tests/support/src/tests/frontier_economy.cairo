@@ -48,7 +48,11 @@ pub fn frontier_realm(preset: crate::presets::PresetDefinition) -> (super::Deplo
 pub fn build(home: ResourceKey, category: u8, direction: u8) -> Command {
     Command::CreateBuilding(
         CreateBuilding {
-            structure_id: home.entity_id, directions: array![direction].span(), category, use_simple: true,
+            scouting_kind: 0,
+            structure_id: home.entity_id,
+            directions: array![direction].span(),
+            category,
+            use_simple: true,
         },
     )
 }
@@ -63,7 +67,7 @@ pub fn demolish(home: ResourceKey, direction: u8) -> Command {
 pub fn raise(home: ResourceKey, troops: u128, direction: u8) -> Command {
     Command::CreateExplorer(
         CreateExplorer {
-            structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
+            slot: 0, structure_id: home.entity_id, category: 0, tier: 0, amount: troops * RESOURCE_PRECISION, direction,
         },
     )
 }

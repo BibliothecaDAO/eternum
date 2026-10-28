@@ -1,144 +1,97 @@
 import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
 import {
-  bankLiquidityCopy,
-  bankSwapCopy,
   bitcoinAwardCopy,
   battleCopy,
-  buildingStoryCopy,
   captureStoryCopy,
-  explorationRewardCopy,
   hyperstructurePointsCopy,
-  levelUpCopy,
   raidStoryCopy,
-  rewardChestCopy,
   says,
-  sitePayoutCopy,
-  spireDiscoveredCopy,
   type StoryCopy,
-  tierBoughtCopy,
   transferStoryCopy,
 } from "./story-copy";
 import type { NativeStoryVariant } from "../../../contracts/l3/world-native/schema/client.gen";
 
-type RecipientSource = "capture" | "owner" | "transfer" | "nativeBattle" | "raid";
-/** A delivered story's level, who it is for, and what its alert says; a story is delivered with its words or not at all. */
+type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle" | "raid";
+/** A game's mode, as its shard's directory names it. */
+export type StoryGameMode = "blitz" | "eternum" | "frontier" | "duel" | null;
+/**
+ * A delivered story's level, who it is for, the game modes it is pushed in (every mode when absent), and what its alert
+ * says; a story is delivered with its words or not at all.
+ */
 type StoryRule =
-  | { level: Exclude<NotificationLevel, "off">; recipients: RecipientSource; copy: StoryCopy }
+  | {
+      level: Exclude<NotificationLevel, "off">;
+      recipients: RecipientSource;
+      copy: StoryCopy;
+      modes?: readonly StoryGameMode[];
+    }
   | { excluded: string };
 
+/** Fights between players. Frontier ships none: its battles are the player's own taps against beasts and camps. */
+const PLAYER_FIGHTS: readonly StoryGameMode[] = ["blitz", "eternum", "duel"];
+
 // Recipient fields are emitted with the action. Never resolve them from present-day structure ownership.
+const OWN_ACTION = "The player's own action: the Feed and the Log show it";
 const STORY_RULES = {
-  BitcoinAwardStory: { level: "all", recipients: "owner", copy: bitcoinAwardCopy },
-  TradeCreated: {
-    level: "all",
+  // What happens to the player without their tap.
+  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
+  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
+  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
+  SeasonEnded: {
+    level: "important",
     recipients: "owner",
-    copy: says("Your trade is listed", "Merchants can now take your offer."),
+    copy: says("The season is over", "see where you finished."),
+  },
+  BlitzFinalized: {
+    level: "important",
+    recipients: "owner",
+    copy: says("Your Blitz is settled", "see where you finished."),
+  },
+  ResourceReceiveArrivalStory: {
+    level: "standard",
+    recipients: "owner",
+    copy: says("Your caravan arrived", "the resources are in your stores."),
   },
   TradeAccepted: {
     level: "all",
     recipients: "owner",
-    copy: says("A trade was filled", "The goods have changed hands."),
+    copy: says("A trade was filled", "the goods changed hands."),
   },
-  TradeCancelled: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Your trade was withdrawn", "The offer is off the market."),
-  },
-  BankSwap: { level: "all", recipients: "owner", copy: bankSwapCopy },
-  BankLiquidity: { level: "all", recipients: "owner", copy: bankLiquidityCopy },
+  ResourceTransferStory: { level: "all", recipients: "transferReceiver", copy: transferStoryCopy },
+  BitcoinAwardStory: { level: "all", recipients: "owner", copy: bitcoinAwardCopy },
   HyperstructurePoints: { level: "all", recipients: "owner", copy: hyperstructurePointsCopy },
-  SitePayout: { level: "all", recipients: "owner", copy: sitePayoutCopy },
-  TierBought: { level: "all", recipients: "owner", copy: tierBoughtCopy },
-  ExplorationReward: { level: "all", recipients: "owner", copy: explorationRewardCopy },
-  SeasonEnded: { level: "all", recipients: "owner", copy: says("The season has ended", "The final standings are in.") },
-  FaithPledged: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Faith pledged", "A realm's faith now flows to a wonder."),
-  },
-  FaithRemoved: { level: "all", recipients: "owner", copy: says("Faith withdrawn", "A pledge to a wonder has ended.") },
-  BlitzFinalized: {
-    level: "all",
-    recipients: "owner",
-    copy: says("The Blitz is settled", "The final results are in."),
-  },
-  RelicCrafted: { level: "all", recipients: "owner", copy: says("A relic is forged", "It waits in your stores.") },
-  RelicActivated: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Relic activated", "Your relic's effect was applied."),
-  },
 
-  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy },
-  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy },
-  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy },
-  RealmCreatedStory: {
-    level: "standard",
-    recipients: "owner",
-    copy: says("A new realm rises", "Your banner now flies over fresh lands."),
-  },
-  SpireDiscovered: { level: "standard", recipients: "owner", copy: spireDiscoveredCopy },
-  BuildingPlacementStory: { level: "standard", recipients: "owner", copy: buildingStoryCopy },
-  StructureLevelUpStory: { level: "standard", recipients: "owner", copy: levelUpCopy },
-  ResourceReceiveArrivalStory: {
-    level: "standard",
-    recipients: "owner",
-    copy: says("The caravan has arrived", "Fresh supplies have reached their destination."),
-  },
-  RelicChestOpened: {
-    level: "standard",
-    recipients: "owner",
-    copy: says("A crate is open", "Your army has pulled relics from the fog."),
-  },
-  RewardChestOpened: { level: "standard", recipients: "owner", copy: rewardChestCopy },
-  ProductionStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("The workshops are humming", "Production has started."),
-  },
-  BuildingPaymentStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Construction is underway", "The builders have their materials and their orders."),
-  },
-  ResourceTransferStory: { level: "all", recipients: "transfer", copy: transferStoryCopy },
-  ResourceBurnStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Resources burned", "They are gone from your stores."),
-  },
-  ExplorerCreateStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("An army answers the call", "New troops stand ready beyond the walls."),
-  },
-  ExplorerAddStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Reinforcements have arrived", "Fresh troops have joined your army."),
-  },
-  ExplorerDeleteStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("An army was disbanded", "Its troops and what it carried are gone."),
-  },
-  GuardAddStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("The walls are reinforced", "Fresh defenders have taken their posts."),
-  },
-  GuardDeleteStory: {
-    level: "all",
-    recipients: "owner",
-    copy: says("A guard was dismissed", "Its troops have left the walls for good."),
-  },
-  TroopsTransferred: {
-    level: "all",
-    recipients: "owner",
-    copy: says("Troops have moved", "Your troops have joined their new post."),
-  },
+  // The player's own taps: the Feed and the Log tell them, a push would only echo them.
+  TradeCreated: { excluded: OWN_ACTION },
+  TradeCancelled: { excluded: OWN_ACTION },
+  BankSwap: { excluded: OWN_ACTION },
+  BankLiquidity: { excluded: OWN_ACTION },
+  SitePayout: { excluded: OWN_ACTION },
+  SkillPointSpent: { excluded: OWN_ACTION },
+  ExplorationReward: { excluded: OWN_ACTION },
+  FaithPledged: { excluded: OWN_ACTION },
+  FaithRemoved: { excluded: OWN_ACTION },
+  RelicCrafted: { excluded: OWN_ACTION },
+  RelicActivated: { excluded: OWN_ACTION },
+  ProductionStory: { excluded: OWN_ACTION },
+  BuildingPaymentStory: { excluded: OWN_ACTION },
+  ResourceBurnStory: { excluded: OWN_ACTION },
+  ExplorerCreateStory: { excluded: OWN_ACTION },
+  ExplorerAddStory: { excluded: OWN_ACTION },
+  ExplorerDeleteStory: { excluded: OWN_ACTION },
+  GuardAddStory: { excluded: OWN_ACTION },
+  GuardDeleteStory: { excluded: OWN_ACTION },
+  TroopsTransferred: { excluded: OWN_ACTION },
+  RealmCreatedStory: { excluded: OWN_ACTION },
+  SpireDiscovered: { excluded: OWN_ACTION },
+  BuildingPlacementStory: { excluded: OWN_ACTION },
+  StructureLevelUpStory: { excluded: OWN_ACTION },
+  RelicChestOpened: { excluded: OWN_ACTION },
+  RewardChestOpened: { excluded: OWN_ACTION },
+
   FaithPointsClaimedStory: { excluded: "Recipient and notification UX deferred" },
   LordsWithdrawn: { excluded: "The player's own withdrawal needs no notification" },
+  SiteUsed: { excluded: "Site use is recorded in Today and the Log" },
 } satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", StoryRule>;
 
 export function storyNotificationRule(story: string): StoryRule {
@@ -149,9 +102,14 @@ export function storyNotificationRule(story: string): StoryRule {
   return STORY_RULES[story as keyof typeof STORY_RULES];
 }
 
-export function includesStoryNotification(level: NotificationLevel, story: string): boolean {
+/** Whether a player at this level is pushed this story in a game of this mode. */
+export function includesStoryNotification(level: NotificationLevel, story: string, mode: StoryGameMode): boolean {
   const rule = storyNotificationRule(story);
-  return !("excluded" in rule) && NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(rule.level);
+  return (
+    !("excluded" in rule) &&
+    (rule.modes === undefined || rule.modes.includes(mode)) &&
+    NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(rule.level)
+  );
 }
 
 export function storyRecipients(story: string, owner: unknown, payload: Record<string, unknown>): string[] {
@@ -165,9 +123,17 @@ export function storyRecipients(story: string, owner: unknown, payload: Record<s
       (payload.defender as Record<string, unknown> | undefined)?.player,
     ],
     raid: [payload.player, payload.target_owner],
-    transfer: [payload.from_entity_owner_address, payload.to_entity_owner_address],
+    // Goods sent to another player: the sender sent them, so only the receiver hears of it.
+    transferReceiver: [payload.to_entity_owner_address],
   };
-  return [...new Set(sources[rule.recipients].map(recipientAddress).filter((address) => address !== null))];
+  const sender = rule.recipients === "transferReceiver" ? recipientAddress(payload.from_entity_owner_address) : null;
+  return [
+    ...new Set(
+      sources[rule.recipients]
+        .map(recipientAddress)
+        .filter((address): address is string => address !== null && address !== sender),
+    ),
+  ];
 }
 
 function recipientAddress(value: unknown): string | null {

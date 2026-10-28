@@ -107,7 +107,7 @@ it("resets a halt the previous version recorded, reading the halted row's page a
       transaction_hash: "0xdef",
       from_address: "0x10",
       keys: [hash.getSelectorFromName("WithdrawalPaid"), chainId, claim],
-      data: ["0x2", "0x999", "0x5", "0x0"],
+      data: ["0x2", "0x999", "0x5", "0x0", "0", "0"],
     }) as never;
   // A full page of earlier payments, then the halted one on the page after the saved anchor.
   ledger.events = [
