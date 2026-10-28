@@ -283,7 +283,10 @@ The right column's layout has a command: `pnpm --dir apps/game prove:chat <base-
 window, and on `/lab/kit/chat?state=rail` the real rail (Events with its Log count, the panels lab's real picked army,
 chat open or closed, the build tag) from 1920×1080 down to 1280×720: the details and chat share the column, each kept to
 its least height (on a short screen the column scrolls as a whole), the Events name reads whole, nothing covers the
-build tag, and a wheel over a panel never reaches the map's canvas (`scripts/prove-hud-chat.mjs`).
+build tag, and a wheel over a panel never reaches the map's canvas (`scripts/prove-hud-chat.mjs`). It also opens chat
+from the strip on `/lab/kit/chat?state=closed` at a desktop's and a phone's size: every channel opens on its newest
+message, drawn there on its first frame; a message arriving keeps a reader on the newest there, and one scrolled up to
+read stays put with **New messages** to jump down (the lab's **A message arrives** delivers one).
 
 Before play opens, every action is shown but shut, with **Starts in …** under the actions; a map order or a way into a
 workspace says the same instead of sending (`src/utils/can-issue-orders.ts`).

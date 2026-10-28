@@ -2,7 +2,7 @@ import { formatClockTime } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef } from "react";
+import { Fragment, useCallback, useEffect, useMemo } from "react";
 
 import { Position } from "@bibliothecadao/eternum";
 import { openOnMap } from "@/play/navigation/open-place";
@@ -16,6 +16,8 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
 import { computeDateSeparators } from "../../model/message-grouping";
+import { useStickToLatest } from "@/hooks/use-stick-to-latest";
+import { JumpToLatest } from "../shared/jump-to-latest";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 
@@ -118,16 +120,6 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
   const { sendMessage, loadHistory, markAsRead } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? NO_MESSAGES;
   const presence = useRealtimePresence();
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
-  const topSentinelRef = useRef<HTMLDivElement | null>(null);
-  const isLoadingRef = useRef(false);
-  // Gate the top-sentinel IntersectionObserver until the panel has anchored
-  // to the bottom at least once. Without this the observer fires while we're
-  // still at scrollTop=0 (the panel just mounted), triggers a history fetch,
-  // which keeps us at the top, which re-triggers the observer — an infinite
-  // load loop where the user never sees the latest messages.
-  const hasInitialAnchorRef = useRef(false);
-
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
   const handleNavigateToCoordinates = useCallback((coordinates: { x: number; y: number }) => {
@@ -177,86 +169,16 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
     }
   }, [hasChannelAccess, resolvedZoneId, zone, messages.length, loadHistory]);
 
-  // Auto-scroll to bottom on new messages. Once we've ever pinned to bottom we
-  // mark the panel as "anchored" so the history-loading observer can start.
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-    if (isActive || isAtBottom) {
-      el.scrollTop = el.scrollHeight;
-      if (messages.length > 0) hasInitialAnchorRef.current = true;
+  const loadOlder = () => {
+    if (zone?.hasMoreHistory && !zone.isFetchingHistory && !zone.historyError) {
+      void loadHistory(zone.lastFetchedCursor ?? undefined);
     }
-  }, [messages.length, isActive]);
-
-  // Scroll to bottom when panel becomes visible or resizes
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-
-    // Reset anchor flag when the panel re-activates so it has to settle again.
-    hasInitialAnchorRef.current = false;
-
-    // Delay to ensure content is rendered
-    const timer = setTimeout(() => {
-      el.scrollTop = el.scrollHeight;
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [isActive]);
-
-  // Scroll to bottom when container height changes (expand/collapse)
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      // Scroll to bottom when height increases
-      requestAnimationFrame(() => {
-        if (el) {
-          el.scrollTop = el.scrollHeight;
-        }
-      });
-    });
-
-    resizeObserver.observe(el);
-    return () => resizeObserver.disconnect();
-  }, []);
-
-  // Intersection Observer for auto-loading older messages on scroll.
-  // Only activates after the first scroll-to-bottom so it doesn't fire while
-  // the panel is still mounting (which caused the infinite-history loop).
-  useEffect(() => {
-    const sentinel = topSentinelRef.current;
-    if (!sentinel || !zone?.hasMoreHistory || zone.historyError) return;
-    if (!hasInitialAnchorRef.current) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && !zone.isFetchingHistory && zone.hasMoreHistory && !isLoadingRef.current) {
-          isLoadingRef.current = true;
-          const currentScrollHeight = scrollContainerRef.current?.scrollHeight ?? 0;
-
-          loadHistory(zone.lastFetchedCursor ?? undefined).then(() => {
-            // Maintain scroll position after loading
-            requestAnimationFrame(() => {
-              if (scrollContainerRef.current) {
-                const newScrollHeight = scrollContainerRef.current.scrollHeight;
-                const scrollDiff = newScrollHeight - currentScrollHeight;
-                scrollContainerRef.current.scrollTop += scrollDiff;
-              }
-              isLoadingRef.current = false;
-            });
-          });
-        }
-      },
-      { threshold: 0.1, rootMargin: "100px" },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [zone?.hasMoreHistory, zone?.isFetchingHistory, zone?.lastFetchedCursor, zone?.historyError, loadHistory]);
+  };
+  const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
+    oldest: messages[0]?.id,
+    newest: messages.at(-1)?.id,
+    onNearOldest: loadOlder,
+  });
 
   const dateSeparators = useMemo(() => computeDateSeparators(messages), [messages]);
 
@@ -267,11 +189,8 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
           <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
         {hasChannelAccess && zone && (
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollContainerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1 scroll-smooth">
-              {/* Sentinel for auto-loading older messages */}
-              <div ref={topSentinelRef} className="h-1" />
-
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
+            <div ref={scrollerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
               {zone.historyError && (
                 <div className="mb-2">
                   <HudNotice
@@ -341,6 +260,7 @@ export function WorldChatPanel({ zoneId, className }: WorldChatPanelProps) {
                 )}
               </ul>
             </div>
+            {hasNewer && <JumpToLatest onJump={jumpToLatest} />}
           </div>
         )}
       </div>

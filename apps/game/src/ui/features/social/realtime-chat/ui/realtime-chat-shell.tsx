@@ -230,10 +230,11 @@ export function RealtimeChatShell({
 
             {/* Single Active Panel */}
             <div className="flex-1 min-h-0 overflow-hidden">
+              {/* Keyed by its tab: each channel opened draws its own list, on its latest message. */}
               {activeTab?.type === "world" || activeTab?.type === "zone" ? (
-                <WorldChatPanel zoneId={activeTab.targetId} />
+                <WorldChatPanel key={activeTab.id} zoneId={activeTab.targetId} />
               ) : activeTab?.type === "dm" ? (
-                <DirectMessagesPanel threadId={activeTab.targetId} />
+                <DirectMessagesPanel key={activeTab.id} threadId={activeTab.targetId} />
               ) : (
                 <div className="flex items-center justify-center h-full text-hud-cue text-hud-body">
                   No chat selected

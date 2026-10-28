@@ -726,6 +726,8 @@ export const CHAT_WORDS = {
   registeredWrite: "Players registered in this Blitz write here.",
   rateLimited: "Too fast. Wait a moment.",
   refused: "That message was not sent.",
+  /** Over a chat scrolled up to read, once a newer message arrived: it jumps to the latest. */
+  newMessages: "New messages",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

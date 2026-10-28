@@ -17,26 +17,32 @@ import { TileGame } from "./panels-lab";
 /**
  * Dev only: the HUD's chat at /lab/kit/chat, the real HudChatWindow and chat shell over a room the lab fills, in the
  * HUD's right column: `?state=open` the pane over a long history with its composer, `?state=closed` the strip with a
- * long last message and an unread count, `&fold=1` the strip folded to its icon on a phone held upright. `?state=rail`
- * puts it in the real rail over a stand-in map: the Events panel with its Log count, a picked army's details and its
- * biome, chat open (`&chat=closed` its strip), and the build tag in the base band. The chat proof
- * (scripts/prove-hud-chat.mjs) measures each at a desktop's and a phone's size.
+ * long last message and an unread count (pressed, it opens the pane as the game's does), `&fold=1` the strip folded to
+ * its icon on a phone held upright. **A message arrives** delivers another player's message to the room, as the chat's
+ * socket does. `?state=rail` puts it in the real rail over a stand-in map: the Events panel with its Log count, a
+ * picked army's details and its biome, chat open (`&chat=closed` its strip), and the build tag in the base band. The
+ * chat proof (scripts/prove-hud-chat.mjs) measures each at a desktop's and a phone's size.
  */
 export const ChatLab = () => {
   useDocumentClass("classic-hud");
   const [params] = useSearchParams();
   const [ready] = useState(installLabRoom);
   const state = params.get("state");
+  const [open, setOpen] = useState(state === "open");
   // The session lands after the page mounts, so the real session read it starts is outdated before it answers.
   useEffect(() => {
     useIdentitySessionStore.getState().applySession(LAB_SESSION);
   }, []);
   if (state === "rail") return ready ? <RailLab chatOpen={params.get("chat") !== "closed"} /> : null;
-  const open = state === "open";
   return (
     <div className="min-h-screen bg-[#0b1418]">
+      <div className="fixed left-3 top-28 z-10">
+        <HudButton kind="secondary" size="sm" data-lab="arrive" onClick={deliverLabMessage}>
+          A message arrives
+        </HudButton>
+      </div>
       <div data-lab="chat" className="fixed inset-y-3 right-3 flex w-hud-column flex-col">
-        {ready && <HudChatWindow open={open} onOpenChange={() => undefined} foldToIcon={params.get("fold") === "1"} />}
+        {ready && <HudChatWindow open={open} onOpenChange={setOpen} foldToIcon={params.get("fold") === "1"} />}
       </div>
     </div>
   );
@@ -99,6 +105,19 @@ const labMessages = (): WorldChatMessage[] =>
     content: index === 39 ? LONG_LINE.repeat(4) : LONG_LINE,
     createdAt: new Date(Date.UTC(2026, 9, 18, 12, index)).toISOString(),
   })) as WorldChatMessage[];
+
+/** Another player's message, through the store's own receive path, numbered after the history. */
+const deliverLabMessage = () => {
+  const { worldZones, actions } = useRealtimeChatStore.getState();
+  const index = worldZones[GLOBAL_CHAT_CHANNEL_ID]?.messages.length ?? 0;
+  actions.receiveWorldMessage(GLOBAL_CHAT_CHANNEL_ID, {
+    id: `lab-arrived-${index}`,
+    zoneId: GLOBAL_CHAT_CHANNEL_ID,
+    sender: { playerId: "0x6", displayName: "Rowena" },
+    content: `Arrived just now (${index + 1}): the ridge is ours.`,
+    createdAt: new Date(Date.UTC(2026, 9, 18, 13, index)).toISOString(),
+  } as WorldChatMessage);
+};
 
 /**
  * The room the lab shows: connected, joined, its history loaded with unread messages, and the store's network steps

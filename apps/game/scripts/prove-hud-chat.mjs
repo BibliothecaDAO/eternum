@@ -6,6 +6,10 @@
  *   viewport, and the history scrolls inside the pane without moving the composer;
  * - closed, at 1440×900: the strip stays inside the HUD's column, its last message truncated, its unread count in view;
  * - closed and folded on a phone held upright (390×844): the strip is its icon and its unread count alone;
+ * - opened from the strip, at 1440×900 and 390×844, each frame recorded from the press: the pane's first frame shows the
+ *   newest message and the history never slides after; a message arriving (the lab's **A message arrives**) keeps a
+ *   reader on the newest there with no jump offered; one arriving while the reader scrolled up leaves the history where
+ *   it was and offers **New messages**, which shows the newest and goes;
  * - in the rail (`?state=rail`, the real rail frame, Events panel, the panels lab's real picked-army tile, chat and build
  *   tag over a stand-in map canvas), chat open at 1920×1080, 1440×900, 1440×768 and 1280×720: the details and the open
  *   chat share the column without covering each other, each keeping its least height (the details a header and a body,
@@ -27,7 +31,7 @@
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { runProof, sleep, waitFor } from "./prove-run.mjs";
+import { clickAsPlayer, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const READY_MS = 30_000;
 /** Desktop sizes down to the shortest a laptop shows: the rail must hold at each. */
@@ -148,6 +152,104 @@ const WHEEL_TARGETS = `(() => {
     "chat strip": middle(document.querySelector('[aria-label="Chat strip"]')),
   };
 })()`;
+
+/** The open pane's history: its scroll, the furthest it goes, whether the newest message shows whole, and the jump. */
+const HISTORY = `(() => {
+  const list = document.querySelector('[data-lab="chat"] section[aria-label="Chat"] ul');
+  const scroller = list?.parentElement;
+  const newest = list?.querySelector("li:last-child");
+  const box = scroller?.getBoundingClientRect();
+  const row = newest?.getBoundingClientRect();
+  return {
+    top: scroller ? Math.round(scroller.scrollTop) : null,
+    furthest: scroller ? scroller.scrollHeight - scroller.clientHeight : null,
+    newest: newest?.textContent ?? null,
+    newestInView: Boolean(box && row && row.top >= box.top - 1 && row.bottom <= box.bottom + 1),
+    jump: document.querySelector('[data-lab="chat"] [aria-label="New messages"]') !== null,
+  };
+})()`;
+
+/** Records the history on every frame from the pane's first until 1.2 s after it, into window.__historyFrames. */
+const RECORD_FRAMES = `(() => {
+  window.__historyFrames = [];
+  let first = null;
+  const frame = () => {
+    const history = ${HISTORY};
+    if (history.top !== null) {
+      first ??= performance.now();
+      window.__historyFrames.push({ at: Math.round(performance.now() - first), ...history });
+    }
+    if (first === null || performance.now() - first < 1200) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  return true;
+})()`;
+
+/** The reader scrolls the history to `top`: the position moves and the list hears its scroll, as a wheel's does. */
+const scrollHistoryTo = (top) => `(() => {
+  const scroller = document.querySelector('[data-lab="chat"] section[aria-label="Chat"] ul').parentElement;
+  scroller.scrollTop = ${top};
+  return Math.round(scroller.scrollTop);
+})()`;
+
+/** Opening from the strip: the first frame drawn shows the newest message, and no later frame moves the history. */
+const openingChecks = (frames) => [
+  {
+    check: "the pane's first frame shows the newest message",
+    ok: frames.length > 0 && frames[0].newestInView && frames[0].top === frames[0].furthest,
+  },
+  {
+    check: "the history never slides after it opens",
+    ok: frames.length > 0 && frames.every((frame) => frame.top === frames[0].top),
+  },
+];
+
+const arrivalChecks = ({ atNewest, scrolledUp, readAt, jumped }) => [
+  {
+    check: "a message arriving keeps a reader on the newest there, with no jump offered",
+    ok: atNewest.newestInView && atNewest.newest?.includes("Arrived just now") && !atNewest.jump,
+  },
+  {
+    check: "a message arriving while the reader scrolled up leaves the history where it was, and offers the jump",
+    ok: scrolledUp.top === readAt && !scrolledUp.newestInView && scrolledUp.jump,
+  },
+  {
+    check: "the jump shows the newest message and goes",
+    ok: jumped.newestInView && jumped.top === jumped.furthest && !jumped.jump,
+  },
+];
+
+/** Chat opened from its strip as a player opens it, then two messages arriving: at the newest, and scrolled up. */
+const proveOpening = async (b, out, records, baseUrl, viewport) => {
+  const size = viewport.join("×");
+  const record = { state: `opened from the strip, ${size}`, ready: false, presses: [], checks: [] };
+  records.push(record);
+  record.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed`, viewport);
+  if (!record.ready) return;
+  b.evaluate(RECORD_FRAMES);
+  const opened = clickAsPlayer(b, '[aria-label="Chat strip"]');
+  await waitFor(b, "window.__historyFrames.at(-1)?.at >= 1200", READY_MS);
+  const frames = b.evaluate("window.__historyFrames");
+  record.measures = { opened, frames };
+  record.checks.push(...openingChecks(frames));
+  b.run("screenshot", join(out, `opened-${size}.png`));
+
+  clickAsPlayer(b, '[data-lab="arrive"]');
+  await sleep(500);
+  const atNewest = b.evaluate(HISTORY);
+  const readAt = b.evaluate(scrollHistoryTo(400));
+  await sleep(300);
+  clickAsPlayer(b, '[data-lab="arrive"]');
+  await sleep(500);
+  const scrolledUp = b.evaluate(HISTORY);
+  b.run("screenshot", join(out, `scrolled-up-arrival-${size}.png`));
+  clickAsPlayer(b, '[aria-label="New messages"]');
+  await sleep(500);
+  const jumped = b.evaluate(HISTORY);
+  b.run("screenshot", join(out, `jumped-${size}.png`));
+  record.measures = { ...record.measures, atNewest, readAt, scrolledUp, jumped };
+  record.checks.push(...arrivalChecks({ atNewest, scrolledUp, readAt, jumped }));
+};
 
 const inside = (inner, outer, slack = 1) =>
   inner !== null &&
@@ -339,6 +441,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         strip.measures = b.evaluate(STRIP);
         strip.checks.push(...stripChecks(strip.measures));
         b.run("screenshot", join(out, "chat-strip.png"));
+      }
+
+      for (const viewport of [
+        ["1440", "900"],
+        ["390", "844"],
+      ]) {
+        await proveOpening(b, out, records, baseUrl, viewport);
       }
 
       for (const viewport of RAIL_OPEN_SIZES) {

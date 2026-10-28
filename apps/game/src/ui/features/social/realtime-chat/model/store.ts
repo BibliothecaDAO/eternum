@@ -1023,7 +1023,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
       const { baseUrl } = get();
-      if (!baseUrl) return;
+      if (!baseUrl || get().dmThreads[threadId]?.isFetchingHistory) return;
 
       set((state) => {
         const existing = state.dmThreads[threadId];
