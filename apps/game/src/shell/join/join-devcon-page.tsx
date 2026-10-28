@@ -17,11 +17,23 @@ const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
 /** A code as flyers print it; anything else in the address is not kept. */
 const PRINTED_CODE = /^[A-Za-z0-9]{8}$/;
 
-type Opening = { kind: "sealed" } | { kind: "opening" } | { kind: "refused"; line: string } | CampaignTicket;
+/** A refusal a retry can change (the network, the service) or one it cannot (the campaign or the code says no). */
+type Opening =
+  | { kind: "sealed" }
+  | { kind: "opening" }
+  | { kind: "refused"; line: string; final: boolean }
+  | CampaignTicket;
+
+/** The identity service's answers no retry changes, each with what the player reads. */
+const FINAL_REFUSALS = new Map<string, string>([
+  ["campaign_closed", JOIN_WORDS.closed],
+  ["ticket_taken", JOIN_WORDS.taken],
+  ["invalid_redemption", JOIN_WORDS.noTicket],
+]);
 
 /**
- * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`) and the shared link (`/join/devcon`). It looks
- * the same for every code: the code waits in this browser, through sign-in, until the signed-in player opens their
+ * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`); `/join/devcon` serves a code already kept,
+ * as when a sign-in finished elsewhere comes back. It looks the same for every code: the code waits in this browser, through sign-in, until the signed-in player opens their
  * ticket, and only the answer to that account tells a golden ticket from another.
  */
 export const JoinDevconPage = () => {
@@ -40,7 +52,7 @@ export const JoinDevconPage = () => {
   return (
     <SealedTicket
       opening={opening.kind === "opening"}
-      refusal={opening.kind === "refused" ? opening.line : null}
+      refusal={opening.kind === "refused" ? opening : null}
       onOpen={open}
     />
   );
@@ -53,8 +65,8 @@ const redeemTicket = async (): Promise<Opening> => {
     forgetCampaignCode();
     return ticket;
   } catch (cause) {
-    const closed = cause instanceof IdentityRequestError && cause.code === "campaign_closed";
-    return { kind: "refused", line: closed ? JOIN_WORDS.closed : JOIN_WORDS.failed };
+    const final = cause instanceof IdentityRequestError ? FINAL_REFUSALS.get(cause.code ?? "") : undefined;
+    return { kind: "refused", line: final ?? JOIN_WORDS.failed, final: final !== undefined };
   }
 };
 
@@ -85,21 +97,26 @@ const DevconLanding = ({ waiting }: { waiting: boolean }) => {
   );
 };
 
+/** The ticket before it opens. Once it is refused for good, the way on is Play: the game is open to everyone. */
 const SealedTicket = ({
   opening,
   refusal,
   onOpen,
 }: {
   opening: boolean;
-  refusal: string | null;
+  refusal: { line: string; final: boolean } | null;
   onOpen: () => void;
 }) => (
   <DevconFrame
-    notice={refusal ? <AppNotice tone="bad" line={refusal} /> : undefined}
+    notice={refusal ? <AppNotice tone="bad" line={refusal.line} /> : undefined}
     foot={
-      <AppButton kind="primary" size="lg" step busy={opening ? JOIN_WORDS.opening : undefined} onClick={onOpen}>
-        {refusal === JOIN_WORDS.failed ? TRY_AGAIN : JOIN_WORDS.open}
-      </AppButton>
+      refusal?.final ? (
+        <ContinueToPlay />
+      ) : (
+        <AppButton kind="primary" size="lg" step busy={opening ? JOIN_WORDS.opening : undefined} onClick={onOpen}>
+          {refusal ? TRY_AGAIN : JOIN_WORDS.open}
+        </AppButton>
+      )
     }
   >
     <h1 className="text-app-title text-app-ink">{JOIN_WORDS.yourTicket}</h1>
@@ -111,13 +128,7 @@ const SealedTicket = ({
 const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
   const golden = tier === "golden";
   return (
-    <DevconFrame
-      foot={
-        <AppButton kind="primary" size="lg" icon="play" step to="/">
-          {JOIN_WORDS.continue}
-        </AppButton>
-      }
-    >
+    <DevconFrame foot={<ContinueToPlay />}>
       <h1 className="text-app-title text-app-ink">{golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket}</h1>
       <AppTicket
         face={golden ? "golden" : "opened"}
@@ -129,6 +140,12 @@ const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
     </DevconFrame>
   );
 };
+
+const ContinueToPlay = () => (
+  <AppButton kind="primary" size="lg" icon="play" step to="/">
+    {JOIN_WORDS.continue}
+  </AppButton>
+);
 
 const TicketArt = () => <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="h-28 w-auto" />;
 

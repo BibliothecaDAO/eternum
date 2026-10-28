@@ -1,9 +1,11 @@
 /**
  * Campaigns: an event's tickets to a campaign home, a realm the player founds through the campaign rather than with a
- * Realm they hold. Each printed flyer carries its own code; the codes live hashed in D1 (`campaign_codes`, written by
- * apps/realms/scripts/campaign-codes.ts), each with the tier it gives, so only this Worker knows which are golden. An
- * account holds one ticket per campaign (`campaign_tickets`), and the relay registers it onchain, under the campaign's
- * key as a short string, when that account founds its home in one of the campaign's games (ValueIdentity.campaignTicket).
+ * Realm they hold. Each printed flyer carries its own code, good for one account; the codes live hashed in D1
+ * (`campaign_codes`, written by apps/realms/scripts/campaign-codes.ts), each with the tier it gives, so only this Worker
+ * knows which are golden. An account holds one ticket per campaign (`campaign_tickets`), and the relay registers it
+ * onchain, under the campaign's key as a short string, when that account founds its home in one of the campaign's games
+ * (ValueIdentity.campaignTicket). Nothing else gives a ticket: posters and promotion link to the game itself, where any
+ * account founds an ordinary home.
  */
 export const CAMPAIGNS = {
   "devcon-2026": {

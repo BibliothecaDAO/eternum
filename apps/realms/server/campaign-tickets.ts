@@ -9,9 +9,10 @@ import { json, readBody } from "./http";
 const REDEEM_BYTES = 1024;
 
 /**
- * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign, from the code its flyer carried or
- * from the campaign's shared link (no code). It answers the ticket's tier, to this account only; repeating it answers the
- * same ticket, so a reload or a retry never shows another outcome.
+ * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried. It
+ * answers the ticket's tier, to this account only; repeating it answers the same ticket, so a reload or a retry never
+ * shows another outcome, with a code or without. A code another account already took, or one no flyer carries, gives
+ * none.
  */
 export function handleCampaignRedeem(request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> {
   return Effect.runPromise(
@@ -42,13 +43,18 @@ function redeemTicket(request: Request, auth: IdentityAuth) {
     if (!held && now >= CAMPAIGNS[asked.campaign].redeemUntil) return json({ error: "campaign_closed" }, 410);
     if (held) return json({ campaign: held.campaign, tier: held.tier });
     const { campaign, code } = asked;
-    const codeHash = code === null ? null : yield* Effect.promise(() => campaignCodeHash(campaign, code));
+    if (code === null) return json({ error: "invalid_redemption" }, 400);
+    const codeHash = yield* Effect.promise(() => campaignCodeHash(campaign, code));
     const ticket = yield* store.redeem(campaign, session.user.realmsId, codeHash, now);
+    if (!ticket) return json({ error: "ticket_taken" }, 410);
     return json({ campaign: ticket.campaign, tier: ticket.tier });
   });
 }
 
-/** A redemption names its campaign, and the code it came with, if any; a code no flyer could carry counts as none. */
+/**
+ * A redemption names its campaign and the code its flyer carried. Without a code it can only answer a ticket the
+ * account already holds; a code no flyer could carry counts as none.
+ */
 const readRedemption = (value: unknown): { campaign: CampaignKey; code: string | null } | null => {
   const { campaign, code } = (value ?? {}) as Record<string, unknown>;
   if (!isCampaignKey(campaign)) return null;

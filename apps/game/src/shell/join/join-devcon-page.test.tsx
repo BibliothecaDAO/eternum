@@ -79,7 +79,7 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(useConnectStore.getState().request).toEqual({ next: "/join/devcon/T9HW3NPB" });
   expect(service.redeemCampaignTicket).not.toHaveBeenCalled();
 
-  // Signed in, even back on the shared link (Discord finished elsewhere, the home-screen app reloaded): the kept code.
+  // Signed in, even back on the bare link (Discord finished elsewhere, the home-screen app reloaded): the kept code.
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "golden" });
   await visit("/join/devcon");
@@ -98,19 +98,19 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(path).toBe("/");
 });
 
-it("opens a regular ticket from the shared link: the Devcon realm and its Labor, no Essence", async () => {
+it("opens a regular ticket from a flyer's code: the Devcon realm and its Labor, no Essence", async () => {
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
-  await visit("/join/devcon");
+  await visit("/join/devcon/K7M2QX4R");
   await press("Open your ticket");
-  expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", null]]);
+  expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", "K7M2QX4R"]]);
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
   expect(text()).not.toMatch(/golden|Essence/i);
 });
 
-it("says a closed campaign, and offers Try again when the ticket could not be opened", async () => {
+it("offers Try again when the ticket could not be opened, and Play once the campaign has closed", async () => {
   signIn();
   await visit("/join/devcon/K7M2QX4R");
   service.redeemCampaignTicket.mockRejectedValueOnce(new Error("offline"));
@@ -121,6 +121,23 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   await press("Try again");
   expect(text()).toContain("Devcon tickets have closed.");
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
+  expect(text()).not.toContain("Try again");
+  await press("Continue");
+  expect(path).toBe("/");
+});
+
+it.each([
+  ["/join/devcon/K7M2QX4R", 410, "ticket_taken", "Another player already opened this ticket."],
+  ["/join/devcon", 400, "invalid_redemption", "This link holds no ticket. Scan the QR on your Devcon flyer."],
+])("on %s, says why no ticket opens (%i %s) and leads on to Play", async (address, status, code, line) => {
+  signIn();
+  service.redeemCampaignTicket.mockRejectedValueOnce(new IdentityRequestError(status, code));
+  await visit(address);
+  await press("Open your ticket");
+  expect(text()).toContain(line);
+  expect(text()).not.toMatch(/Open your ticket|Try again/);
+  await press("Continue");
+  expect(path).toBe("/");
 });
 
 it("promises the Labor, and a golden ticket's Essence, that the Devcon preset grants each day", () => {

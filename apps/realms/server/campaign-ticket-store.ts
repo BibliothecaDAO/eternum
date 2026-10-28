@@ -16,23 +16,27 @@ function createCampaignTicketStore(db: D1Database) {
       .bind(campaign, owner)
       .first<CampaignTicket>();
 
-  const tierOfCode = async (campaign: CampaignKey, codeHash: string | null) =>
-    codeHash === null
-      ? null
-      : ((
-          await db
-            .prepare('SELECT "tier" FROM "campaign_codes" WHERE "campaign" = ? AND "code_hash" = ?')
-            .bind(campaign, codeHash)
-            .first<{ tier: TicketTier }>()
-        )?.tier ?? null);
+  const tierOfCode = async (campaign: CampaignKey, codeHash: string) =>
+    (
+      await db
+        .prepare('SELECT "tier" FROM "campaign_codes" WHERE "campaign" = ? AND "code_hash" = ?')
+        .bind(campaign, codeHash)
+        .first<{ tier: TicketTier }>()
+    )?.tier ?? null;
 
-  /** Null when the account already holds this campaign's ticket, or the golden code was already used as golden. */
-  const insertTicket = (campaign: CampaignKey, owner: string, codeHash: string | null, tier: TicketTier, now: number) =>
+  /**
+   * Null when the account already holds this campaign's ticket, or another account took this code first. The check and
+   * the insert are one statement, so two accounts redeeming one flyer at once cannot both get its ticket.
+   */
+  const insertTicket = (campaign: CampaignKey, owner: string, codeHash: string, tier: TicketTier, now: number) =>
     db
       .prepare(
-        'INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES (?, ?, ?, ?, ?) ON CONFLICT DO NOTHING RETURNING "campaign", "owner", "tier"',
+        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at")
+         SELECT ?, ?, ?, ?, ?
+         WHERE NOT EXISTS (SELECT 1 FROM "campaign_tickets" WHERE "campaign" = ? AND "code_hash" = ?)
+         ON CONFLICT DO NOTHING RETURNING "campaign", "owner", "tier"`,
       )
-      .bind(campaign, owner, codeHash, tier, now)
+      .bind(campaign, owner, codeHash, tier, now, campaign, codeHash)
       .first<CampaignTicket>();
 
   const read = (campaign: CampaignKey, owner: string) =>
@@ -42,22 +46,18 @@ function createCampaignTicketStore(db: D1Database) {
     });
 
   /**
-   * The account's ticket: the one it already holds, else a new one from the code. A code no flyer carries, or none,
-   * gives a regular ticket; a golden code gives a golden one to its first account only, and a regular one after. Safe to
-   * repeat: a retry, or two redemptions at once, return the one ticket.
+   * The account's ticket: the one it already holds, else the one its flyer's code gives, regular or golden. Null when the
+   * code is no flyer's or another account already took it. Safe to repeat: a retry, or two redemptions at once, return
+   * the one ticket.
    */
-  const redeem = (campaign: CampaignKey, owner: string, codeHash: string | null, now: number) =>
+  const redeem = (campaign: CampaignKey, owner: string, codeHash: string, now: number) =>
     Effect.tryPromise({
-      try: async (): Promise<CampaignTicket> => {
+      try: async (): Promise<CampaignTicket | null> => {
         const held = await ticketOf(campaign, owner);
         if (held) return held;
-        const known = await tierOfCode(campaign, codeHash);
-        const code = known === null ? null : codeHash;
-        const golden = known === "golden" ? await insertTicket(campaign, owner, code, "golden", now) : null;
-        const ticket = golden ?? (await insertTicket(campaign, owner, code, "regular", now));
-        const recorded = ticket ?? (await ticketOf(campaign, owner));
-        if (!recorded) throw new Error("campaign_ticket_not_recorded");
-        return recorded;
+        const tier = await tierOfCode(campaign, codeHash);
+        if (!tier) return null;
+        return (await insertTicket(campaign, owner, codeHash, tier, now)) ?? (await ticketOf(campaign, owner));
       },
       catch: (cause) => new CampaignStorageError({ cause }),
     });

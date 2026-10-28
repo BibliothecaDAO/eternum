@@ -676,6 +676,8 @@ export const JOIN_WORDS = {
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
   continue: "Continue",
   closed: "Devcon tickets have closed.",
+  taken: "Another player already opened this ticket.",
+  noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
   failed: "Your ticket could not be opened.",
 } as const;
 
