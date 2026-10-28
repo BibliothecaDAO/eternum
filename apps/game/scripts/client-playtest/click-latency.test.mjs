@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { clickToResultTable, framesBetween, measureClickToResult } from "./click-latency.mjs";
 
-/** A frame every 16 ms from 0 to `until`. */
-const framesTo = (until, every = 16) =>
-  Array.from({ length: Math.floor(until / every) + 1 }, (_, index) => index * every);
+/** A frame every 16 ms from 0 to `until`, each frame's callback running as it begins. */
+const framesTo = (until, every = 16) => {
+  const frames = Array.from({ length: Math.floor(until / every) + 1 }, (_, index) => index * every);
+  return { frames, frameRuns: frames };
+};
 
 /** A send the client reported, stage by stage, with the facts Herald brought for it. */
 const send = ({ command, answered, diff, applied, rendered }) => ({
@@ -30,7 +32,7 @@ describe("measureClickToResult", () => {
           { type: "keydown", t: 95 },
           { type: "pointerdown", t: 100 },
         ],
-        frames: framesTo(800),
+        ...framesTo(800),
         watched: [{ name: "level", t: 688, at: 700 }],
       },
       actionLatency: { clientActions: [send({ command: 112, answered: 140, diff: 600, applied: 630 })] },
@@ -51,7 +53,7 @@ describe("measureClickToResult", () => {
           { type: "pointerdown", t: 10 },
           { type: "pointerdown", t: 300 },
         ],
-        frames: framesTo(900),
+        ...framesTo(900),
       },
       actionLatency: { clientActions: [send({ command: 305, answered: 320, diff: 700, applied: 710, rendered: 800 })] },
       result: { rendered: true },
@@ -64,7 +66,7 @@ describe("measureClickToResult", () => {
   it("times a move to its army starting to walk", () => {
     const measured = measureClickToResult({
       since: 0,
-      probe: { inputs: [{ type: "pointerdown", t: 50 }], frames: framesTo(600) },
+      probe: { inputs: [{ type: "pointerdown", t: 50 }], ...framesTo(600) },
       actionLatency: {
         clientActions: [send({ command: 60, answered: 70, diff: 400, applied: 420 })],
         armyMovement: [
@@ -80,28 +82,29 @@ describe("measureClickToResult", () => {
     expect(measured.segments.drawn).toBe(44);
   });
 
-  it("counts a result seen inside a long frame from the next frame, not from the long frame's start", () => {
-    // The frame that began at 600 ran its callbacks 50 ms late: the change it saw is shown by the frame at 660.
+  it("counts a result from when the frame that paints it ran, not from when that frame began", () => {
+    // The frame that began at 600 ran its callback at 650, after the work that wrote the facts: it paints the result.
     const measured = measureClickToResult({
       since: 0,
       probe: {
         inputs: [{ type: "pointerdown", t: 100 }],
         frames: [96, 112, 600, 660, 676],
+        frameRuns: [97, 113, 650, 661, 677],
         watched: [{ name: "level", t: 600, at: 650 }],
       },
       actionLatency: { clientActions: [send({ command: 110, answered: 120, diff: 590, applied: 640 })] },
       result: { watch: "level" },
     });
 
-    expect(measured.marks.visible).toBe(660);
-    expect(measured.segments.drawn).toBe(20);
+    expect(measured.marks.visible).toBe(650);
+    expect(measured.segments.drawn).toBe(10);
     expect(measured.frames.worstMs).toBe(488);
   });
 
   it("names a mark the client never reached and leaves its segments out", () => {
     const measured = measureClickToResult({
       since: 0,
-      probe: { inputs: [{ type: "pointerdown", t: 50 }], frames: framesTo(600), watched: [] },
+      probe: { inputs: [{ type: "pointerdown", t: 50 }], ...framesTo(600), watched: [] },
       actionLatency: { clientActions: [send({ command: 60, answered: 70, diff: undefined, applied: undefined })] },
       result: { watch: "built" },
     });
@@ -136,7 +139,7 @@ describe("framesBetween", () => {
 
   it("counts the long frame that crosses the result", () => {
     // Frames every 16 ms to 1984, then one at 10000: the result at 2005 waited on that 8 s frame.
-    const frames = [...framesTo(1998).filter((frame) => frame >= 990), 10_000];
+    const frames = [...framesTo(1998).frames.filter((frame) => frame >= 990), 10_000];
     expect(framesBetween(frames, 1000, 2005)).toMatchObject({ covered: true, worstMs: 8016 });
   });
 });

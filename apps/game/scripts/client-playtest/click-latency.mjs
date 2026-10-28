@@ -98,13 +98,13 @@ function stageAt(record, stage) {
 }
 
 /**
- * The first frame that can show the result: the first to begin once the result was seen (by the probe's check, the
- * client's own mark, or a scene's mark). A frame's start, not when its callbacks ran, so a long frame is not counted
- * as having shown what its own callbacks only changed.
+ * When the frame that shows the result ran: the first frame callback after the result was seen (by the probe's check,
+ * the client's own mark, or a scene's mark), the frame the browser then paints. Its callback time, not its start: a
+ * frame begins before the work that blocks it, and paints only after.
  */
 function visibleAt({ probe, actionLatency, record, click, result }) {
   const seen = seenAt({ probe, actionLatency, record, click, result });
-  return seen === null ? null : ((probe.frames ?? []).find((frame) => frame >= seen) ?? null);
+  return seen === null ? null : ((probe.frameRuns ?? []).find((ran) => ran >= seen) ?? null);
 }
 
 function seenAt({ probe, actionLatency, record, click, result }) {
