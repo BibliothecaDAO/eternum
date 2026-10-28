@@ -35,9 +35,9 @@ export function assetPlans(
   treasury: string,
   assets: Partial<Assets>,
 ): AssetPlan[] {
-  // Each environment deploys the assets its book does not name: production's book names dev's test LORDS, so it
-  // deploys its own rating token and collections and owns its ledger, roles and pause.
-  const testAssets: AssetPlan[] = [
+  // Each environment deploys the assets its book does not name (a test token only when it names no LORDS), so it owns
+  // its rating token, collections, ledger, roles and pause.
+  const ownAssets: AssetPlan[] = [
     { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
     { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
     {
@@ -53,7 +53,7 @@ export function assetPlans(
       constructor: collectibleConstructor(target.cosmeticsName, target.collectionDescription, admin),
     },
   ];
-  const plans = testAssets.filter((plan) => !assets[plan.name]);
+  const plans = ownAssets.filter((plan) => !assets[plan.name]);
   if (assets.lords && assets.mmr && assets.chests && assets.cosmetics)
     plans.push({
       name: "ledger",

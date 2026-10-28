@@ -45,7 +45,7 @@
     "chests": "lords",
     "chestName": "Realms Loot Chest",
     "cosmeticsName": "Realms Cosmetic Items",
-    "collectionDescription": "Test collection (no value) until the LORDS launch",
+    "collectionDescription": "Won in Realms games",
     "picture": "Qmb7Zr5bJaSzrARdXVYzc5PMp3bbnydJu4reKBXGF8Aiz4",
     "blitzPrice": 100,
     "runDirectory": "/opt/athanor/runs/production",

@@ -8,6 +8,7 @@ import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/s
 import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/commands/deployment/frontier.js";
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
+import { isTestLords } from "../../packages/chain/src/value-plane";
 import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
@@ -225,9 +226,7 @@ export function seasonSteps(context: Season): Step[] {
         const pool = BigInt(context.inputs!.amount) * WEI;
         const lords = context.assets!.lords;
         const payer = context.target.coldAdmin ? context.inputs!.admin! : account.address;
-        // Both environments deposit dev's test LORDS, which anyone may mint: the payer mints the deposit it lacks.
-        const mint =
-          (await balance(account, lords, payer, state.block)) < pool ? [testLordsMint(lords, payer, pool)] : [];
+        const mint = await shortfallMint(account, lords, payer, pool, state.block);
         const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,
           frontierSeasonId: state.gameId,
@@ -287,12 +286,20 @@ export function seasonSteps(context: Season): Step[] {
   ];
 }
 
-function testLordsMint(lords: string, recipient: string, amount: bigint) {
-  return {
-    contractAddress: lords,
-    entrypoint: "mint",
-    calldata: CallData.compile([recipient, uint256.bnToUint256(amount)]),
-  };
+/**
+ * What the payer must mint before its deposit: a test token's shortfall, through its public mint. LORDS has no mint, so
+ * a payer short of LORDS is refused before any call is prepared.
+ */
+async function shortfallMint(provider: RpcProvider, lords: string, payer: string, pool: bigint, block: number) {
+  if ((await balance(provider, lords, payer, block)) >= pool) return [];
+  if (!isTestLords(lords)) throw new PublicError("The payer holds less LORDS than the deposit; send it LORDS first");
+  return [
+    {
+      contractAddress: lords,
+      entrypoint: "mint",
+      calldata: CallData.compile([payer, uint256.bnToUint256(pool)]),
+    },
+  ];
 }
 
 async function poolPublished(context: Season) {
