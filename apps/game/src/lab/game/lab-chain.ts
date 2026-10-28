@@ -107,7 +107,8 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
-  const herald = new LabHerald(chain, now, () => (record.streams += 1));
+  const events = new Set(nativeBindings.events.map((event) => event.name));
+  const herald = new LabHerald(chain, events, now, () => (record.streams += 1));
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
@@ -347,6 +348,8 @@ class LabHerald {
 
   constructor(
     private readonly chain: NativeFactStore,
+    /** The schema's event models: they ride a diff to the game and are never the chain's rows. */
+    private readonly events: ReadonlySet<string>,
     private readonly now: () => number,
     private readonly opened: () => void,
   ) {}
@@ -420,16 +423,30 @@ class LabHerald {
     }
   }
 
-  /** A command's facts land pre-confirmed in the next block, then its status. */
-  apply(hash: string, facts: LabFact[]) {
+  /**
+   * A command's facts land pre-confirmed in the next block, then its status. Its events ride the same diff, each with
+   * its place in the transaction, as Herald stamps them (a site's payout is paired with its battle by that place).
+   */
+  apply(hash: string, answered: LabFact[]) {
+    const facts = answered.filter((fact) => !this.events.has(fact.model));
     this.chain.applyFacts(facts as never);
     const block = ++this.block;
+    const events = answered
+      .filter((fact) => this.events.has(fact.model))
+      .map((event, index) => ({
+        model: event.model,
+        key: `${hash}:${index}`,
+        value: {
+          ...(event.value as Record<string, unknown>),
+          event_position: { block_number: block, transaction_hash: hash, transaction_index: 0, event_index: index },
+        },
+      }));
     this.sequenced({
       type: "diff",
       block,
       preconfirmed: true,
       transaction_hash: hash,
-      set: facts.filter((fact) => fact.value !== null),
+      set: [...facts.filter((fact) => fact.value !== null), ...events],
       del: facts.filter((fact) => fact.value === null).map(({ model, key }) => ({ model, key })),
     });
     this.sequenced({ type: "tx", hash, status: "PRE_CONFIRMED", block });

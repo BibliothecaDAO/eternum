@@ -1,14 +1,17 @@
 // @vitest-environment jsdom
+import { act } from "react";
+import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /** Where the army and the site stand on screen: the test puts them in the map's open area or out of it. */
 const onScreen = vi.hoisted(() => ({ point: { x: 700, y: 450 } }));
 vi.mock("@/three/utils/project-hex-to-screen", () => ({ projectHexToScreen: () => onScreen.point }));
+vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
 
 const { configManager, Position } = await import("@bibliothecadao/eternum");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
-const { pickArmyFor } = await import("@/ui/features/frontier/sites/selected-army");
-const { requestArmyShown, takeArmySelectRequest } = await import("./worldmap-army-select-request");
+const { usePickArmy } = await import("@/ui/features/frontier/army/army-opens");
+const { requestArmySelection, takeArmySelectRequest } = await import("./worldmap-army-select-request");
 const { MAP_CENTER, worldMapCamera } = await import("./worldmap-camera.test-support");
 
 const ARMY = 7;
@@ -40,6 +43,20 @@ const mapTakesRequest = async (world: ReturnType<typeof worldMapCamera>, frontie
   await world.scene.selectRequestedArmy(request);
 };
 
+/** A pick in the Armies list or the dock, through the hook both press (usePickArmy), on the world map. */
+const pickFromArmiesList = (explorerId: number) => {
+  window.history.replaceState({}, "", "/g/0xa1/1/map");
+  const Row = () => {
+    const pick = usePickArmy();
+    return <button onClick={() => pick(explorerId)}>Army</button>;
+  };
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  act(() => root.render(<Row />));
+  act(() => host.querySelector("button")!.click());
+  act(() => root.unmount());
+};
+
 const selectedArmy = () => useUIStore.getState().entityActions.selectedEntityId;
 
 const SCREENS = [
@@ -50,6 +67,7 @@ const SCREENS = [
 ] as const;
 
 beforeEach(() => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(MAP_CENTER);
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: null } }));
 });
@@ -59,71 +77,27 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-// Owner, 28 October 2026: "it moves the camera when I fight for example".
-describe("an army picked on a site's card to fight it", () => {
-  it.each(SCREENS)(
-    "on %s, is the card's actor and the camera stays where the player had it",
-    async (_, frontier, desktop) => {
-      screen(desktop);
-      for (const point of [inSight(desktop), OUT_OF_SIGHT]) {
-        onScreen.point = point;
-        const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX });
-        const before = world.scene.camera.position.clone();
-
-        pickArmyFor(ARMY, { col: MAP_CENTER + SITE_HEX.col, row: MAP_CENTER + SITE_HEX.row });
-        await mapTakesRequest(world, frontier);
-
-        expect(selectedArmy()).toBe(ARMY);
-        expect(world.openedCards).toEqual([{ col: MAP_CENTER + SITE_HEX.col, row: MAP_CENTER + SITE_HEX.row }]);
-        expect(world.aimed).toEqual([]);
-        expect(world.scene.camera.position).toEqual(before);
-      }
-    },
-  );
-
-  it("is brought into view when the map does not draw it where the camera looks, since only a drawn army is selected", async () => {
-    screen(true);
-    const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX, armyDrawn: false });
-
-    pickArmyFor(ARMY, { col: MAP_CENTER + SITE_HEX.col, row: MAP_CENTER + SITE_HEX.row });
-    await mapTakesRequest(world, true);
-
-    expect(world.aimed.length).toBeGreaterThan(0);
-    expect(world.openedCards).toEqual([{ col: MAP_CENTER + SITE_HEX.col, row: MAP_CENTER + SITE_HEX.row }]);
-  });
-});
-
-describe("an army shown from the HUD (its dock token, Next up, idle armies)", () => {
-  it.each(SCREENS)("on %s, in sight, is selected where it stands, the camera unmoved", async (_, frontier, desktop) => {
+// Owner, 28 October 2026: "I mean picking from here should center the camera indeed its a player request".
+describe("an army picked in the Armies list or the dock", () => {
+  it.each(SCREENS)("on %s, is framed and selected, in sight or not", async (_, frontier, desktop) => {
     screen(desktop);
-    onScreen.point = inSight(desktop);
-    const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX });
+    for (const point of [inSight(desktop), OUT_OF_SIGHT]) {
+      onScreen.point = point;
+      const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX });
 
-    requestArmyShown(ARMY);
-    await mapTakesRequest(world, frontier);
+      pickFromArmiesList(ARMY);
+      await mapTakesRequest(world, frontier);
 
-    expect(selectedArmy()).toBe(ARMY);
-    expect(world.aimed).toEqual([]);
+      expect(selectedArmy()).toBe(ARMY);
+      expect(world.aimed[0]).toEqual(ARMY_HEX);
+    }
   });
 
-  it.each(SCREENS)("on %s, out of sight, is framed and selected", async (_, frontier, desktop) => {
-    screen(desktop);
-    onScreen.point = OUT_OF_SIGHT;
-    const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX });
-
-    requestArmyShown(ARMY);
-    await mapTakesRequest(world, frontier);
-
-    expect(selectedArmy()).toBe(ARMY);
-    expect(world.aimed[0]).toEqual(ARMY_HEX);
-  });
-
-  it("with its target, frames both when the target is out of sight, and opens the target's card", async () => {
+  it("with a coach step's target, frames both and opens the target's card", async () => {
     screen(true);
-    onScreen.point = OUT_OF_SIGHT;
     const world = worldMapCamera(ARMY_HEX, { drawnAround: ARMY_HEX });
 
-    requestArmyShown(ARMY, Position.fromNormalized({ x: SITE_HEX.col, y: SITE_HEX.row }));
+    requestArmySelection(ARMY, Position.fromNormalized({ x: SITE_HEX.col, y: SITE_HEX.row }));
     await mapTakesRequest(world, true);
 
     expect(world.aimed.length).toBeGreaterThan(1);

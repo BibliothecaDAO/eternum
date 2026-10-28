@@ -75,11 +75,6 @@ const pressStep = async () => {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
-  // The map's canvas, where a hex's place on screen is read.
-  const canvas = document.createElement("canvas");
-  canvas.id = "main-canvas";
-  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1440, height: 900 }) as DOMRect;
-  document.body.replaceChildren(canvas);
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(CENTER);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({

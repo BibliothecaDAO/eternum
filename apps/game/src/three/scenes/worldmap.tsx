@@ -158,7 +158,6 @@ import {
 import throttle from "lodash/throttle";
 import { Box3, Color, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
-import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
 import { WorldmapProceduralTerrain, type TerrainPresentMetrics } from "@/three/terrain/worldmap-procedural-terrain";
 import type { TerrainPresentationEvent } from "@/three/terrain/worldmap-procedural-terrain";
@@ -8678,42 +8677,24 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * Selects the army the HUD asked for. Asked from a site's card or Next up, the card stays open on that site with the
-   * army as its actor: the attack's preview, or what the army lacks. The camera moves only when it must (cameraForArmy);
-   * a move can cross into another chunk, so it runs as the Tab shortcut does: the chunk under the framed view switches at
-   * once, without the delay a pan's switch waits out.
+   * Shows the army the HUD asked for: the player's request to look at it, so the camera frames it in the map's open area,
+   * in sight or not, and selects it. Asked with a site (a coach step's target), both are framed and the site's card opens
+   * with the army as its actor. The framing can cross into another chunk, so it runs as the Tab shortcut does: the chunk
+   * under the framed view switches at once, without the delay a pan's switch waits out.
    */
-  private async selectRequestedArmy({ entityId, forSite, look }: ArmySelectRequest): Promise<void> {
+  private async selectRequestedArmy({ entityId, forSite }: ArmySelectRequest): Promise<void> {
     const account = accountAddress();
     const position = this.getArmyDisplayPosition(entityId);
     if (account === null || !position) return;
     const army = Position.fromNormalized({ x: position.col, y: position.row });
-    const framed = forSite ? [army, forSite] : [army];
-    const reason = this.cameraForArmy(entityId, framed, look);
     await this.runShortcutArmySelection(async () => {
-      await this.focusAndSelectArmy(entityId, position, account, reason);
+      await this.focusAndSelectArmy(entityId, position, account, "show");
       if (getLiveWorldmapEntityActions().selectedEntityId !== entityId) return;
-      if (reason) this.frameOnOpenMap(framed, reason);
+      this.frameOnOpenMap(forSite ? [army, forSite] : [army], "show");
       if (!forSite) return;
       const site = forSite.getContract();
       this.openTargetCardForSelectedArmy({ col: site.x, row: site.y });
     });
-  }
-
-  /**
-   * Whether an army the HUD asked for moves the camera, and why. Shown, it is framed only when what is shown is not all
-   * in sight already. Picked for the card the player has open, the camera stays, unless the map does not draw the army
-   * where it looks and has to, to select it.
-   */
-  private cameraForArmy(entityId: number, framed: Position[], look: boolean): CameraNavigation | null {
-    if (look) return framed.every((position) => this.isInSight(position)) ? null : "show";
-    return this.armyManager.hasArmy(entityId) ? null : "reach";
-  }
-
-  /** Whether a map position stands in the map's open area, where the HUD covers nothing. */
-  private isInSight(position: Position): boolean {
-    const viewport = { width: window.innerWidth, height: window.innerHeight };
-    return inOpenMapArea(projectHexToScreen(cameraHexOf(position), this.camera), viewport);
   }
 
   /**

@@ -17,15 +17,11 @@ export const MAP_CENTER = 2147483646;
 /**
  * The world map's camera, read as a player's eye: every hex the scene moves or frames the camera onto, as scene
  * (normalized) hexes. The scene's own methods run, the army's selection included; only drawing and chunk loading are
- * left out. The player's army stands on `army` (a scene hex), drawn by the map unless `armyDrawn` is false. A chunk
- * switch keeps the selection, so a framing into another chunk changes nothing here. Given `drawnAround`, the map has
- * already drawn its first pass around that hex; each time it draws the world again, the origin it draws around is kept
- * in `redrawnAround`.
+ * left out. The player's army stands on `army` (a scene hex), as the map draws it. A chunk switch keeps the selection,
+ * so a framing into another chunk changes nothing here. Given `drawnAround`, the map has already drawn its first pass
+ * around that hex; each time it draws the world again, the origin it draws around is kept in `redrawnAround`.
  */
-export const worldMapCamera = (
-  army: HexPosition,
-  { drawnAround, armyDrawn = true }: { drawnAround?: HexPosition; armyDrawn?: boolean } = {},
-) => {
+export const worldMapCamera = (army: HexPosition, { drawnAround }: { drawnAround?: HexPosition } = {}) => {
   const aimed: HexPosition[] = [];
   const redrawnAround: HexPosition[] = [];
   setWorldOrigin(drawnAround ?? { col: 0, row: 0 });
@@ -47,7 +43,6 @@ export const worldMapCamera = (
       aimed.push(WORLD_HEX_SPACE.hexForPosition({ x, y, z }));
     },
     getArmyDisplayPosition: () => army,
-    armyManager: { hasArmy: () => armyDrawn },
     runShortcutArmySelection: async (select: () => Promise<void>) => select(),
     refreshChunksAfterShortcutNavigation: async () => {},
     handleHexSelection: () => {},

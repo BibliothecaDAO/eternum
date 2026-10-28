@@ -1,7 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { openPlace } from "@/play/navigation/open-place";
 import { leaveRealmVisit } from "@/sync/active-game-client";
-import { requestArmyShown } from "@/three/scenes/worldmap-army-select-request";
+import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
 import { useAccountStore } from "../store/use-account-store";
 import { configManager, entityMapPosition, Position } from "@bibliothecadao/eternum";
 
@@ -11,9 +11,9 @@ import { ID } from "@bibliothecadao/types";
 import { useUIStore } from "../store/use-ui-store";
 
 /**
- * Shows one of the player's armies on the world map from any view: on the map at once, framed when out of sight; from
- * another view the map opens at the army's tile and selects it once it is shown. Given a site, the site's card opens
- * with the army as its actor.
+ * Selects one of the player's armies on the world map from any view: on the map at once; from another view the map
+ * opens at the army's tile and selects it once it is shown. Given a site, the site's card opens with the army as its
+ * actor.
  */
 export const useSelectArmyOnMap = () => {
   const { setup } = useGame();
@@ -25,7 +25,7 @@ export const useSelectArmyOnMap = () => {
         Position.fromContract(entityMapPosition(setup.store, configManager.getActiveGameId(), entityId)),
       );
     }
-    requestArmyShown(entityId, forSite);
+    requestArmySelection(entityId, forSite);
   };
 };
 
