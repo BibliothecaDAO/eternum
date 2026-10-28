@@ -520,6 +520,9 @@ merge emptied opens none.
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies
 above the highest ground under it.
 
+`/lab/game?scenario=painted-buildings-sands` is the painted-buildings Kingdom on beach sand, palms around its board: the
+realm view's light and shadows on palms and buildings together (`&scene=hex` opens the realm).
+
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots
 light, and the realm view stands at City (18 plots), as it does after going to the World and back.
