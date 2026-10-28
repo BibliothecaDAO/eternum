@@ -973,13 +973,11 @@ describe("identity Worker", () => {
     }
   };
 
-  it("gives each flyer's ticket to its first account only, golden or regular as the code says, told to that account alone", async () => {
+  describe("flyer redemption", () => {
     const printed = async (code: string, tier: "regular" | "golden") =>
       env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
         .bind("devcon-2026", await campaignCodeHash("devcon-2026", code), tier)
         .run();
-    await printed("T9HW3NPB", "golden");
-    await printed("K7M2QX4R", "regular");
     const player = async (name: string) => {
       const browser = createBrowser();
       await signInWithCode(browser, `${name}@realms.test`);
@@ -993,55 +991,74 @@ describe("identity Worker", () => {
     };
     const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
     const taken = [410, { error: "ticket_taken" }];
+    type Player = Awaited<ReturnType<typeof player>>;
+    let first: Player, second: Player, regular: Player, other: Player, late: Player;
+    let goldenRacers: [Player, Player], regularRacers: [Player, Player];
 
-    const first = await player("golden-first");
-    expect(await first.redeem("t9hw3npb")).toEqual(ticket("golden"));
-    // A retry, or another flyer's code, answers the ticket the account already holds and spends nothing.
-    expect(await first.redeem("T9HW3NPB")).toEqual(ticket("golden"));
-    expect(await first.redeem("K7M2QX4R")).toEqual(ticket("golden"));
-    expect(await first.redeem()).toEqual(ticket("golden"));
-    const second = await player("golden-second");
-    expect(await second.redeem("T9HW3NPB")).toEqual(taken);
-    const regular = await player("regular-flyer");
-    expect(await regular.redeem("K7M2QX4R")).toEqual(ticket("regular"));
-    expect(await second.redeem("K7M2QX4R")).toEqual(taken);
-    // Only a printed code opens a ticket: none, or one no flyer carries, opens nothing.
-    expect(await second.redeem()).toEqual([400, { error: "invalid_redemption" }]);
-    expect(await second.redeem("ZZZZZZZZ")).toEqual(taken);
-    expect(await (await player("other-campaign")).redeem("T9HW3NPB", "devcon-2025")).toEqual([
-      400,
-      { error: "invalid_redemption" },
-    ]);
-    const signedOut = await createBrowser().request("/api/campaigns/redeem", {
-      body: { campaign: "devcon-2026", code: "K7M2QX4R" },
+    beforeAll(async () => {
+      [first, second, regular, other, late] = await Promise.all([
+        player("golden-first"),
+        player("golden-second"),
+        player("regular-flyer"),
+        player("other-campaign"),
+        player("after-devcon"),
+      ]);
+      [goldenRacers, regularRacers] = await Promise.all([
+        Promise.all([player("race-a-golden"), player("race-b-golden")]),
+        Promise.all([player("race-a-regular"), player("race-b-regular")]),
+      ]);
     });
-    expect(signedOut.status).toBe(401);
 
-    // Two accounts redeeming one flyer at once: one ticket, golden or regular alike.
-    await printed("GQ2MZ7XA", "golden");
-    await printed("R8VNC4TW", "regular");
-    for (const code of ["GQ2MZ7XA", "R8VNC4TW"]) {
-      const [racerA, racerB] = await Promise.all([player(`race-a-${code}`), player(`race-b-${code}`)]);
-      const raced = await Promise.all([racerA.redeem(code), racerB.redeem(code)]);
-      expect(raced.map(([status]) => status).sort()).toEqual([200, 410]);
-    }
-
-    // The relay reads the ticket for a game of the campaign's preset (Devcon is 6).
-    expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "golden" });
-    expect(await campaignTicketFor(env.DB, regular.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "regular" });
-    expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toBeNull();
-    expect(await campaignTicketFor(env.DB, first.realmsId, 5)).toBeNull();
-
-    // After the season, a new ticket is refused; one already held still answers.
-    await printed("M3XKP7HQ", "regular");
-    const late = await player("after-devcon");
-    const now = vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 6, 14, 30));
-    try {
-      expect(await late.redeem("M3XKP7HQ")).toEqual([410, { error: "campaign_closed" }]);
+    it("gives each flyer's ticket to its first account only and keeps retries from spending another code", async () => {
+      await printed("T9HW3NPB", "golden");
+      await printed("K7M2QX4R", "regular");
+      expect(await first.redeem("t9hw3npb")).toEqual(ticket("golden"));
       expect(await first.redeem("T9HW3NPB")).toEqual(ticket("golden"));
-    } finally {
-      now.mockRestore();
-    }
+      expect(await first.redeem("K7M2QX4R")).toEqual(ticket("golden"));
+      expect(await first.redeem()).toEqual(ticket("golden"));
+      expect(await second.redeem("T9HW3NPB")).toEqual(taken);
+      expect(await regular.redeem("K7M2QX4R")).toEqual(ticket("regular"));
+      expect(await second.redeem("K7M2QX4R")).toEqual(taken);
+      expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "golden" });
+      expect(await campaignTicketFor(env.DB, regular.realmsId, 6)).toEqual({
+        campaign: "devcon-2026",
+        tier: "regular",
+      });
+      expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toBeNull();
+      expect(await campaignTicketFor(env.DB, first.realmsId, 5)).toBeNull();
+    });
+
+    it("refuses bare links, unknown codes, other campaigns and signed-out redemption", async () => {
+      expect(await other.redeem()).toEqual([400, { error: "invalid_redemption" }]);
+      expect(await other.redeem("ZZZZZZZZ")).toEqual(taken);
+      expect(await other.redeem("T9HW3NPB", "devcon-2025")).toEqual([400, { error: "invalid_redemption" }]);
+      const signedOut = await createBrowser().request("/api/campaigns/redeem", {
+        body: { campaign: "devcon-2026", code: "K7M2QX4R" },
+      });
+      expect(signedOut.status).toBe(401);
+    });
+
+    it.each(["golden", "regular"] as const)("gives a raced %s flyer to exactly one account", async (tier) => {
+      const code = tier === "golden" ? "GQ2MZ7XA" : "R8VNC4TW";
+      await printed(code, tier);
+      const racers = tier === "golden" ? goldenRacers : regularRacers;
+      const raced = await Promise.all(racers.map((racer) => racer.redeem(code)));
+      expect(raced.map(([status]) => status).sort()).toEqual([200, 410]);
+      expect(raced.find(([status]) => status === 200)).toEqual(ticket(tier));
+    });
+
+    it("refuses a new ticket after the season but still answers a held ticket", async () => {
+      await printed("M3XKP7HQ", "regular");
+      await printed("Z9X2M4NH", "golden");
+      expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));
+      const now = vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 6, 14, 30));
+      try {
+        expect(await other.redeem("M3XKP7HQ")).toEqual([410, { error: "campaign_closed" }]);
+        expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));
+      } finally {
+        now.mockRestore();
+      }
+    });
   });
 
   it("prints flyers whose codes, once loaded, give exactly the campaign's golden count of golden tickets", async () => {
