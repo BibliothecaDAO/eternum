@@ -250,6 +250,10 @@ and verbs; a words-only notice keeps its text.
   mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
   **Results**. Eternum: when it opens.
 - A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
+- Founding a Frontier home (the game's entry, **Found your realm**): **Your Realms** lists the Realms your linked wallet
+  holds, from the marketplace's Realm index; press one to fill **Realm number**, or type it (the only way when the index
+  is down). The relay checks the holder on the index, then live on Starknet, so a Realm just bought still counts; when
+  neither answers it says **Realm check unavailable. Try again.**
 - A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
   Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby's **Back**
   leads to Play. Sign-in from You or Settings returns to the page it was asked from.

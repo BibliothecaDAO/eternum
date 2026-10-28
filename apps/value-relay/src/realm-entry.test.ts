@@ -1,7 +1,12 @@
 import { beforeEach, expect, it, vi } from "vitest";
 import { CairoOption, CairoOptionVariant, CallData, shortString } from "starknet";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
-import { handleRealmEntryRequest, registerHomeSource, type RealmEntryClaim } from "./realm-entry";
+import {
+  handleHeldRealmsRequest,
+  handleRealmEntryRequest,
+  registerHomeSource,
+  type RealmEntryClaim,
+} from "./realm-entry";
 const io = vi.hoisted(() => ({
   snapshot: vi.fn(),
   view: vi.fn(),
@@ -10,6 +15,7 @@ const io = vi.hoisted(() => ({
   account: vi.fn(),
   wallet: vi.fn(),
   ticket: vi.fn(),
+  held: vi.fn(),
 }));
 vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
@@ -38,7 +44,9 @@ const target = {
   identity: {
     accountForRealmsId: io.account,
     linkedWallet: io.wallet,
-    realmOwnerOf: io.owner,
+    /** The chain's owner of the Realm, as identity's holdings reader answers for a wallet. */
+    holdsRealm: async (wallet: string, realmId: number) => BigInt(await io.owner(String(realmId))) === BigInt(wallet),
+    heldRealms: io.held,
     campaignTicket: io.ticket,
   },
 };
@@ -153,6 +161,27 @@ it("answers realm_not_owned through the HTTP route", async () => {
   const response = await handleRealmEntryRequest(request({ gameId: 7, realmId: 711 }), route());
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: "realm_not_owned" });
+});
+it("asks the player to retry, never refuses, when no holdings source answers", async () => {
+  io.owner.mockRejectedValue(new Error("realm_holdings_unavailable"));
+  const response = await handleRealmEntryRequest(request({ gameId: 7, realmId: 711 }), route());
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({ error: "realm_check_unavailable" });
+  expect(io.admin).not.toHaveBeenCalled();
+});
+it("lists the linked wallet's Realms for the settle picker, none without a wallet, and a retry when the index is down", async () => {
+  const deps = { ...route(), identity: target.identity };
+  io.held.mockResolvedValue([3, 251]);
+  const listed = await handleHeldRealmsRequest(request({}), deps);
+  expect(await listed.json()).toEqual({ realms: [3, 251] });
+  expect(io.held).toHaveBeenCalledExactlyOnceWith("0x456");
+  io.wallet.mockResolvedValue(null);
+  expect(await (await handleHeldRealmsRequest(request({}), deps)).json()).toEqual({ realms: [] });
+  io.wallet.mockResolvedValue("0x456");
+  io.held.mockRejectedValue(new Error("realm_holdings_unavailable"));
+  const down = await handleHeldRealmsRequest(request({}), deps);
+  expect(down.status).toBe(503);
+  expect(await down.json()).toEqual({ error: "realm_holdings_unavailable" });
 });
 it.each([0, 8001, 1.5, "711"])("refuses invalid Realm number %s", async (realmId) => {
   const deps = route();

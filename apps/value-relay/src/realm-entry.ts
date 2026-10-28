@@ -35,6 +35,23 @@ export const handleRealmEntryRequest = (request: Request, route: RealmEntryRoute
     return route.register({ gameId: body.gameId, realmId: body.realmId ?? null, ...player, chainId: route.chainId });
   });
 
+/** The Realms the player's linked wallet holds, for the settle picker; none without a linked wallet. */
+export const handleHeldRealmsRequest = (request: Request, route: PlayerIdentity & { identity: HoldingsIdentity }) =>
+  playerRequest(request, route, async (player) => ({ realms: await readHeldRealms(route.identity, player.realmsId) }));
+
+interface HoldingsIdentity {
+  linkedWallet(id: string): Promise<string | null>;
+  heldRealms(wallet: string): Promise<number[]>;
+}
+
+async function readHeldRealms(identity: HoldingsIdentity, realmsId: string): Promise<number[]> {
+  const wallet = await identity.linkedWallet(realmsId);
+  if (!wallet) return [];
+  return identity.heldRealms(wallet).catch(() => {
+    throw new PlayerRequestError(503, "realm_holdings_unavailable");
+  });
+}
+
 interface RealmEntryTarget {
   connection: ShardConnection;
   heraldUrl: string;
@@ -43,7 +60,7 @@ interface RealmEntryTarget {
   identity: {
     accountForRealmsId(id: string): Promise<string | null>;
     linkedWallet(id: string): Promise<string | null>;
-    realmOwnerOf(id: string): Promise<string>;
+    holdsRealm(wallet: string, realmId: number): Promise<boolean>;
     campaignTicket(realmsId: string, presetId: number): Promise<{ campaign: string; tier: TicketTier } | null>;
   };
 }
@@ -157,11 +174,14 @@ async function requireOpenFrontier(connection: ShardConnection, snapshot: Confir
     throw new PlayerRequestError(409, "settlement_closed");
 }
 
-async function requireHeldWallet(identity: RealmEntryTarget["identity"], claim: RealmEntryClaim) {
+/** The linked wallet holds the Realm; an unanswerable check asks the player to retry rather than refusing them. */
+async function requireHeldWallet(identity: RealmEntryTarget["identity"], claim: RealmEntryClaim & { realmId: number }) {
   const wallet = await identity.linkedWallet(claim.realmsId);
   if (!wallet) throw new PlayerRequestError(409, "realm_wallet_missing");
-  if (!sameFelt(await identity.realmOwnerOf(String(claim.realmId)), wallet))
-    throw new PlayerRequestError(409, "realm_not_owned");
+  const held = await identity.holdsRealm(wallet, claim.realmId).catch(() => {
+    throw new PlayerRequestError(503, "realm_check_unavailable");
+  });
+  if (!held) throw new PlayerRequestError(409, "realm_not_owned");
 }
 
 function matchingEntry(entry: Entitlement, realmId: number): HomeSource {

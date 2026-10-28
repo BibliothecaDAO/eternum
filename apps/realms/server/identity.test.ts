@@ -105,6 +105,7 @@ beforeAll(async () => {
     BASE_URL: ORIGIN,
     BETTER_AUTH_SECRET: "identity-test-secret-identity-test-secret",
     RATING_READER: {} as IdentityEnv["RATING_READER"],
+    MARKETPLACE_API_URL: "https://market.test/api/marketplace",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
     DISCORD_CLIENT_ID: "discord-client",

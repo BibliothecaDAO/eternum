@@ -572,6 +572,7 @@ export const partialRealmLabor = (fits: number, total: number) =>
 export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
+export const YOUR_REALMS = "Your Realms";
 export const FREE_REALM_ENTRY = "Free home · no daily Labor";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 

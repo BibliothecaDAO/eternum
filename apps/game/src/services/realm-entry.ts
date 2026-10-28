@@ -21,6 +21,19 @@ export async function registerHomeSource(game: GameRef, realmId: number | null):
     realm_registration_refused: "Choose another Realm or leave blank.",
     conflicting_entry_entitlement: "Use the Realm number already registered.",
     settlement_closed: "This game's settlement is closed.",
+    realm_check_unavailable: "Realm check unavailable. Try again.",
   };
   throw new Error(messages[reply?.error ?? ""] ?? "Realm registration failed. Try again.");
+}
+
+/** The Realms the player's linked wallet holds, from the Realm holdings index; empty without a linked wallet. */
+export async function readHeldRealms(): Promise<number[]> {
+  const response = await fetchApi("/api/value/held-realms", {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!response.ok) throw new Error("held_realms_unavailable");
+  return ((await response.json()) as { realms: number[] }).realms;
 }

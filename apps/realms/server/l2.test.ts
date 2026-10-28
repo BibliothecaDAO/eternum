@@ -1,7 +1,6 @@
-import dev from "../../../contracts/common/addresses/dev.json";
 import { afterEach, expect, it, vi } from "vitest";
 import { RpcProvider } from "starknet";
-import { identityL2Configuration, identityProvider, verifyIdentityChain, realmOwnerOf, fetchIdentityRpc } from "./l2";
+import { identityL2Configuration, identityProvider, verifyIdentityChain, fetchIdentityRpc } from "./l2";
 import { decodeIdentityEnv, socialProvidersOf, vapidKeysOf } from "./env";
 import { verifyWalletOnL2 } from "./wallet-signature";
 
@@ -41,17 +40,7 @@ it("refuses a provider on another chain before any Realm or wallet read", async 
   await expect(verifyWalletOnL2(env)(message, ["0x1", "0x2"], "0x123")).rejects.toThrow("identity_l2_chain_mismatch");
   expect(deployments).not.toHaveBeenCalled();
   await expect(verifyIdentityChain(identityProvider(env), env)).rejects.toThrow("identity_l2_chain_mismatch");
-  await expect(realmOwnerOf(env, "7")).rejects.toThrow("identity_l2_chain_mismatch");
   expect(calls).not.toHaveBeenCalled();
-});
-it("reads Realm ownership on the configured chain with full u256 calldata", async () => {
-  vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
-  const calls = vi.spyOn(RpcProvider.prototype, "callContract").mockResolvedValue(["0x123"]);
-  expect(await realmOwnerOf(env, String(2n ** 128n + 4n))).toBe("0x123");
-  expect(calls).toHaveBeenCalledWith(
-    { contractAddress: dev.realms, entrypoint: "owner_of", calldata: ["4", "1"] },
-    "latest",
-  );
 });
 it("accepts mainnet SIWS and refuses another proof chain without a signature or deployment read", async () => {
   vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
@@ -133,6 +122,7 @@ it("requires the generated push pair but no Discord or duplicated constants", ()
     RESEND_API_KEY: "test-email",
     WEB_PUSH_VAPID_PUBLIC_KEY: "public-test-key",
     WEB_PUSH_VAPID_PRIVATE_KEY: "private-test-key",
+    MARKETPLACE_API_URL: "https://market.test/api/marketplace",
   };
   const decoded = decodeIdentityEnv(settings);
   expect(socialProvidersOf(decoded)).toEqual({});
@@ -141,6 +131,6 @@ it("requires the generated push pair but no Discord or duplicated constants", ()
     privateKey: "private-test-key",
     subject: "mailto:ops@realms.party",
   });
-  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY"])
+  for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY", "MARKETPLACE_API_URL"])
     expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
 });

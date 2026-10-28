@@ -7,7 +7,8 @@ import { normalizeStarknetAddress, type LedgerPayDecision } from "@realms-world/
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { ACCOUNT_CLASS_HASH, decodeIdentityEnv, type IdentityEnv } from "./env";
 import { encodeChainName } from "@realms-world/chain";
-import { identityL2Configuration, realmOwnerOf } from "./l2";
+import { identityL2Configuration } from "./l2";
+import { heldRealms, holdsRealm } from "./realm-holdings";
 import { realmsIdsOfAccounts } from "./realms-accounts";
 import { readLinkedWallet } from "./linked-wallet";
 import { campaignTicketFor } from "./campaign-ticket-store";
@@ -23,8 +24,11 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   override fetch() {
     return new Response(null, { status: 404 });
   }
-  realmOwnerOf(realmId: string) {
-    return realmOwnerOf(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), realmId);
+  holdsRealm(wallet: string, realmId: number) {
+    return holdsRealm(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet, realmId);
+  }
+  heldRealms(wallet: string) {
+    return heldRealms(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet);
   }
   async recordPayDecisions(decisions: LedgerPayDecision[]) {
     for (const decision of decisions) await recordPayDecision(this.env.DB, decision);

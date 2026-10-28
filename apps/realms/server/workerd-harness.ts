@@ -100,6 +100,7 @@ export const startWorker = async (options: {
       BASE_URL: ORIGIN,
       VERSION: { id: "workerd-test", tag: "", timestamp: "" },
       BETTER_AUTH_SECRET: "workerd-test-secret-workerd-test-secret",
+      MARKETPLACE_API_URL: "https://market.test/api/marketplace",
       L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
       OPERATOR_TOKEN: "unused",
       RESEND_API_KEY: "unused",

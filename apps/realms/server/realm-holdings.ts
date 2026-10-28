@@ -1,0 +1,113 @@
+import { environmentL2, valuePlaneAddress } from "@realms-world/chain";
+import { RpcError } from "starknet";
+import { identityProvider, verifyIdentityChain } from "./l2";
+
+/**
+ * The one reader of Realm NFT holdings. The marketplace indexer answers what it knows (each Realm's owner, a wallet's
+ * Realms); the chain answers the rest. A check is refused only by a live `owner_of` read, never by indexer lag.
+ */
+interface HoldingsEnvironment {
+  ENVIRONMENT: import("@realms-world/chain").ValueEnvironment;
+  L2_RPC_URL: string;
+  /** The marketplace API's base, up to (not including) `/v1`. */
+  MARKETPLACE_API_URL: string;
+}
+
+/** A holdings answer could not be had from either source; the player can retry. */
+export class RealmHoldingsUnavailableError extends Error {
+  constructor() {
+    super("realm_holdings_unavailable");
+  }
+}
+
+const INDEXER_TIMEOUT_MS = 3_000;
+/** 8,000 Realms at the indexer's 100 a page. */
+const MAX_HOLDING_PAGES = 80;
+
+/** Whether `wallet` holds Realm `realmId`: the indexer's yes, else the chain's live answer. */
+export async function holdsRealm(env: HoldingsEnvironment, wallet: string, realmId: number): Promise<boolean> {
+  if (sameAddress(await indexedOwner(env, realmId), wallet)) return true;
+  try {
+    return sameAddress(await liveRealmOwner(env, realmId), wallet);
+  } catch (error) {
+    if (isMissingToken(error)) return false;
+    throw new RealmHoldingsUnavailableError();
+  }
+}
+
+/** Every Realm the indexer has `wallet` holding, ascending. The chain cannot list them, so there is no fallback. */
+export async function heldRealms(env: HoldingsEnvironment, wallet: string): Promise<number[]> {
+  const realms: number[] = [];
+  let cursor: string | null = null;
+  for (let page = 0; page < MAX_HOLDING_PAGES; page += 1) {
+    const holdings: HoldingsPage | null = await readIndexer<HoldingsPage>(env, holdingsPath(env, wallet, cursor));
+    if (!holdings) throw new RealmHoldingsUnavailableError();
+    realms.push(
+      ...holdings.items.filter((token) => sameAddress(token.owner, wallet)).map((token) => Number(token.tokenId)),
+    );
+    cursor = holdings.nextCursor;
+    if (!cursor) return realms.sort((a, b) => a - b);
+  }
+  throw new RealmHoldingsUnavailableError();
+}
+
+interface IndexedToken {
+  tokenId: string;
+  owner: string;
+}
+interface HoldingsPage {
+  items: IndexedToken[];
+  nextCursor: string | null;
+}
+
+/** The indexer's owner of a Realm; null when it is down, slow, or has no such token. */
+async function indexedOwner(env: HoldingsEnvironment, realmId: number): Promise<string | null> {
+  const token = await readIndexer<IndexedToken>(env, `tokens/${realmsCollection(env)}/${realmId}`);
+  return token?.owner ?? null;
+}
+
+const holdingsPath = (env: HoldingsEnvironment, wallet: string, cursor: string | null) => {
+  const query = new URLSearchParams({ collection: realmsCollection(env), limit: "100" });
+  if (cursor) query.set("cursor", cursor);
+  return `accounts/${wallet}/holdings?${query}`;
+};
+
+/** One indexer read with a short timeout; any failure is null, so the caller decides what to fall back to. */
+async function readIndexer<T>(env: HoldingsEnvironment, path: string): Promise<T | null> {
+  const { chain } = environmentL2(env.ENVIRONMENT);
+  try {
+    const response = await fetch(`${env.MARKETPLACE_API_URL}/v1/chains/${chain}/${path}`, {
+      signal: AbortSignal.timeout(INDEXER_TIMEOUT_MS),
+      redirect: "error",
+    });
+    if (!response.ok) return null;
+    return ((await response.json()) as { data: T }).data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** The Realm's owner read live on the environment chain. */
+async function liveRealmOwner(env: HoldingsEnvironment, realmId: number): Promise<string> {
+  const id = BigInt(realmId);
+  const provider = identityProvider(env);
+  await verifyIdentityChain(provider, env);
+  const owner = await provider.callContract(
+    {
+      contractAddress: realmsCollection(env),
+      entrypoint: "owner_of",
+      calldata: [String(id & (2n ** 128n - 1n)), String(id >> 128n)],
+    },
+    "latest",
+  );
+  if (owner.length !== 1 || BigInt(owner[0]!) <= 0n || BigInt(owner[0]!) >= (1n << 251n) - 256n)
+    throw new Error("invalid_realm_owner");
+  return owner[0]!;
+}
+
+const realmsCollection = (env: HoldingsEnvironment) => valuePlaneAddress("realms", env.ENVIRONMENT);
+
+/** A Realm never minted on this chain reverts `owner_of`: no one holds it. */
+const isMissingToken = (error: unknown) => error instanceof RpcError && error.isType("CONTRACT_ERROR");
+
+const sameAddress = (a: string | null, b: string) => a !== null && BigInt(a) === BigInt(b);

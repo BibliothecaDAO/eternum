@@ -1,4 +1,4 @@
-import { encodeChainName, environmentL2, valuePlaneAddress } from "@realms-world/chain";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
 import { RpcProvider } from "starknet";
 
 interface L2Environment {
@@ -30,25 +30,6 @@ export const verifyIdentityChain = async (provider: RpcProvider, env: L2Environm
   const { chainId } = identityL2Configuration(env);
   if (BigInt(await provider.getChainId()) !== BigInt(encodeChainName(chainId)))
     throw new Error("identity_l2_chain_mismatch");
-};
-
-/** Labor ownership uses the same chain/RPC as wallet proof and ratings; the relay has no second Realms reader. */
-export const realmOwnerOf = async (env: L2Environment, realmId: string) => {
-  const id = BigInt(realmId);
-  if (id < 0n || id >= 2n ** 256n) throw new Error("invalid_realm_id");
-  const provider = identityProvider(env);
-  await verifyIdentityChain(provider, env);
-  const owner = await provider.callContract(
-    {
-      contractAddress: valuePlaneAddress("realms", env.ENVIRONMENT),
-      entrypoint: "owner_of",
-      calldata: [String(id & (2n ** 128n - 1n)), String(id >> 128n)],
-    },
-    "latest",
-  );
-  if (owner.length !== 1 || BigInt(owner[0]!) <= 0n || BigInt(owner[0]!) >= (1n << 251n) - 256n)
-    throw new Error("invalid_realm_owner");
-  return owner[0]!;
 };
 
 const isMainnetAlchemy = (url: URL) => {
