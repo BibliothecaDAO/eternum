@@ -1,6 +1,7 @@
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import type { ChestRarity } from "@/three/rewards/chest-rarity-glow";
+import { CHEST_VEIL_SECONDS } from "@/three/rewards/reward-stage";
 import {
   onRewardChestBeat,
   type RewardChestBeat,
@@ -18,15 +19,14 @@ import { createPortal } from "react-dom";
 
 /** How long the LORDS take to count up once the lid opens: long enough to feel their weight. */
 const LORDS_ROLL_MS = 1_300;
-/** How long the veil takes to fall and to lift. */
-const VEIL_SECONDS = 0.35;
 
 /** One staged chest's moment: its presentation, what it gives, and whether its lid has opened yet. */
 type Moment = { id: number; request: RewardChestRequest; opened: boolean };
 
 /**
- * A reward chest's moment around it, while the world map stages it at the centre of the screen: the rest of the
- * screen darkens so the chest is the one thing to look at, and as the lid opens its LORDS are the hero, counted up
+ * A reward chest's moment around it, while the world map stages it over the board (RewardStage, which veils the board
+ * under the chest): this veil darkens the HUD around it so the chest is the one thing to look at, and as the lid opens
+ * its LORDS are the hero, counted up
  * large under it in front of light rays in its rarity, to Frontier's chest sounds; then the veil lifts as the chest
  * goes. It keeps no time of its own: it follows the chest's beats (shown, opened, ended) as the chest reaches them,
  * whatever the frame rate, and ends whenever the chest does, cancelled, replaced or left with the map. It takes no
@@ -67,7 +67,7 @@ const ChestMoment = ({ request, opened }: { request: RewardChestRequest; opened:
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      transition={{ duration: VEIL_SECONDS, ease: EASE.outQuart }}
+      transition={{ duration: CHEST_VEIL_SECONDS, ease: EASE.outQuart }}
     >
       <div className="ui-chest-moment__veil" />
       {opened && <ChestWinnings request={request} />}

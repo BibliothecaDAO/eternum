@@ -22,8 +22,8 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
-import { screenCentrePlacement } from "../rewards/screen-centre-placement";
-import { CENTRE_KEY, type ReadyStage, ScreenCentreStage } from "../rewards/screen-centre-stage";
+import { type ReadyStage, RewardStage } from "../rewards/reward-stage";
+import type { RendererOverlayPass } from "../renderer-backend";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex } from "../utils";
@@ -57,14 +57,14 @@ import {
 } from "../frame-budget-work-queue";
 
 const MAX_INSTANCES = 1000;
-/** How much of the screen's height the centred chest fills, whatever the zoom. */
-const CENTRE_SCREEN_SHARE = 0.22;
 
 export class ChestManager {
   private scene: THREE.Scene;
   private chestModel?: RewardTileModel;
   private modelLoadPromise?: Promise<void>;
   private chestTransitions?: ChestTransitions;
+  /** The reward stage's own chest, drawn over the map in the stage's pass. */
+  private stagedChest?: ChestTransitions;
   private renderedChunk: string | null = null;
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
@@ -158,9 +158,7 @@ export class ChestManager {
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
     if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
-    // A chest staged at the screen's centre shows at every zoom; the map's own chests follow the ladder.
-    if (this.chestTransitions)
-      this.chestTransitions.group.visible = ladder.structureModels || this.chestTransitions.has(CENTRE_KEY);
+    if (this.chestTransitions) this.chestTransitions.group.visible = ladder.structureModels;
     this.pointsRenderer?.setEnabled(ladder.entityIcons);
     this.labelsGroup.visible = ladder.labels;
   }
@@ -230,6 +228,8 @@ export class ChestManager {
     }
 
     this.chestTransitions?.dispose();
+    this.rewardStage.dispose();
+    this.stagedChest?.dispose();
 
     // Clean up points renderer
     if (this.pointsRenderer) {
@@ -262,22 +262,28 @@ export class ChestManager {
   private async loadModel(): Promise<void> {
     let model: RewardTileModel | undefined;
     let transitions: ChestTransitions | undefined;
+    let staged: ChestTransitions | undefined;
     try {
       const gltf = await gltfLoader.loadAsync(ChestModelPath);
       model = new RewardTileModel(gltf, MAX_INSTANCES);
       transitions = new ChestTransitions(gltf);
+      staged = new ChestTransitions(gltf, 1);
       await this.compilePipelines(model.group, this.scene);
       await transitions.prepare(this.compilePipelines, this.scene);
+      await staged.prepare(this.compilePipelines, this.rewardStage.scene);
       if (this.isDestroyed) {
+        staged.dispose();
         transitions.dispose();
         model.dispose();
         return;
       }
       this.chestModel = model;
       this.chestTransitions = transitions;
+      this.stagedChest = staged;
       this.scene.add(model.group, transitions.group);
       this.applyContentLadder(this.contentLadder);
     } catch (error) {
+      staged?.dispose();
       transitions?.dispose();
       model?.dispose();
       throw error;
@@ -326,34 +332,33 @@ export class ChestManager {
   }
 
   /**
-   * A reward's chest at the centre of the screen: it arrives on the ground the camera looks at, sized to the screen
-   * whatever the zoom, opens by itself in `glow`, and goes, telling `beats` as it reaches each. A chest already staged
-   * there ends first. Nothing on the map is replaced or held. The chest's model loads first when no chest on the map has
-   * needed it yet; a request ended or superseded meanwhile stages nothing (ScreenCentreStage).
+   * A reward's chest, staged over everything at the centre of the screen (RewardStage): it arrives, opens by itself in
+   * `glow`, and goes, telling `beats` as it reaches each. A chest already staged there ends first. Nothing on the map is
+   * replaced or held. The chest's model loads first when no chest on the map has needed it yet; a request ended or
+   * superseded meanwhile stages nothing.
    */
-  public async presentAtScreenCentre(beats: ChestPresentationBeats, glow?: ChestGlow): Promise<boolean> {
-    const presented = await this.centreStage.present(beats, glow);
-    this.applyContentLadder(this.contentLadder);
-    return presented;
+  public presentAtScreenCentre(beats: ChestPresentationBeats, glow?: ChestGlow): Promise<boolean> {
+    return this.rewardStage.present(beats, glow);
   }
 
-  /** Ends the chest staged at the screen's centre and any still loading, as when the map is left mid-moment. */
+  /** Ends the staged chest and any still loading, as when the map is left mid-moment. */
   public endScreenCentrePresentation(): void {
-    this.centreStage.end(this.chestTransitions);
-    this.applyContentLadder(this.contentLadder);
+    this.rewardStage.end();
   }
 
-  /** The centre's chest once its model is ready: where it stands now; none when it cannot stand anywhere. */
-  private readonly prepareCentreStage = async (): Promise<ReadyStage | null> => {
+  /** The reward stage's passes, drawn over the map while a chest is staged; none otherwise. */
+  public getRewardStagePasses(): RendererOverlayPass[] {
+    return this.rewardStage.passes();
+  }
+
+  /** The stage's chest once its model is ready; none when the manager is gone. */
+  private readonly prepareRewardStage = async (): Promise<ReadyStage | null> => {
     await this.prepareModel();
-    const camera = this.hexagonScene?.getCamera();
-    if (this.isDestroyed || !this.chestModel || !this.chestTransitions || !camera) return null;
-    const surface = this.hexagonScene?.getTerrainSurface() ?? FLAT_TERRAIN_SURFACE;
-    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE, surface);
-    return placement && { transitions: this.chestTransitions, placement, time: this.chestModel.time };
+    if (this.isDestroyed || !this.chestModel || !this.stagedChest) return null;
+    return { transitions: this.stagedChest, time: this.chestModel.time };
   };
 
-  private readonly centreStage = new ScreenCentreStage(this.prepareCentreStage);
+  private readonly rewardStage = new RewardStage(this.prepareRewardStage);
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
     return `${chest.hexCoords.col},${chest.hexCoords.row}`;
@@ -703,16 +708,16 @@ export class ChestManager {
   }
 
   public update(deltaTime: number) {
-    const cameraPosition = this.hexagonScene?.getCamera().position;
+    const camera = this.hexagonScene?.getCamera();
+    const cameraPosition = camera?.position;
     const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
     this.chestModel?.updatePresentation(nightAmount, cameraPosition);
     this.chestModel?.updateAnimations(deltaTime);
-    const presenting = this.chestTransitions?.has(CENTRE_KEY) ?? false;
+    if (this.chestModel && camera) this.rewardStage.update(deltaTime, this.chestModel.time, camera);
     if (
       this.chestModel &&
       this.chestTransitions?.update(deltaTime, this.chestModel.time, cameraPosition, nightAmount)
     ) {
-      if (presenting && !this.chestTransitions.has(CENTRE_KEY)) this.applyContentLadder(this.contentLadder);
       for (const chest of this.visibleChests) this.updateChestInstance(chest);
       this.updateChestMarkers();
     }

@@ -18,7 +18,7 @@ import { MotionGlobalConfig } from "framer-motion";
 import { Matrix4 } from "three";
 import { createChestPool } from "@/three/rewards/chest-pool-fixture";
 import type { ChestTransitions } from "@/three/rewards/chest-transitions";
-import { type ReadyStage, ScreenCentreStage } from "@/three/rewards/screen-centre-stage";
+import { type ReadyStage, RewardStage } from "@/three/rewards/reward-stage";
 import { announcedRewardChestBeats, type RewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
 import { ChestLordsMoment } from "./chest-lords-moment";
 
@@ -150,11 +150,8 @@ describe("a chest and its moment, on one clock", () => {
 /** A chest model still loading: the stage waits on it until the test lets it finish. */
 const loadingModel = () => {
   const loads: Array<() => void> = [];
-  const stage = new ScreenCentreStage(
-    () =>
-      new Promise<ReadyStage>((ready) =>
-        loads.push(() => ready({ transitions: pool, placement: new Matrix4(), time: clock })),
-      ),
+  const stage = new RewardStage(
+    () => new Promise<ReadyStage>((ready) => loads.push(() => ready({ transitions: pool, time: clock }))),
   );
   /** The model finishes loading: every request waiting on it carries on. */
   const finish = () =>
@@ -165,7 +162,7 @@ const loadingModel = () => {
 };
 
 /** A reward's request, as the world map makes it on a ruin's clear: staged once its chest's model is ready. */
-const request = (stage: ScreenCentreStage, reward: RewardChestRequest) =>
+const request = (stage: RewardStage, reward: RewardChestRequest) =>
   act(async () => void stage.present(announcedRewardChestBeats(reward)));
 
 // Review, 28 October 2026: cancelling a presentation must also cancel its pending model load.
@@ -174,7 +171,7 @@ describe("a chest whose model is still loading when its moment is cut short", ()
     const { stage, finish } = loadingModel();
     await request(stage, RUIN);
     // The world map is left (WorldmapScene.onSwitchOff → ChestManager.endScreenCentrePresentation).
-    await act(async () => stage.end(pool));
+    await act(async () => stage.end());
     await finish();
     expect(scene()).toEqual({ chest: false, veil: false, lords: null, labelsHidden: false });
     expect(plays).toEqual([]);
@@ -183,7 +180,7 @@ describe("a chest whose model is still loading when its moment is cut short", ()
   it("never revives an old request after leaving and coming back: only the request made since plays", async () => {
     const { stage, finish } = loadingModel();
     await request(stage, RUIN);
-    await act(async () => stage.end(pool));
+    await act(async () => stage.end());
     // Back on the map, another ruin is cleared while the same model is still loading.
     await request(stage, { ...RUIN, lords: 40 });
     await finish();

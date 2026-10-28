@@ -2273,9 +2273,11 @@ button.ui-card__choose:disabled {
   z-index: theme(zIndex.hud-motion);
   pointer-events: none;
 }
-/* The map's labels and plates (army plates, site tokens, all in the label layer) would float over the chest and through
-   the veil's spotlight: while the moment plays they step aside. */
-.chest-moment #labelrenderer {
+/* The chest is drawn by the map's canvas, over the board; every page layer pinned to the map's tiles would draw over it:
+   the labels and plates (army plates, site tokens, all in the label layer) and the tiles' rises and flights (the motion
+   layer's "+136 XP", "-4"). While the moment plays they step aside. */
+.chest-moment #labelrenderer,
+.chest-moment [data-motion-layer] {
   visibility: hidden;
 }
 .ui-chest-moment__veil {

@@ -38,8 +38,9 @@ export class ChestTransitions {
   private readonly actors: ChestTransition[] = [];
   private readonly active = new Map<string, ChestTransition>();
 
-  constructor(gltf: GLTF) {
-    for (let index = 0; index < 4; index++) {
+  /** `slots`: how many chests may play at once; the map's tiles take a few, a reward's stage one. */
+  constructor(gltf: GLTF, slots = 4) {
+    for (let index = 0; index < slots; index++) {
       const root = new Group();
       const object = gltf.scene.clone(true);
       root.add(object);

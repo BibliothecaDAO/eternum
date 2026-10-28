@@ -25,6 +25,7 @@ import { dispatchRightClick } from "./worldmap-right-click";
 import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
+import type { RendererOverlayPass } from "@/three/renderer-backend";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -4665,6 +4666,11 @@ export default class WorldmapScene extends WarpTravel {
     this.wheelHandler = null;
     this.unregisterTrackedVisibilityChunks();
     this.resetZoomHardeningRuntimeState();
+  }
+
+  /** A reward's chest staged over the map, drawn after it in passes of its own (RewardStage). */
+  public override getRewardStagePasses(): RendererOverlayPass[] {
+    return this.chestManager.getRewardStagePasses();
   }
 
   onSwitchOff(nextSceneName?: SceneName) {
