@@ -22,10 +22,11 @@ assertions and browser errors; the command owns and closes its server and browse
 
 ## Rooms
 
-Open `/lab` in the dev environment: it opens on Kit → HUD sheet. The header's first row holds the six rooms and the two
-switches; the second row holds the room's pages and, when a page has several, its views. `src/lab/rooms.ts` lists every
-room, page and view; the header and the routes are drawn from it, and every page loads only when opened. A lane adds a
-page by adding its entry there.
+Open `/lab` in the dev environment: it opens on **Open now**, what the owner has open (the pick pages at `/picks` and
+the pages of open PRs at `/ship`, from the lists eternum-lanes' `lab-open.py` writes), each one click away; the header's
+**Open now** returns there. The header's first row holds the six rooms and the two switches; the second row holds the
+room's pages and, when a page has several, its views. `src/lab/rooms.ts` lists every room, page and view; the header and
+the routes are drawn from it, and every page loads only when opened. A lane adds a page by adding its entry there.
 
 - **Game** (Blitz, Frontier, Eternum) writes `mode` into the address and opens the page again in that game. It is
   offered only on a page that draws more than one game, and a page that draws Frontier opens on Frontier.
@@ -58,7 +59,6 @@ restore their network and identity overrides when you leave them.
 | Art    | Bench                                   | Characters `/lab/character-benchmark`, World `/lab/world`, Chunks `/lab/chunks`, Terrain `/lab/terrain-benchmark` | The runners below                                         |
 | Data   | Balance & data                          | `/lab/data` (`view` live or balance, `mode`): see Balance & data below                                            | Owner; perf, rules                                        |
 | Studio | Set                                     | `/lab/studio`: see Film studio below                                                                              | Reels; `prove:studio`                                     |
-| Studio | Footage                                 | `/lab/footage`: the footage and marketing pages the showcase serves beside the lab                                | Owner                                                     |
 
 `pnpm --dir apps/game prove:lab-load --port <free> --out <fresh-dir>` opens every page twice and records what each
 fetches (the client's own modules, every script, the bytes), when its last script arrived and whether it drew 3D.

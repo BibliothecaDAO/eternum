@@ -129,14 +129,3 @@
     grid-template-columns: 1fr;
   }
 }
-.ship-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-.ship-list a {
-  color: #d4b986;
-}

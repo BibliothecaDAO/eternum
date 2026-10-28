@@ -162,8 +162,7 @@ const chainPositionOf = (position: Record<string, unknown>): ChainPosition | nul
   return { block, transactionIndex, eventIndex };
 };
 
-/** One event of Herald's history as the story the stream would have delivered. */
-export const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
+const historyStoryEvent = (event: HeraldHistoryEvent, scope: StoryEventScope): StreamStoryEvent | null =>
   storyEventFromValue(
     event.model,
     {
@@ -211,7 +210,7 @@ export const isPresentableStory = (event: Pick<StoryEventData, "story">): boolea
 };
 
 /** A story as the viewer reads it: its words name the viewer "you" where it names them. */
-export const processStoryEvent = (
+const processStoryEvent = (
   event: StoryEventData | StreamStoryEvent,
   store: Parameters<typeof buildStoryEventPresentation>[1],
   viewerAddress: string | null,

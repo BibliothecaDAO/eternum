@@ -52,9 +52,7 @@ vi.mock("./hud/view", () => ({
 }));
 vi.mock("./data/view", () => ({ DataRoomView: () => <Tool name="data" /> }));
 vi.mock("./data/ui-usage", () => ({ UiUsageView: () => <Tool name="ui-usage" /> }));
-vi.mock("./data/ships", () => ({ ShipsView: () => <Tool name="ships" /> }));
 vi.mock("./kit-sheet/view", () => ({ FrontierSheetView: () => <Tool name="frontier-sheet" /> }));
-vi.mock("./footage/view", () => ({ FootageView: () => <Tool name="footage" /> }));
 vi.mock("../ui/features/debug/procedural-character-benchmark-view", () => ({
   ProceduralCharacterBenchmarkView: () => <Tool name="benchmark" />,
   ProceduralWorldGymView: () => <Tool name="world" />,
@@ -172,10 +170,8 @@ it.each([
   ["/lab/chunks", "chunks", "Art", "Bench"],
   ["/lab/data?view=balance", "data", "Data", "Balance & data"],
   ["/lab/data/usage?mode=blitz", "ui-usage", "Data", "UI usage"],
-  ["/lab/data/ships", "ships", "Data", "Ships"],
   ["/lab/kit/frontier-sheet", "frontier-sheet", "Kit", "Frontier sheet"],
   ["/lab/studio?take=battle&mode=frontier", "studio", "Studio", "Set"],
-  ["/lab/footage", "footage", "Studio", "Footage"],
 ])("opens %s through the common bootstrap, in its room and page", async (at, name, room, page) => {
   await openLab(at);
   expect((await findTool(name)).getAttribute("data-address")).toBe(at);
@@ -195,10 +191,48 @@ it("lists the six rooms, and each room its pages", async () => {
   expect(labels("Pages")).toEqual(ROOMS.find((room) => room.title === "Art")!.pages.map((page) => page.title));
 });
 
-it("opens the lab on the kit's sheet, not on a 3D page", async () => {
-  await openLab("/lab");
-  await findTool("kit-style-sheet");
-  expect(address()).toBe("/lab/kit");
+it("opens the lab on what's open, each a link to its page, and returns there from any room", async () => {
+  const served: Record<string, unknown> = {
+    "/picks/index.json": [{ name: "xp-ladder", title: "XP ladder", page: "/picks/xp-ladder/" }],
+    "/ship/index.json": [{ pr: 5102, title: "Devcon season", page: "/ship/5102/" }],
+  };
+  vi.stubGlobal("fetch", async (address: string) => new Response(JSON.stringify(served[address] ?? null)));
+  try {
+    await openLab("/lab");
+    await settle();
+    const links = () =>
+      [...container.querySelectorAll<HTMLAnchorElement>(".lab-open a")].map((link) => [
+        link.textContent,
+        link.getAttribute("href"),
+      ]);
+    expect(links()).toEqual([
+      ["XP ladder", "/picks/xp-ladder/index.html"],
+      ["PR #5102: Devcon season", "/ship/5102/index.html"],
+    ]);
+    // No page is open, so no renderer runs.
+    expect(lifecycle.active.size).toBe(0);
+    await press("Rooms", "Art");
+    await findTool("terrain");
+    await act(async () =>
+      [...container.querySelectorAll("a")].find((link) => link.textContent === "Open now")!.click(),
+    );
+    await settle();
+    expect(links()).toHaveLength(2);
+    expect(lifecycle.active.size).toBe(0);
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
+
+it("says so when nothing is open", async () => {
+  vi.stubGlobal("fetch", async () => new Response("[]"));
+  try {
+    await openLab("/lab");
+    await settle();
+    expect(container.querySelector(".lab-open")!.textContent).toBe("Open nowNothing open.");
+  } finally {
+    vi.unstubAllGlobals();
+  }
 });
 
 it("opens a page that draws Frontier on Frontier, and its Game switch opens it again in the other game", async () => {

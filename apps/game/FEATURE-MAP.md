@@ -11,16 +11,15 @@ Next-season research proposals: `/lab/data?mode=frontier&view=balance` (Data →
 players never use, ranked from prod's counts with a HUD screenshot beside each: `/lab/data/usage` (Data → UI usage, the
 Game switch picks Blitz or Frontier); every number is the newest live-data pull's:
 `apps/game/scripts/live-data/live-data.py all`, run from the folder that keeps the pulls, writes the pull's `usage.json`
-(read at `/live-data/usage.json`; stills at `/live-data/usage-shots`). What each open PR ships, item by item in stills:
-`/lab/data/ships` (Data → Ships) lists the pages eternum-lanes' `ship-page.py` wrote, linked at `/ship`, each at
-`/ship/<pr>/index.html`. **Storage** compares deleting storage research with smaller late-game base stores; pick a realm
-and plan a Farm or Workshop upgrade. **Research paths** compares separate side levels, a shared four-purchase budget and
-the current rule; start with Drill level 2 and try Drill level 3 or Rations level 2. **Beast labor** compares three
-guard-based clear payouts at every depth and replays 28 recorded clears. Plans are local fixtures and send no game
-commands. Serve the client on an assigned port, open the route with `&evidence=/absolute/new/capture/directory` (use `?`
-without another query), then run `scripts/frontier/prove-research-balance.playwright.js` through the Playwright
-connection with the page as its argument. It clicks the proposals, verifies results and captures desktop and phone; keep
-its returned transcript with the images. No gameplay or preset rule changes are part of this study.
+(read at `/live-data/usage.json`; stills at `/live-data/usage-shots`). **Storage** compares deleting storage research
+with smaller late-game base stores; pick a realm and plan a Farm or Workshop upgrade. **Research paths** compares
+separate side levels, a shared four-purchase budget and the current rule; start with Drill level 2 and try Drill level 3
+or Rations level 2. **Beast labor** compares three guard-based clear payouts at every depth and replays 28 recorded
+clears. Plans are local fixtures and send no game commands. Serve the client on an assigned port, open the route with
+`&evidence=/absolute/new/capture/directory` (use `?` without another query), then run
+`scripts/frontier/prove-research-balance.playwright.js` through the Playwright connection with the page as its argument.
+It clicks the proposals, verifies results and captures desktop and phone; keep its returned transcript with the images.
+No gameplay or preset rule changes are part of this study.
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and
@@ -70,31 +69,32 @@ function as browser code. Keep the returned result beside the captures. Reuse th
 
 What a player can do and how they get there, so a report or a screenshot can be reproduced. Update it in the change that
 adds, moves or removes a feature. Local dev: `pnpm --dir apps/game dev --host 127.0.0.1 --port <port>`. The dev build's
-lab (`/lab`, `src/lab/README.md`) is six rooms, Kit, HUD, Game, Art, Data and Studio, with one Game and one Device
-switch. Kit → Icons → Frontier guards retains the painting review at `/lab/kit/beast-icons`. In it,
-`/lab/app/<screen>/<page>` shows the shell pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and `/lab/kit` the
-HUD's style sheet, the HUD scope of `src/tokens.ts` (HUD_TYPE, HUD_SHEET, HUD_MODES, HUD_PHONE): its tokens, editable
-live (Copy gives the changed values); each game as its age of the lore (Blitz I, Frontier II, Eternum III: Blitz torch
-amber, Frontier violet, Eternum gold, each an accent and a surface); the type scale by role; then every element the HUD
-draws (button, action bubble and badge, troop amount (+500, Max and a slider), transfer sliders with quick shares,
-field, select, switch, checkbox and settings, tooltip and the map's order line, panel, tabs, chip, ring badge, meter,
-list row, event row and notice, window, confirm (Frontier only), loading and empty, top bar and portrait, map plate,
-minimap frame) in every state, beside the versions the game draws today; the lab's Game switch changes the age, its
-Device switch a phone. `pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel
-and chip looks. `/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's
-style sheet (the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile),
-its spec, the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the
-reward chest at each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's
-fixtures; `pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks
-them (nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the
-painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
-notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every
-choice taken at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You
-signed in, out and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway
-into a game at each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season
-awaited, a roster filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and
-every element of the sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished
-game's Results, presses **See the end map** and holds the map to its scene being ready, watched and finished.
+lab (`/lab`, `src/lab/README.md`) opens on **Open now**, the owner's open pick pages and open PRs' ship pages, each one
+click away; then six rooms, Kit, HUD, Game, Art, Data and Studio, with one Game and one Device switch. Kit → Icons →
+Frontier guards retains the painting review at `/lab/kit/beast-icons`. In it, `/lab/app/<screen>/<page>` shows the shell
+pages over fixtures (`src/shell/lab/app-lab-fixtures.ts`), and `/lab/kit` the HUD's style sheet, the HUD scope of
+`src/tokens.ts` (HUD_TYPE, HUD_SHEET, HUD_MODES, HUD_PHONE): its tokens, editable live (Copy gives the changed values);
+each game as its age of the lore (Blitz I, Frontier II, Eternum III: Blitz torch amber, Frontier violet, Eternum gold,
+each an accent and a surface); the type scale by role; then every element the HUD draws (button, action bubble and
+badge, troop amount (+500, Max and a slider), transfer sliders with quick shares, field, select, switch, checkbox and
+settings, tooltip and the map's order line, panel, tabs, chip, ring badge, meter, list row, event row and notice,
+window, confirm (Frontier only), loading and empty, top bar and portrait, map plate, minimap frame) in every state,
+beside the versions the game draws today; the lab's Game switch changes the age, its Device switch a phone.
+`pnpm --dir apps/game styles:inventory` counts the client's distinct button, input, tab, panel and chip looks.
+`/lab/kit/shell` the shell kit's components (`/lab/kit/tokens` the token file). `/lab/kit/app` the app's style sheet
+(the pages outside a game): the research behind it (shipped game launchers and menus, desktop then mobile), its spec,
+the app scope of `src/tokens.ts` (APP_TYPE, APP_SHEET), every element in every state beside today's (the reward chest at
+each tier, sealed and opened, among them), and links to the real pages on the sheet over the app lab's fixtures;
+`pnpm --dir apps/game prove:app <base-url> <out-dir>` captures those pages on a desktop and a phone and checks them
+(nothing spills out of its block, every picture loads, one gold verb at most, the page's place the one lit, the painting
+and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install notice
+at 1024 and 1440 px (`/lab/app/long-name`), the phone's five places at 360 px, the lobby's entry with every choice taken
+at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You signed in, out
+and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway into a game at
+each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season awaited, a roster
+filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and every element of the
+sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished game's Results, presses
+**See the end map** and holds the map to its scene being ready, watched and finished.
 `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
 no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a

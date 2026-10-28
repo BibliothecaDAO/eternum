@@ -1,0 +1,34 @@
+.lab-open {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px 16px;
+  color: #dce3df;
+  font:
+    15px/1.5 system-ui,
+    sans-serif;
+}
+.lab-open h1 {
+  margin: 0 0 16px;
+  color: #d4b986;
+  font-size: 22px;
+}
+.lab-open ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lab-open a {
+  display: block;
+  padding: 12px 14px;
+  border: 1px solid #3a3f4a;
+  border-radius: 8px;
+  color: #dce3df;
+  font-size: 16px;
+  text-decoration: none;
+}
+.lab-open a:hover {
+  border-color: #d4b986;
+}

@@ -477,17 +477,6 @@ export const ROOMS: LabRoom[] = [
           ),
         ],
       },
-      {
-        title: "Ships",
-        views: [
-          view(
-            "Ships",
-            "/lab/data/ships",
-            "data/ships",
-            load(() => import("./data/ships"), "ShipsView"),
-          ),
-        ],
-      },
     ],
   },
   {
@@ -502,17 +491,6 @@ export const ROOMS: LabRoom[] = [
             "/lab/studio",
             "studio",
             load(() => import("./studio/view"), "StudioLabView"),
-          ),
-        ],
-      },
-      {
-        title: "Footage",
-        views: [
-          view(
-            "Footage",
-            "/lab/footage",
-            "footage",
-            load(() => import("./footage/view"), "FootageView"),
           ),
         ],
       },

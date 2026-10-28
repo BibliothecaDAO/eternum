@@ -44,7 +44,6 @@ const ROUTES = [
   "/lab/terrain-benchmark",
   "/lab/data",
   "/lab/studio",
-  "/lab/footage",
   "/lab/kit/hud/idle",
   "/lab/kit/unified/frontier",
   "/lab/kit/panels",

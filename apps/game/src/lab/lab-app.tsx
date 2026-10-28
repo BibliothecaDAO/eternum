@@ -1,8 +1,9 @@
 import { Suspense, useEffect, useRef } from "react";
-import { Link, matchPath, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
+import { Link, matchPath, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { SceneRoute } from "../scene-route";
 import { useBootDocumentState } from "../ui/modules/boot-loader";
 import "./lab-app.css";
+import { OpenView } from "./open/view";
 import { type Device, type LabPage, type LabRoom, type LabView, type Mode, ROOMS } from "./rooms";
 
 const MODE_NAMES: Record<Mode, string> = { blitz: "Blitz", frontier: "Frontier", eternum: "Eternum" };
@@ -79,7 +80,7 @@ function LabRooms() {
         {/* A page reads its game as it opens; another game opens it again. */}
         <Suspense key={`${shown?.view.route ?? pathname}|${params.get("mode")}`} fallback={<LoadingTool />}>
           <Routes>
-            <Route index element={<Navigate to="/lab/kit" replace />} />
+            <Route index element={<OpenView />} />
             {ROUTES.map(({ view: { route, View } }) => (
               <Route key={route} path={route} element={<View />} />
             ))}
@@ -87,7 +88,7 @@ function LabRooms() {
               path="*"
               element={
                 <div className="lab-loading">
-                  No lab page here. <Link to="/lab/kit">Open the kit</Link>
+                  No lab page here. <Link to="/lab">Open now</Link>
                 </div>
               }
             />
@@ -120,6 +121,9 @@ function LabHeader({
       <div className="lab-row">
         <Link to="/" aria-label="Exit lab to home">
           Eternum Lab
+        </Link>
+        <Link to="/lab" aria-current={shown ? undefined : "page"}>
+          Open now
         </Link>
         <nav aria-label="Rooms">
           {ROOMS.map((room) => (
