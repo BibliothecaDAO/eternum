@@ -77,10 +77,10 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   minute of watching.
 - **As a player** (`--player <email>`), entering through the Frontier card's Resume or Play on the home page with the
   browser's own click, and past a new day's summary (Continue): enter on the map, select the army with the most stamina,
-  open and close production, the next order's life (below), explore twice (tap a tile beside the army, Enter; on a
-  desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map. Orders use
-  the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes from the
-  map at once, so its steps are blocked there; play them with `--viewport 390x844`.
+  open and close production, the next order's life (below), explore twice (tap a tile beside the army, then tap it
+  again; on a desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map.
+  Orders use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes
+  from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a

@@ -15,7 +15,10 @@ import { useSelectedArmySpire } from "../spire-card";
  * it, never the same selection seen again (an order's update, a visit left), so a panel the player closed stays
  * closed. Returns the pick of an army (its row, its token, Today, Next up): another army is selected and that change
  * opens the panel, once; the army already selected reopens it. An army selected on or beside its realm's spire opens the
- * spire's card instead (useSelectedArmySpire), where it enters a depth; picking it again opens its panel.
+ * spire's card instead (useSelectedArmySpire), where it enters a depth; picking it again opens its panel. Also returns the
+ * way back to an army a card acted for, once the card's job is done (a clear, owner 27 October 2026: "the panel on the
+ * right should go back to my army panel since its still selected"): the selection goes back to the army's own tile, and
+ * its panel opens where selecting an army opens it (a desktop's); a phone's action row shows the army again.
  */
 export const useArmyPanelOpens = (
   realm: NativeRows["Structure"] | null,
@@ -25,7 +28,7 @@ export const useArmyPanelOpens = (
    * direction A): a selection shows in the action row, and the panel opens from its details button or a pick here.
    */
   opensOnSelect: boolean,
-): ((explorerId: number) => void) => {
+): { pick: (explorerId: number) => void; returnTo: (explorerId: number) => void } => {
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
   const selectArmy = useSelectArmyOnMap();
@@ -39,10 +42,16 @@ export const useArmyPanelOpens = (
     seen.current = selectedId;
     if (opensOnSelect && !atItsSpire) open(selectedId);
   });
-  return (explorerId) => {
-    const reopen = useUIStore.getState().entityActions.selectedEntityId === explorerId;
-    pickArmy(selectArmy, explorerId);
-    if (reopen || !opensOnSelect) open(explorerId);
+  return {
+    pick: (explorerId) => {
+      const reopen = useUIStore.getState().entityActions.selectedEntityId === explorerId;
+      pickArmy(selectArmy, explorerId);
+      if (reopen || !opensOnSelect) open(explorerId);
+    },
+    returnTo: (explorerId) => {
+      useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: "own" });
+      if (opensOnSelect) open(explorerId);
+    },
   };
 };
 

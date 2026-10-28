@@ -57,6 +57,7 @@ import { CombatPresentationCoordinator } from "@/three/combat/combat-presentatio
 import { BattleDirectionManager } from "@/three/managers/battle-direction-manager";
 import { ChestManager } from "@/three/managers/chest-manager";
 import { ReservedHyperstructureManager } from "@/three/managers/reserved-hyperstructure-manager";
+import { HoverHexManager } from "@/three/managers/hover-hex-manager";
 import { SelectedHexManager } from "@/three/managers/selected-hex-manager";
 import { OwnershipRingLayer } from "@/three/managers/ownership-ring-layer";
 import { bindOwnershipRings } from "./worldmap-ownership-rings";
@@ -155,7 +156,7 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import throttle from "lodash/throttle";
-import { Box3, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
+import { Box3, Color, Group, type Ray, Raycaster, Sphere, Vector2, Vector3 } from "three";
 import { zoomTowardCursor } from "./worldmap-zoom/worldmap-zoom-anchor";
 import { inOpenMapArea } from "../utils/labels/hud-clearance";
 import { MapControls } from "three/addons/controls/MapControls.js";
@@ -181,7 +182,7 @@ import {
   type WorldmapHoverReconciliationSnapshot,
 } from "./worldmap-hover-reconciliation";
 import { ResourceFXManager } from "../managers/resource-fx-manager";
-import { resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
+import { resolveHighlightLayerPalette, resolveHoverVisualPalette } from "../managers/worldmap-interaction-palette";
 import { isCommittedManagerChunk } from "../managers/manager-update-convergence";
 import { SceneName } from "../types/common";
 import { getWorldPositionForHex, isAddressEqualToAccount } from "../utils";
@@ -266,13 +267,7 @@ import {
 } from "./worldmap-terrain-commit-runtime";
 import { runWorldmapArmySelectionRecovery } from "./worldmap-army-selection-recovery-runtime";
 import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "./worldmap-army-select-request";
-import {
-  DEPLOY_ON_MAP_EVENT,
-  type DeployOnMap,
-  deployShownOnMap,
-  markDeployTile,
-  readDeployOnMap,
-} from "./worldmap-deploy-request";
+import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, deployShownOnMap, readDeployOnMap } from "./worldmap-deploy-request";
 import { cameraHexOf } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
@@ -899,6 +894,8 @@ export default class WorldmapScene extends WarpTravel {
   private battleDirectionManager!: BattleDirectionManager;
 
   private selectedHexManager!: SelectedHexManager;
+  /** The tile the order at hand goes to (markOrderTarget), apart from the pointer's own hover ring. */
+  private orderTargetRing!: HoverHexManager;
   private ownershipRings!: OwnershipRingLayer;
   private interactionAdapter!: ReturnType<typeof createWorldmapInteractionAdapter>;
   private updateCameraTargetHexThrottled?: ReturnType<typeof throttle>;
@@ -1865,6 +1862,7 @@ export default class WorldmapScene extends WarpTravel {
 
   private initializeWorldmapInteractionRuntime(): void {
     this.selectedHexManager = new SelectedHexManager(this.scene, this.getTerrainSurface());
+    this.orderTargetRing = new HoverHexManager(this.scene, this.getTerrainSurface());
     this.ownershipRings = new OwnershipRingLayer(this.scene, this.getTerrainSurface());
     this.interactionAdapter = createWorldmapInteractionAdapter({
       state: this.state,
@@ -1873,6 +1871,13 @@ export default class WorldmapScene extends WarpTravel {
     this.interactiveHexManager.applyHoverPalette(resolveHoverVisualPalette({ hasSelection: false }));
     this.interactiveHexManager.setSurfaceVisibility(false);
     this.interactiveHexManager.setHoverVisualMode("outline");
+  }
+
+  /** Releases the rings the interaction runtime drew on the map, each one it created, so a new game draws its own. */
+  private disposeWorldmapInteractionRuntime(): void {
+    this.selectedHexManager.dispose();
+    this.orderTargetRing.dispose();
+    this.ownershipRings.dispose();
   }
 
   private bindWorldmapSceneUiLifecycle(): void {
@@ -2846,9 +2851,8 @@ export default class WorldmapScene extends WarpTravel {
       const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
+      // The HUD's bar is the order's preview, in one row; the same tile tapped again sends it.
       this.state.updateEntityActionHoveredHex(hexCoords);
-      // The order's line stands at its tile, marking the tile the bar's verb (or a second tap) sends to.
-      this.showTileFacts(hexCoords);
       return true;
     } else if (order === "attack") {
       const attack = path ?? this.attackPathTo(hexCoords, selectedEntityId);
@@ -3606,17 +3610,17 @@ export default class WorldmapScene extends WarpTravel {
       }
     }
     this.updateEntityActionPaths(actionPaths.getPaths());
-    this.highlightHexManager.highlightHexes(
-      markDeployTile(actionPaths.getHighlightDescriptors(), this.deployTileOf(selectedEntityId)),
-    );
+    this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
+    this.markOrderTarget();
 
     this.applyContextualHoverPalette(this.previouslyHoveredHex ?? null);
   }
 
   /**
    * Frontier's deploy sheet shows its order on the map: the realm selected with its open tiles lit, and the order's tile
-   * marked among them. The camera stays where the player has it (owner, 27 October 2026: "when I right click to deploy
-   * an army stop centering the camera on the realm"). Closed, a selection the map made for the sheet goes with it.
+   * ringed among them (markOrderTarget). The camera stays where the player has it (owner, 27 October 2026: "when I right
+   * click to deploy an army stop centering the camera on the realm"). Closed, a selection the map made for the sheet
+   * goes with it.
    */
   private showDeployOrder(order: DeployOnMap): void {
     const shown = this.deployShown;
@@ -3624,6 +3628,7 @@ export default class WorldmapScene extends WarpTravel {
       this.deployShown = null;
       if (shown?.selectedForIt && getLiveWorldmapEntityActions().selectedEntityId === shown.order.structureId)
         this.clearEntitySelection();
+      this.markOrderTarget();
       return;
     }
     const realm = this.getStructureHexPosition(order.structureId);
@@ -3634,6 +3639,7 @@ export default class WorldmapScene extends WarpTravel {
       : (shown?.selectedForIt ?? false);
     this.deployShown = { order, selectedForIt };
     this.onStructureSelection(order.structureId, realm);
+    this.markOrderTarget();
   }
 
   /** The tile the shown deploy order steps out on, as the lit tiles name it; none for another structure or no order. */
@@ -8161,6 +8167,7 @@ export default class WorldmapScene extends WarpTravel {
       this.fxManager.update(deltaTime);
       this.resourceFXManager.update(deltaTime);
       this.selectedHexManager.update(deltaTime);
+      this.orderTargetRing.update(deltaTime);
       this.chestManager.update(deltaTime);
     }
     this.updateCameraTargetHexThrottled?.();
@@ -8576,10 +8583,8 @@ export default class WorldmapScene extends WarpTravel {
     this.stopChestOpenRequests?.();
     this.clearCache();
 
-    // Dispose hover label and selected hex managers to release Three.js resources
     this.hoverLabelManager.dispose();
-    this.selectedHexManager.dispose();
-    this.ownershipRings.dispose();
+    this.disposeWorldmapInteractionRuntime();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);
@@ -8839,6 +8844,30 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
+   * The tile the order at hand goes to, ringed on the map in its order's colour until the order goes: Deploy's tile,
+   * whether the player picked it or the sheet took the first open one (audit hud 12: "nothing names the target"), and
+   * on a phone the pinned order's tile, the one the same tap again sends it to. The pointer's hover ring stays its own.
+   */
+  private markOrderTarget(): void {
+    const { selectedEntityId, hoveredHex, actionPaths } = getLiveWorldmapEntityActions();
+    const deploying =
+      selectedEntityId === null || selectedEntityId === undefined ? null : this.deployTileOf(selectedEntityId);
+    const target = deploying ?? (this.hudCarriesOrderVerb() ? hoveredHex : null);
+    if (!target) {
+      this.orderTargetRing.hideHover();
+      return;
+    }
+    const path = actionPaths.get(ActionPaths.posKey(target, true));
+    const color = new Color(
+      resolveHighlightLayerPalette(deploying ? ActionType.CreateArmy : path && ActionPaths.getActionType(path))
+        .endpointColor,
+    );
+    this.orderTargetRing.setHoverColor(color, color);
+    const { x, z } = getWorldPositionForHex(target);
+    this.orderTargetRing.showHover(x, z);
+  }
+
+  /**
    * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
    * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
    */
@@ -8885,6 +8914,12 @@ export default class WorldmapScene extends WarpTravel {
       });
       return;
     }
+
+    if (
+      nextEntityActions.hoveredHex !== previousEntityActions?.hoveredHex ||
+      nextEntityActions.selectedEntityId !== previousEntityActions?.selectedEntityId
+    )
+      this.markOrderTarget();
 
     if (this.isMissingActionPathOwnershipState()) {
       this.logInteractionDebug("clearing_entity_selection_for_missing_ownership", {

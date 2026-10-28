@@ -149,20 +149,55 @@ it.each([
   },
 );
 
-it("on a Frontier phone, a tap pins the order for the HUD's own verb, naming it at its tile, and opens no preview", () => {
+// Owner, 27 October 2026: "Yes double tapping to explore on mobile"; Next up teaches it ("Double-tap a tile beside your
+// army", frontier-coach.ts).
+it("on a Frontier phone, a double tap on a tile beside the army explores it: the first tap pins it for the HUD's bar alone", () => {
   screen(false);
   const { scene, sent, pinned, facts } = worldMap(true);
 
   expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
 
   expect(pinned).toEqual([BESIDE]);
-  expect(facts).toEqual([BESIDE]);
+  expect(facts).toEqual([]);
   expect(usePopoverStore.getState().surface).toBeNull();
   expect(sent).toEqual([]);
 
-  // Owner, 22 October 2026 (mobile direction A): the same tile again sends the pinned order.
   expect(scene.answerTapWithSelectedOrder(BESIDE)).toBe(true);
   expect(sent).toEqual([BESIDE]);
+});
+
+it.each([
+  ["a Frontier phone", false, ["ringed", "none"]],
+  ["a desktop", true, ["none", "none"]],
+])("on %s, the pinned order's tile wears the order's ring until the pin goes", (_, desktop, ringed) => {
+  screen(desktop);
+  const { scene } = worldMap(true);
+  const rings: string[] = [];
+  Object.assign(scene, {
+    isInteractionOwner: () => true,
+    isSceneExitInteractionResetInProgress: false,
+    isMissingActionPathOwnershipState: () => false,
+    syncEntityActionPathsTransitionToken: () => {},
+    logInteractionDebug: () => {},
+    getInteractionDebugSnapshot: () => ({}),
+    deployTileOf: () => null,
+    orderTargetRing: {
+      setHoverColor: () => {},
+      showHover: () => rings.push("ringed"),
+      hideHover: () => rings.push("none"),
+    },
+  });
+  const storeUpdate = scene as unknown as {
+    handleEntityActionsStoreUpdate: (next: object, previous: object) => void;
+  };
+  const actions = useUIStore.getState().entityActions;
+
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: BESIDE } }));
+  storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: BESIDE }, { ...actions, hoveredHex: null });
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: null } }));
+  storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: null }, { ...actions, hoveredHex: BESIDE });
+
+  expect(rings).toEqual(ringed);
 });
 
 it("on a Frontier phone, a tap on a tile the rules refused says why there, and keeps the army", () => {

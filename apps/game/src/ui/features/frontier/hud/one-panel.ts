@@ -2,7 +2,6 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { useEffect, useState } from "react";
 
-import { closeFightResult } from "../sites/fight-result";
 import type { HudSurface } from "./frontier-nav";
 
 /**
@@ -104,10 +103,9 @@ const mapPick = ({
     ? null
     : `${String(selectedEntityId)}@${hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : ""}`;
 
-/** The tapped tile, plot or building let go, with its card and an attack result standing in it. */
+/** The tapped tile, plot or building let go, with its card. */
 const letGoOfTheTile = () => {
   const ui = useUIStore.getState();
-  closeFightResult();
   ui.closeSelectedTile();
   ui.setSelectedBuildingHex(null);
 };

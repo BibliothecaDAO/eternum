@@ -1,8 +1,7 @@
 import { afterEach, expect, it, vi } from "vitest";
 import { buildStoryEventPresentation, configManager, type SiteKind } from "@bibliothecadao/eternum";
-import { siteName, VERDICT_WORDS } from "@bibliothecadao/types";
+import { siteName } from "@bibliothecadao/types";
 import { campBeside, SITE, SITE_TILE } from "./site-fixture";
-import { fightResultOf } from "./fight-result";
 
 vi.stubGlobal("localStorage", { getItem: () => null });
 afterEach(() => vi.restoreAllMocks());
@@ -73,30 +72,15 @@ function battle(army: number, guard: number, defenderId = SITE, defenderPlayer =
 const names = (address: string | bigint) => (BigInt(address) === 0x111n ? "clientlane" : "rival");
 
 it.each(KINDS)(
-  "shares all verdicts with the card for %s and names the site by its one name, even after clearing",
+  "tells every verdict for %s in its story and names the site by its one name, even after clearing",
   (site) => {
     const store = encounter(site);
-    const sent = {
-      targetId: SITE,
-      tile: { col: 40, row: 12 },
-      site,
-      armyId: 201,
-      armyArt: "knight-t1",
-      army: 1000,
-      homeId: 7,
-      clearXp: 50,
-    } as const;
     for (const [army, guard, verdict] of [
       [694, 572, "Guard holds"],
       [694, 0, "Victory"],
       [0, 572, "Army lost"],
       [0, 0, "Army lost"],
     ] as const) {
-      const result = fightResultOf(
-        sent,
-        { army: { before: 1000, after: army }, guard: { before: 1000, after: guard } },
-        () => null,
-      );
       if (guard === 0)
         store.applyFacts([
           {
@@ -111,8 +95,6 @@ it.each(KINDS)(
           { model: "Guard", key: "0x73", value: null },
         ] as never);
       const story = buildStoryEventPresentation(battle(army, guard), store, names);
-      // A fight both sides survive has no result to show; its story still says how it ended.
-      expect(result && VERDICT_WORDS[result.verdict]).toBe(guard > 0 && army > 0 ? null : verdict);
       expect(story.title).toBe(`clientlane vs ${siteName(SITE)} · ${verdict}`);
       expect(story.description).toContain(`Defender [${siteName(SITE)}]: ${siteName(SITE)}`);
       expect(story.description).toContain(`Defender forces: ${SPECIES[site]} [`);

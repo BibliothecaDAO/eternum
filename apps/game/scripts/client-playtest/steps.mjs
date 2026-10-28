@@ -613,8 +613,8 @@ function armySelected({ seen, played }) {
 
 /**
  * Centres the army and explores a tile beside it as a player does: on a desktop, hovers its neighbours until one's
- * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one offers
- * Explore on the order bar and confirms it, other offers cancelled.
+ * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one's order
+ * bar names Explore and taps that tile again, which sends it, other offers cancelled.
  */
 async function exploreBesideArmy({ browser, extraScreenshot }) {
   const army = await focusTheReadiestArmy(browser);
@@ -632,14 +632,16 @@ async function exploreBesideArmy({ browser, extraScreenshot }) {
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
     for (const offset of NEIGHBOUR_RING) {
+      const pinnedAt = browser.observe().now;
       browser.tap(offset);
-      const verb = orderVerb(browser.buttonTexts());
+      const verb = orderVerb(browser.orderBar());
       offered.push(verb);
       if (verb === "Explore") {
         const before = extraScreenshot("before");
         const pressedAt = browser.observe().now;
-        browser.press("Enter");
-        return { army, offered, pressedAt, before, target: offset };
+        // The phone's own confirmation (owner, 27 October 2026: "double tapping to explore on mobile"): the same tile again.
+        browser.tap(offset);
+        return { army, offered, pinnedAt, pressedAt, before, target: offset };
       }
     }
     if (offered.some(Boolean)) break;
@@ -2243,7 +2245,7 @@ async function scanTheRing(browser, army) {
   for (const offset of NEIGHBOUR_RING) {
     browser.tap(offset);
     const stillPicked = browser.observe().pressed.includes(army);
-    scanned.push({ offset, verb: stillPicked ? orderVerb(browser.buttonTexts()) : null });
+    scanned.push({ offset, verb: stillPicked ? orderVerb(browser.orderBar()) : null });
     if (!stillPicked) await pickArmy(browser, army);
   }
   browser.press("Escape");
@@ -2301,11 +2303,10 @@ async function queueThenOpenTheRealm({ browser, targets, extraScreenshot }) {
 /** The order bar's next order, as a screen reader names its chip: "Next order Queued". */
 const nextOrderShown = (browser) => browser.read(`Boolean(document.querySelector('[aria-label="Next order Queued"]'))`);
 
-/** What the order bar offers after a tap: its verb, "short" when it shows a cost not covered (the verb is hidden), or null. */
-function orderVerb(buttonTexts) {
-  const verb = buttonTexts.map((text) => /^(Explore|Move)/.exec(text)?.[1]).find(Boolean);
-  if (verb) return verb;
-  return buttonTexts.some((text) => text.startsWith("Cancel")) ? "short" : null;
+/** What the order bar offers after a tap: the order its row names, "short" when a cost of it is not covered, or null. */
+function orderVerb(bar) {
+  if (!bar) return null;
+  return bar.short ? "short" : bar.verb;
 }
 
 async function waitUntil(check, timeoutMs) {

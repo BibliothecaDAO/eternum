@@ -110,7 +110,7 @@ const dayLoop = (facts: NextUpFacts, at: At): FrontierCoachStep[] => {
 /** Exploring: select the army that can; once one is selected, how to send it on the map. */
 const explore = ({ armySelected }: NextUpFacts, pointer: Pointer): FrontierCoachStep =>
   armySelected
-    ? step("explore-on-map", `${pointer === "touch" ? "Hold" : "Click"} a tile beside your army`)
+    ? step("explore-on-map", `${pointer === "touch" ? "Double-tap" : "Click"} a tile beside your army`)
     : step("explore", "Your army can explore", "Select the army", "select-army");
 
 const step = (

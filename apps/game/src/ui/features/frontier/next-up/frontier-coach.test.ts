@@ -72,7 +72,7 @@ describe("Frontier's Next up", () => {
     const out = { barracks: true, armies: 2 };
     expect(lines(out)).toEqual([["Your army can explore", "Select the army", "select-army"]]);
     expect(lines({ ...out, armySelected: true })).toEqual([["Click a tile beside your army", null, null]]);
-    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Hold a tile beside your army");
+    expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Double-tap a tile beside your army");
   });
 
   it("puts the day's alerts first: the last hour, a full store, no population", () => {

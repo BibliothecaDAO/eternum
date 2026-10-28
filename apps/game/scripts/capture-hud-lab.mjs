@@ -204,7 +204,6 @@ export const SURFACES = [
   { name: "frontier-explore", path: "/lab/kit/hud/explore", mark: "frontier" },
   { name: "frontier-stores", path: "/lab/kit/hud/stores", mark: "frontier" },
   { name: "frontier-site-camp", path: "/lab/kit/hud/site-camp", mark: "frontier" },
-  { name: "frontier-fight-won", path: "/lab/kit/hud/fight-won", mark: "frontier" },
   { name: "frontier-army-refill", path: "/lab/kit/hud/army-refill", mark: "frontier" },
   ...[
     "castle",
@@ -234,10 +233,9 @@ export const SURFACES = [
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-pick", path: "/lab/kit/hud/site-pick", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", ...FIGHT_FITS },
-  // The owner's phone card (10-27) and seven-digit armies, on the attack's card and on its result.
+  // The owner's phone card (10-27) and seven-digit armies, on the attack's card.
   { name: "frontier-site-runereach", path: "/lab/kit/hud/site-runereach", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-site-large", path: "/lab/kit/hud/site-large", mark: "frontier", ...FIGHT_FITS },
-  { name: "frontier-fight-large", path: "/lab/kit/hud/fight-large", mark: "frontier", ...FIGHT_FITS },
   // Every state of the attack's card draws the same two sides (owner, 10-27): out of reach (the owner's Shadeglow camp,
   // and with a Move toward it), short of stamina, and refused; and Blitz's attack preview.
   { name: "frontier-site-shadeglow", path: "/lab/kit/hud/site-shadeglow", mark: "frontier", ...FIGHT_FITS },
@@ -258,9 +256,8 @@ export const SURFACES = [
     waitFor: '[role="img"][aria-label*="→"]',
     ...FIGHT_FITS,
   },
-  // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on both cards.
+  // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.
   { name: "frontier-site-alike", path: "/lab/kit/hud/site-alike", mark: "frontier", ...FIGHT_FITS },
-  { name: "frontier-fight-alike", path: "/lab/kit/hud/fight-alike", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
   { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];
