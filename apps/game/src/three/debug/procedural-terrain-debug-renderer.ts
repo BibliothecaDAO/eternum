@@ -799,11 +799,10 @@ function startAnimation(runtime: TerrainDebugRuntime, input: MountProceduralTerr
     const deltaSeconds = input.captureMode && input.sceneId === "fog-reveal" ? 0 : frameSeconds * runtime.clock.scale;
     const endgameFrozen = runtime.endgame?.getSnapshot().finished === true;
     runtime.controls.update();
-    runtime.atmosphere.update(
-      runtime.cycleProgress,
-      runtime.controls.target,
-      LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
-    );
+    runtime.atmosphere.update(runtime.cycleProgress, runtime.controls.target, {
+      ...LAB_LIGHTING_OPTIONS[runtime.terrain.getSurfacePresentation()],
+      etherealDepth: runtime.terrain.getEtherealDepth(),
+    });
     runtime.endgame?.update(Math.max(0, (runtime.frameSamplesMs.at(-1) ?? 0) / 1000), runtime.terrain, runtime.camera);
     if (!endgameFrozen) {
       runtime.terrain.update(deltaSeconds);

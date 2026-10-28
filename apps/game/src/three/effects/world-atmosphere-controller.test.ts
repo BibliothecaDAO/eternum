@@ -52,6 +52,24 @@ describe("WorldAtmosphereController", () => {
     expected.manager.dispose();
   });
 
+  it("lights each Ethereal depth its own way, keeping depth I's night and leaving the surface alone", () => {
+    const cameraTarget = new Vector3();
+    const lightingAt = (environment: "world" | "ethereal", etherealDepth?: 1 | 2 | 3) => {
+      const fixture = createFixture();
+      fixture.manager.update(50, cameraTarget, { environment, etherealDepth });
+      const lighting = readLighting(fixture);
+      fixture.manager.dispose();
+      return lighting;
+    };
+    const [first, second, third] = ([1, 2, 3] as const).map((depth) => lightingAt("ethereal", depth));
+    expect(first).toEqual(lightingAt("ethereal"));
+    expect(new Set([first.sunColor, second.sunColor, third.sunColor]).size).toBe(3);
+    const rgb = (hex: number) => new Color(hex);
+    expect(rgb(second.sunColor).b).toBeGreaterThan(rgb(second.sunColor).r);
+    expect(rgb(third.sunColor).r).toBeGreaterThan(rgb(third.sunColor).b);
+    expect(lightingAt("world", 3)).toEqual(lightingAt("world"));
+  });
+
   it.each([false, true])(
     "restores current world lighting and the prior shadow setting %s on leaving underground",
     (castsShadow) => {

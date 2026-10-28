@@ -26,6 +26,8 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { DEFAULT_TERRAIN_LAB_PREVIEW, type TerrainLabPreview } from "@/three/debug/terrain-lab-preview";
 import { MODEL_TYPE_TO_FILE } from "@/three/constants/army-constants";
+import type { EtherealDepth } from "@/three/terrain/ethereal-depth-look";
+import { depthName } from "@/ui/design-system/kit/words";
 
 /** A typed id: whole, positive and at most fifteen digits, so always exact; anything else leaves the current one. */
 const typedEntityId = (value: string): number | undefined =>
@@ -275,9 +277,23 @@ export const ProceduralTerrainDebugView = () => {
               </select>
             </label>
             {preview.biome === "ethereal" && (
-              <p className="text-sm text-stone-400">
-                Ethereal / Underground — dark basalt slabs with flowing neon along gameplay hex borders.
-              </p>
+              <label className="flex flex-col gap-1 text-sm">
+                Depth
+                <select
+                  aria-label="Preview Ethereal depth"
+                  value={preview.etherealDepth}
+                  className="bg-stone-900 p-2"
+                  onChange={(event) =>
+                    setPreview({ ...preview, etherealDepth: Number(event.target.value) as EtherealDepth })
+                  }
+                >
+                  {([1, 2, 3] as const).map((depth) => (
+                    <option key={depth} value={depth}>
+                      {depthName(depth)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             )}
             <label className="flex flex-col gap-1 text-sm">
               Fog

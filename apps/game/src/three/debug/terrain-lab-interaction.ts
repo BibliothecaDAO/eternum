@@ -102,6 +102,7 @@ export class TerrainLabInteraction {
       preview.biome !== this.preview.biome;
     this.selectionDirty = true;
     this.preview = preview;
+    this.terrain.setEtherealDepth(preview.etherealDepth);
     this.spinAngle = preview.yaw;
     this.updateSettlementHeraldry();
     if (rebuild) await this.presentFixture();

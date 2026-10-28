@@ -1,6 +1,7 @@
 import type { GameModeId } from "@/config/game-modes";
 import { FRONTIER_EMBER_COLORS, WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
+import { ETHEREAL_DEPTH_LOOKS, type EtherealDepth } from "../terrain/ethereal-depth-look";
 import type GUI from "lil-gui";
 import {
   Scene,
@@ -29,6 +30,8 @@ interface WorldAtmosphereParams {
 interface WorldAtmosphereUpdateOptions {
   snap?: boolean;
   environment?: "world" | "ethereal";
+  /** Which depth's light the Ethereal takes; depth I when omitted. */
+  etherealDepth?: EtherealDepth;
 }
 
 interface AtmosphereProgressFrame {
@@ -173,6 +176,9 @@ export class WorldAtmosphereController {
     const targetColors = this.applyNightTemperatureGrading(interpolatedColors, progressFrame.progress);
     if (this.gameMode === "frontier" && this.environment === "world") {
       Object.assign(targetColors, FRONTIER_EMBER_COLORS);
+    }
+    if (this.environment === "ethereal") {
+      Object.assign(targetColors, ETHEREAL_DEPTH_LOOKS[options.etherealDepth ?? 1].light);
     }
 
     // Smoothly transition current colors toward target colors

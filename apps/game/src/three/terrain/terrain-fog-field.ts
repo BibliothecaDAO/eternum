@@ -34,6 +34,7 @@ import {
 
 import { terrainCellKey } from "./terrain-coordinates";
 import { createEtherealEnergy } from "./terrain-ethereal-material";
+import { etherealDepthUniforms } from "./ethereal-depth-look";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
 import {
   buildTerrainFogMask,
@@ -349,7 +350,7 @@ function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogM
   material.toneMapped = true;
   material.fog = false;
 
-  const drift = time.mul(motionStrength);
+  const drift = time.mul(motionStrength).mul(mix(float(1), etherealDepthUniforms.mistDrift, ethereal));
   // Anchor drifting color to the backdrop rather than screen coordinates.
   const fogGround = positionWorld;
   const broadMist = mx_noise_float(
@@ -390,7 +391,9 @@ function createFogMaterial(maskTexture: DataTexture, gameMode: GameModeId): FogM
   // Obscured basalt is a public-coordinate pattern, never a blur of hidden world geometry.
   const slabDistance = terrainHexEdgeDistance(fogGround.xz.div(BASALT_BLOCK_RADIUS)).mul(BASALT_BLOCK_RADIUS);
   const slab = smoothstep(0.025, 0.12, slabDistance).mul(0.003).mul(mistNoise.mul(0.6).add(0.4));
-  const basaltFog = color("#111318").add(slab).add(mistLight.mul(0.065));
+  const basaltFog = etherealDepthUniforms.mistColor
+    .add(slab)
+    .add(mistLight.mul(etherealDepthUniforms.mistLight).mul(etherealDepthUniforms.mistTint));
   material.colorNode = shadeFogHexBoundary(mix(fogColor, basaltFog, ethereal), fogGround.xz);
   material.opacityNode = mix(surfaceOpacity, float(1), streaming);
   return {

@@ -24,6 +24,7 @@ import { findNearestTerrainHex } from "./terrain-coordinates";
 import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
+import { applyEtherealDepthLook, type EtherealDepth } from "./ethereal-depth-look";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
@@ -103,6 +104,7 @@ export class ProceduralTerrain {
   private basaltGeometry: BufferGeometry | null = null;
   private readonly etherealBorders = createEtherealBorderMaterial();
   private surfacePresentation: "world" | "ethereal" = "world";
+  private etherealDepth: EtherealDepth = 1;
   private groundTextureHandle: TerrainGroundTextureHandle | null = null;
   private groundTexturesPromise: Promise<TerrainGroundTextureHandle> | null = null;
   private propLod: TerrainPropLod = "near";
@@ -215,12 +217,23 @@ export class ProceduralTerrain {
     if (presentation === this.surfacePresentation) return;
     this.surfacePresentation = presentation;
     this.fogField.setSurfacePresentation(presentation);
+    applyEtherealDepthLook(presentation === "ethereal" ? this.etherealDepth : 1);
     this.refreshGroundMaterial();
     this.applyAppearance();
   }
 
   getSurfacePresentation(): "world" | "ethereal" {
     return this.surfacePresentation;
+  }
+
+  /** The depth whose palette, mist and light the Ethereal wears; the surface keeps depth I's faint energy. */
+  setEtherealDepth(depth: EtherealDepth): void {
+    this.etherealDepth = depth;
+    applyEtherealDepthLook(this.surfacePresentation === "ethereal" ? depth : 1);
+  }
+
+  getEtherealDepth(): EtherealDepth {
+    return this.etherealDepth;
   }
 
   setQualityTier(tier: TerrainQualityTier): void {

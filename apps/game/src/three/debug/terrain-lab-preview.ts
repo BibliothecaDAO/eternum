@@ -5,9 +5,11 @@ import { resolveTerrainLabStructureType, type TerrainLabBuilding } from "./terra
 import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import type { ModelType } from "@/three/types/army";
 import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
+import type { EtherealDepth } from "@/three/terrain/ethereal-depth-look";
 
 export interface TerrainLabPreview {
   biome: BiomeType | "fixture" | "ethereal";
+  etherealDepth: EtherealDepth;
   fog: "fixture" | "clear" | "frontier" | "covered";
   selection: boolean;
   army: ModelType | "none";
@@ -19,6 +21,7 @@ export interface TerrainLabPreview {
 
 export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
   biome: "fixture",
+  etherealDepth: 1,
   fog: "fixture",
   selection: true,
   army: "none",

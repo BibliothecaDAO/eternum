@@ -1,8 +1,8 @@
 import { applyEndgameFrost } from "../effects/endgame/field";
 import type Node from "three/src/nodes/core/Node.js";
-import { attribute, color, float, fwidth, mix, positionWorld, smoothstep, vec2, vec3 } from "three/tsl";
+import { attribute, float, fwidth, mix, positionWorld, smoothstep, vec2, vec3 } from "three/tsl";
 import { MeshStandardNodeMaterial } from "three/webgpu";
-import { createEtherealSurfacePalette } from "./ethereal-surface-palette";
+import { etherealDepthUniforms } from "./ethereal-depth-look";
 import { BASALT_BLOCK_RADIUS } from "./terrain-basalt";
 
 /** One surface treatment at every zoom and on both occupied and unoccupied tiles. */
@@ -10,7 +10,9 @@ export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
   const material = new MeshStandardNodeMaterial({ metalness: 0, roughness: 0.9 });
   material.name = "terrain-ethereal-basalt";
   material.colorNode = applyEndgameFrost(
-    createBasaltSurface(positionWorld.xz).color.mul(attribute("terrainColor", "vec3")),
+    createBasaltSurface(positionWorld.xz)
+      .color.mul(etherealDepthUniforms.slabTint)
+      .mul(attribute("terrainColor", "vec3")),
   );
   return material;
 }
@@ -66,12 +68,13 @@ export function createBasaltSurface(ground: Node<"vec2">): { color: Node<"vec3">
 
 /** Reuse the existing cloud field in fog: no extra noise samples, geometry, or hidden world data. */
 export function createEtherealEnergy(ground: Node<"vec2">, drift: Node<"float">, cloud: Node<"float">): Node<"vec3"> {
-  const palette = createEtherealSurfacePalette();
   const contour = cloud.sub(0.51).abs();
   const pixelWidth = fwidth(cloud).max(0.001);
   const thread = smoothstep(0.003, pixelWidth.add(0.009), contour).oneMinus();
   const halo = smoothstep(0.008, 0.065, contour).oneMinus().mul(0.13);
   const pulse = ground.x.mul(0.7).add(ground.y.mul(0.43)).sub(drift.mul(0.42)).sin().mul(0.5).add(0.5);
   const flowingLight = smoothstep(0.35, 0.94, pulse).mul(0.8).add(0.2);
-  return mix(color(palette.edgeColor), color(palette.glowColor), pulse).mul(thread.add(halo)).mul(flowingLight);
+  return mix(etherealDepthUniforms.energyEdge, etherealDepthUniforms.energyGlow, pulse)
+    .mul(thread.add(halo))
+    .mul(flowingLight);
 }
