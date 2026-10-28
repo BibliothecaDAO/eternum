@@ -4,6 +4,7 @@ import { useNotificationPreferenceStore } from "@/hooks/use-notification-prefere
 import { getActiveGame } from "@/runtime/world";
 import { buildEntryHref, parsePlayRoute } from "@/play/navigation/play-route";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
+import { nativeGameModeOf } from "@bibliothecadao/eternum";
 import {
   eventConfirmationRank,
   storyEventIdentity,
@@ -95,7 +96,7 @@ function isCurrentDeliveryContext(scope: StoryEventScope, expected: DeliveryCont
 function buildEligibleNotification(value: Record<string, unknown>, scope: StoryEventScope, context: DeliveryContext) {
   const { story, payload } = readNotificationStory(value);
   if (
-    !includesStoryNotification(context.preference.level, story) ||
+    !includesStoryNotification(context.preference.level, story, nativeGameModeOf(context.world.presetId)) ||
     !storyRecipients(story, value.owner, payload).includes(`0x${BigInt(context.account).toString(16)}`)
   )
     return null;

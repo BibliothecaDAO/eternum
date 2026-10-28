@@ -569,6 +569,13 @@ export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
   `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
 export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+/** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
+export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+/** The claimed sheet's ask: a push when the next game day opens, on this device. */
+export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} opens`;
+/** The same ask on an iPhone in its browser, which sends push only to the installed app. */
+export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
+export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
 export const YOUR_REALMS = "Your Realms";

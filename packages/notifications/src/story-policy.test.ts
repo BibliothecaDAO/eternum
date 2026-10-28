@@ -11,45 +11,41 @@ it("covers every native story and tests every cumulative level", () => {
   const storyType = event.event.members.find((member: { name: string }) => member.name === "story").type;
   const variants = schema.types[storyType].variants.map((variant: { name: string }) => variant.name);
   const nativeLevels = {
-    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory"],
-    standard: [
-      "RealmCreatedStory",
-      "SpireDiscovered",
-      "BuildingPlacementStory",
-      "StructureLevelUpStory",
-      "ResourceReceiveArrivalStory",
-      "RelicChestOpened",
-      "RewardChestOpened",
-    ],
-    all: [
+    important: ["BattleEvent", "RaidEvent", "StructureCapturedStory", "SeasonEnded", "BlitzFinalized"],
+    standard: ["ResourceReceiveArrivalStory"],
+    all: ["ResourceTransferStory", "BitcoinAwardStory", "TradeAccepted", "HyperstructurePoints"],
+    // The player's own taps: the Feed and the Log tell them.
+    excluded: [
       "ProductionStory",
       "BuildingPaymentStory",
-      "ResourceTransferStory",
       "ResourceBurnStory",
       "ExplorerCreateStory",
       "ExplorerAddStory",
       "ExplorerDeleteStory",
       "GuardAddStory",
       "GuardDeleteStory",
-      "BitcoinAwardStory",
       "TradeCreated",
-      "TradeAccepted",
       "TradeCancelled",
       "BankSwap",
       "BankLiquidity",
-      "HyperstructurePoints",
       "SkillPointSpent",
       "SitePayout",
       "ExplorationReward",
-      "SeasonEnded",
       "FaithPledged",
       "FaithRemoved",
-      "BlitzFinalized",
       "RelicCrafted",
       "RelicActivated",
       "TroopsTransferred",
+      "RealmCreatedStory",
+      "SpireDiscovered",
+      "BuildingPlacementStory",
+      "StructureLevelUpStory",
+      "RelicChestOpened",
+      "RewardChestOpened",
+      "FaithPointsClaimedStory",
+      "LordsWithdrawn",
+      "SiteUsed",
     ],
-    excluded: ["FaithPointsClaimedStory", "LordsWithdrawn", "SiteUsed"],
   };
   expect([...variants, "BattleEvent", "RaidEvent"].sort()).toEqual(Object.values(nativeLevels).flat().sort());
   for (const [minimum, stories] of Object.entries(nativeLevels)) {
@@ -58,7 +54,7 @@ it("covers every native story and tests every cumulative level", () => {
       for (const level of NOTIFICATION_LEVELS) {
         const expected =
           minimum !== "excluded" && NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(minimum as "all");
-        expect(includesStoryNotification(level, story), `${story} at ${level}`).toBe(expected);
+        expect(includesStoryNotification(level, story, "blitz"), `${story} at ${level}`).toBe(expected);
       }
     }
   }
@@ -73,15 +69,21 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
   const battle = { attacker: { player: "0x0001" }, defender: { player: 2n } };
   expect(storyRecipients("BattleEvent", "0x003", battle)).toEqual(["0x1", "0x2"]);
   expect(storyRecipients("RaidEvent", "0x003", { player: "0x01", target_owner: "2" })).toEqual(["0x1", "0x2"]);
+  // Goods sent: only the receiver hears of them, and nobody of goods moved between their own holdings.
   expect(
     storyRecipients("ResourceTransferStory", "0x003", {
       from_entity_owner_address: "0x01",
       to_entity_owner_address: "2",
     }),
-  ).toEqual(["0x1", "0x2"]);
-  expect(storyRecipients("RealmCreatedStory", "0x003", battle)).toEqual(["0x3"]);
-  expect(storyRecipients("SkillPointSpent", "0x003", { explorer_id: 7 })).toEqual(["0x3"]);
-  expect(storyRecipients("RelicActivated", "0x003", { relic_id: 41, recipient: "Explorer" })).toEqual(["0x3"]);
+  ).toEqual(["0x2"]);
+  expect(
+    storyRecipients("ResourceTransferStory", "0x003", {
+      from_entity_owner_address: "0x02",
+      to_entity_owner_address: "2",
+    }),
+  ).toEqual([]);
+  expect(storyRecipients("SeasonEnded", "0x003", battle)).toEqual(["0x3"]);
+  expect(storyRecipients("SkillPointSpent", "0x003", { explorer_id: 7 })).toEqual([]);
   expect(storyRecipients("BattleEvent", "0xff", { attacker: { player: "0x1" }, defender: { player: "0x01" } })).toEqual(
     ["0x1"],
   );
@@ -90,7 +92,7 @@ it("uses event-time recipients, normalizes duplicates, and excludes neutral addr
   ]);
   expect(storyRecipients("FaithPointsClaimedStory", "0x1", {})).toEqual([]);
   expect(() => storyRecipients("BattleEvent", "0x1", { attacker: {}, defender: {} })).toThrow("event-time");
-  expect(() => storyRecipients("RealmCreatedStory", "garbage", {})).toThrow();
+  expect(() => storyRecipients("SeasonEnded", "garbage", {})).toThrow();
 });
 
 it("validates the versioned preference boundary without accepting owner overrides or invalid revisions", () => {
@@ -113,17 +115,17 @@ it("validates the versioned preference boundary without accepting owner override
 it("excludes unknown variants in production and diagnoses them in development", () => {
   try {
     vi.stubEnv("NODE_ENV", "production");
-    expect(includesStoryNotification("all", "FutureStory")).toBe(false);
+    expect(includesStoryNotification("all", "FutureStory", "blitz")).toBe(false);
     expect(storyRecipients("FutureStory", "0x1", {})).toEqual([]);
     vi.stubEnv("NODE_ENV", "development");
-    expect(() => includesStoryNotification("all", "FutureStory")).toThrow("Unknown notification story");
+    expect(() => includesStoryNotification("all", "FutureStory", "blitz")).toThrow("Unknown notification story");
   } finally {
     vi.unstubAllEnvs();
   }
 });
 
 it("routes native battles and raids to the owners recorded in the event", () => {
-  expect(includesStoryNotification("important", "BattleEvent")).toBe(true);
+  expect(includesStoryNotification("important", "BattleEvent", "blitz")).toBe(true);
   expect(storyRecipients("BattleEvent", null, { attacker: { player: "0x11" }, defender: { player: "0x12" } })).toEqual([
     "0x11",
     "0x12",
@@ -131,20 +133,18 @@ it("routes native battles and raids to the owners recorded in the event", () => 
   expect(storyRecipients("RaidEvent", null, { player: "0x11", target_owner: "0x12" })).toEqual(["0x11", "0x12"]);
 });
 
-it("notifies the acting owner of a native troop transfer only at all activity level", () => {
-  expect(includesStoryNotification("standard", "TroopsTransferred")).toBe(false);
-  expect(includesStoryNotification("all", "TroopsTransferred")).toBe(true);
-  expect(storyRecipients("TroopsTransferred", "0x0003", {})).toEqual(["0x3"]);
-});
-
 it("notifies both owners for player capture, excluding the zero bandit owner", () => {
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x111" })).toEqual(["0x222", "0x111"]);
   expect(storyRecipients("StructureCapturedStory", "0x222", { previous_owner: "0x0" })).toEqual(["0x222"]);
 });
 
-it("notifies only the opening player of a reward chest payment or expiry", () => {
-  for (const amount of [17, 0])
-    expect(storyRecipients("RewardChestOpened", "0x0003", { explorer_id: 7, structure_id: 5, amount })).toEqual([
-      "0x3",
-    ]);
+it("pushes fights between players only where players fight: never in Frontier, whatever the level", () => {
+  for (const story of ["BattleEvent", "RaidEvent", "StructureCapturedStory"]) {
+    for (const level of NOTIFICATION_LEVELS) expect(includesStoryNotification(level, story, "frontier")).toBe(false);
+    for (const mode of ["blitz", "eternum", "duel"] as const)
+      expect(includesStoryNotification("important", story, mode), `${story} in ${mode}`).toBe(true);
+  }
+  // Everything else a Frontier player is pushed is the same as anywhere.
+  expect(includesStoryNotification("important", "SeasonEnded", "frontier")).toBe(true);
+  expect(includesStoryNotification("all", "ResourceTransferStory", "frontier")).toBe(true);
 });

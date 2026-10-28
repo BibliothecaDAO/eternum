@@ -13,15 +13,15 @@ export interface DirectMessageNotificationInput {
 /** Builds a privacy-safe DM alert: sender context is visible, private message text is not. */
 export function buildDirectMessageNotification(value: unknown, now: number): LocalNotificationPayload {
   const input = parseDirectMessageNotificationInput(value);
-  const sender = input.senderDisplayName ?? "another ruler";
+  const sender = input.senderDisplayName ?? "another player";
   return parseNotificationPayload(
     {
       version: 1,
       id: `direct-message:${input.messageId}`,
       tag: `direct-thread:${input.threadId}`,
       owner: input.recipientOwner,
-      title: `A raven from ${sender}`,
-      body: "A private message awaits your reply in Realms.",
+      title: `Message from ${sender}`,
+      body: "Open Realms to read it.",
       target: "/",
       createdAt: input.createdAt,
       expiresAt: input.createdAt + 120_000,

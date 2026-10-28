@@ -23,8 +23,8 @@ const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
 const NO_LEVEL = "" as Level;
 
 /**
- * Notifications (spec 12): three levels with the chosen one's meaning in one line (Important carries the reminder an
- * hour before a Frontier day closes), and This device as one switch. Signed out, the level is kept on this browser and
+ * Notifications (spec 12): three levels with the chosen one's meaning in one line (Important carries the push that opens
+ * each Frontier game day), and This device as one switch. Signed out, the level is kept on this browser and
  * moves to the account at sign-in. A switch that failed turns back with the reason.
  */
 export const NotificationsCard = () => {

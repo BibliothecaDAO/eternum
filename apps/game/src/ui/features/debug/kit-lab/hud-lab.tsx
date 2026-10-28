@@ -224,7 +224,14 @@ const RUIN_CARD: LabSite = {
 const LAB_PRESET = { realmLabor: 1_000 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
-type LabRealms = { eligible: boolean; claimed: boolean; labor: number; limit: number };
+type LabRealms = {
+  eligible: boolean;
+  claimed: boolean;
+  labor: number;
+  limit: number;
+  /** Once claimed, the ask for the next day's push: on a phone that can take it, or an iPhone's browser. */
+  ask?: "remind" | "install";
+};
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
 const NIGHT: DayClock = {
@@ -958,6 +965,20 @@ const STATES = {
     purse: { lords: 1240 },
     realms: { eligible: true, claimed: true, labor: 9640, limit: 18000 },
   },
+  "realms-remind": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "remind" },
+  },
+  "realms-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "install" },
+  },
   "realms-full": {
     clock: CLOCK,
     stores: STORES,
@@ -1656,6 +1677,8 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     dailyEssence={0}
     mark={null}
     secondsLeft={CLOCK.secondsLeft}
+    nextDay={(CLOCK.day ?? 0) + 1}
+    ask={realms.ask ? { kind: realms.ask, busy: false, act: noop } : null}
     sending={false}
     onClaim={noop}
     onRealm={noop}
