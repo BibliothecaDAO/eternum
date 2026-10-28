@@ -495,7 +495,7 @@ pub mod MapLogic {
                         class_hash: self.release.classes(game_id).relics.read(),
                     },
                     crate::troops::ExplorerKey { game_id, explorer_id },
-                    crate::progression::XpAward::Reveal,
+                    crate::progression::XpAward::Reveal(coord),
                 );
             }
             self

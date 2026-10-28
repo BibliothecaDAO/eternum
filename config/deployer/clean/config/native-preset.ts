@@ -4,6 +4,7 @@ import {
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
 import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
+import { nativeProgressionRules } from "../../../source/common/progression";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -322,9 +323,14 @@ function buildEconomy(
     throw new Error("Explicit progression rules are required for expedition presets only");
   if (
     progression &&
-    Object.values(progression).some((value) => !Number.isSafeInteger(value) || value <= 0 || value > 0xffff_ffff)
+    Object.entries(progression).some(
+      ([key, value]) =>
+        !Number.isSafeInteger(value) || value < (key === "revealXpPerDepth" ? 0 : 1) || value > 0xffff_ffff,
+    )
   )
     throw new Error("Progression XP values must be positive u32 integers");
+  if (progression && progression.revealXp + 3 * progression.revealXpPerDepth > 0xffff_ffff)
+    throw new Error("Depth reveal XP exceeds u32");
   const labor = preset.labor;
   if (
     (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
@@ -350,15 +356,7 @@ function buildEconomy(
     progression:
       progression === null
         ? new CairoOption(CairoOptionVariant.None)
-        : new CairoOption(CairoOptionVariant.Some, {
-            reveal_xp: progression.revealXp,
-            fixed_xp: progression.fixedXp,
-            common_xp: progression.commonXp,
-            uncommon_xp: progression.uncommonXp,
-            rare_xp: progression.rareXp,
-            epic_xp: progression.epicXp,
-            legendary_xp: progression.legendaryXp,
-          }),
+        : new CairoOption(CairoOptionVariant.Some, nativeProgressionRules(progression)),
     chests:
       chests === null
         ? new CairoOption(CairoOptionVariant.None)

@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 
 import type { ArmyDetailFacts } from "../army/army-detail";
@@ -69,7 +70,7 @@ const realmOn = (
     // A Knight deploys for 2 wheat; each Rations pick cuts 0.2.
     wheatPerTroop: (rations) => 2 - rations * 0.2,
     laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 4000)) / 10_000,
-    shrineXp: 200,
+    shrineXp: frontierArmyRules().fixed_xp,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
 };
@@ -111,18 +112,7 @@ export const MID_REALM = realmOn(
 );
 
 const ARMY_RULES = {
-  rules: {
-    game_id: 1,
-    reveal_xp: 2,
-    fixed_xp: 200,
-    common_xp: 100,
-    uncommon_xp: 250,
-    rare_xp: 500,
-    epic_xp: 900,
-    legendary_xp: 1500,
-  },
-  revealXp: 2,
-  shrineXp: 200,
+  rules: frontierArmyRules(),
 };
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */

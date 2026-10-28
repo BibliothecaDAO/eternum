@@ -544,12 +544,13 @@ describe("native presets", () => {
     });
     expect(design.economy.relics).toEqual([]);
     expect(design.economy.progression.unwrap()).toEqual({
-      common_xp: 100,
+      common_xp: 75,
       reveal_xp: 2,
+      reveal_xp_per_depth: 1,
       fixed_xp: 200,
-      uncommon_xp: 250,
-      rare_xp: 500,
-      epic_xp: 900,
+      uncommon_xp: 200,
+      rare_xp: 400,
+      epic_xp: 800,
       legendary_xp: 1500,
     });
     expect(design.settlement.realms.resources).toEqual([

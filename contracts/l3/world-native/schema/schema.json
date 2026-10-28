@@ -2834,6 +2834,12 @@
           "feltLength": 1
         },
         {
+          "name": "reveal_xp_per_depth",
+          "type": "core::integer::u32",
+          "id": "0x72657665616c5f78705f7065725f6465707468",
+          "feltLength": 1
+        },
+        {
           "name": "fixed_xp",
           "type": "core::integer::u32",
           "id": "0x66697865645f7870",
@@ -2871,7 +2877,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 7,
+      "valueLength": 8,
       "derivedFrom": "preset"
     },
     {
@@ -11065,6 +11071,10 @@
           "type": "core::integer::u32"
         },
         {
+          "name": "reveal_xp_per_depth",
+          "type": "core::integer::u32"
+        },
+        {
           "name": "fixed_xp",
           "type": "core::integer::u32"
         },
@@ -11180,7 +11190,7 @@
       "variants": [
         {
           "name": "Reveal",
-          "type": "()"
+          "type": "world_native::troops::Coord"
         },
         {
           "name": "Clear",
@@ -13557,5 +13567,5 @@
       ]
     }
   },
-  "identity": "436974d742494cbea971ef70f5a88bfc35bed41f1e668327ef0dcd8b005bed46"
+  "identity": "0ce1949d00478066c27292de613ff22aee76f6f2d74294a2d159501f3f014423"
 }

@@ -152,6 +152,7 @@ fn exploration_discovers_a_camp_without_moving_the_explorer_into_it() {
     let origin = troops.explorer(key).unwrap().coord;
     assert!(execute(d, Command::Explore(Explore { explorer_id, direction: 0 }), 140));
     assert_eq!(troops.explorer(key).unwrap().coord, origin);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
     let destination = neighbor(origin, 0);
     let _tile = IMapLogicDispatcher { contract_address: d.games }.tile(tile_key(3, destination)).unwrap();
     let occupancy = IMapLogicDispatcher { contract_address: d.games }.occupancy(tile_key(3, destination)).unwrap();
@@ -197,6 +198,7 @@ fn eternum_exploration_does_not_create_a_camp() {
     assert!(!occupant.is_structure);
     assert_eq!(occupant.entity_id, explorer_id);
     assert_eq!(troops.explorer(key).unwrap().coord, destination);
+    assert!(snforge_std::interact_with_state(d.games, || crate::logic::progression::read(key)).is_none());
 }
 
 #[test]

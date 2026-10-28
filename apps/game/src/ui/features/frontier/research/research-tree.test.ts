@@ -93,9 +93,8 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
     expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
   });
 
-  it("names the army's camp clear and its Scouting kind by the Troll", () => {
+  it("names the army's Scouting kind by the Troll", () => {
     const army = readArmyDetail({ ...VETERAN_ARMY, progress: { ...VETERAN_ARMY.progress, scoutingKinds: ["camp"] } });
-    expect(army.earn.map(({ line }) => line)).toContain("Clear a Troll");
     expect(army.attributes.find(({ key }) => key === "scouting")?.now).toBe("+10% discovery on Trolls");
     expect(JSON.stringify(army)).not.toMatch(/Camp/);
   });

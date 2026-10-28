@@ -82,6 +82,7 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
+        let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
         assert!(
             progression.reveal_xp != 0
                 && progression.fixed_xp != 0

@@ -25,7 +25,7 @@ const buildingRows = [
   })),
 ];
 
-export const frontierPreset: NativePreset = {
+export const frontierPreset = {
   ledger: {
     protocolCutBps: 0,
     mmrEnabled: false,
@@ -114,11 +114,12 @@ export const frontierPreset: NativePreset = {
   },
   progression: {
     revealXp: 2,
+    revealXpPerDepth: 1,
     fixedXp: 200,
-    commonXp: 100,
-    uncommonXp: 250,
-    rareXp: 500,
-    epicXp: 900,
+    commonXp: 75,
+    uncommonXp: 200,
+    rareXp: 400,
+    epicXp: 800,
     legendaryXp: 1500,
   },
   labor: { amount: 1000, campaignEssence: 0, goldenAmount: 1000, goldenEssence: 0 },
@@ -192,4 +193,4 @@ export const frontierPreset: NativePreset = {
       chest: { common: 0, uncommon: 0, rare: 0, epic: 6400, legendary: 3600 },
     },
   ],
-};
+} satisfies NativePreset;

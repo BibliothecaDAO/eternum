@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { readExpeditionRules, setBuildingCount } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -235,16 +236,7 @@ const researchPriced = (): LabFact[] => [
   {
     model: "ArmyProgressionRules",
     key: "0x1ac40",
-    value: {
-      common_xp: 100,
-      game_id: 1,
-      reveal_xp: 2,
-      fixed_xp: 200,
-      uncommon_xp: 250,
-      rare_xp: 500,
-      epic_xp: 900,
-      legendary_xp: 1500,
-    },
+    value: frontierArmyRules(),
   },
 ];
 

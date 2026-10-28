@@ -2,7 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 
 // The selected army (7) has pinned an explore of the tile (1, 2); its realm's wheat is what the test holds.
 vi.mock("@/hooks/context/game-context", () => ({
-  useGame: () => ({ setup: { store: { get: () => ({ owner: 1n, troops: {} }) } } }),
+  useGame: () => ({
+    setup: {
+      store: {
+        get: (model: "ExplorerTroops" | "ArmyProgressionRules" | "SliceRules" | "GameRegistry" | "SettlementRules") =>
+          ({
+            ExplorerTroops: { owner: 1n, troops: {} },
+            ArmyProgressionRules: { reveal_xp: 2, reveal_xp_per_depth: 1 },
+            SliceRules: { day_unit_seconds: 7200 },
+            SettlementRules: { spacing: 100 },
+            GameRegistry: { start_main_at: 0, seed: 1n },
+          })[model],
+      },
+    },
+  }),
 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCurrentDefaultTick: () => 1 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
@@ -20,6 +33,7 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@bibliothecadao/eternum")>();
   return {
     ...actual,
+    FELT_CENTER: () => 0,
     ActionPaths: { posKey: () => "tile", getActionType: () => actual.ActionType.Explore },
     configManager: { getActiveGameId: () => 1, getExploreStaminaCost: () => 21 },
     // The balance as the chain stores it, at the resource's precision.
@@ -54,3 +68,10 @@ describe("an order's wheat, held exactly against its charge", () => {
     expect(wheat.wait).toBeCloseTo(3, 6);
   });
 });
+
+it.each([
+  [2, 2],
+  [102, 3],
+  [202, 4],
+  [302, 5],
+])("previews the revealed tile's XP at row %s", (row, xp) => expect(useOrderAt({ col: 1, row })!.xp).toBe(xp));

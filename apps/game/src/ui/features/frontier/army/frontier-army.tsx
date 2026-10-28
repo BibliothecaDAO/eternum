@@ -75,8 +75,6 @@ const ArmyPanel = ({
     },
     points: heldSkillPoints(progress),
     rules,
-    revealXp: rules.reveal_xp,
-    shrineXp: rules.fixed_xp,
   };
 
   const levelUp = async (choice: SkillPointChoice) => {
