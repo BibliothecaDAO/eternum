@@ -356,6 +356,12 @@ export const ROOMS: LabRoom[] = [
             "terrain-props",
             load(() => import("../ui/features/debug/terrain-prop-debug-view"), "TerrainPropDebugView"),
           ),
+          view(
+            "Biome study",
+            "/lab/biome-study",
+            "biome-study",
+            load(() => import("./biome-study/view"), "BiomeStudyView"),
+          ),
         ],
       },
       {

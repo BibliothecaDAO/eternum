@@ -74,6 +74,7 @@
     "verify:outposts": "node scripts/outposts/verify-outpost.mjs",
     "prove:endgame": "node ./scripts/run-endgame-mist-study.mjs",
     "prove:studio": "node ./scripts/prove-lab-studio.mjs",
+    "prove:biome-study": "node ./scripts/prove-biome-study.mjs",
     "prove:day-end": "node ./scripts/prove-lab-day-end.mjs",
     "prove:lab-load": "node ./scripts/prove-lab-load.mjs",
     "prove:frontier-feed": "node ./scripts/prove-frontier-feed.mjs",
