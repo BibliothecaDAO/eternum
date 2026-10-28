@@ -316,7 +316,6 @@ export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
-export const BEASTS = structureName(StructureType.Beasts, undefined, "frontier");
 export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
