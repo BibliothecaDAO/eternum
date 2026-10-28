@@ -1535,18 +1535,18 @@ const TOKEN_ABOVE_TILE_PX = 100;
 
 /**
  * Two of the realm's armies merged as a player merges them, then hovered (owner, 2026-10-25: "due to an army merge I dont
- * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed and
- * answered by the chain; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none.
- * merge-keeps-picked keeps the army picked (today's rule when it has more progression); merge-keeps-tapped keeps the
- * army tapped (the merged-into army, as from release 3).
+ * see the hover label"): the spire's army picked, the other right-clicked for the transfer card, its Merge pressed (and
+ * pressed again where the button then names the XP the merge loses) and answered by the chain, which keeps the army
+ * tapped; then the surviving army's tile, hovered, opens its plate, and the emptied tile opens none. In merge-loses-xp
+ * the picked army holds 100 XP, so the second press reads `confirm`; in merge-keeps-tapped one press merges.
  */
-function labMergeSteps() {
+function labMergeSteps(confirm) {
   const tiles = { byArmy: null };
   return [
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
     { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
     { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
-    { name: "merge", play: pressMerge, settleMs: 1_000, verify: oneArmyLeft },
+    { name: "merge", play: pressMerge, settleMs: 1_000, verify: (context) => mergedIntoTheTapped(context, confirm) },
     {
       name: "hover-survivor",
       play: (context) => hoverTheTileOf(context, tiles, "survivor"),
@@ -1766,27 +1766,46 @@ function mergeCardOpen({ played }) {
   return merge ? completed({ ...played, merge }) : failed("the card offers no Merge", played);
 }
 
-/** Presses the card's Merge, then waits for the chain's answer to leave the realm one army. */
+/**
+ * Presses the card's Merge and, when the button then asks again with the XP the merge loses, that button too; then waits
+ * for the chain's answer to leave the realm one army.
+ */
 async function pressMerge({ browser }) {
   const before = browser.read(MERGE_STATE);
   const merge = before.buttons.find((text) => text.startsWith("Merge into"));
   if (merge) browser.click(merge);
+  const asked = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.sent.length > 0 || shown.buttons.some((text) => text.startsWith("Lose ")),
+    MERGE_WAIT_MS,
+  );
+  const confirm = asked.sent.length > 0 ? null : (asked.buttons.find((text) => text.startsWith("Lose ")) ?? null);
+  if (confirm) browser.click(confirm);
   const after = await readUntil(
     () => ({ ...browser.read(MERGE_STATE), armies: browser.armies() }),
     (shown) => shown.destroyed.length === 1 && shown.armies.length === 1,
     MERGE_WAIT_MS,
   );
-  return { merge, before, after };
+  return { merge, confirm, before, after };
 }
 
-function oneArmyLeft({ played }) {
+/** The merge asked again only where it loses XP, in those words; it sent the transfer, and only the army tapped is left. */
+function mergedIntoTheTapped({ played }, confirm) {
   if (!played.merge) return failed("no Merge to press", played);
+  if (played.confirm !== confirm)
+    return failed(
+      confirm ? `the merge never asked "${confirm}"` : `a merge that loses no XP asked "${played.confirm}"`,
+      played,
+    );
   if (!played.after.sent.includes("ManageTroops")) return failed("Merge sent no troop transfer", played);
   if (played.after.destroyed.length !== 1) return failed("the chain's answer destroyed no army", played);
+  if (played.after.destroyed[0] !== PICKED_ARMY)
+    return failed(`the merge kept the army picked, not army ${played.after.destroyed[0]} it was merged into`, played);
   if (played.after.armies.length !== 1)
     return failed(`the HUD lists ${played.after.armies.length} armies after the merge`, played);
   return completed({
     merge: played.merge,
+    confirm: played.confirm,
     sent: played.after.sent,
     destroyed: played.after.destroyed[0],
     left: played.after.armies,
@@ -2275,12 +2294,15 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
-  "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },
-  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps() },
+  "lab-merge-loses-xp": {
+    game: labSpireGame("merge-loses-xp"),
+    steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
+  },
+  "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
-  "lab-hover-zoom-pair": { game: labSpireGame("merge-keeps-picked"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },

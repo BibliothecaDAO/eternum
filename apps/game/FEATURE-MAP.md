@@ -514,17 +514,18 @@ involved. `--steps lab-realm-load` times the same game's realm view as a player 
 map, then again, then the realm's address loaded again), with what each step downloads; add `--network 20,40` for a
 player's connection.
 
-`/lab/game?scenario=merge-keeps-picked` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and
-2,517 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps
-the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
-army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
-(guard 999), both on battle cooldown; its Feed holds that fight and another player's lost fight at a site the map never
-loaded; `scenario=low-stamina` is that army beside the same ruin with 5 stamina and no cooldown, short of an attack.
-`scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the spire, and leaves another
-cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token. `scenario=explore`
-stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double tap or a desktop's
-right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and `lab-after-battle` check that
-hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
+`/lab/game?scenario=merge-loses-xp` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and 2,517
+knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps the
+army tapped. In `merge-loses-xp` the picked army holds 100 XP, so the button then asks **Lose 100 XP, merge into Army
+2** before it sends. `scenario=after-battle` is the owner's army after its fight on prod (25 October 2026): 4,015
+knights on the camp they cleared, beside the ruin they attacked (guard 999), both on battle cooldown; its Feed holds
+that fight and another player's lost fight at a site the map never loaded; `scenario=low-stamina` is that army beside
+the same ruin with 5 stamina and no cooldown, short of an attack. `scenario=cleared-camp` stands the realm's second army
+on a camp it cleared, away from the spire, and leaves another cleared camp empty: tap the army for its panel, and the
+empty camp shows its standard with no token. `scenario=explore` stands the spire's army at the edge of the land it has
+seen, fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-loses-xp`,
+`lab-merge-keeps-tapped` and `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a
+merge emptied opens none.
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies

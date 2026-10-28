@@ -936,7 +936,7 @@ export const HudRow = ({
   title,
   detail,
   trail,
-  selected = false,
+  selected,
   state,
   disabled,
   busy,
@@ -954,6 +954,7 @@ export const HudRow = ({
    * never one button inside another.
    */
   trail?: ReactNode;
+  /** Whether the row is the one chosen; absent on a row that does something rather than choosing (Deploy). */
   selected?: boolean;
   state?: string;
   disabled?: boolean;
@@ -965,7 +966,13 @@ export const HudRow = ({
 }) => {
   if (trail !== undefined) {
     return (
-      <div className="ui-row" aria-selected={selected} aria-disabled={disabled} data-state={state} data-tip={tip}>
+      <div
+        className="ui-row"
+        aria-selected={selected ?? false}
+        aria-disabled={disabled}
+        data-state={state}
+        data-tip={tip}
+      >
         {lead}
         {onClick ? (
           <button
@@ -1005,7 +1012,7 @@ export const HudRow = ({
       className="ui-row"
       aria-label={label}
       role="option"
-      aria-selected={selected}
+      aria-selected={selected ?? false}
       data-state={state}
       data-tip={tip}
       disabled={disabled}
@@ -1017,7 +1024,7 @@ export const HudRow = ({
     <div
       className="ui-row"
       role="option"
-      aria-selected={selected}
+      aria-selected={selected ?? false}
       aria-disabled={disabled}
       data-state={state}
       data-tip={tip}
