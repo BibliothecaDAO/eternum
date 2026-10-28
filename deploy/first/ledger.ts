@@ -83,6 +83,10 @@ export async function deployAsset(
   const classHash = hash.computeSierraContractClassHash(artifacts.contract);
   const salt = fixedSalt(environment, account.address, plan.name);
   const address = hash.calculateContractAddressFromHash(salt, classHash, plan.constructor, 0);
+  if (store.read(retiredPin(plan.name, address)))
+    throw new PublicError(
+      `The retired ${plan.name} has this address; change its constructor or deployer to deploy a new one`,
+    );
   const pin = { classHash, address, constructor: plan.constructor };
   const previous = store.read<typeof pin>(`asset-${plan.name}.json`);
   if (previous && JSON.stringify(previous) !== JSON.stringify(pin))
@@ -141,7 +145,6 @@ export function recordedLedgerBlock(target: Target): number | undefined {
   return typeof block === "number" ? block : undefined;
 }
 export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBlock: number) {
-  const path = join(root, "contracts/common/addresses", target.book);
   const book: Record<string, string | number> = addressBook(target);
   for (const [key, value] of Object.entries({
     ledger: assets.ledger,
@@ -158,10 +161,17 @@ export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBl
   if (recorded !== undefined && recorded !== ledgerDeploymentBlock)
     throw new PublicError("Address book already names another ledger deployment block");
   book.ledgerDeploymentBlock = ledgerDeploymentBlock;
+  writeAddressBook(target, book);
+}
+/** Replaces the environment's public address book in one rename; it always names mainnet. */
+export function writeAddressBook(target: Target, book: Record<string, string | number>) {
+  const path = join(root, "contracts/common/addresses", target.book);
   const temporary = `${path}.${process.pid}.tmp`;
   writeFileSync(temporary, JSON.stringify({ ...book, l2Chain: "SN_MAIN" }, null, 2) + "\n", { flag: "wx" });
   renameSync(temporary, path);
 }
+/** The private record of a retired contract's pin; setup never deploys that contract at its address again. */
+export const retiredPin = (name: keyof Assets, address: string) => `retired-asset-${name}-${num.toHex(address)}.json`;
 const call = (contractAddress: string, entrypoint: string, values: Parameters<typeof CallData.compile>[0]): Call => ({
   contractAddress,
   entrypoint,

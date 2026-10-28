@@ -2,6 +2,7 @@
 
     sudo python3 backup.py capture PROJECT DATA_DIR DEST
     sudo python3 backup.py restore-test PROJECT DEST
+    sudo python3 backup.py verify PROJECT DEST
 
 PROJECT is the shard's compose project and DATA_DIR its private data directory (the package's SHARD_DATA). Capture
 writes DEST once: Herald's Postgres hot (a base backup plus a dump), the chain as a cold copy of the node's volume
@@ -9,8 +10,11 @@ taken while the node is stopped, the private VRF key, the data directory, the im
 checksums of all of it, then `capture.json`. The node is down only while its volume is copied; capture.json records
 how long. Restore-test brings the copy up in scratch containers without a network, compares the restored chain's
 block at the captured head with the running node's, restores both Postgres copies, and writes
-`restore-test/result.json`; it exits non-zero unless everything matches.
+`restore-test/result.json`; it exits non-zero unless everything matches. Verify is what a production teardown asks
+before it removes a shard: the copy's checksums hold, its restore test passed, it is of the running chain (the node
+still has the captured head) and it was captured within the hour, so it holds the shard as drained.
 """
+import calendar
 import hashlib
 import json
 import os
@@ -26,6 +30,8 @@ from stack_lock import LOCK, isolated_stack_lock
 POSTGRES_USER = "herald"
 DATABASE = "herald"
 STOP_GRACE_SECONDS = 60
+# A teardown removes the shard; its copy must be the state the operator just drained, not an older one.
+MAX_VERIFIED_AGE_SECONDS = 3600
 # One line per user table, `schema.table|rows`, exact rather than estimated.
 COUNTS_SQL = """SELECT format('SELECT %L || ''|'' || count(*) FROM %I.%I;', schemaname || '.' || relname, schemaname,
 relname) FROM pg_stat_user_tables ORDER BY schemaname, relname
@@ -59,6 +65,28 @@ def restore_test(project, dest):
 
 
 # Capture
+
+
+def verify(project, dest, now=None):
+    """Every reason this copy cannot stand in for the running shard; empty when it can."""
+    record = json.loads((dest / "capture.json").read_text())
+    result = json.loads((dest / "restore-test" / "result.json").read_text())
+    problems = []
+    try:
+        verify_checksums(dest)
+    except RuntimeError as error:
+        problems.append(str(error))
+    if record.get("project") != project or result.get("project") != project:
+        problems.append("the copy is of another shard")
+    if result.get("passed") is not True:
+        problems.append("its restore test did not pass")
+    head = record["chain"]["head"]
+    if node_block(f"{project}-madara-1", {"block_number": head["block_number"]}) != head:
+        problems.append("the running chain differs from the copy's head")
+    taken = calendar.timegm(time.strptime(record["finished"], "%Y-%m-%dT%H:%M:%SZ"))
+    if (now if now is not None else time.time()) - taken > MAX_VERIFIED_AGE_SECONDS:
+        problems.append("it was captured more than an hour ago")
+    return problems
 
 
 def capture_postgres(project, dest):
@@ -298,6 +326,10 @@ def main(argv):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
+    elif argv[:1] == ["verify"] and len(argv) == 3:
+        problems = verify(argv[1], Path(argv[2]).resolve())
+        print(json.dumps({"verified": not problems, "problems": problems}))
+        sys.exit(0 if not problems else 1)
     else:
         raise SystemExit(__doc__)
 

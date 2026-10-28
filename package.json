@@ -102,6 +102,7 @@
     "fixtures:native-lords-budget": "python3 contracts/l3/world-native/scripts/generate-lords-budget-fixtures.py",
     "test:deployment": "bun test deploy/first/*.test.ts",
     "setup": "bun --no-env-file deploy/first/owner-command.ts setup",
+    "retire": "bun --no-env-file deploy/first/retire.ts",
     "deploy": "bun --no-env-file deploy/first/deploy.ts",
     "deploy:cloudflare": "bun --no-env-file deploy/first/cloudflare.ts",
     "season": "bun --no-env-file deploy/first/owner-command.ts season",
