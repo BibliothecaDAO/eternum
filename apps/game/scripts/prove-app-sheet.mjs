@@ -54,6 +54,14 @@ const SOCIALS = ["X", "Discord", "Telegram", "CoinGecko", "GitHub"].map(
 const BAR_CASES = [
   { name: "bar-long-name-1024", path: "long-name", viewport: ["1024", "768"], desktop: true, place: "Play" },
   { name: "bar-long-name-1440", path: "long-name", viewport: ["1440", "900"], desktop: true, place: "Play" },
+  // A page whose notice is words alone (a signed-out visitor's Build orders), at the desktop's narrowest width.
+  {
+    name: "bar-words-notice-1024",
+    path: "first-visit/blitz/build-orders",
+    viewport: ["1024", "768"],
+    desktop: true,
+    place: "Play",
+  },
   { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "What's new" },
   { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
@@ -315,6 +323,11 @@ const barChecks = (b) => {
       const rect = control.getBoundingClientRect();
       return { text: control.textContent.trim().slice(0, 30), whole: control.scrollWidth <= control.clientWidth + 1, onScreen: rect.left >= 0 && rect.right <= innerWidth && rect.width >= 24, rect };
     });
+    // A notice with no verb is its words: they stay drawn whatever the width (review, 10-28: a narrow desktop hid them).
+    const unread = [...bar.querySelectorAll(".app-notice")]
+      .filter((notice) => !notice.querySelector(".app-button"))
+      .filter((notice) => (notice.querySelector(".app-notice__words")?.getBoundingClientRect().width ?? 0) < 24)
+      .map((notice) => notice.textContent);
     // Two controls drawn over each other (audit 10-27, 18: Install under the player's name at 1024).
     const overlapping = controls.flatMap((one, index) =>
       controls.slice(index + 1)
@@ -327,6 +340,7 @@ const barChecks = (b) => {
       markWidth: Math.round(bar.querySelector('[data-role="lockup"] img')?.getBoundingClientRect().width ?? 0),
       controls,
       overlapping,
+      unread,
     };
   })()`);
   return [
@@ -334,6 +348,7 @@ const barChecks = (b) => {
     { check: "the bar's mark keeps its width", ok: bar.markWidth >= 100 },
     { check: "the bar's controls are whole and on the screen", ok: bar.controls.every((control) => control.onScreen) },
     { check: "no control in the bar over another", ok: bar.overlapping.length === 0, overlapping: bar.overlapping },
+    { check: "a notice without verbs shows its words", ok: bar.unread.length === 0, unread: bar.unread },
   ];
 };
 

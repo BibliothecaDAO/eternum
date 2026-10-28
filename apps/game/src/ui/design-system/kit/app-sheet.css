@@ -323,9 +323,10 @@
   .app-bar__end {
     gap: theme(spacing.2);
   }
-  /* Under 1280 the bar has room for a notice's icon and verbs beside the places and the player, not its line: the line
-     is still read out, never drawn under the player. */
-  .app-bar__end > [data-band="notice"] .app-notice__words {
+  /* Under 1280 the bar has room for a notice's icon and verbs beside the places and the player, not its line: where
+     the notice has verbs (Install, Update, Try again), they carry it, and its line is still read out, never drawn under
+     the player. A notice that is its words alone ("Sign in to save your orders.") keeps them. */
+  .app-bar__end > [data-band="notice"] .app-notice:has(.app-button) .app-notice__words {
     position: absolute;
     width: 1px;
     height: 1px;
