@@ -101,9 +101,9 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
 });
 
 describe("an army's detail as progression rules it", () => {
-  it("reads the owner's army: 12 of the 100 XP its first level-up costs, nothing to buy yet", () => {
+  it("reads the owner's army: 12 of the 75 XP its first point needs, nothing to buy yet", () => {
     const army = readArmyDetail(EARLY_ARMY);
-    expect([army.goal, army.available]).toEqual([{ rank: 1, at: 100, from: 0, share: 0.12 }, 0]);
+    expect([army.goal, army.available]).toEqual([{ rank: 1, at: 75, from: 0, share: 0.16 }, 0]);
     expect(army.attributes.map(({ name, now, next }) => [name, now, next?.change])).toEqual([
       ["Battle", "0% damage", "0% → +10% damage"],
       ["Logistics", "120 max stamina", "120 → 140 max stamina"],
