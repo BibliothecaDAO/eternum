@@ -4,11 +4,10 @@ import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
 import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
+import { addressBook, blitzPresetOf, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
-import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { resolveBlitzSeason } from "./blitz-season";
+import { setupSeason, type BlitzWindow } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
@@ -35,9 +34,9 @@ export function assetPlans(
   treasury: string,
   assets: Partial<Assets>,
 ): AssetPlan[] {
-  // Each environment deploys the assets its book does not name: production's book names dev's test LORDS, so it
-  // deploys its own rating token and collections and owns its ledger, roles and pause.
-  const testAssets: AssetPlan[] = [
+  // Each environment deploys the assets its book does not name (a test token only when it names no LORDS), so it owns
+  // its rating token, collections, ledger, roles and pause.
+  const ownAssets: AssetPlan[] = [
     { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
     { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
     {
@@ -53,7 +52,7 @@ export function assetPlans(
       constructor: collectibleConstructor(target.cosmeticsName, target.collectionDescription, admin),
     },
   ];
-  const plans = testAssets.filter((plan) => !assets[plan.name]);
+  const plans = ownAssets.filter((plan) => !assets[plan.name]);
   if (assets.lords && assets.mmr && assets.chests && assets.cosmetics)
     plans.push({
       name: "ledger",
@@ -84,6 +83,10 @@ export async function deployAsset(
   const classHash = hash.computeSierraContractClassHash(artifacts.contract);
   const salt = fixedSalt(environment, account.address, plan.name);
   const address = hash.calculateContractAddressFromHash(salt, classHash, plan.constructor, 0);
+  if (store.read(retiredPin(plan.name, address)))
+    throw new PublicError(
+      `The retired ${plan.name} has this address; change its constructor or deployer to deploy a new one`,
+    );
   const pin = { classHash, address, constructor: plan.constructor };
   const previous = store.read<typeof pin>(`asset-${plan.name}.json`);
   if (previous && JSON.stringify(previous) !== JSON.stringify(pin))
@@ -142,7 +145,6 @@ export function recordedLedgerBlock(target: Target): number | undefined {
   return typeof block === "number" ? block : undefined;
 }
 export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBlock: number) {
-  const path = join(root, "contracts/common/addresses", target.book);
   const book: Record<string, string | number> = addressBook(target);
   for (const [key, value] of Object.entries({
     ledger: assets.ledger,
@@ -159,10 +161,17 @@ export function publishAssets(target: Target, assets: Assets, ledgerDeploymentBl
   if (recorded !== undefined && recorded !== ledgerDeploymentBlock)
     throw new PublicError("Address book already names another ledger deployment block");
   book.ledgerDeploymentBlock = ledgerDeploymentBlock;
+  writeAddressBook(target, book);
+}
+/** Replaces the environment's public address book in one rename; it always names mainnet. */
+export function writeAddressBook(target: Target, book: Record<string, string | number>) {
+  const path = join(root, "contracts/common/addresses", target.book);
   const temporary = `${path}.${process.pid}.tmp`;
   writeFileSync(temporary, JSON.stringify({ ...book, l2Chain: "SN_MAIN" }, null, 2) + "\n", { flag: "wx" });
   renameSync(temporary, path);
 }
+/** The private record of a retired contract's pin; setup never deploys that contract at its address again. */
+export const retiredPin = (name: keyof Assets, address: string) => `retired-asset-${name}-${num.toHex(address)}.json`;
 const call = (contractAddress: string, entrypoint: string, values: Parameters<typeof CallData.compile>[0]): Call => ({
   contractAddress,
   entrypoint,
@@ -172,12 +181,12 @@ export function setupCalls(
   target: Target,
   assets: Assets,
   pauser: string,
-  start: number,
-  end: number,
-  seasonId: number,
   frontierPresetId: number,
+  blitz: BlitzWindow | null,
 ) {
   const chests = chestPresetFor(target.environment as Environment);
+  // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
+  const blitzPreset = blitz ? blitzPresetOf(target) : null;
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
@@ -187,19 +196,25 @@ export function setupCalls(
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
     ...chests.bands.map((band) => metadata(assets.chests, band.metadata)),
     ...awardableCosmetics(chests).map((item: number) => metadata(assets.cosmetics, item)),
-    call(assets.ledger, "register_preset", [
-      target.blitzPreset,
-      buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
-      chests.bands,
-      chests.items,
-    ]),
+    ...(blitzPreset === null
+      ? []
+      : [
+          call(assets.ledger, "register_preset", [
+            blitzPreset,
+            buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
+            chests.bands,
+            chests.items,
+          ]),
+        ]),
     call(assets.ledger, "register_preset", [
       frontierPresetId,
       buildLedgerEconomicPreset("frontier", { chests, presetId: frontierPresetId }),
       chests.bands,
       chests.items,
     ]),
-    call(assets.ledger, "open_season", [seasonId, target.blitzPreset, start, end]),
+    ...(blitzPreset === null
+      ? []
+      : [call(assets.ledger, "open_season", [blitz!.seasonId, blitzPreset, blitz!.start, blitz!.end])]),
   ];
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
@@ -338,15 +353,13 @@ export async function configureLedger(
   output: (line: string) => void,
   readPresence = setupPresenceReader(account),
 ) {
-  const start = seconds(input.blitzStart);
-  const end = seconds(input.blitzEnd);
-  const season = await resolveBlitzSeason(account, assets.ledger, start, end);
-  const desired = setupCalls(target, assets, pauser, start, end, season.id, Number(input.frontierPresetId));
+  const season = await setupSeason(account, target, assets.ledger, input);
+  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId), season.blitz);
   output("Reading collectible metadata on mainnet.");
   const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
-  if (missing.some((call) => call.entrypoint === "open_season") && start <= season.now)
+  if (missing.some((call) => call.entrypoint === "open_season") && season.blitz!.start <= season.now)
     throw new PublicError(
       "Blitz start is no longer in the future. Choose new explicit dates in inputs.json before sending setup.",
     );
@@ -354,6 +367,13 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(account, missing, store, `setup-${assets.ledger}-${season.id}`, output, season.head);
+  await send(
+    account,
+    missing,
+    store,
+    `setup-${assets.ledger}-${season.blitz?.seasonId ?? "frontier"}`,
+    output,
+    season.head,
+  );
   return true;
 }

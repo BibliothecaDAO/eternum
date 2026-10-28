@@ -1,7 +1,10 @@
 """Back up one shard and prove the copy restores.
 
+    sudo python3 backup.py quiesce PROJECT
+    sudo python3 backup.py reopen PROJECT
     sudo python3 backup.py capture PROJECT DATA_DIR DEST
     sudo python3 backup.py restore-test PROJECT DEST
+    sudo python3 backup.py verify PROJECT DEST
 
 PROJECT is the shard's compose project and DATA_DIR its private data directory (the package's SHARD_DATA). Capture
 writes DEST once: Herald's Postgres hot (a base backup plus a dump), the chain as a cold copy of the node's volume
@@ -10,6 +13,14 @@ checksums of all of it, then `capture.json`. The node is down only while its vol
 how long. Restore-test brings the copy up in scratch containers without a network, compares the restored chain's
 block at the captured head with the running node's, restores both Postgres copies, and writes
 `restore-test/result.json`; it exits non-zero unless everything matches.
+
+A final copy, the one a production teardown removes the shard after, is taken at a write boundary. The shard's RPC
+proxy is its one write path (the node publishes no port) and also the path the value relay reads receipts through:
+quiesce makes the proxy refuse every write while it keeps answering reads (read-rpc.ts WRITES_CLOSED_FILE, in its
+public configuration), so outstanding withdrawals are still found and paid; reopen lifts it. Verify then asks: the
+copy's checksums hold, its restore test passed, it is of the running chain (the node still has the captured head),
+the proxy refuses a write now, and no block after the captured head holds a transaction. Blocks keep coming (the node
+seals empty ones), but none of them changed the game.
 """
 import hashlib
 import json
@@ -26,6 +37,8 @@ from stack_lock import LOCK, isolated_stack_lock
 POSTGRES_USER = "herald"
 DATABASE = "herald"
 STOP_GRACE_SECONDS = 60
+# Blocks read per RPC batch when counting what the node accepted after a capture.
+BLOCKS_PER_BATCH = 100
 # One line per user table, `schema.table|rows`, exact rather than estimated.
 COUNTS_SQL = """SELECT format('SELECT %L || ''|'' || count(*) FROM %I.%I;', schemaname || '.' || relname, schemaname,
 relname) FROM pg_stat_user_tables ORDER BY schemaname, relname
@@ -59,6 +72,71 @@ def restore_test(project, dest):
 
 
 # Capture
+
+
+# read-rpc.ts: the file the proxy looks for in its /config volume, and the refusal it then answers every write with.
+WRITES_CLOSED_FILE = "writes-closed"
+WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup"
+
+
+def quiesce(project):
+    """Makes the shard's RPC proxy refuse every write; reads, the node, Herald and the relay keep running."""
+    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).write_text("closed\n")
+    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
+
+
+def reopen(project):
+    """Lifts quiesce: the proxy takes writes again, and any earlier final copy no longer verifies."""
+    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).unlink(missing_ok=True)
+    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
+
+
+def accepts_writes(project):
+    """Whether the running proxy would take a write: it is asked one, from inside the stack, and must refuse it as
+    closed. A proxy without the switch (an older image) answers otherwise and counts as open."""
+    request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_addInvokeTransaction", "params": [{}]})
+    answer = docker(["exec", f"{project}-madara-1", "curl", "-s", "-m", "10", "-X", "POST", "-H",
+                     "content-type: application/json", "-d", request, "http://rpc:8080/"], check=False).stdout
+    try:
+        return json.loads(answer).get("error", {}).get("message") != WRITES_CLOSED_MESSAGE
+    except (json.JSONDecodeError, AttributeError):
+        return True
+
+
+def transactions_after(container, number):
+    """How many transactions the node holds in the blocks after `number`, up to its head."""
+    head = node_rpc(container, "starknet_blockNumber", [])
+    count = 0
+    for start in range(number + 1, head + 1, BLOCKS_PER_BATCH):
+        batch = [{"jsonrpc": "2.0", "id": block, "method": "starknet_getBlockTransactionCount",
+                  "params": [{"block_number": block}]} for block in range(start, min(start + BLOCKS_PER_BATCH, head + 1))]
+        count += sum(answer["result"] for answer in node_batch(container, batch))
+    return count
+
+
+def verify(project, dest):
+    """Every reason this copy cannot stand in for the running shard as drained; empty when it can."""
+    record = json.loads((dest / "capture.json").read_text())
+    result = json.loads((dest / "restore-test" / "result.json").read_text())
+    problems = []
+    try:
+        verify_checksums(dest)
+    except RuntimeError as error:
+        problems.append(str(error))
+    if record.get("project") != project or result.get("project") != project:
+        problems.append("the copy is of another shard")
+    if result.get("passed") is not True:
+        problems.append("its restore test did not pass")
+    head = record["chain"]["head"]
+    node = f"{project}-madara-1"
+    if node_block(node, {"block_number": head["block_number"]}) != head:
+        problems.append("the running chain differs from the copy's head")
+    if accepts_writes(project):
+        problems.append("the shard still accepts writes: quiesce it, drain, then capture")
+    accepted = transactions_after(node, head["block_number"])
+    if accepted:
+        problems.append(f"{accepted} transactions were accepted after the capture: capture the drained shard again")
+    return problems
 
 
 def capture_postgres(project, dest):
@@ -233,6 +311,15 @@ def node_rpc(container, method, params):
     return json.loads(response)["result"]
 
 
+def node_batch(container, requests):
+    response = docker_output(["exec", container, "curl", "-s", "-m", "30", "-X", "POST", "-H",
+                              "content-type: application/json", "-d", json.dumps(requests), "http://127.0.0.1:9944"])
+    answers = json.loads(response)
+    if not isinstance(answers, list) or len(answers) != len(requests) or any("result" not in answer for answer in answers):
+        raise RuntimeError("The node did not answer every block in its batch")
+    return answers
+
+
 def node_block(container, block):
     result = node_rpc(container, "starknet_getBlockWithTxHashes", [block])
     return {key: result[key] for key in ("block_number", "block_hash", "new_root")}
@@ -298,6 +385,16 @@ def main(argv):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
+    elif argv[:1] == ["quiesce"] and len(argv) == 2:
+        result = quiesce(argv[1])
+        print(json.dumps(result))
+        sys.exit(0 if result["writes"] == "closed" else 1)
+    elif argv[:1] == ["reopen"] and len(argv) == 2:
+        print(json.dumps(reopen(argv[1])))
+    elif argv[:1] == ["verify"] and len(argv) == 3:
+        problems = verify(argv[1], Path(argv[2]).resolve())
+        print(json.dumps({"verified": not problems, "problems": problems}))
+        sys.exit(0 if not problems else 1)
     else:
         raise SystemExit(__doc__)
 

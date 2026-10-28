@@ -904,7 +904,7 @@ export const ENTRY_WORDS = {
   whereItGoes: "Season pool, chests and treasury",
 } as const;
 
-/** The test token every environment's ledger is paid in, minted to the wallet that pays. */
+/** A ledger's test token, minted to the wallet that pays. */
 export const mintTestTokenWord = (amount: string) => `Mint ${amount} test tokens`;
 
 /** After a paid Blitz: the rating's change and the chest the result minted. */

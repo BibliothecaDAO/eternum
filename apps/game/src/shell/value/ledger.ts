@@ -104,14 +104,13 @@ export const registerCalls = (
 ];
 
 /**
- * What one tap mints of the test token every environment's ledger is paid in: enough for a ranked entry with its
- * sword and its shield.
+ * What one tap mints of a ledger's test token: enough for a ranked entry with its sword and its shield.
  */
 export const TEST_TOKEN_MINT = 1_000n * LORDS_UNIT;
 
 /**
- * mint(recipient, amount) on the test token the environment's ledger names as its payment token: that token's own
- * public mint, open to any caller, to the wallet given. The caller pays its network fee.
+ * mint(recipient, amount) on a ledger's test token: that token's own public mint, open to any caller, to the wallet
+ * given. The caller pays its network fee.
  */
 export const mintTestTokenCall = (token: string, recipient: string): Call => ({
   contractAddress: token,

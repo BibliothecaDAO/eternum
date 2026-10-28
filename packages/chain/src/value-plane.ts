@@ -1,5 +1,7 @@
 import devAddresses from "../../../contracts/common/addresses/dev.json";
 import productionAddresses from "../../../contracts/common/addresses/production.json";
+import { ChainId } from "./chains";
+import { LORDS } from "./contracts";
 
 export type ValuePlaneContract =
   | "ledger"
@@ -67,6 +69,13 @@ export const ledgerDeploymentBlock = (
     );
   return block;
 };
+
+/**
+ * Whether a ledger's token is a test token: anything but Starknet's LORDS. A test token has a public mint anyone may
+ * call; LORDS has none, so nothing mints the LORDS a payer lacks.
+ */
+export const isTestLords = (token: string): boolean =>
+  BigInt(token) !== BigInt(LORDS[ChainId.SN_MAIN]!.address);
 
 /** One environment book supplies every build and Worker's L2 and ledger; absence never selects another book. */
 export const environmentL2 = (environment: ValueEnvironment) => {

@@ -26,7 +26,11 @@ const input = {
   amount: "1000",
 } as Inputs;
 type Phase = { phase: string; presetId?: number; startsAt: string; endsAt: string };
-function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt: input.blitzEnd }]) {
+function setup(
+  phases: Phase[],
+  windows = [{ startsAt: input.blitzStart!, endsAt: input.blitzEnd! }],
+  target: (typeof environments)[keyof typeof environments] = environments.dev,
+) {
   spyOn(Date, "now").mockReturnValue(now);
   const base = mkdtempSync(join(tmpdir(), "calendar-recovery-"));
   temporary.push(base);
@@ -42,6 +46,7 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
   });
   const writes: { url: string; body: unknown }[] = [];
   const output: string[] = [];
+  const ledgerReads: string[][] = [];
   globalThis.fetch = mock(async (url, init) => {
     if (init?.method === "PUT") {
       const body = JSON.parse(String(init.body));
@@ -52,8 +57,8 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
     return Response.json({ phases });
   }) as unknown as typeof fetch;
   const context = {
-    target: environments.dev,
-    environment: "dev",
+    target,
+    environment: target.environment,
     apply: true,
     revision,
     store,
@@ -63,6 +68,7 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
     provider: {
       getBlockWithTxHashes: async () => ({ block_number: 100, timestamp: Date.now() / 1000 }),
       callContract: async ({ calldata }: { calldata: string[] }) => {
+        ledgerReads.push(calldata);
         const window = windows[Number(calldata[0]) - 1];
         if (!window) throw { code: 40, message: "Ledger: unknown Blitz season" };
         return [
@@ -77,8 +83,26 @@ function setup(phases: Phase[], windows = [{ startsAt: input.blitzStart, endsAt:
       },
     } as unknown as RpcProvider,
   } as Deployment;
-  return { context, output, writes, step: seasonSteps(context).find((step) => step.name === "Season calendar")! };
+  return {
+    context,
+    output,
+    writes,
+    ledgerReads,
+    step: seasonSteps(context).find((step) => step.name === "Season calendar")!,
+  };
 }
+test("a Frontier-only environment writes its Frontier phase alone and reads no Blitz season", async () => {
+  const { blitzStart: _blitzStart, blitzEnd: _blitzEnd, ...frontierOnly } = input;
+  const { context, step, writes, ledgerReads } = setup([], [], environments.production);
+  context.inputs = frontierOnly as Inputs;
+  expect((await step.inspect()).done).toBe(false);
+  await step.apply();
+  expect(writes.map(({ url, body }) => [url.split("/").at(-1), body])).toEqual([
+    ["frontier", { presetId: 5, startsAt: "2027-02-01T00:00:00.000Z", endsAt: "2027-02-21T00:00:00.000Z" }],
+  ]);
+  expect(ledgerReads).toEqual([]);
+  expect((await step.inspect()).done).toBe(true);
+});
 test("ended phases, including the exact end boundary, are replaced with explicit new dates", async () => {
   const { step, writes } = setup(
     ["frontier", "blitz"].map((phase) => ({
@@ -128,7 +152,7 @@ test("calendar accepts season two from the ledger after the first ended", async 
     [],
     [
       { startsAt: "2026-01-01T00:00:00Z", endsAt: "2027-01-01T00:00:00Z" },
-      { startsAt: input.blitzStart, endsAt: input.blitzEnd },
+      { startsAt: input.blitzStart!, endsAt: input.blitzEnd! },
     ],
   );
   await step.apply();
