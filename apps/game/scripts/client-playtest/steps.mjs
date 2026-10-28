@@ -2041,11 +2041,11 @@ function reloadOn(place, scene, labScenario = null) {
  * The game entered, cold then warm, and what keeps running once it is: the boot (a fresh profile), then a still window
  * read for the frame callbacks, timers, CSS animations, hidden full-screen layers and canvases still alive after the
  * doorway handed off, then the same address loaded again from the HTTP cache and the same read. A player enters through
- * the home page's card (`--player`), a spectator by the Watch link.
+ * the home page's card (`--player`), a spectator by the Watch link; the lab's built Kingdom needs no live game.
  */
-const ENTRY_STEPS = [
+const entrySteps = (labScenario = null) => [
   { name: "after-entry", play: readWhatKeepsRunning, settleMs: 0, verify: inScene("map") },
-  { name: "reload-on-map", play: reloadOn("Map", "map"), settleMs: 0, verify: inScene("map") },
+  { name: "reload-on-map", play: reloadOn("Map", "map", labScenario), settleMs: 0, verify: inScene("map") },
   { name: "after-reload", play: readWhatKeepsRunning, settleMs: 0, verify: inScene("map") },
 ];
 
@@ -2106,7 +2106,8 @@ export const STEP_SETS = {
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
   "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
   "lab-season-opens": { game: labDayTurn("season-opens"), steps: LAB_SEASON_OPENS_STEPS },
-  entry: { game: FRONTIER, steps: ENTRY_STEPS },
+  entry: { game: FRONTIER, steps: entrySteps() },
+  "lab-entry": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: entrySteps("painted-buildings") },
   "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
   "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
   "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },
