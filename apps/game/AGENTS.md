@@ -119,9 +119,10 @@ pnpm --dir apps/game playtest --base-url https://127.0.0.1:4174 --iterations 1  
 
 Options: `--renderer-modes webgpu-auto,webgpu-force-webgl` (default both), `--iterations` (default 3),
 `--cpu-throttle 4` (Chrome's CPU slowdown of this machine; not a measured laptop), `--gpu low-power` (the page on the
-machine's integrated GPU, a phone's class of GPU: the browser is launched seeing only that GPU through Mesa's Vulkan
-device selection, and a run that drew on another fails), `--network 20,40` (Chrome shapes the page's link to that many
-Mbit/s and that round trip in ms, so a load is timed as a player's connection serves it), `--chain-id` and `--game-id`,
+machine's integrated GPU, a phone's class of GPU: the one device `vulkaninfo --summary` calls integrated, refused when
+there is none or more than one; the browser is launched seeing only that GPU through Mesa's Vulkan device selection, and
+a run that drew on another fails), `--network 20,40` (Chrome shapes the page's link to that many Mbit/s and that round
+trip in ms, so a load is timed as a player's connection serves it), `--chain-id` and `--game-id`,
 `--steps ownership-rings` (the map unselected, the player's realm selected with its owner's holdings ringed, held and
 panned, then cleared: the rings' frame cost; each phase checks the selection and ring count the page reports in
 `window.__eternumMapSelection`, and fails on a build that does not report them), `--steps blitz-orders` (a seated player

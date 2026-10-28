@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { execFileSync } from "node:child_process";
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -17,26 +17,38 @@ const scratch = () => {
   return dir;
 };
 
-/** A /sys/class/drm with a card per entry: [name, vendor, device, boot_vga]. */
-function drmTree(cards) {
-  const root = scratch();
-  for (const [name, vendor, device, bootVga] of cards) {
-    mkdirSync(join(root, name, "device"), { recursive: true });
-    writeFileSync(join(root, name, "device", "vendor"), `${vendor}\n`);
-    writeFileSync(join(root, name, "device", "device"), `${device}\n`);
-    writeFileSync(join(root, name, "device", "boot_vga"), `${bootVga}\n`);
-  }
-  mkdirSync(join(root, "card1-DP-1"));
-  return root;
-}
+/** `vulkaninfo --summary`'s device list, one GPUn block per [vendor, device, type, name], in the order given. */
+const vulkanSummary = (devices) =>
+  [
+    "Devices:",
+    "========",
+    ...devices.flatMap(([vendor, device, type, name], index) => [
+      `GPU${index}:`,
+      "\tapiVersion         = 1.4.318",
+      `\tvendorID           = 0x${vendor}`,
+      `\tdeviceID           = 0x${device}`,
+      `\tdeviceType         = PHYSICAL_DEVICE_TYPE_${type}`,
+      `\tdeviceName         = ${name}`,
+    ]),
+  ].join("\n");
 
-it("finds the card the display did not boot on, as Mesa names it", () => {
-  const root = drmTree([
-    ["card0", "0x1002", "0x13C0", 0],
-    ["card1", "0x1002", "0x7550", 1],
-  ]);
-  expect(findIntegratedGpu(root)).toEqual({ vendor: "1002", device: "13c0" });
-  expect(() => findIntegratedGpu(drmTree([["card0", "0x1002", "0x7550", 1]]))).toThrow("no second GPU");
+const DISCRETE = ["1002", "7550", "DISCRETE_GPU", "AMD Radeon RX 9070 XT (RADV GFX1201)"];
+const INTEGRATED = ["1002", "13C0", "INTEGRATED_GPU", "AMD Ryzen 7 9800X3D (RADV RAPHAEL_MENDOCINO)"];
+const CPU = ["10005", "0000", "CPU", "llvmpipe"];
+
+it("finds the integrated GPU by Vulkan's device type, whichever card booted the display", () => {
+  const integrated = { vendor: "1002", device: "13c0", name: INTEGRATED[3] };
+  // The discrete card first (it booted the display), then the integrated one first: the same answer either way.
+  expect(findIntegratedGpu(vulkanSummary([DISCRETE, INTEGRATED, CPU]))).toEqual(integrated);
+  expect(findIntegratedGpu(vulkanSummary([INTEGRATED, DISCRETE, CPU]))).toEqual(integrated);
+});
+
+it("refuses a machine with no integrated GPU, or more than one", () => {
+  expect(() => findIntegratedGpu(vulkanSummary([DISCRETE, CPU]))).toThrow("no integrated GPU");
+  const second = ["8086", "a7a0", "INTEGRATED_GPU", "Intel Iris Xe"];
+  expect(() => findIntegratedGpu(vulkanSummary([INTEGRATED, second, DISCRETE]))).toThrow(
+    "2 integrated GPUs, which one is ambiguous",
+  );
 });
 
 it("launches the browser seeing only that GPU through Vulkan", () => {
