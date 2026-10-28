@@ -36,6 +36,10 @@ export const BEAST = "Beast";
 
 export const LEFT = "left";
 export const DAY = "Day";
+/** A day of the season against its last: "Day 10 of 14". */
+export const dayOfSeason = (day: string, lastDay: string) => `${DAY} ${day} of ${lastDay}`;
+/** When the season ends, as a local day and clock time: "Season ends 31 Oct 21:40". */
+export const seasonEnds = (moment: string) => `Season ends ${moment}`;
 
 /**
  * The day's clock, written here once (live-qa-night-1 P3-8: the HUD said "Tomorrow lasts 1d" where Play said "24h"):

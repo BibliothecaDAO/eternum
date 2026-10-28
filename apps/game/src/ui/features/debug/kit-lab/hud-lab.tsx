@@ -88,6 +88,10 @@ const CLOCK: DayClock = {
   tone: "calm",
 };
 
+/** The season the fiction's Day 12 stands in: its last day the 14th, ending two days after today at 21:40. */
+const SEASON_LAST_DAY = 14;
+const SEASON_ENDS_AT = CLOCK.endsAt! + 2 * 24 * HOUR;
+
 const UNKNOWN_CLOCK: DayClock = {
   day: undefined,
   endsAt: undefined,
@@ -726,6 +730,8 @@ const STATES = {
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
+  // In the realm with its labor store full (audit 10-27): Next up says so, with no "Open the realm" that goes nowhere.
+  "realm-labor-full": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmView: "build" },
   "army-refill": {
     clock: CLOCK,
     stores: STORES,
@@ -1165,6 +1171,8 @@ export const HudLab = () => {
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={noop}
+                onClose={noop}
+                ends={{ at: SEASON_ENDS_AT, day: CLOCK.day, lastDay: SEASON_LAST_DAY }}
               />
             )
           ) : undefined
@@ -1193,7 +1201,7 @@ export const HudLab = () => {
           !lab.visiting && (
             <PlaceNav
               place={lab.chat && !desktop ? "chat" : lab.menu || lab.season ? "menu" : lab.research ? "research" : null}
-              onRealm={lab.realmView !== undefined || lab.building !== undefined}
+              onRealm={inTheRealm(lab)}
               onGo={noop}
               realmDot={lab.realmDot}
               researchDot={!lab.offline}
@@ -1375,9 +1383,13 @@ const LabResearch = () => {
       sending={new Set()}
       fixFor={() => undefined}
       onResearch={noop}
+      onClose={noop}
     />
   );
 };
+
+/** Whether the lab state stands in the realm view (its board, castle or a building's card), as Next up reads it. */
+const inTheRealm = (lab: LabState): boolean => lab.realmView !== undefined || lab.building !== undefined;
 
 /** Next up on the lab's realm at a state: the coach's steps, their buttons doing nothing. */
 const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
@@ -1390,7 +1402,7 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
       ...lab.nextUp,
     },
-    { pointer: desktop ? "mouse" : "touch", where: "map", tips: true },
+    { pointer: desktop ? "mouse" : "touch", where: inTheRealm(lab) ? "realm" : "map", tips: true },
   ).map((step) => ({
     key: step.key,
     kind: "order",
@@ -1594,6 +1606,7 @@ const LabResults = ({
   ) : (
     <TodaySheet
       day={results === "today-earlier" ? 11 : 12}
+      lastDay={SEASON_LAST_DAY}
       today={results !== "today-earlier"}
       clock={CLOCK}
       totals={{ reveals: 19, cleared: 2, chests: 0, essence: 4_150, labor: 550, lords: 0 }}
