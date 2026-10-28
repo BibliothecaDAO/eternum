@@ -24,7 +24,8 @@ import { isTransferPair } from "@/ui/features/economy/transfers/transfer-pair";
 import { dispatchRightClick } from "./worldmap-right-click";
 import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
-import { whenPipelineCompilesSettle, type PipelineCompiler } from "@/three/pipeline-compiler";
+import { whenModelPreparationSettles } from "@/three/model-preparation";
+import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
@@ -604,9 +605,9 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 };
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
-// The entry's pipelines took up to ~3 s on a phone stand-in (CPU 4×); a slower phone keeps headroom before the doorway
-// gives up waiting for them.
-const ENTRY_PIPELINES_WAIT_MS = 10_000;
+// The entry's models took up to ~3 s to prepare on a phone stand-in (CPU 4×); a slower phone keeps headroom before the
+// doorway gives up waiting for them.
+const ENTRY_MODELS_WAIT_MS = 10_000;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 /** A tile the selected army's routes never reached: out of reach, as the planner says of a target beyond its step. */
 const BEYOND_REACH: OrderRefusal = { reason: "too-far" };
@@ -4489,19 +4490,20 @@ export default class WorldmapScene extends WarpTravel {
     if (phase === "initial") {
       recordGameEntryDuration("worldmap-first-terrain", performance.now() - startedAt);
       markGameEntryMilestone("worldmap-terrain-visible");
-      await this.waitForEntryPipelines();
+      await this.waitForEntryModels();
     }
   }
 
   /**
-   * The doorway stays up until the models already loading have their pipelines: their shader builds run behind it, not
-   * in the first frames a player sees (one to three seconds of stutter on a phone otherwise).
+   * The doorway stays up until the models the opening view asked for are loaded and their pipelines compiled: their
+   * shader builds run behind it, not in the first frames a player sees (one to three seconds of stutter on a phone
+   * otherwise).
    */
-  private async waitForEntryPipelines(): Promise<void> {
-    if ((await whenPipelineCompilesSettle(ENTRY_PIPELINES_WAIT_MS)) === "timed-out") {
-      console.warn(`[Worldmap] entry pipelines still compiling after ${ENTRY_PIPELINES_WAIT_MS}ms; entering anyway`);
+  private async waitForEntryModels(): Promise<void> {
+    if ((await whenModelPreparationSettles(ENTRY_MODELS_WAIT_MS)) === "timed-out") {
+      console.warn(`[Worldmap] entry models still preparing after ${ENTRY_MODELS_WAIT_MS}ms; entering anyway`);
     }
-    markGameEntryMilestone("worldmap-pipelines-ready");
+    markGameEntryMilestone("worldmap-models-ready");
   }
 
   private async waitForLatestTerrainPresentation(): Promise<void> {
