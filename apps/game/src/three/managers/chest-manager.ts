@@ -5,7 +5,8 @@ import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
-import { ChestTransitions } from "../rewards/chest-transitions";
+import { type ChestGlow, ChestTransitions } from "../rewards/chest-transitions";
+import { type ChestPrize, chestRewardPrizes } from "../rewards/chest-reward-reveal";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
 import { Position, nativeGameModeOf, configManager, type ChestReward } from "@bibliothecadao/eternum";
@@ -54,6 +55,10 @@ import {
 } from "../frame-budget-work-queue";
 
 const MAX_INSTANCES = 1000;
+/** The transition slot of the chest a reward stages at the screen's centre: it stands on no tile. */
+const CENTRE_KEY = "centre";
+/** How much of the screen's height the centred chest fills, whatever the zoom. */
+const CENTRE_SCREEN_SHARE = 0.14;
 
 export class ChestManager {
   private scene: THREE.Scene;
@@ -153,7 +158,9 @@ export class ChestManager {
   private applyContentLadder(ladder: WorldmapContentLadder): void {
     this.contentLadder = ladder;
     if (this.chestModel) this.chestModel.group.visible = ladder.structureModels;
-    if (this.chestTransitions) this.chestTransitions.group.visible = ladder.structureModels;
+    // A chest staged at the screen's centre shows at every zoom; the map's own chests follow the ladder.
+    if (this.chestTransitions)
+      this.chestTransitions.group.visible = ladder.structureModels || this.chestTransitions.has(CENTRE_KEY);
     this.pointsRenderer?.setEnabled(ladder.entityIcons);
     this.labelsGroup.visible = ladder.labels;
   }
@@ -310,12 +317,28 @@ export class ChestManager {
     const key = this.transitionKey(tile);
     const opened = this.chestTransitions.start(key, "open", this.chestPlacement(tile), this.chestModel.time);
     if (!opened) return false;
-    this.chestTransitions.revealReward(key, reward);
+    this.chestTransitions.revealReward(key, chestRewardPrizes(reward));
     const chest = this.worldSpatialProjection.getChestsAtHex(hexCoords)[0];
     const instance = chest ? this.chestInstanceIndices.get(chest.entityId) : undefined;
     if (instance !== undefined) this.chestModel.removeInstance(instance);
     this.updateChestMarkers();
     return true;
+  }
+
+  /**
+   * A reward's chest at the centre of the screen: it arrives on the ground the camera looks at, sized to the screen
+   * whatever the zoom, opens by itself with `prizes` in `glow`, and goes. Nothing on the map is replaced or held. The
+   * chest's model loads first when no chest on the map has needed it yet.
+   */
+  public async presentAtScreenCentre(prizes: readonly ChestPrize[], glow?: ChestGlow): Promise<boolean> {
+    await this.prepareModel();
+    const camera = this.hexagonScene?.getCamera();
+    if (!this.chestModel || !this.chestTransitions || !camera) return false;
+    const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE);
+    if (!placement) return false;
+    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, prizes, glow);
+    this.applyContentLadder(this.contentLadder);
+    return presented;
   }
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
@@ -670,12 +693,28 @@ export class ChestManager {
     const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
     this.chestModel?.updatePresentation(nightAmount, cameraPosition);
     this.chestModel?.updateAnimations(deltaTime);
+    const presenting = this.chestTransitions?.has(CENTRE_KEY) ?? false;
     if (
       this.chestModel &&
       this.chestTransitions?.update(deltaTime, this.chestModel.time, cameraPosition, nightAmount)
     ) {
+      if (presenting && !this.chestTransitions.has(CENTRE_KEY)) this.applyContentLadder(this.contentLadder);
       for (const chest of this.visibleChests) this.updateChestInstance(chest);
       this.updateChestMarkers();
     }
   }
 }
+
+/**
+ * Where a chest stands at the screen's centre: on the ground under it, scaled so the chest fills `share` of the
+ * screen's height at the camera's distance. None when the camera looks at no ground.
+ */
+const screenCentrePlacement = (camera: THREE.Camera, share: number): THREE.Matrix4 | null => {
+  const direction = camera.getWorldDirection(new THREE.Vector3());
+  if (direction.y >= 0) return null;
+  const distance = -camera.position.y / direction.y;
+  const ground = camera.position.clone().addScaledVector(direction, distance);
+  const fov = camera instanceof THREE.PerspectiveCamera ? THREE.MathUtils.degToRad(camera.fov) : Math.PI / 4;
+  const scale = share * 2 * distance * Math.tan(fov / 2);
+  return new THREE.Matrix4().compose(ground, new THREE.Quaternion(), new THREE.Vector3(scale, scale, scale));
+};

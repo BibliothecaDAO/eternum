@@ -5,7 +5,7 @@ import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
-import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { NativeFactStore, nativeModelDefinition } from "@bibliothecadao/eternum/game-client";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
@@ -106,7 +106,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   const chain = new NativeFactStore();
   chain.applyFacts(rowsOf(scenario.store) as never);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
-  const herald = new LabHerald(chain, now, () => (record.streams += 1));
+  const herald = new LabHerald(chain, now, () => (record.streams += 1), nativeModelDefinition(nativeBindings));
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
@@ -348,6 +348,8 @@ class LabHerald {
     private readonly chain: NativeFactStore,
     private readonly now: () => number,
     private readonly opened: () => void,
+    /** Each model's definition, as the game's transport reads it: an event's rows are streamed, never kept. */
+    private readonly modelDefinition: (name: string) => { deletion: "component" | "event-ephemeral" },
   ) {}
 
   confirmedBlock(): number {
@@ -419,9 +421,11 @@ class LabHerald {
     }
   }
 
-  /** A command's facts land pre-confirmed in the next block, then its status. */
+  /** A command's facts land pre-confirmed in the next block, its events with them as Herald streams them, then its status. */
   apply(hash: string, facts: LabFact[]) {
-    this.chain.applyFacts(facts as never);
+    this.chain.applyFacts(
+      facts.filter((fact) => this.modelDefinition(fact.model).deletion !== "event-ephemeral") as never,
+    );
     const block = ++this.block;
     this.sequenced({
       type: "diff",

@@ -1,10 +1,9 @@
-import { ChestRewardReveal } from "./chest-reward-reveal";
+import { type ChestPrize, ChestRewardReveal } from "./chest-reward-reveal";
 import { AnimationMixer, Group, Matrix4, Scene, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { RewardSummoning } from "./reward-summoning";
 import { ChestPresentation } from "./chest-presentation";
-import type { ChestReward } from "@bibliothecadao/eternum";
 
 interface ChestTransition {
   root: Group;
@@ -15,7 +14,12 @@ interface ChestTransition {
   reward?: ChestRewardReveal;
   tileKey?: string;
   kind?: "summon" | "open";
+  /** A presented chest's prizes: it opens on its own with them once it has arrived. */
+  opensWith?: readonly ChestPrize[];
 }
+
+/** A chest's glow as it opens: its rarity's colour leaking from the lid, on its runes and up its beams. */
+export type ChestGlow = Parameters<RewardSummoning["setGlow"]>[0];
 
 /** A bounded, precompiled pool for transient effects; persistent chests stay instanced. */
 export class ChestTransitions {
@@ -61,6 +65,8 @@ export class ChestTransitions {
     if (actor.tileKey === tileKey && actor.kind === kind) return true;
     actor.reward?.dispose();
     actor.reward = undefined;
+    actor.opensWith = undefined;
+    actor.effect.clearGlow();
     placement.decompose(actor.root.position, actor.root.quaternion, actor.root.scale);
     actor.tileKey = tileKey;
     actor.kind = kind;
@@ -74,6 +80,24 @@ export class ChestTransitions {
     return true;
   }
 
+  /**
+   * A chest that arrives (its summon), then opens by itself and gives `prizes`, glowing in `glow` when it has one, and
+   * goes once they are absorbed: a reward staged on its own, with nothing to press.
+   */
+  present(
+    tileKey: string,
+    placement: Matrix4,
+    animationTime: number,
+    prizes: readonly ChestPrize[],
+    glow?: ChestGlow,
+  ): boolean {
+    if (!this.start(tileKey, "summon", placement, animationTime)) return false;
+    const actor = this.active.get(tileKey)!;
+    actor.opensWith = prizes;
+    if (glow) actor.effect.setGlow(glow);
+    return true;
+  }
+
   has(tileKey: string): boolean {
     return this.active.has(tileKey);
   }
@@ -82,10 +106,10 @@ export class ChestTransitions {
     return [...this.active.values()].some((actor) => Boolean(actor.reward));
   }
 
-  revealReward(tileKey: string, reward: ChestReward): void {
+  revealReward(tileKey: string, prizes: readonly ChestPrize[]): void {
     const actor = this.active.get(tileKey);
     if (!actor || actor.reward) return;
-    actor.reward = new ChestRewardReveal(reward);
+    actor.reward = new ChestRewardReveal(prizes);
     actor.root.add(actor.reward.label);
     actor.reward.update(actor.effect.openingElapsed);
   }
@@ -101,6 +125,7 @@ export class ChestTransitions {
     for (const [tileKey, actor] of this.active) {
       actor.mixer.setTime(animationTime);
       actor.effect.update(delta, animationTime);
+      if (actor.opensWith && actor.effect.isSummoned) this.openPresented(tileKey, actor);
       actor.presentation.setOpening(actor.kind === "open");
       actor.presentation.setNightAmount(nightAmount);
       if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
@@ -111,12 +136,22 @@ export class ChestTransitions {
     return true;
   }
 
+  /** A presented chest has arrived: it opens and its prizes come out. */
+  private openPresented(tileKey: string, actor: ChestTransition): void {
+    const prizes = actor.opensWith!;
+    actor.opensWith = undefined;
+    actor.kind = "open";
+    actor.effect.open();
+    this.revealReward(tileKey, prizes);
+  }
+
   cancel(tileKey: string): void {
     const actor = this.active.get(tileKey);
     if (!actor) return;
     actor.root.visible = false;
     actor.reward?.dispose();
     actor.reward = undefined;
+    actor.opensWith = undefined;
     actor.tileKey = undefined;
     actor.kind = undefined;
     this.active.delete(tileKey);

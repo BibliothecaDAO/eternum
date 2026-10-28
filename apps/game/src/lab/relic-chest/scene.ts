@@ -10,6 +10,7 @@ import { configureGltfTextureSupport, gltfLoader } from "@/three/utils/utils";
 import { disposeSkinnedSceneTemplates } from "@/three/characters/skinned-asset-resources";
 import { ChestModelPath } from "@/three/constants/scene-constants";
 import { ChestTransitions } from "@/three/rewards/chest-transitions";
+import { chestRewardPrizes } from "@/three/rewards/chest-reward-reveal";
 import { RewardTileModel } from "@/three/rewards/reward-tile-model";
 import { ModelLabEnvironment } from "@/three/debug/model-lab/model-lab-environment";
 import { readModelLabSettings } from "@/three/debug/model-lab/model-lab-settings";
@@ -170,7 +171,7 @@ export async function mountChestProof(
       open: (reward) => {
         model!.setCount(0);
         transitions!.start("0,0", "open", placement, model!.time);
-        transitions!.revealReward("0,0", reward);
+        transitions!.revealReward("0,0", chestRewardPrizes(reward));
         plate.visible = false;
       },
     };

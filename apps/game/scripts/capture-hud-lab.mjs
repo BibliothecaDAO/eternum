@@ -259,7 +259,6 @@ export const SURFACES = [
   // Twelve-digit sides whose short figures would read alike: exact, set smaller to fit, on the attack card.
   { name: "frontier-site-alike", path: "/lab/kit/hud/site-alike", mark: "frontier", ...FIGHT_FITS },
   { name: "frontier-day-done", path: "/lab/kit/hud/day-done-full", mark: "frontier", sizes: CARDS },
-  { name: "frontier-clear-ruin", path: "/lab/kit/hud/clear-ruin", mark: "frontier", sizes: CARDS },
 ];
 
 /**

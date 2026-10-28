@@ -31,7 +31,6 @@ import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
-import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
@@ -179,7 +178,6 @@ type LabDeploy = {
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
-type LabChest = Parameters<typeof RuinChestMoment>[0];
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
@@ -694,18 +692,6 @@ const STATES = {
       xp: 50,
     },
   },
-  "clear-ruin": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    chest: { tier: 3, lords: 128, xp: 145, troopsLost: 1_250, onDone: () => undefined },
-  },
-  "clear-ruin-legendary": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    chest: { tier: 5, lords: 640, xp: 145, troopsLost: 1_250, onDone: () => undefined },
-  },
   "last-hour": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true },
   "day-done": { clock: NIGHT, stores: STORES, armies: [], dayDone: DAY_DONE },
   "day-done-full": {
@@ -1045,7 +1031,6 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
-  chest?: LabChest;
   deploy?: LabDeploy;
   clock: DayClock;
   stores: readonly StoreReading[];
@@ -1238,7 +1223,6 @@ export const HudLab = () => {
         )}
         {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
-        {lab.chest && <RuinChestMoment {...lab.chest} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
       </LabBands>

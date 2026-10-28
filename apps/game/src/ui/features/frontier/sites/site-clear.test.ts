@@ -24,7 +24,7 @@ import { WorldUpdateListener } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { ClearedRuinChest } from "../chest/cleared-ruin-chest";
-import { RUIN_CHEST_SHOWN_MS } from "../chest/ruin-chest-moment";
+import { onRewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
 import { campBeside, SITE } from "./site-fixture";
 import { closeRuinChest, playSiteClear, useRuinChest } from "./site-clear-moment";
 import { payoutSprites, type SiteClear } from "./site-outcome";
@@ -122,16 +122,25 @@ describe("the site-cleared moment", () => {
         );
         expect(burst).toHaveBeenCalledTimes(1);
         expect(flights).toEqual([expect.objectContaining({ announce: amount, count: 6, delayMs: 300 })]);
+        const requested: unknown[] = [];
+        const stopRequests = onRewardChestRequest((request) => requested.push(request));
         act(() => vi.advanceTimersByTime(300));
-        const chest = host.querySelector<HTMLElement>('[role="status"]');
-        expect(chest).not.toBeNull();
-        expect(chest!.querySelector(`[aria-label="${amount} LORDS"]`)).not.toBeNull();
-        expect(chest!.textContent).toContain("−90");
+        stopRequests();
         expect(plays).toEqual(["combat.victory", "site.clear"]);
-        // Nothing to press: no button, and every click goes through to the map.
-        expect(host.querySelector("button")).toBeNull();
-        expect(chest!.className).toContain("pointer-events-none");
-        act(() => void vi.advanceTimersByTime(RUIN_CHEST_SHOWN_MS));
+        // The world map stages the chest at the screen's centre in its tier's glow, giving what the clear paid; the
+        // site fixture's ruin chest is the contract's tier 3, Epic, and the clear cost 90 troops.
+        expect(requested).toEqual([
+          {
+            rarity: 4,
+            prizes: [
+              ...(amount ? [expect.objectContaining({ icon: "lords", figure: `${amount} LORDS` })] : []),
+              expect.objectContaining({ name: "XP" }),
+              { icon: "skull", name: "troops", figure: "−90" },
+            ],
+          },
+        ]);
+        // Nothing of it is on the page: no panel, nothing to press, every click reaches the map.
+        expect(host.innerHTML).toBe("");
         const probeHost = document.createElement("div");
         const probe = createRoot(probeHost);
         const Probe = () => createElement("i", { "data-open": String(useRuinChest() !== null) });

@@ -87,7 +87,7 @@ const clearedCampAt = (tile: { col: number; row: number }): LabFact => ({
 });
 
 /** A ruin on the tile, guarded by the troops given: its structure, its site, its guard and its tile's blocker. */
-const ruinAt = (
+export const ruinAt = (
   store: ReturnType<typeof spireScenario>["store"],
   tile: { col: number; row: number },
   guard: object,
