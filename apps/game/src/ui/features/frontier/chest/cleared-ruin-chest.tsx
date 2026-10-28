@@ -21,20 +21,22 @@ export const ClearedRuinChest = () => {
   const opening = useRuinChest();
   const { setup } = useGame();
   const chest = opening && ruinChest(setup.store, opening.siteId);
+  const tier = chest?.tier;
+  const lords = chest?.lords;
   useEffect(() => {
-    if (!opening || !chest) return;
+    if (!opening || tier === undefined || lords === undefined) return;
     requestRewardChest({
-      rarity: chest.tier,
-      lords: chest.lords,
+      rarity: tier,
+      lords,
       prizes: ruinChestPrizes(clearedSiteXp(setup.store, opening.siteId), opening.troopsLost),
     });
     closeRuinChest();
-  }, [opening, chest?.tier, chest?.lords, setup.store]);
+  }, [opening, tier, lords, setup.store]);
   return null;
 };
 
-/** What rises from a ruin's chest beside its LORDS, small: the clear's XP and the troops it cost. */
-export const ruinChestPrizes = (xp: number | undefined, troopsLost: number): ChestPrize[] => [
+/** What a ruin's chest gives beside its LORDS, shown small under them: the clear's XP and the troops it cost. */
+const ruinChestPrizes = (xp: number | undefined, troopsLost: number): ChestPrize[] => [
   ...(xp !== undefined ? [{ name: XP, figure: `${formatShort(xp, { signed: true })} ${XP}` }] : []),
   ...(troopsLost > 0 ? [{ icon: "skull" as const, name: TROOPS, figure: `−${formatShort(troopsLost)}` }] : []),
 ];
