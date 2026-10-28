@@ -5,7 +5,7 @@ import { getHexDistance, getHexesWithinRadius } from "@bibliothecadao/types";
 
 import { clearedCampAt } from "./after-battle-scenario";
 import { type LabScenario, wire } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { armyProgress, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, standing on a camp it cleared. */
 const SECOND_ARMY = 203;
@@ -27,6 +27,7 @@ export const clearedCampScenario = (): LabScenario => {
   store.applyFacts([
     { model: "ExplorerTroops", key: "0x1ab97", value: wire({ ...first, explorer_id: SECOND_ARMY }) },
     { model: "TileOccupancy", key: "0x1ab98", value: wire({ ...occupancy, ...held, entity_id: SECOND_ARMY }) },
+    armyProgress("0x1ab9a", SECOND_ARMY, 0),
     clearedCampAt(held),
     clearedCampAt(empty, { key: "0x1ab99", entityId: EMPTY_CAMP }),
   ] as never);

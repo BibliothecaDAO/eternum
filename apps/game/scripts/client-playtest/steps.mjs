@@ -1215,15 +1215,12 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  { name: "find-spire", play: findTheSpire, settleMs: 0, verify: spireFound },
-  { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "army-panel", play: readTheArmyPanel, settleMs: 0, verify: armyPanelOffersSpire },
+  { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
-const SPIRE_ORDER = "Enter a depth";
-// The pointer's tooltip, read whole: Frontier's names the order on its first line ("Enter a depth").
-const TILE_TOOLTIP = `JSON.stringify(document.querySelector('[role="tooltip"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -1238,43 +1235,39 @@ const SPIRE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ hash, command }) => ({ hash, ...command })),
 })`;
 
-/** Hovers the selected army's neighbours until one's tooltip offers the spire's order. */
-async function findTheSpire({ browser }) {
-  const scanned = [];
-  for (const offset of NEIGHBOUR_RING) {
-    browser.hover(offset);
-    await sleep(HOVER_SETTLE_MS);
-    const tip = browser.read(TILE_TOOLTIP);
-    scanned.push({ offset, tip });
-    if (tip === SPIRE_ORDER) return { spire: offset, scanned };
-  }
-  return { spire: null, scanned };
+// Whether a button named Spire is on the page: the army's panel's way to its spire's card.
+const SPIRE_BUTTON = `JSON.stringify([...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Spire"))`;
+
+/** What selecting the army shows: the open card, if any, and whether Spire is offered. */
+async function readTheArmyPanel({ browser }) {
+  await sleep(HOVER_SETTLE_MS);
+  return { state: browser.read(SPIRE_STATE), spireButton: browser.read(SPIRE_BUTTON) };
 }
 
-function spireFound({ played }) {
-  return played.spire
-    ? completed({ spire: played.spire, scanned: played.scanned })
-    : failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
+/**
+ * The army selected beside its spire shows its own panel, not the spire's card, and offers Spire (owner, 2026-10-28:
+ * tapping a tile with his army on it selects the army, whatever site is under it).
+ */
+function armyPanelOffersSpire({ played }) {
+  if (played.state.sheet === "Spire") return failed("selecting the army opened the spire's card", played);
+  return played.spireButton ? completed(played) : failed("the army's panel offers no Spire", played);
 }
 
-/** Taps the tile whose hover offers the spire's order, as a player taps what they see. */
-async function tapTheSpire({ browser }) {
-  const { spire, scanned } = await findTheSpire({ browser });
-  if (!spire) return { spire, scanned };
-  browser.tap(spire);
+/** Presses Spire on the army's panel, the deliberate way to its spire's card. */
+async function pressSpire({ browser }) {
+  browser.click("Spire");
   const state = await readUntil(
     () => browser.read(SPIRE_STATE),
-    (shown) => shown.sheet !== null,
+    (shown) => shown.sheet === "Spire",
     SPIRE_WAIT_MS,
   );
-  return { spire, scanned, state };
+  return { spire: "Spire", state };
 }
 
 function spireCardOffersDepths({ played, seen }) {
-  if (!played.spire) return failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
   const shown = { ...played.state, pressed: seen.pressed };
-  if (shown.sheet !== "Spire") return failed(`the tap opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
-  if (!shown.army) return failed("the tap on the spire dropped the army", shown);
+  if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
+  if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
   const expected = [
     "Ethereal I|30 stamina|Enter|true",
@@ -1283,11 +1276,7 @@ function spireCardOffersDepths({ played, seen }) {
   ];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
-  if (
-    !/^Entering keeps .+ in that depth for the rest of the day \(.+ left\): there is no way back up$/.test(
-      shown.commitment ?? "",
-    )
-  )
+  if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
     return failed("the card does not say what entering commits the army to", shown);
   return completed(shown);
 }
@@ -1312,7 +1301,7 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II until the day ends/.test(after.text ?? ""))
+  if (!/is in Ethereal II today/.test(after.text ?? ""))
     return failed("the card does not show the army in Ethereal II", { before, after });
   return completed({ command, before: before.army, after: after.army, card: after.text });
 }
