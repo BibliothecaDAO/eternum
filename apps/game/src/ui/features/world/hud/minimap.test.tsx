@@ -10,7 +10,6 @@ vi.mock("@/ui/features/world/components/bottom-right-panel", () => ({
     isLoading: false,
     cameraTargetHex: null,
     selectedHex: null,
-    navigationTarget: null,
   }),
 }));
 vi.mock("@/ui/features/world/components/bottom-right-panel/hex-minimap", () => ({

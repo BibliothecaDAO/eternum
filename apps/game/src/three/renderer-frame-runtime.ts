@@ -26,7 +26,6 @@ interface RendererFrameHudController {
   getCamera(): Camera;
   getScene(): Scene;
   getWeatherState(): unknown;
-  hasActiveLabelAnimations(): boolean;
   update(deltaTime: number, cycleProgress: number): void;
 }
 
@@ -181,10 +180,6 @@ function resolveRendererFrameLabelState(input: {
   } else if (input.currentScene === SceneName.Hexception) {
     view = input.hexceptionScene.getCurrentCameraView();
     labelsActive = input.hexceptionScene.hasActiveLabelAnimations();
-  }
-
-  if (input.hudScene.hasActiveLabelAnimations()) {
-    labelsActive = true;
   }
 
   return {

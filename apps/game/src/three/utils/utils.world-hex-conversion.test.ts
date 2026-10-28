@@ -37,9 +37,7 @@ vi.mock("three/addons/loaders/KTX2Loader.js", () => ({
 
 vi.mock("three/addons/libs/meshopt_decoder.module.js", () => ({ MeshoptDecoder: {} }));
 
-vi.mock("@bibliothecadao/eternum", () => ({
-  calculateDistance: () => 0,
-}));
+vi.mock("@bibliothecadao/eternum", () => ({}));
 
 vi.mock("@bibliothecadao/types", () => ({
   ContractAddress: (value: string) => value,

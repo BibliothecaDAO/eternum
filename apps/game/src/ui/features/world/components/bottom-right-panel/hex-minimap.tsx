@@ -317,18 +317,11 @@ const windowHolds = (window: TileWindow, box: { minX: number; minY: number; widt
 interface HexMinimapProps {
   tiles: MinimapTile[];
   selectedHex: HexPosition | null;
-  navigationTarget: HexPosition | null;
   cameraTargetHex: HexPosition | null;
   look?: MinimapLook;
 }
 
-export const HexMinimap = ({
-  tiles,
-  selectedHex,
-  navigationTarget,
-  cameraTargetHex,
-  look = "classic",
-}: HexMinimapProps) => {
+export const HexMinimap = ({ tiles, selectedHex, cameraTargetHex, look = "classic" }: HexMinimapProps) => {
   const { terrainOpacity } = LOOKS[look];
   const svgRef = useRef<SVGSVGElement | null>(null);
   const markers = useFactView(minimapMarkersView);
@@ -337,9 +330,9 @@ export const HexMinimap = ({
   const [origin, setOrigin] = useState(() => viewOrigin(readCameraView()));
   const centeredIndex = useMemo(() => buildCenteredIndex(tiles, origin), [tiles, origin]);
 
-  /** Before the camera first tells what it sees (another scene first, the lab): its hex, else a target, else the map. */
+  /** Before the camera first tells what it sees (another scene first, the lab): its hex, else the selection, else the map. */
   const fallback = useMemo((): Framing => {
-    const targetHex = cameraTargetHex ?? navigationTarget ?? selectedHex;
+    const targetHex = cameraTargetHex ?? selectedHex;
     if (targetHex) {
       const center = offsetToPixel(targetHex.col - FELT_CENTER(), targetHex.row - FELT_CENTER());
       return { ...center, scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look) };
@@ -350,7 +343,7 @@ export const HexMinimap = ({
       y: (bounds.minY + bounds.maxY) / 2,
       scale: scaleAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, look),
     };
-  }, [cameraTargetHex, navigationTarget, selectedHex, centeredIndex, look]);
+  }, [cameraTargetHex, selectedHex, centeredIndex, look]);
   const fallbackRef = useRef(fallback);
   fallbackRef.current = fallback;
 
