@@ -272,7 +272,7 @@ const BeastGuard = ({
  * A site's card with no army selected, whatever the site: what an army does there, then each of the realm's armies as
  * a row (with the fight it would have, at a guarded site) that a tap picks for it; with none out, where one comes from.
  */
-export const ArmyChoices = ({
+const ArmyChoices = ({
   does,
   choices,
   guardIcon,
