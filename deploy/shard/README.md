@@ -102,11 +102,13 @@ includes the VRF credential and must remain private on the shard. `backup.py res
 isolated scratch containers without a network and checks the chain head and database contents. Its JSON verdict must
 pass before relying on the backup. A shard's final copy, the one `teardown production` removes it after, follows
 `backup.py quiesce PROJECT [RELAY_HEALTH_URL]`: the proxy refuses every write and keeps serving the relay's reads; on a
-shard deployed before that switch, quiesce stops the proxy instead, only once the environment's relay health shows the
-shard drained and no transaction after its last read. `backup.py reopen PROJECT` lifts either, and
-`backup.py verify PROJECT DEST` accepts only a copy of the closed, drained chain. Stop the public RPC during a node
-outage; callers receive the fixed refusal and must observe their original transaction hash before submitting another
-action.
+shard deployed before that switch, quiesce stops the proxy instead, only once the environment's relay health shows it
+caught up and the stopped node holds no transaction after the relay's last read. That proves the relay holds every
+obligation in its queue, not that it paid them: a stopped proxy also stops the relay's payments for that shard. Quiesce
+is safe to rerun and resumes an interrupted stop. `backup.py reopen PROJECT` lifts either, and
+`backup.py verify PROJECT DEST` accepts only a copy of a chain whose closure is established now. Stop the public RPC
+during a node outage; callers receive the fixed refusal and must observe their original transaction hash before
+submitting another action.
 
 To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
 Start preparation first: it verifies identity and republishes runtime files. Then start the stack and verify the pinned
