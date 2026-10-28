@@ -1,5 +1,5 @@
 import { useGame } from "@/hooks/context/game-context";
-import { type ChestPrize, chestRewardPrizes } from "@/three/rewards/chest-reward-reveal";
+import type { ChestPrize } from "@/three/rewards/chest-reward-reveal";
 import { requestRewardChest } from "@/three/scenes/worldmap-reward-chest-request";
 import { type Tier, TROOPS, XP } from "@/ui/design-system/kit/words";
 import { configManager } from "@bibliothecadao/eternum";
@@ -13,8 +13,9 @@ import { closeRuinChest, useRuinChest } from "../sites/site-clear-moment";
 /**
  * A cleared ruin's chest, opened as Blitz's chests open (owner, 28 October 2026: "I want a real animation, like the
  * chest opening in blitz, but on the center of the screen"): the world map stages it at the screen's centre, where it
- * arrives, opens in its tier's glow and gives what the clear paid (its LORDS, the clear's XP, the troops it cost), then
- * goes by itself. Nothing to press, no panel; the map stays in play.
+ * arrives, opens in its tier's glow and gives what the clear paid, then goes by itself: its LORDS the moment's hero,
+ * counted up large under it (ChestLordsMoment), the clear's XP and the troops it cost small from its lid. Nothing to
+ * press, no panel; the map stays in play.
  */
 export const ClearedRuinChest = () => {
   const opening = useRuinChest();
@@ -24,16 +25,16 @@ export const ClearedRuinChest = () => {
     if (!opening || !chest) return;
     requestRewardChest({
       rarity: chest.tier,
-      prizes: ruinChestPrizes(chest.lords, clearedSiteXp(setup.store, opening.siteId), opening.troopsLost),
+      lords: chest.lords,
+      prizes: ruinChestPrizes(clearedSiteXp(setup.store, opening.siteId), opening.troopsLost),
     });
     closeRuinChest();
   }, [opening, chest?.tier, chest?.lords, setup.store]);
   return null;
 };
 
-/** What a ruin's chest gives as it opens: its LORDS, as every chest shows them, the clear's XP and the troops lost. */
-export const ruinChestPrizes = (lords: number, xp: number | undefined, troopsLost: number): ChestPrize[] => [
-  ...chestRewardPrizes({ kind: "lords", amount: lords }),
+/** What rises from a ruin's chest beside its LORDS, small: the clear's XP and the troops it cost. */
+export const ruinChestPrizes = (xp: number | undefined, troopsLost: number): ChestPrize[] => [
   ...(xp !== undefined ? [{ name: XP, figure: `${formatShort(xp, { signed: true })} ${XP}` }] : []),
   ...(troopsLost > 0 ? [{ icon: "skull" as const, name: TROOPS, figure: `−${formatShort(troopsLost)}` }] : []),
 ];

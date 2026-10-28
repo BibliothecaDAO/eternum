@@ -289,7 +289,7 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { type PlacedOrderTip, PointerOrderTip } from "./worldmap-order-tip";
 import { getGameModeId } from "@/config/game-modes";
 import { onChestOpenRequest } from "./worldmap-chest-open-request";
-import { onRewardChestRequest } from "./worldmap-reward-chest-request";
+import { announceRewardChestShown, onRewardChestRequest } from "./worldmap-reward-chest-request";
 import { chestRarityGlow } from "../rewards/chest-rarity-glow";
 import { shouldQueueArmySelectionRecovery } from "./worldmap-army-tab-selection";
 import { shouldPlayArmyMovementFx } from "./worldmap-movement-fx-policy";
@@ -1906,9 +1906,11 @@ export default class WorldmapScene extends WarpTravel {
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
       if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) void this.openChest(explorerId, hex);
     });
-    this.stopRewardChestRequests = onRewardChestRequest(({ prizes, rarity }) => {
-      if (this.sceneManager.getCurrentScene() === SceneName.WorldMap)
-        void this.chestManager.presentAtScreenCentre(prizes, chestRarityGlow(rarity));
+    this.stopRewardChestRequests = onRewardChestRequest((request) => {
+      if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+      void this.chestManager
+        .presentAtScreenCentre(chestRarityGlow(request.rarity))
+        .then((shown) => shown && announceRewardChestShown(request));
     });
     this.controls.addEventListener("change", this.handleWorldmapControlsChange);
     window.addEventListener("resize", this.handleTerrainViewportResize);

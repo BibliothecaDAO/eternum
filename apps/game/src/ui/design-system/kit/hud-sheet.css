@@ -2246,3 +2246,105 @@ button.ui-card__choose:disabled {
   max-height: 100%;
   border-radius: var(--hud-radius-panel);
 }
+
+/* ── A chest's moment (owner, 28 October 2026: "darken the rest of the screen so the focus is on it", "the lords
+   winnings ... the fucking biggest moment of the game"): over the whole screen, map and HUD alike, a dark veil with a
+   soft spotlight where the chest stands at the centre, and its LORDS counted up large under it in front of light rays
+   in the chest's rarity. It takes no pointer: the map stays in play under it. ── */
+.ui-chest-moment {
+  position: fixed;
+  inset: 0;
+  z-index: theme(zIndex.hud-motion);
+  pointer-events: none;
+}
+.ui-chest-moment__veil {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    ellipse 34vmin 30vmin at 50% 46%,
+    rgb(0 0 0 / 0) 0%,
+    rgb(var(--hud-dark) / 0.45) 50%,
+    rgb(var(--hud-dark) / 0.9) 100%
+  );
+}
+.ui-chest-moment__hero {
+  --rarity: var(--hud-rarity-1);
+  position: absolute;
+  left: 50%;
+  top: 70%;
+  transform: translate(-50%, -50%);
+}
+/* The figure's own box, which pops in: the hero above stays where it is placed. */
+.ui-chest-moment__pop {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.ui-chest-moment__hero[data-tier="2"] {
+  --rarity: var(--hud-rarity-2);
+}
+.ui-chest-moment__hero[data-tier="3"] {
+  --rarity: var(--hud-rarity-3);
+}
+.ui-chest-moment__hero[data-tier="4"] {
+  --rarity: var(--hud-rarity-4);
+}
+.ui-chest-moment__hero[data-tier="5"] {
+  --rarity: var(--hud-rarity-5);
+}
+/* Light rays behind the figure, in the chest's rarity, turning slowly. */
+.ui-chest-moment__rays {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 34rem;
+  height: 34rem;
+  margin: -17rem 0 0 -17rem;
+  border-radius: 50%;
+  background: repeating-conic-gradient(from 0deg, var(--rarity) 0deg 7deg, transparent 7deg 24deg);
+  mask-image: radial-gradient(circle, black 0%, transparent 68%);
+  opacity: 0.55;
+  filter: blur(2px);
+  animation: ui-chest-rays 9s linear infinite;
+}
+@keyframes ui-chest-rays {
+  to {
+    transform: rotate(1turn);
+  }
+}
+.ui-chest-moment__figure {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.3);
+  color: rgb(var(--hud-gold));
+  font-family: theme(fontFamily.display);
+  font-size: clamp(3.5rem, 12vmin, 9rem);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  text-shadow:
+    0 0 18px rgb(var(--hud-gold) / 0.65),
+    0 3px 0 rgb(var(--hud-dark)),
+    0 6px 18px rgb(var(--hud-dark) / 0.9);
+}
+.ui-chest-moment__word {
+  position: relative;
+  margin-top: theme(spacing.1);
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-title);
+  letter-spacing: 0.3em;
+  text-shadow: 0 2px 8px rgb(var(--hud-dark));
+}
+/* What else the chest gives, small under its LORDS. */
+.ui-chest-moment__prizes {
+  position: relative;
+  display: flex;
+  gap: theme(spacing.2);
+  margin-top: theme(spacing.3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ui-chest-moment__rays {
+    animation: none;
+  }
+}

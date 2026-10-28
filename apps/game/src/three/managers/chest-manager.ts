@@ -6,7 +6,7 @@ import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
 import { type ChestGlow, ChestTransitions } from "../rewards/chest-transitions";
-import { type ChestPrize, chestRewardPrizes } from "../rewards/chest-reward-reveal";
+import { chestRewardPrizes } from "../rewards/chest-reward-reveal";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
 import { Position, nativeGameModeOf, configManager, type ChestReward } from "@bibliothecadao/eternum";
@@ -327,16 +327,16 @@ export class ChestManager {
 
   /**
    * A reward's chest at the centre of the screen: it arrives on the ground the camera looks at, sized to the screen
-   * whatever the zoom, opens by itself with `prizes` in `glow`, and goes. Nothing on the map is replaced or held. The
+   * whatever the zoom, opens by itself in `glow`, and goes. Nothing on the map is replaced or held. The
    * chest's model loads first when no chest on the map has needed it yet.
    */
-  public async presentAtScreenCentre(prizes: readonly ChestPrize[], glow?: ChestGlow): Promise<boolean> {
+  public async presentAtScreenCentre(glow?: ChestGlow): Promise<boolean> {
     await this.prepareModel();
     const camera = this.hexagonScene?.getCamera();
     if (!this.chestModel || !this.chestTransitions || !camera) return false;
     const placement = screenCentrePlacement(camera, CENTRE_SCREEN_SHARE);
     if (!placement) return false;
-    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, prizes, glow);
+    const presented = this.chestTransitions.present(CENTRE_KEY, placement, this.chestModel.time, glow);
     this.applyContentLadder(this.contentLadder);
     return presented;
   }

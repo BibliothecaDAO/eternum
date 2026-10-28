@@ -24,6 +24,9 @@ export const chestRewardPrizes = (reward: ChestReward): ChestPrize[] =>
         ]
       : [];
 
+/** How long after the lid opens the prizes start to rise, in seconds. */
+const PRIZES_RISE_AFTER = 0.25;
+
 /** The prizes rise from the lid on the chest's animation clock, fan out, and fade as the chest is absorbed. */
 export class ChestRewardReveal {
   readonly label: CSS2DObject;
@@ -68,9 +71,10 @@ export class ChestRewardReveal {
   }
 
   update(openingElapsed: number): void {
-    this.label.visible = openingElapsed > 0.25;
+    this.label.visible = openingElapsed > PRIZES_RISE_AFTER;
     this.prizes.forEach((prize, index) => {
-      const progress = MathUtils.smoothstep(openingElapsed, 0.25 + index * 0.08, 0.6 + index * 0.08);
+      const rise = PRIZES_RISE_AFTER + index * 0.08;
+      const progress = MathUtils.smoothstep(openingElapsed, rise, rise + 0.35);
       const fade = 1 - MathUtils.smoothstep(openingElapsed, 2.1, 2.65);
       const spread = index - (this.prizes.length - 1) / 2;
       prize.style.opacity = String(progress * fade);

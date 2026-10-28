@@ -132,11 +132,9 @@ describe("the site-cleared moment", () => {
         expect(requested).toEqual([
           {
             rarity: 4,
-            prizes: [
-              ...(amount ? [expect.objectContaining({ icon: "lords", figure: `${amount} LORDS` })] : []),
-              expect.objectContaining({ name: "XP" }),
-              { icon: "skull", name: "troops", figure: "−90" },
-            ],
+            // The LORDS are the moment's hero, counted up under the chest; the rest rises small from its lid.
+            lords: amount,
+            prizes: [expect.objectContaining({ name: "XP" }), { icon: "skull", name: "troops", figure: "−90" }],
           },
         ]);
         // Nothing of it is on the page: no panel, nothing to press, every click reaches the map.

@@ -2,7 +2,7 @@ import { type ChestPrize, ChestRewardReveal } from "./chest-reward-reveal";
 import { AnimationMixer, Group, Matrix4, Scene, Vector3 } from "three";
 import type { GLTF } from "three/addons/loaders/GLTFLoader.js";
 import type { PipelineCompiler } from "../pipeline-compiler";
-import { RewardSummoning } from "./reward-summoning";
+import { ABSORBED_AFTER, RewardSummoning, SUMMONING_DURATION } from "./reward-summoning";
 import { ChestPresentation } from "./chest-presentation";
 
 interface ChestTransition {
@@ -14,9 +14,18 @@ interface ChestTransition {
   reward?: ChestRewardReveal;
   tileKey?: string;
   kind?: "summon" | "open";
-  /** A presented chest's prizes: it opens on its own with them once it has arrived. */
-  opensWith?: readonly ChestPrize[];
+  /** A presented chest: it opens on its own once it has arrived. */
+  opensByItself?: boolean;
 }
+
+/**
+ * A presented chest's beats, in seconds from its start, for whatever plays beside it: it has arrived and its lid
+ * opens, and it is gone.
+ */
+export const PRESENTED_CHEST_BEATS = {
+  opens: SUMMONING_DURATION,
+  gone: SUMMONING_DURATION + ABSORBED_AFTER,
+} as const;
 
 /** A chest's glow as it opens: its rarity's colour leaking from the lid, on its runes and up its beams. */
 export type ChestGlow = Parameters<RewardSummoning["setGlow"]>[0];
@@ -65,7 +74,7 @@ export class ChestTransitions {
     if (actor.tileKey === tileKey && actor.kind === kind) return true;
     actor.reward?.dispose();
     actor.reward = undefined;
-    actor.opensWith = undefined;
+    actor.opensByItself = undefined;
     actor.effect.clearGlow();
     placement.decompose(actor.root.position, actor.root.quaternion, actor.root.scale);
     actor.tileKey = tileKey;
@@ -81,19 +90,13 @@ export class ChestTransitions {
   }
 
   /**
-   * A chest that arrives (its summon), then opens by itself and gives `prizes`, glowing in `glow` when it has one, and
-   * goes once they are absorbed: a reward staged on its own, with nothing to press.
+   * A chest that arrives (its summon), then opens by itself, glowing in `glow` when it has one, and goes once absorbed:
+   * a reward staged on its own, with nothing to press. What it gives is shown beside it, on its beats.
    */
-  present(
-    tileKey: string,
-    placement: Matrix4,
-    animationTime: number,
-    prizes: readonly ChestPrize[],
-    glow?: ChestGlow,
-  ): boolean {
+  present(tileKey: string, placement: Matrix4, animationTime: number, glow?: ChestGlow): boolean {
     if (!this.start(tileKey, "summon", placement, animationTime)) return false;
     const actor = this.active.get(tileKey)!;
-    actor.opensWith = prizes;
+    actor.opensByItself = true;
     if (glow) actor.effect.setGlow(glow);
     return true;
   }
@@ -125,7 +128,7 @@ export class ChestTransitions {
     for (const [tileKey, actor] of this.active) {
       actor.mixer.setTime(animationTime);
       actor.effect.update(delta, animationTime);
-      if (actor.opensWith && actor.effect.isSummoned) this.openPresented(tileKey, actor);
+      if (actor.opensByItself && actor.effect.isSummoned) this.openPresented(actor);
       actor.presentation.setOpening(actor.kind === "open");
       actor.presentation.setNightAmount(nightAmount);
       if (cameraPosition) actor.presentation.faceCamera(cameraPosition);
@@ -136,13 +139,11 @@ export class ChestTransitions {
     return true;
   }
 
-  /** A presented chest has arrived: it opens and its prizes come out. */
-  private openPresented(tileKey: string, actor: ChestTransition): void {
-    const prizes = actor.opensWith!;
-    actor.opensWith = undefined;
+  /** A presented chest has arrived: its lid opens. */
+  private openPresented(actor: ChestTransition): void {
+    actor.opensByItself = undefined;
     actor.kind = "open";
     actor.effect.open();
-    this.revealReward(tileKey, prizes);
   }
 
   cancel(tileKey: string): void {
@@ -151,7 +152,7 @@ export class ChestTransitions {
     actor.root.visible = false;
     actor.reward?.dispose();
     actor.reward = undefined;
-    actor.opensWith = undefined;
+    actor.opensByItself = undefined;
     actor.tileKey = undefined;
     actor.kind = undefined;
     this.active.delete(tileKey);

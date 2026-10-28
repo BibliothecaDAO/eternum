@@ -126,36 +126,28 @@ it.each([17, 0])("reveals exactly the paid LORDS amount %i, never relics or an e
 });
 
 // Owner, 28 October 2026: "I want a real animation, like the chest opening in blitz, but on the center of the screen".
-it("presents a chest that arrives, opens by itself with its prizes, and goes, with nothing to press", () => {
+it("presents a chest that arrives, opens by itself, and goes, with nothing to press", () => {
+  const open = vi.spyOn(RewardSummoning.prototype, "open");
   const pool = createPool();
   try {
-    const prizes = [
-      ...chestRewardPrizes({ kind: "lords", amount: 100 }),
-      { name: "XP", figure: "+136 XP" },
-      { icon: "skull" as const, name: "troops", figure: "−4" },
-    ];
-    expect(pool.present("centre", new Matrix4(), 4, prizes)).toBe(true);
+    expect(pool.present("centre", new Matrix4(), 4)).toBe(true);
     const actor = pool.group.children.find((child) => child.visible)!;
-    const label = () =>
-      actor.children.find((child) => "element" in child) as (Group & { element: HTMLElement }) | undefined;
-    // It arrives first: no prize yet while it is summoned.
+    open.mockClear();
+    // It arrives first, shut.
     pool.update(0.5, 4.5);
-    expect(label()).toBeUndefined();
-    // Arrived, it opens on its own and the prizes come out, each with its figure.
+    expect(open).not.toHaveBeenCalled();
+    // Arrived, its lid opens on its own, once.
     pool.update(0.6, 5.1);
     pool.update(0.5, 5.6);
-    expect(label()?.visible).toBe(true);
-    expect([...label()!.element.querySelectorAll("[data-chest-prize]")].map((prize) => prize.textContent)).toEqual([
-      "100 LORDS",
-      "+136 XP",
-      "−4",
-    ]);
-    // Then it goes by itself, its prizes with it.
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(pool.has("centre")).toBe(true);
+    // Then it goes by itself, its slot free again.
     pool.update(2.5, 8.1);
     expect(pool.has("centre")).toBe(false);
     expect(actor.visible).toBe(false);
   } finally {
     pool.dispose();
+    open.mockRestore();
   }
 });
 
@@ -165,7 +157,7 @@ it("lights a presented chest in its rarity's glow, and lets a reused slot open p
   const pool = createPool();
   try {
     const legendary = chestRarityGlow(5)!;
-    pool.present("centre", new Matrix4(), 4, [], legendary);
+    pool.present("centre", new Matrix4(), 4, legendary);
     expect(setGlow).toHaveBeenLastCalledWith(legendary);
     pool.clear();
     clearGlow.mockClear();
