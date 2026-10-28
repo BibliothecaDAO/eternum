@@ -71,7 +71,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     { model: "GameRelease", key: "0x1ab0", value: { game_id: 1, release_id: 1, preset_commitment: "0x1ab" } },
     // Every army has its progress from the command that made it (progression::create).
     progressionRules(),
-    armyProgress("0x1ab92", SPIRE_ARMY, 0),
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, 0),
     ...[site, ...getHexesWithinRadius(site.col, site.row, 4)]
       .filter((hex) => !store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }))
       .map((hex, index) => tile(`0x1ab7${index.toString(16)}`, hex.col, hex.row)),
@@ -135,10 +135,13 @@ export const besideOnOpenLand = (store: NativeFactStore, beside: { col: number; 
   return { col: open.col, row: open.row };
 };
 
+/** Where the spire's game keeps its progression rows: a lab game that writes its own replaces them in place. */
+export const PROGRESS_KEYS = { rules: "0x1ab94", spireArmy: "0x1ab92" } as const;
+
 /** The game's progression rules, as its preset writes them (lab thresholds: a few XP buy a level). */
 export const progressionRules = (): LabFact => ({
   model: "ArmyProgressionRules",
-  key: "0x1ab94",
+  key: PROGRESS_KEYS.rules,
   value: { game_id: 1, reveal_xp: 1, fixed_xp: 1, uncommon_xp: 2, rare_xp: 3, epic_xp: 4, legendary_xp: 5 },
 });
 

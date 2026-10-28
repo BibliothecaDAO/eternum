@@ -2,7 +2,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
-import { armyProgress, besideOnOpenLand, progressionRules, spireScenario } from "./spire-scenario";
+import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, progressionRules, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 const MERGE_ARMY = 202;
@@ -46,7 +46,7 @@ export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
     },
     progressionRules(),
     // The picked army is the spire's; the more progressed army is the one a merge keeps.
-    armyProgress("0x1ab92", SPIRE_ARMY, survivor === "picked" ? 100 : 0),
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, survivor === "picked" ? 100 : 0),
     armyProgress("0x1ab93", MERGE_ARMY, survivor === "tapped" ? 100 : 0),
   ] as never);
   return {
