@@ -58,7 +58,7 @@ export const sitesScenario = (): LabScenario => {
   return {
     ...spire,
     answer: (command, chain, now) =>
-      command.kind === "InteractSite" ? useSite(command, chain, now) : spire.answer(command, chain, now),
+      command.kind === "InteractSite" ? answerSiteUse(command, chain, now) : spire.answer(command, chain, now),
   };
 };
 
@@ -69,7 +69,7 @@ const siteAt = (key: string, tile: { col: number; row: number }, entity: number,
 });
 
 /** InteractSite: [explorer, coord.alt, coord.x, coord.y]. */
-const useSite = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
+const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [explorerId, , x, y] = command.calldata.slice(5).map((felt) => BigInt(felt));
   const [siteKey, site] = [...chain.entries("TileOccupancy")].find(
     ([, row]) => BigInt(row.col) === x && BigInt(row.row) === y,
