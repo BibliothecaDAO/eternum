@@ -459,25 +459,28 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   its token, is that ground's tile (`HexagonScene.pickPointerHex`, `MapPlateLayer.thingHitBy`): the same at every zoom
   (owner, 2026-10-27: "at a certain zoom level I cant get the hover modal"; "right clicking here I'd expect the army to
   move"). Hover a tile and its full plate opens where its token was drawn (one plate a tile: the army standing on it
-  before any structure; a cleared site's marker never counts as one, so an army on a cleared site opens its own): on the
-  token's foot (hung from the top bar's edge only where it would reach under the bar), slid aside but always covering
-  the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token ringed in gold: its detail
-  is the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens again when it comes back.
-  The open plate and the order line are placed together, clear of each other, the screen's edges and the HUD; where the
-  hovered plate cannot fit beside the line, it stays its token. The plate, on the HUD panel's surface, has at most three
-  rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its realm's plate writes them, then its
-  troops, then its stamina bar and exact "84/150". A realm or hyperstructure: "player | name", its guard slots in the
-  order an attacker meets them, each with its stamina bar under it (read at the chain's tick, following regeneration),
-  or "Undefended"; in Frontier, whose realms have no guard slots and are never attacked, "player | name" alone; then the
-  troops on their way, each time before its troops ("Arriving 13m T2 300"). A camp or rift: its owner (the Vanguard for
-  nobody's), its lore name, read off its id on every client (`site-name.ts`), and kind ("Grimtear Camp"), and what it
-  holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier site's payout). With a thing selected,
-  the hovered tile's order line stands beside the tile, clear of the opened plates and of every token kept in view, or
-  is not drawn; the tokens under it step aside. Crowded tokens slide aside only as far as keeps their thing's label
-  point under them, else are not drawn; the selected thing, the player's own armies and anything in battle (on its
-  battle cooldown) always stay in view: placed first, together (`placeKept`), each on its own point, slid while
-  attached, or a row or two straight up, in the arrangement that rises least, the same whatever order they arrive in,
-  and the others yield to them. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
+  before any structure; a cleared site has no token or plate, its standard on the tile says it, so an army on a cleared
+  site opens its own): on the token's foot (hung from the top bar's edge only where it would reach under the bar), slid
+  aside but always covering the token's middle (`map-plate-layout.ts`). Select it and it goes back to rest, its token
+  ringed in gold: its detail is the HUD's panel; selected while hovered, it rests until the pointer leaves it, and opens
+  again when it comes back. The open plate and the order line are placed together, clear of each other, the screen's
+  edges and the HUD; where the hovered plate cannot fit beside the line, it stays its token. The plate, on the HUD
+  panel's surface, has at most three rows (`map-plate-rows.ts`) and never an id. An army: "player | home realm" as its
+  realm's plate writes them, then its troops, then its stamina bar and exact "84/150". A realm or hyperstructure:
+  "player | name", its guard slots in the order an attacker meets them, each with its stamina bar under it (read at the
+  chain's tick, following regeneration), or "Undefended"; in Frontier, whose realms have no guard slots and are never
+  attacked, "player | name" alone; then the troops on their way, each time before its troops ("Arriving 13m T2 300"). A
+  camp or rift: its owner (the Vanguard for nobody's), its lore name, read off its id on every client (`site-name.ts`),
+  and kind ("Grimtear Camp"), and what it holds beside its guard ("T2 300 | 1,200 Essence", a camp's Labor, a Frontier
+  site's payout). With a thing selected, the hovered tile's order line stands beside the tile, clear of the opened
+  plates and of every token kept in view, or is not drawn; the tokens under it step aside. Crowded tokens slide aside
+  only as far as keeps their thing's label point under them, else are not drawn; the selected thing, the player's own
+  armies and anything in battle (on its battle cooldown) always stay in view: placed first, together (`placeKept`), each
+  on its own point, slid while attached, or a row or two straight up, in the arrangement that rises least, the same
+  whatever order they arrive in, and the others yield to them. The tokens near a kept one are placed with it where an
+  arrangement lifts no kept token higher than alone, so a beast beside the player's army keeps its label (owner,
+  2026-10-28: "I think we need to see the enemy label most of the time"); `/lab/game?scenario=low-stamina` at a phone's
+  far zoom shows it. Elsewhere an unnamed army or structure is called by its kind, never by its entity id
   (`getEntityName`, `packages/core/src/utils/entities.ts`). The dev build's lab draws the same labels over a fixture
   world, `/lab/map-labels` (`zoom` play, close or far, `hover`, `select`, `battle`, `focus`, `busy=1`, `mode=frontier`,
   `panel=0`, `spectate=1` in the address, or the panel's **Viewer · Playing | Spectating**: a watching viewer over the
@@ -493,15 +496,15 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
 
 ## Outposts
 
-| Feature                 | How to reach it                                                                                                                                                                         |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                                     |
-| Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                                    |
-| Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                           |
-| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.              |
-| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.          |
-| Spire                   | Frontier Map → tap your lit spire, or select its army on or beside it: researched depths, stamina and Enter. Research stays open; Close clears the selection.                           |
-| Ownership and placement | `/lab/terrain` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility. |
+| Feature                 | How to reach it                                                                                                                                                                                                                                                                                |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Camp                    | Map → select a discovered canvas camp. Its standard and roof edging show ownership.                                                                                                                                                                                                            |
+| Village                 | Map → select a discovered Canvas & Thatch village. The yard standard and tent edging show ownership; local views use the same model.                                                                                                                                                           |
+| Beasts                  | Frontier Map → select a beast encounter. Weak and stronger bands both scale with depth; both are below the other site guards.                                                                                                                                                                  |
+| Shrine                  | Frontier Map → select an army beside a discovered sun arch → right-click it (press and hold on a phone): Use, +XP, the army stays. Tap it for its card and Use, army kept.                                                                                                                     |
+| Well                    | Frontier Map → select an army beside a discovered stone well → right-click it (hold on a phone): Use, +stamina; the hover warns at a full bar. Tap it for its card, army kept.                                                                                                                 |
+| Spire                   | Frontier Map → tap your lit spire, or **Spire** on its army's panel (its action row on a phone) while the army stands on or beside it: researched depths, stamina and Enter. A tap on the army selects it and shows its panel, as on any site. Research stays open; Close hands back the army. |
+| Ownership and placement | `/lab/terrain` → Building model → choose an outpost → Ownership where available → Place on selected tile → Focus selected tile. Biome and Fog controls exercise terrain and visibility.                                                                                                        |
 
 `pnpm --dir apps/game playtest --base-url https://127.0.0.1:<port> --steps lab-spire --iterations 1` plays the spire in
 the lab's game on a fixture (`/lab/game?scenario=spire`, `src/lab/game/`): the game's own map and HUD, the army
@@ -516,9 +519,12 @@ player's connection.
 the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
 army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
 (guard 999), both on battle cooldown; its Feed holds that fight and another player's lost fight at a site the map never
-loaded. `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double
-tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and
-`lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
+loaded; `scenario=low-stamina` is that army beside the same ruin with 5 stamina and no cooldown, short of an attack.
+`scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the spire, and leaves another
+cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token. `scenario=explore`
+stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double tap or a desktop's
+right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and `lab-after-battle` check that
+hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies
@@ -851,10 +857,11 @@ the phone); `pnpm --dir apps/game prove:day-end --port 4199 --out <fresh-dir>` p
 ## Cleared Frontier sites
 
 On the world map, win the adjacent fight at a guarded site. Its standard replaces the structure; select that tile to
-read the credited resource and XP, including with an army standing there. The receipt (in another army's card too), the
-tile's plate (no holder: nobody owns a cleared site) and the clear's line in Events all name the site by its map name.
-The normal Move order enters the cleared tile. The receipt remains after a snapshot reload. Yesterday’s sites leave the
-current region with the new day.
+read the credited resource and XP. A tap on your own army standing there selects the army and shows its panel; the
+clear's row in the Feed selects the tile itself and shows the receipt. The tile carries no token or plate: the standard
+on it says the site is cleared. The receipt (in another army's card too) and the clear's line in Events both name the
+site by its map name. The normal Move order enters the cleared tile. The receipt remains after a snapshot reload.
+Yesterday’s sites leave the current region with the new day.
 
 `/lab/models?family=cleared-sites&rendererMode=webgpu-force-webgl` compares the production standard with the standing
 camp and beasts, at gameplay and detail distance. Both use the game renderer; the selected standard uses the production

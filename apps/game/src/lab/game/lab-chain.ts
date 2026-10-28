@@ -76,7 +76,8 @@ declare global {
   }
 }
 
-const wire = (value: unknown): unknown =>
+/** A row as Herald carries it on the wire: its bigints as decimal strings. */
+export const wire = (value: unknown): Record<string, unknown> =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /** Every row of a store as Herald carries it. */

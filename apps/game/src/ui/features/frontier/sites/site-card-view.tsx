@@ -7,13 +7,14 @@ import {
   HudButton,
   HudChip,
   HudCost,
+  HudNotice,
   HudRarity,
   HudRow,
   HudSheet,
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
-import { staminaShortfall } from "@/ui/design-system/kit/reasons";
+import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
   ARMY,
@@ -46,7 +47,7 @@ import type { SiteFight } from "./site-card-plan";
 import { type AttackTargetKind, TARGET_MARKS, attackTargetName } from "./site-marks";
 
 /** The step under the outcome: Attack (the same tap whatever the forecast), Move until the army is in reach, or
- * Attack held back, by the stamina the army lacks or by a site too far for one order. One line under it says why. */
+ * Attack held back, by the stamina the army lacks or by a site too far for one order, which the foot then says. */
 export type SiteVerb =
   | {
       kind: "attack";
@@ -413,7 +414,7 @@ const Verb = ({
   return (
     <>
       <VerbLine {...verbLine(verb, site, warns && !lossInHeadline)} />
-      <HudWindowFoot note={<HudCost line={costLine(verb.kind === "move" ? verb.prices : attackPrices(verb))} />}>
+      <HudWindowFoot note={<FootNote verb={verb} site={site} />}>
         {onRealm && (
           <HudButton kind="secondary" icon="realm" onClick={onRealm}>
             {REALM}
@@ -450,24 +451,34 @@ export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFl
 /**
  * The one line under the step. An attack that did not happen says why, in red, ahead of the forecast's warning: it
  * is the news. Otherwise the warning that the whole fight loses the army, where the headline does not already say it,
- * or why the step is not Attack.
+ * or, under Move, that the site is out of reach.
  */
 const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
-  return { line: warns ? ARMY_WILL_BE_LOST : verbReason(verb, site), warns };
+  return { line: warns ? ARMY_WILL_BE_LOST : verb.kind === "move" ? tooFarFrom(site) : undefined, warns };
 };
 
-const attackPrices = (verb: Exclude<SiteVerb, { kind: "move" }>): readonly Price[] => {
-  if (verb.kind === "attack") return [{ of: "stamina", amount: verb.stamina }];
-  return verb.kind === "short" ? [{ of: "stamina", amount: verb.stamina.cost }] : [];
+/**
+ * Beside the step, what it costs; or, while Attack is held back, why, in the place of its cost: the stamina line says
+ * the cost already, so the card says it once (owner, 28 October 2026: "the need 30 stamina line can actually replace
+ * the 30 stamina below it it just makes more sense, and we save space").
+ */
+const FootNote = ({ verb, site }: { verb: SiteVerb; site: string }) => {
+  switch (verb.kind) {
+    case "attack":
+      return <HudCost line={costLine([{ of: "stamina", amount: verb.stamina }])} />;
+    case "move":
+      return <HudCost line={costLine(verb.prices)} />;
+    default:
+      return <HudNotice tone="warn" line={reasonLine(heldBack(verb, site))} />;
+  }
 };
 
-/** Why the step is not Attack, or cannot run: the stamina missing and when it is back, or the site out of reach. */
-const verbReason = (verb: SiteVerb, site: string): string | undefined => {
-  if (verb.kind === "attack") return undefined;
-  if (verb.kind !== "short") return tooFarFrom(site);
+/** Why Attack is held back: the stamina missing and when it is back, or the site out of reach. */
+const heldBack = (verb: Extract<SiteVerb, { kind: "short" | "far" }>, site: string): Reason => {
+  if (verb.kind === "far") return { kind: "failed", line: tooFarFrom(site) };
   const { cost, held, wait } = verb.stamina;
-  return staminaShortfall(held, cost, wait);
+  return { kind: "short", of: "stamina", held, need: cost, wait };
 };
 
 const VerbLine = ({ line, warns }: { line: string | undefined; warns: boolean }) =>

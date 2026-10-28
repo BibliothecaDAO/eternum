@@ -224,7 +224,9 @@ describe("a guarded site's card", () => {
     expect(buttons().some((button) => button.textContent?.startsWith("Attack"))).toBe(true);
   });
 
-  it("holds Attack back when the army is short, with the stamina it needs, what it has and the wait under it", () => {
+  // Owner, 28 October 2026: "the need 30 stamina line can actually replace the 30 stamina below it it just makes more
+  // sense, and we save space".
+  it("holds Attack back when the army is short, the stamina it needs, has and waits for in the foot, the cost's place", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -245,8 +247,12 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(true);
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    const foot = document.querySelector(".ui-window__foot")!;
+    expect(foot.querySelector('[role="status"]')?.textContent).toBe("Needs 30 stamina, have 10 · in 40m");
+    expect(foot.querySelector("button")?.textContent).toBe("Attack");
+    expect(foot.querySelector("button")?.disabled).toBe(true);
+    expect(document.querySelectorAll('[role="status"]')).toHaveLength(1);
+    expect(document.querySelector(".ui-cost")).toBeNull();
   });
 });
 
@@ -560,5 +566,7 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
         expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
         expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
         expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
+        // Attack's stamina is said once: its cost beside it, or why it is held back in the cost's place.
+        expect(document.querySelector(".ui-cost")?.textContent).toBe(attacks ? "30 stamina" : undefined);
       });
 });

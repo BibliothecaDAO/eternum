@@ -1222,15 +1222,12 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  { name: "find-spire", play: findTheSpire, settleMs: 0, verify: spireFound },
-  { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "army-panel", play: readTheArmyPanel, settleMs: 0, verify: armyPanelOffersSpire },
+  { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
-const SPIRE_ORDER = "Enter a depth";
-// The pointer's tooltip, read whole: Frontier's names the order on its first line ("Enter a depth").
-const TILE_TOOLTIP = `JSON.stringify(document.querySelector('[role="tooltip"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -1245,43 +1242,39 @@ const SPIRE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ hash, command }) => ({ hash, ...command })),
 })`;
 
-/** Hovers the selected army's neighbours until one's tooltip offers the spire's order. */
-async function findTheSpire({ browser }) {
-  const scanned = [];
-  for (const offset of NEIGHBOUR_RING) {
-    browser.hover(offset);
-    await sleep(HOVER_SETTLE_MS);
-    const tip = browser.read(TILE_TOOLTIP);
-    scanned.push({ offset, tip });
-    if (tip === SPIRE_ORDER) return { spire: offset, scanned };
-  }
-  return { spire: null, scanned };
+// Whether a button named Spire is on the page: the army's panel's way to its spire's card.
+const SPIRE_BUTTON = `JSON.stringify([...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Spire"))`;
+
+/** What selecting the army shows: the open card, if any, and whether Spire is offered. */
+async function readTheArmyPanel({ browser }) {
+  await sleep(HOVER_SETTLE_MS);
+  return { state: browser.read(SPIRE_STATE), spireButton: browser.read(SPIRE_BUTTON) };
 }
 
-function spireFound({ played }) {
-  return played.spire
-    ? completed({ spire: played.spire, scanned: played.scanned })
-    : failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
+/**
+ * The army selected beside its spire shows its own panel, not the spire's card, and offers Spire (owner, 2026-10-28:
+ * tapping a tile with his army on it selects the army, whatever site is under it).
+ */
+function armyPanelOffersSpire({ played }) {
+  if (played.state.sheet === "Spire") return failed("selecting the army opened the spire's card", played);
+  return played.spireButton ? completed(played) : failed("the army's panel offers no Spire", played);
 }
 
-/** Taps the tile whose hover offers the spire's order, as a player taps what they see. */
-async function tapTheSpire({ browser }) {
-  const { spire, scanned } = await findTheSpire({ browser });
-  if (!spire) return { spire, scanned };
-  browser.tap(spire);
+/** Presses Spire on the army's panel, the deliberate way to its spire's card. */
+async function pressSpire({ browser }) {
+  browser.click("Spire");
   const state = await readUntil(
     () => browser.read(SPIRE_STATE),
-    (shown) => shown.sheet !== null,
+    (shown) => shown.sheet === "Spire",
     SPIRE_WAIT_MS,
   );
-  return { spire, scanned, state };
+  return { spire: "Spire", state };
 }
 
 function spireCardOffersDepths({ played, seen }) {
-  if (!played.spire) return failed(`no tile beside the army offers "${SPIRE_ORDER}"`, { scanned: played.scanned });
   const shown = { ...played.state, pressed: seen.pressed };
-  if (shown.sheet !== "Spire") return failed(`the tap opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
-  if (!shown.army) return failed("the tap on the spire dropped the army", shown);
+  if (shown.sheet !== "Spire") return failed(`Spire opened ${shown.sheet ?? "no card"}, not the spire's`, shown);
+  if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
   const expected = [
     "Ethereal I|30 stamina|Enter|true",
@@ -1290,11 +1283,7 @@ function spireCardOffersDepths({ played, seen }) {
   ];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
     return failed(`the card offers ${offered.join(", ")}`, shown);
-  if (
-    !/^Entering keeps .+ in that depth for the rest of the day \(.+ left\): there is no way back up$/.test(
-      shown.commitment ?? "",
-    )
-  )
+  if (!/^.+ stays until the day ends \(.+\)$/.test(shown.commitment ?? ""))
     return failed("the card does not say what entering commits the army to", shown);
   return completed(shown);
 }
@@ -1319,7 +1308,7 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II until the day ends/.test(after.text ?? ""))
+  if (!/is in Ethereal II today/.test(after.text ?? ""))
     return failed("the card does not show the army in Ethereal II", { before, after });
   return completed({ command, before: before.army, after: after.army, card: after.text });
 }
@@ -1587,13 +1576,14 @@ const LAB_AFTER_BATTLE_STEPS = [
 /**
  * The owner's army after its fight, nothing selected, at each zoom step from the closest to the farthest (owner,
  * 2026-10-27: "at a certain zoom level I cant get the hover modal"): its token stands over its own model, and the pointer
- * anywhere on its model, feet to head, opens its plate, at every step. The page reports its world (dev overlays), so the
- * model is hovered where the renderer draws it.
+ * anywhere on its model, feet to head, opens its plate, at every step; so does every other army drawn, such as the
+ * realm's second army beside it in the merge game (owner, 2026-10-28: "again on desktop the hover label disappears at a
+ * certain zoom level"). The page reports its world (dev overlays), so each model is hovered where the renderer draws it.
  */
 const LAB_HOVER_ZOOM_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
-  { name: "hover-every-zoom", play: hoverTheArmyAtEveryZoom, settleMs: 0, verify: armyAnswersAtEveryZoom },
+  { name: "hover-every-zoom", play: hoverEveryArmyAtEveryZoom, settleMs: 0, verify: armiesAnswerAtEveryZoom },
 ];
 /**
  * The spire's game on high ground (owner, 2026-10-27: "when exploring a tile thats not empty the tile selection to move
@@ -1641,14 +1631,25 @@ function litTilesClearTheirGround({ played }) {
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
 const MODEL_SHARES = [0.2, 0.6, 1];
+/**
+ * A point on a model, `share` of the way from its tile to its top on screen, kept a pixel inside the top: the pointer
+ * stands on a whole pixel, and one rounded from the top itself may stand over it.
+ */
+const onTheModel = ({ tile, top }, share) => {
+  const inside = Math.min(share, 1 - 1 / Math.max(1, Math.hypot(top.x - tile.x, top.y - tile.y)));
+  return { x: tile.x + (top.x - tile.x) * inside, y: tile.y + (top.y - tile.y) * inside };
+};
 /** Wheel notches from the closest zoom past which the farthest must have been reached. */
 const ZOOM_STEPS_MAX = 14;
 
-/** The picked army's label in a plate reading. */
-const pickedArmyLabel = (seen) => seen?.things?.find((thing) => thing.key === `army:${PICKED_ARMY}`) ?? null;
+/** Every army's label in a plate reading. */
+const armyLabels = (seen) => seen?.things?.filter((thing) => thing.key?.startsWith("army:")) ?? [];
 
-/** Lets the army go, zooms all the way in, then at each notch out reads its token and hovers its model, feet to head. */
-async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
+/**
+ * Lets the army go, zooms all the way in, then at each notch out reads every army's token and hovers each army's model,
+ * feet to head.
+ */
+async function hoverEveryArmyAtEveryZoom({ browser, extraScreenshot }) {
   for (let press = 0; press < ESCAPES_TO_DESELECT; press += 1) browser.press("Escape");
   browser.run(["eval", `void window.__playtest.wheel(-100, ${ZOOM_IN_NOTCHES})`]);
   await sleep(ZOOM_SETTLE_MS);
@@ -1659,17 +1660,22 @@ async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
     browser.hover(POINTER_PARKED);
     await sleep(HOVER_SETTLE_MS);
     const distance = browser.observe().worldmapDistance;
-    const rest = pickedArmyLabel(browser.read(PLATES_EXPRESSION));
-    const hovers = [];
-    for (const share of rest?.over ? MODEL_SHARES : []) {
-      const { tile, top } = rest.over;
-      browser.hover(offsetOf({ x: tile.x + (top.x - tile.x) * share, y: tile.y + (top.y - tile.y) * share }));
-      await sleep(HOVER_SETTLE_MS * 2);
-      hovers.push({ share, opened: pickedArmyLabel(browser.read(PLATES_EXPRESSION))?.open === true });
+    const armies = [];
+    for (const rest of armyLabels(browser.read(PLATES_EXPRESSION))) {
+      const hovers = [];
+      for (const share of rest.over ? MODEL_SHARES : []) {
+        browser.hover(offsetOf(onTheModel(rest.over, share)));
+        await sleep(HOVER_SETTLE_MS * 2);
+        const seen = armyLabels(browser.read(PLATES_EXPRESSION)).find((thing) => thing.key === rest.key);
+        hovers.push({ share, opened: seen?.open === true });
+      }
+      browser.hover(POINTER_PARKED);
+      await sleep(HOVER_SETTLE_MS);
+      const against = againstTheirThings({ things: [rest] });
+      armies.push({ key: rest.key, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
     }
     extraScreenshot(`zoom-${notch}`);
-    const against = againstTheirThings({ things: rest ? [rest] : [] });
-    zooms.push({ distance, rest: against.standing[0] ?? null, offModel: against.off.length > 0, hovers });
+    zooms.push({ distance, armies });
     if (Math.abs(distance - FARTHEST_CAMERA_DISTANCE) <= CLOSEST_DISTANCE_TOLERANCE) break;
     browser.run(["eval", "void window.__playtest.wheel(100, 1)"]);
     await sleep(ZOOM_SETTLE_MS);
@@ -1677,24 +1683,30 @@ async function hoverTheArmyAtEveryZoom({ browser, extraScreenshot }) {
   return { zooms };
 }
 
-/** From the closest zoom to the farthest, the army's token over its model and its plate open wherever its model is hovered. */
-function armyAnswersAtEveryZoom({ played }) {
+/**
+ * From the closest zoom to the farthest, the picked army read at every step, and every army read with its token over its
+ * model and its plate open wherever its model is hovered.
+ */
+function armiesAnswerAtEveryZoom({ played }) {
   const { zooms } = played;
   const near = (distance, target) => Math.abs(distance - target) <= CLOSEST_DISTANCE_TOLERANCE;
   if (!near(zooms[0]?.distance, CLOSEST_CAMERA_DISTANCE) || !near(zooms.at(-1)?.distance, FARTHEST_CAMERA_DISTANCE))
     return failed("the camera did not step from the closest zoom to the farthest", played);
-  const undrawn = zooms.filter((zoom) => zoom.hovers.length === 0);
+  const picked = `army:${PICKED_ARMY}`;
+  const undrawn = zooms.filter((zoom) => !zoom.armies.some((army) => army.key === picked && army.hovers.length > 0));
   if (undrawn.length > 0)
     return failed(`army ${PICKED_ARMY}'s token or model is not read at ${undrawn.length} zooms`, {
       ...played,
       undrawn,
     });
-  const off = zooms.filter((zoom) => !zoom.rest || zoom.offModel);
-  if (off.length > 0) return failed(`army ${PICKED_ARMY}'s token stands off its model at ${off.length} zooms`, played);
-  const closed = zooms.filter((zoom) => zoom.hovers.some((hover) => !hover.opened));
+  const readAt = (test) =>
+    zooms.flatMap((zoom) => zoom.armies.filter(test).map((army) => ({ distance: zoom.distance, ...army })));
+  const off = readAt((army) => !army.rest || army.offModel);
+  if (off.length > 0) return failed(`${off.length} army tokens stand off their models`, { ...played, off });
+  const closed = readAt((army) => army.hovers.some((hover) => !hover.opened));
   return closed.length === 0
     ? completed(played)
-    : failed(`hovering army ${PICKED_ARMY}'s model opens no plate at ${closed.length} zooms`, { ...played, closed });
+    : failed(`hovering an army's model opens no plate ${closed.length} times`, { ...played, closed });
 }
 
 // The open card and its buttons, the commands the lab's chain has been sent, and the army a merge's answer destroyed.
@@ -2268,6 +2280,7 @@ export const STEP_SETS = {
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
+  "lab-hover-zoom-pair": { game: labSpireGame("merge-keeps-picked"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
   "lab-day-turn": { game: labDayTurn("day-turn"), steps: labDayTurnSteps(RECORDED_DAY_2) },
   "lab-day-later": { game: labDayTurn("day-later"), steps: labDayTurnSteps(RECORDED_DAY_2) },

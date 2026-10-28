@@ -54,6 +54,7 @@ import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
 import { PickedArmy } from "./hud/picked-army";
+import { SpireButton, useArmyAtItsSpire } from "./spire-card";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
@@ -401,16 +402,30 @@ const ArmyAction = ({
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
-  if (acting && onOpenArmy)
-    return (
-      <PickedArmy
-        army={acting}
-        refill={<ArmyRefill army={acting} realm={realm} look="stamina" />}
-        onDetails={() => onOpenArmy(acting.explorerId)}
-        onLevelUp={() => onOpenArmy(acting.explorerId, acting.canBuyTier)}
-      />
-    );
+  if (acting && onOpenArmy) return <ActingArmy army={acting} realm={realm} onOpenArmy={onOpenArmy} />;
   return null;
+};
+
+/** The picked army in a phone's action row, with Spire while it stands at its spire. */
+const ActingArmy = ({
+  army,
+  realm,
+  onOpenArmy,
+}: {
+  army: DockArmy;
+  realm: NativeRows["Structure"];
+  onOpenArmy: (explorerId: number, choosing?: boolean) => void;
+}) => {
+  const spire = useArmyAtItsSpire(army.explorerId);
+  return (
+    <PickedArmy
+      army={army}
+      refill={<ArmyRefill army={army} realm={realm} look="stamina" />}
+      spire={spire && <SpireButton explorerId={army.explorerId} spire={spire} />}
+      onDetails={() => onOpenArmy(army.explorerId)}
+      onLevelUp={() => onOpenArmy(army.explorerId, army.canBuyTier)}
+    />
+  );
 };
 
 /** The dock over the realm's armies today; on a phone the action row takes its place while an army is picked. */

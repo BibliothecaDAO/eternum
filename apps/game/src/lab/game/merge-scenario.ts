@@ -1,8 +1,8 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import type { LabCommand, LabFact, LabScenario } from "./lab-chain";
-import { besideOnOpenLand, spireScenario } from "./spire-scenario";
+import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
+import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, progressionRules, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 const MERGE_ARMY = 202;
@@ -17,9 +17,6 @@ const LIMIT_RAISED = 3;
  * always from release 3).
  */
 type Survivor = "picked" | "tapped";
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
  * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-keeps-picked or
@@ -49,7 +46,7 @@ export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
     },
     progressionRules(),
     // The picked army is the spire's; the more progressed army is the one a merge keeps.
-    armyProgress("0x1ab92", SPIRE_ARMY, survivor === "picked" ? 100 : 0),
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, survivor === "picked" ? 100 : 0),
     armyProgress("0x1ab93", MERGE_ARMY, survivor === "tapped" ? 100 : 0),
   ] as never);
   return {
@@ -70,27 +67,6 @@ const raisedArmyLimit = (store: NativeFactStore): LabFact => {
     value: { ...rules, troop_limit_config: { ...limit, t1_tier_modifier: limit.t1_tier_modifier * LIMIT_RAISED } },
   };
 };
-
-const progressionRules = (): LabFact => ({
-  model: "ArmyProgressionRules",
-  key: "0x1ab94",
-  value: { game_id: 1, reveal_xp: 1, fixed_xp: 1, uncommon_xp: 2, rare_xp: 3, epic_xp: 4, legendary_xp: 5 },
-});
-
-const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
-  model: "ArmyProgress",
-  key,
-  value: {
-    game_id: 1,
-    explorer_id: String(explorerId),
-    xp,
-    battle: 1,
-    logistics: 1,
-    scouting: 1,
-    scouting_kinds: 0,
-    homecoming: 1,
-  },
-});
 
 /** ManageTroops::Transfer (troop_management.cairo's fifth variant). */
 const TRANSFER = 4n;

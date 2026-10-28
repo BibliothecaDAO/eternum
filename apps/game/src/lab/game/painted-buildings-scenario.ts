@@ -6,7 +6,7 @@ import {
   TileOccupier,
   StructureType,
 } from "@bibliothecadao/types";
-import type { LabFact, LabScenario } from "./lab-chain";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario, type LabGround } from "./spire-scenario";
 
 const GUARD_PRECISION = 1_000_000_000n;
@@ -28,8 +28,6 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
     ({ col, row }) => col !== BUILDINGS_CENTER[0] || row !== BUILDINGS_CENTER[1],
   );
   const realm = game.store.require("Structure", { game_id: 1, entity_id: 7 });
-  const wire = (value: unknown) =>
-    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? String(field) : field)));
   const neighbors = getNeighborHexes(game.opensOn.col, game.opensOn.row);
   const facts: LabFact[] = [
     {

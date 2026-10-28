@@ -28,18 +28,21 @@ export type PickedArmyView = Pick<
 /**
  * A phone's picked army, in the dock's place (owner, 22 October 2026: mobile direction A; 27 October: D, its stamina
  * over Level up): its token, a tap opening its card; its four sides with their tiers, which the token does not show;
- * then its stamina, which is its refill, over Level up. Level up opens the card on its choices while the XP buys a
+ * then its stamina, which is its refill, over Level up, and Spire where it stands at its spire. Level up opens the card on its choices while the XP buys a
  * level, else the card. A tap on an empty tile lets the army go, and the dock comes back.
  */
 export const PickedArmy = ({
   army,
   refill,
+  spire,
   onDetails,
   onLevelUp,
 }: {
   army: PickedArmyView;
   /** The army's stamina as its refill's button. */
   refill: ReactNode;
+  /** The way to its spire's card, while the army stands on or beside its spire (SpireButton). */
+  spire?: ReactNode;
   onDetails: () => void;
   onLevelUp: () => void;
 }) => (
@@ -63,6 +66,7 @@ export const PickedArmy = ({
     <span className="grid w-24 shrink-0 gap-1.5">
       {refill}
       <LevelUpButton affordable={army.canBuyTier} onPress={onLevelUp} />
+      {spire}
     </span>
   </HudPanel>
 );

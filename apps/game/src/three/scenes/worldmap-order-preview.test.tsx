@@ -704,6 +704,8 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 describe("the click matrix: what is selected × what is clicked", () => {
   const OTHER_ARMY = 8;
   const FAR_ARMY = 10;
+  const SPIRE_ARMY_ON_IT = 11;
+  const CLEARED_ARMY = 12;
   const REALM = 9;
   const ENEMY = 99;
   const OWN = 0x111n;
@@ -711,6 +713,10 @@ describe("the click matrix: what is selected × what is clicked", () => {
     "your army beside": { col: 3, row: 5 },
     "your army far": { col: 9, row: 9 },
     "your realm beside": { col: 4, row: 4 },
+    // Owner, 28 October 2026 (brief item 2): a tap on a tile with his army on it selects the army, whatever site is
+    // under it: the realm's spire, a cleared site.
+    "your army on its spire": { col: 6, row: 2 },
+    "your army on a cleared site": { col: 7, row: 7 },
     "enemy army": BESIDE,
     "bare ground in reach": { col: 4, row: 6 },
     "bare ground far": { col: 12, row: 9 },
@@ -744,13 +750,18 @@ describe("the click matrix: what is selected × what is clicked", () => {
       [key(tiles["your army beside"]), { army: { id: OTHER_ARMY, owner: OWN } }],
       [key(tiles["your army far"]), { army: { id: FAR_ARMY, owner: OWN } }],
       [key(tiles["your realm beside"]), { structure: { id: REALM, owner: OWN } }],
+      [key(tiles["your army on its spire"]), { army: { id: SPIRE_ARMY_ON_IT, owner: OWN } }],
+      [key(tiles["your army on a cleared site"]), { army: { id: CLEARED_ARMY, owner: OWN } }],
       [key(tiles["enemy army"]), { army: { id: ENEMY, owner: 0x999n } }],
     ]);
     const armies = new Map([
       [ARMY, ARMY_HEX],
       [OTHER_ARMY, tiles["your army beside"]],
       [FAR_ARMY, tiles["your army far"]],
+      [SPIRE_ARMY_ON_IT, tiles["your army on its spire"]],
+      [CLEARED_ARMY, tiles["your army on a cleared site"]],
     ]);
+    const cleared = contract(tiles["your army on a cleared site"]);
     const selectedId = selected === "army" ? ARMY : selected === "realm" ? REALM : null;
     // The map's own selection for the row: the army on its own tile, the realm, or nothing.
     useUIStore.setState({
@@ -785,12 +796,15 @@ describe("the click matrix: what is selected × what is clicked", () => {
     Object.assign(map.scene, {
       worldSpatialProjection: {
         getArmy: (id: number) => (armies.has(id) ? { hexCoords: contract(armies.get(id)!) } : undefined),
-        getStructuresAtHex: () => [],
+        getStructuresAtHex: (at: { col: number; row: number }) =>
+          at.col === cleared.col && at.row === cleared.row ? [{ clearedSite: true }] : [],
       },
       getHexagonEntity: (hex: { col: number; row: number }) => entities.get(key(hex)) ?? {},
       getOwnArmyOrderedTo: () => undefined,
       usableSiteAt: () => null,
-      isArmysSpire: () => false,
+      // The realm's spire, whose army is the one standing on it.
+      isArmysSpire: (_army: number, hex: { col: number; row: number }) =>
+        key(hex) === key(tiles["your army on its spire"]),
       isStandingExpeditionSite: () => false,
       logInteractionDebug: () => {},
       getInteractionDebugSnapshot: () => ({}),
@@ -859,6 +873,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
     "your army beside": "tile selected, select army 8",
     "your army far": "tile selected, select army 10",
     "your realm beside": "tile selected, select realm 9",
+    "your army on its spire": "tile selected, select army 11",
+    "your army on a cleared site": "tile selected, select army 12",
   };
   const elsewhere = { "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo };
 
@@ -877,6 +893,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
     const none = {
       "your army beside": "",
       "your army far": "",
+      "your army on its spire": "",
+      "your army on a cleared site": "",
       "enemy army": "",
       "bare ground in reach": "",
       "bare ground far": "",
@@ -886,6 +904,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
       army: {
         "your army beside": "its order runs",
         "your army far": "order-preview: Too far: move closerTransfer troops",
+        "your army on its spire": "order-preview: Too far: move closerTransfer troops",
+        "your army on a cleared site": "order-preview: Too far: move closerTransfer troops",
         "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
