@@ -94,7 +94,7 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
         l2ChainId: async () => "0x1",
         accountForRealmsId: async () => "0x3",
         linkedWallet: async () => "0x4",
-        realmOwnerOf: async () => "0x4",
+        holdsRealm: async () => true,
       },
     } as never,
   );
@@ -209,7 +209,7 @@ it("serializes pool publication with labor on the same shard signer", async () =
         l2ChainId: async () => "0x1",
         accountForRealmsId: async () => "0x3",
         linkedWallet: async () => "0x4",
-        realmOwnerOf: async () => "0x4",
+        holdsRealm: async () => true,
       },
     } as never,
   );

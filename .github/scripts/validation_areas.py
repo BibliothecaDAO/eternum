@@ -122,6 +122,9 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
+        "apps/realms/server/realm-holdings.ts",
+        "apps/realms/server/l2.ts",
         "deploy/release/**",
         "deploy/shard/**",
         "scripts/generate-realm-metadata.py"
@@ -144,6 +147,9 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
+        "apps/realms/server/realm-holdings.ts",
+        "apps/realms/server/l2.ts",
         # The release files this area reads: the release id (deploy/first) and the shard settings (deploy/athanor).
         "deploy/release/native-release.ts",
         "deploy/release/*.json",

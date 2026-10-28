@@ -1,4 +1,9 @@
-import { handleRealmEntryRequest, registerHomeSource, type RealmEntryClaim } from "./realm-entry";
+import {
+  handleHeldRealmsRequest,
+  handleRealmEntryRequest,
+  registerHomeSource,
+  type RealmEntryClaim,
+} from "./realm-entry";
 import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
@@ -46,7 +51,8 @@ interface RelayEnv extends RelaySettings {
   ROSTER_MONITOR: { verifyRoster(chainId: string, gameId: number): Promise<number | null> };
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
-    realmOwnerOf(realmId: string): Promise<string>;
+    holdsRealm(wallet: string, realmId: number): Promise<boolean>;
+    heldRealms(wallet: string): Promise<number[]>;
     campaignTicket(
       realmsId: string,
       presetId: number,
@@ -631,6 +637,13 @@ export default {
         },
       });
     }
+    if (new URL(request.url).pathname === "/api/value/held-realms" && request.method === "POST")
+      return handleHeldRealmsRequest(request, {
+        origin: env.BASE_URL,
+        authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
+        accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
+        identity: env.IDENTITY,
+      });
     if (new URL(request.url).pathname === "/api/value/labor" && request.method === "POST") {
       const chainId = new URL(request.url).searchParams.get("chainId");
       if (!chainId || !/^0x[0-9a-f]+$/i.test(chainId))

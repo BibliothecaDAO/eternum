@@ -26,18 +26,23 @@ and portraits are presentation metadata; they never select the rating wallet. An
 ## Environment L2
 
 The environment address book (`contracts/common/addresses/dev.json` or `mainnet.json`) supplies the L2 chain. Wallet
-proofs, Realm ownership and rating reads use that chain and `L2_RPC_URL`, which must be its HTTPS Alchemy endpoint;
-redirects are refused. The Worker checks the provider's chain before reading contracts. A missing or invalid setting
-fails environment initialization, and a proof naming another chain is refused before signature verification or nonce
-consumption. Deployed accounts retain contract verification; offchain verification still requires confirmed absence and
-allow-listed deployment data.
+proofs, Realm ownership and chat slot reads go to the marketplace's RPC relay (`MARKETPLACE_API_URL` + `/rpc`, the
+provider the marketplace uses) and to `L2_RPC_URL`, which must be the chain's HTTPS Alchemy endpoint, when the relay
+does not carry the chain's answer (down, slow, rate limited, or an unsupported method). Rating reads scan events, which
+the relay does not serve, so they use `L2_RPC_URL` only. Redirects are refused. The Worker checks the provider's chain
+before reading contracts. A missing or invalid setting fails environment initialization, and a proof naming another
+chain is refused before signature verification or nonce consumption. Deployed accounts retain contract verification;
+offchain verification still requires confirmed absence and allow-listed deployment data.
 
 The Realms collection and rating token come from `contracts/common/addresses/dev.json` or `mainnet.json`, selected by
 `ENVIRONMENT`, like the ledger. Both environments run on mainnet. Staging uses `dev.json`: its own ledger, test token,
 rating token and collections, and the real Realms collection. Production uses `mainnet.json`. No missing dev address
-falls back to production. Labor ownership runs through the private `ValueIdentity.realmOwnerOf` service binding; the
-relay's second Realms RPC is removed. Rating readers live in separate Worker deployments; every token lookup selects the
-environment book directly.
+falls back to production. Realm holdings have one reader, `server/realm-holdings.ts`, reached by the relay through the
+private `ValueIdentity.holdsRealm` and `heldRealms` bindings. A holder check, which grants the Realm, is the chain's
+live `owner_of` only, so a sale the marketplace index has not seen yet never credits the seller; a check the chain does
+not answer is a retry, not a refusal. The wallet's Realm list for the picker comes from the marketplace index
+(`MARKETPLACE_API_URL`) and has no chain fallback. Rating readers live in separate Worker deployments; every token
+lookup selects the environment book directly.
 
 The client and Workers share the address book through `environmentL2`. The deployment workflow does not override its
 chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browser build. Discord is offered only when

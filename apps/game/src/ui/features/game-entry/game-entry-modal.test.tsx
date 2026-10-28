@@ -16,6 +16,7 @@ const settlement = vi.hoisted(() => ({
 }));
 
 const GAME = { chainId: "0x5245414c4d53", gameId: 8 };
+const HELD_REALMS = "/api/value/held-realms";
 
 vi.mock("@/hooks/context/identity-session", async (original) => {
   const identity = await original<typeof import("@/hooks/context/identity-session")>();
@@ -68,6 +69,13 @@ vi.mock("./selected-world-entity-wait", () => ({
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { GameEntryModal } from "./game-entry-modal";
+import type { Session } from "@realms-world/identity";
+
+/** A signed-in Realms account whose linked wallet is `address`. */
+const signedIn = (realmsId: string, address: string): Session => ({
+  session: { id: `session-${realmsId}`, expiresAt: "2099-01-01T00:00:00Z", userId: realmsId },
+  user: { id: realmsId, realmsId, address, name: realmsId, email: `${realmsId}@test` },
+});
 
 afterEach(() => {
   vi.restoreAllMocks();
@@ -121,6 +129,7 @@ it.each(["", "711", "registered"])(
     useIdentitySessionStore.setState({ status: "signed-in" });
     const sent: unknown[] = [];
     vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+      if (url === HELD_REALMS) return Response.json({ error: "realm_holdings_unavailable" }, { status: 503 });
       settlement.order.push("register");
       sent.push({ url, body: JSON.parse(String(init.body)) });
       return Response.json({ realmId: 711 });
@@ -172,7 +181,8 @@ it.each(["", "712"])("lets a refused Realm claimant found with a new choice (%s)
   useAccountStore.setState({ account: signer });
   useIdentitySessionStore.setState({ status: "signed-in" });
   const sent: number[] = [];
-  vi.stubGlobal("fetch", async (_url: string, init: RequestInit) => {
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS) return Response.json({ realms: [] });
     const { realmId } = JSON.parse(String(init.body));
     sent.push(realmId);
     return realmId === 711
@@ -212,6 +222,90 @@ it.each(["", "712"])("lets a refused Realm claimant found with a new choice (%s)
     expect(sent).toEqual(alternative === "" ? [711, undefined] : [711, 712]);
     expect(settlement.calls).toEqual([{ signer, selectedRealm: undefined }]);
     expect(settlement.settled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    query.clear();
+  }
+});
+
+it("lets a holder pick their Realm from the ones their wallet holds, and found with it", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const signer = { address: "0x123" } as never;
+  useAccountStore.setState({ account: signer });
+  useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
+  const sent: unknown[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS) return Response.json({ realms: [3, 711] });
+    sent.push(JSON.parse(String(init.body)));
+    return Response.json({ realmId: 711 });
+  });
+  const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={query}>
+          <MemoryRouter>
+            <GameEntryModal isOpen game={GAME} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    await vi.waitFor(() => expect(host.querySelector('[role="group"][aria-label="Your Realms"]')).not.toBeNull());
+    const yours = host.querySelector('[role="group"][aria-label="Your Realms"]')!;
+    expect([...yours.querySelectorAll("button")].map((chip) => chip.textContent)).toEqual(["3", "711"]);
+    await act(async () => [...yours.querySelectorAll("button")].find((chip) => chip.textContent === "711")!.click());
+    expect(host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!.value).toBe("711");
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!.click(),
+    );
+    expect(sent).toEqual([{ gameId: 8, realmId: 711 }]);
+    expect(settlement.settled).toBe(true);
+  } finally {
+    await act(async () => root.unmount());
+    query.clear();
+  }
+});
+
+it("shows each account its own Realms in the same tab: another account or a changed wallet asks again", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  useAccountStore.setState({ account: { address: "0x123" } as never });
+  useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
+  /** The relay answers for whichever account the session cookie names, by its linked wallet. */
+  const holdings: Record<string, number[]> = { "0x456": [711], "0x789": [934], "0xabc": [12] };
+  const asked: string[] = [];
+  vi.stubGlobal("fetch", async (url: string) => {
+    if (url !== HELD_REALMS) return Response.json({ realmId: 711 });
+    const wallet = useIdentitySessionStore.getState().session!.user.address!;
+    asked.push(wallet);
+    return Response.json({ realms: holdings[wallet] });
+  });
+  const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const chips = () =>
+    [...(host.querySelector('[role="group"][aria-label="Your Realms"]')?.querySelectorAll("button") ?? [])].map(
+      (chip) => chip.textContent,
+    );
+  try {
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={query}>
+          <MemoryRouter>
+            <GameEntryModal isOpen game={GAME} />
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+    await vi.waitFor(() => expect(chips()).toEqual(["711"]));
+    await act(async () => useIdentitySessionStore.getState().applySession(null));
+    useAccountStore.setState({ account: { address: "0x124" } as never });
+    await act(async () => useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x3", "0x789") }));
+    await vi.waitFor(() => expect(chips()).toEqual(["934"]));
+    await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x3", "0xabc") }));
+    await vi.waitFor(() => expect(chips()).toEqual(["12"]));
+    expect(asked).toEqual(["0x456", "0x789", "0xabc"]);
   } finally {
     await act(async () => root.unmount());
     query.clear();
