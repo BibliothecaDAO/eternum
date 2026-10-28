@@ -54,7 +54,13 @@ beforeEach(() => {
 });
 it("writes one home claim using the published ABI and retries without a second write", async () => {
   const result = await Effect.runPromise(writeLaborGrant(target, claim));
-  expect(result).toEqual({ gameId: 7, account: expect.stringMatching(/123$/), home: "9", amount: "1000" });
+  expect(result).toEqual({
+    gameId: 7,
+    account: expect.stringMatching(/123$/),
+    home: "9",
+    amount: "1000",
+    essence: "0",
+  });
   expect(rpc.admin).toHaveBeenCalledExactlyOnceWith("grant_labor", {
     home: { game_id: 7, home: 9n },
     day: 0,
@@ -62,6 +68,11 @@ it("writes one home claim using the published ABI and retries without a second w
   });
   expect(await Effect.runPromise(writeLaborGrant(target, claim))).toEqual(result);
   expect(rpc.admin).toHaveBeenCalledTimes(1);
+});
+it("answers a golden ticket's home with the Essence its receipt recorded", async () => {
+  saved = { ...grant, essence: 1000n };
+  expect(await Effect.runPromise(writeLaborGrant(target, claim))).toMatchObject({ amount: "1000", essence: "1000" });
+  expect(rpc.admin).not.toHaveBeenCalled();
 });
 it("accepts a recorded zero payout without minting again", async () => {
   saved = { ...grant, amount: 0n };
@@ -109,13 +120,16 @@ const route = () => ({
   authenticate: async () => ({ realmsId: "0x2" }),
   accountForRealmsId: async () => "0x123",
   currentDay: vi.fn(() => Effect.succeed(4)),
-  grant: vi.fn(async () => ({ gameId: 7, account: "0x123", home: "9", amount: "1000" })),
+  grant: vi.fn(async () => ({ gameId: 7, account: "0x123", home: "9", amount: "1000", essence: "0" })),
 });
 it("derives the account and day, accepting only one settled home", async () => {
   const deps = route();
   const response = await handleLaborRequest(request({ gameId: 7, home: "9" }), deps);
   expect(response.status).toBe(200);
-  expect(await response.json()).toEqual({ day: 4, grant: { gameId: 7, account: "0x123", home: "9", amount: "1000" } });
+  expect(await response.json()).toEqual({
+    day: 4,
+    grant: { gameId: 7, account: "0x123", home: "9", amount: "1000", essence: "0" },
+  });
   expect(deps.currentDay).toHaveBeenCalledExactlyOnceWith(7);
   expect(deps.grant).toHaveBeenCalledExactlyOnceWith({ ...claim, day: 4 });
 });

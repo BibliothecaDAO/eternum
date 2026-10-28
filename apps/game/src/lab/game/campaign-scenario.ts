@@ -1,3 +1,5 @@
+import { shortString } from "starknet";
+
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
@@ -14,5 +16,9 @@ export const campaignScenario = (tier: "regular" | "golden") => (): LabScenario 
 
 const campaignHome = (tier: number): LabFact[] => [
   { model: "LaborRules", key: "0x1abc0", value: { game_id: 1, amount: "1000", golden_essence: "1000" } },
-  { model: "CampaignHome", key: "0x1abc1", value: { game_id: 1, home: 7, campaign_id: "1", tier } },
+  {
+    model: "CampaignHome",
+    key: "0x1abc1",
+    value: { game_id: 1, home: 7, campaign_id: shortString.encodeShortString("devcon-2026"), tier },
+  },
 ];

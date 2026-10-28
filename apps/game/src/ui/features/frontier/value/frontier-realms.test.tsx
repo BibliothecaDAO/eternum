@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { dayOf } from "@bibliothecadao/eternum";
+import { shortString } from "starknet";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 const facts = vi.hoisted(() => ({
   held: true,
@@ -101,6 +102,7 @@ it("claims its settled home once and takes the result from the next native facts
   }
 });
 
+const DEVCON_ID = BigInt(shortString.encodeShortString("devcon-2026"));
 it("gives a campaign home its daily claim, with a golden ticket's Essence, and wears the campaign's mark", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const requests: unknown[] = [];
@@ -114,7 +116,7 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
   const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
   try {
     facts.held = false;
-    facts.campaign = { campaign_id: 1n, tier: 2 };
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.textContent).toContain("Golden Devcon");
     expect(host.textContent).toContain("1,000 Labor per game day");
@@ -125,7 +127,7 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
     );
     expect(requests).toEqual([{ gameId: 3, home: "412" }]);
 
-    facts.campaign = { campaign_id: 1n, tier: 1 };
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
     expect(host.textContent).toContain("Devcon");
     expect(host.textContent).not.toMatch(/Golden|Essence/);

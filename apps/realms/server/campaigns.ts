@@ -2,13 +2,11 @@
  * Campaigns: an event's tickets to a campaign home, a realm the player founds through the campaign rather than with a
  * Realm they hold. Each printed flyer carries its own code; the codes live hashed in D1 (`campaign_codes`, written by
  * apps/realms/scripts/campaign-codes.ts), each with the tier it gives, so only this Worker knows which are golden. An
- * account holds one ticket per campaign (`campaign_tickets`), and the relay registers it onchain when that account
- * founds its home in one of the campaign's games (ValueIdentity.campaignTicket).
+ * account holds one ticket per campaign (`campaign_tickets`), and the relay registers it onchain, under the campaign's
+ * key as a short string, when that account founds its home in one of the campaign's games (ValueIdentity.campaignTicket).
  */
 export const CAMPAIGNS = {
   "devcon-2026": {
-    /** The campaign's number onchain, in its homes' entitlement. */
-    id: 1,
     /** The landing its flyers' QR codes open, each with its own code after it. */
     link: "/join/devcon",
     /** The native presets whose games found its homes: Frontier's three-times-speed Devcon season. */
@@ -21,7 +19,6 @@ export const CAMPAIGNS = {
 } as const satisfies Record<string, Campaign>;
 
 interface Campaign {
-  id: number;
   link: string;
   presets: readonly number[];
   redeemUntil: number;
@@ -30,9 +27,6 @@ interface Campaign {
 
 export type CampaignKey = keyof typeof CAMPAIGNS;
 export type TicketTier = "regular" | "golden";
-
-/** A tier as the campaign home's entitlement carries it onchain. */
-export const TIER_ONCHAIN: Record<TicketTier, number> = { regular: 1, golden: 2 };
 
 export const isCampaignKey = (value: unknown): value is CampaignKey =>
   typeof value === "string" && Object.hasOwn(CAMPAIGNS, value);

@@ -973,9 +973,9 @@ describe("identity Worker", () => {
     const raced = await Promise.all([racerA.redeem("GQ2MZ7XA"), racerB.redeem("GQ2MZ7XA")]);
     expect(raced.map(([, body]) => (body as { tier: string }).tier).sort()).toEqual(["golden", "regular"]);
 
-    // The relay reads the ticket for a game of the campaign's preset (Devcon is 6) as its entitlement carries it.
-    expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaignId: 1, tier: 2 });
-    expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toEqual({ campaignId: 1, tier: 1 });
+    // The relay reads the ticket for a game of the campaign's preset (Devcon is 6).
+    expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "golden" });
+    expect(await campaignTicketFor(env.DB, second.realmsId, 6)).toEqual({ campaign: "devcon-2026", tier: "regular" });
     expect(await campaignTicketFor(env.DB, first.realmsId, 5)).toBeNull();
 
     // After the season, a new ticket is refused; one already held still answers.

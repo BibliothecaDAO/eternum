@@ -1,12 +1,16 @@
 import { fetchApi } from "@/runtime/app-api";
 import type { GameRef } from "@bibliothecadao/eternum/game-client";
 
-export async function registerHeldRealm(game: GameRef, realmId: number): Promise<void> {
+/**
+ * Registers the source a Frontier home claims from, before the player founds it: the held Realm they name, else the
+ * campaign ticket (Devcon's) their account holds, which the relay reads from identity; with neither, nothing.
+ */
+export async function registerHomeSource(game: GameRef, realmId: number | null): Promise<void> {
   const response = await fetchApi(`/api/value/realm-entry?chainId=${game.chainId}`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ gameId: game.gameId, realmId }),
+    body: JSON.stringify(realmId === null ? { gameId: game.gameId } : { gameId: game.gameId, realmId }),
   });
   if (response.ok) return;
   const reply = (await response.json().catch(() => null)) as { error?: string } | null;

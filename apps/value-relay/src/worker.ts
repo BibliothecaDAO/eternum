@@ -1,4 +1,4 @@
-import { handleRealmEntryRequest, registerHeldRealm, type RealmEntryClaim } from "./realm-entry";
+import { handleRealmEntryRequest, registerHomeSource, type RealmEntryClaim } from "./realm-entry";
 import { PlayerRequestError } from "./player-request";
 import { joinShardOperator } from "./shard-account";
 import { decodeRelaySettings, ledgerAddress, ledgerContractOf, type RelaySettings } from "./environment";
@@ -47,6 +47,10 @@ interface RelayEnv extends RelaySettings {
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     realmOwnerOf(realmId: string): Promise<string>;
+    campaignTicket(
+      realmsId: string,
+      presetId: number,
+    ): Promise<{ campaign: string; tier: "regular" | "golden" } | null>;
     recordPayDecisions(decisions: import("@realms-world/identity").LedgerPayDecision[]): Promise<void>;
     linkedWallet(id: string): Promise<string | null>;
     authenticate(cookie: string): Promise<{ realmsId: string } | null>;
@@ -334,7 +338,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
               const progress = await this.store.progress();
               if (progress.halted) throw new Error("relay_halted_or_wrong_chain");
               const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
-              return registerHeldRealm(
+              return registerHomeSource(
                 {
                   connection: connectionOf(shard),
                   heraldUrl: shard.url,

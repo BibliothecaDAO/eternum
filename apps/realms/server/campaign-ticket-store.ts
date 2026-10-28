@@ -1,6 +1,6 @@
 import { Context, Data, Effect, Layer } from "effect";
 
-import { CAMPAIGNS, TIER_ONCHAIN } from "./campaigns";
+import { CAMPAIGNS } from "./campaigns";
 import type { CampaignKey, TicketTier } from "./campaigns";
 
 interface CampaignTicket {
@@ -73,22 +73,17 @@ export class CampaignTicketStore extends Context.Service<
   static readonly layer = (db: D1Database) => Layer.sync(CampaignTicketStore, () => createCampaignTicketStore(db));
 }
 
-/**
- * The ticket an account founds its home with in a game of this preset, as its home's entitlement carries it onchain:
- * the campaign's number and the tier's. Null when it holds no ticket to a campaign of this preset's games.
- */
+/** The ticket an account founds its home with in a game of this preset; null when it holds none for this preset's games. */
 export async function campaignTicketFor(
   db: D1Database,
   owner: string,
   presetId: number,
-): Promise<{ campaignId: number; tier: number } | null> {
-  for (const [campaign, { id, presets }] of Object.entries(CAMPAIGNS) as [
-    CampaignKey,
-    (typeof CAMPAIGNS)[CampaignKey],
-  ][]) {
-    if (!(presets as readonly number[]).includes(presetId)) continue;
-    const ticket = await createCampaignTicketStore(db).ticketOf(campaign, owner);
-    if (ticket) return { campaignId: id, tier: TIER_ONCHAIN[ticket.tier] };
+): Promise<{ campaign: CampaignKey; tier: TicketTier } | null> {
+  const store = createCampaignTicketStore(db);
+  for (const campaign of Object.keys(CAMPAIGNS) as CampaignKey[]) {
+    if (!(CAMPAIGNS[campaign].presets as readonly number[]).includes(presetId)) continue;
+    const ticket = await store.ticketOf(campaign, owner);
+    if (ticket) return { campaign, tier: ticket.tier };
   }
   return null;
 }

@@ -1,25 +1,29 @@
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
-import type { CairoOption } from "starknet";
+import { shortString, type CairoOption } from "starknet";
 import { ShardReader, sameFelt, type ShardConnection } from "./shard-rpc";
 import { readConfirmedSnapshot, singleRow, type ConfirmedSnapshot } from "./shard-snapshot";
 import { playerRequest, readPlayerBody, PlayerRequestError, type PlayerIdentity } from "./player-request";
 
 const RealmEntryRequest = Schema.Struct({
   gameId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 0xffffffff }))),
-  realmId: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 8000 }))),
+  realmId: Schema.optional(Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: 8000 })))),
 });
 export interface RealmEntryClaim {
   chainId: string;
   gameId: number;
-  realmId: number;
+  /** The held Realm the player names; null registers the campaign ticket identity holds for them, if any. */
+  realmId: number | null;
   realmsId: string;
   account: string;
 }
+/** The source a Frontier home claims from: a held Realm, a campaign's ticket, or none (a free home). */
+export type HomeSource = { realmId: number } | { campaign: string; tier: TicketTier } | Record<string, never>;
+type TicketTier = "regular" | "golden";
 interface RealmEntryRoute extends PlayerIdentity {
   chainId: string;
-  register(claim: RealmEntryClaim): Promise<{ realmId: number }>;
+  register(claim: RealmEntryClaim): Promise<HomeSource>;
 }
 export const handleRealmEntryRequest = (request: Request, route: RealmEntryRoute) =>
   playerRequest(request, route, async (player) => {
@@ -28,7 +32,7 @@ export const handleRealmEntryRequest = (request: Request, route: RealmEntryRoute
       Schema.decodeUnknownSync(RealmEntryRequest, { onExcessProperty: "error" }),
       "invalid_realm_entry",
     );
-    return route.register({ ...body, ...player, chainId: route.chainId });
+    return route.register({ gameId: body.gameId, realmId: body.realmId ?? null, ...player, chainId: route.chainId });
   });
 
 interface RealmEntryTarget {
@@ -40,15 +44,37 @@ interface RealmEntryTarget {
     accountForRealmsId(id: string): Promise<string | null>;
     linkedWallet(id: string): Promise<string | null>;
     realmOwnerOf(id: string): Promise<string>;
+    campaignTicket(realmsId: string, presetId: number): Promise<{ campaign: string; tier: TicketTier } | null>;
   };
 }
 type Entitlement = { realm_id: bigint; metadata_1: bigint; metadata_2: bigint; metadata_3: bigint; pass_kind: bigint };
 
-/** Ownership is proved at registration; the shard then binds this immutable identity to one home for the game. */
-export async function registerHeldRealm(
-  target: RealmEntryTarget,
-  claim: RealmEntryClaim,
-): Promise<{ realmId: number }> {
+/** The entitlement kinds and campaign tiers as the contract reads them (settlement.cairo). */
+const HELD_REALM_KIND = 2;
+const CAMPAIGN_KIND = 3;
+const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
+
+/**
+ * A Frontier home's source, registered before the player founds it, then immutable for the game: the held Realm the
+ * player names (ownership proved here), else the campaign ticket identity holds for this game's preset, else none.
+ * An exact retry answers the registered source without another write; a different source is refused.
+ */
+export async function registerHomeSource(target: RealmEntryTarget, claim: RealmEntryClaim): Promise<HomeSource> {
+  const entry = await openEntry(target, claim);
+  const previous = (await entry.read()).unwrap();
+  const { realmId } = claim;
+  if (realmId !== null)
+    return previous ? matchingEntry(previous, realmId) : registerHeldRealm(target, { ...claim, realmId }, entry);
+  if (previous) return sourceOf(previous);
+  const presetId = Number(singleRow(entry.snapshot, "GameRegistry").preset_id);
+  const ticket = await target.identity.campaignTicket(claim.realmsId, presetId);
+  // A free home already founded gains no source later.
+  if (!ticket || hasEntered(entry.snapshot, claim.account)) return {};
+  return writeEntry(entry, claim, campaignEntitlement(ticket));
+}
+
+/** The game open for settling, the account the session's, and the operator that reads and writes its entitlement. */
+async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
   if (!sameFelt(target.connection.chainId, claim.chainId)) throw new PlayerRequestError(409, "shard_chain_differs");
   const account = await target.identity.accountForRealmsId(claim.realmsId);
   if (!account || !sameFelt(account, claim.account)) throw new PlayerRequestError(403, "account_unavailable");
@@ -65,33 +91,53 @@ export async function registerHeldRealm(
     privateKey: target.privateKey,
   } satisfies ShardTarget);
   const read = () => operator.view<CairoOption<Entitlement>>("entry_entitlement", [claim.gameId, claim.account]);
-  const previous = (await read()).unwrap();
-  if (previous) return matchingEntry(previous, claim.realmId);
-  await requireHeldWallet(target.identity, claim);
-  if (
-    snapshot.models
-      .find((model) => model.model === "PlayerEntry")!
-      .rows.some(({ value }) => sameFelt(String(value.player), claim.account))
-  )
-    throw new PlayerRequestError(409, "owner_already_settled");
-  if ((await operator.view<bigint>("settled_realm", [claim.gameId, claim.realmId])) !== 0n)
-    throw new PlayerRequestError(409, "realm_already_settled");
-  await writeRealmEntry(operator, claim);
-  const saved = (await read()).unwrap();
-  if (!saved) throw new Error("realm_entry_not_recorded");
-  return matchingEntry(saved, claim.realmId);
+  return { snapshot, operator, read };
 }
-async function writeRealmEntry(operator: ShardOperator, claim: RealmEntryClaim) {
-  const key = { game_id: claim.gameId, owner: claim.account };
+type OpenEntry = Awaited<ReturnType<typeof openEntry>>;
+
+async function registerHeldRealm(
+  target: RealmEntryTarget,
+  claim: RealmEntryClaim & { realmId: number },
+  entry: OpenEntry,
+) {
+  await requireHeldWallet(target.identity, claim);
+  if (hasEntered(entry.snapshot, claim.account)) throw new PlayerRequestError(409, "owner_already_settled");
+  if ((await entry.operator.view<bigint>("settled_realm", [claim.gameId, claim.realmId])) !== 0n)
+    throw new PlayerRequestError(409, "realm_already_settled");
+  const held = { realm_id: claim.realmId, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: HELD_REALM_KIND };
+  return writeEntry(entry, claim, held);
+}
+
+const campaignEntitlement = (ticket: { campaign: string; tier: TicketTier }) => ({
+  realm_id: 0,
+  metadata_1: shortString.encodeShortString(ticket.campaign),
+  metadata_2: CAMPAIGN_TIERS[ticket.tier],
+  metadata_3: 0,
+  pass_kind: CAMPAIGN_KIND,
+});
+
+async function writeEntry(
+  entry: OpenEntry,
+  claim: RealmEntryClaim,
+  entitlement: Record<keyof Entitlement, number | string>,
+): Promise<HomeSource> {
   try {
-    await operator.admin("register_entitlement", {
-      key,
-      entitlement: { realm_id: claim.realmId, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
+    await entry.operator.admin("register_entitlement", {
+      key: { game_id: claim.gameId, owner: claim.account },
+      entitlement,
     });
   } catch {
     throw new PlayerRequestError(409, "realm_registration_refused");
   }
+  const saved = (await entry.read()).unwrap();
+  if (!saved) throw new Error("realm_entry_not_recorded");
+  return sourceOf(saved);
 }
+
+const hasEntered = (snapshot: ConfirmedSnapshot, account: string) =>
+  snapshot.models
+    .find((model) => model.model === "PlayerEntry")!
+    .rows.some(({ value }) => sameFelt(String(value.player), account));
 
 async function requireOpenFrontier(connection: ShardConnection, snapshot: ConfirmedSnapshot) {
   const game = singleRow(snapshot, "GameRegistry");
@@ -118,14 +164,25 @@ async function requireHeldWallet(identity: RealmEntryTarget["identity"], claim: 
     throw new PlayerRequestError(409, "realm_not_owned");
 }
 
-function matchingEntry(entry: Entitlement, realmId: number) {
+function matchingEntry(entry: Entitlement, realmId: number): HomeSource {
   if (
     BigInt(entry.realm_id) !== BigInt(realmId) ||
-    BigInt(entry.pass_kind) !== 2n ||
+    BigInt(entry.pass_kind) !== BigInt(HELD_REALM_KIND) ||
     entry.metadata_1 !== 0n ||
     entry.metadata_2 !== 0n ||
     entry.metadata_3 !== 0n
   )
     throw new PlayerRequestError(409, "conflicting_entry_entitlement");
   return { realmId };
+}
+
+/** The source a registered entitlement names. */
+function sourceOf(entry: Entitlement): HomeSource {
+  if (BigInt(entry.pass_kind) === BigInt(HELD_REALM_KIND)) return { realmId: Number(entry.realm_id) };
+  if (BigInt(entry.pass_kind) === BigInt(CAMPAIGN_KIND))
+    return {
+      campaign: shortString.decodeShortString(`0x${BigInt(entry.metadata_1).toString(16)}`),
+      tier: BigInt(entry.metadata_2) === BigInt(CAMPAIGN_TIERS.golden) ? "golden" : "regular",
+    };
+  throw new PlayerRequestError(409, "conflicting_entry_entitlement");
 }

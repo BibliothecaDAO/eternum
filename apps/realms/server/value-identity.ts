@@ -52,10 +52,7 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
       .first<{ realmsId: string }>();
     return user ? realmsAccountAddress(user.realmsId, ACCOUNT_CLASS_HASH, await this.env.GUARDIAN.publicKey()) : null;
   }
-  /**
-   * The campaign ticket an account founds its home with in a game of this preset: the campaign's number and the ticket's
-   * tier as its entitlement carries them onchain, or null when the account holds none for this preset's games.
-   */
+  /** The campaign ticket an account founds its home with in a game of this preset, or null when it holds none. */
   campaignTicket(realmsId: string, presetId: number) {
     return campaignTicketFor(this.env.DB, realmsId, presetId);
   }
