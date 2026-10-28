@@ -1,3 +1,4 @@
+import { presentResult } from "@/three/presented-results";
 import { activeMapLayer } from "@/three/map-layer";
 import { getGameModeConfig } from "@/config/game-modes";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
@@ -41,10 +42,17 @@ export class MapSiteManager {
     private readonly terrain: TerrainSurface = FLAT_TERRAIN_SURFACE,
   ) {
     this.unsubscribe = projection.subscribeTiles((changes) => {
-      const touched = projectionChangesForLayer(changes, activeMapLayer()).some(
+      const onLayer = projectionChangesForLayer(changes, activeMapLayer());
+      const touched = onLayer.some(
         ({ previous, current }) => isMapSite(previous?.occupierType) || isMapSite(current?.occupierType),
       );
-      if (touched) this.refresh();
+      if (!touched) return;
+      this.refresh();
+      for (const { previous, current } of onLayer) {
+        if (previous && isMapSite(previous.occupierType) && !isMapSite(current?.occupierType)) {
+          presentResult(`site-gone:${previous.hexCoords.col},${previous.hexCoords.row}`);
+        }
+      }
     });
     this.refresh();
   }

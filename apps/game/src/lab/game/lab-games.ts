@@ -8,6 +8,7 @@ import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
+import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, spireScenario } from "./spire-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
@@ -22,6 +23,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
   fight: fightScenario,
+  sites: sitesScenario,
   explore: exploreScenario,
   "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),
