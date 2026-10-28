@@ -133,6 +133,17 @@ test("positive integral deposit and duration required; production asks for publi
     "This environment runs no Blitz; remove blitzStart and blitzEnd from inputs.json",
   );
   expect(() => validateInputs(frontierInput as Inputs, environments.dev)).toThrow("without a default");
+  // With the deployer as its admin, production still names its treasury: it is never the deployer by default.
+  const deployerAdmin = { ...environments.production, coldAdmin: false } as Target;
+  expect(() =>
+    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" } as Inputs, deployerAdmin),
+  ).toThrow("treasury");
+  expect(() =>
+    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test", treasury: "0xa" } as Inputs, deployerAdmin),
+  ).not.toThrow();
+  expect(setupQuestions(deployerAdmin).map(([name]) => name)).toContain("treasury");
+  expect(setupQuestions(deployerAdmin).map(([name]) => name)).not.toContain("admin");
+  expect(setupQuestions(environments.dev).map(([name]) => name)).not.toContain("treasury");
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {

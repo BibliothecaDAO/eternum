@@ -1,5 +1,6 @@
 """Back up one shard and prove the copy restores.
 
+    sudo python3 backup.py quiesce PROJECT
     sudo python3 backup.py capture PROJECT DATA_DIR DEST
     sudo python3 backup.py restore-test PROJECT DEST
     sudo python3 backup.py verify PROJECT DEST
@@ -10,11 +11,14 @@ taken while the node is stopped, the private VRF key, the data directory, the im
 checksums of all of it, then `capture.json`. The node is down only while its volume is copied; capture.json records
 how long. Restore-test brings the copy up in scratch containers without a network, compares the restored chain's
 block at the captured head with the running node's, restores both Postgres copies, and writes
-`restore-test/result.json`; it exits non-zero unless everything matches. Verify is what a production teardown asks
-before it removes a shard: the copy's checksums hold, its restore test passed, it is of the running chain (the node
-still has the captured head) and it was captured within the hour, so it holds the shard as drained.
+`restore-test/result.json`; it exits non-zero unless everything matches.
+
+A final copy, the one a production teardown removes the shard after, is taken at a write boundary: quiesce stops the
+shard's RPC service, its one write path (the node publishes no port), while Herald and the value relay keep reading,
+so outstanding withdrawals drain. Verify then asks: the copy's checksums hold, its restore test passed, it is of the
+running chain (the node still has the captured head), writes are still closed, and no block after the captured head
+holds a transaction. Blocks keep coming (the node seals empty ones), but none of them changed the game.
 """
-import calendar
 import hashlib
 import json
 import os
@@ -30,8 +34,8 @@ from stack_lock import LOCK, isolated_stack_lock
 POSTGRES_USER = "herald"
 DATABASE = "herald"
 STOP_GRACE_SECONDS = 60
-# A teardown removes the shard; its copy must be the state the operator just drained, not an older one.
-MAX_VERIFIED_AGE_SECONDS = 3600
+# Blocks read per RPC batch when counting what the node accepted after a capture.
+BLOCKS_PER_BATCH = 100
 # One line per user table, `schema.table|rows`, exact rather than estimated.
 COUNTS_SQL = """SELECT format('SELECT %L || ''|'' || count(*) FROM %I.%I;', schemaname || '.' || relname, schemaname,
 relname) FROM pg_stat_user_tables ORDER BY schemaname, relname
@@ -67,8 +71,29 @@ def restore_test(project, dest):
 # Capture
 
 
-def verify(project, dest, now=None):
-    """Every reason this copy cannot stand in for the running shard; empty when it can."""
+def quiesce(project):
+    """Closes the shard's write path, its RPC service; the node, Herald and the relay's reads keep running."""
+    docker(["stop", "-t", str(STOP_GRACE_SECONDS), f"{project}-rpc-1"])
+    return {"project": project, "writes": "closed" if not accepts_writes(project) else "open"}
+
+
+def accepts_writes(project):
+    return docker_output(["inspect", "-f", "{{.State.Running}}", f"{project}-rpc-1"]) == "true"
+
+
+def transactions_after(container, number):
+    """How many transactions the node holds in the blocks after `number`, up to its head."""
+    head = node_rpc(container, "starknet_blockNumber", [])
+    count = 0
+    for start in range(number + 1, head + 1, BLOCKS_PER_BATCH):
+        batch = [{"jsonrpc": "2.0", "id": block, "method": "starknet_getBlockTransactionCount",
+                  "params": [{"block_number": block}]} for block in range(start, min(start + BLOCKS_PER_BATCH, head + 1))]
+        count += sum(answer["result"] for answer in node_batch(container, batch))
+    return count
+
+
+def verify(project, dest):
+    """Every reason this copy cannot stand in for the running shard as drained; empty when it can."""
     record = json.loads((dest / "capture.json").read_text())
     result = json.loads((dest / "restore-test" / "result.json").read_text())
     problems = []
@@ -81,11 +106,14 @@ def verify(project, dest, now=None):
     if result.get("passed") is not True:
         problems.append("its restore test did not pass")
     head = record["chain"]["head"]
-    if node_block(f"{project}-madara-1", {"block_number": head["block_number"]}) != head:
+    node = f"{project}-madara-1"
+    if node_block(node, {"block_number": head["block_number"]}) != head:
         problems.append("the running chain differs from the copy's head")
-    taken = calendar.timegm(time.strptime(record["finished"], "%Y-%m-%dT%H:%M:%SZ"))
-    if (now if now is not None else time.time()) - taken > MAX_VERIFIED_AGE_SECONDS:
-        problems.append("it was captured more than an hour ago")
+    if accepts_writes(project):
+        problems.append("the shard still accepts writes: quiesce it, drain, then capture")
+    accepted = transactions_after(node, head["block_number"])
+    if accepted:
+        problems.append(f"{accepted} transactions were accepted after the capture: capture the drained shard again")
     return problems
 
 
@@ -261,6 +289,15 @@ def node_rpc(container, method, params):
     return json.loads(response)["result"]
 
 
+def node_batch(container, requests):
+    response = docker_output(["exec", container, "curl", "-s", "-m", "30", "-X", "POST", "-H",
+                              "content-type: application/json", "-d", json.dumps(requests), "http://127.0.0.1:9944"])
+    answers = json.loads(response)
+    if not isinstance(answers, list) or len(answers) != len(requests) or any("result" not in answer for answer in answers):
+        raise RuntimeError("The node did not answer every block in its batch")
+    return answers
+
+
 def node_block(container, block):
     result = node_rpc(container, "starknet_getBlockWithTxHashes", [block])
     return {key: result[key] for key in ("block_number", "block_hash", "new_root")}
@@ -326,6 +363,8 @@ def main(argv):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
+    elif argv[:1] == ["quiesce"] and len(argv) == 2:
+        print(json.dumps(quiesce(argv[1])))
     elif argv[:1] == ["verify"] and len(argv) == 3:
         problems = verify(argv[1], Path(argv[2]).resolve())
         print(json.dumps({"verified": not problems, "problems": problems}))
