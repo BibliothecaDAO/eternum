@@ -1500,7 +1500,7 @@ button.ui-relic:focus-visible {
   text-align: left;
   cursor: pointer;
 }
-.ui-menu__item:is(:hover, [data-state="hover"]) {
+.ui-menu__item:is(:hover, [data-state="hover"], [aria-selected="true"]) {
   background: var(--hud-hover);
 }
 .ui-menu__item[aria-checked="true"] {

@@ -1,6 +1,6 @@
 import { FormEvent, KeyboardEvent, useCallback, useId, useRef, useState } from "react";
 import { EmojiPicker } from "./emoji-picker";
-import { HudButton, HudField, HudMenu, HudNotice } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudField, HudMenu, HudNotice, menuOptionId } from "@/ui/design-system/kit/hud-elements";
 import type { MentionablePlayer } from "../../hooks/use-chat-mentions";
 import { insertMention, mentionChoices, typedMention } from "../../model/mentions";
 
@@ -142,6 +142,7 @@ export function MessageComposer({
           aria-autocomplete="list"
           aria-expanded={choices.length > 0}
           aria-controls={choices.length > 0 ? listId : undefined}
+          aria-activedescendant={choices.length > 0 ? menuOptionId(listId, chosen) : undefined}
         />
         <HudButton
           kind="secondary"
@@ -158,12 +159,11 @@ export function MessageComposer({
           // A press on a name keeps the keyboard in the field, so a phone's keyboard stays up.
           <div className="absolute bottom-full left-0 mb-1" onMouseDown={(event) => event.preventDefault()}>
             <HudMenu
-              id={listId}
+              suggests={{ id: listId, active: chosen }}
               aria-label="Mention a player"
-              items={choices.map((name, index) => ({
+              items={choices.map((name) => ({
                 label: name,
                 lead: <img src={byName.get(name)!.portrait} alt="" className="h-6 w-6 rounded object-cover" />,
-                state: index === chosen ? "hover" : undefined,
                 onSelect: () => pickMention(name),
               }))}
             />

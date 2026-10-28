@@ -63,7 +63,7 @@ const drawRoom = (messages: WorldChatMessage[]) => {
 };
 
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
-const listed = () => [...host.querySelectorAll('[aria-label="Mention a player"] [role="menuitem"]')];
+const listed = () => [...host.querySelectorAll('[aria-label="Mention a player"] [role="option"]')];
 const names = () => listed().map((item) => item.textContent);
 
 /** Types as a keyboard does: the field's whole new text, the caret at its end. */
@@ -128,6 +128,37 @@ it("writes the picked name into the message, and sends it as the plain text type
   expect(listed()).toEqual([]);
   await act(async () => host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
   expect(send).toHaveBeenCalledWith(ZONE, { zoneId: ZONE, content: "hold the ridge @Aldric at dusk" });
+});
+
+it("tells assistive technology which player the arrows chose, the one Enter inserts, and clears it on Escape", () => {
+  drawRoom([]);
+  /** The player the field names as its active option, and which options say they are selected. */
+  const active = () => document.getElementById(field().getAttribute("aria-activedescendant") ?? "")?.textContent;
+  const selected = () => listed().filter((option) => option.getAttribute("aria-selected") === "true");
+  act(() => field().focus());
+  type("@");
+  expect(host.querySelector('[aria-label="Mention a player"]')!.getAttribute("role")).toBe("listbox");
+  expect(field().getAttribute("aria-controls")).toBe(host.querySelector('[role="listbox"]')!.id);
+  expect(active()).toBe("Ada");
+  press("ArrowDown");
+  expect(active()).toBe("Aldric");
+  expect(selected().map((option) => option.textContent)).toEqual(["Aldric"]);
+  press("ArrowDown");
+  press("ArrowDown");
+  // Past the last name, back to the first.
+  expect(active()).toBe("Ada");
+  press("ArrowUp");
+  expect(active()).toBe("Corwin");
+  expect(document.activeElement).toBe(field());
+  press("Enter");
+  expect(field().value).toBe("@Corwin ");
+  expect(send).not.toHaveBeenCalled();
+  type("@Corwin and @a");
+  expect(active()).toBe("Ada");
+  press("Escape");
+  expect(field().getAttribute("aria-expanded")).toBe("false");
+  expect(field().hasAttribute("aria-activedescendant")).toBe(false);
+  expect(field().hasAttribute("aria-controls")).toBe(false);
 });
 
 it("picks a name with a press, the keyboard staying in the field, and Escape puts the list away", () => {

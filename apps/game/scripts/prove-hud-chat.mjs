@@ -230,13 +230,14 @@ const MENTIONS = `(() => {
 /** The composer and its list of players: what is typed, whether it keeps the keyboard, and each name as shown. */
 const LIST = `(() => {
   const input = document.querySelector('[data-lab="chat"] input[aria-label="Message"]');
-  const items = [...document.querySelectorAll('[aria-label="Mention a player"] [role="menuitem"]')];
+  const items = [...document.querySelectorAll('[aria-label="Mention a player"] [role="option"]')];
   return {
     viewport: { width: innerWidth, height: innerHeight },
     coarse: matchMedia("(pointer: coarse)").matches,
     value: input?.value ?? null,
     expanded: input?.getAttribute("aria-expanded") ?? null,
     focused: document.activeElement === input,
+    active: document.getElementById(input?.getAttribute("aria-activedescendant") ?? "")?.textContent ?? null,
     names: items.map((item) => item.textContent),
     items: items.map((item) => {
       const box = item.getBoundingClientRect();
@@ -319,10 +320,15 @@ const proveMentions = async (b, out, record, phone) => {
   record.checks.push(...listChecks(record.measures.narrowed, ["Caradoc", "Corwin"], phone));
 
   if (phone) {
-    const tapped = clickAsPlayer(b, '[aria-label="Mention a player"] [role="menuitem"]:nth-child(2)');
+    const tapped = clickAsPlayer(b, '[aria-label="Mention a player"] [role="option"]:nth-child(2)');
     record.presses.push({ press: "Corwin, tapped", status: tapped ?? "led" });
   } else {
     b.run("press", "ArrowDown");
+    record.measures.chosen = b.evaluate(LIST);
+    record.checks.push({
+      check: "ArrowDown makes Corwin the field's active option, the one selected",
+      ok: record.measures.chosen.active === "Corwin" && record.measures.chosen.focused === true,
+    });
     b.run("press", "Enter");
     record.presses.push({ press: "ArrowDown, Enter", status: "led" });
   }
