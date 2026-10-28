@@ -207,7 +207,7 @@ export class FXManager {
 
         return true;
       },
-      textureUrl: buildSharedFxTexturePath("skull.png"),
+      textureUrl: buildSharedFxTexturePath("skull.webp"),
     });
 
     this.registerFX("compass", {
@@ -216,7 +216,7 @@ export class FXManager {
         fx.setRotation(t * 2);
         return true;
       },
-      textureUrl: buildSharedFxTexturePath("compass.png"),
+      textureUrl: buildSharedFxTexturePath("compass.webp"),
     });
 
     this.registerFX("travel", {
@@ -232,11 +232,11 @@ export class FXManager {
         return true;
       },
       isInfinite: true,
-      textureUrl: buildSharedFxTexturePath("travel.png"),
+      textureUrl: buildSharedFxTexturePath("travel.webp"),
     });
 
     this.registerFX("attack", {
-      textureUrl: buildSharedFxTexturePath("attack.png"),
+      textureUrl: buildSharedFxTexturePath("attack.webp"),
       animate: (fx, t) => {
         const fadeIn = Math.min(t / 0.25, 1);
         fx.setOpacity(0.78 * fadeIn);
@@ -249,7 +249,7 @@ export class FXManager {
     });
 
     this.registerFX("defense", {
-      textureUrl: buildSharedFxTexturePath("defense.png"),
+      textureUrl: buildSharedFxTexturePath("defense.webp"),
       animate: (fx, t) => {
         const fadeIn = Math.min(t / 0.25, 1);
         fx.setOpacity(0.72 * fadeIn);
