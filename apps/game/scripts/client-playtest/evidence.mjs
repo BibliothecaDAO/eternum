@@ -231,41 +231,49 @@ const SETTLED_SPAN_MS = 1_000;
 
 /**
  * The first seconds of play once the doorway drops, from one continuous frame record: the frames over 33 ms and the
- * worst frame in the `windowMs` after `overlay-dismissed`, and the time until the first full second of frames at or
- * under 20 ms. A record that does not reach back to the dismissal and on through the window is refused as incomplete:
- * time that was not observed is no evidence of either a smooth or a long frame.
+ * worst frame in the `windowMs` after `overlay-dismissed`, and the time until the first second of frames at or under
+ * 20 ms. Only frames observed count: the record must hold a frame at or before the dismissal and one at or after the
+ * window's end, so the frame crossing either edge is judged too. A record that does not is refused as incomplete, as
+ * time between frames that was not observed is no evidence of either a smooth or a long frame.
  */
-export function judgeAfterDoorway({ dismissedAt, frames, readAt }, { windowMs = 5_000 } = {}) {
+export function judgeAfterDoorway({ dismissedAt, frames }, { windowMs = 5_000 } = {}) {
   if (!Number.isFinite(dismissedAt)) return { status: "incomplete", reason: "no overlay-dismissed milestone" };
   if (!(frames.length > 0 && frames[0] <= dismissedAt)) {
     return { status: "incomplete", reason: "the record starts after the doorway dropped" };
   }
-  if (!(readAt >= dismissedAt + windowMs)) {
-    return { status: "incomplete", reason: `the record ends ${Math.round(readAt - dismissedAt)} ms after the drop` };
+  const lastFrame = frames.at(-1);
+  if (lastFrame < dismissedAt + windowMs) {
+    return { status: "incomplete", reason: `the frames end ${Math.round(lastFrame - dismissedAt)} ms after the drop` };
   }
-  const gaps = frames.slice(1).map((end, index) => ({ end, ms: end - frames[index] }));
-  // Every frame that overlaps the window counts, one that runs past its end included.
-  const inWindow = gaps.filter(({ end, ms }) => end > dismissedAt && end - ms < dismissedAt + windowMs);
+  const inWindow = framesOverlapping(frames, dismissedAt, dismissedAt + windowMs);
   return {
     status: "complete",
     windowMs,
-    observedMs: round(readAt - dismissedAt),
-    framesOver33: inWindow.filter(({ ms }) => ms > 33.4).length,
-    worstFrameMs: round(Math.max(0, ...inWindow.map(({ ms }) => ms))),
-    settledAfterMs: settledAfter(gaps, dismissedAt, readAt),
+    observedMs: round(lastFrame - dismissedAt),
+    framesOver33: inWindow.filter((ms) => ms > 33.4).length,
+    worstFrameMs: round(Math.max(...inWindow)),
+    settledAfterMs: settledAfter(frames, dismissedAt),
   };
 }
 
-/** From the drop to the first frame that opens a fully observed second of frames at or under 20 ms; null if none. */
-function settledAfter(gaps, dismissedAt, readAt) {
-  for (const [index, { end: start }] of gaps.entries()) {
+/** From the drop to the first frame that opens an observed second whose every frame is at or under 20 ms; null if none. */
+function settledAfter(frames, dismissedAt) {
+  for (const start of frames) {
     if (start < dismissedAt) continue;
-    if (start + SETTLED_SPAN_MS > readAt) return null;
-    const second = gaps.slice(index + 1).filter(({ end }) => end <= start + SETTLED_SPAN_MS);
-    const covered = second.length > 0 && second.at(-1).end >= start + SETTLED_SPAN_MS - SETTLED_FRAME_MS;
-    if (covered && second.every(({ ms }) => ms <= SETTLED_FRAME_MS)) return round(start - dismissedAt);
+    if (frames.at(-1) < start + SETTLED_SPAN_MS) return null;
+    const second = framesOverlapping(frames, start, start + SETTLED_SPAN_MS);
+    if (second.every((ms) => ms <= SETTLED_FRAME_MS)) return round(start - dismissedAt);
   }
   return null;
+}
+
+/** The duration of every frame interval that overlaps `(from, to)`, those crossing either edge included. */
+function framesOverlapping(frames, from, to) {
+  const durations = [];
+  for (let index = 1; index < frames.length; index++) {
+    if (frames[index] > from && frames[index - 1] < to) durations.push(frames[index] - frames[index - 1]);
+  }
+  return durations;
 }
 
 /** The WebGPU memory held when the step's probe was read, in MB; null on WebGL, whose memory is not kept. */

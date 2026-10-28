@@ -310,7 +310,7 @@ describe("judgeAfterDoorway", () => {
     expect(judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 8500 })).toEqual({
       status: "complete",
       windowMs: 5000,
-      observedMs: 7500,
+      observedMs: 7450,
       framesOver33: 2,
       worstFrameMs: 150,
       settledAfterMs: 250,
@@ -327,7 +327,7 @@ describe("judgeAfterDoorway", () => {
     // The boot's own snapshot, which ended before the window did, is refused rather than joined to a later one.
     expect(judgeAfterDoorway({ dismissedAt: 1000, frames: [990, 1006, 1022], readAt: 2840 })).toEqual({
       status: "incomplete",
-      reason: "the record ends 1840 ms after the drop",
+      reason: "the frames end 22 ms after the drop",
     });
   });
 
@@ -337,6 +337,29 @@ describe("judgeAfterDoorway", () => {
     );
     const stutter = run(990, 50, 200);
     expect(judgeAfterDoorway({ dismissedAt: 1000, frames: stutter, readAt: 11_000 }).settledAfterMs).toBe(null);
+  });
+
+  it("refuses a window its frames do not reach, however late the record was read", () => {
+    // The review's case: 22 ms of frames after the drop, read nine seconds later.
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: [990, 1006, 1022], readAt: 10_000 })).toEqual({
+      status: "incomplete",
+      reason: "the frames end 22 ms after the drop",
+    });
+  });
+
+  it("judges the frame that crosses the end of a second or of the window as part of it", () => {
+    // The review's case: 16 ms frames through 1998, then the next frame at 10000. That 8002 ms frame overlaps every
+    // second starting after 998 and the whole window, so no second is clean and the window holds one long frame.
+    const frames = [...run(990, 16, 64), 10_000];
+    expect(frames.at(-2)).toBe(1998);
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 10_000 })).toEqual({
+      status: "complete",
+      windowMs: 5000,
+      observedMs: 9000,
+      framesOver33: 1,
+      worstFrameMs: 8002,
+      settledAfterMs: null,
+    });
   });
 });
 

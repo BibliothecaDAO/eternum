@@ -2054,16 +2054,22 @@ const LEFTOVER_WINDOW_MS = 10_000;
 
 /**
  * Two readings of what the page keeps running, a still window apart (`compareCensus`), and the first seconds of play
- * after the doorway dropped, judged from one continuous frame record (`judgeAfterDoorway`).
+ * after the doorway dropped, judged from one continuous frame record (`judgeAfterDoorway`). The record is kept beside
+ * its judgment, so the judgment can be replayed from what was observed.
  */
 async function readWhatKeepsRunning({ browser }) {
   const before = browser.read("window.__playtest.census()");
   await sleep(LEFTOVER_WINDOW_MS);
   const keepsRunning = compareCensus(before, browser.read("window.__playtest.census()"));
   const dismissedAt = browser.read(DISMISSED_AT_EXPRESSION);
-  const record =
+  const { frames, readAt } =
     dismissedAt === null ? { frames: [], readAt: null } : browser.read(`window.__playtest.framesFrom(${dismissedAt})`);
-  return { keepsRunning, afterDoorway: judgeAfterDoorway({ dismissedAt: dismissedAt ?? Number.NaN, ...record }) };
+  const doorwayFrames = { dismissedAt, frames, readAt };
+  return {
+    keepsRunning,
+    doorwayFrames,
+    afterDoorway: judgeAfterDoorway({ dismissedAt: dismissedAt ?? Number.NaN, frames }),
+  };
 }
 
 /** The page time the doorway dropped at on this page (a reload has its own), or null. */
