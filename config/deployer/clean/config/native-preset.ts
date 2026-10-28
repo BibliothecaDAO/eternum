@@ -3,7 +3,7 @@ import {
   nativeRuleConstants as presetRule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { nativePresetForId } from "../../../source/native";
-import { clockScaled } from "../../../source/common/season-clock";
+import { clockScaled, seasonDayUnitSeconds } from "../../../source/common/season-clock";
 import { RESOURCE_PRECISION, ResourcesIds, type Config } from "@bibliothecadao/types";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import {
@@ -84,7 +84,7 @@ function buildRules(config: Config, preset: ReturnType<typeof nativePresetForId>
     map_center_offset: config.settlement.center,
     spire_travel_essence_cost: scaled(config.spireTravelEssenceCost),
     command_mask: preset.commandMask,
-    day_unit_seconds: preset.dayUnitSeconds,
+    day_unit_seconds: seasonDayUnitSeconds(preset),
     mode_rules: preset.modeRules,
     entry_rule: preset.entryRule,
     faith_enabled: faith.enabled,
@@ -331,8 +331,9 @@ function buildEconomy(
     (labor !== null &&
       (!Number.isSafeInteger(labor.amount) ||
         labor.amount <= 0 ||
-        !Number.isSafeInteger(labor.goldenEssence) ||
-        labor.goldenEssence < 0))
+        !Number.isSafeInteger(labor.goldenAmount) ||
+        labor.goldenAmount <= 0 ||
+        [labor.campaignEssence, labor.goldenEssence].some((amount) => !Number.isSafeInteger(amount) || amount < 0)))
   )
     throw new Error("Invalid Realm labor rules");
   return {
@@ -341,6 +342,8 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             amount: BigInt(preset.labor.amount),
+            campaign_essence: BigInt(preset.labor.campaignEssence),
+            golden_amount: BigInt(preset.labor.goldenAmount),
             golden_essence: BigInt(preset.labor.goldenEssence),
           }),
     discovery: buildDiscovery(preset),
@@ -429,13 +432,12 @@ export function buildNativePreset(config: Config, presetId: number) {
     exploration: preset.supplies.map((reward) => ({ ...reward })),
     season_win_points: config.victoryPoints.pointsForWin,
   };
-  if (preset.clockScale !== undefined) scaleSeasonClocks(definition, preset.clockScale);
+  if (preset.clockScale !== undefined) scaleActivityClocks(definition, preset.clockScale.activity);
   return definition;
 }
 
-/** A scaled preset has shorter days, faster army ticks and proportionally more production. */
-function scaleSeasonClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
-  definition.rules.day_unit_seconds = clockScaled(definition.rules.day_unit_seconds, scale, "day_unit_seconds");
+/** Activity scales stamina recovery and production without changing the day calendar. */
+function scaleActivityClocks(definition: ReturnType<typeof buildNativePreset>, scale: number): void {
   definition.rules.tick_config.armies_tick_in_seconds = clockScaled(
     definition.rules.tick_config.armies_tick_in_seconds,
     scale,

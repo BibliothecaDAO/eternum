@@ -217,6 +217,13 @@ pub mod EntryAdministration {
             rules: crate::entry::LaborRules,
             context: crate::commands::ExecutionContext,
         ) -> (u128, u128) {
+            let (labor_amount, essence_amount) = if campaign_tier == Some(crate::settlement::CAMPAIGN_GOLDEN) {
+                (rules.golden_amount, rules.golden_essence)
+            } else if campaign_tier.is_some() {
+                (rules.amount, rules.campaign_essence)
+            } else {
+                (rules.amount, 0)
+            };
             let home = ResourceKey { game_id: target.game_id, entity_id: target.home };
             let timestamp = starknet::get_block_timestamp();
             let classes = get_dep_component!(@self, Life).classes(target.game_id);
@@ -226,16 +233,16 @@ pub mod EntryAdministration {
                 .grant_resource(
                     home,
                     crate::resources::LABOR,
-                    rules.amount * crate::rules::RESOURCE_PRECISION,
+                    labor_amount * crate::rules::RESOURCE_PRECISION,
                     timestamp,
                     resource_context,
                 );
-            let essence = if campaign_tier == Some(crate::settlement::CAMPAIGN_GOLDEN) && rules.golden_essence != 0 {
+            let essence = if essence_amount != 0 {
                 resources
                     .grant_resource(
                         home,
                         crate::resources::ESSENCE,
-                        rules.golden_essence * crate::rules::RESOURCE_PRECISION,
+                        essence_amount * crate::rules::RESOURCE_PRECISION,
                         timestamp,
                         resource_context,
                     )

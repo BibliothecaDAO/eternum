@@ -34,7 +34,7 @@ fn found(d: Deployment, game_id: u32) -> LaborHome {
 
 #[feature("safe_dispatcher")]
 fn campaign_home(preset: ByteArray, tier: u8) -> (Deployment, LaborHome) {
-    let (d, game_id) = super::registrar::setup_open_frontier_preset(preset, 3);
+    let (d, game_id) = super::registrar::setup_open_frontier_preset(preset, 2);
     set_operator(d, authority());
     register(d, game_id, ticket(tier));
     let home = found(d, game_id);
@@ -51,7 +51,7 @@ fn balance(d: Deployment, home: LaborHome, resource: u8) -> u128 {
 }
 
 #[feature("safe_dispatcher")]
-fn claims_each_game_day(tier: u8, expected_essence: u128) {
+fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128) {
     let (d, home) = campaign_home("devcon", tier);
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     let labor_before = balance(d, home, LABOR);
@@ -60,7 +60,7 @@ fn claims_each_game_day(tier: u8, expected_essence: u128) {
     assert!(operator.grant_labor(home, 0, authority()).is_err());
     let mut spy = spy_events();
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
+    assert_eq!(grant.amount, expected_amount * RESOURCE_PRECISION);
     assert_eq!(grant.essence, expected_essence * RESOURCE_PRECISION);
     assert_eq!(balance(d, home, LABOR), labor_before + grant.amount);
     assert_eq!(balance(d, home, ESSENCE), essence_before + grant.essence);
@@ -87,30 +87,49 @@ fn claims_each_game_day(tier: u8, expected_essence: u128) {
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    let today = crate::days::day_of(game, 4800, 360);
-    start_cheat_block_timestamp(d.games, today.end - 1);
+    let (_, preset) = super::preset_projection::current_definition("devcon");
+    let unit = preset.rules.day_unit_seconds;
+    assert_eq!(unit, 7200);
+    assert_eq!(crate::days::season_days(game.end_at - game.start_main_at, unit), 10);
+    let old_first_day = crate::days::day_of(game, 4800, 360);
+    start_cheat_block_timestamp(d.games, old_first_day.end);
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
-    start_cheat_block_timestamp(d.games, today.end);
-    let tomorrow = operator.grant_labor(home, 1, d.actor).unwrap();
-    assert!(tomorrow.amount <= 1000 * RESOURCE_PRECISION);
-    assert_eq!(tomorrow.essence, expected_essence * RESOURCE_PRECISION);
-    assert_eq!(balance(d, home, ESSENCE), essence_before + grant.essence + tomorrow.essence);
-    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), tomorrow);
+    let mut today = crate::days::day_of(game, unit, 360);
+    for day in 1_u64..10 {
+        start_cheat_block_timestamp(d.games, today.end - 1);
+        assert!(operator.grant_labor(home, day, d.actor).is_err());
+        start_cheat_block_timestamp(d.games, today.end);
+        let labor_before = balance(d, home, LABOR);
+        let next = operator.grant_labor(home, day, d.actor).unwrap();
+        if day == 1 {
+            assert_eq!(next.amount, expected_amount * RESOURCE_PRECISION);
+        }
+        assert!(next.amount <= expected_amount * RESOURCE_PRECISION);
+        assert_eq!(balance(d, home, LABOR), labor_before + next.amount);
+        assert_eq!(next.essence, expected_essence * RESOURCE_PRECISION);
+        assert_eq!(
+            balance(d, home, ESSENCE),
+            essence_before + Into::<u64, u128>::into(day + 1) * expected_essence * RESOURCE_PRECISION,
+        );
+        assert_eq!(operator.grant_labor(home, day, d.actor).unwrap(), next);
+        today = crate::days::day_of(game, unit, today.end);
+    }
+    assert_eq!(today.end, game.end_at);
     start_cheat_block_timestamp(d.games, game.end_at);
-    assert!(operator.grant_labor(home, 15, d.actor).is_err());
+    assert!(operator.grant_labor(home, 10, d.actor).is_err());
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_normal_campaign_home_claims_one_thousand_labor_on_each_game_day() {
-    claims_each_game_day(crate::settlement::CAMPAIGN_NORMAL, 0);
+fn a_normal_campaign_home_claims_one_thousand_labor_and_essence_on_each_game_day() {
+    claims_each_game_day(crate::settlement::CAMPAIGN_NORMAL, 1000, 1000);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
 fn a_golden_campaign_home_claims_labor_and_essence_once_together() {
-    claims_each_game_day(crate::settlement::CAMPAIGN_GOLDEN, 1000);
+    claims_each_game_day(crate::settlement::CAMPAIGN_GOLDEN, 2000, 2000);
 }
 
 #[test]
@@ -180,11 +199,15 @@ fn refuses_a_second_source(held_first: bool) {
     assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(first));
     start_cheat_block_timestamp(d.games, 360);
     let grant = ILedgerOperatorSafeDispatcher { contract_address: d.games }.grant_labor(home, 0, d.actor).unwrap();
-    assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
+    assert_eq!(grant.amount, if held_first {
+        1000 * RESOURCE_PRECISION
+    } else {
+        2000 * RESOURCE_PRECISION
+    });
     assert_eq!(grant.essence, if held_first {
         0
     } else {
-        1000 * RESOURCE_PRECISION
+        2000 * RESOURCE_PRECISION
     });
 }
 
@@ -235,10 +258,9 @@ fn a_free_home_cannot_become_a_campaign_home_after_founding() {
     assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.grant_labor(free, 0, other.actor).is_err());
 }
 
-#[test]
 #[feature("safe_dispatcher")]
-fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
-    let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_GOLDEN);
+fn full_labor_store_still_claims_essence(tier: u8, expected_essence: u128) {
+    let (d, home) = campaign_home("devcon", tier);
     interact_with_state(
         d.games,
         || {
@@ -252,10 +274,22 @@ fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
     let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
     let grant = operator.grant_labor(home, 0, d.actor).unwrap();
     assert_eq!(grant.amount, 0);
-    assert_eq!(grant.essence, 1000 * RESOURCE_PRECISION);
+    assert_eq!(grant.essence, expected_essence * RESOURCE_PRECISION);
     assert_eq!(balance(d, home, ESSENCE), before + grant.essence);
     assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), grant);
     assert_eq!(balance(d, home, ESSENCE), before + grant.essence);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_regular_claim_records_essence_even_when_the_labor_store_is_full() {
+    full_labor_store_still_claims_essence(crate::settlement::CAMPAIGN_NORMAL, 1000);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_golden_claim_records_essence_even_when_the_labor_store_is_full() {
+    full_labor_store_still_claims_essence(crate::settlement::CAMPAIGN_GOLDEN, 2000);
 }
 
 #[test]

@@ -14,7 +14,7 @@ import {
 import type { CampaignMark } from "./campaign-home";
 import type { RealmLaborPlan } from "./realm-labor";
 
-/** One daily claim for the home founded with a held Realm or a campaign's ticket: its Labor, and a golden one's Essence. */
+/** One daily claim for the home founded with a held Realm or a campaign's ticket: its preset's Labor and Essence. */
 export const RealmsSheet = ({
   plan,
   dailyAmount,

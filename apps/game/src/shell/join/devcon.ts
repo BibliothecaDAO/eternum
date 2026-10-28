@@ -1,13 +1,14 @@
 /**
  * Devcon's campaign as its landing shows it: the identity Worker's campaign key (apps/realms/server/campaigns.ts), the
- * landing's address, what a ticket's home claims each Frontier day (the Devcon preset's Labor, and a golden ticket's
- * Essence) and how many tickets are golden.
+ * landing's address, what each ticket's home claims each Frontier day and how many tickets are golden.
  */
 export const DEVCON = {
   campaign: "devcon-2026",
   path: "/join/devcon",
   laborPerDay: 1_000,
-  goldenEssencePerDay: 1_000,
+  essencePerDay: 1_000,
+  goldenLaborPerDay: 2_000,
+  goldenEssencePerDay: 2_000,
   golden: 20,
 } as const;
 

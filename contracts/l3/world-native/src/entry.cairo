@@ -23,6 +23,8 @@ pub struct LaborHome {
 #[derive(Copy, Drop, Serde, Debug, PartialEq, starknet::Store)]
 pub struct LaborRules {
     pub amount: u128,
+    pub campaign_essence: u128,
+    pub golden_amount: u128,
     pub golden_essence: u128,
 }
 

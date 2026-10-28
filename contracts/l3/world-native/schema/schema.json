@@ -2999,6 +2999,18 @@
           "feltLength": 1
         },
         {
+          "name": "campaign_essence",
+          "type": "core::integer::u128",
+          "id": "0x63616d706169676e5f657373656e6365",
+          "feltLength": 1
+        },
+        {
+          "name": "golden_amount",
+          "type": "core::integer::u128",
+          "id": "0x676f6c64656e5f616d6f756e74",
+          "feltLength": 1
+        },
+        {
           "name": "golden_essence",
           "type": "core::integer::u128",
           "id": "0x676f6c64656e5f657373656e6365",
@@ -3006,7 +3018,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 2,
+      "valueLength": 4,
       "derivedFrom": "preset"
     },
     {
@@ -9053,6 +9065,14 @@
           "type": "core::integer::u128"
         },
         {
+          "name": "campaign_essence",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "golden_amount",
+          "type": "core::integer::u128"
+        },
+        {
           "name": "golden_essence",
           "type": "core::integer::u128"
         }
@@ -13537,5 +13557,5 @@
       ]
     }
   },
-  "identity": "1eb3841f8064b4b439dd5c31b8ad879a0bdd2b0c55a8818b9bbae4ac5761f185"
+  "identity": "436974d742494cbea971ef70f5a88bfc35bed41f1e668327ef0dcd8b005bed46"
 }

@@ -1,3 +1,4 @@
+import { seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
 import { lowestFittingPoint } from "@bibliothecadao/eternum";
 import { openArmySlots } from "@bibliothecadao/eternum/troop-stamina";
 import { safeInteger } from "../../../packages/core/src/utils/safe-integer";
@@ -76,7 +77,7 @@ const GUARDED_SITES = new Set<number>([
 /** A design run's day unit: the accelerated fixture preset's, which the season it plays must match. */
 const acceleratedDayUnitSeconds = (): number => {
   const preset = nativePresetForId(FRONTIER_ACCELERATED_PRESET_ID);
-  return preset.dayUnitSeconds / preset.clockScale!;
+  return seasonDayUnitSeconds(preset);
 };
 
 type Army = NativeRows["ExplorerTroops"];

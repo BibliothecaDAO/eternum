@@ -120,7 +120,7 @@ export function buildNativeGameParams(config: Config, input: CreateGamePayloadIn
 function nativeSeasonStart(config: Config, input: Pick<CreateGamePayloadInput, "presetId" | "startMainAt">): number {
   const preset = nativePresetForId(input.presetId);
   if (preset.dayUnitSeconds === 0) return input.startMainAt;
-  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale ?? 1, "armies tick");
+  const tick = clockScaled(config.tick.armiesTickIntervalInSeconds, preset.clockScale?.activity ?? 1, "armies tick");
   return Math.ceil(input.startMainAt / tick) * tick;
 }
 
@@ -138,6 +138,10 @@ export function loadNativePresetConfiguration(environment: DeploymentEnvironment
   const config = preset.balance ? mergeConfigPatches<Config>(loaded, preset.balance) : loaded;
   // A scaled preset's season lasts as many of its shorter bags as its mode's: the length scales with the day unit.
   if (preset.clockScale !== undefined)
-    config.season.durationSeconds = clockScaled(config.season.durationSeconds, preset.clockScale, "season duration");
+    config.season.durationSeconds = clockScaled(
+      config.season.durationSeconds,
+      preset.clockScale.days,
+      "season duration",
+    );
   return config;
 }

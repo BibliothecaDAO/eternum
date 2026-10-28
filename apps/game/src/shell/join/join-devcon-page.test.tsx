@@ -74,7 +74,8 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   await visit("/join/devcon/T9HW3NPB");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
-  expect(text()).not.toMatch(/golden|Essence/i);
+  expect(text()).not.toMatch(/golden/i);
+  expect(text()).toContain("1,000 Essence each day");
   await press("Claim your realm");
   expect(useConnectStore.getState().request).toEqual({ next: "/join/devcon/T9HW3NPB" });
   expect(service.redeemCampaignTicket).not.toHaveBeenCalled();
@@ -91,14 +92,14 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden ticket");
   expect(text()).toContain("One of 20 at Devcon");
-  expect(text()).toContain("1,000 Labor each day");
-  expect(text()).toContain("1,000 Essence each day");
+  expect(text()).toContain("2,000 Labor each day");
+  expect(text()).toContain("2,000 Essence each day");
   expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
   await press("Continue");
   expect(path).toBe("/");
 });
 
-it("opens a regular ticket from the shared link: the Devcon realm and its Labor, no Essence", async () => {
+it("opens a regular ticket from the shared link: the Devcon realm with its Labor and Essence", async () => {
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
   await visit("/join/devcon");
@@ -107,7 +108,8 @@ it("opens a regular ticket from the shared link: the Devcon realm and its Labor,
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
-  expect(text()).not.toMatch(/golden|Essence/i);
+  expect(text()).not.toMatch(/golden/i);
+  expect(text()).toContain("1,000 Essence each day");
 });
 
 it("says a closed campaign, and offers Try again when the ticket could not be opened", async () => {
@@ -123,6 +125,11 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
 });
 
-it("promises the Labor, and a golden ticket's Essence, that the Devcon preset grants each day", () => {
-  expect(frontierDevconPreset.labor).toEqual({ amount: DEVCON.laborPerDay, goldenEssence: DEVCON.goldenEssencePerDay });
+it("promises both ticket tiers exactly the daily amounts in the Devcon preset", () => {
+  expect(frontierDevconPreset.labor).toEqual({
+    amount: DEVCON.laborPerDay,
+    campaignEssence: DEVCON.essencePerDay,
+    goldenAmount: DEVCON.goldenLaborPerDay,
+    goldenEssence: DEVCON.goldenEssencePerDay,
+  });
 });

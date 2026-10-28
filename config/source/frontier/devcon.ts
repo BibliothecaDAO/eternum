@@ -8,8 +8,8 @@ if (!frontierPreset.labor) throw new Error("Devcon requires Frontier's home Labo
 export const frontierDevconPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_DEVCON_PRESET_ID,
-  clockScale: 3,
-  labor: { ...frontierPreset.labor, goldenEssence: 1000 },
+  clockScale: { days: 2, activity: 3 },
+  labor: { ...frontierPreset.labor, campaignEssence: 1000, goldenAmount: 2000, goldenEssence: 2000 },
   research: [
     ...frontierPreset.research.filter(({ row }) => row !== research.ROW_DEPTH),
     ...[20_000, 50_000, 100_000].map((essenceCost, index) => ({

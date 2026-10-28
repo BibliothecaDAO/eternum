@@ -14,7 +14,7 @@ import season
 
 ROOT = Path(__file__).resolve().parents[3]
 START = "2026-10-30T06:30:00.000Z"
-END = "2026-10-31T09:10:00.000Z"
+END = "2026-10-31T22:30:00.000Z"
 NOW = datetime.fromisoformat("2026-10-28T12:00:00+00:00").timestamp()
 DATES = {"presetId": 6, "startsAt": START, "endsAt": END}
 
@@ -71,19 +71,19 @@ class SeasonCommandTest(unittest.TestCase):
         return phase
 
     def test_rehearsal_dates_and_preset_reach_the_calendar_and_retry_does_not_write(self):
-        result = season.open_frontier("dev", 6, "2026-10-30T12:00:00+05:30", "2026-10-31T14:40:00+05:30")
+        result = season.open_frontier("dev", 6, "2026-10-30T12:00:00+05:30", "2026-11-01T04:00:00+05:30")
         self.assertEqual(result, {"phase": "frontier", **DATES})
         self.assertEqual(season.open_frontier("dev", 6, START, END), result)
         self.assertEqual(self.writes, [DATES])
 
     def test_fast_tick_accepts_a_start_between_normal_frontier_ticks(self):
-        result = season.open_frontier("dev", 6, "2026-10-30T06:30:40Z", "2026-10-31T09:10:40Z")
+        result = season.open_frontier("dev", 6, "2026-10-30T06:30:40Z", "2026-10-31T22:30:40Z")
         self.assertEqual(result, {"phase": "frontier", "presetId": 6,
-                                  "startsAt": "2026-10-30T06:30:40.000Z", "endsAt": "2026-10-31T09:10:40.000Z"})
+                                  "startsAt": "2026-10-30T06:30:40.000Z", "endsAt": "2026-10-31T22:30:40.000Z"})
         self.assertEqual(len(self.writes), 1)
 
     def test_open_now_uses_each_presets_tick_and_one_complete_bag(self):
-        for preset_id, tick, duration in ((6, 40, 96000), (5, 120, 288000)):
+        for preset_id, tick, duration in ((6, 40, 144000), (5, 120, 288000)):
             with self.subTest(preset_id=preset_id):
                 self.phases = []
                 before = datetime.now().timestamp()
@@ -109,7 +109,7 @@ class SeasonCommandTest(unittest.TestCase):
     def test_running_or_pending_dates_cannot_be_moved(self):
         self.phases = [{"phase": "frontier", **DATES}]
         with self.assertRaisesRegex(ValueError, "different preset or dates"):
-            season.open_frontier("dev", 6, "2026-10-31T09:30:00Z", "2026-11-01T12:10:00Z")
+            season.open_frontier("dev", 6, "2026-10-31T22:50:00Z", "2026-11-02T14:50:00Z")
         self.assertEqual(self.writes, [])
 
     def test_ended_season_can_roll_over_to_the_next_bag(self):

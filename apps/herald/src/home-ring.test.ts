@@ -233,8 +233,18 @@ it("delivers game labor rules and that game's account grants through snapshots a
     fold,
     receipt(
       seedDerivedRows(fold, decoder, [
-        rowEvent("LaborRules", ["1"], { amount: 7n, golden_essence: 1000n }),
-        rowEvent("LaborRules", ["2"], { amount: 99n, golden_essence: 1000n }),
+        rowEvent("LaborRules", ["1"], {
+          amount: 7n,
+          campaign_essence: 1000n,
+          golden_amount: 2000n,
+          golden_essence: 2000n,
+        }),
+        rowEvent("LaborRules", ["2"], {
+          amount: 99n,
+          campaign_essence: 1000n,
+          golden_amount: 2000n,
+          golden_essence: 2000n,
+        }),
         rowEvent("LaborGrant", ["2", "700", String(day)], { account: 10n, amount: 99n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "1", String(day - 1)], { account: 10n, amount: 33n, essence: 1000n }),
         rowEvent("LaborGrant", ["1", "2", String(day)], { account: 11n, amount: 44n, essence: 1000n }),
@@ -249,7 +259,9 @@ it("delivers game labor rules and that game's account grants through snapshots a
   const store = new NativeFactStore();
   applyMessages(store, messages);
 
-  expect([...store.rows("LaborRules")]).toEqual([{ game_id: 1, amount: 7n, golden_essence: 1000n }]);
+  expect([...store.rows("LaborRules")]).toEqual([
+    { game_id: 1, amount: 7n, campaign_essence: 1000n, golden_amount: 2000n, golden_essence: 2000n },
+  ]);
   expect([...store.rows("LaborGrant")]).toEqual([
     { day: BigInt(day - 1), game_id: 1, account: 10n, home: 1n, amount: 33n, essence: 1000n },
   ]);
