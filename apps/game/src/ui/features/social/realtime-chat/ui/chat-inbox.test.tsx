@@ -81,7 +81,7 @@ const holdList = () => {
     });
 };
 
-const serve = (unread: number) =>
+const serve = (unread: number, last: ReturnType<typeof message> = HISTORY[1]!, readThrough?: string) =>
   vi.fn(async (input: string | URL) => {
     const { pathname } = new URL(String(input));
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
@@ -94,12 +94,13 @@ const serve = (unread: number) =>
               id: THREAD,
               participants: [SELF, ALDRIC],
               createdAt: at(1),
-              updatedAt: at(30),
-              lastMessageId: "d2",
+              updatedAt: last.createdAt,
+              lastMessageId: last.id,
               unreadCounts: { [SELF]: unread },
+              ...(readThrough ? { readThrough: { [SELF]: readThrough } } : {}),
               typing: [],
             },
-            lastMessage: HISTORY[1],
+            lastMessage: last,
           },
         ],
       });
@@ -279,6 +280,33 @@ describe("a slow list, answered after what reached the client meanwhile", () => 
     expect(rows()[0]!.textContent).toContain("dawn it is");
     expect(rows()[0]!.querySelector(".ui-chip")).toBeNull();
     expect(held().messages.map(({ id }) => id)).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("keeps read what was read meanwhile, though the list counts it, and counts what the list adds unseen", async () => {
+    // The client holds Aldric's "are you there", unread; the list asked for again already holds his next line too.
+    const inbox = await startEmpty(1);
+    vi.stubGlobal("fetch", serve(2, message("d3", ALDRIC, "dawn it is", 40)));
+    const release = await reconnectHeld(inbox);
+    await press("Messages");
+    await act(async () => rows()[0]!.querySelector("button")!.click());
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
+    expect(tabs()).toEqual(["Global", "Messages"]);
+
+    await release();
+    // "are you there" stays read; "dawn it is", which the client never showed, is the one unread.
+    expect(tabs()).toEqual(["Global", "Messages1"]);
+    expect(rows()[0]!.textContent).toContain("dawn it is");
+    expect(rows()[0]!.querySelector(".ui-chip")?.textContent).toBe("1");
+    expect(held().messages.map(({ id }) => id)).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("counts from where the server says the player read, when that is past what was read here", async () => {
+    const inbox = await startEmpty(0);
+    // Read on another device through "are you there": the list's one unread is the line after it.
+    vi.stubGlobal("fetch", serve(1, message("d3", ALDRIC, "dawn it is", 40), at(30)));
+    const release = await reconnectHeld(inbox);
+    await release();
+    expect(tabs()).toEqual(["Global", "Messages1"]);
   });
 
   it("gives nothing to a client replaced while the list was on its way", async () => {

@@ -433,7 +433,12 @@ it("lists a player's conversations from the server: one written while they were 
   await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
   const [sender, recipient] = [await signIn(worker), await signIn(worker)];
   type Listed = {
-    thread: { id: string; participants: string[]; unreadCounts: Record<string, number> };
+    thread: {
+      id: string;
+      participants: string[];
+      unreadCounts: Record<string, number>;
+      readThrough?: Record<string, string>;
+    };
     lastMessage: { content: string; senderId: string } | null;
   };
   const threadsOf = (player: { cookie: string }) =>
@@ -451,38 +456,58 @@ it("lists a player's conversations from the server: one written while they were 
     return threads;
   };
 
-  // The recipient has never opened chat: the message waits in their inbox.
+  // The recipient has never opened chat: two messages wait in their inbox.
   const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
   await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
-  outbox.socket!.send(
-    JSON.stringify({ type: "direct:message", payload: { recipientId: recipient.realmsId, content: "are you there" } }),
+  for (const [content, sent] of [
+    ["are you there", 1],
+    ["hello?", 2],
+  ] as const) {
+    outbox.socket!.send(
+      JSON.stringify({ type: "direct:message", payload: { recipientId: recipient.realmsId, content } }),
+    );
+    await waitUntil(() => ofType(outbox.received, "direct:message").length >= sent, 5_000);
+    await pause(5);
+  }
+  const [first, second] = ofType(outbox.received, "direct:message").map(
+    ({ message }) => message as { id: string; createdAt: string },
   );
-  await waitUntil(() => ofType(outbox.received, "direct:message").length > 0, 5_000);
 
-  // A client starting empty finds it: who, the last line, unread.
+  // A client starting empty finds it: who, the last line, unread, never read.
   const [waiting] = (await threadsOf(recipient)).threads;
   expect(waiting!.thread.participants).toContain(sender.realmsId);
-  expect(waiting!.lastMessage).toMatchObject({ content: "are you there", senderId: sender.realmsId });
-  expect(waiting!.thread.unreadCounts[recipient.realmsId]).toBe(1);
+  expect(waiting!.lastMessage).toMatchObject({ content: "hello?", senderId: sender.realmsId });
+  expect(waiting!.thread.unreadCounts[recipient.realmsId]).toBe(2);
+  expect(waiting!.thread.readThrough).toBeUndefined();
 
-  // Read on a device, then listed again as a reload lists it: still there, nothing unread.
+  // Read through the first only: the second stays unread, and the list says where the reading stands.
   const inbox = await connect(worker, recipient.cookie, "/api/chat/inbox");
   await waitUntil(() => ofType(inbox.received, "connected").length > 0, 5_000);
-  const messageId = (ofType(outbox.received, "direct:message")[0]!.message as { id: string }).id;
-  inbox.socket!.send(
-    JSON.stringify({
-      type: "direct:read",
-      payload: {
-        threadId: waiting!.thread.id,
-        messageId,
-        readerId: recipient.realmsId,
-        readAt: new Date().toISOString(),
-      },
-    }),
-  );
+  const readThrough = (message: { id: string }) =>
+    inbox.socket!.send(
+      JSON.stringify({
+        type: "direct:read",
+        payload: {
+          threadId: waiting!.thread.id,
+          messageId: message.id,
+          readerId: recipient.realmsId,
+          readAt: new Date().toISOString(),
+        },
+      }),
+    );
+  readThrough(first!);
+  const partly = await listedOnce(recipient, (threads) => threads[0]?.thread.unreadCounts[recipient.realmsId] === 1);
+  expect(partly[0]!.thread.unreadCounts[recipient.realmsId]).toBe(1);
+  expect(partly[0]!.thread.readThrough?.[recipient.realmsId]).toBe(first!.createdAt);
+
+  // Then through the second, then the first again (a late receipt): read, and never back.
+  readThrough(second!);
+  readThrough(first!);
+  await pause(300);
   const read = await listedOnce(recipient, (threads) => threads[0]?.thread.unreadCounts[recipient.realmsId] === 0);
   expect(read).toHaveLength(1);
   expect(read[0]!.thread.unreadCounts[recipient.realmsId]).toBe(0);
+  expect(read[0]!.thread.readThrough?.[recipient.realmsId]).toBe(second!.createdAt);
 
   // The answer is the conversation's last line for both.
   inbox.socket!.send(

@@ -29,6 +29,8 @@ interface ThreadRow extends Record<string, SqlStorageValue> {
   updatedAt: number;
   lastMessageId: string;
   unread: number;
+  /** The time the owner has read through (0: never): `unread` is the peer's messages after it. */
+  readThroughAt: number;
 }
 
 interface MessageRow extends Record<string, SqlStorageValue> {
@@ -53,12 +55,17 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, peerId TEXT NOT NULL, createdAt INTEGER NOT NULL,
-         updatedAt INTEGER NOT NULL, lastMessageId TEXT NOT NULL, unread INTEGER NOT NULL);
+         updatedAt INTEGER NOT NULL, lastMessageId TEXT NOT NULL, unread INTEGER NOT NULL,
+         readThroughAt INTEGER NOT NULL DEFAULT 0);
        CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, threadId TEXT NOT NULL, senderId TEXT NOT NULL,
          recipientId TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT, createdAt INTEGER NOT NULL);
        CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt);
        CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL)`,
     );
+    // An inbox made before threads kept their read boundary gains it, once.
+    const columns = ctx.storage.sql.exec<{ name: string }>("PRAGMA table_info(threads)").toArray();
+    if (!columns.some(({ name }) => name === "readThroughAt"))
+      ctx.storage.sql.exec("ALTER TABLE threads ADD COLUMN readThroughAt INTEGER NOT NULL DEFAULT 0");
   }
 
   /** The owner's socket, admitted by the Worker with the rooms the owner may join. */
@@ -221,7 +228,22 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     const parsed = Schema.decodeUnknownResult(directMessageReadReceiptSchema)(payload);
     const peer = Result.isSuccess(parsed) ? this.peerOf(parsed.success.threadId) : null;
     if (Result.isFailure(parsed) || !peer || parsed.success.readerId !== member.realmsId) return;
-    this.ctx.storage.sql.exec("UPDATE threads SET unread = 0 WHERE id = ?", parsed.success.threadId);
+    const { threadId, messageId } = parsed.success;
+    const read = this.ctx.storage.sql
+      .exec<MessageRow>("SELECT * FROM messages WHERE id = ? AND threadId = ?", messageId, threadId)
+      .toArray()[0];
+    // Read through that message, never back: what the peer wrote after it stays unread. A receipt for a message this
+    // inbox does not hold moves nothing here, and still reaches the peer.
+    if (read)
+      this.ctx.storage.sql.exec(
+        `UPDATE threads SET readThroughAt = MAX(readThroughAt, ?1),
+           unread = (SELECT COUNT(*) FROM messages
+             WHERE messages.threadId = threads.id AND messages.senderId = threads.peerId
+               AND messages.createdAt > MAX(threads.readThroughAt, ?1))
+         WHERE id = ?2`,
+        read.createdAt,
+        threadId,
+      );
     await inboxOf(this.env, peer).read(parsed.success);
   }
 
@@ -327,5 +349,6 @@ const toDirectThread = (row: ThreadRow, owner: string): DirectMessageThread => (
   updatedAt: new Date(row.updatedAt).toISOString(),
   lastMessageId: row.lastMessageId,
   unreadCounts: { [owner]: row.unread },
+  ...(row.readThroughAt > 0 ? { readThrough: { [owner]: new Date(row.readThroughAt).toISOString() } } : {}),
   typing: [],
 });

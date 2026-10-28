@@ -43,6 +43,11 @@ export interface DirectMessageThread {
   readonly updatedAt?: Date | string;
   readonly lastMessageId?: string;
   readonly unreadCounts: Readonly<Record<string, number>>;
+  /**
+   * The time each participant has read the thread through, as the server keeps it: their unread count is the other
+   * player's messages after it. Absent for one who never read.
+   */
+  readonly readThrough?: Readonly<Record<string, Date | string>>;
   readonly typing?: string[];
 }
 export interface DirectMessageTyping extends Schema.Schema.Type<typeof directMessageTypingSchema> {}

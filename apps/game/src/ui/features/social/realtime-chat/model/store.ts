@@ -73,8 +73,9 @@ const timeOf = (value: string | Date | null | undefined) => (value ? new Date(va
  * reached the client since (a message over the socket, a read) is newer than it, and stands:
  * - its lines are the client's and the listed last one, in time order, each once;
  * - its thread (last message, last change) is the list's only where the list is as new as the client's;
- * - unread is none while it is open; else, read here through the listed last line or later, what came after that read;
- *   else the list's unread and the other player's lines since the list's last one.
+ * - unread is none while it is open. Else it is the list's unread, which counts the other player's lines after the
+ *   server's read boundary up to the listed last one, less those of them read here since (the client holds every line
+ *   up to its own read, its history read on opening), and the other player's lines that came after both.
  */
 const reconcileListedThread = (
   existing: DirectMessageThreadState | undefined,
@@ -90,16 +91,19 @@ const reconcileListedThread = (
       : held.messages;
   const listedIsNewer = !existing || timeOf(listed.updatedAt) >= timeOf(held.thread.updatedAt);
   const thread = listedIsNewer ? { ...held.thread, ...listed } : held.thread;
-  const fromPeer = (after: number) =>
-    messages.filter((message) => message.senderId !== self && timeOf(message.createdAt) > after).length;
+  const fromPeer = (after: number, through = Infinity) =>
+    messages.filter(
+      (message) =>
+        message.senderId !== self && timeOf(message.createdAt) > after && timeOf(message.createdAt) <= through,
+    ).length;
   const listedThrough = timeOf(last?.createdAt);
-  const readThrough = timeOf(messages.find((message) => message.id === held.readThrough)?.createdAt);
+  const serverRead = self ? timeOf(listed.readThrough?.[self]) : 0;
+  const localRead = timeOf(messages.find((message) => message.id === held.readThrough)?.createdAt);
+  const readHereSince = localRead > serverRead ? fromPeer(serverRead, Math.min(localRead, listedThrough)) : 0;
   const unreadCount =
     open || !self
       ? 0
-      : held.readThrough && readThrough >= listedThrough
-        ? fromPeer(readThrough)
-        : (listed.unreadCounts[self] ?? 0) + fromPeer(listedThrough);
+      : Math.max(0, (listed.unreadCounts[self] ?? 0) - readHereSince) + fromPeer(Math.max(listedThrough, localRead));
   return { ...held, thread, messages, unreadCount };
 };
 
@@ -211,6 +215,7 @@ const mapDirectThreadRecord = (record: any): DirectMessageThread => {
     updatedAt,
     lastMessageId: record.lastMessageId ?? undefined,
     unreadCounts: record.unreadCounts ?? {},
+    ...(record.readThrough ? { readThrough: record.readThrough } : {}),
   };
 };
 
