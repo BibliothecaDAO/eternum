@@ -56,7 +56,16 @@ export function readFrontierBeast(
   entityId: number,
 ): FrontierBeast | undefined {
   const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: entityId });
-  if (!site) return undefined;
+  return site && siteFrontierBeast(store, gameId, entityId, site);
+}
+
+/** The site's guard from its own row (its kind, its depth, its initial strength) and the game's shared rules. */
+export function siteFrontierBeast(
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  entityId: number,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "row" | "initial_guard_count">,
+): FrontierBeast | undefined {
   const category = site.category;
   if (![StructureType.Ruin, StructureType.Camp, StructureType.Rift, StructureType.Beasts].includes(category))
     return undefined;

@@ -53,6 +53,7 @@ describe("native confirmed replay and transaction delivery", () => {
         fold: {
           modelRows: (name) => world.modelRows(name),
           structurePosition: (game, entity) => world.structurePosition(game, entity),
+          expeditionSite: (game, entity) => world.expeditionSite(game, entity),
           directoryRevision: () => world.directoryRevision(),
           snapshot: (game, block, models) => world.snapshot(game, block, models),
         },
@@ -315,6 +316,7 @@ it("halts a live confirmed fold atomically while leaving the process available",
     fold: {
       modelRows: (model) => fold.modelRows(model),
       structurePosition: (game, entity) => fold.structurePosition(game, entity),
+      expeditionSite: (game, entity) => fold.expeditionSite(game, entity),
       directoryRevision: () => fold.directoryRevision(),
       snapshot: (game, block, models) => fold.snapshot(game, block, models),
     },

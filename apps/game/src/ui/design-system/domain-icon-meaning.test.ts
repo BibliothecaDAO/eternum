@@ -1,7 +1,17 @@
 import { describe, expect, it } from "vitest";
 import { StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { beastMeaning, readStructureMeaning, structureMeaning } from "./domain-icon-meaning";
+import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { beastMeaning, readStructureMeaning, storyMeaning, structureMeaning } from "./domain-icon-meaning";
+import { iconDefinition } from "./icon-meaning";
+
+describe("story icon meanings", () => {
+  it("paints every story the game can emit, and refuses one it cannot", () => {
+    for (const story of [...nativeStoryVariants, "BattleEvent", "RaidEvent"])
+      expect(iconDefinition(storyMeaning(story)).label, story).toBeTruthy();
+    expect(() => storyMeaning("Unknown")).toThrow("Unknown story icon: Unknown");
+  });
+});
 
 describe("guard and site icon meanings", () => {
   it("keeps Blitz camps as sites and Frontier camps as Trolls in every category caller", () => {

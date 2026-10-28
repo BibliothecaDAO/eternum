@@ -18,6 +18,8 @@ import type { ShardManifest } from "@bibliothecadao/eternum/game-sync";
 import { isDevShardChain } from "@realms-world/value-ledger/dev-shard";
 
 interface SnapshotSource extends GameDirectorySource {
+  /** A site's row by its entity, outside any player's scope: the Feed names a fight's beast far from the player. */
+  expeditionSite: (gameId: string, entityId: string) => Record<string, unknown> | undefined;
   snapshot: (
     gameId: string,
     confirmedBlock: number,
@@ -122,6 +124,7 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
   const reviewSnapshotPath = /^\/games\/([0-9]+)\/review\/snapshot$/;
   const dayRanksPath = /^\/games\/([0-9]+)\/days\/([0-9]+)\/ranks$/;
   const leaderboardPath = /^\/games\/([0-9]+)\/leaderboard$/;
+  const sitePath = /^\/games\/([0-9]+)\/sites\/([0-9]+)$/;
 
   // Browsers hide a cross-origin request's connect, TLS and wait timings unless the response allows it. Only a dev chain
   // shows them: the chain identity, not a setting, decides, so no production deploy can carry it.
@@ -187,6 +190,12 @@ export const createHeraldRequestHandler = (state: HeraldHttpState): ((request: R
       } catch {
         return jsonResponse({ error: "day_ranks_unavailable" }, 503);
       }
+    }
+
+    const siteMatch = request.method === "GET" ? sitePath.exec(url.pathname) : null;
+    if (siteMatch) {
+      const site = state.fold.expeditionSite(siteMatch[1], siteMatch[2]);
+      return site ? jsonResponse(site) : jsonResponse({ error: "unknown_site" }, 404);
     }
 
     const leaderboardMatch = request.method === "GET" ? leaderboardPath.exec(url.pathname) : null;

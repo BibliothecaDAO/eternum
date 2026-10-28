@@ -169,6 +169,10 @@ export class LiveWorld {
     return this.confirmedFold.structurePosition(gameId, entityId);
   }
 
+  public expeditionSite(gameId: string, entityId: string) {
+    return this.confirmedFold.expeditionSite(gameId, entityId);
+  }
+
   public directoryRevision(): number {
     return this.confirmedFold.directoryRevision();
   }

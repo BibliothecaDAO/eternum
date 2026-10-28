@@ -51,6 +51,8 @@ export interface LabScenario {
   answer: (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
   /** The game's history, newest first, on the lab's clock: Herald serves each event once its time has come. */
   history?: HeraldHistoryEvent[];
+  /** Sites Herald holds outside the player's scope (wire rows), served only by its site read: fights far from them. */
+  farSites?: Record<string, unknown>[];
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
@@ -171,7 +173,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     if (url.pathname === "/games")
       return json({ chain: LAB_GAME.chainId, world_address: "0x1ab", confirmed_block: now(), games: [game] });
     const answer = read(url);
-    if (answer === NOT_CLOSED) return Promise.resolve(new Response(null, { status: 404 }));
+    if (answer === NOT_FOUND) return Promise.resolve(new Response(null, { status: 404 }));
     if (answer instanceof Promise) return answer.then(json);
     if (answer !== undefined) return json(answer);
     return Promise.reject(new TypeError(`The lab shard does not serve ${url.pathname}`));
@@ -198,8 +200,8 @@ const answerAccountJoin = (rpcUrl: string, accountClassHash: string) =>
     callContract: async () => ["0x1"],
   });
 
-/** Herald's answer for a day that has not closed (day_ranks_not_closed). */
-const NOT_CLOSED = Symbol("not closed");
+/** Herald's 404: a day that has not closed (day_ranks_not_closed), a site it does not hold. */
+const NOT_FOUND = Symbol("not found");
 /** Herald's largest history page. */
 const HISTORY_PAGE = 500;
 
@@ -236,11 +238,17 @@ const answerHeraldRead = (
     );
     return { complete_through_block: confirmedBlock, items: items.slice(offset, offset + limit), limit, offset };
   }
+  const site = url.pathname.match(new RegExp(`^${game}/sites/(\\d+)$`));
+  if (site) {
+    const id = Number(site[1]);
+    const held = chain.get("ExpeditionSite", { game_id: LAB_GAME.gameId, entity_id: id });
+    return held ? wire(held) : (scenario.farSites?.find((row) => Number(row.entity_id) === id) ?? NOT_FOUND);
+  }
   const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
   if (ranks) {
     const rules = readExpeditionRules(chain, LAB_GAME.gameId);
     const today = rules && dayOf(rules, now());
-    if (!today || Number(ranks[1]) >= today.index) return NOT_CLOSED;
+    if (!today || Number(ranks[1]) >= today.index) return NOT_FOUND;
     return {
       game_id: String(LAB_GAME.gameId),
       day_index: Number(ranks[1]),

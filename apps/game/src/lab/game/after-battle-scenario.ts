@@ -1,5 +1,6 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
+import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 
 import type { LabFact, LabScenario } from "./lab-chain";
@@ -40,7 +41,79 @@ export const afterBattleScenario = (): LabScenario => {
     ...ruinAt(store, ruinTile, afterTheFight(999n)),
     clearedCampAt(armyTile),
   ] as never);
-  return spire;
+  return {
+    ...spire,
+    // The camp the other player lost at, which Herald holds and the player's map never loads.
+    farSites: [
+      wire({
+        game_id: 1,
+        entity_id: FAR_SITE,
+        category: StructureType.Camp,
+        initial_guard_count: 2_400n * PRECISION,
+        alt: false,
+        col: 9,
+        row: ruinTile.row,
+        clear: null,
+      }) as Record<string, unknown>,
+    ],
+    history: [
+      // Another player's lost fight at a site this client never loaded (owner, 28 October: "Loaf attacked Runegrasp").
+      fight(
+        spire.startsAt - 60,
+        2,
+        { player: OTHER_PLAYER, army: 9_002, site: FAR_SITE, coord: { col: 9, row: ruinTile.row } },
+        [
+          [300n, 0n],
+          [2_400n, 2_310n],
+        ],
+      ),
+      fight(spire.startsAt - 120, 1, { player: spire.player, army: SPIRE_ARMY, site: SITE, coord: ruinTile }, [
+        [4_716n, 4_015n],
+        [3_000n, 999n],
+      ]),
+    ],
+  };
+};
+
+/** Another player, and a site of theirs far from the player's army, which the player's map never loads. */
+const OTHER_PLAYER = "0x10af";
+const FAR_SITE = 4_242;
+
+/** A fight on a site as Herald's history keeps it: the attacker's and the guard's troops before and after. */
+const fight = (
+  at: number,
+  block: number,
+  side: { player: string; army: number; site: number; coord: { col: number; row: number } },
+  [[armyBefore, armyAfter], [guardBefore, guardAfter]]: [bigint, bigint][],
+): HeraldHistoryEvent => {
+  const hash = `0xf16${block}`;
+  const troops = (player: string, before: bigint, after: bigint) => ({
+    player,
+    category: "Knight",
+    tier: "T2",
+    before: String(before * PRECISION),
+    after: String(after * PRECISION),
+    roll: 0,
+  });
+  return {
+    block_number: 900_000 + block,
+    transaction_index: 0,
+    event_index: 0,
+    game_id: "1",
+    model: "BattleEvent",
+    transaction_hash: hash,
+    value: {
+      game_id: "0x1",
+      attacker_id: String(side.army),
+      defender_id: String(side.site),
+      coord: { x: side.coord.col, y: side.coord.row, alt: false },
+      max_reward: [],
+      attacker: troops(side.player, armyBefore, armyAfter),
+      defender: troops("0x0", guardBefore, guardAfter),
+      tx_hash: hash,
+      timestamp: `0x${at.toString(16)}`,
+    },
+  };
 };
 
 /**

@@ -374,7 +374,9 @@ in slot order; the minimap), the rail and the foot (the selected army's state ov
 the client's notices (a refused order, a warning, the clock's milestones) under it, then whatever is open, a page
 (Research, the Season's board) or any sheet (Build, an army, a site's card, Today), at the rail's one width; with
 nothing open, the **Feed** (`frontier/hud/frontier-feed.tsx`): the world's history live, one line a story (who did what
-to what, how it went, what it paid at its end; a find under one unit is "djizus explored"), your own in gold, under
+to what, how it went, what it paid at its end; a find under one unit is "djizus explored"), your own in gold; each row's
+painting is its story's act (`storyMeaning`, the same table Blitz's Events and Log rows read) and a site's guard as the
+map draws it, from Herald's row of the site (`/games/<id>/sites/<entity>`) when the player's map holds none, under
 **All** (the world’s history, first and the default) or **Mine** (your own fights, captures and chests), filling the
 rail under Next up and scrolling inside. Its × closes it and leaves the rail empty; **Feed** at the foot brings the rail
 home with the Feed open, and while lit closes it. Chat stands at the rail's foot. The whole desktop HUD draws bigger on
@@ -513,10 +515,10 @@ player's connection.
 2,517 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps
 the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
 army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
-(guard 999), both on battle cooldown. `scenario=explore` stands the spire's army at the edge of the land it has seen,
-fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`,
-`lab-merge-keeps-tapped` and `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a
-merge emptied opens none.
+(guard 999), both on battle cooldown; its Feed holds that fight and another player's lost fight at a site the map never
+loaded. `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double
+tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and
+`lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies

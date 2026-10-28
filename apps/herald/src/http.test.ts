@@ -28,6 +28,10 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   decodedModelCount: 50,
   fold: {
     structurePosition: () => undefined,
+    expeditionSite: (game, entity) =>
+      game === "7" && entity === "4242"
+        ? { game_id: "0x7", entity_id: "0x1092", category: "0x9", row: "0x32" }
+        : undefined,
     directoryRevision: () => 0,
     modelRows: (model) => {
       if (model === "GameRegistry") {
@@ -173,6 +177,15 @@ describe("herald HTTP", () => {
       offset: 5,
       total: 1,
     });
+  });
+
+  it("serves a site's row by its entity, and none for an entity that is no site", async () => {
+    const site = await handler(new Request("http://herald/games/7/sites/4242"));
+    expect(site.status).toBe(200);
+    await expect(site.json()).resolves.toEqual({ game_id: "0x7", entity_id: "0x1092", category: "0x9", row: "0x32" });
+    const none = await handler(new Request("http://herald/games/7/sites/7"));
+    expect(none.status).toBe(404);
+    await expect(none.json()).resolves.toEqual({ error: "unknown_site" });
   });
 
   it("rejects unknown models and routes", async () => {

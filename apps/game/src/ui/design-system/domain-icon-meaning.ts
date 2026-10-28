@@ -2,8 +2,57 @@ import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { StructureType, type StructureNamingMode } from "@bibliothecadao/types";
 import { frontierBeast, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
+
+/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+const storyMeanings = {
+  BattleEvent: "attack",
+  RaidEvent: "raid",
+  FaithPointsClaimedStory: "shrine",
+  FaithPledged: "shrine",
+  FaithRemoved: "shrine",
+  StructureLevelUpStory: "upgrade",
+  RealmCreatedStory: "realm",
+  StructureCapturedStory: "flag",
+  GuardAddStory: "defend",
+  GuardDeleteStory: "defend",
+  ResourceBurnStory: "flame",
+  ResourceTransferStory: "transfer",
+  ResourceReceiveArrivalStory: "transfer",
+  ProductionStory: "produce",
+  BuildingPlacementStory: "build",
+  BuildingPaymentStory: "build",
+  BitcoinAwardStory: "bitcoin-mine",
+  TradeCreated: "trade",
+  TradeAccepted: "trade",
+  TradeCancelled: "trade",
+  BankSwap: "swap",
+  BankLiquidity: "bank",
+  HyperstructurePoints: "hyperstructure",
+  RelicChestOpened: "relics",
+  RelicCrafted: "relics",
+  RelicActivated: "relics",
+  ExplorationReward: "explore",
+  SpireDiscovered: "spire",
+  SitePayout: "flag",
+  RewardChestOpened: "reward-chest",
+  SeasonEnded: "victory",
+  BlitzFinalized: "victory",
+  ExplorerCreateStory: "deploy",
+  ExplorerAddStory: "deploy",
+  ExplorerDeleteStory: "military",
+  TroopsTransferred: "military",
+  LordsWithdrawn: "lords",
+  TierBought: "research",
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent", IconMeaning>;
+
+/** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
+export function storyMeaning(story: string): IconMeaning {
+  if (!Object.hasOwn(storyMeanings, story)) throw new Error(`Unknown story icon: ${story}`);
+  return storyMeanings[story as keyof typeof storyMeanings];
+}
+
 const structureMeanings = {
   [StructureType.Realm]: "realm",
   [StructureType.Village]: "village",
