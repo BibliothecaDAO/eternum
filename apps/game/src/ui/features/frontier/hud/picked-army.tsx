@@ -4,11 +4,11 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudPanel, HudTier } from "@/ui/design-system/kit/hud-elements";
-import { ATTRIBUTES, CANCEL, PICKED_ARMY, type Tier, tierNumeral, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
+import { CANCEL, PICKED_ARMY, type Tier, tierNumeral, TRANSFER_TROOPS } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager, Position } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 
-import { attributeMark } from "../army/army-detail";
+import { ATTRIBUTE_LIST, type AttributeKey } from "../army/army-detail";
 import { LevelUpButton } from "../army/army-panel";
 import { attributeBadgeTarget } from "../attributes/attributes";
 import { ArmyToken } from "./army-token";
@@ -72,24 +72,22 @@ export const PickedArmy = ({
   </HudPanel>
 );
 
-/** The army's four sides, each its mark over its tier's gem. */
-const Sides = ({ tiers }: { tiers: readonly [number, number, number, number] }) => (
+/** The army's sides, every attribute the game levels, each its mark over its tier's gem. */
+const Sides = ({ tiers }: { tiers: Record<AttributeKey, number> }) => (
   <span className="grid grid-cols-4 gap-1">
-    {SIDES.map((key, index) => (
+    {ATTRIBUTE_LIST.map(({ key, name, mark }) => (
       <span
         key={key}
         role="img"
-        aria-label={`${ATTRIBUTES[index]} ${tierNumeral(tiers[index] as Tier)}`}
+        aria-label={`${name} ${tierNumeral(tiers[key] as Tier)}`}
         className="flex flex-col items-center gap-1"
       >
-        <Icon name={attributeMark(key)} size={28} />
-        <HudTier tier={tiers[index] as Tier} />
+        <Icon name={mark} size={28} />
+        <HudTier tier={tiers[key] as Tier} />
       </span>
     ))}
   </span>
 );
-
-const SIDES = ["battle", "logistics", "scouting", "homecoming"] as const;
 
 /**
  * Where a phone's tap pinned the picked army's transfer (the Help order beside it): the tile, and the realm's army

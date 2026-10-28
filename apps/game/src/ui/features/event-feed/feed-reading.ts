@@ -1,7 +1,7 @@
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { beastMeaning, structureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
-import { attributeMark, type AttributeKey } from "@/ui/features/frontier/army/army-detail";
+import { ARMY_ATTRIBUTES, type Attribute } from "@/ui/features/frontier/army/army-detail";
 import { configManager, findGain, readFrontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import {
@@ -119,7 +119,7 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
         // The attribute and its tier as the story says them: "Logistics uncommon".
         object: {
           name: story.presentation.title,
-          icon: attributeMark(String(payload.attribute).toLowerCase() as AttributeKey),
+          icon: ARMY_ATTRIBUTES[String(payload.attribute) as Attribute]?.mark,
         },
       };
     case "TroopsTransferred":

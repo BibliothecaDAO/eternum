@@ -9,18 +9,12 @@ import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/ga
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { type ArmyDetailFacts, readArmyDetail, type AttributeKey, type ScoutKind } from "./army-detail";
+import { type ArmyDetailFacts, attributeOf, readArmyDetail, type AttributeKey, type ScoutKind } from "./army-detail";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 
 const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
 
-const ATTRIBUTE_OF: Record<AttributeKey, "Battle" | "Logistics" | "Scouting" | "Homecoming"> = {
-  battle: "Battle",
-  logistics: "Logistics",
-  scouting: "Scouting",
-  homecoming: "Homecoming",
-};
 const KIND_KEYS: Record<ScoutingKind, ScoutKind> = { Camp: "camp", Rift: "rift", Beasts: "beasts" };
 const KIND_OF: Record<ScoutKind, ScoutingKind> = { camp: "Camp", rift: "Rift", beasts: "Beasts" };
 
@@ -93,7 +87,7 @@ const ArmyPanel = ({
         setup.systemCalls.buy_tier({
           signer,
           explorerId: army.explorerId,
-          attribute: ATTRIBUTE_OF[attribute],
+          attribute: attributeOf(attribute),
           scoutingKind: kind && KIND_OF[kind],
         }),
       );

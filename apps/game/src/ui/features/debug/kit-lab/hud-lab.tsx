@@ -1227,7 +1227,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
       secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
       canBuyTier: !rested,
-      tiers: [3, 2, 2, 1] as const,
+      tiers: { battle: 3, logistics: 2, scouting: 2, homecoming: 1 },
     };
     return { army, lords: lab.picked === "pay" ? 500 : 100 };
   }
@@ -1242,7 +1242,7 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
       stamina: { current, max: 150, perExplore: LAB_EXPLORE },
       secondsToFull: (150 - current) * 60,
       canBuyTier: army.tier === true,
-      tiers: [2, 3, 2, 1] as const,
+      tiers: { battle: 2, logistics: 3, scouting: 2, homecoming: 1 },
     },
     lords: lab.purse?.lords ?? LAB_LORDS,
   };

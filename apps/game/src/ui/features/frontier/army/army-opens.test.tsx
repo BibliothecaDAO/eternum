@@ -19,6 +19,7 @@ const { RESOURCE_PRECISION, ResourcesIds } = await import("@bibliothecadao/types
 const active = await import("@/sync/active-game-client");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { UnifiedHudLab } = await import("@/ui/features/debug/kit-lab/unified-hud-lab");
+const { ARMY_ATTRIBUTES } = await import("./army-detail");
 
 /** The lab realm's army out. */
 const ARMY = 90;
@@ -144,7 +145,8 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
   it("shows the picked army's four sides beside its token, its stamina over Level up, and no details button", async () => {
     await renderHud();
     await select(ARMY);
-    expect(sides()).toEqual(["Battle I", "Logistics I", "Scouting I", "Homecoming I"]);
+    // Every attribute the game levels (the list picked-army.test holds to the schema), each at the lab army's Common.
+    expect(sides()).toEqual(Object.values(ARMY_ATTRIBUTES).map(({ name }) => `${name} I`));
     expect(staminaButton().textContent).toBe("90/150");
     expect(levelUp().textContent).toBe("Level up");
     // One way to the card: the token, which wears the army's XP, number and troops.

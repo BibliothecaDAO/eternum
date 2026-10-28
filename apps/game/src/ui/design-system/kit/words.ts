@@ -307,8 +307,13 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  */
 export const xpTowardTip = (held: string, price: string, tier: string) =>
   `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
-/** The four attributes, each wearing its Aspect's mark. */
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+/** The attributes an army levels, by their names in the game's schema, each wearing its Aspect's mark. */
+export const ATTRIBUTE_NAMES = {
+  Battle: "Battle",
+  Logistics: "Logistics",
+  Scouting: "Scouting",
+  Homecoming: "Homecoming",
+} as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";
