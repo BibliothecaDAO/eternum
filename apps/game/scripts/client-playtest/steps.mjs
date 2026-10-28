@@ -1918,8 +1918,7 @@ function mergeCardOpen({ played }) {
 /** Presses the card's Merge, then waits for the chain's answer to leave the realm one army. */
 async function pressMerge({ browser }) {
   const before = browser.read(MERGE_STATE);
-  const merge = before.buttons.find((text) => text.startsWith("Merge into"));
-  if (merge) browser.click(merge);
+  const { merge } = await mergeTheArmies({ browser }, { byArmy: null });
   const after = await readUntil(
     () => ({ ...browser.read(MERGE_STATE), armies: browser.armies() }),
     (shown) => shown.destroyed.length === 1 && shown.armies.length === 1,
