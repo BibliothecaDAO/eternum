@@ -1,24 +1,12 @@
 import { STORE_MAKERS } from "@/ui/design-system/kit/words";
 import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { getBuildingQuantity, realmLearned } from "@bibliothecadao/eternum";
-import {
-  nativeResearchConstants as research,
-  safeInteger,
-  type NativeFactStore,
-  type NativeRows,
-} from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatCount, formatRate, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 
 import { buildingName } from "../build/building-names";
 import { makePicks } from "../research/sides-taken";
-
-/** What Frontier's stores are made by: each product's building, and the research row whose make side raises it. */
-const MAKERS = {
-  [ResourcesIds.Wheat]: { category: BuildingType.ResourceWheat, row: research.ROW_FARM },
-  [ResourcesIds.Labor]: { category: BuildingType.ResourceLabor, row: research.ROW_WORKSHOP },
-  [ResourcesIds.Knight]: { category: BuildingType.ResourceKnightT1, row: research.ROW_BARRACKS },
-} as const;
-type MadeResource = keyof typeof MAKERS;
+import { FRONTIER_STORES, madeStore, type MadeResource, storeBuilding, storeMadeBy } from "../stores";
 
 /**
  * The buildings of a type standing on a realm, from its facts (the packed counts Blitz's tables read too). The castle's
@@ -30,7 +18,8 @@ export const standingBuildings = (store: NativeFactStore, realmId: number, categ
 };
 
 /** The picks on the make side (Fields, Tools, Drill) that raise a product's building. */
-export const madePicks = (resource: MadeResource, learned: bigint): number => makePicks(learned, MAKERS[resource].row);
+export const madePicks = (resource: MadeResource, learned: bigint): number =>
+  makePicks(learned, FRONTIER_STORES[madeStore(resource)].made.row);
 
 /** What all of a type's standing buildings make: their product and its rate a second. */
 type BuildingsMake = { resource: MadeResource; perSecond: number };
@@ -44,9 +33,8 @@ export const buildingsMake = (
   realm: NativeRows["Structure"],
   category: BuildingType,
 ): BuildingsMake | undefined => {
-  const resource = (Object.keys(MAKERS).map(Number) as MadeResource[]).find(
-    (each) => MAKERS[each].category === category,
-  );
+  const made = storeMadeBy(category);
+  const resource = made === undefined ? undefined : FRONTIER_STORES[made].resource;
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   if (resource === undefined || learned === undefined) return undefined;
   const each = buildingOutput(store, realm, category, madePicks(resource, learned));
@@ -64,7 +52,7 @@ export const storeMakerLines = (
   realm: NativeRows["Structure"],
   resource: MadeResource,
 ): string[] => {
-  const { category } = MAKERS[resource];
+  const category = storeBuilding(madeStore(resource));
   const count = standingBuildings(store, safeInteger(realm.entity_id), category);
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
   const name = buildingName(category);
@@ -84,7 +72,7 @@ const makersLine = (
   standing: string,
   count: number,
 ): string => {
-  const each = buildingOutput(store, realm, MAKERS[resource].category, madePicks(resource, learned));
+  const each = buildingOutput(store, realm, storeBuilding(madeStore(resource)), madePicks(resource, learned));
   return STORE_MAKERS.buildings(standing, formatRate(each.total * count));
 };
 

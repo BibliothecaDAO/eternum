@@ -1,11 +1,14 @@
 // The lint guards: the rules CI holds the client and its packages to, each closing a class of bug a review found.
 // The repo's full ESLint config is not run in CI, so a rule that must hold lives here.
 //   node scripts/lint-guards.mjs      fails, naming each hit (CI: pnpm --dir apps/game lint:guards)
+//   node scripts/lint-guards.mjs --write-catalog-baseline   records the catalog copies standing, once some are removed
 import { ESLint } from "eslint";
+import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
+import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
@@ -48,14 +51,6 @@ const NO_HEAD_RENDER = [
       "A render subscribed to the confirmed head runs at every block: follow it with useConnectionStore.subscribe, or select what the render shows.",
   },
 ];
-
-// A list of troops is the troop catalog (TROOP_TYPES, TROOP_TIERS from @bibliothecadao/types), never the members spelled
-// out: twelve hand-written copies of it stood in the client (audit 10-27, F7), and a type or tier the game adds would
-// be missing from each (as the build order maker missed every T2 and T3 building).
-const TROOP_CATALOG = ["TroopType", "TroopTier"].map((name) => ({
-  selector: `ArrayExpression:has(> MemberExpression[object.name='${name}'] ~ MemberExpression[object.name='${name}'])`,
-  message: `A list of ${name} members is the catalog: ${name === "TroopType" ? "TROOP_TYPES" : "TROOP_TIERS"} from @bibliothecadao/types.`,
-}));
 
 // A gain is written by formatGain: one written by hand as "+" before an amount read "+<1 Labor" for a find under a unit,
 // which players took for nothing found (feedback, 25 October). Flags a template, a sum or JSX text joining "+" to an
@@ -138,7 +133,7 @@ const eslint = new ESLint({
       linterOptions: { noInlineConfig: true, reportUnusedDisableDirectives: "off" },
       plugins: { "react-hooks": reactHooks, "@typescript-eslint": tseslint.plugin },
       rules: {
-        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN, ...TROOP_CATALOG],
+        "no-restricted-syntax": ["error", ...NO_BITWISE_ID, ...HAND_WRITTEN_GAIN],
         ...HOOK_ORDER,
         ...UNUSED,
       },
@@ -155,7 +150,6 @@ const eslint = new ESLint({
           ...HAND_WRITTEN_GAIN,
           ...SHORT_IN_CHIPS,
           ...STAMINA_IS_SEGMENTED,
-          ...TROOP_CATALOG,
         ],
       },
     },
@@ -168,15 +162,42 @@ const eslint = new ESLint({
     },
     // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
+    // One source per fact: no list or partial map of a catalog's members outside its modules (catalog-guards.mjs).
+    ...catalogGuardConfigs,
   ],
 });
 
 const results = await eslint.lintFiles(SOURCES);
-const hits = results.flatMap((result) =>
+const errors = results.flatMap((result) =>
   result.messages
     .filter((message) => message.fatal || message.severity === 2)
-    .map((message) => `${relative(REPO, result.filePath)}:${message.line}:${message.column} ${message.message}`),
+    .map((message) => ({ file: relative(REPO, result.filePath), message })),
 );
+const line = ({ file, message }) => `${file}:${message.line}:${message.column} ${message.message}`;
+const isCatalogCopy = ({ message }) => message.ruleId === CATALOG_RULE;
+
+// The catalog copies that stood when the guard came, a count per file: a file may hold no more than its count, and
+// once one is removed --write-catalog-baseline lowers the count. It writes nothing while any file holds more than its
+// count or is new to the baseline, so the copies only ever fall.
+const BASELINE = resolve(dirname(fileURLToPath(import.meta.url)), "catalog-copies-baseline.json");
+const copiesByFile = new Map();
+for (const copy of errors.filter(isCatalogCopy))
+  copiesByFile.set(copy.file, [...(copiesByFile.get(copy.file) ?? []), copy]);
+const counts = Object.fromEntries([...copiesByFile].map(([file, copies]) => [file, copies.length]));
+const baseline = JSON.parse(readFileSync(BASELINE, "utf8"));
+const { additions, unlowered, write } = planCatalogBaseline(counts, baseline, {
+  lowering: process.argv.includes("--write-catalog-baseline"),
+});
+if (write) writeFileSync(BASELINE, `${JSON.stringify(write, null, 2)}\n`);
+const catalogHits = [
+  ...additions.flatMap((file) => copiesByFile.get(file).map(line)),
+  ...unlowered.map(
+    (file) =>
+      `${file} holds ${counts[file] ?? 0} catalog copies, under its baseline of ${baseline[file]}: run --write-catalog-baseline`,
+  ),
+];
+
+const hits = [...errors.filter((error) => !isCatalogCopy(error)).map(line), ...catalogHits];
 for (const hit of hits) console.log(hit);
 console.log(`lint guards: ${hits.length} hit(s)`);
 process.exitCode = hits.length > 0 ? 1 : 0;

@@ -1,3 +1,4 @@
+import { buildingMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
 import { BuildingType, buildingName as nameOfBuilding, isFrontierBuilding } from "@bibliothecadao/types";
@@ -13,20 +14,8 @@ export const buildingName = (category: BuildingType): string => {
   return name;
 };
 
-const ICONS: Partial<Record<BuildingType, IconMeaning>> = {
-  [BuildingType.ResourceWheat]: "farm",
-  [BuildingType.ResourceLabor]: "workshop",
-  [BuildingType.ResourceKnightT1]: "barracks",
-  [BuildingType.WorkersHut]: "workers-hut",
-  [BuildingType.WarHall]: "war-hall",
-  [BuildingType.SupplyYard]: "supply-yard",
-  [BuildingType.ScoutsLodge]: "scout-lodge",
-  [BuildingType.Hearth]: "hearth",
-};
-
-/** A Frontier building's icon; a building Frontier does not raise is loud. */
+/** A Frontier building's icon, as every game paints it; a building Frontier does not raise is loud. */
 export const buildingIcon = (category: BuildingType): IconMeaning => {
-  const icon = ICONS[category];
-  if (!icon) throw new Error(`Frontier has no building ${category}`);
-  return icon;
+  if (!isFrontierBuilding(category)) throw new Error(`Frontier has no building ${category}`);
+  return buildingMeaning(category, true);
 };

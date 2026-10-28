@@ -1,21 +1,9 @@
 import { formatAmount, formatExact, formatDuration, formatRate } from "@bibliothecadao/types";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudDial, HudMeter, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import type { Tone } from "@/ui/design-system/kit/tone";
-import {
-  DAY,
-  ESSENCE,
-  FULL,
-  FULL_IN,
-  LABOR,
-  OF,
-  TODAY,
-  TROOPS,
-  WHEAT,
-  dayLeft,
-  phraseText,
-} from "@/ui/design-system/kit/words";
+import { DAY, FULL, FULL_IN, OF, TODAY, dayLeft, phraseText } from "@/ui/design-system/kit/words";
 import { useLandedValue, useLandingDelta } from "@/ui/motion/landing-hold";
 import { EASE } from "@/ui/motion/motion-scale";
 import { useReducedMotion } from "@/ui/motion/motion-settings";
@@ -23,9 +11,8 @@ import { TickNumber } from "@/ui/motion/tick-number";
 import { AnimatePresence, motion } from "framer-motion";
 import type { ReactNode } from "react";
 
+import { FRONTIER_STORES, type StoreKind } from "../stores";
 import type { DayClock } from "./day-clock";
-
-export type StoreKind = "essence" | "labor" | "wheat" | "troops";
 
 /**
  * One store on the strip: what it holds, its limit (Essence has none), its rate an hour and when it is full (0 once it
@@ -46,13 +33,6 @@ export const STORE_TONES: Record<Tone, { text: string; meter: "warn" | "bad" | u
   calm: { text: "text-hud-ink", meter: undefined },
   amber: { text: "text-hud-warn", meter: "warn" },
   ember: { text: "text-hud-bad", meter: "bad" },
-};
-
-export const STORES: Record<StoreKind, { icon: IconMeaning; word: string }> = {
-  essence: { icon: "essence", word: ESSENCE },
-  labor: { icon: "labor", word: LABOR },
-  wheat: { icon: "wheat", word: WHEAT },
-  troops: { icon: "troops", word: TROOPS },
 };
 
 /**
@@ -131,7 +111,7 @@ const Stores = ({
  * is there only when the game's facts give it; a full store says Full in place of a rate it no longer earns.
  */
 export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading): string => {
-  const held = `${STORES[kind].word} ${formatExact(amount)}`;
+  const held = `${FRONTIER_STORES[kind].word} ${formatExact(amount)}`;
   if (limit === undefined) return held;
   const against = `${held} ${OF} ${formatExact(limit)}`;
   if (fullIn === 0) return `${against} · ${FULL}`;
@@ -144,7 +124,7 @@ export const storeLine = ({ kind, amount, limit, perHour, fullIn }: StoreReading
  * what a screen reader says and what the tooltip shows.
  */
 const StorePlate = ({ store }: { store: StoreReading }) => {
-  const { icon } = STORES[store.kind];
+  const { icon } = FRONTIER_STORES[store.kind];
   const shown = useLandedValue(store.flyTarget, store.amount);
   return (
     <span className="relative flex min-w-0 flex-1">
@@ -176,7 +156,7 @@ const StoreMeter = ({ store }: { store: StoreReading }) =>
     <HudMeter
       share={store.amount === undefined || store.limit <= 0 ? 0 : store.amount / store.limit}
       tone={STORE_TONES[store.tone].meter}
-      label={STORES[store.kind].word}
+      label={FRONTIER_STORES[store.kind].word}
     />
   );
 

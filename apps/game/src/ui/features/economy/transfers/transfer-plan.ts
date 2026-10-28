@@ -1,5 +1,5 @@
 import { presentedMineKind } from "@bibliothecadao/eternum";
-import { ResourcesIds, type Structure, StructureType } from "@bibliothecadao/types";
+import { ResourcesIds, RIFT_MINE_KIND, type Structure, StructureType } from "@bibliothecadao/types";
 
 /** A good the source holds: its resource id, how much (whole units), and its weight per unit. */
 export interface Good {
@@ -11,14 +11,12 @@ export interface Good {
 /** What a transfer's prefill rule tells holdings apart by. */
 export type HoldingRole = "realm" | "rift" | "camp" | "other";
 
-const ESSENCE_RIFT = 1;
-
 /** A holding's role for the prefill rule: a realm, an Essence Rift (a mine of kind 1), a camp, or anything else. */
 export const roleOf = (structure: Structure | undefined): HoldingRole => {
   if (!structure) return "other";
   if (structure.category === StructureType.Realm) return "realm";
   if (structure.category === StructureType.Camp) return "camp";
-  return presentedMineKind(structure.structure) === ESSENCE_RIFT ? "rift" : "other";
+  return presentedMineKind(structure.structure) === RIFT_MINE_KIND ? "rift" : "other";
 };
 
 /**

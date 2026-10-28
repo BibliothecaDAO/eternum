@@ -2,11 +2,15 @@ import { StructureWorkspace } from "@/ui/design-system/molecules/structure-works
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { HudLoading, HudWindow } from "@/ui/design-system/kit/hud-elements";
-import { BUILDABLE_FILTER, StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
+import { StructureSidebar } from "@/ui/features/world/containers/structure-sidebar";
+import { categoriesThatCan } from "@/ui/lib/structure-capabilities";
 import type { StructureWithMetadata } from "@/ui/features/world/containers/top-header/structure-picker/chip";
 import { type ID } from "@bibliothecadao/types";
 
 import { lazy, memo, Suspense, useCallback, useEffect, useState } from "react";
+
+/** The structures that build: the Build window lists only these. */
+const BUILDERS = categoriesThatCan("builds");
 
 const SelectPreviewBuildingMenu = lazy(() =>
   import("@/ui/features/settlement/construction/select-preview-building").then((module) => ({
@@ -53,7 +57,7 @@ export const ConstructionModal = memo(({ structureEntityId }: ConstructionModalP
             selectedEntityId={focusedRealmId}
             onSelectStructure={setFocusedRealmId}
             attention={buildAttention}
-            filter={BUILDABLE_FILTER}
+            filter={BUILDERS}
           />
         }
       >

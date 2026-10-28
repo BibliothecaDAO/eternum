@@ -47,6 +47,7 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
+import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -374,7 +375,7 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
-const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt">): StoreLine => ({
+const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
   limit: 18_000,
@@ -384,9 +385,9 @@ const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt"
   ...overrides,
 });
 const STORE_LINES: StoreLine[] = [
-  line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
-  line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
+  line({ kind: "wheat", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({ kind: "labor", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
+  line({ kind: "troops", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
@@ -807,7 +808,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
+    storeCard: line({ kind: "troops", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
@@ -1475,8 +1476,8 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 labor: lab.purse?.realms,
                 storeCards: lab.storeCard && {
-                  kinds: ["wheat", "labor", "troops"],
-                  open: lab.storeCard.icon,
+                  kinds: MADE_STORES,
+                  open: lab.storeCard.kind,
                   onToggle: noop,
                   card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
                 },

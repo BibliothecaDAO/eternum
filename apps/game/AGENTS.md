@@ -349,8 +349,8 @@ Construction card artwork uses `BuildingThumbnail`: a render of the current buil
 source and image hashes live in `asset-sources/building-thumbnails.json`; regenerate after a model changes with
 `scripts/render-building-thumbnails.mjs`. Actions and resource costs on those cards still use `Icon`.
 
-| Rule                                           | Enforcement                                                         |
-| ---------------------------------------------- | ------------------------------------------------------------------- |
-| Named artwork, no arbitrary image path         | `IconMeaning` and the renderer's props                              |
-| Distinct Transfer/Move and Production/Settings | `scripts/icons/validate.test.mjs` reproduces both rejected mappings |
-| Every resource and reviewed painting exists    | `pnpm icons:check`, client build and client CI                      |
+| Rule                                           | Enforcement                                                          |
+| ---------------------------------------------- | -------------------------------------------------------------------- |
+| Named artwork, no arbitrary image path         | `IconMeaning`, the renderer's props and `scripts/catalog-guards.mjs` |
+| Distinct Transfer/Move and Production/Settings | `scripts/icons/validate.test.mjs` reproduces both rejected mappings  |
+| Every resource and reviewed painting exists    | `pnpm icons:check`, client build and client CI                       |

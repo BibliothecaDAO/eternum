@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { BuildingType, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { campBeside, SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { nativeStoryVariants } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { beastMeaning, readStructureMeaning, storyMeaning, structureMeaning } from "./domain-icon-meaning";
-import { iconDefinition } from "./icon-meaning";
+import {
+  beastMeaning,
+  buildingMeaning,
+  readStructureMeaning,
+  storyMeaning,
+  structureMeaning,
+} from "./domain-icon-meaning";
+import { iconDefinition, resourceMeaning } from "./icon-meaning";
 
 describe("story icon meanings", () => {
   it("paints every story the game can emit, and refuses one it cannot", () => {
@@ -79,5 +85,16 @@ describe("guard and site icon meanings", () => {
     expect(
       readStructureMeaning(store, { ...structure, base: { ...structure.base, category: StructureType.Camp } }),
     ).toBe("camp");
+  });
+});
+
+describe("a building's painting", () => {
+  it("paints each building one way everywhere: its own painting, else what it makes, Frontier's barracks as Barracks", () => {
+    expect(buildingMeaning(BuildingType.WorkersHut)).toBe("workers-hut");
+    expect(buildingMeaning(BuildingType.Storehouse)).toBe("storehouse");
+    expect(buildingMeaning(BuildingType.ResourceDonkey)).toBe(resourceMeaning(ResourcesIds.Donkey));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1)).toBe(resourceMeaning(ResourcesIds.Knight));
+    expect(buildingMeaning(BuildingType.ResourceKnightT1, true)).toBe("barracks");
+    expect(() => buildingMeaning(BuildingType.None)).toThrow("has no painting");
   });
 });

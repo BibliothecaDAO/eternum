@@ -1,3 +1,4 @@
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { relicLine } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -25,7 +26,6 @@ import {
   RelicEffect,
   RelicRecipientType,
   ResourcesIds,
-  StructureType,
   formatWait,
   formatAmount,
   formatRate,
@@ -103,9 +103,7 @@ export const ResourceChip = ({
       return false;
     }
 
-    const structureCategory = structure?.base.category;
-
-    return structureCategory === StructureType.Realm || structureCategory === StructureType.Village;
+    return categoryCan(structure?.base.category, "craftsRelics");
   }, [balance, structure, resourceEnumId]);
 
   const handleOpenProduction = useCallback(() => {

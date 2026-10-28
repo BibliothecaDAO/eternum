@@ -308,15 +308,14 @@ export const ATTRIBUTE_NAMES = {
 } as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
-export const RIFT = "Rift";
-export const RUIN = "Ruin";
+export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
+export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
-export const BEASTS = "Beasts";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
@@ -347,6 +346,8 @@ export const FIGHT_WORDS = {
   holds: "The guard holds",
   attacks: "Attacks",
 } as const;
+/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
+export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -1227,7 +1228,11 @@ export const RESEARCH_TREE = {
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
-  kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
+  kinds: {
+    camp: structurePlural(StructureType.Camp, undefined, "frontier"),
+    rift: structurePlural(StructureType.Rift, undefined, "frontier"),
+    beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
+  },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   hutLine: "Population from every Hut",
   population: "Population",

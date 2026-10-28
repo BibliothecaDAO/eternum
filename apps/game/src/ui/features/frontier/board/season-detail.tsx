@@ -1,20 +1,9 @@
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { frontierSiteName, LORDS, StructureType, formatShort } from "@bibliothecadao/types";
+import type { SiteKind } from "@bibliothecadao/eternum";
+import { LORDS, formatShort } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { TARGET_MARKS } from "../sites/site-marks";
 import { OrderMark } from "./realm-marks";
-import {
-  CHESTS,
-  CLEARED,
-  ESSENCE,
-  DEPTH,
-  DEPTH_NUMERALS,
-  LABOR,
-  RIFT,
-  RUIN,
-  SEASON,
-  BEASTS,
-  VISIT,
-} from "@/ui/design-system/kit/words";
+import { CHESTS, CLEARED, ESSENCE, DEPTH, DEPTH_NUMERALS, LABOR, SEASON, VISIT } from "@/ui/design-system/kit/words";
 
 /** A realm's season, as Herald totals it. */
 export type SeasonDetail = {
@@ -28,6 +17,15 @@ export type SeasonDetail = {
   essence: number;
   labor: number;
 };
+
+/** Herald's count for each kind of site: every kind has one, or this does not compile. */
+const SITE_COUNTS = {
+  Camp: "camps",
+  Rift: "rifts",
+  Ruin: "ruins",
+  Beasts: "beasts",
+} as const satisfies Record<SiteKind, keyof SeasonDetail["sites"]>;
+const SITE_KINDS = Object.keys(SITE_COUNTS) as SiteKind[];
 
 /**
  * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin,
@@ -62,21 +60,12 @@ export const SeasonDetailSheet = ({
         <span aria-hidden className="text-hud-body text-hud-muted">
           =
         </span>
-        <HudChip
-          icons={[structureMeaning(StructureType.Camp, "frontier")]}
-          label={frontierSiteName(StructureType.Camp)}
-        >
-          {formatShort(detail.sites.camps)}
-        </HudChip>
-        <HudChip icons={["rift"]} label={RIFT}>
-          {formatShort(detail.sites.rifts)}
-        </HudChip>
-        <HudChip icons={["ruin"]} label={RUIN}>
-          {formatShort(detail.sites.ruins)}
-        </HudChip>
-        <HudChip icons={["troops"]} label={BEASTS}>
-          {formatShort(detail.sites.beasts)}
-        </HudChip>
+        {/* Each kind as every attack card draws it: the guard that holds it, and its name. */}
+        {SITE_KINDS.map((kind) => (
+          <HudChip key={kind} icons={[TARGET_MARKS[kind].icon]} label={TARGET_MARKS[kind].word}>
+            {formatShort(detail.sites[SITE_COUNTS[kind]])}
+          </HudChip>
+        ))}
       </div>
       <div className="flex items-center justify-center gap-1.5">
         <HudChip icons={["chest"]} label={CHESTS}>

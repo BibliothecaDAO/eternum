@@ -55,7 +55,8 @@ import { useEffect, useMemo, useState } from "react";
 import { readRealmPopulation } from "../realm/realm-population";
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
-import { type BuildOption, PRODUCTS, readBuildOptions } from "./build-options";
+import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
+import { type BuildOption, readBuildOptions } from "./build-options";
 import { type BuildTile, BuildView } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
@@ -246,15 +247,9 @@ export const BuildSheet = ({
   );
 };
 
-const PRICE_KINDS: Partial<Record<number, PriceKind>> = {
-  [ResourcesIds.Labor]: "labor",
-  [ResourcesIds.Wheat]: "wheat",
-  [ResourcesIds.Essence]: "essence",
-};
-
-/** A price's resource as the kit draws it; a building priced in anything else is loud. */
+/** A price's resource as the kit draws it, the realm store that holds it; a building priced in anything else is loud. */
 const priceKind = (resource: number): PriceKind => {
-  const kind = PRICE_KINDS[resource];
+  const kind = STORE_KINDS.find((store) => FRONTIER_STORES[store].resource === resource);
   if (!kind) throw new Error(`A Frontier building is priced in resource ${resource}`);
   return kind;
 };
@@ -301,7 +296,7 @@ const buildingLine = (option: BuildOption): string => {
   const { effect } = option;
   const does =
     effect.kind === "produces"
-      ? makes(PRODUCTS[effect.resource].word, formatRate(effect.output.total))
+      ? makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))
       : effect.kind === "trains"
         ? startsNewArmies(effect.attribute, tierNumeral(option.tier))
         : `${formatGain(effect.amount)} ${POPULATION}`;
@@ -323,7 +318,7 @@ const gemsOf = ({ sides, tier }: BuildOption): BuildTile["gems"] =>
 /** What one more gives: what it makes a minute, the population room it adds, or the attribute new armies start in. */
 const givesOf = ({ effect }: BuildOption): BuildTile["gives"] =>
   effect.kind === "produces"
-    ? { icon: PRODUCTS[effect.resource].icon, value: formatRate(effect.output.total) }
+    ? { icon: FRONTIER_STORES[madeStore(effect.resource)].icon, value: formatRate(effect.output.total) }
     : effect.kind === "trains"
       ? { icon: ATTRIBUTE_MARKS[effect.attribute] }
       : { icon: "person", value: formatGain(effect.amount) };
