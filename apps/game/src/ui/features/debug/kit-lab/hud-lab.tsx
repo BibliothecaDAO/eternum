@@ -172,6 +172,8 @@ type LabDeploy = {
   count: number;
   troopsAtHome: number;
   wheat: number;
+  /** Seconds until the next troop is home; none while nothing makes them. */
+  troopsWait?: number;
 };
 
 const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
@@ -568,6 +570,12 @@ const STATES = {
     stores: STORES,
     armies: [],
     deploy: { ...DEPLOY, count: 0, troopsAtHome: 0 },
+  },
+  "deploy-empty-making": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsWait: 6 * 60 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
   "site-full": {
@@ -1260,6 +1268,7 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       onCount={setCount}
       // The next army fills a slot whose army was released today with 40 stamina left.
       start={{ slot: 2, number: 3, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } }}
+      troopsWait={deploy.troopsWait}
       wheatCost={count * 2}
       tile="open"
       canDeploy={count > 0}

@@ -435,6 +435,8 @@ export const NEW_ARMY = "The new army";
 /** Raise an army from troops at home; with none, the realm's Barracks trains them. */
 export const DEPLOY = "Deploy";
 export const NO_TROOPS_AT_HOME = "No troops at home";
+/** No troops at home while the realm's Barracks make the next: when it is home ("No troops at home · in 6m"). */
+export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
 /** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
