@@ -398,6 +398,18 @@ describe("where the map's labels stand (the owner's plan D, 2026-10-19: 'icons e
       expect(overItsPoint(things[1], placed.spots.get("beast"))).toBe(true);
     });
 
+    // The lab's merge game on a 1440 × 900 desktop, its two armies a tile apart beside the rail's Feed (one camera step
+    // from the farthest zoom): hovering the one by the rail, its plate could neither reach under the Feed nor slide over
+    // its neighbour, and stayed its token.
+    it("opens the plate of an army hovered between the rail and another own army", () => {
+      const screen = { ...SCREEN, width: 1440, height: 900, columns: [{ x: 1022, y: 198, width: 408, height: 700 }] };
+      const things = [army("own a", 900, 447), army("hovered", 975, 447, { opened: DRAWN.armyPlate, openRank: 1 })];
+      const placed = placePlates(things, screen);
+      expect(placed.closed.size).toBe(0);
+      expect(placed.spots.get("hovered")).toMatchObject({ shape: "plate" });
+      expectKeptReadable(things, placed, { hovered: "hovered" });
+    });
+
     it("never lets the order line cover a kept token, and the hovered plate only where it has no other place", () => {
       // Own armies in a row 30px apart, the middle one's neighbour hovered, the line asked beside a kept tile.
       const things = [

@@ -1427,6 +1427,14 @@ function litTilesClearTheirGround({ played }) {
 
 /** Points on an army's model as drawn, its tile (0) to its top (1): the head is where the tile behind lay. */
 const MODEL_SHARES = [0.2, 0.6, 1];
+/**
+ * A point on a model, `share` of the way from its tile to its top on screen, kept a pixel inside the top: the pointer
+ * stands on a whole pixel, and one rounded from the top itself may stand over it.
+ */
+const onTheModel = ({ tile, top }, share) => {
+  const inside = Math.min(share, 1 - 1 / Math.max(1, Math.hypot(top.x - tile.x, top.y - tile.y)));
+  return { x: tile.x + (top.x - tile.x) * inside, y: tile.y + (top.y - tile.y) * inside };
+};
 /** Wheel notches from the closest zoom past which the farthest must have been reached. */
 const ZOOM_STEPS_MAX = 14;
 
@@ -1452,8 +1460,7 @@ async function hoverEveryArmyAtEveryZoom({ browser, extraScreenshot }) {
     for (const rest of armyLabels(browser.read(PLATES_EXPRESSION))) {
       const hovers = [];
       for (const share of rest.over ? MODEL_SHARES : []) {
-        const { tile, top } = rest.over;
-        browser.hover(offsetOf({ x: tile.x + (top.x - tile.x) * share, y: tile.y + (top.y - tile.y) * share }));
+        browser.hover(offsetOf(onTheModel(rest.over, share)));
         await sleep(HOVER_SETTLE_MS * 2);
         const seen = armyLabels(browser.read(PLATES_EXPRESSION)).find((thing) => thing.key === rest.key);
         hovers.push({ share, opened: seen?.open === true });
