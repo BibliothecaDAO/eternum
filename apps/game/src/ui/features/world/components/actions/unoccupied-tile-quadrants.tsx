@@ -9,7 +9,7 @@ import { HudButton, HudChip, HudPanel, HudRow } from "@/ui/design-system/kit/hud
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
 import { configManager, getTroopResourceId } from "@bibliothecadao/eternum";
-import { BiomeType, TROOP_TYPES, TROOP_WORDS, TroopTier } from "@bibliothecadao/types";
+import { BiomeType, TROOP_TYPES, TROOP_WORDS, TroopTier, type TroopType } from "@bibliothecadao/types";
 
 /** A biome's bonus for a troop as the row says it: its word, in the tone it has for the army. */
 const resolveBiomeBonusCardTone = (bonus: number) => {
