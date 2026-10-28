@@ -32,10 +32,9 @@ export function isAddressEqualToAccount(address: bigint | string | null | undefi
   return isViewerOwner(normalizeAddressToBigInt(address), accountAddress());
 }
 
-import { calculateDistance, isViewerOwner } from "@bibliothecadao/eternum";
-import { HexPosition, Position } from "@bibliothecadao/types";
+import { isViewerOwner } from "@bibliothecadao/eternum";
+import { HexPosition } from "@bibliothecadao/types";
 import { Vector3 } from "three";
-import { HEX_SIZE } from "../constants";
 import { worldHexAt, worldHexToWorld } from "../world-origin";
 import { latticeHexAt, latticeToWorld } from "./hex-lattice";
 
@@ -83,17 +82,6 @@ export const LOCAL_HEX_SPACE: HexSpace = {
   positionForHex: (hex, flat = true) => placeOnLattice(latticeToWorld(hex.col, hex.row), flat, new Vector3()),
   positionForHexInto: (col, row, out, flat = true) => placeOnLattice(latticeToWorld(col, row), flat, out),
   hexForPosition: (point) => latticeHexAt(point.x, point.z),
-};
-
-export const calculateDistanceInHexes = (
-  start: Pick<Position, "x" | "y">,
-  destination: Pick<Position, "x" | "y">,
-): number | undefined => {
-  const distance = calculateDistance(start, destination);
-  if (distance) {
-    return Math.round(distance / HEX_SIZE / 2);
-  }
-  return undefined;
 };
 
 const pseudoRandom = (x: number, y: number) => {

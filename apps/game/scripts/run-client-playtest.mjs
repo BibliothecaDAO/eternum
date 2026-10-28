@@ -9,6 +9,7 @@ import {
   createBrowserSession,
   openPageDevTools,
   recordRpcSends,
+  serveModelOverrides,
   setViewport,
   touchAtPhoneWidth,
   VIEWPORT,
@@ -32,6 +33,12 @@ import {
   summarizeRpcSends,
   summarizeStep,
 } from "./client-playtest/evidence.mjs";
+import {
+  drewOn,
+  findIntegratedGpu,
+  resolveBrowserExecutable,
+  writeIntegratedGpuLauncher,
+} from "./client-playtest/integrated-gpu.mjs";
 import { continuePastTheDaySummary, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
@@ -60,11 +67,18 @@ const BROWSER_ARGS = [
   "--js-flags=--expose-gc",
   "--enable-precise-memory-info",
 ];
-/** The GPU WebGPU draws on: the machine's default, or its integrated one (`--gpu low-power`), a laptop's class of GPU. */
-const GPUS = { default: [], "low-power": ["--use-webgpu-power-preference=force-low-power"] };
+/** The GPU the page draws on: the machine's default, or its integrated one (`--gpu low-power`, integrated-gpu.mjs). */
+const GPUS = ["default", "low-power"];
 
-/** The browser's launch flags for a run on `gpu`. */
-export const browserArgsFor = (gpu) => [...BROWSER_ARGS, ...GPUS[gpu]];
+/** The integrated GPU and a launcher, written in the run's directory, that runs the browser seeing only it. */
+function prepareIntegratedGpu(runDir) {
+  const gpu = findIntegratedGpu();
+  const launcher = writeIntegratedGpuLauncher(join(runDir, "integrated-gpu-browser.sh"), {
+    browser: resolveBrowserExecutable(),
+    gpu,
+  });
+  return { gpu, launcher };
+}
 
 /** The command's options, refused when they cannot describe a run. Paths are taken from where the command was run. */
 export function readPlaytestOptions(argv, callerDir = process.cwd()) {
@@ -94,10 +108,15 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   }
 
   const gpu = option("--gpu", "default");
-  if (!GPUS[gpu]) throw new Error(`--gpu takes ${Object.keys(GPUS).join(" or ")}, not "${gpu}"`);
+  if (!GPUS.includes(gpu)) throw new Error(`--gpu takes ${GPUS.join(" or ")}, not "${gpu}"`);
   const network = option("--network", null);
   const link = network === null ? null : /^(\d+(?:\.\d+)?),(\d+)$/.exec(network);
   if (network !== null && !link) throw new Error(`--network takes <down Mbit/s>,<round trip ms>, not "${network}"`);
+
+  // A player's order steps hold their sends with the same DevTools interception the overrides use.
+  if (player !== null && option("--model-override", null) !== null) {
+    throw new Error("--model-override serves a spectator's or a lab game's models: run it without --player");
+  }
 
   const viewport = /^(\d+)x(\d+)$/.exec(option("--viewport", "1920x1080"));
   if (!viewport) throw new Error(`--viewport takes <width>x<height>, not "${option("--viewport")}"`);
@@ -118,6 +137,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     rendererModes,
     stepSet,
     timeoutMs: integer("--timeout-ms", DEFAULTS.timeoutMs, 1),
+    modelOverride: option("--model-override", null) && resolve(callerDir, option("--model-override")),
+    profileSteps: option("--profile-steps", "").split(",").filter(Boolean),
     trace: argv.includes("--trace"),
     viewport: { width: Number(viewport[1]), height: Number(viewport[2]) },
   };
@@ -155,6 +176,8 @@ async function main(argv) {
     output.viewport = options.viewport;
     runDir = allocateRunDirectory(options.outRoot, options.player ? "player" : "spectator");
     output.source = describeSource();
+    const integratedGpu = options.gpu === "low-power" ? prepareIntegratedGpu(runDir) : null;
+    output.integratedGpu = integratedGpu;
     output.stage = "starting the client";
     const client = options.baseUrl
       ? { baseUrl: options.baseUrl, external: true }
@@ -173,6 +196,7 @@ async function main(argv) {
         owner.throwIfCancelled();
         const run = {
           ...options,
+          integratedGpu,
           baseUrl: client.baseUrl,
           iteration,
           owner,
@@ -279,6 +303,7 @@ async function playRun(context) {
     ? () => {}
     : owner.adopt(`profile ${profile}`, () => rmSync(profile, { recursive: true, force: true }));
   const browser = createBrowserSession(`playtest-${label}-${Date.now().toString(36)}`, {
+    executablePath: context.integratedGpu?.launcher,
     headed: context.headed,
     profile,
   });
@@ -292,7 +317,7 @@ async function playRun(context) {
       "--init-script",
       PROBE_PATH,
       "--args",
-      browserArgsFor(context.gpu).join(","),
+      BROWSER_ARGS.join(","),
     ]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
@@ -301,21 +326,25 @@ async function playRun(context) {
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     if (context.network) await emulateNetwork(devTools, context.network);
     record.rpcSends = await recordRpcSends(devTools);
+    if (context.modelOverride) record.modelsServed = await serveModelOverrides(devTools, context.modelOverride);
     record.url = buildRunUrl({ baseUrl: context.baseUrl, game, player, rendererMode, stepSet: context.stepSet });
     // The trace is the boot's: from before the game page opens to the world being interactive. A longer one is not
     // kept whole (the browser records into a ring buffer, and the boot is overwritten first) and costs gigabytes.
     if (context.trace) browser.run(["trace", "start"]);
     // A player is signed in first, through Connect on the home page, then opens the run's page.
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
-    else browser.run(["open", record.url]);
+    const profileBoot = context.profileSteps.includes("boot");
+    if (profileBoot) await startCpuProfile(devTools);
+    if (!player) browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
+    if (profileBoot) await writeCpuProfile(devTools, join(runDir, `${label}-00-boot.cpuprofile`));
     if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
     // The boot as a step: from the page's start to now, its downloads, long frames, GPU work and scene marks.
-    record.bootWindow = readSafely(() => {
-      const probe = JSON.parse(browser.eval("window.__playtest.read(0)"));
-      return summarizeStep(probe, { name: "boot", startedOn: { t: 0, timeOrigin: probe.timeOrigin } });
-    });
+    record.bootProbe = readSafely(() => JSON.parse(browser.eval("window.__playtest.read(0)")));
+    record.bootWindow = readSafely(() =>
+      summarizeStep(record.bootProbe, { name: "boot", startedOn: { t: 0, timeOrigin: record.bootProbe.timeOrigin } }),
+    );
     browser.screenshot(join(runDir, `${label}-00-boot.png`));
     if (player) record.daySummary = await continuePastTheDaySummary(browser, owner);
     // No order is sent before the run is proven to be in the game it was asked to play.
@@ -324,7 +353,8 @@ async function playRun(context) {
     for (const [index, step] of steps.entries()) {
       owner.throwIfCancelled();
       const base = join(runDir, `${label}-${String(index + 1).padStart(2, "0")}-${step.name}`);
-      const played = await playStep({ browser, devTools, owner, step, base });
+      const profiled = context.profileSteps.includes(step.name);
+      const played = await playStep({ browser, devTools, owner, step, base, profiled });
       record.steps.push(played);
       if (played.cancelled) throw played.cancelled;
     }
@@ -351,7 +381,7 @@ async function playRun(context) {
  * Marks the step, plays it, lets it settle, and judges it by what the page then shows and what the probe saw. Any
  * failure, capture included, is kept as the step's verdict with what it attempted and whatever could still be read.
  */
-async function playStep({ browser, devTools, owner, step, base }) {
+async function playStep({ browser, devTools, owner, step, base, profiled }) {
   const screenshot = `${base}.png`;
   const attempt = { name: step.name, played: {} };
   let startedOn = null;
@@ -359,8 +389,10 @@ async function playStep({ browser, devTools, owner, step, base }) {
   try {
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
+    if (profiled) await startCpuProfile(devTools);
     attempt.played = (await step.play?.({ base, browser, devTools, extraScreenshot, owner })) ?? {};
     await owner.sleep(step.settleMs);
+    if (profiled) attempt.played.cpuProfile = await writeCpuProfile(devTools, `${base}.cpuprofile`);
     browser.screenshot(screenshot);
     browser.run(["eval", `window.__playtest.step(${JSON.stringify(`${step.name}:end`)})`]);
     const seen = browser.observe();
@@ -385,6 +417,23 @@ async function playStep({ browser, devTools, owner, step, base }) {
   }
 }
 
+/**
+ * The page's JavaScript sampled every 200 µs from here on: where a step's main-thread time goes, by function
+ * (`--profile-steps`, which also takes `boot`: from the game page's opening to the world being interactive).
+ */
+async function startCpuProfile(devTools) {
+  await devTools.send("Profiler.enable");
+  await devTools.send("Profiler.setSamplingInterval", { interval: 200 });
+  await devTools.send("Profiler.start");
+}
+
+/** Stops the step's profile and writes it where DevTools' Performance panel opens it (`.cpuprofile`). */
+async function writeCpuProfile(devTools, path) {
+  const { profile } = await devTools.send("Profiler.stop");
+  writeJson(path, profile);
+  return path;
+}
+
 function takeScreenshot(browser, path) {
   browser.screenshot(path);
   return path;
@@ -399,6 +448,7 @@ function writeRunEvidence({ browser, context, record }) {
   const boot = record.boot ?? {};
   const rpcSends = record.rpcSends?.() ?? [];
   const bootOk = errors.length === 0 && Boolean(boot.canvasExists) && hasEntryFinished(boot);
+  const renderer = readSafely(() => browser.eval(GPU_RENDERER_EXPRESSION));
   const result = {
     ...boot,
     label: record.label,
@@ -412,12 +462,13 @@ function writeRunEvidence({ browser, context, record }) {
     provokedErrors,
     expectedSteps: record.expectedSteps,
     frameSpikes: collectFrameSpikes(consoleOutput),
-    gpu: readSafely(() => browser.eval(GPU_RENDERER_EXPRESSION)),
+    gpu: renderer,
     iteration: record.iteration,
     machine: {
       cpus: availableParallelism(),
       cpuThrottle: context.cpuThrottle,
       gpu: context.gpu,
+      drewOnIntegratedGpu: context.integratedGpu ? drewOn(renderer, context.integratedGpu.gpu) : null,
       network: context.network ?? null,
       loadAverageMax: Math.max(...record.loadSamples),
       loadSampleEveryMs: LOAD_SAMPLE_MS,
@@ -431,6 +482,9 @@ function writeRunEvidence({ browser, context, record }) {
       .map(({ summary }) => ({ step: summary.name, ...summary.reload })),
     rendererMode: record.rendererMode,
     rpc: summarizeRpcSends(rpcSends),
+    modelOverride: context.modelOverride
+      ? { from: context.modelOverride, served: record.modelsServed?.() ?? [] }
+      : null,
     signIn: record.signIn ?? null,
     daySummary: record.daySummary ?? null,
     steps: record.steps.map(({ summary }) => summary),
@@ -438,7 +492,10 @@ function writeRunEvidence({ browser, context, record }) {
   };
   writeJson(join(context.runDir, `${record.label}-transcript.json`), {
     ...result,
-    probes: record.steps.map(({ probe, summary }) => ({ step: summary.name, probe })),
+    probes: [
+      { step: "boot", probe: record.bootProbe ?? null },
+      ...record.steps.map(({ probe, summary }) => ({ step: summary.name, probe })),
+    ],
     rpcSends,
   });
   return result;

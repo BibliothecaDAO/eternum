@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { STEP_SETS } from "./client-playtest/steps.mjs";
-import { allocateRunDirectory, browserArgsFor, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
+import { allocateRunDirectory, buildRunUrl, readPlaytestOptions } from "./run-client-playtest.mjs";
 
 describe("allocateRunDirectory", () => {
   it("gives every invocation a new directory and never writes into an existing one", () => {
@@ -46,12 +46,23 @@ describe("readPlaytestOptions", () => {
 
   it("draws on the machine's default GPU unless --gpu low-power asks for its integrated one", () => {
     expect(readPlaytestOptions([]).gpu).toBe("default");
-    expect(browserArgsFor("default")).not.toContain("--use-webgpu-power-preference=force-low-power");
     expect(readPlaytestOptions(["--gpu", "low-power"]).gpu).toBe("low-power");
-    expect(browserArgsFor("low-power")).toContain("--use-webgpu-power-preference=force-low-power");
     expect(() => readPlaytestOptions(["--gpu", "integrated"])).toThrow(
       '--gpu takes default or low-power, not "integrated"',
     );
+  });
+
+  it("serves heavier models from a directory taken from where the command was run, never to a player", () => {
+    expect(readPlaytestOptions(["--model-override", "heavier"], "/work").modelOverride).toBe("/work/heavier");
+    expect(readPlaytestOptions([]).modelOverride).toBe(null);
+    expect(() => readPlaytestOptions(["--model-override", "heavier", "--player", "a@b.c"])).toThrow(
+      "--model-override serves a spectator's or a lab game's models: run it without --player",
+    );
+  });
+
+  it("profiles only the steps named in --profile-steps", () => {
+    expect(readPlaytestOptions([]).profileSteps).toEqual([]);
+    expect(readPlaytestOptions(["--profile-steps", "map-idle,pan"]).profileSteps).toEqual(["map-idle", "pan"]);
   });
 
   it("reads a player run as the email the player signs in with", () => {

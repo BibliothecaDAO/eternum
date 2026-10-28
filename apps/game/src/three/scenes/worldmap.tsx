@@ -24,6 +24,7 @@ import { isTransferPair } from "@/ui/features/economy/transfers/transfer-pair";
 import { dispatchRightClick } from "./worldmap-right-click";
 import { publishMapSelection } from "@/observability/map-selection";
 import { resolveSpawnActionPath, showArmyDeploymentTooltip } from "./worldmap-army-deployment";
+import { whenModelPreparationSettles } from "@/three/model-preparation";
 import type { PipelineCompiler } from "@/three/pipeline-compiler";
 import { playUnitCommandSound, playUnitCommandSoundForWorldmapAction } from "@/audio/unit-command-audio";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -436,7 +437,7 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { WorldmapTerrainContent } from "./worldmap-terrain-content";
+import { WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
 import {
   WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -607,6 +608,9 @@ const actorOnHex = (entity: { army?: { id: ID }; structure?: { id: ID } }) => {
 };
 
 const MEMORY_MONITORING_ENABLED = env.VITE_PUBLIC_ENABLE_MEMORY_MONITORING;
+// The entry's models took up to ~3 s to prepare on a phone stand-in (CPU 4×); a slower phone keeps headroom before the
+// doorway gives up waiting for them.
+const ENTRY_MODELS_WAIT_MS = 10_000;
 const MIN_TRAVEL_EFFECT_VISIBLE_MS = 600;
 /** A tile the selected army's routes never reached: out of reach, as the planner says of a target beyond its step. */
 const BEYOND_REACH: OrderRefusal = { reason: "too-far" };
@@ -4307,28 +4311,21 @@ export default class WorldmapScene extends WarpTravel {
     });
   }
 
-  /** A structure or a spire: terrain levels a pad under both. Callers that already know the presentation pass it. */
-  private isTerrainSupportHex(
-    col: number,
-    row: number,
-    surfacePresentation = this.getTerrainCellSurfacePresentation(col, row),
-  ): boolean {
-    if (surfacePresentation === "ethereal") return true;
-    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
-    return (
-      this.worldSpatialProjection.getStructuresAtHex({ alt: activeMapLayer(), col: contract.x, row: contract.y })
-        .length > 0
-    );
-  }
-
-  private getTerrainCellSurfacePresentation(col: number, row: number): "ethereal" | undefined {
-    const contract = Position.fromNormalized({ x: col, y: row }).getContract();
-    const tile = this.worldSpatialProjection.getTileAtHex({
-      alt: activeMapLayer(),
-      col: contract.x,
-      row: contract.y,
-    });
-    return tile?.occupierType === TileOccupier.Spire ? "ethereal" : undefined;
+  /**
+   * A cell's facts as the terrain presents them, from one tile read and, off a spire, one structures read: its projected
+   * biome, its surface (a spire's is ethereal) and whether terrain levels a pad under it (a structure or a spire). Every
+   * terrain path reads a cell through here; a panned page reads thousands, and each projection lookup builds a key.
+   */
+  private readTerrainCell(col: number, row: number): TerrainCellFacts {
+    const center = FELT_CENTER();
+    const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
+    const tile = this.worldSpatialProjection.getTileAtHex(hex);
+    const surfacePresentation = tile?.occupierType === TileOccupier.Spire ? "ethereal" : undefined;
+    return {
+      projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
+      surfacePresentation,
+      occupied: surfacePresentation === "ethereal" || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
+    };
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -4466,7 +4463,22 @@ export default class WorldmapScene extends WarpTravel {
     if (phase === "initial") {
       recordGameEntryDuration("worldmap-first-terrain", performance.now() - startedAt);
       markGameEntryMilestone("worldmap-terrain-visible");
+      await this.waitForEntryModels();
     }
+  }
+
+  /**
+   * The doorway stays up until the models the opening view asked for are loaded and their pipelines compiled: their
+   * shader builds run behind it, not in the first frames a player sees (one to three seconds of stutter on a phone
+   * otherwise). The armies' character runtime is prepared with them, though no army may be in view yet: its first
+   * setup otherwise lands in the first pan that brings one in.
+   */
+  private async waitForEntryModels(): Promise<void> {
+    this.armyManager.prepareCharacterRuntime();
+    if ((await whenModelPreparationSettles(ENTRY_MODELS_WAIT_MS)) === "timed-out") {
+      console.warn(`[Worldmap] entry models still preparing after ${ENTRY_MODELS_WAIT_MS}ms; entering anyway`);
+    }
+    markGameEntryMilestone("worldmap-models-ready");
   }
 
   private async waitForLatestTerrainPresentation(): Promise<void> {
@@ -5519,8 +5531,7 @@ export default class WorldmapScene extends WarpTravel {
         : null;
       const biomeKey = biome ?? "Outline";
       const instanceIndex = instanceCounts.get(biomeKey) ?? 0;
-      const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
-      const occupied = this.isTerrainSupportHex(col, row, surfacePresentation);
+      const { occupied, surfacePresentation } = this.readTerrainCell(col, row);
       instanceCounts.set(biomeKey, instanceIndex + 1);
       const cell = { biomeKey, col, instanceIndex, occupied, row, surfacePresentation };
       terrainCells.push(cell);
@@ -6293,19 +6304,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private captureTerrainPresentationContent(cells: readonly { biomeKey: string; col: number; row: number }[]) {
-    const center = FELT_CENTER();
     return this.terrainContent.capture({
       cells,
-      getProjectedBiome: (col, row) => {
-        const tile = this.worldSpatialProjection.getTileAtHex({
-          alt: activeMapLayer(),
-          col: col + center,
-          row: row + center,
-        });
-        return tile ? requireBiomeTypeFromId(tile.biome) : undefined;
-      },
-      isOccupied: (col, row) => this.isTerrainSupportHex(col, row),
-      getSurfacePresentation: (col, row) => this.getTerrainCellSurfacePresentation(col, row),
+      readCell: (col, row) => this.readTerrainCell(col, row),
       simulateAllExplored: this.simulateAllExplored,
     });
   }
@@ -7092,14 +7093,8 @@ export default class WorldmapScene extends WarpTravel {
         }
 
         const biome = exploredBiome ?? this.perfSimulation!.getSimulatedBiome(col, row);
-        const surfacePresentation = this.getTerrainCellSurfacePresentation(col, row);
-        fingerprintEntries.push({
-          biomeKey: biome,
-          col,
-          row,
-          occupied: this.isTerrainSupportHex(col, row, surfacePresentation),
-          surfacePresentation,
-        });
+        const { occupied, surfacePresentation } = this.readTerrainCell(col, row);
+        fingerprintEntries.push({ biomeKey: biome, col, row, occupied, surfacePresentation });
       }
     }
 

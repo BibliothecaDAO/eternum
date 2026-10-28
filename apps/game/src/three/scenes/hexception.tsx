@@ -288,6 +288,9 @@ export default class HexceptionScene extends HexagonScene {
   private readonly gridBuilds = new RealmGridBuilds();
   private localPresentation: Promise<void> = Promise.resolve();
   private localPresentationReady = true;
+  // Presentable once the realm's first frame has been drawn behind the held map frame (see whenPresentable).
+  private presentation: Promise<void> = Promise.resolve();
+  private resolveFirstFrame: (() => void) | undefined;
   private groundTexturesReady: Promise<void> = Promise.resolve();
   // Store Zustand unsubscribe functions to clean up on destroy
   private storeUnsubscribes: (() => void)[] = [];
@@ -1209,11 +1212,19 @@ export default class HexceptionScene extends HexagonScene {
 
   /**
    * The first local frame is empty until the grid build presents terrain and buildings, so the world frame is held
-   * until then. Each building model's pipelines compile as it loads (loadBuildingModel); a scene-wide warm-up compile
-   * of the placed buildings left some of their render objects broken on WebGPU (they drew solid black until rebuilt).
+   * until then, and on until the realm's first frame has been drawn behind it: that frame builds the shaders no
+   * precompile reaches (every shadow caster's shadow pass, the ground, the highlights; ~350 ms on a phone stand-in),
+   * so the reveal's camera ease starts after it instead of being spent inside it. Each building model's pipelines
+   * compile as it loads (loadBuildingModel); a scene-wide warm-up compile of the placed buildings left some of their
+   * render objects broken on WebGPU (they drew solid black until rebuilt), which a real first frame does not.
    */
   public override whenPresentable(): Promise<void> {
-    return this.localPresentation;
+    return this.presentation;
+  }
+
+  public onFrameRendered(): void {
+    this.resolveFirstFrame?.();
+    this.resolveFirstFrame = undefined;
   }
 
   public isReadyToRender(): boolean {
@@ -1223,12 +1234,16 @@ export default class HexceptionScene extends HexagonScene {
   private prepareLocalPresentation(): void {
     const generation = this.activeRealmGeneration;
     this.localPresentationReady = false;
+    // A realm superseded before its first frame releases whoever waited on it.
+    this.resolveFirstFrame?.();
+    const firstFrame = new Promise<void>((resolve) => (this.resolveFirstFrame = resolve));
     this.localPresentation = awaitLocalScenePresentable({
       gridBuilt: this.gridBuilds.whenBuilt(),
       groundTextures: this.groundTexturesReady,
     }).finally(() => {
       if (this.ownsRealmGeneration(generation)) this.localPresentationReady = true;
     });
+    this.presentation = this.localPresentation.then(() => firstFrame);
   }
 
   private advanceRealmGeneration(): number {

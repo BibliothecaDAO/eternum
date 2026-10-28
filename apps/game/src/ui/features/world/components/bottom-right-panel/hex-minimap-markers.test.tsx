@@ -19,7 +19,6 @@ const draw = (occupierType: number, occupierId = "0") =>
     <HexMinimap
       tiles={[{ col: 0, row: 0, biome: 11, occupier_type: occupierType, occupier_id: occupierId }]}
       selectedHex={null}
-      navigationTarget={null}
       cameraTargetHex={null}
     />,
   );

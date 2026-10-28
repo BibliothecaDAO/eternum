@@ -5,11 +5,13 @@ const cells = [
   { biomeKey: "Grassland", col: 11, row: 0 },
   { biomeKey: "Grassland", col: 12, row: 0 },
 ];
-const input = (biomes = new Map<number, string>()) => ({
+const input = (biomes = new Map<number, string>(), spireCol?: number) => ({
   cells,
-  getProjectedBiome: (col: number) => biomes.get(col),
-  isOccupied: () => false,
-  getSurfacePresentation: (): "ethereal" | undefined => undefined,
+  readCell: (col: number) => ({
+    projectedBiome: biomes.get(col),
+    occupied: col === spireCol,
+    surfacePresentation: col === spireCol ? ("ethereal" as const) : undefined,
+  }),
   simulateAllExplored: false,
 });
 
@@ -21,12 +23,7 @@ describe("worldmap authoritative terrain content", () => {
       [12, "Grassland"],
     ]);
     let spireCol: number | undefined = 11;
-    const capture = () =>
-      content.capture({
-        ...input(biomes),
-        isOccupied: (col) => col === spireCol,
-        getSurfacePresentation: (col) => (col === spireCol ? "ethereal" : undefined),
-      });
+    const capture = () => content.capture(input(biomes, spireCol));
     expect(capture().cells).toEqual([
       { biomeKey: "Snow", col: 11, row: 0, occupied: true, surfacePresentation: "ethereal" },
       { biomeKey: "Grassland", col: 12, row: 0, occupied: false, surfacePresentation: undefined },

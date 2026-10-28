@@ -43,7 +43,7 @@ const show = (tiles: MinimapTile[], look: "badges" | "classic" = "badges") =>
   act(async () =>
     root.render(
       <Profiler id="minimap" onRender={() => commits++}>
-        <HexMinimap tiles={tiles} selectedHex={null} navigationTarget={null} cameraTargetHex={null} look={look} />
+        <HexMinimap tiles={tiles} selectedHex={null} cameraTargetHex={null} look={look} />
       </Profiler>,
     ),
   );
