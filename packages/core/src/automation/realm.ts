@@ -15,8 +15,9 @@ import {
   getBuildingFromResource,
   type ID,
   StructureType,
-  TroopTier,
-  TroopType,
+  TROOP_TIERS,
+  TROOP_TYPES,
+  type TroopType,
   BUILDINGS_CENTER,
 } from "@bibliothecadao/types";
 import { getTroopResourceId } from "../utils/army";
@@ -44,9 +45,6 @@ type BuildabilityContext = {
   useSimpleCost: boolean;
   hasAvailableBuildingTile: boolean;
 };
-
-const TROOP_TYPES = [TroopType.Crossbowman, TroopType.Paladin, TroopType.Knight] as const;
-const TROOP_TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3] as const;
 
 const canAffordRealmUpgrade = (realmId: ID, realmLevel: number, store: NativeFactStore, currentDefaultTick: number) => {
   const maxLevel = configManager.getMaxLevel(StructureType.Realm);

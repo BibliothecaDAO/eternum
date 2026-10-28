@@ -8,6 +8,7 @@ import {
   StructureType,
   structureName,
   TroopTier,
+  TROOP_TIERS,
 } from "@bibliothecadao/types";
 
 /**
@@ -80,15 +81,14 @@ const troopsByTier = (): ResourcesIds[] => {
 
 /** A biome troop's goal at a tier: "army" for T1, as orders already say it, then "armyT2", "armyT3". */
 const tierGoal = (kind: "barracks" | "army", tier: TroopTier): string => (tier === TroopTier.T1 ? kind : kind + tier);
-const TIERS = [TroopTier.T1, TroopTier.T2, TroopTier.T3];
 
 const GOAL_TARGETS = new Map<string, BuildOrderTarget>([
   ...BLITZ_BUILDINGS.map((building): [string, BuildOrderTarget] => [
     buildingGoal(building),
     { kind: "building", building },
   ]),
-  ...TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("barracks", tier), { kind: "barracks", tier }]),
-  ...TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("army", tier), { kind: "army", tier }]),
+  ...TROOP_TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("barracks", tier), { kind: "barracks", tier }]),
+  ...TROOP_TIERS.map((tier): [string, BuildOrderTarget] => [tierGoal("army", tier), { kind: "army", tier }]),
   ["levelUp", { kind: "levelUp" }],
 ]);
 
@@ -128,7 +128,7 @@ export const BUILD_ORDER_GOAL_GROUPS: readonly BuildOrderGoalGroup[] = [
   {
     label: "Your biome's troop",
     heads: ["Barracks", "Army"],
-    goals: TIERS.flatMap((tier) => [tierGoal("barracks", tier), tierGoal("army", tier)]),
+    goals: TROOP_TIERS.flatMap((tier) => [tierGoal("barracks", tier), tierGoal("army", tier)]),
   },
 ];
 
