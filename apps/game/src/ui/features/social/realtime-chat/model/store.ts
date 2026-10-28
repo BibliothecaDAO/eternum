@@ -66,6 +66,43 @@ const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMe
   pendingMessages: [],
 });
 
+const timeOf = (value: string | Date | null | undefined) => (value ? new Date(value).getTime() : 0);
+
+/**
+ * A conversation as the server listed it, laid over what this client holds now. The list was read a moment ago, so what
+ * reached the client since (a message over the socket, a read) is newer than it, and stands:
+ * - its lines are the client's and the listed last one, in time order, each once;
+ * - its thread (last message, last change) is the list's only where the list is as new as the client's;
+ * - unread is none while it is open; else, read here through the listed last line or later, what came after that read;
+ *   else the list's unread and the other player's lines since the list's last one.
+ */
+const reconcileListedThread = (
+  existing: DirectMessageThreadState | undefined,
+  listed: DirectMessageThread,
+  last: DirectMessage | null,
+  self: string | undefined,
+  open: boolean,
+): DirectMessageThreadState => {
+  const held = existing ?? createThreadState(listed);
+  const messages =
+    last && !held.messages.some((message) => message.id === last.id)
+      ? [...held.messages, last].toSorted((a, b) => timeOf(a.createdAt) - timeOf(b.createdAt))
+      : held.messages;
+  const listedIsNewer = !existing || timeOf(listed.updatedAt) >= timeOf(held.thread.updatedAt);
+  const thread = listedIsNewer ? { ...held.thread, ...listed } : held.thread;
+  const fromPeer = (after: number) =>
+    messages.filter((message) => message.senderId !== self && timeOf(message.createdAt) > after).length;
+  const listedThrough = timeOf(last?.createdAt);
+  const readThrough = timeOf(messages.find((message) => message.id === held.readThrough)?.createdAt);
+  const unreadCount =
+    open || !self
+      ? 0
+      : held.readThrough && readThrough >= listedThrough
+        ? fromPeer(readThrough)
+        : (listed.unreadCounts[self] ?? 0) + fromPeer(listedThrough);
+  return { ...held, thread, messages, unreadCount };
+};
+
 const toIsoTimestamp = (value: string | Date | null | undefined): string => {
   if (!value) return new Date().toISOString();
   if (value instanceof Date) return value.toISOString();
@@ -999,36 +1036,28 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
     },
     loadDirectThreads: async () => {
-      const { baseUrl } = get();
+      const { baseUrl, client } = get();
       if (!baseUrl) return;
       const response = await fetchApi(new URL("/api/chat/dm/threads", baseUrl).toString(), { credentials: "include" });
       if (!response.ok) throw new Error(`Failed to load direct chat threads (${response.status})`);
       const data = (await response.json()) as { threads?: { thread: unknown; lastMessage: unknown }[] };
+      // The list answers for the client that asked: one replaced since (a sign-out, another account) takes nothing.
+      if (get().client !== client) return;
       set((state) => {
         const self = state.identity?.playerId;
         const dmThreads = { ...state.dmThreads };
         for (const listed of data.threads ?? []) {
           const thread = mapDirectThreadRecord(listed.thread);
           const last = listed.lastMessage ? mapDirectMessageRecord(listed.lastMessage) : null;
-          const existing = dmThreads[thread.id] ?? createThreadState(thread);
-          const messages =
-            last && !existing.messages.some((message) => message.id === last.id)
-              ? [...existing.messages, last]
-              : existing.messages;
           const open = state.activeThreadId === thread.id && state.isShellOpen;
-          dmThreads[thread.id] = {
-            ...existing,
-            thread: { ...existing.thread, ...thread },
-            messages,
-            unreadCount: open || !self ? 0 : (thread.unreadCounts[self] ?? 0),
-          };
+          dmThreads[thread.id] = reconcileListedThread(dmThreads[thread.id], thread, last, self, open);
         }
         const unreadDirectTotal = Object.values(dmThreads).reduce((total, thread) => total + thread.unreadCount, 0);
         return { dmThreads, unreadDirectTotal };
       });
     },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
-      const { baseUrl } = get();
+      const { baseUrl, client } = get();
       if (!baseUrl || get().dmThreads[threadId]?.isFetchingHistory) return;
 
       set((state) => {
@@ -1079,6 +1108,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         }
 
         const data = await response.json();
+        // A page read for a client replaced since writes nothing into the one that replaced it.
+        if (get().client !== client) return;
         const incomingUnsorted = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapDirectMessageRecord(record))
           : [];

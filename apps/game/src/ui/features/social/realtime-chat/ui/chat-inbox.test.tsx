@@ -68,11 +68,25 @@ const HISTORY = [message("d1", SELF, "how goes the ruin?", 1), message("d2", ALD
  * The server, as its routes answer: the account's conversations (/api/chat/dm/threads: Aldric's, with his last line and
  * the unread the inbox counts), a conversation's history, the block list and the room's history.
  */
+/** While set, the list's answer waits for it: a slow answer, released when the test says. */
+let listHeld: Promise<void> | null = null;
+const holdList = () => {
+  let release = () => {};
+  listHeld = new Promise<void>((resolve) => (release = resolve));
+  return () =>
+    act(async () => {
+      release();
+      listHeld = null;
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+};
+
 const serve = (unread: number) =>
   vi.fn(async (input: string | URL) => {
     const { pathname } = new URL(String(input));
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
-    if (pathname === "/api/chat/dm/threads")
+    if (pathname === "/api/chat/dm/threads") {
+      if (listHeld) await listHeld;
       return json({
         threads: [
           {
@@ -89,6 +103,7 @@ const serve = (unread: number) =>
           },
         ],
       });
+    }
     if (pathname === `/api/chat/dm/threads/${THREAD}/messages`)
       return json({ messages: [...HISTORY].reverse(), nextCursor: null });
     if (pathname === "/api/chat/blocks") return json({ blocked: [] });
@@ -214,5 +229,67 @@ describe("Messages from the server, on a client that starts empty", () => {
     expect(receipts().map((frame) => (frame.payload as { messageId: string }).messageId)).toEqual(["d2", "d3"]);
     await act(async () => useRealtimeChatStore.getState().actions.markThreadAsRead(THREAD));
     expect(receipts()).toHaveLength(2);
+  });
+});
+
+describe("a slow list, answered after what reached the client meanwhile", () => {
+  /** The inbox's handshake again, as after a reconnect: the list is asked for again, and held. */
+  const reconnectHeld = async (inbox: FakeSocket) => {
+    const release = holdList();
+    await act(async () =>
+      inbox.receive({ type: "connected", playerId: SELF, displayName: "You", channels: [GLOBAL_CHAT_CHANNEL_ID] }),
+    );
+    return release;
+  };
+  const arrives = (inbox: FakeSocket, id: string, content: string, minute: number) =>
+    act(async () =>
+      inbox.receive({
+        type: "direct:message",
+        message: message(id, ALDRIC, content, minute),
+        thread: { id: THREAD, participants: [SELF, ALDRIC], updatedAt: at(minute), lastMessageId: id },
+      }),
+    );
+  const held = () => useRealtimeChatStore.getState().dmThreads[THREAD]!;
+
+  it("keeps a message that came over the socket meanwhile: its unread, its line first in the list, its order", async () => {
+    const inbox = await startEmpty(0);
+    const release = await reconnectHeld(inbox);
+    await arrives(inbox, "d3", "dawn it is", 40);
+    expect(tabs()).toEqual(["Global", "Messages1"]);
+
+    await release();
+    expect(tabs()).toEqual(["Global", "Messages1"]);
+    await press("Messages");
+    expect(rows()[0]!.textContent).toContain("dawn it is");
+    expect(rows()[0]!.textContent).toContain("1");
+    expect(held().thread.lastMessageId).toBe("d3");
+    expect(held().messages.map(({ id }) => id)).toEqual(["d2", "d3"]);
+  });
+
+  it("keeps a conversation read meanwhile read, though the list was read before and says unread", async () => {
+    const inbox = await startEmpty(1);
+    const release = await reconnectHeld(inbox);
+    await arrives(inbox, "d3", "dawn it is", 40);
+    await press("Messages");
+    await act(async () => rows()[0]!.querySelector("button")!.click());
+    await act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
+
+    await release();
+    expect(tabs()).toEqual(["Global", "Messages"]);
+    expect(rows()[0]!.textContent).toContain("dawn it is");
+    expect(rows()[0]!.querySelector(".ui-chip")).toBeNull();
+    expect(held().messages.map(({ id }) => id)).toEqual(["d1", "d2", "d3"]);
+  });
+
+  it("gives nothing to a client replaced while the list was on its way", async () => {
+    const inbox = await startEmpty(0);
+    const release = await reconnectHeld(inbox);
+    await act(async () => {
+      useRealtimeChatStore.getState().actions.resetClient();
+      useRealtimeChatStore.getState().actions.initializeClient({ baseUrl: BASE, rooms: [GLOBAL_ROOM.zoneId] });
+    });
+    await release();
+    expect(useRealtimeChatStore.getState().dmThreads).toEqual({});
+    expect(useRealtimeChatStore.getState().unreadDirectTotal).toBe(0);
   });
 });
