@@ -58,7 +58,7 @@ const MAX_INSTANCES = 1000;
 /** The transition slot of the chest a reward stages at the screen's centre: it stands on no tile. */
 const CENTRE_KEY = "centre";
 /** How much of the screen's height the centred chest fills, whatever the zoom. */
-const CENTRE_SCREEN_SHARE = 0.14;
+const CENTRE_SCREEN_SHARE = 0.22;
 
 export class ChestManager {
   private scene: THREE.Scene;
