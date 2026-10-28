@@ -1,3 +1,4 @@
+import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
@@ -30,6 +31,12 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
   "season-opens": seasonOpensScenario,
+  ...Object.fromEntries(
+    REALM_SKIN_MODELS.map(({ skin, level }) => [
+      `${skin}-${level}`,
+      campaignScenario(skin === "devcon" ? "regular" : "golden", level),
+    ]),
+  ),
   devcon: campaignScenario("regular"),
   "devcon-golden": campaignScenario("golden"),
 };

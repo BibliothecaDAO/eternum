@@ -44,11 +44,11 @@ export const RealmsSheet = ({
       <>
         {mark && (
           <span>
-            <HudChip icons={["realm"]}>{mark.line}</HudChip>
+            <HudChip icons={[mark.icon]}>{mark.line}</HudChip>
           </span>
         )}
         <span className="flex justify-end gap-2">
-          <HudChip icons={["realm", "labor"]} label={DAILY_REALM_LABOR}>
+          <HudChip icons={[mark?.icon ?? "realm", "labor"]} label={DAILY_REALM_LABOR}>
             {formatShort(dailyAmount, { signed: true })}
           </HudChip>
           {dailyEssence > 0 && (
@@ -74,7 +74,7 @@ export const RealmsSheet = ({
               </HudButton>
             )}
             {plan.fits < plan.total && (
-              <HudButton kind="primary" icon="realm" onClick={onRealm}>
+              <HudButton kind="primary" icon={mark?.icon ?? "realm"} onClick={onRealm}>
                 {REALM}
               </HudButton>
             )}

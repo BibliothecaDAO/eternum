@@ -1,3 +1,5 @@
+import { REALM_SKIN_MODELS, realmSkinIcon, readRealmSkin } from "@/three/structures/realm-skins";
+import { shortString } from "starknet";
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ContractAddress, RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
@@ -83,3 +85,33 @@ describe("the minimap to a watching viewer (side-colours-4)", () => {
     }
   });
 });
+
+it.each(REALM_SKIN_MODELS)(
+  "shows $skin level $level on the minimap as CampaignHome arrives and is removed",
+  ({ skin, level }) => {
+    const { store } = campBeside();
+    const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
+    store.applyFacts([{ model: "Structure", key: "0x7", value: { ...realm, base: { ...realm.base, level } } }]);
+    expect(minimapMarkersView.read(store, null).get("7")?.name).toBe(`map-realm-${level}`);
+    store.applyFacts([
+      {
+        model: "CampaignHome",
+        key: "0xc",
+        value: {
+          game_id: 1,
+          home: 7,
+          campaign_id: shortString.encodeShortString("devcon-2026"),
+          tier: skin === "devcon" ? 1 : 2,
+        },
+      },
+    ]);
+    expect(readRealmSkin(store, realm)).toBe(skin);
+    expect(minimapMarkersView.read(store, ContractAddress("0x111")).get("7")).toEqual({
+      name: realmSkinIcon(skin),
+      owner: "you",
+      value: String(level),
+    });
+    store.applyFacts([{ model: "CampaignHome", key: "0xc", value: null }]);
+    expect(minimapMarkersView.read(store, null).get("7")?.name).toBe(`map-realm-${level}`);
+  },
+);

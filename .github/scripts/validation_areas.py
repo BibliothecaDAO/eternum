@@ -166,6 +166,7 @@ AREAS = {
         "apps/game/scripts/**",
         "apps/game/public/**",
         "apps/game/vitest.assets.*",
+        "apps/game/asset-sources/realms/devcon/**",
         "packages/core/src/utils/biome/**"
     ],
     "amm": [

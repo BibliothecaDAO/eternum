@@ -119,6 +119,7 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
     facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.textContent).toContain("Golden Devcon");
+    expect(host.querySelector('img[src$="/devcon-golden-realm.webp"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Labor per game day +1K"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Essence per game day +1K"]')).not.toBeNull();
     expect(buttons()).toContain("Claim 1,000 Labor · 1,000 Essence");
@@ -130,6 +131,7 @@ it("gives a campaign home its daily claim, with a golden ticket's Essence, and w
     facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
     expect(host.textContent).toContain("Devcon");
+    expect(host.querySelector('img[src$="/devcon-realm.webp"]')).not.toBeNull();
     expect(host.textContent).not.toMatch(/Golden|Essence/);
     expect(buttons()).toContain("Claim 1,000 Labor");
   } finally {

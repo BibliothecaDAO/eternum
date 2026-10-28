@@ -1,3 +1,5 @@
+import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
+import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import { describe, expect, it, vi } from "vitest";
 
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
@@ -741,5 +743,26 @@ describe("the player's Wheat store card", () => {
     expect(verify({ played: { opened: true, closed: false } }).status).toBe("completed");
     expect(verify({ played: { opened: false, closed: false } }).status).toBe("failed");
     expect(verify({ played: { opened: true, closed: true } }).status).toBe("failed");
+  });
+});
+
+describe("Devcon delivery through the game", () => {
+  const steps = STEP_SETS["lab-devcon-art"].steps;
+  it("visits every registered tier of both families on the map and in the realm", () => {
+    expect(steps.map((step) => step.name)).toEqual(
+      Object.keys(realmSkins).flatMap((skin) =>
+        realmAssets.filter((asset) => !asset.wonder).flatMap(({ id }) => [`${skin}-${id}-map`, `${skin}-${id}-realm`]),
+      ),
+    );
+  });
+  it("rejects a playable screen with the wrong family or an absent HUD icon", () => {
+    const verify = steps[0].verify;
+    const expected = { path: "/models/realms/devcon/regular/settlement.glb", icon: "devcon-realm", label: "Devcon" };
+    const played = { expected, assets: [expected.path], icons: ["/icons/facets/64/devcon-realm.webp"], text: "Devcon" };
+    expect(verify({ seen: onTheMap, played }).status).toBe("completed");
+    expect(verify({ seen: onTheMap, played: { ...played, assets: [] } }).status).toBe("failed");
+    expect(verify({ seen: onTheMap, played: { ...played, icons: ["/icons/facets/64/realm.webp"] } }).status).toBe(
+      "failed",
+    );
   });
 });

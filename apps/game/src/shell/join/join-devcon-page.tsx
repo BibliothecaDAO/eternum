@@ -1,3 +1,4 @@
+import { realmSkinIcon } from "@/three/structures/realm-skins";
 import { AGES } from "@bibliothecadao/types";
 import { IdentityRequestError, type CampaignTicket } from "@realms-world/identity";
 import { useEffect, useState, type ReactNode } from "react";
@@ -68,7 +69,7 @@ const DevconLanding = ({ waiting }: { waiting: boolean }) => {
         <AppButton
           kind="primary"
           size="lg"
-          icon="realm"
+          icon={realmSkinIcon("devcon")}
           step
           disabled={waiting}
           onClick={() => requestSignIn(`${location.pathname}${location.search}`)}
@@ -78,7 +79,7 @@ const DevconLanding = ({ waiting }: { waiting: boolean }) => {
       }
     >
       <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="w-48 md:w-60" />
-      <Icon name="realm" size={192} />
+      <Icon name={realmSkinIcon("devcon")} size={192} />
       <h1 className="text-app-title text-app-ink">{JOIN_WORDS.realm}</h1>
       <DailyClaim golden={false} />
     </DevconFrame>
@@ -121,7 +122,7 @@ const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
       <h1 className="text-app-title text-app-ink">{golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket}</h1>
       <AppTicket
         face={golden ? "golden" : "opened"}
-        art={<TicketArt />}
+        art={<Icon name={realmSkinIcon(golden ? "devcon-golden" : "devcon")} size={128} />}
         line={golden ? JOIN_WORDS.goldenLine : JOIN_WORDS.realm}
         stub={golden ? JOIN_WORDS.goldenStub(DEVCON.golden) : JOIN_WORDS.stub}
       />

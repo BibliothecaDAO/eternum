@@ -1,3 +1,4 @@
+import { readRealmSkin, realmSkinIcon, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { StructureType, type StructureNamingMode } from "@bibliothecadao/types";
 import { frontierBeast, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
@@ -35,6 +36,7 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
+  if (category === StructureType.Realm) return realmMeaning(structure.base.level, readRealmSkin(store, structure));
   if (![StructureType.Camp, StructureType.Beasts, StructureType.Rift, StructureType.Ruin].includes(category))
     return structureMeaning(category);
   const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
@@ -50,14 +52,15 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number) {
+export function realmMeaning(level: number, skin?: RealmSkin): IconMeaning {
   const meaning = (["realm-0", "realm-1", "realm-2", "realm-3"] as const)[level];
   if (!meaning) throw new Error(`Unknown realm level: ${level}`);
-  return meaning;
+  return skin ? realmSkinIcon(skin) : meaning;
 }
 
-export function realmMarkerMeaning(level: number) {
-  return `map-${realmMeaning(level)}` as const;
+export function realmMarkerMeaning(level: number, skin?: RealmSkin): IconMeaning {
+  if (skin) return realmMeaning(level, skin);
+  return `map-${realmMeaning(level)}` as IconMeaning;
 }
 
 /** Species identity selects the painting, independent of combat tier and remaining strength. */

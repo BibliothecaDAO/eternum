@@ -1,3 +1,4 @@
+import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -143,9 +144,18 @@ const useSeasonListRows = (
   // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
   const names = usePlayerNames();
   const top = (entries ?? []).slice(0, length);
+  const { setup } = useGame();
+  useNativeRevision(["CampaignHome"]);
+  const row = (entry: Entry) =>
+    listRow(
+      entry,
+      entry === own,
+      names,
+      readRealmSkin(setup.store, { game_id: configManager.getActiveGameId(), entity_id: BigInt(entry.structure_id) }),
+    );
   return {
-    rows: top.map((entry) => listRow(entry, entry === own, names)),
-    pinned: own && !top.includes(own) ? listRow(own, true, names) : undefined,
+    rows: top.map(row),
+    pinned: own && !top.includes(own) ? row(own) : undefined,
   };
 };
 
@@ -153,11 +163,11 @@ const useSeasonListRows = (
  * Each realm's rank and depth as the board's own entry gives them, whether or not the realm is streamed to this
  * viewer (Herald reads both from the realm's Structure row).
  */
-const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow => ({
+const listRow = (entry: Entry, own: boolean, names: PlayerNames, skin?: RealmSkin): SeasonListRow => ({
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  realm: { level: entry.level, depth: entry.deepest_depth },
+  realm: { level: entry.level, depth: entry.deepest_depth, skin },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />

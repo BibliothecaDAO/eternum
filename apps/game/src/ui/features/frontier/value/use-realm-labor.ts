@@ -1,3 +1,4 @@
+import { isGoldenHome } from "@/three/structures/realm-skins";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
@@ -6,7 +7,7 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useRealmStores } from "../realm-stores";
-import { campaignMarkOf, isGoldenHome, readCampaignHome } from "./campaign-home";
+import { campaignMarkOf, readCampaignHome } from "./campaign-home";
 import { planRealmLabor } from "./realm-labor";
 
 const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm", "CampaignHome"] as const;

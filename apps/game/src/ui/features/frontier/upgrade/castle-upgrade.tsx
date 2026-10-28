@@ -1,3 +1,5 @@
+import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -43,6 +45,8 @@ export const CastleUpgrade = ({
 }) => {
   const { setup } = useGame();
   const tick = useCurrentDefaultTick();
+  useNativeRevision(["CampaignHome"]);
+  const skin = readRealmSkin(setup.store, realm);
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const tree = useResearchTree(realm);
   if (!levelUp) return null;
@@ -51,8 +55,8 @@ export const CastleUpgrade = ({
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel)}
-      next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin)}
+      next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel, skin)}
       laborRate={castleLaborRate(setup.store, realm)}
       research={
         tree && (
@@ -87,8 +91,8 @@ export const CastleUpgrade = ({
  * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
  * Storeroom) and its deploy cap, from the preset.
  */
-const castleSide = (store: NativeFactStore, gameId: number, level: number): CastleSide => {
-  const art = realmMeaning(level);
+const castleSide = (store: NativeFactStore, gameId: number, level: number, skin?: RealmSkin): CastleSide => {
+  const art = realmMeaning(level, skin);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,

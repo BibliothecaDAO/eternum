@@ -564,7 +564,6 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
     ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
   ].join(" · ")}`;
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
-export const campaignRealmMark = (campaign: string, golden: boolean) => (golden ? `Golden ${campaign}` : campaign);
 export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
