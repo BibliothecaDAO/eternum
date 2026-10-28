@@ -25,6 +25,8 @@ import { TerrainField } from "./terrain-field";
 import { createEtherealBorderMaterial } from "./terrain-ethereal-border-material";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 import { applyEtherealDepthLook, type EtherealDepth } from "./ethereal-depth-look";
+import { tileSurfaceStrength } from "./terrain-tile-surface";
+import type { TerrainTileLook } from "./terrain-types";
 import type { TerrainFogMask } from "./terrain-fog-mask";
 import { acquireTerrainGroundTextures, type TerrainGroundTextureHandle } from "./terrain-ground-textures";
 import { createTerrainGroundMaterial, createTerrainMaterials, type TerrainMaterials } from "./terrain-material";
@@ -234,6 +236,11 @@ export class ProceduralTerrain {
 
   getEtherealDepth(): EtherealDepth {
     return this.etherealDepth;
+  }
+
+  /** Study: the ground surface follows the tile look; relief and stepped tiles come with the page request. */
+  setTileLook(look: TerrainTileLook | undefined): void {
+    tileSurfaceStrength.value = look ? 1 : 0;
   }
 
   setQualityTier(tier: TerrainQualityTier): void {

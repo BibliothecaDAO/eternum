@@ -31,6 +31,7 @@ import { MeshPhysicalNodeMaterial, MeshStandardNodeMaterial } from "three/webgpu
 
 import { createBasaltSurface } from "./terrain-ethereal-material";
 import { terrainHexEdgeDistance } from "./terrain-hex-node";
+import { applyTileSurface } from "./terrain-tile-surface";
 import type { TerrainGroundTextures } from "./terrain-ground-textures";
 import {
   TERRAIN_DEEP_WATER_DEPTH,
@@ -190,8 +191,10 @@ export function createTerrainGroundMaterial(
   const detail = createGroundSurfaceDetail(groundWeights0, groundWeights1, groundMotion);
   // Powder buries sharp stone detail; otherwise snow reads as a pale cracked pavement.
   const snowCover = smoothstep(0.35, 0.85, groundWeights1.z);
-  const groundColor = mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.22).add(0.12)).mul(
-    detail.shade,
+  const groundColor = applyTileSurface(
+    mix(sampledAlbedo.mul(terrainTint), terrainColor, snowCover.mul(0.22).add(0.12)).mul(detail.shade),
+    groundWeights0,
+    groundWeights1,
   );
   const volcanic = createScorchedSurface(
     sampledAlbedo,

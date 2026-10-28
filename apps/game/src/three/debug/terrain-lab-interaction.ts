@@ -99,10 +99,13 @@ export class TerrainLabInteraction {
       wasExploring ||
       preview.fog !== this.preview.fog ||
       preview.army !== this.preview.army ||
-      preview.biome !== this.preview.biome;
+      preview.biome !== this.preview.biome ||
+      preview.tileLook !== this.preview.tileLook ||
+      preview.props !== this.preview.props;
     this.selectionDirty = true;
     this.preview = preview;
     this.terrain.setEtherealDepth(preview.etherealDepth);
+    this.terrain.setTileLook(preview.tileLook === "today" ? undefined : preview.tileLook);
     this.spinAngle = preview.yaw;
     this.updateSettlementHeraldry();
     if (rebuild) await this.presentFixture();

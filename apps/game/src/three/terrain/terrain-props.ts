@@ -39,6 +39,7 @@ interface BiomePropProfile {
 
 interface TerrainPropPreparationContext {
   densityMultiplier: number;
+  scaleMultiplier: number;
   elevationSeed: number;
   eligibleByKey: ReadonlyMap<string, TerrainCellInput & { biome: BiomeType }>;
   field: TerrainField;
@@ -201,6 +202,7 @@ export function prepareTerrainPropInstances(request: TerrainPageRequest, field: 
   const densityMultiplier = resolveDensityMultiplier(request.propDensityMultiplier);
   const context = {
     densityMultiplier,
+    scaleMultiplier: request.propScaleMultiplier ?? 1,
     elevationSeed,
     eligibleByKey,
     field,
@@ -350,7 +352,7 @@ function buildTerrainPropCandidate(
     context.moistureSeed,
     `prop-${layer}-scale-v2`,
   );
-  const scale = resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext);
+  const scale = resolveTerrainPropScale(archetype, scaleValue, accepted.densityContext) * context.scaleMultiplier;
   const center = terrainHexToWorld(site.owner.col, site.owner.row);
   if (
     !isTerrainArmySpaceClear(

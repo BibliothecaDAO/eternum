@@ -3,6 +3,12 @@ import { BiomeType, BiomeTypeToId } from "@bibliothecadao/types/terrain";
 import { Color } from "three/src/math/Color.js";
 
 import { TERRAIN_FOG_GROUND_HEIGHT } from "./terrain-fog-style";
+import {
+  resolveTilePlateau,
+  resolveTileRelief,
+  resolveTileReliefReach,
+  resolveTilePlateauWeight,
+} from "./terrain-tile-shape";
 import { SurfaceBasaltTransition } from "./terrain-basalt-transition";
 import { sampleBasaltSurface } from "./terrain-basalt";
 import { isEtherealTerrainCell } from "./terrain-surface-presentation";
@@ -648,8 +654,43 @@ export class TerrainField {
     candidates: readonly CellFieldSample[],
   ): number {
     const detail = (this.noise.sample(worldX * 0.7, worldZ * 0.7, "terrain-relief-v1") - 0.5) * 2 * relief;
-    const height = this.applyStructurePad(worldX, worldZ, baseHeight + detail, candidates);
+    const shaped = this.resolveTileShape(worldX, worldZ, baseHeight, candidates);
+    const height = this.applyStructurePad(worldX, worldZ, shaped + detail, candidates);
     return this.basaltTransition.blendHeight(worldX, worldZ, height);
+  }
+
+  /** The study's tile looks: each biome's landform with a level middle, and on stepped tiles a plateau per hex. */
+  private resolveTileShape(
+    worldX: number,
+    worldZ: number,
+    baseHeight: number,
+    candidates: readonly CellFieldSample[],
+  ): number {
+    const look = this.request.tileLook;
+    if ((look !== "relief" && look !== "tiles") || candidates.length === 0) return baseHeight;
+    const byDistance = candidates
+      .map((candidate) => ({ candidate, distance: Math.hypot(candidate.centerX - worldX, candidate.centerZ - worldZ) }))
+      .toSorted((left, right) => left.distance - right.distance);
+    const [nearest] = byDistance;
+    const sample = (x: number, z: number, salt: string) => this.noise.sample(x, z, salt);
+    let relief = 0;
+    let totalWeight = 0;
+    for (const { candidate, distance } of byDistance) {
+      const weight = terrainBlendWeight(distance * distance);
+      if (weight === 0) continue;
+      relief += resolveTileRelief(candidate.biome, worldX, worldZ, sample) * weight;
+      totalWeight += weight;
+    }
+    const landform = totalWeight === 0 ? 0 : (relief / totalWeight) * resolveTileReliefReach(nearest.distance);
+    if (look === "relief") return baseHeight + landform;
+    let plateau = 0;
+    let plateauWeight = 0;
+    for (const { candidate, distance } of byDistance) {
+      const weight = resolveTilePlateauWeight(distance, byDistance[0].distance);
+      plateau += resolveTilePlateau(candidate.baseHeight, candidate.col, candidate.row) * weight;
+      plateauWeight += weight;
+    }
+    return plateau / plateauWeight + landform * 0.5;
   }
 
   private resolveMacroLandformOffset(worldX: number, worldZ: number, direction: TerrainBiomeArtDirection): number {

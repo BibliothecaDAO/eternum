@@ -646,6 +646,12 @@ biome's patch on the game terrain, either with the game's own props (Today) or c
 meshes in one batch (Target: massed stands and glades, layered understory, landmarks; hex centres kept clear). The
 header counts props, batches and draws.
 
+Tile looks (study): Art → **Terrain** (`/lab/terrain`) → **Tile** (Today, Surface, Surface + relief, Surface + stepped
+tiles) changes the hex itself per biome: its ground surface (`terrain-tile-surface.ts`), its landform with a level
+middle for armies and structures, or a stepped plateau per hex (`terrain-tile-shape.ts`). **Props** (Today, Smaller,
+sparser) sets prop size and density. Place a realm (Building model → Place on selected tile) and an army to judge
+clarity.
+
 Ethereal depths: Art → **Terrain** (`/lab/terrain`) → Biome **Ethereal / Underground** → **Depth** (Ethereal I, II, III)
 shows each depth's palette, mist and light (`src/three/terrain/ethereal-depth-look.ts`). The world map shows depth I.
 

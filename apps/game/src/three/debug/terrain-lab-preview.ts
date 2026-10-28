@@ -6,10 +6,15 @@ import type { TerrainPageRequest } from "@/three/terrain/terrain-types";
 import type { ModelType } from "@/three/types/army";
 import { resolveSettlementLandCell } from "@/three/terrain/terrain-settlement-ground";
 import type { EtherealDepth } from "@/three/terrain/ethereal-depth-look";
+import type { TerrainTileLook } from "@/three/terrain/terrain-types";
 
 export interface TerrainLabPreview {
   biome: BiomeType | "fixture" | "ethereal";
   etherealDepth: EtherealDepth;
+  /** Study: the shipped tile ("today") or one of the tile looks. */
+  tileLook: TerrainTileLook | "today";
+  /** Study: props at today's size and density, or smaller and sparser. */
+  props: "today" | "reduced";
   fog: "fixture" | "clear" | "frontier" | "covered";
   selection: boolean;
   army: ModelType | "none";
@@ -22,6 +27,8 @@ export interface TerrainLabPreview {
 export const DEFAULT_TERRAIN_LAB_PREVIEW: TerrainLabPreview = {
   biome: "fixture",
   etherealDepth: 1,
+  tileLook: "today",
+  props: "today",
   fog: "fixture",
   selection: true,
   army: "none",
@@ -67,6 +74,7 @@ export function buildTerrainLabRequest(
   return {
     ...request,
     surfacePresentation: preview.biome === "ethereal" ? "ethereal" : "world",
+    ...resolveTileLookRequest(preview),
     cells:
       localMode && preview.biome !== "ethereal"
         ? cells.map((cell) => (cell.surfacePresentation === "ethereal" ? cell : resolveSettlementLandCell(cell)))
@@ -93,5 +101,21 @@ export function buildTerrainLabRequest(
             ];
       }),
     ],
+  };
+}
+
+const REDUCED_PROP_DENSITY = 0.9;
+const REDUCED_PROP_SCALE = 0.7;
+
+function resolveTileLookRequest(
+  preview: Pick<TerrainLabPreview, "tileLook" | "props">,
+): Pick<TerrainPageRequest, "tileLook" | "subdivisions" | "propDensityMultiplier" | "propScaleMultiplier"> {
+  const shaped = preview.tileLook === "relief" || preview.tileLook === "tiles";
+  return {
+    ...(preview.tileLook === "today" ? {} : { tileLook: preview.tileLook }),
+    ...(shaped ? { subdivisions: 4 } : {}),
+    ...(preview.props === "reduced"
+      ? { propDensityMultiplier: REDUCED_PROP_DENSITY, propScaleMultiplier: REDUCED_PROP_SCALE }
+      : {}),
   };
 }

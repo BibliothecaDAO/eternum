@@ -276,6 +276,36 @@ export const ProceduralTerrainDebugView = () => {
                 )}
               </select>
             </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Tile
+              <select
+                aria-label="Preview tile look"
+                value={preview.tileLook}
+                className="bg-stone-900 p-2"
+                onChange={(event) =>
+                  setPreview({ ...preview, tileLook: event.target.value as TerrainLabPreview["tileLook"] })
+                }
+              >
+                <option value="today">Today</option>
+                <option value="surface">Surface</option>
+                <option value="relief">Surface + relief</option>
+                <option value="tiles">Surface + stepped tiles</option>
+              </select>
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Props
+              <select
+                aria-label="Preview props"
+                value={preview.props}
+                className="bg-stone-900 p-2"
+                onChange={(event) =>
+                  setPreview({ ...preview, props: event.target.value as TerrainLabPreview["props"] })
+                }
+              >
+                <option value="today">Today</option>
+                <option value="reduced">Smaller, sparser</option>
+              </select>
+            </label>
             {preview.biome === "ethereal" && (
               <label className="flex flex-col gap-1 text-sm">
                 Depth

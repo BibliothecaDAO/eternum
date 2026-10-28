@@ -45,11 +45,18 @@ export interface TerrainPageRequest {
   /** Ground only: the page is built with no props (see plainTerrainPageRequest). */
   plain?: true;
   propDensityMultiplier?: number;
+  /** Multiplies every prop's size; smaller props keep armies, structures and labels in view. */
+  propScaleMultiplier?: number;
   roadSegments: readonly TerrainRoadSegment[];
   settlementAnchors: readonly TerrainSettlementAnchor[];
   strictBiomeParity?: boolean;
   subdivisions?: number;
+  /** Study: what the tile itself carries per biome. Unset is the shipped tile. */
+  tileLook?: TerrainTileLook;
 }
+
+/** surface: a ground signature per biome; relief: plus its landform; tiles: plus stepped plateaus with rims. */
+export type TerrainTileLook = "surface" | "relief" | "tiles";
 
 export interface TerrainSurfaceSample {
   biome: BiomeType | null;
