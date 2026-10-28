@@ -24,6 +24,7 @@ import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { campaignCodeHash } from "./campaigns";
+import { CAMPAIGNS } from "@realms-world/identity";
 import { campaignTicketFor } from "./campaign-ticket-store";
 import { ORIGIN } from "./workerd-harness";
 
@@ -34,13 +35,18 @@ const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
 let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
 const OPERATOR_TOKEN = "operator-test-token";
 
-/** The Heralds this test's shards answer from, by URL; a missing entry answers 503. */
+/** The Heralds this test's shards answer from, by URL; a missing entry answers 503, and STALLED never answers. */
 const heralds = new Map<string, unknown>();
+const STALLED = Symbol("stalled");
 let launchDirectory: {
   chains: { chainId: string; games: { gameId: number; slotId: number | null }[] }[];
 } = { chains: [] };
-const fetchShard = (async (input: RequestInfo | URL) => {
+const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
   const body = heralds.get(new URL(input instanceof Request ? input.url : input).href);
+  if (body === STALLED)
+    return new Promise<Response>((_, reject) =>
+      init?.signal?.addEventListener("abort", () => reject(init.signal!.reason)),
+    );
   return body === undefined ? new Response("unavailable", { status: 503 }) : Response.json(body);
 }) as typeof fetch;
 let env: IdentityEnv;
@@ -1075,8 +1081,9 @@ describe("identity Worker", () => {
       const response = await browser.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code } });
       tiers.push(((await response.json()) as { tier: string }).tier);
     }
-    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(15);
-    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(9);
+    // The generator prints exactly the campaign's golden count, the number the landing's "One of N" reads too.
+    expect(tiers.filter((tier) => tier === "golden")).toHaveLength(CAMPAIGNS["devcon-2026"].golden);
+    expect(tiers.filter((tier) => tier === "regular")).toHaveLength(24 - CAMPAIGNS["devcon-2026"].golden);
     // A flyer passed on after use opens nothing for the next account.
     const next = createBrowser();
     await signInWithCode(next, "flyer-passed-on@realms.test");
@@ -1087,7 +1094,7 @@ describe("identity Worker", () => {
     rmSync(out, { recursive: true, force: true });
   }, 60_000);
 
-  it("keeps a flyer unspent for an account whose realm is already founded in the running Devcon game", async () => {
+  it("keeps a flyer unspent for an account whose realm is already founded in the running Devcon game, or while a shard cannot say", async () => {
     const shard = "https://devcon-season.test";
     await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
       .bind(shard, Date.now())
@@ -1115,19 +1122,35 @@ describe("identity Worker", () => {
     expect(await friend("F7QZ2KHM")).toEqual([200, { campaign: "devcon-2026", tier: "golden" }]);
     expect(await founded("F7QZ2KHM")).toEqual([410, { error: "ticket_taken" }]);
 
-    // A shard that cannot answer leaves the flyer unspent too, for a retry.
+    // A shard that cannot answer, answers for another chain, or stalls past the shard timeout leaves the flyer
+    // unspent: the account is told to try again, and the same code opens once the shard answers for its own chain.
     await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
       .bind("devcon-2026", await campaignCodeHash("devcon-2026", "B4NW8RXC"), "regular")
       .run();
     const unsure = createBrowser();
-    await signInWithCode(unsure, "shard-down@realms.test");
-    const redeem = () =>
-      unsure.request("/api/campaigns/redeem", { body: { campaign: "devcon-2026", code: "B4NW8RXC" } });
-    expect([(await redeem()).status]).toEqual([503]);
-    await heraldsAnswerFor((await unsure.session())!.user.realmsId, { [shard]: false });
-    expect(await (await redeem()).json()).toEqual({ campaign: "devcon-2026", tier: "regular" });
+    await signInWithCode(unsure, "shard-unsure@realms.test");
+    const unsureId = (await unsure.session())!.user.realmsId;
+    const account = realmsAccountAddress(unsureId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
+    const redeem = async () => {
+      const response = await unsure.request("/api/campaigns/redeem", {
+        body: { campaign: "devcon-2026", code: "B4NW8RXC" },
+      });
+      return [response.status, await response.json()];
+    };
+    const retry = [503, { error: "campaigns_unavailable" }];
+    await heraldsAnswerFor(unsureId, { [shard]: false });
+    heralds.delete(`${shard}/games?player=${account}`);
+    expect(await redeem()).toEqual(retry);
+    heralds.set(`${shard}/games?player=${account}`, { chain: "0xdead", games: [devconGame(false)] });
+    expect(await redeem()).toEqual(retry);
+    heralds.set(`${shard}/games?player=${account}`, STALLED);
+    const stalledAt = Date.now();
+    expect(await redeem()).toEqual(retry);
+    expect(Date.now() - stalledAt).toBeLessThan(15_000);
+    await heraldsAnswerFor(unsureId, { [shard]: false });
+    expect(await redeem()).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
     await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
-  });
+  }, 30_000);
 
   it("saves preferences by revision, caps devices per account and revokes a device only with its token", async () => {
     const browser = createBrowser();

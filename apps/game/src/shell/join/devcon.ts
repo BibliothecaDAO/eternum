@@ -1,4 +1,5 @@
 import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
+import { CAMPAIGNS, type CampaignKey } from "@realms-world/identity";
 
 import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
 
@@ -10,15 +11,17 @@ export const DEVCON_LABOR_RULES: LaborRuleAmounts = {
   golden_essence: frontierDevconPreset.labor.goldenEssence,
 };
 
+const CAMPAIGN = "devcon-2026" satisfies CampaignKey;
+
 /**
- * Devcon's campaign as its landing shows it: the identity Worker's campaign key (apps/realms/server/campaigns.ts), the
- * landing's address, how many tickets are golden, and what a ticket's home claims each Frontier day, by the same rule
+ * Devcon's campaign as its landing shows it: the campaign's public facts (@realms-world/identity's CAMPAIGNS, which the
+ * identity Worker and the flyer generator read too) and what a ticket's home claims each Frontier day, by the same rule
  * the game's Realm sheet and the Day open push read it with (homeDailyClaim).
  */
 export const DEVCON = {
-  campaign: "devcon-2026",
-  path: "/join/devcon",
-  golden: 15,
+  campaign: CAMPAIGN,
+  path: CAMPAIGNS[CAMPAIGN].link,
+  golden: CAMPAIGNS[CAMPAIGN].golden,
   claim: (golden: boolean) => campaignHomeClaim(DEVCON_LABOR_RULES, golden),
 } as const;
 

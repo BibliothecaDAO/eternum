@@ -17,7 +17,7 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   useIdentitySession: () => service.session,
 }));
 
-import { IdentityRequestError } from "@realms-world/identity";
+import { CAMPAIGNS, IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
@@ -92,7 +92,8 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", "T9HW3NPB"]]);
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden ticket");
-  expect(text()).toContain("One of 15 at Devcon");
+  // The count printed on flyers and the one the landing tells are the campaign's one golden count.
+  expect(text()).toContain(`One of ${CAMPAIGNS["devcon-2026"].golden} at Devcon`);
   expect(text()).toContain("2,000 Labor each day");
   expect(text()).toContain("2,000 Essence each day");
   expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();

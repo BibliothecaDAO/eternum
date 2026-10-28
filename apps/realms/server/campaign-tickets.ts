@@ -2,8 +2,9 @@ import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
 import { CampaignTicketStore } from "./campaign-ticket-store";
-import { CAMPAIGNS, campaignCodeHash, isCampaignKey, readCampaignCode } from "./campaigns";
-import type { CampaignKey } from "./campaigns";
+import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
+
+import { campaignCodeHash, readCampaignCode } from "./campaigns";
 import { json, readBody } from "./http";
 
 const REDEEM_BYTES = 1024;

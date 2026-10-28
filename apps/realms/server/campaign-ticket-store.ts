@@ -1,7 +1,6 @@
 import { Context, Data, Effect, Layer } from "effect";
 
-import { CAMPAIGNS } from "./campaigns";
-import type { CampaignKey, TicketTier } from "./campaigns";
+import { CAMPAIGNS, type CampaignKey, type TicketTier } from "@realms-world/identity";
 
 interface CampaignTicket {
   campaign: CampaignKey;

@@ -19,14 +19,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
 
-import {
-  CAMPAIGNS,
-  CODE_ALPHABET,
-  CODE_LENGTH,
-  campaignCodeHash,
-  isCampaignKey,
-  type CampaignKey,
-} from "../server/campaigns";
+import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
+
+import { CODE_ALPHABET, CODE_LENGTH, campaignCodeHash } from "../server/campaigns";
 
 /** The Chart ground of the Realms brand: umber ink on parchment, as flyer B's QR card prints it. */
 const QR_COLOURS = { dark: "#2a1f14", light: "#f1e7d4" };
