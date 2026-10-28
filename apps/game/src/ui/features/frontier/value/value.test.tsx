@@ -170,14 +170,21 @@ describe("the realm's LORDS on the season-over card", () => {
 
 describe("the settled Realm's labor", () => {
   it("gives only an unclaimed held home one daily claim, limited by its store", () => {
-    expect(planRealmLabor({ eligible: true, claimed: false, amount: 1000, held: 17600, limit: 18000 })).toEqual({
+    expect(
+      planRealmLabor({ eligible: true, claimed: false, amount: 1000, essence: 0, held: 17600, limit: 18000 }),
+    ).toEqual({
       eligible: true,
       claimed: false,
       total: 1000,
       fits: 400,
+      essence: 0,
     });
-    expect(planRealmLabor({ eligible: false, claimed: false, amount: 1000, held: 0, limit: 18000 }).total).toBe(0);
-    expect(planRealmLabor({ eligible: true, claimed: true, amount: 1000, held: 0, limit: 18000 }).total).toBe(0);
+    expect(
+      planRealmLabor({ eligible: false, claimed: false, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,
+    ).toBe(0);
+    expect(
+      planRealmLabor({ eligible: true, claimed: true, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,
+    ).toBe(0);
   });
   it("shows one claim, explains partial storage, and offers no claim for a free home", () => {
     const onClaim = vi.fn(),
@@ -186,8 +193,10 @@ describe("the settled Realm's labor", () => {
       act(() =>
         root.render(
           <RealmsSheet
-            plan={planRealmLabor({ eligible, claimed, amount: 1000, held, limit: 18000 })}
+            plan={planRealmLabor({ eligible, claimed, amount: 1000, essence: 0, held, limit: 18000 })}
             dailyAmount={1000}
+            dailyEssence={0}
+            mark={null}
             secondsLeft={3600}
             sending={false}
             onClaim={onClaim}

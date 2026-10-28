@@ -1511,10 +1511,13 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
       eligible: realms.eligible,
       claimed: realms.claimed,
       amount: LAB_PRESET.realmLabor,
+      essence: 0,
       held: realms.labor,
       limit: realms.limit,
     })}
     dailyAmount={LAB_PRESET.realmLabor}
+    dailyEssence={0}
+    mark={null}
     secondsLeft={CLOCK.secondsLeft}
     sending={false}
     onClaim={noop}
