@@ -14,6 +14,8 @@ import {
   buildArmyRestedNotification,
   buildDayOpen,
   buildStoryNotification,
+  dayOpenSendAt,
+  type DayOpenPush,
   gamePath,
   includesArmyRestedNotification,
   includesStoryNotification,
@@ -55,6 +57,8 @@ interface OutboxEntry {
   owner: string;
   subscriptionId: string;
   envelope: PushEnvelope;
+  /** A Day open push's facts: it is worded again as it goes, by the phone's clock then. */
+  dayOpen?: DayOpenPush;
   attempts: number;
   dueAt: number;
 }
@@ -407,7 +411,7 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: n
         console.warn("shard_notifier_daily_ceiling", notification.id, `owner ${entry.owner}`);
         return done;
       }
-      const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, entry.envelope));
+      const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, envelopeAt(entry, now, device)));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
       return { next: outcome === "retry" ? retryLater(entry, now, POLL_MS) : null, accepted: outcome === "accepted" };
     }).pipe(
@@ -425,6 +429,12 @@ const historyStoryIdentity = (scope: StoryEventScope, item: HeraldHistoryEvent) 
     ...item.value,
     event_position: { transaction_hash: item.transaction_hash, event_index: item.event_index },
   });
+
+/** What the push says as it goes: a Day open push names its day's end on the phone's clock at this moment. */
+const envelopeAt = (entry: OutboxEntry, now: number, device: PushSubscriptionRow): PushEnvelope =>
+  entry.dayOpen
+    ? { ...entry.envelope, notification: buildDayOpen({ ...entry.dayOpen, sendAt: now, timeZone: device.timeZone }) }
+    : entry.envelope;
 
 const isDayOpen = (entry: OutboxEntry) => entry.envelope.notification.kind === "day-open";
 
@@ -514,16 +524,20 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
       const owned = devices.filter((device) => device.owner === owner);
       if (owned.length === 0 || (levels.get(owner) ?? "off") === "off") continue;
       const claim = await readHomeClaim(shard.url, opening.gameId, account);
+      const push: DayOpenPush = {
+        ...opening,
+        chainId: shard.chainId,
+        worldAddress: shard.worldAddress,
+        owner,
+        claim,
+      };
       for (const device of owned) {
-        const notification = buildDayOpen({
-          ...opening,
-          chainId: shard.chainId,
-          worldAddress: shard.worldAddress,
-          owner,
-          claim,
-          timeZone: device.timeZone,
-        });
-        if (notification) entries.push(...alertsForDevices(owner, [device], notification, notification.createdAt));
+        const sendAt = dayOpenSendAt(push, device.timeZone);
+        if (sendAt === null) continue;
+        const notification = buildDayOpen({ ...push, sendAt, timeZone: device.timeZone });
+        entries.push(
+          ...alertsForDevices(owner, [device], notification, sendAt).map((entry) => ({ ...entry, dayOpen: push })),
+        );
       }
     }
   }

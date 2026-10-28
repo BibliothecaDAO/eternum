@@ -1,5 +1,5 @@
 import { expect, it } from "vitest";
-import { buildDayOpen } from "./day-open";
+import { buildDayOpen, dayOpenSendAt } from "./day-open";
 import { buildArmyRestedNotification } from "./army-rested";
 import { isQuietAt, sendableAt } from "./quiet-hours";
 
@@ -17,6 +17,7 @@ const day = {
   last: false,
   owner: "0x1",
   claim: { labor: 1000, essence: 0 },
+  sendAt: opensAt,
   timeZone: "Asia/Kolkata",
 };
 
@@ -43,37 +44,40 @@ it("names the last day with the season's end", () => {
   });
 });
 
-it("waits for 08:00 on a phone whose day opens in its quiet hours, and drops a day nearly gone by then", () => {
+it("goes at 08:00 on a phone whose day opens in its quiet hours, and not at all for a day nearly gone by then", () => {
   // 23:00 in Mumbai: a 12-hour day still has two hours left at 08:00 after its last-hour cut.
   const night = Date.UTC(2026, 10, 3, 17, 30);
   const morning = Date.UTC(2026, 10, 4, 2, 30);
-  expect(buildDayOpen({ ...day, opensAt: night, endsAt: night + 12 * HOUR })).toMatchObject({
-    body: "Devcon: claim 1,000 Labor before 11:00.",
-    createdAt: morning,
-    expiresAt: night + 11 * HOUR,
-  });
+  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, "Asia/Kolkata")).toBe(morning);
   // A 10-hour day from 23:00 ends at 09:00: under an hour is left after 08:00, so it sends nothing.
-  expect(buildDayOpen({ ...day, opensAt: night, endsAt: night + 10 * HOUR })).toBeNull();
-  // The same instant is 12:30 in New York: it goes at once, and names the end in New York time.
-  expect(
-    buildDayOpen({ ...day, opensAt: night, endsAt: night + 12 * HOUR, timeZone: "America/New_York" }),
-  ).toMatchObject({ createdAt: night, body: "Devcon: claim 1,000 Labor before 00:30." });
+  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 10 * HOUR }, "Asia/Kolkata")).toBeNull();
+  // The same instant is 12:30 in New York: it goes at once.
+  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, "America/New_York")).toBe(night);
+  // No zone reported yet: no quiet hours.
+  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, null)).toBe(night);
+});
+
+it.each([
+  ["Asia/Kolkata", "Devcon: claim 1,000 Labor before 20:00."],
+  ["UTC", "Devcon: claim 1,000 Labor before 14:30."],
+  ["America/New_York", "Devcon: claim 1,000 Labor before 09:30."],
+  [null, "Devcon: claim 1,000 Labor before 14:30 UTC."],
+] as const)("names the day's end on the clock of the phone it goes to (%s), with one id and expiry", (zone, body) => {
+  const sent = buildDayOpen({ ...day, timeZone: zone, sendAt: opensAt + HOUR });
+  expect(sent).toMatchObject({ body, createdAt: opensAt + HOUR, expiresAt: opensAt + 5 * HOUR });
+  expect(sent.id).toBe(buildDayOpen(day).id);
 });
 
 it("reads UTC, with no quiet hours, on a phone that has not reported its zone", () => {
-  expect(buildDayOpen({ ...day, timeZone: null })).toMatchObject({
-    createdAt: opensAt,
-    body: "Devcon: claim 1,000 Labor before 14:30 UTC.",
-  });
   expect(isQuietAt(Date.UTC(2026, 10, 3, 2), null)).toBe(false);
 });
 
 it("is one push per player and day, whatever phone or wording", () => {
-  const id = buildDayOpen(day)!.id;
-  expect(buildDayOpen({ ...day, timeZone: "UTC" })!.id).toBe(id);
-  expect(buildDayOpen({ ...day, chainId: "0xa", worldAddress: "0x123" })!.id).toBe(id);
-  expect(buildDayOpen({ ...day, day: 2 })!.id).not.toBe(id);
-  expect(buildDayOpen({ ...day, owner: "0x2" })!.id).not.toBe(id);
+  const id = buildDayOpen(day).id;
+  expect(buildDayOpen({ ...day, timeZone: "UTC" }).id).toBe(id);
+  expect(buildDayOpen({ ...day, chainId: "0xa", worldAddress: "0x123" }).id).toBe(id);
+  expect(buildDayOpen({ ...day, day: 2 }).id).not.toBe(id);
+  expect(buildDayOpen({ ...day, owner: "0x2" }).id).not.toBe(id);
 });
 
 it("keeps quiet from 22:00 to 08:00 on the phone's clock", () => {

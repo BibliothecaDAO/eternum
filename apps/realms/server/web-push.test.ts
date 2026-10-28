@@ -21,8 +21,9 @@ const notification = () =>
     last: false,
     owner: "0x1",
     claim: null,
+    sendAt: now,
     timeZone: null,
-  })!;
+  });
 const envelope = (): PushEnvelope => ({
   version: 1,
   kind: "game",

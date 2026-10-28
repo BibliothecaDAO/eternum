@@ -97,6 +97,8 @@ const createHerald = () => {
     snapshotReads: 0,
     snapshotFails: false,
     seasonStart: SEASON_START,
+    /** The season's end, when a test ends it early; else 420 day units after its start. */
+    seasonEnd: null as number | null,
     members: [PLAYER_ACCOUNT],
     /** What founded the player's realm, which decides its daily claim. */
     homeSource: "golden" as "realm" | "golden" | null,
@@ -114,7 +116,10 @@ const createHerald = () => {
             name: "frontier-a",
             status: state.status,
             mode: state.mode,
-            clock: { start_main_at: state.seasonStart, end_at: state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS },
+            clock: {
+              start_main_at: state.seasonStart,
+              end_at: state.seasonEnd ?? state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
+            },
             expedition: { seed: "1", day_unit_seconds: DAY_UNIT_SECONDS },
           },
         ],
@@ -691,6 +696,16 @@ const hourIn = (zone: string) =>
   Number(new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "numeric", hourCycle: "h23" }).format(new Date()));
 const nightZone = () => ZONES.find((zone) => hourIn(zone) >= 22 || hourIn(zone) < 7)!;
 const dayZone = () => ZONES.find((zone) => hourIn(zone) >= 9 && hourIn(zone) < 21)!;
+/** Two zones in their day whose clocks read differently now. */
+const twoDayZones = (): [string, string] => {
+  const awake = ZONES.filter((zone) => hourIn(zone) >= 9 && hourIn(zone) < 20);
+  const first = awake[0]!;
+  return [first, awake.find((zone) => clockIn(zone, Date.now()) !== clockIn(first, Date.now()))!];
+};
+const clockIn = (zone: string, at: number) =>
+  new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+    new Date(at),
+  );
 
 it.each(["important", "all"] as const)(
   "Day open sends one push to an inactive %s player when the day opens",
@@ -1061,3 +1076,42 @@ it("a Day open prepared before a restart is not sent if its game settled while t
     await restarted.dispose();
   }
 }, 45_000);
+
+it.each([
+  [
+    "a golden Devcon realm",
+    "golden",
+    false,
+    (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
+  ],
+  ["a home with no claim", null, false, (ends: string) => `Day 2 is open / frontier-a: it ends at ${ends}.`],
+  [
+    "the season's last day",
+    "golden",
+    true,
+    (ends: string) =>
+      `The last day is open / frontier-a: claim 1,000 Labor and 1,000 Essence. The season ends at ${ends}.`,
+  ],
+] as const)(
+  "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",
+  async (_case, homeSource, last, words) => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      herald.state.homeSource = homeSource;
+      const [prepared, sent] = twoDayZones();
+      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(prepared).run();
+      const opensAt = openSoon(herald, 8);
+      const calendar = { seed: 1n, startMainAt: herald.state.seasonStart, dayUnitSeconds: DAY_UNIT_SECONDS };
+      const dayEnd = dayOf(calendar, opensAt / 1000)!.end;
+      if (last) herald.state.seasonEnd = dayEnd;
+      await worker.runCron();
+      await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // worded once, in the first zone
+      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(sent).run();
+      await waitUntil(() => push.received.length > 0, 15_000);
+      expect(await push.words()).toEqual([words(clockIn(sent, dayEnd * 1000))]);
+    } finally {
+      await worker.dispose();
+    }
+  },
+  45_000,
+);
