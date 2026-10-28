@@ -1,18 +1,7 @@
 import type { TerrainPropArchetypeId } from "../../../terrain/terrain-prop-catalog";
+import type { StudyProp } from "../study-props";
 
 export type BiomeStudyId = "forest" | "taiga" | "desert" | "scorched";
-
-/** One prop the study places: which mesh, where on the ground plane, how big, turned and tinted. */
-export interface StudyProp {
-  archetype: TerrainPropArchetypeId;
-  x: number;
-  z: number;
-  /** Width and height scale; a mesa is wide and low, a spire narrow and tall. */
-  width: number;
-  height: number;
-  yaw: number;
-  tint: readonly [number, number, number];
-}
 
 /** A layer fills the ground where its mass field is above `threshold`, one try every `spacing` world units. */
 interface StudyLayer {

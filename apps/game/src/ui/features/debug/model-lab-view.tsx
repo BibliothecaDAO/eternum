@@ -176,7 +176,7 @@ function UnitModelLabView() {
         <Link to="/lab/models?family=realms">Realm ladder</Link>
         <Link to="/lab/models?family=procedural-realms">Procedural realms</Link>
         <Link to="/lab/models?family=procedural-biomes">Procedural biomes</Link>
-        <Link to="/lab/models?family=biome-rewrite">Sand and water</Link>
+        <Link to="/lab/models?family=biome-rewrite">Biome rewrite</Link>
         <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
         <Link to="/lab/models?family=frontier-painted">Frontier buildings · painted set</Link>
         <Link to="/lab/models?family=cleared-sites">Cleared sites</Link>

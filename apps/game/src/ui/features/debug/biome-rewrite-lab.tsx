@@ -5,18 +5,19 @@ import {
   type BiomeRewriteSettings,
   type BiomeRewriteStats,
 } from "@/three/debug/model-lab/biome-rewrite/biome-rewrite-renderer";
-import { BIOME_REWRITE_APPROACHES, type BiomeRewriteApproach } from "@/three/debug/model-lab/biome-rewrite/approaches";
+import { TERRAIN_BIOME_DESCRIPTORS, TERRAIN_BIOME_ORDER } from "@/three/terrain/terrain-palette";
+import type { BiomeType } from "@bibliothecadao/types";
 
-/** Study: one sand-and-water region, drawn by one of several approaches, with a realm and an army on its coast. */
+/** Study: every biome drawn by one heightfield and its shaders, on the Living Biomes field or a real map region. */
 export function BiomeRewriteLab() {
   const [params, setParams] = useSearchParams();
   const host = useRef<HTMLDivElement>(null);
   const [error, setError] = useState("");
   const [stats, setStats] = useState<BiomeRewriteStats | null>(null);
-  const approach = params.get("approach") as BiomeRewriteApproach;
+  const focus = params.get("focus") as BiomeType | null;
   const settings: BiomeRewriteSettings = {
-    approach: BIOME_REWRITE_APPROACHES.some(({ id }) => id === approach) ? approach : "procedural",
-    view: params.get("view") === "close" ? "close" : "play",
+    field: params.get("field") === "seeded" ? "seeded" : "bench",
+    focus: focus && (TERRAIN_BIOME_ORDER as readonly BiomeType[]).includes(focus) ? focus : "field",
   };
   const signature = JSON.stringify(settings);
   useEffect(() => {
@@ -61,28 +62,29 @@ export function BiomeRewriteLab() {
     >
       <header style={{ padding: 16, display: "flex", gap: 16, alignItems: "center", flexWrap: "wrap" }}>
         <Link to="/lab/models">Models</Link>
-        <strong>Sand and water</strong>
+        <strong>Biome rewrite</strong>
         <label>
-          Approach{" "}
-          <select aria-label="Approach" value={settings.approach} onChange={(e) => change("approach", e.target.value)}>
-            {BIOME_REWRITE_APPROACHES.map(({ id, label }) => (
-              <option key={id} value={id}>
-                {label}
-              </option>
-            ))}
+          Field{" "}
+          <select aria-label="Field" value={settings.field} onChange={(e) => change("field", e.target.value)}>
+            <option value="bench">World biomes</option>
+            <option value="seeded">Map region</option>
           </select>
         </label>
         <label>
           View{" "}
-          <select aria-label="View" value={settings.view} onChange={(e) => change("view", e.target.value)}>
-            <option value="play">Play</option>
-            <option value="close">Close</option>
+          <select aria-label="Focus" value={settings.focus} onChange={(e) => change("focus", e.target.value)}>
+            <option value="field">Whole field</option>
+            {TERRAIN_BIOME_ORDER.map((biome) => (
+              <option key={biome} value={biome}>
+                {TERRAIN_BIOME_DESCRIPTORS[biome].label}
+              </option>
+            ))}
           </select>
         </label>
         {stats && (
           <span>
-            {Math.round(stats.triangles).toLocaleString()} triangles · {stats.materials} materials · {stats.sceneDraws}{" "}
-            draws · built in {Math.round(stats.buildMs)} ms
+            {Math.round(stats.triangles).toLocaleString()} triangles · {stats.props} props · {stats.batches} batches ·{" "}
+            {stats.sceneDraws} draws · built in {Math.round(stats.buildMs)} ms
           </span>
         )}
         {error && <span role="alert">{error}</span>}
