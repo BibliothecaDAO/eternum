@@ -634,6 +634,12 @@ wonders keep their own materials. Choose **Age**, **Series**, **Order**, **Owner
 and scroll to zoom. With an external reference directory in the URL, **Revision** offers Before, After and the pair. See
 [src/lab/README.md](src/lab/README.md#realm-revision-comparison) for the retained capture driver and reference setup.
 
+Art → **Models** → **Procedural realms** (`/lab/models?family=procedural-realms`) is a study: the shipped realm of the
+chosen **Age** cut into kit modules (ring, keep, towers, roofs, yard pieces) by its source parts
+(`scripts/realms/realm-kit-boxes.py`), then reassembled per Realm NFT by `realm-kit-design.ts`. The grid shows the
+shipped model, the fixed design (what a home without a Realm keeps) and twelve real Realms, all kit realms in one batch
+per material; the header counts modules, batches, triangles and draws. `&distance=10&focus=<slot>` frames one row.
+
 ### T1 Knight
 
 Land T1 Knights use the new sword-and-shield model in every game mode. Near/mid skin detail follows camera distance; the
