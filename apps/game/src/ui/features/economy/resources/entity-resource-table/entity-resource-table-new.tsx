@@ -1,3 +1,4 @@
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { knownAmount } from "@/ui/utils/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { realmLevelNumber } from "@/ui/lib/realm-level";
@@ -155,9 +156,7 @@ export const EntityResourceTableNew = React.memo(({ entityId }: EntityResourceTa
         game_id: configManager.getActiveGameId(),
         entity_id: structureColumn.entityId,
       });
-      const structureCategory = structure?.base.category;
-
-      if (structureCategory === StructureType.Realm || structureCategory === StructureType.Village) {
+      if (categoryCan(structure?.base.category, "craftsRelics")) {
         craftableStructureIds.add(structureColumn.entityId);
       }
     });

@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { StructureType } from "@bibliothecadao/types";
 import {
   canTransferMilitaryInventoryBetweenStructures,
+  categoriesThatCan,
+  categoryCan,
   canTransferMilitaryInventoryFromStructure,
   isVillageLikeStructureCategory,
   resolveStructureUiCapabilities,
@@ -158,5 +160,18 @@ describe("Eternum military transfer rules", () => {
     expect(isVillageLikeStructureCategory(StructureType.Camp)).toBe(true);
     expect(isVillageLikeStructureCategory(StructureType.Village)).toBe(true);
     expect(isVillageLikeStructureCategory(StructureType.Mine)).toBe(false);
+  });
+
+  it("lists in the Build window every structure the contract lets build, camps with realms and villages (one table)", () => {
+    // construction.cairo's building command and production_domain.cairo take a realm, a village or a camp.
+    expect(categoriesThatCan("builds").sort()).toEqual(
+      [StructureType.Realm, StructureType.Village, StructureType.Camp].sort(),
+    );
+    // faith.cairo's build_pledge and relics.cairo's craft_relic take a realm or a village.
+    expect(categoriesThatCan("pledgesFaith").sort()).toEqual([StructureType.Realm, StructureType.Village].sort());
+    expect(categoriesThatCan("craftsRelics").sort()).toEqual([StructureType.Realm, StructureType.Village].sort());
+    expect(categoryCan(BigInt(StructureType.Village), "craftsRelics")).toBe(true);
+    expect(categoryCan(undefined, "builds")).toBe(false);
+    expect(categoryCan(99, "builds")).toBe(false);
   });
 });
