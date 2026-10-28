@@ -100,8 +100,14 @@ removes its containers and volumes, and retires its directory entry.
 for its cold chain-volume copy, archives private `data/` locally and writes checksums and `capture.json`. The backup
 includes the VRF credential and must remain private on the shard. `backup.py restore-test PROJECT DEST` restores into
 isolated scratch containers without a network and checks the chain head and database contents. Its JSON verdict must
-pass before relying on the backup. Stop the public RPC during a node outage; callers receive the fixed refusal and must
-observe their original transaction hash before submitting another action.
+pass before relying on the backup. A shard's final copy, the one `teardown production` removes it after, follows
+`backup.py quiesce PROJECT`: the proxy refuses every write and keeps serving the relay's reads, so the relay drains
+through it. A proxy older than that switch is replaced, under the same image, network alias and port, by
+`read-only-rpc.ts` from the checkout, which answers the same public reads and refuses writes the same way. Quiesce is
+safe to rerun. `backup.py reopen PROJECT` gives the shard its own proxy back, and `backup.py verify PROJECT DEST`
+accepts only a copy of a chain whose RPC refuses writes now. Teardown removes the stand-in with the stack. Stop the
+public RPC during a node outage; callers receive the fixed refusal and must observe their original transaction hash
+before submitting another action.
 
 To restore, use the recorded image digests, chain archive, database backup and private data archive on fresh volumes.
 Start preparation first: it verifies identity and republishes runtime files. Then start the stack and verify the pinned

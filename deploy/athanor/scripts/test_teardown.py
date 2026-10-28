@@ -1,4 +1,5 @@
 import importlib.util
+import io
 from pathlib import Path
 import unittest
 import json
@@ -7,6 +8,7 @@ import subprocess
 import tempfile
 from contextlib import ExitStack, nullcontext
 from unittest.mock import patch
+import urllib.error
 
 import teardown
 
@@ -68,8 +70,16 @@ class TeardownBoundaryTest(unittest.TestCase):
     def stack(self, verifies=True, down_fails=False):
         """The shard's box as teardown's commands see it: its chain volume exists until compose down removes it, and
         Docker lists volumes unless its daemon is unreachable."""
-        state = {"volume": True, "verifies": verifies, "down_fails": down_fails, "daemon": True, "calls": []}
+        state = {"volume": True, "verifies": verifies, "down_fails": down_fails, "daemon": True, "calls": [],
+                 "containers": ["a1 composehash", "b2 composehash"]}
         def run(command, **kwargs):
+            if "ps" in command:
+                self.assertIn("label=com.docker.compose.project=realms-production", command)
+                self.assertEqual(command[-1], '{{.ID}} {{.Label "com.docker.compose.config-hash"}}')
+                return subprocess.CompletedProcess(command, 0, "\n".join(state["containers"]) + "\n", "")
+            if "rm" in command:
+                state["calls"].append(f"rm {' '.join(command[command.index('-f') + 1:])}")
+                return subprocess.CompletedProcess(command, 0, "", "")
             if "verify" in command:
                 state["calls"].append("verify")
                 code = 0 if state["verifies"] else 1
@@ -114,6 +124,19 @@ class TeardownBoundaryTest(unittest.TestCase):
             self.assertEqual(state["calls"], ["verify", "down"])
             self.assertFalse((root / "logs/teardown-production.json").exists())
             self.assertEqual(json.loads((root / "logs/teardown-PRODUCTION_1.json").read_text())["backup"], BACKUP)
+
+    def test_a_read_only_proxy_quiesce_left_goes_before_the_stack(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            run = self.production(root)
+            retired = []
+            state, commands = self.stack()
+            # compose's own containers carry its config hash; the stand-in backup.py ran does not.
+            state["containers"].append("c3")
+            self.run_teardown(root, commands, retired)
+            self.assertEqual(state["calls"], ["verify", "rm c3", "down"])
+            self.assertFalse(run.exists())
+            self.assertEqual(retired, ["retired"])
 
     def test_a_teardown_stopped_right_after_its_volumes_are_removed_finishes_on_a_rerun(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -248,7 +271,7 @@ class BackupVerifyTest(unittest.TestCase):
 
     def verify(self, root, live=None, writes=False, accepted=0):
         with patch.object(verify_backup, "node_block", return_value=live or self.head) as read, \
-                patch.object(verify_backup, "accepts_writes", return_value=writes), \
+                patch.object(verify_backup, "writes_closed", return_value=not writes), \
                 patch.object(verify_backup, "transactions_after", return_value=accepted) as after:
             problems = verify_backup.verify("realms-production", root)
         read.assert_called_once_with("realms-production-madara-1", {"block_number": 9})
@@ -260,7 +283,7 @@ class BackupVerifyTest(unittest.TestCase):
             "verified": ({}, {}, []),
             "another chain": ({}, {"live": {**self.head, "block_hash": "0xc"}},
                               ["the running chain differs from the copy's head"]),
-            "writes open": ({}, {"writes": True}, ["the shard still accepts writes: quiesce it, drain, then capture"]),
+            "writes open": ({}, {"writes": True}, ["the shard's writes are not shown closed: quiesce it, drain, then capture"]),
             "changed after capture": ({}, {"accepted": 1},
                                       ["1 transactions were accepted after the capture: capture the drained shard again"]),
             "unrestorable": ({"passed": False}, {}, ["its restore test did not pass"]),
@@ -271,6 +294,11 @@ class BackupVerifyTest(unittest.TestCase):
                 root = Path(temporary)
                 self.backup(root, **copy)
                 self.assertEqual(self.verify(root, **live), problems)
+
+    def test_the_closure_message_is_the_proxies_own(self):
+        rules = (Path(__file__).with_name("public-rpc.ts")).read_text()
+        self.assertIn(f'WRITES_CLOSED_MESSAGE = "{verify_backup.WRITES_CLOSED_MESSAGE}"', rules)
+        self.assertIn(f'WRITES_CLOSED_FILE = "/config/{verify_backup.WRITES_CLOSED_FILE}"', rules)
 
     def test_a_changed_file_fails_its_checksum(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -297,26 +325,150 @@ class BackupVerifyTest(unittest.TestCase):
             refused = json.dumps({"error": {"code": -32010, "message": verify_backup.WRITES_CLOSED_MESSAGE}})
             judged = json.dumps({"error": {"code": -32601, "message": "RPC method is not public"}})
             def proxy(arguments, check=True):
+                if arguments[0] == "inspect":
+                    return subprocess.CompletedProcess(arguments, 0, "true\n", "")
                 closed = (config / "writes-closed").exists()
                 return subprocess.CompletedProcess(arguments, 0, refused if closed else judged, "")
             with patch.object(verify_backup, "volume_path", return_value=config) as volume, \
                     patch.object(verify_backup, "docker", side_effect=proxy) as docker:
                 self.assertEqual(verify_backup.quiesce("realms-production"),
-                                 {"project": "realms-production", "writes": "closed"})
-                self.assertFalse(verify_backup.accepts_writes("realms-production"))
+                                 {"project": "realms-production", "writes": "closed", "reads": "open"})
+                self.assertTrue(verify_backup.writes_closed("realms-production"))
+                self.assertEqual(verify_backup.quiesce("realms-production")["writes"], "closed")
                 self.assertEqual(verify_backup.reopen("realms-production"),
                                  {"project": "realms-production", "writes": "open"})
             volume.assert_called_with("realms-production_public-config")
-            probe = docker.call_args.args[0]
-            self.assertEqual(probe[:3], ["exec", "realms-production-madara-1", "curl"])
-            self.assertEqual(probe[-1], "http://rpc:8080/")
+            probes = [call.args[0] for call in docker.call_args_list if call.args[0][0] == "exec"]
+            self.assertEqual(probes[-1][:3], ["exec", "realms-production-madara-1", "curl"])
+            self.assertEqual(probes[-1][-1], "http://rpc:8080/")
+            self.assertFalse([call for call in docker.call_args_list if call.args[0][0] in ("stop", "run")])
 
-    def test_a_proxy_without_the_switch_counts_as_open(self):
+    def test_a_proxy_without_the_switch_does_not_refuse_writes(self):
         old = json.dumps({"error": {"code": -32010, "message": "Transaction refused"}})
         for answer in (old, "", "not json"):
             with self.subTest(answer=answer), patch.object(
                     verify_backup, "docker", return_value=subprocess.CompletedProcess([], 0, answer, "")):
-                self.assertTrue(verify_backup.accepts_writes("realms-production"))
+                self.assertFalse(verify_backup.proxy_refuses_writes("realms-production"))
+
+
+class ReadOnlyStandInTest(unittest.TestCase):
+    """A shard deployed before the write switch: quiesce puts the checkout's read-only proxy in its proxy's place, so
+    reads (and the relay's payments) go on while writes are refused, and every step is safe to repeat or undo."""
+    shape = {"Config": {"Image": "sha256:herald", "User": "1000:1000"},
+             "HostConfig": {"PortBindings": {"8080/tcp": [{"HostIp": "127.0.0.1", "HostPort": "8080"}]}},
+             "NetworkSettings": {"Networks": {"realms-production_default": {}}}}
+
+    def stack(self, stand_in_refuses=True, start_fails=False, inspect_error=None):
+        state = {"proxy": "running", "stand_in": False, "calls": []}
+        refused = json.dumps({"error": {"code": -32010, "message": verify_backup.WRITES_CLOSED_MESSAGE}})
+        judged = json.dumps({"error": {"code": -32601, "message": "RPC method is not public"}})
+        def docker(arguments, check=True):
+            state["calls"].append(arguments)
+            verb, done = arguments[0], subprocess.CompletedProcess(arguments, 0, "", "")
+            if verb == "inspect":
+                if inspect_error:
+                    return subprocess.CompletedProcess(arguments, 1, "", inspect_error)
+                if arguments[2] == "{{json .}}":
+                    return subprocess.CompletedProcess(arguments, 0, json.dumps(self.shape), "")
+                return subprocess.CompletedProcess(arguments, 0, f"{str(state['proxy'] == 'running').lower()}\n", "")
+            if verb == "stop":
+                state["proxy"] = "stopped"
+            if verb == "start":
+                if start_fails:
+                    return subprocess.CompletedProcess(arguments, 1, "", "cannot start")
+                state["proxy"] = "running"
+            if verb == "run":
+                state["stand_in"] = True
+            if verb == "rm":
+                state["stand_in"] = False
+            if verb == "exec":
+                answer = (refused if stand_in_refuses else "") if state["stand_in"] else \
+                    judged if state["proxy"] == "running" else ""
+                return subprocess.CompletedProcess(arguments, 0, answer, "")
+            return done
+        return state, docker
+
+    def run_quiesce(self, config, state, docker):
+        with patch.object(verify_backup, "volume_path", return_value=config), \
+                patch.object(verify_backup, "docker", side_effect=docker), \
+                patch.object(verify_backup, "docker_output", side_effect=lambda arguments: docker(arguments).stdout.strip()), \
+                patch.object(verify_backup.time, "sleep"):
+            return verify_backup.quiesce("realms-production")
+
+    def test_the_stand_in_takes_the_proxys_place_and_reopen_gives_it_back(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            state, docker = self.stack()
+            self.assertEqual(self.run_quiesce(config, state, docker),
+                             {"project": "realms-production", "writes": "closed", "reads": "open",
+                              "proxy": "read-only stand-in"})
+            self.assertEqual(state["proxy"], "stopped")
+            run = next(call for call in state["calls"] if call[0] == "run")
+            checkout = str(Path(verify_backup.__file__).resolve().parents[2])
+            for argument in (["--network", "realms-production_default"], ["--network-alias", "rpc"],
+                             ["-p", "127.0.0.1:8080:8080/tcp"], ["--user", "1000:1000"],
+                             ["--label", "com.docker.compose.project=realms-production"],
+                             ["-v", f"{checkout}:{checkout}:ro"], ["--entrypoint", "bun"]):
+                self.assertIn(argument, [run[i:i + 2] for i in range(len(run) - 1)])
+            self.assertEqual(run[-2:], ["sha256:herald", f"{checkout}/deploy/shard/read-only-rpc.ts"])
+            with patch.object(verify_backup, "volume_path", return_value=config), \
+                    patch.object(verify_backup, "docker", side_effect=docker):
+                self.assertTrue(verify_backup.writes_closed("realms-production"))
+                # Run again: already closed, nothing restarts.
+                runs = sum(call[0] == "run" for call in state["calls"])
+                self.assertEqual(verify_backup.quiesce("realms-production")["writes"], "closed")
+                self.assertEqual(sum(call[0] == "run" for call in state["calls"]), runs)
+                self.assertEqual(verify_backup.reopen("realms-production"),
+                                 {"project": "realms-production", "writes": "open"})
+            self.assertEqual((state["proxy"], state["stand_in"]), ("running", False))
+            self.assertFalse((config / "writes-closed").exists())
+
+    def test_a_quiesce_cut_short_after_the_stop_finishes_on_the_next_run(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            state, docker = self.stack()
+            state["proxy"] = "stopped"  # the run that stopped it died before starting the stand-in
+            self.assertEqual(self.run_quiesce(config, state, docker)["writes"], "closed")
+            self.assertTrue(state["stand_in"])
+            self.assertFalse([call for call in state["calls"] if call[0] == "stop"])
+
+    def test_a_stand_in_that_never_refuses_gives_the_proxy_back(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            state, docker = self.stack(stand_in_refuses=False)
+            with self.assertRaisesRegex(RuntimeError, "did not start refusing writes"):
+                self.run_quiesce(config, state, docker)
+            self.assertEqual((state["proxy"], state["stand_in"]), ("running", False))
+            self.assertFalse((config / "writes-closed").exists())
+
+    def test_a_proxy_that_will_not_start_again_is_reported_not_hidden(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            state, docker = self.stack(stand_in_refuses=False, start_fails=True)
+            with self.assertRaisesRegex(RuntimeError, "proxy did not start"):
+                self.run_quiesce(config, state, docker)
+            self.assertEqual((state["proxy"], state["stand_in"]), ("stopped", False))
+
+    def test_docker_that_cannot_answer_changes_nothing_and_verifies_nothing(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            state, docker = self.stack(inspect_error="Cannot connect to the Docker daemon")
+            with self.assertRaises((RuntimeError, subprocess.CalledProcessError)):
+                self.run_quiesce(config, state, docker)
+            self.assertFalse([call for call in state["calls"] if call[0] in ("stop", "run")])
+            self.assertFalse((config / "writes-closed").exists())
+
+    def test_a_marker_without_a_refusing_rpc_is_not_a_closure(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            config = Path(temporary)
+            (config / "writes-closed").write_text("closed\n")
+            for proxy in ("running", "stopped"):
+                with self.subTest(proxy=proxy):
+                    state, docker = self.stack()
+                    state["proxy"] = proxy
+                    with patch.object(verify_backup, "volume_path", return_value=config), \
+                            patch.object(verify_backup, "docker", side_effect=docker):
+                        self.assertFalse(verify_backup.writes_closed("realms-production"))
 
 
 spec_backup = importlib.util.spec_from_file_location("shard_backup", Path(__file__).resolve().parents[3] / "deploy/shard/backup.py")

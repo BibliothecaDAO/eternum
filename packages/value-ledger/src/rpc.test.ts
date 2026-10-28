@@ -1,7 +1,8 @@
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
 import { afterEach, expect, it, vi } from "vitest";
-import { isDeploymentBlock, rpcAt, rpcBatch, SHARD_RPC_MAX_BATCH_CALLS, type ClassHashReader } from "./rpc";
+import { isDeploymentBlock, rpcAt, rpcBatch, type ClassHashReader } from "./rpc";
+import { SHARD_RPC_MAX_BATCH_CALLS } from "./shard-rpc-limits";
 
 const URL = "https://shard.test/rpc";
 

@@ -3,7 +3,6 @@ import { GAME_ENTRYPOINTS } from "./entrypoints";
 
 const FIELD = (1n << 251n) + 17n * (1n << 192n) + 1n;
 const ENTRIES = new Map(GAME_ENTRYPOINTS.map((entry) => [BigInt(hash.getSelectorFromName(entry.name)), entry]));
-export const MAX_TRANSACTION_BYTES = 1024 * 1024;
 export const STAMP_TAG = "0x56524631";
 export interface Bound {
   max_amount: string;
