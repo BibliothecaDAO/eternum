@@ -15,6 +15,7 @@ import {
   summarizeRpcSends,
   summarizeStep,
   compareCensus,
+  judgeAfterDoorway,
   describeOrders,
   eligibilityOf,
   assertInTargetGame,
@@ -296,6 +297,46 @@ describe("summarizeStep", () => {
     expect(summary.reload).toEqual({ navigationAfterStepStartMs: 500, toPlayableMs: 5000 });
     expect(summary.durationMs).toBe(6000);
     expect(summary.heap).toEqual({ startMb: null, endMb: 90, retainedDeltaMb: null, peakMb: null });
+  });
+});
+
+describe("judgeAfterDoorway", () => {
+  /** Frame times from `from`, one every `step` ms, `count` of them. */
+  const run = (from, step, count) => Array.from({ length: count }, (_, index) => from + index * step);
+
+  it("counts the long frames in the window after the drop and finds the first fully observed clean second", () => {
+    // The frame in progress at the drop (990 -> 1100) counts; then one of 150 ms; then frames at 60 Hz for 7 s.
+    const frames = [990, 1100, 1250, ...run(1266, 16, 450)];
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 8500 })).toEqual({
+      status: "complete",
+      windowMs: 5000,
+      observedMs: 7500,
+      framesOver33: 2,
+      worstFrameMs: 150,
+      settledAfterMs: 250,
+    });
+  });
+
+  it("never reads a hole between two snapshots as smooth play", () => {
+    // The review's case: 16 ms frames, then nearly ten seconds between them, then 16 ms frames again. In one record the
+    // gap is a frame, so the clean second only starts after it.
+    const frames = [990, 1006, 1022, 11000, ...run(11016, 16, 100)];
+    const judged = judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 12700 });
+    expect(judged.settledAfterMs).toBe(10000);
+    expect(judged.worstFrameMs).toBe(9978);
+    // The boot's own snapshot, which ended before the window did, is refused rather than joined to a later one.
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: [990, 1006, 1022], readAt: 2840 })).toEqual({
+      status: "incomplete",
+      reason: "the record ends 1840 ms after the drop",
+    });
+  });
+
+  it("refuses a record that starts after the drop, and leaves the settle open when no clean second was observed", () => {
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: run(1010, 16, 600), readAt: 10_000 }).status).toBe(
+      "incomplete",
+    );
+    const stutter = run(990, 50, 200);
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: stutter, readAt: 11_000 }).settledAfterMs).toBe(null);
   });
 });
 

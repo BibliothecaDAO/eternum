@@ -226,6 +226,48 @@ export function compareCensus(before, after) {
   };
 }
 
+const SETTLED_FRAME_MS = 20;
+const SETTLED_SPAN_MS = 1_000;
+
+/**
+ * The first seconds of play once the doorway drops, from one continuous frame record: the frames over 33 ms and the
+ * worst frame in the `windowMs` after `overlay-dismissed`, and the time until the first full second of frames at or
+ * under 20 ms. A record that does not reach back to the dismissal and on through the window is refused as incomplete:
+ * time that was not observed is no evidence of either a smooth or a long frame.
+ */
+export function judgeAfterDoorway({ dismissedAt, frames, readAt }, { windowMs = 5_000 } = {}) {
+  if (!Number.isFinite(dismissedAt)) return { status: "incomplete", reason: "no overlay-dismissed milestone" };
+  if (!(frames.length > 0 && frames[0] <= dismissedAt)) {
+    return { status: "incomplete", reason: "the record starts after the doorway dropped" };
+  }
+  if (!(readAt >= dismissedAt + windowMs)) {
+    return { status: "incomplete", reason: `the record ends ${Math.round(readAt - dismissedAt)} ms after the drop` };
+  }
+  const gaps = frames.slice(1).map((end, index) => ({ end, ms: end - frames[index] }));
+  // Every frame that overlaps the window counts, one that runs past its end included.
+  const inWindow = gaps.filter(({ end, ms }) => end > dismissedAt && end - ms < dismissedAt + windowMs);
+  return {
+    status: "complete",
+    windowMs,
+    observedMs: round(readAt - dismissedAt),
+    framesOver33: inWindow.filter(({ ms }) => ms > 33.4).length,
+    worstFrameMs: round(Math.max(0, ...inWindow.map(({ ms }) => ms))),
+    settledAfterMs: settledAfter(gaps, dismissedAt, readAt),
+  };
+}
+
+/** From the drop to the first frame that opens a fully observed second of frames at or under 20 ms; null if none. */
+function settledAfter(gaps, dismissedAt, readAt) {
+  for (const [index, { end: start }] of gaps.entries()) {
+    if (start < dismissedAt) continue;
+    if (start + SETTLED_SPAN_MS > readAt) return null;
+    const second = gaps.slice(index + 1).filter(({ end }) => end <= start + SETTLED_SPAN_MS);
+    const covered = second.length > 0 && second.at(-1).end >= start + SETTLED_SPAN_MS - SETTLED_FRAME_MS;
+    if (covered && second.every(({ ms }) => ms <= SETTLED_FRAME_MS)) return round(start - dismissedAt);
+  }
+  return null;
+}
+
 /** The WebGPU memory held when the step's probe was read, in MB; null on WebGL, whose memory is not kept. */
 function summarizeGpuMemory(memory) {
   if (!memory || memory.textures + memory.buffers === 0) return null;

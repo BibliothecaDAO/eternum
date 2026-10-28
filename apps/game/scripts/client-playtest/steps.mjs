@@ -12,6 +12,7 @@ import {
   refusalErrors,
   contextLossErrors,
   compareCensus,
+  judgeAfterDoorway,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -2051,12 +2052,24 @@ const entrySteps = (labScenario = null) => [
 
 const LEFTOVER_WINDOW_MS = 10_000;
 
-/** Two readings of what the page keeps running, a still window apart (`compareCensus`). */
+/**
+ * Two readings of what the page keeps running, a still window apart (`compareCensus`), and the first seconds of play
+ * after the doorway dropped, judged from one continuous frame record (`judgeAfterDoorway`).
+ */
 async function readWhatKeepsRunning({ browser }) {
   const before = browser.read("window.__playtest.census()");
   await sleep(LEFTOVER_WINDOW_MS);
-  return { keepsRunning: compareCensus(before, browser.read("window.__playtest.census()")) };
+  const keepsRunning = compareCensus(before, browser.read("window.__playtest.census()"));
+  const dismissedAt = browser.read(DISMISSED_AT_EXPRESSION);
+  const record =
+    dismissedAt === null ? { frames: [], readAt: null } : browser.read(`window.__playtest.framesFrom(${dismissedAt})`);
+  return { keepsRunning, afterDoorway: judgeAfterDoorway({ dismissedAt: dismissedAt ?? Number.NaN, ...record }) };
 }
+
+/** The page time the doorway dropped at on this page (a reload has its own), or null. */
+const DISMISSED_AT_EXPRESSION = `JSON.stringify(
+  (window.__eternumGameEntryTimeline ?? []).find((milestone) => milestone.name === "overlay-dismissed")?.timestamp ?? null
+)`;
 
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },

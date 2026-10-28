@@ -518,6 +518,14 @@
       push(state.steps, step);
       return JSON.stringify({ ...step, timeOrigin: performance.timeOrigin });
     },
+    /**
+     * Every frame since page time `t`, the one in progress at `t` included, and the time it was read: one continuous
+     * record, never two reads joined (a gap between reads is not a frame).
+     */
+    framesFrom(t) {
+      const first = Math.max(0, state.frames.findIndex((frame) => frame > t) - 1);
+      return JSON.stringify({ frames: state.frames.slice(first), readAt: performance.now() });
+    },
     /** What keeps running on its own now (see `census`), for a reader to compare with an earlier reading. */
     census() {
       return JSON.stringify(census());
