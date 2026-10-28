@@ -11,6 +11,20 @@ export const isGoldenCampaignHome = (home: { tier: number } | undefined): boolea
 
 type ClaimFacts = Pick<NativeFactStore, "get">;
 
+/** The amounts in a game's LaborRules row, as its fact holds them or as a preset writes them there. */
+export interface LaborRuleAmounts {
+  amount: bigint | number | string;
+  campaign_essence: bigint | number | string;
+  golden_amount: bigint | number | string;
+  golden_essence: bigint | number | string;
+}
+
+/** What a campaign home claims each game day: the campaign's amounts, or the golden ones for a golden ticket. */
+export const campaignHomeClaim = (rules: LaborRuleAmounts, golden: boolean): HomeDailyClaim => ({
+  labor: Number(golden ? rules.golden_amount : rules.amount),
+  essence: Number(golden ? rules.golden_essence : rules.campaign_essence),
+});
+
 /**
  * The one reader of a home's daily claim, for the game's Realm sheet and the notifier's Day open push alike. A home
  * claims when it was founded with a held Realm (SettledRealm names it) or with a campaign's ticket (CampaignHome); any
@@ -26,10 +40,6 @@ export const homeDailyClaim = (
   if (!rules) return null;
   const settled = facts.get("SettledRealm", { game_id, realm_id: home.realmId });
   const campaign = facts.get("CampaignHome", { game_id, home: entityId });
-  if (settled?.home !== entityId && !campaign) return null;
-  const golden = isGoldenCampaignHome(campaign);
-  return {
-    labor: Number(golden ? rules.golden_amount : rules.amount),
-    essence: Number(golden ? rules.golden_essence : campaign ? rules.campaign_essence : 0),
-  };
+  if (campaign) return campaignHomeClaim(rules, isGoldenCampaignHome(campaign));
+  return settled?.home === entityId ? { labor: Number(rules.amount), essence: 0 } : null;
 };

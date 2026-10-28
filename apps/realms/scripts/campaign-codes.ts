@@ -1,10 +1,11 @@
 /**
  * A campaign's printed codes: N codes, the campaign's golden count of them golden, each one flyer.
  *
- *   CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms campaign-codes devcon-2026 1000 https://play.realms.party <out>
+ *   CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms campaign-codes devcon-2026 315 https://play.realms.party <out>
  *
  * writes into <out>:
  * - `qr/0001.svg` … one QR per printed flyer, in print order, each to `<base>/join/devcon/<code>`;
+ * - `qr/game.svg`: the game's own address (`<base>`), for posters and promotion, which grant nothing;
  * - `print.csv`: page, QR file and address, for the printer's variable data. Nothing in it says which pages are golden:
  *   the print order is shuffled;
  * - `codes.sql`: every code hashed with its tier, for the identity Worker's D1
@@ -18,14 +19,9 @@ import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import QRCode from "qrcode";
 
-import {
-  CAMPAIGNS,
-  CODE_ALPHABET,
-  CODE_LENGTH,
-  campaignCodeHash,
-  isCampaignKey,
-  type CampaignKey,
-} from "../server/campaigns";
+import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
+
+import { CODE_ALPHABET, CODE_LENGTH, campaignCodeHash } from "../server/campaigns";
 
 /** The Chart ground of the Realms brand: umber ink on parchment, as flyer B's QR card prints it. */
 const QR_COLOURS = { dark: "#2a1f14", light: "#f1e7d4" };
@@ -36,6 +32,7 @@ async function main() {
   const golden = new Set(codes.slice(0, CAMPAIGNS[campaign].golden));
   const printed = printOrder(campaign, codes, seed);
   mkdirSync(join(out, "qr"), { recursive: true });
+  writeFileSync(join(out, "qr", "game.svg"), await qrSvg(base));
   const rows = ["page,qr,url"];
   for (const [index, code] of printed.entries()) {
     const page = String(index + 1).padStart(4, "0");

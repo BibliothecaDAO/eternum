@@ -1,6 +1,6 @@
 import { BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
 import { shortString } from "starknet";
-import { DEVCON } from "@/shell/join/devcon";
+import { DEVCON, DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { LAB_FRONTIER_BOARD } from "@/shell/lab/app-lab-fixtures";
 
 import type { LabFact, LabScenario } from "./lab-chain";
@@ -14,7 +14,7 @@ import { realmScenario } from "./realm-scenario";
  */
 export const campaignScenario = (tier: "regular" | "golden", level?: number) => (): LabScenario => {
   const spire = level === undefined ? spireScenario() : realmScenario();
-  spire.store.applyFacts(campaignHome(tier === "golden" ? 2 : 1) as never);
+  spire.store.applyFacts(campaignHomeFacts(tier) as never);
   if (level !== undefined) {
     const realm = spire.store.require("Structure", { game_id: 1, entity_id: 7 });
     const value = JSON.parse(
@@ -50,26 +50,29 @@ export const devconSeasonScenario = (): LabScenario => ({
     entries: LAB_FRONTIER_BOARD.entries.slice(0, 3).map((entry, index) => ({
       ...entry,
       structure_id: String(901 + index),
-      campaign: index < 2 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: index + 1 } : null,
+      campaign: index < 2 ? { campaign_id: shortString.encodeShortString(DEVCON.campaign), tier: index + 1 } : null,
     })),
   },
 });
 
-const campaignHome = (tier: number): LabFact[] => [
+/** The campaign home and its claim use the same rules as the ticket landing. */
+export const campaignHomeFacts = (ticket: "regular" | "golden"): LabFact[] => [
   {
     model: "LaborRules",
     key: "0x1abc0",
     value: {
       game_id: 1,
-      amount: String(DEVCON.laborPerDay),
-      campaign_essence: String(DEVCON.essencePerDay),
-      golden_amount: String(DEVCON.goldenLaborPerDay),
-      golden_essence: String(DEVCON.goldenEssencePerDay),
+      ...Object.fromEntries(Object.entries(DEVCON_LABOR_RULES).map(([key, value]) => [key, String(value)])),
     },
   },
   {
     model: "CampaignHome",
     key: "0x1abc1",
-    value: { game_id: 1, home: 7, campaign_id: shortString.encodeShortString(DEVCON.campaign), tier },
+    value: {
+      game_id: 1,
+      home: 7,
+      campaign_id: shortString.encodeShortString(DEVCON.campaign),
+      tier: ticket === "golden" ? 2 : 1,
+    },
   },
 ];

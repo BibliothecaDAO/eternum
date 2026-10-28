@@ -1,4 +1,3 @@
-import { isGoldenHome } from "@/three/structures/realm-skins";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";

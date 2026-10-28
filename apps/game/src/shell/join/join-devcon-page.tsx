@@ -18,11 +18,24 @@ const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
 /** A code as flyers print it; anything else in the address is not kept. */
 const PRINTED_CODE = /^[A-Za-z0-9]{8}$/;
 
-type Opening = { kind: "sealed" } | { kind: "opening" } | { kind: "refused"; line: string } | CampaignTicket;
+/** A refusal a retry can change (the network, the service) or one it cannot (the campaign or the code says no). */
+type Opening =
+  | { kind: "sealed" }
+  | { kind: "opening" }
+  | { kind: "refused"; line: string; final: boolean }
+  | CampaignTicket;
+
+/** The identity service's answers no retry changes, each with what the player reads. */
+const FINAL_REFUSALS = new Map<string, string>([
+  ["campaign_closed", JOIN_WORDS.closed],
+  ["ticket_taken", JOIN_WORDS.taken],
+  ["realm_founded", JOIN_WORDS.founded],
+  ["invalid_redemption", JOIN_WORDS.noTicket],
+]);
 
 /**
- * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`) and the shared link (`/join/devcon`). It looks
- * the same for every code: the code waits in this browser, through sign-in, until the signed-in player opens their
+ * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`); `/join/devcon` serves a code already kept,
+ * as when a sign-in finished elsewhere comes back. It looks the same for every code: the code waits in this browser, through sign-in, until the signed-in player opens their
  * ticket, and only the answer to that account tells a golden ticket from another.
  */
 export const JoinDevconPage = () => {
@@ -41,21 +54,26 @@ export const JoinDevconPage = () => {
   return (
     <SealedTicket
       opening={opening.kind === "opening"}
-      refusal={opening.kind === "refused" ? opening.line : null}
+      refusal={opening.kind === "refused" ? opening : null}
       onOpen={open}
     />
   );
 };
 
-/** The signed-in account's ticket: the one it holds, else one from the kept code. The code is spent once answered. */
+/**
+ * The signed-in account's ticket: the one it holds, else one from the kept code. The code is let go once answered, or
+ * refused for good: a flyer this account cannot use (taken, or its realm already founded) goes on to someone else.
+ */
 const redeemTicket = async (): Promise<Opening> => {
   try {
     const ticket = await identityClient.redeemCampaignTicket(DEVCON.campaign, keptCampaignCode());
     forgetCampaignCode();
     return ticket;
   } catch (cause) {
-    const closed = cause instanceof IdentityRequestError && cause.code === "campaign_closed";
-    return { kind: "refused", line: closed ? JOIN_WORDS.closed : JOIN_WORDS.failed };
+    const final = cause instanceof IdentityRequestError ? FINAL_REFUSALS.get(cause.code ?? "") : undefined;
+    if (final === undefined) return { kind: "refused", line: JOIN_WORDS.failed, final: false };
+    forgetCampaignCode();
+    return { kind: "refused", line: final, final: true };
   }
 };
 
@@ -86,21 +104,26 @@ const DevconLanding = ({ waiting }: { waiting: boolean }) => {
   );
 };
 
+/** The ticket before it opens. Once it is refused for good, the way on is Play: the game is open to everyone. */
 const SealedTicket = ({
   opening,
   refusal,
   onOpen,
 }: {
   opening: boolean;
-  refusal: string | null;
+  refusal: { line: string; final: boolean } | null;
   onOpen: () => void;
 }) => (
   <DevconFrame
-    notice={refusal ? <AppNotice tone="bad" line={refusal} /> : undefined}
+    notice={refusal ? <AppNotice tone="bad" line={refusal.line} /> : undefined}
     foot={
-      <AppButton kind="primary" size="lg" step busy={opening ? JOIN_WORDS.opening : undefined} onClick={onOpen}>
-        {refusal === JOIN_WORDS.failed ? TRY_AGAIN : JOIN_WORDS.open}
-      </AppButton>
+      refusal?.final ? (
+        <ContinueToPlay />
+      ) : (
+        <AppButton kind="primary" size="lg" step busy={opening ? JOIN_WORDS.opening : undefined} onClick={onOpen}>
+          {refusal ? TRY_AGAIN : JOIN_WORDS.open}
+        </AppButton>
+      )
     }
   >
     <h1 className="text-app-title text-app-ink">{JOIN_WORDS.yourTicket}</h1>
@@ -112,13 +135,7 @@ const SealedTicket = ({
 const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
   const golden = tier === "golden";
   return (
-    <DevconFrame
-      foot={
-        <AppButton kind="primary" size="lg" icon="play" step to="/">
-          {JOIN_WORDS.continue}
-        </AppButton>
-      }
-    >
+    <DevconFrame foot={<ContinueToPlay />}>
       <h1 className="text-app-title text-app-ink">{golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket}</h1>
       <AppTicket
         face={golden ? "golden" : "opened"}
@@ -131,23 +148,32 @@ const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
   );
 };
 
+const ContinueToPlay = () => (
+  <AppButton kind="primary" size="lg" icon="play" step to="/">
+    {JOIN_WORDS.continue}
+  </AppButton>
+);
+
 const TicketArt = () => <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="h-28 w-auto" />;
 
 /** What this ticket's realm claims each Frontier day. */
-const DailyClaim = ({ golden }: { golden: boolean }) => (
-  <AppPanel className="w-full max-w-[20rem]">
-    <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
-      <li className="flex items-center gap-3">
-        <Icon name="labor" size={32} />
-        {JOIN_WORDS.laborEachDay(golden ? DEVCON.goldenLaborPerDay : DEVCON.laborPerDay)}
-      </li>
-      <li className="flex items-center gap-3">
-        <Icon name="essence" size={32} />
-        {JOIN_WORDS.essenceEachDay(golden ? DEVCON.goldenEssencePerDay : DEVCON.essencePerDay)}
-      </li>
-    </ul>
-  </AppPanel>
-);
+const DailyClaim = ({ golden }: { golden: boolean }) => {
+  const { labor, essence } = DEVCON.claim(golden);
+  return (
+    <AppPanel className="w-full max-w-[20rem]">
+      <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
+        <li className="flex items-center gap-3">
+          <Icon name="labor" size={32} />
+          {JOIN_WORDS.laborEachDay(labor)}
+        </li>
+        <li className="flex items-center gap-3">
+          <Icon name="essence" size={32} />
+          {JOIN_WORDS.essenceEachDay(essence)}
+        </li>
+      </ul>
+    </AppPanel>
+  );
+};
 
 /**
  * Every step of the landing stands on Frontier's mist, alone, with no places; Back leads to Play. Its one verb sits under the thumb on a

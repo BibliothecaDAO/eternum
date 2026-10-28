@@ -7,6 +7,7 @@ import {
   type NotificationPreferences,
   type PushRegistration,
 } from "@bibliothecadao/notifications";
+import { TICKET_TIERS } from "./campaigns";
 import type { SiwsTypedData } from "./siws";
 import { buildSiwsMessage, payoutWalletStatement } from "./siws";
 import type { IdentityChainId, Session } from "./types";
@@ -108,7 +109,7 @@ export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
 /** An account's ticket to a campaign, told to that account only. */
 const campaignTicketSchema = Schema.Struct({
   campaign: Schema.String,
-  tier: Schema.Literals(["regular", "golden"]),
+  tier: Schema.Literals(TICKET_TIERS),
 });
 export type CampaignTicket = typeof campaignTicketSchema.Type;
 
