@@ -5,23 +5,24 @@ import { useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
-import { HudButton, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudCost, HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
+import { MOVE, SHRINE, STAMINA, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, formatShort, formatShortChange } from "@bibliothecadao/types";
-import { useMemo } from "react";
+import { formatShort, formatShortChange } from "@bibliothecadao/types";
+import { type ReactNode, useMemo } from "react";
 
 import { useFrontierRealm } from "../frontier-home";
 import { useOrderAt } from "../hud/army-order";
-import { armyArt, useDockArmies } from "../hud/dock-armies";
+import { useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
 import { type MapSiteKind, mapSiteKind, siteGain } from "./map-site-plan";
 import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
-import { ArmyChoices, inFlightWord, SiteMark } from "./site-card-view";
+import { ArmyChoices, inFlightWord } from "./site-card-view";
 import { sendSiteUse } from "./use-site";
 
 const MAP_SITE_MODELS = ["ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
@@ -74,48 +75,54 @@ export const MapSiteCard = ({
   };
 
   const word = plan.kind === "Shrine" ? SHRINE : WELL;
+  const gain =
+    plan.kind === "Well" ? (
+      <HudChip icons={["stamina"]} label={STAMINA}>
+        {wellGain(plan.gain, stamina)}
+      </HudChip>
+    ) : (
+      <HudChip>
+        {formatShort(plan.gain, { signed: true })} {XP}
+      </HudChip>
+    );
   return (
     <HudSheet label={word} onClose={onClose}>
-      <SiteMark icon={plan.kind === "Shrine" ? "shrine" : "well"} />
-      <div className="flex items-center justify-center gap-2.5">
-        {user && (
-          <HudChip icons={[armyArt(user.army.troops)]} label={TROOPS}>
-            {formatShort(Number(user.army.troops.count / BigInt(RESOURCE_PRECISION)))}
-          </HudChip>
-        )}
-        {plan.kind === "Well" ? (
-          <HudChip icons={["stamina"]} label={STAMINA}>
-            {wellGain(plan.gain, stamina)}
-          </HudChip>
-        ) : (
-          <HudChip>
-            {formatShort(plan.gain, { signed: true })} {XP}
-          </HudChip>
-        )}
-      </div>
       {choices && <ArmyChoices does="use" choices={choices} />}
       {usable ? (
-        <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={use}>
-          {USE}
-        </HudButton>
+        <HudWindowFoot note={<SiteGain icon={plan.kind === "Shrine" ? "shrine" : "well"}>{gain}</SiteGain>}>
+          <HudButton kind="primary" busy={inFlightWord(inFlight, "use", USING)} onClick={use}>
+            {USE}
+          </HudButton>
+        </HudWindowFoot>
       ) : (
         approach && (
-          <>
+          <HudWindowFoot
+            note={
+              <HudCost
+                line={costLine([
+                  { of: "stamina", amount: approach.stamina.cost },
+                  { of: "wheat", amount: approach.wheat.cost },
+                ])}
+              />
+            }
+          >
             <HudButton kind="primary" icon="move" onClick={() => requestOrderAt(approach.target)}>
               {MOVE}
             </HudButton>
-            <HudCost
-              line={costLine([
-                { of: "stamina", amount: approach.stamina.cost },
-                { of: "wheat", amount: approach.wheat.cost },
-              ])}
-            />
-          </>
+          </HudWindowFoot>
         )
       )}
     </HudSheet>
   );
 };
+
+/** What one use gives, beside its verb: the site's painting and the gain. */
+const SiteGain = ({ icon, children }: { icon: "shrine" | "well"; children: ReactNode }) => (
+  <span className="flex items-center gap-2">
+    <SemanticIcon name={icon} size={32} />
+    {children}
+  </span>
+);
 
 /** With no army selected, the realm's armies to pick for the site; none to offer without a realm (a spectator). */
 const useUseChoices = (siteTile: { col: number; row: number }, wanted: boolean) => {
