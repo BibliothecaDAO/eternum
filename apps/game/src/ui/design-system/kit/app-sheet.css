@@ -1086,8 +1086,82 @@
   padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
 }
 
+/* ── Ticket: a campaign's flyer in small, sealed, then turned over once; gold under rays when golden. ── */
+.app-ticket {
+  position: relative;
+  isolation: isolate;
+  width: min(100%, 20rem);
+  perspective: 900px;
+}
+.app-ticket[data-face="golden"]::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  z-index: -1;
+  background: repeating-conic-gradient(rgb(var(--app-gold) / 0.22) 0deg 8deg, transparent 8deg 22deg);
+  mask-image: radial-gradient(closest-side, black 30%, transparent);
+  animation: app-ticket-rays 600ms var(--app-ease) both;
+}
+.app-ticket__card {
+  overflow: hidden;
+  border-radius: var(--app-radius-panel);
+  background: var(--app-ink);
+  color: var(--app-dark);
+  box-shadow: var(--app-shadow-dialog);
+  text-align: center;
+}
+.app-ticket:not([data-face="sealed"]) .app-ticket__card {
+  animation: app-ticket-turn 520ms var(--app-ease) both;
+}
+.app-ticket[data-face="golden"] .app-ticket__card {
+  background: linear-gradient(160deg, color-mix(in srgb, rgb(var(--app-gold)) 70%, white), rgb(var(--app-gold)));
+}
+.app-ticket__art {
+  display: grid;
+  place-items: center;
+  padding: theme(spacing.3);
+  background: var(--app-surface);
+}
+.app-ticket__line {
+  padding: theme(spacing.5) theme(spacing.4) theme(spacing.4);
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  line-height: var(--app-leading-heading);
+}
+.app-ticket__stub {
+  border-top: 2px dashed rgb(0 0 0 / 0.45);
+  padding: theme(spacing.2) theme(spacing.4) theme(spacing.3);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+@keyframes app-ticket-turn {
+  0% {
+    transform: rotateY(90deg);
+  }
+  100% {
+    transform: rotateY(0deg);
+  }
+}
+@keyframes app-ticket-rays {
+  0% {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .app-skeleton > i {
+    animation: none;
+  }
+  .app-ticket[data-face="golden"]::before,
+  .app-ticket:not([data-face="sealed"]) .app-ticket__card {
     animation: none;
   }
 }

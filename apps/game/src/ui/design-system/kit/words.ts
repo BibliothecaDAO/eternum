@@ -667,6 +667,25 @@ export const SIGN_IN_WORDS = {
   discordAgain: "Try Discord again",
 } as const;
 
+/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
+export const JOIN_WORDS = {
+  realm: "A Devcon realm is yours",
+  claim: "Claim your realm",
+  yourTicket: "Your ticket",
+  open: "Open your ticket",
+  opening: "Opening…",
+  sealed: "A realm waits for you",
+  stub: "Devcon · Mumbai",
+  golden: "Golden ticket",
+  goldenLine: "A golden realm waits",
+  goldenStub: (count: number) => `One of ${count} at Devcon`,
+  laborEachDay: (amount: number) => `${formatExact(amount)} Labor each day`,
+  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
+  continue: "Continue",
+  closed: "Devcon tickets have closed.",
+  failed: "Your ticket could not be opened.",
+} as const;
+
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */
 export const BLITZ_WORDS = {
   /**
