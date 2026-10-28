@@ -34,7 +34,7 @@ export const insertMention = (text: string, at: number, caret: number, name: str
   return { text: text.slice(0, at) + mention + rest, caret: at + mention.length + (rest.startsWith(" ") ? 1 : 0) };
 };
 
-export type MessagePart =
+type MessagePart =
   | { type: "text"; text: string }
   | { type: "mention"; text: string; name: string }
   | { type: "coordinates"; x: number; y: number };
