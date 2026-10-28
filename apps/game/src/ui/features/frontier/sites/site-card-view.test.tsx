@@ -270,7 +270,6 @@ describe("a guarded site's card with no army chosen", () => {
           pay={null}
           xp={undefined}
           verb={null}
-          choices={[{ label: "Army 1", ...army, fight: undefined, onPick: () => {} }]}
           onClose={() => {}}
         />,
       ),
@@ -280,8 +279,8 @@ describe("a guarded site's card with no army chosen", () => {
     expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("RuinBasilisk1.1K");
   });
 
-  it("gives each army a row with the fight it would have, names the skull, and opens the attack on a tap", () => {
-    const onPick = vi.fn();
+  // Owner, 28 October 2026: "agree with no picker".
+  it("lists no army and offers no step: what the site is and pays, and its guard", () => {
     act(() =>
       root.render(
         <SiteCardView
@@ -293,55 +292,15 @@ describe("a guarded site's card with no army chosen", () => {
           pay={{ icon: "essence", amount: 3_300 }}
           xp={82}
           verb={null}
-          choices={[
-            {
-              label: "Army 1",
-              art: army.art,
-              troops: 5_000,
-              fight: {
-                outcome: "wins",
-                exchanges: 2,
-                troopsLost: 456,
-                guardLeft: 492,
-              },
-              onPick,
-            },
-            {
-              label: "Army 2",
-              art: army.art,
-              troops: 154,
-              fight: {
-                outcome: "loses",
-                exchanges: 1,
-                troopsLost: 154,
-                guardLeft: 1_028,
-              },
-              onPick: () => {},
-            },
-            { label: "Army 3", art: army.art, troops: 600, fight: undefined, onPick: () => {} },
-          ]}
           onClose={() => {}}
         />,
       ),
     );
-    /** An army's row: its button names it and its troops, its forecast sits beside the button. */
-    const row = (label: string) =>
-      [...document.querySelectorAll(".ui-row")].find((candidate) =>
-        candidate.querySelector("button")?.textContent?.startsWith(`${label}`),
-      )!;
-    // Two attacks win it, counted beside the flag: the figures are the first one's, the troops it costs and the guard it
-    // leaves standing.
-    expect(row("Army 1").querySelector('[data-icon="beast-dark-fey"]')).not.toBeNull();
-    expect(row("Army 1").textContent).toBe("Army 15,000 troops×2−456492");
-    expect(row("Army 1").querySelector('[data-tip="Attacks"]')?.textContent).toBe("×2");
-    expect(row("Army 2").textContent).toBe("Army 2154 troops−1541,028");
-    expect(row("Army 2").querySelector('[data-tip="Would be lost"]')).not.toBeNull();
-    // Out of reach: the army is still a choice, with no forecast to show and no dash in its place.
-    expect(row("Army 3").textContent).toBe("Army 3600 troops");
-    expect(document.body.textContent).toContain("Pick an army to attack it");
-    expect(document.querySelector("section[aria-label='Rift']")!.textContent).not.toContain("—");
-    act(() => row("Army 1").querySelector("button")!.click());
-    expect(onPick).toHaveBeenCalled();
+    const card = document.querySelector("section[data-kit-sheet]")!;
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("+3,300+82 XPDark fey1.1K");
+    expect(card.querySelectorAll(".ui-row")).toHaveLength(0);
+    expect(card.querySelectorAll("button")).toHaveLength(1);
+    expect(card.textContent).not.toContain("Pick an army");
   });
 });
 
@@ -443,28 +402,6 @@ describe("a cleared ruin's chest", () => {
     act(() => (moment as HTMLButtonElement).click());
     expect(onClose).toHaveBeenCalled();
   });
-});
-
-it("says where an army comes from when the realm has none out, in the place of the rows", () => {
-  act(() =>
-    root.render(
-      <SiteCardView
-        site="Camp"
-        army={null}
-        beast={undefined}
-        guard={1_100}
-        fight={undefined}
-        pay={null}
-        xp={undefined}
-        verb={null}
-        choices={[]}
-        onClose={() => {}}
-      />,
-    ),
-  );
-  expect(document.querySelectorAll(".ui-row")).toHaveLength(0);
-  expect(document.body.textContent).toContain("No army out: deploy one");
-  expect(document.body.textContent).not.toContain("Pick an army");
 });
 
 it("titles a single roaming Wraith by its species", () => {

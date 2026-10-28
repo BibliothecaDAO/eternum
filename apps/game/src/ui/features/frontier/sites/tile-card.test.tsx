@@ -20,7 +20,6 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 import { GameProvider } from "@/hooks/context/game-context";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { acceptGameSyncStoryEvent, resetGameSyncStoryEvents } from "@/hooks/store/use-story-events-store";
-import { ARMY_SELECT_REQUEST_EVENT, takeArmySelectRequest } from "@/three/scenes/worldmap-army-select-request";
 import { inFlight, sendOnce } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalStorage } from "@bibliothecadao/eternum";
@@ -462,28 +461,6 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     act(() => store.applyFacts([...ARMY_GONE, gone("Guard", "0x73")] as never));
     expect(selection()).toEqual(ON_THE_SITE);
     noResult(host);
-    unmount();
-  });
-});
-
-describe("an army picked from a site's card", () => {
-  it("asks the map for that army and names the site's tile, so the card stays open with the army as its actor", () => {
-    const { host, unmount } = renderCard("beside");
-    const asked: unknown[] = [];
-    // The site's place as the map reads it: the tile's contract hex, carried as a Position.
-    const hear = () => {
-      const request = takeArmySelectRequest();
-      const site = request?.forSite?.getContract();
-      asked.push({ entityId: request?.entityId, forSite: site && { col: site.x, row: site.y } });
-    };
-    window.addEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    const rows = [...host.querySelectorAll<HTMLButtonElement>(".ui-row__choose")].filter((row) =>
-      row.textContent?.startsWith("Army"),
-    );
-    expect(rows.length).toBeGreaterThan(0);
-    act(() => rows[0].click());
-    window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, hear);
-    expect(asked).toEqual([{ entityId: 201, forSite: { col: SITE_TILE.col, row: SITE_TILE.row } }]);
     unmount();
   });
 });
