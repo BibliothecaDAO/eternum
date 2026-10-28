@@ -1,6 +1,6 @@
 import { PerspectiveCamera, Group, Scene, Mesh, PointLight, type Object3D } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createPipelineCompiler } from "./pipeline-compiler";
+import { createPipelineCompiler, whenPipelineCompilesSettle } from "./pipeline-compiler";
 import { resetWorldmapRenderDiagnostics, snapshotWorldmapRenderDiagnostics } from "./perf/worldmap-render-diagnostics";
 
 describe("createPipelineCompiler", () => {
@@ -86,5 +86,52 @@ describe("createPipelineCompiler", () => {
     const nested = new Group().add(new Group().add(new Mesh()), new Mesh());
     await compile(nested, new Scene());
     expect(compileAsync.mock.calls[1][0]).toBe(nested);
+  });
+});
+
+describe("whenPipelineCompilesSettle", () => {
+  /** A compiler whose every compile waits for `finish()`. */
+  function heldCompiler() {
+    const pending: Array<() => void> = [];
+    const compile = createPipelineCompiler({
+      getRenderer: () => ({ compileAsync: () => new Promise<void>((resolve) => pending.push(resolve)) }),
+      getCamera: () => new PerspectiveCamera(),
+    });
+    const finish = async () => {
+      await vi.waitFor(() => expect(pending.length).toBeGreaterThan(0));
+      pending.shift()!();
+    };
+    return { compile, finish };
+  }
+
+  it("is settled at once when nothing compiles", async () => {
+    await expect(whenPipelineCompilesSettle(1_000)).resolves.toBe("settled");
+  });
+
+  it("settles only after models compiled one after another have all finished", async () => {
+    const { compile, finish } = heldCompiler();
+    const scene = new Scene();
+    const models = [new Group(), new Group()];
+    const loop = (async () => {
+      for (const model of models) await compile(model, scene);
+    })();
+    let settled: string | null = null;
+    void whenPipelineCompilesSettle(5_000).then((result) => (settled = result));
+
+    await finish();
+    await new Promise((resolve) => setTimeout(resolve, 5));
+    expect(settled).toBeNull();
+
+    await finish();
+    await loop;
+    await vi.waitFor(() => expect(settled).toBe("settled"));
+  });
+
+  it("gives up after its bound while a compile never ends", async () => {
+    const { compile, finish } = heldCompiler();
+    const compiling = compile(new Group(), new Scene());
+    await expect(whenPipelineCompilesSettle(20)).resolves.toBe("timed-out");
+    await finish();
+    await compiling;
   });
 });

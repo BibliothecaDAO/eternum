@@ -10,6 +10,37 @@ export interface PipelineCompilingRenderer {
 
 const pendingRendererCompiles = new WeakMap<PipelineCompilingRenderer, Promise<void>>();
 
+// Compiles queued or running in this page, and the callers waiting for none to be.
+let compilesInFlight = 0;
+let settleWaiters: Array<() => void> = [];
+
+/**
+ * Resolves "settled" once no pipeline compile is queued or running, checked a task after the last one ends, so a
+ * manager that compiles its models one after another is not read as done between two of them; "timed-out" after
+ * `atMostMs`, so a compile that never ends cannot hold its caller.
+ */
+export function whenPipelineCompilesSettle(atMostMs: number): Promise<"settled" | "timed-out"> {
+  if (compilesInFlight === 0) return Promise.resolve("settled");
+  return new Promise((resolve) => {
+    const timeout = setTimeout(() => resolve("timed-out"), atMostMs);
+    settleWaiters.push(() => {
+      clearTimeout(timeout);
+      resolve("settled");
+    });
+  });
+}
+
+function endCompile(): void {
+  compilesInFlight -= 1;
+  if (compilesInFlight > 0) return;
+  setTimeout(() => {
+    if (compilesInFlight > 0) return;
+    const waiters = settleWaiters;
+    settleWaiters = [];
+    waiters.forEach((resolve) => resolve());
+  }, 0);
+}
+
 export function createPipelineCompiler(input: {
   getRenderer: () => PipelineCompilingRenderer | undefined;
   getCamera: () => Camera;
@@ -25,12 +56,14 @@ export function createPipelineCompiler(input: {
       return;
     }
     const startedAt = performance.now();
+    compilesInFlight += 1;
     try {
       const camera = input.getCamera();
       await serializeRendererCompile(renderer, () => renderer.compileAsync!(object, camera, targetScene));
       incrementWorldmapRenderCounter("pipelinePrecompiles");
     } finally {
       recordWorldmapRenderDuration("pipelineCompileMs", performance.now() - startedAt);
+      endCompile();
     }
   };
 }

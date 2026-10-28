@@ -35,6 +35,7 @@ type GameEntryMilestone =
   | "worldmap-navigation-started"
   | "worldmap-fetch-completed"
   | "worldmap-terrain-visible"
+  | "worldmap-pipelines-ready"
   | "worldmap-scene-ready"
   | "renderer-scene-ready"
   | "overlay-ready"
