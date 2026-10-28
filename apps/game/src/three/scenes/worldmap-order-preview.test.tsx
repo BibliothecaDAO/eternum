@@ -708,6 +708,9 @@ describe("the click matrix: what is selected × what is clicked", () => {
   const CLEARED_ARMY = 12;
   const REALM = 9;
   const ENEMY = 99;
+  const OTHER_REALM = 98;
+  /** Another player's realm, beside none of the player's things: off the matrix's columns. */
+  const OTHER_REALM_TILE = { col: 11, row: 3 };
   const OWN = 0x111n;
   const tiles = {
     "your army beside": { col: 3, row: 5 },
@@ -753,6 +756,7 @@ describe("the click matrix: what is selected × what is clicked", () => {
       [key(tiles["your army on its spire"]), { army: { id: SPIRE_ARMY_ON_IT, owner: OWN } }],
       [key(tiles["your army on a cleared site"]), { army: { id: CLEARED_ARMY, owner: OWN } }],
       [key(tiles["enemy army"]), { army: { id: ENEMY, owner: 0x999n } }],
+      [key(OTHER_REALM_TILE), { structure: { id: OTHER_REALM, owner: 0x999n } }],
     ]);
     const armies = new Map([
       [ARMY, ARMY_HEX],
@@ -814,6 +818,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
       onArmyAttack: () => did.push("attack card"),
       interactionAdapter: {
         selectHex: () => did.push("tile selected"),
+        enterStructure: ({ structureId, spectator }: { structureId: number; spectator: boolean }) =>
+          did.push(`${spectator ? "visit" : "enter"} realm ${structureId}`),
         openOwnedStructureContextMenu: () => did.push("realm menu"),
       },
       state: {
@@ -824,6 +830,7 @@ describe("the click matrix: what is selected × what is clicked", () => {
     });
     const scene = map.scene as unknown as {
       onHexagonClick: (hex: { col: number; row: number }) => void;
+      onHexagonDoubleClick: (hex: { col: number; row: number }) => void;
       onHexagonRightClick: (event: MouseEvent, hex: { col: number; row: number }) => void;
     };
     /** What the gesture did, in the player's words: what it selected or opened, or the order it sent or pinned. */
@@ -927,6 +934,59 @@ describe("the click matrix: what is selected × what is clicked", () => {
       },
       realm: { ...selects, ...elsewhere },
     });
+  });
+
+  /**
+   * A double tap, as the touch recognizer sends it: two taps, then the double tap, as a mouse sends two clicks and a
+   * double-click (owner, 28 October 2026: "double tapping the realm on mobile should bring me to the realm view !").
+   */
+  const doubleTap = (
+    layout: "desktop" | "phone",
+    selected: Selected,
+    frontier: boolean,
+    tile: { col: number; row: number },
+  ) => {
+    screen(layout === "desktop");
+    usePopoverStore.getState().close();
+    const { scene, outcome } = mapWith(selected, frontier);
+    scene.onHexagonClick(tile);
+    scene.onHexagonClick(tile);
+    scene.onHexagonDoubleClick(tile);
+    return outcome();
+  };
+
+  it.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])(
+    "%s, a double tap or double-click on a realm: the taps select as ever, then the realm's view opens",
+    (_, frontier) => {
+      for (const layout of ["phone", "desktop"] as const) {
+        // The player's realm: selected by each tap, then its own realm view.
+        expect(doubleTap(layout, "nothing", frontier, tiles["your realm beside"])).toBe(
+          "tile selected, select realm 9, tile selected, select realm 9, enter realm 9",
+        );
+        // Another player's realm: each tap lets go, as a tap on another's thing does, then its read-only visit.
+        expect(doubleTap(layout, "nothing", frontier, OTHER_REALM_TILE)).toBe(
+          "tile selected, let go, tile selected, let go, visit realm 98",
+        );
+      }
+    },
+  );
+
+  // Owner, 27 October 2026: "Yes double tapping to explore on mobile". Its two taps pin, then send; the double tap
+  // finds no structure there and adds nothing.
+  it("keeps a phone's double tap on bare ground in reach the explore it was: pinned, then sent once", () => {
+    expect(doubleTap("phone", "army", true, tiles["bare ground in reach"])).toBe("its order runs, order pinned");
+  });
+
+  it("sends no order from a double tap on a realm with the army selected, on a phone or a desktop", () => {
+    for (const layout of ["phone", "desktop"] as const)
+      for (const tile of [tiles["your realm beside"], OTHER_REALM_TILE]) {
+        const done = doubleTap(layout, "army", true, tile);
+        expect(done, `${layout} ${JSON.stringify(tile)}`).not.toMatch(/its order runs|order pinned/);
+        expect(done).toMatch(/(enter|visit) realm (9|98)/);
+      }
   });
 
   it("Frontier phone, a hold: the transfer to the player's own beside the army, else the tile's facts", () => {
