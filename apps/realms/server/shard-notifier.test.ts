@@ -1,6 +1,6 @@
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { beforeAll, expect, it } from "vitest";
+import { beforeAll, describe, expect, it } from "vitest";
 
 import preset from "../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import explorerFixture from "../../../contracts/l3/world-native/schema/fixtures/row-set.json";
@@ -536,10 +536,9 @@ const seed = async (db: D1Database, level: string, device: { p256dh: string; aut
   ]);
 };
 
-// These timing cases have separate Workers, storage and network fixtures.
-it.concurrent(
-  "alerts the player's device once for a battle on a listed shard, and a restart resends nothing",
-  async () => {
+// Each case owns its Worker, persistent storage and network fixtures.
+describe.concurrent("shard notifications", () => {
+  it("alerts the player's device once for a battle on a listed shard, and a restart resends nothing", async () => {
     const { herald, push, start, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     push.status = 503;
@@ -557,13 +556,9 @@ it.concurrent(
     await pause(polls(10)); // more polls, and the retry window, pass quietly
     expect(push.received).toEqual([503, 201]);
     await restarted.dispose();
-  },
-  150_000,
-);
+  }, 150_000);
 
-it.concurrent(
-  "alerts once a day when an army is rested, not if it acted again first, nor once it is gone or from an earlier day",
-  async () => {
+  it("alerts once a day when an army is rested, not if it acted again first, nor once it is gone or from an earlier day", async () => {
     const { herald, push, worker } = await createHarness("standard");
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
@@ -600,13 +595,9 @@ it.concurrent(
     await pause(ticks(REST_TICKS + 1) + polls(10));
     expect(push.received).toEqual([201]);
     await worker.dispose();
-  },
-  420_000,
-);
+  }, 420_000);
 
-it.concurrent(
-  "a game that ends while an army rests alerts nothing for it, and every other alert still flows",
-  async () => {
+  it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
     const { herald, push, worker } = await createHarness("standard");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
@@ -624,13 +615,9 @@ it.concurrent(
     await pause(polls(10));
     expect(push.received).toEqual([201]);
     await worker.dispose();
-  },
-  150_000,
-);
+  }, 150_000);
 
-it.concurrent(
-  "a wake that keeps failing is retried, then dropped, and every other alert still flows",
-  async () => {
+  it("a wake that keeps failing is retried, then dropped, and every other alert still flows", async () => {
     const { herald, push, worker } = await createHarness("standard");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
@@ -648,13 +635,9 @@ it.concurrent(
     await pause(polls(20));
     expect(herald.state.snapshotReads).toBe(reads); // the watch was given up, not retried forever
     await worker.dispose();
-  },
-  240_000,
-);
+  }, 240_000);
 
-it.concurrent(
-  "reads a new chain at the same URL from its own head, and sends nothing twice",
-  async () => {
+  it("reads a new chain at the same URL from its own head, and sends nothing twice", async () => {
     const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
@@ -674,13 +657,9 @@ it.concurrent(
     await pause(polls(10));
     expect(push.received).toEqual([201, 201, 201]);
     await worker.dispose();
-  },
-  120_000,
-);
+  }, 120_000);
 
-it.concurrent(
-  "a story that cannot be put into words is left, the player's own taps send nothing, and what follows still alerts",
-  async () => {
+  it("a story that cannot be put into words is left, the player's own taps send nothing, and what follows still alerts", async () => {
     const { herald, push, worker } = await createHarness("all");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
@@ -694,289 +673,285 @@ it.concurrent(
     await pause(polls(5)); // nothing more comes for the page
     expect(push.received).toEqual([201, 201]);
     await worker.dispose();
-  },
-  120_000,
-);
+  }, 120_000);
 
-/** Open a day of the shared calendar a few seconds from now (Day 2 by default); no player needs to have acted. */
-const openSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 1) => {
-  const opensAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
-  const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
-  let start = 0;
-  for (let index = 0; index < dayIndex; index++) start = dayOf(calendar, start)!.end;
-  herald.state.seasonStart = opensAt / 1000 - start;
-  return opensAt;
-};
+  /** Open a day of the shared calendar a few seconds from now (Day 2 by default); no player needs to have acted. */
+  const openSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 1) => {
+    const opensAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
+    const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
+    let start = 0;
+    for (let index = 0; index < dayIndex; index++) start = dayOf(calendar, start)!.end;
+    herald.state.seasonStart = opensAt / 1000 - start;
+    return opensAt;
+  };
 
-/** Zones where it is now night (22:00 to 08:00) and day, so a test runs at any hour. */
-const ZONES = ["UTC", "Asia/Kolkata", "America/New_York", "Asia/Tokyo", "Europe/Paris", "America/Los_Angeles"];
-const hourIn = (zone: string) =>
-  Number(new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "numeric", hourCycle: "h23" }).format(new Date()));
-const nightZone = () => ZONES.find((zone) => hourIn(zone) >= 22 || hourIn(zone) < 7)!;
-const dayZone = () => ZONES.find((zone) => hourIn(zone) >= 9 && hourIn(zone) < 21)!;
-/** Two zones in their day whose clocks read differently now. */
-const twoDayZones = (): [string, string] => {
-  const awake = ZONES.filter((zone) => hourIn(zone) >= 9 && hourIn(zone) < 20);
-  const first = awake[0]!;
-  return [first, awake.find((zone) => clockIn(zone, Date.now()) !== clockIn(first, Date.now()))!];
-};
-const clockIn = (zone: string, at: number) =>
-  new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
-    new Date(at),
+  /** Zones where it is now night (22:00 to 08:00) and day, so a test runs at any hour. */
+  const ZONES = ["UTC", "Asia/Kolkata", "America/New_York", "Asia/Tokyo", "Europe/Paris", "America/Los_Angeles"];
+  const hourIn = (zone: string) =>
+    Number(new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "numeric", hourCycle: "h23" }).format(new Date()));
+  const nightZone = () => ZONES.find((zone) => hourIn(zone) >= 22 || hourIn(zone) < 7)!;
+  const dayZone = () => ZONES.find((zone) => hourIn(zone) >= 9 && hourIn(zone) < 21)!;
+  /** Two zones in their day whose clocks read differently now. */
+  const twoDayZones = (): [string, string] => {
+    const awake = ZONES.filter((zone) => hourIn(zone) >= 9 && hourIn(zone) < 20);
+    const first = awake[0]!;
+    return [first, awake.find((zone) => clockIn(zone, Date.now()) !== clockIn(first, Date.now()))!];
+  };
+  const clockIn = (zone: string, at: number) =>
+    new Intl.DateTimeFormat("en-GB", { timeZone: zone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(
+      new Date(at),
+    );
+
+  it.each(["important", "all"] as const)(
+    "Day open sends one push to an inactive %s player when the day opens",
+    async (level) => {
+      const { herald, push, worker, start } = await createHarness(level);
+      const opensAt = openSoon(herald);
+      await worker.runCron();
+      await waitUntil(() => push.received.length > 0, 15_000);
+      expect(push.received).toEqual([201]);
+      expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
+      expect(push.times[0]).toBeLessThan(opensAt + 1000);
+      // The player's golden Devcon realm, read as its owner sees it, names what it claims; the phone has no zone yet.
+      expect(herald.state.ownerReads).toContain(PLAYER_ACCOUNT);
+      expect(await push.words()).toEqual([
+        expect.stringMatching(
+          /^Day 2 is open \/ frontier-a: claim 2,000 Labor and 2,000 Essence before \d\d:\d\d UTC\.$/,
+        ),
+      ]);
+      await worker.dispose();
+      const restarted = await start();
+      await restarted.runCron();
+      await pause(2000);
+      expect(push.received).toEqual([201]);
+      await restarted.dispose();
+    },
+    45_000,
   );
 
-it.each(["important", "all"] as const)(
-  "Day open sends one push to an inactive %s player when the day opens",
-  async (level) => {
-    const { herald, push, worker, start } = await createHarness(level);
-    const opensAt = openSoon(herald);
-    await worker.runCron();
-    await waitUntil(() => push.received.length > 0, 15_000);
-    expect(push.received).toEqual([201]);
-    expect(push.times[0]).toBeGreaterThanOrEqual(opensAt);
-    expect(push.times[0]).toBeLessThan(opensAt + 1000);
-    // The player's golden Devcon realm, read as its owner sees it, names what it claims; the phone has no zone yet.
-    expect(herald.state.ownerReads).toContain(PLAYER_ACCOUNT);
-    expect(await push.words()).toEqual([
-      expect.stringMatching(
-        /^Day 2 is open \/ frontier-a: claim 2,000 Labor and 2,000 Essence before \d\d:\d\d UTC\.$/,
-      ),
-    ]);
-    await worker.dispose();
-    const restarted = await start();
-    await restarted.runCron();
-    await pause(2000);
-    expect(push.received).toEqual([201]);
-    await restarted.dispose();
-  },
-  45_000,
-);
-
-it("Day open is not sent to a phone that has the game in view", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  const opensAt = openSoon(herald);
-  await worker.db
-    .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
-    .bind(opensAt + 60_000)
-    .run();
-  await worker.runCron();
-  await pause(Math.max(0, opensAt + 2000 - Date.now()));
-  expect(push.received).toEqual([]);
-  await worker.dispose();
-}, 45_000);
-
-it("Day open waits for the morning on a phone in its quiet hours, and goes at once to one in its day", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  const awake = `${PUSH_ENDPOINT}/awake`;
-  const now = Date.now();
-  await worker.db.batch([
-    worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()),
-    worker.db
-      .prepare(
-        `INSERT INTO "notification_push_subscriptions"
-      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt", "timeZone")
-      SELECT '00000000-0000-4000-8000-000000000002', "owner", ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", ?, ?
-      FROM "notification_push_subscriptions" WHERE "id" = ?`,
-      )
-      .bind(awake, now, dayZone(), DEVICE_ID),
-  ]);
-  const opensAt = openSoon(herald);
-  await worker.runCron();
-  await pause(Math.max(0, opensAt + 3000 - Date.now()));
-  expect(push.endpoints).toEqual([awake]);
-  await worker.dispose();
-}, 45_000);
-
-it("Day open covers enrollment beyond a story page, including another inactive player", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  const account = "0xbeef";
-  const owner = realmsIdOf("player-two");
-  const endpoint = `${PUSH_ENDPOINT}/two`;
-  const now = Date.now();
-  // The first hundred accounts have never registered a notification device; recipients still include later rows.
-  herald.state.members = [
-    ...Array.from({ length: 101 }, (_, index) => `0x${(0x1000 + index).toString(16)}`),
-    PLAYER_ACCOUNT,
-    account,
-  ];
-  await worker.db.batch([
-    worker.db
-      .prepare(
-        `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId")
-      VALUES ('player-two', 'player-two', 'two@x.test', 0, ?, ?, ?)`,
-      )
-      .bind(new Date(now).toISOString(), new Date(now).toISOString(), owner),
-    worker.db.prepare('INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)').bind(account, owner),
-    worker.db
-      .prepare('INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, ?, 1)')
-      .bind(owner, "all"),
-    worker.db
-      .prepare(
-        `INSERT INTO "notification_push_subscriptions"
-      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
-      SELECT '00000000-0000-4000-8000-000000000002', ?, ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
-      FROM "notification_push_subscriptions" WHERE "id" = ?`,
-      )
-      .bind(owner, endpoint, DEVICE_ID),
-  ]);
-  openSoon(herald);
-  await worker.runCron();
-  await waitUntil(() => push.received.length === 2, 15_000);
-  expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, endpoint]);
-  await worker.dispose();
-}, 45_000);
-
-it("Day open drops a missed opening on a newly started notifier", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  openSoon(herald, -2);
-  await worker.runCron();
-  await pause(2000);
-  expect(push.received).toEqual([]);
-  await worker.dispose();
-}, 45_000);
-
-it("Day open rechecks preferences after preparation and cancels a finished game's push", async () => {
-  for (const cancelledBy of ["off", "settled"] as const) {
+  it("Day open is not sent to a phone that has the game in view", async () => {
     const { herald, push, worker } = await createHarness("important");
     const opensAt = openSoon(herald);
+    await worker.db
+      .prepare('UPDATE "notification_push_subscriptions" SET "gameForegroundUntil" = ?')
+      .bind(opensAt + 60_000)
+      .run();
     await worker.runCron();
-    await waitUntil(() => herald.state.snapshotReads > 0, 4000);
-    expect(herald.state.snapshotReads).toBeGreaterThan(0);
-    if (cancelledBy === "off")
-      await worker.db.prepare('UPDATE "notification_preferences" SET "level" = ?').bind("off").run();
-    else herald.state.status = "Settled";
-    await pause(Math.max(0, opensAt + 1500 - Date.now()));
+    await pause(Math.max(0, opensAt + 2000 - Date.now()));
     expect(push.received).toEqual([]);
     await worker.dispose();
-  }
-}, 45_000);
+  }, 45_000);
 
-it("Day open never reaches Off or a device without game-alert consent", async () => {
-  const { herald, push, worker } = await createHarness("off");
-  const opensAt = openSoon(herald);
-  await worker.runCron();
-  await pause(Math.max(0, opensAt + 1500 - Date.now()));
-  expect(push.received).toEqual([]);
-  await worker.dispose();
-  const other = await createHarness("important");
-  const otherOpensAt = openSoon(other.herald);
-  await other.worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = NULL').run();
-  await other.worker.runCron();
-  await pause(Math.max(0, otherOpensAt + 1500 - Date.now()));
-  expect(other.push.received).toEqual([]);
-  await other.worker.dispose();
-}, 45_000);
-
-it("Day open retries a lost delivery while its day is open, across a restart, and sends it once", async () => {
-  const { herald, push, worker, start } = await createHarness("important");
-  openSoon(herald);
-  push.status = 503;
-  await worker.runCron();
-  await waitUntil(() => push.received.length > 0, 15_000);
-  expect(push.received).toEqual([503]);
-  await worker.dispose();
-  const restarted = await start();
-  push.status = 201;
-  await restarted.runCron();
-  await waitUntil(() => push.received.includes(201), 15_000);
-  await pause(polls(5));
-  expect(push.received).toEqual([503, 201]);
-  await restarted.dispose();
-}, 45_000);
-
-/** Each extra player owns one eligible device, within the production per-owner cap. */
-const addDayOpenPlayers = async (worker: Awaited<ReturnType<typeof startWorker>>, count: number) => {
-  const now = Date.now();
-  const players = Array.from({ length: count }, (_, index) => {
-    const id = `day-open-extra-${index}`;
-    return {
-      id,
-      owner: realmsIdOf(id),
-      account: `0x${(0x2000 + index).toString(16)}`,
-      endpoint: `${PUSH_ENDPOINT}/${index}`,
-      device: `00000000-0000-4000-8000-${(index + 2).toString().padStart(12, "0")}`,
-    };
-  });
-  await worker.db.batch(
-    players.flatMap((player) => [
-      worker.db
-        .prepare(
-          `INSERT INTO "user" ("id","name","email","emailVerified","createdAt","updatedAt","realmsId") VALUES (?,?,?,1,?,?,?)`,
-        )
-        .bind(
-          player.id,
-          player.id,
-          `${player.id}@x.test`,
-          new Date(now).toISOString(),
-          new Date(now).toISOString(),
-          player.owner,
-        ),
-      worker.db
-        .prepare('INSERT INTO "realms_accounts" ("address","realmsId") VALUES (?,?)')
-        .bind(player.account, player.owner),
-      worker.db
-        .prepare(`INSERT INTO "notification_preferences" ("owner","level","revision") VALUES (?,'important',1)`)
-        .bind(player.owner),
-      worker.db
-        .prepare(
-          `INSERT INTO "notification_push_subscriptions" ("id","owner","endpoint","p256dh","auth","revocationHash","gameAlertsEnabledAt","createdAt")
-      SELECT ?,?,?,"p256dh","auth",'x',"gameAlertsEnabledAt","createdAt" FROM "notification_push_subscriptions" WHERE "id"=?`,
-        )
-        .bind(player.device, player.owner, player.endpoint, DEVICE_ID),
-    ]),
-  );
-  return players;
-};
-
-it("Day open reaches 101 devices in seconds while one endpoint stalls", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  try {
-    const players = await addDayOpenPlayers(worker, 100);
-    herald.state.members.push(...players.map((player) => player.account));
-    push.stalledEndpoint = players[0]!.endpoint;
-    const opensAt = openSoon(herald, 15);
-    await worker.runCron();
-    await waitUntil(() => push.endpoints.length === 101, 20_000);
-    expect(push.times.every((time) => time >= opensAt && time < opensAt + 5000)).toBe(true);
-    await pause(polls(3));
-    expect(new Set(push.endpoints).size).toBe(101);
-    expect(push.endpoints).toHaveLength(101);
-  } finally {
-    await worker.dispose();
-  }
-}, 60_000);
-
-it.each([false, true])(
-  "Day open fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
-  async (initiallyEmpty) => {
+  it("Day open waits for the morning on a phone in its quiet hours, and goes at once to one in its day", async () => {
     const { herald, push, worker } = await createHarness("important");
-    try {
-      const [late] = await addDayOpenPlayers(worker, 1);
-      if (initiallyEmpty) herald.state.members = [];
-      const opensAt = openSoon(herald, 8);
+    const awake = `${PUSH_ENDPOINT}/awake`;
+    const now = Date.now();
+    await worker.db.batch([
+      worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()),
+      worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions"
+        ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt", "timeZone")
+        SELECT '00000000-0000-4000-8000-000000000002', "owner", ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", ?, ?
+        FROM "notification_push_subscriptions" WHERE "id" = ?`,
+        )
+        .bind(awake, now, dayZone(), DEVICE_ID),
+    ]);
+    const opensAt = openSoon(herald);
+    await worker.runCron();
+    await pause(Math.max(0, opensAt + 3000 - Date.now()));
+    expect(push.endpoints).toEqual([awake]);
+    await worker.dispose();
+  }, 45_000);
+
+  it("Day open covers enrollment beyond a story page, including another inactive player", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    const account = "0xbeef";
+    const owner = realmsIdOf("player-two");
+    const endpoint = `${PUSH_ENDPOINT}/two`;
+    const now = Date.now();
+    // The first hundred accounts have never registered a notification device; recipients still include later rows.
+    herald.state.members = [
+      ...Array.from({ length: 101 }, (_, index) => `0x${(0x1000 + index).toString(16)}`),
+      PLAYER_ACCOUNT,
+      account,
+    ];
+    await worker.db.batch([
+      worker.db
+        .prepare(
+          `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "realmsId")
+        VALUES ('player-two', 'player-two', 'two@x.test', 0, ?, ?, ?)`,
+        )
+        .bind(new Date(now).toISOString(), new Date(now).toISOString(), owner),
+      worker.db.prepare('INSERT INTO "realms_accounts" ("address", "realmsId") VALUES (?, ?)').bind(account, owner),
+      worker.db
+        .prepare('INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, ?, 1)')
+        .bind(owner, "all"),
+      worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions"
+        ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+        SELECT '00000000-0000-4000-8000-000000000002', ?, ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
+        FROM "notification_push_subscriptions" WHERE "id" = ?`,
+        )
+        .bind(owner, endpoint, DEVICE_ID),
+    ]);
+    openSoon(herald);
+    await worker.runCron();
+    await waitUntil(() => push.received.length === 2, 15_000);
+    expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, endpoint]);
+    await worker.dispose();
+  }, 45_000);
+
+  it("Day open drops a missed opening on a newly started notifier", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    openSoon(herald, -2);
+    await worker.runCron();
+    await pause(2000);
+    expect(push.received).toEqual([]);
+    await worker.dispose();
+  }, 45_000);
+
+  it("Day open rechecks preferences after preparation and cancels a finished game's push", async () => {
+    for (const cancelledBy of ["off", "settled"] as const) {
+      const { herald, push, worker } = await createHarness("important");
+      const opensAt = openSoon(herald);
       await worker.runCron();
       await waitUntil(() => herald.state.snapshotReads > 0, 4000);
       expect(herald.state.snapshotReads).toBeGreaterThan(0);
-      herald.state.members.push(late!.account);
+      if (cancelledBy === "off")
+        await worker.db.prepare('UPDATE "notification_preferences" SET "level" = ?').bind("off").run();
+      else herald.state.status = "Settled";
       await pause(Math.max(0, opensAt + 1500 - Date.now()));
-      expect(push.endpoints).toEqual(initiallyEmpty ? [] : [PUSH_ENDPOINT]);
-      const nextOpensAt = openSoon(herald, 8, 2); // Advance the fake shard to the next seeded day.
+      expect(push.received).toEqual([]);
+      await worker.dispose();
+    }
+  }, 45_000);
+
+  it("Day open never reaches Off or a device without game-alert consent", async () => {
+    const { herald, push, worker } = await createHarness("off");
+    const opensAt = openSoon(herald);
+    await worker.runCron();
+    await pause(Math.max(0, opensAt + 1500 - Date.now()));
+    expect(push.received).toEqual([]);
+    await worker.dispose();
+    const other = await createHarness("important");
+    const otherOpensAt = openSoon(other.herald);
+    await other.worker.db.prepare('UPDATE "notification_push_subscriptions" SET "gameAlertsEnabledAt" = NULL').run();
+    await other.worker.runCron();
+    await pause(Math.max(0, otherOpensAt + 1500 - Date.now()));
+    expect(other.push.received).toEqual([]);
+    await other.worker.dispose();
+  }, 45_000);
+
+  it("Day open retries a lost delivery while its day is open, across a restart, and sends it once", async () => {
+    const { herald, push, worker, start } = await createHarness("important");
+    openSoon(herald);
+    push.status = 503;
+    await worker.runCron();
+    await waitUntil(() => push.received.length > 0, 15_000);
+    expect(push.received).toEqual([503]);
+    await worker.dispose();
+    const restarted = await start();
+    push.status = 201;
+    await restarted.runCron();
+    await waitUntil(() => push.received.includes(201), 15_000);
+    await pause(polls(5));
+    expect(push.received).toEqual([503, 201]);
+    await restarted.dispose();
+  }, 45_000);
+
+  /** Each extra player owns one eligible device, within the production per-owner cap. */
+  const addDayOpenPlayers = async (worker: Awaited<ReturnType<typeof startWorker>>, count: number) => {
+    const now = Date.now();
+    const players = Array.from({ length: count }, (_, index) => {
+      const id = `day-open-extra-${index}`;
+      return {
+        id,
+        owner: realmsIdOf(id),
+        account: `0x${(0x2000 + index).toString(16)}`,
+        endpoint: `${PUSH_ENDPOINT}/${index}`,
+        device: `00000000-0000-4000-8000-${(index + 2).toString().padStart(12, "0")}`,
+      };
+    });
+    await worker.db.batch(
+      players.flatMap((player) => [
+        worker.db
+          .prepare(
+            `INSERT INTO "user" ("id","name","email","emailVerified","createdAt","updatedAt","realmsId") VALUES (?,?,?,1,?,?,?)`,
+          )
+          .bind(
+            player.id,
+            player.id,
+            `${player.id}@x.test`,
+            new Date(now).toISOString(),
+            new Date(now).toISOString(),
+            player.owner,
+          ),
+        worker.db
+          .prepare('INSERT INTO "realms_accounts" ("address","realmsId") VALUES (?,?)')
+          .bind(player.account, player.owner),
+        worker.db
+          .prepare(`INSERT INTO "notification_preferences" ("owner","level","revision") VALUES (?,'important',1)`)
+          .bind(player.owner),
+        worker.db
+          .prepare(
+            `INSERT INTO "notification_push_subscriptions" ("id","owner","endpoint","p256dh","auth","revocationHash","gameAlertsEnabledAt","createdAt")
+        SELECT ?,?,?,"p256dh","auth",'x',"gameAlertsEnabledAt","createdAt" FROM "notification_push_subscriptions" WHERE "id"=?`,
+          )
+          .bind(player.device, player.owner, player.endpoint, DEVICE_ID),
+      ]),
+    );
+    return players;
+  };
+
+  it("Day open reaches 101 devices in seconds while one endpoint stalls", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      const players = await addDayOpenPlayers(worker, 100);
+      herald.state.members.push(...players.map((player) => player.account));
+      push.stalledEndpoint = players[0]!.endpoint;
+      const opensAt = openSoon(herald, 15);
       await worker.runCron();
-      await waitUntil(() => push.endpoints.includes(late!.endpoint), 12_000);
-      expect(push.endpoints.filter((endpoint) => endpoint === late!.endpoint)).toHaveLength(1);
-      const attempt = push.endpoints.indexOf(late!.endpoint);
-      expect(push.times[attempt]).toBeGreaterThanOrEqual(nextOpensAt);
-      expect(push.times[attempt]).toBeLessThan(nextOpensAt + 1000);
+      await waitUntil(() => push.endpoints.length === 101, 20_000);
+      expect(push.times.every((time) => time >= opensAt && time < opensAt + 5000)).toBe(true);
+      await pause(polls(3));
+      expect(new Set(push.endpoints).size).toBe(101);
+      expect(push.endpoints).toHaveLength(101);
     } finally {
       await worker.dispose();
     }
-  },
-  45_000,
-);
+  }, 60_000);
 
-it.concurrent(
-  "a player gets at most six game pushes in a day; the seventh waits in the Feed",
-  async () => {
+  it.each([false, true])(
+    "Day open fixes eligibility at preparation (empty cohort: %s), then includes a late enrolment next day",
+    async (initiallyEmpty) => {
+      const { herald, push, worker } = await createHarness("important");
+      try {
+        const [late] = await addDayOpenPlayers(worker, 1);
+        if (initiallyEmpty) herald.state.members = [];
+        const opensAt = openSoon(herald, 8);
+        await worker.runCron();
+        await waitUntil(() => herald.state.snapshotReads > 0, 4000);
+        expect(herald.state.snapshotReads).toBeGreaterThan(0);
+        herald.state.members.push(late!.account);
+        await pause(Math.max(0, opensAt + 1500 - Date.now()));
+        expect(push.endpoints).toEqual(initiallyEmpty ? [] : [PUSH_ENDPOINT]);
+        const nextOpensAt = openSoon(herald, 8, 2); // Advance the fake shard to the next seeded day.
+        await worker.runCron();
+        await waitUntil(() => push.endpoints.includes(late!.endpoint), 12_000);
+        expect(push.endpoints.filter((endpoint) => endpoint === late!.endpoint)).toHaveLength(1);
+        const attempt = push.endpoints.indexOf(late!.endpoint);
+        expect(push.times[attempt]).toBeGreaterThanOrEqual(nextOpensAt);
+        expect(push.times[attempt]).toBeLessThan(nextOpensAt + 1000);
+      } finally {
+        await worker.dispose();
+      }
+    },
+    45_000,
+  );
+
+  it("a player gets at most six game pushes in a day; the seventh waits in the Feed", async () => {
     const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
@@ -986,157 +961,156 @@ it.concurrent(
     await pause(polls(5));
     expect(push.received).toEqual([201, 201, 201, 201, 201, 201]);
     await worker.dispose();
-  },
-  90_000,
-);
+  }, 90_000);
 
-it("a phone that turns alerts on gets Alerts are on, and its game's lease keeps the phone's time zone", async () => {
-  const { push, worker } = await createHarness("important");
-  try {
-    const { cookie, realmsId: owner } = await worker.signInWithEmailCode("alerts-on@x.test");
-    const post = (action: string, body: unknown) =>
-      worker.mf.dispatchFetch(`${ORIGIN}/api/notifications/push/${action}`, {
-        method: "POST",
-        headers: { origin: ORIGIN, "content-type": "application/json", cookie },
-        body: JSON.stringify(body),
-      });
-    const id = "00000000-0000-4000-8000-0000000000aa";
-    const endpoint = `${PUSH_ENDPOINT}/alerts-on`;
-    const subscribed = await post("subscribe", {
-      owner,
-      id,
-      token: "00000000-0000-4000-8000-0000000000ab",
-      gameAlerts: true,
-      subscription: { endpoint, keys: await deviceKeys() },
-    });
-    expect(subscribed.status).toBe(200);
-
-    expect((await post("foreground", { owner, id, foreground: true, timeZone: "Asia/Kolkata" })).status).toBe(200);
-    expect((await post("foreground", { owner, id, foreground: false })).status).toBe(200);
-    const bad = await post("foreground", { owner, id, foreground: false, timeZone: "Mars/Olympus" });
-    expect(await bad.json()).toEqual({ error: "invalid_time_zone" });
-    const zone = await worker.db
-      .prepare('SELECT "timeZone" FROM "notification_push_subscriptions" WHERE "id" = ?')
-      .bind(id)
-      .first<{ timeZone: string }>();
-    expect(zone?.timeZone).toBe("Asia/Kolkata");
-
-    const alertsOn = await post("alerts-on", { owner, id });
-    expect(await alertsOn.json()).toEqual({ status: "accepted" });
-    expect(push.endpoints).toEqual([endpoint]);
-  } finally {
-    await worker.dispose();
-  }
-}, 45_000);
-
-it("Frontier pushes no fight to either side or to a second phone; the same fights in Blitz reach both", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  try {
-    const second = `${PUSH_ENDPOINT}/second`;
-    await worker.db
-      .prepare(
-        `INSERT INTO "notification_push_subscriptions"
-      ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
-      SELECT '00000000-0000-4000-8000-000000000002', "owner", ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
-      FROM "notification_push_subscriptions" WHERE "id" = ?`,
-      )
-      .bind(second, DEVICE_ID)
-      .run();
-    await worker.runCron();
-    await pause(polls(5)); // the notifier reaches the shard's head
-    herald.battle(); // the player attacks a beast camp's army: their own tap
-    await pause(polls(5));
-    expect(push.received).toEqual([]);
-
-    herald.state.mode = "blitz";
-    herald.battle();
-    await waitUntil(() => push.received.length >= 2, 20_000);
-    await pause(polls(3));
-    expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, second].sort());
-    expect(await push.words()).toEqual([
-      "You won a battle / frontier-a: your army beat the enemy.",
-      "You won a battle / frontier-a: your army beat the enemy.",
-    ]);
-  } finally {
-    await worker.dispose();
-  }
-}, 60_000);
-
-it("Day open checks the phone's quiet hours again when it is due: a phone now in its night gets nothing then", async () => {
-  const { herald, push, worker } = await createHarness("important");
-  try {
-    await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(dayZone()).run();
-    const opensAt = openSoon(herald, 8);
-    await worker.runCron();
-    await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // prepared while the phone was in its day
-    await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()).run();
-    await pause(Math.max(0, opensAt + 3000 - Date.now()));
-    expect(push.received).toEqual([]);
-  } finally {
-    await worker.dispose();
-  }
-}, 45_000);
-
-it("a Day open prepared before a restart is not sent if its game settled while the notifier was down", async () => {
-  const { herald, push, worker, start } = await createHarness("important");
-  const opensAt = openSoon(herald, 8);
-  await worker.runCron();
-  await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // the opening is prepared and stored
-  await worker.dispose();
-  herald.state.status = "Settled";
-  await pause(Math.max(0, opensAt + 1000 - Date.now()));
-  const restarted = await start();
-  try {
-    await restarted.runCron();
-    await pause(3000);
-    expect(push.received).toEqual([]);
-  } finally {
-    await restarted.dispose();
-  }
-}, 45_000);
-
-it.each([
-  ["a held Realm", "realm", false, (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor before ${ends}.`],
-  [
-    "an ordinary Devcon realm",
-    "campaign",
-    false,
-    (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
-  ],
-  [
-    "a golden Devcon realm",
-    "golden",
-    false,
-    (ends: string) => `Day 2 is open / frontier-a: claim 2,000 Labor and 2,000 Essence before ${ends}.`,
-  ],
-  ["a home with no claim", null, false, (ends: string) => `Day 2 is open / frontier-a: it ends at ${ends}.`],
-  [
-    "the season's last day",
-    "golden",
-    true,
-    (ends: string) =>
-      `The last day is open / frontier-a: claim 2,000 Labor and 2,000 Essence. The season ends at ${ends}.`,
-  ],
-] as const)(
-  "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",
-  async (_case, homeSource, last, words) => {
-    const { herald, push, worker } = await createHarness("important");
+  it("a phone that turns alerts on gets Alerts are on, and its game's lease keeps the phone's time zone", async () => {
+    const { push, worker } = await createHarness("important");
     try {
-      herald.state.homeSource = homeSource;
-      const [prepared, sent] = twoDayZones();
-      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(prepared).run();
-      const opensAt = openSoon(herald, 8);
-      const calendar = { seed: 1n, startMainAt: herald.state.seasonStart, dayUnitSeconds: DAY_UNIT_SECONDS };
-      const dayEnd = dayOf(calendar, opensAt / 1000)!.end;
-      if (last) herald.state.seasonEnd = dayEnd;
-      await worker.runCron();
-      await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // worded once, in the first zone
-      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(sent).run();
-      await waitUntil(() => push.received.length > 0, 15_000);
-      expect(await push.words()).toEqual([words(clockIn(sent, dayEnd * 1000))]);
+      const { cookie, realmsId: owner } = await worker.signInWithEmailCode("alerts-on@x.test");
+      const post = (action: string, body: unknown) =>
+        worker.mf.dispatchFetch(`${ORIGIN}/api/notifications/push/${action}`, {
+          method: "POST",
+          headers: { origin: ORIGIN, "content-type": "application/json", cookie },
+          body: JSON.stringify(body),
+        });
+      const id = "00000000-0000-4000-8000-0000000000aa";
+      const endpoint = `${PUSH_ENDPOINT}/alerts-on`;
+      const subscribed = await post("subscribe", {
+        owner,
+        id,
+        token: "00000000-0000-4000-8000-0000000000ab",
+        gameAlerts: true,
+        subscription: { endpoint, keys: await deviceKeys() },
+      });
+      expect(subscribed.status).toBe(200);
+
+      expect((await post("foreground", { owner, id, foreground: true, timeZone: "Asia/Kolkata" })).status).toBe(200);
+      expect((await post("foreground", { owner, id, foreground: false })).status).toBe(200);
+      const bad = await post("foreground", { owner, id, foreground: false, timeZone: "Mars/Olympus" });
+      expect(await bad.json()).toEqual({ error: "invalid_time_zone" });
+      const zone = await worker.db
+        .prepare('SELECT "timeZone" FROM "notification_push_subscriptions" WHERE "id" = ?')
+        .bind(id)
+        .first<{ timeZone: string }>();
+      expect(zone?.timeZone).toBe("Asia/Kolkata");
+
+      const alertsOn = await post("alerts-on", { owner, id });
+      expect(await alertsOn.json()).toEqual({ status: "accepted" });
+      expect(push.endpoints).toEqual([endpoint]);
     } finally {
       await worker.dispose();
     }
-  },
-  45_000,
-);
+  }, 45_000);
+
+  it("Frontier pushes no fight to either side or to a second phone; the same fights in Blitz reach both", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      const second = `${PUSH_ENDPOINT}/second`;
+      await worker.db
+        .prepare(
+          `INSERT INTO "notification_push_subscriptions"
+        ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "gameAlertsEnabledAt", "createdAt")
+        SELECT '00000000-0000-4000-8000-000000000002', "owner", ?, "p256dh", "auth", 'x', "gameAlertsEnabledAt", "createdAt"
+        FROM "notification_push_subscriptions" WHERE "id" = ?`,
+        )
+        .bind(second, DEVICE_ID)
+        .run();
+      await worker.runCron();
+      await pause(polls(5)); // the notifier reaches the shard's head
+      herald.battle(); // the player attacks a beast camp's army: their own tap
+      await pause(polls(5));
+      expect(push.received).toEqual([]);
+
+      herald.state.mode = "blitz";
+      herald.battle();
+      await waitUntil(() => push.received.length >= 2, 20_000);
+      await pause(polls(3));
+      expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, second].sort());
+      expect(await push.words()).toEqual([
+        "You won a battle / frontier-a: your army beat the enemy.",
+        "You won a battle / frontier-a: your army beat the enemy.",
+      ]);
+    } finally {
+      await worker.dispose();
+    }
+  }, 60_000);
+
+  it("Day open checks the phone's quiet hours again when it is due: a phone now in its night gets nothing then", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(dayZone()).run();
+      const opensAt = openSoon(herald, 8);
+      await worker.runCron();
+      await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // prepared while the phone was in its day
+      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()).run();
+      await pause(Math.max(0, opensAt + 3000 - Date.now()));
+      expect(push.received).toEqual([]);
+    } finally {
+      await worker.dispose();
+    }
+  }, 45_000);
+
+  it("a Day open prepared before a restart is not sent if its game settled while the notifier was down", async () => {
+    const { herald, push, worker, start } = await createHarness("important");
+    const opensAt = openSoon(herald, 8);
+    await worker.runCron();
+    await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // the opening is prepared and stored
+    await worker.dispose();
+    herald.state.status = "Settled";
+    await pause(Math.max(0, opensAt + 1000 - Date.now()));
+    const restarted = await start();
+    try {
+      await restarted.runCron();
+      await pause(3000);
+      expect(push.received).toEqual([]);
+    } finally {
+      await restarted.dispose();
+    }
+  }, 45_000);
+
+  it.each([
+    ["a held Realm", "realm", false, (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor before ${ends}.`],
+    [
+      "an ordinary Devcon realm",
+      "campaign",
+      false,
+      (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
+    ],
+    [
+      "a golden Devcon realm",
+      "golden",
+      false,
+      (ends: string) => `Day 2 is open / frontier-a: claim 2,000 Labor and 2,000 Essence before ${ends}.`,
+    ],
+    ["a home with no claim", null, false, (ends: string) => `Day 2 is open / frontier-a: it ends at ${ends}.`],
+    [
+      "the season's last day",
+      "golden",
+      true,
+      (ends: string) =>
+        `The last day is open / frontier-a: claim 2,000 Labor and 2,000 Essence. The season ends at ${ends}.`,
+    ],
+  ] as const)(
+    "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",
+    async (_case, homeSource, last, words) => {
+      const { herald, push, worker } = await createHarness("important");
+      try {
+        herald.state.homeSource = homeSource;
+        const [prepared, sent] = twoDayZones();
+        await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(prepared).run();
+        const opensAt = openSoon(herald, 8);
+        const calendar = { seed: 1n, startMainAt: herald.state.seasonStart, dayUnitSeconds: DAY_UNIT_SECONDS };
+        const dayEnd = dayOf(calendar, opensAt / 1000)!.end;
+        if (last) herald.state.seasonEnd = dayEnd;
+        await worker.runCron();
+        await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // worded once, in the first zone
+        await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(sent).run();
+        await waitUntil(() => push.received.length > 0, 15_000);
+        expect(await push.words()).toEqual([words(clockIn(sent, dayEnd * 1000))]);
+      } finally {
+        await worker.dispose();
+      }
+    },
+    45_000,
+  );
+});
