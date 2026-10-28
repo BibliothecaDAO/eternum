@@ -59,8 +59,8 @@ export interface DirectMessageThreadState {
   /** The thread as the server last sent it: its unread count is the only one (directUnread reads it). */
   thread: DirectMessageThread;
   messages: DirectMessage[];
-  /** The other player's message this client last told the server it read, so it is told once. */
-  readThrough?: string;
+  /** The other player's line this connection last told the server the player read through (receiptDue). */
+  receiptSent?: string;
   hasMoreHistory: boolean;
   lastFetchedCursor?: string | null;
   isFetchingHistory: boolean;

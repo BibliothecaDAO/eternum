@@ -44,6 +44,11 @@ class FakeSocket {
   close() {
     this.readyState = FakeSocket.CLOSED;
   }
+  /** The network drops it: what it was handed and had not sent is lost. */
+  drop() {
+    this.readyState = FakeSocket.CLOSED;
+    this.#listeners.get("close")?.forEach((listener) => listener({ wasClean: false, reason: "network lost" }));
+  }
   open() {
     this.readyState = FakeSocket.OPEN;
     this.#listeners.get("open")?.forEach((listener) => listener({}));
@@ -104,7 +109,7 @@ let root: Root;
 let undoLayout: () => void;
 
 /** A client starting empty, as a reload or a new device starts it: chat opened, the inbox's handshake received. */
-const startEmpty = async (unread: number, page?: Parameters<typeof serve>[0]) => {
+const startEmpty = async (unread: number, page?: Parameters<typeof serve>[0], last = HISTORY[1]!) => {
   vi.stubGlobal("fetch", serve(page));
   useRealtimeChatStore.getState().actions.resetClient();
   await act(async () =>
@@ -116,7 +121,7 @@ const startEmpty = async (unread: number, page?: Parameters<typeof serve>[0]) =>
   const inbox = FakeSocket.made.at(-1)!;
   await act(async () => {
     inbox.open();
-    inbox.receive(handshake(listing(unread)));
+    inbox.receive(handshake(listing(unread, last)));
   });
   return inbox;
 };
@@ -312,5 +317,48 @@ describe("unread is the server's count, whatever part of the conversation the cl
     await press("Messages");
     expect(rows()[0]!.textContent).toContain("dawn it is");
     expect(useRealtimeChatStore.getState().dmThreads[THREAD]!.messages.map(({ id }) => id)).toEqual(["d2", "d3"]);
+  });
+});
+
+describe("the read reaches the server", () => {
+  const inboxes = () => FakeSocket.made.filter((socket) => new URL(socket.url).pathname === "/api/chat/inbox");
+
+  it("tells it again on the next connection when the one before dropped before the server took it", async () => {
+    const inbox = await startEmpty(1);
+    await openConversation();
+    expect(receipts(inbox)).toEqual(["d2"]);
+    // The receipt was handed to the socket, which dropped before the server recounted.
+    await act(async () => {
+      inbox.drop();
+      await new Promise((resolve) => setTimeout(resolve, 1_100));
+    });
+    const reopened = inboxes().at(-1)!;
+    expect(reopened).not.toBe(inbox);
+    await act(async () => {
+      reopened.open();
+      reopened.receive(handshake(listing(1)));
+    });
+    // Still open: the handshake still counts it, so the read goes again, once, on the new connection.
+    expect(receipts(reopened)).toEqual(["d2"]);
+    await back();
+    await act(async () => rows()[0]!.querySelector("button")!.click());
+    expect(receipts(reopened)).toEqual(["d2"]);
+    await recounted(reopened, 0);
+    await back();
+    expect(tabs()).toEqual(["Global", "Messages"]);
+  });
+
+  it("reads the other player's lines a history page brings, when the listed last line is the player's own", async () => {
+    // The player answered from another device: the handshake lists 1 unread under their own last line.
+    const ownLast = message("d3", SELF, "I am back", 40);
+    const inbox = await startEmpty(1, { messages: [ownLast, HISTORY[1]!, HISTORY[0]!], nextCursor: null }, ownLast);
+    expect(tabs()).toEqual(["Global", "Messages1"]);
+    await openConversation();
+    expect(lineIds()).toEqual(["d1", "d2", "d3"]);
+    expect(receipts(inbox)).toEqual(["d2"]);
+    await recounted(inbox, 0, ownLast);
+    await back();
+    expect(tabs()).toEqual(["Global", "Messages"]);
+    expect(rows()[0]!.querySelector(".ui-chip")).toBeNull();
   });
 });

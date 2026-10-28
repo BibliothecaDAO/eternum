@@ -22,6 +22,7 @@ import type {
   WorldChatZoneState,
 } from "./types";
 import { fetchApi } from "@/runtime/app-api";
+import { receiptDue } from "./direct-unread";
 
 const normalizeHttpBaseUrl = (raw: string): string => {
   try {
@@ -285,7 +286,10 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               if (Array.isArray(message.threads)) {
                 const listed = message.threads as { thread: unknown; lastMessage: unknown }[];
                 set((state) => {
-                  const dmThreads = { ...state.dmThreads };
+                  // A new connection tells its reads again: one sent on the connection before may have been lost.
+                  const dmThreads = Object.fromEntries(
+                    Object.entries(state.dmThreads).map(([id, held]) => [id, { ...held, receiptSent: undefined }]),
+                  );
                   for (const record of listed) {
                     const thread = mapDirectThreadRecord(record.thread);
                     const held = dmThreads[thread.id] ?? createThreadState(thread);
@@ -686,19 +690,17 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: Math.max(unreadWorldTotal - zoneState.unreadCount, 0),
       });
     },
-    // Read here, and told to the server, which recounts its unread and tells every device of the player: through the
-    // newest message the other player sent, once a message, while the server counts some unread.
+    // Read here, and told to the server when a receipt is due (receiptDue): it recounts its unread and tells every
+    // device of the player.
     markThreadAsRead: (threadId) => {
-      const { dmThreads, identity, actions } = get();
-      const thread = dmThreads[threadId];
-      if (!thread || !identity) return;
-      const newest = thread.messages.findLast((line) => line.senderId !== identity.playerId);
-      if (!newest || newest.id === thread.readThrough || !thread.thread.unreadCounts[identity.playerId]) return;
-      set({ dmThreads: { ...dmThreads, [threadId]: { ...thread, readThrough: newest.id } } });
-      void actions.acknowledgeDirectRead({
+      const state = get();
+      const due = receiptDue(state, threadId);
+      if (!due || !state.identity) return;
+      set({ dmThreads: { ...state.dmThreads, [threadId]: { ...state.dmThreads[threadId]!, receiptSent: due.id } } });
+      void state.actions.acknowledgeDirectRead({
         threadId,
-        messageId: newest.id,
-        readerId: identity.playerId,
+        messageId: due.id,
+        readerId: state.identity.playerId,
         readAt: new Date().toISOString(),
       });
     },

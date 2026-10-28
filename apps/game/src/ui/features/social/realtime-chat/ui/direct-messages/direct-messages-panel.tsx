@@ -10,6 +10,7 @@ import {
   useRealtimeChatSelector,
   useRealtimeTypingIndicators,
 } from "../../hooks/use-realtime-chat";
+import { receiptDue } from "../../model/direct-unread";
 import type { DirectMessage } from "../../model/types";
 import { computeDateSeparators, startsRun } from "../../model/message-grouping";
 import { replyMetadata, replyOf } from "../../model/reply";
@@ -86,13 +87,14 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
   );
   const chatActions = useRealtimeChatSelector((state) => state.actions);
 
-  // Open, it is read through its newest message: on opening, and as each new one arrives while it stays open.
-  const newestId = thread?.messages.at(-1)?.id;
+  // Open, it is read whenever a receipt is due: on opening, as the other player's lines arrive or a page of history
+  // brings them, and again on a new connection.
+  const due = useRealtimeChatSelector((state) =>
+    resolvedThreadId ? receiptDue(state, resolvedThreadId)?.id : undefined,
+  );
   useEffect(() => {
-    if (resolvedThreadId) {
-      markAsRead();
-    }
-  }, [markAsRead, resolvedThreadId, newestId]);
+    if (due) markAsRead();
+  }, [markAsRead, due]);
 
   // Its history is read once, when it opens: a conversation listed from the server holds only its last line until then.
   useEffect(() => {

@@ -7,7 +7,7 @@ import { UserAvatar } from "./user-avatar";
 
 /** A finger dragged this far right on a message answers it, as a phone's chats do. */
 const SWIPE_PX = 56;
-/** Moved less than this, a touch is a tap. */
+/** Moved less than this, a press is a click or a tap. */
 const TAP_PX = 8;
 
 /**
@@ -15,8 +15,8 @@ const TAP_PX = 8;
  * the rest of the run sits under it. A reply carries one line over it: who it answers and the start of what they said,
  * pressed to show that message. A message naming the reader is lit.
  *
- * Reply stands at its end while a pointer is over it or the keyboard is in it. On a phone, a tap shows it, and a swipe
- * right answers at once.
+ * Reply stands at its end once the message is clicked or tapped (the next click or tap puts it away), or while the
+ * keyboard is in it. On a phone, a swipe right answers at once.
  */
 export const MessageRow = ({
   id,
@@ -39,17 +39,17 @@ export const MessageRow = ({
   children: ReactNode;
 }) => {
   const [actions, setActions] = useState(false);
-  const touch = useRef<{ x: number; y: number } | null>(null);
+  const press = useRef<{ x: number; y: number; touch: boolean } | null>(null);
   const onPointerDown = (event: PointerEvent) => {
-    touch.current = event.pointerType === "touch" ? { x: event.clientX, y: event.clientY } : null;
+    press.current = { x: event.clientX, y: event.clientY, touch: event.pointerType === "touch" };
   };
   const onPointerUp = (event: PointerEvent) => {
-    const start = touch.current;
-    touch.current = null;
+    const start = press.current;
+    press.current = null;
     if (!start || (event.target as Element).closest("a, button")) return;
     const dx = event.clientX - start.x;
     const dy = Math.abs(event.clientY - start.y);
-    if (dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply();
+    if (start.touch && dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply();
     else if (Math.abs(dx) < TAP_PX && dy < TAP_PX) setActions((shown) => !shown);
   };
 
@@ -97,9 +97,7 @@ export const MessageRow = ({
         )}
         <p className="break-words">{children}</p>
       </div>
-      <span
-        className={cn("absolute right-1 top-0 group-hover:flex group-focus-within:flex", actions ? "flex" : "hidden")}
-      >
+      <span className={cn("absolute right-1 top-0 group-focus-within:flex", actions ? "flex" : "hidden")}>
         <HudButton kind="secondary" size="sm" onClick={onReply}>
           {CHAT_WORDS.reply}
         </HudButton>

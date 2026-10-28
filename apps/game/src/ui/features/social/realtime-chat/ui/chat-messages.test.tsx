@@ -194,6 +194,30 @@ describe("a room's messages", () => {
     });
   });
 
+  it("shows a message's Reply on a click or a tap, and puts it away on the next; a mouse never swipes", () => {
+    const press = (pointerType: string, from: number, to = from) =>
+      act(() => {
+        for (const [type, x] of [
+          ["pointerdown", from],
+          ["pointerup", to],
+        ] as const) {
+          const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: 100 });
+          Object.defineProperty(event, "pointerType", { value: pointerType });
+          row("m3").dispatchEvent(event);
+        }
+      });
+    const reply = () => buttonIn(row("m3"), "Reply")!.parentElement!.classList;
+    expect(reply().contains("hidden")).toBe(true);
+    press("mouse", 20);
+    expect(reply().contains("flex")).toBe(true);
+    press("mouse", 20);
+    expect(reply().contains("hidden")).toBe(true);
+    press("touch", 20);
+    expect(reply().contains("flex")).toBe(true);
+    press("mouse", 20, 100);
+    expect(host.querySelector("form")!.textContent).not.toContain("sent 1,200 knights");
+  });
+
   it("answers a message swiped right on a phone", () => {
     const at = (type: string, x: number) => {
       const event = new MouseEvent(type, { bubbles: true, clientX: x, clientY: 100 });
