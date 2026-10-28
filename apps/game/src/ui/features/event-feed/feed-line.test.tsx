@@ -85,7 +85,8 @@ const draw = async (row: ProcessedStoryEvent, own = false) => {
   return {
     words: line.querySelector(".ui-event__text")!.textContent,
     reward: line.querySelector(".ui-feed-line__reward")?.textContent ?? null,
-    gold: line.querySelector("strong")?.className.includes("text-hud-gold") ?? null,
+    // The player's own row is gold as a whole (owner, 27 October: "put the row in yellow like it did before").
+    gold: line.hasAttribute("data-own"),
   };
 };
 
@@ -180,5 +181,5 @@ it("names the player once where a story's own words already name them, in gold w
 
 it("names no one on a story no player owns", async () => {
   const row = story("0x0", "BlitzFinalized", {});
-  expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: null });
+  expect(await draw(row)).toEqual({ words: "Blitz finalized", reward: null, gold: false });
 });

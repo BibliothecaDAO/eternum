@@ -922,6 +922,11 @@ span.ui-row__choose {
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;
 }
+/* The player's own row, in every lens: its words, its names and what it paid in gold, as the Feed drew it before
+   option A (owner, 27 October: "when a row is mine should put the row in yellow like it did before"). */
+.ui-feed-line[data-own] :is(.ui-event__text, .ui-event__text strong, .ui-feed-line__reward) {
+  color: rgb(var(--hud-gold));
+}
 
 /* ── Window: a panel the size of a task (Military, Transfer), its title bar and a way out. ── */
 /* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the

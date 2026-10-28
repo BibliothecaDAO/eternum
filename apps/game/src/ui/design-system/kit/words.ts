@@ -219,13 +219,14 @@ export const EVENTS_WORDS = {
     all: "Everything players do in the world",
   },
   /**
-   * Frontier's Feed: its default first, and Important called Mine, since a Frontier game has no Hyperstructure and the
-   * lens holds only the player's own (owner, 27 October: "important (which is mine, not important tbh)").
+   * Frontier's Feed: All, its default, then Important, anyone's notable stories, then Mine (owner, 27 October: "All /
+   * Important (battles but not just mine), then mine").
    */
-  feedLenses: { all: "All", important: "Mine" },
+  feedLenses: { all: "All", important: "Important", mine: "Mine" },
   feedLensTips: {
     all: "Everything players do in the world",
-    important: "Your fights, captures and chests",
+    important: "Fights, captures, cleared sites and chests, anyone's",
+    mine: "Everything you do",
   },
   failed: "Event history could not load.",
 } as const;

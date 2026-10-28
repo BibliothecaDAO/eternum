@@ -107,3 +107,52 @@ export const eventsReads = (filter: EventsFilter, address: string | null, hypers
     ...hyperstructures.map((entityId) => ({ limit: READ_LIMIT, story: "StructureCapturedStory", entityId })),
   ];
 };
+
+/**
+ * Frontier's Feed's three lenses (owner, 27 October: "All / Important (battles but not just mine), then mine"): All,
+ * the world's history; Important, the notable stories of anyone; Mine, every story that names the player. Blitz's
+ * Events and Log keep their two (EventsFilter).
+ */
+export type FeedLens = "all" | "important" | "mine";
+
+/**
+ * What the Feed's Important holds, from every player: a fight (with a player, a beast or a site's guard), a raid, a
+ * capture, a site cleared, and a chest opened. Exploring, raising an army, training, moving troops and building are
+ * the routine left to All and Mine.
+ */
+const NOTABLE_STORIES = [
+  "BattleEvent",
+  "RaidEvent",
+  "StructureCapturedStory",
+  "SitePayout",
+  "RewardChestOpened",
+  "RelicChestOpened",
+] as const;
+
+const isNotable = (event: ProcessedStoryEvent) => (NOTABLE_STORIES as readonly string[]).includes(event.story);
+
+/** How many stories each of the Feed's narrower reads holds, newest first. */
+const FEED_READ_LIMIT = 100;
+
+/** The history reads a Feed lens needs: the world's newest stories, each notable kind's, or the player's own. */
+export const feedReads = (lens: FeedLens, address: string | null): StoryRead[] => {
+  if (lens === "all") return [{ limit: WORLD_STORIES }];
+  if (lens === "important") return NOTABLE_STORIES.map((story) => ({ limit: FEED_READ_LIMIT, story }));
+  return address === null ? [] : [{ limit: FEED_READ_LIMIT, owner: address }];
+};
+
+/**
+ * What a Feed lens shows, newest first, each action once: All every story; Important the notable ones, a fight and the
+ * capture it won told once, by the capture; Mine the stories that name the player.
+ */
+export const selectFeedStories = (
+  stories: ProcessedStoryEvent[],
+  lens: FeedLens,
+  address: string | null,
+): ProcessedStoryEvent[] => {
+  const newestFirst = (kept: ProcessedStoryEvent[]) =>
+    kept.toSorted((left, right) => right.timestampMs - left.timestampMs);
+  if (lens === "all") return oneStoryPerAction(stories);
+  if (lens === "important") return onePerTransaction(oneStoryPerAction(newestFirst(stories.filter(isNotable))));
+  return oneStoryPerAction(newestFirst(stories.filter((event) => involvesPlayer(event, address))));
+};
