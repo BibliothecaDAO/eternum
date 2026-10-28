@@ -2,8 +2,9 @@ import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, ATTRIBUTES, RESEARCH_TREE, type Tier } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, ATTRIBUTE_NAMES, RESEARCH_TREE, type Tier } from "@/ui/design-system/kit/words";
 import { battleBonusBps, homecomingBps, logisticsStamina, scoutingIncrementBps } from "@bibliothecadao/eternum";
+import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 
 /**
@@ -13,7 +14,30 @@ import { formatExact, formatPercent } from "@bibliothecadao/types";
  * kind of site it finds more of.
  */
 
-export type AttributeKey = "battle" | "logistics" | "scouting" | "homecoming";
+/**
+ * Every attribute an army levels, under its name in the game's schema (progression::Attribute, what BuyTier sends): its
+ * field on the army's progress, the name a player reads and its Aspect's mark, read together. The one list the army's
+ * panel, a phone's picked army, the level-up command and the Feed read; a test holds it to the generated schema.
+ */
+export const ARMY_ATTRIBUTES = {
+  Battle: { key: "battle", name: ATTRIBUTE_NAMES.Battle, mark: "order-rage" },
+  Logistics: { key: "logistics", name: ATTRIBUTE_NAMES.Logistics, mark: "order-skill" },
+  Scouting: { key: "scouting", name: ATTRIBUTE_NAMES.Scouting, mark: "order-detection" },
+  Homecoming: { key: "homecoming", name: ATTRIBUTE_NAMES.Homecoming, mark: "order-enlightenment" },
+} as const satisfies Record<string, { key: keyof NativeRows["ArmyProgress"]; name: string; mark: IconMeaning }>;
+
+export type Attribute = keyof typeof ARMY_ATTRIBUTES;
+export type AttributeKey = (typeof ARMY_ATTRIBUTES)[Attribute]["key"];
+
+/** The attributes in the schema's order, each with its name there. */
+export const ATTRIBUTE_LIST = (Object.keys(ARMY_ATTRIBUTES) as Attribute[]).map((attribute) => ({
+  attribute,
+  ...ARMY_ATTRIBUTES[attribute],
+}));
+
+/** The attribute whose field on the army's progress is `key`, by its name in the schema (what BuyTier sends). */
+export const attributeOf = (key: AttributeKey): Attribute => ATTRIBUTE_LIST.find((row) => row.key === key)!.attribute;
+
 export type ScoutKind = "camp" | "rift" | "beasts";
 
 /** What the detail reads of an army and its game. */
@@ -67,18 +91,8 @@ export interface ArmyView {
   refill: number;
 }
 
-const ATTRIBUTE_ROWS: { key: AttributeKey; mark: IconMeaning }[] = [
-  { key: "battle", mark: "order-rage" },
-  { key: "logistics", mark: "order-skill" },
-  { key: "scouting", mark: "order-detection" },
-  { key: "homecoming", mark: "order-enlightenment" },
-];
-
-/** An attribute's mark, as its tile on the army's panel and its line in the Feed draw it. */
-export const attributeMark = (key: AttributeKey): IconMeaning => ATTRIBUTE_ROWS.find((row) => row.key === key)!.mark;
-
 export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
-  const attributes = ATTRIBUTE_ROWS.map(({ key, mark }, index): AttributeView => {
+  const attributes = ATTRIBUTE_LIST.map(({ key, name, mark }): AttributeView => {
     const level = army.progress[key];
     const price = army.levelXp[level - 1];
     const figure = (at: number) =>
@@ -87,7 +101,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     const now = key === "scouting" ? scoutingNow(army.progress.scoutingKinds) : effect(figure(level));
     return {
       key,
-      name: ATTRIBUTES[index],
+      name,
       mark,
       level: level as Tier,
       now,

@@ -2,7 +2,7 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
-import { RefillButton, RefillChip, RefillConfirm } from "./refill";
+import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "./refill";
 
 const render = (node: React.ReactNode) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -58,6 +58,47 @@ describe("the refill", () => {
     expect(sending.host.querySelector("button")!.textContent).toBe("Refilling…");
     expect(sending.host.querySelector("button")!.disabled).toBe(true);
     sending.unmount();
+  });
+
+  it("beside a phone's picked army is its stamina: pressed for the refill, red and unpressable when short, at rest when full", () => {
+    const onRefill = vi.fn();
+    const button = (node: React.ReactNode) => {
+      const view = render(node);
+      const pressed = view.host.querySelector("button")!;
+      const read = [
+        pressed.textContent,
+        pressed.getAttribute("aria-label"),
+        pressed.disabled,
+        pressed.dataset.tone ?? null,
+      ];
+      const tip = pressed.dataset.tip ?? null;
+      act(() => pressed.click());
+      view.unmount();
+      return [...read, tip];
+    };
+    expect(button(<StaminaRefill stamina={{ current: 14, max: 140 }} held={500} onRefill={onRefill} />)).toEqual([
+      "14/140",
+      "Refill 14/140",
+      false,
+      null,
+      null,
+    ]);
+    expect(onRefill).toHaveBeenCalledTimes(1);
+    expect(button(<StaminaRefill stamina={{ current: 14, max: 140 }} held={100} onRefill={onRefill} />)).toEqual([
+      "14/140",
+      "Refill 14/140",
+      true,
+      "bad",
+      "Refill needs 126 LORDS, has 100",
+    ]);
+    expect(button(<StaminaRefill stamina={{ current: 140, max: 140 }} held={100} onRefill={onRefill} />)).toEqual([
+      "140/140",
+      "Refill 140/140",
+      true,
+      null,
+      null,
+    ]);
+    expect(onRefill).toHaveBeenCalledTimes(1);
   });
 
   it("reads Refilling… and cannot be pressed while the army's refill is in flight", () => {

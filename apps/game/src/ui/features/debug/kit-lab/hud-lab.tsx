@@ -29,6 +29,7 @@ import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
+import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { RuinChestMoment } from "@/ui/features/frontier/chest/ruin-chest-moment";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
@@ -64,7 +65,7 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillChip, RefillConfirm } from "@/ui/features/frontier/army/refill";
+import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
@@ -516,6 +517,10 @@ const STATES = {
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
+  // A phone's picked army, its card not opened: the row in the dock's place.
+  picked: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "owner" },
+  "picked-rested": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "rested" },
+  "picked-pay": { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 1, picked: "pay" },
   full: { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, realmDot: "ember" as const },
   offline: { clock: UNKNOWN_CLOCK, stores: UNKNOWN_STORES, armies: UNKNOWN_ARMIES, offline: true },
   menu: { clock: CLOCK, stores: STORES, armies: ARMIES, menu: true },
@@ -1020,6 +1025,11 @@ type LabState = {
   /** The card a store's ring or plate opened. */
   storeCard?: StoreLine;
   army?: LabArmySheet;
+  /**
+   * A phone's picked army: the owner's Army 2 (27 October: 14/140, 100 of 126 LORDS, a level to buy), it rested, or its
+   * realm holding 500 LORDS.
+   */
+  picked?: "owner" | "rested" | "pay";
   realmView?: "build" | "build-early" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
@@ -1165,10 +1175,11 @@ export const HudLab = () => {
                 onGo={noop}
               />
             )}
+            {!desktop && !lab.order && lab.selected !== undefined && <LabPicked lab={lab} />}
             {lab.visiting && <VisitFoot label="Aldric" order={2} name="Aldric" arriving={false} onLeave={noop} />}
           </>
         }
-        dock={(desktop || !lab.order) && <LabDock lab={lab} />}
+        dock={(desktop || (!lab.order && lab.selected === undefined)) && <LabDock lab={lab} />}
         nav={
           !lab.visiting && (
             <PlaceNav
@@ -1259,6 +1270,54 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       onClose={noop}
     />
   );
+};
+
+/** A phone's picked army on the fiction, as the action row draws it in the dock's place. */
+const LabPicked = ({ lab }: { lab: LabState }) => {
+  const { army, lords } = labPickedArmy(lab);
+  return (
+    <PickedArmy
+      army={army}
+      refill={<StaminaRefill stamina={army.stamina!} held={lords} onRefill={noop} />}
+      onDetails={noop}
+      onLevelUp={noop}
+    />
+  );
+};
+
+/** The owner's Army 2, it rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
+const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
+  const index = lab.selected ?? 0;
+  const base = { explorerId: index + 1, number: index + 1, label: `${ARMY} ${index + 1}`, art: "knight-t1" as const };
+  if (lab.picked) {
+    const rested = lab.picked === "rested";
+    const army = {
+      ...base,
+      xp: rested ? 40 : 276,
+      xpGoal: undefined,
+      troops: 1_342,
+      stamina: { current: rested ? 140 : 14, max: 140, perExplore: 20 },
+      secondsToFull: rested ? 0 : 4 * HOUR + 11 * 60,
+      canBuyTier: !rested,
+      tiers: { battle: 3, logistics: 2, scouting: 2, homecoming: 1 },
+    };
+    return { army, lords: lab.picked === "pay" ? 500 : 100 };
+  }
+  const army = lab.armies[index];
+  const current = army.stamina ?? 0;
+  return {
+    army: {
+      ...base,
+      xp: army.xp,
+      xpGoal: undefined,
+      troops: army.troops ?? 0,
+      stamina: { current, max: 150, perExplore: LAB_EXPLORE },
+      secondsToFull: (150 - current) * 60,
+      canBuyTier: army.tier === true,
+      tiers: { battle: 2, logistics: 3, scouting: 2, homecoming: 1 },
+    },
+    lords: lab.purse?.lords ?? LAB_LORDS,
+  };
 };
 
 /** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */

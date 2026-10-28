@@ -301,8 +301,13 @@ export const startsNewArmies = (attribute: string, numeral: string) => `new armi
  */
 export const xpTowardTip = (held: string, price: string, tier: string) =>
   `${XP} ${held} ${OF} ${price} · buys ${/^[AEIOU]/.test(tier) ? "an" : "a"} ${tier} attribute tier`;
-/** The four attributes, each wearing its Aspect's mark. */
-export const ATTRIBUTES = ["Battle", "Logistics", "Scouting", "Homecoming"] as const;
+/** The attributes an army levels, by their names in the game's schema, each wearing its Aspect's mark. */
+export const ATTRIBUTE_NAMES = {
+  Battle: "Battle",
+  Logistics: "Logistics",
+  Scouting: "Scouting",
+  Homecoming: "Homecoming",
+} as const;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = "Rift";
@@ -443,10 +448,9 @@ export const BUILD = "Build";
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
 
-/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its details' button. */
+/** A phone's picked army, in its action row (owner, 22 October 2026: mobile direction A): its token opens its card. */
 export const PICKED_ARMY = {
   details: (army: string) => `${army}: details`,
-  letGo: (army: string) => `Let go of ${army}`,
 } as const;
 
 /** Troops between two of the realm's armies side by side (Frontier's Transfer troops, desktop and phone). */

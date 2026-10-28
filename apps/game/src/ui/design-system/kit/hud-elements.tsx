@@ -77,11 +77,13 @@ export const HudButton = forwardRef<
     icon?: IconMeaning;
     /** Its order is on its way: this word in place of its own, and no second press. */
     busy?: string;
+    /** Its action is out of reach now (a refill short of LORDS): its words and line in red. */
+    tone?: "bad";
     /** Its action. One that returns the send's promise holds the button until the send settles: no second press. */
     onClick?: (event: MouseEvent<HTMLButtonElement>) => unknown;
     children?: ReactNode;
   } & Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick">
->(({ kind, size = "md", icon, busy, children, disabled, onClick, ...rest }, ref) => {
+>(({ kind, size = "md", icon, busy, tone, children, disabled, onClick, ...rest }, ref) => {
   const sending = useSending();
   const waits = busy !== undefined || sending.now;
   return (
@@ -94,6 +96,7 @@ export const HudButton = forwardRef<
       className="ui-button"
       data-kind={kind}
       data-size={size}
+      data-tone={tone}
       onClick={(event) => sending.press(() => onClick?.(event))}
     >
       {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}

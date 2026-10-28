@@ -42,7 +42,7 @@ export const ArmyDetail = ({
   /** The refill's control, at the end of the chips' row, so the stamina line keeps its width. */
   refill?: ReactNode;
   sending: boolean;
-  /** Opens on the choices (the lab's second step). */
+  /** Opens on the choices: the picked army's Level up on a phone, and the lab's second step. */
   choosing?: boolean;
   onLevelUp: (attribute: AttributeKey, kind: ScoutKind | undefined) => unknown;
 }) => {
@@ -89,7 +89,7 @@ export const ArmyDetail = ({
             <StatusChips army={army} />
             {refill && <span className="ml-auto flex">{refill}</span>}
           </span>
-          <StaminaLine army={army} />
+          <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
         </div>
       </div>
       <div className="grid grid-cols-4 gap-1.5">
@@ -120,16 +120,16 @@ const StatusChips = ({ army }: { army: ArmyView }) => (
  * The stamina on one line (the owner's layout A, 27 October): "96/170", the bar in a segment per explore, and when it is
  * full again.
  */
-const StaminaLine = ({ army }: { army: ArmyView }) => (
+const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "secondsToFull">) => (
   <span data-stamina-line className="flex items-center gap-2">
     <span className="flex items-center gap-0.5 whitespace-nowrap text-hud-label tabular-nums text-hud-ink">
       <Icon name="stamina" size={14} />
-      {`${formatExact(army.stamina.current)}/${formatExact(army.stamina.max)}`}
+      {`${formatExact(stamina.current)}/${formatExact(stamina.max)}`}
     </span>
     <span className="min-w-0 flex-1">
-      <HudStamina stamina={army.stamina} />
+      <HudStamina stamina={stamina} />
     </span>
-    {army.secondsToFull !== undefined && army.secondsToFull > 0 && <FullIn seconds={army.secondsToFull} />}
+    {secondsToFull !== undefined && secondsToFull > 0 && <FullIn seconds={secondsToFull} />}
   </span>
 );
 
@@ -174,10 +174,7 @@ const XpLine = ({ army }: { army: ArmyView }) =>
     </span>
   );
 
-/**
- * The XP held, with how XP is earned on its hover, Level up (lit while the XP buys a level-up, with no count: the
- * choices say which), and the bar to the next level-up.
- */
+/** The XP held, with how XP is earned on its hover, Level up, and the bar to the next level-up. */
 const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
   <div className="flex flex-col gap-1.5">
     <div className="flex items-end justify-between gap-2">
@@ -193,13 +190,21 @@ const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void })
       </span>
       <span className="flex items-center gap-2">
         <XpLine army={army} />
-        <HudButton kind={army.affordable > 0 ? "primary" : "secondary"} size="sm" icon="upgrade" onClick={onLevelUp}>
-          {army.affordable > 0 ? ARMY_DETAIL.levelUp : ARMY_DETAIL.levelUps}
-        </HudButton>
+        <LevelUpButton affordable={army.affordable > 0} onPress={onLevelUp} />
       </span>
     </div>
     {army.goal && <HudMeter share={army.goal.share} tone={army.affordable > 0 ? "good" : undefined} label={XP} />}
   </div>
+);
+
+/**
+ * Level up: the primary while the XP buys a level-up, with no count (the choices say which), else a way to see what it
+ * will buy. The army card's and a phone's picked army's.
+ */
+export const LevelUpButton = ({ affordable, onPress }: { affordable: boolean; onPress: () => void }) => (
+  <HudButton kind={affordable ? "primary" : "secondary"} size="sm" icon="upgrade" onClick={onPress}>
+    {affordable ? ARMY_DETAIL.levelUp : ARMY_DETAIL.levelUps}
+  </HudButton>
 );
 
 /** One level-up: the attribute, its next level, what it gives next, its XP. */

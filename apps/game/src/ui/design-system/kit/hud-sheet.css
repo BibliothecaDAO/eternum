@@ -182,6 +182,16 @@ button.ui-panel__name[data-action]:hover {
   background: var(--hud-hover);
   color: rgb(var(--hud-accent));
 }
+/* A button whose action is out of reach now (a refill short of LORDS): the bad chip's look, at full strength even
+   unpressable, since its words are a reading the player needs. */
+.ui-button[data-tone="bad"] {
+  border-color: color-mix(in srgb, var(--hud-bad) 45%, transparent);
+  background: color-mix(in srgb, var(--hud-bad) 14%, transparent);
+  color: var(--hud-bad);
+}
+.ui-button[data-tone="bad"]:disabled {
+  opacity: 1;
+}
 .ui-button[data-icon-only] {
   width: var(--hud-control);
   padding: 0;

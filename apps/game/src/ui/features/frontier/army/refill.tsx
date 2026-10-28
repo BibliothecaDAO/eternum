@@ -4,6 +4,12 @@ import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-element
 import { CANCEL, REFILL, REFILLING, STAMINA, heldAgainstNeed, refillShort } from "@/ui/design-system/kit/words";
 
 /**
+ * Whether the realm's LORDS cannot pay the refill: the one rule every refill control reads, the order bar's, the card's
+ * and a phone's picked army's. A refill fills the whole bar, so it needs the whole price; unknown LORDS are not short.
+ */
+const refillOutOfReach = (held: number | undefined, price: number): boolean => held !== undefined && held < price;
+
+/**
  * Refill's control (wireframes 05, 08): the missing points as a LORDS price, one LORDS a point; when the realm holds
  * fewer LORDS, what it holds against the price takes the button's place in two lines, "Refill" over "40 / 150", its
  * hover saying what the two numbers count. The order bar's; the army card's is the chip below.
@@ -20,7 +26,7 @@ export const RefillButton = ({
   refilling?: boolean;
   onRefill: () => void;
 }) =>
-  held !== undefined && held < price ? (
+  refillOutOfReach(held, price) ? (
     <span
       role="img"
       aria-label={refillShort(formatExact(held), formatCharge(price))}
@@ -54,7 +60,7 @@ export const RefillChip = ({
   refilling?: boolean;
   onRefill: () => void;
 }) => {
-  const short = held !== undefined && held < price;
+  const short = refillOutOfReach(held, price);
   return (
     <HudChip
       icons={["stamina", "lords"]}
@@ -66,6 +72,43 @@ export const RefillChip = ({
     >
       {refilling ? REFILLING : short ? heldAgainstNeed(held, price) : formatShort(price)}
     </HudChip>
+  );
+};
+
+/**
+ * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press
+ * opening the refill's confirm. Short of LORDS it reads in red, what the realm holds against the price on its hover, and
+ * takes no press; a full bar takes none either.
+ */
+export const StaminaRefill = ({
+  stamina,
+  held,
+  refilling = false,
+  onRefill,
+}: {
+  stamina: { current: number; max: number };
+  held: number | undefined;
+  /** A refill of this army is in flight: sent, its outcome not known yet. */
+  refilling?: boolean;
+  onRefill: () => void;
+}) => {
+  const price = Math.ceil(stamina.max - stamina.current);
+  const short = refillOutOfReach(held, price);
+  const reading = `${formatExact(stamina.current)}/${formatExact(stamina.max)}`;
+  return (
+    <HudButton
+      kind="secondary"
+      size="sm"
+      icon="stamina"
+      tone={short ? "bad" : undefined}
+      aria-label={`${REFILL} ${reading}`}
+      data-tip={short ? refillShort(formatExact(held), formatCharge(price)) : undefined}
+      disabled={price <= 0 || short}
+      busy={refilling ? REFILLING : undefined}
+      onClick={onRefill}
+    >
+      {reading}
+    </HudButton>
   );
 };
 
