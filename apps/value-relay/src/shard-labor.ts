@@ -10,7 +10,7 @@ interface LaborTarget {
   operatorAddress: string;
   privateKey: string;
 }
-type RecordedGrant = { game_id: bigint; account: bigint; home: bigint; amount: bigint };
+type RecordedGrant = { game_id: bigint; account: bigint; home: bigint; amount: bigint; essence: bigint };
 
 export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, gameId: number): RelayEffect<number> =>
   relayOperation("read Frontier labor day", async () => {
@@ -31,7 +31,7 @@ export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, 
   });
 
 export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
-  relayOperation("write settled Realm labor grant", async (): Promise<LaborGrant> => {
+  relayOperation("write home labor grant", async (): Promise<LaborGrant> => {
     if (!sameFelt(claim.chainId, target.connection.chainId)) throw new Error("labor_chain_differs");
     const home = { game_id: Number(uint(String(claim.gameId), 32)), home: uint(claim.home, 64) };
     uint(String(claim.day), 64);
@@ -61,5 +61,6 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
       account: felt(claim.account),
       home: String(grant.home),
       amount: String(grant.amount),
+      essence: String(grant.essence),
     };
   });

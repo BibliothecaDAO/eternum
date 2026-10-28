@@ -664,6 +664,30 @@ export const AppChoice = ({
   </button>
 );
 
+/**
+ * A ticket in the player's hand: a campaign's flyer in small, its art over its line and its stub. It comes sealed;
+ * opened, it turns over once, and a golden one lands gold under its rays.
+ */
+export const AppTicket = ({
+  art,
+  line,
+  stub,
+  face = "sealed",
+}: {
+  art: ReactNode;
+  line: string;
+  stub: string;
+  face?: "sealed" | "opened" | "golden";
+}) => (
+  <div className="app-ticket" data-face={face}>
+    <div key={face} className="app-ticket__card">
+      <div className="app-ticket__art">{art}</div>
+      <p className="app-ticket__line">{line}</p>
+      <p className="app-ticket__stub">{stub}</p>
+    </div>
+  </div>
+);
+
 /** A player's portrait in its ring; the player's own ring in the accent. An initial where there is no portrait. */
 export const AppPortrait = ({
   src,

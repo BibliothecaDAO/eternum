@@ -1,4 +1,4 @@
-import { registerHeldRealm } from "@/services/realm-entry";
+import { registerHomeSource } from "@/services/realm-entry";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
@@ -501,8 +501,8 @@ export const GameEntryModal = ({
 
       const settlementTarget = isEternumDevMode ? (initialSnapshot?.settledCount ?? 0) + 1 : expectedSettlementCount;
       if (isEternumDevMode) setDevSettlementTarget(settlementTarget);
-      if (isFrontierMode && initialSnapshot?.heldRealmId == null && heldRealmNumber !== "")
-        await registerHeldRealm(game, Number(heldRealmNumber));
+      if (isFrontierMode && initialSnapshot?.heldRealmId == null)
+        await registerHomeSource(game, heldRealmNumber === "" ? null : Number(heldRealmNumber));
       setSettleStage("settling");
       await submitSettlement(navigationEntryContext, (client) =>
         client.setup.systemCalls.settle_season({

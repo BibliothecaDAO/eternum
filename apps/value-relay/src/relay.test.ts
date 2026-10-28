@@ -102,7 +102,9 @@ const fixture = () => {
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
+      grantLabor: vi.fn(() =>
+        Effect.succeed({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000", essence: "0" }),
+      ),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -223,6 +225,7 @@ describe("confirmed value relay", () => {
       account: "0x3",
       home: "9",
       amount: "1000000000000",
+      essence: "0",
     });
     expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith(claim);
     expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();

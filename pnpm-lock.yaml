@@ -831,12 +831,18 @@ importers:
       '@types/node':
         specifier: ^22.19.13
         version: 22.20.1
+      '@types/qrcode':
+        specifier: 1.5.5
+        version: 1.5.5
       eslint:
         specifier: catalog:web
         version: 9.39.2(jiti@2.7.0)
       miniflare:
         specifier: 4.20260730.0
         version: 4.20260730.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+      qrcode:
+        specifier: 1.5.3
+        version: 1.5.3
       typescript:
         specifier: catalog:web
         version: 5.9.3
@@ -8256,6 +8262,9 @@ packages:
 
   '@types/prop-types@15.7.15':
     resolution: {integrity: sha512-F6bEyamV9jKGAFBEmlQnesRPGOQqS2+Uwi0Em15xenOxHaf2hv6L8YCVn3rPdPJOiJfPiCnLIRyvwVaqMY3MIw==}
+
+  '@types/qrcode@1.5.5':
+    resolution: {integrity: sha512-CdfBi/e3Qk+3Z/fXYShipBT13OJ2fDO2Q2w5CIP5anLTLIndQG9z6P1cnm+8zCWSpm5dnxMFd/uREtb0EXuQzg==}
 
   '@types/react-dom@18.3.7':
     resolution: {integrity: sha512-MEe3UeoENYVFXzoXEWsvcpg6ZvlrFNlOQ7EOsvhI3CfAXwzPfO8Qwuxd40nepsYKqyyVQnTdEfv68q91yLcKrQ==}
@@ -25676,6 +25685,10 @@ snapshots:
       kleur: 3.0.3
 
   '@types/prop-types@15.7.15': {}
+
+  '@types/qrcode@1.5.5':
+    dependencies:
+      '@types/node': 22.20.1
 
   '@types/react-dom@18.3.7(@types/react@18.3.28)':
     dependencies:

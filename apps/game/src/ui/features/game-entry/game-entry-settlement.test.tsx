@@ -49,7 +49,10 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { GameEntryModal } from "./game-entry-modal";
 
-afterEach(() => vi.useRealTimers());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.unstubAllGlobals();
+});
 it.each(["play", "settle"] as const)(
   "enters once after founding for %s intent, with no delayed navigation after unmount",
   async (entryIntent) => {
@@ -60,6 +63,8 @@ it.each(["play", "settle"] as const)(
     state.milestone.mockClear();
     useAccountStore.setState({ account: { address: "0x111" } as never });
     useIdentitySessionStore.setState({ status: "signed-in" });
+    // The relay registers the home's source before founding: this account names no Realm and holds no ticket.
+    vi.stubGlobal("fetch", async () => Response.json({}));
     const host = document.createElement("div");
     const root = createRoot(host);
     const query = new QueryClient({ defaultOptions: { queries: { retry: false } } });

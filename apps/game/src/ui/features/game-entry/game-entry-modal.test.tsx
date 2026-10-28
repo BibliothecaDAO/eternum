@@ -112,7 +112,7 @@ it("renders spectator entry before any head without reading the chain clock", as
 });
 
 it.each(["", "711", "registered"])(
-  "founds from the player's button, registering only a typed held Realm (%s)",
+  "founds from the player's button, registering its source first: a typed held Realm, else any campaign ticket (%s)",
   async (number) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     if (number === "registered") settlement.heldRealmId = 711;
@@ -153,11 +153,10 @@ it.each(["", "711", "registered"])(
       const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
       await act(async () => found.click());
       expect(settlement.calls).toEqual([{ signer, selectedRealm: undefined }]);
-      expect(settlement.order).toEqual(number === "711" ? ["register", "settle"] : ["settle"]);
+      expect(settlement.order).toEqual(number === "registered" ? ["settle"] : ["register", "settle"]);
+      const url = `/api/value/realm-entry?chainId=${GAME.chainId}`;
       expect(sent).toEqual(
-        number === "711"
-          ? [{ url: `/api/value/realm-entry?chainId=${GAME.chainId}`, body: { gameId: 8, realmId: 711 } }]
-          : [],
+        number === "registered" ? [] : [{ url, body: number === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 } }],
       );
       expect(settlement.settled).toBe(true);
     } finally {
@@ -210,7 +209,7 @@ it.each(["", "712"])("lets a refused Realm claimant found with a new choice (%s)
     expect(host.textContent).toContain("Choose another Realm or leave blank.");
     await choose(alternative);
     await found();
-    expect(sent).toEqual(alternative === "" ? [711] : [711, 712]);
+    expect(sent).toEqual(alternative === "" ? [711, undefined] : [711, 712]);
     expect(settlement.calls).toEqual([{ signer, selectedRealm: undefined }]);
     expect(settlement.settled).toBe(true);
   } finally {

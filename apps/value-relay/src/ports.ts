@@ -94,7 +94,9 @@ export interface LaborGrant {
   gameId: number;
   account: string;
   home: string;
+  /** The Labor granted, and a golden ticket's home's Essence (else zero), as the contract recorded them. */
   amount: string;
+  essence: string;
 }
 export interface LaborClaim {
   gameId: number;

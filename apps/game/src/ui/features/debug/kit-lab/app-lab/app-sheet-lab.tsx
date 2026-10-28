@@ -4,6 +4,7 @@ import {
   AppButton,
   AppChip,
   AppChoice,
+  AppTicket,
   AppCode,
   AppDialog,
   AppEmpty,
@@ -73,6 +74,7 @@ export const AppSheetLab = () => (
       <NoticeSection />
       <SettingSection />
       <ChoiceSection />
+      <TicketSection />
       <PortraitSection />
       <PageHeadSection />
       <EmptySection />
@@ -632,6 +634,23 @@ const ChoiceSection = () => (
     }
   />
 );
+
+const TicketSection = () => {
+  const art = <img src="/images/logos/frontier-lockup.webp" alt="Frontier" className="h-24 w-auto" />;
+  return (
+    <Element
+      name="Ticket"
+      rule="A campaign's flyer in small: its art, its line, its stub. Sealed, then turned over once; gold under rays."
+      sheet={
+        <div className="flex flex-wrap items-start gap-6 p-6">
+          <AppTicket art={art} line="A realm waits for you" stub="Devcon · Mumbai" />
+          <AppTicket art={art} face="opened" line="A Devcon realm is yours" stub="Devcon · Mumbai" />
+          <AppTicket art={art} face="golden" line="A golden realm waits" stub="One of 20 at Devcon" />
+        </div>
+      }
+    />
+  );
+};
 
 const PortraitSection = () => (
   <Element

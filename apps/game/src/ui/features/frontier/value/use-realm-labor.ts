@@ -6,11 +6,15 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useRealmStores } from "../realm-stores";
+import { campaignMarkOf, isGoldenHome, readCampaignHome } from "./campaign-home";
 import { planRealmLabor } from "./realm-labor";
 
-const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm"] as const;
+const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm", "CampaignHome"] as const;
 
-/** Eligibility, today's claim and the available space all come from the native facts. */
+/**
+ * Eligibility, today's claim and the available space all come from the native facts. A home claims when it was founded
+ * with a held Realm or with a campaign's ticket; a golden ticket's home claims Essence with its Labor.
+ */
 export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
   const now = useNowSeconds();
@@ -22,6 +26,8 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   const laborRules = setup.store.get("LaborRules", { game_id });
   if (!laborRules || labor?.amount === undefined) return undefined;
   const settled = setup.store.get("SettledRealm", { game_id, realm_id: realm.metadata.realm_id });
+  const campaign = readCampaignHome(setup.store, realm);
+  const essence = isGoldenHome(campaign) ? Number(laborRules.golden_essence) : 0;
   const claimed = setup.store.get("LaborGrant", {
     game_id,
     home: entity_id,
@@ -29,13 +35,16 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   });
   return {
     plan: planRealmLabor({
-      eligible: settled?.home === entity_id,
+      eligible: settled?.home === entity_id || campaign !== undefined,
       claimed: !!claimed,
       amount: Number(laborRules.amount),
+      essence,
       held: labor.amount,
       limit: labor.limit,
     }),
     dailyAmount: Number(laborRules.amount),
+    dailyEssence: essence,
+    mark: campaignMarkOf(campaign),
     secondsLeft: day.end - now,
     claim: () => claimRealmLabor(realm),
   };

@@ -28,6 +28,8 @@ export const FrontierRealms = ({
     <RealmsSheet
       plan={labor.plan}
       dailyAmount={labor.dailyAmount}
+      dailyEssence={labor.dailyEssence}
+      mark={labor.mark}
       secondsLeft={labor.secondsLeft}
       sending={sending}
       onClaim={() => void claim()}

@@ -573,7 +573,16 @@ export const withdrawalUnknown = (amount: string) => `No answer yet for these ${
 export const REALM_LABOR = "Realm Labor";
 export const NO_REALM_LABOR = "No daily Labor claim";
 export const settledRealmLabor = (amount: number) => `${formatExact(amount)} Labor per game day`;
-export const claimRealmLaborLabel = (amount: number) => `Claim ${formatExact(amount)} Labor`;
+export const settledRealmEssence = (amount: number) => `${formatExact(amount)} Essence per game day`;
+/** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
+export const claimRealmLaborLabel = (amount: number, essence = 0) =>
+  `Claim ${[
+    ...(amount > 0 ? [`${formatExact(amount)} Labor`] : []),
+    ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
+  ].join(" · ")}`;
+/** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
+export const campaignRealmMark = (campaign: string, golden: boolean) => (golden ? `Golden ${campaign}` : campaign);
+export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
   `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
@@ -665,6 +674,25 @@ export const SIGN_IN_WORDS = {
   handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
   discordAgain: "Try Discord again",
+} as const;
+
+/** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
+export const JOIN_WORDS = {
+  realm: "A Devcon realm is yours",
+  claim: "Claim your realm",
+  yourTicket: "Your ticket",
+  open: "Open your ticket",
+  opening: "Opening…",
+  sealed: "A realm waits for you",
+  stub: "Devcon · Mumbai",
+  golden: "Golden ticket",
+  goldenLine: "A golden realm waits",
+  goldenStub: (count: number) => `One of ${count} at Devcon`,
+  laborEachDay: (amount: number) => `${formatExact(amount)} Labor each day`,
+  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
+  continue: "Continue",
+  closed: "Devcon tickets have closed.",
+  failed: "Your ticket could not be opened.",
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */

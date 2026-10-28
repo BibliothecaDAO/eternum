@@ -40,6 +40,25 @@ describe("identity client", () => {
     fetch.mockResolvedValueOnce(Response.json(refusal, { status: 400 }));
     await expect(client.saveBuildOrders(saved)).rejects.toThrow("Step 1: “mill” is not a goal.");
   });
+  it("redeems a campaign ticket with its flyer's code, and says a closed campaign as the server does", async () => {
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(Response.json({ campaign: "devcon-2026", tier: "golden" }));
+    const client = createIdentityClient({ apiUrl: "https://realms.test/api", fetch });
+    expect(await client.redeemCampaignTicket("devcon-2026", "T9HW3NPB")).toEqual({
+      campaign: "devcon-2026",
+      tier: "golden",
+    });
+    expect(fetch.mock.calls[0]).toMatchObject([
+      "https://realms.test/api/campaigns/redeem",
+      { credentials: "include", method: "POST", body: JSON.stringify({ campaign: "devcon-2026", code: "T9HW3NPB" }) },
+    ]);
+    fetch.mockResolvedValueOnce(Response.json({ error: "campaign_closed" }, { status: 410 }));
+    await expect(client.redeemCampaignTicket("devcon-2026", null)).rejects.toMatchObject({
+      status: 410,
+      code: "campaign_closed",
+    });
+  });
   it("signs the server nonce and returns the resulting session", async () => {
     const session = {
       session: { id: "session-1", expiresAt: "2026-08-26T00:00:00.000Z", userId: "0x123" },

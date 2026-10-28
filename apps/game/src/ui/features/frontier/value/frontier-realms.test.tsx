@@ -3,9 +3,11 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 import { dayOf } from "@bibliothecadao/eternum";
+import { shortString } from "starknet";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 const facts = vi.hoisted(() => ({
   held: true,
+  campaign: undefined as { campaign_id: bigint; tier: number } | undefined,
   claimedDay: -1n,
   now: 360,
   balance: 0 as number | undefined,
@@ -18,14 +20,16 @@ vi.mock("@/hooks/context/game-context", () => ({
         get: (model: string, key: { day?: bigint }) => {
           facts.read(model, key);
           return model === "LaborRules"
-            ? { amount: 1000n }
-            : model === "SettledRealm"
-              ? facts.held
-                ? { home: 412n }
-                : undefined
-              : key.day === facts.claimedDay
-                ? { amount: 1000n }
-                : undefined;
+            ? { amount: 1000n, golden_essence: 1000n }
+            : model === "CampaignHome"
+              ? facts.campaign
+              : model === "SettledRealm"
+                ? facts.held
+                  ? { home: 412n }
+                  : undefined
+                : key.day === facts.claimedDay
+                  ? { amount: 1000n }
+                  : undefined;
         },
       },
     },
@@ -42,6 +46,7 @@ const rules = { seed: 711n, dayUnitSeconds: 4800, startMainAt: 360, spacing: 50 
 const Sheet = () => <FrontierRealms labor={useRealmLabor(rules, home)} onRealm={() => {}} onClose={() => {}} />;
 afterEach(() => {
   facts.held = true;
+  facts.campaign = undefined;
   facts.claimedDay = -1n;
   facts.balance = 0;
   facts.now = 360;
@@ -92,6 +97,80 @@ it("claims its settled home once and takes the result from the next native facts
     expect(host.textContent).toContain("No daily Labor claim");
     expect(host.querySelector("input")).toBeNull();
     expect([...host.querySelectorAll("button")].some((button) => button.textContent?.startsWith("Claim "))).toBe(false);
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+const DEVCON_ID = BigInt(shortString.encodeShortString("devcon-2026"));
+it("gives a campaign home its daily claim, with a golden ticket's Essence, and wears the campaign's mark", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const requests: unknown[] = [];
+  vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
+    requests.push(JSON.parse(String(init.body)));
+    return Response.json({ grant: { amount: "1000000000000" } });
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+  try {
+    facts.held = false;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+    await show();
+    expect(host.textContent).toContain("Golden Devcon");
+    expect(host.textContent).toContain("1,000 Labor per game day");
+    expect(host.textContent).toContain("1,000 Essence per game day");
+    expect(buttons()).toContain("Claim 1,000 Labor · 1,000 Essence");
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Claim"))!.click(),
+    );
+    expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
+    await show();
+    expect(host.textContent).toContain("Devcon");
+    expect(host.textContent).not.toMatch(/Golden|Essence/);
+    expect(buttons()).toContain("Claim 1,000 Labor");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+it("lets a golden home at full Labor storage claim its Essence, and leaves a full regular home only its Realm", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const requests: unknown[] = [];
+  vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
+    requests.push(JSON.parse(String(init.body)));
+    return Response.json({ grant: { amount: "0", essence: "1000000000000" } });
+  });
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+  try {
+    facts.held = false;
+    facts.balance = 18000;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+    await show();
+    expect(host.textContent).toContain("0 of 1,000 fit · remainder lost");
+    expect(buttons()).toEqual(expect.arrayContaining(["Claim 1,000 Essence", "Realm"]));
+    await act(async () =>
+      [...host.querySelectorAll("button")].find((b) => b.textContent === "Claim 1,000 Essence")!.click(),
+    );
+    expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    // The receipt arrives in the native facts: today is claimed.
+    facts.claimedDay = 0n;
+    await show();
+    expect(host.textContent).toContain("Claimed today");
+    expect(buttons().some((label) => label?.startsWith("Claim"))).toBe(false);
+
+    facts.claimedDay = -1n;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
+    await show();
+    expect(host.textContent).toContain("0 of 1,000 fit · remainder lost");
+    expect(buttons().some((label) => label?.startsWith("Claim"))).toBe(false);
+    expect(buttons()).toContain("Realm");
   } finally {
     await act(async () => root.unmount());
   }
