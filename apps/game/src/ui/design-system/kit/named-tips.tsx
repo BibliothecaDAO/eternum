@@ -32,6 +32,15 @@ const cutOff = (anchor: HTMLElement) =>
     (node) => node.scrollWidth > node.clientWidth || node.scrollHeight > node.clientHeight,
   );
 
+/**
+ * Whether the element covers the whole screen (a backdrop, a full-page layer): it is the screen, not a thing on it, so a
+ * name has nowhere to stand beside it but the screen's edge, alone (the owner, 28 October 2026: "why is there a ruin").
+ */
+const coversScreen = (anchor: HTMLElement) => {
+  const { width, height } = anchor.getBoundingClientRect();
+  return width >= window.innerWidth && height >= window.innerHeight;
+};
+
 /** A meter says its reading with its name: "stamina 81 / 150". */
 const meterLine = (meter: HTMLElement, name: string) => {
   const now = meter.getAttribute("aria-valuenow");
@@ -42,11 +51,11 @@ const meterLine = (meter: HTMLElement, name: string) => {
 /**
  * The line an element under the pointer shows: its own `data-tip`, else its accessible name. Words the element
  * already shows whole (a button reading "Deploy", an event row's own sentence) are not said twice; words cut off at
- * its edge are.
+ * its edge are. Something covering the whole screen names nothing.
  */
 const namedAt = (target: EventTarget | null): Named | null => {
   const anchor = target instanceof Element ? target.closest<HTMLElement>(NAMED) : null;
-  if (!anchor) return null;
+  if (!anchor || coversScreen(anchor)) return null;
   const own = anchor.dataset.tip;
   if (own !== undefined) return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : { anchor, line: own };
   const name = anchor.getAttribute("aria-label") ?? "";

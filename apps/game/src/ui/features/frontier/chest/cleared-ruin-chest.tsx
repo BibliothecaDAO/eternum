@@ -11,7 +11,7 @@ import { RuinChestMoment } from "./ruin-chest-moment";
 
 /**
  * A cleared ruin's result over the game's facts: its chest opens with its moment (its tier and the LORDS it paid, from
- * its clear receipt), the XP the clear paid and the troops it cost, until the player taps it away.
+ * its clear receipt), the XP the clear paid and the troops it cost, and goes by itself.
  */
 export const ClearedRuinChest = () => {
   const opening = useRuinChest();
@@ -26,7 +26,7 @@ export const ClearedRuinChest = () => {
           lords={chest.lords}
           xp={clearedSiteXp(setup.store, opening.siteId)}
           troopsLost={opening.troopsLost}
-          onClose={closeRuinChest}
+          onDone={closeRuinChest}
         />
       )}
     </AnimatePresence>
