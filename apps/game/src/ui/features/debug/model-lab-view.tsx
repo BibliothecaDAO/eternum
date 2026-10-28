@@ -4,6 +4,7 @@ import { FrontierPaintedLab } from "./frontier-painted-lab";
 import { WorkshopModelLab } from "./workshop-model-lab";
 import { RealmSeriesLab } from "./realm-series-lab";
 import { ProceduralRealmsLab } from "./procedural-realms-lab";
+import { ProceduralBiomesLab } from "./procedural-biomes-lab";
 import { ClearedSiteLab } from "./cleared-site-lab";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
@@ -52,6 +53,7 @@ export function ModelLabView() {
   if (params.get("family") === "workshops") return <WorkshopModelLab />;
   if (params.get("family") === "cleared-sites") return <ClearedSiteLab />;
   if (params.get("family") === "procedural-realms") return <ProceduralRealmsLab />;
+  if (params.get("family") === "procedural-biomes") return <ProceduralBiomesLab />;
   return params.get("family") === "realms" ? <RealmSeriesLab /> : <UnitModelLabView />;
 }
 
@@ -171,6 +173,7 @@ function UnitModelLabView() {
         <Link to="/lab/models?family=beasts">Frontier beasts</Link>
         <Link to="/lab/models?family=realms">Realm ladder</Link>
         <Link to="/lab/models?family=procedural-realms">Procedural realms</Link>
+        <Link to="/lab/models?family=procedural-biomes">Procedural biomes</Link>
         <Link to="/lab/models?family=workshops">Workshop · Craft Yard</Link>
         <Link to="/lab/models?family=frontier-painted">Frontier buildings · painted set</Link>
         <Link to="/lab/models?family=cleared-sites">Cleared sites</Link>

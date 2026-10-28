@@ -640,6 +640,15 @@ chosen **Age** cut into kit modules (ring, keep, towers, roofs, yard pieces) by 
 shipped model, the fixed design (what a home without a Realm keeps) and twelve real Realms, all kit realms in one batch
 per material; the header counts modules, batches, triangles and draws. `&distance=10&focus=<slot>` frames one row.
 
+Art → **Models** → **Procedural biomes**
+(`/lab/models?family=procedural-biomes&biome=<forest|taiga|desert|scorched>&look=<today|target>`) is a study: one
+biome's patch on the game terrain, either with the game's own props (Today) or composed as a place from the same 15 prop
+meshes in one batch (Target: massed stands and glades, layered understory, landmarks; hex centres kept clear). The
+header counts props, batches and draws.
+
+Ethereal depths: Art → **Terrain** (`/lab/terrain`) → Biome **Ethereal / Underground** → **Depth** (Ethereal I, II, III)
+shows each depth's palette, mist and light (`src/three/terrain/ethereal-depth-look.ts`). The world map shows depth I.
+
 ### T1 Knight
 
 Land T1 Knights use the new sword-and-shield model in every game mode. Near/mid skin detail follows camera distance; the
