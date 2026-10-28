@@ -1,7 +1,7 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import type { LabCommand, LabFact, LabScenario } from "./lab-chain";
+import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
@@ -17,9 +17,6 @@ const LIMIT_RAISED = 3;
  * always from release 3).
  */
 type Survivor = "picked" | "tapped";
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
  * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-keeps-picked or

@@ -10,7 +10,7 @@ import {
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 
-import type { LabFact, LabScenario } from "./lab-chain";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
@@ -233,6 +233,3 @@ const researchPriced = (): LabFact[] => [
     value: { game_id: 1, reveal_xp: 2, fixed_xp: 200, uncommon_xp: 100, rare_xp: 200, epic_xp: 400, legendary_xp: 800 },
   },
 ];
-
-const wire = (value: unknown): Record<string, unknown> =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));

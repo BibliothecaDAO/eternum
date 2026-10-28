@@ -2,7 +2,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 
-import type { LabFact, LabScenario } from "./lab-chain";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
@@ -10,9 +10,6 @@ const PRECISION = 1_000_000_000n;
 const CLEARED_CAMP = 711;
 /** How long both stay on battle cooldown after the fight: longer than a session. */
 const COOLDOWN_SECONDS = 3_600;
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
  * The owner's army on prod just after its fight (/lab/game?scenario=after-battle): Frontier game 1, 25 October 2026 at
@@ -66,13 +63,19 @@ export const lowStaminaScenario = (): LabScenario => {
   return spire;
 };
 
-/** The camp the army cleared, on the tile it stands on: the site's row with its receipt, as clear_site leaves it. */
-const clearedCampAt = (tile: { col: number; row: number }): LabFact => ({
+/**
+ * A camp the spire's army cleared, on the tile given (by default the after-battle camp the army stands on): the site's
+ * row with its receipt, as clear_site leaves it.
+ */
+export const clearedCampAt = (
+  tile: { col: number; row: number },
+  camp: { key: string; entityId: number } = { key: "0x1ab96", entityId: CLEARED_CAMP },
+): LabFact => ({
   model: "ExpeditionSite",
-  key: "0x1ab96",
+  key: camp.key,
   value: wire({
     game_id: 1,
-    entity_id: CLEARED_CAMP,
+    entity_id: camp.entityId,
     category: StructureType.Camp,
     initial_guard_count: 1_600n * PRECISION,
     alt: false,

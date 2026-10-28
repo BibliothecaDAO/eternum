@@ -7,7 +7,7 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 
 import { nativeTilePackingConstants } from "../../../../../contracts/l3/world-native/schema/client.gen";
 import { frontierPreset } from "../../../../../config/source/frontier/native";
-import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./lab-chain";
+import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario, wire } from "./lab-chain";
 
 /** A revealed tile's packed data: its biome alone. */
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
@@ -19,9 +19,6 @@ const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
 const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
 
 /**
  * The fixture's rules as Frontier plays them: hour-long day units, so a day outlasts a session; Frontier's own commands
