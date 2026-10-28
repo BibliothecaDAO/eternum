@@ -40,6 +40,22 @@ it("asks our directory for the signed-in player's state on every shard, and for 
   expect(requests).toEqual(["/api/directory"]);
 });
 
+it("gives each signed-in player and guardian their own account, asked in any order", () => {
+  const guardian = {
+    publicKey: "0x20b94f1f60aabd0d7538bc5d78b95829603d1c969220385992772be5283ca76",
+    accountClassHash: playerAccount.accountClassHash,
+  };
+  const first = "0x4dcca33a9dcd23f3d11f33c2082297968809f3600f2ea26493e52000233bac8";
+  const player = "0x7135b0375449f4d4ba792fb0ed683f501002ec64aa8c742dc90071b5f014992";
+
+  expect(realmsPlayerOf(first, guardian)).toBe(player);
+  const other = realmsPlayerOf("0x1234", guardian);
+  const otherGuardian = realmsPlayerOf(first, { ...guardian, publicKey: "0x99" });
+  expect(new Set([player, other, otherGuardian]).size).toBe(3);
+  expect(realmsPlayerOf("0x1234", guardian)).toBe(other);
+  expect(realmsPlayerOf(first, guardian)).toBe(player);
+});
+
 it("points the player at a game they can enter now, a live Frontier season first, else the soonest still registering", () => {
   const game = (overrides: Partial<DirectoryGame>) =>
     ({

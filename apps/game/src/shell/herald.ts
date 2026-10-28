@@ -56,8 +56,22 @@ const fetchGuardian = async (): Promise<GuardianIdentity> => {
  * The signed-in player's account address on every shard our directory lists, known from the session alone, before any
  * game is joined: the directory admits only shards whose accounts sit under this guardian and class.
  */
-export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null =>
-  realmsId && guardian ? realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey) : null;
+export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null => {
+  if (!realmsId || !guardian) return null;
+  const inputs = `${realmsId}:${guardian.accountClassHash}:${guardian.publicKey}`;
+  if (lastRealmsPlayer?.inputs !== inputs)
+    lastRealmsPlayer = {
+      inputs,
+      address: realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey),
+    };
+  return lastRealmsPlayer.address;
+};
+
+/**
+ * The address last worked out, with what it was worked out from. It is a pedersen hash, milliseconds of work, and every
+ * HUD render that shows the player asks for it: a press or a fact change paid it again in each surface.
+ */
+let lastRealmsPlayer: { inputs: string; address: string } | null = null;
 
 const GUARDIAN_QUERY = { queryKey: ["shell", "guardian"], queryFn: fetchGuardian, staleTime: Infinity } as const;
 
