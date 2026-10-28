@@ -2257,6 +2257,11 @@ button.ui-card__choose:disabled {
   z-index: theme(zIndex.hud-motion);
   pointer-events: none;
 }
+/* The map's labels and plates (army plates, site tokens, all in the label layer) would float over the chest and through
+   the veil's spotlight: while the moment plays they step aside. */
+.chest-moment #labelrenderer {
+  visibility: hidden;
+}
 .ui-chest-moment__veil {
   position: absolute;
   inset: 0;

@@ -1,4 +1,5 @@
 import { AudioManager } from "@/audio/core/AudioManager";
+import { useDocumentClass } from "@/hooks/use-document-class";
 import type { ChestRarity } from "@/three/rewards/chest-rarity-glow";
 import { PRESENTED_CHEST_BEATS } from "@/three/rewards/chest-transitions";
 import { onRewardChestShown, type RewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
@@ -38,6 +39,8 @@ export const ChestLordsMoment = () => {
 };
 
 const ChestMoment = ({ request, onDone }: { request: RewardChestRequest; onDone: () => void }) => {
+  // The map's labels and plates step aside: nothing but the chest and its LORDS while it plays.
+  useDocumentClass("chest-moment");
   const opened = useChestOpened(request.rarity, onDone);
   return (
     <motion.div

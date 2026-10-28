@@ -41,6 +41,7 @@ it("veils the screen while the chest plays, makes its LORDS the hero as it opens
   act(() => root.render(createElement(ChestLordsMoment)));
   const moment = () => document.querySelector<HTMLElement>("[data-chest-moment]");
   expect(moment()).toBeNull();
+  expect(document.documentElement.classList.contains("chest-moment")).toBe(false);
 
   act(() =>
     announceRewardChestShown({
@@ -57,6 +58,8 @@ it("veils the screen while the chest plays, makes its LORDS the hero as it opens
   expect(moment()?.querySelector(".ui-chest-moment__veil")).not.toBeNull();
   expect(moment()?.querySelector("button")).toBeNull();
   expect(moment()?.querySelector(".ui-chest-moment__figure")).toBeNull();
+  // The map's labels and plates step aside while it plays (hud-sheet.css: .chest-moment #labelrenderer).
+  expect(document.documentElement.classList.contains("chest-moment")).toBe(true);
   expect(plays).toEqual(["chest.charge"]);
 
   // The lid opens: its LORDS are the hero, the rest small under them, to its rarity's tell, burst and coins.
@@ -74,6 +77,7 @@ it("veils the screen while the chest plays, makes its LORDS the hero as it opens
   await act(async () => void vi.advanceTimersByTime(PRESENTED_CHEST_BEATS.gone * 1_000));
   await act(async () => void vi.advanceTimersByTime(1_000));
   expect(moment()).toBeNull();
+  expect(document.documentElement.classList.contains("chest-moment")).toBe(false);
   act(() => root.unmount());
   host.remove();
 });
