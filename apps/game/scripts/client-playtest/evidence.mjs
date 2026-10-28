@@ -601,6 +601,9 @@ export function evaluatePlaytestSummary(summary, options = {}) {
     if (result.errors?.length) {
       failures.push(describeRun(result, `${result.errors.length} browser errors`));
     }
+    if (result.machine?.gpu === "low-power" && result.machine.drewOnIntegratedGpu !== true) {
+      failures.push(describeRun(result, `asked for the integrated GPU, drew on ${result.gpu ?? "an unknown GPU"}`));
+    }
     const played = (result.steps ?? []).map((step) => step.name);
     const missing = (result.expectedSteps ?? []).filter((name) => !played.includes(name));
     if (missing.length) failures.push(describeRun(result, `steps not played: ${missing.join(", ")}`));

@@ -23,8 +23,15 @@ export const setViewport = ({ width, height }) => Object.assign(VIEWPORT, { widt
  * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
  * Every command names the profile: agent-browser relaunches the browser on a temporary one for a command that does not.
  */
-export function createBrowserSession(session, { headed, profile }) {
-  const sessionArgs = ["--session", session, "--profile", profile, ...(headed ? ["--headed"] : [])];
+export function createBrowserSession(session, { executablePath, headed, profile }) {
+  const sessionArgs = [
+    "--session",
+    session,
+    "--profile",
+    profile,
+    ...(executablePath ? ["--executable-path", executablePath] : []),
+    ...(headed ? ["--headed"] : []),
+  ];
   const invoke = (commandArgs) =>
     spawnSync("npx", ["-y", "agent-browser", ...sessionArgs, ...commandArgs], {
       cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
