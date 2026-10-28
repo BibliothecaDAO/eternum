@@ -145,8 +145,8 @@ test("changing unsent Blitz dates sends the newly computed setup with the curren
   expect(calls.find((call) => call.entrypoint === "open_season")!.calldata).toEqual([
     "1",
     "1",
-    String(Date.parse(input.blitzStart) / 1000),
-    String(Date.parse(input.blitzEnd) / 1000),
+    String(Date.parse(input.blitzStart!) / 1000),
+    String(Date.parse(input.blitzEnd!) / 1000),
   ]);
   expect(calls.some((call) => call.contractAddress === "0xbad")).toBe(false);
 });

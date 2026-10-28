@@ -41,7 +41,6 @@
       "origin": "https://docs.realms.party"
     },
     "box": "realms-production",
-    "blitzPreset": 2,
     "chests": "lords",
     "chestName": "Realms Loot Chest",
     "cosmeticsName": "Realms Cosmetic Items",

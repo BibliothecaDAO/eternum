@@ -97,3 +97,33 @@ test("a successful first setup cannot suppress opening season two", async () => 
   expect(saved.has(transactionIntentName(rpc, calls, "setup-0x10-2"))).toBe(true);
   expect(await resolve(rpc)).toMatchObject({ id: 2, present: true });
 });
+
+test("Frontier-only production's cold setup holds its Frontier preset and no Blitz call, and reads no Blitz season", async () => {
+  const rpc = { ...provider([]), address: "0x30" };
+  const saved = new Map<string, unknown>();
+  const files = {
+    read: (name: string) => saved.get(name),
+    write: (name: string, value: unknown) => saved.set(name, value),
+  };
+  const ready = await configureLedger(
+    rpc as unknown as Account,
+    environments.production,
+    { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
+    "0x33",
+    { frontierPresetId: "6", admin: "0xad" } as Inputs,
+    files as unknown as PrivateStore,
+    () => {},
+    async () => false,
+  );
+  expect(ready).toBe(false);
+  const written = saved.get("cold-setup.json") as {
+    account: string;
+    calls: { entrypoint: string; calldata: string[] }[];
+  };
+  expect(written.account).toBe("0xad");
+  expect(written.calls.filter((call) => call.entrypoint === "register_preset").map((call) => call.calldata[0])).toEqual(
+    ["6"],
+  );
+  expect(written.calls.some((call) => call.entrypoint === "open_season")).toBe(false);
+  expect(rpc.callContract).not.toHaveBeenCalled();
+});

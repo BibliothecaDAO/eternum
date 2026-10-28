@@ -4,11 +4,10 @@ import { join } from "node:path";
 import { Account, byteArray, CallData, hash, json, num, type Call, type RpcProvider } from "starknet";
 import { buildLedgerEconomicPreset, chestPresetFor } from "../../config/deployer/clean/ledger/economics";
 import { awardableCosmetics } from "../../contracts/l2/ledger/scripts/chest-preset.js";
-import { addressBook, root, type Environment, type Inputs, type Target } from "./settings";
+import { addressBook, blitzPresetOf, root, type Environment, type Inputs, type Target } from "./settings";
 import { classAt, isMissing, isContractRevert, confirm, send } from "./chain";
-import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { resolveBlitzSeason } from "./blitz-season";
+import { setupSeason, type BlitzWindow } from "./blitz-season";
 import type { PrivateStore } from "./private-store";
 
 export type Assets = { ledger: string; lords: string; mmr: string; chests: string; cosmetics: string };
@@ -172,12 +171,12 @@ export function setupCalls(
   target: Target,
   assets: Assets,
   pauser: string,
-  start: number,
-  end: number,
-  seasonId: number,
   frontierPresetId: number,
+  blitz: BlitzWindow | null,
 ) {
   const chests = chestPresetFor(target.environment as Environment);
+  // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
+  const blitzPreset = blitz ? blitzPresetOf(target) : null;
   const metadata = (collection: string, attributes: number) =>
     call(collection, "set_attrs_raw_to_ipfs_cid", [attributes, byteArray.byteArrayFromString(target.picture), false]);
   return [
@@ -187,19 +186,25 @@ export function setupCalls(
     call(assets.ledger, "grant_role", [hash.getSelectorFromName("PAUSER_ROLE"), pauser]),
     ...chests.bands.map((band) => metadata(assets.chests, band.metadata)),
     ...awardableCosmetics(chests).map((item: number) => metadata(assets.cosmetics, item)),
-    call(assets.ledger, "register_preset", [
-      target.blitzPreset,
-      buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
-      chests.bands,
-      chests.items,
-    ]),
+    ...(blitzPreset === null
+      ? []
+      : [
+          call(assets.ledger, "register_preset", [
+            blitzPreset,
+            buildLedgerEconomicPreset("blitz", { environment: target.environment as Environment, chests }),
+            chests.bands,
+            chests.items,
+          ]),
+        ]),
     call(assets.ledger, "register_preset", [
       frontierPresetId,
       buildLedgerEconomicPreset("frontier", { chests, presetId: frontierPresetId }),
       chests.bands,
       chests.items,
     ]),
-    call(assets.ledger, "open_season", [seasonId, target.blitzPreset, start, end]),
+    ...(blitzPreset === null
+      ? []
+      : [call(assets.ledger, "open_season", [blitz!.seasonId, blitzPreset, blitz!.start, blitz!.end])]),
   ];
 }
 /** Find the first block containing this contract; only code 20 means it did not exist yet. */
@@ -338,15 +343,13 @@ export async function configureLedger(
   output: (line: string) => void,
   readPresence = setupPresenceReader(account),
 ) {
-  const start = seconds(input.blitzStart);
-  const end = seconds(input.blitzEnd);
-  const season = await resolveBlitzSeason(account, assets.ledger, start, end);
-  const desired = setupCalls(target, assets, pauser, start, end, season.id, Number(input.frontierPresetId));
+  const season = await setupSeason(account, target, assets.ledger, input);
+  const desired = setupCalls(target, assets, pauser, Number(input.frontierPresetId), season.blitz);
   output("Reading collectible metadata on mainnet.");
   const present = await Promise.all(desired.map((operation) => readPresence(operation, season.head)));
   const missing = desired.filter((_, index) => !present[index]);
   if (!missing.length) return true;
-  if (missing.some((call) => call.entrypoint === "open_season") && start <= season.now)
+  if (missing.some((call) => call.entrypoint === "open_season") && season.blitz!.start <= season.now)
     throw new PublicError(
       "Blitz start is no longer in the future. Choose new explicit dates in inputs.json before sending setup.",
     );
@@ -354,6 +357,13 @@ export async function configureLedger(
     store.write("cold-setup.json", { account: input.admin, calls: missing });
     return false;
   }
-  await send(account, missing, store, `setup-${assets.ledger}-${season.id}`, output, season.head);
+  await send(
+    account,
+    missing,
+    store,
+    `setup-${assets.ledger}-${season.blitz?.seasonId ?? "frontier"}`,
+    output,
+    season.head,
+  );
   return true;
 }
