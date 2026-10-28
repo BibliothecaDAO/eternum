@@ -328,7 +328,11 @@ function buildEconomy(
   const labor = preset.labor;
   if (
     (labor !== null) !== (preset.dayUnitSeconds !== 0) ||
-    (labor !== null && (!Number.isSafeInteger(labor.amount) || labor.amount <= 0))
+    (labor !== null &&
+      (!Number.isSafeInteger(labor.amount) ||
+        labor.amount <= 0 ||
+        !Number.isSafeInteger(labor.goldenEssence) ||
+        labor.goldenEssence < 0))
   )
     throw new Error("Invalid Realm labor rules");
   return {
@@ -337,6 +341,7 @@ function buildEconomy(
         ? new CairoOption(CairoOptionVariant.None)
         : new CairoOption(CairoOptionVariant.Some, {
             amount: BigInt(preset.labor.amount),
+            golden_essence: BigInt(preset.labor.goldenEssence),
           }),
     discovery: buildDiscovery(preset),
     progression:

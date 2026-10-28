@@ -60,6 +60,7 @@ pub fn validate(preset: PresetDefinition) {
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
         let _ = labor.amount * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
     if let Some(chests) = preset.economy.chests {
         assert!(

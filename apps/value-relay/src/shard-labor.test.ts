@@ -30,7 +30,7 @@ const target = {
   privateKey: "0x1",
 };
 const claim: LaborClaim = { chainId: "0x1", gameId: 7, home: "9", day: 0, realmsId: "0x2", account: "0x123" };
-const grant = { game_id: 7n, account: 0x123n, home: 9n, amount: 1000n };
+const grant = { game_id: 7n, account: 0x123n, home: 9n, amount: 1000n, essence: 0n };
 let saved: typeof grant | undefined;
 beforeEach(() => {
   vi.resetAllMocks();

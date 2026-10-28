@@ -2997,10 +2997,16 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
+        },
+        {
+          "name": "golden_essence",
+          "type": "core::integer::u128",
+          "id": "0x676f6c64656e5f657373656e6365",
+          "feltLength": 1
         }
       ],
       "keyLength": 1,
-      "valueLength": 1,
+      "valueLength": 2,
       "derivedFrom": "preset"
     },
     {
@@ -3036,10 +3042,16 @@
           "type": "core::integer::u128",
           "id": "0x616d6f756e74",
           "feltLength": 1
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128",
+          "id": "0x657373656e6365",
+          "feltLength": 1
         }
       ],
       "keyLength": 3,
-      "valueLength": 2
+      "valueLength": 3
     },
     {
       "name": "ChestRules",
@@ -4513,6 +4525,39 @@
       ],
       "keyLength": 2,
       "valueLength": 1
+    },
+    {
+      "name": "CampaignHome",
+      "identity": "0x43616d706169676e486f6d65",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "campaign_id",
+          "type": "core::felt252",
+          "id": "0x63616d706169676e5f6964",
+          "feltLength": 1
+        },
+        {
+          "name": "tier",
+          "type": "core::integer::u8",
+          "id": "0x74696572",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 2
     },
     {
       "name": "EntryEntitlement",
@@ -8978,6 +9023,10 @@
         {
           "name": "amount",
           "type": "core::integer::u128"
+        },
+        {
+          "name": "essence",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -9001,6 +9050,10 @@
       "members": [
         {
           "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "golden_essence",
           "type": "core::integer::u128"
         }
       ]
@@ -13484,5 +13537,5 @@
       ]
     }
   },
-  "identity": "8b0bcf82179d42ffe1605743f0900391d145157aade8bb992c5ac97a5a6cd007"
+  "identity": "1eb3841f8064b4b439dd5c31b8ad879a0bdd2b0c55a8818b9bbae4ac5761f185"
 }

@@ -19,4 +19,5 @@ pub struct SettlementStateStorage<TSettlementProgress, TPlayerEntry, TEntryEntit
     pub entitlements: Map<(u32, ContractAddress), Option<TEntryEntitlement>>,
     pub held_realm_owners: Map<(u32, u32), ContractAddress>,
     pub held_realm_homes: Map<(u32, u32), u64>,
+    pub campaign_homes: Map<(u32, u64), Option<(felt252, u8)>>,
 }

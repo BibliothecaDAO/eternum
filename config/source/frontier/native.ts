@@ -121,7 +121,7 @@ export const frontierPreset: NativePreset = {
     epicXp: 900,
     legendaryXp: 1500,
   },
-  labor: { amount: 1000 },
+  labor: { amount: 1000, goldenEssence: 0 },
   // Daily chest prices cannot exceed 50 LORDS per share.
   chests: {
     poolBps: 7_000,

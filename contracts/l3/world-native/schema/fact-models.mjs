@@ -1004,6 +1004,18 @@ export function defineFactModels({ struct, model: declare }) {
       ],
       [{ name: "home", type: "core::integer::u64" }],
     ),
+    model(
+      "CampaignHome",
+      "game",
+      [
+        { name: "game_id", type: "core::integer::u32" },
+        { name: "home", type: "core::integer::u64" },
+      ],
+      [
+        { name: "campaign_id", type: "core::felt252" },
+        { name: "tier", type: "core::integer::u8" },
+      ],
+    ),
     model("EntryEntitlement", "game", struct("settlement::EntryKey"), struct("settlement::EntryEntitlement")),
     model("PlayerEntry", "game", struct("settlement::EntryKey"), struct("settlement::PlayerEntry")),
     model("TileOpt", "game", struct("map::TileKey"), struct("map::TileOpt")),
@@ -1394,6 +1406,7 @@ export const syncScopes = {
   PlayerPoints: { owners: ["address"] },
   RealmTraits: { realmTraits: ["realm_id"] },
   SettledRealm: { entities: ["home"] },
+  CampaignHome: { entities: ["home"] },
   EntryEntitlement: byOwner,
   PlayerEntry: byOwner,
   VillagePass: byOwner,

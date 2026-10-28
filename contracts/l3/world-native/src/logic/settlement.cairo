@@ -274,8 +274,10 @@ pub mod SettlementState {
                 return;
             }
             assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
-            if entitlement.pass_kind == 2 {
+            if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
                 self.reserve_held_realm(key, entitlement);
+            } else if entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND {
+                self.validate_campaign_entry(key, entitlement);
             }
             self.data.settlements.entitlements.write((key.game_id, key.owner), Some(entitlement));
             let mut values = array![];
@@ -287,6 +289,41 @@ pub mod SettlementState {
                         model: 'EntryEntitlement',
                         keys: array![key.game_id.into(), key.owner.into()].span(),
                         values: values.span(),
+                    },
+                );
+        }
+        fn validate_campaign_entry(
+            self: @ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
+        ) {
+            assert!(entitlement.realm_id == 0 && entitlement.metadata_3 == 0, "campaign has no NFT");
+            assert!(entitlement.metadata_1 != 0, "campaign id is required");
+            assert!(
+                entitlement.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()
+                    || entitlement.metadata_2 == crate::settlement::CAMPAIGN_GOLDEN.into(),
+                "invalid campaign tier",
+            );
+            let preset = crate::logic::preset_record::for_game(key.game_id);
+            assert!(
+                preset.rules.entry_rule.read() == crate::rules::ENTRY_OPEN
+                    && preset.rules.day_unit_seconds.read() != 0
+                    && preset.labor_rules.read().is_some(),
+                "campaign requires Frontier",
+            );
+        }
+        fn claim_campaign_home(
+            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
+        ) {
+            self.validate_campaign_entry(key, entitlement);
+            assert!(self.data.settlements.campaign_homes.read((key.game_id, home)).is_none(), "home source is fixed");
+            let tier: u8 = entitlement.metadata_2.try_into().unwrap();
+            self.data.settlements.campaign_homes.write((key.game_id, home), Some((entitlement.metadata_1, tier)));
+            self
+                .emit(
+                    RowSet {
+                        version: 1,
+                        model: 'CampaignHome',
+                        keys: array![key.game_id.into(), home.into()].span(),
+                        values: array![entitlement.metadata_1, tier.into()].span(),
                     },
                 );
         }
