@@ -168,3 +168,36 @@ it.each(["phone", "desktop"] as const)(
     }
   },
 );
+
+it.each(["phone", "desktop"] as const)(
+  "makes each army on a %s a button that is pressed when picked, and Deploy a button that only deploys",
+  (size) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    layout.is = size;
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const { store, row } = dayWithTwoOpenSlots();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDock realm={row} armies={ARMIES_OUT} />
+        </GameProvider>,
+      ),
+    );
+    try {
+      const toggles = [...host.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')];
+      expect(toggles.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-pressed")])).toEqual(
+        [
+          ["Army 1", "false"],
+          ["Army 2", "false"],
+        ],
+      );
+      expect(host.querySelector('nav[aria-label="Armies"] button[aria-label="Deploy"]')).not.toBeNull();
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);
