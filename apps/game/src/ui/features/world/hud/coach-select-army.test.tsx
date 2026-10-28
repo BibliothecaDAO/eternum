@@ -75,6 +75,11 @@ const pressStep = async () => {
 
 beforeEach(() => {
   Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
+  // The map's canvas, where a hex's place on screen is read.
+  const canvas = document.createElement("canvas");
+  canvas.id = "main-canvas";
+  canvas.getBoundingClientRect = () => ({ left: 0, top: 0, width: 1440, height: 900 }) as DOMRect;
+  document.body.replaceChildren(canvas);
   vi.spyOn(configManager, "getMapCenter").mockReturnValue(CENTER);
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
   vi.spyOn(configManager, "getVictoryPointGrants").mockReturnValue({
@@ -122,7 +127,7 @@ it("Show the crate frames the camera on the army and its crate, and opens the cr
   const armyOnScreen = { col: 4, row: 5 };
   const crateOnScreen = { col: 9, row: 5 };
   const { aimed, openedCards, scene } = worldMapCamera(armyOnScreen);
-  await scene.selectRequestedArmy(request!.entityId, request!.forSite);
+  await scene.selectRequestedArmy(request!);
 
   expect(aimed.length).toBeGreaterThan(0);
   for (const hex of aimed) {
@@ -138,7 +143,7 @@ it("Show the crate keeps the army selected through the framing, when the crate i
   await pressStep();
   const [request] = worldMap.taken;
   const { openedCards, scene } = worldMapCamera({ col: 4, row: 5 });
-  await scene.selectRequestedArmy(request!.entityId, request!.forSite);
+  await scene.selectRequestedArmy(request!);
 
   expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   expect(openedCards).toEqual([CRATE_TILE]);

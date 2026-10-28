@@ -5,7 +5,7 @@ import { useAllInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useFactView } from "@/hooks/use-fact-view";
 import { selectableArmiesView } from "@/sync/fact-views";
-import { requestArmySelection } from "@/three/scenes/worldmap-army-select-request";
+import { requestArmyShown } from "@/three/scenes/worldmap-army-select-request";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
 import { configManager } from "@bibliothecadao/eternum";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -81,9 +81,9 @@ export const useIdleArmies = (): IdleArmies => {
   return { ids, refusal };
 };
 
-/** Selects the next idle army as Tab selects an army: the camera goes to it and it is selected. */
+/** Selects the next idle army, shown as the dock shows one: framed when out of sight, and selected. */
 export const selectNextIdleArmy = (idle: readonly number[]) => {
   const selection = useUIStore.getState().mapSelection;
   const next = nextIdleArmy(idle, selection?.kind === "army" ? Number(selection.entityId) : null);
-  if (next !== null) requestArmySelection(next);
+  if (next !== null) requestArmyShown(next);
 };

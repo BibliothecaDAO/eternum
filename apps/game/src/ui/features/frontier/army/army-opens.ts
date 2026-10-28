@@ -58,8 +58,8 @@ export const useArmyPanelOpens = (
 };
 
 /**
- * Picks one of the realm's armies from the HUD (a dock's token or row): the map frames and selects it, and the selection
- * holds now, while the map takes the request.
+ * Picks one of the realm's armies from the HUD (a dock's token or row): the map selects it, framed when out of sight,
+ * and the selection holds now, while the map takes the request.
  */
 export const usePickArmy = (): ((explorerId: number) => void) => {
   const selectArmy = useSelectArmyOnMap();

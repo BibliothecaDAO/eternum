@@ -145,7 +145,7 @@ describe("disbanding an army", () => {
   });
 });
 
-it("closes the sheet and asks the map to frame and select the army, as Next up's Select the army does", () => {
+it("closes the sheet and asks the map to show and select the army, as Next up's Select the army does", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   window.history.replaceState({}, "", "/g/0xa1/1/map");
   fixture.troops = null;
@@ -157,7 +157,7 @@ it("closes the sheet and asks the map to frame and select the army, as Next up's
     act(() => root.render(<ExistingArmiesPanel structureId={7} />));
     act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Navigate to army"]')!.click());
     expect(setLeftNavigationView).toHaveBeenCalledWith(LeftView.None);
-    expect(takeArmySelectRequest()).toEqual({ entityId: 9, forSite: null });
+    expect(takeArmySelectRequest()).toEqual({ entityId: 9, forSite: null, look: true });
   } finally {
     act(() => root.unmount());
     host.remove();

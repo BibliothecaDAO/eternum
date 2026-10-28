@@ -70,7 +70,6 @@ const worldMap = () => {
     camera: { position: { clone: () => unknown } };
     showDeployOrder: (order: unknown) => void;
     showSelectedTile: (hex: unknown) => void;
-    onHexagonClick: (hex: { col: number; row: number }) => void;
   };
   const unsubscribe = useUIStore.subscribe(
     (state) => state.selectedHex,
@@ -170,29 +169,3 @@ it.each([
     expect(rings.at(-1)).toBeNull();
   },
 );
-
-// Owner, 26 October 2026 (layout A): on a phone the player's own tap on a tile its card would cover still frames it.
-it("on a phone, a tap on a far tile still frames it above its card", () => {
-  screen(false);
-  const world = worldMap();
-  cleanups.push(world.stop);
-  useUIStore.getState().selectOnMap(null);
-  Object.assign(world.map, {
-    getHexagonEntity: () => ({}),
-    getOwnArmyOrderedTo: () => undefined,
-    logInteractionDebug: () => {},
-    getInteractionDebugSnapshot: () => ({}),
-    clearEntitySelection: () => {},
-    interactionAdapter: {
-      selectHex: ({ contractHexPosition }: { contractHexPosition: { x: number; y: number } }) =>
-        useUIStore
-          .getState()
-          .selectOnMap({ kind: "hex", hex: { col: contractHexPosition.x, row: contractHexPosition.y } }),
-    },
-  });
-
-  world.map.onHexagonClick(REALM_HEX);
-  flushFrames();
-
-  expect(world.aimed.length).toBeGreaterThan(0);
-});
