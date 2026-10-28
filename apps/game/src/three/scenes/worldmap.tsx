@@ -278,6 +278,7 @@ import {
   isTouchHold,
   orderOnTap,
   orderVerbOnHud,
+  pinsOrder,
   readOrderRequest,
   stepBackOnEscape,
 } from "./worldmap-order-request";
@@ -2654,7 +2655,7 @@ export default class WorldmapScene extends WarpTravel {
       resolveSpawnActionPath(hexCoords, getLiveWorldmapEntityActions().actionPaths)
     )
       return;
-    if (hexCoords && this.answerTapWithSelectedOrder(hexCoords)) return;
+    if (hexCoords && this.tapActsForSelection(hexCoords) && this.answerTapWithSelectedOrder(hexCoords)) return;
     const viewer = accountAddress();
     const {
       army: standingArmy,
@@ -2677,7 +2678,7 @@ export default class WorldmapScene extends WarpTravel {
     if (clickPlan.kind === "ignore") {
       return;
     }
-    if (clickPlan.selection.type === "clear" && this.keepsArmyOnClick()) {
+    if (clickPlan.selection.type === "clear" && this.keepsArmyOnClick(hexCoords)) {
       this.openTargetCardForSelectedArmy(contractHexOf(hexCoords));
       return;
     }
@@ -2718,12 +2719,38 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * On a desktop, a click on a tile that holds none of the player's own keeps the selected army, and the tile's card
-   * opens for it: only Escape, its ×, or another selection lets it go (owner, 27 October 2026: "I wanna be able to
-   * select an army and do all kind of actions without deselecting and reselecting the army").
+   * On a desktop, a click on another's thing (a beast's site, an army, a structure, a crate) keeps the selected army,
+   * and that tile's card opens for it: only Escape, its ×, or another selection lets it go (owner, 27 October 2026: "I
+   * wanna be able to select an army and do all kind of actions without deselecting and reselecting the army").
    */
-  private keepsArmyOnClick(): boolean {
-    return layoutNow() !== "phone" && this.selectedArmyId() !== null;
+  private keepsArmyOnClick(hexCoords: HexPosition): boolean {
+    return layoutNow() !== "phone" && this.selectedArmyId() !== null && !this.isBareGround(hexCoords);
+  }
+
+  /**
+   * Whether a tap or click acts for what is selected. The player's own army or structure is selected, on every device,
+   * whatever order the selection has there (owner, 27 October 2026: "tapping/clicking any selectable thing … always
+   * selects it"); a right-click or a phone's hold gives that order, a transfer. A desktop's click orders nothing: a
+   * right-click does. There a click on bare ground lets go of the selected army or structure, as a click with nothing
+   * selected ("Left clicking should remove the selected army/structure"); one on a thing opens it for the army. A
+   * phone's tap keeps its rules elsewhere: it previews or pins the order at the tile.
+   */
+  private tapActsForSelection(hexCoords: HexPosition): boolean {
+    if (this.holdsOwnSelectable(hexCoords)) return false;
+    return layoutNow() === "phone" || !this.isBareGround(hexCoords);
+  }
+
+  /**
+   * Nothing stands on the tile (an army, a structure or a site, a crate, the army's own spire), and the selected army's
+   * only order there, if any, takes it onto the tile: a move or an explore.
+   */
+  private isBareGround(hexCoords: HexPosition): boolean {
+    const { army, structure, chest } = this.getHexagonEntity(hexCoords);
+    if (army || structure || chest || this.usableSiteAt(hexCoords) !== null) return false;
+    const armyId = this.selectedArmyId();
+    if (armyId !== null && this.isArmysSpire(armyId, hexCoords)) return false;
+    const path = getLiveWorldmapEntityActions().actionPaths.get(ActionPaths.posKey(hexCoords, true));
+    return !path || pinsOrder(path);
   }
 
   protected handleHexSelection(hexCoords: HexPosition, isMine: boolean) {
@@ -2732,16 +2759,22 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * The holds that act: a site's (an adjacent Shrine or Well used, a spire's depth choice) and, with the realm selected,
-   * a lit tile beside it, which opens Deploy aimed there (owner, 26 October 2026: "When I touch the realm and long press
-   * a tile it should deploy an army on that tile"). Other phone holds show the tile's facts.
+   * The holds that act: a site's (an adjacent Shrine or Well used, a spire's depth choice), a transfer to the player's
+   * own army or holding beside the army (its tap selects it instead) and, with the realm selected, a lit tile beside
+   * it, which opens Deploy aimed there (owner, 26 October 2026: "When I touch the realm and long press a tile it should
+   * deploy an army on that tile"). Other phone holds show the tile's facts.
    */
   private hasHoldAction(hexCoords: HexPosition): boolean {
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
     if (selectedEntityId === null || selectedEntityId === undefined) return false;
     const path = actionPaths.get(ActionPaths.posKey(hexCoords, true));
     const action = path && ActionPaths.getActionType(path);
-    return action === ActionType.UseSite || action === ActionType.EnterDepth || action === ActionType.CreateArmy;
+    return (
+      action === ActionType.UseSite ||
+      action === ActionType.EnterDepth ||
+      action === ActionType.CreateArmy ||
+      action === ActionType.Help
+    );
   }
 
   protected onHexagonRightClick(event: MouseEvent, hexCoords: HexPosition | null): void {
@@ -2788,8 +2821,9 @@ export default class WorldmapScene extends WarpTravel {
         order: () => {
           this.pointerOrderTip.take();
           if (actionPaths.has(clickedHexKey) || isTouchHold(event)) this.actAtHex(hexCoords);
-          // No order here: what a click opens, an order the army can't take now with its reason among them.
-          else this.answerTapWithSelectedOrder(hexCoords);
+          // No order here: what a click opens, an order the army can't take now with its reason among them; on another
+          // of the player's armies, which a click selects instead, the troop transfer it has no order for, and why.
+          else if (!this.answerTapWithSelectedOrder(hexCoords)) this.openRefusedOrderPreview(hexCoords);
         },
         transfer: openTransfer,
         menu: () => {
@@ -2837,9 +2871,6 @@ export default class WorldmapScene extends WarpTravel {
     });
     if (order === "go") {
       this.actAtHex(hexCoords);
-    } else if (order === "transfer") {
-      // The action row offers the transfer, or picking the army there.
-      this.state.updateEntityActionHoveredHex(hexCoords);
     } else if (order === "why") {
       this.showTileFacts(hexCoords);
       return true;
@@ -2851,6 +2882,7 @@ export default class WorldmapScene extends WarpTravel {
       const target = { alt: activeMapLayer(), col: contract.x, row: contract.y };
       if (this.worldSpatialProjection.getStructuresAtHex(target).some((site) => site.clearedSite))
         this.openTargetCardForSelectedArmy(target);
+      else this.putAwayTheActedOnTile(selectedEntityId);
       // The HUD's bar is the order's preview, in one row; the same tile tapped again sends it.
       this.state.updateEntityActionHoveredHex(hexCoords);
       return true;
@@ -2927,7 +2959,7 @@ export default class WorldmapScene extends WarpTravel {
     if (army === null || !refusal || !reason) return;
     const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
     const verb = refusedOrderVerb({
-      holds: armyThere || structure ? "target" : chest ? "crate" : null,
+      holds: this.holdsOwnSelectable(hexCoords) ? "friend" : armyThere || structure ? "target" : chest ? "crate" : null,
       explored: this.exploredTiles.get(hexCoords.col)?.has(hexCoords.row) === true,
     });
     const tip = { line: verb, cost: null };
@@ -3371,6 +3403,16 @@ export default class WorldmapScene extends WarpTravel {
       attackerIsArmy,
       targetIsArmy: target.type === ActorType.Explorer,
     });
+  }
+
+  /**
+   * The army's selection back on its own tile: the card of the tile it acted on before (a target's, a transfer's) goes,
+   * so a new order pinned elsewhere is the one answer on screen (audit 10-27, phone: "shows two answers at once").
+   */
+  private putAwayTheActedOnTile(armyId: ID): void {
+    const tile = useUIStore.getState().mapSelection;
+    if (tile?.kind === "army" && tile.tile !== "own" && tile.tile !== null)
+      this.state.selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
   }
 
   /** The target's tile card with the selected army kept as its actor: the forecast and Attack, or what the army lacks. */

@@ -87,16 +87,17 @@ const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | nu
 };
 
 /**
- * The order a tile the planner refused would take, by what it holds: an attack on a target, a crate's opening, else a
- * move onto revealed land or an explore into the fog.
+ * The order a tile the planner refused would take, by what it holds: troops passed to the player's own army, an attack
+ * on a target, a crate's opening, else a move onto revealed land or an explore into the fog.
  */
 export const refusedOrderVerb = ({
   holds,
   explored,
 }: {
-  holds: "target" | "crate" | null;
+  holds: "friend" | "target" | "crate" | null;
   explored: boolean;
 }): string => {
+  if (holds === "friend") return ORDERS[ActionType.Help]!;
   if (holds === "target") return ATTACK;
   if (holds === "crate") return OPEN_CRATE;
   return explored ? MOVE : EXPLORE;

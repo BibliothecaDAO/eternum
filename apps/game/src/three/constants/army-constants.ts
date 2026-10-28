@@ -11,6 +11,8 @@ export const ARMY_MODEL_SCALE = 0.3;
  * label keeps over its own model. The asset check measures every army as drawn against it.
  */
 export const ARMY_PLATE_HEIGHT = 1.45;
+/** The tallest army as drawn over its tile, a T3 ship (army-plate-height.test.ts measures it). */
+export const ARMY_MODEL_TOP = 1.28;
 /** The shipped T1 knight's articulated model: authored 0.6135 tall, drawn at the old T1 model's 1.02 height. */
 export const T1_KNIGHT_WORLD_SCALE = 1.67;
 export const ANIMATION_STATE_IDLE = 0;

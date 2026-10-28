@@ -235,8 +235,6 @@ export const SIGN_IN = "Sign in";
 /** An army's two ways across the map, and backing out of an order. */
 export const EXPLORE = "Explore";
 export const MOVE = "Move";
-/** What a desktop order's preview says under its verb: the right-click sends an order with no preview. */
-export const RIGHT_CLICK_SENDS = "A right-click sends it at once.";
 export const CANCEL = "Cancel";
 /** A highlighted tile on its tooltip: ground not yet seen, and troops passed to another of the player's armies. */
 export const UNEXPLORED = "Unexplored";
@@ -474,9 +472,6 @@ export const TRANSFER_TROOPS = {
   unalike: (picked: string, tapped: string) => `${picked} and ${tapped} hold different troops`,
   failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
-  /** A phone's action row, a tap on another of the realm's armies beside the picked one. */
-  beside: (tapped: string, picked: string) => `${tapped} stands beside ${picked}.`,
-  pickArmy: (army: string) => `Pick ${army}`,
 } as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";

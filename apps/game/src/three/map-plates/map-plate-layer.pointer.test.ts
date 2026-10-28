@@ -2,14 +2,15 @@
 import { PerspectiveCamera, Raycaster, Vector2, Vector3 } from "three";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { ARMY_PLATE_HEIGHT } from "../constants/army-constants";
+import { ARMY_MODEL_TOP, ARMY_PLATE_HEIGHT } from "../constants/army-constants";
+import { PLATE_CLEARANCE } from "../managers/structure-visible-presentation";
 import {
   resolveWorldmapCameraFieldOfViewDegrees,
   resolveWorldmapCameraPitchRadians,
   WORLDMAP_CAMERA_ZOOM,
 } from "../scenes/worldmap-camera-view-profile";
 import { MapPlateLayer } from "./map-plate-layer";
-import type { ArmyPlate } from "./map-plate-model";
+import type { ArmyPlate, StructurePlate } from "./map-plate-model";
 
 const plate: ArmyPlate = {
   kind: "army",
@@ -21,7 +22,7 @@ const plate: ArmyPlate = {
 };
 
 /** The tallest army as drawn over its tile (army-constants.ts, held by army-plate-height.test.ts). */
-const MODEL_TOP = 1.28;
+const MODEL_TOP = ARMY_MODEL_TOP;
 /** One row of tiles further from the camera. */
 const ROW = 1.5;
 
@@ -105,5 +106,60 @@ describe("the thing under the pointer (owner, 2026-10-27: 'at a certain zoom lev
   it("is nothing a model's height over the army's label point", () => {
     const camera = cameraAt(WORLDMAP_CAMERA_ZOOM.defaultDistance, tile);
     expect(layerWith(tile).thingHitBy(rayThrough(camera, tile.clone().setY(ARMY_PLATE_HEIGHT + 1)))).toBeNull();
+  });
+});
+
+/** A beast's site, as the structure manager labels it: a ruin guarded by 518. */
+const site: StructurePlate = {
+  kind: "structure",
+  relation: "enemy",
+  owner: "",
+  name: "Ruin",
+  named: false,
+  guards: [{ type: "knight", tier: 1, count: 518 }],
+  arrivals: [],
+  icon: "ruin",
+};
+
+/** A model 1.2 tall on its tile, its label point over its roof as the structure manager sets it. */
+const SITE_TOP = 1.2;
+const layerWithSite = (tile: Vector3) => {
+  const layer = new MapPlateLayer(() => null);
+  layer
+    .createScope("structure")
+    .setLabel({ entityId: 9, position: tile.clone().setY(SITE_TOP + PLATE_CLEARANCE), plate: site });
+  return layer;
+};
+
+describe("the tile under the pointer over a thing (owner, 2026-10-27: 'right clicking here I'd expect the army to move')", () => {
+  const tile = new Vector3(0, 0, 0);
+  const behind = new Vector3(0, 0, -ROW);
+
+  it.each(ZOOMS)(
+    "is the tile behind an army where its ground shows between the army's head and token, at zoom %d",
+    (distance) => {
+      const camera = cameraAt(distance, tile);
+      const gap = tile.clone().setY((MODEL_TOP + ARMY_PLATE_HEIGHT) / 2 + 0.05);
+      expect(layerWith(tile).thingHitBy(rayThrough(camera, gap))).toBeNull();
+      expect(layerWith(tile).thingHitBy(rayThrough(camera, tile.clone().setY(ARMY_PLATE_HEIGHT)))).toBeNull();
+    },
+  );
+
+  it.each(ZOOMS)("is a structure's tile on its model, edge to edge and up to its roof, at zoom %d", (distance) => {
+    const camera = cameraAt(distance, tile);
+    const layer = layerWithSite(tile);
+    const label = [0, SITE_TOP + PLATE_CLEARANCE, 0];
+    const roof = tile.clone().setY(SITE_TOP - 0.05);
+    const wall = new Vector3(0.8, SITE_TOP / 2, 0);
+    expect(layer.thingHitBy(rayThrough(camera, roof))?.toArray()).toEqual(label);
+    expect(layer.thingHitBy(rayThrough(camera, wall))?.toArray()).toEqual(label);
+  });
+
+  it.each(ZOOMS)("is the tile behind a structure over its roof, under its token, at zoom %d", (distance) => {
+    const camera = cameraAt(distance, tile);
+    const layer = layerWithSite(tile);
+    const overRoof = tile.clone().setY(SITE_TOP + PLATE_CLEARANCE / 2);
+    expect(layer.thingHitBy(rayThrough(camera, overRoof))).toBeNull();
+    expect(groundUnder(camera, overRoof).z).toBeLessThan(behind.z / 3);
   });
 });

@@ -53,7 +53,7 @@ import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
 import { SceneFailureNotice } from "./hud/scene-failure-notice";
 import { NextOrderBar, OrderBar } from "./hud/order-bar";
-import { PickedArmy, TransferChoice, usePinnedTransfer } from "./hud/picked-army";
+import { PickedArmy } from "./hud/picked-army";
 import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
@@ -402,10 +402,8 @@ const ArmyAction = ({
   const nextOrder = useUIStore((state) => state.entityActions.nextOrder);
   const ordersAllowed = useUIStore(canIssueOrders);
   const selected = armies.find((army) => army.explorerId === selectedId);
-  const transfer = usePinnedTransfer(armies);
   const acting = selected && ordersAllowed && onOpenArmy ? selected : undefined;
   if (order && selected) return <PendingOrder rules={rules} realm={realm} order={order} army={selected} />;
-  if (transfer && acting) return <TransferChoice picked={acting} choice={transfer} />;
   if (selected && nextOrder?.entityId === selected.explorerId)
     return <NextOrderBar onCancel={() => dropNextOrder("cancelled", selected.explorerId)} />;
   if (acting && onOpenArmy)
