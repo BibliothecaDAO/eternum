@@ -54,15 +54,6 @@ describe("readPlaytestOptions", () => {
     );
   });
 
-  it("holds frames to the screen's refresh unless --uncapped lets them run as fast as the page makes them", () => {
-    expect(readPlaytestOptions([]).uncapped).toBe(false);
-    expect(browserArgsFor("default")).not.toContain("--disable-gpu-vsync");
-    expect(readPlaytestOptions(["--uncapped"]).uncapped).toBe(true);
-    expect(browserArgsFor("default", { uncapped: true })).toEqual(
-      expect.arrayContaining(["--disable-gpu-vsync", "--disable-frame-rate-limit"]),
-    );
-  });
-
   it("serves heavier models from a directory taken from where the command was run, never to a player", () => {
     expect(readPlaytestOptions(["--model-override", "heavier"], "/work").modelOverride).toBe("/work/heavier");
     expect(readPlaytestOptions([]).modelOverride).toBe(null);

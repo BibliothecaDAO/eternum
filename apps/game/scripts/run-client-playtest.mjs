@@ -64,16 +64,8 @@ const BROWSER_ARGS = [
 /** The GPU WebGPU draws on: the machine's default, or its integrated one (`--gpu low-power`), a laptop's class of GPU. */
 const GPUS = { default: [], "low-power": ["--use-webgpu-power-preference=force-low-power"] };
 
-// Frames as fast as the page can make them, not held to the screen's refresh: a frame's interval is then its cost, so a
-// view that holds 60 Hz shows how far under 16.7 ms it is.
-const UNCAPPED_ARGS = ["--disable-gpu-vsync", "--disable-frame-rate-limit"];
-
-/** The browser's launch flags for a run on `gpu`, its frames held to the screen's refresh unless `uncapped`. */
-export const browserArgsFor = (gpu, { uncapped = false } = {}) => [
-  ...BROWSER_ARGS,
-  ...GPUS[gpu],
-  ...(uncapped ? UNCAPPED_ARGS : []),
-];
+/** The browser's launch flags for a run on `gpu`. */
+export const browserArgsFor = (gpu) => [...BROWSER_ARGS, ...GPUS[gpu]];
 
 /** The command's options, refused when they cannot describe a run. Paths are taken from where the command was run. */
 export function readPlaytestOptions(argv, callerDir = process.cwd()) {
@@ -135,7 +127,6 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     modelOverride: option("--model-override", null) && resolve(callerDir, option("--model-override")),
     profileSteps: option("--profile-steps", "").split(",").filter(Boolean),
     trace: argv.includes("--trace"),
-    uncapped: argv.includes("--uncapped"),
     viewport: { width: Number(viewport[1]), height: Number(viewport[2]) },
   };
 }
@@ -309,7 +300,7 @@ async function playRun(context) {
       "--init-script",
       PROBE_PATH,
       "--args",
-      browserArgsFor(context.gpu, { uncapped: context.uncapped }).join(","),
+      browserArgsFor(context.gpu).join(","),
     ]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
@@ -459,7 +450,6 @@ function writeRunEvidence({ browser, context, record }) {
       cpus: availableParallelism(),
       cpuThrottle: context.cpuThrottle,
       gpu: context.gpu,
-      uncapped: context.uncapped,
       network: context.network ?? null,
       loadAverageMax: Math.max(...record.loadSamples),
       loadSampleEveryMs: LOAD_SAMPLE_MS,

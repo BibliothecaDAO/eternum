@@ -142,6 +142,8 @@ describe("summarizeStep", () => {
         frames: [990, 1000, 1016, 1100, 1116],
         draws: [9, 10, 12, 30, 12],
         vertices: [90, 300, 600, 3000, 600],
+        callbackMs: [1, 2, 3, 9, 3],
+        gpuDoneMs: [1, 4, 4, 20, null],
         gpuMemory: { textures: 3, textureBytes: 6 * MB, buffers: 2, bufferBytes: MB },
         loafs: [
           {
@@ -187,6 +189,8 @@ describe("summarizeStep", () => {
       },
       drawCalls: { n: 4, p50: 12, p95: 30, p99: 30, max: 30 },
       vertices: { n: 4, p50: 600, p95: 3000, p99: 3000, max: 3000 },
+      frameCallbackMs: { n: 4, p50: 3, p95: 9, p99: 9, max: 9 },
+      gpuDoneMs: { n: 3, p50: 4, p95: 20, p99: 20, max: 20 },
       gpuMemoryAtEnd: { textures: 3, textureMb: 6, buffers: 2, bufferMb: 1 },
       longFrames: {
         count: 1,

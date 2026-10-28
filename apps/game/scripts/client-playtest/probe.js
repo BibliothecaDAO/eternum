@@ -1,6 +1,7 @@
 // Registered by run-client-playtest.mjs as an init script, so it runs before any page code. It only observes: frame
 // times, the scene each frame drew, long animation frames, input-to-paint latency, every input's time, draw calls, the
-// GPU work each frame asked for (pipelines and shaders compiled, bytes uploaded), the vertices each frame drew, the GPU
+// GPU work each frame asked for (pipelines and shaders compiled, bytes uploaded), the vertices each frame drew, each frame's
+// script time in frame callbacks and its GPU time to work done, the GPU
 // memory held, what keeps running on its own (frame callbacks, timers, CSS animations, hidden overlays), every download, the scene marks, heap,
 // the map labels' DOM size, and each Herald socket message's arrival and handler cost. The runner reads it with `window.__playtest.read()` and reduces it per step.
 (() => {
@@ -11,6 +12,8 @@
   const state = {
     draws: [],
     vertices: [],
+    callbackMs: [],
+    gpuDoneMs: [],
     events: [],
     frames: [],
     heap: [],
@@ -27,6 +30,8 @@
   };
   let drawsThisFrame = 0;
   let verticesThisFrame = 0;
+  let callbackMsThisFrame = 0;
+  let gpuFrame = null;
   const NO_GPU_WORK = { pipelines: 0, shaders: 0, uploadBytes: 0, callMs: 0 };
   let gpuThisFrame = { ...NO_GPU_WORK };
 
@@ -233,9 +238,18 @@
     return tag;
   };
   const tally = (map, tag) => map.set(tag, (map.get(tag) ?? 0) + 1);
+  // Each frame callback is also timed: their sum is the main thread's script time for the frame, which a 60 Hz frame
+  // interval hides whenever it is under 16.7 ms.
   globalThis.requestAnimationFrame = function (callback) {
     tally(scheduled.frames, callerOf(callback));
-    return raw.requestAnimationFrame(callback);
+    return raw.requestAnimationFrame((timestamp) => {
+      const start = performance.now();
+      try {
+        return callback(timestamp);
+      } finally {
+        callbackMsThisFrame += performance.now() - start;
+      }
+    });
   };
   globalThis.setInterval = function (callback, delay, ...args) {
     const id = raw.setInterval(callback, delay, ...args);
@@ -331,8 +345,22 @@
       .map(([key, bytes]) => ({ bytes, shape: textureShapes.get(key) })),
   });
 
+  // The GPU's share of a frame: from its first submit to the GPU reporting the frame's last submitted work done. It
+  // includes any wait behind the previous frame's work, so it reads as the GPU's frame time once the GPU is the bottleneck.
+  const submit = window.GPUQueue?.prototype.submit;
+  if (typeof submit === "function") {
+    window.GPUQueue.prototype.submit = function (commandBuffers) {
+      const result = submit.call(this, commandBuffers);
+      const frame = (gpuFrame ??= { start: performance.now(), ms: null });
+      this.onSubmittedWorkDone().then(() => (frame.ms = performance.now() - frame.start));
+      return result;
+    };
+  }
+
   const onFrame = (timestamp) => {
     push(state.frames, timestamp);
+    push(state.callbackMs, callbackMsThisFrame);
+    push(state.gpuDoneMs, gpuFrame);
     push(state.draws, drawsThisFrame);
     push(state.vertices, verticesThisFrame);
     push(state.gpu, gpuThisFrame);
@@ -340,6 +368,8 @@
     push(state.scenes, window.__rendererDiagnostics?.sceneName ?? null);
     drawsThisFrame = 0;
     verticesThisFrame = 0;
+    callbackMsThisFrame = 0;
+    gpuFrame = null;
     gpuThisFrame = { ...NO_GPU_WORK };
     raw.requestAnimationFrame(onFrame);
   };
@@ -507,6 +537,8 @@
       return JSON.stringify({
         draws: state.draws.slice(fromFrame),
         vertices: state.vertices.slice(fromFrame),
+        callbackMs: state.callbackMs.slice(fromFrame),
+        gpuDoneMs: state.gpuDoneMs.slice(fromFrame).map((frame) => frame?.ms ?? null),
         gpuMemory: gpuMemory(),
         gpu: state.gpu.slice(fromFrame),
         scenes: state.scenes.slice(fromFrame),
