@@ -1,6 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { formatClockTime } from "@bibliothecadao/types";
 
@@ -26,7 +27,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
   const words = (
     <>
       <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
-      <Icon name={reading.act} size={16} className="ui-event__icon" />
+      <Icon name={storyMeaning(story.story)} size={16} className="ui-event__icon" />
       <span className="ui-event__text">
         {"words" in reading ? (
           <OwnWordsLine words={reading.words} named={reading.named} name={reading.actor && names.text(reading.actor)} />

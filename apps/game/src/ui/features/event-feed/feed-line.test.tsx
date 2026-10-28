@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
-import { buildStoryEventPresentation, configManager, siteDisplayName } from "@bibliothecadao/eternum";
+import {
+  buildStoryEventPresentation,
+  configManager,
+  expeditionDepth,
+  readExpeditionRules,
+  siteDisplayName,
+} from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -156,6 +162,79 @@ it("says a fight's army was lost", async () => {
     },
   });
   expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Army lost`);
+});
+
+/** A fight on the camp's site, the attacker's army lost to its guard. */
+const fightAt = (site: number) =>
+  story(KRUMP, "BattleEvent", {
+    attacker_id: 71,
+    defender_id: site,
+    attacker: { player: KRUMP, category: "Knight", tier: "T1", before: "300000000000", after: "0", roll: 0 },
+    defender: {
+      player: "0x0",
+      category: "Knight",
+      tier: "T1",
+      before: "1100000000000",
+      after: "1000000000000",
+      roll: 0,
+    },
+  });
+/** The paintings a row draws: the act's at its head, then what it was done to. */
+const paintings = () =>
+  [...host.querySelectorAll("[data-feed-line] [data-icon]")].map((icon) => icon.getAttribute("data-icon"));
+
+it("draws the guard a fight was against as the map draws it, for every kind of site the game guards", async () => {
+  const site = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
+  const depth = expeditionDepth(readExpeditionRules(game.store, 1)!, { y: site.row });
+  // The depth's beast bounds, which tell a roaming beast's two strengths apart.
+  game.store.applyFacts([
+    {
+      model: "DepthRules",
+      key: "0x777",
+      value: {
+        game_id: 1,
+        depth,
+        beast_weak_lower: 300,
+        beast_weak_upper: 350,
+        beast_strong_lower: 450,
+        beast_strong_upper: 550,
+        site_guard_lower: 1000,
+        site_guard_upper: 1600,
+        reveal_site_neighbors: false,
+        entry_stamina: 0,
+        reveal_percent: 10,
+        chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
+        ruin_guard_lower: 2000,
+        ruin_guard_upper: 4000,
+        guard_step: 100,
+      },
+    },
+  ] as never);
+  const guards = [
+    [StructureType.Camp, 1_400, "beast-troll"],
+    [StructureType.Rift, 1_400, "beast-dark-fey"],
+    [StructureType.Beasts, 320, "beast-cyclops"],
+    [StructureType.Beasts, 500, "beast-wraith"],
+    [StructureType.Ruin, 3_000, `beast-${FALLEN_REALM_DEPTHS[depth]!.beast}`],
+  ] as const;
+  for (const [category, guard, painting] of guards) {
+    game.store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x1:0x2329",
+        value: { ...site, category, initial_guard_count: scaled(guard) },
+      },
+    ] as never);
+    await draw(fightAt(CAMP));
+    expect(paintings()).toEqual(["attack", painting]);
+  }
+});
+
+// The owner, 28 October 2026: "the icons in the chat arent the new ones ?" ("Loaf attacked Runegrasp · Army lost").
+it("draws no guard for a fight at a site this client never loaded, rather than an old or guessed painting", async () => {
+  const read = await draw(fightAt(4_242));
+  expect(read.words).toBe(`Krump attacked ${siteDisplayName(4_242)} · Army lost`);
+  expect(paintings()).toEqual(["attack"]);
 });
 
 it("says what an army trained in the story's own words", async () => {

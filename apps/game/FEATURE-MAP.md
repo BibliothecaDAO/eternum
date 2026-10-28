@@ -372,22 +372,24 @@ in slot order; the minimap), the rail and the foot (the selected army's state ov
 the client's notices (a refused order, a warning, the clock's milestones) under it, then whatever is open, a page
 (Research, the Season's board) or any sheet (Build, an army, a site's card, Today), at the rail's one width; with
 nothing open, the **Feed** (`frontier/hud/frontier-feed.tsx`): the world's history live, one line a story (who did what
-to what, how it went, what it paid at its end; a find under one unit is "djizus explored"), your own in gold, under
-**All** (the world’s history, first and the default) or **Mine** (your own fights, captures and chests), filling the
-rail under Next up and scrolling inside. Its × closes it and leaves the rail empty; **Feed** at the foot brings the rail
-home with the Feed open, and while lit closes it. Chat stands at the rail's foot. The whole desktop HUD draws bigger on
-a bigger screen (`frontier/hud/hud-scale.ts`: its own size at 1920 wide, 1.33 at 2560, 0.85 at 1440). A desktop has no
-Menu: Settings (the top bar's gear) holds Next up's Tips and Leave game. Orders go from the map as in Blitz: hover a
-tile for its order, right-click to give it. On a phone it keeps its own bands (`frontier/hud/hud-bands.tsx`): a strip at
-the top, a place bar at the foot. A page or a sheet stands on the place bar, as tall as what it holds and at most 45% of
-the screen, under one row (its name and its way out; a drag down on it closes a sheet), its verb in its foot; while one
-is open, Next up's row folds away. Tapping a build plot keeps the realm camera still. The realm view zooms out until
-every plot of the castle’s reach fits the screen’s width, including an Empire on an upright phone. Chat’s Global, Game
-and new DM share one row of tabs. One panel at a time, on both (`frontier/hud/one-panel.ts`): a page or sheet the HUD
-opens, the card of what the map selected, or the deploy order; the one opened last stands alone and puts the others
-away, so no panel opens over another. A detail opened from a page (a Research row's sheet, a realm on the Season's
-board) stands in the page's place, and its Back returns to the page. Dev: HUD → In game (`/lab/hud?mode=frontier`) draws
-the HUD as the game mounts it and every Frontier state (`/lab/kit/hud/<state>`) on a desktop and a phone side by side.
+to what, how it went, what it paid at its end; a find under one unit is "djizus explored"), your own in gold; each row's
+painting is its story's act (`storyMeaning`, the same table Blitz's Events and Log rows read) and a site's guard as the
+map draws it, none for a site the player's map never loaded, under **All** (the world’s history, first and the default)
+or **Mine** (your own fights, captures and chests), filling the rail under Next up and scrolling inside. Its × closes it
+and leaves the rail empty; **Feed** at the foot brings the rail home with the Feed open, and while lit closes it. Chat
+stands at the rail's foot. The whole desktop HUD draws bigger on a bigger screen (`frontier/hud/hud-scale.ts`: its own
+size at 1920 wide, 1.33 at 2560, 0.85 at 1440). A desktop has no Menu: Settings (the top bar's gear) holds Next up's
+Tips and Leave game. Orders go from the map as in Blitz: hover a tile for its order, right-click to give it. On a phone
+it keeps its own bands (`frontier/hud/hud-bands.tsx`): a strip at the top, a place bar at the foot. A page or a sheet
+stands on the place bar, as tall as what it holds and at most 45% of the screen, under one row (its name and its way
+out; a drag down on it closes a sheet), its verb in its foot; while one is open, Next up's row folds away. Tapping a
+build plot keeps the realm camera still. The realm view zooms out until every plot of the castle’s reach fits the
+screen’s width, including an Empire on an upright phone. Chat’s Global, Game and new DM share one row of tabs. One panel
+at a time, on both (`frontier/hud/one-panel.ts`): a page or sheet the HUD opens, the card of what the map selected, or
+the deploy order; the one opened last stands alone and puts the others away, so no panel opens over another. A detail
+opened from a page (a Research row's sheet, a realm on the Season's board) stands in the page's place, and its Back
+returns to the page. Dev: HUD → In game (`/lab/hud?mode=frontier`) draws the HUD as the game mounts it and every
+Frontier state (`/lab/kit/hud/<state>`) on a desktop and a phone side by side.
 
 | Feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | Where                                                                              | How to reach it                                                                                                                                                                                                                                                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -511,10 +513,10 @@ player's connection.
 2,517 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps
 the army picked or the army tapped (the merged-into army, as from release 3). `scenario=after-battle` is the owner's
 army after its fight on prod (25 October 2026): 4,015 knights on the camp they cleared, beside the ruin they attacked
-(guard 999), both on battle cooldown. `scenario=explore` stands the spire's army at the edge of the land it has seen,
-fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`,
-`lab-merge-keeps-tapped` and `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a
-merge emptied opens none.
+(guard 999), both on battle cooldown; its Feed holds that fight and another player's lost fight at a site the map never
+loaded. `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double
+tap or a desktop's right-click explores. `--steps lab-merge-keeps-picked`, `lab-merge-keeps-tapped` and
+`lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies

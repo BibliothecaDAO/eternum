@@ -1,5 +1,5 @@
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { beastMeaning, structureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { beastMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { ARMY_ATTRIBUTES, type Attribute } from "@/ui/features/frontier/army/army-detail";
 import { configManager, findGain, readFrontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
@@ -29,8 +29,6 @@ export interface ToldReading {
   actor: string;
   /** The act after the name: "explored", "cleared", "attacked". */
   verb: string;
-  /** The act's painting, at the row's head. */
-  act: IconMeaning;
   /** What the act was done to or made: a site with its guard's painting, troops, an attribute, a building; or a player. */
   object?: { name: string; icon?: IconMeaning } | { player: string; icon: IconMeaning };
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
@@ -44,7 +42,6 @@ export interface ToldReading {
  */
 interface OwnWords {
   actor?: string;
-  act: IconMeaning;
   words: string;
   /** Where the words name the actor, as the story formatter wrote them (`ownerAt`); none where they do not. */
   named?: { at: number; length: number };
@@ -67,7 +64,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: site ? "found" : "explored",
-        act: "explore",
         object: site && siteObject(site.entity_id, store),
         reward: paid(payload.resource_type, payload.amount, findGain),
       };
@@ -77,7 +73,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "cleared",
-        act: "flag",
         object: siteObject(payload.site_id, store),
         outcome: Number(payload.category) === StructureType.Ruin ? { word: CHEST_EARNED, tone: "good" } : undefined,
         reward: reward ? paid(reward.resource_type, reward.amount, formatGain) : undefined,
@@ -90,7 +85,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "attacked",
-        act: "attack",
         object:
           BigInt(String(defender.player)) === 0n
             ? siteObject(payload.defender_id, store)
@@ -105,7 +99,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "raised",
-        act: "deploy",
         object: {
           name: story.presentation.description ?? "an army",
           icon: troopMeaning({ category: String(payload.category), tier: String(payload.tier) }),
@@ -115,7 +108,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "trained",
-        act: "research",
         // The attribute and its tier as the story says them: "Logistics uncommon".
         object: {
           name: story.presentation.title,
@@ -126,7 +118,6 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "moved",
-        act: "military",
         object: { name: `${formatCharge(scaledToUnits(BigInt(String(payload.amount ?? 0))))} troops` },
       };
     case "BuildingPaymentStory":
@@ -134,12 +125,11 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       const change = story.story === "BuildingPaymentStory" ? "Created" : String(payload.change);
       const verb = BUILDING_CHANGES[change];
       if (!verb) throw new Error(`Unknown building change ${change}`);
-      return { actor, verb, act: "build", object: { name: buildingName(Number(payload.category), true) } };
+      return { actor, verb, object: { name: buildingName(Number(payload.category), true) } };
     }
     default:
       return {
         actor: playerOwner(story.owner),
-        act: "chronicles",
         words: story.presentation.title,
         named: ownerNamed(story.presentation),
       };
@@ -183,14 +173,12 @@ const siteAt = (coord: unknown, store: NativeFactStore) => {
   );
 };
 
-/** A site by its one name, with its guard's painting where a beast guards it, else its kind's. */
+/**
+ * A site by its one name, with its guard's painting as the map and the site's card draw it, read from the site's facts.
+ * A site this client holds no facts for (a fight far from the player's armies) has no painting: its beast is unknown.
+ */
 const siteObject = (entityId: unknown, store: NativeFactStore): ToldReading["object"] => {
   const id = Number(entityId);
-  const gameId = configManager.getActiveGameId();
-  const site = store.get("ExpeditionSite", { game_id: gameId, entity_id: BigInt(id) });
-  const beast = readFrontierBeast(store, gameId, id);
-  return {
-    name: siteDisplayName(id),
-    icon: beast ? beastMeaning(beast.beast) : site ? structureMeaning(site.category) : "beasts",
-  };
+  const beast = readFrontierBeast(store, configManager.getActiveGameId(), id);
+  return { name: siteDisplayName(id), icon: beast && beastMeaning(beast.beast) };
 };
