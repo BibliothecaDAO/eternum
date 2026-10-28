@@ -1,6 +1,6 @@
 """Back up one shard and prove the copy restores.
 
-    sudo python3 backup.py quiesce PROJECT [RELAY_HEALTH_URL]
+    sudo python3 backup.py quiesce PROJECT
     sudo python3 backup.py reopen PROJECT
     sudo python3 backup.py capture PROJECT DATA_DIR DEST
     sudo python3 backup.py restore-test PROJECT DEST
@@ -16,16 +16,12 @@ block at the captured head with the running node's, restores both Postgres copie
 
 A final copy, the one a production teardown removes the shard after, is taken at a write boundary. The shard's RPC
 proxy is its one write path (the node publishes no port) and also the path the value relay reads receipts through.
-Quiesce makes the proxy refuse every write while it keeps answering reads (read-rpc.ts WRITES_CLOSED_FILE, in its public
-configuration), so outstanding withdrawals are still found and paid; reopen lifts it. A shard deployed before that
-switch can only close by stopping its proxy, which stops the relay's reads and payments too, so quiesce stops it only
-once the relay has read every transaction: its health (the environment's /api/value/health) shows this shard read
-through block N, caught up, with nothing deferred or held, and the stopped node holds no transaction after N. That
-proves every obligation is in the relay's queue, not that the queue is paid: the health doesn't show it. The closure
-file records how writes closed and N; an unfinished stop is recorded as such and never counts as closed. Verify then asks: the
-copy's checksums hold, its restore test passed, it is of the running chain (the node still has the captured head),
-writes are closed now, no block after the captured head holds a transaction, and none after the relay's last read
-either. Blocks keep coming (the node seals empty ones), but none of them changed the game.
+Quiesce makes it refuse every write while it keeps answering reads (public-rpc.ts WRITES_CLOSED_FILE, in its public
+configuration), so outstanding withdrawals are still found and paid; reopen lifts it. A proxy older than that switch
+is replaced by read-only-rpc.ts from this checkout, which answers the same reads and refuses every write the same way.
+Verify then asks: the copy's checksums hold, its restore test passed, it is of the running chain (the node still has
+the captured head), the stack's RPC refuses a write now, and no block after the captured head holds a transaction.
+Blocks keep coming (the node seals empty ones), but none of them changed the game.
 """
 import hashlib
 import json
@@ -34,8 +30,6 @@ import shutil
 import subprocess
 import sys
 import time
-import urllib.error
-import urllib.request
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -86,121 +80,72 @@ WRITES_CLOSED_FILE = "writes-closed"
 WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup"
 
 
-def quiesce(project, relay_health=None):
-    """Closes the shard's writes, and is safe to run again. A proxy with the switch refuses them and keeps serving
-    reads. A proxy without it is stopped once the relay has read every transaction; the closure records the relay's
-    last read, first as stopping, then, after the stopped node shows nothing past it, as stopped."""
-    record = closure_record(project)
-    if record and record["by"] in (STOPPING, STOPPED) and proxy_state(project) == "stopped":
-        return finish_stop(project, record["relay_through"])
-    write_closure(project, {"by": SWITCH})
+def quiesce(project):
+    """Closes the shard's writes and keeps its reads, and is safe to run again. A proxy with the switch refuses writes
+    itself. One older than the switch is replaced, for the rest of the shard's life, by the checkout's read-only
+    proxy under the same image, network alias and port: the relay keeps reading and paying through it."""
+    write_closure(project)
     if proxy_refuses_writes(project):
-        return {"project": project, "writes": "closed", "by": SWITCH}
-    # No switch: the proxy ignores the file, and it must not stand for a closure.
-    clear_closure(project)
-    if proxy_state(project) != "running":
-        raise RuntimeError("The proxy neither refuses writes nor runs, so the relay can't be shown to have read the "
-                           "shard; start it with reopen, then quiesce again")
-    if not relay_health:
-        raise RuntimeError("This shard's proxy has no write switch, and stopping it stops the relay's reads: name the "
-                           "relay's health URL so it stops only once the relay has read every transaction")
-    through = relay_read_through(relay_health, node_rpc(f"{project}-madara-1", "starknet_chainId", []))
-    write_closure(project, {"by": STOPPING, "relay_through": through})
-    stopped = docker(["stop", "-t", "10", f"{project}-rpc-1"], check=False)
-    if stopped.returncode != 0:
-        restore_reads(project)
-        raise RuntimeError(f"The proxy did not stop ({stopped.stderr.strip()}); it serves reads and writes as before")
-    return finish_stop(project, through)
-
-
-def finish_stop(project, through):
-    """With the proxy stopped: the node holds no transaction after the relay's last read, and the closure becomes
-    stopped. Otherwise, or if that can't be counted, the relay's read path comes back and the closure goes."""
-    node = f"{project}-madara-1"
+        return {"project": project, "writes": "closed", "reads": "open"}
     try:
-        unread = transactions_between(node, through + 1, node_rpc(node, "starknet_blockNumber", []))
+        stand_in_read_only_proxy(project)
     except Exception:
-        restore_reads(project)
+        clear_closure(project)
+        restore_proxy(project)
         raise
-    if unread:
-        restore_reads(project)
-        raise RuntimeError(f"{unread} transactions came after block {through}, the relay's last read; the proxy runs "
-                           "again: let the relay read them, then quiesce again")
-    write_closure(project, {"by": STOPPED, "relay_through": through})
-    return {"project": project, "writes": "closed", "by": STOPPED, "relay_through": through}
-
-
-def restore_reads(project):
-    """Starts the stopped proxy again, then drops the unfinished closure. If it won't start, the stopping closure
-    stays: writes are still closed, and quiesce or reopen continues from it."""
-    started = docker(["start", f"{project}-rpc-1"], check=False)
-    if started.returncode != 0:
-        raise RuntimeError(f"The proxy is stopped and did not start ({started.stderr.strip()}); the closure stays "
-                           "stopping: run quiesce to finish it or reopen to start the proxy")
-    clear_closure(project)
+    return {"project": project, "writes": "closed", "reads": "open", "proxy": "read-only stand-in"}
 
 
 def reopen(project):
-    """Lifts quiesce: the proxy takes writes again, and any earlier final copy no longer verifies."""
+    """Lifts quiesce: the shard's own proxy serves writes again, and any earlier final copy no longer verifies."""
     clear_closure(project)
+    restore_proxy(project)
+    return {"project": project, "writes": "closed" if writes_closed(project) else "open"}
+
+
+def stand_in_read_only_proxy(project):
+    """Stops the shard's own proxy and runs read-only-rpc.ts from this checkout in its place: the proxy's image (it
+    carries Bun), its network alias `rpc`, its published port and user. Labelled into the compose project, so the
+    teardown's `compose down --remove-orphans` removes it with the stack."""
+    proxy, stand_in = f"{project}-rpc-1", f"{project}-rpc-read-only"
+    shape = json.loads(docker_output(["inspect", "-f", "{{json .}}", proxy]))
+    docker(["rm", "-f", stand_in], check=False)
+    if proxy_state(project) == "running":
+        docker(["stop", "-t", "10", proxy])
+    ports = [argument for port, bindings in (shape["HostConfig"]["PortBindings"] or {}).items()
+             for binding in bindings for argument in ("-p", f"{binding['HostIp']}:{binding['HostPort']}:{port}")]
+    network = next(iter(shape["NetworkSettings"]["Networks"]))
+    deploy = Path(__file__).resolve().parents[1]
+    docker(["run", "-d", "--name", stand_in, "--restart", "on-failure", "--network", network, "--network-alias", "rpc",
+            *ports, *(["--user", shape["Config"]["User"]] if shape["Config"]["User"] else []),
+            "--label", f"com.docker.compose.project={project}", "--label", "com.docker.compose.service=rpc-read-only",
+            "-v", f"{deploy}:{deploy}:ro", "-e", "NODE_RPC_URL=http://madara:9944", "-e", "PORT=8080",
+            "--entrypoint", "bun", shape["Config"]["Image"], str(deploy / "shard/read-only-rpc.ts")])
+    for _ in range(30):
+        if proxy_refuses_writes(project):
+            return
+        time.sleep(1)
+    raise RuntimeError("The read-only proxy did not start refusing writes; the shard's own proxy runs again")
+
+
+def restore_proxy(project):
+    """The shard's own proxy back in place of any read-only stand-in."""
+    docker(["rm", "-f", f"{project}-rpc-read-only"], check=False)
     if proxy_state(project) == "stopped":
         started = docker(["start", f"{project}-rpc-1"], check=False)
         if started.returncode != 0:
-            raise RuntimeError(f"The proxy did not start: {started.stderr.strip()}")
-    return {"project": project, "writes": boundary_state(project)}
-
-
-def relay_read_through(url, chain_id):
-    """The last block of this shard the relay has read: every obligation up to it is stored in the relay's queue,
-    since its cursor moves in the same write. Its health doesn't show that queue, so this proves the relay has read
-    every transaction, not that it paid them: its last pass must still be caught up, with nothing deferred or held."""
-    request = urllib.request.Request(url, headers={"User-Agent": "realms-backup/1"})
-    try:
-        with urllib.request.urlopen(request, timeout=15) as response:
-            health = json.load(response)
-    except urllib.error.HTTPError as error:
-        # Unhealthy (503) still describes every shard; only the body matters here.
-        with error:
-            health = json.load(error)
-    shard = next((row for row in health.get("shards", []) if int(row["chainId"], 16) == int(chain_id, 16)), None)
-    if shard is None:
-        raise RuntimeError("The relay does not serve this shard")
-    value = shard.get("value") or {}
-    if shard.get("halted") or shard.get("page") or value.get("status") != "ready" or value.get("more") is not False \
-            or value.get("deferred") or health.get("held"):
-        raise RuntimeError("The relay is not caught up on this shard: wait until its last pass is ready and complete, "
-                           "with nothing deferred or held")
-    return shard["nextBlock"] - 1
+            raise RuntimeError(f"The shard's proxy did not start: {started.stderr.strip()}")
 
 
 def writes_closed(project):
-    """No write can reach the node: the proxy, asked now, refuses one as closed; or quiesce finished stopping it and
-    Docker says it is stopped. A marker alone, an unfinished stop or an unanswered question proves nothing."""
-    record = closure_record(project)
-    if record is None:
-        return False
-    if record["by"] == SWITCH:
-        return proxy_refuses_writes(project)
-    return record["by"] == STOPPED and proxy_state(project) == "stopped"
-
-
-def boundary_state(project):
-    """closed, open, stopping (quiesce stopped the proxy but hasn't finished) or unknown: open only when the proxy
-    is seen running without refusing writes."""
-    try:
-        if writes_closed(project):
-            return "closed"
-        record, state = closure_record(project), proxy_state(project)
-        if record and record["by"] == STOPPING and state == "stopped":
-            return "stopping"
-        return "open" if state == "running" else "unknown"
-    except (RuntimeError, ValueError):
-        return "unknown"
+    """No write can reach the node: quiesce closed it, and the RPC the stack serves, asked now, refuses a write as
+    closed. A marker alone or an unanswered question proves nothing."""
+    return closure_path(project).exists() and proxy_refuses_writes(project)
 
 
 def proxy_refuses_writes(project):
-    """Whether the running proxy refuses a write as closed: it is asked one, from inside the stack. A proxy without
-    the switch (an older image) answers otherwise, and a stopped one doesn't answer."""
+    """Whether the stack's RPC (the alias `rpc`: the proxy, or its read-only stand-in) refuses a write as closed: it is
+    asked one, from inside the stack. A proxy without the switch answers otherwise, and none at all doesn't answer."""
     request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_addInvokeTransaction", "params": [{}]})
     answer = docker(["exec", f"{project}-madara-1", "curl", "-s", "-m", "10", "-X", "POST", "-H",
                      "content-type: application/json", "-d", request, "http://rpc:8080/"], check=False).stdout
@@ -220,50 +165,25 @@ def proxy_state(project):
     return state
 
 
-# The closure file's record: how writes were closed, and for a stopped proxy the relay's last read.
-SWITCH, STOPPING, STOPPED = "switch", "stopping", "stopped"
-
-
 def closure_path(project):
     return volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE
 
 
-def write_closure(project, record):
-    path = closure_path(project)
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(json.dumps(record) + "\n")
-    temporary.replace(path)
+def write_closure(project):
+    closure_path(project).write_text("closed\n")
 
 
 def clear_closure(project):
     closure_path(project).unlink(missing_ok=True)
 
 
-def closure_record(project):
-    """The closure quiesce wrote, or None while there is none; a record it can't have written is refused."""
-    path = closure_path(project)
-    if not path.exists():
-        return None
-    record = json.loads(path.read_text())
-    if record.get("by") == SWITCH and set(record) == {"by"}:
-        return record
-    if record.get("by") in (STOPPING, STOPPED) and set(record) == {"by", "relay_through"} \
-            and type(record["relay_through"]) is int:
-        return record
-    raise ValueError(f"{path.name} holds no closure quiesce writes; run reopen, then quiesce")
-
-
 def transactions_after(container, number):
     """How many transactions the node holds in the blocks after `number`, up to its head."""
-    return transactions_between(container, number + 1, node_rpc(container, "starknet_blockNumber", []))
-
-
-def transactions_between(container, first, last):
-    """How many transactions the node holds in blocks `first` to `last`."""
+    head = node_rpc(container, "starknet_blockNumber", [])
     count = 0
-    for start in range(first, last + 1, BLOCKS_PER_BATCH):
+    for start in range(number + 1, head + 1, BLOCKS_PER_BATCH):
         batch = [{"jsonrpc": "2.0", "id": block, "method": "starknet_getBlockTransactionCount",
-                  "params": [{"block_number": block}]} for block in range(start, min(start + BLOCKS_PER_BATCH, last + 1))]
+                  "params": [{"block_number": block}]} for block in range(start, min(start + BLOCKS_PER_BATCH, head + 1))]
         count += sum(answer["result"] for answer in node_batch(container, batch))
     return count
 
@@ -285,19 +205,11 @@ def verify(project, dest):
     node = f"{project}-madara-1"
     if node_block(node, {"block_number": head["block_number"]}) != head:
         problems.append("the running chain differs from the copy's head")
-    state = boundary_state(project)
-    if state != "closed":
-        problems.append(f"the shard's writes are not shown closed ({state}): quiesce it, drain, then capture")
+    if not writes_closed(project):
+        problems.append("the shard's writes are not shown closed: quiesce it, drain, then capture")
     accepted = transactions_after(node, head["block_number"])
     if accepted:
         problems.append(f"{accepted} transactions were accepted after the capture: capture the drained shard again")
-    record = closure_record(project) if state == "closed" else None
-    through = record["relay_through"] if record and record["by"] == STOPPED else None
-    if through is not None and through < head["block_number"]:
-        unread = transactions_between(node, through + 1, head["block_number"])
-        if unread:
-            problems.append(f"{unread} transactions are in blocks the relay never read: reopen, let it drain, then "
-                            "quiesce and capture again")
     return problems
 
 
@@ -547,17 +459,17 @@ def main(argv):
             result = restore_test(argv[1], Path(argv[2]).resolve())
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
-    elif argv[:1] == ["quiesce"] and len(argv) in (2, 3):
+    elif argv[:1] == ["quiesce"] and len(argv) == 2:
         try:
-            print(json.dumps(quiesce(*argv[1:])))
-        except (RuntimeError, ValueError, subprocess.CalledProcessError) as error:
-            print(json.dumps({"project": argv[1], "writes": boundary_state(argv[1]), "problem": str(error)}))
+            print(json.dumps(quiesce(argv[1])))
+        except (RuntimeError, subprocess.CalledProcessError) as error:
+            print(json.dumps({"project": argv[1], "problem": str(error)}))
             sys.exit(1)
     elif argv[:1] == ["reopen"] and len(argv) == 2:
         try:
             print(json.dumps(reopen(argv[1])))
-        except (RuntimeError, ValueError, subprocess.CalledProcessError) as error:
-            print(json.dumps({"project": argv[1], "writes": boundary_state(argv[1]), "problem": str(error)}))
+        except (RuntimeError, subprocess.CalledProcessError) as error:
+            print(json.dumps({"project": argv[1], "problem": str(error)}))
             sys.exit(1)
     elif argv[:1] == ["verify"] and len(argv) == 3:
         problems = verify(argv[1], Path(argv[2]).resolve())

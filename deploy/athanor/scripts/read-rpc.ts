@@ -1,4 +1,5 @@
 import { existsSync, readFileSync } from "node:fs";
+import { CORS, READ_METHODS, WRITE_METHODS, WRITES_CLOSED_FILE, WRITES_CLOSED_MESSAGE } from "./public-rpc";
 import { isIP } from "node:net";
 import { hash } from "starknet";
 import { openProver, type StampProvider } from "../vrf/native";
@@ -14,28 +15,6 @@ import {
   type PlayRefusalReason,
 } from "../../../packages/provider/src/play-refusal";
 
-const READ_METHODS = new Set([
-  "starknet_specVersion",
-  "starknet_chainId",
-  "starknet_blockNumber",
-  "starknet_blockHashAndNumber",
-  "starknet_syncing",
-  "starknet_getBlockWithTxHashes",
-  "starknet_getStateUpdate",
-  "starknet_getStorageAt",
-  "starknet_getTransactionStatus",
-  "starknet_getTransactionReceipt",
-  "starknet_getClass",
-  "starknet_getClassHashAt",
-  "starknet_getClassAt",
-  "starknet_getBlockTransactionCount",
-  "starknet_call",
-  "starknet_estimateMessageFee",
-  "starknet_getEvents",
-  "starknet_getNonce",
-  "starknet_getStorageProof",
-  "starknet_getCompiledCasm",
-]);
 const PREPARATION_TIMEOUT_MS = 2000;
 const FORWARD_TIMEOUT_MS = 5000;
 type Preparation = { signal: AbortSignal; deadline: number };
@@ -81,14 +60,6 @@ function untilAborted<T>(work: Promise<T>, signal: AbortSignal): Promise<T> {
   });
 }
 
-// A browser preflights every JSON POST; without a max age it keeps the answer 5 s, so nearly every player action would
-// wait one extra round trip for it. Chromium honours at most two hours.
-const CORS = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "Content-Type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Max-Age": "7200",
-};
 // Starknet RPC 0.10 transaction/contract errors; internal and unknown errors stay unavailable.
 const ESTIMATE_REFUSALS = new Set([-32602, 21, 40, 41, 52, 53, 54, 55, 58, 61, 64, 65, 69]);
 const READ_NOT_FOUND = new Map<number, string>([
@@ -125,8 +96,6 @@ function writeRefusals() {
  * the boundary of a final backup, where the value relay still reads its receipts and pays them. backup.py quiesce
  * creates it and reopen removes it; its verify recognises the refusal by this message.
  */
-export const WRITES_CLOSED_FILE = "/config/writes-closed";
-export const WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup";
 
 function refuse(code: number, message: string, status = 200, data?: object): Response {
   logRefusal({ code, message, status, ...data });
@@ -385,11 +354,7 @@ function outcomeUnknown(call: RpcCall, transactionHash?: string) {
 function isWrite(value: unknown): boolean {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const { method } = value as RpcCall;
-  return (
-    method === "starknet_addInvokeTransaction" ||
-    method === "starknet_addDeployAccountTransaction" ||
-    method === "starknet_addDeclareTransaction"
-  );
+  return typeof method === "string" && WRITE_METHODS.has(method);
 }
 type NodeAnswer = { jsonrpc?: unknown; id?: unknown; result?: unknown; error?: { code?: unknown } };
 function validReply(answer: unknown, call: RpcCall): answer is NodeAnswer {
