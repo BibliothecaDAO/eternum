@@ -135,6 +135,23 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId);
   }
 
+  /**
+   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read
+   * (a read receipt the owner sends clears it). A conversation with an account the owner blocked is left out. This is
+   * how a client that starts empty (a new device, a reload, a return after messages came in offline) finds them.
+   */
+  async threads(owner: string): Promise<{ thread: DirectMessageThread; lastMessage: DirectMessage | null }[]> {
+    const sql = this.ctx.storage.sql;
+    return sql
+      .exec<ThreadRow>("SELECT * FROM threads ORDER BY updatedAt DESC")
+      .toArray()
+      .filter((row) => !this.hasBlocked(row.peerId))
+      .map((row) => {
+        const last = sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", row.lastMessageId).toArray()[0];
+        return { thread: toDirectThread(row, owner), lastMessage: last ? toDirectMessage(last) : null };
+      });
+  }
+
   /** One thread's messages for its owner, newest first, a page before the cursor (an ISO time). */
   async threadMessages(
     threadId: string,

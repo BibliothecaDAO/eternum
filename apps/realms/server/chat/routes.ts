@@ -73,6 +73,11 @@ const routeAuthenticatedChat = async (request: Request, env: IdentityEnv, auth: 
   const blocks = /^\/api\/chat\/blocks(?:\/([^/]+))?$/.exec(pathname);
   if (blocks) return routeBlocks(request, env, member.realmsId, blocks[1] ? decodeURIComponent(blocks[1]) : undefined);
 
+  if (pathname === "/api/chat/dm/threads" && request.method === "GET") {
+    const inbox = env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(member.realmsId));
+    return json({ threads: await inbox.threads(member.realmsId) });
+  }
+
   const threadHistory = /^\/api\/chat\/dm\/threads\/([^/]+)\/messages$/.exec(pathname);
   if (threadHistory && request.method === "GET") {
     const page = await env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(member.realmsId)).threadMessages(

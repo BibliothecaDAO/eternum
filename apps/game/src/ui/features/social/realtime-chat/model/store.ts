@@ -229,6 +229,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const client = new RealtimeClient({
         baseUrl: params.baseUrl,
+        rooms: params.rooms,
         onOpen: () => {
           if (get().client !== client) return;
           set({
@@ -263,16 +264,18 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
           switch (message.type) {
             case "connected":
+              // Of the rooms the server allows this account, only the player's are joined: the client opens no other.
               set({
                 connectionStatus: "connected",
-                joinedZoneIds: message.channels as string[],
+                joinedZoneIds: (message.channels as string[]).filter((zoneId) => params.rooms.includes(zoneId)),
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,
                 },
               });
-              // The server has already joined the channels it authorized for this identity.
-              params.joinZones?.forEach((zoneId) => actions.joinZone(zoneId));
+              get().joinedZoneIds.forEach((zoneId) => actions.joinZone(zoneId));
+              // Every handshake (a reconnect too) reads the conversations again, those that came while away with them.
+              actions.loadDirectThreads().catch((error) => console.error("chat_threads_unavailable", error));
               break;
             case "joined:zone":
               set((state) => ({
@@ -285,6 +288,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               set((state) => ({ joinedZoneIds: state.joinedZoneIds.filter((zoneId) => zoneId !== message.zoneId) }));
               break;
             case "world:message":
+              // A room the player does not have counts nothing: nothing it says reaches the player.
+              if (!get().joinedZoneIds.includes(message.zoneId as string)) break;
               actions.receiveWorldMessage(message.zoneId as string, message.message as WorldChatMessage, {
                 clientMessageId: message.clientMessageId as string | undefined,
               });
@@ -688,23 +693,29 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: Math.max(unreadWorldTotal - zoneState.unreadCount, 0),
       });
     },
+    // Read here, and told to the server: its unread for the conversation clears through the newest message the other
+    // player sent, so another device and a reload find it read. Told once a message.
     markThreadAsRead: (threadId) => {
-      const { dmThreads, unreadDirectTotal } = get();
+      const { dmThreads, unreadDirectTotal, identity, actions } = get();
       const thread = dmThreads[threadId];
-      if (!thread || thread.unreadCount === 0) {
-        return;
-      }
-
+      if (!thread) return;
+      const newest = thread.messages.at(-1);
+      const tell = newest && identity && newest.senderId !== identity.playerId && thread.readThrough !== newest.id;
+      if (thread.unreadCount === 0 && !tell) return;
       set({
         dmThreads: {
           ...dmThreads,
-          [threadId]: {
-            ...thread,
-            unreadCount: 0,
-          },
+          [threadId]: { ...thread, unreadCount: 0, ...(tell ? { readThrough: newest.id } : {}) },
         },
         unreadDirectTotal: Math.max(unreadDirectTotal - thread.unreadCount, 0),
       });
+      if (tell)
+        void actions.acknowledgeDirectRead({
+          threadId,
+          messageId: newest.id,
+          readerId: identity.playerId,
+          readAt: new Date().toISOString(),
+        });
     },
     enqueuePendingMessage: (message: PendingMessage) => {
       const { worldZones, dmThreads } = get();
@@ -986,6 +997,35 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           };
         });
       }
+    },
+    loadDirectThreads: async () => {
+      const { baseUrl } = get();
+      if (!baseUrl) return;
+      const response = await fetchApi(new URL("/api/chat/dm/threads", baseUrl).toString(), { credentials: "include" });
+      if (!response.ok) throw new Error(`Failed to load direct chat threads (${response.status})`);
+      const data = (await response.json()) as { threads?: { thread: unknown; lastMessage: unknown }[] };
+      set((state) => {
+        const self = state.identity?.playerId;
+        const dmThreads = { ...state.dmThreads };
+        for (const listed of data.threads ?? []) {
+          const thread = mapDirectThreadRecord(listed.thread);
+          const last = listed.lastMessage ? mapDirectMessageRecord(listed.lastMessage) : null;
+          const existing = dmThreads[thread.id] ?? createThreadState(thread);
+          const messages =
+            last && !existing.messages.some((message) => message.id === last.id)
+              ? [...existing.messages, last]
+              : existing.messages;
+          const open = state.activeThreadId === thread.id && state.isShellOpen;
+          dmThreads[thread.id] = {
+            ...existing,
+            thread: { ...existing.thread, ...thread },
+            messages,
+            unreadCount: open || !self ? 0 : (thread.unreadCounts[self] ?? 0),
+          };
+        }
+        const unreadDirectTotal = Object.values(dmThreads).reduce((total, thread) => total + thread.unreadCount, 0);
+        return { dmThreads, unreadDirectTotal };
+      });
     },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
       const { baseUrl } = get();

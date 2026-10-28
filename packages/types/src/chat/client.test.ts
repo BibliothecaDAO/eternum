@@ -54,13 +54,14 @@ class FakeSocket {
   }
 }
 
-const connect = () => {
+const connect = (rooms: readonly string[] = ["world:global", "game:7"]) => {
   const sockets: FakeSocket[] = [];
   const closes: unknown[] = [];
   const messages: Array<{ type: string; zoneId?: unknown }> = [];
   let reconnecting = 0;
   const client = new RealtimeClient({
     baseUrl: "https://chat.realms.party?playerId=0xvictim",
+    rooms,
     createSocket: (url) => {
       const socket = new FakeSocket(url);
       sockets.push(socket);
@@ -133,6 +134,35 @@ describe("RealtimeClient", () => {
     expect(sockets[2].closedByClient).toBe(true);
     vi.advanceTimersByTime(60_000);
     expect(paths().filter((path) => path === "/api/chat/rooms/game%3A7")).toHaveLength(1);
+  });
+
+  it("opens only the rooms the player has, of those the handshake allows: a game room not shown never opens", () => {
+    const { sockets, paths } = connect(["world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global", "game:7", "game:9"] });
+    expect(paths()).toEqual(["/api/chat/inbox", "/api/chat/rooms/world%3Aglobal"]);
+  });
+
+  it("opens the same rooms again when a dropped inbox reconnects, never the hidden ones", () => {
+    const { sockets, paths } = connect(["world:global"]);
+    const handshake = { type: "connected", playerId: "p", channels: ["world:global", "game:7"] };
+    sockets[0].open();
+    sockets[0].receive(handshake);
+    sockets[0].drop();
+    vi.advanceTimersByTime(1_000);
+    const inbox = sockets.at(-1)!;
+    inbox.open();
+    inbox.receive(handshake);
+    expect(paths().filter((path) => path.includes("game"))).toEqual([]);
+  });
+
+  it("opens a game's room where it is shown (Blitz's, with its switch on), and only once the handshake allows it", () => {
+    const shown = connect(["world:global", "game:7"]);
+    shown.sockets[0].open();
+    shown.sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    expect(shown.paths()).toEqual(["/api/chat/inbox", "/api/chat/rooms/world%3Aglobal"]);
+    shown.sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global", "game:7"] });
+    expect(shown.paths()).toContain("/api/chat/rooms/game%3A7");
   });
 
   it("stays closed once closed, and closes a socket still connecting only when it has opened", () => {

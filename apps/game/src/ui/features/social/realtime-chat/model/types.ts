@@ -59,6 +59,8 @@ export interface DirectMessageThreadState {
   thread: DirectMessageThread;
   messages: DirectMessage[];
   unreadCount: number;
+  /** The other player's message this client last told the server it read: the server's unread clears through it. */
+  readThrough?: string;
   hasMoreHistory: boolean;
   lastFetchedCursor?: string | null;
   isFetchingHistory: boolean;
@@ -89,7 +91,8 @@ export interface RealtimeChatState {
 
 export interface InitializeRealtimeClientParams {
   baseUrl: string;
-  joinZones?: string[];
+  /** The rooms the player has where they stand (chatRooms): the only rooms opened, of those the server allows. */
+  rooms: string[];
 }
 
 export interface LoadWorldChatHistoryParams extends Pick<WorldChatHistoryQuery, "cursor" | "limit" | "since"> {
@@ -135,6 +138,8 @@ export interface RealtimeChatActions {
   setDirectHistoryLoading(threadId: string, isLoading: boolean): void;
   loadWorldHistory(params: LoadWorldChatHistoryParams): Promise<void>;
   loadDirectHistory(threadId: string, cursor?: string): Promise<void>;
+  /** The account's conversations as the server keeps them: each one, its last line and its unread. */
+  loadDirectThreads(): Promise<void>;
   loadBlockedPlayers(): Promise<void>;
   blockPlayer(playerId: string): Promise<void>;
   unblockPlayer(playerId: string): Promise<void>;

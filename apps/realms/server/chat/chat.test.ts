@@ -422,3 +422,75 @@ it("drops a blocked player's direct messages before socket and push, and deliver
 
   await worker.dispose();
 }, 120_000);
+
+it("lists a player's conversations from the server: one written while they were offline, read, then answered", async () => {
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: () => new Response(null, { status: 599 }),
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const [sender, recipient] = [await signIn(worker), await signIn(worker)];
+  type Listed = {
+    thread: { id: string; participants: string[]; unreadCounts: Record<string, number> };
+    lastMessage: { content: string; senderId: string } | null;
+  };
+  const threadsOf = (player: { cookie: string }) =>
+    worker.mf
+      .dispatchFetch(`${ORIGIN}/api/chat/dm/threads`, { headers: { cookie: player.cookie, origin: ORIGIN } })
+      .then((response) => response.json() as Promise<{ threads: Listed[] }>);
+  /** The list read again until it says what is awaited: a socket's frame lands a moment after it is sent. */
+  const listedOnce = async (player: { cookie: string }, holds: (threads: Listed[]) => boolean) => {
+    const deadline = Date.now() + 5_000;
+    let threads = (await threadsOf(player)).threads;
+    while (!holds(threads) && Date.now() < deadline) {
+      await pause(100);
+      threads = (await threadsOf(player)).threads;
+    }
+    return threads;
+  };
+
+  // The recipient has never opened chat: the message waits in their inbox.
+  const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
+  outbox.socket!.send(
+    JSON.stringify({ type: "direct:message", payload: { recipientId: recipient.realmsId, content: "are you there" } }),
+  );
+  await waitUntil(() => ofType(outbox.received, "direct:message").length > 0, 5_000);
+
+  // A client starting empty finds it: who, the last line, unread.
+  const [waiting] = (await threadsOf(recipient)).threads;
+  expect(waiting!.thread.participants).toContain(sender.realmsId);
+  expect(waiting!.lastMessage).toMatchObject({ content: "are you there", senderId: sender.realmsId });
+  expect(waiting!.thread.unreadCounts[recipient.realmsId]).toBe(1);
+
+  // Read on a device, then listed again as a reload lists it: still there, nothing unread.
+  const inbox = await connect(worker, recipient.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(inbox.received, "connected").length > 0, 5_000);
+  const messageId = (ofType(outbox.received, "direct:message")[0]!.message as { id: string }).id;
+  inbox.socket!.send(
+    JSON.stringify({
+      type: "direct:read",
+      payload: {
+        threadId: waiting!.thread.id,
+        messageId,
+        readerId: recipient.realmsId,
+        readAt: new Date().toISOString(),
+      },
+    }),
+  );
+  const read = await listedOnce(recipient, (threads) => threads[0]?.thread.unreadCounts[recipient.realmsId] === 0);
+  expect(read).toHaveLength(1);
+  expect(read[0]!.thread.unreadCounts[recipient.realmsId]).toBe(0);
+
+  // The answer is the conversation's last line for both.
+  inbox.socket!.send(
+    JSON.stringify({ type: "direct:message", payload: { recipientId: sender.realmsId, content: "yes, at dawn" } }),
+  );
+  const answered = await listedOnce(sender, (threads) => threads[0]?.lastMessage?.content === "yes, at dawn");
+  expect(answered[0]!.lastMessage).toMatchObject({ content: "yes, at dawn", senderId: recipient.realmsId });
+  expect((await threadsOf(recipient)).threads[0]!.lastMessage).toMatchObject({ content: "yes, at dawn" });
+
+  await worker.dispose();
+}, 120_000);

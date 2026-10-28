@@ -102,6 +102,12 @@ export interface RealtimeClientOptions {
   /** The app's origin: chat is served under its /api/chat. */
   baseUrl: string;
   /**
+   * The rooms the player has where they stand (Global, and a game's own where its mode keeps one). The inbox's handshake
+   * names every room the account may read; only these are opened, so a room the player is not shown never streams to
+   * them, and every handshake (each reconnect) opens them again.
+   */
+  rooms: readonly string[];
+  /**
    * Optional factory for constructing WebSocket instances.
    * This enables dependency injection during tests or on platforms
    * that do not expose `WebSocket` as a global.
@@ -194,7 +200,8 @@ export class RealtimeClient {
       const message = safeParse(event.data);
       if (!message) return;
       if (message.type === "connected") {
-        for (const zoneId of (message.channels as string[] | undefined) ?? []) this.joinZone(zoneId);
+        const allowed = (message.channels as string[] | undefined) ?? [];
+        for (const zoneId of allowed) if (this.#options.rooms.includes(zoneId)) this.joinZone(zoneId);
       }
       this.#options.onMessage?.(message, event);
     });

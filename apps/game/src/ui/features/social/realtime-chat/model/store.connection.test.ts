@@ -27,9 +27,10 @@ afterEach(() => {
   vi.clearAllMocks();
 });
 
-it("waits for the server handshake and only opens game zones the server granted", async () => {
+it("waits for the server handshake and only opens the player's rooms the server granted", async () => {
   const actions = useRealtimeChatStore.getState().actions;
-  actions.initializeClient({ baseUrl: "https://chat.test", joinZones: ["game:7", "game:28"] });
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["game:7", "game:28"] });
+  expect(mock.options!.rooms).toEqual(["game:7", "game:28"]);
   mock.options!.onOpen!({} as WebSocket);
   expect(useRealtimeChatStore.getState().connectionStatus).toBe("connecting");
   expect(useRealtimeChatStore.getState().joinedZoneIds).toEqual([]);
@@ -55,9 +56,9 @@ it("waits for the server handshake and only opens game zones the server granted"
 
 it("ignores delayed connection events from a replaced client", () => {
   const actions = useRealtimeChatStore.getState().actions;
-  actions.initializeClient({ baseUrl: "https://chat.test", joinZones: ["game:7"] });
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["game:7"] });
   const previous = mock.options!;
-  actions.initializeClient({ baseUrl: "https://chat.test", joinZones: ["game:28"] });
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["game:28"] });
   mock.options!.onMessage!({ type: "connected", playerId: "0xb", channels: ["game:28"] }, {} as MessageEvent);
 
   previous.onMessage!({ type: "connected", playerId: "0xa", channels: ["game:7"] }, {} as MessageEvent);
@@ -69,7 +70,7 @@ it("ignores delayed connection events from a replaced client", () => {
 
 it("reads as reconnecting while a dropped socket is coming back, and as connected once its room rejoins", () => {
   const actions = useRealtimeChatStore.getState().actions;
-  actions.initializeClient({ baseUrl: "https://chat.test" });
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["world:global"] });
   mock.options!.onMessage!({ type: "connected", playerId: "0xa", channels: ["world:global"] }, {} as MessageEvent);
 
   // The room drops: the client reports it left, then that it is opening it again.
@@ -86,4 +87,31 @@ it("reads as reconnecting while a dropped socket is coming back, and as connecte
   mock.options!.onClose!({ wasClean: false } as CloseEvent);
   mock.options!.onReconnecting!();
   expect(useRealtimeChatStore.getState().connectionStatus).toBe("reconnecting");
+});
+
+it("joins only the rooms the player has: a game the account may read but is not shown never counts unread", () => {
+  const actions = useRealtimeChatStore.getState().actions;
+  actions.initializeClient({ baseUrl: "https://chat.test", rooms: ["world:global"] });
+  mock.options!.onMessage!(
+    { type: "connected", playerId: "0xa", channels: ["world:global", "game:7", "game:9"] },
+    {} as MessageEvent,
+  );
+  expect(useRealtimeChatStore.getState().joinedZoneIds).toEqual(["world:global"]);
+  expect(Object.keys(useRealtimeChatStore.getState().worldZones)).toEqual(["world:global"]);
+  mock.options!.onMessage!(
+    {
+      type: "world:message",
+      zoneId: "game:7",
+      message: {
+        id: "m1",
+        zoneId: "game:7",
+        sender: { playerId: "0xb" },
+        content: "hi",
+        createdAt: "2026-10-28T12:00:00Z",
+      },
+    },
+    {} as MessageEvent,
+  );
+  expect(useRealtimeChatStore.getState().unreadWorldTotal).toBe(0);
+  expect(useRealtimeChatStore.getState().worldZones["game:7"]).toBeUndefined();
 });

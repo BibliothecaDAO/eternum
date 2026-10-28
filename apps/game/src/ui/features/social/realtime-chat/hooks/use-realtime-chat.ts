@@ -146,7 +146,7 @@ export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientPara
   const actions = useRealtimeChatActions();
   // The client starts again only for another server or other zones, with the config as it stands then.
   const startedWith = useLatest(config);
-  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.joinZones ?? [])}` : null;
+  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.rooms)}` : null;
 
   useEffect(() => {
     const current = startedWith.current;

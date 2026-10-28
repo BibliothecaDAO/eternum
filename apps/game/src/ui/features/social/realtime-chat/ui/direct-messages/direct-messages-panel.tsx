@@ -86,18 +86,20 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
   );
   const chatActions = useRealtimeChatSelector((state) => state.actions);
 
+  // Open, it is read through its newest message: on opening, and as each new one arrives while it stays open.
+  const newestId = thread?.messages.at(-1)?.id;
   useEffect(() => {
     if (resolvedThreadId) {
       markAsRead();
     }
-  }, [markAsRead, resolvedThreadId]);
+  }, [markAsRead, resolvedThreadId, newestId]);
 
-  // Initial load of messages
+  // Its history is read once, when it opens: a conversation listed from the server holds only its last line until then.
   useEffect(() => {
     if (
       resolvedThreadId &&
       thread &&
-      thread.messages.length === 0 &&
+      thread.lastFetchedCursor === undefined &&
       thread.hasMoreHistory &&
       !thread.isFetchingHistory
     ) {

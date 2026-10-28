@@ -39,15 +39,9 @@ const useGameChatRoom = () => {
   const zoneId = useRealtimeChatSelector((state) =>
     rooms.some((room) => room.zoneId === state.activeZoneId) ? state.activeZoneId! : GLOBAL_CHAT_CHANNEL_ID,
   );
-  // The server joins Global at the handshake; a game's room is asked for by name.
+  // The rooms shown are the rooms opened: one list for the tabs and the sockets.
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () =>
-      signedIn
-        ? {
-            baseUrl: window.location.origin,
-            joinZones: rooms.map((room) => room.zoneId).filter((zone) => zone !== GLOBAL_CHAT_CHANNEL_ID),
-          }
-        : null,
+    () => (signedIn ? { baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) } : null),
     [signedIn, rooms],
   );
   return { status, rooms, zoneId, initializer };
