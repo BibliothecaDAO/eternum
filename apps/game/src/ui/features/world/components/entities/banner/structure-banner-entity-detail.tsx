@@ -1,3 +1,4 @@
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { IncomingCaravans } from "./incoming-caravans";
@@ -129,17 +130,11 @@ export const StructureBannerEntityDetail = memo(
         ? formatWait(villageTimerSummary.postRaidImmunityWindowSeconds)
         : "Unavailable"
       : "—";
-    const showFaithTab =
-      isEternumMode &&
-      rawCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village].includes(Number(rawCategory) as StructureType);
+    const showFaithTab = isEternumMode && categoryCan(rawCategory, "pledgesFaith");
     const canOpenTransferPanel =
       isMine &&
       configManager.isCommandEnabled("SendResources") &&
-      structureCategory !== undefined &&
-      [StructureType.Realm, StructureType.Village, StructureType.Camp, StructureType.Mine].includes(
-        structureCategory as StructureType,
-      ) &&
+      categoryCan(structureCategory, "holdsInventory") &&
       typeof structure.entity_id !== "undefined";
     const ownerInitial = (ownerDisplayName || "?").charAt(0).toUpperCase();
     const showHyperstructureVP = isHyperstructure && hyperstructureRate !== undefined;

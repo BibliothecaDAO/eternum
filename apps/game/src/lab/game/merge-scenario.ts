@@ -1,9 +1,8 @@
-import { frontierArmyRules } from "../../ui/features/frontier/army/progression-rules-fixture";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
-import type { LabCommand, LabFact, LabScenario } from "./lab-chain";
-import { besideOnOpenLand, spireScenario } from "./spire-scenario";
+import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
+import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, progressionRules, spireScenario } from "./spire-scenario";
 
 /** The realm's second army, beside its first. */
 const MERGE_ARMY = 202;
@@ -13,24 +12,19 @@ const SECOND_ARMY_TROOPS = 2_517_000_000_000n;
 const LIMIT_RAISED = 3;
 
 /**
- * Which army a full merge keeps: the army picked (the source, when it has more progression; today's rule, troops.cairo
- * `source_wins_merge`), or the army tapped (the merged-into army: today when it has as much progression or more, and
- * always from release 3).
+ * Which army holds the progression: the army picked, so merging it into the other loses its XP and the card asks twice,
+ * or the army tapped, which a merge keeps with its XP.
  */
-type Survivor = "picked" | "tapped";
-
-const wire = (value: unknown): unknown =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+type Progressed = "picked" | "tapped";
 
 /**
- * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-keeps-picked or
- * merge-keeps-tapped): the spire's 1,498 knights and 2,517 more beside them, alike and within the realm's army limit
- * together, so they can merge. The chain answers their transfer as troops.cairo's transfer_troops applies it between two
- * explorers: a full merge keeps the army with more progression, the other is destroyed (its troops row and its tile's
- * occupancy deleted). The owner's merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended
+ * Two of realm 7's armies side by side on the spire's game (/lab/game?scenario=merge-loses-xp or merge-keeps-tapped):
+ * the spire's 1,498 knights and 2,517 more beside them, alike and within the realm's army limit together, so they can
+ * merge. The chain answers their transfer as troops.cairo's transfer_troops applies it between two explorers: a full
+ * merge keeps the army merged into, the other is destroyed (its troops row and its tile's occupancy deleted). The owner's merge on prod (2026-10-25: "due to an army merge I dont see the hover label") ended
  * with one army of 4,015.
  */
-export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
+export const mergeScenario = (progressed: Progressed) => (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
   const [, occupancy] = [...store.entries("TileOccupancy")].find(([, row]) => row.entity_id === BigInt(SPIRE_ARMY))!;
@@ -49,9 +43,9 @@ export const mergeScenario = (survivor: Survivor) => (): LabScenario => {
       value: wire({ ...occupancy, ...beside, entity_id: MERGE_ARMY }),
     },
     progressionRules(),
-    // The picked army is the spire's; the more progressed army is the one a merge keeps.
-    armyProgress("0x1ab92", SPIRE_ARMY, survivor === "picked" ? 100 : 0),
-    armyProgress("0x1ab93", MERGE_ARMY, survivor === "tapped" ? 100 : 0),
+    // The picked army is the spire's.
+    armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, progressed === "picked" ? 100 : 0),
+    armyProgress("0x1ab93", MERGE_ARMY, progressed === "tapped" ? 100 : 0),
   ] as never);
   return {
     ...spire,
@@ -72,27 +66,6 @@ const raisedArmyLimit = (store: NativeFactStore): LabFact => {
   };
 };
 
-const progressionRules = (): LabFact => ({
-  model: "ArmyProgressionRules",
-  key: "0x1ab94",
-  value: frontierArmyRules(),
-});
-
-const armyProgress = (key: string, explorerId: number, xp: number): LabFact => ({
-  model: "ArmyProgress",
-  key,
-  value: {
-    game_id: 1,
-    explorer_id: String(explorerId),
-    xp,
-    battle: 1,
-    logistics: 1,
-    scouting: 0,
-    scouting_kinds: 0,
-    homecoming: 1,
-  },
-});
-
 /** ManageTroops::Transfer (troop_management.cairo's fifth variant). */
 const TRANSFER = 4n;
 
@@ -108,20 +81,14 @@ const readTransfer = (command: LabCommand) => {
 };
 
 /**
- * troops.cairo's transfer_troops between two explorers: a full merge goes into the army with more progression, the
- * emptied army is destroyed (destroy_explorer: its row deleted, its tile vacated), and the other holds the troops.
+ * troops.cairo's transfer_troops between two explorers: the target holds what it is sent, and a source left empty is
+ * destroyed (destroy_explorer: its row deleted, its tile vacated).
  */
 const answerTransfer = (command: LabCommand, chain: NativeFactStore): LabFact[] | null => {
   const transfer = readTransfer(command);
   if (!transfer) return null;
   const army = (id: bigint) => [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === id)!;
-  const value = (id: bigint) => chain.get("ArmyProgress", { game_id: 1, explorer_id: id })?.xp ?? 0;
-  let [source, target, amount] = [transfer.source, transfer.target, transfer.amount];
-  const [, sourceRow] = army(source);
-  if (amount === sourceRow.troops.count && value(source) > value(target)) {
-    amount = army(target)[1].troops.count;
-    [source, target] = [target, source];
-  }
+  const { source, target, amount } = transfer;
   const [sourceKey, from] = army(source);
   const [targetKey, to] = army(target);
   const left = from.troops.count - amount;

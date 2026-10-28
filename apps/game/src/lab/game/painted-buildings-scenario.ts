@@ -6,14 +6,14 @@ import {
   TileOccupier,
   StructureType,
 } from "@bibliothecadao/types";
-import type { LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import { spireScenario, type LabGround } from "./spire-scenario";
 
 const GUARD_PRECISION = 1_000_000_000n;
 
-/** A built Kingdom and its nearby sites, using the game's own board, map and placement controls. */
-export const paintedBuildingsScenario = (): LabScenario => {
-  const game = spireScenario();
+/** A built Kingdom and its nearby sites, using the game's own board, map and placement controls, on the given ground. */
+export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
+  const game = spireScenario(ground);
   const types = [
     BuildingType.ResourceWheat,
     BuildingType.ResourceLabor,
@@ -28,8 +28,6 @@ export const paintedBuildingsScenario = (): LabScenario => {
     ({ col, row }) => col !== BUILDINGS_CENTER[0] || row !== BUILDINGS_CENTER[1],
   );
   const realm = game.store.require("Structure", { game_id: 1, entity_id: 7 });
-  const wire = (value: unknown) =>
-    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? String(field) : field)));
   const neighbors = getNeighborHexes(game.opensOn.col, game.opensOn.row);
   const facts: LabFact[] = [
     {

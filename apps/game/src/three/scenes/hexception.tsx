@@ -97,6 +97,7 @@ import {
 import { HexceptionAmbienceSystem } from "@/three/systems/hexception-ambience-system";
 import { pickLocalRealm } from "./local-realm";
 import { IS_FLAT_MODE } from "@/ui/config";
+import { UNDEFINED_STRUCTURE_ENTITY_ID } from "@/ui/constants";
 
 import { openProduction } from "@/ui/features/settlement/production/open-production";
 import { resolveConstructionBuildability } from "@bibliothecadao/eternum/automation";
@@ -125,6 +126,7 @@ import {
   BiomeType,
   BuildingType,
   HexPosition,
+  ID,
   RealmLevels,
   ResourceMiningTypes,
   ResourcesIds,
@@ -260,6 +262,12 @@ export default class HexceptionScene extends HexagonScene {
   private newRingTimer: number | undefined;
   /** The entered structure's building slots; setup() binds it before the scene is entered. */
   private tileManager!: BuildingTiles;
+  /**
+   * The realm the board draws, whose slots tileManager reads: a hover, a tap, a placement and each model, its stage and
+   * tier name it, so what a card reads of a plot is what its hover read and what the board shows, whichever realm the
+   * session holds since. None until the first setup draws one.
+   */
+  private shownRealmId: ID = UNDEFINED_STRUCTURE_ENTITY_ID;
   private labels: {
     col: number;
     row: number;
@@ -613,7 +621,7 @@ export default class HexceptionScene extends HexagonScene {
             ? buildingTypeTier(
                 this.game.store,
                 configManager.getActiveGameId(),
-                this.state.structureEntityId,
+                this.shownRealmId,
                 building as BuildingType,
               )
             : 1;
@@ -681,7 +689,8 @@ export default class HexceptionScene extends HexagonScene {
     if (realmChanged) {
       const realmGeneration = this.advanceRealmGeneration();
       this.centerColRow = [realmPosition.col, realmPosition.row];
-      this.tileManager = requireActiveGameClient().views.buildingTiles(useUIStore.getState().structureEntityId);
+      this.shownRealmId = safeInteger(structure.entity_id);
+      this.tileManager = requireActiveGameClient().views.buildingTiles(this.shownRealmId);
 
       // remove all previous building instances
       this.buildingInstances.forEach((instance, key) => {
@@ -850,7 +859,7 @@ export default class HexceptionScene extends HexagonScene {
       }
 
       const useSimpleCost = resolveUseSimpleCost(configManager.buildingCostMode, this.state.useSimpleCost);
-      const structureEntityId = useUIStore.getState().structureEntityId;
+      const structureEntityId = this.shownRealmId;
       const realm = getRealmInfo(structureEntityId, this.game.store, getPlayerDisplayName);
       const buildability = resolveConstructionBuildability({
         entityId: structureEntityId,
@@ -892,7 +901,7 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: hexCoords.col,
           innerRow: hexCoords.row,
         });
@@ -904,19 +913,22 @@ export default class HexceptionScene extends HexagonScene {
         playBuildingSound(building?.category as BuildingType);
 
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
-      } else {
+      } else if (canIssueOrders()) {
         this.state.setSelectedBuildingHex({
-          structureId: this.state.structureEntityId,
+          structureId: this.shownRealmId,
           innerCol: normalizedCoords.col,
           innerRow: normalizedCoords.row,
         });
         this.state.setLeftNavigationView(LeftView.EntityView);
         if (canConstruct) this.openPlotConstruction(normalizedCoords);
+      } else {
+        // A viewer builds nothing: an open plot is empty ground to them, and lets go of what was tapped.
+        this.state.setSelectedBuildingHex(null);
       }
     }
   }
@@ -933,7 +945,7 @@ export default class HexceptionScene extends HexagonScene {
 
   private openPlotConstruction(spot: HexPosition): boolean {
     if (!this.isEntered || !canIssueOrders() || !this.mode.ui.showBuildMenus || refusedBeforePlay()) return false;
-    const entityId = useUIStore.getState().structureEntityId;
+    const entityId = this.shownRealmId;
     const account = useAccountStore.getState().account;
     const realm = getRealmInfo(entityId, this.game.store, getPlayerDisplayName);
     if (!account || !realm || realm.owner !== BigInt(account.address)) return false;
@@ -1015,13 +1027,11 @@ export default class HexceptionScene extends HexagonScene {
     const producedResource = getProducedResource(building.category as BuildingType);
 
     if (producedResource) {
-      const productionManager = this.state.structureEntityId
-        ? new ResourceManager(this.game.store, this.state.structureEntityId)
-        : undefined;
-      const productionEndsAt = productionManager?.getProductionEndsAt(producedResource as ResourcesIds);
+      const productionManager = new ResourceManager(this.game.store, this.shownRealmId);
+      const productionEndsAt = productionManager.getProductionEndsAt(producedResource as ResourcesIds);
       const currentTick = getBlockTimestamp().currentDefaultTick;
       const isActive =
-        (productionEndsAt ?? 0) > currentTick || productionManager?.isFood(producedResource as ResourcesIds);
+        (productionEndsAt ?? 0) > currentTick || productionManager.isFood(producedResource as ResourcesIds);
       const producedName = resourceName(producedResource as ResourcesIds);
 
       this.hoverLabelManager.update(position, {
@@ -1048,7 +1058,8 @@ export default class HexceptionScene extends HexagonScene {
     void hexCoords;
   }
   protected onHexagonDoubleClick(hexCoords: HexPosition): void {
-    if (!hexCoords) {
+    // Production is the owner's: a viewer's double-click opens nothing.
+    if (!hexCoords || !canIssueOrders()) {
       return;
     }
 
@@ -1063,18 +1074,13 @@ export default class HexceptionScene extends HexagonScene {
       return;
     }
 
-    const structureEntityId = this.state.structureEntityId;
-    if (!structureEntityId) {
-      return;
-    }
-
     const building = this.tileManager.getBuilding({ col: normalizedCoords.col, row: normalizedCoords.row });
     if (!building || building.category === BuildingType.None) {
       return;
     }
 
     this.state.setSelectedBuildingHex({
-      structureId: structureEntityId,
+      structureId: this.shownRealmId,
       innerCol: normalizedCoords.col,
       innerRow: normalizedCoords.row,
     });
@@ -1130,8 +1136,8 @@ export default class HexceptionScene extends HexagonScene {
     const structureType = this.tileManager.structureType();
     this.structureStage =
       structureType === StructureType.Hyperstructure
-        ? getStructureStage(structureType, useUIStore.getState().structureEntityId, this.game.store)
-        : this.tileManager.getRealmLevel(this.state.structureEntityId);
+        ? getStructureStage(structureType, this.shownRealmId, this.game.store)
+        : this.tileManager.getRealmLevel(this.shownRealmId);
     this.fitCameraReach();
   }
 
@@ -1469,6 +1475,7 @@ export default class HexceptionScene extends HexagonScene {
       model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
       this.scene.add(model.group);
       this.buildingInstances.set(key, model.group);
+      this.requestShadowContentRefresh();
       return;
     }
 
@@ -1485,7 +1492,7 @@ export default class HexceptionScene extends HexagonScene {
     holdPartHeadings(instance);
     if (selection.tierPath && isWonderModelPath(selection.tierPath)) {
       const aura = new RealmLivingAura(buildingData.model);
-      aura.setEntityAt(0, this.state.structureEntityId);
+      aura.setEntityAt(0, this.shownRealmId);
       instance.add(aura.mesh);
       this.wonderAuras.set(key, aura);
     }
@@ -1500,8 +1507,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.scene.add(instance);
     this.buildingInstances.set(key, instance);
-    if (entrance === "overshoot") this.overshootIn(instance);
-    else this.animateBuildingScale(instance);
+    this.enterBuilding(instance, entrance);
     this.startBuildingAnimations(key, instance, buildingData.animations);
   }
 
@@ -1511,9 +1517,9 @@ export default class HexceptionScene extends HexagonScene {
   ): BuildingModelSelection {
     return resolveBuildingModelSelection(building, {
       stage: this.structureStage,
-      structureId: this.state.structureEntityId,
+      structureId: this.shownRealmId,
       mainStructureType,
-      wonder: !!this.tileManager.getWonder(this.state.structureEntityId),
+      wonder: !!this.tileManager.getWonder(this.shownRealmId),
       frontier: this.mode.id === "frontier",
       realmSkin:
         mainStructureType === StructureType.Realm
@@ -1574,16 +1580,25 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  private overshootIn(instance: Group): void {
-    instance.scale.set(0.8, 0.8, 0.8);
-    gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)" });
+  /**
+   * A building grows onto its plot, or springs back after a tier swap. Its shadow is drawn once it stands at full
+   * size: the sun's shadow map is drawn only when asked, and one drawn mid-growth would keep a building's shadow tiny.
+   */
+  private enterBuilding(instance: Group, entrance: "grow" | "overshoot"): void {
+    const standing = () => this.requestShadowContentRefresh();
+    if (entrance === "overshoot") {
+      instance.scale.set(0.8, 0.8, 0.8);
+      gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)", onComplete: standing });
+      return;
+    }
+    gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "power2.out", onComplete: standing });
   }
 
   private syncHyperstructureConstruction(): void {
     if (!this.hyperstructureModel || this.tileManager.structureType() !== StructureType.Hyperstructure) return;
     this.hyperstructureModel.setConstructionAt(
       0,
-      readHyperstructureConstruction(this.game.store, safeInteger(this.state.structureEntityId)),
+      readHyperstructureConstruction(this.game.store, safeInteger(this.shownRealmId)),
     );
   }
 
@@ -1618,16 +1633,6 @@ export default class HexceptionScene extends HexagonScene {
       this.minesMaterials.set(resource, material);
     }
     return material;
-  }
-
-  private animateBuildingScale(instance: Group): void {
-    gsap.to(instance.scale, {
-      duration: 0.5,
-      x: 1,
-      y: 1,
-      z: 1,
-      ease: "power2.out",
-    });
   }
 
   private startBuildingAnimations(key: string, instance: Group, animations: AnimationClip[]): void {
@@ -1667,23 +1672,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   removeCastleFromScene() {
-    const key = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-    const instance = this.buildingInstances.get(key);
-    if (instance) {
-      this.scene.remove(instance);
-      this.buildingInstances.delete(key);
-    }
-
-    this.wonderAuras.get(key)?.dispose();
-    this.wonderAuras.delete(key);
-
-    // Properly dispose of mixers before removing
-    const mixer = this.buildingMixers.get(key);
-    if (mixer) {
-      mixer.stopAllAction();
-      mixer.uncacheRoot(mixer.getRoot());
-      this.buildingMixers.delete(key);
-    }
+    this.removeBuilding(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]);
   }
 
   computeHexMatrices = (
@@ -1775,7 +1764,7 @@ export default class HexceptionScene extends HexagonScene {
   private centerBuildingCategory(structureType: StructureType): BuildingType {
     if (structureType !== StructureType.Mine) return structureTypeToBuildingType[structureType];
     const game_id = configManager.getActiveGameId();
-    const structure = this.game.store.require("Structure", { game_id, entity_id: this.state.structureEntityId });
+    const structure = this.game.store.require("Structure", { game_id, entity_id: this.shownRealmId });
     return this.game.store.require("MineKindConfig", { game_id, kind: structure.metadata.mine_kind }).building_category;
   }
 
@@ -1836,7 +1825,7 @@ export default class HexceptionScene extends HexagonScene {
   private changesShownHyperstructure(change: NativeFactChange): boolean {
     if (change.model !== "Hyperstructure" && change.model !== "HyperstructureProgress") return false;
     const row = change.current ?? change.previous;
-    return row?.entity_id === BigInt(this.state.structureEntityId) && row?.game_id === configManager.getActiveGameId();
+    return row?.entity_id === BigInt(this.shownRealmId) && row?.game_id === configManager.getActiveGameId();
   }
 
   /** The shown structure's new level, when the change is one to its level. */
@@ -1844,7 +1833,7 @@ export default class HexceptionScene extends HexagonScene {
     if (change.model !== "Structure" || !change.current) return undefined;
     const { current, previous } = change;
     const shown =
-      current.game_id === configManager.getActiveGameId() && current.entity_id === BigInt(this.state.structureEntityId);
+      current.game_id === configManager.getActiveGameId() && current.entity_id === BigInt(this.shownRealmId);
     return shown && previous?.base.level !== current.base.level ? current.base.level : undefined;
   }
 
@@ -1887,6 +1876,7 @@ export default class HexceptionScene extends HexagonScene {
         disposeClonedBuildingMaterials(instance);
       }
       this.buildingInstances.delete(key);
+      this.requestShadowContentRefresh();
     }
 
     this.wonderAuras.get(key)?.dispose();
@@ -1941,7 +1931,7 @@ export default class HexceptionScene extends HexagonScene {
     if (!this.isEntered) return;
     const structure = this.game.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
-      entity_id: this.state.structureEntityId,
+      entity_id: this.shownRealmId,
     });
     const activePaths = new Set(
       Array.from(this.buildingInstances.values(), (model) => model.userData.settlementModelPath),

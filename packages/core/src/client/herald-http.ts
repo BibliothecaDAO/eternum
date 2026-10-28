@@ -96,6 +96,26 @@ export const fetchHeraldGameHistory = async (
   return fetchHeraldJson(url.toString(), `Herald history for ${shard.url} game ${gameId}`);
 };
 
+/**
+ * One site's row by its entity, wherever it stands: its kind, place and starting guard, which never change. Null where
+ * Herald holds no such site (or predates the read).
+ */
+export const fetchHeraldExpeditionSite = async (
+  shard: Pick<Shard, "url">,
+  gameId: number,
+  siteId: number,
+): Promise<Record<string, unknown> | null> => {
+  try {
+    return await fetchHeraldJson(
+      buildHeraldUrl(shard, `/games/${gameId}/sites/${siteId}`),
+      `Herald site ${siteId} for ${shard.url} game ${gameId}`,
+    );
+  } catch (error) {
+    if (error instanceof HeraldHttpError && error.status === 404) return null;
+    throw error;
+  }
+};
+
 export const snapshotModelRows = (snapshot: HeraldGameSnapshot, model: string): Array<Record<string, unknown>> => {
   const selected = snapshot.models.find((entry) => entry.model === model);
   if (!selected) throw new Error(`Herald snapshot omitted requested model ${model}`);

@@ -1,10 +1,64 @@
 import { readRealmSkin, realmSkinIcon, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
-import { StructureType, type StructureNamingMode } from "@bibliothecadao/types";
-import { frontierBeast, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
+import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
+import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { NativeRows } from "../../../../../contracts/l3/world-native/schema/client.gen";
-import { iconDefinition, type IconMeaning } from "./icon-meaning";
+import type { NativeRows, NativeStoryVariant } from "../../../../../contracts/l3/world-native/schema/client.gen";
+import { iconDefinition, type IconMeaning, resourceMeaning } from "./icon-meaning";
+
+/** Frontier's wordmark, shared by its landing and campaign-ticket preview. */
+export const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
+
+/** Every story the game can emit (the schema's story variants, a fight and a raid), by the act it tells. */
+const storyMeanings = {
+  BattleEvent: "attack",
+  RaidEvent: "raid",
+  FaithPointsClaimedStory: "shrine",
+  FaithPledged: "shrine",
+  FaithRemoved: "shrine",
+  StructureLevelUpStory: "upgrade",
+  RealmCreatedStory: "realm",
+  StructureCapturedStory: "flag",
+  GuardAddStory: "defend",
+  GuardDeleteStory: "defend",
+  ResourceBurnStory: "flame",
+  ResourceTransferStory: "transfer",
+  ResourceReceiveArrivalStory: "transfer",
+  ProductionStory: "produce",
+  BuildingPlacementStory: "build",
+  BuildingPaymentStory: "build",
+  BitcoinAwardStory: "bitcoin-mine",
+  TradeCreated: "trade",
+  TradeAccepted: "trade",
+  TradeCancelled: "trade",
+  BankSwap: "swap",
+  BankLiquidity: "bank",
+  HyperstructurePoints: "hyperstructure",
+  RelicChestOpened: "relics",
+  RelicCrafted: "relics",
+  RelicActivated: "relics",
+  ExplorationReward: "explore",
+  SpireDiscovered: "spire",
+  SitePayout: "flag",
+  RewardChestOpened: "reward-chest",
+  SeasonEnded: "victory",
+  BlitzFinalized: "victory",
+  ExplorerCreateStory: "deploy",
+  ExplorerAddStory: "deploy",
+  ExplorerDeleteStory: "military",
+  TroopsTransferred: "military",
+  LordsWithdrawn: "lords",
+  TierBought: "research",
+  SkillPointSpent: "research",
+  SiteUsed: "claim",
+} satisfies Record<NativeStoryVariant | "BattleEvent" | "RaidEvent" | "TierBought", IconMeaning>;
+
+/** A story's painting, by its kind: the one table every Feed, Events and Log row reads. */
+export function storyMeaning(story: string): IconMeaning {
+  if (!Object.hasOwn(storyMeanings, story)) throw new Error(`Unknown story icon: ${story}`);
+  return storyMeanings[story as keyof typeof storyMeanings];
+}
+
 const structureMeanings = {
   [StructureType.Realm]: "realm",
   [StructureType.Village]: "village",
@@ -24,7 +78,8 @@ export function structureMeaning(
 ): IconMeaning {
   if (mode === "frontier") {
     if (guard) return beastMeaning(guard);
-    if ([StructureType.Camp, StructureType.Beasts, StructureType.Rift].includes(category))
+    // A ruin keeps its landmark; every other guarded site is drawn as its guard.
+    if (isGuardedSite(category) && category !== StructureType.Ruin)
       return beastMeaning(frontierBeast(0, category, "lowly").beast);
   }
   return structureMeanings[category];
@@ -37,8 +92,7 @@ export function readStructureMeaning(
 ): IconMeaning {
   const category = structure.base.category;
   if (category === StructureType.Realm) return realmMeaning(structure.base.level, readRealmSkin(store, structure));
-  if (![StructureType.Camp, StructureType.Beasts, StructureType.Rift, StructureType.Ruin].includes(category))
-    return structureMeaning(category);
+  if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
   const guard =
     mode === "frontier"
@@ -61,6 +115,34 @@ export function realmMeaning(level: number, skin?: RealmSkin): IconMeaning {
 export function realmMarkerMeaning(level: number, skin?: RealmSkin): IconMeaning {
   if (skin) return realmMeaning(level, skin);
   return `map-${realmMeaning(level)}` as IconMeaning;
+}
+
+/** The buildings painted as themselves, named as buildings in every game; the rest wear what they make. */
+const BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
+  [BuildingType.ResourceWheat]: "farm",
+  [BuildingType.ResourceLabor]: "workshop",
+  [BuildingType.WorkersHut]: "workers-hut",
+  [BuildingType.Storehouse]: "storehouse",
+  [BuildingType.WarHall]: "war-hall",
+  [BuildingType.SupplyYard]: "supply-yard",
+  [BuildingType.ScoutsLodge]: "scout-lodge",
+  [BuildingType.Hearth]: "hearth",
+};
+/** Frontier names its troop building Barracks (buildingName), and paints it so; elsewhere it is "Knight T1". */
+const FRONTIER_BUILDING_PAINTINGS: Partial<Record<BuildingType, IconMeaning>> = {
+  [BuildingType.ResourceKnightT1]: "barracks",
+};
+
+/**
+ * A building's painting, the one way every card, menu and list draws it: its own where it has one, else what it makes
+ * (a Market its donkey, a Knight T2 building its troops). A building with neither is loud.
+ */
+export function buildingMeaning(building: BuildingType, frontier = false): IconMeaning {
+  const own = (frontier ? FRONTIER_BUILDING_PAINTINGS[building] : undefined) ?? BUILDING_PAINTINGS[building];
+  if (own) return own;
+  const made = getProducedResource(building);
+  if (made === undefined) throw new Error(`Building ${building} has no painting`);
+  return resourceMeaning(made);
 }
 
 /** Species identity selects the painting, independent of combat tier and remaining strength. */

@@ -28,11 +28,13 @@ describe("the castle", () => {
         <CastleView
           laborRate="+1.7/min"
           now={side(0)}
-          next={side(1)}
-          prices={[{ of: "labor", amount: 4_000 }]}
-          refusal={undefined}
-          sending={false}
-          onUpgrade={() => {}}
+          upgrade={{
+            next: side(1),
+            prices: [{ of: "labor", amount: 4_000 }],
+            refusal: undefined,
+            sending: false,
+            onUpgrade: () => {},
+          }}
           onClose={() => {}}
         />,
       ),
@@ -58,11 +60,13 @@ describe("the castle", () => {
         <CastleView
           laborRate="+1.7/min"
           now={side(1)}
-          next={side(2)}
-          prices={[{ of: "labor", amount: 15_000 }]}
-          refusal={undefined}
-          sending={false}
-          onUpgrade={onUpgrade}
+          upgrade={{
+            next: side(2),
+            prices: [{ of: "labor", amount: 15_000 }],
+            refusal: undefined,
+            sending: false,
+            onUpgrade: onUpgrade,
+          }}
           onClose={() => {}}
         />,
       ),
@@ -101,11 +105,13 @@ describe("the castle", () => {
         <CastleView
           laborRate="+1.7/min"
           now={side(0)}
-          next={side(1)}
-          prices={[{ of: "labor", amount: 4_000 }]}
-          refusal={{ reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 } }}
-          sending={false}
-          onUpgrade={onUpgrade}
+          upgrade={{
+            next: side(1),
+            prices: [{ of: "labor", amount: 4_000 }],
+            refusal: { reason: { kind: "short", of: "labor", held: 2_011, need: 4_000, wait: 19 * 3_600 + 44 * 60 } },
+            sending: false,
+            onUpgrade: onUpgrade,
+          }}
           onClose={() => {}}
         />,
       ),
@@ -120,21 +126,8 @@ describe("the castle", () => {
     expect(onUpgrade).not.toHaveBeenCalled();
   });
 
-  it("has no next side and no verb at the last level", () => {
-    act(() =>
-      root.render(
-        <CastleView
-          laborRate="+1.7/min"
-          now={side(3)}
-          next={null}
-          prices={[]}
-          refusal={undefined}
-          sending={false}
-          onUpgrade={() => {}}
-          onClose={() => {}}
-        />,
-      ),
-    );
+  it("has no next side and no verb without an upgrade: the last level, or a castle the viewer does not own", () => {
+    act(() => root.render(<CastleView laborRate="+1.7/min" now={side(3)} onClose={() => {}} />));
     expect(buttons().some((button) => button.textContent?.startsWith("Upgrade"))).toBe(false);
   });
 });

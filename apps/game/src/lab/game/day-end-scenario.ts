@@ -11,8 +11,8 @@ import {
 
 import { dayClock } from "@/ui/features/frontier/hud/day-clock";
 
-import type { LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import { PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /** The rows changed here, under the keys their fixtures write them by (deploy, kit lab and site fixtures). */
 const FIXTURE_KEYS = {
@@ -198,7 +198,7 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
     },
     {
       model: "ArmyProgress",
-      key: "1:201",
+      key: PROGRESS_KEYS.spireArmy,
       value: {
         common_points: 0,
         uncommon_points: 0,
@@ -235,10 +235,7 @@ const researchPriced = (): LabFact[] => [
   ).flat(),
   {
     model: "ArmyProgressionRules",
-    key: "0x1ac40",
+    key: PROGRESS_KEYS.rules,
     value: frontierArmyRules(),
   },
 ];
-
-const wire = (value: unknown): Record<string, unknown> =>
-  JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));

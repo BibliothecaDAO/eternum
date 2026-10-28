@@ -704,13 +704,22 @@ describe("an army selected on a desktop keeps its actions one click away (owner,
 describe("the click matrix: what is selected × what is clicked", () => {
   const OTHER_ARMY = 8;
   const FAR_ARMY = 10;
+  const SPIRE_ARMY_ON_IT = 11;
+  const CLEARED_ARMY = 12;
   const REALM = 9;
   const ENEMY = 99;
+  const OTHER_REALM = 98;
+  /** Another player's realm, beside none of the player's things: off the matrix's columns. */
+  const OTHER_REALM_TILE = { col: 11, row: 3 };
   const OWN = 0x111n;
   const tiles = {
     "your army beside": { col: 3, row: 5 },
     "your army far": { col: 9, row: 9 },
     "your realm beside": { col: 4, row: 4 },
+    // Owner, 28 October 2026 (brief item 2): a tap on a tile with his army on it selects the army, whatever site is
+    // under it: the realm's spire, a cleared site.
+    "your army on its spire": { col: 6, row: 2 },
+    "your army on a cleared site": { col: 7, row: 7 },
     "enemy army": BESIDE,
     "bare ground in reach": { col: 4, row: 6 },
     "bare ground far": { col: 12, row: 9 },
@@ -744,13 +753,19 @@ describe("the click matrix: what is selected × what is clicked", () => {
       [key(tiles["your army beside"]), { army: { id: OTHER_ARMY, owner: OWN } }],
       [key(tiles["your army far"]), { army: { id: FAR_ARMY, owner: OWN } }],
       [key(tiles["your realm beside"]), { structure: { id: REALM, owner: OWN } }],
+      [key(tiles["your army on its spire"]), { army: { id: SPIRE_ARMY_ON_IT, owner: OWN } }],
+      [key(tiles["your army on a cleared site"]), { army: { id: CLEARED_ARMY, owner: OWN } }],
       [key(tiles["enemy army"]), { army: { id: ENEMY, owner: 0x999n } }],
+      [key(OTHER_REALM_TILE), { structure: { id: OTHER_REALM, owner: 0x999n } }],
     ]);
     const armies = new Map([
       [ARMY, ARMY_HEX],
       [OTHER_ARMY, tiles["your army beside"]],
       [FAR_ARMY, tiles["your army far"]],
+      [SPIRE_ARMY_ON_IT, tiles["your army on its spire"]],
+      [CLEARED_ARMY, tiles["your army on a cleared site"]],
     ]);
+    const cleared = contract(tiles["your army on a cleared site"]);
     const selectedId = selected === "army" ? ARMY : selected === "realm" ? REALM : null;
     // The map's own selection for the row: the army on its own tile, the realm, or nothing.
     useUIStore.setState({
@@ -785,12 +800,15 @@ describe("the click matrix: what is selected × what is clicked", () => {
     Object.assign(map.scene, {
       worldSpatialProjection: {
         getArmy: (id: number) => (armies.has(id) ? { hexCoords: contract(armies.get(id)!) } : undefined),
-        getStructuresAtHex: () => [],
+        getStructuresAtHex: (at: { col: number; row: number }) =>
+          at.col === cleared.col && at.row === cleared.row ? [{ clearedSite: true }] : [],
       },
       getHexagonEntity: (hex: { col: number; row: number }) => entities.get(key(hex)) ?? {},
       getOwnArmyOrderedTo: () => undefined,
       usableSiteAt: () => null,
-      isArmysSpire: () => false,
+      // The realm's spire, whose army is the one standing on it.
+      isArmysSpire: (_army: number, hex: { col: number; row: number }) =>
+        key(hex) === key(tiles["your army on its spire"]),
       isStandingExpeditionSite: () => false,
       logInteractionDebug: () => {},
       getInteractionDebugSnapshot: () => ({}),
@@ -800,6 +818,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
       onArmyAttack: () => did.push("attack card"),
       interactionAdapter: {
         selectHex: () => did.push("tile selected"),
+        enterStructure: ({ structureId, spectator }: { structureId: number; spectator: boolean }) =>
+          did.push(`${spectator ? "visit" : "enter"} realm ${structureId}`),
         openOwnedStructureContextMenu: () => did.push("realm menu"),
       },
       state: {
@@ -810,6 +830,7 @@ describe("the click matrix: what is selected × what is clicked", () => {
     });
     const scene = map.scene as unknown as {
       onHexagonClick: (hex: { col: number; row: number }) => void;
+      onHexagonDoubleClick: (hex: { col: number; row: number }) => void;
       onHexagonRightClick: (event: MouseEvent, hex: { col: number; row: number }) => void;
     };
     /** What the gesture did, in the player's words: what it selected or opened, or the order it sent or pinned. */
@@ -859,6 +880,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
     "your army beside": "tile selected, select army 8",
     "your army far": "tile selected, select army 10",
     "your realm beside": "tile selected, select realm 9",
+    "your army on its spire": "tile selected, select army 11",
+    "your army on a cleared site": "tile selected, select army 12",
   };
   const elsewhere = { "enemy army": letsGo, "bare ground in reach": letsGo, "bare ground far": letsGo };
 
@@ -877,6 +900,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
     const none = {
       "your army beside": "",
       "your army far": "",
+      "your army on its spire": "",
+      "your army on a cleared site": "",
       "enemy army": "",
       "bare ground in reach": "",
       "bare ground far": "",
@@ -886,6 +911,8 @@ describe("the click matrix: what is selected × what is clicked", () => {
       army: {
         "your army beside": "its order runs",
         "your army far": "order-preview: Too far: move closerTransfer troops",
+        "your army on its spire": "order-preview: Too far: move closerTransfer troops",
+        "your army on a cleared site": "order-preview: Too far: move closerTransfer troops",
         "your realm beside": "its order runs",
         "enemy army": "its order runs",
         "bare ground in reach": "its order runs",
@@ -907,6 +934,59 @@ describe("the click matrix: what is selected × what is clicked", () => {
       },
       realm: { ...selects, ...elsewhere },
     });
+  });
+
+  /**
+   * A double tap, as the touch recognizer sends it: two taps, then the double tap, as a mouse sends two clicks and a
+   * double-click (owner, 28 October 2026: "double tapping the realm on mobile should bring me to the realm view !").
+   */
+  const doubleTap = (
+    layout: "desktop" | "phone",
+    selected: Selected,
+    frontier: boolean,
+    tile: { col: number; row: number },
+  ) => {
+    screen(layout === "desktop");
+    usePopoverStore.getState().close();
+    const { scene, outcome } = mapWith(selected, frontier);
+    scene.onHexagonClick(tile);
+    scene.onHexagonClick(tile);
+    scene.onHexagonDoubleClick(tile);
+    return outcome();
+  };
+
+  it.each([
+    ["Frontier", true],
+    ["Blitz", false],
+  ])(
+    "%s, a double tap or double-click on a realm: the taps select as ever, then the realm's view opens",
+    (_, frontier) => {
+      for (const layout of ["phone", "desktop"] as const) {
+        // The player's realm: selected by each tap, then its own realm view.
+        expect(doubleTap(layout, "nothing", frontier, tiles["your realm beside"])).toBe(
+          "tile selected, select realm 9, tile selected, select realm 9, enter realm 9",
+        );
+        // Another player's realm: each tap lets go, as a tap on another's thing does, then its read-only visit.
+        expect(doubleTap(layout, "nothing", frontier, OTHER_REALM_TILE)).toBe(
+          "tile selected, let go, tile selected, let go, visit realm 98",
+        );
+      }
+    },
+  );
+
+  // Owner, 27 October 2026: "Yes double tapping to explore on mobile". Its two taps pin, then send; the double tap
+  // finds no structure there and adds nothing.
+  it("keeps a phone's double tap on bare ground in reach the explore it was: pinned, then sent once", () => {
+    expect(doubleTap("phone", "army", true, tiles["bare ground in reach"])).toBe("its order runs, order pinned");
+  });
+
+  it("sends no order from a double tap on a realm with the army selected, on a phone or a desktop", () => {
+    for (const layout of ["phone", "desktop"] as const)
+      for (const tile of [tiles["your realm beside"], OTHER_REALM_TILE]) {
+        const done = doubleTap(layout, "army", true, tile);
+        expect(done, `${layout} ${JSON.stringify(tile)}`).not.toMatch(/its order runs|order pinned/);
+        expect(done).toMatch(/(enter|visit) realm (9|98)/);
+      }
   });
 
   it("Frontier phone, a hold: the transfer to the player's own beside the army, else the tile's facts", () => {

@@ -143,6 +143,3 @@ export const StructureSidebar = memo(
 );
 
 StructureSidebar.displayName = "StructureSidebar";
-
-// Construction includes villages because they can build too.
-export const BUILDABLE_FILTER: StructureType[] = [StructureType.Realm, StructureType.Village];

@@ -21,6 +21,7 @@ import {
   resourceName,
   scaledToUnits,
   StructureType,
+  troopPlural,
   type ResourcesIds,
   VERDICT_WORDS,
   wholePoints,
@@ -975,8 +976,6 @@ const findLine = (found: string, foundBy: string, payload: Record<string, unknow
     : `${found}: ${findGain(units)} ${resourceName(Number(payload.resource_type))}`;
 };
 
-const TROOP_PLURALS: Record<string, string> = { Knight: "Knights", Paladin: "Paladins", Crossbowman: "Crossbowmen" };
-
 /** The viewer's side of a fight, when it fell: "Army lost: 1,000 Knights". Null when it stood, or is not theirs. */
 export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | null): string | null => {
   const side = [payload.attacker, payload.defender].find(
@@ -985,7 +984,7 @@ export const lostArmyLine = (payload: Record<string, unknown>, viewer: string | 
   );
   if (!side || BigInt(String(side.after ?? 1)) !== 0n) return null;
   const troops = formatExact(divideByPrecision(Number(side.before ?? 0)));
-  return `Army lost: ${troops} ${TROOP_PLURALS[String(side.category ?? "")] ?? "troops"}`;
+  return `Army lost: ${troops} ${troopPlural(String(side.category ?? "")) ?? "troops"}`;
 };
 
 function battleOutcome(attacker: { name?: string; standing: boolean }, defender: { name?: string; standing: boolean }) {

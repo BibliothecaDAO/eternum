@@ -23,34 +23,35 @@ export type CastleSide = {
   maxArmySize: number;
 };
 
+/** Upgrade to the next level, a player's own castle's order: the next level, its price, and why it cannot run yet. */
+export type CastleUpgradeOrder = {
+  next: CastleSide;
+  prices: Price[];
+  refusal: Refusal | undefined;
+  sending: boolean;
+  onUpgrade: () => void;
+};
+
 /**
  * The castle's card (the owner's pick A, 26 October): one table of what it gives now against its next level (plots, army
  * slots, storage, max army size) with the labor it makes a minute in its corner, its own research, and Upgrade with its
  * price in the card's foot. When the realm cannot pay, the foot says what it needs against what is held and the exact wait
  * (RefusedVerb). The labor held is the top bar's, never repeated here (owner, 27 October), so the card fits a phone whole.
- * At the last level there is no next column and no verb.
+ * With no upgrade (the last level, or a castle the viewer does not own) there is no next column and no verb.
  */
 export const CastleView = ({
   now,
-  next,
   laborRate,
   research,
-  prices,
-  refusal,
-  sending,
-  onUpgrade,
+  upgrade,
   onClose,
 }: {
   now: CastleSide;
-  next: CastleSide | null;
   /** The labor the castle itself makes a minute ("+1.7/min"). */
   laborRate: string;
   /** The castle's own research, as tiles that open it on the Research page. */
   research?: ReactNode;
-  prices: Price[];
-  refusal: Refusal | undefined;
-  sending: boolean;
-  onUpgrade: () => void;
+  upgrade?: CastleUpgradeOrder;
   onClose: () => void;
 }) => (
   <HudSheet label={CASTLE} onClose={onClose}>
@@ -66,17 +67,17 @@ export const CastleView = ({
           </span>
         }
         now={<LevelHead side={now} />}
-        next={next ? <LevelHead side={next} /> : undefined}
-        rows={castleRows(now, next)}
+        next={upgrade ? <LevelHead side={upgrade.next} /> : undefined}
+        rows={castleRows(now, upgrade?.next ?? null)}
       />
       {research}
     </div>
-    {next &&
-      (refusal ? (
-        <RefusedVerb word={UPGRADE} refusal={refusal} />
+    {upgrade &&
+      (upgrade.refusal ? (
+        <RefusedVerb word={UPGRADE} refusal={upgrade.refusal} />
       ) : (
-        <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
-          <HudButton kind="primary" busy={sending ? UPGRADING : undefined} onClick={onUpgrade}>
+        <HudWindowFoot note={<HudCost line={costLine(upgrade.prices)} />}>
+          <HudButton kind="primary" busy={upgrade.sending ? UPGRADING : undefined} onClick={upgrade.onUpgrade}>
             {UPGRADE}
           </HudButton>
         </HudWindowFoot>

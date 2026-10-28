@@ -45,14 +45,11 @@ export const campaignScenario = (tier: "regular" | "golden", level?: number) => 
 /** The Season lists three unvisited homes: regular Devcon, golden Devcon, and an ordinary control. */
 export const devconSeasonScenario = (): LabScenario => ({
   ...campaignScenario("regular", 0)(),
-  leaderboard: {
-    ...LAB_FRONTIER_BOARD,
-    entries: LAB_FRONTIER_BOARD.entries.slice(0, 3).map((entry, index) => ({
-      ...entry,
-      structure_id: String(901 + index),
-      campaign: index < 2 ? { campaign_id: shortString.encodeShortString(DEVCON.campaign), tier: index + 1 } : null,
-    })),
-  },
+  board: LAB_FRONTIER_BOARD.entries.slice(0, 3).map((entry, index) => ({
+    ...entry,
+    structure_id: String(901 + index),
+    campaign: index < 2 ? { campaign_id: shortString.encodeShortString(DEVCON.campaign), tier: index + 1 } : null,
+  })),
 });
 
 /** The campaign home and its claim use the same rules as the ticket landing. */

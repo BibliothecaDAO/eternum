@@ -1,11 +1,13 @@
 import { useGame } from "@/hooks/context/game-context";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
 import { formatClockTime } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
+import { useSiteBeastMeaning } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
@@ -26,7 +28,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
   const words = (
     <>
       <span className="ui-event__time">{formatClockTime(story.timestampMs / 1000)}</span>
-      <Icon name={reading.act} size={16} className="ui-event__icon" />
+      <Icon name={storyMeaning(story.story)} size={16} className="ui-event__icon" />
       <span className="ui-event__text">
         {"words" in reading ? (
           <OwnWordsLine words={reading.words} named={reading.named} name={reading.actor && names.text(reading.actor)} />
@@ -69,10 +71,20 @@ const ObjectWords = ({
 }) => (
   <>
     {" "}
-    {object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />}
+    {"site" in object ? (
+      <SiteGlyph site={object.site} />
+    ) : (
+      object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />
+    )}
     {"player" in object ? names(object.player) : object.name}
   </>
 );
+
+/** A site's guard, painted as the map paints it. */
+const SiteGlyph = ({ site }: { site: number }) => {
+  const meaning = useSiteBeastMeaning(site);
+  return meaning ? <Icon name={meaning} size={16} className="ui-feed-line__glyph" /> : null;
+};
 
 /** Who did it. */
 const Name = ({ text }: { text: string }) => <strong>{text}</strong>;

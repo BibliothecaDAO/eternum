@@ -46,6 +46,7 @@ import { buildingIcon, buildingName } from "@/ui/features/frontier/build/buildin
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { readResearchTree } from "@/ui/features/frontier/research/research-tree";
 import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/store-card";
+import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
@@ -371,7 +372,7 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
-const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt">): StoreLine => ({
+const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
   perHour: undefined,
   held: undefined,
   limit: 18_000,
@@ -381,9 +382,9 @@ const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "icon" | "spentAt"
   ...overrides,
 });
 const STORE_LINES: StoreLine[] = [
-  line({ icon: "wheat", spentAt: "deploy", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
-  line({ icon: "labor", spentAt: "realm", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
-  line({ icon: "troops", spentAt: "deploy", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
+  line({ kind: "wheat", perHour: 1_500, sides: ["fields"], held: 4_410, fullIn: 9 * HOUR + 4 * 60 }),
+  line({ kind: "labor", perHour: 500, held: 9_640, fullIn: 16 * HOUR + 44 * 60 }),
+  line({ kind: "troops", perHour: 600, sides: ["drill"], held: 1_200, fullIn: 28 * HOUR }),
 ];
 
 /** Today's lines, each written by the day log itself from the owner's 22 October stories (today-log-fixture.ts). */
@@ -594,6 +595,23 @@ const STATES = {
     site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
+  // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
+  "site-ruin-armyless": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: {
+      ...RUIN_CARD,
+      name: "Titanwatch",
+      beast: { name: "Ammit", beast: "ammit", combatClass: "Knight" },
+      army: null,
+      guard: 2_300,
+      fight: undefined,
+      chest: { tier: 2, lords: 100 },
+      xp: 119,
+      verb: null,
+    },
+  },
   "site-ruin-lose": {
     clock: CLOCK,
     stores: STORES,
@@ -649,26 +667,12 @@ const STATES = {
       verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
     },
   },
-  "site-pick": {
+  // No army selected: what the site is and pays, its guard beside them (owner, 28 October 2026: "agree with no picker").
+  "site-armyless": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: {
-      ...CAMP_CARD,
-      army: null,
-      verb: null,
-      choices: [
-        { label: "Army 1", art: ARMY_CHIP.art, troops: 5_000, fight: WIN(2, 180, 492), onPick: () => undefined },
-        {
-          label: "Army 2",
-          art: ARMY_CHIP.art,
-          troops: 100,
-          fight: LOSE(1, 100, 1_034),
-          onPick: () => undefined,
-        },
-        { label: "Army 3", art: ARMY_CHIP.art, troops: 600, fight: undefined, onPick: () => undefined },
-      ],
-    },
+    site: { ...CAMP_CARD, army: null, fight: undefined, verb: null },
   },
   "site-short": {
     clock: CLOCK,
@@ -806,7 +810,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: [],
-    storeCard: line({ icon: "troops", spentAt: "deploy", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
+    storeCard: line({ kind: "troops", perHour: 0, held: 1_500, limit: 6_000, noBuilding: true }),
   },
   research: { clock: CLOCK, stores: STORES, armies: ARMIES, research: true },
   // A refused order's notice, through the game's own notice store: on a desktop it stands in the rail under Next up.
@@ -1064,7 +1068,12 @@ export const HudLab = () => {
   useHudMode("frontier");
   useLabNotice(lab.notice);
   const chatPane = useRef<HTMLElement>(null);
-  const chat = lab.chat && <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />;
+  // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
+  const chat = lab.chat && (
+    <LabGame preset={FRONTIER_PRESET}>
+      {() => <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />}
+    </LabGame>
+  );
   if (lab.merge)
     return (
       <div data-lab="frontier-merge" className="ui min-h-screen bg-hud-surface flex items-center justify-center p-3">
@@ -1207,17 +1216,18 @@ export const HudLab = () => {
         {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
-            next={CASTLE_SIDE(2, 50_000)}
             laborRate="+1.7/min"
-            prices={[{ of: "labor", amount: 15_000 }]}
-            refusal={
-              lab.realmView === "castle-short"
-                ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
-                : undefined
-            }
             research={<LabCastleResearch />}
-            sending={false}
-            onUpgrade={noop}
+            upgrade={{
+              next: CASTLE_SIDE(2, 50_000),
+              prices: [{ of: "labor", amount: 15_000 }],
+              refusal:
+                lab.realmView === "castle-short"
+                  ? { reason: { kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * HOUR + 44 * 60 } }
+                  : undefined,
+              sending: false,
+              onUpgrade: noop,
+            }}
             onClose={noop}
           />
         )}
@@ -1382,10 +1392,12 @@ const LabBuildingCard = ({ building }: { building: keyof typeof LAB_BUILDINGS })
       standing={standing}
       makes={makes}
       node={node}
-      sending={false}
-      fix={() => undefined}
-      onResearch={noop}
-      demolish={<HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />}
+      orders={{
+        sending: false,
+        fix: () => undefined,
+        onResearch: noop,
+        demolish: <HudIconButton kind="danger" icon="trash" label="Delete" title="Delete" size="sm" onClick={noop} />,
+      }}
       onClose={noop}
     />
   );
@@ -1460,8 +1472,8 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
                 lords: lab.purse?.lords ?? LAB_LORDS,
                 labor: lab.purse?.realms,
                 storeCards: lab.storeCard && {
-                  kinds: ["wheat", "labor", "troops"],
-                  open: lab.storeCard.icon,
+                  kinds: MADE_STORES,
+                  open: lab.storeCard.kind,
                   onToggle: noop,
                   card: <StoreCard line={lab.storeCard} onSpend={noop} onBuild={noop} />,
                 },

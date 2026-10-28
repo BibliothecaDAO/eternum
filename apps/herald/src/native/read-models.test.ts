@@ -308,6 +308,9 @@ describe("native directory and leaderboard", () => {
     const retained = fold.modelRows("ExpeditionSite");
     expect(retained).toHaveLength(1);
     expect(retained[0]!.value).toMatchObject({ category: "0x9", col: "0x6e4", row: "0x32" });
+    // Read by its entity, whichever region it stands in: the Feed names a fight's beast far from the player.
+    expect(fold.expeditionSite("1", "6")).toEqual(retained[0]!.value);
+    expect(fold.expeditionSite("1", "7")).toBeUndefined();
     const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
     expect(restored.modelRows("ExpeditionSite")).toEqual(retained);
     expect(buildNativeDirectory({ ...input, fold: restored })).toEqual(buildNativeDirectory(input));
@@ -716,6 +719,7 @@ describe("the player directory over HTTP", () => {
       fold: {
         modelRows: (model) => fold.modelRows(model),
         structurePosition: (game, entity) => fold.structurePosition(game, entity),
+        expeditionSite: (game, entity) => fold.expeditionSite(game, entity),
         directoryRevision: () => fold.directoryRevision(),
         snapshot: () => {
           throw new Error("the directory reads no snapshot");

@@ -17,7 +17,7 @@ import {
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { FARM, LABOR, TROOPS, WHEAT, WORKSHOP } from "@/ui/design-system/kit/words";
+import { FARM, WORKSHOP } from "@/ui/design-system/kit/words";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, getNeighborHexes, RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { knownAmount } from "@/ui/utils/utils";
@@ -26,6 +26,7 @@ import { availableRankUps } from "../attributes/attributes";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
+import { FRONTIER_STORES, MADE_STORES } from "../stores";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -216,15 +217,9 @@ const fullStore = (
   rules: ExpeditionRules,
   clock: { now: number; tick: number },
 ): string | null => {
-  const full = FULL_STORES.find(({ store: kind }) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
-  return full?.word ?? null;
+  const full = MADE_STORES.find((kind) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
+  return full === undefined ? null : FRONTIER_STORES[full].word.toLowerCase();
 };
-
-const FULL_STORES = [
-  { store: ResourcesIds.Wheat, word: WHEAT.toLowerCase() },
-  { store: ResourcesIds.Labor, word: LABOR.toLowerCase() },
-  { store: "troops" as const, word: TROOPS.toLowerCase() },
-];
 
 const guardedCampToday = (
   store: NativeFactStore,

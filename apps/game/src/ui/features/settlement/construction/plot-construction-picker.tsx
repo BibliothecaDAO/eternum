@@ -9,7 +9,7 @@ import {
   getProducedResource,
   resourceName,
   ResourcesIds,
-  type TROOP_NAMES,
+  type TroopType,
 } from "@bibliothecadao/types";
 import { useEffect, useState } from "react";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
@@ -24,7 +24,7 @@ type Form = ReturnType<typeof usePlotConstruction>;
 type Choice = Form["groups"][number]["buildings"][number];
 
 /** Each troop type's column head: the troop its buildings train, by its name without a tier, and its painting. */
-const TROOP_HEADS: Record<MilitaryBuildingGroup, { name: (typeof TROOP_NAMES)[number]; painting: ResourcesIds }> = {
+const TROOP_HEADS: Record<MilitaryBuildingGroup, { name: TroopType; painting: ResourcesIds }> = {
   Stable: { name: "Paladin", painting: ResourcesIds.Paladin },
   Barracks: { name: "Knight", painting: ResourcesIds.Knight },
   Archery: { name: "Crossbowman", painting: ResourcesIds.Crossbowman },

@@ -20,6 +20,7 @@ import {
   resourceName,
   formatHeldAgainst,
   structurePlural,
+  structureName,
   StructureType,
 } from "@bibliothecadao/types";
 
@@ -34,7 +35,6 @@ export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUME
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
-export const BEAST = "Beast";
 
 export const LEFT = "left";
 export const DAY = "Day";
@@ -106,6 +106,8 @@ export const LABOR = "labor";
 export const WHEAT = "wheat";
 export const TROOPS = "troops";
 export const STAMINA = "stamina";
+/** The explores a Well's stamina buys the army it refills: "+3 explores". */
+export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
 
 /** The HUD's tab for everything the player holds. */
 export const EMPIRE = "Empire";
@@ -303,15 +305,14 @@ export const xpTowardTip = (held: string, milestone: string, tier: string) =>
   `${XP} ${held} of ${milestone} · next ${tier} point`;
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
-export const RIFT = "Rift";
-export const RUIN = "Ruin";
+export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
+export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
-export const BEASTS = "Beasts";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
 export const ATTACK = "Attack";
@@ -328,8 +329,6 @@ export const fightLine = (site: string, verdict: string, lost: string, guardBefo
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
-/** The skull beside an army on a site's card, on its tooltip. */
-export const WOULD_BE_LOST = "Would be lost";
 /**
  * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
@@ -340,8 +339,9 @@ export const FIGHT_WORDS = {
   earns: "This attack earns",
   clears: "This attack clears it",
   holds: "The guard holds",
-  attacks: "Attacks",
 } as const;
+/** Why a village's trade in troops is refused, wherever the market and the bank say so. */
+export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
 export const USING = "Using…";
 
@@ -432,9 +432,6 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
-/** A site's card with no army selected: what an army does there, or, with none out, where one comes from. */
-export const PICK_AN_ARMY = { attack: "Pick an army to attack it", use: "Pick an army to use it" } as const;
-export const NO_ARMY_OUT = "No army out: deploy one";
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
@@ -1246,7 +1243,11 @@ export const RESEARCH_TREE = {
     rations: ["Rations", "Wheat a deployed troop costs"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
-  kinds: { camp: structurePlural(StructureType.Camp, undefined, "frontier"), rift: "Rifts", beasts: "Beasts" },
+  kinds: {
+    camp: structurePlural(StructureType.Camp, undefined, "frontier"),
+    rift: structurePlural(StructureType.Rift, undefined, "frontier"),
+    beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
+  },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
   hutLine: "Population from every Hut",

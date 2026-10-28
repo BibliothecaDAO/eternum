@@ -1,3 +1,5 @@
+import { type StructureCategoryLike } from "@/lib/structure-type-utils";
+import { categoryCan } from "@/ui/lib/structure-capabilities";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
@@ -19,7 +21,7 @@ import {
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
-import { ID, StructureType, formatExact, formatPercent, formatRate, formatFigure } from "@bibliothecadao/types";
+import { ID, formatExact, formatPercent, formatRate, formatFigure } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -27,15 +29,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { useStructureEntityDetail } from "../entities/hooks/use-structure-entity-detail";
 import { EntityDetailStat, EntityDetailStatList } from "../entities/layout";
 
-const DEVOTION_ELIGIBLE_STRUCTURE_TYPES = new Set<StructureType>([StructureType.Realm, StructureType.Village]);
-
-const isDevotionEligible = (category: unknown): boolean => {
-  if (category === undefined || category === null) {
-    return false;
-  }
-
-  return DEVOTION_ELIGIBLE_STRUCTURE_TYPES.has(Number(category) as StructureType);
-};
+const isDevotionEligible = (category: StructureCategoryLike): boolean => categoryCan(category, "pledgesFaith");
 
 const isZeroAddress = (address: string): boolean => {
   return /^0x0+$/i.test(address.trim());

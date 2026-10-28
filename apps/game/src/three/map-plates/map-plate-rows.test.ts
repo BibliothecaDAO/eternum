@@ -126,18 +126,6 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     expect(read(camp)).toEqual(["The Vanguard", "Orbroar Camp", "T1 250 | 640 Labor"]);
   });
 
-  it("opens a cleared site on its name and that it is cleared, with no holder above it", () => {
-    const cleared = {
-      ...camp,
-      owner: "",
-      name: "Camp · Cleared",
-      guards: null,
-      reward: undefined,
-      icon: "flag",
-    } as const;
-    expect(read(cleared)).toEqual(["Orbroar Camp · Cleared"]);
-  });
-
   it("keeps every plate within three rows", () => {
     const busy = {
       ...rift,

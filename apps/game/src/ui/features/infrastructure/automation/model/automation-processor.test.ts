@@ -10,7 +10,7 @@ describe("buildAutomationSkipMessage", () => {
         resourceId: ResourcesIds.PaladinT2,
         reason: "No active production building",
       }),
-    ).toBe("PaladinT2 has no active production building");
+    ).toBe("Paladin T2 has no active production building");
   });
 
   it("describes troop input waits with the resource name", () => {
@@ -19,6 +19,6 @@ describe("buildAutomationSkipMessage", () => {
         resourceId: ResourcesIds.KnightT2,
         reason: "Insufficient complex recipe inputs",
       }),
-    ).toBe("KnightT2 waiting for recipe inputs");
+    ).toBe("Knight T2 waiting for recipe inputs");
   });
 });

@@ -3,18 +3,16 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { Tone } from "@/ui/design-system/kit/tone";
 import { knownAmount } from "@/ui/utils/utils";
-import { type ExpeditionRules, getBalance, getTroopResourceId, ResourceManager } from "@bibliothecadao/eternum";
+import { type ExpeditionRules, getBalance, ResourceManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
-import { RESOURCE_PRECISION, ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, type ResourcesIds } from "@bibliothecadao/types";
 
 import { troopsAtHome } from "./frontier-home";
 import { realmPerHour, secondsUntilHeld } from "./hud/army-order";
+import { FRONTIER_STORES, STORE_KINDS, type StoreKind } from "./stores";
 
 /** A store turns amber when it fills within the hour. */
 const AMBER_SECONDS = 3_600;
-
-/** The one troop type's stock: the barracks train it, and its limit is every troop stock's. */
-const TROOP_STOCK = getTroopResourceId(TroopType.Knight, TroopTier.T1);
 
 /** One of the realm's stores as the strip and Production read it, in whole units; unknown is undefined. */
 type RealmStore = {
@@ -38,14 +36,15 @@ export const readRealmStore = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,
-  resourceId: ResourcesIds | "troops",
+  kind: StoreKind,
   clock: { now: number },
 ): RealmStore => {
-  const stock = resourceId === "troops" ? TROOP_STOCK : resourceId;
+  // The one troop type's stock: the barracks train it, and its limit is every troop stock's.
+  const stock = FRONTIER_STORES[kind].resource;
   const amount =
-    resourceId === "troops"
+    kind === "troops"
       ? troopsAtHome(store, realm, rules, clock.now, clock.now)
-      : wholeBalance(store, safeInteger(realm.entity_id), resourceId, clock.now);
+      : wholeBalance(store, safeInteger(realm.entity_id), stock, clock.now);
   const rawLimit = new ResourceManager(store, safeInteger(realm.entity_id), realm.game_id).storeLimit(stock);
   const limit = rawLimit === undefined ? undefined : Number(rawLimit / BigInt(RESOURCE_PRECISION));
   const perHour = realmPerHour(store, safeInteger(realm.entity_id), stock, clock.now);
@@ -109,16 +108,12 @@ const STORE_MODELS = [
 export const useRealmStores = (
   realm: NativeRows["Structure"] | null,
   rules: ExpeditionRules,
-): Record<"essence" | "labor" | "wheat" | "troops", RealmStore> | null => {
+): Record<StoreKind, RealmStore> | null => {
   const { setup } = useGame();
   const now = useCurrentDefaultTick();
   useNativeRevision(STORE_MODELS);
   if (!realm) return null;
-  const read = (resourceId: ResourcesIds | "troops") => readRealmStore(setup.store, realm, rules, resourceId, { now });
-  return {
-    essence: read(ResourcesIds.Essence),
-    labor: read(ResourcesIds.Labor),
-    wheat: read(ResourcesIds.Wheat),
-    troops: read("troops"),
-  };
+  return Object.fromEntries(
+    STORE_KINDS.map((kind) => [kind, readRealmStore(setup.store, realm, rules, kind, { now })]),
+  ) as Record<StoreKind, RealmStore>;
 };

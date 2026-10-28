@@ -78,7 +78,7 @@ function createGameRendererControlBridgeRuntime(input: CreateGameRendererRuntime
       // The dev tools type a scene hex: a normalized map position.
       input
         .resolveRuntimeState()
-        .worldmapScene?.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), duration);
+        .worldmapScene?.moveCameraToMapPosition(Position.fromNormalized({ x: col, y: row }), "dev-tools", duration);
     },
     moveCameraToXYZ: (x, y, z, duration) => {
       input.resolveRuntimeState().worldmapScene?.moveCameraToXYZ(x, y, z, duration);

@@ -3,7 +3,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
+import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useGame } from "@/hooks/context/game-context";
@@ -14,17 +14,15 @@ import { buildablePlotCount, configManager, getBalance, ResourceManager } from "
 import { BUILDINGS_CENTER, RESOURCE_PRECISION, ResourcesIds, TroopTier, formatRate } from "@bibliothecadao/types";
 
 import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
-import { CastleResearch, type CastleSide, CastleView } from "./castle-view";
+import { CastleResearch, type CastleSide, type CastleUpgradeOrder, CastleView } from "./castle-view";
 import { useResearchTree } from "../research/research-facts";
 
-/** Whether the player tapped their own realm's keep in the realm view. */
+/** Whether the keep of `realm`, the realm the board draws, is tapped in the realm view: a player's or a viewer's. */
 export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean => {
   const { isMapView } = useQuery();
   const selected = useUIStore((state) => state.selectedBuildingHex);
-  const ordersAllowed = useUIStore(canIssueOrders);
   return (
     !isMapView &&
-    ordersAllowed &&
     realm !== null &&
     selected?.structureId === safeInteger(realm.entity_id) &&
     selected.innerCol === BUILDINGS_CENTER[0] &&
@@ -32,7 +30,10 @@ export const useKeepSelected = (realm: NativeRows["Structure"] | null): boolean 
   );
 };
 
-/** The castle's sheet over the game's facts: its level now and next, and the upgrade recipe's price. */
+/**
+ * The castle's sheet over the game's facts: its level and what it gives. A player's own castle adds its research and
+ * Upgrade to the next level with the recipe's price; a viewer reads the castle as it stands.
+ */
 export const CastleUpgrade = ({
   realm,
   onResearchPage,
@@ -47,44 +48,57 @@ export const CastleUpgrade = ({
   const tick = useCurrentDefaultTick();
   useNativeRevision(["CampaignHome"]);
   const skin = readRealmSkin(setup.store, realm);
+  const ordersAllowed = useUIStore(canIssueOrders);
   const levelUp = useRealmLevelUp(safeInteger(realm.entity_id));
   const tree = useResearchTree(realm);
   if (!levelUp) return null;
-  const held = (resource: number) =>
-    knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
-  const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return (
     <CastleView
       now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin)}
-      next={levelUp.mode === "max" ? null : castleSide(setup.store, realm.game_id, levelUp.nextLevel, skin)}
       laborRate={castleLaborRate(setup.store, realm)}
       research={
+        ordersAllowed &&
         tree && (
           <CastleResearch nodes={tree.nodes.filter(({ branch }) => branch === "castle")} onOpen={onResearchPage} />
         )
       }
-      prices={levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount }))}
-      refusal={
-        (short && {
-          reason: {
-            kind: "short",
-            of: castlePriceKind(short.resource),
-            held: held(short.resource),
-            need: short.amount,
-            wait: secondsUntilHeld(
-              held(short.resource),
-              short.amount,
-              realmPerHour(setup.store, safeInteger(realm.entity_id), short.resource, tick),
-            ),
-          },
-        }) ||
-        (levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined)
-      }
-      sending={levelUp.loading}
-      onUpgrade={levelUp.run}
+      upgrade={ordersAllowed && levelUp.mode !== "max" ? upgradeOrder(setup.store, realm, levelUp, tick) : undefined}
       onClose={onClose}
     />
   );
+};
+
+/** Upgrade to the next level: its side, the recipe's price, and why the realm cannot pay it yet with the wait. */
+const upgradeOrder = (
+  store: NativeFactStore,
+  realm: NativeRows["Structure"],
+  levelUp: RealmLevelUp,
+  tick: number,
+): CastleUpgradeOrder => {
+  const realmId = safeInteger(realm.entity_id);
+  const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
+  const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
+  return {
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, readRealmSkin(store, realm)),
+    prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
+    refusal:
+      (short && {
+        reason: {
+          kind: "short",
+          of: castlePriceKind(short.resource),
+          held: held(short.resource),
+          need: short.amount,
+          wait: secondsUntilHeld(
+            held(short.resource),
+            short.amount,
+            realmPerHour(store, realmId, short.resource, tick),
+          ),
+        },
+      }) ||
+      (levelUp.refusal ? { reason: { kind: "failed", line: `${levelUp.refusal}.` } } : undefined),
+    sending: levelUp.loading,
+    onUpgrade: levelUp.run,
+  };
 };
 
 /**

@@ -122,7 +122,7 @@ it("Show the crate frames the camera on the army and its crate, and opens the cr
   const armyOnScreen = { col: 4, row: 5 };
   const crateOnScreen = { col: 9, row: 5 };
   const { aimed, openedCards, scene } = worldMapCamera(armyOnScreen);
-  await scene.selectRequestedArmy(request!.entityId, request!.forSite);
+  await scene.selectRequestedArmy(request!);
 
   expect(aimed.length).toBeGreaterThan(0);
   for (const hex of aimed) {
@@ -138,7 +138,7 @@ it("Show the crate keeps the army selected through the framing, when the crate i
   await pressStep();
   const [request] = worldMap.taken;
   const { openedCards, scene } = worldMapCamera({ col: 4, row: 5 });
-  await scene.selectRequestedArmy(request!.entityId, request!.forSite);
+  await scene.selectRequestedArmy(request!);
 
   expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
   expect(openedCards).toEqual([CRATE_TILE]);

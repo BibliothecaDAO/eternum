@@ -1,3 +1,4 @@
+import { RESOURCE_TIER_NAMES } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { ResourceChip } from "@/ui/features/economy/resources";
@@ -17,7 +18,7 @@ import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import React, { useCallback, useMemo, useState } from "react";
-import { ALWAYS_SHOW_RESOURCES, TIER_DISPLAY_NAMES } from "./utils";
+import { ALWAYS_SHOW_RESOURCES } from "./utils";
 
 interface EntityResourceTableOldProps {
   entityId: ID | undefined;
@@ -147,7 +148,9 @@ export const EntityResourceTableOld = React.memo(
                   aria-expanded={!isCollapsed}
                   className="flex w-full items-center justify-between border-b border-hud-divider px-1 pb-1 text-left"
                 >
-                  <span className="text-hud-label text-hud-muted">{TIER_DISPLAY_NAMES[tier]}</span>
+                  <span className="text-hud-label text-hud-muted">
+                    {RESOURCE_TIER_NAMES[tier as keyof typeof RESOURCE_TIER_NAMES]}
+                  </span>
                   <span className="flex items-center gap-1 text-hud-label text-hud-cue">
                     {resourcesForTier.length}
                     <SemanticIcon

@@ -71,14 +71,14 @@ export const followInitialStructure = (setup: SetupResult): (() => void) => {
 
 /** Chooses the session's structure, and answers the realm it picked for a spectator (else the one it had). */
 const chooseInitialStructure = (setup: SetupResult, state: AppStore, spectatorPick: number | null): number | null => {
+  const viewer = accountAddress();
   const hasSelection = Boolean(state.structureEntityId);
-  const picked = isSpectatorFallback(state) || state.structureEntityId === spectatorPick;
+  const picked = state.structureEntityId === spectatorPick || spectatesOwnRealm(setup, state, viewer);
   if (hasSelection && !picked) {
     completeSelection(setup, state);
     return spectatorPick;
   }
 
-  const viewer = accountAddress();
   const ownedStructures = viewer === null ? [] : readInitialSelectableStructures(setup, viewer);
   // A session entered to spectate has no viewer, yet opens on the signed-in player's own realm when they have one.
   const player = isExplicitSpectateSession() ? readRealmsPlayer() : null;
@@ -143,5 +143,15 @@ const subjectScopeApplied = (setup: SetupResult, viewer: bigint | null): boolean
   return scope !== undefined && (scope.visit !== undefined || scope.expedition === undefined);
 };
 
-/** Spectating because no account had arrived, not because the player asked to spectate. */
-const isSpectatorFallback = (state: AppStore): boolean => state.isSpectating && !isExplicitSpectateSession();
+/**
+ * The player's own realm, opened as a spectator's before their account arrived. A realm of someone else's the player
+ * opened (a visit, a shared link) is theirs to keep: this chooser never takes the session off it.
+ */
+const spectatesOwnRealm = (setup: SetupResult, state: AppStore, viewer: bigint | null): boolean => {
+  if (!state.isSpectating || isExplicitSpectateSession() || viewer === null) return false;
+  const selected = setup.store.get("Structure", {
+    game_id: configManager.getActiveGameId(),
+    entity_id: state.structureEntityId,
+  });
+  return selected?.owner === viewer;
+};

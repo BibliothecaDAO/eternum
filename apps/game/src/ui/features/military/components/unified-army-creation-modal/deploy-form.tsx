@@ -1,12 +1,11 @@
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudButton, HudCost, HudDeploy, type HudTroopStack, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
-import { TroopTier, type TroopType } from "@bibliothecadao/types";
+import { type TroopTier, troopTierIndex, type TroopType } from "@bibliothecadao/types";
 
 import type { useArmyCreation } from "./use-army-creation";
 
 type ArmyCreationForm = ReturnType<typeof useArmyCreation>;
 
-const TIER_NUMBER = { [TroopTier.T1]: 1, [TroopTier.T2]: 2, [TroopTier.T3]: 3 } as const;
 const stackKey = (type: TroopType, tier: TroopTier) => `${type}-${tier}`;
 
 /**
@@ -29,7 +28,7 @@ export const DeployTroops = ({ form }: { form: ArmyCreationForm }) => {
           (tier): HudTroopStack => ({
             key: stackKey(option.type, tier.tier),
             icon: resourceMeaning(tier.resourceId),
-            tier: TIER_NUMBER[tier.tier],
+            tier: (troopTierIndex(tier.tier) + 1) as HudTroopStack["tier"],
             held: tier.available,
             disabled: locked !== null && locked !== stackKey(option.type, tier.tier),
           }),

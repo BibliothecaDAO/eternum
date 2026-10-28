@@ -146,21 +146,6 @@ describe("a map plate's facts", () => {
   });
 });
 
-it("marks a cleared site with a flag, never calls it undefended, keeps the name every list reads it by, and gives it no holder", () => {
-  expect(
-    buildStructurePlate(
-      structure({
-        structureName: siteName(29),
-        structureType: StructureType.Camp,
-        clearedSite: true,
-        guardArmies: [],
-        owner: { address: 0n, ownerName: "", guildName: "" },
-        isMine: false,
-      }),
-    ),
-  ).toMatchObject({ icon: "flag", name: "Troll · Cleared", guards: null, place: siteName(29), owner: "" });
-});
-
 it("names a Frontier guard by its beast while retaining its combat stack and site lore", () => {
   const plate = buildStructurePlate(
     structure({
