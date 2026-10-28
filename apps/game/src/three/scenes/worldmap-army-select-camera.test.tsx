@@ -130,3 +130,22 @@ describe("an army shown from the HUD (its dock token, Next up, idle armies)", ()
     expect(world.openedCards).toEqual([{ col: MAP_CENTER + SITE_HEX.col, row: MAP_CENTER + SITE_HEX.row }]);
   });
 });
+
+describe("Tab, the player's key to go to the next army", () => {
+  it.each(SCREENS)("on %s, still brings the camera onto it and selects it", async (_, frontier, desktop) => {
+    screen(desktop);
+    const world = worldMapCamera(ARMY_HEX, { drawnAround: { col: 0, row: 0 } });
+    Object.assign(world.scene, {
+      isFrontierHud: () => frontier,
+      selectableArmies: [{ entityId: ARMY }],
+      armyIndex: -1,
+      hasOrderInFlight: () => false,
+      canArmyAct: () => true,
+    });
+
+    await (world.scene as unknown as { selectNextArmy: () => Promise<void> }).selectNextArmy();
+
+    expect(selectedArmy()).toBe(ARMY);
+    expect(world.aimed).toEqual([ARMY_HEX]);
+  });
+});
