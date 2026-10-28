@@ -32,7 +32,6 @@ export const tierNumeral = (tier: Tier): string => TIER_NUMERALS[tier - 1]!;
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
-export const BEAST = "Beast";
 
 export const LEFT = "left";
 export const DAY = "Day";
