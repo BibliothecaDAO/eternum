@@ -117,14 +117,21 @@ const targetId = (target: AttackTarget): number =>
  * XP, then Attack in reach, Move until the army arrives, or the stamina it lacks. With no army selected, the realm's
  * armies are the choices. The card stays between attacks and closes when the target falls. It is the one surface an
  * army's attack is confirmed on, whatever it attacks.
+ *
+ * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
+ * clear a camp, the panel on the right should go back to my army panel since its still selected"), through the HUD's
+ * `onArmyBack`; selecting the site later shows its own card. An army lost lets go of the map itself.
  */
 export const TileCard = ({
   selected,
   onClose,
+  onArmyBack,
   receipt,
 }: {
   selected: AttackTarget;
   onClose: () => void;
+  /** Hands the HUD back to the army once it cleared the target (useArmyPanelOpens). */
+  onArmyBack: (armyId: number) => void;
   receipt?: ReactNode;
 }) => {
   const { setup, account } = useGame();
@@ -151,7 +158,8 @@ export const TileCard = ({
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);
       });
-      if (fought !== null && targetFell(setup.store, selected, fought)) backToTheArmy(armyId);
+      if (fought !== null && targetFell(setup.store, selected, fought) && stillActsOn(armyId, siteTile))
+        onArmyBack(armyId);
     } catch (error) {
       fightWasNotSent({
         armyId,
@@ -298,12 +306,19 @@ const targetFell = (store: NativeFactStore, selected: AttackTarget, transactionH
 };
 
 /**
- * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
- * clear a camp, the panel on the right should go back to my army panel since its still selected"); selecting the site
- * shows its own card. An army lost lets go of the map itself.
+ * Whether the army is still selected acting on the attacked tile when the attack's outcome arrives: a player who let
+ * go of it, picked another army or another tile meanwhile keeps that newer choice.
  */
-const backToTheArmy = (armyId: number): void =>
-  useUIStore.getState().selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
+const stillActsOn = (armyId: number, tile: { col: number; row: number }): boolean => {
+  const selection = useUIStore.getState().mapSelection;
+  return (
+    selection?.kind === "army" &&
+    selection.entityId === armyId &&
+    typeof selection.tile === "object" &&
+    selection.tile?.col === tile.col &&
+    selection.tile.row === tile.row
+  );
+};
 
 const wholeTroops = (army: NativeRows["ExplorerTroops"]): number =>
   Number(army.troops.count / BigInt(RESOURCE_PRECISION));

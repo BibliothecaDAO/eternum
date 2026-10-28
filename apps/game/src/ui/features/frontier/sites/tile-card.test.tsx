@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
   useNowSeconds: () => 350,
+  useCurrentBlockTimestamp: () => 350,
   useCurrentArmiesTick: () => 3,
   useCurrentDefaultTick: () => 350,
   useBlockTimestamp: () => ({ currentArmiesTick: 3, armiesTickTimeRemaining: 60 }),
@@ -26,6 +27,10 @@ import { ActionPaths, ActionType, setBlockTimestampSource, setEntityNameLocalSto
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { siteName } from "@bibliothecadao/types";
+import type { ComponentProps } from "react";
+import { MemoryRouter } from "react-router-dom";
+import { useArmyPanelOpens } from "../army/army-opens";
+import { useOnePanel } from "../hud/one-panel";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
@@ -64,8 +69,42 @@ const battleArrives = (army: [number, number], guard: [number, number], defender
     { chainId: "0x1", worldAddress: "0xabc", gameId: 1 },
   );
 
-/** The card over the fixture's camp, its army beside it or moved away to stand out of reach. */
-const renderCard = (army: "beside" | "far") => {
+/** Whether the map's selection is an army acting on the fixture's camp, which opens the camp's card. */
+const actsOnTheSite = (selection: ReturnType<typeof useUIStore.getState>["mapSelection"]) =>
+  selection?.kind === "army" &&
+  typeof selection.tile === "object" &&
+  selection.tile?.col === SITE_TILE.col &&
+  selection.tile.row === SITE_TILE.row;
+
+/**
+ * The card inside the HUD's arbitration, as frontier-hud.tsx wires it: the one panel (a new card puts the army's panel
+ * away), the army's panel opening on selection (a desktop's), and the card's way back to the army. The army's panel
+ * stands in as a marked section.
+ */
+const InTheHud = ({
+  desktop,
+  realm,
+  ...card
+}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & Omit<
+  ComponentProps<typeof TileCard>,
+  "onArmyBack"
+>) => {
+  const onTheSite = useUIStore((state) => actsOnTheSite(state.mapSelection));
+  const { surface, openSurface, showsCard } = useOnePanel(onTheSite ? "target" : null, !desktop);
+  const armyPanel = useArmyPanelOpens(realm, () => openSurface("army"), desktop);
+  return (
+    <>
+      {showsCard && <TileCard {...card} onArmyBack={armyPanel.returnTo} />}
+      {surface === "army" && <section aria-label="Army details" />}
+    </>
+  );
+};
+
+/**
+ * The card over the fixture's camp, its army beside it or moved away to stand out of reach: alone, or inside a
+ * desktop's or a phone's HUD.
+ */
+const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store, site, structure } = campBeside();
   const standsAt = { game_id: 1, alt: false, col: 60, row: 12, entity_id: 201, category: 15, is_structure: false };
@@ -86,7 +125,18 @@ const renderCard = (army: "beside" | "far") => {
         value={{ store, systemCalls: { attack_explorer_vs_guard: attack } } as unknown as GameClientSetup}
         account={{ address: "0x111" } as never}
       >
-        <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} />
+        {hud ? (
+          <MemoryRouter>
+            <InTheHud
+              desktop={hud === "desktop"}
+              realm={store.require("Structure", { game_id: 1, entity_id: 7 })}
+              selected={{ kind: "site", site, structure, tile }}
+              onClose={() => {}}
+            />
+          </MemoryRouter>
+        ) : (
+          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} onArmyBack={() => {}} />
+        )}
       </GameProvider>,
     ),
   );
@@ -186,7 +236,7 @@ describe("the tile card", () => {
           value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
           account={{ address: "0x111" } as never}
         >
-          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
+          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} onArmyBack={() => {}} />
         </GameProvider>,
       ),
     );
@@ -292,16 +342,30 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
   /** The army's selection, acting on the site's tile, as the site's card is opened for it. */
   const ON_THE_SITE = { kind: "army", entityId: 201, tile: SITE_TILE } as const;
   const selection = () => useUIStore.getState().mapSelection;
+  const selectedArmy = () => useUIStore.getState().entityActions.selectedEntityId;
   /** No card of how the fight went: the Feed tells it (feed-line.test.tsx). */
   const noResult = (host: HTMLElement) => expect(host.textContent).not.toMatch(/Victory|Army lost/);
+  const armyPanel = (host: HTMLElement) => host.querySelector('[aria-label="Army details"]');
+  const siteCard = (host: HTMLElement) => host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
+  const clears = () => battleArrives([1_498, 1_318], [1_100, 0]);
 
-  /** An attack sent from the card; `lands` writes what the action did, then its outcome arrives as applied. */
-  const attackThatLands = async (lands: (store: ReturnType<typeof renderCard>["store"]) => void) => {
+  /**
+   * In a HUD, the army selected on the map, then the camp's card opened for it; an attack sent from the card, then
+   * `meanwhile` (what the player does while it is on its way), `lands` (what the action did) and its outcome, applied.
+   */
+  const attackThatLands = async (
+    lands: (store: ReturnType<typeof renderCard>["store"]) => void,
+    { hud = "desktop", meanwhile = () => {} }: { hud?: "desktop" | "phone"; meanwhile?: () => void } = {},
+  ) => {
     let apply: (outcome: unknown) => void = () => {};
     waitForAction.mockReturnValue(new Promise((resolve) => (apply = resolve)));
-    const card = renderCard("beside");
+    const card = renderCard("beside", hud);
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: "own" }));
+    expect(armyPanel(card.host) !== null).toBe(hud === "desktop");
     act(() => useUIStore.getState().selectOnMap(ON_THE_SITE));
+    expect(armyPanel(card.host)).toBeNull();
     await act(async () => card.button("Attack")!.click());
+    act(meanwhile);
     act(() => lands(card.store));
     await act(async () => apply(APPLIED));
     return card;
@@ -315,15 +379,54 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     unmount();
   });
 
-  it("hands the panel back to the still-selected army on a clear, with no card of the fight", async () => {
-    const { host, unmount } = await attackThatLands(() => battleArrives([1_498, 1_318], [1_100, 0]));
-    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+  it("opens the still-selected army's panel again on a desktop after a clear, with no card of the fight", async () => {
+    const { host, unmount } = await attackThatLands(clears);
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    expect(siteCard(host)).toBeNull();
     noResult(host);
     unmount();
   });
 
+  it("gives a phone back its army after a clear: selected on its own tile for the action row, no panel over the map", async () => {
+    const { host, unmount } = await attackThatLands(clears, { hud: "phone" });
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(armyPanel(host)).toBeNull();
+    expect(siteCard(host)).toBeNull();
+    noResult(host);
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they let go of the army", async () => {
+    const { host, unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(null),
+    });
+    expect(selection()).toBeNull();
+    expect(armyPanel(host)).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they picked another army", async () => {
+    const other = { kind: "army", entityId: 202, tile: "own" } as const;
+    const { host, unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(other),
+    });
+    expect(selection()).toEqual(other);
+    expect(armyPanel(host)).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the clear lands after they picked another tile for the army", async () => {
+    const elsewhere = { kind: "army", entityId: 201, tile: { col: SITE_TILE.col + 2, row: SITE_TILE.row } } as const;
+    const { unmount } = await attackThatLands(clears, {
+      meanwhile: () => useUIStore.getState().selectOnMap(elsewhere),
+    });
+    expect(selection()).toEqual(elsewhere);
+    unmount();
+  });
+
   it("hands it back on a clear whose battle record has not reached the screen, the site standing cleared", async () => {
-    const { unmount } = await attackThatLands((store) =>
+    const { host, unmount } = await attackThatLands((store) =>
       store.applyFacts([
         {
           model: "ExpeditionSite",
@@ -335,7 +438,8 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
         },
       ] as never),
     );
-    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
     unmount();
   });
 

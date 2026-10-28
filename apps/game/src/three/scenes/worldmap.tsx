@@ -1873,6 +1873,13 @@ export default class WorldmapScene extends WarpTravel {
     this.interactiveHexManager.setHoverVisualMode("outline");
   }
 
+  /** Releases the rings the interaction runtime drew on the map, each one it created, so a new game draws its own. */
+  private disposeWorldmapInteractionRuntime(): void {
+    this.selectedHexManager.dispose();
+    this.orderTargetRing.dispose();
+    this.ownershipRings.dispose();
+  }
+
   private bindWorldmapSceneUiLifecycle(): void {
     // The minimap follows the camera through publishCameraView; it moves the camera through "minimapCameraMove".
     this.updateCameraTargetHexThrottled = throttle(this.updateCameraTargetHex, this.cameraTargetHexUpdateIntervalMs);
@@ -8576,10 +8583,8 @@ export default class WorldmapScene extends WarpTravel {
     this.stopChestOpenRequests?.();
     this.clearCache();
 
-    // Dispose hover label and selected hex managers to release Three.js resources
     this.hoverLabelManager.dispose();
-    this.selectedHexManager.dispose();
-    this.ownershipRings.dispose();
+    this.disposeWorldmapInteractionRuntime();
 
     if (this.visibilityChangeHandler) {
       document.removeEventListener("visibilitychange", this.visibilityChangeHandler);

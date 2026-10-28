@@ -26,15 +26,18 @@ import { useTappedBuilding } from "./research/selected-building";
  * chests keep their receipts on the tile.
  * A cleared site shows its receipt even with an army on the tile, when the player selects it (owner, 27 October 2026:
  * "this stays of course"). Other empty tiles and armies the dock already shows open no card. No card takes the panel
- * after a fight: a clear hands it back to the army (tile-card.tsx), and the Feed tells how the fight went.
+ * after a fight: a clear hands it back to the army (onArmyBack), and the Feed tells how the fight went.
  */
 export const useSelectionCard = ({
   realm,
   onResearch,
+  onArmyBack,
 }: {
   realm: NativeRows["Structure"] | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;
+  /** Hands the HUD back to the army a target's card acted for, once it cleared the target (useArmyPanelOpens). */
+  onArmyBack: (armyId: number) => void;
 }): { key: string; sheet: ReactNode } | null => {
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -70,7 +73,12 @@ export const useSelectionCard = ({
   if (target)
     return card(
       "target",
-      <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
+      <TileCard
+        selected={target}
+        onClose={close}
+        onArmyBack={onArmyBack}
+        receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined}
+      />,
     );
   if (cleared) return card("cleared", <ClearedSiteSheet selected={cleared} onClose={close} />);
   if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);

@@ -93,6 +93,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       setResearchPick(node);
       setSurface("research");
     },
+    onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
   const {
@@ -110,7 +111,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
   // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
-  const openArmy = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"), desktop);
+  const armyPanel = useArmyPanelOpens(visit ? null : realm, () => setSurface("army"), desktop);
+  const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
