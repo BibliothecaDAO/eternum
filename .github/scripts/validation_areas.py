@@ -97,6 +97,9 @@ AREAS = {
         "contracts/common/addresses/**"
     ],
     "native": [
+        ".tool-versions",
+        "contracts/l2/ledger/**",
+        "contracts/l2/collectibles/**",
         ".github/workflows/test-native.yml",
         "apps/herald/src/**",
         "apps/launch-service/src/**",
