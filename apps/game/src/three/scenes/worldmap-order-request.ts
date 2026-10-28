@@ -29,7 +29,7 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
 
 /**
  * A tap opens the selected army's spire card or previews its order. On a phone, tapping the pinned tile again sends
- * it, a friendly neighbour offers transfer, and a refused tile explains why. Sites keep the army as actor. On a phone,
+ * it, and a refused tile explains why; the player's own army or holding is the map's to select (a hold transfers). Sites keep the army as actor. On a phone,
  * with the realm selected, a lit tile beside it opens Deploy aimed there (owner, 27 October 2026: "when I click on the
  * castle then on a tile next to it it should bring up the deploy on that tile", in every mode; a desktop keeps
  * right-click: "change is phone only for now").
@@ -38,7 +38,7 @@ export const pinsOrder = (path: ActionPath[] | undefined): boolean => {
  * stamina can't pay yet opens the attack's own preview, any other refused order the order's preview (owner, 27 October
  * 2026: "having an army selected and right clicking a tile should always bring the action").
  */
-type TapOrder = "pin" | "go" | "attack" | "deploy" | "transfer" | "site-card" | "why" | "refused";
+type TapOrder = "pin" | "go" | "attack" | "deploy" | "site-card" | "why" | "refused";
 
 export const orderOnTap = ({
   path,
@@ -65,7 +65,6 @@ export const orderOnTap = ({
   const actionType = path && ActionPaths.getActionType(path);
   if (actionType === ActionType.Attack) return "attack";
   if (onPhone && actionType === ActionType.CreateArmy) return "deploy";
-  if (hud && actionType === ActionType.Help) return "transfer";
   if (armySelected && site) return "site-card";
   if (hud?.refused) return "why";
   if (onPhone || !armySelected || !refused) return null;

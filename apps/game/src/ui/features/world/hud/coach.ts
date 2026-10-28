@@ -125,7 +125,7 @@ const exploreStep = (army: CoachArmy, grants: PointsGrants): CoachStep => {
   return army.selected
     ? {
         key: `coach:explore:${army.entityId}:selected`,
-        line: "Click a tile beside your army",
+        line: "Right-click a tile beside your army",
         verb: null,
         act: null,
       }

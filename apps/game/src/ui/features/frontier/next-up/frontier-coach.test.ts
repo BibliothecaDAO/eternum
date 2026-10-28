@@ -71,7 +71,7 @@ describe("Frontier's Next up", () => {
   it("sends an army exploring, then says how on the map once it is selected", () => {
     const out = { barracks: true, armies: 2 };
     expect(lines(out)).toEqual([["Your army can explore", "Select the army", "select-army"]]);
-    expect(lines({ ...out, armySelected: true })).toEqual([["Click a tile beside your army", null, null]]);
+    expect(lines({ ...out, armySelected: true })).toEqual([["Right-click a tile beside your army", null, null]]);
     expect(lines({ ...out, armySelected: true }, "touch")[0][0]).toBe("Double-tap a tile beside your army");
   });
 

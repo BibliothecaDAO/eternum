@@ -14,7 +14,6 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 
 const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
-const { ActionPaths, ActionType } = await import("@bibliothecadao/eternum");
 const { RESOURCE_PRECISION, ResourcesIds } = await import("@bibliothecadao/types");
 const active = await import("@/sync/active-game-client");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
@@ -257,35 +256,21 @@ describe("the army's panel on a phone (owner, 22 October 2026: mobile direction 
     expect(panel()).not.toBeNull();
   });
 
-  it("puts a page away for a transfer pinned beside the picked army, so its choice can be taken", async () => {
-    await renderHud();
+  // Owner, 27 October 2026: "tapping/clicking any selectable thing (army, structure, site) always selects it and closes
+  // whatever sheet belonged to the previous selection". A transfer to it is the hold's (or a desktop's right-click).
+  it("selects the realm a tap lands on beside the picked army, the page and the army's row put away", async () => {
+    const store = await renderHud();
     await select(ARMY);
     await place("Research");
     expect(openPage()).not.toBeNull();
 
-    // The map pins the army's Help order on the tile beside it, as a phone's tap on the realm's holding there does.
-    const beside = { col: 7, row: 7 };
-    await act(async () =>
-      useUIStore.setState((state) => ({
-        entityActions: {
-          ...state.entityActions,
-          actionPaths: new Map([
-            [
-              ActionPaths.posKey(beside, true),
-              [
-                { hex: { col: 6, row: 7 }, actionType: ActionType.Move },
-                { hex: beside, actionType: ActionType.Help },
-              ],
-            ],
-          ]),
-          hoveredHex: beside,
-        },
-      })),
-    );
+    const realm = [...store.rows("Structure")].find((structure) => structure.base.category === 1)!;
+    await act(async () => useUIStore.getState().selectOnMap({ kind: "structure", entityId: Number(realm.entity_id) }));
+
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(Number(realm.entity_id));
     expect(openPage()).toBeNull();
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Transfer troops")).toBe(true);
-    // Beside a holding the button alone names the transfer: the words stand once.
-    expect(host.textContent?.split("Transfer troops")).toHaveLength(2);
+    expect(details()).toBeNull();
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Transfer troops")).toBe(false);
   });
 
   it("keeps a page open on a desktop, where it stands beside the map", async () => {

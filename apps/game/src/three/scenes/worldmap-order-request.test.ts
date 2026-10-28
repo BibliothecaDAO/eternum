@@ -120,8 +120,9 @@ describe("a tap on a phone, where the HUD carries the verb (owner, 22 October 20
     expect(onPhone(explore, { pinned: true })).toBe("go");
   });
 
-  it("pins the transfer on the player's own army or holding beside the army, which the action row offers", () => {
-    expect(onPhone([step(ActionType.Move), step(ActionType.Help)])).toBe("transfer");
+  // Owner, 27 October 2026: "tapping/clicking any selectable thing … always selects it"; a hold gives the transfer.
+  it("leaves the player's own army or holding beside the army to its tap, which selects it", () => {
+    expect(onPhone([step(ActionType.Move), step(ActionType.Help)])).toBeNull();
   });
 
   it("says why on a tile the rules refused, and leaves any other tile its own tap", () => {
