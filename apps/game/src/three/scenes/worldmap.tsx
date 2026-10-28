@@ -1456,6 +1456,14 @@ export default class WorldmapScene extends WarpTravel {
       this.handleProjectedArmyChanges(changes);
       this.syncArmyMarkers(changes);
     });
+    const unsubscribeCampaigns = this.game.store.subscribe((changes) => {
+      for (const change of changes) {
+        if (change.model !== "CampaignHome") continue;
+        const home = change.current ?? change.previous;
+        if (home?.game_id === configManager.getActiveGameId())
+          this.refreshStructureMarkersForEntity(safeInteger(home.home));
+      }
+    });
     const unsubscribeChests = this.worldSpatialProjection.subscribeChests(() => this.refreshTerrainPropOccupancy());
     const unsubscribeSelectedArmyMap = this.worldSpatialProjection.subscribe((published) => {
       if (projectionChangesForLayer(published, activeMapLayer()).length > 0) this.refreshSelectedArmyOrders();
@@ -1467,6 +1475,7 @@ export default class WorldmapScene extends WarpTravel {
       unsubscribeTerrainEcology();
       unsubscribeArmies();
       unsubscribeChests();
+      unsubscribeCampaigns();
     };
   }
 
@@ -1531,7 +1540,7 @@ export default class WorldmapScene extends WarpTravel {
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
     this.strategicMarkers.setStructure(
       structure.entityId,
-      structureMarkerKind(facts.structureType),
+      facts.realmSkin ?? structureMarkerKind(facts.structureType),
       position.x,
       position.z,
       color,

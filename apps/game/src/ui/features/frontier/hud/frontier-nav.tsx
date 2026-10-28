@@ -1,3 +1,4 @@
+import { useCampaignMark } from "../value/campaign-home";
 import { useQuery } from "@/hooks/helpers/use-query";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -49,6 +50,7 @@ export const FrontierNav = ({
   unread: number;
 }) => {
   const { isMapView } = useQuery();
+  const mark = useCampaignMark(board);
   const place: Place | null =
     surface === "research" || surface === "feed" || surface === "chat" || surface === "menu"
       ? surface
@@ -68,6 +70,7 @@ export const FrontierNav = ({
   };
   return (
     <PlaceNav
+      realmIcon={mark?.icon}
       place={place}
       onRealm={!isMapView}
       onGo={go}

@@ -1,3 +1,4 @@
+import type { RealmSkin } from "@/three/structures/realm-skins";
 import { playerAvatarUrl, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
@@ -15,12 +16,12 @@ const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
  * gone to as that depth's painting on its corner (none before the first), named on its tip ("City · Ethereal II"). No
  * numeral: on the board a numeral would read as a tier.
  */
-export const RealmBadge = ({ level, depth }: { level: number; depth: number }) => {
+export const RealmBadge = ({ level, depth, skin }: { level: number; depth: number; skin?: RealmSkin }) => {
   const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
   const line = step === 0 ? rankName(level) : `${rankName(level)} · ${depthName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
-      <Icon name={realmMeaning(level)} size={28} />
+      <Icon name={realmMeaning(level, skin)} size={28} />
       {step > 0 && (
         <span
           aria-hidden

@@ -86,11 +86,11 @@ export const RealmPanel = ({
     <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 text-hud-strong text-hud-ink">
       {level !== undefined && (
         <span className="flex items-center gap-2">
-          <SemanticIcon name={realmMeaning(level)} size={24} />
+          <SemanticIcon name={mark?.icon ?? realmMeaning(level)} size={24} />
           {rankName(level)}
         </span>
       )}
-      {mark && <HudChip icons={["realm"]}>{mark.line}</HudChip>}
+      {mark && <HudChip icons={[mark.icon]}>{mark.line}</HudChip>}
       {population && <PopulationReading population={population} />}
       {onRealms && (
         <span className="ml-auto">

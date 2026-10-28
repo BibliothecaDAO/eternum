@@ -114,10 +114,13 @@ export const feltEquals = (left: unknown, right: unknown): boolean => {
 export const fetchHeraldLeaderboard = async (shard: Shard, gameId: number): Promise<HeraldGameLeaderboard> => {
   if (!Number.isSafeInteger(gameId) || gameId <= 0)
     throw new Error(`Herald leaderboard requires a positive game id; received ${gameId}`);
-  return fetchHeraldJson(
+  const board = await fetchHeraldJson<HeraldGameLeaderboard>(
     buildHeraldUrl(shard, `/games/${gameId}/leaderboard`),
     `Herald leaderboard for ${shard.url} game ${gameId}`,
   );
+  if (board.mode === "frontier" && board.entries.some((entry) => entry.campaign === undefined))
+    throw new Error("Herald Frontier leaderboard is missing campaign identity");
+  return board;
 };
 
 /**

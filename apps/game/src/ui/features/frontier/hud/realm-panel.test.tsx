@@ -1,3 +1,4 @@
+import { REALM_SKIN_MODELS, REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -167,4 +168,21 @@ it("offers a desktop's places, Research, the Feed and the Season; the lit Feed c
   act(() => research[1].click());
   expect(onHome).toHaveBeenCalledTimes(2);
   expect(onCloseFeed).toHaveBeenCalledTimes(1);
+});
+
+it.each(REALM_SKIN_MODELS)("shows the $skin painting on the HUD at level $level", ({ skin, level }) => {
+  const icon = realmSkinIcon(skin);
+  act(() =>
+    root.render(
+      <RealmPanel
+        name="Devcon home"
+        level={level}
+        highest={3}
+        stores={STORES}
+        mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
+      />,
+    ),
+  );
+  const panel = host.querySelector('section[aria-label="Realm"]')!;
+  expect(panel.querySelectorAll(`img[src$="/${icon}.webp"]`).length).toBe(2);
 });

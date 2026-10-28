@@ -407,6 +407,7 @@ it("caches each leaderboard once per confirmed head and drops all previous-head 
 it("serves Frontier history at one confirmed head, caches successes only and keeps captured realm facts", async () => {
   let head = 12;
   let depth = 1;
+  let campaignTier = 1;
   let release!: (value: Awaited<ReturnType<NonNullable<typeof httpState.history>["frontierHistory"]>>) => void;
   const frontierHistory = vi.fn(
     () =>
@@ -416,6 +417,8 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   );
   const modelRows = (model: string) => {
     if (model === "SliceRules") return [{ key: "7", value: { game_id: "7", day_unit_seconds: 14400 } }];
+    if (model === "CampaignHome")
+      return [{ key: "1", value: { game_id: "7", home: "1", campaign_id: "123", tier: campaignTier } }];
     if (model === "Structure")
       return [
         {
@@ -443,15 +446,22 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
   const pending = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 12));
   depth = 2;
+  campaignTier = 2;
   head = 13;
   release([]);
   const completed = await pending;
   expect(completed.headers.get("X-Confirmed-Block")).toBe("12");
-  expect(await completed.json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 1, level: 2 }] });
+  expect(await completed.json()).toMatchObject({
+    mode: "frontier",
+    entries: [{ deepest_depth: 1, level: 2, campaign: { campaign_id: "123", tier: 1 } }],
+  });
   const next = read(new Request(url));
   await vi.waitFor(() => expect(frontierHistory).toHaveBeenCalledWith("7", 13));
   release([]);
-  expect(await (await next).json()).toMatchObject({ mode: "frontier", entries: [{ deepest_depth: 2 }] });
+  expect(await (await next).json()).toMatchObject({
+    mode: "frontier",
+    entries: [{ deepest_depth: 2, campaign: { campaign_id: "123", tier: 2 } }],
+  });
   await read(new Request(url));
   expect(frontierHistory).toHaveBeenCalledTimes(2);
   head = 14;

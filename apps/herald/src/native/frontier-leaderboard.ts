@@ -20,7 +20,7 @@ export function buildFrontierLeaderboard(
   history: readonly HeraldHistoryEvent[],
 ): HeraldFrontierLeaderboard {
   required(modelRows("GameRegistry"), gameId, "GameRegistry");
-  const players = settledPlayers(gameRows(modelRows("Structure"), gameId));
+  const players = settledPlayers(gameRows(modelRows("Structure"), gameId), gameRows(modelRows("CampaignHome"), gameId));
   const receipts = new Set<string>();
   for (const event of history) {
     if (integer(event.game_id) !== integer(gameId)) throw new Error("Frontier history game mismatch");
@@ -42,7 +42,13 @@ export function buildFrontierLeaderboard(
   return { game_id: integer(gameId).toString(), mode: "frontier", entries };
 }
 
-function settledPlayers(structures: Row[]): Map<string, Standing> {
+function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, Standing> {
+  const campaigns = new Map(
+    campaignHomes.map((home) => [
+      integer(home.home),
+      { campaign_id: integer(home.campaign_id).toString(), tier: number(home.tier) },
+    ]),
+  );
   const players = new Map<string, Standing>();
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
@@ -52,6 +58,7 @@ function settledPlayers(structures: Row[]): Map<string, Standing> {
       entry: {
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
+        campaign: campaigns.get(integer(structure.entity_id)) ?? null,
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,

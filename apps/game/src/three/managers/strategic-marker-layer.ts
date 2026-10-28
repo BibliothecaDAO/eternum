@@ -1,3 +1,4 @@
+import { REALM_SKINS, realmSkinIcon, type RealmSkin } from "../structures/realm-skins";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import {
@@ -23,7 +24,7 @@ import {
   type SlotDirtyRange,
 } from "../utils/instance-update-ranges";
 
-export type StrategicStructureMarkerKind = "realm" | "village" | "hyperstructure" | "bank" | "mine";
+export type StrategicStructureMarkerKind = RealmSkin | "realm" | "village" | "hyperstructure" | "bank" | "mine";
 export type StrategicArmyMarkerTier = "T1" | "T2" | "T3";
 
 export interface StrategicMarkerLayerMetrics {
@@ -56,6 +57,9 @@ const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKi
   hyperstructure: iconUrl("hyperstructure"),
   mine: iconUrl("mine"),
   realm: iconUrl("realm"),
+  ...(Object.fromEntries(
+    Object.keys(REALM_SKINS).map((skin) => [skin, iconUrl(realmSkinIcon(skin as RealmSkin))]),
+  ) as Record<RealmSkin, string>),
   village: iconUrl("village"),
 };
 const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");
@@ -68,6 +72,7 @@ const STRUCTURE_MARKER_CAPACITY: Readonly<Record<StrategicStructureMarkerKind, n
   hyperstructure: 256,
   mine: 512,
   realm: 1024,
+  ...(Object.fromEntries(Object.keys(REALM_SKINS).map((skin) => [skin, 1024])) as Record<RealmSkin, number>),
   village: 2048,
 };
 const ARMY_MARKER_CAPACITY = 2048;

@@ -5,6 +5,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { shortString } from "starknet";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.
@@ -62,6 +64,7 @@ const viewport = (() => {
 
 let host: HTMLDivElement;
 let root: Root;
+let shownStore: NativeFactStore;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -97,7 +100,10 @@ const renderHud = () =>
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame preset={5} facts={() => [LABOR_RULES]}>
-            {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+            {(store) => {
+              shownStore = store;
+              return <FrontierHud rules={readExpeditionRules(store, 1)!} />;
+            }}
           </LabGame>
         </QueryClientProvider>
       </MemoryRouter>,
@@ -212,38 +218,54 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   }
 });
 
-it("draws every realm on the Season board with its rank and depth, from Herald's entry, though no realm is streamed", async () => {
-  // Three realms the lab's game streams none of: their Structure rows are absent from the store.
-  const entry = (rank: number, level: number, depth: number) => ({
-    address: `0x${(0xa00 + rank).toString(16)}`,
-    structure_id: String(900 + rank),
-    rank,
-    sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
-    chests_earned: 0,
-    rewards: { lords: "0", essence: "0", labor: "0" },
-    deepest_depth: depth,
-    level,
-    order: rank,
-  });
-  const board = { game_id: "1", mode: "frontier", entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0)] };
-  vi.stubGlobal(
-    "fetch",
-    vi.fn(async (url: string | URL) =>
-      String(url).includes("/leaderboard")
-        ? new Response(JSON.stringify(board), { status: 200 })
-        : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
-    ),
-  );
-  viewport.set(1920);
-  await renderHud();
-  const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
-  await act(async () => season.click());
-  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-  const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
-    .map((badge) => badge.getAttribute("aria-label"))
-    .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
-  expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
-});
+it.each([false, true])(
+  "draws Season ranks, depths and campaign icons outside streamed scope (campaigns: %s)",
+  async (campaigns) => {
+    // Three realms the lab's game streams none of: their Structure rows are absent from the store.
+    const entry = (rank: number, level: number, depth: number) => ({
+      address: `0x${(0xa00 + rank).toString(16)}`,
+      structure_id: String(900 + rank),
+      rank,
+      sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+      chests_earned: 0,
+      rewards: { lords: "0", essence: "0", labor: "0" },
+      deepest_depth: depth,
+      level,
+      order: rank,
+      campaign:
+        campaigns && rank < 3 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: rank } : null,
+    });
+    const board = { game_id: "1", mode: "frontier", entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0)] };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string | URL) =>
+        String(url).includes("/leaderboard")
+          ? new Response(JSON.stringify(board), { status: 200 })
+          : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
+      ),
+    );
+    viewport.set(1920);
+    await renderHud();
+    expect([...shownStore.rows("CampaignHome")]).toEqual([]);
+    for (const entry of board.entries)
+      expect(shownStore.get("Structure", { game_id: 1, entity_id: BigInt(entry.structure_id) })).toBeUndefined();
+    const season = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Season"]')!;
+    await act(async () => season.click());
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+    const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+      .map((badge) => badge.getAttribute("aria-label"))
+      .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
+    expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
+    const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
+      .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
+      .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
+    expect(paintings).toEqual(
+      campaigns
+        ? ["devcon-realm.webp", "devcon-golden-realm.webp", "realm-0.webp"]
+        : ["realm-3.webp", "realm-1.webp", "realm-0.webp"],
+    );
+  },
+);
 
 it.each([390, 1440])(
   "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",

@@ -6,7 +6,7 @@ import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
 import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboard, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import type { NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface } from "starknet";
 
@@ -51,6 +51,8 @@ export interface LabScenario {
   answer: (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
   /** The game's history, newest first, on the lab's clock: Herald serves each event once its time has come. */
   history?: HeraldHistoryEvent[];
+  /** Global standings, including homes the viewer's snapshot does not contain. */
+  leaderboard?: HeraldFrontierLeaderboard;
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
@@ -216,6 +218,7 @@ const answerHeraldRead = (
   confirmedBlock: number,
 ): unknown => {
   const game = `/games/${LAB_GAME.gameId}`;
+  if (url.pathname === `${game}/leaderboard`) return scenario.leaderboard;
   if (url.pathname === `${game}/history`) {
     const heldFor = (scenario.historyAnswersAt ?? 0) - now();
     if (heldFor > 0)
