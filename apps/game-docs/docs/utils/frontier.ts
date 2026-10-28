@@ -121,7 +121,9 @@ export const FRONTIER = {
     strongBeast: BEAST_NAMES[ROAMING_BEASTS.stronger.beast],
   },
   xp: {
-    reveal: n(frontierPreset.progression.revealXp),
+    reveal: frontierPreset.depths.map((_, depth) =>
+      n(frontierPreset.progression.revealXp + depth * frontierPreset.progression.revealXpPerDepth),
+    ),
     shrine: n(frontierPreset.progression.fixedXp),
     pointThresholds: [
       frontierPreset.progression.commonXp,

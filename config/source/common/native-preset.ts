@@ -13,9 +13,9 @@ export interface ChestTiers {
 export interface NativePreset {
   id: number;
   /**
-   * Season clocks run this many times faster than the mode's: days, army ticks and production.
+   * Days and activity scale independently. Activity accelerates army ticks and per-second production.
    */
-  clockScale?: number;
+  clockScale?: { days: number; activity: number };
   /**
    * What a fixture preset changes in its mode's balance (starting stock, prices); the rest of the balance is the mode's.
    * Applied wherever a preset's configuration is loaded.
@@ -72,6 +72,7 @@ export interface NativePreset {
   /** XP per reveal, the fixed award (a shrine, and a relic chest until relics leave chests), and the five cumulative skill-point thresholds. */
   progression: null | {
     revealXp: number;
+    revealXpPerDepth: number;
     fixedXp: number;
     commonXp: number;
     uncommonXp: number;
@@ -79,7 +80,7 @@ export interface NativePreset {
     epicXp: number;
     legendaryXp: number;
   };
-  labor: null | { amount: number; goldenEssence: number };
+  labor: null | { amount: number; campaignEssence: number; goldenAmount: number; goldenEssence: number };
   chests: null | {
     poolBps: number;
     topN: number;

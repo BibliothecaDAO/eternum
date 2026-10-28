@@ -1,6 +1,6 @@
 import { assertFrontierSeason } from "../../../apps/launch-service/src/calendar";
 import { nativePresetForId } from "../../../config/source/native";
-import { clockScaled } from "../../../config/source/common/season-clock";
+import { clockScaled, seasonDayUnitSeconds } from "../../../config/source/common/season-clock";
 import { FRONTIER_ARMIES_TICK_SECONDS } from "../../../config/source/frontier/clock";
 import { seasonSeconds } from "../../../packages/core/src/utils/days";
 
@@ -13,9 +13,9 @@ interface SeasonRequest {
 function seasonDates(request: SeasonRequest) {
   const preset = nativePresetForId(request.presetId);
   if (preset.gameType !== "frontier") throw new Error("Select a Frontier preset");
-  const scale = preset.clockScale ?? 1;
+  const scale = preset.clockScale?.activity ?? 1;
   const tickMs = clockScaled(FRONTIER_ARMIES_TICK_SECONDS, scale, "armies_tick") * 1_000;
-  const bagMs = seasonSeconds(1, clockScaled(preset.dayUnitSeconds, scale, "day_unit_seconds")) * 1_000;
+  const bagMs = seasonSeconds(1, seasonDayUnitSeconds(preset)) * 1_000;
   if ((request.startsAt == null) !== (request.endsAt == null)) throw new Error("Supply both season dates, or neither");
   const start = request.startsAt == null ? Math.floor(Date.now() / tickMs) * tickMs : seasonInstant(request.startsAt);
   const end = request.endsAt == null ? start + bagMs : seasonInstant(request.endsAt);

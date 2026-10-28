@@ -75,7 +75,8 @@ test.each([undefined, "6", null, 0, -1, 6.5, 999, 1])(
 
 test("uses the selected clock for alignment and complete bags, with no partial 84-hour season", async () => {
   expect((await put({ ...devcon, endsAt: "2026-11-06T18:30:00.000Z" })).status).toBe(409);
-  const oneBag = { ...devcon, endsAt: "2026-11-04T09:10:00.000Z" };
+  expect((await put({ ...devcon, endsAt: "2026-11-04T09:10:00.000Z" })).status).toBe(409);
+  const oneBag = { ...devcon, endsAt: "2026-11-04T22:30:00.000Z" };
   expect((await put(oneBag)).status).toBe(200);
   expect((await put({ ...oneBag, presetId: 5 })).status).toBe(409);
   const shifted = { ...devcon, startsAt: "2026-11-03T06:30:40.000Z", endsAt: "2026-11-06T14:30:40.000Z" };

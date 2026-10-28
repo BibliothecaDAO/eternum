@@ -4,11 +4,12 @@ import type { NativeRows } from "../client";
 const rules: NativeRows["ArmyProgressionRules"] = {
   game_id: 1,
   reveal_xp: 2,
+  reveal_xp_per_depth: 1,
   fixed_xp: 200,
-  common_xp: 100,
-  uncommon_xp: 250,
-  rare_xp: 500,
-  epic_xp: 900,
+  common_xp: 75,
+  uncommon_xp: 200,
+  rare_xp: 400,
+  epic_xp: 800,
   legendary_xp: 1500,
 };
 const army: NativeRows["ArmyProgress"] = {
@@ -27,15 +28,17 @@ const army: NativeRows["ArmyProgress"] = {
   scouting_kinds: 0,
 };
 it.each([
-  [0, 1, 100, 0],
-  [99, 1, 100, 0],
-  [100, 2, 250, 100],
-  [250, 3, 500, 250],
-  [500, 4, 900, 500],
-  [900, 5, 1500, 900],
-  [1500, 1, 1600, 1500],
-  [1600, 2, 1750, 1600],
-  [4500, 1, 4600, 4500],
+  [0, 1, 75, 0],
+  [74, 1, 75, 0],
+  [75, 2, 200, 75],
+  [200, 3, 400, 200],
+  [400, 4, 800, 400],
+  [799, 4, 800, 400],
+  [800, 5, 1500, 800],
+  [1499, 5, 1500, 800],
+  [1500, 1, 1575, 1500],
+  [1575, 2, 1700, 1575],
+  [4500, 1, 4575, 4500],
 ])("shows the next point at lifetime XP %s", (xp, rank, at, from) => {
   expect(nextSkillPoint(xp, rules)).toEqual({ rank, at, from, share: (xp - from) / (at - from) });
 });

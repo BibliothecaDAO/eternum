@@ -8,7 +8,7 @@ describe("ledger economics", () => {
   it("registers effective day units for normal, Devcon and accelerated Frontier clocks", () => {
     for (const [presetId, dayUnit] of [
       [5, 14_400],
-      [6, 4_800],
+      [6, 7_200],
       [101, 120],
     ]) {
       const preset = buildLedgerEconomicPreset("frontier", { presetId });

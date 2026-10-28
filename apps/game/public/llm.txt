@@ -1629,9 +1629,9 @@ its troops; Frontier asks first.
 
 ## XP and attributes
 
-An army earns 2 XP per revealed tile, XP for cleared guards, and 200 XP from a
-shrine. XP only increases. At 100 / 250 / 500 / 900 / 1,500 XP it earns Common, Uncommon, Rare, Epic and
-Legendary skill points. The same milestones repeat every 1,500 XP.
+An army earns 2 / 3 / 4 / 5 XP per revealed tile at Surface / Ethereal I / Ethereal II / Ethereal III. It also earns XP for cleared guards and 200 XP from a shrine. XP only
+increases. At 75 / 200 / 400 / 800 / 1,500 XP it earns Common, Uncommon, Rare, Epic and Legendary skill
+points. The same milestones repeat every 1,500 XP.
 
 Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
 uses the lowest fitting point you hold. Raising restores 20 / 30 / 40 / 50 / 60 stamina according
@@ -1738,7 +1738,8 @@ start the day explored. Walking over known ground costs 10 stamina a step and fi
 ## What a reveal pays
 
 Every tile an army reveals sends Essence or labor home to the realm, as likely as each other: a share of the army's
-troops, larger the deeper it is. Each reveal also gives the army 2 XP.
+troops, larger the deeper it is. Each reveal also gives the army 2 / 3 / 4 / 5 XP at
+Surface / Ethereal I / Ethereal II / Ethereal III.
 
 | Ground       | Reveal pays, of the army's troops | Entering costs |
 | ------------ | --------------------------------- | -------------- |

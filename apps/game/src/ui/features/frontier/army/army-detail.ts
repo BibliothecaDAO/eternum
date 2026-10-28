@@ -1,6 +1,4 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { StructureType } from "@bibliothecadao/types";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, RESEARCH_TREE, type Tier, type Rank } from "@/ui/design-system/kit/words";
@@ -32,8 +30,6 @@ export interface ArmyDetailFacts {
   progress: Record<AttributeKey, number> & { scoutingKinds: readonly ScoutKind[] };
   points: readonly number[];
   rules: NativeRows["ArmyProgressionRules"];
-  revealXp: number;
-  shrineXp: number;
 }
 
 export interface AttributeView {
@@ -60,8 +56,6 @@ export interface ArmyView {
   points: readonly number[];
   available: number;
   staminaPoints: { rank: Tier; count: number; refill: number }[];
-  /** How XP is earned, with this game's figures. */
-  earn: { icon: IconMeaning; line: string; xp?: number }[];
 }
 
 export type Attribute = Capitalize<AttributeKey>;
@@ -127,11 +121,6 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
       count: army.points[rank - 1]!,
       refill: Math.max(0, Math.min(skillPointRefill(rank, true), army.stamina.max - army.stamina.current)),
     })),
-    earn: [
-      { icon: "explore", line: ARMY_DETAIL.earn.explore, xp: army.revealXp },
-      { icon: "shrine", line: ARMY_DETAIL.earn.shrine, xp: army.shrineXp },
-      { icon: structureMeaning(StructureType.Camp, "frontier"), line: ARMY_DETAIL.earn.clear },
-    ],
   };
 };
 

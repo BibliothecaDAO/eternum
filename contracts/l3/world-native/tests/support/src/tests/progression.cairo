@@ -4,10 +4,17 @@ pub use crate::progression::{
 };
 pub use crate::resources::IResourceOperationsDispatcherTrait;
 pub use crate::stamina::{StaminaSourceTrait, StaminaTrait};
-pub use crate::tests::state::{ResourceObservationTrait, TroopObservationTrait};
+pub use crate::tests::state::{MapObservationTrait, ResourceObservationTrait, TroopObservationTrait};
 pub fn rules() -> ArmyProgressionRules {
     ArmyProgressionRules {
-        reveal_xp: 2, fixed_xp: 200, common_xp: 100, uncommon_xp: 250, rare_xp: 500, epic_xp: 900, legendary_xp: 1500,
+        reveal_xp: 2,
+        reveal_xp_per_depth: 1,
+        fixed_xp: 200,
+        common_xp: 75,
+        uncommon_xp: 200,
+        rare_xp: 400,
+        epic_xp: 800,
+        legendary_xp: 1500,
     }
 }
 pub fn spend(choice: SkillPointUse) -> SpendSkillPoint {
@@ -107,4 +114,20 @@ pub fn deploy(d: super::Deployment, game_id: u32, category: u8, direction: u8) -
         crate::structures::IStructureOperationsDispatcher { contract_address: d.games }, home,
     );
     crate::troops::ExplorerKey { game_id, explorer_id: *armies.at(armies.len() - 1) }
+}
+
+
+pub fn place_army_at_depth(d: super::Deployment, key: crate::troops::ExplorerKey, depth: u8) {
+    if depth == 0 {
+        return;
+    }
+    let game_id = key.game_id;
+    let map = crate::map::IMapLogicDispatcher { contract_address: d.games };
+    let troops = super::state::GameState { contract_address: d.games };
+    let mut army = troops.resolved_explorer(key).unwrap();
+    let spacing = snforge_std::interact_with_state(d.games, || crate::logic::settlement::rules(game_id).spacing);
+    army.coord.y += Into::<u8, u32>::into(depth) * spacing;
+    let tile = crate::geometry::tile_key(game_id, army.coord);
+    map.reveal(tile, 2);
+    super::resource_commands::set_explorer_fixture(d.games, key, army);
 }

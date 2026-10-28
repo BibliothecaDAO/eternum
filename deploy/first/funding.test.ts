@@ -91,9 +91,9 @@ test.each([
     topN: 10,
     presetId: changes === "wrong preset" ? 5 : 6,
     start: startSeconds,
-    end: startSeconds + 60 * 4800 + (changes === "wrong end" ? 40 : 0),
+    end: startSeconds + 40 * 7200 + (changes === "wrong end" ? 40 : 0),
     seed: "1",
-    dayUnit: 4800,
+    dayUnit: 7200,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockImplementation(async (_provider, _ledger, _key, _native, block) => {
@@ -107,7 +107,7 @@ test.each([
       presetId: 6,
       seed: "1",
       start: startSeconds,
-      end: startSeconds + 60 * 4800,
+      end: startSeconds + 40 * 7200,
       claimDeadline: startSeconds + 21 * 86400,
       confirmedBlock: 1,
     };
@@ -121,7 +121,7 @@ test.each([
             phase: "frontier",
             presetId: 6,
             startsAt: start,
-            endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString(),
+            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
           },
         ],
       });
@@ -142,7 +142,7 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "4800", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
@@ -223,9 +223,9 @@ async function coldFunding(lords: string, held: bigint) {
     topN: 10,
     presetId: 6,
     start: startSeconds,
-    end: startSeconds + 60 * 4800,
+    end: startSeconds + 40 * 7200,
     seed: "1",
-    dayUnit: 4800,
+    dayUnit: 7200,
     claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
@@ -238,7 +238,7 @@ async function coldFunding(lords: string, held: bigint) {
             phase: "frontier",
             presetId: 6,
             startsAt: start,
-            endsAt: new Date((startSeconds + 60 * 4800) * 1000).toISOString(),
+            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
           },
         ],
       });
@@ -257,7 +257,7 @@ async function coldFunding(lords: string, held: bigint) {
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "4800", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
         if (entrypoint === "lords") return [lords];
         throw new Error("Unexpected ledger read");
       },

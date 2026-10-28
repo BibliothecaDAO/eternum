@@ -890,7 +890,7 @@ test.each(["dev", "production"] as const)(
     const calldata = registered(frontier);
     expect(calldata[0]).toBe("6");
     expect(decodeLedgerPreset(calldata.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT))).toMatchObject({
-      dayUnit: 4800,
+      dayUnit: 7200,
       claimWindow: 604800,
       frontierChestBps: 7000,
       frontierTopN: 10,

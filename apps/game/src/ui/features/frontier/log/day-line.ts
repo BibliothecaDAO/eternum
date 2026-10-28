@@ -8,7 +8,7 @@ import {
   revealLine,
   xpGainedLine,
 } from "@/ui/design-system/kit/words";
-import { configManager, findGain } from "@bibliothecadao/eternum";
+import { configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
@@ -40,7 +40,7 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
     case "BattleEvent":
       return fightLogLine(story, store) ?? story.presentation.title;
     case "ExplorationReward":
-      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, store);
+      return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
     case "SitePayout":
       return withClearXp(story.presentation.title, payload.site_id, store);
     case "SkillPointSpent":
@@ -58,10 +58,11 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
   }
 };
 
-/** A reveal's line with the XP every Frontier reveal gives its army; the line alone while the rules are unknown. */
-const withRevealXp = (line: string, store: NativeFactStore): string => {
-  const rules = store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
-  return rules ? xpGainedLine(line, formatExact(rules.reveal_xp)) : line;
+/** The recorded tile keeps historical XP correct after an army changes depth or leaves the map. */
+const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): string => {
+  if (!coord || typeof coord !== "object" || !("y" in coord)) return line;
+  const xp = readRevealXp(store, configManager.getActiveGameId(), { y: Number(coord.y) });
+  return xp === undefined ? line : xpGainedLine(line, formatExact(xp));
 };
 
 /** A clear's line with the XP it paid: the site's starting guard sets it, so it needs the site's row; else the title. */

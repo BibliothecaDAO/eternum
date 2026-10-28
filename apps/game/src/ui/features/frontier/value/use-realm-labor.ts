@@ -13,7 +13,7 @@ const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm", "CampaignHome"
 
 /**
  * Eligibility, today's claim and the available space all come from the native facts. A home claims when it was founded
- * with a held Realm or with a campaign's ticket; a golden ticket's home claims Essence with its Labor.
+ * with a held Realm or with a campaign's ticket; each source uses its preset's grant amounts.
  */
 export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
@@ -27,7 +27,9 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   if (!laborRules || labor?.amount === undefined) return undefined;
   const settled = setup.store.get("SettledRealm", { game_id, realm_id: realm.metadata.realm_id });
   const campaign = readCampaignHome(setup.store, realm);
-  const essence = isGoldenHome(campaign) ? Number(laborRules.golden_essence) : 0;
+  const golden = isGoldenHome(campaign);
+  const amount = Number(golden ? laborRules.golden_amount : laborRules.amount);
+  const essence = Number(golden ? laborRules.golden_essence : campaign ? laborRules.campaign_essence : 0);
   const claimed = setup.store.get("LaborGrant", {
     game_id,
     home: entity_id,
@@ -37,12 +39,12 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
     plan: planRealmLabor({
       eligible: settled?.home === entity_id || campaign !== undefined,
       claimed: !!claimed,
-      amount: Number(laborRules.amount),
+      amount,
       essence,
       held: labor.amount,
       limit: labor.limit,
     }),
-    dailyAmount: Number(laborRules.amount),
+    dailyAmount: amount,
     dailyEssence: essence,
     mark: campaignMarkOf(campaign),
     secondsLeft: day.end - now,

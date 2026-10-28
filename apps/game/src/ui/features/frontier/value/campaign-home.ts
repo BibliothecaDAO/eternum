@@ -18,7 +18,7 @@ export interface CampaignMark {
   golden: boolean;
 }
 
-/** A golden ticket's home, which claims Essence with its Labor. */
+/** A home founded with a golden campaign ticket. */
 export const isGoldenHome = (home: NativeRows["CampaignHome"] | undefined) => home?.tier === GOLDEN_TIER;
 
 /** The home's campaign, as its realm wears it; null for a home of no campaign. */

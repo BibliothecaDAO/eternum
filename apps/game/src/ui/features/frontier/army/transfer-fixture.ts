@@ -1,3 +1,4 @@
+import { frontierArmyRules } from "./progression-rules-fixture";
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { campBeside } from "../sites/site-fixture";
 
@@ -10,16 +11,7 @@ export const transferArmies = (pickedXp = 0, tappedXp = 99) => {
     {
       model: "ArmyProgressionRules",
       key: "0xf1",
-      value: {
-        common_xp: 100,
-        game_id: 1,
-        reveal_xp: 2,
-        fixed_xp: 200,
-        uncommon_xp: 250,
-        rare_xp: 500,
-        epic_xp: 900,
-        legendary_xp: 1500,
-      },
+      value: frontierArmyRules(),
     },
     ...[201, 202].flatMap((id, slot) => [
       {

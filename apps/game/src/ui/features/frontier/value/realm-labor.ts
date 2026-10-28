@@ -3,7 +3,7 @@ export interface RealmLaborPlan {
   claimed: boolean;
   total: number;
   fits: number;
-  /** A golden ticket's Essence, claimed with the Labor; it lands even when no Labor fits. */
+  /** A campaign home's Essence, claimed with the Labor; it lands even when no Labor fits. */
   essence: number;
   /** Today's claim gives something: Labor that fits, or Essence. */
   claimable: boolean;

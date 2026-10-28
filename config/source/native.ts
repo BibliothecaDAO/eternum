@@ -26,7 +26,7 @@ const modes: Record<GameType, NativePreset> = {
 const frontierAcceleratedPreset: NativePreset = {
   ...frontierPreset,
   id: FRONTIER_ACCELERATED_PRESET_ID,
-  clockScale: 120,
+  clockScale: { days: 120, activity: 120 },
 };
 
 const frontierFixturePreset: NativePreset = {

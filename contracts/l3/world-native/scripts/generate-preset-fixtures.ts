@@ -56,7 +56,7 @@ function conformancePreset(definition: Awaited<ReturnType<typeof currentPresetFi
 /** Fixture encoding can follow source edits before the single landing compile; production bindings still require ABI. */
 function presetFixtureSchema(): NativeSchema {
   const schema = structuredClone(compiledSchema);
-  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results"])
+  for (const module of ["rules", "entry", "presets", "relics", "registrar", "blitz_results", "progression"])
     readStructs(schema, module);
   schema.models = defineFactModels({
     struct: (name: string) => {

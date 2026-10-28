@@ -16,6 +16,8 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
       paysRevealSupplies: () => true,
       getActiveGameId: () => 1,
       getTroopConfig: () => ({ troop_limit_config: {} }),
+      setActiveGame: vi.fn(),
+      setStore: vi.fn(),
     },
     entityMapPosition: () => ({ x: 0, y: 0 }),
     readRevealPercent: () => 25,
@@ -68,7 +70,13 @@ it("writes a reveal's fractional reward the same in the army panel and in the Lo
 it("writes the same 57.6 reveal on Today's line, and keeps its fraction until the day's total is written", async () => {
   const { dayLogLine } = await import("./log/day-line");
   const { totalToday } = await import("./log/today-totals");
-  const storyPayload = { explorer_id: 7, receiver: 5, resource_type: ResourcesIds.Essence, amount: String(PAYOUT) };
+  const storyPayload = {
+    explorer_id: 7,
+    receiver: 5,
+    coord: { alt: false, x: 1, y: 1 },
+    resource_type: ResourcesIds.Essence,
+    amount: String(PAYOUT),
+  };
   const presentation = buildStoryEventPresentation({
     storyType: "ExplorationReward",
     storyPayload,
@@ -76,25 +84,10 @@ it("writes the same 57.6 reveal on Today's line, and keeps its fraction until th
     ownerAddress: "0x1",
     viewerAddress: null,
   } as never);
-  // Prod's XP rules: Today writes the reveal's 2 XP beside its pay.
-  const { NativeFactStore } = await import("@bibliothecadao/eternum/game-client");
-  const store = new NativeFactStore();
-  store.applyFacts([
-    {
-      model: "ArmyProgressionRules",
-      key: "0x101",
-      value: {
-        common_xp: 100,
-        game_id: 1,
-        reveal_xp: 2,
-        fixed_xp: 200,
-        uncommon_xp: 250,
-        rare_xp: 500,
-        epic_xp: 900,
-        legendary_xp: 1500,
-      },
-    },
-  ] as never);
+  const { frontierDay } = await import("./deploy/deploy-fixture");
+  const { frontierArmyRules } = await import("./army/progression-rules-fixture");
+  const { store } = frontierDay();
+  store.applyFacts([{ model: "ArmyProgressionRules", key: "0x101", value: frontierArmyRules() }]);
   expect(dayLogLine({ story: "ExplorationReward", storyPayload, presentation } as never, store)).toBe(
     "+58 Essence, +2 XP",
   );

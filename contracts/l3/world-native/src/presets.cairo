@@ -59,7 +59,10 @@ pub fn validate(preset: PresetDefinition) {
     assert!(preset.economy.labor.is_some() == (rules.day_unit_seconds != 0), "labor rules require expeditions");
     if let Some(labor) = preset.economy.labor {
         assert!(labor.amount != 0, "zero daily labor grant");
+        assert!(labor.golden_amount != 0, "zero golden labor grant");
         let _ = labor.amount * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.campaign_essence * crate::rules::RESOURCE_PRECISION;
+        let _ = labor.golden_amount * crate::rules::RESOURCE_PRECISION;
         let _ = labor.golden_essence * crate::rules::RESOURCE_PRECISION;
     }
     if let Some(chests) = preset.economy.chests {
@@ -79,6 +82,7 @@ pub fn validate(preset: PresetDefinition) {
     }
     assert!(preset.economy.progression.is_some() == (rules.day_unit_seconds != 0), "progression requires expedition");
     if let Some(progression) = preset.economy.progression {
+        let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
         assert!(
             progression.reveal_xp != 0
                 && progression.fixed_xp != 0

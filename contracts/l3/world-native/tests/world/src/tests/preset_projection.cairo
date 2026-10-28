@@ -53,7 +53,7 @@ fn current_frontier_rejects_a_reintroduced_supply_pool() {
 fn current_frontier_requires_complete_progression_rules() {
     let d = super::registrar::setup();
     start_cheat_caller_address(d.games, super::authority());
-    for invalid in 0_u8..7 {
+    for invalid in 0_u8..8 {
         let (preset_id, mut definition) = current_definition("frontier");
         let mut progression = definition.economy.progression.unwrap();
         if invalid == 1 {
@@ -68,6 +68,8 @@ fn current_frontier_requires_complete_progression_rules() {
             progression.epic_xp = 0;
         } else if invalid == 6 {
             progression.legendary_xp = 0;
+        } else if invalid == 7 {
+            progression.reveal_xp_per_depth = 0xffffffff;
         }
         definition.economy.progression = if invalid == 0 {
             None

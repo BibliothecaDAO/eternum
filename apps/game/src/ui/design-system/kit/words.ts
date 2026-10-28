@@ -19,7 +19,6 @@ import {
   formatCharge,
   resourceName,
   formatHeldAgainst,
-  structureName,
   structurePlural,
   StructureType,
 } from "@bibliothecadao/types";
@@ -1277,18 +1276,12 @@ export const RESEARCH_TREE = {
 } as const;
 
 /**
- * An army's detail (the owner's picks, 20 and 22 October): its status, its four attributes as tiles, its XP with how it
- * is earned on its hover, then its level-ups, one step on.
+ * An army's detail: status, attributes, the next skill point and level-up choices.
  */
 export const ARMY_DETAIL = {
   /** A Scouting effect on the kind its levels went to: "+10% discovery on Rifts". */
   onKind: (effect: string, kind: string) => `${effect} on ${kind}`,
   scoutingNext: (now: string, step: string) => `${now} · ${step} on the kind you pick`,
-  earn: {
-    explore: "Explore a tile",
-    shrine: "Visit a Shrine",
-    clear: `Clear a ${structureName(StructureType.Camp, undefined, "frontier")}`,
-  },
   /** What each tile the army explores sends home, on its stamina row. */
   revealPays: (amount: string) => `+${amount} a tile`,
   revealPaysLabel: `${ESSENCE} and ${LABOR} a tile`,

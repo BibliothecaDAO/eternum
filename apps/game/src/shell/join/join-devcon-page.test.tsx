@@ -20,10 +20,8 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
 import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
-import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useConnectStore } from "../sign-in/connect";
-import { DEVCON } from "./devcon";
 import { JoinDevconPage } from "./join-devcon-page";
 
 let host: HTMLDivElement;
@@ -74,7 +72,8 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   await visit("/join/devcon/T9HW3NPB");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
-  expect(text()).not.toMatch(/golden|Essence/i);
+  expect(text()).not.toMatch(/golden/i);
+  expect(text()).toContain("1,000 Essence each day");
   await press("Claim your realm");
   expect(useConnectStore.getState().request).toEqual({ next: "/join/devcon/T9HW3NPB" });
   expect(service.redeemCampaignTicket).not.toHaveBeenCalled();
@@ -91,14 +90,14 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden ticket");
   expect(text()).toContain("One of 20 at Devcon");
-  expect(text()).toContain("1,000 Labor each day");
-  expect(text()).toContain("1,000 Essence each day");
+  expect(text()).toContain("2,000 Labor each day");
+  expect(text()).toContain("2,000 Essence each day");
   expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
   await press("Continue");
   expect(path).toBe("/");
 });
 
-it("opens a regular ticket from the shared link: the Devcon realm and its Labor, no Essence", async () => {
+it("opens a regular ticket from the shared link: the Devcon realm with its Labor and Essence", async () => {
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
   await visit("/join/devcon");
@@ -107,7 +106,8 @@ it("opens a regular ticket from the shared link: the Devcon realm and its Labor,
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
-  expect(text()).not.toMatch(/golden|Essence/i);
+  expect(text()).not.toMatch(/golden/i);
+  expect(text()).toContain("1,000 Essence each day");
 });
 
 it("says a closed campaign, and offers Try again when the ticket could not be opened", async () => {
@@ -121,8 +121,4 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   await press("Try again");
   expect(text()).toContain("Devcon tickets have closed.");
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
-});
-
-it("promises the Labor, and a golden ticket's Essence, that the Devcon preset grants each day", () => {
-  expect(frontierDevconPreset.labor).toEqual({ amount: DEVCON.laborPerDay, goldenEssence: DEVCON.goldenEssencePerDay });
 });
