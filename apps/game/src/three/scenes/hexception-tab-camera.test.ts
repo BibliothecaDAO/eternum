@@ -48,6 +48,7 @@ const realmView = () => {
     cameraTransitionStatus: "idle",
     cameraTransitionListeners: new Set(),
     localPresentation: Promise.resolve(),
+    presentation: Promise.resolve(),
     startLocalAssets: () => {},
     selectRouteStructure: () => ({ structure: { entity_id: REALM.entityId }, position: { col: 5, row: 5 } }),
     bootstrapSceneOwnership: () => {},
