@@ -3,17 +3,17 @@ import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
-import { dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { dayOf, homeDailyClaim, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useRealmStores } from "../realm-stores";
-import { campaignMarkOf, isGoldenHome, readCampaignHome } from "./campaign-home";
+import { campaignMarkOf, readCampaignHome } from "./campaign-home";
 import { planRealmLabor } from "./realm-labor";
 
-const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm", "CampaignHome"] as const;
+const LABOR_MODELS = ["LaborRules", "LaborGrant", "SettledRealm", "CampaignHome", "GameRegistry"] as const;
 
 /**
- * Eligibility, today's claim and the available space all come from the native facts. A home claims when it was founded
- * with a held Realm or with a campaign's ticket; a golden ticket's home claims Essence with its Labor.
+ * Eligibility, today's claim and the available space all come from the native facts; what the home claims each day is
+ * homeDailyClaim's, the reader the Day open push uses too.
  */
 export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
@@ -23,11 +23,8 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   const day = dayOf(rules, now);
   if (!realm || !day) return undefined;
   const { game_id, entity_id } = realm;
-  const laborRules = setup.store.get("LaborRules", { game_id });
-  if (!laborRules || labor?.amount === undefined) return undefined;
-  const settled = setup.store.get("SettledRealm", { game_id, realm_id: realm.metadata.realm_id });
-  const campaign = readCampaignHome(setup.store, realm);
-  const essence = isGoldenHome(campaign) ? Number(laborRules.golden_essence) : 0;
+  if (!setup.store.get("LaborRules", { game_id }) || labor?.amount === undefined) return undefined;
+  const daily = homeDailyClaim(setup.store, { gameId: game_id, entityId: entity_id, realmId: realm.metadata.realm_id });
   const claimed = setup.store.get("LaborGrant", {
     game_id,
     home: entity_id,
@@ -35,17 +32,18 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   });
   return {
     plan: planRealmLabor({
-      eligible: settled?.home === entity_id || campaign !== undefined,
+      eligible: daily !== null,
       claimed: !!claimed,
-      amount: Number(laborRules.amount),
-      essence,
+      amount: daily?.labor ?? 0,
+      essence: daily?.essence ?? 0,
       held: labor.amount,
       limit: labor.limit,
     }),
-    dailyAmount: Number(laborRules.amount),
-    dailyEssence: essence,
-    mark: campaignMarkOf(campaign),
+    dailyAmount: daily?.labor ?? 0,
+    dailyEssence: daily?.essence ?? 0,
+    mark: campaignMarkOf(readCampaignHome(setup.store, realm)),
     secondsLeft: day.end - now,
+    nextDay: day.end < Number(setup.store.get("GameRegistry", { game_id })?.end_at ?? 0) ? day.index + 2 : null,
     claim: () => claimRealmLabor(realm),
   };
 };

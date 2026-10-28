@@ -3,6 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import type { AlertsAsk } from "@/shell/profile/alerts-ask";
 import { planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
@@ -199,6 +200,8 @@ describe("the settled Realm's labor", () => {
             dailyEssence={0}
             mark={null}
             secondsLeft={3600}
+            nextDay={5}
+            ask={null}
             sending={false}
             onClaim={onClaim}
             onRealm={onRealm}
@@ -223,5 +226,43 @@ describe("the settled Realm's labor", () => {
     show(false, false, 0);
     expect(host.textContent).toContain("No daily Labor claim");
     expect(button("Claim 1,000 Labor")).toBeUndefined();
+  });
+  it("asks for the next day's push once claimed, while this device would not get it", () => {
+    const remind = vi.fn(),
+      install = vi.fn();
+    const show = (claimed: boolean, ask: AlertsAsk, nextDay: number | null = 5) =>
+      act(() =>
+        root.render(
+          <RealmsSheet
+            plan={planRealmLabor({ eligible: true, claimed, amount: 1000, essence: 0, held: 0, limit: 18000 })}
+            dailyAmount={1000}
+            dailyEssence={0}
+            mark={null}
+            secondsLeft={3600}
+            nextDay={nextDay}
+            ask={ask}
+            sending={false}
+            onClaim={() => undefined}
+            onRealm={() => undefined}
+            onClose={() => undefined}
+          />,
+        ),
+      );
+    show(true, { kind: "remind", busy: false, act: remind });
+    act(() => button("Remind me when Day 5 opens")!.click());
+    expect(remind).toHaveBeenCalledTimes(1);
+    show(true, { kind: "remind", busy: true, act: remind });
+    expect(button("Turning on")?.disabled).toBe(true);
+    show(true, { kind: "install", busy: false, act: install });
+    act(() => button("Add to Home Screen for reminders")!.click());
+    expect(install).toHaveBeenCalledTimes(1);
+    // Alerts already reach this device, the claim is still to take, or no day follows: nothing to ask.
+    show(true, null);
+    expect(button("Remind me when Day 5 opens")).toBeUndefined();
+    expect(button("Add to Home Screen for reminders")).toBeUndefined();
+    show(false, { kind: "remind", busy: false, act: remind });
+    expect(button("Remind me when Day 5 opens")).toBeUndefined();
+    show(true, { kind: "remind", busy: false, act: remind }, null);
+    expect(button("Remind me when Day 5 opens")).toBeUndefined();
   });
 });

@@ -12,24 +12,52 @@ const facts = vi.hoisted(() => ({
   now: 360,
   balance: 0 as number | undefined,
   read: vi.fn(),
+  /** The season ends long after day 1, so a next day follows. */
+  seasonEnd: 1_000_000n,
 }));
+/** This device and the account's level, as Settings would read them; signed out (owner null) asks nothing. */
+const alerts = vi.hoisted(() => ({
+  owner: null as string | null,
+  device: "off" as "on" | "off" | "install" | "blocked",
+  level: "off" as "off" | "important" | "all",
+  toggle: vi.fn(async () => {}),
+  save: vi.fn(async () => {}),
+  install: vi.fn(async () => {}),
+}));
+vi.mock("@/hooks/context/identity-session", () => ({
+  useIdentitySession: () => ({ session: null }),
+  notificationOwnerOf: () => alerts.owner,
+}));
+vi.mock("@/hooks/use-notification-preferences", () => ({
+  useNotificationPreferences: () => ({
+    status: "ready",
+    saved: { level: alerts.level, revision: 1, owner: alerts.owner },
+    save: alerts.save,
+  }),
+}));
+vi.mock("@/shell/profile/this-device", () => ({
+  useThisDevice: () => ({ state: alerts.device, toggle: alerts.toggle, failed: false }),
+}));
+vi.mock("@/pwa/install-state", () => ({ useInstall: () => ({ installed: false, install: alerts.install }) }));
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: {
         get: (model: string, key: { day?: bigint }) => {
           facts.read(model, key);
-          return model === "LaborRules"
-            ? { amount: 1000n, golden_essence: 1000n }
-            : model === "CampaignHome"
-              ? facts.campaign
-              : model === "SettledRealm"
-                ? facts.held
-                  ? { home: 412n }
-                  : undefined
-                : key.day === facts.claimedDay
-                  ? { amount: 1000n }
-                  : undefined;
+          return model === "GameRegistry"
+            ? { end_at: facts.seasonEnd }
+            : model === "LaborRules"
+              ? { amount: 1000n, golden_essence: 1000n }
+              : model === "CampaignHome"
+                ? facts.campaign
+                : model === "SettledRealm"
+                  ? facts.held
+                    ? { home: 412n }
+                    : undefined
+                  : key.day === facts.claimedDay
+                    ? { amount: 1000n }
+                    : undefined;
         },
       },
     },
@@ -51,6 +79,13 @@ afterEach(() => {
   facts.balance = 0;
   facts.now = 360;
   facts.read.mockClear();
+  facts.seasonEnd = 1_000_000n;
+  alerts.owner = null;
+  alerts.device = "off";
+  alerts.level = "off";
+  alerts.toggle.mockClear();
+  alerts.save.mockClear();
+  alerts.install.mockClear();
   vi.unstubAllGlobals();
 });
 it("claims its settled home once and takes the result from the next native facts", async () => {
@@ -84,7 +119,7 @@ it("claims its settled home once and takes the result from the next native facts
     await show();
     expect(host.textContent).not.toContain("Claimed today");
     expect(host.textContent).toContain("Claim 1,000 Labor");
-    expect(facts.read).toHaveBeenLastCalledWith("LaborGrant", { game_id: 3, home: 412n, day: 1n });
+    expect(facts.read).toHaveBeenCalledWith("LaborGrant", { game_id: 3, home: 412n, day: 1n });
     await act(async () =>
       [...host.querySelectorAll("button")].find((b) => b.textContent === "Claim 1,000 Labor")!.click(),
     );
@@ -173,5 +208,50 @@ it("lets a golden home at full Labor storage claim its Essence, and leaves a ful
     expect(buttons()).toContain("Realm");
   } finally {
     await act(async () => root.unmount());
+  }
+});
+
+it("once claimed, asks for a push when the next day opens, and one tap turns this device and the account's level on", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === word);
+  try {
+    alerts.owner = "0xowner";
+    facts.claimedDay = 0n;
+    await show();
+    await act(async () => button("Remind me when Day 2 opens")!.click());
+    expect(alerts.toggle).toHaveBeenCalledTimes(1);
+    expect(alerts.save).toHaveBeenCalledWith("important");
+
+    // On already, at All: nothing to ask. On, but the account's level Off: one tap lifts the level only.
+    alerts.device = "on";
+    alerts.level = "all";
+    await show();
+    expect(button("Remind me when Day 2 opens")).toBeUndefined();
+    alerts.level = "off";
+    await show();
+    await act(async () => button("Remind me when Day 2 opens")!.click());
+    expect(alerts.toggle).toHaveBeenCalledTimes(1);
+    expect(alerts.save).toHaveBeenCalledTimes(2);
+
+    // An iPhone's browser installs first; a device that blocks alerts is not asked.
+    alerts.device = "install";
+    await show();
+    await act(async () => button("Add to Home Screen for reminders")!.click());
+    expect(alerts.install).toHaveBeenCalledTimes(1);
+    alerts.device = "blocked";
+    await show();
+    expect(button("Remind me when Day 2 opens")).toBeUndefined();
+
+    // The season's last day has no next day to remind of.
+    alerts.device = "off";
+    facts.seasonEnd = BigInt(dayOf(rules, facts.now)!.end);
+    await show();
+    expect(host.textContent).toContain("Claimed today");
+    expect(button("Remind me when Day 2 opens")).toBeUndefined();
+  } finally {
+    act(() => root.unmount());
   }
 });

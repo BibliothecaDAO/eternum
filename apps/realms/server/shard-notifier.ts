@@ -9,14 +9,15 @@ import {
   type ShardManifest,
   type StoryEventScope,
 } from "@bibliothecadao/eternum/game-sync";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import {
   buildArmyRestedNotification,
-  buildDayEndReminder,
+  buildDayOpen,
   buildStoryNotification,
   gamePath,
   includesArmyRestedNotification,
-  includesDayEndReminder,
   includesStoryNotification,
+  isQuietAt,
   readHistoryStory,
   storyRecipients,
   type LocalNotificationPayload,
@@ -33,7 +34,7 @@ import {
   type RestWatch,
 } from "./army-rest";
 import { decodeIdentityEnv, vapidKeysOf, type IdentityEnv } from "./env";
-import { planDayEndReminders, readReminderPlayers, type DayEndReminder } from "./day-end-reminder";
+import { planDayOpenings, readEnrolledAccounts, readHomeClaim, type DayOpening } from "./day-open";
 import { NotificationPreferenceStore } from "./notification-preference-store";
 import { PushSubscriptionStore, type PushSubscriptionRow } from "./push-subscription-store";
 import { realmsIdsOfAccounts } from "./realms-accounts";
@@ -48,7 +49,7 @@ interface WatchedShard {
   worldAddress?: string;
 }
 
-/** One game alert waiting for one device, from confirmed history or the seeded day schedule. */
+/** One game alert waiting for one device, from confirmed history, a rested army or the seeded day schedule. */
 interface OutboxEntry {
   owner: string;
   subscriptionId: string;
@@ -61,12 +62,15 @@ const STORY_PAGE = 100;
 const MAX_ATTEMPTS = 5;
 const SHARD_TIMEOUT_MS = 10_000;
 // Fetch confirmed enrollment before the trigger; delivery itself never depends on a shard read.
-const REMINDER_PREPARE_MS = 60_000;
+const DAY_OPEN_PREPARE_MS = 60_000;
+/** The most game pushes one player gets in any 24 hours; the rest wait in the Feed. Direct messages are not counted. */
+const DAILY_PUSH_CEILING = 6;
+const DAY_MS = 86_400_000;
 
 /**
- * Game alerts for one shard in our directory. Alarms deliver due entries, prepare the day-end reminders and read
- * confirmed stories. Story entries commit with their cursor; day reminders are claimed before sending and never
- * recreated after their instant. A device that receives a repeated id drops it by its own durable claim.
+ * Game alerts for one shard in our directory. Alarms deliver due entries, prepare each Frontier day's Day open push and
+ * read confirmed stories. Story entries commit with their cursor; a day's pushes are prepared once, before it opens, and
+ * never recreated after. A device that receives a repeated id drops it by its own durable claim.
  */
 export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   /** Called by the directory's cron for every listed shard; starting an already running notifier changes nothing. */
@@ -92,55 +96,58 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     await runStage(shard, "deliver", () => this.deliverDue(env));
     const watched = await runStage(shard, "manifest", () => this.withWorldAddress(shard));
     let morePages = false;
-    let reminderWake: number | null = null;
+    let dayOpenWake: number | null = null;
     if (watched) {
-      reminderWake = (await runStage(shard, "reminders", () => this.prepareDayEndReminders(env, watched))) ?? null;
+      dayOpenWake = (await runStage(shard, "day-open", () => this.prepareDayOpens(env, watched))) ?? null;
       await runStage(shard, "wake", () => this.wakeRestedArmies(env, watched));
       await runStage(shard, "deliver", () => this.deliverDue(env));
       morePages = (await runStage(shard, "stories", () => this.readStories(env, watched))) ?? false;
     }
-    await this.scheduleNextAlarm(morePages, reminderWake);
+    await this.scheduleNextAlarm(morePages, dayOpenWake);
   }
 
-  private async scheduleNextAlarm(morePages: boolean, reminderWake: number | null): Promise<void> {
+  private async scheduleNextAlarm(morePages: boolean, dayOpenWake: number | null): Promise<void> {
     const now = Date.now();
     let next = now + (morePages ? 0 : POLL_MS);
-    if (reminderWake !== null && reminderWake > now) next = Math.min(next, reminderWake);
+    if (dayOpenWake !== null && dayOpenWake > now) next = Math.min(next, dayOpenWake);
     for (const entry of (await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })).values())
       next = Math.min(next, entry.dueAt);
     await this.ctx.storage.setAlarm(Math.max(now, next));
   }
 
-  private async prepareDayEndReminders(env: IdentityEnv, shard: Required<WatchedShard>): Promise<number | null> {
+  private async prepareDayOpens(env: IdentityEnv, shard: Required<WatchedShard>): Promise<number | null> {
     const directory = await readShard<HeraldGameDirectory>(shard.url, "/games");
     if (BigInt(directory.chain) !== BigInt(shard.chainId)) throw new Error(`${shard.url} changed chain`);
+    await this.forgetEndedDayOpens(shard, directory);
+    const plan = planDayOpenings(directory.games, Date.now(), DAY_OPEN_PREPARE_MS);
+    for (const opening of plan.prepare) {
+      const preparedKey = `day-open-prepared:${opening.gameId}:${opening.day}`;
+      if ((await this.ctx.storage.get(preparedKey)) !== undefined) continue;
+      const entries = await dayOpenAlerts(env, shard, opening);
+      await this.ctx.storage.transaction(async (txn) => {
+        // An enrollment read that finishes late must not resurrect an already opened day.
+        if (Date.now() >= opening.opensAt || (await txn.get(preparedKey)) !== undefined) return;
+        for (const entry of entries) await txn.put(outboxKey(entry), entry);
+        // An empty cohort is prepared too; later polls must not admit later enrollments.
+        await txn.put(preparedKey, opening.endsAt);
+      });
+    }
+    return plan.nextAlarmAt;
+  }
+
+  /** A game that ended sends no more Day open pushes; a day's preparation is forgotten once the day is over. */
+  private async forgetEndedDayOpens(shard: Required<WatchedShard>, directory: HeraldGameDirectory): Promise<void> {
     const running = new Set(
       directory.games
         .filter((game) => game.mode === "frontier" && game.status !== "Ended" && game.status !== "Settled")
         .map((game) => gamePath({ chainId: shard.chainId, gameId: game.game_id })),
     );
-    const pending = await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" });
-    for (const [key, entry] of pending) {
-      if (entry.envelope.notification.kind === "day-end" && !running.has(entry.envelope.notification.target))
+    for (const [key, entry] of await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })) {
+      if (entry.envelope.notification.kind === "day-open" && !running.has(entry.envelope.notification.target))
         await this.ctx.storage.delete(key);
     }
-    // Delivery metadata lives with the existing outbox and expires at the same trigger.
-    for (const [key, dueAt] of await this.ctx.storage.list<number>({ prefix: "reminder-prepared:" }))
-      if (dueAt <= Date.now()) await this.ctx.storage.delete(key);
-    const plan = planDayEndReminders(directory.games, Date.now(), REMINDER_PREPARE_MS);
-    for (const reminder of plan.prepare) {
-      const preparedKey = `reminder-prepared:${reminder.gameId}:${reminder.day}`;
-      if ((await this.ctx.storage.get(preparedKey)) !== undefined) continue;
-      const entries = await reminderAlerts(env, shard, reminder);
-      await this.ctx.storage.transaction(async (txn) => {
-        // An enrollment read that finishes late must not resurrect an already claimed reminder.
-        if (Date.now() >= reminder.dueAt || (await txn.get(preparedKey)) !== undefined) return;
-        for (const entry of entries) await txn.put(outboxKey(entry), entry);
-        // An empty cohort is prepared too; subsequent polls must not admit later enrollments.
-        await txn.put(preparedKey, reminder.dueAt);
-      });
-    }
-    return plan.nextAlarmAt;
+    for (const [key, endsAt] of await this.ctx.storage.list<number>({ prefix: "day-open-prepared:" }))
+      if (endsAt <= Date.now()) await this.ctx.storage.delete(key);
   }
 
   private async withWorldAddress(shard: WatchedShard): Promise<Required<WatchedShard>> {
@@ -240,17 +247,19 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
 
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
     const armies = await readActorArmies(shard.url, watches[0]!.gameId, watches[0]!.actor, now);
-    const alerts: OutboxEntry[] = [];
-    const renewed: RestWatch[] = [];
-    for (const watch of watches) {
+    const rested = watches.find((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
+    const renewed = watches.flatMap((watch) => {
       const army = armies.find((candidate) => candidate.armyId === watch.armyId);
-      if (army?.full) alerts.push(...(await restedAlerts(env, shard, watch, now)));
-      else if (army?.fullAt) renewed.push({ ...watch, fullAt: army.fullAt, attempts: 0 });
-    }
+      return !army?.full && army?.fullAt ? [{ ...watch, fullAt: army.fullAt, attempts: 0 }] : [];
+    });
+    const alert = rested ? await restedAlerts(env, shard, rested, now) : null;
     await this.ctx.storage.transaction(async (txn) => {
       for (const watch of watches) await txn.delete(restWatchKey(watch));
       for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
-      for (const entry of alerts) await txn.put(outboxKey(entry), entry);
+      // One rested push a day per player, however many of their armies rest that day.
+      if (!alert || (await txn.get(alert.sentKey)) !== undefined) return;
+      for (const entry of alert.entries) await txn.put(outboxKey(entry), entry);
+      await txn.put(alert.sentKey, now + 2 * DAY_MS);
     });
   }
 
@@ -277,23 +286,18 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
 
   private async deliverDue(env: IdentityEnv): Promise<void> {
     const now = Date.now();
-    const due = [...(await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" }))].filter(
-      ([, entry]) => entry.dueAt <= now,
-    );
-    const reminders = due.filter(([, entry]) => entry.envelope.notification.kind === "day-end");
-    // Start every independent dispatch before awaiting an endpoint; all players share the same expiry.
-    await Promise.all(reminders.map(([key, entry]) => this.deliverEntry(env, key, entry)));
-    for (const [key, entry] of due) {
-      if (entry.envelope.notification.kind !== "day-end") await this.deliverEntry(env, key, entry);
+    for (const [key, dueAt] of await this.ctx.storage.list<number>({ prefix: "rested-sent:" }))
+      if (dueAt <= now) await this.ctx.storage.delete(key);
+    for (const [key, entry] of await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" })) {
+      if (entry.dueAt <= now) await this.deliverEntry(env, key, entry);
     }
   }
 
   private async deliverEntry(env: IdentityEnv, key: string, entry: OutboxEntry): Promise<void> {
-    const reminder = entry.envelope.notification.kind === "day-end";
-    // Claim before network IO: alarm retries and restarts must never resend a day reminder.
-    if (reminder && !(await this.ctx.storage.delete(key))) return;
-    const next = await deliver(env, entry, Date.now()).catch((error: unknown) => {
-      const retry = reminder ? null : retryLater(entry, Date.now(), POLL_MS);
+    const sentKey = `sent:${entry.owner}`;
+    const sent = ((await this.ctx.storage.get<number[]>(sentKey)) ?? []).filter((at) => at > Date.now() - DAY_MS);
+    const outcome = await deliver(env, entry, Date.now(), sent.length).catch((error: unknown) => {
+      const retry = retryLater(entry, Date.now(), POLL_MS);
       console.error(
         retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
         entry.envelope.notification.id,
@@ -301,12 +305,13 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
         `attempt ${entry.attempts + 1}`,
         error,
       );
-      return retry;
+      return { next: retry, accepted: false };
     });
-    if (!reminder) {
-      if (next) await this.ctx.storage.put(key, next);
-      else await this.ctx.storage.delete(key);
-    }
+    await this.ctx.storage.transaction(async (txn) => {
+      if (outcome.next) await txn.put(key, outcome.next);
+      else await txn.delete(key);
+      if (outcome.accepted) await txn.put(sentKey, [...sent, Date.now()]);
+    });
   }
 }
 
@@ -371,28 +376,30 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
   );
 
 /**
- * Checks current consent and expiry before sending. Reminders consult account/device consent only; other game alerts
- * also suppress foreground delivery. Returns an ordinary alert to retry, or null when it is done.
+ * Checks current consent, expiry, the game in view, quiet hours and the player's 24-hour ceiling before sending. A Day
+ * open push was already timed out of quiet hours. Returns the alert to retry (or null when it is done), and whether the
+ * push service took it.
  */
-const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
+const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: number) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      if (entry.envelope.notification.expiresAt <= now) return null;
+      const done: { next: OutboxEntry | null; accepted: boolean } = { next: null, accepted: false };
+      const notification = entry.envelope.notification;
+      if (notification.expiresAt <= now) return done;
       const store = yield* PushSubscriptionStore;
       const device = yield* store.find(entry.owner, entry.subscriptionId);
       const levels = yield* (yield* NotificationPreferenceStore).levels([entry.owner]);
-      const reminder = entry.envelope.notification.kind === "day-end";
-      const level = levels.get(entry.owner) ?? "off";
-      if (
-        !device ||
-        device.gameAlertsEnabledAt === null ||
-        device.gameAlertsEnabledAt > entry.envelope.notification.createdAt
-      )
-        return null;
-      if (reminder ? !includesDayEndReminder(level) : !wantsGameAlerts(device, now) || level === "off") return null;
+      if (!device || device.gameAlertsEnabledAt === null || device.gameAlertsEnabledAt > notification.createdAt)
+        return done;
+      if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return done;
+      if (notification.kind !== "day-open" && isQuietAt(now, device.timeZone)) return done;
+      if (sentToday >= DAILY_PUSH_CEILING) {
+        console.warn("shard_notifier_daily_ceiling", notification.id, `owner ${entry.owner}`);
+        return done;
+      }
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, entry.envelope));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      return outcome === "retry" && !reminder ? retryLater(entry, now, POLL_MS) : null;
+      return { next: outcome === "retry" ? retryLater(entry, now, POLL_MS) : null, accepted: outcome === "accepted" };
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
@@ -450,31 +457,44 @@ const alertsForDevices = (
       dueAt: now,
     }));
 
-/** Prepare every enrolled owner's opted-in devices; the level is checked at dispatch, not a minute earlier. */
-const reminderAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, reminder: DayEndReminder) => {
-  // Eligibility ends at this confirmed enrollment read. Later joins receive next day's reminder, never this one.
-  const accounts = await readReminderPlayers(shard.url, reminder.gameId);
+/**
+ * Every enrolled player who wants game alerts gets the day's push on each opted-in device, timed and worded by the
+ * device's own clock, with what their home claims that day. The level is checked again at dispatch.
+ */
+const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, opening: DayOpening) => {
+  // Eligibility ends at this confirmed enrollment read. Later joins hear of the next day, never this one.
+  const accounts = await readEnrolledAccounts(shard.url, opening.gameId);
   const entries: OutboxEntry[] = [];
   // D1 permits 100 bound parameters. Enrollment can be larger than a story page.
   for (let offset = 0; offset < accounts.length; offset += 100) {
     const realmsIds = await realmsIdsOfAccounts(env.DB, accounts.slice(offset, offset + 100));
-    const owners = [...new Set(realmsIds.values())];
-    const devices = await Effect.runPromise(
+    const { levels, devices } = await Effect.runPromise(
       Effect.gen(function* () {
-        return yield* (yield* PushSubscriptionStore).gameAlertDevices(owners);
-      }).pipe(Effect.provide(PushSubscriptionStore.layer(env.DB))),
+        const owners = [...new Set(realmsIds.values())];
+        return {
+          levels: yield* (yield* NotificationPreferenceStore).levels(owners),
+          devices: yield* (yield* PushSubscriptionStore).gameAlertDevices(owners),
+        };
+      }).pipe(
+        Effect.provide(NotificationPreferenceStore.layer(env.DB)),
+        Effect.provide(PushSubscriptionStore.layer(env.DB)),
+      ),
     );
-    for (const owner of owners) {
-      const notification = buildDayEndReminder({
-        chainId: shard.chainId,
-        worldAddress: shard.worldAddress,
-        gameId: reminder.gameId,
-        day: reminder.day,
-        owner,
-        endsAt: reminder.endsAt,
-        tomorrowSeconds: reminder.tomorrowSeconds,
-      });
-      entries.push(...alertsForDevices(owner, devices, notification, reminder.dueAt));
+    for (const [account, owner] of realmsIds) {
+      const owned = devices.filter((device) => device.owner === owner);
+      if (owned.length === 0 || (levels.get(owner) ?? "off") === "off") continue;
+      const claim = await readHomeClaim(shard.url, opening.gameId, account);
+      for (const device of owned) {
+        const notification = buildDayOpen({
+          ...opening,
+          chainId: shard.chainId,
+          worldAddress: shard.worldAddress,
+          owner,
+          claim,
+          timeZone: device.timeZone,
+        });
+        if (notification) entries.push(...alertsForDevices(owner, [device], notification, notification.createdAt));
+      }
     }
   }
   return entries;
@@ -535,37 +555,59 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
     ),
   );
 
-/** The rested-army alert for one watch, if the owner still wants it, to each of their opted-in devices. */
+/**
+ * The rested push for the player of one watch, if they still want it, to each of their opted-in devices; with the key
+ * that holds it to one a day.
+ */
 const restedAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, watch: RestWatch, now: number) =>
   Effect.runPromise(
     Effect.gen(function* () {
       const levels = yield* (yield* NotificationPreferenceStore).levels([watch.owner]);
-      if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return [];
+      if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return null;
       const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([watch.owner]);
-      const games = yield* Effect.promise(() => gameNames(shard.url));
+      const game = (yield* Effect.promise(() => gameDirectory(shard.url))).get(watch.gameId);
+      const day = restedDay(game, watch.fullAt);
       const notification = buildArmyRestedNotification({
         chainId: shard.chainId,
         gameId: watch.gameId,
-        armyId: watch.armyId,
+        day,
         fullAt: watch.fullAt,
         owner: watch.owner,
-        gameName: games.get(watch.gameId) ?? `Game ${watch.gameId}`,
+        gameName: game?.name ?? `Game ${watch.gameId}`,
         now,
       });
-      return notification ? alertsForDevices(watch.owner, devices, notification, now) : [];
+      if (!notification) return null;
+      return {
+        entries: alertsForDevices(watch.owner, devices, notification, now),
+        sentKey: `rested-sent:${watch.owner}:${watch.gameId}:${day}`,
+      };
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
     ),
   );
 
+/** The day a rested army counts against: its Frontier game day, else its UTC date. */
+const restedDay = (game: HeraldGameDirectory["games"][number] | undefined, fullAt: number): number => {
+  if (!game?.expedition || fullAt / 1000 < game.clock.start_main_at) return Math.floor(fullAt / DAY_MS);
+  const calendar = {
+    seed: BigInt(game.expedition.seed),
+    startMainAt: game.clock.start_main_at,
+    dayUnitSeconds: game.expedition.day_unit_seconds,
+  };
+  return dayOf(calendar, fullAt / 1000)!.index;
+};
+
 const wantsGameAlerts = (device: PushSubscriptionRow, now: number) =>
   device.gameAlertsEnabledAt !== null && (device.gameForegroundUntil === null || device.gameForegroundUntil <= now);
 
-const gameNames = async (url: string) => {
+const gameDirectory = async (url: string) => {
   const directory = await readShard<HeraldGameDirectory>(url, "/games");
-  return new Map(directory.games.map((game) => [game.game_id, game.name]));
+  return new Map(directory.games.map((game) => [game.game_id, game]));
 };
+
+const gameNames = async (url: string) =>
+  new Map([...(await gameDirectory(url))].map(([gameId, game]) => [gameId, game.name]));
 
 const readShard = async <T>(url: string, path: string): Promise<T> => {
   const response = await fetch(`${url}${path}`, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });

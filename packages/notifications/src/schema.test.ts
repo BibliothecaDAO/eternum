@@ -35,7 +35,7 @@ it("preserves strict fields, revisions and preference output", () => {
   );
 });
 it("preserves optional undefined fields on display envelopes and DM inputs", () => {
-  const payload = { ...notification, tag: undefined, kind: undefined, dayEnd: undefined };
+  const payload = { ...notification, tag: undefined, kind: undefined };
   expect(parseNotificationPayload(payload, now)).toStrictEqual(payload);
   const input = { messageId: "m", threadId: "t", recipientOwner: "0x1", createdAt: now, senderDisplayName: undefined };
   expect(parseDirectMessageNotificationInput(input)).toStrictEqual(input);
@@ -88,22 +88,14 @@ it("enforces UTF-16 text limits and a separate UTF-8 envelope budget", () => {
   };
   expect(() => parseNotificationPayload(large, now)).toThrow("notification_too_large");
 });
-it("keeps exact expiry boundaries and day-end correspondence", () => {
+it("keeps exact expiry boundaries: two minutes for an alert, until the day's last hour for a Day open push", () => {
   expect(parseNotificationPayload(notification, now)).toStrictEqual(notification);
   expect(() => parseNotificationPayload(notification, notification.expiresAt)).toThrow("expired_notification");
   expect(() => parseNotificationPayload({ ...notification, expiresAt: notification.expiresAt + 1 }, now)).toThrow(
     "expired_notification",
   );
-  const day = {
-    ...notification,
-    kind: "day-end",
-    expiresAt: now + 1000,
-    dayEnd: { endsAt: 3700, asOf: 100, tomorrowSeconds: 1 },
-  };
+  const day = { ...notification, kind: "day-open", expiresAt: notification.createdAt + 48 * 3_600_000 };
   expect(parseNotificationPayload(day, now)).toStrictEqual(day);
-  expect(() => parseNotificationPayload(day, now - 1)).toThrow("expired_notification");
-  expect(() => parseNotificationPayload({ ...day, expiresAt: now + 1001 }, now)).toThrow("invalid_day_end_reminder");
-  expect(() => parseNotificationPayload({ ...day, dayEnd: { ...day.dayEnd, extra: true } }, now)).toThrow(
-    "invalid_day_end_reminder",
-  );
+  expect(() => parseNotificationPayload({ ...day, expiresAt: day.expiresAt + 1 }, now)).toThrow("expired_notification");
+  expect(() => parseNotificationPayload({ ...day, kind: "day-end" }, now)).toThrow("invalid_notification");
 });

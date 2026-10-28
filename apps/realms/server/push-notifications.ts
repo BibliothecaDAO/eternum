@@ -1,6 +1,7 @@
 import { Data, Effect } from "effect";
 import {
   isPushDeviceId,
+  isTimeZone,
   isPushOwner,
   parseNotificationPayload,
   parsePushRegistration,
@@ -13,7 +14,7 @@ import { json, readBody } from "./http";
 import { PushSubscriptionStore } from "./push-subscription-store";
 import { sendPush } from "./web-push";
 
-const ACTIONS = ["subscribe", "status", "foreground", "revoke", "test"];
+const ACTIONS = ["subscribe", "status", "foreground", "revoke", "alerts-on"];
 
 /**
  * GET /api/notifications/push/config and POST /api/notifications/push/:action — a device's push subscription for the
@@ -69,9 +70,11 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
         gameAlerts: !!subscription?.gameAlertsEnabledAt,
       });
     }
-    if (action === "test") return json({ status: yield* sendTestPush(env, owner, input.id) });
+    if (action === "alerts-on") return json({ status: yield* sendAlertsOn(env, owner, input.id) });
     if (typeof input.foreground !== "boolean") return json({ error: "invalid_foreground_status" }, 400);
-    const found = yield* store.setGameForeground(owner, input.id, input.foreground);
+    const timeZone = input.timeZone;
+    if (timeZone !== undefined && !isTimeZone(timeZone)) return json({ error: "invalid_time_zone" }, 400);
+    const found = yield* store.setGameForeground(owner, input.id, input.foreground, timeZone ?? null);
     return found ? json({ foreground: input.foreground }) : json({ error: "subscription_not_found" }, 404);
   });
 }
@@ -103,8 +106,8 @@ function parsePushRequest(request: Request) {
   });
 }
 
-/** Server-owned text to the caller's own device, so a player can see a push arrive with the game closed. */
-function sendTestPush(env: IdentityEnv, owner: string, id: string) {
+/** The first push a device gets, the moment the player turns its alerts on: proof that they arrive. */
+function sendAlertsOn(env: IdentityEnv, owner: string, id: string) {
   return Effect.gen(function* () {
     const store = yield* PushSubscriptionStore;
     const device = yield* store.find(owner, id);
@@ -113,10 +116,10 @@ function sendTestPush(env: IdentityEnv, owner: string, id: string) {
     const notification = parseNotificationPayload(
       {
         version: 1,
-        id: `push-test:${crypto.randomUUID()}`,
+        id: `alerts-on:${crypto.randomUUID()}`,
         owner,
-        title: "Realms background notification",
-        body: "This test was sent by the server and can arrive with the game closed.",
+        title: "Alerts are on",
+        body: "Each game day opens with a push.",
         target: "/",
         createdAt: now,
         expiresAt: now + 120_000,
@@ -124,7 +127,8 @@ function sendTestPush(env: IdentityEnv, owner: string, id: string) {
       now,
     );
     const outcome = yield* Effect.tryPromise({
-      try: () => sendPush(vapidKeysOf(env), device, { version: 1, kind: "test", subscriptionId: id, notification }),
+      try: () =>
+        sendPush(vapidKeysOf(env), device, { version: 1, kind: "alerts-on", subscriptionId: id, notification }),
       catch: () => new PushRequestError({ code: "push_provider_unavailable", status: 502 }),
     });
     if (outcome === "expired") yield* store.expire(owner, id);
