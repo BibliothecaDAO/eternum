@@ -3,6 +3,7 @@ import { RainEffect } from "@/three/effects/rain-effect";
 import { createWorldFxRuntime, type WorldFxRuntime } from "@/three/fx/world-fx-runtime";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { burstParticles, momentSpeed, type Intensity } from "@/ui/motion/motion-scale";
+import { placeKeyLight } from "@/three/effects/key-light";
 import { configureWorldSunShadows } from "@/three/effects/world-sun-shadows";
 import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
@@ -302,8 +303,7 @@ export abstract class HexagonScene {
     // ShadowRefreshPolicy owns refreshes as the camera, sun and scene contents change.
     this.mainDirectionalLight.shadow.autoUpdate = false;
     this.mainDirectionalLight.shadow.needsUpdate = true;
-    this.mainDirectionalLight.position.set(-15, 13, 8);
-    this.mainDirectionalLight.target.position.set(0, 0, -5.2);
+    placeKeyLight(this.controls.target, this.mainDirectionalLight.position, this.mainDirectionalLight.target.position);
   }
 
   private setupStormLighting(): void {
@@ -1103,9 +1103,11 @@ export abstract class HexagonScene {
   private updateLights = throttle(() => {
     // Only manually update lights if the atmosphere controller is not managing them
     if (this.mainDirectionalLight && !this.worldAtmosphereController?.params?.enabled) {
-      const { x, y, z } = this.controls.target;
-      this.mainDirectionalLight.position.set(x - 15, y + 13, z + 8);
-      this.mainDirectionalLight.target.position.set(x, y, z - 5.2);
+      placeKeyLight(
+        this.controls.target,
+        this.mainDirectionalLight.position,
+        this.mainDirectionalLight.target.position,
+      );
       this.mainDirectionalLight.target.updateMatrixWorld();
     }
     if (this.lightHelper) this.lightHelper.update();

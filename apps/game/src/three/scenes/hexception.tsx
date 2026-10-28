@@ -1467,6 +1467,7 @@ export default class HexceptionScene extends HexagonScene {
       model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
       this.scene.add(model.group);
       this.buildingInstances.set(key, model.group);
+      this.requestShadowContentRefresh();
       return;
     }
 
@@ -1498,8 +1499,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.scene.add(instance);
     this.buildingInstances.set(key, instance);
-    if (entrance === "overshoot") this.overshootIn(instance);
-    else this.animateBuildingScale(instance);
+    this.enterBuilding(instance, entrance);
     this.startBuildingAnimations(key, instance, buildingData.animations);
   }
 
@@ -1565,9 +1565,18 @@ export default class HexceptionScene extends HexagonScene {
     });
   }
 
-  private overshootIn(instance: Group): void {
-    instance.scale.set(0.8, 0.8, 0.8);
-    gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)" });
+  /**
+   * A building grows onto its plot, or springs back after a tier swap. Its shadow is drawn once it stands at full
+   * size: the sun's shadow map is drawn only when asked, and one drawn mid-growth would keep a building's shadow tiny.
+   */
+  private enterBuilding(instance: Group, entrance: "grow" | "overshoot"): void {
+    const standing = () => this.requestShadowContentRefresh();
+    if (entrance === "overshoot") {
+      instance.scale.set(0.8, 0.8, 0.8);
+      gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)", onComplete: standing });
+      return;
+    }
+    gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.5, ease: "power2.out", onComplete: standing });
   }
 
   private syncHyperstructureConstruction(): void {
@@ -1611,16 +1620,6 @@ export default class HexceptionScene extends HexagonScene {
     return material;
   }
 
-  private animateBuildingScale(instance: Group): void {
-    gsap.to(instance.scale, {
-      duration: 0.5,
-      x: 1,
-      y: 1,
-      z: 1,
-      ease: "power2.out",
-    });
-  }
-
   private startBuildingAnimations(key: string, instance: Group, animations: AnimationClip[]): void {
     if (animations.length === 0) return;
 
@@ -1658,23 +1657,7 @@ export default class HexceptionScene extends HexagonScene {
   }
 
   removeCastleFromScene() {
-    const key = `${BUILDINGS_CENTER[0]},${BUILDINGS_CENTER[1]}`;
-    const instance = this.buildingInstances.get(key);
-    if (instance) {
-      this.scene.remove(instance);
-      this.buildingInstances.delete(key);
-    }
-
-    this.wonderAuras.get(key)?.dispose();
-    this.wonderAuras.delete(key);
-
-    // Properly dispose of mixers before removing
-    const mixer = this.buildingMixers.get(key);
-    if (mixer) {
-      mixer.stopAllAction();
-      mixer.uncacheRoot(mixer.getRoot());
-      this.buildingMixers.delete(key);
-    }
+    this.removeBuilding(BUILDINGS_CENTER[0], BUILDINGS_CENTER[1]);
   }
 
   computeHexMatrices = (
@@ -1871,6 +1854,7 @@ export default class HexceptionScene extends HexagonScene {
         disposeClonedBuildingMaterials(instance);
       }
       this.buildingInstances.delete(key);
+      this.requestShadowContentRefresh();
     }
 
     this.wonderAuras.get(key)?.dispose();

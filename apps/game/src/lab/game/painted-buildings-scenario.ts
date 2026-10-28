@@ -7,13 +7,13 @@ import {
   StructureType,
 } from "@bibliothecadao/types";
 import type { LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { spireScenario, type LabGround } from "./spire-scenario";
 
 const GUARD_PRECISION = 1_000_000_000n;
 
-/** A built Kingdom and its nearby sites, using the game's own board, map and placement controls. */
-export const paintedBuildingsScenario = (): LabScenario => {
-  const game = spireScenario();
+/** A built Kingdom and its nearby sites, using the game's own board, map and placement controls, on the given ground. */
+export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
+  const game = spireScenario(ground);
   const types = [
     BuildingType.ResourceWheat,
     BuildingType.ResourceLabor,

@@ -1,6 +1,7 @@
 import type { GameModeId } from "@/config/game-modes";
 import { FRONTIER_EMBER_COLORS, WORLD_ATMOSPHERE_PRESETS, type TimeOfDayColors } from "./world-atmosphere-presets";
 import { DAY_PHASE_PROGRESS, resolveDayPhase } from "@/utils/cycle-progress";
+import { placeKeyLight } from "./key-light";
 import type GUI from "lil-gui";
 import {
   Scene,
@@ -18,8 +19,6 @@ interface WorldAtmosphereParams {
   enabled: boolean;
   moonEnabled: boolean;
   cycleSpeed: number; // Multiplier for testing (1.0 = normal)
-  sunHeight: number;
-  sunDistance: number;
   transitionSmoothness: number; // 0-1, higher = smoother
   colorTransitionSpeed: number; // How fast colors transition (0.01-1.0)
   sunPositionEasing: number; // How fast sun follows camera (0.01-1.0)
@@ -49,13 +48,8 @@ const WEATHER_LIMITS = {
   maxKeyLightDimming: 0.2,
 } as const;
 
-const KEY_LIGHT_TARGET_DEPTH_OFFSET = 5.2;
-const KEY_LIGHT_MIN_ELEVATION_RATIO = 1;
-// The key light shines from where the sun stands at this point of the day, all day: the day cycle colours and dims the
-// world, it does not swing the shadows. A sun orbiting with a clock of minutes moved every shadow on every frame, and
-// that motion was the flicker players saw (bug 26: shadows hold perfectly still once the sun is held).
-const KEY_LIGHT_DAY_PROGRESS = 50;
 const PREVIEW_SNAP_PROGRESS_THRESHOLD = 1.5;
+const WORLD_ORIGIN = new Vector3();
 
 export class WorldAtmosphereController {
   private scene: Scene;
@@ -69,8 +63,6 @@ export class WorldAtmosphereController {
     enabled: true,
     moonEnabled: true,
     cycleSpeed: 1.0,
-    sunHeight: 12,
-    sunDistance: 15,
     transitionSmoothness: 0.45,
     colorTransitionSpeed: 0.02, // Smooth color transitions
     sunPositionEasing: 0.1, // Smooth sun movement when camera pans
@@ -81,14 +73,13 @@ export class WorldAtmosphereController {
   private currentColors: TimeOfDayColors = { ...WORLD_ATMOSPHERE_PRESETS.deepNight };
 
   // Current sun position state (for smooth camera tracking)
-  private currentSunPosition: Vector3 = new Vector3(0, 12, 0);
-  private currentSunTarget: Vector3 = new Vector3(0, 0, 5.2);
+  private currentSunPosition: Vector3 = new Vector3();
+  private currentSunTarget: Vector3 = new Vector3();
   private readonly targetSunPosition: Vector3 = new Vector3();
   private readonly targetSunTarget: Vector3 = new Vector3();
   private readonly tempColor1: Color = new Color();
   private readonly tempColor2: Color = new Color();
   private readonly tempHSL: { h: number; s: number; l: number } = { h: 0, s: 0, l: 0 };
-  private readonly moonPosition: Vector3 = new Vector3();
   private readonly stormTint: Color = new Color(0x606880);
   private readonly lastUpdateSkyColor: Color = new Color();
   private readonly lastUpdateFogColor: Color = new Color();
@@ -192,7 +183,7 @@ export class WorldAtmosphereController {
 
     // Update sun position (relative to camera target if provided)
     this.updateSunPosition(cameraTarget, progressFrame.snapVisualState);
-    this.updateMoonLighting(progressFrame.progress, cameraTarget);
+    this.updateMoonLighting(progressFrame.progress);
   }
 
   private resolveAtmosphereProgress(adjustedProgress: number, forceSnap: boolean): AtmosphereProgressFrame {
@@ -401,68 +392,31 @@ export class WorldAtmosphereController {
     };
   }
 
-  /**
-   * Places the key light at its fixed point of the day (KEY_LIGHT_DAY_PROGRESS), around the camera target when given.
-   * @param cameraTarget - Optional camera target to offset sun position
-   */
+  /** Places the key light around the camera target when given, else around the world's origin. */
   private updateSunPosition(cameraTarget?: Vector3, snapPosition: boolean = false): void {
-    // Offset by π so that progress 50 (noon) puts the sun at its peak: cos(2π) = 1.
-    const angle = (KEY_LIGHT_DAY_PROGRESS / 100) * Math.PI * 2 + Math.PI;
-
-    const offsetX = Math.sin(angle) * this.params.sunDistance;
-    const offsetZ = -Math.cos(angle) * this.params.sunDistance * 0.3; // Slight depth variation
-    // Bound geometric shadow length to caster height. A floor based only on sunHeight
-    // ignored the horizontal orbit and made tall towers shadow five neighboring hexes.
-    const horizontalDistance = Math.hypot(offsetX, offsetZ - KEY_LIGHT_TARGET_DEPTH_OFFSET);
-    const offsetY = Math.max(
-      Math.abs(Math.cos(angle)) * this.params.sunHeight,
-      horizontalDistance * KEY_LIGHT_MIN_ELEVATION_RATIO,
-    );
-
-    // Calculate target sun position and target
-    const targetSunPosition = this.targetSunPosition;
-    const targetSunTarget = this.targetSunTarget;
-
-    if (cameraTarget) {
-      targetSunPosition.set(
-        cameraTarget.x + offsetX,
-        cameraTarget.y + Math.max(offsetY, 0.5),
-        cameraTarget.z + offsetZ,
-      );
-      targetSunTarget.set(cameraTarget.x, cameraTarget.y, cameraTarget.z + KEY_LIGHT_TARGET_DEPTH_OFFSET);
-    } else {
-      // Default behavior - sun at world origin
-      targetSunPosition.set(offsetX, Math.max(offsetY, 0.5), offsetZ);
-      targetSunTarget.set(0, 0, KEY_LIGHT_TARGET_DEPTH_OFFSET);
-    }
-
+    placeKeyLight(cameraTarget ?? WORLD_ORIGIN, this.targetSunPosition, this.targetSunTarget);
     if (snapPosition) {
-      this.currentSunPosition.copy(targetSunPosition);
-      this.currentSunTarget.copy(targetSunTarget);
+      this.currentSunPosition.copy(this.targetSunPosition);
+      this.currentSunTarget.copy(this.targetSunTarget);
     } else {
       // Smoothly lerp current sun position toward target
-      this.currentSunPosition.lerp(targetSunPosition, this.params.sunPositionEasing);
-      this.currentSunTarget.lerp(targetSunTarget, this.params.sunPositionEasing);
+      this.currentSunPosition.lerp(this.targetSunPosition, this.params.sunPositionEasing);
+      this.currentSunTarget.lerp(this.targetSunTarget, this.params.sunPositionEasing);
     }
 
-    // Apply smoothed position to light
     this.directionalLight.position.copy(this.currentSunPosition);
     this.directionalLight.target.position.copy(this.currentSunTarget);
     this.directionalLight.target.updateMatrixWorld();
   }
 
-  private updateMoonLighting(progress: number, cameraTarget?: Vector3): void {
+  /** The moon is the night's key light: it stands where the sun does, in its own cool colour. */
+  private updateMoonLighting(progress: number): void {
     const nightToneFactor = this.params.moonEnabled ? this.resolveNightToneFactor(progress) : 0;
     this.moonLight.intensity = 0.95 * nightToneFactor;
     this.lastUpdateMoonIntensity = this.moonLight.intensity;
     this.moonLight.color.setHex(0xb3ccff);
-    const anchor = cameraTarget ?? this.currentSunTarget;
-    // A raised cool key lights silhouettes and their front faces instead of a low rear rim.
-    this.moonPosition
-      .set(-this.params.sunDistance * 0.65, this.params.sunHeight, this.params.sunDistance * 0.8)
-      .add(anchor);
-    this.moonLight.position.copy(this.moonPosition);
-    this.moonTarget.position.copy(anchor);
+    this.moonLight.position.copy(this.currentSunPosition);
+    this.moonTarget.position.copy(this.currentSunTarget);
     this.moonTarget.updateMatrixWorld();
   }
 
@@ -577,10 +531,6 @@ export class WorldAtmosphereController {
     atmosphereFolder.add(this.params, "colorTransitionSpeed", 0.01, 1.0, 0.01).name("Color Transition Speed");
 
     atmosphereFolder.add(this.params, "sunPositionEasing", 0.01, 1.0, 0.01).name("Sun Position Easing");
-
-    atmosphereFolder.add(this.params, "sunHeight", 5, 20, 0.5).name("Sun Height");
-
-    atmosphereFolder.add(this.params, "sunDistance", 10, 30, 1).name("Sun Distance");
 
     atmosphereFolder.add(this.params, "progressSmoothing", 0.001, 0.5, 0.001).name("Progress Smoothing");
 

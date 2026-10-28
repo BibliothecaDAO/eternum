@@ -13,12 +13,14 @@ import { LAB_GAME, LAB_GAME_ENDS_AT, type LabFact, type LabScenario } from "./la
 const tileData = (biome: BiomeType) => BigInt(BiomeTypeToId[biome]) * BigInt(nativeTilePackingConstants.BIOME_SCALE);
 
 /** The biome each revealed tile of a lab game lies in, by its position. */
-type LabGround = (hex: { col: number; row: number }) => BiomeType;
+export type LabGround = (hex: { col: number; row: number }) => BiomeType;
 
 const GRASSLAND: LabGround = () => BiomeType.Grassland;
 /** Snow, bare rock and tundra in turn: the highest ground the map draws, as the playtest's snow fields rise. */
 const HIGH_GROUND: LabGround = ({ col, row }) =>
   [BiomeType.Snow, BiomeType.Bare, BiomeType.Tundra][(((col + 2 * row) % 3) + 3) % 3];
+/** Beach sand, where palms grow: the owner's desert realm with its palms (28 October 2026, "shadows are weird ??"). */
+export const SANDS: LabGround = () => BiomeType.Beach;
 
 const wire = (value: unknown): unknown =>
   JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
