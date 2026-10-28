@@ -1,4 +1,3 @@
-import { ResourcesIds } from "@bibliothecadao/types";
 import { biomeDisplayName } from "@/ui/utils/biome-name";
 import { type ReactNode, useCallback, useMemo } from "react";
 
@@ -9,29 +8,8 @@ import { HudButton, HudChip, HudPanel, HudRow } from "@/ui/design-system/kit/hud
 
 import { formatBiomeBonus } from "@/ui/features/military";
 import { BattleLab } from "@/ui/features/military/battle/battle-lab";
-import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, TROOP_TYPES, TroopType } from "@bibliothecadao/types";
-
-const unoccupiedTileTroopConfig: Record<
-  TroopType,
-  {
-    resourceId: ResourcesIds;
-    label: string;
-  }
-> = {
-  [TroopType.Knight]: {
-    resourceId: ResourcesIds.Knight,
-    label: "Knights",
-  },
-  [TroopType.Crossbowman]: {
-    resourceId: ResourcesIds.Crossbowman,
-    label: "Crossbowmen",
-  },
-  [TroopType.Paladin]: {
-    resourceId: ResourcesIds.Paladin,
-    label: "Paladins",
-  },
-};
+import { configManager, getTroopResourceId } from "@bibliothecadao/eternum";
+import { BiomeType, TROOP_TYPES, TROOP_WORDS, TroopTier } from "@bibliothecadao/types";
 
 /** A biome's bonus for a troop as the row says it: its word, in the tone it has for the army. */
 const resolveBiomeBonusCardTone = (bonus: number) => {
@@ -42,7 +20,7 @@ const resolveBiomeBonusCardTone = (bonus: number) => {
 
 const buildBiomeTroopBonusCards = (biome: BiomeType) => {
   return TROOP_TYPES.map((troopType) => {
-    const config = unoccupiedTileTroopConfig[troopType];
+    const config = { resourceId: getTroopResourceId(troopType, TroopTier.T1), label: TROOP_WORDS[troopType].many };
     const bonus = configManager.getBiomeCombatBonus(troopType, biome);
     const tone = resolveBiomeBonusCardTone(bonus);
 

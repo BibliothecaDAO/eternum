@@ -28,7 +28,8 @@ import {
   siteName,
   StructureType,
   structureName,
-  TROOP_NAMES,
+  TROOP_TYPES,
+  TROOP_WORDS,
   VOICE_RULES,
 } from "@bibliothecadao/types";
 import type { ReactNode } from "react";
@@ -260,7 +261,9 @@ const Nouns = () => (
     />
     <div>
       <p className="text-[#b9ab8e]">Troops</p>
-      <p className="mt-1 font-semibold">{TROOP_NAMES.join(" · ")}, each T1 to T3: Knight T1</p>
+      <p className="mt-1 font-semibold">
+        {TROOP_TYPES.map((troop) => TROOP_WORDS[troop].one).join(" · ")}, each T1 to T3: Knight T1
+      </p>
       <p className="mt-4 text-[#b9ab8e]">The three ages</p>
       {(Object.keys(AGES) as (keyof typeof AGES)[]).map((game) => (
         <p key={game} className="mt-1 font-semibold">

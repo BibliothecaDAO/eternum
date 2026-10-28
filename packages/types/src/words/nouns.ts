@@ -14,6 +14,7 @@ import {
 } from "../constants/structures";
 import { GUARD_SLOT_NAMES, type GuardSlot } from "../constants/troops";
 import { StructureType } from "../constants/structure-type";
+import { TROOP_TYPES, TroopType } from "../types/common";
 
 const UNKNOWN = "—";
 
@@ -34,11 +35,24 @@ export const REALM_LEVELS = [
 export const rankName = (level: number | undefined): string =>
   (level === undefined ? undefined : REALM_LEVELS[level]) ?? UNKNOWN;
 
-/** The three troops, and a troop with its tier: "Knight T1", "Paladin T3". */
-export const TROOP_NAMES = ["Knight", "Crossbowman", "Paladin"] as const;
+/**
+ * Each troop type as a player reads it, one and many: "Knight", "Crossbowmen". Keyed by every type the schema allows,
+ * so a type it adds does not compile until it has its words.
+ */
+export const TROOP_WORDS = {
+  [TroopType.Knight]: { one: "Knight", many: "Knights" },
+  [TroopType.Crossbowman]: { one: "Crossbowman", many: "Crossbowmen" },
+  [TroopType.Paladin]: { one: "Paladin", many: "Paladins" },
+} as const satisfies Record<TroopType, { one: string; many: string }>;
+
+/** Many of a troop type, by its type or its name in the game's tables: "Crossbowmen". Unknown is undefined. */
+export const troopPlural = (troop: TroopType | string): string | undefined =>
+  (TROOP_WORDS as Record<string, { many: string }>)[troop]?.many;
+
+/** A troop with its tier: "Knight T1", "Paladin T3". */
 const troopName = (troop: string, tier: string): string => `${troop} ${tier}`;
 
-const TROOP_RESOURCE = /^(Knight|Crossbowman|Paladin)(T[23])?$/;
+const TROOP_RESOURCE = new RegExp(`^(${TROOP_TYPES.join("|")})(T[23])?$`);
 
 /**
  * A resource by its id, as a player reads it: its name in the game's table, a troop with its tier ("Knight T2", where

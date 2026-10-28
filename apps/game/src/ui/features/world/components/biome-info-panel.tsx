@@ -4,8 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 
 import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { biomeBonusText, formatBiomeBonus } from "@/ui/features/military";
-import { configManager } from "@bibliothecadao/eternum";
-import { BiomeType, TROOP_TYPES, TroopType } from "@bibliothecadao/types";
+import { configManager, getTroopResourceId } from "@bibliothecadao/eternum";
+import { BiomeType, TROOP_TYPES, TROOP_WORDS, TroopTier } from "@bibliothecadao/types";
 
 enum BiomeFilenames {
   Bare = "bare.png",
@@ -44,22 +44,6 @@ const formatBiomeLabel = (biome: BiomeType | string) => {
     .trim();
 };
 
-// Troop type configuration with resource names for ResourceIcon
-const troopConfig = {
-  [TroopType.Knight]: {
-    resourceId: ResourcesIds.Knight,
-    label: "Knights",
-  },
-  [TroopType.Crossbowman]: {
-    resourceId: ResourcesIds.Crossbowman,
-    label: "Crossbowmen",
-  },
-  [TroopType.Paladin]: {
-    resourceId: ResourcesIds.Paladin,
-    label: "Paladins",
-  },
-};
-
 // Get bonus styling based on value
 const getBonusStyles = (bonus: number) => {
   if (bonus > 1) {
@@ -95,7 +79,7 @@ export const BiomeInfoPanel = ({ biome, collapsed = false }: BiomeInfoPanelProps
   const troopBonuses = useMemo(
     () =>
       TROOP_TYPES.map((troopType) => {
-        const config = troopConfig[troopType];
+        const config = { resourceId: getTroopResourceId(troopType, TroopTier.T1), label: TROOP_WORDS[troopType].many };
         const bonus = configManager.getBiomeCombatBonus(troopType, biome);
         const styles = getBonusStyles(bonus);
         return {
