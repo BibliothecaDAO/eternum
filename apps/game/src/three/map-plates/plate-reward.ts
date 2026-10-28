@@ -7,7 +7,7 @@ import {
   siteReward,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { resourceName, ResourcesIds, RIFT_MINE_KIND, StructureType } from "@bibliothecadao/types";
 
 import type { StructureInfo } from "../types";
 import type { PlateReward } from "./map-plate-model";
@@ -16,7 +16,8 @@ type RewardSource = Pick<StructureInfo, "entityId" | "structureType" | "mineKind
 
 /** What a Blitz Essence Rift (Essence) and a camp (Labor) hold, and change hands with; none for anything else. */
 const heldResource = (structure: Pick<StructureInfo, "structureType" | "mineKind">): ResourcesIds | undefined => {
-  if (structure.structureType === StructureType.Mine && structure.mineKind === 1) return ResourcesIds.Essence;
+  if (structure.structureType === StructureType.Mine && structure.mineKind === RIFT_MINE_KIND)
+    return ResourcesIds.Essence;
   if (structure.structureType === StructureType.Camp) return ResourcesIds.Labor;
   return undefined;
 };
@@ -35,7 +36,7 @@ export const readPlateReward = (store: NativeFactStore, structure: RewardSource)
   if (site) {
     const payout = siteReward(siteKindOf(structure.structureType), site);
     return payout
-      ? { amount: divideByPrecision(Number(payout.amount)), unit: ResourcesIds[payout.resourceType] }
+      ? { amount: divideByPrecision(Number(payout.amount)), unit: resourceName(payout.resourceType) }
       : undefined;
   }
   const resource = heldResource(structure);
@@ -44,5 +45,5 @@ export const readPlateReward = (store: NativeFactStore, structure: RewardSource)
     getBlockTimestamp().currentDefaultTick,
     resource,
   );
-  return held ? { amount: divideByPrecision(held.balance), unit: ResourcesIds[resource] } : undefined;
+  return held ? { amount: divideByPrecision(held.balance), unit: resourceName(resource) } : undefined;
 };

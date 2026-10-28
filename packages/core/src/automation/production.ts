@@ -10,7 +10,7 @@ import {
 } from "./types";
 import { resolveProductionPercentages, calculatePresetAllocations } from "./presets";
 import { configManager, divideByPrecision, ResourceManager } from "../index";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { resourceName, ResourcesIds } from "@bibliothecadao/types";
 
 export const PROCESS_INTERVAL_MS = 60 * 1000;
 
@@ -217,13 +217,8 @@ const shouldUseSmartMinimumTroopCycle = ({
   return canFundOneCycle(recipeInputs, getTotal, getBudget);
 };
 
-const resolveResourceLabel = (resourceId: ResourcesIds): string => {
-  const label = ResourcesIds[resourceId];
-  return typeof label === "string" ? label : `Resource ${resourceId}`;
-};
-
 export const buildAutomationSkipMessage = (skip: AutomationSkipEntry): string => {
-  const resource = resolveResourceLabel(skip.resourceId);
+  const resource = resourceName(skip.resourceId);
 
   switch (skip.reason) {
     case "No active production building":
