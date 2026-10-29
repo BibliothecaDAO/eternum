@@ -1,9 +1,9 @@
 {
   "measured": {
-    "commit": "22159576f35a7db9be5b206d35cc9488c78c6adc",
+    "commit": "1fe3c8acfa0199b6a822c6367a53ff578716bb4c",
     "steps": "lab-actions-fight",
     "device": "desktop",
-    "run": "evidence/click-latency/r5-014256/desktop/lab-actions-fight/2026-10-29T01-30-59-849Z-spectator",
+    "run": "evidence/click-latency/r6-052614/desktop/lab-actions-fight/2026-10-29T05-41-36-430Z-spectator",
     "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
   },
   "byMode": {
@@ -12,9 +12,9 @@
         "attack": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 322.9,
-            "min": 322.7,
-            "max": 324.2
+            "median": 323.4,
+            "min": 323,
+            "max": 324
           }
         }
       }
