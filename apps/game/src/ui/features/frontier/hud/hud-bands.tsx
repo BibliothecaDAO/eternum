@@ -45,7 +45,8 @@ export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...ba
 
 const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
-  // A sheet stands on the place bar: its top, from the screen's bottom.
+  // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
+  // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   return (
     <div
@@ -67,8 +68,8 @@ const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, 
         ) : (
           <UnderSheet action={action} dock={dock} />
         )}
-        <div ref={bar} data-keyboard-hides>
-          {nav}
+        <div ref={bar}>
+          <div data-keyboard-hides>{nav}</div>
         </div>
       </div>
       {children}
@@ -130,7 +131,10 @@ const UnderSheet = ({ action, dock }: { action: ReactNode; dock: ReactNode }) =>
   </div>
 );
 
-/** An edge of an element on screen, read again whenever the element or the screen changes size. */
+/**
+ * An edge of an element on screen, read again whenever the element or the screen changes size, the part of it the
+ * player sees (the visual viewport, which an on-screen keyboard shrinks) included.
+ */
 const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) => {
   const [value, setValue] = useState(0);
   const read = useRef(edge);
@@ -144,9 +148,11 @@ const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) =
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     observer?.observe(element);
     window.addEventListener("resize", measure);
+    window.visualViewport?.addEventListener("resize", measure);
     return () => {
       observer?.disconnect();
       window.removeEventListener("resize", measure);
+      window.visualViewport?.removeEventListener("resize", measure);
     };
   }, [ref]);
   return value;

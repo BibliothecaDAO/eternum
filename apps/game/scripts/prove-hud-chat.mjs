@@ -57,7 +57,10 @@
  *   on the app's Chat page (/lab/app/home/chat), Frontier's chat page (/lab/kit/unified/frontier, its place bar's Chat)
  *   and Blitz's compact HUD (/lab/kit/unified/blitz, its Chat tab), the field is focused, the keyboard opens, a message
  *   is typed and sent: the field stays whole above the keyboard with the focus, the message sent shows just above it,
- *   the chat's tabs stay on screen, and the bars for moving between places step aside; the keyboard closed, they are back. `keyboard` as a third
+ *   the chat's tabs stay on screen, and the bars for moving between places step aside; and Frontier's Withdraw sheet
+ *   (/lab/kit/hud/withdraw), upright with that keyboard and sideways (844×390) with a 200 px one: an amount typed, its
+ *   field stands whole above the keyboard, its confirm too once the sheet is scrolled to it, and the keyboard closed,
+ *   the sheet stands where it stood; the keyboard closed, they are back. `keyboard` as a third
  *   argument runs these records alone.
  *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json (the keyboard's to
@@ -1071,6 +1074,65 @@ const pressChatPlace = (selector) => `(() => {
   return true;
 })()`;
 
+/** Frontier's Withdraw sheet, its amount typed with the keyboard open: upright on a phone, and held sideways. */
+const SHEET_PAGES = [
+  { name: "upright", viewport: ["390", "844"], keyboard: KEYBOARD_PX },
+  { name: "sideways", viewport: ["844", "390"], keyboard: 200 },
+];
+const SHEET_FIELD = ".ui-sheet input";
+/** The open sheet as the player sees it: its box, its amount field, its confirm, and what is left of the screen. */
+const SHEET_VIEW = `(() => {
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const sheet = document.querySelector(".ui-sheet");
+  const field = sheet?.querySelector("input") ?? null;
+  return {
+    visible: window.visualViewport.height,
+    sheet: rect(sheet),
+    field: rect(field),
+    focused: field !== null && document.activeElement === field,
+    confirm: rect(sheet?.querySelector('button[type="submit"]') ?? null),
+  };
+})()`;
+const onScreen = (box, visible) => box !== null && box.top >= 0 && box.bottom <= visible && box.height > 0;
+
+const proveSheetKeyboard = async (b, out, record, page) => {
+  const closed = b.evaluate(SHEET_VIEW);
+  const press = clickAsPlayer(b, SHEET_FIELD);
+  record.presses.push({ press: "the amount", status: press === null ? "led" : press });
+  b.evaluate(`window.__keyboard(${page.keyboard})`);
+  await sleep(500);
+  b.run("type", SHEET_FIELD, "100");
+  await sleep(300);
+  const open = b.evaluate(SHEET_VIEW);
+  // The confirm as a player reaches it: the sheet's body scrolled to it, as a finger scrolls it.
+  b.evaluate(
+    `(() => { document.querySelector('.ui-sheet button[type="submit"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+  );
+  await sleep(200);
+  open.confirm = b.evaluate(SHEET_VIEW).confirm;
+  record.measures = { closed, open };
+  record.checks.push(
+    {
+      check: "the amount field stands whole above the keyboard, still focused",
+      ok: onScreen(open.field, open.visible) && open.focused,
+    },
+    {
+      check: "the confirm is in reach: scrolled to in the sheet, whole above the keyboard",
+      ok: onScreen(open.confirm, open.visible),
+    },
+    { check: "the sheet ends above the keyboard, its top on screen", ok: onScreen(open.sheet, open.visible) },
+  );
+  b.run("screenshot", join(out, `keyboard-withdraw-${page.name}.png`));
+  b.evaluate("window.__keyboard(0)");
+  await sleep(500);
+  const after = b.evaluate(SHEET_VIEW);
+  record.measures.after = after;
+  record.checks.push({
+    check: "the keyboard closed, the sheet stands where it stood",
+    ok: after.sheet !== null && closed.sheet !== null && Math.abs(after.sheet.bottom - closed.sheet.bottom) <= 1,
+  });
+};
+
 /** One phone chat with the keyboard: open it, focus the field, open the keyboard, send a message; then close it. */
 const proveKeyboard = async (b, out, record, page) => {
   if (page.open) {
@@ -1352,6 +1414,22 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           "typeof window.__keyboard === 'function'",
         );
         if (record.ready) await proveKeyboard(b, out, record, page);
+      }
+      for (const page of SHEET_PAGES) {
+        const record = {
+          state: `keyboard, Withdraw sheet, ${page.name}, ${page.viewport.join("×")}`,
+          ready: false,
+          presses: [],
+          checks: [],
+        };
+        records.push(record);
+        record.ready = await openApp(
+          b,
+          `${baseUrl}/lab/kit/hud/withdraw?capture=1`,
+          page.viewport,
+          `typeof window.__keyboard === 'function' && document.querySelector(${JSON.stringify(SHEET_FIELD)}) !== null`,
+        );
+        if (record.ready) await proveSheetKeyboard(b, out, record, page);
       }
     },
   );

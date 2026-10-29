@@ -953,7 +953,8 @@ span.ui-row__choose {
 /* ── Sheet: a panel over the stage; on a phone it rises from the place bar, as tall as what it holds and at most the
    phone panel's height, on a desktop it docks under the top bar. It never takes the stage: no backdrop, so the map
    beside or above it still answers a tap (owner, 22 October 2026: mobile direction A; 26 October: panel layout A).
-   `--hud-phone-foot` is the height HudBands keeps for its place bar. ── */
+   `--hud-phone-foot` is the height HudBands keeps for its place bar, or for the on-screen keyboard while the bar
+   steps aside for it. ── */
 .ui-sheet {
   position: fixed;
   inset-inline: theme(spacing.2);
@@ -995,7 +996,8 @@ span.ui-row__choose {
     inset-inline: auto;
     right: max(env(safe-area-inset-right), theme(spacing.2));
     top: var(--hud-sheet-top, theme(spacing.2));
-    bottom: max(env(safe-area-inset-bottom), theme(spacing.2));
+    /* Above the on-screen keyboard while it is open (useKeyboardInset). */
+    bottom: calc(var(--keyboard, 0px) + max(env(safe-area-inset-bottom), theme(spacing.2)));
     width: theme(spacing.hud-column);
     max-height: none;
   }
