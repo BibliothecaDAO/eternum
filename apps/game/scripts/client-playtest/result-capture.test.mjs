@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -63,5 +63,61 @@ describe("proveResultOnScreen", () => {
   it("fails a mark that comes after the screen already showed the result", async () => {
     const proof = await prove({ resultAt: 160 - 3 * FRAME_MS });
     expect(proof).toMatchObject({ shown: false, lagMs: -48, reason: "the screen showed it 48ms before its mark" });
+  });
+});
+
+/**
+ * An explore's frames, cropped to its tile's ground inside the outline (fixtures/explore-reveal): the reviewer's run
+ * where the old proof passed an unexplored tile (review 4), and a whole reveal captured frame by frame.
+ */
+const exploreFrames = (run) => {
+  const dir = new URL(`./fixtures/explore-reveal/${run}/`, import.meta.url);
+  const marks = JSON.parse(readFileSync(new URL("marks.json", dir), "utf8"));
+  const frames = readdirSync(dir)
+    .filter((name) => name.endsWith(".jpg"))
+    .map((name) => ({ t: Number(name.slice(1, -4)), width: 64, jpeg: readFileSync(new URL(name, dir)) }))
+    .sort((left, right) => left.t - right.t);
+  return { frames, marks };
+};
+const ground = { left: 0, top: 0, width: 64, height: 50 };
+const proveExplore = ({ frames, marks }, markedLater = 0) =>
+  proveResultOnScreen({
+    frames,
+    region: ground,
+    target: ground,
+    before: marks.diff,
+    visible: marks.visible + markedLater,
+    frameMs: marks.frameMs,
+    dir,
+  });
+
+describe("proveResultOnScreen on a target's state", () => {
+  it("fails an explore whose tile is still fog three frames after its mark, whatever changed round it", async () => {
+    const proof = await proveExplore(exploreFrames("review-4-desktop-1"));
+    expect(proof).toMatchObject({
+      shown: false,
+      reason: "three frames after its mark its target still read as before",
+    });
+  });
+
+  it("fails a reveal marked when its terrain committed, and holds it marked once half its fog has cleared", async () => {
+    const reveal = exploreFrames("whole-reveal-desktop");
+    expect(await proveExplore(reveal)).toMatchObject({ shown: false });
+    expect(await proveExplore(reveal, 150)).toMatchObject({ shown: true, firstShownAt: 16100 });
+  });
+
+  it("fails a target that never changed", async () => {
+    const frames = await capture({ laterAt: 300 });
+    const proof = await proveResultOnScreen({
+      frames,
+      region,
+      target: { left: 0, top: 0, width: 20, height: 40 },
+      before: 100,
+      visible: 160,
+      frameMs: FRAME_MS,
+      dir,
+    });
+    expect(proof).toMatchObject({ shown: false });
+    expect(proof.reason).toMatch(/never changed/);
   });
 });
