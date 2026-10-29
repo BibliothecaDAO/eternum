@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
+import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
 import { useSideways } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
@@ -45,12 +46,13 @@ export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...ba
 
 const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
-  // A sheet stands on the place bar: its top, from the screen's bottom.
+  // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
+  // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-[var(--keyboard,0px)] z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
     >
       <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
@@ -67,7 +69,9 @@ const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, 
         ) : (
           <UnderSheet action={action} dock={dock} />
         )}
-        <div ref={bar}>{nav}</div>
+        <div ref={bar}>
+          <div data-keyboard-hides>{nav}</div>
+        </div>
       </div>
       {children}
     </div>
@@ -81,7 +85,7 @@ const SidewaysBands = ({ strip, purse, page, nextUp, notices, action, dock, nav,
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-[var(--keyboard,0px)] z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
       <div {...HUD_COLUMN_MARK} className="flex">
@@ -128,11 +132,15 @@ const UnderSheet = ({ action, dock }: { action: ReactNode; dock: ReactNode }) =>
   </div>
 );
 
-/** An edge of an element on screen, read again whenever the element or the screen changes size. */
+/**
+ * An edge of an element on screen, read again whenever the element or the screen changes size, and whenever the
+ * on-screen keyboard does (useKeyboardHeight: the bands end on it, so everything in them moves with it).
+ */
 const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) => {
   const [value, setValue] = useState(0);
   const read = useRef(edge);
   read.current = edge;
+  const keyboard = useKeyboardHeight();
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -146,6 +154,6 @@ const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) =
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [ref]);
+  }, [ref, keyboard]);
   return value;
 };

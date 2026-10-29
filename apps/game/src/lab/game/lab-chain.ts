@@ -165,9 +165,6 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
-    // The game's chat has no messages yet, and the player blocks nobody.
-    if (url.pathname === "/api/chat/world") return json({ messages: [], nextCursor: null });
-    if (url.pathname === "/api/chat/blocks") return json({ blocked: [], version: 0 });
     if (url.pathname === "/api/directory")
       return json({
         shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],

@@ -84,7 +84,13 @@ const PhoneFrame = ({
   stage = false,
   children,
 }: PageFrameProps) => (
-  <div className={stage ? "app-frame h-dvh" : "flex h-dvh flex-col"} data-stage={stage || undefined}>
+  // The page ends where the on-screen keyboard begins (--keyboard), so what is typed and what it answers stay in sight.
+  <div
+    className={
+      stage ? "app-frame h-[calc(100dvh-var(--keyboard,0px))]" : "flex h-[calc(100dvh-var(--keyboard,0px))] flex-col"
+    }
+    data-stage={stage || undefined}
+  >
     {stage && painting && (
       <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
     )}
@@ -114,7 +120,7 @@ const PhoneFrame = ({
       </div>
     ) : null}
     {tabs ? (
-      <div data-band="tabs" className="shrink-0">
+      <div data-band="tabs" data-keyboard-hides className="shrink-0">
         <TabBar />
       </div>
     ) : null}

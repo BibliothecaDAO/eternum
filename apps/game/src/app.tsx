@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
@@ -131,6 +132,7 @@ export const appRoutes = (
  * 3D client and its mode's screens, loads only under `/g/:chain/:game`.
  */
 function App() {
+  useKeyboardInset();
   return (
     <BrowserRouter>
       <QueryClientProvider client={appQueryClient}>

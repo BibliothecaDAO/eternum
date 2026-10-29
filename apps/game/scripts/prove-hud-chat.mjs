@@ -53,8 +53,19 @@
  * - the Frontier phone's Chat page (/lab/kit/hud/chat, 390×844): the page fills the band from the strip to the place
  *   bar, the map band gone behind it, its field above the bar.
  *
- * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
- * check fails.
+ * - a phone's on-screen keyboard (390×844, a 336 px keyboard staged by lib/stage-keyboard.js, in a session of its own):
+ *   on the app's Chat page (/lab/app/home/chat), Frontier's chat page (/lab/kit/unified/frontier, its place bar's Chat)
+ *   and Blitz's compact HUD (/lab/kit/unified/blitz, its Chat tab), the field is focused, the keyboard opens, a message
+ *   is typed and sent: the field stays whole above the keyboard with the focus, the message sent shows just above it,
+ *   the chat's tabs stay on screen, and the bars for moving between places step aside; and Frontier's Withdraw sheet
+ *   (/lab/kit/hud/withdraw), upright with that keyboard (once with the view panned down and back, a scroll alone, as
+ *   iOS Safari pans it) and sideways (844×390) with a 200 px one: an amount typed, its
+ *   field stands whole above the keyboard, its confirm too once the sheet is scrolled to it, and the keyboard closed,
+ *   the sheet stands where it stood; the keyboard closed, they are back. `keyboard` as a third
+ *   argument runs these records alone.
+ *
+ * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json (the keyboard's to
+ * hud-chat-keyboard.json); exits 1 when a check fails.
  */
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -1026,210 +1037,410 @@ const frontierPageChecks = (m) => [
   },
 ];
 
+/** The staged keyboard's height: a phone's, upright (a 390 px wide Android keyboard with its suggestion row). */
+const KEYBOARD_PX = 336;
+const KEYBOARD_SCRIPT = fileURLToPath(new URL("./lib/stage-keyboard.js", import.meta.url));
+/** The phone's three chats: the app's page, Frontier's page from its place bar, Blitz's compact HUD from its tab. */
+const KEYBOARD_PAGES = [
+  { name: "app", path: "/lab/app/home/chat?capture=1", open: null },
+  {
+    name: "frontier",
+    path: "/lab/kit/unified/frontier?capture=1",
+    open: 'nav[aria-label="Places"] button',
+  },
+  { name: "blitz", path: "/lab/kit/unified/blitz?capture=1", open: 'nav[aria-label="HUD tabs"] button' },
+];
+const FIELD = 'input[aria-label="Message"]';
+/** Chat as the player sees it with the keyboard: the field, the last message, what is left of the screen. */
+const KEYBOARD_VIEW = `(() => {
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const shown = (element) => element.getClientRects().length > 0;
+  const field = [...document.querySelectorAll(${JSON.stringify(FIELD)})].find(shown) ?? null;
+  const rows = [...document.querySelectorAll("li[data-message-id]")].filter(shown);
+  return {
+    visible: window.visualViewport.height,
+    field: rect(field),
+    focused: field !== null && document.activeElement === field,
+    last: rect(rows.at(-1)),
+    lastWords: rows.at(-1)?.textContent ?? null,
+    tabs: rect([...document.querySelectorAll('[role="tablist"]')].find(shown) ?? null),
+    // The bars for moving between places, by what they are: the app's tabs, Frontier's places, Blitz's tabs and actions.
+    bars: [...document.querySelectorAll('[data-band="tabs"], nav[aria-label="Places"], nav[aria-label="HUD tabs"], nav[aria-label="Structure actions"]')].filter(shown).length,
+  };
+})()`;
+const pressChatPlace = (selector) => `(() => {
+  const place = [...document.querySelectorAll(${JSON.stringify(selector)})].find((button) => button.textContent.includes("Chat"));
+  if (!place) return false;
+  place.click();
+  return true;
+})()`;
+
+/** Frontier's Withdraw sheet, its amount typed with the keyboard open: upright on a phone, and held sideways. */
+const SHEET_PAGES = [
+  { name: "upright", viewport: ["390", "844"], keyboard: KEYBOARD_PX },
+  // The keyboard opening on a view panned 100 px down the page, which then pans back: the sheet follows the scroll.
+  { name: "upright, panned and back", viewport: ["390", "844"], keyboard: KEYBOARD_PX, pan: 100 },
+  { name: "sideways", viewport: ["844", "390"], keyboard: 200 },
+];
+const SHEET_FIELD = ".ui-sheet input";
+/** The open sheet as the player sees it: its box, its amount field, its confirm, and what is left of the screen. */
+const SHEET_VIEW = `(() => {
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const sheet = document.querySelector(".ui-sheet");
+  const field = sheet?.querySelector("input") ?? null;
+  return {
+    visible: window.visualViewport.height,
+    sheet: rect(sheet),
+    field: rect(field),
+    focused: field !== null && document.activeElement === field,
+    confirm: rect(sheet?.querySelector('button[type="submit"]') ?? null),
+  };
+})()`;
+const onScreen = (box, visible) => box !== null && box.top >= 0 && box.bottom <= visible && box.height > 0;
+
+const proveSheetKeyboard = async (b, out, record, page) => {
+  const closed = b.evaluate(SHEET_VIEW);
+  const press = clickAsPlayer(b, SHEET_FIELD);
+  record.presses.push({ press: "the amount", status: press === null ? "led" : press });
+  // Panned (iOS): the keyboard opens on a view already 100 px down the page, then the view pans back, a scroll alone.
+  if (page.pan) b.evaluate(`window.__pan(${page.pan})`);
+  b.evaluate(`window.__keyboard(${page.keyboard})`);
+  if (page.pan) {
+    await sleep(300);
+    b.evaluate("window.__pan(0)");
+  }
+  await sleep(500);
+  b.run("type", SHEET_FIELD, "100");
+  await sleep(300);
+  const open = b.evaluate(SHEET_VIEW);
+  // The confirm as a player reaches it: the sheet's body scrolled to it, as a finger scrolls it.
+  b.evaluate(
+    `(() => { document.querySelector('.ui-sheet button[type="submit"]')?.scrollIntoView({ block: "nearest" }); return true; })()`,
+  );
+  await sleep(200);
+  open.confirm = b.evaluate(SHEET_VIEW).confirm;
+  record.measures = { closed, open };
+  record.checks.push(
+    {
+      check: "the amount field stands whole above the keyboard, still focused",
+      ok: onScreen(open.field, open.visible) && open.focused,
+    },
+    {
+      check: "the confirm is in reach: scrolled to in the sheet, whole above the keyboard",
+      ok: onScreen(open.confirm, open.visible),
+    },
+    { check: "the sheet ends above the keyboard, its top on screen", ok: onScreen(open.sheet, open.visible) },
+  );
+  b.run("screenshot", join(out, `keyboard-withdraw-${page.name.replaceAll(/[ ,]+/g, "-")}.png`));
+  b.evaluate("window.__keyboard(0)");
+  await sleep(500);
+  const after = b.evaluate(SHEET_VIEW);
+  record.measures.after = after;
+  record.checks.push({
+    check: "the keyboard closed, the sheet stands where it stood",
+    ok: after.sheet !== null && closed.sheet !== null && Math.abs(after.sheet.bottom - closed.sheet.bottom) <= 1,
+  });
+};
+
+/** One phone chat with the keyboard: open it, focus the field, open the keyboard, send a message; then close it. */
+const proveKeyboard = async (b, out, record, page) => {
+  if (page.open) {
+    record.presses.push({ press: "Chat", status: b.evaluate(pressChatPlace(page.open)) ? "led" : "missing" });
+    await waitFor(b, `document.querySelector(${JSON.stringify(FIELD)}) !== null`, READY_MS);
+    await sleep(800);
+  }
+  const press = clickAsPlayer(b, FIELD);
+  record.presses.push({ press: "the field", status: press === null ? "led" : press });
+  b.evaluate(`window.__keyboard(${KEYBOARD_PX})`);
+  await sleep(500);
+  const words = `hold the ${page.name} gate`;
+  b.run("type", FIELD, words);
+  b.run("press", "Enter");
+  await sleep(800);
+  const open = b.evaluate(KEYBOARD_VIEW);
+  record.measures = { open };
+  record.checks.push(
+    {
+      check: "the field stands whole above the keyboard, still focused",
+      ok: open.field !== null && open.field.top >= 0 && open.field.bottom <= open.visible && open.focused,
+    },
+    {
+      check: "the message sent shows above the field, above the keyboard",
+      ok:
+        open.last !== null &&
+        open.field !== null &&
+        open.lastWords?.includes(words) === true &&
+        open.last.top >= 0 &&
+        open.last.bottom <= open.visible &&
+        open.last.bottom <= open.field.top + 1,
+    },
+    { check: "the chat's tabs stay on screen above it", ok: open.tabs !== null && open.tabs.top >= 0 },
+    { check: "the bars for moving between places step aside", ok: open.bars === 0 },
+  );
+  b.run("screenshot", join(out, `keyboard-${page.name}.png`));
+  b.evaluate("window.__keyboard(0)");
+  await sleep(500);
+  const closed = b.evaluate(KEYBOARD_VIEW);
+  record.measures.closed = closed;
+  record.checks.push({
+    check: "the keyboard closed, the bars are back and the field at the foot again",
+    ok: closed.bars > 0 && closed.field !== null && closed.field.bottom > open.field.bottom,
+  });
+};
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
+  const keyboardOnly = process.argv[4] === "keyboard";
+  if (!keyboardOnly)
+    await runProof(
+      {
+        parent: resolve(process.argv[3] ?? ".context/hud-chat"),
+        name: "hud-chat",
+        baseUrl,
+        where: (record) => ({ state: record.state }),
+      },
+      async (b, out, records) => {
+        const pane = { state: "open, 1440×900", ready: false, presses: [], checks: [] };
+        records.push(pane);
+        pane.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, ["1440", "900"]);
+        if (pane.ready) {
+          const before = b.evaluate(OPEN);
+          b.evaluate(`(() => { const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+          const scroller = pane && [...pane.querySelectorAll("*")].find((element) => /(auto|scroll)/.test(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
+          if (scroller) scroller.scrollTop = 0; return true; })()`);
+          await sleep(300);
+          const after = b.evaluate(OPEN);
+          pane.measures = { before, after };
+          pane.checks.push(...openChecks(before, after));
+          b.run("screenshot", join(out, "chat-open.png"));
+        }
+
+        for (const [viewport, phone] of [
+          [["1440", "900"], false],
+          [["390", "844"], true],
+        ]) {
+          const mention = { state: `mentions, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+          records.push(mention);
+          mention.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+          if (mention.ready) await proveMentions(b, out, mention, phone);
+        }
+
+        for (const [viewport, phone] of [
+          [["1440", "900"], false],
+          [["390", "844"], true],
+        ]) {
+          const places = { state: `places, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+          records.push(places);
+          places.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+          if (places.ready) await provePlaces(b, out, places, phone);
+        }
+
+        for (const [viewport, phone] of [
+          [["1440", "900"], false],
+          [["390", "844"], true],
+        ]) {
+          const card = { state: `player card, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+          records.push(card);
+          card.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+          if (card.ready) await proveCard(b, out, card, phone);
+        }
+
+        const strip = { state: "closed, 1440×900", ready: false, presses: [], checks: [] };
+        records.push(strip);
+        strip.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed`, ["1440", "900"]);
+        if (strip.ready) {
+          strip.measures = b.evaluate(STRIP);
+          strip.checks.push(...stripChecks(strip.measures));
+          b.run("screenshot", join(out, "chat-strip.png"));
+        }
+
+        for (const viewport of [
+          ["1440", "900"],
+          ["390", "844"],
+        ]) {
+          await proveOpening(b, out, records, baseUrl, viewport);
+        }
+
+        for (const viewport of RAIL_OPEN_SIZES) {
+          const size = viewport.join("×");
+          const rail = { state: `rail, chat open, ${size}`, ready: false, presses: [], checks: [] };
+          records.push(rail);
+          rail.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, viewport);
+          if (rail.ready) {
+            rail.measures = b.evaluate(RAIL);
+            rail.measures.reach = b.evaluate(REACH);
+            rail.checks.push(...railOpenChecks(rail.measures), ...reachChecks(rail.measures.reach));
+            b.run("screenshot", join(out, `rail-open-${size}.png`));
+            rail.measures.wheel = turnWheelOver(b);
+            rail.checks.push(...wheelChecks(rail.measures.wheel));
+          }
+        }
+
+        // One page, chat open, made shorter: the rail's structure, not where the page opened, keeps the chat's foot in.
+        const resized = { state: "rail, chat open, 1440×900", ready: false, presses: [], checks: [] };
+        resized.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, ["1440", "900"]);
+        for (const height of RAIL_RESIZE_HEIGHTS) {
+          const size = `1440×${height}`;
+          const step = {
+            state: `rail, chat open, resized from 1440×900 to ${size}`,
+            ready: false,
+            presses: [],
+            checks: [],
+          };
+          records.push(step);
+          if (!resized.ready) continue;
+          b.run("set", "viewport", "1440", height);
+          await sleep(SETTLE_MS);
+          step.ready = true;
+          step.measures = b.evaluate(RAIL);
+          step.measures.reach = b.evaluate(REACH);
+          step.checks.push(...railOpenChecks(step.measures), ...reachChecks(step.measures.reach));
+          b.run("screenshot", join(out, `rail-resized-${size}.png`));
+          step.measures.wheel = turnWheelOver(b);
+          step.checks.push(...wheelChecks(step.measures.wheel));
+        }
+
+        for (const viewport of RAIL_CLOSED_SIZES) {
+          const size = viewport.join("×");
+          const closed = { state: `rail, chat closed, ${size}`, ready: false, presses: [], checks: [] };
+          records.push(closed);
+          closed.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail&chat=closed`, viewport);
+          if (closed.ready) {
+            closed.measures = b.evaluate(RAIL);
+            closed.measures.reach = b.evaluate(REACH);
+            closed.checks.push(
+              ...detailsChecks(closed.measures),
+              ...tagChecks(closed.measures),
+              ...reachChecks(closed.measures.reach),
+            );
+            b.run("screenshot", join(out, `rail-closed-${size}.png`));
+          }
+        }
+
+        const appPane = { state: "app, Chat pane, 1440×900", ready: false, presses: [], checks: [] };
+        records.push(appPane);
+        appPane.ready = await openApp(
+          b,
+          `${baseUrl}/lab/app/home?capture=1`,
+          ["1440", "900"],
+          `document.querySelector('${APP_CHAT_PLACE}') !== null`,
+        );
+        if (appPane.ready) await proveAppPane(b, out, appPane);
+
+        const phonePage = { state: "app, Chat page, 390×844", ready: false, presses: [], checks: [] };
+        records.push(phonePage);
+        phonePage.ready = await openApp(
+          b,
+          `${baseUrl}/lab/app/home/chat?capture=1`,
+          ["390", "844"],
+          `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+        );
+        if (phonePage.ready) await proveAppPhonePage(b, out, phonePage);
+
+        // The same page, its window grown to a desktop's: the page stays Chat's, one chat.
+        const grown = { state: "app, Chat page, 390×844 grown to 1440×900", ready: false, presses: [], checks: [] };
+        records.push(grown);
+        if (phonePage.ready) {
+          b.run("set", "viewport", "1440", "900");
+          grown.ready = await waitFor(b, `document.querySelector('[data-band="bar"]') !== null`, READY_MS);
+          await sleep(SETTLE_MS);
+          if (grown.ready) proveDesktopChatPage(b, out, grown, "app-chat-page-grown-desktop.png");
+        }
+
+        const desktopPage = { state: "app, Chat page, 1440×900", ready: false, presses: [], checks: [] };
+        records.push(desktopPage);
+        desktopPage.ready = await openApp(
+          b,
+          `${baseUrl}/lab/app/home/chat?capture=1`,
+          ["1440", "900"],
+          `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+        );
+        if (desktopPage.ready) proveDesktopChatPage(b, out, desktopPage, "app-chat-page-desktop.png");
+
+        for (const [viewport, phone] of [
+          [["1440", "900"], false],
+          [["390", "844"], true],
+        ]) {
+          const lobby = {
+            state: `app, Blitz lobby chat, ${viewport.join("×")}`,
+            ready: false,
+            presses: [],
+            checks: [],
+          };
+          records.push(lobby);
+          lobby.ready = await openApp(
+            b,
+            `${baseUrl}${LOBBY}`,
+            viewport,
+            `document.querySelector('section[aria-label="Chat"] li[data-message-id]') !== null`,
+          );
+          if (lobby.ready) await proveLobbyChat(b, out, lobby, phone);
+        }
+
+        const frontier = { state: "Frontier phone, Chat page, 390×844", ready: false, presses: [], checks: [] };
+        records.push(frontier);
+        frontier.ready = await openApp(
+          b,
+          `${baseUrl}/lab/kit/hud/chat?capture=1`,
+          ["390", "844"],
+          `document.querySelector("[data-page-fills]") !== null`,
+        );
+        if (frontier.ready) {
+          frontier.measures = b.evaluate(FRONTIER_PAGE);
+          frontier.checks.push(...frontierPageChecks(frontier.measures));
+          b.run("screenshot", join(out, "frontier-chat-page-phone.png"));
+        }
+
+        const folded = { state: "closed and folded, 390×844", ready: false, presses: [], checks: [] };
+        records.push(folded);
+        folded.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed&fold=1`, ["390", "844"]);
+        if (folded.ready) {
+          folded.measures = b.evaluate(STRIP);
+          folded.checks.push(...foldedChecks(folded.measures));
+          b.run("screenshot", join(out, "chat-strip-folded.png"));
+        }
+      },
+    );
+
+  // The keyboard's records, in a session of their own: its stand-in for the visual viewport touches no other record.
+  const before = process.exitCode;
+  process.env.AGENT_BROWSER_INIT_SCRIPTS = KEYBOARD_SCRIPT;
   await runProof(
     {
       parent: resolve(process.argv[3] ?? ".context/hud-chat"),
-      name: "hud-chat",
+      name: "hud-chat-keyboard",
       baseUrl,
       where: (record) => ({ state: record.state }),
     },
     async (b, out, records) => {
-      const pane = { state: "open, 1440×900", ready: false, presses: [], checks: [] };
-      records.push(pane);
-      pane.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, ["1440", "900"]);
-      if (pane.ready) {
-        const before = b.evaluate(OPEN);
-        b.evaluate(`(() => { const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
-          const scroller = pane && [...pane.querySelectorAll("*")].find((element) => /(auto|scroll)/.test(getComputedStyle(element).overflowY) && element.scrollHeight > element.clientHeight + 1);
-          if (scroller) scroller.scrollTop = 0; return true; })()`);
-        await sleep(300);
-        const after = b.evaluate(OPEN);
-        pane.measures = { before, after };
-        pane.checks.push(...openChecks(before, after));
-        b.run("screenshot", join(out, "chat-open.png"));
+      for (const page of KEYBOARD_PAGES) {
+        const record = { state: `keyboard, ${page.name}, 390×844`, ready: false, presses: [], checks: [] };
+        records.push(record);
+        record.ready = await openApp(
+          b,
+          `${baseUrl}${page.path}`,
+          ["390", "844"],
+          "typeof window.__keyboard === 'function'",
+        );
+        if (record.ready) await proveKeyboard(b, out, record, page);
       }
-
-      for (const [viewport, phone] of [
-        [["1440", "900"], false],
-        [["390", "844"], true],
-      ]) {
-        const mention = { state: `mentions, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
-        records.push(mention);
-        mention.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
-        if (mention.ready) await proveMentions(b, out, mention, phone);
-      }
-
-      for (const [viewport, phone] of [
-        [["1440", "900"], false],
-        [["390", "844"], true],
-      ]) {
-        const places = { state: `places, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
-        records.push(places);
-        places.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
-        if (places.ready) await provePlaces(b, out, places, phone);
-      }
-
-      for (const [viewport, phone] of [
-        [["1440", "900"], false],
-        [["390", "844"], true],
-      ]) {
-        const card = { state: `player card, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
-        records.push(card);
-        card.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
-        if (card.ready) await proveCard(b, out, card, phone);
-      }
-
-      const strip = { state: "closed, 1440×900", ready: false, presses: [], checks: [] };
-      records.push(strip);
-      strip.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed`, ["1440", "900"]);
-      if (strip.ready) {
-        strip.measures = b.evaluate(STRIP);
-        strip.checks.push(...stripChecks(strip.measures));
-        b.run("screenshot", join(out, "chat-strip.png"));
-      }
-
-      for (const viewport of [
-        ["1440", "900"],
-        ["390", "844"],
-      ]) {
-        await proveOpening(b, out, records, baseUrl, viewport);
-      }
-
-      for (const viewport of RAIL_OPEN_SIZES) {
-        const size = viewport.join("×");
-        const rail = { state: `rail, chat open, ${size}`, ready: false, presses: [], checks: [] };
-        records.push(rail);
-        rail.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, viewport);
-        if (rail.ready) {
-          rail.measures = b.evaluate(RAIL);
-          rail.measures.reach = b.evaluate(REACH);
-          rail.checks.push(...railOpenChecks(rail.measures), ...reachChecks(rail.measures.reach));
-          b.run("screenshot", join(out, `rail-open-${size}.png`));
-          rail.measures.wheel = turnWheelOver(b);
-          rail.checks.push(...wheelChecks(rail.measures.wheel));
-        }
-      }
-
-      // One page, chat open, made shorter: the rail's structure, not where the page opened, keeps the chat's foot in.
-      const resized = { state: "rail, chat open, 1440×900", ready: false, presses: [], checks: [] };
-      resized.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail`, ["1440", "900"]);
-      for (const height of RAIL_RESIZE_HEIGHTS) {
-        const size = `1440×${height}`;
-        const step = {
-          state: `rail, chat open, resized from 1440×900 to ${size}`,
+      for (const page of SHEET_PAGES) {
+        const record = {
+          state: `keyboard, Withdraw sheet, ${page.name}, ${page.viewport.join("×")}`,
           ready: false,
           presses: [],
           checks: [],
         };
-        records.push(step);
-        if (!resized.ready) continue;
-        b.run("set", "viewport", "1440", height);
-        await sleep(SETTLE_MS);
-        step.ready = true;
-        step.measures = b.evaluate(RAIL);
-        step.measures.reach = b.evaluate(REACH);
-        step.checks.push(...railOpenChecks(step.measures), ...reachChecks(step.measures.reach));
-        b.run("screenshot", join(out, `rail-resized-${size}.png`));
-        step.measures.wheel = turnWheelOver(b);
-        step.checks.push(...wheelChecks(step.measures.wheel));
-      }
-
-      for (const viewport of RAIL_CLOSED_SIZES) {
-        const size = viewport.join("×");
-        const closed = { state: `rail, chat closed, ${size}`, ready: false, presses: [], checks: [] };
-        records.push(closed);
-        closed.ready = await open(b, `${baseUrl}/lab/kit/chat?state=rail&chat=closed`, viewport);
-        if (closed.ready) {
-          closed.measures = b.evaluate(RAIL);
-          closed.measures.reach = b.evaluate(REACH);
-          closed.checks.push(
-            ...detailsChecks(closed.measures),
-            ...tagChecks(closed.measures),
-            ...reachChecks(closed.measures.reach),
-          );
-          b.run("screenshot", join(out, `rail-closed-${size}.png`));
-        }
-      }
-
-      const appPane = { state: "app, Chat pane, 1440×900", ready: false, presses: [], checks: [] };
-      records.push(appPane);
-      appPane.ready = await openApp(
-        b,
-        `${baseUrl}/lab/app/home?capture=1`,
-        ["1440", "900"],
-        `document.querySelector('${APP_CHAT_PLACE}') !== null`,
-      );
-      if (appPane.ready) await proveAppPane(b, out, appPane);
-
-      const phonePage = { state: "app, Chat page, 390×844", ready: false, presses: [], checks: [] };
-      records.push(phonePage);
-      phonePage.ready = await openApp(
-        b,
-        `${baseUrl}/lab/app/home/chat?capture=1`,
-        ["390", "844"],
-        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
-      );
-      if (phonePage.ready) await proveAppPhonePage(b, out, phonePage);
-
-      // The same page, its window grown to a desktop's: the page stays Chat's, one chat.
-      const grown = { state: "app, Chat page, 390×844 grown to 1440×900", ready: false, presses: [], checks: [] };
-      records.push(grown);
-      if (phonePage.ready) {
-        b.run("set", "viewport", "1440", "900");
-        grown.ready = await waitFor(b, `document.querySelector('[data-band="bar"]') !== null`, READY_MS);
-        await sleep(SETTLE_MS);
-        if (grown.ready) proveDesktopChatPage(b, out, grown, "app-chat-page-grown-desktop.png");
-      }
-
-      const desktopPage = { state: "app, Chat page, 1440×900", ready: false, presses: [], checks: [] };
-      records.push(desktopPage);
-      desktopPage.ready = await openApp(
-        b,
-        `${baseUrl}/lab/app/home/chat?capture=1`,
-        ["1440", "900"],
-        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
-      );
-      if (desktopPage.ready) proveDesktopChatPage(b, out, desktopPage, "app-chat-page-desktop.png");
-
-      for (const [viewport, phone] of [
-        [["1440", "900"], false],
-        [["390", "844"], true],
-      ]) {
-        const lobby = { state: `app, Blitz lobby chat, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
-        records.push(lobby);
-        lobby.ready = await openApp(
+        records.push(record);
+        record.ready = await openApp(
           b,
-          `${baseUrl}${LOBBY}`,
-          viewport,
-          `document.querySelector('section[aria-label="Chat"] li[data-message-id]') !== null`,
+          `${baseUrl}/lab/kit/hud/withdraw?capture=1`,
+          page.viewport,
+          `typeof window.__keyboard === 'function' && document.querySelector(${JSON.stringify(SHEET_FIELD)}) !== null`,
         );
-        if (lobby.ready) await proveLobbyChat(b, out, lobby, phone);
-      }
-
-      const frontier = { state: "Frontier phone, Chat page, 390×844", ready: false, presses: [], checks: [] };
-      records.push(frontier);
-      frontier.ready = await openApp(
-        b,
-        `${baseUrl}/lab/kit/hud/chat?capture=1`,
-        ["390", "844"],
-        `document.querySelector("[data-page-fills]") !== null`,
-      );
-      if (frontier.ready) {
-        frontier.measures = b.evaluate(FRONTIER_PAGE);
-        frontier.checks.push(...frontierPageChecks(frontier.measures));
-        b.run("screenshot", join(out, "frontier-chat-page-phone.png"));
-      }
-
-      const folded = { state: "closed and folded, 390×844", ready: false, presses: [], checks: [] };
-      records.push(folded);
-      folded.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed&fold=1`, ["390", "844"]);
-      if (folded.ready) {
-        folded.measures = b.evaluate(STRIP);
-        folded.checks.push(...foldedChecks(folded.measures));
-        b.run("screenshot", join(out, "chat-strip-folded.png"));
+        if (record.ready) await proveSheetKeyboard(b, out, record, page);
       }
     },
   );
+  if (before) process.exitCode = before;
 }
