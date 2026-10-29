@@ -741,6 +741,10 @@ export const CHAT_WORDS = {
   /** Asked before a link off Realms' own sites opens: its whole address, then Cancel or Open. */
   leavingRealms: "Leaving Realms",
   open: "Open",
+  /** Beside the field: the place selected on the map goes with the message. */
+  sharePlace: "Share the selected place",
+  /** Over the field while a place goes with the message: take it off. */
+  removePlace: "Take the place off",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

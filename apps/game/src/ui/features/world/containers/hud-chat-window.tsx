@@ -5,6 +5,7 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
 import {
+  GameChatMap,
   RealtimeChatShell,
   type InitializeRealtimeClientParams,
   useRealtimeChatInitializer,
@@ -13,6 +14,7 @@ import {
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { directUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
+import { messageWords } from "@/ui/features/social/realtime-chat/model/place";
 import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -93,7 +95,7 @@ export function useGameChat(open: boolean) {
     history,
     last:
       lastMessage &&
-      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`,
+      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastMessage.metadata)}`,
   });
   return { status, initializer, requestSignIn, rooms, unread, stripLine };
 }
@@ -186,7 +188,9 @@ export function HudChatWindow({
             // The chat shell pads its own tabs, history and composer.
             bodyClassName="flex min-h-0 flex-1 flex-col p-0"
           >
-            <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+            <GameChatMap>
+              <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+            </GameChatMap>
           </HudPanel>
         </div>
       )}

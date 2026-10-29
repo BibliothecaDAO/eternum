@@ -1,8 +1,12 @@
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { useGame } from "@/hooks/context/game-context";
+import { useUIStore } from "@/hooks/store/use-ui-store";
+import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { placeMetadata, sharedPlaceOf } from "@/ui/features/social/realtime-chat/model/place";
 import { replyMetadata } from "@/ui/features/social/realtime-chat/model/reply";
+
 import { useRealtimeChatStore } from "@/ui/features/social/realtime-chat/model/store";
 import type {
   DirectMessage,
@@ -54,7 +58,9 @@ export const ChatLab = () => {
         {ready && (
           <TileGame tile="army">
             <RoomPlayers>
-              <HudChatWindow open={open} onOpenChange={setOpen} foldToIcon={params.get("fold") === "1"} />
+              <LabPlaces select>
+                <HudChatWindow open={open} onOpenChange={setOpen} foldToIcon={params.get("fold") === "1"} />
+              </LabPlaces>
             </RoomPlayers>
           </TileGame>
         )}
@@ -78,6 +84,33 @@ const RoomPlayers = ({ children }: { children: ReactNode }) => {
   return children;
 };
 
+/**
+ * Places in the room, as sharing makes them: message 32 carries the lab game's realm (sharedPlaceOf on its store, as the
+ * place button reads it), message 31 an army since gone, struck through. With `select`, the realm stands selected on the
+ * map, so the place button shares it; the rail keeps its picked army's tile.
+ */
+const LabPlaces = ({ select = false, children }: { select?: boolean; children: ReactNode }) => {
+  const { store } = useGame().setup;
+  useState(() => {
+    const realm = sharedPlaceOf(store, 1, LAB_REALM, getBlockTimestamp().currentBlockTimestamp);
+    const gone = { kind: "army" as const, entityId: 999, name: "Iron Wardens", icon: "knight-t2" as const, at: 0 };
+    useRealtimeChatStore.setState((state) => {
+      const zone = state.worldZones[GLOBAL_CHAT_CHANNEL_ID];
+      if (!zone || !realm) return state;
+      const placed: Record<string, object> = { "lab-31": placeMetadata(gone), "lab-32": placeMetadata(realm) };
+      const messages = zone.messages.map((message) =>
+        placed[message.id] ? { ...message, metadata: { ...message.metadata, ...placed[message.id] } } : message,
+      );
+      return { worldZones: { ...state.worldZones, [GLOBAL_CHAT_CHANNEL_ID]: { ...zone, messages } } };
+    });
+    if (select) useUIStore.getState().selectOnMap(LAB_REALM);
+  });
+  return children;
+};
+
+/** The lab game's realm, as the map selects it. */
+const LAB_REALM = { kind: "structure" as const, entityId: 7 };
+
 const noop = () => undefined;
 
 /**
@@ -88,7 +121,9 @@ const noop = () => undefined;
 const RailLab = ({ chatOpen }: { chatOpen: boolean }) => (
   <TileGame tile="army">
     <RoomPlayers>
-      <RailStage chatOpen={chatOpen} />
+      <LabPlaces>
+        <RailStage chatOpen={chatOpen} />
+      </LabPlaces>
     </RoomPlayers>
   </TileGame>
 );
@@ -133,6 +168,8 @@ const ROOM_PLAYERS = Object.keys(LAB_SEAT_PROFILES);
  * Realms that asks first), a reply to the message before it, a mention of another player and one of the lab's own.
  */
 const MENTIONS: Record<number, string> = {
+  31: "yesterday's army is gone:",
+  32: "meet me at",
   33: "sent 1,200 knights at the ruin, 3,046 left at home",
   34: "the rules: https://docs.realms.party/frontier/expedition and my run https://www.youtube.com/watch?v=ruin-run",
   35: "the camps and rifts, that is where the labor is",
@@ -282,7 +319,8 @@ function installLabRoom(view: string | null): true {
       loadWorldHistory: () => Promise.resolve(),
       loadDirectHistory: () => Promise.resolve(),
       // What the lab's player sends comes back from the room as the room broadcasts it.
-      sendWorldMessage: async (zoneId, { content }) => actions.receiveWorldMessage(zoneId, ownMessage(zoneId, content)),
+      sendWorldMessage: async (zoneId, { content, metadata }) =>
+        actions.receiveWorldMessage(zoneId, ownMessage(zoneId, content, metadata)),
     },
   });
   const { actions: lab } = useRealtimeChatStore.getState();
@@ -292,11 +330,12 @@ function installLabRoom(view: string | null): true {
 }
 
 let sent = 0;
-const ownMessage = (zoneId: string, content: string) =>
+const ownMessage = (zoneId: string, content: string, metadata?: Readonly<Record<string, unknown>>) =>
   ({
     id: `lab-sent-${(sent += 1)}`,
     zoneId,
     sender: { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name },
     content,
+    ...(metadata ? { metadata } : {}),
     createdAt: new Date().toISOString(),
   }) as WorldChatMessage;

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -29,6 +29,7 @@ vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => vi.fn() }));
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
+  GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
 
 const { readExpeditionRules } = await import("@bibliothecadao/eternum");

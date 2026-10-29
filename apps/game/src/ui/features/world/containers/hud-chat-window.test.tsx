@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -24,6 +24,7 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => ({
 }));
 vi.mock("@/ui/features/social", () => ({
   RealtimeChatShell: () => <input aria-label="Message" />,
+  GameChatMap: ({ children }: { children: ReactNode }) => children,
   useRealtimeChatInitializer: () => {},
   useRealtimeChatSelector: (select: (state: unknown) => unknown) =>
     select({

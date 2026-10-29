@@ -13,7 +13,9 @@ import {
 import { receiptDue } from "../../model/direct-unread";
 import type { DirectMessage } from "../../model/types";
 import { computeDateSeparators, startsRun } from "../../model/message-grouping";
+import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
+import { PlaceChip } from "../shared/chat-map";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useLinkOpener } from "../shared/leaving-realms";
@@ -161,6 +163,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
               <ul className="flex flex-col">
                 {thread.messages.map((message, index) => {
                   const reply = replyOf(message.metadata);
+                  const place = placeOf(message.metadata);
                   const previous = thread.messages[index - 1];
                   const run = startsRun(previous, {
                     senderId: message.senderId,
@@ -199,7 +202,15 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
                         lit={quoted.lit === message.id}
                         onReply={() => setReplying(message)}
                       >
-                        <MessageText content={message.content} names={NO_NAMES} me={null} onLink={links.open} />
+                        {place?.name !== message.content.trim() && (
+                          <MessageText content={message.content} names={NO_NAMES} me={null} onLink={links.open} />
+                        )}
+                        {place && (
+                          <>
+                            {" "}
+                            <PlaceChip place={place} />
+                          </>
+                        )}
                       </MessageRow>
                     </Fragment>
                   );
@@ -220,14 +231,13 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
         )}
       </div>
       <MessageComposer
-        onSend={async (value) => {
+        onSend={async (value, place) => {
           if (!recipientId) return;
-          await sendMessage(
-            value,
-            replying
-              ? replyMetadata({ id: replying.id, playerId: replying.senderId, content: replying.content })
-              : undefined,
-          );
+          const metadata = {
+            ...(replying && replyMetadata({ id: replying.id, playerId: replying.senderId, content: replying.content })),
+            ...(place && placeMetadata(place)),
+          };
+          await sendMessage(value, Object.keys(metadata).length > 0 ? metadata : undefined);
           setReplying(null);
         }}
         placeholder={`${CHAT_WORDS.message} ${recipientLabel ?? ""}`.trim()}

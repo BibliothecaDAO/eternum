@@ -1,6 +1,6 @@
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import { SIGN_IN } from "@/ui/design-system/kit/words";
-import { RealtimeChatShell } from "@/ui/features/social";
+import { GameChatMap, RealtimeChatShell } from "@/ui/features/social";
 import type { ChatRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import type { RefObject } from "react";
 
@@ -27,7 +27,9 @@ export const ChatPage = ({
       bodyClassName="flex min-h-0 flex-1 flex-col p-0"
     >
       {signedIn ? (
-        <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+        <GameChatMap>
+          <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+        </GameChatMap>
       ) : (
         <div className="flex flex-1 items-center justify-center p-4">
           <HudButton kind="primary" onClick={onSignIn}>

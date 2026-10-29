@@ -13,7 +13,9 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { WorldChatMessage } from "../../model/types";
 import { computeDateSeparators, startsRun } from "../../model/message-grouping";
+import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
+import { PlaceChip } from "../shared/chat-map";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useChatMentions } from "../../hooks/use-chat-mentions";
@@ -143,6 +145,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                   const senderId = message.sender.playerId;
                   const senderName = formatSenderName(names, senderId, message.sender.displayName);
                   const reply = replyOf(message.metadata);
+                  const place = placeOf(message.metadata);
                   const previous = messages[index - 1];
                   const run = startsRun(
                     previous && { senderId: previous.sender.playerId, createdAt: previous.createdAt },
@@ -183,12 +186,20 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                         lit={quoted.lit === message.id}
                         onReply={() => setReplying(message)}
                       >
-                        <MessageText
-                          content={message.content}
-                          names={mentionable.names}
-                          me={mentionable.me}
-                          onLink={links.open}
-                        />
+                        {place?.name !== message.content.trim() && (
+                          <MessageText
+                            content={message.content}
+                            names={mentionable.names}
+                            me={mentionable.me}
+                            onLink={links.open}
+                          />
+                        )}
+                        {place && (
+                          <>
+                            {" "}
+                            <PlaceChip place={place} />
+                          </>
+                        )}
                       </MessageRow>
                     </Fragment>
                   );
@@ -203,12 +214,18 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
         )}
       </div>
       <MessageComposer
-        onSend={async (value) => {
+        onSend={async (value, place) => {
           if (!resolvedZoneId) return;
-          const metadata = replying
-            ? replyMetadata({ id: replying.id, playerId: replying.sender.playerId, content: replying.content })
-            : undefined;
-          await sendMessage({ content: value, zoneId: resolvedZoneId, ...(metadata ? { metadata } : {}) });
+          const metadata = {
+            ...(replying &&
+              replyMetadata({ id: replying.id, playerId: replying.sender.playerId, content: replying.content })),
+            ...(place && placeMetadata(place)),
+          };
+          await sendMessage({
+            content: value,
+            zoneId: resolvedZoneId,
+            ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
+          });
           setReplying(null);
         }}
         placeholder={`${CHAT_WORDS.message} ${name}`}

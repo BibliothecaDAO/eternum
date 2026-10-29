@@ -3,9 +3,13 @@ import { HudButton, HudField, HudIconButton, HudMenu, menuOptionId } from "@/ui/
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import type { MentionablePlayer } from "../../hooks/use-chat-mentions";
 import { insertMention, mentionChoices, typedMention } from "../../model/mentions";
+import type { SharedPlace } from "../../model/place";
+import { PlaceChip } from "./chat-map";
+import { useChatMap } from "./use-chat-map";
 
 interface MessageComposerProps {
-  onSend(message: string): Promise<void> | void;
+  /** Sends the words, and the place that goes with them. A place sent with no words is written as its name. */
+  onSend(message: string, place: SharedPlace | null): Promise<void> | void;
   placeholder?: string;
   disabled?: boolean;
   isSending?: boolean;
@@ -84,10 +88,14 @@ export function MessageComposer({
     }
   };
 
+  // Where there is a map (in a game), the place selected on it can go with the message.
+  const map = useChatMap();
+  const [place, setPlace] = useState<SharedPlace | null>(null);
+
   const handleSubmit = useCallback(
     async (event: FormEvent<HTMLFormElement>) => {
       event.preventDefault();
-      const value = draft.trim();
+      const value = draft.trim() || (place?.name ?? "");
       if (value.length < minLength) {
         return;
       }
@@ -95,13 +103,14 @@ export function MessageComposer({
         return;
       }
       try {
-        await onSend(value);
+        await onSend(value, place);
         resetDraft();
+        setPlace(null);
       } catch (sendError) {
         console.error("Failed to send message:", sendError);
       }
     },
-    [draft, maxLength, minLength, onSend, resetDraft],
+    [draft, maxLength, minLength, onSend, place, resetDraft],
   );
 
   return (
@@ -119,7 +128,31 @@ export function MessageComposer({
           />
         </div>
       )}
+      {place && (
+        <div className="flex min-w-0 items-center gap-1.5 px-1">
+          <PlaceChip place={place} />
+          <HudIconButton
+            icon="close"
+            label={CHAT_WORDS.removePlace}
+            kind="quiet"
+            size="sm"
+            onClick={() => setPlace(null)}
+          />
+        </div>
+      )}
       <div className="flex space-x-1.5 relative">
+        {map && (
+          <HudIconButton
+            icon="location"
+            label={CHAT_WORDS.sharePlace}
+            kind="quiet"
+            disabled={!map.selected || disabled}
+            onClick={() => {
+              setPlace(map.selected);
+              inputRef.current?.focus();
+            }}
+          />
+        )}
         <HudField
           ref={inputRef}
           type="text"

@@ -31,6 +31,11 @@
  *
  *   pnpm --dir apps/game prove:chat <base-url> <out-dir>
  *
+ * - places, at 1440×900 and on a phone (390×844), in the open pane: the room's places are chips, painted; the lab realm
+ *   shared today opens and the army gone since is struck through and opens nothing; the place button shares the realm
+ *   selected on the map, over the field, and the message sent comes back carrying it as a chip that opens. (Opening one
+ *   moves the game's route, which the lab has not; the chat's tests press it.)
+ *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
  * check fails.
  */
@@ -464,6 +469,78 @@ const proveMentions = async (b, out, record, phone) => {
   b.run("screenshot", join(out, `mentions-sent-${tag}.png`));
 };
 
+/** The pane's places: each chip in the history, the place button, and the place over the field. */
+const PLACES = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const chip = (element) => {
+    const image = element.querySelector("img");
+    return {
+      name: element.getAttribute("data-place"),
+      struck: getComputedStyle(element).textDecorationLine.includes("line-through"),
+      opens: !(element.querySelector("button")?.disabled ?? true),
+      painted: Boolean(image && image.complete && image.naturalWidth > 0),
+    };
+  };
+  const share = pane?.querySelector('button[aria-label="Share the selected place"]');
+  const picked = pane?.querySelector("form [data-place]");
+  const last = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].at(-1);
+  const lastChip = last?.querySelector("[data-place]");
+  return {
+    chips: [...(pane?.querySelectorAll("li[data-message-id] [data-place]") ?? [])].map(chip),
+    share: share ? { enabled: !share.disabled } : null,
+    picked: picked ? chip(picked) : null,
+    last: last ? { words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null, chip: lastChip ? chip(lastChip) : null } : null,
+  };
+})()`;
+
+/** Places on one device: the history's chips read, the selected realm shared over the field, and the message sent. */
+const provePlaces = async (b, out, record, phone) => {
+  const tag = phone ? "phone" : "desktop";
+  record.measures = { history: b.evaluate(PLACES) };
+  const { chips, share } = record.measures.history;
+  const today = chips.find((chip) => chip.opens);
+  record.checks.push(
+    {
+      check: "the room's places are chips, each painted",
+      ok: chips.length >= 2 && chips.every((chip) => chip.painted),
+    },
+    { check: "a place shared today opens, and is not struck through", ok: Boolean(today) && !today.struck },
+    {
+      check: "the army gone since is struck through and opens nothing",
+      ok: chips.some((chip) => chip.name === "Iron Wardens" && chip.struck && !chip.opens),
+    },
+    { check: "the place button can share the realm selected on the map", ok: share?.enabled === true },
+  );
+  b.run("screenshot", join(out, `places-history-${tag}.png`));
+
+  const pressed = clickAsPlayer(b, '[data-lab="chat"] button[aria-label="Share the selected place"]');
+  record.presses.push({ press: "the place button", status: pressed ?? "led" });
+  await sleep(300);
+  record.measures.picked = b.evaluate(PLACES).picked;
+  record.checks.push({
+    check: "the selected realm goes over the field, named and painted as in the room",
+    ok: Boolean(today) && record.measures.picked?.name === today.name && record.measures.picked.painted,
+  });
+  b.run("screenshot", join(out, `places-picked-${tag}.png`));
+
+  b.run("type", COMPOSER, "hold here");
+  b.run("press", "Enter");
+  await sleep(500);
+  record.measures.sent = b.evaluate(PLACES);
+  record.checks.push(
+    {
+      check: "the message sent comes back with its words and the place as a chip that opens",
+      ok:
+        Boolean(today) &&
+        record.measures.sent.last?.words?.startsWith("hold here") === true &&
+        record.measures.sent.last.chip?.name === today.name &&
+        record.measures.sent.last.chip.opens,
+    },
+    { check: "the field holds no place after sending", ok: record.measures.sent.picked === null },
+  );
+  b.run("screenshot", join(out, `places-sent-${tag}.png`));
+};
+
 const above = (upper, lower, slack = 1) => upper !== null && lower !== null && upper.bottom <= lower.top + slack;
 
 /** The rail with chat open: the details and chat share the column, the Events name whole, the tag under the column. */
@@ -604,6 +681,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         records.push(mention);
         mention.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
         if (mention.ready) await proveMentions(b, out, mention, phone);
+      }
+
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const places = { state: `places, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(places);
+        places.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+        if (places.ready) await provePlaces(b, out, places, phone);
       }
 
       const strip = { state: "closed, 1440×900", ready: false, presses: [], checks: [] };
