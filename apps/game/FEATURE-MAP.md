@@ -180,21 +180,21 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 ## Shell (outside a game)
 
 On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
-sheet's bar: the brand's small globe, Play, Season, What's new and Market with their icons, the page's notice, and the
-player (name and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's step, neither key
-printed on its button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's
-`AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps
-the bar with the globe alone. The brand is the Realms Brand Kit v3: its palette (`src/brand/palette.json`, read by
-`src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell English SC for headings, Cinzel
-for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and its marks by displayed size
-(`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame and the share card, the small
-globe in the bar and the favicon, the contour globe on the install icons and a loader; `AGE_LOCKUP`, each age's complete
-lockup naming it on Play's cards and columns, Eternum's on the kit's parchment grade), exported from the kit by
-`scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the token file (the boot, 404 and offline pages,
-the status page, the docs site's styles and config, the player emails) hold a copy written by
-`pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a surface left on a
-v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or mark a standalone
-surface writes on its own, and on email headers drawn from older brand inputs
+sheet's bar: the brand's lettered mark (56 px; 48 px in a phone's top row), Play, Season, What's new and Market with
+their icons, the page's notice, and the player (name and portrait, or You) at its right end. `Esc` goes back and `Enter`
+takes the page's step, neither key printed on its button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`,
+`shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A
+full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand is the Realms Brand Kit v3: its palette
+(`src/brand/palette.json`, read by `src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell
+English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
+its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
+the bar and the share card, the small globe on the favicon and the status page, the contour globe on the install icons
+and a loader; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the kit's
+parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the
+token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails) hold
+a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a
+surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or
+mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
 (`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
 is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
 enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the

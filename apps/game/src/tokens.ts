@@ -827,6 +827,12 @@ export const APP_SHEET = {
   "control-lg": "56px",
   /** The bar across the top of every page, and the widest a page's content runs on a desktop. */
   bar: "72px",
+  /**
+   * The lettered mark in the bar, and in the phone's top row (owner, 29 October 2026: "the one with the realms in the
+   * circle as the logo in the top nav bar"): sized so its word reads, its R about 15 px and 13 px tall.
+   */
+  mark: "56px",
+  "mark-phone": "48px",
   page: "1680px",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "6px",

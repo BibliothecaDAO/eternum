@@ -6,6 +6,8 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appRoutes, RETIRED_PATHS } from "@/app";
 
+import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
+
 import { PageFrame } from "./page-frame";
 import { setViewportWidth } from "./test-viewport";
 
@@ -206,5 +208,20 @@ describe("a stage on a phone", () => {
   it("leaves a page that is no stage on the plain ground", async () => {
     const plain = await renderFrame(false);
     expect(plain.querySelector("img.app-frame__painting")).toBeNull();
+  });
+});
+
+describe.each([
+  [1440, "bar"],
+  [390, "top"],
+] as const)("the app's mark at %i wide", (width, where) => {
+  it("is the brand's lettered mark, its word in the artwork (owner, 29 October 2026)", async () => {
+    setViewportWidth(width);
+    const container = await renderPath("/");
+    // The images that name something: the places' icons beside the mark are decoration (no alt).
+    const marks = [...band(container, where)!.querySelectorAll<HTMLImageElement>("img[alt]:not([alt=''])")].map(
+      (img) => `${img.alt} ${img.getAttribute("src")}`,
+    );
+    expect(marks).toEqual([`Realms ${REALMS_MARK.lettered}`]);
   });
 });

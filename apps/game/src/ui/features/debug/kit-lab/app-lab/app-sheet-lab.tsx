@@ -362,7 +362,7 @@ const TopBarSection = () => (
         {(["play", "season", "news", "you"] as const).map((current) => (
           <AppTopBar
             key={current}
-            mark={<img src={REALMS_MARK.small} alt="Realms" className="h-7" />}
+            mark={<img src={REALMS_MARK.lettered} alt="Realms" className="app-mark" />}
             places={[
               { to: "#", label: "Play", icon: "play", current: current === "play" },
               { to: "#", label: "Season", icon: "leaderboard", current: current === "season" },

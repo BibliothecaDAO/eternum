@@ -8,11 +8,11 @@ import type { ResourcesIds } from "@bibliothecadao/types";
  * kit by scripts/build-brand.sh; the static pages (index.html, public/*.html) name the same files.
  */
 export const REALMS_MARK = {
-  /** The parent mark with its word, above 120 px: the first frame. */
+  /** The parent mark with its word: the first frame, and the bar (the owner's call over the kit's size rule). */
   lettered: "/images/logos/realms-lettered.webp",
   /** The unlettered globe, 64 to 120 px: a loader. */
   contour: "/images/logos/realms-contour.webp",
-  /** The retained small globe, under 64 px: the bar's mark. */
+  /** The retained small globe, under 64 px: the status page's header and the favicon. */
   small: "/images/logos/realms-small.webp",
 } as const;
 

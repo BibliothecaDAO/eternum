@@ -253,6 +253,19 @@
   display: flex;
   gap: theme(spacing.1);
 }
+/* The app's lettered mark: the bar's and the phone's top row's, its word legible at the sheet's size. */
+.app-mark {
+  display: block;
+  width: auto;
+  height: var(--app-mark);
+}
+/* On a phone the mark keeps a little clear ground above and below it, so the top row grows to hold it (56 px). */
+@media (max-width: 1023px) {
+  .app-mark {
+    height: var(--app-mark-phone);
+    margin-block: theme(spacing.1);
+  }
+}
 .app-bar__place {
   display: flex;
   height: var(--app-control);
