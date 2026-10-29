@@ -934,7 +934,7 @@ span.ui-row__choose {
   width: 1.15em;
   height: 1.15em;
   margin-right: 0.2em;
-  vertical-align: -0.2em;
+  vertical-align: var(--hud-icon-baseline);
 }
 .ui-feed-line__reward {
   flex: none;

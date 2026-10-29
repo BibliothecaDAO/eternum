@@ -41,7 +41,7 @@ export const MessageText = ({
       >
         {linkWords(part.url)}
         {!isRealmsSite(part.url) && (
-          <Icon name="external-link" size={14} className="ml-0.5 inline-block align-[-2px]" alt="" />
+          <Icon name="external-link" size={14} className="ml-0.5 inline-block align-hud-icon" alt="" />
         )}
       </a>
     ),

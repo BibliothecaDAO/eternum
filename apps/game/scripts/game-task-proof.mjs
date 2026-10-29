@@ -172,7 +172,12 @@ export const proveTask = async (b, base, addresses, name, layout, out) => {
   record.clicks = record.inputs.length;
   const outcome = await waitForOutcome(b, task, reading, before);
   record.done = outcome.problem === null;
-  if (reading) record.reading = { token, before, after: outcome.after };
+  if (reading)
+    record.reading = {
+      ...(typeof task.reading === "function" ? { token } : {}),
+      before,
+      after: outcome.after,
+    };
   record.screenshots.push(await shot(b, out, `task-${name}-${layout}-done.png`));
   return outcome.problem ? { ...record, problem: outcome.problem } : record;
 };

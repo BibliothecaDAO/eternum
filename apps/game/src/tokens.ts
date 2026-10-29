@@ -465,6 +465,8 @@ export const HUD_SHEET = {
   "rarity-5": "#f6ac1d",
   /** A control's height; a touch target's is HUD_PHONE's. */
   control: "36px",
+  /** Inline icons sit on the text baseline in Feed lines and links. */
+  "icon-baseline": "-0.2em",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "4px",
   "radius-control": "8px",
