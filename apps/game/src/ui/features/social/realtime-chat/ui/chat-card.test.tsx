@@ -105,7 +105,9 @@ let blocked: string[] = [];
 let blockListDown = false;
 /** How the server answers a read of the block list: at once, held until the test lets it go, or refused. */
 let blockRead: "now" | "held" | "down" = "now";
-let answerBlockRead = () => {};
+/** Reads the server holds, oldest first: each answers the list as it stood when it was asked. */
+let heldReads: (() => void)[] = [];
+const answerOldestRead = () => act(async () => heldReads.shift()!());
 /** The player's conversation with Dagna, as the server keeps it. */
 const DAGNA_LINE = {
   id: "d1",
@@ -119,7 +121,11 @@ const serve = vi.fn(async (input: string | URL, init?: RequestInit) => {
   const url = new URL(String(input));
   if (url.pathname === "/api/chat/blocks" && (init?.method ?? "GET") === "GET") {
     if (blockRead === "down") return new Response("{}", { status: 503 });
-    if (blockRead === "held") await new Promise<void>((resolve) => (answerBlockRead = resolve));
+    if (blockRead === "held") {
+      const asked = [...blocked];
+      await new Promise<void>((resolve) => heldReads.push(resolve));
+      return new Response(JSON.stringify({ blocked: asked }), { status: 200 });
+    }
   }
   if (url.pathname.startsWith("/api/chat/dm/threads/"))
     return new Response(JSON.stringify({ messages: [DAGNA_LINE], nextCursor: null }), { status: 200 });
@@ -188,6 +194,7 @@ beforeEach(() => {
   blocked = [];
   blockListDown = false;
   blockRead = "now";
+  heldReads = [];
   useEventFeedStore.getState().dismiss();
   moved.openOnMap.mockClear();
   vi.stubGlobal("fetch", serve);
@@ -312,6 +319,30 @@ describe("a player's card, outside a game", () => {
   });
 });
 
+/** Dagna's private conversation, as it arrives, then opened. */
+const openDagna = () =>
+  act(() => {
+    const { actions } = useRealtimeChatStore.getState();
+    useRealtimeChatStore.setState({
+      onlinePlayers: {
+        ...useRealtimeChatStore.getState().onlinePlayers,
+        [DAGNA]: { playerId: DAGNA, displayName: "Dagna", isOnline: true, isTypingInThreadIds: [] },
+      },
+    });
+    actions.receiveDirectMessage(
+      DAGNA_LINE as never,
+      {
+        id: DAGNA_LINE.threadId,
+        participants: [SELF, DAGNA],
+        createdAt: DAGNA_LINE.createdAt,
+        unreadCounts: {},
+      } as never,
+    );
+    actions.openConversation(DAGNA);
+  });
+const headMute = () =>
+  [...host.querySelectorAll<HTMLButtonElement>("header button")].find((b) => b.textContent === "Mute")!;
+
 const tab = (name: string) =>
   [...host.querySelectorAll<HTMLButtonElement>('[role="tab"]')].find((button) => button.textContent?.startsWith(name))!;
 const muted = () => host.querySelector<HTMLElement>('section[aria-label="Muted"]');
@@ -418,7 +449,7 @@ describe("chat starting, before it knows who is muted", () => {
     expect(strip()).not.toContain("Aldric");
     expect(strip()).not.toContain("Corwin");
 
-    await act(async () => answerBlockRead());
+    await answerOldestRead();
     await act(async () => {});
 
     // Aldric's runs read as muted; Corwin's message stands, counted once and heard once, and is the strip's line.
@@ -429,6 +460,100 @@ describe("chat starting, before it knows who is muted", () => {
     expect(tab("Global").textContent).toBe("Global1");
     expect(heard).toHaveBeenCalledTimes(1);
     expect(strip()).toBe("Corwin: still there");
+  });
+
+  it("takes nothing from a replaced connection's late answer: the current list stands, and the room goes on", async () => {
+    // The first connection's read is held with the list as it was then: nobody muted.
+    blocked = [];
+    blockRead = "held";
+    await start();
+    // A new connection reads the list as it is now: Aldric muted.
+    blocked = [ALDRIC];
+    blockRead = "now";
+    await start();
+    await act(async () => {});
+    act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
+    const heard = vi.spyOn(AudioManager.getInstance(), "play");
+    arrive("m5", ALDRIC, "Aldric", "muted on the new connection", 5);
+
+    await answerOldestRead();
+    await act(async () => {});
+    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([ALDRIC]);
+    expect(host.textContent).not.toContain("muted on the new connection");
+    expect(host.textContent).not.toContain("gg on the spire");
+    expect(tab("Global").textContent).toBe("Global");
+    expect(heard).not.toHaveBeenCalled();
+    expect(strip()).not.toContain("Aldric");
+
+    // Afterwards, the room goes on as the list says.
+    arrive("m6", CORWIN, "Corwin", "still there", 6);
+    expect(host.textContent).toContain("still there");
+    expect(tab("Global").textContent).toBe("Global1");
+    expect(heard).toHaveBeenCalledTimes(1);
+    expect(strip()).toBe("Corwin: still there");
+  });
+
+  it("keeps a Mute made while an older read was out: its answer stands, and Unmute stays in reach", async () => {
+    blocked = [];
+    blockRead = "held";
+    await start();
+    openDagna();
+    await act(async () => headMute().click());
+    expect(blocked).toEqual([DAGNA]);
+    expect(muted()!.textContent).toContain("Dagna");
+
+    // The read asked before the Mute comes back with the list from before it: it is not taken.
+    await answerOldestRead();
+    await act(async () => {});
+    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([DAGNA]);
+    expect(muted()!.textContent).toContain("Dagna");
+    expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
+    expect(host.textContent).not.toContain("see you at dawn");
+
+    // A room message from someone not muted counts and sounds; then Unmute reverses the Mute.
+    const heard = vi.spyOn(AudioManager.getInstance(), "play");
+    act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
+    arrive("m6", CORWIN, "Corwin", "still there", 6);
+    expect(tab("Global").textContent).toBe("Global1");
+    expect(heard).toHaveBeenCalledTimes(1);
+    await act(async () => muted()!.querySelector("button")!.click());
+    expect(blocked).toEqual([]);
+    expect(muted()).toBeNull();
+    expect(host.textContent).toContain("see you at dawn");
+  });
+
+  it("keeps an Unmute made while an older read was out: the player stays unmuted, their words shown", async () => {
+    blocked = [DAGNA];
+    await start();
+    await act(async () => {});
+    openDagna();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(muted()!.textContent).toContain("Dagna");
+
+    // A read goes out while Dagna is muted, and is held; Unmute is pressed and answered before it.
+    blockRead = "held";
+    let reading!: Promise<void>;
+    act(() => {
+      reading = useRealtimeChatStore.getState().actions.loadBlockedPlayers();
+    });
+    await act(async () => muted()!.querySelector("button")!.click());
+    expect(blocked).toEqual([]);
+    expect(muted()).toBeNull();
+
+    await answerOldestRead();
+    await act(async () => reading);
+    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([]);
+    expect(muted()).toBeNull();
+    expect(host.textContent).toContain("see you at dawn");
+
+    // What she writes in a room afterwards is hers to read: shown, counted, heard.
+    const heard = vi.spyOn(AudioManager.getInstance(), "play");
+    act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
+    arrive("m7", DAGNA, "Dagna", "back again", 7);
+    expect(tab("Global").textContent).toBe("Global1");
+    expect(heard).toHaveBeenCalledTimes(1);
+    act(() => tab("Global").click());
+    expect(host.textContent).toContain("back again");
   });
 
   it("says when the list could not be read, keeps the room waiting, and reads it again later", async () => {

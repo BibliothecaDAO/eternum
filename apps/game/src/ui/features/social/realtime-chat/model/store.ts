@@ -221,18 +221,6 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   roomRefusals: {},
 };
 
-/** The signed-in account's block list, as the server returns it after a read or a change. */
-const requestBlockList = async (baseUrl: string | undefined, method: string, path = "", body?: unknown) => {
-  if (!baseUrl) return null;
-  const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
-    method,
-    credentials: "include",
-    ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
-  });
-  if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
-  return ((await response.json()) as { blocked: string[] }).blocked;
-};
-
 /** The first wait before the block list is read again after a failed read; each further one doubles, up to a minute. */
 const MUTES_RETRY_MS = 2_000;
 
@@ -1169,14 +1157,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
     },
     loadBlockedPlayers: async () => {
-      const blocked = await requestBlockList(get().baseUrl, "GET");
+      const blocked = await askBlockList("GET");
       if (blocked) knowMutes(blocked);
     },
     // Blocking hides the thread: the chat leaves it for Messages, which lists the muted players (from the block list,
     // so after a reload too), and its messages leave this client. The server drops the account's future messages;
     // unblocking lets later ones through and brings the conversation back, its history read again.
     blockPlayer: async (playerId) => {
-      const blocked = await requestBlockList(get().baseUrl, "POST", "", { realmsId: playerId });
+      const blocked = await askBlockList("POST", "", { realmsId: playerId });
       if (!blocked) return;
       const hidden = Object.keys(get().dmThreads).filter((threadId) =>
         get().dmThreads[threadId]!.thread.participants.includes(playerId),
@@ -1190,7 +1178,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       knowMutes(blocked);
     },
     unblockPlayer: async (playerId) => {
-      const blocked = await requestBlockList(get().baseUrl, "DELETE", `/${encodeURIComponent(playerId)}`);
+      const blocked = await askBlockList("DELETE", `/${encodeURIComponent(playerId)}`);
       if (!blocked) return;
       knowMutes(blocked);
       const threadId = get().actions.ensureDirectThread(playerId);
@@ -1198,6 +1186,32 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
   },
 }));
+
+/** How many block-list requests were made, in order, and which of them gave the list now held. */
+let blockListAsked = 0;
+let blockListTaken = 0;
+
+/**
+ * The signed-in account's block list, as the server returns it after a read or a change, taken only while it still
+ * speaks for the list: its connection is still the current one, and no answer to a later request was taken first. A
+ * read answered after a Mute or an Unmute asked after it, or a reply that came after its connection was replaced, is
+ * dropped (null), as no answer.
+ */
+const askBlockList = async (method: string, path = "", body?: unknown): Promise<string[] | null> => {
+  const { baseUrl, client } = useRealtimeChatStore.getState();
+  if (!baseUrl) return null;
+  const asked = ++blockListAsked;
+  const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
+    method,
+    credentials: "include",
+    ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+  });
+  if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
+  const { blocked } = (await response.json()) as { blocked: string[] };
+  if (useRealtimeChatStore.getState().client !== client || asked < blockListTaken) return null;
+  blockListTaken = asked;
+  return blocked;
+};
 
 /** The server's block list, now known: every room message held for it is taken, as it would have been on arrival. */
 const knowMutes = (blocked: string[]) => {
