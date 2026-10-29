@@ -1,3 +1,4 @@
+import { readRealmSkin } from "@/three/structures/realm-skins";
 import { configManager, getExplorerOwner } from "@bibliothecadao/eternum";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import type { FactView } from "@/sync/fact-views";
@@ -13,6 +14,7 @@ export interface MinimapMarker {
 export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
   models: [
     "Structure",
+    "CampaignHome",
     "ExplorerTroops",
     "GuildMember",
     "PlayerEntry",
@@ -40,7 +42,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       const category = row.base.category;
       const name =
         category === StructureType.Realm
-          ? realmMarkerMeaning(row.base.level)
+          ? realmMarkerMeaning(row.base.level, readRealmSkin(store, row))
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine

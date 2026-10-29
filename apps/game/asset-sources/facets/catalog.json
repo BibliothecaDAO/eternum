@@ -3237,6 +3237,24 @@
         "kind": "painted",
         "sha256": "fb42992e25b5433cef42aa42b63724029db28d34473e55a6b3938556f77e66c5"
       }
+    },
+    {
+      "id": "devcon-realm",
+      "label": "Devcon realm",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "5d917204967d62d7f328f6c632b3504a497df166019be4aee5be8b06f015584f"
+      }
+    },
+    {
+      "id": "devcon-golden-realm",
+      "label": "Golden Devcon realm",
+      "family": "Structures",
+      "source": {
+        "kind": "painted",
+        "sha256": "3de36fee0b99be093590967447a9a275daf98b03405af56c3c96ff2aac4cc8eb"
+      }
     }
   ]
 }

@@ -15,6 +15,7 @@ import {
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleBuildOrders } from "./build-orders";
+import { hasEnteredCampaignGame } from "./campaign-entry";
 import { handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
@@ -101,7 +102,10 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
-  if (pathname === "/api/campaigns/redeem") return handleCampaignRedeem(request, auth, env.DB);
+  if (pathname === "/api/campaigns/redeem")
+    return handleCampaignRedeem(request, auth, env.DB, (realmsId, presets) =>
+      hasEnteredCampaignGame(env, platform.fetchShard, realmsId, presets),
+    );
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);

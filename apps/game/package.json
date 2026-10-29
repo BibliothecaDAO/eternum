@@ -23,6 +23,7 @@
     "verify:structures": "node ./scripts/realms/export-realms.mjs --verify && node ./scripts/optimize-structure-models.mjs --verify ethereal/spire.glb ethereal/bitcoin-mine.glb",
     "verify:t1-knight-default": "node ./scripts/validate-t1-knight-default-exports.mjs",
     "optimize:realms": "node ./scripts/realms/export-realms.mjs",
+    "build:devcon-realms": "node ./scripts/realms/deliver-devcon.mjs",
     "optimize:spire": "node ./scripts/optimize-structure-models.mjs ethereal/spire.glb",
     "optimize:bitcoin-mine": "node ./scripts/optimize-structure-models.mjs ethereal/bitcoin-mine.glb",
     "optimize:chest-c2": "node ./scripts/reward-tiles/optimize-chest-c2.mjs",

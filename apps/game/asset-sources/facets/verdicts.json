@@ -1015,5 +1015,13 @@
   "faceted/beast-dark-fey": {
     "verdict": "beats shipped",
     "reason": "Distinct painted portrait matches the selected creature silhouette and fills its HUD frame."
+  },
+  "faceted/devcon-realm": {
+    "verdict": "equal",
+    "reason": "Approved Devcon pavilion painting, regular and golden, compared beside the shipped realm icon at 64, 128 and 256 pixels."
+  },
+  "faceted/devcon-golden-realm": {
+    "verdict": "equal",
+    "reason": "Approved Devcon pavilion painting, regular and golden, compared beside the shipped realm icon at 64, 128 and 256 pixels."
   }
 }

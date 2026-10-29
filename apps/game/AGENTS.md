@@ -196,18 +196,21 @@ map, Realm again, and the realm's address loaded again; each step reports its do
 wire, the GPU work its frames asked for (pipelines and shaders compiled, bytes uploaded), long frames, the frames where
 the drawn scene changed and the scene marks `scene:<name>:requested` and `scene:<name>:presentable`; the boot reports
 the same as `bootWindow`), `--steps lab-realm-load` (the same on the lab's built Kingdom,
-`/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps blitz-realm-load` (the same
-on the newest live Blitz game), `--steps entry` (the game entered from a fresh profile, then the same address loaded
-again from the HTTP cache, each followed by 10 s still on the map read for what keeps running: frame callbacks,
-repeating timers and timers of 100 ms or more by the code that scheduled them, elements restyled by script, running CSS
-animations, canvases, full-screen layers a player cannot see, the boot shell and the GPU memory held, and the first
-seconds of play from one continuous frame record from the drop of the doorway (frames over 33 ms and the worst frame in
-the 5 s after it, the time to the first second of frames at or under 20 ms, each counting the frame that crosses its
-end; a record whose frames do not reach from the drop through the window is refused as incomplete, and the record is
-kept in the transcript beside its judgment, `doorwayFrames`); the reload's entry milestones are kept),
-`--steps lab-entry` (the same on the lab's built Kingdom, needing no live game), `--steps map-frames` (the spectator's
-map only: entered, idle, pan, zoom), `--model-override <dir>` (the models under `<dir>`, at their path below
-`public/models`, served in place of the deployed ones whatever their content hash, a spectator's or a lab game's only;
+`/lab/game?scenario=painted-buildings`, reopened on its realm with `&scene=hex`), `--steps lab-devcon-art` (all regular
+and golden Devcon model tiers on the map, HUD and local keep; `/lab/game?scenario=devcon-0` through `devcon-3`, and
+`devcon-golden-0` through `devcon-golden-3`), `--steps lab-devcon-season` (regular, golden and ordinary Season homes
+outside the streamed scope; `/lab/game?scenario=devcon-season`), `--steps blitz-realm-load` (the same on the newest live
+Blitz game), `--steps entry` (the game entered from a fresh profile, then the same address loaded again from the HTTP
+cache, each followed by 10 s still on the map read for what keeps running: frame callbacks, repeating timers and timers
+of 100 ms or more by the code that scheduled them, elements restyled by script, running CSS animations, canvases,
+full-screen layers a player cannot see, the boot shell and the GPU memory held, and the first seconds of play from one
+continuous frame record from the drop of the doorway (frames over 33 ms and the worst frame in the 5 s after it, the
+time to the first second of frames at or under 20 ms, each counting the frame that crosses its end; a record whose
+frames do not reach from the drop through the window is refused as incomplete, and the record is kept in the transcript
+beside its judgment, `doorwayFrames`); the reload's entry milestones are kept), `--steps lab-entry` (the same on the
+lab's built Kingdom, needing no live game), `--steps map-frames` (the spectator's map only: entered, idle, pan, zoom),
+`--model-override <dir>` (the models under `<dir>`, at their path below `public/models`, served in place of the deployed
+ones whatever their content hash, a spectator's or a lab game's only;
 `node scripts/client-playtest/heavier-models.mjs --triangles 4|16 --textures 2 --out <dir> <model>…` writes such copies
 with each triangle split into four and each KTX2 texture at twice its size), `--profile-steps <step,…>` (a `.cpuprofile`
 of each named step, and of the boot for `boot`; profiled steps' timings are not comparable with unprofiled ones),

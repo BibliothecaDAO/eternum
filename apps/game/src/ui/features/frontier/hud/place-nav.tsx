@@ -30,6 +30,7 @@ export const PlaceNav = ({
   onRealm,
   onGo,
   realmDot,
+  realmIcon = "realm",
   researchDot,
   events,
   unread,
@@ -39,6 +40,7 @@ export const PlaceNav = ({
   onRealm: boolean;
   onGo: (place: Place) => void;
   realmDot?: Dot;
+  realmIcon?: IconMeaning;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
   /** Events arrived since the Feed was last read. */
@@ -64,7 +66,7 @@ export const PlaceNav = ({
         <Slot
           switchTo={onRealm ? "world" : "realm"}
           lit={false}
-          icon={onRealm ? "map" : "realm"}
+          icon={onRealm ? "map" : realmIcon}
           word={onRealm ? WORLD : REALM}
           badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
           onClick={() => onGo("realm")}

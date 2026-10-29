@@ -1,0 +1,38 @@
+{
+  "approved": "2026-10-28",
+  "models": {
+    "gold/city.glb": {
+      "sha256": "7a7ddffddbe9880996fc872534dac0075d74d2bbb7dccdda7ab6957fcb73d160",
+      "blendSha256": "5b12c3a3636cef2ee92b23ec98fe70e67a8968e8c317b8b1b7a6b3e5d33f17d2"
+    },
+    "gold/empire.glb": {
+      "sha256": "5183df0f728b46cce7bc852b11668e730891bb64de12366d81e143088ee99d6c",
+      "blendSha256": "f88a5271c73ad64e2cb3fb948eef0789c9d277bf38bc11bd7e439115760e5225"
+    },
+    "gold/kingdom.glb": {
+      "sha256": "2507ba7b043b616edbb4cda98b207d28e0940e7d0716501cc4221a1ec21600c0",
+      "blendSha256": "777747f4684aa314b99793bb8de43ded4672eaf749638bd7edd6d7b9d7640367"
+    },
+    "gold/settlement.glb": {
+      "sha256": "a94773429fd30826f8601ae49c04fbff75c67ff853e932aaf896e4d9b0d5fd14",
+      "blendSha256": "ebce16fbdba09e19c82532698818d11bd3553762b557df5f69014f52dcf38d46"
+    },
+    "regular/city.glb": {
+      "sha256": "5810445883204443c3946cbfcfffccc62b16c6545e8ac59ef6ad0067874d4c37",
+      "blendSha256": "29e735bad12a42c2dac67933e3f53829a02dab48c3a941725086053a6ab022bf"
+    },
+    "regular/empire.glb": {
+      "sha256": "2f3a39b528f01b5ba02ee930718584981b993ac2ce2d8ef0c9a70852129935e4",
+      "blendSha256": "07eff80341b9bcaa47e36dda7b7f9fa73fa1101df0b375c92ed5bd2f1f24143f"
+    },
+    "regular/kingdom.glb": {
+      "sha256": "5b1b9ac2042c7e0157d0f83a94401aded4e6988e521152fc149acb394a4c23dc",
+      "blendSha256": "a18ad438b1c7d73f347e5c0ae0eb970420ae1cc13b28cdd889f6eb58cee20602"
+    },
+    "regular/settlement.glb": {
+      "sha256": "eedf9318064f71c36353c481d80328efd5733e98243fc183c314f4f4a52d04a2",
+      "blendSha256": "513f798e8cbb18a9972100e2577ad5060d7549d6a1e071d1809c77fbc6bef4b8"
+    }
+  },
+  "diamondSha256": "768c201137f0170591c96c7eed5951bce5fc3e809ace219637b53d3da49bc758"
+}

@@ -1,3 +1,4 @@
+import { REALM_SKIN_MODELS, realmSkinIcon } from "@/three/structures/realm-skins";
 // @vitest-environment jsdom
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -58,4 +59,9 @@ describe("a lord and a realm's Order on the HUD", () => {
     const host = render(<OrderMark order={1} />);
     expect(host.querySelector("img")?.getAttribute("alt")).toBeTruthy();
   });
+});
+
+it.each(REALM_SKIN_MODELS)("shows $skin at level $level on the season list", ({ skin, level }) => {
+  const badge = render(<RealmBadge level={level} depth={0} skin={skin} />);
+  expect(badge.querySelector(`img[src$="/${realmSkinIcon(skin)}.webp"]`)).not.toBeNull();
 });

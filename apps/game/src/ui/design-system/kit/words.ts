@@ -560,7 +560,6 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
     ...(essence > 0 ? [`${formatExact(essence)} Essence`] : []),
   ].join(" · ")}`;
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
-export const campaignRealmMark = (campaign: string, golden: boolean) => (golden ? `Golden ${campaign}` : campaign);
 export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
 export const partialRealmLabor = (fits: number, total: number) =>
@@ -679,6 +678,9 @@ export const JOIN_WORDS = {
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
   continue: "Continue",
   closed: "Devcon tickets have closed.",
+  taken: "Another player already opened this ticket.",
+  founded: "Your realm is already founded: give this flyer to a friend.",
+  noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
   failed: "Your ticket could not be opened.",
 } as const;
 
