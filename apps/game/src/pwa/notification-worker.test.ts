@@ -151,3 +151,49 @@ it("delivers once across worker restarts, respects foreground activity and stops
   expect((await restarted.send("disable")).ok).toBe(true);
   expect((await restarted.send("deliver", { token, payload: { ...local, id: "disabled" } })).value).toBe("suppressed");
 });
+
+it("shows a mention's alert and, pressed, opens its chat: a Realms window that shows it, else its page", async () => {
+  const h = harness();
+  const prepared = await h.send("prepare-push");
+  const id = prepared.value.id;
+  expect((await h.send("activate-push", { id })).ok).toBe(true);
+  const mention = (target: string, tag: string) => ({
+    version: 1,
+    kind: "mention",
+    subscriptionId: id,
+    notification: {
+      version: 1,
+      id: `mention:${tag}`,
+      tag,
+      owner: "0x1",
+      title: "Lady Ada mentioned you",
+      body: "In Global. Open Realms to read it.",
+      target,
+      createdAt: Date.now(),
+      expiresAt: Date.now() + 120_000,
+    },
+  });
+  const global = mention("/chat", "mention:global");
+  h.clients.matchAll.mockResolvedValue([]);
+  await h.push(global);
+  expect(h.registration.showNotification).toHaveBeenCalledWith(
+    "Lady Ada mentioned you",
+    expect.objectContaining({ tag: "mention:global" }),
+  );
+
+  // No Realms window: the press opens the app's chat page.
+  await h.click(global);
+  expect(h.clients.openWindow).toHaveBeenCalledWith("https://game.test/chat");
+
+  // A game open: Global is in it, a press away; the press brings it forward.
+  h.clients.matchAll.mockResolvedValue([h.client]);
+  await h.click(global);
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.clients.openWindow).toHaveBeenCalledOnce();
+
+  // A lobby's mention needs that lobby: the game is left as it is and the lobby opens.
+  const lobby = mention("/blitz/slot-blitz-1630", "mention:lobby:blitz-1630");
+  await h.click(lobby);
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.clients.openWindow).toHaveBeenLastCalledWith("https://game.test/blitz/slot-blitz-1630");
+});

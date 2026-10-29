@@ -1,14 +1,11 @@
+import { NAME_CHARACTER, startsMention } from "@realms-world/identity";
+
 /**
  * Chat mentions, kept as the plain text a player types: "@" and a player's name. A message carries no new field; a
  * reader finds a mention by matching the names it knows. Names may hold spaces ("Ser Ada"), so a mention is found by
- * the names, never by a word pattern.
+ * the names, never by a word pattern. Where a mention starts and ends is the identity package's one reading
+ * (startsMention, NAME_CHARACTER), which the chat server's mention notices read too.
  */
-
-/** A name ends where a character a name may hold stops (letters, digits, "_" and "-"); a space may go on to a longer one. */
-const NAME_CHARACTER = /[A-Za-z0-9_-]/;
-
-/** An "@" starts a mention at the message's start or after a space, never inside a word ("ada@realms.test"). */
-const startsMention = (text: string, at: number): boolean => text[at] === "@" && (at === 0 || /\s/.test(text[at - 1]!));
 
 /** The "@" the caret is typing a mention after, and what is typed since: null when the caret is in no mention. */
 export const typedMention = (text: string, caret: number): { at: number; query: string } | null => {

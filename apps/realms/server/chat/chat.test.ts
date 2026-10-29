@@ -436,6 +436,72 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   await worker.dispose();
 }, 120_000);
 
+it("tells a player mentioned in Global who is not there to read it, unless they muted the sender", async () => {
+  const PUSH_ENDPOINT = "https://fcm.googleapis.com/fcm/send/mention-device";
+  const pushes: string[] = [];
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: (request) => {
+      if (request.url === PUSH_ENDPOINT) pushes.push(request.url);
+      return new Response(null, { status: request.url === PUSH_ENDPOINT ? 201 : 599 });
+    },
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const [sender, mentioned] = [await signIn(worker), await signIn(worker)];
+  const device = await deviceKeys();
+  await worker.db.batch([
+    worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Ser Ada", sender.realmsId),
+    worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Isolde", mentioned.realmsId),
+    worker.db
+      .prepare(`INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, 'important', 1)`)
+      .bind(mentioned.realmsId),
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions" ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "directMessagesEnabledAt", "createdAt") VALUES ('device-1', ?, ?, ?, ?, 'x', ?, ?)`,
+      )
+      .bind(mentioned.realmsId, PUSH_ENDPOINT, device.p256dh, device.auth, Date.now(), Date.now()),
+  ]);
+  const GLOBAL = `/api/chat/rooms/${encodeURIComponent("world:global")}`;
+  const room = await connect(worker, sender.cookie, GLOBAL);
+  await waitUntil(() => ofType(room.received, "joined:zone").length > 0, 5_000);
+  let said = 0;
+  const say = async (content: string) => {
+    room.socket?.send(
+      JSON.stringify({ type: "world:publish", zoneId: "world:global", payload: { zoneId: "world:global", content } }),
+    );
+    said += 1;
+    await waitUntil(() => ofType(room.received, "world:message").length >= said, 5_000);
+  };
+
+  // Mentioned by name, ignoring case, while away from the room: one alert.
+  await say("@isolde hold the east gate");
+  await waitUntil(() => pushes.length >= 1, 10_000);
+  expect(pushes).toEqual([PUSH_ENDPOINT]);
+
+  // No alert for a name no player holds, nor for the sender mentioning themselves.
+  await say("@Nobody here and @Ser Ada too");
+  // In the room, the mention is read there: no alert.
+  const present = await connect(worker, mentioned.cookie, GLOBAL);
+  await waitUntil(() => ofType(present.received, "joined:zone").length > 0, 5_000);
+  await say("@Isolde are you there");
+  present.socket?.close();
+  await pause(500);
+
+  // Away again, having muted the sender: no alert.
+  await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/blocks`, {
+    method: "POST",
+    headers: { cookie: mentioned.cookie, origin: ORIGIN, "content-type": "application/json" },
+    body: JSON.stringify({ realmsId: sender.realmsId }),
+  });
+  await say("@Isolde one more");
+  await pause(1_500);
+  expect(pushes).toEqual([PUSH_ENDPOINT]);
+
+  await worker.dispose();
+}, 120_000);
+
 it("counts unread on the server alone: the handshake lists conversations, and a read reaches every device", async () => {
   const worker = await startWorker({
     bundle,

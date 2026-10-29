@@ -16,9 +16,11 @@ export const IDENTITY_PORTRAITS = ["01", "02", "03", "04", "05", "06", "07", "08
  * the app applies the same rule before it offers a name.
  */
 const NAME_PATTERN = /^[A-Za-z0-9][A-Za-z0-9 _-]{1,18}[A-Za-z0-9]$/;
+/** The longest a name may be. */
+export const NAME_MAX_LENGTH = 20;
 
 export const nameRuleViolation = (name: string): string | null => {
-  if (name.length < 3 || name.length > 20) return "3 to 20 characters";
+  if (name.length < 3 || name.length > NAME_MAX_LENGTH) return "3 to 20 characters";
   if (!NAME_PATTERN.test(name)) return "letters, numbers, spaces, - or _; no leading or trailing space";
   return null;
 };

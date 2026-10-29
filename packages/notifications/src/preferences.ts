@@ -4,7 +4,8 @@ import { decodeNotification } from "./validation";
 export const NOTIFICATION_LEVELS = ["off", "important", "standard", "all"] as const;
 export type NotificationLevel = (typeof NOTIFICATION_LEVELS)[number];
 
-export const includesDirectMessageNotification = (level: NotificationLevel): boolean => level !== "off";
+/** Chat alerts (a private message, a mention) reach a player at every level but off. */
+export const includesChatNotification = (level: NotificationLevel): boolean => level !== "off";
 
 export interface NotificationPreferences {
   owner: string;

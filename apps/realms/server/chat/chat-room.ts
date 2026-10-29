@@ -9,6 +9,7 @@ import {
 } from "@bibliothecadao/types";
 
 import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
+import { pushMentions } from "./mention-push";
 interface RoomMember extends ChatMember {
   canWrite: boolean;
 }
@@ -31,8 +32,8 @@ interface MessageRow extends Record<string, SqlStorageValue> {
  * One chat room: its members' sockets and its history. Sockets use the hibernation API only, with no timer or
  * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it.
  */
-export class ChatRoom extends DurableObject<unknown> {
-  constructor(ctx: DurableObjectState, env: unknown) {
+export class ChatRoom extends DurableObject<Record<string, unknown>> {
+  constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, senderId TEXT NOT NULL, senderName TEXT, content TEXT NOT NULL,
@@ -135,6 +136,8 @@ export class ChatRoom extends DurableObject<unknown> {
       clientMessageId: message.clientMessageId,
       message: toWorldChatMessage(room, row),
     });
+    // A player it mentions who is not here to read it is told, as a private message's recipient is.
+    await pushMentions(this.env, room, row, (realmsId) => this.ctx.getWebSockets(realmsId).length > 0);
   }
 
   private leave(socket: WebSocket) {

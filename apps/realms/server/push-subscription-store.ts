@@ -48,8 +48,11 @@ function createPushSubscriptionStore(db: D1Database) {
           .all<PushSubscriptionRow>();
         return results;
       }),
-    /** Devices of this account that opted in to direct messages and have no game window in the foreground. */
-    directMessageDevices: (owner: string, now: number) =>
+    /**
+     * Devices of this account that opted in to chat alerts (a private message, a mention: the consent a device gives as
+     * directMessages) and have no game window in the foreground.
+     */
+    chatAlertDevices: (owner: string, now: number) =>
       storeEffect(async () => {
         const { results } = await db
           .prepare(

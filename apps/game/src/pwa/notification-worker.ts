@@ -168,8 +168,8 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
     if (push?.kind === "game" && !pushDevice?.automatic) return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
     const matching = clients.find((client) =>
-      push?.kind === "direct-message"
-        ? isDirectMessageClient(client.url, worker.location.origin)
+      push?.kind === "direct-message" || push?.kind === "mention"
+        ? isChatClient(client.url, payload.target, worker.location.origin)
         : notificationMatchesGame(client.url, payload.target, worker.location.origin),
     );
     if (matching) {
@@ -183,9 +183,15 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   }
 }
 
-function isDirectMessageClient(clientUrl: string, origin: string): boolean {
+/**
+ * A Realms window that shows chat, for a chat alert (a private message, a mention): the page it opens, the app's home
+ * or a game, each with the chat a press away. A mention in a lobby needs that lobby's page.
+ */
+function isChatClient(clientUrl: string, target: string, origin: string): boolean {
   const client = new URL(clientUrl);
-  return client.origin === origin && (client.pathname === "/" || isNotificationGameClient(clientUrl, origin));
+  if (client.origin !== origin) return false;
+  if (client.pathname === target) return true;
+  return !target.startsWith("/blitz/") && (client.pathname === "/" || isNotificationGameClient(clientUrl, origin));
 }
 
 async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {
