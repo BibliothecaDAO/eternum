@@ -4,44 +4,66 @@
 @tailwind components;
 @tailwind utilities;
 
-/* The app's two faces (decisions-1, apps/game/src/tokens.ts FONTS), from the files the app serves, bundled with the
-   docs so they ship with every deploy: Bokor for page titles, Atkinson Hyperlegible Next for everything read. */
-@font-face {
-  font-family: "Atkinson Hyperlegible Next";
-  src: url("../../game/public/fonts/atkinson-hyperlegible-next.woff2") format("woff2");
-  font-weight: 200 800;
-  font-display: swap;
+/* The brand's colours and the app's faces (apps/game/src/tokens.ts), from the files the app serves, bundled with the
+   docs so they ship with every deploy: the heading face for page titles, the reading face for everything read. */
+/* brand: written from apps/game/src/tokens.ts by apps/game/scripts/build-brand-surfaces.ts */
+:root {
+  --ground: #130f0c;
+  --plate: #201a16;
+  --plate2: #2a221c;
+  --line: #46351c;
+  --line2: #6b5230;
+  --cream: #f4ebdc;
+  --muted: #b7a78a;
+  --gold: #dfaa54;
+  --gold2: #f3d08a;
+  --peach: #f6c297;
+  --amber: #e39001;
+  --ember: #ef5858;
+  --red: #fc4c4c;
+  --sage: #b5bd75;
+  --hot: #f6ac1d;
+  --ink: #1b1207;
+  --veil: #0a0806;
+  --shade: #000000;
+  --face-display: "IM Fell English SC", serif;
+  --face-body: "Exo 2", system-ui, sans-serif;
 }
-
 @font-face {
-  font-family: "Bokor";
-  src: url("../../game/public/fonts/bokor-regular.ttf") format("truetype");
+  font-family: "IM Fell English SC";
+  src: url("../../game/public/fonts/im-fell-english-sc-regular.ttf") format("truetype");
   font-weight: 100 900;
   font-display: swap;
 }
+@font-face {
+  font-family: "Exo 2";
+  src: url("../../game/public/fonts/exo-2.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+/* brand: end */
 
 :root,
 :root.dark {
-  --realm-bg-void: #050709;
-  --realm-bg-smoke: #070b0d;
-  --realm-surface-iron: #101417;
-  --realm-surface-slate: #161b20;
-  --realm-accent-ember: #c4874a;
-  --realm-accent-brass: #e7cf88;
-  --realm-accent-arcane: #8d98c8;
-  --realm-border-etched: rgba(231, 207, 136, 0.22);
-  --realm-border-strong: rgba(231, 207, 136, 0.38);
-  --realm-text: #e8dcc2;
-  --realm-text-muted: #d8c8a8;
-  --realm-title: #f5ead0;
+  --realm-bg-void: var(--ground);
+  --realm-bg-smoke: var(--ground);
+  --realm-surface-iron: var(--plate);
+  --realm-surface-slate: var(--plate2);
+  --realm-accent-ember: var(--gold);
+  --realm-accent-brass: var(--gold2);
+  --realm-border-etched: color-mix(in srgb, var(--gold2) 22%, transparent);
+  --realm-border-strong: color-mix(in srgb, var(--gold2) 38%, transparent);
+  --realm-text: var(--cream);
+  --realm-text-muted: var(--muted);
+  --realm-title: var(--cream);
   --vocs-borderRadius_4: 8px;
   --vocs-borderRadius_6: 8px;
   --vocs-borderRadius_8: 8px;
   --vocs-content_horizontalPadding: clamp(1rem, 4vw, 3rem);
   --vocs-content_verticalPadding: clamp(1.5rem, 2.6vw, 2.25rem);
   --vocs-content_width: calc(76ch + (var(--vocs-content_horizontalPadding) * 2));
-  --docs-font-title: "Bokor", serif;
-  --docs-font-body: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+  --docs-font-title: var(--face-display);
+  --docs-font-body: var(--face-body);
   --docs-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   /* The reading scale's table step: every table, MDX or component, reads it here and sets no size of its own. */
   --docs-table-size: 15px;
@@ -154,7 +176,7 @@ article.vocs_Content,
   .vocs_DocsLayout_gutterTopCurtain,
   .vocs_MobileTopNav,
   .vocs_MobileTopNav_curtain {
-    background: rgba(5, 7, 9, 0.98) !important;
+    background: color-mix(in srgb, var(--ground) 98%, transparent) !important;
   }
 }
 
@@ -215,15 +237,19 @@ article.vocs_Content,
 .vocs_Content table {
   border: 1px solid var(--realm-border-etched) !important;
   border-radius: 8px !important;
-  background: linear-gradient(160deg, rgba(22, 27, 32, 0.94), rgba(7, 10, 12, 0.9)) !important;
+  background: linear-gradient(
+    160deg,
+    color-mix(in srgb, var(--plate2) 94%, transparent),
+    color-mix(in srgb, var(--ground) 90%, transparent)
+  ) !important;
   box-shadow:
-    inset 0 1px 0 rgba(231, 207, 136, 0.12),
-    0 14px 30px rgba(0, 0, 0, 0.24);
+    inset 0 1px 0 color-mix(in srgb, var(--gold2) 12%, transparent),
+    0 14px 30px color-mix(in srgb, var(--shade) 24%, transparent);
 }
 
 .vocs_Content blockquote {
   padding: 1rem 1.25rem;
-  color: #cfc0a0;
+  color: var(--muted);
 }
 
 .vocs_CodeBlock pre,
@@ -235,15 +261,15 @@ article.vocs_Content,
 
 .vocs_CodeTitle,
 .vocs_Tabs_list {
-  background: rgba(231, 207, 136, 0.1) !important;
+  background: color-mix(in srgb, var(--gold2) 10%, transparent) !important;
   border-color: var(--realm-border-etched) !important;
-  color: #f2dd9b !important;
+  color: var(--gold2) !important;
 }
 
 .vocs_Content th {
-  background: rgba(22, 27, 32, 0.92) !important;
-  border-color: rgba(201, 169, 96, 0.28) !important;
-  color: #c9a960 !important;
+  background: color-mix(in srgb, var(--plate2) 92%, transparent) !important;
+  border-color: color-mix(in srgb, var(--gold) 28%, transparent) !important;
+  color: var(--gold) !important;
 }
 
 .vocs_Button_button,
@@ -251,11 +277,15 @@ article.vocs_Content,
 .vocs_Footer_navigationItem,
 .vocs_NavigationLink,
 .vocs_Pagination_link {
-  border: 1px solid rgba(231, 207, 136, 0.32) !important;
+  border: 1px solid color-mix(in srgb, var(--gold2) 32%, transparent) !important;
   border-radius: 8px !important;
-  background: linear-gradient(180deg, rgba(231, 207, 136, 0.12), rgba(7, 10, 12, 0.92)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gold2) 12%, transparent),
+    color-mix(in srgb, var(--ground) 92%, transparent)
+  ) !important;
   color: var(--realm-title) !important;
-  box-shadow: inset 0 1px 0 rgba(231, 207, 136, 0.16);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--gold2) 16%, transparent);
 }
 
 .vocs_Button_button:hover,
@@ -263,16 +293,20 @@ article.vocs_Content,
 .vocs_Footer_navigationItem:hover,
 .vocs_NavigationLink:hover,
 .vocs_Pagination_link:hover {
-  border-color: rgba(231, 207, 136, 0.58) !important;
-  background: linear-gradient(180deg, rgba(231, 207, 136, 0.18), rgba(22, 27, 32, 0.96)) !important;
-  color: #fff6dc !important;
+  border-color: color-mix(in srgb, var(--gold2) 58%, transparent) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--gold2) 18%, transparent),
+    color-mix(in srgb, var(--plate2) 96%, transparent)
+  ) !important;
+  color: var(--cream) !important;
 }
 
 .vocs_Button_button_accent,
 .vocs_HomePage_button_accent {
   background: var(--realm-accent-brass) !important;
-  border-color: #f2dd9b !important;
-  color: #17110a !important;
+  border-color: var(--gold2) !important;
+  color: var(--ink) !important;
 }
 
 .vocs_Footer {
@@ -298,7 +332,11 @@ article.vocs_Content,
 
 .vocs_Sidebar,
 .vocs_DocsLayout_gutterLeft {
-  background: linear-gradient(180deg, rgba(5, 7, 9, 0.98), rgba(7, 10, 12, 0.98)) !important;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--ground) 98%, transparent),
+    color-mix(in srgb, var(--ground) 98%, transparent)
+  ) !important;
 }
 
 .vocs_Sidebar_logoWrapper {
@@ -306,7 +344,7 @@ article.vocs_Content,
 }
 
 .vocs_Sidebar {
-  border-right: 1px solid rgba(231, 207, 136, 0.2) !important;
+  border-right: 1px solid color-mix(in srgb, var(--gold2) 20%, transparent) !important;
 }
 
 .vocs_Sidebar a {
@@ -346,17 +384,17 @@ article.vocs_Content,
 .vocs_Sidebar_item {
   border-radius: 8px;
   padding: 0.28rem 0.5rem;
-  color: #bcae91 !important;
+  color: var(--muted) !important;
 }
 
 .vocs_Sidebar_item:hover {
   color: var(--realm-title) !important;
-  background: rgba(231, 207, 136, 0.07);
+  background: color-mix(in srgb, var(--gold2) 7%, transparent);
 }
 
 .vocs_Sidebar_item[data-active="true"],
 .vocs_Sidebar_sectionTitleLink[data-active="true"] {
-  color: #17110a !important;
+  color: var(--ink) !important;
   background: var(--realm-accent-brass) !important;
 }
 
@@ -366,7 +404,7 @@ article.vocs_Content,
 
 .vocs_Outline,
 .vocs_Outline a {
-  color: #a99570 !important;
+  color: var(--muted) !important;
 }
 
 .vocs_Outline a:hover,
@@ -379,9 +417,9 @@ article.vocs_Content,
 .vocs_MobileSearch_button,
 .vocs_DesktopSearch_search,
 .vocs_MobileSearch_searchButton {
-  border-color: rgba(231, 207, 136, 0.24) !important;
-  background: rgba(7, 10, 12, 0.9) !important;
-  color: #d8c8a8 !important;
+  border-color: color-mix(in srgb, var(--gold2) 24%, transparent) !important;
+  background: color-mix(in srgb, var(--ground) 90%, transparent) !important;
+  color: var(--muted) !important;
 }
 
 .vocs_DocsLayout[data-layout="landing"],
@@ -453,7 +491,7 @@ article.vocs_Content,
   padding: clamp(2rem, 5vw, 4rem) 1.5rem !important;
   color: var(--realm-text);
   text-align: center;
-  text-shadow: 0 2px 18px rgba(0, 0, 0, 0.48);
+  text-shadow: 0 2px 18px color-mix(in srgb, var(--shade) 48%, transparent);
 }
 
 .realms-homepage-background {
@@ -478,8 +516,17 @@ article.vocs_Content,
   position: absolute;
   inset: 0;
   background:
-    radial-gradient(circle at 50% 38%, rgba(5, 7, 9, 0.14), rgba(5, 7, 9, 0.7) 68%, rgba(5, 7, 9, 0.9)),
-    linear-gradient(180deg, rgba(5, 7, 9, 0.08), rgba(5, 7, 9, 0.78));
+    radial-gradient(
+      circle at 50% 38%,
+      color-mix(in srgb, var(--ground) 14%, transparent),
+      color-mix(in srgb, var(--ground) 70%, transparent) 68%,
+      color-mix(in srgb, var(--ground) 90%, transparent)
+    ),
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--ground) 8%, transparent),
+      color-mix(in srgb, var(--ground) 78%, transparent)
+    );
 }
 
 .vocs_HomePage > :not(.realms-homepage-background) {
@@ -491,7 +538,7 @@ article.vocs_Content,
 
 .vocs_HomePage_logo img,
 .vocs_HomePage > img {
-  max-height: 58px;
+  max-height: 160px;
   width: auto;
 }
 
@@ -628,17 +675,17 @@ article.vocs_Content,
 .vocs_Content table {
   width: 100% !important;
   border-collapse: collapse;
-  background-color: rgba(7, 10, 12, 0.82);
-  border: 1px solid rgba(201, 169, 96, 0.18) !important;
+  background-color: color-mix(in srgb, var(--ground) 82%, transparent);
+  border: 1px solid color-mix(in srgb, var(--gold) 18%, transparent) !important;
   border-radius: 8px;
   overflow: hidden;
 }
 
 .vocs_Content th {
   font-weight: 700;
-  color: #c9a960;
-  background-color: rgba(22, 27, 32, 0.92);
-  border-bottom: 1px solid rgba(201, 169, 96, 0.28) !important;
+  color: var(--gold);
+  background-color: color-mix(in srgb, var(--plate2) 92%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 28%, transparent) !important;
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -646,9 +693,9 @@ article.vocs_Content,
 }
 
 .vocs_Content td {
-  border-bottom: 1px solid rgba(201, 169, 96, 0.13) !important;
+  border-bottom: 1px solid color-mix(in srgb, var(--gold) 13%, transparent) !important;
   vertical-align: middle;
-  color: #ece0bd;
+  color: var(--cream);
   border-left: none !important;
   border-right: none !important;
   border-top: none !important;
@@ -716,7 +763,7 @@ article.vocs_Content,
 
 /* Subtle hover state for data rows */
 .vocs_Content tbody tr:hover {
-  background-color: rgba(201, 169, 96, 0.05);
+  background-color: color-mix(in srgb, var(--gold) 5%, transparent);
   transition: background-color 0.15s ease;
 }
 

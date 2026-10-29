@@ -97,7 +97,7 @@ export const rules = (fonts, colors = []) => [
   { rule: "arbitrary radius: use a RADII token (rounded-key … rounded-plate)", pattern: /\brounded-\[[^\]]*\]/g },
   { rule: "arbitrary wide screen: use wide:", pattern: /\bmin-\[1800px\]:/g },
   {
-    rule: "unknown face: use a FONTS face (font-display, font-ui, font-body) or a Tailwind weight",
+    rule: "unknown face: use a FONTS face (font-game, font-display, font-ui, font-body) or a Tailwind weight",
     pattern: /(?<![\w-])font-(?:\[[^\]]*\]|[a-z][\w-]*)/g,
     allows: (match) => [...fonts, ...TAILWIND_FONTS].includes(match.slice("font-".length)),
   },

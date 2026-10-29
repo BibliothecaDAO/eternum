@@ -3,27 +3,52 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#130F0C" />
+    <meta name="theme-color" content="#130f0c" />
     <title>Realms — Nothing here</title>
     <!-- The host's answer for an address that is no page and no file: the app's Nothing here (the storm, one plate, Play),
          with no script. Colours are the token file's (src/tokens.ts); faces and painting are the app's own files. -->
     <style>
+      /* brand: written from apps/game/src/tokens.ts by apps/game/scripts/build-brand-surfaces.ts */
+      :root {
+        --ground: #130f0c;
+        --plate: #201a16;
+        --plate2: #2a221c;
+        --line: #46351c;
+        --line2: #6b5230;
+        --cream: #f4ebdc;
+        --muted: #b7a78a;
+        --gold: #dfaa54;
+        --gold2: #f3d08a;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --ember: #ef5858;
+        --red: #fc4c4c;
+        --sage: #b5bd75;
+        --hot: #f6ac1d;
+        --ink: #1b1207;
+        --veil: #0a0806;
+        --shade: #000000;
+        --face-display: "IM Fell English SC", serif;
+        --face-body: "Exo 2", system-ui, sans-serif;
+      }
       @font-face {
-        font-family: "Bokor";
-        src: url("/fonts/bokor-regular.ttf") format("truetype");
+        font-family: "IM Fell English SC";
+        src: url("/fonts/im-fell-english-sc-regular.ttf") format("truetype");
+        font-weight: 100 900;
         font-display: swap;
       }
       @font-face {
-        font-family: "Atkinson Hyperlegible Next";
-        src: url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2");
-        font-weight: 200 800;
+        font-family: "Exo 2";
+        src: url("/fonts/exo-2.woff2") format("woff2");
+        font-weight: 100 900;
         font-display: swap;
       }
+      /* brand: end */
       :root {
         color-scheme: dark;
-        background: #130f0c;
-        color: #f4ebdc;
-        font-family: "Atkinson Hyperlegible Next", system-ui, sans-serif;
+        background: var(--ground);
+        color: var(--cream);
+        font-family: var(--face-body);
       }
       body {
         margin: 0;
@@ -33,7 +58,12 @@
         padding: 1rem;
         box-sizing: border-box;
         background:
-          linear-gradient(0deg, #130f0c 0%, rgb(19 15 12 / 0.2) 60%, rgb(19 15 12 / 0.5) 100%),
+          linear-gradient(
+            0deg,
+            var(--ground) 0%,
+            color-mix(in srgb, var(--ground) 20%, transparent) 60%,
+            color-mix(in srgb, var(--ground) 50%, transparent) 100%
+          ),
           url("/images/landscapes/stormy-1600.webp") center / cover no-repeat;
       }
       main {
@@ -43,17 +73,15 @@
         width: min(30rem, 100%);
         padding: 1.5rem;
         box-sizing: border-box;
-        border: 1px solid #6b5230;
+        border: 1px solid var(--line2);
         border-radius: 16px;
-        background: #201a16;
+        background: var(--plate);
         box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
       }
       h1 {
         margin: 0;
         text-align: center;
-        font:
-          400 34px/1 "Bokor",
-          serif;
+        font: 400 34px/1 var(--face-display);
       }
       a {
         display: flex;
@@ -61,16 +89,13 @@
         justify-content: center;
         height: 56px;
         border-radius: 16px;
-        background: linear-gradient(180deg, #f3d08a, #dfaa54);
-        color: #1b1207;
-        font:
-          700 18px "Atkinson Hyperlegible Next",
-          system-ui,
-          sans-serif;
+        background: linear-gradient(180deg, var(--gold2), var(--gold));
+        color: var(--ink);
+        font: 700 18px var(--face-body);
         text-decoration: none;
       }
       a:focus-visible {
-        outline: 3px solid #f6c297;
+        outline: 3px solid var(--peach);
         outline-offset: 3px;
       }
     </style>

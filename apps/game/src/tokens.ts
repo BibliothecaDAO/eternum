@@ -1,8 +1,8 @@
 /**
  * The one token file: every visual value the shell (src/shell, the doorway, src/pwa and the kit) renders with, and the
  * HUD's palette and finish beside it. Tailwind reads it (tailwind.config.js) and writes each value as a CSS variable,
- * so classes, index.css and code that cannot take a class read the same values. Where the kit and the code named a
- * value for the same role, the kit's won (brand.html, ruled 7 October 2026).
+ * so classes, index.css and code that cannot take a class read the same values. The brand's colours are the brand kit's
+ * own palette (src/brand/palette.json, Realms Brand Kit v3, unchanged): a role the kit names reads it from there.
  *
  * How to restyle the shell
  *
@@ -19,6 +19,13 @@
  * - /lab/kit/tokens draws every value from this file; /lab/app and /lab/kit show it in place.
  */
 
+import KIT from "./brand/palette.json";
+
+/** The brand kit's colours (Realms Brand Kit v3 `03-Colors/palette.json`), lower-cased as the rest of this file. */
+const BRAND = Object.fromEntries(Object.entries(KIT.brand).map(([name, hex]) => [name, hex.toLowerCase()])) as {
+  readonly [name in keyof typeof KIT.brand]: string;
+};
+
 /** `r g b` channels of a `#rrggbb` colour: the form Tailwind's `rgb(var(--kit-x) / <alpha-value>)` classes read. */
 const channels = (hex: string) => [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16)).join(" ");
 
@@ -28,23 +35,23 @@ const withAlpha = (hex: string, alpha: number) => `rgb(${channels(hex)} / ${alph
 /** The HUD's palette: the in-game interface, and :root's (`--ground`, `bg-kit-ground` outside the shell). */
 export const HUD_COLORS = {
   /** Every page's background, the install splash, the status bar. */
-  ground: "#130f0c",
+  ground: BRAND.hearth,
   /** Cards and plates, always opaque. */
-  plate: "#201a16",
+  plate: BRAND.plate,
   /** A secondary button's face, a pressed row. */
   plate2: "#2a221c",
   /** Card edges and separators; never text. */
-  line: "#46351c",
+  line: BRAND.line,
   /** Chip and outline-button edges; never text. */
   line2: "#6b5230",
   /** Text, and the logo on dark. */
-  cream: "#f4ebdc",
+  cream: BRAND.cream,
   /** Secondary text. */
-  muted: "#a2926f",
+  muted: BRAND.muted,
   /** Earned and press-me: the primary button's face, a place or LORDS won. */
-  gold: "#dfaa54",
+  gold: BRAND["action-gold"],
   /** The lit rim, the ending line. */
-  gold2: "#f3d08a",
+  gold2: BRAND["mark-gold"],
   /** The brand accent: the selected tab, focus rings, the age numerals, the player's own row. */
   peach: "#f6c297",
   /** Warning: the last hour, a full store, Blocked. */
@@ -69,15 +76,15 @@ type Palette = { readonly [name in keyof typeof HUD_COLORS]: string };
 
 /** The shell's palette: every page outside a game. Same roles as the HUD's; today the same values. */
 export const SHELL_COLORS: Palette = {
-  ground: "#130f0c",
-  plate: "#201a16",
+  ground: BRAND.hearth,
+  plate: BRAND.plate,
   plate2: "#2a221c",
-  line: "#46351c",
+  line: BRAND.line,
   line2: "#6b5230",
-  cream: "#f4ebdc",
-  muted: "#a2926f",
-  gold: "#dfaa54",
-  gold2: "#f3d08a",
+  cream: BRAND.cream,
+  muted: BRAND.muted,
+  gold: BRAND["action-gold"],
+  gold2: BRAND["mark-gold"],
   peach: "#f6c297",
   amber: "#e39001",
   ember: "#ef5858",
@@ -217,48 +224,35 @@ export const surfaceVariables = (colors: Palette, finish: Finish): Record<string
 const kebab = (name: string) => name.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
 /**
- * The app's two faces (decisions-1, 14 October 2026): Bokor for page and card titles only, and Atkinson Hyperlegible
- * Next for everything read (labels, buttons, text, numbers), in sentence case, upright and untracked. The Blitz and
- * Eternum HUD reads in its own faces (CLASSIC_HUD_FONTS).
+ * The brand's faces, one role each (Realms Brand Deck v3, page 6): Realms Titling for a game's title, IM Fell English SC
+ * for headings, Exo 2 for everything read, Cinzel for short labels and controls. Each comes from the brand kit
+ * (`02-Fonts`) and is served from the app (public/fonts/SOURCE.md); the HUD reads in the reading face.
  */
-const BODY_FACE = '"Atkinson Hyperlegible Next", system-ui, sans-serif';
-
 export const FONTS = {
-  /** Titles: page and card titles, the one display line of a page. */
-  display: '"Bokor", serif',
-  /**
-   * Labels: buttons, pills, section labels, panel titles, tabs and switches, a row's name, entry rows, the countdown's
-   * word. The body face today; its own role so a labels face can be adopted (the realms.world reskin) by changing this
-   * one value.
-   */
-  ui: BODY_FACE,
-  /** Everything read. */
-  body: BODY_FACE,
+  /** A game's own title, at 32px and above: Frontier, Blitz 16:00. Its capitals only; others fall back to headings. */
+  game: '"Realms Titling", "IM Fell English SC", serif',
+  /** Headings: a page's or a panel's title, the one display line of a page. */
+  display: '"IM Fell English SC", serif',
+  /** Controls and short labels: buttons, tabs, the bar's places, the footer's links. */
+  ui: '"Cinzel", serif',
+  /** Everything read: text, rows, chips, figures. */
+  body: '"Exo 2", system-ui, sans-serif',
 } as const;
 
 /**
- * The Blitz and Eternum HUD's face (its War room skin, 16 October 2026), as a CSS variable under html.classic-hud only:
- * Exo 2 for everything read there, panel titles included (--font-ui, also `font-ui`).
- */
-export const CLASSIC_HUD_FONTS = {
-  ui: '"Exo 2", "Atkinson Hyperlegible Next", system-ui, sans-serif',
-} as const;
-
-/**
- * Served from the app (public/fonts), each file as the brand kit or Google Fonts ships it with its licence beside it
- * (public/fonts/SOURCE.md). A face with one weight claims every weight, so a bold title keeps its true letters and is
- * never synthesised.
+ * Each face as the brand kit ships it, with its licence beside it (public/fonts/SOURCE.md). A face's files claim every
+ * weight between them, so a bold line keeps its true letters and is never synthesised.
  */
 export const FONT_FACES = [
   {
-    fontFamily: '"Atkinson Hyperlegible Next"',
-    src: 'url("/fonts/atkinson-hyperlegible-next.woff2") format("woff2")',
-    fontWeight: "200 800",
+    fontFamily: '"Realms Titling"',
+    src: 'url("/fonts/realms-titling-bold.woff2") format("woff2")',
+    fontWeight: "100 900",
     fontDisplay: "swap",
   },
   {
-    fontFamily: '"Bokor"',
-    src: 'url("/fonts/bokor-regular.ttf") format("truetype")',
+    fontFamily: '"IM Fell English SC"',
+    src: 'url("/fonts/im-fell-english-sc-regular.ttf") format("truetype")',
     fontWeight: "100 900",
     fontDisplay: "swap",
   },
@@ -266,6 +260,18 @@ export const FONT_FACES = [
     fontFamily: '"Exo 2"',
     src: 'url("/fonts/exo-2.woff2") format("woff2")',
     fontWeight: "100 900",
+    fontDisplay: "swap",
+  },
+  {
+    fontFamily: '"Cinzel"',
+    src: 'url("/fonts/cinzel-regular.woff2") format("woff2")',
+    fontWeight: "100 500",
+    fontDisplay: "swap",
+  },
+  {
+    fontFamily: '"Cinzel"',
+    src: 'url("/fonts/cinzel-semibold.woff2") format("woff2")',
+    fontWeight: "600 900",
     fontDisplay: "swap",
   },
 ] as const;
@@ -458,10 +464,10 @@ export const HUD_SHEET = {
   t2: "52 211 153",
   t3: "147 51 234",
   /** A chest's rarity, common to legendary, by order: each frame warmer than the last. */
-  "rarity-1": "#6b5230",
-  "rarity-2": "#a2926f",
-  "rarity-3": "#dfaa54",
-  "rarity-4": "#f3d08a",
+  "rarity-1": HUD_COLORS.line2,
+  "rarity-2": HUD_COLORS.muted,
+  "rarity-3": HUD_COLORS.gold,
+  "rarity-4": HUD_COLORS.gold2,
   "rarity-5": "#f6ac1d",
   /** A control's height; a touch target's is HUD_PHONE's. */
   control: "36px",
@@ -520,21 +526,44 @@ export const HUD_COLOR_CLASSES: Record<string, string> = Object.fromEntries([
   ["surface", "var(--hud-surface-to)"],
 ]);
 
+/** `#rrggbb` of `over` laid on `ground` at `share` (0 to 1): a dark surface tinted by a kit colour. */
+const tint = (ground: string, over: string, share: number) =>
+  `#${[1, 3, 5]
+    .map((at) => {
+      const [base, top] = [ground, over].map((hex) => parseInt(hex.slice(at, at + 2), 16));
+      return Math.round(base * (1 - share) + top * share)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+
+/** The brand kit's game identities (`games` in src/brand/palette.json), lower-cased. */
+const GAME = (game: keyof typeof KIT.games, role: "title" | "ground") => KIT.games[game][role].toLowerCase();
+
 /**
- * Each game is an age of the lore ("Realms · The Lost Ages"), and wears its age's colours (owner, 17 October 2026: "a
- * different color for each game, like in the lore each game is one age"), taken from the age's painting
- * (public/images/landscapes): its accent (every line, title, label, tab and focus ring, as channels) and its surface.
- * The owner swapped Blitz's and Frontier's (18 October 2026: "I would swap frontier & blitz color"). The elements never
- * change; the primary button stays gold in every age.
+ * Each game is an age of the lore, and wears its age's colours (owner, 17 October 2026: "a different color for each
+ * game, like in the lore each game is one age"): its accent (every line, title, label, tab and focus ring, as channels)
+ * and its surface. Blitz and Frontier take the brand kit v3's (owner, 29 October 2026, of /picks/brand-v3/: "I agree
+ * with the brand calls"): Blitz its Spark title on a dark Ember, Frontier its title violet on its own ground. Eternum's
+ * kit ground is parchment, so on the dark HUD it keeps its gold. The elements never change; the primary button stays
+ * gold in every age.
  */
 export const HUD_MODES = {
-  /** Blitz: torchlight carried through a slate mist. */
-  blitz: { accent: "232 166 90", "surface-from": "#1b2628", "surface-to": "#101718" },
-  /** Frontier: the storm's violet over an obsidian spire. */
-  frontier: { accent: "180 156 240", "surface-from": "#1e1b28", "surface-to": "#121019" },
+  /** Blitz: Spark on Ember, laid dark on Hearth. */
+  blitz: {
+    accent: channels(GAME("blitz", "title")),
+    "surface-from": tint(BRAND.hearth, GAME("blitz", "ground"), 0.3),
+    "surface-to": tint(BRAND.hearth, GAME("blitz", "ground"), 0.15),
+  },
+  /** Frontier: the title's violet on Frontier's ground. */
+  frontier: {
+    accent: channels(GAME("frontier", "title")),
+    "surface-from": tint(GAME("frontier", "ground"), GAME("frontier", "title"), 0.06),
+    "surface-to": GAME("frontier", "ground"),
+  },
   /** Eternum (`eternum-restoration`): the restored tower's gold over warm stone. */
   eternum: { accent: "230 194 122", "surface-from": "#27211a", "surface-to": "#16120d" },
-} as const;
+};
 
 export type HudMode = keyof typeof HUD_MODES;
 
@@ -634,7 +663,7 @@ export const hudVariables = (): Record<string, string> =>
       [`--hud-leading-${role}`, line],
       [`--hud-weight-${role}`, weight],
     ]),
-    ["--hud-font", CLASSIC_HUD_FONTS.ui],
+    ["--hud-font", FONTS.body],
   ]);
 
 /** CSS variables from their names and values, each name written once: two meanings never share a variable. */
@@ -761,20 +790,25 @@ export function mapAgeAccent(age: HudMode): string {
  * HUD's sheet: a handful of type roles, colour roles, and elements built only from them; its own colour scope, so an
  * app value never moves a HUD pixel. Where the app shows a game, that game's age (HUD_MODES) colours it: one source.
  *
- * The type scale: titles in the display face (Bokor), everything read in the body face, nothing under 14px (the app's
+ * The type scale, one face per role as the brand deck sets them (page 6): a game's title in its title face, headings in
+ * the display face, controls in the labels face, everything read in the body face, nothing under 14px (the app's
  * floor). An app text takes a role (`text-app-body`), never a size.
  */
 export const APP_TYPE = {
   /** The one hero line of a page on the desktop: Play's call, a season's ending. */
   display: { size: "56px", line: "60px", weight: "400", face: "display" },
-  /** A page's or a card's title: Season 3, Frontier, Blitz 16:00. */
+  /** A page's or a card's title: Season 3, Your ticket. */
   title: { size: "32px", line: "38px", weight: "400", face: "display" },
+  /** A game's name on its card or column: Frontier, Blitz 16:00. */
+  game: { size: "32px", line: "38px", weight: "700", face: "game" },
   /** A panel's or a section's name: Frontier standings, Entry, Recent games. */
-  heading: { size: "20px", line: "28px", weight: "700", face: "body" },
+  heading: { size: "20px", line: "28px", weight: "400", face: "display" },
   /** Everything read: text, rows, a field's value, a player's name. */
   body: { size: "16px", line: "24px", weight: "500", face: "body" },
-  /** What must stand out in its line: a count, a total, a button's verb, the player's own row. */
+  /** What must stand out in its line: a count, a total, the player's own row. */
   strong: { size: "16px", line: "24px", weight: "700", face: "body" },
+  /** A button's verb, a tab, a place in the bar. */
+  control: { size: "16px", line: "24px", weight: "600", face: "ui" },
   /** Labels, chips, times and meta lines: what names or qualifies the text beside it. */
   label: { size: "14px", line: "20px", weight: "600", face: "body" },
   /** A figure that is the point of its panel: the countdown, a rank, the seats taken, the points. */
@@ -801,6 +835,13 @@ export const APP_SHEET = {
   "line-strong": SHELL_COLORS.line2,
   /** A field's or a list's recess. */
   well: "rgb(0 0 0 / 0.35)",
+  /**
+   * Eternum's ground where its lockup stands (the kit's Play card grades Eternum to parchment, its title being inked
+   * for parchment), and what reads on it: umber ink, and the Realms stamp's brown for what is secondary.
+   */
+  parchment: BRAND.parchment,
+  "parchment-ink": BRAND["umber-ink"],
+  "parchment-muted": KIT.games.eternum.stamp.toLowerCase(),
   /** How a thing stands: good (live, gained), bad (refused, lost), warn (closing soon, waiting). */
   good: SHELL_COLORS.sage,
   bad: SHELL_COLORS.red,
@@ -810,6 +851,12 @@ export const APP_SHEET = {
   "control-lg": "56px",
   /** The bar across the top of every page, and the widest a page's content runs on a desktop. */
   bar: "72px",
+  /**
+   * The lettered mark in the bar, and in the phone's top row (owner, 29 October 2026: "the one with the realms in the
+   * circle as the logo in the top nav bar"): sized so its word reads, its R about 15 px and 13 px tall.
+   */
+  mark: "56px",
+  "mark-phone": "48px",
   page: "1680px",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "6px",

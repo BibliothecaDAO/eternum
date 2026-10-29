@@ -1,5 +1,5 @@
 import { realmSkinIcon } from "@/three/structures/realm-skins";
-import { FRONTIER_LOCKUP } from "@/ui/design-system/domain-icon-meaning";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AGES } from "@bibliothecadao/types";
 import { IdentityRequestError, type CampaignTicket } from "@realms-world/identity";
 import { useEffect, useState, type ReactNode } from "react";
@@ -96,7 +96,7 @@ const DevconLanding = ({ waiting }: { waiting: boolean }) => {
         </AppButton>
       }
     >
-      <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="w-48 md:w-60" />
+      <img src={AGE_LOCKUP.frontier} alt={AGES.frontier.game} className="w-48 md:w-60" />
       <Icon name={realmSkinIcon("devcon")} size={192} />
       <h1 className="text-app-title text-app-ink">{JOIN_WORDS.realm}</h1>
       <DailyClaim golden={false} />
@@ -154,7 +154,7 @@ const ContinueToPlay = () => (
   </AppButton>
 );
 
-const TicketArt = () => <img src={FRONTIER_LOCKUP} alt={AGES.frontier.game} className="h-28 w-auto" />;
+const TicketArt = () => <img src={AGE_LOCKUP.frontier} alt={AGES.frontier.game} className="h-28 w-auto" />;
 
 /** What this ticket's realm claims each Frontier day. */
 const DailyClaim = ({ golden }: { golden: boolean }) => {

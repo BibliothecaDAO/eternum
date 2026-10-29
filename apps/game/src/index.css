@@ -231,8 +231,8 @@ html.scene-viewport body {
   -webkit-touch-callout: none;
   user-select: none;
 }
-/* One readable type for every surface but the Blitz and Eternum HUD (decisions-1, 14 October 2026): Atkinson
-   Hyperlegible Next for everything read, upright, sentence case and untracked; Bokor only where a component asks for
+/* One readable type for every surface but the Blitz and Eternum HUD (decisions-1, 14 October 2026): the reading face
+   (Exo 2) for everything read, upright, sentence case and untracked; the heading face only where a component asks for
    font-display. Semantic italics read upright too. Numbers set bold and tabular, so a rolling count never jitters and a
    number and its unit read in one face ("7h 14m", "18.3K"). The :where scope adds no specificity. */
 :where(html:not(.classic-hud)) body,
@@ -251,14 +251,14 @@ html.scene-viewport body {
 }
 
 /* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
-   owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), panel titles included, and otherwise the
-   readable rules: sentence case, upright and untracked, on the teal overlay surface. */
+   owner approved on 16 October 2026. Exo 2 for everything read, labels and panel titles included, and otherwise the
+   readable rules: sentence case, upright and untracked, on its age's own surface (HUD_MODES). */
 html.classic-hud {
-  --overlay-surface-from: #192930;
-  --overlay-surface-to: #101c23;
+  --overlay-surface-from: var(--hud-surface-from);
+  --overlay-surface-to: var(--hud-surface-to);
 }
 :where(html.classic-hud) :is(body, button, .font-sans, .font-ui) {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
 }
 /* The HUD typography's display choices are one class each (hud-typography.ts); outside the two match HUDs they set
    their caps, tracking and italics. */
@@ -433,8 +433,7 @@ html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   background: var(--primary-face);
   border: 1px solid var(--primary-rim);
   box-shadow: var(--primary-shadow);
-  /* A button's word is a label. */
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
@@ -481,8 +480,7 @@ h6,
 .h4,
 .h5,
 .h6 {
-  /* --font-ui exists only under html.classic-hud: the Blitz and Eternum HUD's face. */
-  font-family: var(--font-ui, var(--font-body));
+  font-family: var(--font-body);
 }
 @keyframes dotAnimation {
   0%,
@@ -652,7 +650,7 @@ canvas {
 
 .btn-bronze {
   /* Modern button border/shadow style - backgrounds controlled by variants */
-  border: 1px solid rgba(223, 170, 84, 0.25); /* border-gold/25 - default */
+  border: 1px solid color-mix(in srgb, var(--gold) 25%, transparent); /* border-gold/25 - default */
   border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
     0 2px 4px -1px rgb(0 0 0 / 0.1),
@@ -663,7 +661,7 @@ canvas {
 
 /* Hover state - brighter border and enhanced shadow */
 .btn-bronze:hover:not(:disabled) {
-  border-color: rgba(223, 170, 84, 0.45); /* border-gold/45 - brighter */
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent); /* border-gold/45 - brighter */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.2),
     0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
@@ -674,7 +672,7 @@ canvas {
 
 /* Active/Pressed state - brightest border with press effect */
 .btn-bronze:active:not(:disabled) {
-  border-color: rgba(223, 170, 84, 0.6); /* border-gold/60 - very bright */
+  border-color: color-mix(in srgb, var(--gold) 60%, transparent); /* border-gold/60 - very bright */
   box-shadow:
     0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
     0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
@@ -684,7 +682,7 @@ canvas {
 
 /* Focus state - visible outline for accessibility */
 .btn-bronze:focus-visible {
-  outline: 2px solid rgba(223, 170, 84, 0.6);
+  outline: 2px solid color-mix(in srgb, var(--gold) 60%, transparent);
   outline-offset: 2px;
 }
 
@@ -700,12 +698,12 @@ canvas {
 }
 
 button {
-  font-family: var(--font-ui, var(--font-body));
+  font-family: var(--font-body);
 }
 
 .button-gold {
   /* Modern gold button border/shadow style - backgrounds controlled by variants */
-  border: 1px solid rgba(223, 170, 84, 0.55); /* border-gold/55 - brighter than wood */
+  border: 1px solid color-mix(in srgb, var(--gold) 55%, transparent); /* border-gold/55 - brighter than wood */
   border-radius: 0.375rem; /* rounded-md (6px) */
   box-shadow:
     0 2px 4px -1px rgb(0 0 0 / 0.1),
@@ -716,7 +714,7 @@ button {
 
 /* Hover state - brighter border and enhanced shadow */
 .button-gold:hover:not(:disabled) {
-  border-color: rgba(223, 170, 84, 0.75); /* border-gold/75 - bright */
+  border-color: color-mix(in srgb, var(--gold) 75%, transparent); /* border-gold/75 - bright */
   box-shadow:
     0 4px 6px -1px rgb(0 0 0 / 0.2),
     0 2px 4px -2px rgb(0 0 0 / 0.15); /* shadow-md - stronger */
@@ -727,7 +725,7 @@ button {
 
 /* Active/Pressed state - brightest border with press effect */
 .button-gold:active:not(:disabled) {
-  border-color: rgba(223, 170, 84, 0.9); /* border-gold/90 - very bright */
+  border-color: color-mix(in srgb, var(--gold) 90%, transparent); /* border-gold/90 - very bright */
   box-shadow:
     0 1px 3px 0 rgb(0 0 0 / 0.3) inset,
     0 1px 2px 0 rgb(0 0 0 / 0.2); /* inset shadow for pressed feel */
@@ -737,7 +735,7 @@ button {
 
 /* Focus state - visible outline for accessibility */
 .button-gold:focus-visible {
-  outline: 2px solid rgba(223, 170, 84, 0.8);
+  outline: 2px solid color-mix(in srgb, var(--gold) 80%, transparent);
   outline-offset: 2px;
 }
 
@@ -767,7 +765,7 @@ button {
 .endgame-backdrop-texture,
 .endgame-backdrop-cinematic {
   background:
-    radial-gradient(circle at 50% 0%, rgba(223, 170, 84, 0.14), transparent 52%),
+    radial-gradient(circle at 50% 0%, color-mix(in srgb, var(--gold) 14%, transparent), transparent 52%),
     linear-gradient(180deg, rgba(1, 1, 1, 0.2), rgba(12, 10, 8, 0.35)), url("/images/hex-bg.png");
   background-size:
     auto,
@@ -804,17 +802,12 @@ button {
 .endgame-shell-cinematic::before {
   background-image:
     url("/images/score-cards/texture.jpg"),
-    radial-gradient(circle at 20% 20%, rgba(223, 170, 84, 0.15), transparent 56%),
-    url("/images/logos/Eternum-Mark-Black.png");
+    radial-gradient(circle at 20% 20%, color-mix(in srgb, var(--gold) 15%, transparent), transparent 56%);
   background-size:
     cover,
-    100% 100%,
-    420px 420px;
-  background-position:
-    center,
-    center,
-    calc(100% + 80px) -60px;
-  background-repeat: no-repeat, no-repeat, no-repeat;
+    100% 100%;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
   mix-blend-mode: screen;
   opacity: 0.22;
 }
@@ -866,10 +859,10 @@ button {
 @keyframes endgame-progress-pulse {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(223, 170, 84, 0.3);
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--gold) 30%, transparent);
   }
   50% {
-    box-shadow: 0 0 0 4px rgba(223, 170, 84, 0);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--gold) 0%, transparent);
   }
 }
 
@@ -886,9 +879,9 @@ button {
   border-image: linear-gradient(
       to right,
       transparent,
-      rgba(223, 170, 84, 0.5),
+      color-mix(in srgb, var(--gold) 50%, transparent),
       rgba(243, 201, 159, 0.5),
-      rgba(223, 170, 84, 0.5),
+      color-mix(in srgb, var(--gold) 50%, transparent),
       transparent
     )
     1;

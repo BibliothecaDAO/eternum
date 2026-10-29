@@ -3,16 +3,14 @@
   margin: auto;
   padding: 28px;
   color: #eadbc2;
-  font-family:
-    Atkinson Hyperlegible Next,
-    sans-serif;
+  font-family: var(--font-body);
   background: #100e0a;
   min-height: 100%;
 }
 
 .icon-lab h1,
 .icon-lab h2 {
-  font-family: Bokor, serif;
+  font-family: var(--font-display);
   font-weight: 400;
 }
 

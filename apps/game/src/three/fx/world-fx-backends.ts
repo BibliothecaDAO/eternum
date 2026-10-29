@@ -1,9 +1,10 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { HUD_COLORS } from "@/tokens";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 
-// The Blitz and Eternum HUD's label face where it is defined (html.classic-hud), the body face in every other mode.
-const HUD_LABEL_FACE = "var(--font-ui, var(--font-body))";
+// The HUD sheet's face (tokens.ts, the reading face), as the map's labels read it: an effect's words are the HUD's.
+const HUD_LABEL_FACE = "var(--hud-font)";
 
 const DOT_SUFFIXES = ["", ".", "..", "..."];
 const WORLD_FX_RENDER_ORDER = 10_000;
@@ -121,7 +122,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
       const div = document.createElement("div");
       div.className = "fx-label";
       div.textContent = spec.labelText;
-      div.style.color = "rgb(223 170 84)";
+      div.style.color = HUD_COLORS.gold;
       div.style.fontFamily = HUD_LABEL_FACE;
       div.style.fontSize = "16px";
       div.style.fontWeight = "bold";

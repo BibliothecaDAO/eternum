@@ -14,10 +14,10 @@
   border: 1px solid transparent;
   border-radius: var(--app-radius-control);
   padding: 0 theme(spacing.5);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  line-height: var(--app-leading-strong);
-  font-weight: var(--app-weight-strong);
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-control);
+  line-height: var(--app-leading-control);
+  font-weight: var(--app-weight-control);
   white-space: nowrap;
   transition:
     background-color var(--app-fast) var(--app-ease),
@@ -253,6 +253,19 @@
   display: flex;
   gap: theme(spacing.1);
 }
+/* The app's lettered mark: the bar's and the phone's top row's, its word legible at the sheet's size. */
+.app-mark {
+  display: block;
+  width: auto;
+  height: var(--app-mark);
+}
+/* On a phone the mark keeps a little clear ground above and below it, so the top row grows to hold it (56 px). */
+@media (max-width: 1023px) {
+  .app-mark {
+    height: var(--app-mark-phone);
+    margin-block: theme(spacing.1);
+  }
+}
 .app-bar__place {
   display: flex;
   height: var(--app-control);
@@ -260,9 +273,9 @@
   gap: theme(spacing.3);
   border-radius: var(--app-radius-control);
   padding: 0 theme(spacing.4);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  font-weight: var(--app-weight-strong);
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-control);
+  font-weight: var(--app-weight-control);
   color: var(--app-muted);
 }
 .app-bar__place:is(:hover, [data-state="hover"]) {
@@ -378,9 +391,9 @@
   border-radius: calc(var(--app-radius-control) - 4px);
   padding: 0 clamp(theme(spacing.2), 3vw, theme(spacing.5));
   white-space: nowrap;
-  font-family: var(--app-face-strong);
+  font-family: var(--app-face-control);
   font-size: var(--app-text-label);
-  font-weight: var(--app-weight-strong);
+  font-weight: var(--app-weight-control);
   color: var(--app-muted);
 }
 .app-tabs__tab:is(:hover, [data-state="hover"]) {
@@ -512,11 +525,36 @@
     padding-top: theme(spacing.16);
   }
 }
-.app-age-column__name {
-  font-family: var(--app-face-title);
-  font-size: var(--app-text-title);
-  line-height: var(--app-leading-title);
+/* ── A game's name: its age's lockup, whole, then one game's start in the title face. ── */
+.app-game-name {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: theme(spacing.1);
+}
+.app-game-name__lockup {
+  display: block;
+  width: auto;
+  height: 8rem;
+}
+.app-game-name__when {
+  font-family: var(--app-face-game);
+  font-size: var(--app-text-game);
+  line-height: var(--app-leading-game);
+  font-weight: var(--app-weight-game);
   color: var(--app-ink);
+}
+.app-game-card[data-size="lead"] .app-game-name__lockup {
+  height: min(12rem, 40vw);
+}
+/* Eternum's lockup is inked for parchment (the kit's Play card): its column and card grade to parchment and read in
+   umber, the painting still above. */
+.app-age-column[data-age="eternum"],
+.app-game-card[data-age="eternum"] {
+  --app-age-to: var(--app-parchment);
+  --app-ink: var(--app-parchment-ink);
+  --app-muted: var(--app-parchment-muted);
+  --app-well: color-mix(in srgb, var(--app-parchment-ink) 8%, transparent);
 }
 
 /* ── Well: a list's recess inside a painted surface. ── */
@@ -575,12 +613,9 @@
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
   line-height: var(--app-leading-title);
+  font-weight: var(--app-weight-title);
   color: var(--app-ink);
   text-shadow: 0 2px 0 rgb(0 0 0 / 0.6);
-}
-.app-game-card[data-size="lead"] .app-game-card__title {
-  font-size: var(--app-text-display);
-  line-height: var(--app-leading-display);
 }
 .app-game-card__facts {
   display: flex;
