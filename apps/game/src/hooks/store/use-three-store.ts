@@ -4,8 +4,6 @@ import { BuildingType, HexPosition, ID, Position } from "@bibliothecadao/types";
 import { deriveMapSelection, type MapSelectionIntent, withoutSelectedTile } from "./map-selection";
 
 export interface ThreeStore {
-  navigationTarget: HexPosition | null;
-  setNavigationTarget: (hex: HexPosition | null) => void;
   cameraTargetHex: HexPosition | null;
   setCameraTargetHex: (hex: HexPosition | null) => void;
   hoveredHex: HexPosition | null;
@@ -90,11 +88,6 @@ export const createThreeStoreSlice = (
   set: (partial: Partial<ThreeStore> | ((state: ThreeStore) => Partial<ThreeStore>)) => void,
   get: () => ThreeStore,
 ) => ({
-  navigationTarget: null,
-  setNavigationTarget: (hex: HexPosition | null) => {
-    if (areHexesEqual(get().navigationTarget, hex)) return;
-    set({ navigationTarget: hex });
-  },
   cameraTargetHex: null,
   setCameraTargetHex: (hex: HexPosition | null) => {
     if (areHexesEqual(get().cameraTargetHex, hex)) return;

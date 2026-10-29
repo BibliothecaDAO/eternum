@@ -1,6 +1,7 @@
 import { identity as playIdentity } from "../vrf/fixtures";
 import { expect, test } from "bun:test";
-import { startReadRpc, WRITES_CLOSED_MESSAGE } from "./read-rpc";
+import { startReadRpc } from "./read-rpc";
+import { WRITES_CLOSED_MESSAGE } from "./public-rpc";
 import { assertPublicRpcBoundary } from "./public-rpc-check";
 import { hash } from "starknet";
 import { rpcClientAddress } from "./rpc-client-limit";

@@ -64,7 +64,7 @@ import { Medallion } from "@/ui/features/world/hud/medallion";
 import { ProductionStatusBadge } from "@/ui/shared";
 import { Token } from "@/three/map-plates/map-plate-token";
 import { Plate } from "@/three/map-plates/map-plates";
-import type { ArmyPlate, StructurePlate } from "@/three/map-plates/map-plate-model";
+import { plateSideStyle, type ArmyPlate, type StructurePlate } from "@/three/map-plates/map-plate-model";
 import { orderTip } from "@/ui/features/frontier/hud/order-tip";
 import { ActionType } from "@bibliothecadao/eternum";
 import "@/three/map-plates/map-plates.css";
@@ -1523,7 +1523,12 @@ const PlateAt = ({
   selected?: boolean;
 }) => (
   <div className="mp !static !overflow-visible">
-    <div className="mp-at !static" data-relation={plate.relation} data-selected={selected}>
+    <div
+      className="mp-at !static"
+      data-relation={plate.relation}
+      data-selected={selected}
+      style={plateSideStyle(plate)}
+    >
       {open ? <Plate plate={plate} /> : <Token plate={plate} />}
     </div>
   </div>

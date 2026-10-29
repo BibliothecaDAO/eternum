@@ -13,16 +13,10 @@ export const HudMinimap = ({ className }: { className?: string }) =>
   useQuery().isMapView ? <WorldMinimap className={className} /> : null;
 
 const WorldMinimap = ({ className }: { className?: string }) => {
-  const { tiles, isLoading, cameraTargetHex, selectedHex, navigationTarget } = useMinimapReading();
+  const { tiles, isLoading, cameraTargetHex, selectedHex } = useMinimapReading();
   return (
     <HudMinimapFrame loading={isLoading} className={cn("aspect-square overflow-hidden", className)}>
-      <HexMinimap
-        look="badges"
-        tiles={tiles}
-        selectedHex={selectedHex}
-        navigationTarget={navigationTarget}
-        cameraTargetHex={cameraTargetHex}
-      />
+      <HexMinimap look="badges" tiles={tiles} selectedHex={selectedHex} cameraTargetHex={cameraTargetHex} />
     </HudMinimapFrame>
   );
 };

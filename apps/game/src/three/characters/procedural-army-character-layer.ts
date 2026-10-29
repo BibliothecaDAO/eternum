@@ -6,6 +6,7 @@ import type {
   ProceduralUnitRuntime,
 } from "@/three/characters";
 import { T1_KNIGHT_WORLD_SCALE } from "@/three/constants/army-constants";
+import { beginModelPreparation } from "@/three/model-preparation";
 import type { CosmeticAttachmentTemplate } from "@/three/cosmetics/types";
 import { CombatImpactRegistry } from "@/three/combat/combat-impact-registry";
 import { intersectSweptSphere } from "@/three/projectiles/arrow-ballistics";
@@ -403,10 +404,25 @@ export class ProceduralArmyCharacterLayer {
     });
   }
 
+  /**
+   * Creates the character runtime ahead of the first army that needs it: the map's entry asks for it, so its ~100 ms
+   * setup (a phone stand-in) runs behind the doorway instead of in the first pan that brings an army into view.
+   */
+  public prepare(): void {
+    if (this.disposed || this.runtime) return;
+    this.loadRuntime([]);
+  }
+
   private startRuntimeLoad(): void {
     const needs = [...this.assetNeeds.values()];
-    if (this.runtimePromise || !needs.some((need) => !need.failed)) return;
+    if (!needs.some((need) => !need.failed)) return;
+    this.loadRuntime(needs);
+  }
+
+  private loadRuntime(needs: { failed: boolean }[]): void {
+    if (this.runtimePromise) return;
     const generation = this.generation;
+    const endPreparation = beginModelPreparation();
     this.runtimePromise = import("@/three/characters")
       .then(async (characterModule) => {
         const runtime = await characterModule.ProceduralUnitRuntime.create();
@@ -430,6 +446,7 @@ export class ProceduralArmyCharacterLayer {
       })
       .finally(() => {
         this.runtimePromise = undefined;
+        endPreparation();
       });
   }
 

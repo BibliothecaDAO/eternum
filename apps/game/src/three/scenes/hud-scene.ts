@@ -1,13 +1,11 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { AmbienceManager } from "@/three/managers/ambience-manager";
-import { Navigator } from "@/three/managers/navigator";
 import { WeatherManager, type WeatherState } from "@/three/managers/weather-manager";
 import { SceneManager } from "@/three/scene-manager";
 import { AmbientParticleSystem } from "@/three/systems/ambient-particle-system";
 import { GRAPHICS_DEV_GUI_ENABLED, createGuiFolder } from "@/three/utils/gui-manager";
 import { clampCycleProgress } from "@/utils/cycle-progress";
 import { AmbientLight, HemisphereLight, OrthographicCamera, Scene, Vector3 } from "three";
-import { MapControls } from "three/addons/controls/MapControls.js";
 
 type GUIController = {
   updateDisplay?: () => void;
@@ -19,15 +17,12 @@ export default class HUDScene {
   private scene: Scene;
   private camera: OrthographicCamera;
   private sceneManager: SceneManager;
-  private controls: MapControls;
   private GUIFolder: any | null = null;
-  private navigator: Navigator;
   private ambientLight!: AmbientLight;
   private hemisphereLight!: HemisphereLight;
   private weatherManager!: WeatherManager;
   private ambienceManager!: AmbienceManager;
   private ambientParticles?: AmbientParticleSystem;
-  private navigationTargetUnsubscribe: (() => void) | null = null;
   private cycleProgress: number = 0;
   private particleSpawnCenter: Vector3 = new Vector3();
   private readonly debugTimeControls = {
@@ -37,13 +32,11 @@ export default class HUDScene {
   private debugTimeOverrideController: GUIController | null = null;
   private debugTimeProgressController: GUIController | null = null;
 
-  constructor(sceneManager: SceneManager, controls: MapControls) {
+  constructor(sceneManager: SceneManager) {
     this.scene = new Scene();
     this.sceneManager = sceneManager;
-    this.controls = controls;
     this.camera = this.createOrthographicCamera();
 
-    this.navigator = new Navigator(this.scene, this.controls);
     this.setupGraphicsDevControls();
 
     this.addAmbientLight();
@@ -56,19 +49,6 @@ export default class HUDScene {
     this.setupGraphicsDevEffectControls();
 
     this.ambientParticles = new AmbientParticleSystem(this.scene);
-
-    // Store subscription reference for cleanup
-    this.navigationTargetUnsubscribe = useUIStore.subscribe(
-      (state) => state.navigationTarget,
-      (target) => {
-        const currentTarget = this.navigator.getNavigationTarget();
-        if (target && target.col !== currentTarget?.col && target.row !== currentTarget?.row) {
-          this.setNavigationTarget(target.col, target.row);
-        } else {
-          this.navigator.clearNavigationTarget();
-        }
-      },
-    );
   }
 
   private setupGraphicsDevControls(): void {
@@ -78,28 +58,10 @@ export default class HUDScene {
 
     try {
       this.GUIFolder = createGuiFolder("HUD");
-      this.setupNavigatorGuiControls();
       this.GUIFolder.close();
     } catch {
       this.GUIFolder = null;
     }
-  }
-
-  private setupNavigatorGuiControls(): void {
-    if (!this.GUIFolder) {
-      return;
-    }
-
-    const navigatorParams = { col: 269, row: 143 };
-
-    this.GUIFolder.add(navigatorParams, "col").name("Col");
-    this.GUIFolder.add(navigatorParams, "row").name("Row");
-    this.GUIFolder.add(
-      {
-        setNavigationTarget: () => this.navigator.setNavigationTarget(navigatorParams.col, navigatorParams.row),
-      },
-      "setNavigationTarget",
-    ).name("Navigate to Col Row");
   }
 
   private setupGraphicsDevEffectControls(): void {
@@ -232,13 +194,7 @@ export default class HUDScene {
     return this.weatherManager.getState();
   }
 
-  public hasActiveLabelAnimations(): boolean {
-    return this.navigator?.hasActiveLabel() ?? false;
-  }
-
   update(deltaTime: number, cycleProgress?: number) {
-    this.navigator.update();
-
     // Update weather system (handles rain, wind, transitions)
     this.weatherManager.update(deltaTime);
 
@@ -290,22 +246,7 @@ export default class HUDScene {
     this.camera.updateProjectionMatrix();
   }
 
-  setNavigationTarget(col: number, row: number) {
-    this.navigator.setNavigationTarget(col, row);
-  }
-
   public destroy(): void {
-    // CRITICAL: Unsubscribe from store to prevent memory leaks
-    if (this.navigationTargetUnsubscribe) {
-      this.navigationTargetUnsubscribe();
-      this.navigationTargetUnsubscribe = null;
-    }
-
-    // Clean up navigator (if it has a destroy method)
-    if (this.navigator && "destroy" in this.navigator && typeof (this.navigator as any).destroy === "function") {
-      (this.navigator as any).destroy();
-    }
-
     useUIStore.getState().setDebugCycleProgressOverride(null);
 
     // Clean up weather manager

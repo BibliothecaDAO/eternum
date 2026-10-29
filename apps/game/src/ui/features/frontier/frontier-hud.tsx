@@ -60,6 +60,7 @@ import { FrontierToday } from "./log/frontier-today";
 import { CARD_STORE_KINDS, type CardStore, FrontierStoreCard, isCardStore } from "./production/frontier-store-card";
 import { FrontierResearch } from "./research/frontier-research";
 import { ClearedRuinChest } from "./chest/cleared-ruin-chest";
+import { ChestLordsMoment } from "./chest/chest-lords-moment";
 import { dayClock } from "./hud/day-clock";
 import { BuildingsInFlight } from "./build/build-sheet";
 import { DayDone } from "./rollover/day-done";
@@ -179,6 +180,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const notices = (
     <>
       <ClearedRuinChest />
+      <ChestLordsMoment />
       <OfflineNotice />
       <SceneFailureNotice />
     </>

@@ -552,7 +552,6 @@ export const useMinimapReading = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
-  const navigationTarget = useUIStore((state) => state.navigationTarget);
   const cameraTargetHex = useUIStore((state) => state.cameraTargetHex);
   const structureEntityId = useUIStore((state) => state.structureEntityId);
   const playerStructures = useFactView(playerStructuresView);
@@ -600,20 +599,14 @@ export const useMinimapReading = () => {
     isLoading,
     cameraTargetHex: activeRealmHex ?? cameraTargetHex,
     selectedHex: activeRealmHex ?? selectedHex,
-    navigationTarget,
   };
 };
 
 export const MinimapPanel = () => {
-  const { tiles, isLoading, cameraTargetHex, selectedHex, navigationTarget } = useMinimapReading();
+  const { tiles, isLoading, cameraTargetHex, selectedHex } = useMinimapReading();
   return (
     <HudMinimapFrame loading={isLoading} className="h-hud-phone-minimap">
-      <HexMinimap
-        tiles={tiles}
-        selectedHex={selectedHex}
-        navigationTarget={navigationTarget}
-        cameraTargetHex={cameraTargetHex}
-      />
+      <HexMinimap tiles={tiles} selectedHex={selectedHex} cameraTargetHex={cameraTargetHex} />
     </HudMinimapFrame>
   );
 };

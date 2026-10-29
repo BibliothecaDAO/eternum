@@ -1,5 +1,7 @@
 import { spawnSync } from "node:child_process";
+import { readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
+import { join, relative } from "node:path";
 
 import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
 
@@ -35,8 +37,15 @@ export const setViewport = ({ width, height }) => Object.assign(VIEWPORT, { widt
  * One agent-browser session on one browser profile: commands as a player gives them, and reads of what the page shows.
  * Every command names the profile: agent-browser relaunches the browser on a temporary one for a command that does not.
  */
-export function createBrowserSession(session, { headed, profile }) {
-  const sessionArgs = ["--session", session, "--profile", profile, ...(headed ? ["--headed"] : [])];
+export function createBrowserSession(session, { executablePath, headed, profile }) {
+  const sessionArgs = [
+    "--session",
+    session,
+    "--profile",
+    profile,
+    ...(executablePath ? ["--executable-path", executablePath] : []),
+    ...(headed ? ["--headed"] : []),
+  ];
   const invoke = (commandArgs) =>
     spawnSync("npx", ["-y", "agent-browser", ...sessionArgs, ...commandArgs], {
       cwd: process.env.RUNNER_TEMP || process.env.TMPDIR || tmpdir(),
@@ -308,6 +317,43 @@ export async function openOrderSendGate(devTools) {
     },
   };
 }
+
+/**
+ * Serves the page the models found under `directory` in place of the deployed ones at the same path below `/models/`,
+ * whatever their content hash: a heavier test asset measured in the real client. Every other request passes untouched.
+ * Returns the models it served so far, by path.
+ */
+export async function serveModelOverrides(devTools, directory) {
+  const overrides = new Map(listModels(directory).map((path) => [relative(directory, path), path]));
+  const served = [];
+  devTools.onEvent(({ method, params }) => {
+    if (method !== "Fetch.requestPaused") return;
+    const model = modelPathOf(params.request.url);
+    const override = overrides.get(model);
+    if (!override) return void devTools.send("Fetch.continueRequest", { requestId: params.requestId });
+    served.push(model);
+    void devTools.send("Fetch.fulfillRequest", {
+      requestId: params.requestId,
+      responseCode: 200,
+      responseHeaders: [
+        { name: "content-type", value: "model/gltf-binary" },
+        { name: "access-control-allow-origin", value: "*" },
+      ],
+      body: readFileSync(override).toString("base64"),
+    });
+  });
+  await devTools.send("Fetch.enable", { patterns: [{ urlPattern: "*.glb*", requestStage: "Request" }] });
+  return () => [...served];
+}
+
+const listModels = (directory) =>
+  readdirSync(directory, { recursive: true })
+    .filter((path) => path.endsWith(".glb"))
+    .map((path) => join(directory, path));
+
+/** A model's path below `/models/` without the content hash a release names it with: `realms/city.glb`. */
+export const modelPathOf = (url) =>
+  new URL(url).pathname.replace(/^\/models\//, "").replace(/\.[0-9a-f]{8,}\.glb$/, ".glb");
 
 const rpcIdOf = (request) => JSON.parse(request.postData ?? "{}").id ?? null;
 

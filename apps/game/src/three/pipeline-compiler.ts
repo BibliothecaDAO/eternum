@@ -1,4 +1,5 @@
 import type { Camera, Object3D, Scene } from "three";
+import { beginModelPreparation } from "./model-preparation";
 import { incrementWorldmapRenderCounter, recordWorldmapRenderDuration } from "./perf/worldmap-render-diagnostics";
 
 /** Prepares an object's material pipelines against its destination scene before attachment. */
@@ -25,12 +26,14 @@ export function createPipelineCompiler(input: {
       return;
     }
     const startedAt = performance.now();
+    const endPreparation = beginModelPreparation();
     try {
       const camera = input.getCamera();
       await serializeRendererCompile(renderer, () => renderer.compileAsync!(object, camera, targetScene));
       incrementWorldmapRenderCounter("pipelinePrecompiles");
     } finally {
       recordWorldmapRenderDuration("pipelineCompileMs", performance.now() - startedAt);
+      endPreparation();
     }
   };
 }

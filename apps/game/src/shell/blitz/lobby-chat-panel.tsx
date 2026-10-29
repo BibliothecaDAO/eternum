@@ -1,4 +1,4 @@
-import { type FormEvent, useEffect, useRef, useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import type { PlaytestSlot } from "../blitz-slot";
@@ -7,7 +7,8 @@ import type { WorldChatMessage } from "@bibliothecadao/types";
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppField, AppPanel } from "@/ui/design-system/kit/app-elements";
+import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { type ChatHold, useLobbyChat } from "./lobby-chat";
 
@@ -60,28 +61,39 @@ export const LobbyChatPanel = ({
   );
 };
 
-/** The messages, kept scrolled to the newest as they arrive. */
+/** The messages, opened on the newest and kept there as they arrive, unless the reader scrolled up to read. */
 const Messages = ({ messages }: { messages: readonly WorldChatMessage[] }) => {
   const { session } = useIdentitySession();
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
-  const list = useRef<HTMLOListElement>(null);
-  useEffect(() => {
-    list.current?.scrollTo({ top: list.current.scrollHeight });
-  }, [messages.length]);
+  const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
+    oldest: messages[0]?.id,
+    newest: messages.at(-1)?.id,
+  });
   return (
-    <ol ref={list} className="flex max-h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
-      {messages.map((message) => (
-        <li key={message.id} className="break-words">
-          <b className="mr-2 text-app-accent">
-            {isOwn(message, session?.user.realmsId)
-              ? YOU
-              : resolveChatSenderName(names, message.sender.playerId, message.sender.displayName)}
-          </b>
-          <span>{message.content}</span>
-        </li>
-      ))}
-    </ol>
+    <div className="relative">
+      <ol ref={scrollerRef} className="flex max-h-64 flex-col gap-1.5 overflow-y-auto py-2 text-app-body text-app-ink">
+        {messages.map((message) => (
+          <li key={message.id} className="break-words">
+            <b className="mr-2 text-app-accent">
+              {isOwn(message, session?.user.realmsId)
+                ? YOU
+                : resolveChatSenderName(names, message.sender.playerId, message.sender.displayName)}
+            </b>
+            <span>{message.content}</span>
+          </li>
+        ))}
+      </ol>
+      {hasNewer && (
+        <div className="pointer-events-none absolute inset-x-0 bottom-2 flex justify-center">
+          <div className="pointer-events-auto">
+            <AppButton kind="secondary" icon="arrow-down" onClick={jumpToLatest}>
+              {CHAT_WORDS.newMessages}
+            </AppButton>
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

@@ -15,12 +15,13 @@ block at the captured head with the running node's, restores both Postgres copie
 `restore-test/result.json`; it exits non-zero unless everything matches.
 
 A final copy, the one a production teardown removes the shard after, is taken at a write boundary. The shard's RPC
-proxy is its one write path (the node publishes no port) and also the path the value relay reads receipts through:
-quiesce makes the proxy refuse every write while it keeps answering reads (read-rpc.ts WRITES_CLOSED_FILE, in its
-public configuration), so outstanding withdrawals are still found and paid; reopen lifts it. Verify then asks: the
-copy's checksums hold, its restore test passed, it is of the running chain (the node still has the captured head),
-the proxy refuses a write now, and no block after the captured head holds a transaction. Blocks keep coming (the node
-seals empty ones), but none of them changed the game.
+proxy is its one write path (the node publishes no port) and also the path the value relay reads receipts through.
+Quiesce makes it refuse every write while it keeps answering reads (public-rpc.ts WRITES_CLOSED_FILE, in its public
+configuration), so outstanding withdrawals are still found and paid; reopen lifts it. A proxy older than that switch
+is replaced by read-only-rpc.ts from this checkout, which answers the same reads and refuses every write the same way.
+Verify then asks: the copy's checksums hold, its restore test passed, it is of the running chain (the node still has
+the captured head), the stack's RPC refuses a write now, and no block after the captured head holds a transaction.
+Blocks keep coming (the node seals empty ones), but none of them changed the game.
 """
 import hashlib
 import json
@@ -80,27 +81,100 @@ WRITES_CLOSED_MESSAGE = "Shard writes are closed for its final backup"
 
 
 def quiesce(project):
-    """Makes the shard's RPC proxy refuse every write; reads, the node, Herald and the relay keep running."""
-    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).write_text("closed\n")
-    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
+    """Closes the shard's writes and keeps its reads, and is safe to run again. A proxy with the switch refuses writes
+    itself. One older than the switch is replaced, for the rest of the shard's life, by the checkout's read-only
+    proxy under the same image, network alias and port: the relay keeps reading and paying through it."""
+    write_closure(project)
+    if proxy_refuses_writes(project):
+        return {"project": project, "writes": "closed", "reads": "open"}
+    try:
+        stand_in_read_only_proxy(project)
+    except Exception:
+        clear_closure(project)
+        restore_proxy(project)
+        raise
+    return {"project": project, "writes": "closed", "reads": "open", "proxy": "read-only stand-in"}
 
 
 def reopen(project):
-    """Lifts quiesce: the proxy takes writes again, and any earlier final copy no longer verifies."""
-    (volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE).unlink(missing_ok=True)
-    return {"project": project, "writes": "open" if accepts_writes(project) else "closed"}
+    """Lifts quiesce: the shard's own proxy serves writes again, and any earlier final copy no longer verifies."""
+    clear_closure(project)
+    restore_proxy(project)
+    return {"project": project, "writes": "closed" if writes_closed(project) else "open"}
 
 
-def accepts_writes(project):
-    """Whether the running proxy would take a write: it is asked one, from inside the stack, and must refuse it as
-    closed. A proxy without the switch (an older image) answers otherwise and counts as open."""
+def stand_in_read_only_proxy(project):
+    """Stops the shard's own proxy and runs read-only-rpc.ts from this checkout in its place: the proxy's image (it
+    carries Bun), its network alias `rpc`, its published port and user, with the checkout mounted read-only (the
+    stand-in imports two dependency-free files from it). Labelled into the compose project; teardown removes it."""
+    proxy, stand_in = f"{project}-rpc-1", f"{project}-rpc-read-only"
+    shape = json.loads(docker_output(["inspect", "-f", "{{json .}}", proxy]))
+    docker(["rm", "-f", stand_in], check=False)
+    if proxy_state(project) == "running":
+        docker(["stop", "-t", "10", proxy])
+    ports = [argument for port, bindings in (shape["HostConfig"]["PortBindings"] or {}).items()
+             for binding in bindings for argument in ("-p", f"{binding['HostIp']}:{binding['HostPort']}:{port}")]
+    network = next(iter(shape["NetworkSettings"]["Networks"]))
+    checkout = Path(__file__).resolve().parents[2]
+    docker(["run", "-d", "--name", stand_in, "--restart", "on-failure", "--network", network, "--network-alias", "rpc",
+            *ports, *(["--user", shape["Config"]["User"]] if shape["Config"]["User"] else []),
+            "--label", f"com.docker.compose.project={project}", "--label", "com.docker.compose.service=rpc-read-only",
+            "-v", f"{checkout}:{checkout}:ro", "-e", "NODE_RPC_URL=http://madara:9944", "-e", "PORT=8080",
+            "--entrypoint", "bun", shape["Config"]["Image"], str(checkout / "deploy/shard/read-only-rpc.ts")])
+    for _ in range(30):
+        if proxy_refuses_writes(project):
+            return
+        time.sleep(1)
+    raise RuntimeError("The read-only proxy did not start refusing writes; the shard's own proxy runs again")
+
+
+def restore_proxy(project):
+    """The shard's own proxy back in place of any read-only stand-in."""
+    docker(["rm", "-f", f"{project}-rpc-read-only"], check=False)
+    if proxy_state(project) == "stopped":
+        started = docker(["start", f"{project}-rpc-1"], check=False)
+        if started.returncode != 0:
+            raise RuntimeError(f"The shard's proxy did not start: {started.stderr.strip()}")
+
+
+def writes_closed(project):
+    """No write can reach the node: quiesce closed it, and the RPC the stack serves, asked now, refuses a write as
+    closed. A marker alone or an unanswered question proves nothing."""
+    return closure_path(project).exists() and proxy_refuses_writes(project)
+
+
+def proxy_refuses_writes(project):
+    """Whether the stack's RPC (the alias `rpc`: the proxy, or its read-only stand-in) refuses a write as closed: it is
+    asked one, from inside the stack. A proxy without the switch answers otherwise, and none at all doesn't answer."""
     request = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "starknet_addInvokeTransaction", "params": [{}]})
     answer = docker(["exec", f"{project}-madara-1", "curl", "-s", "-m", "10", "-X", "POST", "-H",
                      "content-type: application/json", "-d", request, "http://rpc:8080/"], check=False).stdout
     try:
-        return json.loads(answer).get("error", {}).get("message") != WRITES_CLOSED_MESSAGE
+        return json.loads(answer).get("error", {}).get("message") == WRITES_CLOSED_MESSAGE
     except (json.JSONDecodeError, AttributeError):
-        return True
+        return False
+
+
+def proxy_state(project):
+    """running or stopped, as Docker says; anything else, an error included, is not an answer."""
+    inspected = docker(["inspect", "-f", "{{.State.Running}}", f"{project}-rpc-1"], check=False)
+    state = {"true": "running", "false": "stopped"}.get(inspected.stdout.strip())
+    if inspected.returncode != 0 or state is None:
+        raise RuntimeError(f"Docker could not say whether {project}-rpc-1 runs: "
+                           f"{inspected.stderr.strip() or inspected.stdout.strip()}")
+    return state
+
+
+def closure_path(project):
+    return volume_path(f"{project}_public-config") / WRITES_CLOSED_FILE
+
+
+def write_closure(project):
+    closure_path(project).write_text("closed\n")
+
+
+def clear_closure(project):
+    closure_path(project).unlink(missing_ok=True)
 
 
 def transactions_after(container, number):
@@ -131,8 +205,8 @@ def verify(project, dest):
     node = f"{project}-madara-1"
     if node_block(node, {"block_number": head["block_number"]}) != head:
         problems.append("the running chain differs from the copy's head")
-    if accepts_writes(project):
-        problems.append("the shard still accepts writes: quiesce it, drain, then capture")
+    if not writes_closed(project):
+        problems.append("the shard's writes are not shown closed: quiesce it, drain, then capture")
     accepted = transactions_after(node, head["block_number"])
     if accepted:
         problems.append(f"{accepted} transactions were accepted after the capture: capture the drained shard again")
@@ -386,11 +460,17 @@ def main(argv):
         print(json.dumps(result, indent=2))
         sys.exit(0 if result["passed"] else 1)
     elif argv[:1] == ["quiesce"] and len(argv) == 2:
-        result = quiesce(argv[1])
-        print(json.dumps(result))
-        sys.exit(0 if result["writes"] == "closed" else 1)
+        try:
+            print(json.dumps(quiesce(argv[1])))
+        except (RuntimeError, subprocess.CalledProcessError) as error:
+            print(json.dumps({"project": argv[1], "problem": str(error)}))
+            sys.exit(1)
     elif argv[:1] == ["reopen"] and len(argv) == 2:
-        print(json.dumps(reopen(argv[1])))
+        try:
+            print(json.dumps(reopen(argv[1])))
+        except (RuntimeError, subprocess.CalledProcessError) as error:
+            print(json.dumps({"project": argv[1], "problem": str(error)}))
+            sys.exit(1)
     elif argv[:1] == ["verify"] and len(argv) == 3:
         problems = verify(argv[1], Path(argv[2]).resolve())
         print(json.dumps({"verified": not problems, "problems": problems}))

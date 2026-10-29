@@ -110,7 +110,7 @@ function createGameRendererEffectsBridgeRuntime(input: CreateGameRendererRuntime
 }
 
 function createGameRendererHudScene(runtimeState: GameRendererRuntimeState): HUDScene {
-  return new HUDScene(runtimeState.sceneManager as SceneManager, runtimeState.controls as MapControls);
+  return new HUDScene(runtimeState.sceneManager as SceneManager);
 }
 
 function createGameRendererMonitoringRuntime(input: CreateGameRendererRuntimeAssemblyInput) {
