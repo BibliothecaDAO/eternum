@@ -842,14 +842,18 @@ const FIRST_RING_CANDIDATES = [
   ...FIRST_RING.map(([dx, dy]) => [Math.round(dx * 0.6), Math.round(dy * 0.6)]),
 ];
 
-/** The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. */
+/**
+ * The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. The plot changes again after
+ * it (the Build sheet's highlight, then its chosen building's ghost), so the result is what changed there by three
+ * frames after the mark, not the plot's last look.
+ */
 function buildingDemolished({ actionLatency }) {
   const removed = (actionLatency.chainAnswers ?? [])
     .filter(({ kind }) => kind === "DestroyBuilding")
     .at(-1)
     ?.answered.find(({ model, value }) => model === "Building" && value === null);
   const [, , col, row] = removed?.key.split(":") ?? [];
-  return col && { presented: `building-gone:${col},${row}` };
+  return col && { presented: `building-gone:${col},${row}`, onset: true };
 }
 
 /**

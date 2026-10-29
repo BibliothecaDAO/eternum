@@ -45,8 +45,10 @@ export async function startResultCapture(devTools, timeOrigin) {
  * highlights, is not this result). The screen at a moment is the last frame sent by then: a still page sends no frame
  * until it changes again. It was shown at the first frame where half of them did. The verdict fails when too
  * few pixels changed by then (the result was absent, or later than three frames), or when it was shown more than a frame
- * before its mark (the mark came late). Frames are the page's own (`pageFrames`, each frame's start): a slow frame is
- * one frame, and it widens the window only where it falls. The frames around it are written to `dir`.
+ * before its mark (the mark came late). A result its place changes again after (`onset`: a demolished building's
+ * plot, which the Build sheet's ghost fills next) is what changed there by three frames after the mark, not its last
+ * look. Frames are the page's own (`pageFrames`, each frame's start): a slow frame is one frame, and it widens the
+ * window only where it falls. The frames around it are written to `dir`.
  */
 export async function proveResultOnScreen({ frames, region, target, onset, before, visible, pageFrames, dir }) {
   const window = frameWindow(pageFrames, visible);
@@ -58,7 +60,7 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
     return { shown: false, reason: "no frame between the facts and three frames after the mark", region };
   }
   const [base, final, atSettled] = await Promise.all(
-    [reference, last, settled].map((frame) => regionGrey(frame, region)),
+    [reference, onset ? settled : last, settled].map((frame) => regionGrey(frame, region)),
   );
   const resultPixels = [];
   for (let index = 0; index < base.length; index += 1) {
@@ -88,17 +90,17 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
 }
 
 /**
- * The frames a result may first show in, from the page's frame starts: from the start of the frame before the one its
- * mark fell in (a frame early) to the start of the third frame after that one. Where the page recorded none, a 60 Hz
- * frame stands in.
+ * When the screen may first show a result, from the page's frame starts: what a frame paints is on screen as the next
+ * frame starts. From the start of the frame its mark fell in (painted by the frame before: a frame early) to the start
+ * of the fourth frame after it (painted by the third after). Where the page recorded no frame, a 60 Hz one stands in.
  */
 export function frameWindow(pageFrames, visible) {
   const at = pageFrames.findLastIndex((frame) => frame <= visible);
   const nominal = 1000 / 60;
   return {
     visible,
-    earliest: at >= 1 ? pageFrames[at - 1] : visible - nominal,
-    latest: pageFrames[at + 3] ?? visible + 3 * nominal,
+    earliest: at >= 0 ? pageFrames[at] : visible - nominal,
+    latest: pageFrames[at + 4] ?? visible + 4 * nominal,
   };
 }
 
