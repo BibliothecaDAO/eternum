@@ -63,6 +63,17 @@ const BRAND_FAMILY = new RegExp(
   [...new Set(FONT_FACES.map((font) => font.fontFamily.replaceAll('"', "")))].join("|"),
   "gi",
 );
+/** The kit's colours (its brand roles and each game's ground, title and stamp), each as hex or as `rgb()` channels. */
+const KIT_COLOURS = [
+  ...new Set([
+    ...Object.values(KIT.brand),
+    ...Object.values(KIT.games).flatMap((game) => [game.ground, game.title, game.stamp]),
+  ]),
+].map((hex) => {
+  const [r, g, b] = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16));
+  return { hex, pattern: new RegExp(`${hex}\\b|\\b${r},?\\s*${g},?\\s*${b}\\b`, "i") };
+});
+
 const NAMED_FILE = /\/(?:images\/logos|fonts)\/[\w.-]+/g;
 
 function sourcesUnder(dir: string): string[] {
@@ -101,6 +112,18 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
   it("serves every face and mark it names", () => {
     const files = [...fontFiles(), ...Object.values(REALMS_MARK), ...Object.values(AGE_LOCKUP)];
     expect(files.filter((file) => !existsSync(publicFile(file)))).toEqual([]);
+  });
+
+  it("writes no kit colour out in the app's code: it reads the token file", () => {
+    const writtenOut = sourcesUnder(path("../"))
+      .filter((file) => !/(\/tokens\.ts|\.test\.tsx?)$/.test(file))
+      .flatMap((file) => {
+        const text = readFileSync(file, "utf8");
+        return KIT_COLOURS.filter((colour) => colour.pattern.test(text)).map(
+          (colour) => `${shortPath(file)}: ${colour.hex}`,
+        );
+      });
+    expect(writtenOut).toEqual([]);
   });
 
   it("keeps the game's HUD on its reading face: no HUD code reads the app's labels face (Cinzel)", () => {

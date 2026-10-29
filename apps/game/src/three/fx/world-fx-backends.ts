@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
+import { HUD_COLORS } from "@/tokens";
 import type { RendererFxCapabilities } from "../renderer-fx-capabilities";
 
 // The HUD sheet's face (tokens.ts, the reading face), as the map's labels read it: an effect's words are the HUD's.
@@ -121,7 +122,7 @@ abstract class BaseIconWorldFxEffect implements ManagedWorldFxEffect, IconFxAnim
       const div = document.createElement("div");
       div.className = "fx-label";
       div.textContent = spec.labelText;
-      div.style.color = "rgb(223 170 84)";
+      div.style.color = HUD_COLORS.gold;
       div.style.fontFamily = HUD_LABEL_FACE;
       div.style.fontSize = "16px";
       div.style.fontWeight = "bold";

@@ -183,7 +183,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
           ref={navigation}
           aria-label="HUD tabs"
           className={cn(
-            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
+            "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[var(--hud-surface-to)]",
             layout.tabBar,
           )}
           style={layout.tabBarStyle}
@@ -218,7 +218,10 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
       )}
       <nav
         aria-label="Structure actions"
-        className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
+        className={cn(
+          "pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[var(--hud-surface-to)]",
+          layout.actions,
+        )}
         style={layout.actionsStyle}
       >
         {actions.map((action) => (

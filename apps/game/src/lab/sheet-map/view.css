@@ -34,14 +34,14 @@
 }
 .map-sheet-controls button {
   padding: 8px 14px;
-  border: 1px solid #6b5230;
+  border: 1px solid var(--line2);
   border-radius: 6px;
   color: inherit;
   background: transparent;
 }
 .map-sheet-controls button[aria-pressed="true"] {
   background: var(--gold);
-  color: #1b1207;
+  color: var(--ink);
   border-color: var(--gold);
 }
 .map-sheet-headings {
@@ -84,7 +84,7 @@
   line-height: 18px;
   padding: 0 5px;
   border-radius: 3px;
-  background: rgb(19 15 12 / 86%);
+  background: color-mix(in srgb, var(--ground) 86%, transparent);
   white-space: nowrap;
 }
 .map-sheet-lab footer {

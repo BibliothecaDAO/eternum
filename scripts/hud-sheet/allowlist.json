@@ -4,11 +4,11 @@
   "apps/game/src/ui/design-system/atoms/overlay-surface.ts": 13,
   "apps/game/src/ui/features/world/components/actions/spire-travel-modal.tsx": 22,
   "apps/game/src/ui/features/world/components/bottom-right-panel/hex-minimap.tsx": 7,
-  "apps/game/src/ui/features/world/containers/compact-hud.tsx": 31,
+  "apps/game/src/ui/features/world/containers/compact-hud.tsx": 29,
   "apps/game/src/ui/features/world/containers/left-facets/structure-actions-panel.tsx": 13,
   "apps/game/src/ui/features/world/containers/left-facets/structure-list-column.tsx": 1,
   "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 4,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
-  "apps/game/src/ui/features/world/hud/hud.css": 26
+  "apps/game/src/ui/features/world/hud/hud.css": 23
 }
