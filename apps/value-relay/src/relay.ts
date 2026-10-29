@@ -240,6 +240,12 @@ export const grantDailyLabor = (ports: RelayPorts, claim: LaborClaim) =>
       if (BigInt(owner) === BigInt(wallet)) held.push(realm);
       else refused.push({ realmId: realm.realmId, reason: "realm_not_owned" });
     }
-    const grants = held.length ? yield* ports.shard.grantLabor({ ...claim, realms: held }) : [];
-    return { grants: grants.map((grant, index) => ({ ...grant, realmId: held[index]!.realmId })), refused };
+    const written = held.length
+      ? yield* ports.shard.grantLabor({ ...claim, realms: held })
+      : { grants: [], transactionHash: null };
+    return {
+      grants: written.grants.map((grant, index) => ({ ...grant, realmId: held[index]!.realmId })),
+      refused,
+      transactionHash: written.transactionHash,
+    };
   });

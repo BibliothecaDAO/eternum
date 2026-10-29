@@ -111,7 +111,9 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready" } });
   expect(data.get("progress")).toMatchObject({ nextBlock: 1 });
   expect((await relay.shardHealth()).success).toBe(false);
-  shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
+  shard.grant.mockReturnValue(
+    Effect.succeed({ grants: [{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }], transactionHash: "0xabc" }),
+  );
   const claim = {
     realms: [{ gameId: 7, home: "0x8", realmId: "8" }],
     chainId: "0x1",
@@ -219,7 +221,9 @@ it("serializes pool publication with labor on the same shard signer", async () =
     rows: [],
     next: null,
   });
-  shard.grant.mockReturnValue(Effect.succeed([{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }]));
+  shard.grant.mockReturnValue(
+    Effect.succeed({ grants: [{ gameId: 7, account: "0x3", home: "0x8", amount: "1" }], transactionHash: "0xabc" }),
+  );
   const ticking = relay.tick("0x1");
   await started;
   const claiming = relay.labor({

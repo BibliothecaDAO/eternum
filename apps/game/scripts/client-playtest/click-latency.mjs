@@ -33,7 +33,8 @@ export function measureClickToResult({ probe, actionLatency, since, result }) {
   const marks = {
     click,
     command: stageAt(record, "command"),
-    answered: stageAt(record, "answered"),
+    // A send the relay signs (the labor claim) has no RPC answer of the player's: its cut runs from the request.
+    ...(isRelayed(record) ? {} : { answered: stageAt(record, "answered") }),
     diff: record?.phases?.diff_received ?? null,
     applied: record?.phases?.store_applied ?? null,
     visible: visibleAt({ probe, click, result }),
@@ -98,6 +99,11 @@ function stageAt(record, stage) {
   return record?.send?.stages?.find((reached) => reached.stage === stage)?.at ?? null;
 }
 
+/** Whether the relay signed the send: its record names the transaction from the relay's reply. */
+function isRelayed(record) {
+  return Boolean(record?.send?.stages?.some((reached) => reached.stage === "included" && reached.detail === "relay"));
+}
+
 /** When the result was on its frame: its presented mark, or the probe callback that first saw its watch hold. */
 function visibleAt({ probe, click, result }) {
   if (result.presented) {
@@ -109,16 +115,17 @@ function visibleAt({ probe, click, result }) {
   throw new Error(`measureClickToResult has no way to see ${JSON.stringify(result)}`);
 }
 
-/** Each segment whose two marks were reached, in ms. */
+/** Each segment of the action's cut whose two marks were reached, in ms; a mark the cut has none of is passed over. */
 function segmentsOf(marks) {
-  const order = ["click", ...CLICK_TO_RESULT_SEGMENTS.map(({ mark }) => mark)];
-  return Object.fromEntries(
-    CLICK_TO_RESULT_SEGMENTS.flatMap(({ mark, segment }, index) => {
-      const from = marks[order[index]];
-      const to = marks[mark];
-      return from === null || to === null ? [] : [[segment, round(to - from)]];
-    }),
-  );
+  let from = marks.click;
+  const segments = [];
+  for (const { mark, segment } of CLICK_TO_RESULT_SEGMENTS) {
+    if (!(mark in marks)) continue;
+    const to = marks[mark];
+    if (from !== null && to !== null) segments.push([segment, round(to - from)]);
+    from = to;
+  }
+  return Object.fromEntries(segments);
 }
 
 /**

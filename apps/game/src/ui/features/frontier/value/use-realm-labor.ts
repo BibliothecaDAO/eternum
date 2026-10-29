@@ -6,6 +6,7 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { recordClientActionSendStage } from "@/observability/client-action-latency";
 import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
 import { configManager, type ExpeditionRules, getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
@@ -121,6 +122,9 @@ export const claimRealmLabor = async (
 ): Promise<LaborClaimOutcome> => {
   const game = requireActiveGame();
   const homeId = String(safeInteger(home.entity_id));
+  // The relay signs the grant: the claim's record is its request, then the reply naming the transaction that wrote it.
+  const send = `labor:${(laborClaims += 1)}`;
+  recordClientActionSendStage(send, "command");
   const response = await fetchApi(`/api/value/labor?chainId=${game.chainId}`, {
     method: "POST",
     credentials: "include",
@@ -130,14 +134,22 @@ export const claimRealmLabor = async (
   const reply = (await response.json().catch(() => null)) as LaborReply | null;
   if (!Array.isArray(reply?.grants) || !Array.isArray(reply.refused))
     throw new Error(`Labor answered ${response.status}`);
+  recordClientActionSendStage(send, "included", "relay", reply.transactionHash ?? undefined);
   return {
     granted: reply.grants.map((grant) => Number(grant.realmId)),
     refused: reply.refused.map((refusal) => Number(refusal.realmId)),
   };
 };
 
-/** The relay's reply to a labor claim, granted (200) or with no Realm held (409): each Realm by its decimal id. */
+/**
+ * The relay's reply to a labor claim, granted (200) or with no Realm held (409): each Realm by its decimal id, and the
+ * shard transaction that wrote the grants (none when they were written before).
+ */
 interface LaborReply {
   grants: { realmId: string }[];
   refused: { realmId: string }[];
+  transactionHash: string | null;
 }
+
+/** This page's labor claims, each its own send. */
+let laborClaims = 0;

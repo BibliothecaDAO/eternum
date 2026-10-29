@@ -100,7 +100,12 @@ const fixture = () => {
       eventsPage: () => Effect.succeed(block),
       withdrawal: () => Effect.succeed(withdrawal),
       result: () => Effect.succeed(result),
-      grantLabor: vi.fn(() => Effect.succeed([{ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" }])),
+      grantLabor: vi.fn(() =>
+        Effect.succeed({
+          grants: [{ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" }],
+          transactionHash: "0xabc",
+        }),
+      ),
     },
     identity: {
       matchesPayDecision: (decision) => Effect.succeed(BigInt(decision.wallet) === 0x123n),
@@ -227,6 +232,7 @@ describe("confirmed value relay", () => {
     expect(await Effect.runPromise(grantDailyLabor(f.ports, claim))).toEqual({
       grants: [],
       refused: [{ realmId: "7", reason: "realm_not_owned" }],
+      transactionHash: null,
     });
     expect(f.ports.shard.grantLabor).toHaveBeenCalledTimes(1);
   });
@@ -594,20 +600,17 @@ it.each(["7", "8", "9"])("grants held Realms in one call when Realm %s was sold"
   };
   f.ports.realms.ownerOf = vi.fn((id) => Effect.succeed(id === sold ? "0x456" : "0x123"));
   f.ports.shard.grantLabor = vi.fn((claim) =>
-    Effect.succeed(
-      claim.realms.map(() => ({
-        gameId: 1,
-        account: "0x3",
-        home: "9",
-        amount: "1000000000000",
-      })),
-    ),
+    Effect.succeed({
+      grants: claim.realms.map(() => ({ gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
+      transactionHash: "0xabc",
+    }),
   );
   const result = await Effect.runPromise(grantDailyLabor(f.ports, claim));
   const held = claim.realms.filter((realm) => realm.realmId !== sold);
   expect(result).toEqual({
     grants: held.map(({ realmId }) => ({ realmId, gameId: 1, account: "0x3", home: "9", amount: "1000000000000" })),
     refused: [{ realmId: sold, reason: "realm_not_owned" }],
+    transactionHash: "0xabc",
   });
   expect(f.ports.realms.ownerOf).toHaveBeenCalledTimes(3);
   expect(f.ports.shard.grantLabor).toHaveBeenCalledExactlyOnceWith({ ...claim, realms: held });

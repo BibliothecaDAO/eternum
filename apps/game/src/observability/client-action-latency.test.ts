@@ -85,6 +85,22 @@ describe("an action's send, as the game client reports its stages", () => {
     vi.spyOn(performance, "now").mockImplementation(() => clock);
   });
 
+  it("gives a relayed send the stream's phases for its transaction, which it names only once they are past", () => {
+    at(100);
+    recordClientActionSendStage("labor:1", "command");
+    at(400);
+    recordClientActionDiffReceived("0x0c");
+    at(404);
+    recordClientActionStoreApplied("0x0c");
+    recordClientActionDiffReceived("0x0d");
+    at(900);
+    recordClientActionSendStage("labor:1", "included", "relay", "0xc");
+
+    const [claim] = snapshotClientActionLatency();
+    expect(claim.send?.stages.map(({ stage, at }) => `${stage} ${at}`)).toEqual(["command 100", "included 900"]);
+    expect(claim.phases).toEqual({ diff_received: 400, store_applied: 404 });
+  });
+
   it("joins two overlapping actions each to its own send by hash, and keeps their stream phases apart", () => {
     at(100);
     const move = beginClientActionLatency({ operation: "army_move", surface: "worldmap" });

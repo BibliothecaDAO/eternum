@@ -1,7 +1,14 @@
 import { readShardAbi } from "../../../packages/value-ledger/src/shard-abi";
 import { type Abi } from "starknet";
 import { ShardReader, sameFelt, felt, uint, type ShardConnection } from "./shard-rpc";
-import { MAX_LABOR_REALMS, relayOperation, type LaborClaim, type LaborGrant, type RelayEffect } from "./ports";
+import {
+  MAX_LABOR_REALMS,
+  relayOperation,
+  type LaborClaim,
+  type LaborGrant,
+  type LaborGrantsWritten,
+  type RelayEffect,
+} from "./ports";
 import { ShardOperator } from "@realms-world/value-ledger/shard";
 import { rpcAt } from "@realms-world/value-ledger";
 
@@ -17,9 +24,13 @@ export const currentLaborDay = (connection: ShardConnection): RelayEffect<number
     Math.floor((await new ShardReader(connection).header("latest")).timestamp / 86400),
   );
 
-/** Direct role entry: a configured server account signs one grant; limits and exact retry rules remain on the shard. */
+/**
+ * Direct role entry: a configured server account signs one grant; limits and exact retry rules remain on the shard. The
+ * grants come back with the transaction that wrote them, by which the player's client finds them in Herald's stream;
+ * none when every grant was already written.
+ */
 export const writeLaborGrants = (target: LaborTarget, claim: LaborClaim) =>
-  relayOperation("write Realm labor grant", async (): Promise<LaborGrant[]> => {
+  relayOperation("write Realm labor grant", async (): Promise<LaborGrantsWritten> => {
     if (!sameFelt(claim.chainId, target.connection.chainId)) throw new Error("labor_chain_differs");
     const reader = new ShardReader(target.connection);
     const head = await reader.head();
@@ -47,21 +58,22 @@ export const writeLaborGrants = (target: LaborTarget, claim: LaborClaim) =>
     prior.forEach((grant, index) => {
       if (grant) matchingGrant(grant, claim.realms[index]!, claim.account);
     });
-    if (prior.every((grant) => grant !== null)) return prior;
+    if (prior.every((grant) => grant !== null)) return { grants: prior, transactionHash: null };
     const operator = new ShardOperator({
       ...target.connection,
       accountAddress: target.operatorAddress,
       privateKey: target.privateKey,
     });
-    await operator.admin("grant_labor", {
+    const { transactionHash } = await operator.admin("grant_labor", {
       realms,
       day: claim.day,
       account: claim.account,
     });
-    return (await readGrants()).map((grant, index) => {
+    const grants = (await readGrants()).map((grant, index) => {
       if (!grant) throw new Error("labor_grant_not_recorded");
       return matchingGrant(grant, claim.realms[index]!, claim.account);
     });
+    return { grants, transactionHash };
   });
 const laborRealms = (claim: LaborClaim) => {
   uint(String(claim.day), 64);

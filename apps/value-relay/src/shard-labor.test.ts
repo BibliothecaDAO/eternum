@@ -39,12 +39,13 @@ vi.mock("@realms-world/value-ledger/shard", () => ({
       entrypoint: string,
       args: { realms: { game_id: number; realm_id: number; home: bigint }[]; day: number; account: string },
     ) {
-      await rpc.execute({
+      const sent = await rpc.execute({
         contractAddress: "0x10",
         entrypoint,
         calldata: new CallData(gamesAbi).compile(entrypoint, args).map(hex),
       });
       if ((await rpc.wait()).isReverted()) throw new Error("labor_grant_reverted");
+      return { transactionHash: sent.transaction_hash, events: [] };
     }
   },
 }));
@@ -92,14 +93,10 @@ it("writes the published direct grant and returns a zero grant without treating 
             new CairoOption(CairoOptionVariant.Some, { game_id: 7, account: "0x123", home: 9, amount: 0 }),
           ).map(hex),
   );
-  expect(await Effect.runPromise(writeLaborGrants(target, claim))).toEqual([
-    {
-      gameId: 7,
-      account: "0x123",
-      home: "9",
-      amount: "0",
-    },
-  ]);
+  expect(await Effect.runPromise(writeLaborGrants(target, claim))).toEqual({
+    grants: [{ gameId: 7, account: "0x123", home: "9", amount: "0" }],
+    transactionHash: "0xabc",
+  });
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "grant_labor",
@@ -163,7 +160,9 @@ it("derives one UTC day across all games from confirmed shard time", async () =>
   expect(await Effect.runPromise(currentLaborDay(connection))).toBe(1);
 });
 it("authenticates the public request, rejects account/day injection and checks current wallet NFT ownership before writing", async () => {
-  const write = vi.fn(() => Effect.succeed([{ gameId: 7, account: "0x123", home: "9", amount: "0" }]));
+  const write = vi.fn(() =>
+    Effect.succeed({ grants: [{ gameId: 7, account: "0x123", home: "9", amount: "0" }], transactionHash: "0xabc" }),
+  );
   const ports = {
     identity: { accountForRealmsId: () => Effect.succeed("0x123"), linkedWallet: () => Effect.succeed("0x456") },
     realms: { ownerOf: () => Effect.succeed("0x456") },
@@ -189,6 +188,7 @@ it("authenticates the public request, rejects account/day injection and checks c
     day: 5,
     grants: [{ realmId: "8", gameId: 7, account: "0x123", home: "9", amount: "0" }],
     refused: [],
+    transactionHash: "0xabc",
   });
   expect(write).toHaveBeenCalledWith({ ...claim, day: 5 });
   expect(dependencies.authenticate).toHaveBeenCalledWith("test-cookie");
@@ -216,6 +216,7 @@ it("authenticates the public request, rejects account/day injection and checks c
       { realmId: "8", reason: "realm_not_owned" },
       { realmId: "12", reason: "realm_not_owned" },
     ],
+    transactionHash: "0xabc",
   });
   expect(write).toHaveBeenCalledExactlyOnceWith({
     ...claim,
@@ -231,13 +232,14 @@ it("authenticates the public request, rejects account/day injection and checks c
     error: "realm_not_owned",
     grants: [],
     refused: realms.map(({ realmId }) => ({ realmId: String(realmId), reason: "realm_not_owned" })),
+    transactionHash: null,
   });
   expect(write).not.toHaveBeenCalled();
 });
 
 it("never reads a day or writes a grant for a signed-out caller", async () => {
   const currentDay = vi.fn(() => Effect.succeed(0));
-  const grant = vi.fn(async () => ({ grants: [], refused: [] }));
+  const grant = vi.fn(async () => ({ grants: [], refused: [], transactionHash: null }));
   const request = new Request("https://play.test/api/value/labor", {
     method: "POST",
     headers: { origin: "https://play.test", "content-type": "application/json" },
@@ -266,7 +268,7 @@ it("keeps a u64 home exact and rejects a global Realm/day claim originating in a
   );
   expect(
     await Effect.runPromise(writeLaborGrants(target, { ...claim, realms: [{ ...claim.realms[0]!, home }] })),
-  ).toMatchObject([{ home, gameId: 7 }]);
+  ).toMatchObject({ grants: [{ home, gameId: 7 }] });
   rpc.call.mockImplementation(async (request) =>
     request.entrypoint === "ledger_operator" ? ["0x20"] : ["0", "8", "0x123", home, "1000"],
   );
@@ -294,7 +296,10 @@ it("grants five Realms with one transaction and reuses their immutable grants on
     submitted = true;
     return { transaction_hash: "0xabc" };
   });
-  expect(await Effect.runPromise(writeLaborGrants(target, { ...claim, realms }))).toHaveLength(5);
+  expect(await Effect.runPromise(writeLaborGrants(target, { ...claim, realms }))).toMatchObject({
+    grants: { length: 5 },
+    transactionHash: "0xabc",
+  });
   expect(rpc.execute).toHaveBeenCalledOnce();
   expect(rpc.execute.mock.calls[0]![0].calldata).toEqual(
     new CallData(gamesAbi)
@@ -309,7 +314,10 @@ it("grants five Realms with one transaction and reuses their immutable grants on
       })
       .map(hex),
   );
-  expect(await Effect.runPromise(writeLaborGrants(target, { ...claim, realms }))).toHaveLength(5);
+  expect(await Effect.runPromise(writeLaborGrants(target, { ...claim, realms }))).toMatchObject({
+    grants: { length: 5 },
+    transactionHash: null,
+  });
   expect(rpc.execute).toHaveBeenCalledOnce();
 });
 it.each([

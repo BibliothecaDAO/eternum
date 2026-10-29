@@ -99,6 +99,24 @@ describe("measureClickToResult", () => {
     expect(measured.segments.drawn).toBe(20);
   });
 
+  it("cuts a send the relay signed from its request to the facts, with no answer of the player's own", () => {
+    const claim = send({ command: 112, answered: undefined, diff: 520, applied: 526 });
+    claim.send.stages = [
+      { stage: "command", at: 112 },
+      { stage: "included", at: 900, detail: "relay" },
+    ];
+    const measured = measureClickToResult({
+      since: 90,
+      probe: { inputs: [{ type: "pointerdown", t: 100 }], ...framesTo(800), watched: [{ name: "claimed", at: 560 }] },
+      actionLatency: { clientActions: [claim] },
+      result: { watch: "claimed" },
+    });
+
+    expect(measured.missing).toEqual([]);
+    expect(measured.segments).toEqual({ handled: 12, confirmed: 408, applied: 6, drawn: 34 });
+    expect(measured.totalMs).toBe(460);
+  });
+
   it("names a mark the client never reached and leaves its segments out", () => {
     const measured = measureClickToResult({
       since: 0,

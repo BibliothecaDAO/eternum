@@ -94,9 +94,15 @@ export interface LaborGrant {
   home: string;
   amount: string;
 }
+/** The grants a claim wrote, and the shard transaction that wrote them; none when they were all written before. */
+export interface LaborGrantsWritten {
+  grants: LaborGrant[];
+  transactionHash: string | null;
+}
 export interface LaborClaimResult {
   grants: (LaborGrant & { realmId: string })[];
   refused: { realmId: string; reason: "realm_not_owned" }[];
+  transactionHash: string | null;
 }
 export const MAX_LABOR_REALMS = 100;
 export interface LaborClaim {
@@ -135,7 +141,7 @@ export interface RelayPorts {
     blockHash(number: number): RelayEffect<string>;
     eventsPage(from: number, to: number, cursor: string | null): RelayEffect<ConfirmedBlock>;
     withdrawal(chainId: string, transactionHash: string): RelayEffect<Withdrawal | null>;
-    grantLabor(claim: LaborClaim): RelayEffect<LaborGrant[]>;
+    grantLabor(claim: LaborClaim): RelayEffect<LaborGrantsWritten>;
   };
   identity: {
     accountForRealmsId(realmsId: string): RelayEffect<string | null>;
