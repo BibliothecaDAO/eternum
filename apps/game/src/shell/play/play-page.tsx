@@ -9,7 +9,7 @@ import { PageFrame } from "../frame/page-frame";
 import { Loading } from "../loading";
 import type { NextBlitzGame } from "../blitz-slot";
 import { ageOf } from "./ages";
-import { type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
+import { idleCard, type PlayBoard, PLAY_MODES, type PlayMode } from "./play-board";
 import { type PlayFacts, type SourceGap, usePlayFacts } from "./play-facts";
 import { ItemRows, LeadCard } from "./play-item";
 import { BuildOrdersRow } from "../build-orders/build-orders-row";
@@ -107,9 +107,8 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
 /**
  * One age's column: its painting and its name, then its games in its well (Blitz's, with none and no Blitz in the lead:
  * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders while a
- * Blitz is on or to come. An age with nothing to do now is idle: dimmed, its one line alone (owner, 29 October 2026:
- * "for blitz if no season dont display the build orders, and maybe dim the panel", then "eternum deactivated should
- * exist as well").
+ * Blitz is on or to come. With nothing to do now it is idle (`idleCard`, as the lead is): dimmed, its one line alone
+ * (owner, 29 October 2026: "for blitz if no season dont display the build orders, and maybe dim the panel").
  */
 const AgeColumn = ({
   mode,
@@ -123,7 +122,7 @@ const AgeColumn = ({
   const age = ageOf(mode);
   const blitzLeads = facts.board?.lead?.mode === "blitz";
   const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads || facts.nextBlitz !== null);
-  const idle = !items.some((item) => item.verb !== null) && !buildOrders;
+  const idle = idleCard(items, buildOrders);
   return (
     <AppAgeColumn age={mode} painting={age.painting} name={age.name} idle={idle}>
       {items.length > 0 ? (

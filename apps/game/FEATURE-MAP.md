@@ -98,9 +98,10 @@ Results board row on one line. The pages: Play (`/`) the lead widest and each ag
 with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
 local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
 and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and otherwise ends on **Build
-orders**, naming the order the player's games follow; an age with nothing to do now (no game of it with a verb; for
-Blitz, none on or to come) is idle, its column dimmed with nothing to press and its one line saying when it opens or
-that none is scheduled (Eternum before it opens, on the `/lab/app` screens; Blitz on `/lab/app/no-blitz`); Build orders
+orders**, naming the order the player's games follow; a mode's card with nothing to do now (no game on it with a verb;
+for Blitz's column, none on or to come), the lead or a column, is idle, dimmed with nothing to press and its one line
+saying when it opens or that none is scheduled (Eternum before it opens, in its column on the `/lab/app` screens and
+leading on `/lab/app/eternum-lead`, then open on `/lab/app/eternum-open`; Blitz on `/lab/app/no-blitz`); Build orders
 (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the
 account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the
 entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results

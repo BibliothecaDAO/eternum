@@ -507,12 +507,13 @@
   height: 100%;
   object-fit: cover;
 }
-/* An age with nothing to do now (AppAgeColumn's idle): its painting and lockup in grey, dimmed, its panel without its
-   lift; its one line reads as it does. */
-.app-age-column[data-idle] {
+/* A mode's card with nothing to do now (an idle AppAgeColumn or AppGameCard): its painting and lockup in grey, dimmed,
+   its panel without its lift; its one line reads as it does. */
+:is(.app-age-column, .app-game-card)[data-idle] {
   box-shadow: none;
 }
-.app-age-column[data-idle] :is(.app-age-column__painting, .app-game-name__lockup) {
+:is(.app-age-column, .app-game-card)[data-idle]
+  :is(.app-age-column__painting, .app-game-card__painting, .app-game-name__lockup) {
   filter: grayscale(1) brightness(0.6);
 }
 .app-age-column__body {
@@ -562,7 +563,9 @@
   --app-well: color-mix(in srgb, var(--app-parchment-ink) 8%, transparent);
 }
 /* Idle, its parchment greys and dims with its painting, as a dark ground does, its line still read in umber. */
-.app-age-column[data-age="eternum"][data-idle] .app-age-column__body {
+.app-age-column[data-age="eternum"][data-idle] .app-age-column__body,
+.app-game-card[data-age="eternum"][data-idle]::after,
+.app-game-card[data-age="eternum"][data-idle] .app-game-card__body {
   filter: grayscale(1) brightness(0.6);
 }
 

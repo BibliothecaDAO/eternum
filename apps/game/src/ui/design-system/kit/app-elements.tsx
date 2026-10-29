@@ -450,7 +450,8 @@ export const AppAgeColumn = ({
 /**
  * A game, on its age's painting and in its age's accent: its title (an AppGameName, or a line where no game stands),
  * what stands (facts), and its one verb. `lead` is
- * Play's first card, the one gold verb of the page; `tile` sits among others.
+ * Play's first card, the one gold verb of the page; `tile` sits among others. `idle`, as AppAgeColumn's: nothing to do
+ * now, dimmed.
  */
 export const AppGameCard = ({
   age,
@@ -459,6 +460,7 @@ export const AppGameCard = ({
   facts,
   verb,
   size = "tile",
+  idle = false,
   className,
 }: {
   age: Age;
@@ -467,10 +469,11 @@ export const AppGameCard = ({
   facts?: ReactNode;
   verb?: ReactNode;
   size?: "lead" | "tile";
+  idle?: boolean;
   /** Places it (its height in a column), never its look. */
   className?: string;
 }) => (
-  <article className={cn("app-game-card", className)} data-age={age} data-size={size}>
+  <article className={cn("app-game-card", className)} data-age={age} data-size={size} data-idle={idle || undefined}>
     <img className="app-game-card__painting" alt="" {...paintingSources(painting)} sizes="50vw" />
     <div className="app-game-card__body">
       <h3 className="app-game-card__title">{title}</h3>

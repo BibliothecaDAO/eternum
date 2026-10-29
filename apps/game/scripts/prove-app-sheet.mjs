@@ -1,7 +1,8 @@
 /**
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
  * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, with a Blitz on, the
- * next one scheduled and none left in the season, each age's column checked live or idle and shot on its own; the Blitz
+ * next one scheduled, none left in the season, and only Eternum before and after it opens, each mode's card, the lead
+ * and every age's column, checked live or idle and shot on its own; the Blitz
  * lobby, Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
  * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
  * each of its holds (`doorway`).
@@ -28,11 +29,15 @@ const SETTLE_MS = 2_000;
  * open (none on a full-screen step: the lobby).
  */
 const SHEET_PAGES = {
-  // Each age's column, live or idle (nothing to do now). The lab's Eternum opens in a week, so it is idle throughout.
-  play: { path: "home", place: "Play", columns: { blitz: "live", eternum: "idle" } },
+  // Each mode's card, the lead and each age's column, live or idle (nothing to do now). The lab's Eternum opens in a
+  // week, so it is idle wherever it stands.
+  play: { path: "home", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
   // Play with no Blitz left in the season: Blitz's column idle, no Build orders; and with the next one scheduled.
-  "play-no-blitz": { path: "no-blitz", place: "Play", columns: { blitz: "idle", eternum: "idle" } },
-  "play-next-blitz": { path: "blitz-next", place: "Play", columns: { blitz: "live", eternum: "idle" } },
+  "play-no-blitz": { path: "no-blitz", place: "Play", cards: { lead: "live", blitz: "idle", eternum: "idle" } },
+  "play-next-blitz": { path: "blitz-next", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
+  // Only Eternum: before it opens it leads idle, as its column would be; open, its lead offers Enter.
+  "play-eternum-lead": { path: "eternum-lead", place: "Play", cards: { lead: "idle", blitz: "idle" } },
+  "play-eternum-open": { path: "eternum-open", place: "Play", cards: { lead: "live", blitz: "idle" } },
   // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
   "play-seated": { path: "blitz-seat", place: "Play" },
   // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
@@ -368,40 +373,45 @@ const barCases = () =>
   BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(bar) }));
 
 const sheetPages = (desktop) =>
-  Object.entries(SHEET_PAGES).map(([page, { path, place, columns = {} }]) => ({
+  Object.entries(SHEET_PAGES).map(([page, { path, place, cards = {} }]) => ({
     name: `${desktop ? "app" : "phone"}-${page}`,
     path: `/lab/app/${path}?capture=1`,
-    // Each checked column on its own, as well: a phone's first screen ends before them.
-    stills: Object.keys(columns).map((age) => ({ name: age, selector: `.app-age-column[data-age="${age}"]` })),
-    more: (b) => [...sheetPageChecks({ desktop, place })(b), ...ageColumnChecks(b, columns)],
+    // Each checked card on its own, as well: a phone's first screen ends before the columns.
+    stills: Object.keys(cards).map((card) => ({ name: card, selector: cardSelector(card) })),
+    more: (b) => [...sheetPageChecks({ desktop, place })(b), ...modeCardChecks(b, cards)],
   }));
 
+/** A mode's card on Play: the lead's game card, or an age's column. */
+const cardSelector = (card) =>
+  card === "lead" ? '.app-game-card[data-size="lead"]' : `.app-age-column[data-age="${card}"]`;
+
 /**
- * Each age's column on Play, live or idle. Live: something to do (a game's verb; for Blitz, Build orders). Idle, nothing
- * to do now: drawn dimmed, nothing in it to press, so no Build orders.
+ * Each mode's card on Play (the lead, an age's column), live or idle, by one rule. Live: something to do (a game's
+ * verb; for Blitz's column, Build orders). Idle, nothing to do now: drawn dimmed, nothing on it to press, so no Build
+ * orders.
  */
-const ageColumnChecks = (b, columns) =>
-  Object.entries(columns).map(([age, expected]) => {
-    const column = b.evaluate(`(() => {
-      const column = document.querySelector('.app-age-column[data-age="${age}"]');
-      if (!column) return null;
+const modeCardChecks = (b, cards) =>
+  Object.entries(cards).map(([card, expected]) => {
+    const found = b.evaluate(`(() => {
+      const card = document.querySelector(${JSON.stringify(cardSelector(card))});
+      if (!card) return null;
       return {
-        idle: column.hasAttribute("data-idle"),
-        pressable: column.querySelectorAll("a, button").length,
-        buildOrders: column.innerText.includes("Build orders"),
-        dimmed: getComputedStyle(column.querySelector(".app-age-column__painting")).filter !== "none",
+        idle: card.hasAttribute("data-idle"),
+        pressable: card.querySelectorAll("a, button").length,
+        buildOrders: card.innerText.includes("Build orders"),
+        dimmed: getComputedStyle(card.querySelector("img[class$='__painting']")).filter !== "none",
       };
     })()`);
     const idle = expected === "idle";
-    const live = column !== null && !column.idle && !column.dimmed && column.pressable > 0;
+    const live = found !== null && !found.idle && !found.dimmed && found.pressable > 0;
     return {
       check: idle
-        ? `${age} with nothing to do now reads idle: dimmed, nothing to press`
-        : `${age} with something to do reads live${age === "blitz" ? ", with Build orders" : ""}`,
+        ? `${card} with nothing to do now reads idle: dimmed, nothing to press`
+        : `${card} with something to do reads live${card === "blitz" ? ", with Build orders" : ""}`,
       ok: idle
-        ? column !== null && column.idle && column.dimmed && column.pressable === 0 && !column.buildOrders
-        : live && (age !== "blitz" || column.buildOrders),
-      column,
+        ? found !== null && found.idle && found.dimmed && found.pressable === 0 && !found.buildOrders
+        : live && (card !== "blitz" || found.buildOrders),
+      card: found,
     };
   });
 

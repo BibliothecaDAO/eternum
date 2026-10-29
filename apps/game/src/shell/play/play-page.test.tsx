@@ -290,6 +290,47 @@ it("dims Eternum's column while its game is still to open, saying when it opens;
   expect(eternum().hasAttribute("data-idle")).toBe(false);
 });
 
+it("dims Eternum leading Play while its game is still to open, as its column would be; lit once it can be entered", async () => {
+  const opening = game({
+    game_id: 9,
+    mode: "eternum",
+    name: "eternum-1",
+    status: "Registration",
+    ready: false,
+    clock: {
+      start_settling_at: 3_900_000_000,
+      start_main_at: 3_900_000_000,
+      end_at: 4_000_000_000,
+      end_grace_seconds: 0,
+    },
+  } as Partial<DirectoryGame>);
+  reads.directory = answered({ games: [opening] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const lead = () => page.container.querySelector<HTMLElement>('[data-play-item="0xa:9"] .app-game-card')!;
+  // Nothing else running: the unopened Eternum leads, idle, saying when it opens, nothing on it to press.
+  expect(lead().dataset.size).toBe("lead");
+  expect(lead().textContent).toMatch(/Opens \d{1,2} \w{3} 2093, \d\d:\d\d/);
+  expect(lead().hasAttribute("data-idle")).toBe(true);
+  expect(lead().querySelector("a, button")).toBeNull();
+
+  // Open, with the player on its roster: the lead's Enter, and it is lit.
+  reads.directory = answered({
+    games: [
+      {
+        ...opening,
+        status: "Live",
+        ready: true,
+        player_state: { ...opening.player_state, registered: true },
+      } as DirectoryGame,
+    ],
+  });
+  await page.render();
+  expect(lead().textContent).toContain("Enter");
+  expect(lead().hasAttribute("data-idle")).toBe(false);
+});
+
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
   const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [] });

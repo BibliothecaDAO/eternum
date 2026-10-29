@@ -27,6 +27,7 @@ import {
   LAB_PLAYER,
   LAB_PROFILES,
   LAB_RATING_TOP,
+  LAB_NO_HISTORY_SCREENS,
   LAB_SCREENS,
   LAB_SEAT_PROFILES,
   LAB_SESSION,
@@ -198,7 +199,7 @@ const answerAppReads = (screen: LabScreen) => {
       }),
     "/api/directory/history": () =>
       json({
-        games: screen === "no-games" || screen === "no-blitz" || screen === "blitz-next" ? [] : [LAB_FINISHED_BLITZ],
+        games: LAB_NO_HISTORY_SCREENS.includes(screen) ? [] : [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),
