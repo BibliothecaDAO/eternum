@@ -3,6 +3,7 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { GLTFLoader, type GLTF } from "three/addons/loaders/GLTFLoader.js";
 import { KTX2Loader } from "three/addons/loaders/KTX2Loader.js";
 import { LoadingManager, type Texture } from "three";
+import { beginModelPreparation } from "../model-preparation";
 import { currentModelUrls, modelUrl, readDeployedModelUrls } from "./model-url";
 
 type KtxRenderer = Parameters<KTX2Loader["detectSupport"]>[0];
@@ -50,16 +51,26 @@ class DeployedGltfLoader extends GLTFLoader {
     onProgress?: (event: ProgressEvent) => void,
     onError?: (error: unknown) => void,
   ): void {
-    const fail = (error: unknown) => (onError ? onError(error) : console.error(error));
+    // The load counts as model preparation until it hands its model over or fails (model-preparation.ts).
+    const endPreparation = beginModelPreparation();
+    const loaded = (gltf: GLTF) => {
+      endPreparation();
+      onLoad(gltf);
+    };
+    const fail = (error: unknown) => {
+      endPreparation();
+      if (onError) onError(error);
+      else console.error(error);
+    };
     const attempt = (last: boolean) => {
       const asked = currentModelUrls();
       const { loader, failed } = attemptLoader();
       const settle = (gltf: GLTF | null, error?: unknown) => {
-        if (gltf && !failed()) return onLoad(gltf);
-        if (last) return gltf ? onLoad(gltf) : fail(error);
+        if (gltf && !failed()) return loaded(gltf);
+        if (last) return gltf ? loaded(gltf) : fail(error);
         void readDeployedModelUrls().then(() => {
           if (currentModelUrls() !== asked) attempt(true);
-          else if (gltf) onLoad(gltf);
+          else if (gltf) loaded(gltf);
           else fail(error);
         });
       };

@@ -11,6 +11,8 @@ import {
   judgePlateStamina,
   refusalErrors,
   contextLossErrors,
+  compareCensus,
+  judgeAfterDoorway,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -91,6 +93,14 @@ export const SPECTATOR_STEPS = [
   { name: "return-to-map", play: goTo("Map", "map"), settleMs: 8_000, verify: inScene("map") },
   { name: "steady", settleMs: 60_000, verify: inScene("map") },
 ];
+
+/**
+ * The world map's frames only: entered, held still, panned and zoomed, as the full walk does them. Short enough to play
+ * the same map with the deployed models and with heavier ones (`--model-override`) back to back.
+ */
+const MAP_FRAME_STEPS = SPECTATOR_STEPS.filter((step) =>
+  ["enter-on-map", "map-idle", "pan", "zoom"].includes(step.name),
+);
 
 /**
  * The map with nothing pressed, recorded frame by frame at the default view (Medium) and at the closest (Close, where
@@ -1606,8 +1616,8 @@ const FIGHT_STATE = `JSON.stringify({
       Math.round(token.top + token.height / 2 + ${TOKEN_ABOVE_TILE_PX} - innerHeight / 2),
     ];
   })(),
-  // The chest with the LORDS it paid: the clear's moment, a status or (before it played by itself) a button.
-  chest: Boolean(document.querySelector('[role="status"] [aria-label$=" LORDS"], button[aria-label="Ruin"] [aria-label$=" LORDS"]')),
+  // The chest with the LORDS it paid: the clear's moment at the centre of the screen, its LORDS shown once the lid opens.
+  chest: Boolean(document.querySelector('[data-chest-moment] [aria-label$=" LORDS"]')),
 })`;
 
 /** Picks the army from the HUD, as the Armies list or the dock does, reading where the camera looked before and after. */
@@ -2375,7 +2385,7 @@ const realmLoadSteps = (labScenario = null) => [
   { name: "realm-still", play: holdStill, settleMs: 0, verify: inScene("hex") },
   { name: "back-to-map", play: goTo("Map", "map"), settleMs: 0, verify: inScene("map") },
   { name: "realm-again", play: goTo("Realm", "hex"), settleMs: 0, verify: inScene("hex") },
-  { name: "reload-on-realm", play: reloadOnTheRealm(labScenario), settleMs: 0, verify: inScene("hex") },
+  { name: "reload-on-realm", play: reloadOn("Realm", "hex", labScenario), settleMs: 0, verify: inScene("hex") },
 ];
 
 async function holdStill() {
@@ -2383,13 +2393,16 @@ async function holdStill() {
   return {};
 }
 
-/** The realm's address loaded again in the same browser, as a player's refresh: it is playable on the realm again. */
-function reloadOnTheRealm(labScenario) {
+/**
+ * The page's address loaded again in the same browser, as a player's refresh: it is playable on `place` again. A lab
+ * game is opened again on that scene, its chain being the tab's. Returns the new page's entry milestones (warm cache).
+ */
+function reloadOn(place, scene, labScenario = null) {
   const reload = labScenario
     ? `(() => {
         const lab = new URL("/lab/game", location.origin);
         lab.searchParams.set("scenario", ${JSON.stringify(labScenario)});
-        lab.searchParams.set("scene", "hex");
+        lab.searchParams.set("scene", ${JSON.stringify(scene)});
         for (const [key, value] of new URLSearchParams(location.search)) {
           if (key === "rendererMode" || key === "dev") lab.searchParams.set(key, value);
         }
@@ -2401,16 +2414,59 @@ function reloadOnTheRealm(labScenario) {
     browser.run(["eval", reload]);
     const back = await waitFor(
       browser,
-      (seen) => seen.timeOrigin !== before.timeOrigin && seen.playable && isIn(seen, "Realm", "hex"),
+      (seen) => seen.timeOrigin !== before.timeOrigin && seen.playable && isIn(seen, place, scene),
       PLAYABLE_WAIT_MS,
     );
     if (back) await sleep(SCENE_HOLD_MS);
-    return { reloaded: browser.observe().timeOrigin !== before.timeOrigin };
+    return {
+      reloaded: browser.observe().timeOrigin !== before.timeOrigin,
+      milestones: browser.read("JSON.stringify(window.__eternumGameEntryTimeline ?? [])"),
+    };
   };
 }
 
+/**
+ * The game entered, cold then warm, and what keeps running once it is: the boot (a fresh profile), then a still window
+ * read for the frame callbacks, timers, CSS animations, hidden full-screen layers and canvases still alive after the
+ * doorway handed off, then the same address loaded again from the HTTP cache and the same read. A player enters through
+ * the home page's card (`--player`), a spectator by the Watch link; the lab's built Kingdom needs no live game.
+ */
+const entrySteps = (labScenario = null) => [
+  { name: "after-entry", play: readWhatKeepsRunning, settleMs: 0, verify: inScene("map") },
+  { name: "reload-on-map", play: reloadOn("Map", "map", labScenario), settleMs: 0, verify: inScene("map") },
+  { name: "after-reload", play: readWhatKeepsRunning, settleMs: 0, verify: inScene("map") },
+];
+
+const LEFTOVER_WINDOW_MS = 10_000;
+
+/**
+ * Two readings of what the page keeps running, a still window apart (`compareCensus`), and the first seconds of play
+ * after the doorway dropped, judged from one continuous frame record (`judgeAfterDoorway`). The record is kept beside
+ * its judgment, so the judgment can be replayed from what was observed.
+ */
+async function readWhatKeepsRunning({ browser }) {
+  const before = browser.read("window.__playtest.census()");
+  await sleep(LEFTOVER_WINDOW_MS);
+  const keepsRunning = compareCensus(before, browser.read("window.__playtest.census()"));
+  const dismissedAt = browser.read(DISMISSED_AT_EXPRESSION);
+  const { frames, readAt } =
+    dismissedAt === null ? { frames: [], readAt: null } : browser.read(`window.__playtest.framesFrom(${dismissedAt})`);
+  const doorwayFrames = { dismissedAt, frames, readAt };
+  return {
+    keepsRunning,
+    doorwayFrames,
+    afterDoorway: judgeAfterDoorway({ dismissedAt: dismissedAt ?? Number.NaN, frames }),
+  };
+}
+
+/** The page time the doorway dropped at on this page (a reload has its own), or null. */
+const DISMISSED_AT_EXPRESSION = `JSON.stringify(
+  (window.__eternumGameEntryTimeline ?? []).find((milestone) => milestone.name === "overlay-dismissed")?.timestamp ?? null
+)`;
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
+  "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
   "unit-assets-spectator": {
     game: FRONTIER,
     steps: [
@@ -2462,6 +2518,8 @@ export const STEP_SETS = {
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },
   "lab-day-later-played-on": { game: labDayTurn("day-later-played-on"), steps: labDayLaterNoSummarySteps },
   "lab-season-opens": { game: labDayTurn("season-opens"), steps: LAB_SEASON_OPENS_STEPS },
+  entry: { game: FRONTIER, steps: entrySteps() },
+  "lab-entry": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: entrySteps("painted-buildings") },
   "realm-load": { game: FRONTIER, steps: realmLoadSteps() },
   "lab-realm-load": { game: { ...LAB_SPIRE, lab: "painted-buildings" }, steps: realmLoadSteps("painted-buildings") },
   "blitz-realm-load": { game: BLITZ, steps: realmLoadSteps() },

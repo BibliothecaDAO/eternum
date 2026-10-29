@@ -1,4 +1,4 @@
-import { Position, RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import { getEntityIdFromKeys } from "../managers/game-entity-keys";
 import { configManager } from "..";
 import { nativeGameModeOf } from "./native-preset-mode";
@@ -36,20 +36,6 @@ export const ResourceIdToMiningType: Partial<Record<ResourcesIds, ResourceMining
   [ResourcesIds.Adamantine]: ResourceMiningTypes.Forge,
   [ResourcesIds.AncientFragment]: ResourceMiningTypes.Mine,
 };
-
-export function calculateDistance(start: Pick<Position, "x" | "y">, destination: Pick<Position, "x" | "y">): number {
-  // d = √((x2-x1)² + (y2-y1)²)
-
-  // Calculate the difference in x and y coordinates
-  const deltaX = Math.abs(start.x - destination.x);
-  const deltaY = Math.abs(start.y - destination.y);
-
-  // Calculate the distance using the Pythagorean theorem
-  // Each tile is 1 km, so we don't need to divide by 10000 here
-  const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
-
-  return distance;
-}
 
 export const nanogramToKg = (value: number) => {
   return value / 10 ** 12;

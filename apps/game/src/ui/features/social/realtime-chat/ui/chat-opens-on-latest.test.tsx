@@ -9,9 +9,8 @@ vi.mock("@realms-world/identity", async (original) => ({
     Object.fromEntries(accounts.map((account) => [account, { name: null, portrait: null }])),
 }));
 
-// The game's players to mention need a game; these tests read the chat's frame and lists, with no one to mention.
-vi.mock("../hooks/use-chat-mentions", () => ({ useChatMentions: () => ({ me: null, choices: [], names: [] }) }));
-
+import { GameProvider } from "@/hooks/context/game-context";
+import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { ROW_PX, layOutChatLists, scrollOf, scrollTo } from "@/hooks/use-stick-to-latest.test-support";
 import { useRealtimeChatStore } from "../model/store";
@@ -87,12 +86,14 @@ const installRooms = ({ globalCount = 20 } = {}) => {
   });
 };
 
+let store: NativeFactStore;
 let host: HTMLDivElement;
 let root: Root;
 let undoLayout: () => void;
 
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  store = new NativeFactStore();
   undoLayout = layOutChatLists();
   loadWorldHistory.mockClear();
   host = document.createElement("div");
@@ -108,7 +109,13 @@ afterEach(() => {
 
 /** Chat opened, as the HUD opens it: Global, and the game's own room where a mode keeps one (Blitz's, when shown). */
 const openChat = () =>
-  act(() => root.render(<RealtimeChatShell rooms={[GLOBAL_ROOM, { zoneId: GAME, label: "Game" }]} />));
+  act(() =>
+    root.render(
+      <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x7" } as never}>
+        <RealtimeChatShell rooms={[GLOBAL_ROOM, { zoneId: GAME, label: "Game" }]} />
+      </GameProvider>,
+    ),
+  );
 
 /** The open channel's message list: the box that scrolls its messages. */
 const messageList = () => {

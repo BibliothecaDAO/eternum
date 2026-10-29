@@ -60,6 +60,7 @@ const realmView = ({ store }: Fixture) => {
     standCameraAtPreferredZoom: () => {},
     getThunderBoltManager: () => ({ setConfig: () => {} }),
     localPresentation: Promise.resolve(),
+    presentation: Promise.resolve(),
     reconcileAllBuildingInstances: () => {},
   });
   const stop = store.subscribe((changes) => scene.answerFactChanges(changes));

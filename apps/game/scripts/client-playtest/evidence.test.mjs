@@ -14,6 +14,8 @@ import {
   summarizePlaytestResults,
   summarizeRpcSends,
   summarizeStep,
+  compareCensus,
+  judgeAfterDoorway,
   describeOrders,
   eligibilityOf,
   assertInTargetGame,
@@ -140,6 +142,10 @@ describe("summarizeStep", () => {
         // One frame before the step gives the first in-step frame its interval.
         frames: [990, 1000, 1016, 1100, 1116],
         draws: [9, 10, 12, 30, 12],
+        vertices: [90, 300, 600, 3000, 600],
+        callbackMs: [1, 2, 3, 9, 3],
+        gpuDoneMs: [1, 4, 4, 20, null],
+        gpuMemory: { textures: 3, textureBytes: 6 * MB, buffers: 2, bufferBytes: MB },
         loafs: [
           {
             start: 1016,
@@ -183,6 +189,10 @@ describe("summarizeStep", () => {
         jankCount: 1,
       },
       drawCalls: { n: 4, p50: 12, p95: 30, p99: 30, max: 30 },
+      vertices: { n: 4, p50: 600, p95: 3000, p99: 3000, max: 3000 },
+      frameCallbackMs: { n: 4, p50: 3, p95: 9, p99: 9, max: 9 },
+      gpuDoneMs: { n: 3, p50: 4, p95: 20, p99: 20, max: 20 },
+      gpuMemoryAtEnd: { textures: 3, textureMb: 6, buffers: 2, bufferMb: 1 },
       longFrames: {
         count: 1,
         totalMs: 84,
@@ -287,6 +297,126 @@ describe("summarizeStep", () => {
     expect(summary.reload).toEqual({ navigationAfterStepStartMs: 500, toPlayableMs: 5000 });
     expect(summary.durationMs).toBe(6000);
     expect(summary.heap).toEqual({ startMb: null, endMb: 90, retainedDeltaMb: null, peakMb: null });
+  });
+});
+
+describe("judgeAfterDoorway", () => {
+  /** Frame times from `from`, one every `step` ms, `count` of them. */
+  const run = (from, step, count) => Array.from({ length: count }, (_, index) => from + index * step);
+
+  it("counts the long frames in the window after the drop and finds the first fully observed clean second", () => {
+    // The frame in progress at the drop (990 -> 1100) counts; then one of 150 ms; then frames at 60 Hz for 7 s.
+    const frames = [990, 1100, 1250, ...run(1266, 16, 450)];
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 8500 })).toEqual({
+      status: "complete",
+      windowMs: 5000,
+      observedMs: 7450,
+      framesOver33: 2,
+      worstFrameMs: 150,
+      settledAfterMs: 250,
+    });
+  });
+
+  it("never reads a hole between two snapshots as smooth play", () => {
+    // The review's case: 16 ms frames, then nearly ten seconds between them, then 16 ms frames again. In one record the
+    // gap is a frame, so the clean second only starts after it.
+    const frames = [990, 1006, 1022, 11000, ...run(11016, 16, 100)];
+    const judged = judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 12700 });
+    expect(judged.settledAfterMs).toBe(10000);
+    expect(judged.worstFrameMs).toBe(9978);
+    // The boot's own snapshot, which ended before the window did, is refused rather than joined to a later one.
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: [990, 1006, 1022], readAt: 2840 })).toEqual({
+      status: "incomplete",
+      reason: "the frames end 22 ms after the drop",
+    });
+  });
+
+  it("refuses a record that starts after the drop, and leaves the settle open when no clean second was observed", () => {
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: run(1010, 16, 600), readAt: 10_000 }).status).toBe(
+      "incomplete",
+    );
+    const stutter = run(990, 50, 200);
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: stutter, readAt: 11_000 }).settledAfterMs).toBe(null);
+  });
+
+  it("refuses a window its frames do not reach, however late the record was read", () => {
+    // The review's case: 22 ms of frames after the drop, read nine seconds later.
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames: [990, 1006, 1022], readAt: 10_000 })).toEqual({
+      status: "incomplete",
+      reason: "the frames end 22 ms after the drop",
+    });
+  });
+
+  it("judges the frame that crosses the end of a second or of the window as part of it", () => {
+    // The review's case: 16 ms frames through 1998, then the next frame at 10000. That 8002 ms frame overlaps every
+    // second starting after 998 and the whole window, so no second is clean and the window holds one long frame.
+    const frames = [...run(990, 16, 64), 10_000];
+    expect(frames.at(-2)).toBe(1998);
+    expect(judgeAfterDoorway({ dismissedAt: 1000, frames, readAt: 10_000 })).toEqual({
+      status: "complete",
+      windowMs: 5000,
+      observedMs: 9000,
+      framesOver33: 1,
+      worstFrameMs: 8002,
+      settledAfterMs: null,
+    });
+  });
+});
+
+describe("compareCensus", () => {
+  const reading = (t, frameCallbacks, timeouts, extra = {}) => ({
+    t,
+    frameCallbacks,
+    timeouts,
+    intervals: [],
+    animations: [],
+    dom: { nodes: 10, canvases: [], bootShell: null, fullScreenLayers: [] },
+    gpuMemory: { textures: 0, textureBytes: 0, buffers: 0, bufferBytes: 0 },
+    ...extra,
+  });
+
+  it("names each element still restyled by its changes per second", () => {
+    const before = reading(0, {}, {}, { restyles: { "svg.ring": 10 } });
+    const after = reading(2_000, {}, {}, { restyles: { "svg.ring": 130, "div.toast": 2 } });
+
+    expect(compareCensus(before, after).restyles).toEqual([
+      { caller: "svg.ring", perSecond: 60 },
+      { caller: "div.toast", perSecond: 1 },
+    ]);
+  });
+
+  it("names each site still scheduling work by its calls per second over the window, most first", () => {
+    const before = reading(1_000, { "render < loop": 60, "doorway < fade": 600 }, { "poll < shell": 4 });
+    const after = reading(
+      11_000,
+      { "render < loop": 660, "doorway < fade": 600, "spinner < boot": 100 },
+      { "poll < shell": 14 },
+      {
+        intervals: [{ caller: "clock < doorway", delayMs: 1000 }],
+        animations: [
+          { name: "spin", element: "div.loader", seen: false },
+          { name: "pulse", element: "button.cta", seen: true },
+        ],
+        gpuMemory: { textures: 4, textureBytes: 8 * MB, buffers: 1, bufferBytes: 2 * MB },
+        largestTextures: [{ bytes: 5 * MB, shape: "1280x1280 rgba8unorm" }],
+      },
+    );
+
+    expect(compareCensus(before, after)).toEqual({
+      windowMs: 10_000,
+      frameCallbacks: [
+        { caller: "render < loop", perSecond: 60 },
+        { caller: "spinner < boot", perSecond: 10 },
+      ],
+      timeouts: [{ caller: "poll < shell", perSecond: 1 }],
+      restyles: [],
+      intervals: [{ caller: "clock < doorway", delayMs: 1000 }],
+      animations: after.animations,
+      unseenAnimations: 1,
+      dom: after.dom,
+      gpuMemory: { textures: 4, textureMb: 8, buffers: 1, bufferMb: 2 },
+      largestTextures: [{ mb: 5, shape: "1280x1280 rgba8unorm" }],
+    });
   });
 });
 

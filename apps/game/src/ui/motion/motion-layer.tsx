@@ -142,7 +142,12 @@ export const MotionLayer = () => {
     };
   }, []);
   return (
-    <div ref={layer} aria-hidden className="pointer-events-none fixed inset-0 z-hud-motion overflow-hidden">
+    <div
+      ref={layer}
+      aria-hidden
+      data-motion-layer
+      className="pointer-events-none fixed inset-0 z-hud-motion overflow-hidden"
+    >
       {Array.from({ length: POOL_SIZE }, (_, index) => (
         <div
           key={index}

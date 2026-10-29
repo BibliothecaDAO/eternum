@@ -2,8 +2,8 @@ import { useState } from "react";
 import { latticeToWorld } from "@/three/utils/hex-lattice";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
-const owners = ["you", "ally", "enemy"] as const;
-const symbols = { you: "●", ally: "■", enemy: "▲" };
+const owners = ["own", "ally", "enemy"] as const;
+const symbols = { own: "●", ally: "■", enemy: "▲" };
 const kinds = [
   { id: "map-realm", name: "Realm" },
   { id: "camp", name: "Camp" },
@@ -87,8 +87,8 @@ export function IconMinimap() {
       <div className="icon-marker-kinds" aria-label="Marker kinds">
         {kinds.map((kind) => (
           <div key={kind.id} data-kind={kind.id}>
-            <span className="icon-marker-key" data-owner="you">
-              <Badge kind={kind} owner="you" size={size} />
+            <span className="icon-marker-key" data-owner="own">
+              <Badge kind={kind} owner="own" size={size} />
             </span>
             <small>{kind.name}</small>
           </div>

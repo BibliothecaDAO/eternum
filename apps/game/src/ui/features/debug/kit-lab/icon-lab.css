@@ -205,7 +205,7 @@
 .icon-marker-wrap svg {
   overflow: visible;
 }
-.icon-cluster [data-owner="you"] {
+.icon-cluster [data-owner="own"] {
   color: #66ddab;
 }
 .icon-cluster [data-owner="ally"] {

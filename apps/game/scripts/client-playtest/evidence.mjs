@@ -145,6 +145,10 @@ export function summarizeStep(probe, { name, startedOn }) {
       jankCount: frameMs.filter((ms) => ms > JANK_FRAME_MS).length,
     },
     drawCalls: distribution(frameIndexes.map((index) => probe.draws[index])),
+    vertices: distribution(frameIndexes.map((index) => probe.vertices?.[index]).filter(Number.isFinite)),
+    frameCallbackMs: distribution(frameIndexes.map((index) => probe.callbackMs?.[index])),
+    gpuDoneMs: distribution(frameIndexes.map((index) => probe.gpuDoneMs?.[index])),
+    gpuMemoryAtEnd: summarizeGpuMemory(probe.gpuMemory),
     longFrames: {
       count: loafs.length,
       totalMs: round(sum(loafs.map((loaf) => loaf.durationMs))),
@@ -191,6 +195,95 @@ export function summarizeStep(probe, { name, startedOn }) {
       ),
       frameMsAfterMessage: distribution(frameMsAfterMessage),
     },
+  };
+}
+
+/**
+ * What the page kept running between two census readings: each frame-callback and timer site, and each element whose
+ * style or SVG attributes kept changing, with its rate per second over the window (most first), and, as of the later
+ * reading, its repeating timers, running CSS animations,
+ * canvases, full-screen layers (with whether a player sees them), the boot shell, the GPU memory held and its largest
+ * textures.
+ */
+export function compareCensus(before, after) {
+  const seconds = Math.max(after.t - before.t, 1) / 1000;
+  const ratesPerSecond = (counts, earlier) =>
+    Object.entries(counts)
+      .map(([caller, count]) => ({ caller, perSecond: round((count - (earlier[caller] ?? 0)) / seconds) }))
+      .filter((site) => site.perSecond > 0)
+      .toSorted((left, right) => right.perSecond - left.perSecond);
+  return {
+    windowMs: Math.round(after.t - before.t),
+    frameCallbacks: ratesPerSecond(after.frameCallbacks, before.frameCallbacks),
+    timeouts: ratesPerSecond(after.timeouts, before.timeouts),
+    restyles: ratesPerSecond(after.restyles ?? {}, before.restyles ?? {}),
+    intervals: after.intervals,
+    animations: after.animations,
+    unseenAnimations: after.animations.filter((animation) => animation.seen === false).length,
+    dom: after.dom,
+    gpuMemory: summarizeGpuMemory(after.gpuMemory),
+    largestTextures: (after.largestTextures ?? []).map(({ bytes, shape }) => ({ mb: toMb(bytes), shape })),
+  };
+}
+
+const SETTLED_FRAME_MS = 20;
+const SETTLED_SPAN_MS = 1_000;
+
+/**
+ * The first seconds of play once the doorway drops, from one continuous frame record: the frames over 33 ms and the
+ * worst frame in the `windowMs` after `overlay-dismissed`, and the time until the first second of frames at or under
+ * 20 ms. Only frames observed count: the record must hold a frame at or before the dismissal and one at or after the
+ * window's end, so the frame crossing either edge is judged too. A record that does not is refused as incomplete, as
+ * time between frames that was not observed is no evidence of either a smooth or a long frame.
+ */
+export function judgeAfterDoorway({ dismissedAt, frames }, { windowMs = 5_000 } = {}) {
+  if (!Number.isFinite(dismissedAt)) return { status: "incomplete", reason: "no overlay-dismissed milestone" };
+  if (!(frames.length > 0 && frames[0] <= dismissedAt)) {
+    return { status: "incomplete", reason: "the record starts after the doorway dropped" };
+  }
+  const lastFrame = frames.at(-1);
+  if (lastFrame < dismissedAt + windowMs) {
+    return { status: "incomplete", reason: `the frames end ${Math.round(lastFrame - dismissedAt)} ms after the drop` };
+  }
+  const inWindow = framesOverlapping(frames, dismissedAt, dismissedAt + windowMs);
+  return {
+    status: "complete",
+    windowMs,
+    observedMs: round(lastFrame - dismissedAt),
+    framesOver33: inWindow.filter((ms) => ms > 33.4).length,
+    worstFrameMs: round(Math.max(...inWindow)),
+    settledAfterMs: settledAfter(frames, dismissedAt),
+  };
+}
+
+/** From the drop to the first frame that opens an observed second whose every frame is at or under 20 ms; null if none. */
+function settledAfter(frames, dismissedAt) {
+  for (const start of frames) {
+    if (start < dismissedAt) continue;
+    if (frames.at(-1) < start + SETTLED_SPAN_MS) return null;
+    const second = framesOverlapping(frames, start, start + SETTLED_SPAN_MS);
+    if (second.every((ms) => ms <= SETTLED_FRAME_MS)) return round(start - dismissedAt);
+  }
+  return null;
+}
+
+/** The duration of every frame interval that overlaps `(from, to)`, those crossing either edge included. */
+function framesOverlapping(frames, from, to) {
+  const durations = [];
+  for (let index = 1; index < frames.length; index++) {
+    if (frames[index] > from && frames[index - 1] < to) durations.push(frames[index] - frames[index - 1]);
+  }
+  return durations;
+}
+
+/** The WebGPU memory held when the step's probe was read, in MB; null on WebGL, whose memory is not kept. */
+function summarizeGpuMemory(memory) {
+  if (!memory || memory.textures + memory.buffers === 0) return null;
+  return {
+    textures: memory.textures,
+    textureMb: toMb(memory.textureBytes),
+    buffers: memory.buffers,
+    bufferMb: toMb(memory.bufferBytes),
   };
 }
 
@@ -557,6 +650,9 @@ export function evaluatePlaytestSummary(summary, options = {}) {
     }
     if (result.errors?.length) {
       failures.push(describeRun(result, `${result.errors.length} browser errors`));
+    }
+    if (result.machine?.gpu === "low-power" && result.machine.drewOnIntegratedGpu !== true) {
+      failures.push(describeRun(result, `asked for the integrated GPU, drew on ${result.gpu ?? "an unknown GPU"}`));
     }
     const played = (result.steps ?? []).map((step) => step.name);
     const missing = (result.expectedSteps ?? []).filter((name) => !played.includes(name));

@@ -35,7 +35,6 @@ vi.mock("three/addons/libs/meshopt_decoder.module.js", () => ({ MeshoptDecoder: 
 
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   isViewerOwner: (await importOriginal<typeof import("@bibliothecadao/eternum")>()).isViewerOwner,
-  calculateDistance: () => 0,
 }));
 
 vi.mock("../constants", () => ({

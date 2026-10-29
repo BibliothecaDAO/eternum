@@ -1,18 +1,14 @@
+import type { CSSProperties } from "react";
 import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { NEUTRAL_OWNER_NAME, StructureType, structureName, frontierSiteName, formatExact } from "@bibliothecadao/types";
 
-import type { SeatSide } from "@/tokens";
+import { SIDE_COLOURS, type SeatSide, type Side } from "@/tokens";
+import { sideOf } from "@/utils/entity-ownership";
 
 import type { ArmyData, StructureInfo } from "../types";
-
-/**
- * How the viewer stands to a thing's owner. It sets the label's side colour (map-plates.css: nobody's is drawn as an
- * enemy's) and, still four ways, which label yields when they crowd (`RELATION_PRIORITY`, map-plate-layer).
- */
-export type PlateRelation = "own" | "ally" | "enemy" | "neutral";
 
 /**
  * To a watching viewer, whose a thing is in place of its relation's colour (`watchedSide`, entity-ownership.ts): its
@@ -24,6 +20,13 @@ export interface PlateWatched {
   colour: string;
   mark: { letter: string; ink: "dark" | "light" } | null;
 }
+
+/**
+ * The colour a label is drawn in, set on its element as `--mp-side` (map-plates.css): its player's seat colour to a
+ * watching viewer, else its side's (SIDE_COLOURS, as on the minimap).
+ */
+export const plateSideStyle = (plate: { relation: Side; watched?: PlateWatched }) =>
+  ({ "--mp-side": plate.watched?.colour ?? SIDE_COLOURS[plate.relation] }) as CSSProperties;
 
 /** A troop stack: a guard slot, or an army's troops. Its painting is its type and tier (`knight-t2`). */
 export interface PlateTroops {
@@ -38,7 +41,8 @@ export interface PlateTroops {
 /** An army's plate: its owner over its troops and stamina; opened, the realm it comes from. */
 export interface ArmyPlate {
   kind: "army";
-  relation: PlateRelation;
+  /** How the viewer stands to its owner: its colour (`plateSideStyle`), and which label yields when they crowd. */
+  relation: Side;
   owner: string;
   homeName: string;
   troops: PlateTroops;
@@ -56,7 +60,8 @@ export interface ArmyPlate {
  */
 export interface StructurePlate {
   kind: "structure";
-  relation: PlateRelation;
+  /** How the viewer stands to its owner: its colour (`plateSideStyle`), and which label yields when they crowd. */
+  relation: Side;
   /** Whose it is; empty while its owner's name is unknown. */
   owner: string;
   /** The standing guard species, shown as the title above its strength. */
@@ -107,9 +112,6 @@ export type MapPlate = ArmyPlate | StructurePlate;
  */
 const ownerOf = (owner: { address: bigint; ownerName: string }) =>
   owner.address === 0n ? NEUTRAL_OWNER_NAME : owner.ownerName.trim();
-
-const relationOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): PlateRelation =>
-  thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";
 
 /** A watched side as the plate draws it: the seat's colour, and its player's initial where the seat and a name are known. */
 const watchedOf = (side: SeatSide | null | undefined, owner: string): { watched?: PlateWatched } => {
@@ -175,7 +177,7 @@ export const buildStructurePlate = (
       })) ?? null;
   return {
     kind: "structure",
-    relation: relationOf(structure),
+    relation: sideOf(structure),
     owner: ownerOf(structure.owner),
     beast: structure.frontierBeast?.name,
     name: named
@@ -224,7 +226,7 @@ export const buildArmyPlate = (
   perExplore: number,
 ): ArmyPlate => ({
   kind: "army",
-  relation: relationOf(army),
+  relation: sideOf(army),
   owner: ownerOf(army.owner),
   homeName,
   troops: { type: troopType(army.category), tier: tierOf(army.tier), count: army.troopCount },

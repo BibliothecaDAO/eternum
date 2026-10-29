@@ -9,6 +9,7 @@ import { useUIStore, type AppStore } from "@/hooks/store/use-ui-store";
 import { TERRAIN_DEEP_FOG_COLOR } from "@/three/terrain/terrain-fog-style";
 import { CAMERA_CONFIG, FOG_CONFIG } from "@/three/constants";
 import { runWithFrameWorkOwner } from "@/three/frame-work-owner";
+import type { RendererOverlayPass } from "@/three/renderer-backend";
 import { WorldAtmosphereController } from "@/three/effects/world-atmosphere-controller";
 import { type WeatherState } from "@/three/managers/weather-manager";
 import { HighlightHexManager } from "@/three/managers/highlight-hex-manager";
@@ -738,6 +739,11 @@ export abstract class HexagonScene {
 
   public getInteractionOverlayScene() {
     return this.interactionOverlayScene;
+  }
+
+  /** A reward staged over everything this scene draws; a scene that stages none has none. */
+  public getRewardStagePasses(): RendererOverlayPass[] {
+    return [];
   }
 
   public getCamera() {

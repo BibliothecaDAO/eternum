@@ -18,6 +18,7 @@
     "scripts/**/*.ts",
     "../release/**/*.ts",
     "vrf/**/*.ts",
+    "../shard/**/*.ts",
     "../first/**/*.ts"
   ],
   "exclude": [

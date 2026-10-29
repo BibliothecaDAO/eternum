@@ -143,7 +143,7 @@ function WorldComparison() {
                 )}
               >
                 <svg viewBox="0 0 320 75" aria-label={`${age} ownership minimap badges`}>
-                  {(["you", "ally", "enemy", "neutral"] as const).map((owner, i) => (
+                  {(["own", "ally", "enemy", "neutral"] as const).map((owner, i) => (
                     <HexMarker key={owner} name="map-realm-1" owner={owner} x={26 + i * 55} y={25} radius={16} />
                   ))}
                   {Object.values(BiomeType).map((biome, i) => (
