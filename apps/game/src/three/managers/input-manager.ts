@@ -9,16 +9,10 @@ import {
 import * as THREE from "three";
 import { SceneName } from "../types";
 import type { TouchNavigation } from "./touch-camera-navigation";
+import { CLICK_SLOP_PX } from "./map-click";
 
 type ListenerTypes = "click" | "mousemove" | "mouseleave" | "contextmenu" | "dblclick" | "mousedown";
 type InputCallback = (event: MouseEvent, raycaster: THREE.Raycaster) => void;
-
-/**
- * A mouse press is a click while its pointer stays this close to where it went down, as a hand's press travels a few
- * pixels, and the map does not move under it. Past it the press is a pan: the map follows from the press point and no
- * click is sent. The press decides alone, whatever else moves the camera (damping, the zoom, keys, flights).
- */
-const CLICK_SLOP_PX = 8;
 
 interface InputListener {
   callback: InputCallback;

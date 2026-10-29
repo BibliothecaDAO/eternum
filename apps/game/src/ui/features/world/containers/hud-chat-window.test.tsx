@@ -94,6 +94,33 @@ it("leaves Escape to the message field while its list of players is open, so cha
   expect(onOpenChange).toHaveBeenLastCalledWith(false);
 });
 
+// Playtest 29 October 2026 (B3): a place shared, the map dragged off it, then the place opened from the message.
+it("stays open while the map is dragged, and goes away on a click on the map", () => {
+  draw(true);
+  const map = document.createElement("canvas");
+  document.body.append(map);
+  const pointer = (type: string, target: EventTarget, x: number, y: number) =>
+    act(() => {
+      target.dispatchEvent(new PointerEvent(type, { bubbles: true, pointerId: 1, clientX: x, clientY: y }));
+    });
+  // A drag: the press goes down on the map and travels well past a click's slop.
+  pointer("pointerdown", map, 400, 300);
+  pointer("pointermove", map, 460, 340);
+  pointer("pointerup", map, 660, 480);
+  expect(onOpenChange).not.toHaveBeenCalled();
+  // A drag that comes back to where it went down is still a drag.
+  pointer("pointerdown", map, 400, 300);
+  pointer("pointermove", map, 500, 300);
+  pointer("pointerup", map, 402, 301);
+  expect(onOpenChange).not.toHaveBeenCalled();
+  // A click: the press holds within a few pixels, as the map takes it to pick what is under it.
+  pointer("pointerdown", map, 400, 300);
+  pointer("pointermove", map, 403, 302);
+  pointer("pointerup", map, 404, 302);
+  expect(onOpenChange).toHaveBeenLastCalledWith(false);
+  map.remove();
+});
+
 it("keeps a signed-out player's sign-in action, and the strip cannot be pressed while identity loads", () => {
   fixture.status = "signed-out";
   draw(false);

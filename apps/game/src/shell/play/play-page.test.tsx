@@ -268,7 +268,8 @@ it("dims Eternum's column while its game is still to open, saying when it opens;
   const page = await mount();
   const eternum = () => page.container.querySelector<HTMLElement>('section[aria-label="Eternum"]')!;
   // Frontier's day leads; Eternum stands beside it with its opening alone, idle, nothing in it to press.
-  expect(page.text()).toContain("Resume");
+  const resume = page.container.querySelector<HTMLButtonElement>('[data-play-item] button[data-play-verb="resume"]');
+  expect(resume?.textContent).toBe("Resume");
   expect(eternum().textContent).toMatch(/^EternumOpens \d{1,2} \w{3} 2093, \d\d:\d\d$/);
   expect(eternum().hasAttribute("data-idle")).toBe(true);
   expect(eternum().querySelector("a, button")).toBeNull();
@@ -315,6 +316,8 @@ it("dims Eternum leading Play while its game is still to open, as its column wou
   expect(lead().hasAttribute("data-idle")).toBe(true);
   expect(lead().querySelector("a, button")).toBeNull();
 
+  expect(lead().querySelector("[data-play-verb]")).toBeNull();
+
   // Open, with the player on its roster: the lead's Enter, and it is lit.
   reads.directory = answered({
     games: [
@@ -329,6 +332,8 @@ it("dims Eternum leading Play while its game is still to open, as its column wou
   await page.render();
   expect(lead().textContent).toContain("Enter");
   expect(lead().hasAttribute("data-idle")).toBe(false);
+  // The lead's call to action by its verb's name, whatever its word: what the playtest runner presses to enter.
+  expect(lead().querySelector<HTMLButtonElement>("button[data-play-verb]")!.dataset.playVerb).toBe("enter");
 });
 
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {

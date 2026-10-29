@@ -145,7 +145,11 @@ const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: bo
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  const press = verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to };
+  // The verb by its name, whatever its word: what a script presses to take the game's step (the playtest runner).
+  const press = {
+    ...(verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to }),
+    "data-play-verb": item.verb,
+  };
   return lead ? (
     <AppButton kind="primary" size="lg" icon={verb.icon} {...press} step>
       {verb.word}

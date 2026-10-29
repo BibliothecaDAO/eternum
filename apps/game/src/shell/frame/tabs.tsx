@@ -121,6 +121,7 @@ export const TabBar = () => {
               key={tab.to}
               type="button"
               data-role="tab"
+              data-action="connect"
               aria-current={current ? "page" : undefined}
               onClick={connect}
               className={look}
@@ -194,7 +195,7 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
         places
           ? {
               ...placeOf(YOU_TAB),
-              ...(connect && { label: WORDS.connect, onSelect: connect }),
+              ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),
               ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
             }
           : null

@@ -78,8 +78,9 @@ const NEIGHBOUR_RING = [
  * with its call to action. Frontier's card has its title; a Blitz card is found by the game it names, and only a player
  * seated in it can Enter.
  */
-const FRONTIER = { mode: "frontier", card: { heading: "Frontier", enter: "^(Resume|Play)" } };
-const BLITZ = { mode: "blitz", card: { heading: null, enter: "^Enter$" } };
+// A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
+const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
+const BLITZ = { mode: "blitz", card: { verbs: ["enter"] } };
 
 /**
  * What a spectator does: enter on the map (every Frontier session opens there), move the camera, read the season,

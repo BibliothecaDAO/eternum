@@ -209,6 +209,8 @@ type AppBarPlace = {
   to: string;
   /** A place that opens over the page instead of leading anywhere (Connect), lit when it stands in the page's place. */
   onSelect?: () => void;
+  /** What the place does, by name (`data-action`), for a script to find it whatever its word or position: "connect". */
+  action?: "connect";
   label: string;
   icon?: IconMeaning;
   /** The player's portrait: the place shows the player (their name and portrait) instead of its word and icon. */
@@ -255,6 +257,7 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) =>
     <button
       type="button"
       data-role="tab"
+      data-action={place.action}
       aria-current={place.current ? "page" : undefined}
       onClick={place.onSelect}
       className="app-bar__place"

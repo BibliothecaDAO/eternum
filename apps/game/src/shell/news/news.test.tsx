@@ -84,6 +84,10 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
     ]);
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");
     expect(current.map((place) => place.textContent)).toEqual(["Connect"]);
+    // Connect, by what it does, for a script to find it whatever its word or place (the playtest runner's sign-in).
+    expect([...page.querySelectorAll('[data-action="connect"]')].map((place) => place.textContent)).toEqual([
+      "Connect",
+    ]);
   });
 
   it("leads to Realms' marketplace from its footer, in a new tab, never from the bar", async () => {

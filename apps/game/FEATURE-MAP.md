@@ -178,7 +178,9 @@ live game the profile holds no seat in shows its HUD at both sizes (`scripts/pro
 actions still need an eligible player.
 
 Inside a Frontier match, `pnpm --dir apps/game playtest [--player <email>]` plays it as a spectator or a signed-in
-player and judges each step by what the page shows (`apps/game/AGENTS.md`).
+player and judges each step by what the page shows (`apps/game/AGENTS.md`); a player signs in through the bar's Connect
+(`data-action="connect"`) and enters by its game's card's verb (`data-play-verb`, on the `data-play-item` naming the
+game), whatever their words or places.
 
 ## Shell (outside a game)
 
@@ -306,20 +308,21 @@ The right column's layout has a command: `pnpm --dir apps/game prove:chat <base-
 window, and on `/lab/kit/chat?state=rail` the real rail (Events with its Log count, the panels lab's real picked army,
 chat open or closed, the build tag) from 1920×1080 down to 1280×720: the details and chat share the column, each kept to
 its least height (on a short screen the column scrolls as a whole), the Events name reads whole, nothing covers the
-build tag, and a wheel over a panel never reaches the map's canvas (`scripts/prove-hud-chat.mjs`). It also opens chat
-from the strip on `/lab/kit/chat?state=closed` at a desktop's and a phone's size: every channel opens on its newest
-message, drawn there on its first frame; a message arriving keeps a reader on the newest there, and one scrolled up to
-read stays put with **New messages** to jump down (the lab's **A message arrives** delivers one). `&view=messages` opens
-Messages over the lab's three conversations, `&view=conversation` the one with Isolde, who is offline. On the open pane,
-at 1440×900 and on a phone with touch, it reads the history's mentions and types `@` to list, pick and send one. It
-opens Aldric's card from his name and checks his realm, **Mute**, **Unmute** and **Message**, and the online count. On
-the app lab it opens the app's chat: the desktop bar's **Chat** pane over Play (`/lab/app/home`, Global's history and
-field, `Escape`), the phone's page filling `/lab/app/home/chat` between the top band and the tabs, and a Blitz lobby's
-chat (`/lab/app/entry-choose/blitz/slot-blitz-1630`: Lobby read-only for a wallet not registered, Global written in);
-and Frontier's phone Chat page (`/lab/kit/hud/chat`) filling the band from the strip to the place bar. There too it
-reads the room's place chips (the lab realm's opens, a gone army's is struck through), shares the realm selected on the
-map with the place button, and sends it. Messages' unread counts are the server's: read on one of a player's devices, a
-conversation clears on the others too.
+build tag, and a wheel over a panel never reaches the map's canvas (`scripts/prove-hud-chat.mjs`). Open chat goes away
+on a click on the map (the map's own click, `three/managers/map-click.ts`); a drag only moves the map, chat staying
+open. It also opens chat from the strip on `/lab/kit/chat?state=closed` at a desktop's and a phone's size: every channel
+opens on its newest message, drawn there on its first frame; a message arriving keeps a reader on the newest there, and
+one scrolled up to read stays put with **New messages** to jump down (the lab's **A message arrives** delivers one).
+`&view=messages` opens Messages over the lab's three conversations, `&view=conversation` the one with Isolde, who is
+offline. On the open pane, at 1440×900 and on a phone with touch, it reads the history's mentions and types `@` to list,
+pick and send one. It opens Aldric's card from his name and checks his realm, **Mute**, **Unmute** and **Message**, and
+the online count. On the app lab it opens the app's chat: the desktop bar's **Chat** pane over Play (`/lab/app/home`,
+Global's history and field, `Escape`), the phone's page filling `/lab/app/home/chat` between the top band and the tabs,
+and a Blitz lobby's chat (`/lab/app/entry-choose/blitz/slot-blitz-1630`: Lobby read-only for a wallet not registered,
+Global written in); and Frontier's phone Chat page (`/lab/kit/hud/chat`) filling the band from the strip to the place
+bar. There too it reads the room's place chips (the lab realm's opens, a gone army's is struck through), shares the
+realm selected on the map with the place button, and sends it. Messages' unread counts are the server's: read on one of
+a player's devices, a conversation clears on the others too.
 
 Before play opens, every action is shown but shut, with **Starts in …** under the actions; a map order or a way into a
 workspace says the same instead of sending (`src/utils/can-issue-orders.ts`).
