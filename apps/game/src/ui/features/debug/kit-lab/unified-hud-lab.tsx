@@ -1,4 +1,7 @@
 import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
+import { useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { answerLabChat } from "@/shell/lab/lab-chat";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -76,6 +79,12 @@ const ViewLab = ({ view }: { view: View }) => {
   const frontier = preset === VIEWS.frontier.preset;
   useDocumentClass(frontier ? "frontier-hud" : "classic-hud");
   useHudMode(frontier ? "frontier" : "blitz");
+  // The lab's player is signed in, as a player in a game is, and chat connects to the lab's chat server, in the tab.
+  useEffect(() => {
+    const restore = answerLabChat({});
+    useIdentitySessionStore.getState().applySession(LAB_SESSION);
+    return restore;
+  }, []);
   return (
     <>
       <div

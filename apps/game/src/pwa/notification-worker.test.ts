@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { IDBFactory, IDBKeyRange } from "fake-indexeddb";
+import { buildMentionNotification } from "@bibliothecadao/notifications";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 
 let installNotificationWorker: typeof import("./notification-worker").installNotificationWorker;
@@ -9,7 +10,10 @@ beforeEach(async () => {
   vi.resetModules();
   ({ installNotificationWorker } = await import("./notification-worker"));
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 const now = Date.now();
 const payload = {
@@ -31,6 +35,7 @@ function harness() {
     visibilityState: "hidden",
     focus: vi.fn(),
     navigate: vi.fn(),
+    postMessage: vi.fn(),
   };
   const registration = {
     showNotification: vi.fn(),
@@ -150,4 +155,65 @@ it("delivers once across worker restarts, respects foreground activity and stops
   expect(restarted.clients.openWindow).toHaveBeenCalledOnce();
   expect((await restarted.send("disable")).ok).toBe(true);
   expect((await restarted.send("deliver", { token, payload: { ...local, id: "disabled" } })).value).toBe("suppressed");
+});
+
+it("shows a mention's alert and, pressed, hands its chat to a Realms window that opens it, else opens its page", async () => {
+  // A clock that moves on every read: the alert's times come from one reading, as the server builds them.
+  let clock = Date.now();
+  vi.spyOn(Date, "now").mockImplementation(() => (clock += 1));
+  const h = harness();
+  const prepared = await h.send("prepare-push");
+  const id = prepared.value.id;
+  expect((await h.send("activate-push", { id })).ok).toBe(true);
+  const mention = (place: { kind: "global" } | { kind: "lobby"; slot: string }) => ({
+    version: 1,
+    kind: "mention",
+    subscriptionId: id,
+    notification: buildMentionNotification(
+      {
+        messageId: crypto.randomUUID(),
+        recipientOwner: "0x1",
+        senderDisplayName: "Lady Ada",
+        place,
+        createdAt: Date.now(),
+      },
+      Date.now(),
+    ),
+  });
+  const global = mention({ kind: "global" });
+  h.clients.matchAll.mockResolvedValue([]);
+  await h.push(global);
+  expect(h.registration.showNotification).toHaveBeenCalledWith(
+    "Lady Ada mentioned you",
+    expect.objectContaining({ tag: "mention:global" }),
+  );
+
+  // No Realms window: the press opens the app's chat page.
+  await h.click(global);
+  expect(h.clients.openWindow).toHaveBeenCalledWith("https://game.test/chat");
+
+  // A game open: brought forward and told what to open, its chat opening over it.
+  h.clients.matchAll.mockResolvedValue([h.client]);
+  await h.click(global);
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.client.postMessage).toHaveBeenCalledWith({
+    type: "chat-alert-pressed",
+    kind: "mention",
+    target: "/chat",
+    tag: "mention:global",
+  });
+  expect(h.clients.openWindow).toHaveBeenCalledOnce();
+
+  // A lobby's mention: a game is left as it is and the lobby opens; an app page is told, and goes there itself.
+  const lobby = mention({ kind: "lobby", slot: "blitz-1630" });
+  await h.click(lobby);
+  expect(h.client.focus).toHaveBeenCalledOnce();
+  expect(h.clients.openWindow).toHaveBeenLastCalledWith("https://game.test/blitz/slot-blitz-1630");
+  const app = { ...h.client, url: "https://game.test/season", focus: vi.fn(), postMessage: vi.fn() };
+  h.clients.matchAll.mockResolvedValue([h.client, app]);
+  await h.click(lobby);
+  expect(app.focus).toHaveBeenCalledOnce();
+  expect(app.postMessage).toHaveBeenCalledWith(
+    expect.objectContaining({ kind: "mention", target: "/blitz/slot-blitz-1630" }),
+  );
 });

@@ -2,6 +2,8 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { HexMarker } from "@/ui/design-system/hex-marker";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { minimapMarkersView, type MinimapMarker } from "./minimap-markers";
+import { MAP_SITES } from "@/config/map-sites";
+import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import { latticeHexAt, latticeHexBoundsForWorldRect, latticeToWorld } from "@/three/utils/hex-lattice";
 import { fromRenderHex, worldOrigin } from "@/three/world-origin";
 import { WORLDMAP_CAMERA_ZOOM } from "@/three/scenes/worldmap-camera-view-profile";
@@ -218,12 +220,12 @@ const buildCenteredIndex = (tiles: MinimapTile[], origin: HexPosition): Centered
   };
 };
 
-/** Sites the world places with no entity of their own: the tile's occupier alone names them. */
+/** Sites the world places with no entity of their own: the tile's occupier alone names them, the map's single-use
+ * sites (MAP_SITES) painted as the HUD paints them. */
 const SITE_MEANINGS: Partial<Record<number, MinimapMarker["name"]>> = {
   [TileOccupier.Spire]: "spire",
   [TileOccupier.DormantSpire]: "spire",
-  [TileOccupier.Shrine]: "shrine",
-  [TileOccupier.Well]: "well",
+  ...Object.fromEntries(MAP_SITES.map((site) => [site.occupier, mapSite(site.kind).icon])),
   [TileOccupier.ReservedHyperstructure]: "hyperstructure",
   [TileOccupier.Chest]: "chest",
 };

@@ -26,7 +26,10 @@ vi.hoisted(() =>
     return new Response(null, { status: 401 });
   }),
 );
-vi.mock("./lobby-chat-panel", () => ({ LobbyChatPanel: () => null }));
+vi.mock("../chat/app-chat", async (original) => ({
+  ...(await original<typeof import("../chat/app-chat")>()),
+  LobbyChat: () => null,
+}));
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { BlitzLobbyPage } from "./blitz-pages";

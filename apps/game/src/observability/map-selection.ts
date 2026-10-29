@@ -16,6 +16,8 @@ interface MapSelectionSnapshot {
   hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
   /** The camera target in contract hexes, used to check map links and the realm site after a day turn. */
   camera: { col: number; row: number } | null;
+  /** The layer the map shows: the depth below (true) or the surface. */
+  layer: boolean;
 }
 
 interface MapSelectionWindow {

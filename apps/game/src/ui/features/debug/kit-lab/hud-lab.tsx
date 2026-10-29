@@ -27,6 +27,7 @@ import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
+import { GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
@@ -1056,7 +1057,7 @@ export const HudLab = () => {
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
     <LabGame preset={FRONTIER_PRESET}>
-      {() => <ChatPage gameZoneId="lab-game" signedIn onSignIn={noop} pane={chatPane} />}
+      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />}
     </LabGame>
   );
   if (lab.merge)

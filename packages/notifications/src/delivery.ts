@@ -120,7 +120,15 @@ function notificationTargetForGameClient(clientUrl: string, origin: string): str
   return match ? gamePath({ chainId: match[1], gameId: Number(match[2]) }) : null;
 }
 
+/** The app's chat page: where a mention in Global opens. */
+export const CHAT_PATH = "/chat";
+
+/** A Blitz slot's lobby, by the slot's name: where a mention in its room opens. The app's lobby route reads the same. */
+export const lobbyPath = (slot: string): string => `/blitz/slot-${slot}`;
+
 function isNotificationTarget(target: string): boolean {
-  if (target === "/") return true;
-  return /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target);
+  if (target === "/" || target === CHAT_PATH) return true;
+  return (
+    /^\/g\/0x[0-9a-f]{1,64}\/[1-9][0-9]{0,15}$/.test(target) || /^\/blitz\/slot-[a-z0-9][a-z0-9-]{0,23}$/.test(target)
+  );
 }

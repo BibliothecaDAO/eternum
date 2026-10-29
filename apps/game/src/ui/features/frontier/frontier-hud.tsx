@@ -348,7 +348,7 @@ const FrontierPhoneHud = ({
       page={
         surface === "chat" ? (
           <ChatPage
-            gameZoneId={chat.gameZoneId}
+            rooms={chat.rooms}
             signedIn={chat.initializer !== null}
             onSignIn={chat.requestSignIn}
             pane={chatPane}

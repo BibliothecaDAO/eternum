@@ -1,17 +1,27 @@
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
+import { chatAlertOpening, useChatAlertPresses } from "@/pwa/chat-alert-press";
+import { usePushDeviceId } from "@/pwa/use-push-device-id";
+import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
+import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import {
+  GameChatMap,
   RealtimeChatShell,
   type InitializeRealtimeClientParams,
   useRealtimeChatInitializer,
   useRealtimeChatSelector,
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
-import { configManager } from "@bibliothecadao/eternum";
+import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
+import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
+import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
+import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
+import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
@@ -23,22 +33,27 @@ import { CHAT_SHORTCUT } from "./chat-shortcut";
 export const gameChatZoneId = (chainId: string, gameId: number) => `game:0x${BigInt(chainId).toString(16)}:${gameId}`;
 
 /**
- * The game's chat room as the player stands in it: signed in or not, the room's name (game ids repeat across shards,
- * so a room is named by its shard's chain and the game), the zone shown, and what joining it takes.
+ * The chat as the player stands in a game: signed in or not, the rooms they have there (chatRooms: Global, and the
+ * game's own only where its mode keeps one), the room the strip reads, and what joining them takes.
  */
 const useGameChatRoom = () => {
   const { status } = useIdentitySession();
   const signedIn = status === "signed-in";
   const game = getActiveGame();
   const gameZoneId = game ? gameChatZoneId(game.chainId, configManager.getActiveGameId()) : "";
+  const rooms = useMemo(
+    () => chatRooms(game ? { zoneId: gameZoneId, mode: nativeGameModeOf(game.presetId) } : null),
+    [game, gameZoneId],
+  );
   const zoneId = useRealtimeChatSelector((state) =>
-    state.activeZoneId === gameZoneId ? gameZoneId : GLOBAL_CHAT_CHANNEL_ID,
+    rooms.some((room) => room.zoneId === state.activeZoneId) ? state.activeZoneId! : GLOBAL_CHAT_CHANNEL_ID,
   );
+  // The rooms shown are the rooms opened: one list for the tabs and the sockets.
   const initializer = useMemo<InitializeRealtimeClientParams | null>(
-    () => (signedIn ? { baseUrl: window.location.origin, joinZones: gameZoneId ? [gameZoneId] : [] } : null),
-    [signedIn, gameZoneId],
+    () => (signedIn ? { baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) } : null),
+    [signedIn, rooms],
   );
-  return { status, gameZoneId, zoneId, initializer };
+  return { status, rooms, zoneId, initializer };
 };
 
 /**
@@ -50,6 +65,13 @@ const useGameChatRoom = () => {
 export function GameChatConnection() {
   const { initializer, zoneId } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
+  useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));
+  // A chat alert pressed brings this game forward: chat opens on what it is about, the game left as it is.
+  const openAlert = useRealtimeChatSelector((state) => state.actions.openAlert);
+  useChatAlertPresses((press) => {
+    const opening = chatAlertOpening(press);
+    if (!("page" in opening)) openAlert(opening);
+  });
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
@@ -64,13 +86,21 @@ export function GameChatConnection() {
  * read while `open`. Every view that shows chat reads it here; the connection itself is GameChatConnection's.
  */
 export function useGameChat(open: boolean) {
-  const { status, gameZoneId, zoneId, initializer } = useGameChatRoom();
+  const { status, rooms, zoneId, initializer } = useGameChatRoom();
   const requestSignIn = useRequestSignIn();
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
-  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  // The strip reads the room's last message from a player not muted, once who is muted is known.
+  const lastMessage = useRealtimeChatSelector((state) =>
+    state.worldZones[zoneId]?.messages.findLast(
+      (message) => state.blockList !== null && !state.blockList.blocked.includes(message.sender.playerId),
+    ),
+  );
+  // The strip names a place as its chip does: one reading of it.
+  const readPlace = usePlaceReader();
+  const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;
   const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
-  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const unread = useRealtimeChatSelector(chatUnread);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
     setShellOpen(open);
@@ -86,9 +116,9 @@ export function useGameChat(open: boolean) {
     history,
     last:
       lastMessage &&
-      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${lastMessage.content}`,
+      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace).name : null)}`,
   });
-  return { status, initializer, requestSignIn, gameZoneId, unread, stripLine };
+  return { status, initializer, requestSignIn, rooms, unread, stripLine };
 }
 
 /** Where the room's history stands: not answered yet, answered (with or without messages), or failed. */
@@ -114,7 +144,7 @@ const chatStripLine = ({
   history: HistoryState;
   last: string | undefined;
 }): string => {
-  if (!signedIn) return "Sign in to chat";
+  if (!signedIn) return CHAT_WORDS.signInToChat;
   if (connection === "connected" && !hasGameChat) return CHAT_UNAVAILABLE;
   if (last) return last;
   if (connection === "error" || history === "failed") return CHAT_UNAVAILABLE;
@@ -136,8 +166,9 @@ export function HudChatWindow({
   onOpenChange: (open: boolean) => void;
   foldToIcon?: boolean;
 }) {
-  const { status, initializer, requestSignIn, gameZoneId, unread, stripLine } = useGameChat(open);
+  const { status, initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
   const pane = useRef<HTMLDivElement>(null);
+  useChatRevealed(() => onOpenChange(true));
 
   useEffect(() => {
     if (open) pane.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
@@ -179,14 +210,9 @@ export function HudChatWindow({
             // The chat shell pads its own tabs, history and composer.
             bodyClassName="flex min-h-0 flex-1 flex-col p-0"
           >
-            <RealtimeChatShell
-              defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-              gameZoneId={gameZoneId}
-              displayMode="embedded"
-              autoInitializeClient={false}
-              showInlineToggle={false}
-              className="min-h-0 flex-1"
-            />
+            <GameChatMap>
+              <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
+            </GameChatMap>
           </HudPanel>
         </div>
       )}

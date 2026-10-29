@@ -7,6 +7,7 @@ import { useBootDocumentState } from "@/ui/modules/boot-loader";
 import { useOutsidePlaySession } from "@/utils/spectator-session";
 
 import { AppMusic } from "./app-music";
+import { AppChatConnection } from "./chat/app-chat";
 
 /**
  * Every screen outside a game, in the player app's one visual system. Each page composes itself with PageFrame; this
@@ -28,6 +29,8 @@ export const AppShell = () => {
           <AccountRuntime />
         </Suspense>
       )}
+      {/* The app's one chat connection: its pane, its page and a lobby's chat read it. */}
+      {session && <AppChatConnection />}
     </>
   );
 };

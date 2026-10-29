@@ -3,20 +3,20 @@ import { getGameModeConfig } from "@/config/game-modes";
 import { frontierPaintedPath } from "../structures/frontier-painted-buildings";
 import InstancedModel from "@/three/managers/instanced-model";
 import { FELT_CENTER } from "@/ui/config";
-import { TileOccupier } from "@bibliothecadao/types";
+import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
 import { projectionChangesForLayer, type WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import { Object3D, Scene } from "three";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
 
-/** Frontier's single-use sites: tile occupancy only, with no Structure, so the tile's category alone places them. */
-const MAP_SITES = [
-  { occupier: TileOccupier.Shrine, path: "/models/outposts/shrine.glb", name: "Shrine" },
-  { occupier: TileOccupier.Well, path: "/models/outposts/well.glb", name: "Well" },
-] as const;
+/** Each site of the map's catalog (MAP_SITES), as the renderer draws it outside Frontier (Frontier's own are painted). */
+const SITE_MODELS: Record<MapSiteKind, string> = {
+  Shrine: "/models/outposts/shrine.glb",
+  Well: "/models/outposts/well.glb",
+};
 
-type MapSite = Omit<(typeof MAP_SITES)[number], "path"> & { path: string };
+type DrawnSite = { occupier: number; name: MapSiteKind; path: string };
 type SiteHex = { col: number; row: number };
 
 /**
@@ -25,14 +25,15 @@ type SiteHex = { col: number; row: number };
  */
 export class MapSiteManager {
   private readonly dummy = new Object3D();
-  private readonly models = new Map<MapSite["occupier"], InstancedModel>();
-  private readonly loading = new Map<MapSite["occupier"], Promise<void>>();
+  private readonly models = new Map<DrawnSite["occupier"], InstancedModel>();
+  private readonly loading = new Map<DrawnSite["occupier"], Promise<void>>();
   private readonly unsubscribe: () => void;
   private modelVisible = true;
   private destroyed = false;
-  private readonly sites = MAP_SITES.map((site) => ({
-    ...site,
-    path: getGameModeConfig().id === "frontier" ? frontierPaintedPath(site.name.toLowerCase()) : site.path,
+  private readonly sites: DrawnSite[] = MAP_SITES.map((site) => ({
+    occupier: site.occupier,
+    name: site.kind,
+    path: getGameModeConfig().id === "frontier" ? frontierPaintedPath(site.kind.toLowerCase()) : SITE_MODELS[site.kind],
   }));
 
   constructor(
@@ -87,7 +88,7 @@ export class MapSiteManager {
     }
   }
 
-  private load(site: MapSite): void {
+  private load(site: DrawnSite): void {
     if (this.loading.has(site.occupier)) return;
     const loading = gltfLoader
       .loadAsync(site.path)
@@ -104,7 +105,7 @@ export class MapSiteManager {
     this.loading.set(site.occupier, loading);
   }
 
-  private siteHexes(site: MapSite): SiteHex[] {
+  private siteHexes(site: DrawnSite): SiteHex[] {
     return this.projection
       .getTiles(activeMapLayer())
       .filter((tile) => tile.occupierType === site.occupier)
@@ -123,4 +124,4 @@ export class MapSiteManager {
 /** Sites a day's map can hold at once; the draw spaces them far below this. */
 const SITE_CAPACITY = 64;
 
-const isMapSite = (occupier: number | undefined): boolean => MAP_SITES.some((site) => site.occupier === occupier);
+const isMapSite = (occupier: number | undefined): boolean => mapSiteOf(occupier) !== null;

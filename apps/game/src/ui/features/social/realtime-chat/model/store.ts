@@ -3,7 +3,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { RealtimeClient } from "@bibliothecadao/types";
+import { type BlockList, GLOBAL_CHAT_CHANNEL_ID, isBlockList, RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
   DirectMessageOutboundMessage,
@@ -22,6 +22,8 @@ import type {
   WorldChatZoneState,
 } from "./types";
 import { fetchApi } from "@/runtime/app-api";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import { receiptDue } from "./direct-unread";
 
 const normalizeHttpBaseUrl = (raw: string): string => {
   try {
@@ -59,12 +61,20 @@ const createWorldZoneState = (zoneId: string): WorldChatZoneState => ({
 const createThreadState = (thread: DirectMessageThreadState["thread"]): DirectMessageThreadState => ({
   thread,
   messages: [],
-  unreadCount: 0,
   hasMoreHistory: true,
   lastFetchedCursor: undefined,
   isFetchingHistory: false,
   pendingMessages: [],
 });
+
+const timeOf = (value: string | Date | null | undefined) => (value ? new Date(value).getTime() : 0);
+
+/** A conversation's lines with others added: each once, in time order. */
+const mergeLines = (held: DirectMessage[], incoming: DirectMessage[]): DirectMessage[] => {
+  const heldIds = new Set(held.map((line) => line.id));
+  const added = incoming.filter((line) => !heldIds.has(line.id));
+  return added.length ? [...held, ...added].toSorted((a, b) => timeOf(a.createdAt) - timeOf(b.createdAt)) : held;
+};
 
 const toIsoTimestamp = (value: string | Date | null | undefined): string => {
   if (!value) return new Date().toISOString();
@@ -187,28 +197,6 @@ const matchesIdentityAlias = (identity: { playerId: string } | undefined, candid
   return false;
 };
 
-// Load tabs from localStorage
-const loadTabsFromStorage = () => {
-  try {
-    const stored = localStorage.getItem("realtime-chat-tabs");
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      return Array.isArray(parsed) ? parsed : [];
-    }
-  } catch (e) {
-    console.warn("Failed to load tabs from localStorage", e);
-  }
-  return [];
-};
-
-const loadActiveTabIdFromStorage = () => {
-  try {
-    return localStorage.getItem("realtime-chat-active-tab") || null;
-  } catch {
-    return null;
-  }
-};
-
 const initialState: Omit<RealtimeChatStore, "actions"> = {
   client: null,
   connectionStatus: "idle",
@@ -219,29 +207,23 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   activeZoneId: undefined,
   activeThreadId: undefined,
   isShellOpen: false,
+  chatRevealed: 0,
   worldZones: {},
   dmThreads: {},
   unreadWorldTotal: 0,
-  unreadDirectTotal: 0,
   onlinePlayers: {},
   typingIndicators: {},
   pendingReadReceipts: [],
-  openTabs: loadTabsFromStorage(),
-  activeTabId: loadActiveTabIdFromStorage(),
-  blockedPlayers: [],
+  view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
+  blockList: null,
+  heldWorldMessages: [],
+  rooms: [],
+  readOnlyZoneIds: [],
+  roomRefusals: {},
 };
 
-/** The signed-in account's block list, as the server returns it after a read or a change. */
-const requestBlockList = async (baseUrl: string | undefined, method: string, path = "", body?: unknown) => {
-  if (!baseUrl) return null;
-  const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
-    method,
-    credentials: "include",
-    ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
-  });
-  if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
-  return ((await response.json()) as { blocked: string[] }).blocked;
-};
+/** The first wait before the block list is read again after a failed read; each further one doubles, up to a minute. */
+const MUTES_RETRY_MS = 2_000;
 
 export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
   ...initialState,
@@ -252,19 +234,17 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const client = new RealtimeClient({
         baseUrl: params.baseUrl,
+        rooms: params.rooms,
+        // The inbox's own events. The rooms the player is in are each room's to say (joined:zone, left:zone): the inbox
+        // dropping or coming back leaves a room whose socket stands as it is.
         onOpen: () => {
           if (get().client !== client) return;
-          set({
-            connectionStatus: "connecting",
-            joinedZoneIds: [],
-            lastConnectionError: undefined,
-          });
+          set({ connectionStatus: "connecting", lastConnectionError: undefined });
         },
         onClose: (event) => {
           if (get().client !== client) return;
           set({
             connectionStatus: event.wasClean ? "idle" : "error",
-            joinedZoneIds: [],
             lastConnectionError: event.reason || undefined,
           });
         },
@@ -272,7 +252,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           if (get().client !== client) return;
           set({
             connectionStatus: "error",
-            joinedZoneIds: [],
             lastConnectionError: event instanceof Event ? event.type : String(event),
           });
         },
@@ -286,28 +265,51 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
           switch (message.type) {
             case "connected":
+              // The transport opens the player's rooms the server allows; each says it is joined when it opens.
               set({
                 connectionStatus: "connected",
-                joinedZoneIds: message.channels as string[],
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,
                 },
               });
-              // The server has already joined the channels it authorized for this identity.
-              params.joinZones?.forEach((zoneId) => actions.joinZone(zoneId));
+              // The inbox's handshake (a reconnect's too) lists the conversations, those that came while away with them.
+              if (Array.isArray(message.threads)) {
+                const listed = message.threads as { thread: unknown; lastMessage: unknown }[];
+                set((state) => {
+                  // A new connection tells its reads again: one sent on the connection before may have been lost.
+                  const dmThreads = Object.fromEntries(
+                    Object.entries(state.dmThreads).map(([id, held]) => [id, { ...held, receiptSent: undefined }]),
+                  );
+                  for (const record of listed) {
+                    const thread = mapDirectThreadRecord(record.thread);
+                    const held = dmThreads[thread.id] ?? createThreadState(thread);
+                    const last = record.lastMessage ? [mapDirectMessageRecord(record.lastMessage)] : [];
+                    dmThreads[thread.id] = { ...held, thread, messages: mergeLines(held.messages, last) };
+                  }
+                  return { dmThreads };
+                });
+              }
               break;
             case "joined:zone":
               set((state) => ({
                 joinedZoneIds: [...new Set([...state.joinedZoneIds, message.zoneId as string])],
+                // The room says at its open whether the player writes there.
+                readOnlyZoneIds:
+                  message.canWrite === false
+                    ? [...new Set([...state.readOnlyZoneIds, message.zoneId as string])]
+                    : state.readOnlyZoneIds.filter((zoneId) => zoneId !== message.zoneId),
                 // A room that dropped and came back ends the reconnecting it started.
                 connectionStatus: state.connectionStatus === "reconnecting" ? "connected" : state.connectionStatus,
               }));
+              actions.joinZone(message.zoneId as string);
               break;
             case "left:zone":
               set((state) => ({ joinedZoneIds: state.joinedZoneIds.filter((zoneId) => zoneId !== message.zoneId) }));
               break;
             case "world:message":
+              // A room the player does not have counts nothing: nothing it says reaches the player.
+              if (!get().joinedZoneIds.includes(message.zoneId as string)) break;
               actions.receiveWorldMessage(message.zoneId as string, message.message as WorldChatMessage, {
                 clientMessageId: message.clientMessageId as string | undefined,
               });
@@ -321,6 +323,17 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 actions.resolvePendingMessage(message.clientMessageId as string, { status: "sent" });
               }
               break;
+            case "direct:thread": {
+              // Read on one of the player's devices: every device takes the thread with its unread recounted.
+              const thread = mapDirectThreadRecord(message.thread);
+              set((state) => ({
+                dmThreads: {
+                  ...state.dmThreads,
+                  [thread.id]: { ...(state.dmThreads[thread.id] ?? createThreadState(thread)), thread },
+                },
+              }));
+              break;
+            }
             case "direct:typing":
               set((state) => ({
                 typingIndicators: {
@@ -350,10 +363,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               }));
               break;
             case "error":
-              set({
-                connectionStatus: "error",
-                lastConnectionError: message.message as string | undefined,
-              });
+              // A room's refusal of the player's message is that room's (its last message not taken), not the
+              // connection's; a refusal for want of registration means the player only reads there now.
+              if (typeof message.zoneId === "string") actions.refuseInRoom(message.zoneId, message.code as string);
+              else
+                set({
+                  connectionStatus: "error",
+                  lastConnectionError: message.message as string | undefined,
+                });
               break;
             default:
               if (VERBOSE_LOGS_ENABLED) console.debug("[realtime] unhandled message", message);
@@ -365,15 +382,62 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       set({
         client,
+        rooms: [...params.rooms],
         identity: undefined,
         baseUrl: httpBaseUrl,
         connectionStatus: "connecting",
         joinedZoneIds: [],
         lastConnectionError: undefined,
+        blockList: null,
+        heldWorldMessages: [],
       });
-      get()
-        .actions.loadBlockedPlayers()
-        .catch((error) => console.error("chat_block_list_unavailable", error));
+      // Who is muted is read before any room message is shown, counted or heard. A failed read is told once and tried
+      // again, later each time, for as long as this connection stands.
+      const readMutes = (attempt: number): Promise<void> =>
+        get()
+          .actions.loadBlockedPlayers()
+          .catch((error: unknown) => {
+            if (get().client !== client) return;
+            if (attempt === 0) toast.failed(error, CHAT_WORDS.mutesUnavailable);
+            setTimeout(
+              () => {
+                if (get().client === client && get().blockList === null) void readMutes(attempt + 1);
+              },
+              Math.min(MUTES_RETRY_MS * 2 ** attempt, 60_000),
+            );
+          });
+      void readMutes(0);
+    },
+    setRooms: (rooms) => {
+      const before = get().rooms;
+      if (before.length === rooms.length && before.every((zoneId, at) => zoneId === rooms[at])) return;
+      set({ rooms: [...rooms] });
+      get().client?.setRooms(rooms);
+    },
+    reopenRoom: (zoneId) => get().client?.reopenZone(zoneId),
+    refuseInRoom: (zoneId, code) => {
+      const zone = get().worldZones[zoneId];
+      // The room answers in order: the refused message is the oldest still being sent there.
+      const refused = zone?.pendingMessages.find((pending) => pending.status === "sending");
+      set((state) => ({
+        ...(code === "registration_required"
+          ? { readOnlyZoneIds: [...new Set([...state.readOnlyZoneIds, zoneId])] }
+          : {
+              roomRefusals: { ...state.roomRefusals, [zoneId]: code === "rate_limited" ? "rate-limited" : "refused" },
+            }),
+        ...(zone && refused
+          ? {
+              worldZones: {
+                ...state.worldZones,
+                [zoneId]: {
+                  ...zone,
+                  messages: zone.messages.filter((line) => line.id !== refused.id),
+                  pendingMessages: zone.pendingMessages.filter((pending) => pending.id !== refused.id),
+                },
+              },
+            }
+          : {}),
+      }));
     },
     resetClient: () => {
       const { client } = get();
@@ -400,24 +464,28 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    setWorldChatChannel: (zoneId) => {
-      const { actions, openTabs, activeTabId } = get();
+    // Each view is read where it stands: the room shown counts nothing unread, a conversation open neither; leaving one
+    // lets its messages count again.
+    showRoom: (zoneId) => {
+      const { actions } = get();
       actions.joinZone(zoneId);
+      actions.setActiveThread(undefined);
       actions.setActiveZone(zoneId);
-      const directTabs = openTabs.filter((tab) => tab.type === "dm");
-      const worldTab = {
-        id: `world-${zoneId}`,
-        type: "world" as const,
-        label: "World",
-        targetId: zoneId,
-        unreadCount: get().worldZones[zoneId]?.unreadCount ?? 0,
-        closeable: false,
-      };
-      const nextTabs = [worldTab, ...directTabs];
-      const nextActiveTabId = directTabs.some((tab) => tab.id === activeTabId) ? activeTabId : worldTab.id;
-      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      localStorage.setItem("realtime-chat-active-tab", nextActiveTabId!);
+      set({ view: { kind: "room", zoneId } });
+    },
+    showMessages: () => {
+      const { actions } = get();
+      actions.setActiveZone(undefined);
+      actions.setActiveThread(undefined);
+      set({ view: { kind: "messages" } });
+    },
+    openConversation: (playerId) => {
+      const { actions } = get();
+      const threadId = actions.ensureDirectThread(playerId);
+      if (!threadId) return;
+      actions.setActiveZone(undefined);
+      actions.setActiveThread(threadId);
+      set({ view: { kind: "conversation", threadId } });
     },
     setActiveZone: (zoneId) => {
       const { worldZones, unreadWorldTotal, activeZoneId } = get();
@@ -450,28 +518,22 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: nextUnreadTotal,
       });
     },
+    openAlert: (alert) => {
+      const { actions, identity } = get();
+      if ("room" in alert) actions.showRoom(alert.room);
+      else {
+        const peer = alert.thread.split("|").find((player) => player !== identity?.playerId);
+        if (peer) actions.openConversation(peer);
+        else actions.showMessages();
+      }
+      set((state) => ({ chatRevealed: state.chatRevealed + 1 }));
+    },
     setShellOpen: (isOpen) => {
       const { isShellOpen } = get();
       if (isShellOpen === isOpen) {
         return;
       }
       set({ isShellOpen: isOpen });
-    },
-    openDirectThread: (playerId: string) => {
-      if (!playerId) {
-        return undefined;
-      }
-
-      const { actions } = get();
-      const threadId = actions.ensureDirectThread(playerId);
-
-      if (threadId) {
-        actions.setShellOpen(true);
-        actions.setActiveThread(threadId);
-        return threadId;
-      }
-
-      return undefined;
     },
     ensureDirectThread: (participantId: string) => {
       const { identity, dmThreads } = get();
@@ -524,43 +586,19 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       return threadId;
     },
     setActiveThread: (threadId) => {
-      const { dmThreads, unreadDirectTotal, activeThreadId } = get();
-      if (!threadId) {
-        if (activeThreadId !== undefined) {
-          set({ activeThreadId: undefined });
-        }
-        return;
-      }
-
-      const threadState = dmThreads[threadId];
-      if (!threadState) {
-        if (activeThreadId !== threadId) {
-          set({ activeThreadId: threadId });
-        }
-        return;
-      }
-
-      if (activeThreadId === threadId && threadState.unreadCount === 0) {
-        return;
-      }
-
-      const unreadCount = threadState.unreadCount;
-      const nextUnreadTotal = Math.max(unreadDirectTotal - unreadCount, 0);
-
-      set({
-        activeThreadId: threadId,
-        dmThreads: {
-          ...dmThreads,
-          [threadId]: {
-            ...threadState,
-            unreadCount: 0,
-          },
-        },
-        unreadDirectTotal: nextUnreadTotal,
-      });
+      if (get().activeThreadId !== threadId) set({ activeThreadId: threadId });
     },
     receiveWorldMessage: (zoneId, message, options) => {
-      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen } = get();
+      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen, blockList } = get();
+      if (blockList === null) {
+        set((state) => ({
+          heldWorldMessages: [
+            ...state.heldWorldMessages,
+            { zoneId, message, clientMessageId: options?.clientMessageId },
+          ],
+        }));
+        return;
+      }
       const zoneState = worldZones[zoneId] ?? createWorldZoneState(zoneId);
       const normalizedMessage = normalizeWorldChatMessage(message);
 
@@ -586,7 +624,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const isActiveZone = activeZoneId === zoneId;
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
-      const shouldIncrement = !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
+      // A muted player's message is kept, as the room has it, but neither heard nor counted.
+      const isMuted = blockList.blocked.includes(normalizedMessage.sender.playerId);
+      const shouldIncrement = !isOwnMessage && !isMuted && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
       if (shouldIncrement) {
         AudioManager.getInstance().play("ui.msg_receive");
@@ -609,7 +649,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       });
     },
     receiveDirectMessage: (message, threadInfo) => {
-      const { dmThreads, identity, activeThreadId, unreadDirectTotal, isShellOpen } = get();
+      const { dmThreads, identity, activeThreadId, isShellOpen } = get();
       const normalizedMessage = normalizeDirectMessage(message);
       const existingThread = dmThreads[normalizedMessage.threadId];
       const baseThread = threadInfo ?? existingThread?.thread ?? createFallbackThread(normalizedMessage);
@@ -617,10 +657,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const messages = [...threadState.messages, normalizedMessage].slice(-200);
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.senderId);
       const isActiveThread = activeThreadId === normalizedMessage.threadId;
-      const shouldIncrement = !isOwnMessage && (!isShellOpen || !isActiveThread);
-      const unreadCount = shouldIncrement ? threadState.unreadCount + 1 : threadState.unreadCount;
-
-      if (shouldIncrement) {
+      // Heard and shown when it is not being read; what it adds to unread is the server's count, in its thread.
+      if (!isOwnMessage && (!isShellOpen || !isActiveThread)) {
         AudioManager.getInstance().play("ui.msg_receive");
         const { onlinePlayers } = get();
         const senderName =
@@ -645,10 +683,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               updatedAt,
             },
             messages,
-            unreadCount,
           },
         },
-        unreadDirectTotal: shouldIncrement ? unreadDirectTotal + 1 : unreadDirectTotal,
       });
     },
     setWorldHistory: (zoneId, messages, meta) => {
@@ -723,22 +759,18 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         unreadWorldTotal: Math.max(unreadWorldTotal - zoneState.unreadCount, 0),
       });
     },
+    // Read here, and told to the server when a receipt is due (receiptDue): it recounts its unread and tells every
+    // device of the player.
     markThreadAsRead: (threadId) => {
-      const { dmThreads, unreadDirectTotal } = get();
-      const thread = dmThreads[threadId];
-      if (!thread || thread.unreadCount === 0) {
-        return;
-      }
-
-      set({
-        dmThreads: {
-          ...dmThreads,
-          [threadId]: {
-            ...thread,
-            unreadCount: 0,
-          },
-        },
-        unreadDirectTotal: Math.max(unreadDirectTotal - thread.unreadCount, 0),
+      const state = get();
+      const due = receiptDue(state, threadId);
+      if (!due || !state.identity) return;
+      set({ dmThreads: { ...state.dmThreads, [threadId]: { ...state.dmThreads[threadId]!, receiptSent: due.id } } });
+      void state.actions.acknowledgeDirectRead({
+        threadId,
+        messageId: due.id,
+        readerId: state.identity.playerId,
+        readAt: new Date().toISOString(),
       });
     },
     enqueuePendingMessage: (message: PendingMessage) => {
@@ -835,6 +867,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       };
 
       const existingZone = worldZones[zoneId] ?? createWorldZoneState(zoneId);
+      // A new message puts the room's last refusal away.
+      const roomRefusals = { ...get().roomRefusals };
+      delete roomRefusals[zoneId];
       set({
         worldZones: {
           ...worldZones,
@@ -844,6 +879,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             pendingMessages: [...existingZone.pendingMessages, pending],
           },
         },
+        roomRefusals,
       });
 
       const message: WorldChatOutboundMessage = {
@@ -876,7 +912,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    sendDirectMessage: async (threadId, recipientId, content) => {
+    sendDirectMessage: async (threadId, recipientId, content, metadata) => {
       const { client } = get();
       if (!client) return;
       const message: DirectMessageOutboundMessage = {
@@ -885,6 +921,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           threadId,
           recipientId,
           content,
+          ...(metadata ? { metadata } : {}),
         },
       };
       client.send(message);
@@ -1022,7 +1059,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       }
     },
     loadDirectHistory: async (threadId: string, cursor?: string) => {
-      const { baseUrl } = get();
+      const { baseUrl, client } = get();
       if (!baseUrl || get().dmThreads[threadId]?.isFetchingHistory) return;
 
       set((state) => {
@@ -1073,22 +1110,15 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         }
 
         const data = await response.json();
-        const incomingUnsorted = Array.isArray(data?.messages)
+        // A page read for a client replaced since writes nothing into the one that replaced it.
+        if (get().client !== client) return;
+        const incoming = Array.isArray(data?.messages)
           ? (data.messages as any[]).map((record) => mapDirectMessageRecord(record))
           : [];
 
-        const incoming = incomingUnsorted.toSorted((a, b) => {
-          const aTime = new Date(a.createdAt as string).getTime();
-          const bTime = new Date(b.createdAt as string).getTime();
-          return aTime - bTime;
-        });
-
-        const normalizedThread = data?.thread ? mapDirectThreadRecord(data.thread) : undefined;
-
         set((state) => {
           const existing = state.dmThreads[threadId];
-          const baseThread =
-            existing?.thread ?? normalizedThread ?? (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
+          const baseThread = existing?.thread ?? (incoming[0] ? createFallbackThread(incoming[0]) : undefined);
 
           if (!baseThread) {
             if (!existing) {
@@ -1106,28 +1136,13 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           }
 
           const threadState = existing ?? createThreadState(baseThread);
-          const existingMessages = threadState.messages;
-          const existingIds = new Set(existingMessages.map((msg) => msg.id));
-          const dedupedIncoming = incoming.filter((msg) => !existingIds.has(msg.id));
-          const combined = [...dedupedIncoming, ...existingMessages].toSorted(
-            (a, b) => new Date(a.createdAt as string).getTime() - new Date(b.createdAt as string).getTime(),
-          );
-
-          const nextThread = normalizedThread
-            ? {
-                ...threadState.thread,
-                ...normalizedThread,
-                unreadCounts: normalizedThread.unreadCounts ?? threadState.thread.unreadCounts ?? {},
-              }
-            : threadState.thread;
 
           return {
             dmThreads: {
               ...state.dmThreads,
               [threadId]: {
                 ...threadState,
-                thread: nextThread,
-                messages: combined,
+                messages: mergeLines(threadState.messages, incoming),
                 hasMoreHistory: Boolean(data?.nextCursor),
                 lastFetchedCursor: data?.nextCursor ?? null,
                 isFetchingHistory: false,
@@ -1152,75 +1167,42 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    addTab: (tab) => {
-      const { openTabs } = get();
-      const existingIndex = openTabs.findIndex((t) => t.id === tab.id);
-
-      if (existingIndex >= 0) {
-        // Tab already exists, just set it as active
-        set({ activeTabId: tab.id });
-        localStorage.setItem("realtime-chat-active-tab", tab.id);
-        return;
-      }
-
-      const nextTabs = [...openTabs, tab];
-      set({ openTabs: nextTabs, activeTabId: tab.id });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      localStorage.setItem("realtime-chat-active-tab", tab.id);
-    },
-    removeTab: (tabId) => {
-      const { openTabs, activeTabId } = get();
-      const nextTabs = openTabs.filter((t) => t.id !== tabId);
-
-      let nextActiveTabId = activeTabId;
-      if (activeTabId === tabId) {
-        // If removing active tab, switch to the last tab
-        nextActiveTabId = nextTabs.length > 0 ? nextTabs[nextTabs.length - 1].id : null;
-      }
-
-      set({ openTabs: nextTabs, activeTabId: nextActiveTabId });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-      if (nextActiveTabId) {
-        localStorage.setItem("realtime-chat-active-tab", nextActiveTabId);
-      } else {
-        localStorage.removeItem("realtime-chat-active-tab");
-      }
-    },
-    loadBlockedPlayers: async () => {
-      const blocked = await requestBlockList(get().baseUrl, "GET");
-      if (blocked) set({ blockedPlayers: blocked });
-    },
-    // Blocking hides the thread: its tab closes and its messages leave this client. The server drops the account's
-    // future messages; unblocking lets later ones through, and a new message brings the thread back.
-    blockPlayer: async (playerId) => {
-      const blocked = await requestBlockList(get().baseUrl, "POST", "", { realmsId: playerId });
-      if (!blocked) return;
-      const hidden = Object.keys(get().dmThreads).filter((threadId) =>
-        get().dmThreads[threadId]!.thread.participants.includes(playerId),
-      );
-      const dmThreads = Object.fromEntries(
-        Object.entries(get().dmThreads).filter(([threadId]) => !hidden.includes(threadId)),
-      );
-      set({ blockedPlayers: blocked, dmThreads });
-      hidden.forEach((threadId) => get().actions.removeTab(`dm-${threadId}`));
-    },
-    unblockPlayer: async (playerId) => {
-      const blocked = await requestBlockList(get().baseUrl, "DELETE", `/${encodeURIComponent(playerId)}`);
-      if (blocked) set({ blockedPlayers: blocked });
-    },
-    setActiveTab: (tabId) => {
-      set({ activeTabId: tabId });
-      if (tabId) {
-        localStorage.setItem("realtime-chat-active-tab", tabId);
-      } else {
-        localStorage.removeItem("realtime-chat-active-tab");
-      }
-    },
-    updateTabUnread: (tabId, unreadCount) => {
-      const { openTabs } = get();
-      const nextTabs = openTabs.map((tab) => (tab.id === tabId ? { ...tab, unreadCount } : tab));
-      set({ openTabs: nextTabs });
-      localStorage.setItem("realtime-chat-tabs", JSON.stringify(nextTabs));
-    },
+    loadBlockedPlayers: () => askBlockList("GET"),
+    blockPlayer: (playerId) => askBlockList("POST", "", { realmsId: playerId }),
+    unblockPlayer: (playerId) => askBlockList("DELETE", `/${encodeURIComponent(playerId)}`),
   },
 }));
+
+/**
+ * Asks the server for the account's block list (a read, a block, an unblock: each answers the list with its version)
+ * and holds the answer when it is the latest list this connection has seen, by its version, whatever order the
+ * answers arrive in. A reply that came after its connection was replaced is not this connection's.
+ */
+const askBlockList = async (method: string, path = "", body?: unknown): Promise<void> => {
+  const { baseUrl, client } = useRealtimeChatStore.getState();
+  if (!baseUrl) return;
+  const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
+    method,
+    credentials: "include",
+    ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
+  });
+  if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
+  const list: unknown = await response.json();
+  if (!isBlockList(list)) throw new Error("Block list answer without its version");
+  const held = useRealtimeChatStore.getState();
+  if (held.client !== client || (held.blockList && list.version <= held.blockList.version)) return;
+  holdBlockList({ blocked: [...list.blocked], version: list.version });
+};
+
+/**
+ * The latest block list, held: the room messages held for it are taken as they would have been on arrival. Who shows
+ * in Messages and conversations is read from it where they are drawn (threadShown); the conversations stay as the
+ * server sent them.
+ */
+const holdBlockList = (list: BlockList) => {
+  const { heldWorldMessages } = useRealtimeChatStore.getState();
+  useRealtimeChatStore.setState({ blockList: list, heldWorldMessages: [] });
+  const { actions } = useRealtimeChatStore.getState();
+  for (const { zoneId, message, clientMessageId } of heldWorldMessages)
+    actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+};

@@ -15,6 +15,7 @@ import { AppFooter } from "./footer";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
 import { DesktopBar, TabBar } from "./tabs";
+import { AppChatPane } from "../chat/app-chat";
 
 type PageFrameProps = {
   /** A page opened from another names where Back leads; a tab page has none. */
@@ -31,6 +32,11 @@ type PageFrameProps = {
   tabs?: boolean;
   /** Play, the one page that offers to install the app. */
   offersInstall?: boolean;
+  /**
+   * A page that is its own scroller (Chat): on a phone its body fills the band between the top and the tabs, with no
+   * footer under it; on a desktop it stands as tall as the screen gives under the bar.
+   */
+  fill?: boolean;
   /**
    * The painting behind the desktop page: the age or mode the page is about; a page about the app stands on its
    * landscape. A stage stands on it on a phone too.
@@ -67,8 +73,24 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({ back, title, notice, foot, tabs = true, painting, stage = false, children }: PageFrameProps) => (
-  <div className={stage ? "app-frame h-dvh" : "flex h-dvh flex-col"} data-stage={stage || undefined}>
+const PhoneFrame = ({
+  back,
+  title,
+  notice,
+  foot,
+  tabs = true,
+  fill = false,
+  painting,
+  stage = false,
+  children,
+}: PageFrameProps) => (
+  // The page ends where the on-screen keyboard begins (--keyboard), so what is typed and what it answers stay in sight.
+  <div
+    className={
+      stage ? "app-frame h-[calc(100dvh-var(--keyboard,0px))]" : "flex h-[calc(100dvh-var(--keyboard,0px))] flex-col"
+    }
+    data-stage={stage || undefined}
+  >
     {stage && painting && (
       <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
     )}
@@ -79,11 +101,13 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, painting, stage = 
       {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
     </header>
     {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
-    <div className="min-h-0 flex-1 overflow-y-auto px-gutter pb-4">
-      <main data-band="body" className="min-h-full">
+    <div
+      className={fill ? "flex min-h-0 flex-1 flex-col px-gutter pb-2" : "min-h-0 flex-1 overflow-y-auto px-gutter pb-4"}
+    >
+      <main data-band="body" className={fill ? "min-h-0 flex-1" : "min-h-full"}>
         {children}
       </main>
-      {tabs && <AppFooter />}
+      {tabs && !fill && <AppFooter />}
     </div>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-gutter pb-2">
@@ -96,7 +120,7 @@ const PhoneFrame = ({ back, title, notice, foot, tabs = true, painting, stage = 
       </div>
     ) : null}
     {tabs ? (
-      <div data-band="tabs" className="shrink-0">
+      <div data-band="tabs" data-keyboard-hides className="shrink-0">
         <TabBar />
       </div>
     ) : null}
@@ -113,6 +137,7 @@ const DesktopFrame = ({
   notice,
   foot,
   tabs = true,
+  fill = false,
   painting = APP_LANDSCAPE,
   stage = false,
   children,
@@ -128,12 +153,13 @@ const DesktopFrame = ({
             <AppPageHead back={back} title={title} aside={aside} />
           </div>
         ) : null}
-        <main data-band="body" className="min-w-0">
+        <main data-band="body" className={fill ? "h-[min(48rem,calc(100dvh-14rem))] min-w-0" : "min-w-0"}>
           {children}
         </main>
         {foot ? <div data-band="foot">{foot}</div> : null}
         {tabs && <AppFooter />}
       </div>
+      {tabs && <AppChatPane />}
     </div>
   );
 };

@@ -21,8 +21,9 @@ vi.hoisted(() => {
   });
 });
 // The chat itself has its own tests; here only where the lobby puts it.
-vi.mock("./lobby-chat-panel", () => ({
-  LobbyChatPanel: ({ slot }: { slot: { name: string } }) => <section aria-label="Chat">{slot.name}</section>,
+vi.mock("../chat/app-chat", async (original) => ({
+  ...(await original<typeof import("../chat/app-chat")>()),
+  LobbyChat: ({ slot }: { slot: { name: string } }) => <section aria-label="Chat">{slot.name}</section>,
 }));
 
 import { setViewportWidth } from "../frame/test-viewport";

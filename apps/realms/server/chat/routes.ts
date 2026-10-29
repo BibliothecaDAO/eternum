@@ -90,21 +90,20 @@ const REALMS_ID = /^0x[0-9a-fA-F]{1,64}$/;
 
 /**
  * /api/chat/blocks: the signed-in account's block list. GET lists it, POST {realmsId} blocks an account, and
- * DELETE /api/chat/blocks/:realmsId unblocks it. A blocked account's direct messages are dropped at this inbox.
+ * DELETE /api/chat/blocks/:realmsId unblocks it; each answers the list with its version (BlockList). A blocked
+ * account's direct messages are dropped at this inbox.
  */
 const routeBlocks = async (request: Request, env: IdentityEnv, owner: string, target: string | undefined) => {
   const inbox = env.CHAT_INBOX.get(env.CHAT_INBOX.idFromName(owner));
-  if (request.method === "GET" && !target) return json({ blocked: await inbox.blocked() });
+  if (request.method === "GET" && !target) return json(await inbox.blockList());
   if (request.method === "POST" && !target) {
     const body = (await request.json().catch(() => null)) as { realmsId?: unknown } | null;
     const realmsId = typeof body?.realmsId === "string" && REALMS_ID.test(body.realmsId) ? body.realmsId : null;
     if (!realmsId || BigInt(realmsId) === BigInt(owner)) return json({ error: "invalid_realms_id" }, 400);
-    await inbox.block(canonical(realmsId));
-    return json({ blocked: await inbox.blocked() });
+    return json(await inbox.block(canonical(realmsId)));
   }
   if (request.method === "DELETE" && target && REALMS_ID.test(target)) {
-    await inbox.unblock(canonical(target));
-    return json({ blocked: await inbox.blocked() });
+    return json(await inbox.unblock(canonical(target)));
   }
   return json({ error: "not_found" }, 404);
 };

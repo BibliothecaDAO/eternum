@@ -465,6 +465,8 @@ export const HUD_SHEET = {
   "rarity-5": "#f6ac1d",
   /** A control's height; a touch target's is HUD_PHONE's. */
   control: "36px",
+  /** Inline icons sit on the text baseline in Feed lines and links. */
+  "icon-baseline": "-0.2em",
   /** Corners: a chip's, a control's, a panel's, a round thing's. */
   "radius-chip": "4px",
   "radius-control": "8px",
@@ -568,13 +570,19 @@ export const HUD_LAYOUT = {
   summary: "400px",
   /** A phone's top bar, both its rows (Blitz's and Frontier's end by 94px): the game's news stands under it. */
   "phone-header": "100px",
+  /** The phone layouts stand above the keyboard inset shared by the root viewport hook. */
+  keyboard: "var(--keyboard, 0px)",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
   "phone-panel": "45dvh",
   "chat-width": "800px",
   "chat-height": "600px",
-  "chat-pane": "min(60vh, 520px)",
+  /**
+   * The open chat's pane, and never taller than what the on-screen keyboard leaves (--keyboard, useKeyboardInset) less
+   * the phone's top bar (phone-header, 100px) and the strip under the pane (60px): typing, its tabs stay on screen.
+   */
+  "chat-pane": "min(60vh, 520px, calc(100dvh - var(--keyboard, 0px) - 160px))",
   /** The open chat's least height in the right column, its strip included: the composer and a few lines of history. */
   "chat-least": "300px",
   /** The picked tile's details' least height in the right column (less when they hold less): a header and a body. */
@@ -640,8 +648,10 @@ const variablesOf = (entries: [string, string][]): Record<string, string> => {
 };
 
 /** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
-export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
-  ...Object.fromEntries(Object.entries(HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value])),
+export const hudModeVariables = (mode: HudMode | "app"): Record<string, string> => ({
+  ...Object.fromEntries(
+    Object.entries(mode === "app" ? HUD_APP_MODE : HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value]),
+  ),
   ...Object.fromEntries(Object.entries(HUD_DERIVED).map(([name, value]) => [`--hud-${name}`, value])),
 });
 
@@ -812,6 +822,17 @@ export const APP_SHEET = {
   /** One speed for every hover and press. */
   fast: "120ms",
   ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+} as const;
+
+/**
+ * The HUD's elements drawn in the app (its chat, in a pane over a page or a page of its own): the app sheet's accent,
+ * surfaces and ink in the HUD's roles, so the one chat reads as the app around it ([data-hud-mode="app"]).
+ */
+export const HUD_APP_MODE = {
+  accent: APP_SHEET.accent,
+  "surface-from": APP_SHEET["surface-2"],
+  "surface-to": APP_SHEET.surface,
+  ink: channels(SHELL_COLORS.cream),
 } as const;
 
 /** The app's values built from others: hover and chosen tints and the focus ring follow the accent. */

@@ -17,6 +17,13 @@ export interface ThreeStore {
   selectOnMap: (intent: MapSelectionIntent) => void;
   /** Closes the selected tile's card: a tile or structure is deselected, an army stays selected with no tile. */
   closeSelectedTile: () => void;
+  /**
+   * What the map had selected when a HUD surface opened over it and let go of the tile (one panel at a time): a phone's
+   * Chat, opened from its tab, can still share it. Any later selection, or none, replaces it.
+   */
+  setAsidePick: MapSelectionIntent;
+  /** Closes the selected tile's card for a surface, keeping what was selected as `setAsidePick`. */
+  setTileAsideForSurface: () => void;
   /** Deselects the selected army or structure; a plain tile stays selected. */
   deselectEntity: () => void;
   /** Derives the selection again from where its entity stands now (the map calls it as its projection changes). */
@@ -118,10 +125,16 @@ export const createThreeStoreSlice = (
   // Nothing is selected until the player selects something: no stand-in hex at the origin.
   mapSelection: null,
   selectOnMap: (intent: MapSelectionIntent) => {
-    set({ mapSelection: intent });
+    set({ mapSelection: intent, setAsidePick: null });
     get().refreshMapSelection();
   },
   closeSelectedTile: () => get().selectOnMap(withoutSelectedTile(get().mapSelection)),
+  setAsidePick: null,
+  setTileAsideForSurface: () => {
+    const picked = get().mapSelection;
+    get().closeSelectedTile();
+    set({ setAsidePick: picked });
+  },
   deselectEntity: () => {
     if (get().mapSelection?.kind !== "hex") get().selectOnMap(null);
   },

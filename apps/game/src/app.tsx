@@ -1,4 +1,5 @@
 import { lazy, Suspense, type ReactNode } from "react";
+import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClientProvider } from "@tanstack/react-query";
 
@@ -11,6 +12,7 @@ import { PwaInstallRuntime } from "./pwa/pwa-install-control";
 import { appQueryClient } from "./runtime/query-client";
 import { AppShell } from "./shell/app-shell";
 import { WhatsNewPage } from "./shell/news/news";
+import { ChatPage } from "./shell/chat/chat-page";
 import { IS_DEV_ENVIRONMENT } from "./shell/frame/environment";
 import { NotFoundPage } from "./shell/not-found";
 import { BlitzLobbyPage } from "./shell/blitz/blitz-pages";
@@ -67,6 +69,7 @@ export const appRoutes = (
       <Route path="profile/settings" element={<SettingsPage />} />
       <Route path="p/:address" element={<PlayerPage />} />
       <Route path="scroll" element={<WhatsNewPage />} />
+      <Route path="chat" element={<ChatPage />} />
       <Route
         path="terms"
         element={
@@ -129,6 +132,7 @@ export const appRoutes = (
  * 3D client and its mode's screens, loads only under `/g/:chain/:game`.
  */
 function App() {
+  useKeyboardInset();
   return (
     <BrowserRouter>
       <QueryClientProvider client={appQueryClient}>

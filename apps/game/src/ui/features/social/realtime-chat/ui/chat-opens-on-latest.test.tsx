@@ -14,6 +14,7 @@ import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/g
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { ROW_PX, layOutChatLists, scrollOf, scrollTo } from "@/hooks/use-stick-to-latest.test-support";
 import { useRealtimeChatStore } from "../model/store";
+import { GLOBAL_ROOM } from "../model/chat-rooms";
 import type { DirectMessage, WorldChatMessage, WorldChatZoneState } from "../model/types";
 import { RealtimeChatShell } from "./realtime-chat-shell";
 
@@ -55,6 +56,8 @@ const installRooms = ({ globalCount = 20 } = {}) => {
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
+    // The block list as the server answered it: nobody muted.
+    blockList: { blocked: [], version: 0 },
     identity: { playerId: "0x7", displayName: "You" } as never,
     joinedZoneIds: [GLOBAL_CHAT_CHANNEL_ID, GAME],
     activeZoneId: GLOBAL_CHAT_CHANNEL_ID,
@@ -63,18 +66,14 @@ const installRooms = ({ globalCount = 20 } = {}) => {
       [THREAD]: {
         thread: { id: THREAD, participants: ["0x7", "0xada"], createdAt: new Date(0).toISOString(), unreadCounts: {} },
         messages: Array.from({ length: 12 }, (_, index) => directMessage(index)),
-        unreadCount: 0,
         hasMoreHistory: false,
         lastFetchedCursor: undefined,
         isFetchingHistory: false,
         pendingMessages: [],
       },
     },
-    openTabs: [
-      { id: `world-${GLOBAL_CHAT_CHANNEL_ID}`, type: "world", label: "World", targetId: GLOBAL_CHAT_CHANNEL_ID },
-      { id: `dm-${THREAD}`, type: "dm", label: "Ada", targetId: THREAD },
-    ] as never,
-    activeTabId: `world-${GLOBAL_CHAT_CHANNEL_ID}`,
+    onlinePlayers: { "0xada": { playerId: "0xada", displayName: "Ada", isOnline: true, isTypingInThreadIds: [] } },
+    view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
     actions: {
       ...actions,
       initializeClient: () => undefined,
@@ -108,18 +107,12 @@ afterEach(() => {
   undoLayout();
 });
 
-/** Chat opened, as the HUD opens it: the shell embedded in its pane. */
+/** Chat opened, as the HUD opens it: Global, and the game's own room where a mode keeps one (Blitz's, when shown). */
 const openChat = () =>
   act(() =>
     root.render(
       <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x7" } as never}>
-        <RealtimeChatShell
-          defaultZoneId={GLOBAL_CHAT_CHANNEL_ID}
-          gameZoneId={GAME}
-          displayMode="embedded"
-          autoInitializeClient={false}
-          showInlineToggle={false}
-        />
+        <RealtimeChatShell rooms={[GLOBAL_ROOM, { zoneId: GAME, label: "Game" }]} />
       </GameProvider>,
     ),
   );
@@ -203,6 +196,7 @@ it("opens Game on its latest message, after Global was scrolled up", () => {
 it("opens a DM on its latest message", () => {
   installRooms();
   openChat();
+  act(() => button("Messages")?.click());
   act(() => button("Ada")?.click());
   expect(lastMessageText()).toContain("Whisper 11");
   const { top, latest } = scrollOf(messageList());

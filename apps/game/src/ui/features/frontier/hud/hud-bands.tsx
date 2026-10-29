@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
+import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
 import { useSideways } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
@@ -19,7 +20,7 @@ type Bands = {
   strip: ReactNode;
   /** The realm's LORDS and its Realms' labor, beside Next up under the strip. */
   purse?: ReactNode;
-  /** A nav page, standing on the place bar. */
+  /** A nav page, standing on the place bar; one marked `data-page-fills` (Chat) takes the band up to the strip. */
   page?: ReactNode;
   nextUp?: ReactNode;
   notices?: ReactNode;
@@ -37,33 +38,40 @@ type Bands = {
  * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
  * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height. While either is open, the action
  * row and the dock step aside under it and Next up's row folds away, so the map keeps what they took (owner, 26 October
- * 2026: layout A); the notices stay. A desktop has the HUD every mode shares (FrontierDesktop).
+ * 2026: layout A); the notices stay. A page that marks itself `data-page-fills` (Chat) takes the whole band from the strip
+ * to the place bar, the map hidden behind it: a page read and written in, not glanced at over the map. The page says
+ * so itself, so wherever it is drawn (the game, the lab) it stands the same. A desktop has the HUD every mode shares (FrontierDesktop).
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
 const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, children }: Bands) => {
   const bar = useRef<HTMLDivElement>(null);
-  // A sheet stands on the place bar: its top, from the screen's bottom.
+  // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
+  // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
     >
       <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
         <TopRow nextUp={nextUp} purse={purse} />
       </div>
-      <div className="relative min-h-0 flex-1" />
-      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
+      <div data-map-band className="relative min-h-0 flex-1" />
+      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? (
-          <PageBand className="max-h-hud-phone-panel">{page}</PageBand>
+          <PageBand className="max-h-hud-phone-panel [&:has([data-page-fills])]:max-h-none [&:has([data-page-fills])]:flex-1">
+            {page}
+          </PageBand>
         ) : (
           <UnderSheet action={action} dock={dock} />
         )}
-        <div ref={bar}>{nav}</div>
+        <div ref={bar}>
+          <div data-keyboard-hides>{nav}</div>
+        </div>
       </div>
       {children}
     </div>
@@ -77,7 +85,7 @@ const SidewaysBands = ({ strip, purse, page, nextUp, notices, action, dock, nav,
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
       style={{ ...SAFE_AREA, "--hud-sheet-top": `${sheetTop}px` } as CSSProperties}
     >
       <div {...HUD_COLUMN_MARK} className="flex">
@@ -124,11 +132,15 @@ const UnderSheet = ({ action, dock }: { action: ReactNode; dock: ReactNode }) =>
   </div>
 );
 
-/** An edge of an element on screen, read again whenever the element or the screen changes size. */
+/**
+ * An edge of an element on screen, read again whenever the element or the screen changes size, and whenever the
+ * on-screen keyboard does (useKeyboardHeight: the bands end on it, so everything in them moves with it).
+ */
 const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) => {
   const [value, setValue] = useState(0);
   const read = useRef(edge);
   read.current = edge;
+  const keyboard = useKeyboardHeight();
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -142,6 +154,6 @@ const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) =
       observer?.disconnect();
       window.removeEventListener("resize", measure);
     };
-  }, [ref]);
+  }, [ref, keyboard]);
   return value;
 };

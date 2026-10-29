@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
@@ -17,6 +17,10 @@ vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => fixture.sign
 const NAMES = vi.hoisted(() => ({ text: () => "Ada", reading: () => ({ state: "waiting" as const, text: "…" }) }));
 vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada", usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
+// No game here: a place reads as its message has it (chat-places.test.tsx reads places in a game).
+vi.mock("@/ui/features/social/realtime-chat/ui/shared/use-chat-map", () => ({
+  usePlaceReader: () => (place: { name: string; icon: string }) => ({ ...place, open: null, elsewhere: true }),
+}));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: {} }));
 vi.mock("@bibliothecadao/types", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/types")>()),
@@ -24,6 +28,7 @@ vi.mock("@bibliothecadao/types", async (importOriginal) => ({
 }));
 vi.mock("@/ui/features/social", () => ({
   RealtimeChatShell: () => <input aria-label="Message" />,
+  GameChatMap: ({ children }: { children: ReactNode }) => children,
   useRealtimeChatInitializer: () => {},
   useRealtimeChatSelector: (select: (state: unknown) => unknown) =>
     select({
@@ -32,7 +37,10 @@ vi.mock("@/ui/features/social", () => ({
       joinedZoneIds: ["global"],
       worldZones: { global: fixture.zone },
       unreadWorldTotal: 2,
-      unreadDirectTotal: 1,
+      blockList: { blocked: [], version: 0 },
+      // One conversation the server counts one unread in.
+      identity: { playerId: "0x7" },
+      dmThreads: { "0x7|0xa": { thread: { participants: ["0x7", "0xa"], unreadCounts: { "0x7": 1 } } } },
       actions: { loadWorldHistory: fixture.loadHistory, setShellOpen: fixture.setOpen },
     }),
 }));

@@ -15,6 +15,7 @@
 /profile / 200
 /profile/settings / 200
 /scroll / 200
+/chat / 200
 /scroll/:post https://realms.world/scroll/:post 301
 /terms / 200
 /privacy / 200

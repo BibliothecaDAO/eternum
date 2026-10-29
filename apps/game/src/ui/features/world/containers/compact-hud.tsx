@@ -14,6 +14,7 @@ import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { FeedToasts, UnreadFeedBadge, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
+import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import {
   type CSSProperties,
@@ -79,7 +80,7 @@ interface LaneLayout {
  */
 const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
   portrait: {
-    shell: "inset-x-0 bottom-0 flex-col",
+    shell: "inset-x-0 bottom-hud-keyboard flex-col",
     panels: "",
     sheet: "max-h-[55dvh] rounded-t-xl",
     sheetStyle: SAFE_SIDES,
@@ -89,7 +90,7 @@ const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
     actionsStyle: SAFE_SIDES,
   },
   landscape: {
-    shell: `${BELOW_HEADER} bottom-0 right-0 flex-row`,
+    shell: `${BELOW_HEADER} bottom-hud-keyboard right-0 flex-row`,
     panels: "w-[min(380px,50vw)]",
     sheet: "min-h-0 flex-1 rounded-l-xl rounded-t-none",
     tabBar: "w-16 box-content flex-col overflow-y-auto overscroll-contain border-l px-1 pt-1",
@@ -113,7 +114,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const { isMapView } = useQuery();
   const open = requested === "map" && !isMapView ? null : requested;
   const unread = useUnreadImportantCount(open === "log");
-  const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const unreadChat = useRealtimeChatSelector(chatUnread);
   const logTab = useRef<HTMLButtonElement>(null);
 
   if (showBlankOverlay) return null;
@@ -126,7 +127,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
     },
     ...(isMapView ? [{ id: "map" as const, label: "Map", image: COMPACT_TAB_IMAGES.map }] : []),
     { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
-    { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: chatUnread },
+    { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: unreadChat },
     { id: "details", label: "Details", image: COMPACT_TAB_IMAGES.details },
   ];
   const layout = LANE_LAYOUT[lane];
@@ -181,6 +182,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         {lane === "portrait" && <StructureActionStrip lane={lane} />}
         <nav
           ref={navigation}
+          data-keyboard-hides
           aria-label="HUD tabs"
           className={cn(
             "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
@@ -217,6 +219,7 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
         </p>
       )}
       <nav
+        data-keyboard-hides
         aria-label="Structure actions"
         className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
         style={layout.actionsStyle}

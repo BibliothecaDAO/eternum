@@ -54,13 +54,14 @@ class FakeSocket {
   }
 }
 
-const connect = () => {
+const connect = (rooms: readonly string[] = ["world:global", "game:7"]) => {
   const sockets: FakeSocket[] = [];
   const closes: unknown[] = [];
   const messages: Array<{ type: string; zoneId?: unknown }> = [];
   let reconnecting = 0;
   const client = new RealtimeClient({
     baseUrl: "https://chat.realms.party?playerId=0xvictim",
+    rooms,
     createSocket: (url) => {
       const socket = new FakeSocket(url);
       sockets.push(socket);
@@ -133,6 +134,118 @@ describe("RealtimeClient", () => {
     expect(sockets[2].closedByClient).toBe(true);
     vi.advanceTimersByTime(60_000);
     expect(paths().filter((path) => path === "/api/chat/rooms/game%3A7")).toHaveLength(1);
+  });
+
+  it("opens only the rooms the player has, of those the handshake allows: a game room not shown never opens", () => {
+    const { sockets, paths } = connect(["world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global", "game:7", "game:9"] });
+    expect(paths()).toEqual(["/api/chat/inbox", "/api/chat/rooms/world%3Aglobal"]);
+  });
+
+  it("opens the same rooms again when a dropped inbox reconnects, never the hidden ones", () => {
+    const { sockets, paths } = connect(["world:global"]);
+    const handshake = { type: "connected", playerId: "p", channels: ["world:global", "game:7"] };
+    sockets[0].open();
+    sockets[0].receive(handshake);
+    sockets[0].drop();
+    vi.advanceTimersByTime(1_000);
+    const inbox = sockets.at(-1)!;
+    inbox.open();
+    inbox.receive(handshake);
+    expect(paths().filter((path) => path.includes("game"))).toEqual([]);
+  });
+
+  it("opens a game's room where it is shown (Blitz's, with its switch on), and only once the handshake allows it", () => {
+    const shown = connect(["world:global", "game:7"]);
+    shown.sockets[0].open();
+    shown.sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    expect(shown.paths()).toEqual(["/api/chat/inbox", "/api/chat/rooms/world%3Aglobal"]);
+    shown.sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global", "game:7"] });
+    expect(shown.paths()).toContain("/api/chat/rooms/game%3A7");
+  });
+
+  it("opens and leaves rooms as the player moves, on the one connection: a game room still only once allowed", () => {
+    const { client, sockets, paths, messages } = connect(["world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const lobby = "slot:0x1:blitz-1630";
+    client.setRooms([lobby, "world:global", "game:7"]);
+    // A lobby's room opens at once (any signed-in player reads it); the game room waits for a handshake allowing it.
+    expect(paths()).toEqual([
+      "/api/chat/inbox",
+      "/api/chat/rooms/world%3Aglobal",
+      "/api/chat/rooms/slot%3A0x1%3Ablitz-1630",
+    ]);
+    sockets[2]!.open();
+    client.setRooms(["world:global"]);
+    expect(sockets[2]!.closedByClient).toBe(true);
+    expect(messages.at(-1)).toEqual({ type: "left:zone", zoneId: lobby });
+    // The inbox was never opened again.
+    expect(paths().filter((path) => path === "/api/chat/inbox")).toHaveLength(1);
+  });
+
+  it("opens a room again on demand, so it answers anew who writes there", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { client, sockets, paths } = connect([lobby, "world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const first = sockets.find(({ url }) => url.includes("slot"))!;
+    first.open();
+    client.reopenZone(lobby);
+    expect(first.closedByClient).toBe(true);
+    expect(paths().filter((path) => path.includes("slot"))).toHaveLength(2);
+  });
+
+  it("tells a room when it is seen and on which device, the room it leaves that it no longer is, and a reopened room again", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { client, sockets } = connect([lobby, "world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const room = (part: string) => sockets.filter(({ url }) => url.includes(part)).at(-1)!;
+    const seen = (socket: FakeSocket) =>
+      socket.sent
+        .map((data) => JSON.parse(data) as { type: string; device?: unknown })
+        .filter(({ type }) => type === "room:seen");
+    const DEVICE = "11111111-1111-4111-8111-111111111111";
+
+    // Seen before its socket opened: told once it opens.
+    client.setSeenRoom({ zoneId: "world:global", device: DEVICE });
+    expect(seen(room("world"))).toEqual([]);
+    room("world").open();
+    expect(seen(room("world"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+    // The same again tells nothing.
+    client.setSeenRoom({ zoneId: "world:global", device: DEVICE });
+    expect(seen(room("world"))).toHaveLength(1);
+
+    // Another room shown: the one left hears it is no longer seen.
+    room("slot").open();
+    client.setSeenRoom({ zoneId: lobby, device: DEVICE });
+    expect(seen(room("world")).at(-1)).toEqual({ type: "room:seen", device: null });
+    expect(seen(room("slot"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+
+    // Its socket drops and opens again: the new socket hears it, as the room forgot it with the old one.
+    room("slot").drop();
+    vi.advanceTimersByTime(1_000);
+    room("slot").open();
+    expect(seen(room("slot"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+
+    // Nothing shown (the page hidden, chat closed): the room hears it.
+    client.setSeenRoom(null);
+    expect(seen(room("slot")).at(-1)).toEqual({ type: "room:seen", device: null });
+  });
+
+  it("names the room an error came from: a room's refusal is that room's", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { sockets, messages } = connect([lobby]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: [] });
+    sockets.find(({ url }) => url.includes("slot"))!.receive({ type: "error", code: "rate_limited", message: "slow" });
+    sockets[0].receive({ type: "error", code: "invalid_direct_payload", message: "bad" });
+    expect(messages.filter(({ type }) => type === "error")).toEqual([
+      { type: "error", code: "rate_limited", message: "slow", zoneId: lobby },
+      { type: "error", code: "invalid_direct_payload", message: "bad" },
+    ]);
   });
 
   it("stays closed once closed, and closes a socket still connecting only when it has opened", () => {

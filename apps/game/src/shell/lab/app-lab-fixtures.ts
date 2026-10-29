@@ -513,6 +513,19 @@ export const LAB_CHAT = [
   createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
 }));
 
+/** Global's chat so far, oldest first: the room every player has, in the app as in a game. */
+export const LAB_GLOBAL_CHAT = [
+  ["Isolde", "anyone up for the next Blitz?"],
+  ["Corwin", "frontier day 12, the spire is open"],
+  ["Aldric", "gg everyone, see you at the lobby"],
+].map(([name, content], index) => ({
+  id: `lab-global-${index}`,
+  sender: { playerId: `0x${(100 + SEAT_NAMES.indexOf(name)).toString(16)}`, displayName: name },
+  zoneId: "world:global",
+  content,
+  createdAt: new Date((NOW - 900 + index * 120) * 1000).toISOString(),
+}));
+
 const RESULT = { rank: 3, chestId: 41n, mmrBefore: 1744, mmrAfter: 1780 };
 const SWORD = {
   registered: true,

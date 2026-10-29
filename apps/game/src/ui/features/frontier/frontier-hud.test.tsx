@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { act } from "react";
+import { act, type ReactNode } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -18,6 +18,7 @@ vi.mock("@bibliothecadao/types", async (original) => ({
       wire.made += 1;
     }
     close = wire.close;
+    setSeenRoom = vi.fn();
   },
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
@@ -37,6 +38,7 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
+  GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
 
 const { getStructureName, readExpeditionRules } = await import("@bibliothecadao/eternum");
@@ -78,7 +80,7 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify({ blocked: [] }), { status: 200 })),
+    vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
   );
   host = document.createElement("div");
   document.body.append(host);
@@ -249,7 +251,7 @@ it.each([false, true])(
       vi.fn(async (url: string | URL) =>
         String(url).includes("/leaderboard")
           ? new Response(JSON.stringify(board), { status: 200 })
-          : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
+          : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
       ),
     );
     viewport.set(1920);
@@ -573,4 +575,33 @@ it.each([
   const { title, controls } = await tapOnVisit(width, { innerCol: 10, innerRow: 10 });
   expect(title).toBe("Castle");
   expect(controls).toEqual(["Close"]);
+});
+
+/** The service worker's word to this window when a chat alert is pressed: what to open. */
+const pressAlert = (kind: "mention" | "direct-message", target: string, tag: string) =>
+  act(async () =>
+    (navigator as unknown as { serviceWorker: EventTarget }).serviceWorker.dispatchEvent(
+      new MessageEvent("message", { data: { type: "chat-alert-pressed", kind, target, tag } }),
+    ),
+  );
+const chatOpen = () => host.querySelector('input[aria-label="Message"]') !== null;
+
+it("opens chat on Global over the game when a mention's alert is pressed, the game left as it was, desktop and phone", async () => {
+  Object.defineProperty(navigator, "serviceWorker", { value: new EventTarget(), configurable: true });
+  for (const width of [1440, 390]) {
+    viewport.set(width);
+    await renderHud();
+    // Chat closed, Messages the last view: the press opens it on Global.
+    await act(async () => useRealtimeChatStore.getState().actions.showMessages());
+    expect(chatOpen()).toBe(false);
+    const labor = host.querySelector('[aria-label="Realm Labor"]') !== null;
+    await pressAlert("mention", "/chat", "mention:global");
+    expect(chatOpen()).toBe(true);
+    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "room", zoneId: "world:global" });
+    // The game stays where it was: its HUD, not another page.
+    expect(host.querySelector('[aria-label="Realm Labor"]') !== null).toBe(labor);
+    act(() => root.unmount());
+    root = createRoot(host);
+  }
+  Reflect.deleteProperty(navigator, "serviceWorker");
 });

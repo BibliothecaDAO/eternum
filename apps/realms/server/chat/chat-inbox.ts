@@ -2,11 +2,12 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
-import { buildDirectMessageNotification, includesDirectMessageNotification } from "@bibliothecadao/notifications";
+import { buildDirectMessageNotification, includesChatNotification } from "@bibliothecadao/notifications";
 import {
   directMessageCreateSchema,
   directMessageReadReceiptSchema,
   directMessageTypingSchema,
+  type BlockList,
   type DirectMessage,
   type DirectMessageReadReceipt,
   type DirectMessageThread,
@@ -29,6 +30,8 @@ interface ThreadRow extends Record<string, SqlStorageValue> {
   updatedAt: number;
   lastMessageId: string;
   unread: number;
+  /** The time the owner has read through (0: never): a read recounts `unread` as the peer's messages after it. */
+  readThroughAt: number;
 }
 
 interface MessageRow extends Record<string, SqlStorageValue> {
@@ -53,15 +56,25 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS threads (id TEXT PRIMARY KEY, peerId TEXT NOT NULL, createdAt INTEGER NOT NULL,
-         updatedAt INTEGER NOT NULL, lastMessageId TEXT NOT NULL, unread INTEGER NOT NULL);
+         updatedAt INTEGER NOT NULL, lastMessageId TEXT NOT NULL, unread INTEGER NOT NULL,
+         readThroughAt INTEGER NOT NULL DEFAULT 0);
        CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, threadId TEXT NOT NULL, senderId TEXT NOT NULL,
          recipientId TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT, createdAt INTEGER NOT NULL);
        CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt);
-       CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL)`,
+       CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL);
+       CREATE TABLE IF NOT EXISTS block_list (version INTEGER NOT NULL);
+       INSERT INTO block_list (version) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM block_list)`,
     );
+    // An inbox made before threads kept their read boundary gains it, once.
+    const columns = ctx.storage.sql.exec<{ name: string }>("PRAGMA table_info(threads)").toArray();
+    if (!columns.some(({ name }) => name === "readThroughAt"))
+      ctx.storage.sql.exec("ALTER TABLE threads ADD COLUMN readThroughAt INTEGER NOT NULL DEFAULT 0");
   }
 
-  /** The owner's socket, admitted by the Worker with the rooms the owner may join. */
+  /**
+   * The owner's socket, admitted by the Worker with the rooms the owner may join. Its handshake carries the owner's
+   * conversations, read once the socket is accepted and sent in the same step: every later frame is newer than it.
+   */
   override async fetch(request: Request): Promise<Response> {
     const member = chatMemberOf(request);
     if (!member) return new Response("chat member required", { status: 400 });
@@ -75,6 +88,7 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
       playerId: member.realmsId,
       displayName: member.displayName ?? null,
       channels: rooms,
+      threads: this.listThreads(member.realmsId),
     });
     return new Response(null, { status: 101, webSocket: client });
   }
@@ -114,25 +128,53 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:read", receipt });
   }
 
-  /** The accounts the owner blocked, most recent first. */
-  async blocked(): Promise<string[]> {
-    return this.ctx.storage.sql
+  /**
+   * The accounts the owner blocked, most recent first, with the list's version. The version rises with each change
+   * and only then, so a client holding two answers keeps the higher: the list as it stands later.
+   */
+  async blockList(): Promise<BlockList> {
+    const sql = this.ctx.storage.sql;
+    const blocked = sql
       .exec<{ realmsId: string }>("SELECT realmsId FROM blocks ORDER BY blockedAt DESC")
       .toArray()
       .map(({ realmsId }) => realmsId);
+    const { version } = sql.exec<{ version: number }>("SELECT version FROM block_list").one();
+    return { blocked, version };
   }
 
-  async block(realmsId: string): Promise<void> {
-    this.ctx.storage.sql.exec(
+  /** Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. */
+  async block(realmsId: string): Promise<BlockList> {
+    const added = this.ctx.storage.sql.exec(
       "INSERT INTO blocks (realmsId, blockedAt) VALUES (?, ?) ON CONFLICT DO NOTHING",
       realmsId,
       Date.now(),
-    );
+    ).rowsWritten;
+    if (added > 0) this.ctx.storage.sql.exec("UPDATE block_list SET version = version + 1");
+    return this.blockList();
   }
 
   /** Unblocking lets future messages through; what was dropped while blocked stays dropped. */
-  async unblock(realmsId: string): Promise<void> {
-    this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId);
+  async unblock(realmsId: string): Promise<BlockList> {
+    const removed = this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId).rowsWritten;
+    if (removed > 0) this.ctx.storage.sql.exec("UPDATE block_list SET version = version + 1");
+    return this.blockList();
+  }
+
+  /**
+   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read.
+   * This is how a client that starts empty (a new device, a reload, a return after messages came in offline) finds
+   * them. Every conversation is listed, one with an account the owner blocked too: the client shows or hides it by the
+   * block list, its one source, and what a blocked account sent while blocked was never stored.
+   */
+  private listThreads(owner: string): { thread: DirectMessageThread; lastMessage: DirectMessage | null }[] {
+    const sql = this.ctx.storage.sql;
+    return sql
+      .exec<ThreadRow>("SELECT * FROM threads ORDER BY updatedAt DESC")
+      .toArray()
+      .map((row) => {
+        const last = sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", row.lastMessageId).toArray()[0];
+        return { thread: toDirectThread(row, owner), lastMessage: last ? toDirectMessage(last) : null };
+      });
   }
 
   /** One thread's messages for its owner, newest first, a page before the cursor (an ISO time). */
@@ -204,7 +246,27 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     const parsed = Schema.decodeUnknownResult(directMessageReadReceiptSchema)(payload);
     const peer = Result.isSuccess(parsed) ? this.peerOf(parsed.success.threadId) : null;
     if (Result.isFailure(parsed) || !peer || parsed.success.readerId !== member.realmsId) return;
-    this.ctx.storage.sql.exec("UPDATE threads SET unread = 0 WHERE id = ?", parsed.success.threadId);
+    const { threadId, messageId } = parsed.success;
+    const read = this.ctx.storage.sql
+      .exec<MessageRow>("SELECT * FROM messages WHERE id = ? AND threadId = ?", messageId, threadId)
+      .toArray()[0];
+    // Read through that message, never back: what the peer wrote after it stays unread. Every device of the owner is
+    // told the recount before anything else can happen here. A receipt for a message this inbox does not hold moves
+    // nothing here, and still reaches the peer.
+    if (read) {
+      this.ctx.storage.sql.exec(
+        `UPDATE threads SET readThroughAt = MAX(readThroughAt, ?1),
+           unread = (SELECT COUNT(*) FROM messages
+             WHERE messages.threadId = threads.id AND messages.senderId = threads.peerId
+               AND messages.createdAt > MAX(threads.readThroughAt, ?1))
+         WHERE id = ?2`,
+        read.createdAt,
+        threadId,
+      );
+      const row = this.ctx.storage.sql.exec<ThreadRow>("SELECT * FROM threads WHERE id = ?", threadId).toArray()[0]!;
+      const thread = toDirectThread(row, member.realmsId);
+      for (const own of this.ctx.getWebSockets()) sendChat(own, { type: "direct:thread", thread });
+    }
     await inboxOf(this.env, peer).read(parsed.success);
   }
 
@@ -262,9 +324,9 @@ const pushDirectMessage = (env: IdentityEnv, message: DirectMessage, senderName?
     Effect.gen(function* () {
       const owner = message.recipientId;
       const levels = yield* (yield* NotificationPreferenceStore).levels([owner]);
-      if (!includesDirectMessageNotification(levels.get(owner) ?? "off")) return;
+      if (!includesChatNotification(levels.get(owner) ?? "off")) return;
       const store = yield* PushSubscriptionStore;
-      const devices = yield* store.directMessageDevices(owner, Date.now());
+      const devices = yield* store.chatAlertDevices(owner, Date.now());
       const notification = buildDirectMessageNotification(
         {
           messageId: message.id,

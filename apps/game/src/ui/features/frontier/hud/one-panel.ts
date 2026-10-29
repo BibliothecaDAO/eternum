@@ -115,10 +115,10 @@ const mapPick = (
   return `${String(selectedEntityId)}@${hoveredHex ? `${hoveredHex.col},${hoveredHex.row}` : ""}`;
 };
 
-/** The tapped tile, plot or building let go, with its card. */
+/** The tapped tile, plot or building let go, with its card; chat keeps what was picked to share (setAsidePick). */
 const letGoOfTheTile = () => {
   const ui = useUIStore.getState();
-  ui.closeSelectedTile();
+  ui.setTileAsideForSurface();
   ui.setSelectedBuildingHex(null);
 };
 

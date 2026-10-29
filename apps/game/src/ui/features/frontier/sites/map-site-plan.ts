@@ -1,14 +1,23 @@
-import { formatGain, TileOccupier } from "@bibliothecadao/types";
+import { formatGain } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
-import { STAMINA, XP } from "@/ui/design-system/kit/words";
+import { type MapSiteKind, mapSiteOf } from "@/config/map-sites";
+import type { IconMeaning } from "@/ui/design-system/icon-meaning";
+import { SHRINE, STAMINA, WELL, XP } from "@/ui/design-system/kit/words";
 
-/** The single-use sites a tile can hold. */
-export type MapSiteKind = "Shrine" | "Well";
+export type { MapSiteKind } from "@/config/map-sites";
 
-/** A tile's single-use site, from its occupier category alone: these sites have no Structure. */
+/** How the HUD names and paints each site of the map's catalog (MAP_SITES), the site card and chat alike. */
+const SITE_FACES: Record<MapSiteKind, { name: string; icon: IconMeaning }> = {
+  Shrine: { name: SHRINE, icon: "shrine" },
+  Well: { name: WELL, icon: "well" },
+};
+
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>
-  occupierType === TileOccupier.Shrine ? "Shrine" : occupierType === TileOccupier.Well ? "Well" : null;
+  mapSiteOf(occupierType)?.kind ?? null;
+
+/** A site of the map's catalog as the HUD names and paints it. */
+export const mapSite = (kind: MapSiteKind) => ({ kind, ...SITE_FACES[kind] });
 
 /** What one use gives: a Shrine its fixed XP, a Well stamina; unknown while the game's XP rules are. */
 export const siteGain = (

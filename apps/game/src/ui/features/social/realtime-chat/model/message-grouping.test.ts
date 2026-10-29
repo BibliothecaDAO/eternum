@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { formatDate } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { computeDateSeparators } from "./message-grouping";
+import { computeDateSeparators, startsRun } from "./message-grouping";
 
 const at = (createdAt: string) => ({ id: createdAt, createdAt });
 /** How an older day reads: the words module's date of that UTC day. */
@@ -48,5 +48,24 @@ describe("computeDateSeparators", () => {
 
   it("has no line for no messages", () => {
     expect(computeDateSeparators([]).size).toBe(0);
+  });
+});
+
+describe("startsRun", () => {
+  const at = (minute: number) => new Date(Date.UTC(2026, 9, 28, 12, minute)).toISOString();
+  const by = (senderId: string, minute: number, replies = false) => ({ senderId, createdAt: at(minute), replies });
+
+  it("starts a run at the first message, a new sender, a five-minute gap, a new day and a reply", () => {
+    expect(startsRun(undefined, by("a", 0))).toBe(true);
+    expect(startsRun(by("a", 0), by("b", 1))).toBe(true);
+    expect(startsRun(by("a", 0), by("a", 6))).toBe(true);
+    expect(
+      startsRun(by("a", 0), { senderId: "a", createdAt: new Date(Date.UTC(2026, 9, 29, 0, 1)), replies: false }),
+    ).toBe(true);
+    expect(startsRun(by("a", 0), by("a", 1, true))).toBe(true);
+  });
+
+  it("keeps a sender's next message within five minutes in their run", () => {
+    expect(startsRun(by("a", 0), by("a", 4))).toBe(false);
   });
 });

@@ -73,6 +73,7 @@ export default {
       maxWidth: WIDTHS,
       width: WIDTHS,
       spacing: { ...GUTTERS, ...prefixed(HUD_LAYOUT, "hud") },
+      verticalAlign: { "hud-icon": "var(--hud-icon-baseline)" },
       // An item sized to what it holds whatever its `height`, which then sets only its least size (the rail's details).
       flexBasis: { content: "content" },
       zIndex: { 1: "1", 100: "100", 250: "250", 1000: "1000", ...prefixed(HUD_LAYERS, "hud") },
@@ -430,6 +431,8 @@ export default {
         ...Object.fromEntries(
           Object.keys(HUD_MODES).map((mode) => [`[data-hud-mode="${mode}"]`, hudModeVariables(mode)]),
         ),
+        // The HUD's elements in the app (its chat), in the app's colours.
+        '[data-hud-mode="app"]': hudModeVariables("app"),
         '[data-hud-device="phone"]': phone,
         // The age a game shows in the app, on its card or page.
         ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),

@@ -80,6 +80,7 @@ describe.each([390, 1440])("What's new at %i px", (width) => {
       "Play",
       "Season",
       "What's new",
+      "Chat",
       "Market",
       "Connect",
     ]);

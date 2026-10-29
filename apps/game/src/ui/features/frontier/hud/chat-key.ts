@@ -1,10 +1,12 @@
 import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
 import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
+import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
 import { type RefObject, useEffect, useLayoutEffect, useRef, useState } from "react";
 
 /**
  * The chat key (Enter, as Settings lists it) puts the cursor in chat: it opens chat where it is closed, then focuses
- * the field of the pane the returned ref is given to. Never while typing, and never an Enter a preview's verb took.
+ * the field of the pane the returned ref is given to. Never while typing, and never an Enter a preview's verb took. A
+ * pressed chat alert opens chat too (useChatRevealed).
  */
 export const useChatKey = (openChat: () => void): RefObject<HTMLElement> => {
   const pane = useRef<HTMLElement>(null);
@@ -13,6 +15,7 @@ export const useChatKey = (openChat: () => void): RefObject<HTMLElement> => {
   useLayoutEffect(() => {
     open.current = openChat;
   });
+  useChatRevealed(() => open.current());
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       if (event.key !== CHAT_SHORTCUT.key || event.repeat || event.defaultPrevented) return;

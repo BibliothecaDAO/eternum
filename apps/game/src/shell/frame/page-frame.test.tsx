@@ -20,10 +20,12 @@ const SIZES = [
 ] as const;
 
 /**
- * The pages without Back: the app's four places (the fifth, Market, is another site), and a result after a match (spec 08); every other page is opened from
+ * The pages without Back: the app's five places (the sixth, Market, is another site), and a result after a match (spec 08); every other page is opened from
  * another and carries Back.
  */
-const TAB_PATHS = new Set(["/", "/season", "/scroll", "/profile", "/nothing-here", "/results/0x111"]);
+const TAB_PATHS = new Set(["/", "/season", "/scroll", "/chat", "/profile", "/nothing-here", "/results/0x111"]);
+/** A page that is its own scroller: on a phone it fills the page over the tabs, with no footer under it. */
+const FILL_PATHS = new Set(["/chat"]);
 /** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (a Blitz lobby). */
 const STEP_PATHS = ["/blitz/0x111", "/join/devcon", "/join/devcon/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
@@ -86,8 +88,8 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
-    // Every page with the places ends on the footer; a full-screen step has neither.
-    expect(band(container, "footer") !== null).toBe(!isStep);
+    // Every page with the places ends on the footer; a full-screen step has neither, nor a phone's page that fills.
+    expect(band(container, "footer") !== null).toBe(!isStep && !(layout === "phone" && FILL_PATHS.has(path)));
     // Back leads every page opened from another, and only those.
     const back = container.querySelectorAll('[data-role="back"]');
     expect(back.length).toBe(isTabPage ? 0 : 1);
@@ -103,10 +105,10 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
       expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(
-        isStep ? 0 : 5,
+        isStep ? 0 : 6,
       );
     } else {
-      // One bar across the top: the lockup as a mark, then the five places and nothing else, above every other band;
+      // One bar across the top: the lockup as a mark, then the six places and nothing else, above every other band;
       // Back sits in the title row under it.
       expect(top).toBeNull();
       const bar = band(container, "bar");
@@ -114,7 +116,7 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
       expect(controls.map((control) => control.dataset.role)).toEqual(
-        isStep ? [] : ["tab", "tab", "tab", "tab", "tab"],
+        isStep ? [] : ["tab", "tab", "tab", "tab", "tab", "tab"],
       );
       expect(band(container, "tabs")).toBeNull();
       if (!isTabPage) expect(back[0].closest('[data-band="title"]')).not.toBeNull();
