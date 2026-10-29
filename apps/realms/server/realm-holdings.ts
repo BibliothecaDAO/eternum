@@ -66,17 +66,28 @@ const holdingsPath = (env: HoldingsEnvironment, wallet: string, cursor: string |
   return `accounts/${wallet}/holdings?${query}`;
 };
 
-/** One indexer read with a short timeout; any failure is null, so the caller decides what to fall back to. */
+/**
+ * One indexer read with a short timeout; a failure is logged with its cause and is null, so the caller decides what to
+ * fall back to. A redirect is not followed: it answers 3xx and fails like any other non-2xx, since the Workers runtime
+ * has no "error" redirect mode (scripts/check-worker-fetch-options.mjs).
+ */
 async function readIndexer<T>(env: HoldingsEnvironment, path: string): Promise<T | null> {
   const { chain } = environmentL2(env.ENVIRONMENT);
+  const route = path.split("/")[0];
   try {
     const response = await fetch(`${env.MARKETPLACE_API_URL}/v1/chains/${chain}/${path}`, {
       signal: AbortSignal.timeout(INDEXER_TIMEOUT_MS),
-      redirect: "error",
+      redirect: "manual",
     });
-    if (!response.ok) return null;
-    return ((await response.json()) as { data: T }).data ?? null;
-  } catch {
+    if (!response.ok) {
+      console.error("realm_index_unavailable", { route, status: response.status });
+      return null;
+    }
+    const data = ((await response.json()) as { data?: T }).data ?? null;
+    if (data === null) console.error("realm_index_unavailable", { route, status: response.status, cause: "no data" });
+    return data;
+  } catch (error) {
+    console.error("realm_index_unavailable", { route, cause: String(error) });
     return null;
   }
 }

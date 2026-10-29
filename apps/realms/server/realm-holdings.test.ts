@@ -13,7 +13,12 @@ const OTHER = "0x999";
 const INDEX = `https://market.test/api/marketplace/v1/chains/SN_MAIN`;
 
 /** The marketplace indexer as it answers: `{data}` per route, a 404 for a token it never saw, or down. */
-let indexer: { owners: Record<number, string>; holdings: Record<string, number[][]>; down: boolean };
+let indexer: {
+  owners: Record<number, string>;
+  holdings: Record<string, number[][]>;
+  down: boolean;
+  redirects?: boolean;
+};
 let chainOwner: string | Error;
 let indexerReads: string[];
 let chainReads: MockInstance<RpcProvider["callContract"]>;
@@ -22,9 +27,16 @@ beforeEach(() => {
   indexer = { owners: {}, holdings: {}, down: false };
   chainOwner = HOLDER;
   indexerReads = [];
-  vi.stubGlobal("fetch", async (input: string) => {
+  vi.stubGlobal("fetch", async (input: string, init?: RequestInit) => {
+    // The Workers runtime refuses this option before anything is sent; Node accepts it, so the stub refuses it as the
+    // runtime does.
+    if (init?.redirect === "error")
+      throw new TypeError(
+        'Invalid redirect value, must be one of "follow" or "manual" ("error" won\'t be implemented)',
+      );
     indexerReads.push(input);
     if (indexer.down) throw new TypeError("fetch failed");
+    if (indexer.redirects) return new Response(null, { status: 302, headers: { location: "https://elsewhere.test/" } });
     return answerIndex(new URL(input));
   });
   vi.spyOn(RpcProvider.prototype, "getChainId").mockResolvedValue("0x534e5f4d41494e");
@@ -98,4 +110,20 @@ it("lists every page of a wallet's Realms in order, and has no chain fallback fo
   indexer.down = true;
   await expect(heldRealms(env, HOLDER)).rejects.toBeInstanceOf(RealmHoldingsUnavailableError);
   expect(chainReads).not.toHaveBeenCalled();
+});
+
+it("says why the index could not be read, and follows no redirect", async () => {
+  const logged = vi.spyOn(console, "error").mockImplementation(() => undefined);
+  indexer.holdings[HOLDER] = [[711]];
+  indexer.redirects = true;
+  await expect(heldRealms(env, HOLDER)).rejects.toBeInstanceOf(RealmHoldingsUnavailableError);
+  indexer.redirects = false;
+  indexer.down = true;
+  await expect(heldRealms(env, HOLDER)).rejects.toBeInstanceOf(RealmHoldingsUnavailableError);
+  expect(logged.mock.calls).toEqual([
+    ["realm_index_unavailable", { route: "accounts", status: 302 }],
+    ["realm_index_unavailable", { route: "accounts", cause: "TypeError: fetch failed" }],
+  ]);
+  indexer.down = false;
+  expect(await heldRealms(env, HOLDER)).toEqual([711]);
 });
