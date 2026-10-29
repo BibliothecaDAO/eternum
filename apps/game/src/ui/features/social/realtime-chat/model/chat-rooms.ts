@@ -1,5 +1,7 @@
 import type { GameModeId } from "@/config/game-modes";
+import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 
 /** A room the chat shows as a tab beside Messages: its zone on the chat server and its tab's word. */
 export interface ChatRoom {
@@ -21,3 +23,12 @@ export const chatRooms = (game: { zoneId: string; mode: GameModeId } | null): Ch
   GLOBAL_ROOM,
   ...(game && GAME_ROOM_MODES.includes(game.mode) ? [{ zoneId: game.zoneId, label: "Game" }] : []),
 ];
+
+/**
+ * A Blitz lobby's room, first on its page, before Global: the slot's own (`slot:<shard>:<name>`, two shards may each
+ * open a slot of one name). Any signed-in player reads it; a player registered in the slot writes.
+ */
+export const lobbyRoom = (slot: { chainId: string; name: string }): ChatRoom => ({
+  zoneId: `slot:${normalizeStarknetAddress(slot.chainId)}:${slot.name}`,
+  label: BLITZ_WORDS.lobby,
+});

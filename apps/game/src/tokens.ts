@@ -640,8 +640,10 @@ const variablesOf = (entries: [string, string][]): Record<string, string> => {
 };
 
 /** Each mode's variables, and the derived values again, so a mode root (and the lab's editor on it) restyles them. */
-export const hudModeVariables = (mode: HudMode): Record<string, string> => ({
-  ...Object.fromEntries(Object.entries(HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value])),
+export const hudModeVariables = (mode: HudMode | "app"): Record<string, string> => ({
+  ...Object.fromEntries(
+    Object.entries(mode === "app" ? HUD_APP_MODE : HUD_MODES[mode]).map(([name, value]) => [`--hud-${name}`, value]),
+  ),
   ...Object.fromEntries(Object.entries(HUD_DERIVED).map(([name, value]) => [`--hud-${name}`, value])),
 });
 
@@ -798,6 +800,17 @@ export const APP_SHEET = {
   /** One speed for every hover and press. */
   fast: "120ms",
   ease: "cubic-bezier(0.2, 0.8, 0.2, 1)",
+} as const;
+
+/**
+ * The HUD's elements drawn in the app (its chat, in a pane over a page or a page of its own): the app sheet's accent,
+ * surfaces and ink in the HUD's roles, so the one chat reads as the app around it ([data-hud-mode="app"]).
+ */
+export const HUD_APP_MODE = {
+  accent: APP_SHEET.accent,
+  "surface-from": APP_SHEET["surface-2"],
+  "surface-to": APP_SHEET.surface,
+  ink: channels(SHELL_COLORS.cream),
 } as const;
 
 /** The app's values built from others: hover and chosen tints and the focus ring follow the accent. */

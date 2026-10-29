@@ -24,7 +24,18 @@ vi.mock("@/play/navigation/open-place", () => ({ openOnMap: vi.fn() }));
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useRealtimeChatStore } from "../../model/store";
 import type { WorldChatMessage } from "../../model/types";
+import { ChatMapContext } from "../shared/use-chat-map";
 import { WorldChatPanel } from "./world-chat-panel";
+
+/** The game around the room, as GameChatMap gives it: its named players, whom chat mentions in a game. */
+const GAME_MAP = {
+  selected: null,
+  read: (place: { name: string; icon: never }) => ({ name: place.name, icon: place.icon, open: null, elsewhere: true }),
+  realmOf: () => null,
+  players: PLAYERS.flatMap((player) =>
+    player.name ? [{ name: player.name, portrait: `/portrait/${player.address}.png` }] : [],
+  ),
+};
 
 const ZONE = "game:0x1:1";
 const message = (id: string, from: string, content: string) =>
@@ -40,10 +51,18 @@ let host: HTMLDivElement;
 let root: Root;
 const send = vi.fn(() => Promise.resolve());
 
-const drawRoom = (messages: WorldChatMessage[]) => {
+/** The room, in a game (its players mentioned), or in the app (`inGame: false`), with the players online. */
+const drawRoom = (messages: WorldChatMessage[], { inGame = true, online = [] as [string, string][] } = {}) => {
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
+    identity: { playerId: "0x7", displayName: "Maelis" },
+    onlinePlayers: Object.fromEntries(
+      online.map(([playerId, displayName]) => [
+        playerId,
+        { playerId, displayName, isOnline: true, isTypingInThreadIds: [] },
+      ]),
+    ),
     joinedZoneIds: [ZONE],
     activeZoneId: ZONE,
     worldZones: {
@@ -59,7 +78,10 @@ const drawRoom = (messages: WorldChatMessage[]) => {
     },
     actions: { ...actions, joinZone: () => undefined, sendWorldMessage: send },
   });
-  act(() => root.render(<WorldChatPanel zoneId={ZONE} name="Global" />));
+  const room = <WorldChatPanel zoneId={ZONE} name="Global" />;
+  act(() =>
+    root.render(inGame ? <ChatMapContext.Provider value={GAME_MAP as never}>{room}</ChatMapContext.Provider> : room),
+  );
 };
 
 const field = () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!;
@@ -113,6 +135,20 @@ it("lists the game's named players as an @ is typed, never the player themselves
   // An address is no mention.
   type("ada@realms.test");
   expect(listed()).toEqual([]);
+});
+
+it("lists, in the app, the room's own speakers and the players online, never the player themselves", () => {
+  drawRoom([message("b1", "Brannoc", "who is up for a Blitz?"), message("b2", "Brannoc", "anyone?")], {
+    inGame: false,
+    online: [
+      ["0xc1", "Isolde"],
+      ["0x7", "Maelis"],
+    ],
+  });
+  type("@");
+  expect(names()).toEqual(["Brannoc", "Isolde"]);
+  type("hi @is");
+  expect(names()).toEqual(["Isolde"]);
 });
 
 it("writes the picked name into the message, and sends it as the plain text typed", async () => {

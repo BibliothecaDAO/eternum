@@ -4,6 +4,7 @@ import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profil
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import {
   GameChatMap,
   RealtimeChatShell,
@@ -13,7 +14,7 @@ import {
 } from "@/ui/features/social";
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
-import { directUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
+import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
 import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
 import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
@@ -86,7 +87,7 @@ export function useGameChat(open: boolean) {
   const readPlace = usePlaceReader();
   const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;
   const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
-  const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + directUnread(state));
+  const unread = useRealtimeChatSelector(chatUnread);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
   useEffect(() => {
     setShellOpen(open);
@@ -130,7 +131,7 @@ const chatStripLine = ({
   history: HistoryState;
   last: string | undefined;
 }): string => {
-  if (!signedIn) return "Sign in to chat";
+  if (!signedIn) return CHAT_WORDS.signInToChat;
   if (connection === "connected" && !hasGameChat) return CHAT_UNAVAILABLE;
   if (last) return last;
   if (connection === "error" || history === "failed") return CHAT_UNAVAILABLE;

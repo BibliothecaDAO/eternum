@@ -42,6 +42,16 @@
  *   place that opens, Message and Mute; Mute leaves his messages as his name and "muted", Unmute brings them back, and
  *   Message opens his conversation.
  *
+ * - the app's chat, on the app lab's pages (/lab/app/<screen>/<page>, the real shell over its fixtures and the lab's
+ *   answered chat sockets): at 1440×900, the bar's Chat opens the pane over Play, inside the screen, with Global (its
+ *   history, a field) and Messages, and Escape closes it; on a phone (390×844), the Chat tab leads to /chat (the lab's
+ *   tabs lead to the app's own addresses, so the lab's /chat page is opened by its address), lit there, the chat
+ *   filling the page from the top band to the tabs, its field above them, the page never scrolling; on a Blitz lobby, at both sizes, the lobby's chat on its page has Lobby first, then Global and Messages,
+ *   the Lobby room read-only for a wallet not registered (no field, who writes there said) and Global written in, and
+ *   on a desktop no bar Chat over it.
+ * - the Frontier phone's Chat page (/lab/kit/hud/chat, 390×844): the page fills the band from the strip to the place
+ *   bar, the map band gone behind it, its field above the bar.
+ *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
  * check fails.
  */
@@ -774,6 +784,183 @@ const open = async (b, url, viewport) => {
   return ready;
 };
 
+/** The app's chat where it stands: its box, its tabs, its rows, its field, and the frame's bands around it. */
+const APP_CHAT = `(() => {
+  const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
+  const chat = document.querySelector('section[aria-label="Chat"]') ?? document.querySelector('[data-band="body"] [data-hud-mode="app"]');
+  const band = (name) => rect(document.querySelector('[data-band="' + name + '"]'));
+  const place = document.querySelector('[data-band="bar"] button[data-role="tab"], [data-band="tabs"] a[href$="/chat"]');
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    scrolls: document.scrollingElement.scrollHeight > innerHeight + 1,
+    path: location.pathname,
+    chat: rect(chat),
+    tabs: chat ? [...chat.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent) : [],
+    current: chat ? chat.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null : null,
+    rows: chat ? chat.querySelectorAll("li[data-message-id]").length : 0,
+    field: rect(chat?.querySelector('input[aria-label="Message"]')),
+    words: chat?.textContent ?? "",
+    place: place ? { words: place.textContent, href: place.getAttribute("href"), count: place.querySelector("[data-count]")?.textContent ?? null, current: place.getAttribute("aria-current") } : null,
+    top: band("top"),
+    body: band("body"),
+    nav: band("tabs"),
+  };
+})()`;
+const APP_CHAT_PLACE = '[data-band="bar"] button[data-role="tab"]';
+const READ_ONLY = "Players registered in this Blitz write here.";
+const LOBBY = "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1";
+
+const openApp = async (b, url, viewport, ready) => {
+  b.run("set", "viewport", ...viewport);
+  b.run("open", url, "--ignore-https-errors");
+  const shown = await waitFor(b, ready, READY_MS);
+  await sleep(SETTLE_MS);
+  return shown;
+};
+const pressTab = (words) => `(() => {
+  const tab = [...document.querySelectorAll('section[aria-label="Chat"] [role="tab"]')].find((t) => t.textContent === ${JSON.stringify(words)});
+  if (!tab) return false;
+  tab.click();
+  return true;
+})()`;
+
+/** The desktop's pane: the bar's Chat (its unread counted), the pane over Play, Escape. */
+const proveAppPane = async (b, out, record) => {
+  const press = clickAsPlayer(b, APP_CHAT_PLACE);
+  record.presses.push({ press: "Chat, in the bar", status: press === null ? "led" : press });
+  await sleep(600);
+  const open = b.evaluate(APP_CHAT);
+  record.measures = { open };
+  record.checks.push(
+    { check: "the bar's Chat is lit while the pane is open", ok: open.place?.current === "page" },
+    {
+      check: "the pane is whole inside the screen",
+      ok:
+        open.chat !== null &&
+        inside(open.chat, { left: 0, top: 0, right: open.viewport.width, bottom: open.viewport.height }),
+    },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(open.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "Global shows its history and a field to write in",
+      ok: open.rows >= 3 && open.field !== null && inside(open.field, open.chat),
+    },
+    { check: "the page stays under it: Play is still the page", ok: open.path.endsWith("/home") },
+  );
+  b.run("screenshot", join(out, "app-chat-pane.png"));
+  b.run("press", "Escape");
+  await sleep(300);
+  record.measures.closed = b.evaluate(APP_CHAT);
+  record.checks.push({ check: "Escape closes the pane", ok: record.measures.closed.chat === null });
+};
+
+/** The phone's Chat page, the chat filling it from the top band to the tabs. */
+const proveAppPhonePage = async (b, out, record) => {
+  const page = b.evaluate(APP_CHAT);
+  record.measures = { page };
+  record.checks.push(
+    {
+      check: "the Chat tab leads to /chat, and is lit there",
+      ok: page.place?.href === "/chat" && page.place.current === "page",
+    },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(page.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "the chat fills the page: from the top band's foot to within 8 px of the tabs",
+      ok:
+        page.chat !== null &&
+        page.top !== null &&
+        page.nav !== null &&
+        Math.abs(page.chat.top - page.top.bottom) <= 1 &&
+        page.chat.bottom <= page.nav.top &&
+        page.nav.top - page.chat.bottom <= 8,
+    },
+    {
+      check: "its field stands above the tabs, inside the screen",
+      ok: page.field !== null && page.field.bottom <= page.nav.top && page.nav.bottom <= page.viewport.height + 1,
+    },
+    { check: "the page itself never scrolls", ok: !page.scrolls },
+  );
+  b.run("screenshot", join(out, "app-chat-phone.png"));
+};
+
+/** A Blitz lobby's chat on its page: Lobby first, read-only for a wallet not registered; Global written in. */
+const proveLobbyChat = async (b, out, record, phone) => {
+  b.evaluate(
+    `(() => { document.querySelector('section[aria-label="Chat"]')?.scrollIntoView({ block: "center" }); return true; })()`,
+  );
+  await sleep(300);
+  const lobby = b.evaluate(APP_CHAT);
+  record.measures = { lobby };
+  record.checks.push(
+    {
+      check: "its tabs are Lobby, Global, then Messages, on Lobby",
+      ok: JSON.stringify(lobby.tabs) === JSON.stringify(["Lobby", "Global", "Messages"]) && lobby.current === "Lobby",
+    },
+    { check: "Lobby shows its history", ok: lobby.rows >= 3 },
+    {
+      check: "a wallet not registered reads Lobby with no field, told who writes there",
+      ok: lobby.field === null && lobby.words.includes(READ_ONLY),
+    },
+    {
+      check: "the chat is whole across the screen",
+      ok: lobby.chat !== null && lobby.chat.left >= 0 && lobby.chat.right <= lobby.viewport.width,
+    },
+  );
+  if (!phone)
+    record.checks.push({
+      check: "the page shows its chat, so the bar offers no Chat over it",
+      ok: lobby.place === null,
+    });
+  b.run("screenshot", join(out, `app-chat-lobby-${phone ? "phone" : "desktop"}.png`));
+  record.presses.push({ press: "Global", status: b.evaluate(pressTab("Global")) ? "led" : "missing" });
+  await sleep(500);
+  record.measures.global = b.evaluate(APP_CHAT);
+  record.checks.push({
+    check: "Global, on the same chat, is written in",
+    ok: record.measures.global.field !== null && !record.measures.global.words.includes(READ_ONLY),
+  });
+};
+
+/** The Frontier phone's Chat page: the whole band from the strip to the place bar. */
+const FRONTIER_PAGE = `(() => {
+  const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
+  const hud = document.querySelector('[aria-label="Frontier HUD"]');
+  const page = hud?.querySelector("[data-page]");
+  return {
+    viewport: innerHeight,
+    top: rect(hud?.querySelector("[data-hud-top]")),
+    page: rect(page),
+    chat: rect(hud?.querySelector("[data-page-fills]")),
+    map: rect(hud?.querySelector("[data-map-band]")),
+    field: rect(hud?.querySelector('[data-page-fills] input[aria-label="Message"]')),
+    bar: rect(page?.nextElementSibling),
+  };
+})()`;
+const frontierPageChecks = (m) => [
+  {
+    check: "the page stands on the place bar",
+    ok: m.page !== null && m.bar !== null && m.bar.top - m.page.bottom <= 8 && m.page.bottom <= m.bar.top,
+  },
+  {
+    check: "it reaches up to the strip: within 14 px of its foot",
+    ok: m.top !== null && m.page !== null && m.page.top >= m.top.bottom && m.page.top - m.top.bottom <= 14,
+  },
+  {
+    check: "the chat fills the page",
+    ok: m.chat !== null && Math.abs(m.chat.top - m.page.top) <= 1 && Math.abs(m.chat.bottom - m.page.bottom) <= 1,
+  },
+  { check: "the map band is gone behind it", ok: m.map !== null && m.map.height === 0 },
+  {
+    check: "its field stands above the place bar",
+    ok: m.field !== null && m.field.bottom <= m.bar.top && m.bar.bottom <= m.viewport + 1,
+  },
+];
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
   await runProof(
@@ -899,6 +1086,55 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           );
           b.run("screenshot", join(out, `rail-closed-${size}.png`));
         }
+      }
+
+      const appPane = { state: "app, Chat pane, 1440×900", ready: false, presses: [], checks: [] };
+      records.push(appPane);
+      appPane.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home?capture=1`,
+        ["1440", "900"],
+        `document.querySelector('${APP_CHAT_PLACE}') !== null`,
+      );
+      if (appPane.ready) await proveAppPane(b, out, appPane);
+
+      const phonePage = { state: "app, Chat page, 390×844", ready: false, presses: [], checks: [] };
+      records.push(phonePage);
+      phonePage.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home/chat?capture=1`,
+        ["390", "844"],
+        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+      );
+      if (phonePage.ready) await proveAppPhonePage(b, out, phonePage);
+
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const lobby = { state: `app, Blitz lobby chat, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(lobby);
+        lobby.ready = await openApp(
+          b,
+          `${baseUrl}${LOBBY}`,
+          viewport,
+          `document.querySelector('section[aria-label="Chat"] li[data-message-id]') !== null`,
+        );
+        if (lobby.ready) await proveLobbyChat(b, out, lobby, phone);
+      }
+
+      const frontier = { state: "Frontier phone, Chat page, 390×844", ready: false, presses: [], checks: [] };
+      records.push(frontier);
+      frontier.ready = await openApp(
+        b,
+        `${baseUrl}/lab/kit/hud/chat?capture=1`,
+        ["390", "844"],
+        `document.querySelector("[data-page-fills]") !== null`,
+      );
+      if (frontier.ready) {
+        frontier.measures = b.evaluate(FRONTIER_PAGE);
+        frontier.checks.push(...frontierPageChecks(frontier.measures));
+        b.run("screenshot", join(out, "frontier-chat-page-phone.png"));
       }
 
       const folded = { state: "closed and folded, 390×844", ready: false, presses: [], checks: [] };

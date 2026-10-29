@@ -6,7 +6,8 @@ import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useRealmsAccountOf } from "@/shell/herald";
 import { getBlockTimestamp, isRealmCategory } from "@bibliothecadao/eternum";
-import type { ReactNode } from "react";
+import { playerAvatarUrl, usePlayers } from "@/hooks/use-player-profile";
+import { type ReactNode, useMemo } from "react";
 
 import { placeKey, placeOnMap, type SharedPlace, sharedPlaceOf } from "../../model/place";
 import { type ChatMap, ChatMapContext, useChatMap, usePlaceReader } from "./use-chat-map";
@@ -21,6 +22,14 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
   } = useGame();
   const read = usePlaceReader();
   const accountOf = useRealmsAccountOf();
+  const registered = usePlayers();
+  const players = useMemo(
+    () =>
+      registered.flatMap((player) =>
+        player.name === null ? [] : [{ name: player.name, portrait: playerAvatarUrl(player.address, player) }],
+      ),
+    [registered],
+  );
   const selection = useUIStore((state) => state.mapSelection ?? state.setAsidePick);
   const layer = useUIStore((state) => state.mapLayer);
   const here = getActiveGame();
@@ -29,6 +38,7 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
   const map: ChatMap = {
     selected: game ? sharedPlaceOf(store, game, selection, layer, now) : null,
     read,
+    players,
     realmOf: (playerId) => {
       const account = game && accountOf(playerId);
       if (!game || !account) return null;

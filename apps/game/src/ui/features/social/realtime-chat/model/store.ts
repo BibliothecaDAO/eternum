@@ -214,6 +214,9 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   pendingReadReceipts: [],
   view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
   blockedPlayers: [],
+  rooms: [],
+  readOnlyZoneIds: [],
+  roomRefusals: {},
 };
 
 /** The signed-in account's block list, as the server returns it after a read or a change. */
@@ -275,7 +278,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               // Of the rooms the server allows this account, only the player's are joined: the client opens no other.
               set({
                 connectionStatus: "connected",
-                joinedZoneIds: (message.channels as string[]).filter((zoneId) => params.rooms.includes(zoneId)),
+                joinedZoneIds: (message.channels as string[]).filter((zoneId) => get().rooms.includes(zoneId)),
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,
@@ -303,6 +306,11 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             case "joined:zone":
               set((state) => ({
                 joinedZoneIds: [...new Set([...state.joinedZoneIds, message.zoneId as string])],
+                // The room says at its open whether the player writes there.
+                readOnlyZoneIds:
+                  message.canWrite === false
+                    ? [...new Set([...state.readOnlyZoneIds, message.zoneId as string])]
+                    : state.readOnlyZoneIds.filter((zoneId) => zoneId !== message.zoneId),
                 // A room that dropped and came back ends the reconnecting it started.
                 connectionStatus: state.connectionStatus === "reconnecting" ? "connected" : state.connectionStatus,
               }));
@@ -366,10 +374,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
               }));
               break;
             case "error":
-              set({
-                connectionStatus: "error",
-                lastConnectionError: message.message as string | undefined,
-              });
+              // A room's refusal of the player's message is that room's (its last message not taken), not the
+              // connection's; a refusal for want of registration means the player only reads there now.
+              if (typeof message.zoneId === "string") actions.refuseInRoom(message.zoneId, message.code as string);
+              else
+                set({
+                  connectionStatus: "error",
+                  lastConnectionError: message.message as string | undefined,
+                });
               break;
             default:
               if (VERBOSE_LOGS_ENABLED) console.debug("[realtime] unhandled message", message);
@@ -381,6 +393,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       set({
         client,
+        rooms: [...params.rooms],
         identity: undefined,
         baseUrl: httpBaseUrl,
         connectionStatus: "connecting",
@@ -390,6 +403,37 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       get()
         .actions.loadBlockedPlayers()
         .catch((error) => console.error("chat_block_list_unavailable", error));
+    },
+    setRooms: (rooms) => {
+      const before = get().rooms;
+      if (before.length === rooms.length && before.every((zoneId, at) => zoneId === rooms[at])) return;
+      set({ rooms: [...rooms] });
+      get().client?.setRooms(rooms);
+    },
+    reopenRoom: (zoneId) => get().client?.reopenZone(zoneId),
+    refuseInRoom: (zoneId, code) => {
+      const zone = get().worldZones[zoneId];
+      // The room answers in order: the refused message is the oldest still being sent there.
+      const refused = zone?.pendingMessages.find((pending) => pending.status === "sending");
+      set((state) => ({
+        ...(code === "registration_required"
+          ? { readOnlyZoneIds: [...new Set([...state.readOnlyZoneIds, zoneId])] }
+          : {
+              roomRefusals: { ...state.roomRefusals, [zoneId]: code === "rate_limited" ? "rate-limited" : "refused" },
+            }),
+        ...(zone && refused
+          ? {
+              worldZones: {
+                ...state.worldZones,
+                [zoneId]: {
+                  ...zone,
+                  messages: zone.messages.filter((line) => line.id !== refused.id),
+                  pendingMessages: zone.pendingMessages.filter((pending) => pending.id !== refused.id),
+                },
+              },
+            }
+          : {}),
+      }));
     },
     resetClient: () => {
       const { client } = get();
@@ -800,6 +844,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       };
 
       const existingZone = worldZones[zoneId] ?? createWorldZoneState(zoneId);
+      // A new message puts the room's last refusal away.
+      const roomRefusals = { ...get().roomRefusals };
+      delete roomRefusals[zoneId];
       set({
         worldZones: {
           ...worldZones,
@@ -809,6 +856,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             pendingMessages: [...existingZone.pendingMessages, pending],
           },
         },
+        roomRefusals,
       });
 
       const message: WorldChatOutboundMessage = {

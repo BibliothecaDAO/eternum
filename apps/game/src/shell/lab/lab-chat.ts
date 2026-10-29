@@ -1,13 +1,20 @@
-import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID, isLobbyRoom } from "@bibliothecadao/types";
 
 import { LAB_SESSION } from "./app-lab-fixtures";
 
 /**
  * Chat's sockets, answered in the tab, as the chat Worker answers them. The inbox greets the lab's player with the rooms
- * they may join: the world's and `gameRooms`. A room admits them to the zone its address names, with whether they write,
- * and echoes what they send as the room would broadcast it. Any other socket opens as before.
+ * they may join: the world's and `gameRooms`. A room admits them to the zone its address names, with whether they write
+ * (a Blitz lobby's room when `lobbyWrites`, as it answers a player registered in its slot; any other room always), and
+ * echoes what they send as the room would broadcast it. Any other socket opens as before.
  */
-export const answerLabChat = (canWrite: boolean, gameRooms: readonly string[] = []) => {
+export const answerLabChat = ({
+  lobbyWrites = false,
+  gameRooms = [],
+}: {
+  lobbyWrites?: boolean;
+  gameRooms?: readonly string[];
+}) => {
   const Network = window.WebSocket;
   const player = { playerId: LAB_SESSION.user.realmsId, displayName: LAB_SESSION.user.name };
   class LabInbox extends EventTarget {
@@ -33,6 +40,7 @@ export const answerLabChat = (canWrite: boolean, gameRooms: readonly string[] = 
     constructor(zoneId: string) {
       super();
       this.#zoneId = zoneId;
+      const canWrite = !isLobbyRoom(zoneId) || lobbyWrites;
       setTimeout(() => this.#emit({ type: "joined:zone", zoneId, canWrite }), 50);
     }
     send(data: string) {

@@ -1,4 +1,7 @@
-import { WORDS } from "@/ui/design-system/kit/words";
+import { CHAT_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { useRealtimeChatSelector } from "@/ui/features/social";
+import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
+import { useAppChatPane, useChatOnPage } from "../chat/app-chat-place";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { type IconMeaning } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
@@ -23,13 +26,17 @@ export const WHATS_NEW_PATH = "/scroll";
 /** You: the player's place, at the end of both bars. */
 const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
 
+/** Chat: a page of its own on a phone; over the page, as a pane, on a desktop (its bar's Chat opens it). */
+const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
+
 /** Realms' marketplace: a site of its own, so it opens in a new tab and is never the current place. */
 const MARKET_TAB: Place = { to: "https://realms.market/", word: WORDS.market, icon: "trade", matches: [] };
 
 /**
  * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
- * now, Season where the player stands, What's new the patch notes, Market
- * the trading of Realms' items on its own site, You the player, their finished games and everything about the account.
+ * now, Season where the player stands, What's new the patch notes, Chat the one chat (Global and Messages, as in a game,
+ * its unread counted on it), Market the trading of Realms' items on its own site, You the player, their finished games
+ * and everything about the account.
  * The legal pages, read from the footer, are none of these places: no tab is current there (qa-app-1 P3-3).
  */
 const TABS: readonly Place[] = [
@@ -41,6 +48,7 @@ const TABS: readonly Place[] = [
     icon: "chronicles",
     matches: [WHATS_NEW_PATH],
   },
+  CHAT_TAB,
   MARKET_TAB,
   YOU_TAB,
 ];
@@ -103,6 +111,7 @@ export const TabBar = () => {
   const active = useActiveTab();
   const connect = useConnect();
   const player = useSignedInPlayer();
+  const unread = useRealtimeChatSelector(chatUnread);
   return (
     <nav
       aria-label="Tabs"
@@ -134,7 +143,17 @@ export const TabBar = () => {
             aria-current={current ? "page" : undefined}
             className={look}
           >
-            <TabIcon tab={tab} current={current} size={28} />
+            <span className="relative">
+              <TabIcon tab={tab} current={current} size={28} />
+              {tab === CHAT_TAB && unread > 0 && (
+                <span
+                  data-count
+                  className="absolute -right-3 -top-1.5 min-w-5 rounded-full bg-kit-peach px-1 text-center text-sm leading-5 text-kit-ground"
+                >
+                  {unread}
+                </span>
+              )}
+            </span>
             {tab.word}
           </AppLink>
         );
@@ -153,6 +172,9 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
   const active = useActiveTab();
   const player = useSignedInPlayer();
   const connect = useConnect();
+  const pane = useAppChatPane();
+  const chatOnPage = useChatOnPage();
+  const unread = useRealtimeChatSelector(chatUnread);
   const placeOf = (tab: Place) => ({
     to: tab.to,
     label: tab.word,
@@ -162,7 +184,16 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
   return (
     <AppTopBar
       mark={<Lockup />}
-      places={places ? TABS.filter((tab) => tab !== YOU_TAB).map(placeOf) : []}
+      places={
+        places
+          ? TABS.filter((tab) => tab !== YOU_TAB && !(tab === CHAT_TAB && chatOnPage)).map((tab) =>
+              // Chat opens over the page, as in a game; a page that shows it itself (a lobby's) offers none.
+              tab === CHAT_TAB
+                ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
+                : placeOf(tab),
+            )
+          : []
+      }
       player={
         places
           ? {

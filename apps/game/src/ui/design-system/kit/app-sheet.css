@@ -269,6 +269,17 @@
   background: var(--app-hover);
   color: var(--app-ink);
 }
+/* What waits behind a place (Chat's unread), a small count in the accent beside its word. */
+.app-bar__count {
+  min-width: 1.25rem;
+  border-radius: var(--app-radius-round);
+  background: rgb(var(--app-accent));
+  padding: 0 theme(spacing.1);
+  color: var(--app-dark);
+  font-size: var(--app-text-label);
+  line-height: 1.25rem;
+  text-align: center;
+}
 .app-bar__place[aria-current="page"] {
   background: var(--app-chosen);
   color: rgb(var(--app-accent));
@@ -319,6 +330,15 @@
   }
   .app-bar__name {
     max-width: 8rem;
+  }
+  /* The places draw closer, so the five places and the player's end fit beside each other at the desktop's narrowest
+     width (1024). */
+  .app-bar__places {
+    gap: 0;
+  }
+  .app-bar__place {
+    gap: theme(spacing.2);
+    padding: 0 theme(spacing.2);
   }
   .app-bar__end {
     gap: theme(spacing.2);
@@ -443,6 +463,14 @@
 }
 .app-panel[data-flush] .app-panel__body {
   padding: theme(spacing.1) 0;
+}
+.app-panel[data-fill] {
+  overflow: hidden;
+}
+.app-panel[data-fill] .app-panel__body {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
 }
 
 /* ── Age column: an age, tall on its painting, its games in its well. ── */

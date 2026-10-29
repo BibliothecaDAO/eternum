@@ -131,9 +131,11 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
 
 export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientParams | null) => {
   const actions = useRealtimeChatActions();
-  // The client starts again only for another server or other zones, with the config as it stands then.
+  // The client starts again only for another server, with the config as it stands then; the rooms move with the player
+  // on the one connection (setRooms), so walking onto a lobby's page opens its room and nothing else.
   const startedWith = useLatest(config);
-  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.rooms)}` : null;
+  const clientKey = config ? config.baseUrl : null;
+  const roomsKey = config ? JSON.stringify(config.rooms) : null;
 
   useEffect(() => {
     const current = startedWith.current;
@@ -143,6 +145,11 @@ export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientPara
       actions.resetClient();
     };
   }, [actions, clientKey, startedWith]);
+
+  useEffect(() => {
+    const current = startedWith.current;
+    if (current && roomsKey !== null && useRealtimeChatStore.getState().client) actions.setRooms(current.rooms);
+  }, [actions, roomsKey, startedWith]);
 };
 
 export const useRealtimeChatSelector = <T>(

@@ -84,9 +84,17 @@ export interface RealtimeChatState {
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
   view: ChatView;
-  /** Accounts this player blocked: their direct messages never arrive, and their threads are hidden. */
+  /** Accounts this player muted: their direct messages never arrive, and what they write is hidden. */
   blockedPlayers: string[];
+  /** The rooms the player has where they stand (chatRooms), as the transport opens them; setRooms moves them. */
+  rooms: string[];
+  /** Rooms the player reads but may not write in, as each room answered at its open (a Blitz lobby's, unregistered). */
+  readOnlyZoneIds: string[];
+  /** Why a room did not take the player's last message, until they send again: too fast, or refused. */
+  roomRefusals: Record<string, RoomRefusal>;
 }
+
+export type RoomRefusal = "rate-limited" | "refused";
 
 export interface InitializeRealtimeClientParams {
   baseUrl: string;
@@ -111,6 +119,12 @@ export interface RealtimeChatActions {
   /** Opens the conversation with a player, started if there is none: a name pressed in a room leads here. */
   openConversation(playerId: string): void;
   setActiveZone(zoneId: string | undefined): void;
+  /** The rooms where the player now stands: the transport leaves the ones gone and opens the new ones. */
+  setRooms(rooms: readonly string[]): void;
+  /** A room opened again, so it answers anew who writes there (after the player registered in a Blitz lobby). */
+  reopenRoom(zoneId: string): void;
+  /** A room did not take the player's message (`code`, as the room said it): it leaves the room, and why is shown. */
+  refuseInRoom(zoneId: string, code: string): void;
   setShellOpen(isOpen: boolean): void;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;

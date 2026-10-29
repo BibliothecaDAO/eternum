@@ -719,9 +719,6 @@ export const BLITZ_WORDS = {
 export const CHAT_WORDS = {
   chat: "Chat",
   message: "Message",
-  signInToRead: "Sign in to read the lobby's chat.",
-  /** A lobby's chat with no message yet. */
-  empty: "Nobody has written yet.",
   /** Under the chat of a reader the room does not let write. */
   registeredWrite: "Players registered in this Blitz write here.",
   rateLimited: "Too fast. Wait a moment.",
@@ -757,6 +754,10 @@ export const CHAT_WORDS = {
   muted: "muted",
   /** Beside the chat's tabs: how many players are in it now ("4 online"). */
   online: "online",
+  /** Where chat stands for a player not signed in: the chat strip's line, the app's Chat page and pane. */
+  signInToChat: "Sign in to chat",
+  /** The app's pane over a page: what closes it. */
+  closeChat: "Close chat",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

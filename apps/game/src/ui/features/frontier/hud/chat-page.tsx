@@ -5,8 +5,8 @@ import type { ChatRoom } from "@/ui/features/social/realtime-chat/model/chat-roo
 import type { RefObject } from "react";
 
 /**
- * Chat as a nav page on a phone: the room fills the band between the strip and the nav, which stays. Signed out, the
- * page is the way into sign-in, which brings the player back to this game.
+ * Chat as a nav page on a phone: it fills the band between the strip and the nav, which stays (`data-page-fills`, which
+ * the bands read). Signed out, the page is the way into sign-in, which brings the player back to this game.
  */
 export const ChatPage = ({
   rooms,
@@ -20,7 +20,7 @@ export const ChatPage = ({
   /** The chat key focuses this pane's field. */
   pane: RefObject<HTMLElement>;
 }) => (
-  <section ref={pane} aria-label="Chat" className="flex min-h-0 flex-1 flex-col">
+  <section ref={pane} aria-label="Chat" data-page-fills className="flex min-h-0 flex-1 flex-col">
     <HudPanel
       collapsible={false}
       className="flex min-h-0 flex-1 flex-col overflow-hidden"

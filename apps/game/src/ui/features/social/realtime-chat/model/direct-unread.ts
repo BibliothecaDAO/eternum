@@ -30,3 +30,6 @@ export const receiptDue = (state: RealtimeChatState, threadId: string): DirectMe
 /** What is unread across the player's conversations. */
 export const directUnread = (state: RealtimeChatState): number =>
   Object.keys(state.dmThreads).reduce((total, threadId) => total + threadUnread(state, threadId), 0);
+
+/** What is unread in chat altogether, rooms and conversations: every badge that counts chat reads it. */
+export const chatUnread = (state: RealtimeChatState): number => state.unreadWorldTotal + directUnread(state);

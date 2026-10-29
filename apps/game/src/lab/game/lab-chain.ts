@@ -110,7 +110,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
-  answerLabChat(true, [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)]);
+  answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)] });
   signInLabPlayer();
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return scenario;

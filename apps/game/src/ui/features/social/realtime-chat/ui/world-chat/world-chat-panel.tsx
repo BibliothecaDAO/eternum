@@ -53,6 +53,9 @@ const formatSenderName = (names: PlayerNames, playerId: string, displayName?: st
  * A room: its messages, each sender's run under their name, replies quoting what they answer, and the field. A name
  * pressed opens the conversation with that player in Messages: private messages are never written in a room.
  */
+/** Why a room did not take the player's last message. */
+const REFUSALS = { "rate-limited": CHAT_WORDS.rateLimited, refused: CHAT_WORDS.refused } as const;
+
 export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps) {
   // Select value directly to prevent infinite re-renders
   const fallbackZoneId = useRealtimeChatSelector((state) => state.activeZoneId ?? Object.keys(state.worldZones)[0]);
@@ -68,7 +71,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const messages = zone?.messages ?? NO_MESSAGES;
   // A sender's name is read as the list draws, and the list draws again when one lands.
   const names = usePlayerNames();
-  const mentionable = useChatMentions();
+  const mentionable = useChatMentions(resolvedZoneId);
   const links = useLinkOpener();
   const section = useRef<HTMLElement>(null);
   const quoted = useShowMessage(section);
@@ -77,6 +80,9 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const [card, setCard] = useState<string | null>(null);
   const self = useRealtimeChatSelector((state) => state.identity?.playerId);
   const muted = useRealtimeChatSelector((state) => state.blockedPlayers);
+  // A room the player only reads (a Blitz lobby's, unregistered) shows who writes there instead of the field.
+  const readOnly = useRealtimeChatSelector((state) => state.readOnlyZoneIds.includes(resolvedZoneId ?? ""));
+  const refusal = useRealtimeChatSelector((state) => state.roomRefusals[resolvedZoneId ?? ""]);
 
   useEffect(() => {
     if (resolvedZoneId && hasChannelAccess) {
@@ -234,34 +240,39 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
           </div>
         )}
       </div>
-      <MessageComposer
-        onSend={async (value, place) => {
-          if (!resolvedZoneId) return;
-          const metadata = {
-            ...(replying &&
-              replyMetadata({ id: replying.id, playerId: replying.sender.playerId, content: replying.content })),
-            ...(place && placeMetadata(place)),
-          };
-          await sendMessage({
-            content: value,
-            zoneId: resolvedZoneId,
-            ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
-          });
-          setReplying(null);
-        }}
-        placeholder={`${CHAT_WORDS.message} ${name}`}
-        disabled={!hasChannelAccess}
-        mentions={mentionable.choices}
-        replying={
-          replying
-            ? {
-                name: formatSenderName(names, replying.sender.playerId, replying.sender.displayName),
-                excerpt: replying.content,
-                onCancel: () => setReplying(null),
-              }
-            : undefined
-        }
-      />
+      {refusal && <p className="px-3 text-hud-label text-hud-warn">{REFUSALS[refusal]}</p>}
+      {readOnly ? (
+        <p className="px-3 py-2 text-hud-label text-hud-cue">{CHAT_WORDS.registeredWrite}</p>
+      ) : (
+        <MessageComposer
+          onSend={async (value, place) => {
+            if (!resolvedZoneId) return;
+            const metadata = {
+              ...(replying &&
+                replyMetadata({ id: replying.id, playerId: replying.sender.playerId, content: replying.content })),
+              ...(place && placeMetadata(place)),
+            };
+            await sendMessage({
+              content: value,
+              zoneId: resolvedZoneId,
+              ...(Object.keys(metadata).length > 0 ? { metadata } : {}),
+            });
+            setReplying(null);
+          }}
+          placeholder={`${CHAT_WORDS.message} ${name}`}
+          disabled={!hasChannelAccess}
+          mentions={mentionable.choices}
+          replying={
+            replying
+              ? {
+                  name: formatSenderName(names, replying.sender.playerId, replying.sender.displayName),
+                  excerpt: replying.content,
+                  onCancel: () => setReplying(null),
+                }
+              : undefined
+          }
+        />
+      )}
       {links.asking}
     </section>
   );

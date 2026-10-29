@@ -165,6 +165,51 @@ describe("RealtimeClient", () => {
     expect(shown.paths()).toContain("/api/chat/rooms/game%3A7");
   });
 
+  it("opens and leaves rooms as the player moves, on the one connection: a game room still only once allowed", () => {
+    const { client, sockets, paths, messages } = connect(["world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const lobby = "slot:0x1:blitz-1630";
+    client.setRooms([lobby, "world:global", "game:7"]);
+    // A lobby's room opens at once (any signed-in player reads it); the game room waits for a handshake allowing it.
+    expect(paths()).toEqual([
+      "/api/chat/inbox",
+      "/api/chat/rooms/world%3Aglobal",
+      "/api/chat/rooms/slot%3A0x1%3Ablitz-1630",
+    ]);
+    sockets[2]!.open();
+    client.setRooms(["world:global"]);
+    expect(sockets[2]!.closedByClient).toBe(true);
+    expect(messages.at(-1)).toEqual({ type: "left:zone", zoneId: lobby });
+    // The inbox was never opened again.
+    expect(paths().filter((path) => path === "/api/chat/inbox")).toHaveLength(1);
+  });
+
+  it("opens a room again on demand, so it answers anew who writes there", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { client, sockets, paths } = connect([lobby, "world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const first = sockets.find(({ url }) => url.includes("slot"))!;
+    first.open();
+    client.reopenZone(lobby);
+    expect(first.closedByClient).toBe(true);
+    expect(paths().filter((path) => path.includes("slot"))).toHaveLength(2);
+  });
+
+  it("names the room an error came from: a room's refusal is that room's", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { sockets, messages } = connect([lobby]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: [] });
+    sockets.find(({ url }) => url.includes("slot"))!.receive({ type: "error", code: "rate_limited", message: "slow" });
+    sockets[0].receive({ type: "error", code: "invalid_direct_payload", message: "bad" });
+    expect(messages.filter(({ type }) => type === "error")).toEqual([
+      { type: "error", code: "rate_limited", message: "slow", zoneId: lobby },
+      { type: "error", code: "invalid_direct_payload", message: "bad" },
+    ]);
+  });
+
   it("stays closed once closed, and closes a socket still connecting only when it has opened", () => {
     const { client, sockets, closes, paths, reconnecting } = connect();
     client.close();
