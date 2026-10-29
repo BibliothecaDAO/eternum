@@ -318,7 +318,6 @@ export const GameEntryModal = ({
         expectedSettlementCount: expectedSettlementCount,
       });
       setRegisteredRealmId(snapshot.heldRealmId);
-      if (snapshot.heldRealmId != null) setHeldRealmNumber(String(snapshot.heldRealmId));
       setSettledRealmCount(status.settledCount);
       setNeedsSettlement(status.needsSettlement);
       setCanPlay(status.canPlay);
@@ -613,9 +612,10 @@ export const GameEntryModal = ({
             {isFrontierMode && worldMeta && (
               <HomeSourcePicker
                 presetId={worldMeta.preset_id}
+                registered={registeredRealmId}
                 value={heldRealmNumber}
                 onChange={setHeldRealmNumber}
-                disabled={isSettling || registeredRealmId != null}
+                disabled={isSettling}
               />
             )}
             {settlementError && <HudNotice tone="bad" line={settlementError} />}

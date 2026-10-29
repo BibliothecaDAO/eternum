@@ -12,8 +12,8 @@ import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 
 const settlement = vi.hoisted(() => ({
   settled: false,
-  /** The game's preset: Frontier's (1), or the Devcon season's (6), whose homes a Devcon ticket founds. */
-  presetId: 1,
+  /** The game's preset: Frontier's (5), or the Devcon season's (6), whose homes a Devcon ticket founds. */
+  presetId: 5,
   heldRealmId: null as number | null,
   calls: [] as unknown[],
   order: [] as string[],
@@ -87,7 +87,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
   settlement.settled = false;
-  settlement.presetId = 1;
+  settlement.presetId = 5;
   settlement.heldRealmId = null;
   settlement.calls = [];
   settlement.order = [];
@@ -119,7 +119,7 @@ const openEntry = async () => {
     ),
   );
   const yourRealms = () =>
-    [...(host.querySelector('[role="group"][aria-label="Your Realms"]')?.querySelectorAll("button") ?? [])].map(
+    [...(host.querySelector('[role="group"][aria-label="Your Realms"]')?.querySelectorAll(".ui-chip") ?? [])].map(
       (chip) => chip.textContent,
     );
   const press = async (text: string) =>
@@ -128,7 +128,10 @@ const openEntry = async () => {
     await act(async () => root.unmount());
     query.clear();
   };
-  return { host, yourRealms, press, close };
+  const found = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
+  /** The holdings asked again, as a later read of the step does (a refetch, a remount). */
+  const askHoldingsAgain = async () => act(async () => query.invalidateQueries({ queryKey: ["held-realms"] }));
+  return { host, yourRealms, press, found, askHoldingsAgain, close };
 };
 
 it("renders spectator entry before any head without reading the chain clock", async () => {
@@ -162,11 +165,10 @@ it("renders spectator entry before any head without reading the chain clock", as
   }
 });
 
-it.each(["", "711", "registered"])(
+it.each(["", "711"])(
   "founds from the player's button, registering its source first: a typed Realm while the holdings cannot be read, else any campaign ticket (%s)",
   async (number) => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    if (number === "registered") settlement.heldRealmId = 711;
     const signer = { address: "0x123" } as never;
     useAccountStore.setState({ account: signer });
     useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
@@ -183,10 +185,6 @@ it.each(["", "711", "registered"])(
       expect(settlement.calls).toEqual([]);
       await vi.waitFor(() => expect(entry.host.textContent).toContain("Your Realms cannot be read right now"));
       const input = entry.host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
-      if (number === "registered") {
-        expect(input.value).toBe("711");
-        expect(input.disabled).toBe(true);
-      }
       if (number === "711")
         await act(async () => {
           Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, number);
@@ -194,11 +192,9 @@ it.each(["", "711", "registered"])(
         });
       await entry.press("Found your realm");
       expect(settlement.calls).toEqual([{ signer, selectedRealm: undefined }]);
-      expect(settlement.order).toEqual(number === "registered" ? ["settle"] : ["register", "settle"]);
+      expect(settlement.order).toEqual(["register", "settle"]);
       const url = `/api/value/realm-entry?chainId=${GAME.chainId}`;
-      expect(sent).toEqual(
-        number === "registered" ? [] : [{ url, body: number === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 } }],
-      );
+      expect(sent).toEqual([{ url, body: number === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 } }]);
       expect(settlement.settled).toBe(true);
     } finally {
       await entry.close();
@@ -333,6 +329,110 @@ it("tells a linked holder of no Realm so, rather than listing nothing", async ()
   try {
     await vi.waitFor(() => expect(entry.host.textContent).toContain("Your linked wallet holds no Realm"));
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
+  } finally {
+    await entry.close();
+  }
+});
+
+it("lets go a number typed while the holdings could not be read, once they read back holding none", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  useAccountStore.setState({ account: { address: "0x123" } as never });
+  useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
+  noTicket();
+  let holdings: Response | null = null;
+  const sent: unknown[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS) return holdings ?? Response.json({ error: "realm_holdings_unavailable" }, { status: 503 });
+    sent.push(JSON.parse(String(init.body)));
+    return Response.json({});
+  });
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Your Realms cannot be read right now"));
+    const input = entry.host.querySelector<HTMLInputElement>('input[aria-label="Realm number"]')!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "9000");
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    expect(entry.host.textContent).toContain("Enter a Realm number from 1–8,000.");
+    expect(entry.found().disabled).toBe(true);
+
+    holdings = Response.json({ realms: [] });
+    await entry.askHoldingsAgain();
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Your linked wallet holds no Realm"));
+    // The typed number had no control left to change it: it is let go, and the home is the ticket's or a free one.
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Free home · no daily Labor"));
+    expect(entry.host.textContent).not.toContain("Enter a Realm number");
+    expect(entry.found().disabled).toBe(false);
+    await entry.press("Found your realm");
+    expect(sent).toEqual([{ gameId: 8 }]);
+    expect(settlement.settled).toBe(true);
+  } finally {
+    await entry.close();
+  }
+});
+
+it.each([
+  { change: "its wallet unlinked", wallet: null, left: [] as string[] },
+  { change: "another wallet linked", wallet: "0x789", left: ["934"] },
+])("lets go a picked Realm when the account has $change", async ({ wallet, left }) => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  useAccountStore.setState({ account: { address: "0x123" } as never });
+  useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
+  noTicket();
+  const holdings: Record<string, number[]> = { "0x456": [711], "0x789": [934] };
+  const sent: unknown[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS)
+      return Response.json({ realms: holdings[useIdentitySessionStore.getState().session!.user.address!] });
+    sent.push(JSON.parse(String(init.body)));
+    return Response.json({});
+  });
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.yourRealms()).toEqual([realmChip(711)]));
+    await entry.press(realmChip(711));
+    await vi.waitFor(() => expect(entry.host.textContent).toContain(`${realmChip(711)} · 1,000 Labor each day`));
+
+    await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x2", wallet) }));
+    await vi.waitFor(() => expect(entry.yourRealms()).toEqual(left.map((realmId) => realmChip(Number(realmId)))));
+    // Nothing on the step holds 711 any more, so nothing founds with it.
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Free home · no daily Labor"));
+    expect(entry.host.textContent).not.toContain(realmChip(711));
+    await entry.press("Found your realm");
+    expect(sent).toEqual([{ gameId: 8 }]);
+  } finally {
+    await entry.close();
+  }
+});
+
+it("keeps the Realm already registered for this game, shown and locked, whatever the holdings then say", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  settlement.heldRealmId = 711;
+  useAccountStore.setState({ account: { address: "0x123" } as never });
+  useIdentitySessionStore.setState({ status: "signed-in", session: signedIn("0x2", "0x456") });
+  noTicket();
+  const sent: unknown[] = [];
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS) return Response.json({ realms: [3] });
+    settlement.order.push("register");
+    sent.push(JSON.parse(String(init.body)));
+    return Response.json({});
+  });
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.yourRealms()).toEqual([realmChip(711)]));
+    const chip = () => entry.host.querySelector('[aria-label="Your Realms"] .ui-chip')!;
+    expect(chip().tagName).toBe("SPAN");
+    expect(entry.host.textContent).toContain(`${realmChip(711)} · 1,000 Labor each day`);
+
+    await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x2", null) }));
+    await entry.askHoldingsAgain();
+    expect(entry.yourRealms()).toEqual([realmChip(711)]);
+    expect(entry.host.textContent).toContain(`${realmChip(711)} · 1,000 Labor each day`);
+    await entry.press("Found your realm");
+    expect(sent).toEqual([]);
+    expect(settlement.order).toEqual(["settle"]);
   } finally {
     await entry.close();
   }

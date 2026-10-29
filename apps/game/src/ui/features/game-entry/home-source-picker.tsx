@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { canonicalRealm, homeSourceClaim, type HomeClaimSource, type LaborRuleAmounts } from "@bibliothecadao/eternum";
@@ -37,24 +37,42 @@ type Holdings =
  * picked here is registered as the home's source; with none, the relay registers the campaign ticket the account holds
  * for this game's preset, and with neither the home is free (apps/value-relay/src/realm-entry.ts). The line under the
  * picks says what that home will claim each day, by the claim's own rule (homeSourceClaim) on the game's preset rules.
+ *
+ * `registered` is the Realm the relay already holds for this game: it is the home's source for good, shown locked.
+ * `value` is the player's pick before that; it never outlives the control that holds it, so a pick the step no longer
+ * offers (another wallet's Realm, a number typed while the holdings could not be read) is let go rather than founded.
  */
 export function HomeSourcePicker({
   presetId,
+  registered,
   value,
   onChange,
   disabled,
 }: {
   presetId: number;
+  registered: number | null;
   value: string;
   onChange: (value: string) => void;
   disabled: boolean;
 }) {
   const { holdings, ticket, rules } = useHomeSources(presetId);
-  const line = homeLine(value, ticket, rules);
+  const unoffered = registered === null && !disabled && !offers(holdings, value);
+  useEffect(() => {
+    if (unoffered) onChange("");
+  }, [unoffered, onChange]);
+  const line = homeLine(registered === null ? value : String(registered), ticket, rules);
   return (
     <div className="mb-4 flex flex-col gap-2 rounded-xl border border-hud-line p-3">
       <span className="text-hud-label text-hud-muted">{YOUR_REALMS}</span>
-      <HeldRealmChoice holdings={holdings} value={value} onChange={onChange} disabled={disabled} />
+      {registered === null ? (
+        <HeldRealmChoice holdings={holdings} value={value} onChange={onChange} disabled={disabled} />
+      ) : (
+        <div className="flex flex-wrap gap-1.5" role="group" aria-label={YOUR_REALMS}>
+          <HudChip tone="good" label={REALM}>
+            {realmName(registered)}
+          </HudChip>
+        </div>
+      )}
       <p aria-live="polite" className="text-hud-body text-hud-ink">
         {line}
       </p>
@@ -153,11 +171,10 @@ function HeldRealmChoice({
         <RealmNumberField value={value} onChange={onChange} disabled={disabled} />
       </>
     );
-  const realms = pickedAmong(holdings.realms, value);
-  if (realms.length === 0) return <span className="text-hud-body text-hud-muted">{NO_HELD_REALMS}</span>;
+  if (holdings.realms.length === 0) return <span className="text-hud-body text-hud-muted">{NO_HELD_REALMS}</span>;
   return (
     <div className="flex flex-wrap gap-1.5" role="group" aria-label={YOUR_REALMS}>
-      {realms.map((realmId) => {
+      {holdings.realms.map((realmId) => {
         const picked = value === String(realmId);
         return (
           <HudChip
@@ -175,9 +192,11 @@ function HeldRealmChoice({
   );
 }
 
-/** The held Realms, with the one already registered for this game among them even if the index no longer lists it. */
-const pickedAmong = (held: readonly number[], value: string) =>
-  isRealmNumber(value) && !held.includes(Number(value)) ? [...held, Number(value)] : [...held];
+/** Whether the step shows a control that holds this pick: its Realm's chip, or the number field while it is typed. */
+const offers = (holdings: Holdings, value: string) =>
+  value === "" ||
+  holdings.kind === "unreadable" ||
+  (holdings.kind === "held" && holdings.realms.some((realmId) => String(realmId) === value));
 
 const realmName = (realmId: number) => {
   const name = canonicalRealm(realmId)?.name;
