@@ -29,6 +29,8 @@ import {
   buildRegisterLedgerPresetCalldata,
 } from "../../config/deployer/clean/ledger/economics";
 import { LEDGER_PRESET_FIELD_COUNT, decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
+import { frontierDevconPreset } from "../../config/source/frontier/devcon";
+import { seasonDayUnitSeconds } from "../../config/source/common/season-clock";
 
 const temporary: string[] = [];
 const fetchBefore = globalThis.fetch;
@@ -883,17 +885,20 @@ test("date validation requires a native Frontier preset and uses its season cloc
 });
 
 test.each(["dev", "production"] as const)(
-  "%s registers Devcon's exact native ID, clock and 70/30 pool",
+  "%s registers Devcon's ID, clock and chest terms from the preset source",
   (environment) => {
-    const calls = setupCalls(environments[environment], assets, "0x33", 6, BLITZ_WINDOW);
-    const frontier = calls.find((call) => call.entrypoint === "register_preset" && registered(call)[0] === "6")!;
+    const preset = frontierDevconPreset;
+    const calls = setupCalls(environments[environment], assets, "0x33", preset.id, BLITZ_WINDOW);
+    const frontier = calls.find(
+      (call) => call.entrypoint === "register_preset" && registered(call)[0] === String(preset.id),
+    )!;
     const calldata = registered(frontier);
-    expect(calldata[0]).toBe("6");
+    expect(calldata[0]).toBe(String(preset.id));
     expect(decodeLedgerPreset(calldata.slice(1, 1 + LEDGER_PRESET_FIELD_COUNT))).toMatchObject({
-      dayUnit: 7200,
-      claimWindow: 604800,
-      frontierChestBps: 7000,
-      frontierTopN: 10,
+      dayUnit: seasonDayUnitSeconds(preset),
+      claimWindow: preset.chests.claimWindowSeconds,
+      frontierChestBps: preset.chests.poolBps,
+      frontierTopN: preset.chests.topN,
     });
   },
 );

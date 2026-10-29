@@ -6,6 +6,8 @@ import { ShardReader } from "../../../../../../apps/value-relay/src/shard-rpc";
 import devBook from "../../../../../common/addresses/dev.json";
 import productionBook from "../../../../../common/addresses/production.json";
 import { fundFrontier, carryFrontier } from "./fund-frontier";
+import { frontierDevconPreset } from "../../../../../../config/source/frontier/devcon";
+import { seasonDayUnitSeconds } from "../../../../../../config/source/common/season-clock";
 
 const savedDev = { ...devBook };
 const savedProduction = { ...productionBook };
@@ -72,13 +74,23 @@ beforeEach(() => {
     { model: "GameRegistry", rows: [{ key: "42", value: { game_id: 42, ...game } }] },
     {
       model: "ChestRules",
-      rows: [{ key: "42", value: { pool_bps: 7000, top_n: 10, game_id: 42, claim_window_seconds: 604800 } }],
+      rows: [
+        {
+          key: "42",
+          value: {
+            pool_bps: frontierDevconPreset.chests.poolBps,
+            top_n: frontierDevconPreset.chests.topN,
+            game_id: 42,
+            claim_window_seconds: 604800,
+          },
+        },
+      ],
     },
     { model: "SliceRules", rows: [{ key: "42", value: { game_id: 42, day_unit_seconds: 10 } }] },
   ];
   preset = response(ledgerAbi, "get_preset", {
-    frontier_top_n: 10,
-    frontier_chest_bps: 7000,
+    frontier_top_n: frontierDevconPreset.chests.topN,
+    frontier_chest_bps: frontierDevconPreset.chests.poolBps,
     entry_fee: { low: 0, high: 0 },
     protocol_cut_bps: 0,
     chest_lords_bps: 0,
@@ -328,37 +340,37 @@ test("carries an expired chest remainder once, preserving both prize pots", asyn
 });
 
 test.each(["dev", "production"] as const)(
-  "%s funds the 80-hour Devcon game with 100k split into 70k chests and 30k prizes",
+  "%s funds the 80-hour Devcon game with 300k split into 210k chests and 90k top-three prizes",
   async (environment) => {
     const startsAt = 1793687400;
     const endsAt = 1793975400;
     const devcon = { ...game, start_main_at: startsAt, end_at: endsAt };
     models[0]!.rows[0]!.value = { game_id: 42, ...devcon };
-    models[2]!.rows[0]!.value.day_unit_seconds = 4800;
+    models[2]!.rows[0]!.value.day_unit_seconds = seasonDayUnitSeconds(frontierDevconPreset);
     shardCall.mockImplementation(async () => response(gamesAbi, "game", devcon));
-    preset[16] = "4800";
+    preset[16] = String(seasonDayUnitSeconds(frontierDevconPreset));
     season[1] = String(startsAt);
     season[2] = String(endsAt);
-    season[3] = String(70000n * 10n ** 18n);
-    season[10] = String(30000n * 10n ** 18n);
+    season[3] = String(210000n * 10n ** 18n);
+    season[10] = String(90000n * 10n ** 18n);
     const token = environment === "dev" ? "0x111" : "0x222";
     const ledger = environment === "dev" ? "0x123" : "0x456";
     ledgerRead.mockImplementation(async ({ entrypoint }) =>
       entrypoint === "get_preset" ? preset : entrypoint === "get_frontier" ? season : [token],
     );
-    const result = await fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "100000");
+    const result = await fundFrontier(account, provider, shard, "https://herald.test", 42, environment, "300000");
     expect(result.frontier).toMatchObject({
       presetId: 6,
       start: startsAt,
       end: endsAt,
-      pool: String(70000n * 10n ** 18n),
-      prizePool: String(30000n * 10n ** 18n),
+      pool: String(210000n * 10n ** 18n),
+      prizePool: String(90000n * 10n ** 18n),
     });
     expect(execute.mock.calls[0]![0]).toEqual([
       {
         contractAddress: token,
         entrypoint: "approve",
-        calldata: [BigInt(ledger).toString(), String(100000n * 10n ** 18n), "0"],
+        calldata: [BigInt(ledger).toString(), String(300000n * 10n ** 18n), "0"],
       },
       {
         contractAddress: ledger,
@@ -370,9 +382,15 @@ test.each(["dev", "production"] as const)(
           start: startsAt,
           end: endsAt,
           seed: 99,
-          amount: { low: 100000n * 10n ** 18n, high: 0 },
+          amount: { low: 300000n * 10n ** 18n, high: 0 },
         }),
       },
     ]);
   },
 );
+
+test("refuses the previously registered top-ten ledger terms for a new top-three Devcon game", async () => {
+  preset[18] = "10";
+  await expect(run("300000")).rejects.toThrow("frontier_funding_differs_from_game");
+  expect(execute).not.toHaveBeenCalled();
+});
