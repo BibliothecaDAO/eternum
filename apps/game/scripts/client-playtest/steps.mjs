@@ -198,7 +198,7 @@ const clickToResultStep = (name, sends, press, resultOf, { settleMs = RESULT_SET
       onset: result.onset,
       before: measured.marks.diff,
       visible: measured.marks.visible,
-      frameMs: frameMsAround(probe.frames, measured.marks.visible),
+      pageFrames: probe.frames,
       dir: `${played.capturedAs}-frames`,
     });
     return onScreen.shown
@@ -234,18 +234,6 @@ const RESULT_SETTLE_MS = 6_000;
 const SETTLE_RESULT_MS = 25_000;
 /** Frames a step recorded with --capture-results, held until its verdict reads them: never in its transcript. */
 const capturedFrames = new Map();
-
-/**
- * A frame, for the proof's window round a mark: the longest the page took from the frame before the mark's to the third
- * after it, not the step's median. A phone's map frames take 100 ms while the game boots, and a frame there is one of
- * those, not six of a quiet page's.
- */
-const frameMsAround = (frames, mark) => {
-  const at = frames.findLastIndex((frame) => frame <= mark);
-  const around = frames.slice(Math.max(0, at - 1), at + 5);
-  const gaps = around.slice(1).map((frame, index) => frame - around[index]);
-  return Math.max(1000 / 60, ...gaps);
-};
 
 /**
  * The tile an explore targeted, as its own record names it: the one tile its result may show, and on screen, its

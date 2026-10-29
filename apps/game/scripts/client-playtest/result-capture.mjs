@@ -45,13 +45,15 @@ export async function startResultCapture(devTools, timeOrigin) {
  * highlights, is not this result). The screen at a moment is the last frame sent by then: a still page sends no frame
  * until it changes again. It was shown at the first frame where half of them did. The verdict fails when too
  * few pixels changed by then (the result was absent, or later than three frames), or when it was shown more than a frame
- * before its mark (the mark came late). The frames around it are written to `dir`.
+ * before its mark (the mark came late). Frames are the page's own (`pageFrames`, each frame's start): a slow frame is
+ * one frame, and it widens the window only where it falls. The frames around it are written to `dir`.
  */
-export async function proveResultOnScreen({ frames, region, target, onset, before, visible, frameMs, dir }) {
-  if (target) return proveTargetState({ frames, target, onset, before, visible, frameMs, dir });
+export async function proveResultOnScreen({ frames, region, target, onset, before, visible, pageFrames, dir }) {
+  const window = frameWindow(pageFrames, visible);
+  if (target) return proveTargetState({ frames, target, onset, before, window, dir });
   const reference = frames.filter((frame) => frame.t < before).at(-1);
   const last = frames.at(-1);
-  const settled = frames.filter((frame) => frame.t <= visible + 3 * frameMs).at(-1);
+  const settled = frames.filter((frame) => frame.t <= window.latest).at(-1);
   if (!reference || !settled || settled === reference) {
     return { shown: false, reason: "no frame between the facts and three frames after the mark", region };
   }
@@ -81,10 +83,31 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
       break;
     }
   }
-  const lagMs = Math.round((first.t - visible) * 10) / 10;
   const kept = keepAround(frames, first, reference, last, dir);
-  const shownAt = { ...verdict, firstShownAt: first.t, lagMs, kept };
-  if (lagMs < -frameMs) return { shown: false, reason: `the screen showed it ${-lagMs}ms before its mark`, ...shownAt };
+  return judgeFirstShown({ ...verdict, kept }, first, window);
+}
+
+/**
+ * The frames a result may first show in, from the page's frame starts: from the start of the frame before the one its
+ * mark fell in (a frame early) to the start of the third frame after that one. Where the page recorded none, a 60 Hz
+ * frame stands in.
+ */
+export function frameWindow(pageFrames, visible) {
+  const at = pageFrames.findLastIndex((frame) => frame <= visible);
+  const nominal = 1000 / 60;
+  return {
+    visible,
+    earliest: at >= 1 ? pageFrames[at - 1] : visible - nominal,
+    latest: pageFrames[at + 3] ?? visible + 3 * nominal,
+  };
+}
+
+/** Shown no earlier than a frame before its mark; the caller has already found it no later than three after. */
+function judgeFirstShown(verdict, first, { visible, earliest }) {
+  const lagMs = Math.round((first.t - visible) * 10) / 10;
+  const shownAt = { ...verdict, firstShownAt: first.t, lagMs };
+  if (first.t < earliest)
+    return { shown: false, reason: `the screen showed it ${-lagMs}ms before its mark`, ...shownAt };
   return { shown: true, ...shownAt };
 }
 
@@ -93,15 +116,15 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
  * the box the result itself fills, so a change around it (an outline, a plate, the next orders) proves nothing. Its
  * state is its mean grey: from the last frame before the facts (`before`) to the last frame it must move by at least
  * MIN_TARGET_CONTRAST levels (an animated ground shimmers pixel by pixel, not in its mean), and it reads as changed
- * from the first frame past half that way, which must come no more than a frame before the mark (`visible`) and no
- * later than three frames after it. A result that sets its target moving (`onset`: a chest's lid lifting, which ends
+ * from the first frame past half that way, which must come within the mark's `window` (frameWindow): no more than a
+ * frame before it and no later than three frames after it. A result that sets its target moving (`onset`: a chest's lid lifting, which ends
  * seconds later with the chest gone) reads as changed from the first frame that has moved MIN_TARGET_CONTRAST levels
  * from the frame before the facts, whatever its last look.
  */
-async function proveTargetState({ frames, target, onset = false, before, visible, frameMs, dir }) {
+async function proveTargetState({ frames, target, onset = false, before, window, dir }) {
   const reference = frames.filter((frame) => frame.t < before).at(-1);
   const last = frames.at(-1);
-  const settled = frames.filter((frame) => frame.t <= visible + 3 * frameMs).at(-1);
+  const settled = frames.filter((frame) => frame.t <= window.latest).at(-1);
   if (!reference || !settled || settled === reference || last === reference) {
     return { shown: false, reason: "no frame between the facts and three frames after the mark", target };
   }
@@ -131,10 +154,7 @@ async function proveTargetState({ frames, target, onset = false, before, visible
   if (!first || first.t > settled.t) {
     return { shown: false, reason: "three frames after its mark its target still read as before", ...verdict, kept };
   }
-  const lagMs = Math.round((first.t - visible) * 10) / 10;
-  const shownAt = { ...verdict, firstShownAt: first.t, lagMs, kept };
-  if (lagMs < -frameMs) return { shown: false, reason: `the screen showed it ${-lagMs}ms before its mark`, ...shownAt };
-  return { shown: true, ...shownAt };
+  return judgeFirstShown({ ...verdict, kept }, first, window);
 }
 
 const meanGrey = async (frame, region) => {

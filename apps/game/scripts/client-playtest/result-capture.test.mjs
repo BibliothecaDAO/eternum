@@ -28,10 +28,15 @@ const frameAt = async (t, { resultAt = Infinity, laterAt = Infinity } = {}) => {
   return { t, width: 40, jpeg };
 };
 
+/** The page's frames, every 16 ms from 0 to 400. */
+const PAGE_FRAMES = Array.from({ length: 26 }, (_, index) => index * FRAME_MS);
+/** A page frame every `frameMs` round `visible`, for a run kept without its page's frames. */
+const steadyFrames = (frameMs, visible) => Array.from({ length: 81 }, (_, index) => visible + (index - 40) * frameMs);
+
 /** Frames every 16 ms from 0 to 400, the facts arriving at 100 and the result marked at 160. */
-const capture = (lit) => Promise.all(Array.from({ length: 26 }, (_, index) => frameAt(index * FRAME_MS, lit)));
-const prove = async (lit) =>
-  proveResultOnScreen({ frames: await capture(lit), region, before: 100, visible: 160, frameMs: FRAME_MS, dir });
+const capture = (lit) => Promise.all(PAGE_FRAMES.map((t) => frameAt(t, lit)));
+const prove = async (lit, pageFrames = PAGE_FRAMES) =>
+  proveResultOnScreen({ frames: await capture(lit), region, before: 100, visible: 160, pageFrames, dir });
 
 describe("proveResultOnScreen", () => {
   it("holds when the result's pixels show at its mark", async () => {
@@ -41,7 +46,14 @@ describe("proveResultOnScreen", () => {
 
   it("holds on a still page, whose frames stop once the result is shown", async () => {
     const frames = (await capture({ resultAt: 160 })).filter((frame) => frame.t <= 160);
-    const proof = await proveResultOnScreen({ frames, region, before: 100, visible: 160, frameMs: FRAME_MS, dir });
+    const proof = await proveResultOnScreen({
+      frames,
+      region,
+      before: 100,
+      visible: 160,
+      pageFrames: PAGE_FRAMES,
+      dir,
+    });
     expect(proof).toMatchObject({ shown: true, lagMs: 0, resultPercent: 50 });
   });
 
@@ -67,6 +79,39 @@ describe("proveResultOnScreen", () => {
 });
 
 /**
+ * The page's frames round a mark at 160 with one slow frame after it (192 to 292): review 6's counterexample, where a
+ * window sized by the slowest frame accepted a result seven frames late and one three frames early.
+ */
+describe("proveResultOnScreen's window on uneven frames", () => {
+  const unevenFrames = [96, 112, 128, 144, 160, 176, 192, 292, 308, 324, 340, 356, 372, 388];
+  const proveUneven = async (resultAt) =>
+    proveResultOnScreen({
+      frames: await Promise.all(unevenFrames.map((t) => frameAt(t, { resultAt }))),
+      region,
+      before: 100,
+      visible: 160,
+      pageFrames: unevenFrames,
+      dir,
+    });
+
+  it("fails a result first shown seven frames after its mark", async () => {
+    expect(await proveUneven(356)).toMatchObject({ shown: false });
+  });
+
+  it("fails a result already shown three frames before its mark", async () => {
+    expect(await proveUneven(112)).toMatchObject({ shown: false, lagMs: -48 });
+  });
+
+  it("holds a result shown by the third frame after its mark, however slow that frame", async () => {
+    expect(await proveUneven(292)).toMatchObject({ shown: true, lagMs: 132 });
+  });
+
+  it("holds a result shown a frame before its mark", async () => {
+    expect(await proveUneven(144)).toMatchObject({ shown: true, lagMs: -16 });
+  });
+});
+
+/**
  * An explore's frames, cropped to its tile's ground inside the outline (fixtures/explore-reveal): the reviewer's run
  * where the old proof passed an unexplored tile (review 4), and a whole reveal captured frame by frame.
  */
@@ -87,7 +132,7 @@ const proveExplore = ({ frames, marks }, markedLater = 0) =>
     target: ground,
     before: marks.diff,
     visible: marks.visible + markedLater,
-    frameMs: marks.frameMs,
+    pageFrames: steadyFrames(marks.frameMs, marks.visible + markedLater),
     dir,
   });
 
@@ -114,7 +159,7 @@ describe("proveResultOnScreen on a target's state", () => {
       target: { left: 0, top: 0, width: 20, height: 40 },
       before: 100,
       visible: 160,
-      frameMs: FRAME_MS,
+      pageFrames: PAGE_FRAMES,
       dir,
     });
     expect(proof).toMatchObject({ shown: false });
@@ -136,7 +181,7 @@ describe("proveResultOnScreen on a target's state", () => {
       onset: true,
       before: marks.diff,
       visible: marks.visible,
-      frameMs: marks.frameMs,
+      pageFrames: steadyFrames(marks.frameMs, marks.visible),
       dir,
     });
     expect(proof).toMatchObject({
@@ -154,7 +199,7 @@ describe("proveResultOnScreen on a target's state", () => {
       onset: true,
       before: 100,
       visible: 160,
-      frameMs: FRAME_MS,
+      pageFrames: PAGE_FRAMES,
       dir,
     });
     expect(proof).toMatchObject({ shown: true, lagMs: 0 });
