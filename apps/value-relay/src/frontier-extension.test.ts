@@ -21,7 +21,7 @@ vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
     callContract: url.includes("ledger") ? rpc.ledger : rpc.call,
   }),
 }));
-const target = { rpcUrl: "https://shard.test", gamesAddress: "0x10", chainId: approved.chainId };
+const target = { rpcUrl: "https://shard.test", gamesAddress: "0x10", chainId: approved.chainId, firstRelease: 1 };
 let game: Record<string, unknown>;
 let projected: Record<string, unknown>;
 let ledgerEnd: number;

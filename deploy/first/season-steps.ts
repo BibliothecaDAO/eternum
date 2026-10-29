@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { CallData, RpcProvider, uint256 } from "starknet";
 import { decodeLedgerPreset } from "../../packages/value-ledger/src/codecs";
 import { readConfirmedSnapshot, optionalRow } from "../../apps/value-relay/src/shard-snapshot";
+import { firstReleaseOf } from "../../apps/value-relay/src/shard-rpc";
 import { buildFrontierFundingCalls } from "../../contracts/l2/ledger/scripts/commands/deployment/frontier.js";
 import { readFrontierGame } from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
 import { readFrontierFunding, assertFrontierPreset } from "../../packages/value-ledger/src/frontier-funding";
@@ -77,10 +78,17 @@ async function shardConnection(context: Season) {
   const manifest = await nativeDocument(context.target);
   if (!manifest?.shard?.chainId || !manifest.world?.address)
     throw new PublicError("Box native-world.json is unavailable");
-  const publicManifest = await jsonGet<{ chainId: string }>(`${release.public_herald_url}/manifest`);
+  const publicManifest = await jsonGet<{ chainId: string; releaseSchemas: Record<string, string> }>(
+    `${release.public_herald_url}/manifest`,
+  );
   if (BigInt(manifest.shard.chainId) !== BigInt(publicManifest.chainId))
     throw new PublicError("Herald and box name different chains");
-  return { rpcUrl: release.public_rpc_url, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
+  return {
+    rpcUrl: release.public_rpc_url,
+    chainId: manifest.shard.chainId,
+    gamesAddress: manifest.world.address,
+    firstRelease: firstReleaseOf(publicManifest.releaseSchemas),
+  };
 }
 function assertCalendarGame(phase: FrontierSeasonPhase, native: { presetId: number; start: number; end: number }) {
   if (

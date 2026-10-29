@@ -3,11 +3,11 @@ import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import { optionalRow, readConfirmedSnapshot } from "./shard-snapshot";
-import { ShardReader, felt, uint } from "./shard-rpc";
+import { ShardReader, felt, uint, type ShardConnection } from "./shard-rpc";
 
 /** The confirmed board fixes recipients; each award creates the same guarded withdrawal obligation as a chest. */
 export async function awardFrontierPrizes(
-  target: ShardTarget,
+  target: ShardTarget & ShardConnection,
   heraldUrl: string,
   ledger: { rpcUrl: string; address: string },
 ) {
@@ -28,7 +28,7 @@ export async function awardFrontierPrizes(
 }
 
 async function awardGamePrizes(
-  target: ShardTarget,
+  target: ShardTarget & ShardConnection,
   heraldUrl: string,
   ledger: { rpcUrl: string; address: string },
   gameId: number,

@@ -35,7 +35,8 @@ const row = (): ValueRow => ({
   transactionHash: "0xabc",
   values: response(abi, "blitz_result", { players: rows, complete: true, commitment: result.commitment }).map(hex),
 });
-const reader = () => new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" });
+const reader = () =>
+  new ShardReader({ chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc", firstRelease: 1 });
 const ranked = abi.find((entry) => entry.name === "world_native::blitz_results::RankedPlayer")!;
 const record = abi.find((entry) => entry.name === "world_native::blitz_results::BlitzResult")!;
 let classVersion = 0;

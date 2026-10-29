@@ -16,7 +16,7 @@ import {
 } from "../../../../../../packages/value-ledger/src/frontier-funding";
 import { buildFrontierFundingCalls } from "./frontier.js";
 import { readConfirmedSnapshot, singleRow } from "../../../../../../apps/value-relay/src/shard-snapshot";
-import type { ShardConnection } from "../../../../../../apps/value-relay/src/shard-rpc";
+import { readFirstRelease, type ShardConnection } from "../../../../../../apps/value-relay/src/shard-rpc";
 
 export async function readFrontierGame(
   provider: RpcProvider,
@@ -202,7 +202,12 @@ async function main() {
   if (!rpcUrl) throw new Error("RPC_URL is required");
   const heraldUrl = process.env.HERALD_URL;
   if (!heraldUrl) throw new Error("HERALD_URL is required");
-  const shard = { rpcUrl, chainId: manifest.shard.chainId, gamesAddress: manifest.world.address };
+  const shard = {
+    rpcUrl,
+    chainId: manifest.shard.chainId,
+    gamesAddress: manifest.world.address,
+    firstRelease: await readFirstRelease(heraldUrl, manifest.shard.chainId),
+  };
   const account = await getAccount();
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
   const result = carry
