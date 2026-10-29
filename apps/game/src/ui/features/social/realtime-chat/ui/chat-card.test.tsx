@@ -115,6 +115,10 @@ const commit = (next: string[]) => {
   blocked = next;
   blockVersion += 1;
 };
+/** How the server answers a conversation's history: at once, or held until the test lets it go. */
+let historyRead: "now" | "held" = "now";
+let heldHistory: (() => void)[] = [];
+const answerOldestHistory = () => act(async () => heldHistory.shift()!());
 /** How the server takes a Mute or an Unmute: at once, or held before it commits until the test lets it go. */
 let blockWrite: "now" | "held" = "now";
 let heldWrites: (() => void)[] = [];
@@ -145,8 +149,10 @@ const serve = vi.fn(async (input: string | URL, init?: RequestInit) => {
       return new Response(JSON.stringify(asked), { status: 200 });
     }
   }
-  if (url.pathname.startsWith("/api/chat/dm/threads/"))
+  if (url.pathname.startsWith("/api/chat/dm/threads/")) {
+    if (historyRead === "held") await new Promise<void>((resolve) => heldHistory.push(resolve));
     return new Response(JSON.stringify({ messages: [DAGNA_LINE], nextCursor: null }), { status: 200 });
+  }
   if (blockListDown && url.pathname.startsWith("/api/chat/blocks") && init?.method)
     return new Response("{}", { status: 503 });
   if (url.pathname.startsWith("/api/chat/blocks") && (init?.method === "POST" || init?.method === "DELETE")) {
@@ -220,6 +226,8 @@ beforeEach(() => {
   blockVersion = 0;
   blockWrite = "now";
   heldWrites = [];
+  historyRead = "now";
+  heldHistory = [];
   blockListDown = false;
   blockRead = "now";
   heldReads = [];
@@ -404,14 +412,16 @@ describe("a player muted who only wrote privately", () => {
     // The server holds the mute (and drops what Dagna writes from now on); Messages lists her under Muted, not as a
     // conversation, with Unmute.
     expect(blocked).toEqual([DAGNA]);
-    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "messages" });
+    // Her conversation gives way to Messages: its head and its Mute are gone from the screen.
+    expect(headMute()).toBeUndefined();
     expect(host.textContent).not.toContain("see you at dawn");
     expect(muted()!.textContent).toContain("Dagna");
     expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
 
     // A reload: the client starts with nothing, the server's inbox leaves her conversation out, and its block list
     // names her again.
-    act(() => useRealtimeChatStore.setState({ blockList: null, dmThreads: {} }));
+    // The inbox lists her conversation as it lists every one; the client hides it by the list.
+    act(() => useRealtimeChatStore.setState({ blockList: null }));
     expect(muted()).toBeNull();
     await act(async () => useRealtimeChatStore.getState().actions.loadBlockedPlayers());
     expect(muted()!.textContent).toContain("Dagna");
@@ -523,16 +533,22 @@ describe("chat starting, before it knows who is muted", () => {
 
   it("keeps a Mute made while an older read was out: its answer stands, and Unmute stays in reach", async () => {
     serverMutes([]);
-    blockRead = "held";
     await start();
+    await act(async () => {});
     openDagna();
+    // A read goes out, and is held with the list as it is: nobody muted.
+    blockRead = "held";
+    let reading!: Promise<void>;
+    act(() => {
+      reading = useRealtimeChatStore.getState().actions.loadBlockedPlayers();
+    });
     await act(async () => headMute().click());
     expect(blocked).toEqual([DAGNA]);
     expect(muted()!.textContent).toContain("Dagna");
 
     // The read asked before the Mute comes back with the list from before it: it is not taken.
     await answerOldestRead();
-    await act(async () => {});
+    await act(async () => reading);
     expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([DAGNA]);
     expect(muted()!.textContent).toContain("Dagna");
     expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
@@ -585,10 +601,7 @@ describe("chat starting, before it knows who is muted", () => {
   });
 
   it("keeps a slower Mute that commits after a later read was answered: the newer list is the Mute's", async () => {
-    vi.useFakeTimers({ toFake: ["setTimeout"] });
     serverMutes([]);
-    // The startup read fails, and its retry waits.
-    blockRead = "down";
     await start();
     await act(async () => {});
     // Mute is pressed in Dagna's conversation, and the server holds it before it commits.
@@ -597,18 +610,18 @@ describe("chat starting, before it knows who is muted", () => {
     act(() => {
       void headMute().click();
     });
-    // The retry, sent after the Mute, reads the list before the Mute commits: nobody muted.
-    blockRead = "now";
-    await act(async () => vi.advanceTimersByTime(2_000));
-    await act(async () => {});
+    // A read sent after the Mute is answered before it commits: nobody muted, the version already held.
+    await act(async () => useRealtimeChatStore.getState().actions.loadBlockedPlayers());
     expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [], version: blockVersion });
+    expect(headMute()).toBeDefined();
 
     // The Mute commits and answers its list, a higher version: it is the one held.
     await commitOldestWrite();
     await act(async () => {});
     expect(blocked).toEqual([DAGNA]);
     expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [DAGNA], version: blockVersion });
-    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "messages" });
+    // Her conversation gives way to Messages: its head and its Mute are gone from the screen.
+    expect(headMute()).toBeUndefined();
     expect(host.textContent).not.toContain("see you at dawn");
     expect(muted()!.textContent).toContain("Dagna");
     expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
@@ -667,6 +680,41 @@ describe("chat starting, before it knows who is muted", () => {
     expect(heard).toHaveBeenCalledTimes(1);
     act(() => tab("Global").click());
     expect(host.textContent).toContain("back again");
+  });
+
+  it("keeps a conversation hidden when an Unmute's late history page lands after a newer Mute", async () => {
+    serverMutes([DAGNA]);
+    await start();
+    await act(async () => {});
+    openDagna();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(muted()!.textContent).toContain("Dagna");
+
+    // Unmute, and her conversation opened: the server holds its history page.
+    historyRead = "held";
+    await act(async () => muted()!.querySelector("button")!.click());
+    act(() => useRealtimeChatStore.getState().actions.openConversation(DAGNA));
+    expect(heldHistory.length).toBeGreaterThan(0);
+    // Muted again, from her conversation's head, before the page lands.
+    await act(async () => headMute().click());
+    expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [DAGNA], version: blockVersion });
+
+    // The page lands: her conversation stays out of sight, Unmute in reach.
+    while (heldHistory.length > 0) await answerOldestHistory();
+    await act(async () => {});
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(host.textContent).not.toContain("see you at dawn");
+    expect(headMute()).toBeUndefined();
+    expect(muted()!.textContent).toContain("Dagna");
+    expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
+    expect(tab("Messages").textContent).toBe("Messages");
+
+    // A real Unmute brings her conversation back, as the server keeps it.
+    historyRead = "now";
+    await act(async () => muted()!.querySelector("button")!.click());
+    expect(blocked).toEqual([]);
+    expect(muted()).toBeNull();
+    expect(host.textContent).toContain("see you at dawn");
   });
 
   it("says when the list could not be read, keeps the room waiting, and reads it again later", async () => {

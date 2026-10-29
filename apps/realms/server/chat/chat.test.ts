@@ -425,6 +425,14 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   await waitUntil(() => ofType(reopened.received, "direct:message").length > 0, 5_000);
   expect(ofType(reopened.received, "direct:message")[0]!.message).toMatchObject({ content: "hello again" });
 
+  // Blocked again, the conversation is still listed at the next handshake: the client hides it by the block list.
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 3 });
+  const later = await connect(worker, recipient.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(later.received, "connected").length > 0, 5_000);
+  const [greeting] = ofType(later.received, "connected");
+  const listed = (greeting?.threads ?? []) as { lastMessage: { content: string } | null }[];
+  expect(listed.map((entry) => entry.lastMessage?.content)).toEqual(["hello again"]);
+
   await worker.dispose();
 }, 120_000);
 

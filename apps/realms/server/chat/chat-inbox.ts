@@ -161,16 +161,16 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
   }
 
   /**
-   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read. A
-   * conversation with an account the owner blocked is left out. This is how a client that starts empty (a new device,
-   * a reload, a return after messages came in offline) finds them.
+   * The owner's conversations, the latest first: each thread with its last message and what the owner has not read.
+   * This is how a client that starts empty (a new device, a reload, a return after messages came in offline) finds
+   * them. Every conversation is listed, one with an account the owner blocked too: the client shows or hides it by the
+   * block list, its one source, and what a blocked account sent while blocked was never stored.
    */
   private listThreads(owner: string): { thread: DirectMessageThread; lastMessage: DirectMessage | null }[] {
     const sql = this.ctx.storage.sql;
     return sql
       .exec<ThreadRow>("SELECT * FROM threads ORDER BY updatedAt DESC")
       .toArray()
-      .filter((row) => !this.hasBlocked(row.peerId))
       .map((row) => {
         const last = sql.exec<MessageRow>("SELECT * FROM messages WHERE id = ?", row.lastMessageId).toArray()[0];
         return { thread: toDirectThread(row, owner), lastMessage: last ? toDirectMessage(last) : null };

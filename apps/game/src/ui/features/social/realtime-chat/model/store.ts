@@ -1180,36 +1180,18 @@ const askBlockList = async (method: string, path = "", body?: unknown): Promise<
   if (!isBlockList(list)) throw new Error("Block list answer without its version");
   const held = useRealtimeChatStore.getState();
   if (held.client !== client || (held.blockList && list.version <= held.blockList.version)) return;
-  await holdBlockList({ blocked: [...list.blocked], version: list.version });
+  holdBlockList({ blocked: [...list.blocked], version: list.version });
 };
 
 /**
- * The latest block list, held, and what follows from it alone: a muted player's conversations leave this client (the
- * server drops their messages and its inbox leaves them out; Messages lists them under Muted), the room messages held
- * for the list are taken as they would have been on arrival, and a player no longer muted since the list held before
- * has their conversation back, its history read again.
+ * The latest block list, held: the room messages held for it are taken as they would have been on arrival. Who shows
+ * in Messages and conversations is read from it where they are drawn (threadShown); the conversations stay as the
+ * server sent them.
  */
-const holdBlockList = async (list: BlockList) => {
-  const { blockList: before, heldWorldMessages, dmThreads, view } = useRealtimeChatStore.getState();
-  const muted = new Set(list.blocked);
-  const hidden = Object.keys(dmThreads).filter((threadId) =>
-    dmThreads[threadId]!.thread.participants.some((participant) => muted.has(participant)),
-  );
-  const showing = view.kind === "conversation" && hidden.includes(view.threadId);
-  useRealtimeChatStore.setState({
-    blockList: list,
-    heldWorldMessages: [],
-    dmThreads: Object.fromEntries(Object.entries(dmThreads).filter(([threadId]) => !hidden.includes(threadId))),
-    ...(showing ? { view: { kind: "messages" as const } } : {}),
-  });
+const holdBlockList = (list: BlockList) => {
+  const { heldWorldMessages } = useRealtimeChatStore.getState();
+  useRealtimeChatStore.setState({ blockList: list, heldWorldMessages: [] });
   const { actions } = useRealtimeChatStore.getState();
   for (const { zoneId, message, clientMessageId } of heldWorldMessages)
     actions.receiveWorldMessage(zoneId, message, { clientMessageId });
-  const unmuted = (before?.blocked ?? []).filter((playerId) => !muted.has(playerId));
-  await Promise.all(
-    unmuted.map(async (playerId) => {
-      const threadId = actions.ensureDirectThread(playerId);
-      if (threadId) await actions.loadDirectHistory(threadId);
-    }),
-  );
 };

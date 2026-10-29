@@ -1,7 +1,21 @@
 import type { DirectMessage, RealtimeChatState } from "./types";
 
+/**
+ * Whether a conversation shows: once the block list is read, and not one with a player muted. The one rule for
+ * Messages, the conversation opened and every count; the conversations themselves stay as the server sent them, so
+ * nothing that arrives late (a history page, a handshake) can bring a muted player's back.
+ */
+export const threadShown = (state: RealtimeChatState, threadId: string): boolean => {
+  const held = state.dmThreads[threadId];
+  const { blockList } = state;
+  if (!held || !blockList) return false;
+  const self = state.identity?.playerId;
+  return !held.thread.participants.some((player) => player !== self && blockList.blocked.includes(player));
+};
+
 /** Open on screen: the conversation shown while the chat is shown. */
-const isOpen = (state: RealtimeChatState, threadId: string) => state.isShellOpen && state.activeThreadId === threadId;
+const isOpen = (state: RealtimeChatState, threadId: string) =>
+  state.isShellOpen && state.activeThreadId === threadId && threadShown(state, threadId);
 
 /**
  * A conversation's unread: the count the player's inbox last sent with it, in the handshake, with a message or after a
@@ -9,7 +23,7 @@ const isOpen = (state: RealtimeChatState, threadId: string) => state.isShellOpen
  */
 export const threadUnread = (state: RealtimeChatState, threadId: string): number => {
   const self = state.identity?.playerId;
-  if (!self || isOpen(state, threadId)) return 0;
+  if (!self || !threadShown(state, threadId) || isOpen(state, threadId)) return 0;
   return state.dmThreads[threadId]?.thread.unreadCounts[self] ?? 0;
 };
 

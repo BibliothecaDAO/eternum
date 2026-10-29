@@ -5,7 +5,7 @@ import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
-import { threadUnread } from "../../model/direct-unread";
+import { threadShown, threadUnread } from "../../model/direct-unread";
 import { whenSent } from "../../model/message-grouping";
 import { useMute } from "../shared/player-card";
 import { UserAvatar } from "../shared/user-avatar";
@@ -14,7 +14,8 @@ import { UserAvatar } from "../shared/user-avatar";
  * Messages: the player's private conversations, the latest first, each by the other player's name with its last line,
  * and what is unread in it, else when it was last written. A press opens it. A conversation with nothing written yet is
  * not listed; one starts from a player's name in a room. Last, every player the player muted, from the server's block
- * list (a muted player's conversation is not listed, and their messages never arrive), each with Unmute.
+ * list, each with Unmute: a muted player's conversation is kept, as the server sends it, and not listed (threadShown);
+ * their messages never arrive. Until the block list is read, nothing is listed.
  */
 export function MessagesList() {
   const actions = useRealtimeChatActions();
@@ -24,21 +25,28 @@ export function MessagesList() {
   const unread = useRealtimeChatSelector(
     useShallow((state) => Object.fromEntries(Object.keys(state.dmThreads).map((id) => [id, threadUnread(state, id)]))),
   );
+  const shownIds = useRealtimeChatSelector(
+    useShallow((state) => Object.keys(state.dmThreads).filter((id) => threadShown(state, id))),
+  );
+  const known = useRealtimeChatSelector((state) => state.blockList !== null);
   const names = usePlayerNames();
   const muted = useRealtimeChatSelector((state) => state.blockList?.blocked) ?? [];
 
   const conversations = useMemo(
     () =>
       Object.values(threads)
+        .filter(({ thread }) => shownIds.includes(thread.id))
         .flatMap(({ thread, messages }) => {
           const last = messages.at(-1);
           const other = thread.participants.find((participant) => participant !== self);
           return last && other ? [{ other, last, unreadCount: unread[thread.id] ?? 0 }] : [];
         })
         .toSorted((a, b) => Date.parse(String(b.last.createdAt)) - Date.parse(String(a.last.createdAt))),
-    [threads, self, unread],
+    [threads, self, unread, shownIds],
   );
 
+  if (!known)
+    return <p className="flex flex-1 items-center justify-center text-hud-body text-hud-cue">{CHAT_WORDS.loading}</p>;
   if (conversations.length === 0 && muted.length === 0)
     return (
       <p className="flex flex-1 items-center justify-center text-hud-body text-hud-muted">{CHAT_WORDS.noMessages}</p>

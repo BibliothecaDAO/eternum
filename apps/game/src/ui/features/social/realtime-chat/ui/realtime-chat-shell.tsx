@@ -5,7 +5,7 @@ import { useEffect } from "react";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../hooks/use-realtime-chat";
 import type { ChatRoom } from "../model/chat-rooms";
-import { directUnread } from "../model/direct-unread";
+import { directUnread, threadShown } from "../model/direct-unread";
 import { DirectMessagesPanel } from "./direct-messages/direct-messages-panel";
 import { MessagesList } from "./direct-messages/messages-list";
 import { WorldChatPanel } from "./world-chat/world-chat-panel";
@@ -25,6 +25,10 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
   const view = useRealtimeChatSelector((state) => state.view);
   const worldZones = useRealtimeChatSelector((state) => state.worldZones);
   const unreadMessages = useRealtimeChatSelector(directUnread);
+  // A conversation opened shows while its player is not muted; one muted gives way to Messages, where Unmute is.
+  const conversation = useRealtimeChatSelector((state) =>
+    state.view.kind === "conversation" && threadShown(state, state.view.threadId) ? state.view.threadId : null,
+  );
   const online = useRealtimeChatSelector((state) => Object.keys(state.onlinePlayers).length);
   // A room this place does not have (a game's, kept from another game) gives way to the first it has.
   const strayRoom = view.kind === "room" && !rooms.some((room) => room.zoneId === view.zoneId);
@@ -57,10 +61,10 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
         )}
       </div>
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {view.kind === "conversation" ? (
+        {conversation ? (
           // Keyed by its thread: each conversation opened draws its own list, on its latest message.
-          <DirectMessagesPanel key={view.threadId} threadId={view.threadId} onBack={actions.showMessages} />
-        ) : view.kind === "messages" ? (
+          <DirectMessagesPanel key={conversation} threadId={conversation} onBack={actions.showMessages} />
+        ) : view.kind !== "room" ? (
           <MessagesList />
         ) : (
           zoneId && (

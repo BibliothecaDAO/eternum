@@ -40,7 +40,7 @@ vi.mock("@/ui/features/social", () => ({
       blockList: { blocked: [], version: 0 },
       // One conversation the server counts one unread in.
       identity: { playerId: "0x7" },
-      dmThreads: { "0x7|0xa": { thread: { unreadCounts: { "0x7": 1 } } } },
+      dmThreads: { "0x7|0xa": { thread: { participants: ["0x7", "0xa"], unreadCounts: { "0x7": 1 } } } },
       actions: { loadWorldHistory: fixture.loadHistory, setShellOpen: fixture.setOpen },
     }),
 }));
