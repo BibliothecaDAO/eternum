@@ -19,6 +19,7 @@ import { OwnRatingLine } from "../rating-line";
 import { ageOf } from "../play/ages";
 import { chooseSeason } from "../season";
 import { HistoryRow } from "../season-tab/history-row";
+import { HoldingsStrip } from "./holdings-strip";
 import { useNowSeconds } from "../use-now";
 
 /**
@@ -63,7 +64,8 @@ export const ProfileView = ({ account, own }: { account: string; own: boolean })
 
 /**
  * A player's card: Frontier's painting in its head with the player's place on the season's board, then the portrait,
- * the name and, on the player's own card, their Blitz rating (another player's wallet is not known here).
+ * the name and, on the player's own card, their Blitz rating and at its foot what they hold (another player's wallet is
+ * not known here).
  */
 export const PlayerCard = ({ account, own }: { account: string; own: boolean }) => {
   const profile = useCardProfile(account, own);
@@ -96,6 +98,7 @@ export const PlayerCard = ({ account, own }: { account: string; own: boolean }) 
         {!standing && <p className="text-app-label text-app-muted">{SEASON_WORDS.notOnBoard}</p>}
         {own && <OwnRatingLine />}
       </div>
+      {own && <HoldingsStrip />}
     </AppPanel>
   );
 };

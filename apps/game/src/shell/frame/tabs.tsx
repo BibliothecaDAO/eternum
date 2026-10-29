@@ -30,7 +30,9 @@ const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matche
 const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
 
 /** Realms' marketplace: a site of its own, so it opens in a new tab and is never the current place. */
-const MARKET_TAB: Place = { to: "https://realms.market/", word: WORDS.market, icon: "trade", matches: [] };
+/** Realms' marketplace, a site of its own. */
+export const MARKET_SITE = "https://realms.market/";
+const MARKET_TAB: Place = { to: MARKET_SITE, word: WORDS.market, icon: "trade", matches: [] };
 
 /**
  * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do

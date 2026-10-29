@@ -88,7 +88,8 @@ const renderLab = async (path: string) => {
     ),
   );
   await vi.waitFor(() => expect(container.textContent).not.toContain("Loading app fixtures"));
-  return container;
+  // The page and any window over it, which opens at the body's end.
+  return document.body;
 };
 
 it.each([

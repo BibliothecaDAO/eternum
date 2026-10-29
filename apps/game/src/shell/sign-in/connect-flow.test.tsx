@@ -50,7 +50,8 @@ const mount = async (path: string, next?: string, bar = false) => {
       </MemoryRouter>,
     ),
   );
-  const query = <T extends Element>(selector: string) => container.querySelector<T>(selector);
+  // The page and Connect's window, which opens over it at the body's end.
+  const query = <T extends Element>(selector: string) => document.body.querySelector<T>(selector);
   const type = (selector: string, value: string) =>
     act(async () => {
       const input = query<HTMLInputElement>(selector)!;
@@ -65,7 +66,8 @@ const mount = async (path: string, next?: string, bar = false) => {
   const ask = () => act(async () => query<HTMLButtonElement>('[data-testid="ask"]')!.click());
   const where = () => query('[data-testid="where"]')?.textContent;
   const window = () => query('[role="dialog"]');
-  return { container, query, type, ask, where, window, unmount };
+  // What a player sees: the page and Connect's window over it, at the body's end.
+  return { container: document.body, query, type, ask, where, window, unmount };
 };
 
 /** The identity Worker's answer to a sent code: when it stops working, seconds from now. */
@@ -221,7 +223,7 @@ describe("Connect", () => {
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
     };
     const newCode = (ui: Awaited<ReturnType<typeof mount>>) =>
-      [...ui.container.querySelectorAll("button")].some((button) => button.textContent?.includes("New code"));
+      [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("New code"));
 
     const known = await mount("/results");
     try {
@@ -256,7 +258,7 @@ describe("Connect with Discord", () => {
   const pressDiscord = async (ui: Awaited<ReturnType<typeof mount>>) => {
     await ui.ask();
     await act(async () => {});
-    const discord = [...ui.container.querySelectorAll("button")].find((button) => button.textContent === "Discord")!;
+    const discord = [...document.body.querySelectorAll("button")].find((button) => button.textContent === "Discord")!;
     await act(async () => discord.click());
   };
 
@@ -399,7 +401,7 @@ it.each([{ providers: [] }, { providers: ["discord"] }])(
       await view.ask();
       await act(async () => {});
       expect(
-        [...view.container.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
+        [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
       ).toBe(providers.includes("discord"));
       expect(view.query('input[type="email"]')).not.toBeNull();
     } finally {

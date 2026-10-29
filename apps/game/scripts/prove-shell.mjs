@@ -64,7 +64,7 @@ const boardShown = (title, rows) =>
 const placeLit = (word) =>
   `[...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].some((tab) => tab.innerText.trim() === ${JSON.stringify(word)})`;
 
-/** The Connect window, open (shell/sign-in/connect-window.tsx). */
+/** The Connect window, open (shell/frame/shell-window.tsx). */
 const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connect"]') !== null`;
 
 /** Each flow's end, checked in the page. */

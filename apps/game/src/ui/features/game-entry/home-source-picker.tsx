@@ -1,12 +1,10 @@
 import { useEffect, useMemo } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { canonicalRealm, homeSourceClaim, type HomeClaimSource, type LaborRuleAmounts } from "@bibliothecadao/eternum";
-import { IdentityRequestError, type CampaignKey, type CampaignTicket, type Session } from "@realms-world/identity";
+import type { CampaignKey, CampaignTicket, Session } from "@realms-world/identity";
 
-import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { useHeldRealms, useHeldTicket } from "@/hooks/use-holdings";
 import { campaignOfPreset, presetLaborRules } from "@/services/home-claim-rules";
-import { readHeldRealms } from "@/services/realm-entry";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
@@ -22,6 +20,7 @@ import {
   YOUR_REALMS,
   campaignHomeName,
   homeClaimLine,
+  numberedRealm,
 } from "@/ui/design-system/kit/words";
 import { RealmNumberField, isRealmNumber } from "./realm-number-picker";
 
@@ -82,25 +81,11 @@ export function HomeSourcePicker({
 
 /** The account's linked wallet's Realms, its campaign ticket for this preset's games, and the preset's claim rules. */
 function useHomeSources(presetId: number) {
-  const { session } = useIdentitySession();
-  const wallet = session?.user.address ?? null;
+  const { session, wallet, held } = useHeldRealms();
   const campaign = campaignOfPreset(presetId);
-  const held = useQuery({
-    queryKey: ["held-realms", session?.user.realmsId ?? null, wallet] as const,
-    queryFn: readHeldRealms,
-    enabled: wallet !== null,
-    retry: false,
-    staleTime: 60_000,
-  });
-  const ticket = useQuery({
-    queryKey: ["campaign-ticket", session?.user.realmsId ?? null, campaign] as const,
-    queryFn: () => (campaign === null ? null : heldCampaignTicket(campaign)),
-    enabled: session !== null && campaign !== null,
-    retry: false,
-    staleTime: 60_000,
-  });
+  const ticket = useHeldTicket(campaign);
   const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
-  return { holdings: holdingsOf(session, wallet, held), ticket: heldTicketOf(campaign, ticket.data), rules };
+  return { holdings: holdingsOf(session, wallet, held), ticket: heldTicketOf(campaign, ticket), rules };
 }
 
 /** The account's ticket for this game, as its campaign and tier; undefined while it is not known yet. */
@@ -120,20 +105,6 @@ function holdingsOf(
   if (wallet === null) return { kind: "unlinked" };
   if (held.isError) return { kind: "unreadable" };
   return held.data ? { kind: "held", realms: held.data } : { kind: "pending" };
-}
-
-/** The ticket the account already holds to this campaign; null when it holds none. Opens no flyer. */
-async function heldCampaignTicket(campaign: CampaignKey): Promise<CampaignTicket | null> {
-  try {
-    return await identityClient.redeemCampaignTicket(campaign, null);
-  } catch (cause) {
-    if (
-      cause instanceof IdentityRequestError &&
-      (cause.code === "invalid_redemption" || cause.code === "campaign_closed")
-    )
-      return null;
-    throw cause;
-  }
 }
 
 /**
@@ -198,10 +169,7 @@ const offers = (holdings: Holdings, value: string) =>
   holdings.kind === "unreadable" ||
   (holdings.kind === "held" && holdings.realms.some((realmId) => String(realmId) === value));
 
-const realmName = (realmId: number) => {
-  const name = canonicalRealm(realmId)?.name;
-  return name ? `${realmId} · ${name}` : String(realmId);
-};
+const realmName = (realmId: number) => numberedRealm(realmId, canonicalRealm(realmId)?.name);
 
 /**
  * The home this step founds and what it claims each game day: the picked Realm's, else the ticket's (golden's for a
