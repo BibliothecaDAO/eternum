@@ -1,8 +1,10 @@
-Copyright 2020 The Bokor Project Authors (https://github.com/danhhong/Bokor)
+Copyright (c) 2026 Realms Titling contributors.
+Portions copyright (c) 2012 Natanael Gama, with Reserved Font Name 'Cinzel'.
+Proportion reference copyright (c) 2010 Igino Marini.
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
-https://openfontlicense.org
+http://scripts.sil.org/OFL
 
 
 -----------------------------------------------------------

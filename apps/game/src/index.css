@@ -225,8 +225,8 @@ html.scene-viewport body {
   -webkit-touch-callout: none;
   user-select: none;
 }
-/* One readable type for every surface but the Blitz and Eternum HUD (decisions-1, 14 October 2026): Atkinson
-   Hyperlegible Next for everything read, upright, sentence case and untracked; Bokor only where a component asks for
+/* One readable type for every surface but the Blitz and Eternum HUD (decisions-1, 14 October 2026): the reading face
+   (Exo 2) for everything read, upright, sentence case and untracked; the heading face only where a component asks for
    font-display. Semantic italics read upright too. Numbers set bold and tabular, so a rolling count never jitters and a
    number and its unit read in one face ("7h 14m", "18.3K"). The :where scope adds no specificity. */
 :where(html:not(.classic-hud)) body,
@@ -245,14 +245,14 @@ html.scene-viewport body {
 }
 
 /* The Blitz and Eternum HUD's type (classic-hud on <html>, set while that HUD is mounted): its War room skin, which the
-   owner approved on 16 October 2026. Exo 2 for everything read (--font-ui), panel titles included, and otherwise the
+   owner approved on 16 October 2026. Exo 2 for everything read, labels and panel titles included, and otherwise the
    readable rules: sentence case, upright and untracked, on the teal overlay surface. */
 html.classic-hud {
   --overlay-surface-from: #192930;
   --overlay-surface-to: #101c23;
 }
 :where(html.classic-hud) :is(body, button, .font-sans, .font-ui) {
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
 }
 /* The HUD typography's display choices are one class each (hud-typography.ts); outside the two match HUDs they set
    their caps, tracking and italics. */
@@ -427,8 +427,7 @@ html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   background: var(--primary-face);
   border: 1px solid var(--primary-rim);
   box-shadow: var(--primary-shadow);
-  /* A button's word is a label. */
-  font-family: var(--font-ui);
+  font-family: var(--font-body);
   font-weight: 800;
   font-size: 22px;
   color: var(--ink);
@@ -475,8 +474,7 @@ h6,
 .h4,
 .h5,
 .h6 {
-  /* --font-ui exists only under html.classic-hud: the Blitz and Eternum HUD's face. */
-  font-family: var(--font-ui, var(--font-body));
+  font-family: var(--font-body);
 }
 @keyframes dotAnimation {
   0%,
@@ -694,7 +692,7 @@ canvas {
 }
 
 button {
-  font-family: var(--font-ui, var(--font-body));
+  font-family: var(--font-body);
 }
 
 .button-gold {
@@ -798,17 +796,12 @@ button {
 .endgame-shell-cinematic::before {
   background-image:
     url("/images/score-cards/texture.jpg"),
-    radial-gradient(circle at 20% 20%, rgba(223, 170, 84, 0.15), transparent 56%),
-    url("/images/logos/Eternum-Mark-Black.png");
+    radial-gradient(circle at 20% 20%, rgba(223, 170, 84, 0.15), transparent 56%);
   background-size:
     cover,
-    100% 100%,
-    420px 420px;
-  background-position:
-    center,
-    center,
-    calc(100% + 80px) -60px;
-  background-repeat: no-repeat, no-repeat, no-repeat;
+    100% 100%;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
   mix-blend-mode: screen;
   opacity: 0.22;
 }

@@ -1,5 +1,5 @@
 import { formatExact } from "@bibliothecadao/types";
-import { CLASSIC_HUD_FONTS, HUD_TYPE } from "@/tokens";
+import { FONTS as FACES, HUD_TYPE } from "@/tokens";
 
 import { type MapPlate } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
@@ -524,7 +524,7 @@ const READING_GAP = 6;
 
 /** The plate's faces, as map-plates.css draws them from the HUD sheet: every reading at the body size, told by weight. */
 const face = (role: keyof typeof HUD_TYPE, weight: keyof typeof HUD_TYPE = role) =>
-  `${HUD_TYPE[weight].weight} ${HUD_TYPE[role].size} ${CLASSIC_HUD_FONTS.ui}`;
+  `${HUD_TYPE[weight].weight} ${HUD_TYPE[role].size} ${FACES.body}`;
 const FONTS = {
   body: face("body"),
   title: face("body", "title"),

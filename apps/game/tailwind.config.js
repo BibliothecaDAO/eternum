@@ -1,7 +1,6 @@
 const plugin = require("tailwindcss/plugin");
 
 import {
-  CLASSIC_HUD_FONTS,
   FONT_FACES,
   FONTS,
   GUTTERS,
@@ -411,9 +410,6 @@ export default {
           ...Object.fromEntries(Object.entries(FONTS).map(([name, value]) => [`--font-${name}`, value])),
           ...Object.fromEntries(Object.entries(RADII).map(([name, value]) => [`--radius-${name}`, value])),
         },
-        "html.classic-hud": Object.fromEntries(
-          Object.entries(CLASSIC_HUD_FONTS).map(([name, value]) => [`--font-${name}`, value]),
-        ),
         '[data-surface="shell"]': {
           ...surfaceVariables(SHELL_COLORS, SHELL_FINISH),
           ...appVariables(),

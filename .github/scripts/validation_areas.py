@@ -22,6 +22,10 @@ AREAS = {
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",
+        # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads.
+        "apps/game-docs/docs/styles.css",
+        "apps/game-docs/docs/pages/index.mdx",
+        "apps/status/public/index.html",
         # The client job's own checkers, which its workflow runs through root package.json scripts.
         "scripts/hud-sheet/**",
         "scripts/icons/**",

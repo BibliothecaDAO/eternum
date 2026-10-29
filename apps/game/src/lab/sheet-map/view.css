@@ -3,8 +3,8 @@
   min-height: 650px;
   display: flex;
   flex-direction: column;
-  background: #130f0c;
-  color: #f4ebdc;
+  background: var(--ground);
+  color: var(--cream);
   font:
     14px/1.4 Inter,
     sans-serif;
@@ -15,7 +15,7 @@
   justify-content: space-between;
   gap: 24px;
   padding: 14px 24px;
-  border-bottom: 1px solid #46351c;
+  border-bottom: 1px solid var(--line);
 }
 .map-sheet-controls h3 {
   font:
@@ -40,9 +40,9 @@
   background: transparent;
 }
 .map-sheet-controls button[aria-pressed="true"] {
-  background: #dfaa54;
+  background: var(--gold);
   color: #1b1207;
-  border-color: #dfaa54;
+  border-color: var(--gold);
 }
 .map-sheet-headings {
   display: grid;
@@ -89,7 +89,7 @@
 }
 .map-sheet-lab footer {
   padding: 10px 24px;
-  border-top: 1px solid #46351c;
+  border-top: 1px solid var(--line);
 }
 .map-sheet-minimaps {
   display: grid;
@@ -129,7 +129,7 @@
 
 .map-context-world {
   min-width: 0;
-  color: var(--kit-cream, #f4ebdc);
+  color: var(--cream);
 }
 .map-context-world-heading {
   display: flex;

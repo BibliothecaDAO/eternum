@@ -1,4 +1,5 @@
 import { TransactionType } from "@bibliothecadao/provider";
+import { HUD_COLORS } from "@/tokens";
 
 import { useTransactionStore, type Transaction } from "./use-transaction-store";
 
@@ -164,7 +165,7 @@ if (typeof window !== "undefined" && import.meta.env.DEV) {
     // Log usage instructions
     console.log(
       "%c[TransactionDebug] Debug utilities available at window.__eternumTransactionDebug",
-      "color: #dfaa54; font-weight: bold",
+      `color: ${HUD_COLORS.gold}; font-weight: bold`,
     );
     console.log(
       "%cUsage examples:\n" +

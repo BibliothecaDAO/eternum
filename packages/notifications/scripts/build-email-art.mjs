@@ -1,6 +1,7 @@
 // Writes src/email-art.gen.ts: each player email's header art as an inline JPEG, from the game's own art. A painting
-// fades to night under the Realms lockup, and the email's title is lettered in Bokor, the game's title face, so every
-// client shows it (Gmail and Outlook load no web fonts). Rerun after changing a painting, the lockup or a title:
+// fades to night under the Realms lettered mark, and the email's title is lettered in IM Fell English SC, the brand's
+// heading face, so every client shows it (Gmail and Outlook load no web fonts). Rerun after changing a painting, the
+// mark or a title:
 // pnpm --dir packages/notifications build:email-art
 import sharp from "sharp";
 import { readFile, writeFile } from "node:fs/promises";
@@ -12,7 +13,6 @@ const WIDTH = 1200; // drawn at 600: twice the pixels for sharp phones
 const HEIGHT = 640;
 const NIGHT = "#130f0c"; // the shell's ground (apps/game/src/tokens.ts)
 const LETTERING = "#f3d08a"; // gold2
-const LOCKUP = "#f4ebdc"; // cream
 
 /** Each email's painting, where its crop sits (0 top, 1 bottom), and its title. */
 const ART = {
@@ -30,7 +30,7 @@ const painting = async (name, focus) => {
   return sharp(resized.data).extract({ left: 0, top, width: WIDTH, height: HEIGHT }).toBuffer();
 };
 
-/** Night rising from the bottom, and a lighter veil from the top for the lockup. */
+/** Night rising from the bottom, and a lighter veil from the top for the mark. */
 const nightfall = () => {
   const stops = (from, strength) =>
     Array.from({ length: 11 }, (_, i) => {
@@ -44,18 +44,23 @@ const nightfall = () => {
 <rect width="100%" height="100%" fill="url(#t)"/><rect width="100%" height="100%" fill="url(#b)"/></svg>`);
 };
 
-const lockup = async () => {
-  const svg = (await readFile(new URL("images/logos/realms-lockup.svg", publicDir), "utf8")).replace(
-    'fill="#F4EBDC"',
-    `fill="${LOCKUP}"`,
-  );
-  return sharp(Buffer.from(svg), { density: 300 }).resize({ width: 300 }).png().toBuffer();
-};
+/** The lettered mark, drawn at 130 px in a 600 px email: above 120 px, the size the kit gives it. */
+const lettered = async () =>
+  sharp(await readFile(new URL("images/logos/realms-lettered.webp", publicDir)))
+    .resize({ width: 260 })
+    .png()
+    .toBuffer();
 
 const lettering = async (title, colour) => {
-  const fontfile = new URL("fonts/bokor-regular.ttf", publicDir).pathname;
+  const fontfile = new URL("fonts/im-fell-english-sc-regular.ttf", publicDir).pathname;
   return sharp({
-    text: { text: `<span foreground="${colour}">${title}</span>`, font: "Bokor 84", fontfile, dpi: 96, rgba: true },
+    text: {
+      text: `<span foreground="${colour}">${title}</span>`,
+      font: "IM FELL English SC 84",
+      fontfile,
+      dpi: 96,
+      rgba: true,
+    },
   })
     .png()
     .toBuffer({ resolveWithObject: true });
@@ -80,7 +85,7 @@ const header = async ({ painting: name, focus, title }, mark) => {
     .toBuffer();
 };
 
-const mark = await lockup();
+const mark = await lettered();
 const entries = [];
 for (const [id, art] of Object.entries(ART)) {
   const jpeg = await header(art, mark);

@@ -73,15 +73,15 @@ interface PlayerMessage {
   idempotencyKey?: string;
 }
 
-// The shell's palette (apps/game/src/tokens.ts) and faces every client has; the title is lettered in the art.
+// The brand kit's palette (apps/game/src/brand/palette.json) and faces every client has; the title is lettered in the art.
 const NIGHT = "#130f0c";
 const LINE = "#46351c";
 const CREAM = "#f4ebdc";
-const MUTED = "#a2926f";
+const MUTED = "#b7a78a";
 const GOLD = "#dfaa54";
 const GOLD2 = "#f3d08a";
 const INK = "#1b1207";
-const BODY = "'Atkinson Hyperlegible Next','Segoe UI',Helvetica,Arial,sans-serif";
+const BODY = "'Exo 2','Segoe UI',Helvetica,Arial,sans-serif";
 const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace";
 
 const ART_ID = "header";

@@ -14,10 +14,10 @@
   border: 1px solid transparent;
   border-radius: var(--app-radius-control);
   padding: 0 theme(spacing.5);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  line-height: var(--app-leading-strong);
-  font-weight: var(--app-weight-strong);
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-control);
+  line-height: var(--app-leading-control);
+  font-weight: var(--app-weight-control);
   white-space: nowrap;
   transition:
     background-color var(--app-fast) var(--app-ease),
@@ -260,9 +260,9 @@
   gap: theme(spacing.3);
   border-radius: var(--app-radius-control);
   padding: 0 theme(spacing.4);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  font-weight: var(--app-weight-strong);
+  font-family: var(--app-face-control);
+  font-size: var(--app-text-control);
+  font-weight: var(--app-weight-control);
   color: var(--app-muted);
 }
 .app-bar__place:is(:hover, [data-state="hover"]) {
@@ -358,9 +358,9 @@
   border-radius: calc(var(--app-radius-control) - 4px);
   padding: 0 clamp(theme(spacing.2), 3vw, theme(spacing.5));
   white-space: nowrap;
-  font-family: var(--app-face-strong);
+  font-family: var(--app-face-control);
   font-size: var(--app-text-label);
-  font-weight: var(--app-weight-strong);
+  font-weight: var(--app-weight-control);
   color: var(--app-muted);
 }
 .app-tabs__tab:is(:hover, [data-state="hover"]) {
@@ -485,9 +485,10 @@
   }
 }
 .app-age-column__name {
-  font-family: var(--app-face-title);
-  font-size: var(--app-text-title);
-  line-height: var(--app-leading-title);
+  font-family: var(--app-face-game);
+  font-size: var(--app-text-game);
+  line-height: var(--app-leading-game);
+  font-weight: var(--app-weight-game);
   color: var(--app-ink);
 }
 
@@ -544,14 +545,16 @@
   padding: theme(spacing.6);
 }
 .app-game-card__title {
-  font-family: var(--app-face-title);
-  font-size: var(--app-text-title);
-  line-height: var(--app-leading-title);
+  font-family: var(--app-face-game);
+  font-size: var(--app-text-game);
+  line-height: var(--app-leading-game);
+  font-weight: var(--app-weight-game);
   color: var(--app-ink);
   text-shadow: 0 2px 0 rgb(0 0 0 / 0.6);
 }
+/* The title face runs wide: on a phone the lead's title keeps inside its card ("Frontier" at 390 px). */
 .app-game-card[data-size="lead"] .app-game-card__title {
-  font-size: var(--app-text-display);
+  font-size: min(var(--app-text-display), 13vw);
   line-height: var(--app-leading-display);
 }
 .app-game-card__facts {

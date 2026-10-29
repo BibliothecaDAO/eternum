@@ -58,7 +58,7 @@ export const Pill = ({
   // A state's icon fills the chip's height, as the HUD's chips draw theirs.
   const mark = icon && <SemanticIcon name={icon} size={tone === "cream" ? 28 : ICON_SIZES[size]} />;
   const classes = cn(
-    "inline-flex items-center rounded-full border font-ui font-bold",
+    "inline-flex items-center rounded-full border font-body font-bold",
     SIZES[size],
     TONES[tone],
     rimmed && tone === "gold" && "border-kit-gold",

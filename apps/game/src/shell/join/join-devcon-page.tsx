@@ -1,4 +1,4 @@
-import { FRONTIER_LOCKUP } from "@/ui/design-system/domain-icon-meaning";
+import { FRONTIER_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AGES } from "@bibliothecadao/types";
 import { IdentityRequestError, type CampaignTicket } from "@realms-world/identity";
 import { useEffect, useState, type ReactNode } from "react";

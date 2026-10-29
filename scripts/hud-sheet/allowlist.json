@@ -10,5 +10,5 @@
   "apps/game/src/ui/features/world/containers/left-facets/suggestion-chip.tsx": 4,
   "apps/game/src/ui/features/world/containers/left-facets/suggestions-panel.tsx": 9,
   "apps/game/src/ui/features/world/containers/top-header/hud-header-layout.tsx": 1,
-  "apps/game/src/ui/features/world/hud/hud.css": 28
+  "apps/game/src/ui/features/world/hud/hud.css": 26
 }

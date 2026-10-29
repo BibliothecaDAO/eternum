@@ -558,18 +558,18 @@ const CREDITS: LegalSection[] = [
     title: "Typefaces",
     body: (
       <ul>
-        <Typeface name="Bokor" authors="The Bokor Project Authors" licence="bokor-regular.OFL.txt" />
+        <Typeface
+          name="Realms Titling"
+          authors="The Realms Titling contributors, from Cinzel Decorative (Natanael Gama) and IM FELL English SC (Igino Marini)"
+          licence="realms-titling-bold.OFL.txt"
+        />
         <Typeface
           name="IM FELL English SC"
           authors="Igino Marini (Reserved Font Name IM FELL English SC)"
           licence="im-fell-english-sc-regular.OFL.txt"
         />
         <Typeface name="Exo 2" authors="The Exo 2 Project Authors" licence="exo-2.OFL.txt" />
-        <Typeface
-          name="Atkinson Hyperlegible Next"
-          authors="The Atkinson Hyperlegible Next Project Authors (Braille Institute)"
-          licence="atkinson-hyperlegible-next.OFL.txt"
-        />
+        <Typeface name="Cinzel" authors="The Cinzel Project Authors" licence="cinzel.OFL.txt" />
       </ul>
     ),
   },

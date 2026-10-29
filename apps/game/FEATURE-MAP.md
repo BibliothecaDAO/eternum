@@ -179,16 +179,22 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 ## Shell (outside a game)
 
 On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
-sheet's bar: the lockup, Play, Season, What's new and Market with their icons, the page's notice, and the player (name
-and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's step, neither key printed on its
-button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and
-`AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the
-lockup alone. Every page's content starts at the top, under the bar; a painting is its ground, never space above it.
-`Enter` presses the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers
-Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an
-update ready, or Install, which only Play offers) sits in the desktop's top bar before You, and on a phone just above
-the foot, one row: Install is its icon, Later and Install; under 1280 wide a notice with action buttons shows its icon
-and verbs; a words-only notice keeps its text.
+sheet's bar: the brand's small globe, Play, Season, What's new and Market with their icons, the page's notice, and the
+player (name and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's step, neither key
+printed on its button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's
+`AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps
+the bar with the globe alone. The brand is the Realms Brand Kit v3: its palette (`src/brand/palette.json`, read by
+`src/tokens.ts`), its faces (Realms Titling for a game's title on its card, IM Fell English SC for headings, Cinzel for
+buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and its marks by displayed size
+(`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame and the share card, the small
+globe in the bar and the favicon, the contour globe on the install icons and a loader), exported from the kit by
+`scripts/build-brand.sh <kit folder>`; `src/brand/brand.test.ts` fails on a surface left on a v2 face, mark or colour.
+Every page's content starts at the top, under the bar; a painting is its ground, never space above it. `Enter` presses
+the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers Enter itself, and
+no dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an update ready, or
+Install, which only Play offers) sits in the desktop's top bar before You, and on a phone just above the foot, one row:
+Install is its icon, Later and Install; under 1280 wide a notice with action buttons shows its icon and verbs; a
+words-only notice keeps its text.
 
 | Feature                                                                                                                                                                                                                | Route                                                          | How to reach it                                                                                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

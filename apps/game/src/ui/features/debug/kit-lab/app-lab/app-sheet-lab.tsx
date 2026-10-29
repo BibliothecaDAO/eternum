@@ -1,4 +1,4 @@
-import { FRONTIER_LOCKUP } from "@/ui/design-system/domain-icon-meaning";
+import { FRONTIER_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
@@ -165,9 +165,11 @@ const SpecSection = () => (
 const TYPE_SAMPLES: Record<keyof typeof APP_TYPE, string> = {
   display: "The mist forgets.",
   title: "Season 3",
+  game: "Frontier",
   heading: "Frontier standings",
   body: "Entry closes 16:30 · 2h 4m left · 31 registered",
-  strong: "Resume · 2,900 LORDS",
+  strong: "2,900 LORDS",
+  control: "Resume",
   label: "Day 12 · 7h 14m left",
   figure: "2:03:57",
 };
@@ -176,7 +178,7 @@ const TypeSection = () => (
   <Element
     name="Type scale"
     todayLabel={TODAY}
-    rule="Seven roles, each a face, a size and a weight: titles in Bokor, everything read in Atkinson, nothing under 14px. An app text takes a role, never a size."
+    rule="Nine roles, each a face, a size and a weight: a game's title in Realms Titling, headings in IM Fell English SC, controls in Cinzel, everything read in Exo 2, nothing under 14px. An app text takes a role, never a size."
     sheet={
       <div className="flex flex-col gap-3">
         {(Object.keys(APP_TYPE) as (keyof typeof APP_TYPE)[]).map((role) => (
@@ -359,7 +361,7 @@ const TopBarSection = () => (
         {(["play", "season", "news", "you"] as const).map((current) => (
           <AppTopBar
             key={current}
-            mark={<img src="/images/logos/realms-lockup.svg" alt="Realms" className="h-7" />}
+            mark={<img src={REALMS_MARK.small} alt="Realms" className="h-7" />}
             places={[
               { to: "#", label: "Play", icon: "play", current: current === "play" },
               { to: "#", label: "Season", icon: "leaderboard", current: current === "season" },

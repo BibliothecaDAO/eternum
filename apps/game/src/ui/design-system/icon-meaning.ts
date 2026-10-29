@@ -2,6 +2,23 @@ import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
 import type { ResourcesIds } from "@bibliothecadao/types";
 
+/**
+ * The brand's marks the app draws, each the Realms Brand Kit v3 drawing for the size it is shown at (the kit's README:
+ * the lettered mark above 120 px, the contour globe from 64 to 120 px, the small globe below 64 px). Exported from the
+ * kit by scripts/build-brand.sh; the static pages (index.html, public/*.html) name the same files.
+ */
+export const REALMS_MARK = {
+  /** The parent mark with its word, above 120 px: the first frame. */
+  lettered: "/images/logos/realms-lettered.webp",
+  /** The unlettered globe, 64 to 120 px: a loader. */
+  contour: "/images/logos/realms-contour.webp",
+  /** The retained small globe, under 64 px: the bar's mark. */
+  small: "/images/logos/realms-small.webp",
+} as const;
+
+/** Frontier's complete lockup, with real alpha, for a painting or a dark field. */
+export const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
+
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];

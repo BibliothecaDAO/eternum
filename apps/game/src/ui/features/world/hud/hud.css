@@ -152,6 +152,6 @@
   color: #f1dfb0;
 }
 .hud-tab[aria-selected="true"] {
-  border-bottom-color: #f3d08a;
-  color: #f3d08a;
+  border-bottom-color: var(--gold2);
+  color: var(--gold2);
 }

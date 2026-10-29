@@ -28,8 +28,8 @@ export default defineConfig({
   },
 
   description: "How to play Realms: Frontier and Blitz, your account, and LORDS",
-  iconUrl: "/images/logos/realms-mark.svg",
-  logoUrl: "/images/logos/realms-lockup.svg",
+  iconUrl: "/images/logos/realms-small.webp",
+  logoUrl: "/images/logos/realms-small.webp",
   // The game serves the image; the docs build ships only files a page links by a relative path.
   ogImageUrl: "https://play.realms.party/images/covers/og-image.png",
   theme: {
