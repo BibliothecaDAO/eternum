@@ -575,6 +575,7 @@ export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
 export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
+export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
 /** A campaign's name where its tickets are named: on the Realm step, the ticket a home can be founded with. */
 const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };

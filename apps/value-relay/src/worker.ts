@@ -53,7 +53,7 @@ interface RelayEnv extends RelaySettings {
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
-    heldRealms(wallet: string): Promise<HeldRealm[]>;
+    heldRealmsWithMaps(wallet: string): Promise<HeldRealm[]>;
     campaignTicket(
       realmsId: string,
       presetId: number,

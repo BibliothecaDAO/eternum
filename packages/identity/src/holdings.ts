@@ -6,3 +6,12 @@ export interface HeldRealm {
   realmId: number;
   map: string | null;
 }
+
+/**
+ * The value relay's held-Realms answer. `realms` (the numbers) is what clients before the maps (10-29) read, and stays
+ * for them; `held` is each Realm with its map, absent from a relay before the maps.
+ */
+export interface HeldRealmsAnswer {
+  realms: number[];
+  held?: HeldRealm[];
+}

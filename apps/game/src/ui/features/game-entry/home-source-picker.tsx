@@ -20,6 +20,7 @@ import {
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
   JOIN_WORDS,
+  TICKET_UNREADABLE,
   TRY_AGAIN,
   campaignTicketName,
 } from "@/ui/design-system/kit/words";
@@ -77,7 +78,12 @@ export function HomeSourcePicker({
         <Choices choices={choices} value={value} onChange={onChange} disabled={disabled} />
       )}
       {registered === null && sources.ready && sources.wallet === null && choices.length > 0 && <LinkWallet />}
-      {registered === null && sources.unreadable && <Unreadable retry={sources.retry} />}
+      {registered === null && sources.ticketUnreadable && (
+        <Unreadable line={TICKET_UNREADABLE} retry={sources.ticketUnreadable} />
+      )}
+      {registered === null && sources.realmsUnreadable && (
+        <Unreadable line={HELD_REALMS_UNREADABLE} retry={sources.realmsUnreadable} />
+      )}
     </section>
   );
 }
@@ -401,10 +407,13 @@ function LinkWallet() {
   );
 }
 
-/** The Realms could not be read: say so, and read them again on demand. Never a number to type instead. */
-const Unreadable = ({ retry }: { retry: () => void }) => (
+/**
+ * The ticket or the Realms could not be read: say so, and read them again on demand. Nothing is offered or founded
+ * around a failed read, and never a number to type instead.
+ */
+const Unreadable = ({ line, retry }: { line: string; retry: () => void }) => (
   <p className="home-picker__notice" role="status">
-    {HELD_REALMS_UNREADABLE}
+    {line}
     <button type="button" className="home-picker__link" onClick={retry}>
       {TRY_AGAIN}
     </button>
@@ -416,10 +425,15 @@ interface HomeSources {
   wallet: string | null;
   ticket: Choice | null;
   realms: HeldRealm[];
-  /** Both reads answered (or failed): the step can offer its choices and settle the pick. */
+  /**
+   * Both reads answered: the step can offer its choices and settle the pick. A failed read is not an answer: a holder's
+   * Realms or ticket that could not be read must not become a free home or a lesser default.
+   */
   ready: boolean;
-  unreadable: boolean;
-  retry: () => void;
+  /** Ask the Realms again: set while they could not be read. */
+  realmsUnreadable: (() => void) | null;
+  /** Ask the ticket again: set while it could not be read. */
+  ticketUnreadable: (() => void) | null;
   rules: LaborRuleAmounts | null;
 }
 
@@ -442,15 +456,15 @@ function useHomeSources(presetId: number): HomeSources {
     staleTime: 60_000,
   });
   const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
-  const heldKnown = wallet === null || held.data !== undefined || held.isError;
-  const ticketKnown = campaign === null || ticket.data !== undefined || ticket.isError;
+  const heldKnown = wallet === null || held.data !== undefined;
+  const ticketKnown = campaign === null || ticket.data !== undefined;
   return {
     wallet,
     ticket: campaign && ticket.data ? { kind: "ticket", campaign, golden: ticket.data.tier === "golden" } : null,
     realms: held.data ?? [],
     ready: session !== null && heldKnown && ticketKnown,
-    unreadable: held.isError,
-    retry: () => void held.refetch(),
+    realmsUnreadable: held.isError ? () => void held.refetch() : null,
+    ticketUnreadable: ticket.isError ? () => void ticket.refetch() : null,
     rules,
   };
 }

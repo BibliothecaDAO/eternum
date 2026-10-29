@@ -1,6 +1,6 @@
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
-import type { HeldRealm } from "@realms-world/identity";
+import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { shortString, type CairoOption } from "starknet";
 import { ShardReader, sameFelt, type ShardConnection } from "./shard-rpc";
@@ -36,19 +36,25 @@ export const handleRealmEntryRequest = (request: Request, route: RealmEntryRoute
     return route.register({ gameId: body.gameId, realmId: body.realmId ?? null, ...player, chainId: route.chainId });
   });
 
-/** The Realms the player's linked wallet holds, for the settle picker; none without a linked wallet. */
+/**
+ * The Realms the player's linked wallet holds, for the settle picker; none without a linked wallet. The answer carries
+ * them in both shapes a running client reads (HeldRealmsAnswer): numbers, and each with its map.
+ */
 export const handleHeldRealmsRequest = (request: Request, route: PlayerIdentity & { identity: HoldingsIdentity }) =>
-  playerRequest(request, route, async (player) => ({ realms: await readHeldRealms(route.identity, player.realmsId) }));
+  playerRequest(request, route, async (player): Promise<HeldRealmsAnswer> => {
+    const held = await readHeldRealms(route.identity, player.realmsId);
+    return { realms: held.map((realm) => realm.realmId), held };
+  });
 
 interface HoldingsIdentity {
   linkedWallet(id: string): Promise<string | null>;
-  heldRealms(wallet: string): Promise<HeldRealm[]>;
+  heldRealmsWithMaps(wallet: string): Promise<HeldRealm[]>;
 }
 
 async function readHeldRealms(identity: HoldingsIdentity, realmsId: string): Promise<HeldRealm[]> {
   const wallet = await identity.linkedWallet(realmsId);
   if (!wallet) return [];
-  return identity.heldRealms(wallet).catch(() => {
+  return identity.heldRealmsWithMaps(wallet).catch(() => {
     throw new PlayerRequestError(503, "realm_holdings_unavailable");
   });
 }
