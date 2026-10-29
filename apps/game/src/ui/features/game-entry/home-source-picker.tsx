@@ -406,7 +406,10 @@ function LinkWallet() {
   );
 }
 
-/** The ticket or the Realms could not be read: say so, and read them again on demand. Never a number to type instead. */
+/**
+ * The ticket or the Realms could not be read: say so, and read them again on demand. Nothing is offered or founded
+ * around a failed read, and never a number to type instead.
+ */
 const Unreadable = ({ line, retry }: { line: string; retry: () => void }) => (
   <p className="home-picker__notice" role="status">
     {line}
@@ -421,7 +424,10 @@ interface HomeSources {
   wallet: string | null;
   ticket: Choice | null;
   realms: HeldRealm[];
-  /** Both reads answered (or failed): the step can offer its choices and settle the pick. */
+  /**
+   * Both reads answered: the step can offer its choices and settle the pick. A failed read is not an answer: a holder's
+   * Realms or ticket that could not be read must not become a free home or a lesser default.
+   */
   ready: boolean;
   /** Ask the Realms again: set while they could not be read. */
   realmsUnreadable: (() => void) | null;
@@ -432,15 +438,15 @@ interface HomeSources {
 
 /**
  * The account's sources from the holdings reads every screen shares (useHeldRealms, useHeldTicket). The step is ready
- * once the Realms are answered (or failed: the free home and Try again) and the ticket is known: an unreadable ticket
- * could be the home, so the step waits on its Try again rather than offering a home without it.
+ * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
+ * than offering a free home or a lesser default without it.
  */
 function useHomeSources(presetId: number): HomeSources {
   const { session, wallet, held } = useHeldRealms();
   const campaign = campaignOfPreset(presetId);
   const ticket = useHeldTicket(campaign);
   const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
-  const heldKnown = wallet === null || held.data !== undefined || held.isError;
+  const heldKnown = wallet === null || held.data !== undefined;
   return {
     wallet,
     ticket: ticketChoice(campaign, ticket),

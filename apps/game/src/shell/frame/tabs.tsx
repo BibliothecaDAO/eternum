@@ -23,35 +23,28 @@ type Place = { to: string; word: string; icon: IconMeaning; matches: readonly st
 /** What's new's address, which realms.world links. */
 export const WHATS_NEW_PATH = "/scroll";
 
-/** You: the player's place, at the end of both bars. */
-const YOU_TAB: Place = { to: "/profile", word: WORDS.you, icon: "person", matches: ["/profile", "/results"] };
+/** You: the player's place, at the end of both bars; What's new is read from it, so it is lit there too. */
+const YOU_TAB: Place = {
+  to: "/profile",
+  word: WORDS.you,
+  icon: "person",
+  matches: ["/profile", "/results", WHATS_NEW_PATH],
+};
 
 /** Chat: a page of its own on a phone; over the page, as a pane, on a desktop (its bar's Chat opens it). */
 const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matches: ["/chat"] };
 
-/** Realms' marketplace: a site of its own, so it opens in a new tab and is never the current place. */
-/** Realms' marketplace, a site of its own. */
-export const MARKET_SITE = "https://realms.market/";
-const MARKET_TAB: Place = { to: MARKET_SITE, word: WORDS.market, icon: "trade", matches: [] };
-
 /**
- * The app's places, one list for both layouts: the phone's tab bar and the desktop's top bar. Play holds what to do
- * now, Season where the player stands, What's new the patch notes, Chat the one chat (Global and Messages, as in a game,
- * its unread counted on it), Market the trading of Realms' items on its own site, You the player, their finished games
- * and everything about the account.
+ * The app's four places, one list for both layouts: the phone's tab bar and the desktop's top bar (owner, 29 October
+ * 2026, of the four: "yeah B is great."). Play holds what to do now, Season where the player stands, Chat the one chat
+ * (Global and Messages, as in a game, its unread counted on it), You the player, their finished games, everything about
+ * the account, and what is read now and then: What's new and Realms' marketplace.
  * The legal pages, read from the footer, are none of these places: no tab is current there (qa-app-1 P3-3).
  */
 const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
   { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
-  {
-    to: WHATS_NEW_PATH,
-    word: WORDS.whatsNew,
-    icon: "chronicles",
-    matches: [WHATS_NEW_PATH],
-  },
   CHAT_TAB,
-  MARKET_TAB,
   YOU_TAB,
 ];
 
@@ -132,7 +125,7 @@ export const TabBar = () => {
               onClick={connect}
               className={look}
             >
-              <TabIcon tab={tab} current={current} size={28} />
+              <TabIcon tab={tab} current={current} size={32} />
               {WORDS.connect}
             </button>
           );
@@ -146,7 +139,7 @@ export const TabBar = () => {
             className={look}
           >
             <span className="relative">
-              <TabIcon tab={tab} current={current} size={28} />
+              <TabIcon tab={tab} current={current} size={32} />
               {tab === CHAT_TAB && unread > 0 && (
                 <span
                   data-count
@@ -165,8 +158,8 @@ export const TabBar = () => {
 };
 
 /**
- * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season, What's new and Market
- * with their icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
+ * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season and Chat with their
+ * icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
  * signed in, else Connect). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
  * keeps the lockup and the notice alone.
  */

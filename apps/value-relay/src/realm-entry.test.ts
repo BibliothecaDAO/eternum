@@ -47,7 +47,7 @@ const target = {
     linkedWallet: io.wallet,
     /** The chain's owner of the Realm, as identity's holdings reader answers for a wallet. */
     holdsRealm: async (wallet: string, realmId: number) => BigInt(await io.owner(String(realmId))) === BigInt(wallet),
-    heldRealms: io.held,
+    heldRealmsWithMaps: io.held,
     campaignTicket: io.ticket,
   },
 };
@@ -178,10 +178,11 @@ it("lists the linked wallet's Realms for the settle picker, none without a walle
   ];
   io.held.mockResolvedValue(held);
   const listed = await handleHeldRealmsRequest(request({}), deps);
-  expect(await listed.json()).toEqual({ realms: held });
+  // Both shapes: the numbers a client from before the maps reads, and each Realm with its map for today's.
+  expect(await listed.json()).toEqual({ realms: [3, 251], held });
   expect(io.held).toHaveBeenCalledExactlyOnceWith("0x456");
   io.wallet.mockResolvedValue(null);
-  expect(await (await handleHeldRealmsRequest(request({}), deps)).json()).toEqual({ realms: [] });
+  expect(await (await handleHeldRealmsRequest(request({}), deps)).json()).toEqual({ realms: [], held: [] });
   io.wallet.mockResolvedValue("0x456");
   io.held.mockRejectedValue(new Error("realm_holdings_unavailable"));
   const down = await handleHeldRealmsRequest(request({}), deps);

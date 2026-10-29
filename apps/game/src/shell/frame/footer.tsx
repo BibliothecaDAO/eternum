@@ -1,13 +1,14 @@
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { AppLink } from "@/ui/design-system/kit/app-elements";
-import { FOOTER_WORDS, PROFILE_WORDS } from "@/ui/design-system/kit/words";
+import { FOOTER_WORDS, PROFILE_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
-import { COMMUNITY, HOW_TO_PLAY } from "../community";
+import { COMMUNITY, HOW_TO_PLAY, MARKET } from "../community";
+import { WHATS_NEW_PATH } from "./tabs";
 
 /** A link of the footer: its word, where it leads, and a social's official mark before its word. */
 type FooterLink = { word: string; to: string; icon?: IconMeaning };
 
-/** Where realms.world lives: the DAO and the token stay there; its marketplace is a place in the bar. */
+/** Where realms.world lives: the DAO and the token stay there; its marketplace is You's row and the footer's. */
 const REALMS_WORLD = "https://realms.world";
 
 const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
@@ -17,9 +18,11 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
   },
   {
     title: FOOTER_WORDS.realms,
-    // How to play is also You's row; signed out, You is Connect, so the footer is where a new visitor finds it.
+    // What You's rows hold: signed out, You is Connect, so the footer is where a new visitor finds them.
     links: [
+      { word: WORDS.whatsNew, to: WHATS_NEW_PATH },
       { word: PROFILE_WORDS.howToPlay, to: HOW_TO_PLAY },
+      { word: WORDS.market, to: MARKET },
       { word: "realms.world", to: REALMS_WORLD },
     ],
   },
@@ -35,7 +38,8 @@ const COLUMNS: readonly { title: string; links: readonly FooterLink[] }[] = [
 
 /**
  * The footer at the end of every page of the app (not a full-screen step): what the places do not hold. The community
- * with each social's mark, How to play, Realms' own site and the legal pages; a phone stacks its columns.
+ * with each social's mark, What's new, How to play, the marketplace, Realms' own site and the legal pages; a phone stacks
+ * its columns.
  */
 export const AppFooter = () => (
   <footer data-band="footer" className="mt-10 border-t border-kit-line pt-8 lg:mt-16 lg:pt-10">

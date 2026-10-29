@@ -20,7 +20,7 @@ import {
   numberedRealm,
 } from "@/ui/design-system/kit/words";
 
-import { MARKET_SITE } from "../frame/tabs";
+import { MARKET } from "../community";
 import { ShellWindow } from "../frame/shell-window";
 import { DEVCON } from "../join/devcon";
 import { DevconTicket } from "../join/devcon-ticket";
@@ -153,7 +153,7 @@ const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>
           ))}
         </ul>
       )}
-      <AppButton kind="secondary" icon="trade" onClick={() => window.open(MARKET_SITE, "_blank", "noopener")}>
+      <AppButton kind="secondary" icon="trade" onClick={() => window.open(MARKET, "_blank", "noopener")}>
         {WORDS.market}
       </AppButton>
     </div>

@@ -171,9 +171,12 @@ it("renders spectator entry before any head without reading the chain clock", as
   }
 });
 
-/** A held Realm as the relay answers it: its number and the index's map of it. */
+/** Held Realms as the relay answers them: their numbers, and each one with the index's map of it. */
 const held = (...realmIds: number[]) =>
-  Response.json({ realms: realmIds.map((realmId) => ({ realmId, map: `https://index.test/maps/${realmId}.svg` })) });
+  Response.json({
+    realms: realmIds,
+    held: realmIds.map((realmId) => ({ realmId, map: `https://index.test/maps/${realmId}.svg` })),
+  });
 /** A held Realm's choice as the step names it: its number and its name. */
 const realmChoice = (realmId: number) => `${realmId} · ${canonicalRealm(realmId)!.name}`;
 const name = (realmId: number) => canonicalRealm(realmId)!.name;
@@ -262,7 +265,7 @@ it.each(["the ticket", "712"])("lets a refused Realm claimant found with another
     await entry.pick(realmChoice(711));
     await entry.press("Found your realm");
     expect(settlement.calls).toEqual([]);
-    expect(entry.host.textContent).toContain("Choose another Realm or leave blank.");
+    expect(entry.host.textContent).toContain("This Realm cannot be your home in this game. Choose another home.");
     await entry.pick(alternative === "712" ? realmChoice(712) : "Golden Devcon ticket");
     await entry.press("Found your realm");
     expect(sent).toEqual(alternative === "712" ? [711, 712] : [711, undefined]);
@@ -350,30 +353,54 @@ it("shows a ticket holder with no linked wallet their ticket, and the way to the
   }
 });
 
-it("says the Realms could not be read and reads them again on Try again, never offering a number to type", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  setViewportWidth(1440);
-  signIn("0x456");
-  noTicket();
-  let up = false;
-  const registered = relay(() =>
-    up ? held(711) : Response.json({ error: "realm_holdings_unavailable" }, { status: 503 }),
-  );
-  const entry = await openEntry();
-  try {
-    await vi.waitFor(() => expect(entry.host.textContent).toContain("Your Realms cannot be read right now"));
-    expect(entry.featured()).toBe("A free home");
-    expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
-    up = true;
-    await entry.press("Try again");
-    await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
-    expect(entry.host.textContent).not.toContain("Your Realms cannot be read right now");
-    await entry.press("Found your realm");
-    expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
-  } finally {
-    await entry.close();
-  }
-});
+it.each([
+  { failed: "the Realms", width: 1440 },
+  { failed: "the Realms", width: 390 },
+  { failed: "the ticket", width: 1440 },
+  { failed: "the ticket", width: 390 },
+])(
+  "founds nothing while $failed cannot be read, then founds the right default once Try again answers ($width px)",
+  async ({ failed, width }) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    setViewportWidth(width);
+    signIn("0x456");
+    let up = false;
+    if (failed === "the ticket") {
+      settlement.presetId = 6;
+      vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async () => {
+        if (!up) throw new IdentityRequestError(503, "campaigns_unavailable");
+        return { campaign: "devcon-2026", tier: "golden" };
+      });
+    } else noTicket();
+    const registered = relay(() =>
+      failed === "the Realms" && !up
+        ? Response.json({ error: "realm_holdings_unavailable" }, { status: 503 })
+        : held(711),
+    );
+    const entry = await openEntry();
+    try {
+      const notice =
+        failed === "the Realms" ? "Your Realms cannot be read right now" : "Your ticket cannot be read right now";
+      await vi.waitFor(() => expect(entry.host.textContent).toContain(notice));
+      // No home is offered around the failed read: neither a free home nor a lesser default, and nothing founds.
+      expect(entry.featured()).toBeNull();
+      expect(entry.found().disabled).toBe(true);
+      expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
+      await act(async () => entry.found().click());
+      expect([registered, settlement.calls]).toEqual([[], []]);
+      up = true;
+      await entry.press("Try again");
+      const home = failed === "the Realms" ? name(711) : "Golden Devcon ticket";
+      await vi.waitFor(() => expect(entry.featured()).toBe(home));
+      expect(entry.host.textContent).not.toContain(notice);
+      await entry.press("Found your realm");
+      expect(registered).toEqual([failed === "the Realms" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
+      expect(settlement.settled).toBe(true);
+    } finally {
+      await entry.close();
+    }
+  },
+);
 
 it("waits on an unreadable ticket: says so, founds nothing, and offers the ticket once Try again answers", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

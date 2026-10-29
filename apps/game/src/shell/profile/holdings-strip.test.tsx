@@ -53,7 +53,10 @@ afterEach(async () => {
 
 /** Held Realms as the relay answers them: each one's number and the index's map of it. */
 const held = (...realmIds: number[]) =>
-  Response.json({ realms: realmIds.map((realmId) => ({ realmId, map: `https://index.test/maps/${realmId}.svg` })) });
+  Response.json({
+    realms: realmIds,
+    held: realmIds.map((realmId) => ({ realmId, map: `https://index.test/maps/${realmId}.svg` })),
+  });
 
 /** The relay's held-Realms answers, in turn (the last repeats), and every request the page made. */
 const relay = (...answers: (() => Response)[]) => {
