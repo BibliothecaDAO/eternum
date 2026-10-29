@@ -2,7 +2,7 @@ import { afterEach, expect, mock, spyOn, test } from "bun:test";
 import { mkdtempSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import type { Account, Call } from "starknet";
+import { CallData, type Account, type Call } from "starknet";
 import * as main from "./main";
 import * as box from "./box";
 import * as native from "../../contracts/l2/ledger/scripts/commands/deployment/fund-frontier";
@@ -12,7 +12,20 @@ import { runSteps } from "./run";
 import { seasonSteps } from "./season-steps";
 import { PrivateStore } from "./private-store";
 import { environments, WEI } from "./settings";
+import { frontierDevconPreset } from "../../config/source/frontier/devcon";
+import { seasonDayUnitSeconds } from "../../config/source/common/season-clock";
+import { buildLedgerEconomicPreset } from "../../config/deployer/clean/ledger/economics";
 
+const preset = frontierDevconPreset;
+const dayUnit = seasonDayUnitSeconds(preset);
+const ledgerPreset = CallData.compile({ ...buildLedgerEconomicPreset("frontier", { presetId: preset.id }) });
+const nativeTerms = {
+  presetId: preset.id,
+  chestPoolBps: preset.chests.poolBps,
+  topN: preset.chests.topN,
+  dayUnit,
+  claimWindow: preset.chests.claimWindowSeconds,
+};
 const originalFetch = globalThis.fetch;
 const temporary: string[] = [];
 afterEach(() => {
@@ -72,7 +85,7 @@ test.each([
       if (operation === "deposit") {
         const calldata = calls[1]!.calldata;
         if (!Array.isArray(calldata)) throw new Error("Funding must use compiled calldata");
-        expect(calldata[2]).toBe("6");
+        expect(calldata[2]).toBe(String(preset.id));
         funded = true;
       }
       held = calls[0]!.entrypoint === "mint" ? 1000n * WEI : 0n;
@@ -87,28 +100,25 @@ test.each([
   spyOn(main, "signer").mockReturnValue(account as unknown as Account);
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
-    chestPoolBps: 7000,
-    topN: 3,
-    presetId: changes === "wrong preset" ? 5 : 6,
+    ...nativeTerms,
+    presetId: changes === "wrong preset" ? 5 : preset.id,
     start: startSeconds,
-    end: startSeconds + 40 * 7200 + (changes === "wrong end" ? 40 : 0),
+    end: startSeconds + 40 * dayUnit + (changes === "wrong end" ? 40 : 0),
     seed: "1",
-    dayUnit: 7200,
-    claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockImplementation(async (_provider, _ledger, _key, _native, block) => {
     if (!stateAt(block).funded) throw new Error("frontier_funding_missing");
     return {
-      pool: String(700n * WEI),
-      prizePool: String(300n * WEI),
+      pool: String((1000n * WEI * BigInt(preset.chests.poolBps)) / 10_000n),
+      prizePool: String((1000n * WEI * BigInt(10_000 - preset.chests.poolBps)) / 10_000n),
       prizePaid: "0",
       paid: "0",
       closed: false,
-      presetId: 6,
+      presetId: preset.id,
       seed: "1",
       start: startSeconds,
-      end: startSeconds + 40 * 7200,
-      claimDeadline: startSeconds + 21 * 86400,
+      end: startSeconds + 40 * dayUnit,
+      claimDeadline: startSeconds + 40 * dayUnit + nativeTerms.claimWindow,
       confirmedBlock: 1,
     };
   });
@@ -119,9 +129,9 @@ test.each([
         phases: [
           {
             phase: "frontier",
-            presetId: 6,
+            presetId: preset.id,
             startsAt: start,
-            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
+            endsAt: new Date((startSeconds + 40 * dayUnit) * 1000).toISOString(),
           },
         ],
       });
@@ -142,7 +152,7 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "3", "7000"];
+        if (entrypoint === "get_preset") return ledgerPreset;
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
@@ -219,14 +229,10 @@ async function coldFunding(lords: string, held: bigint) {
     world: { address: "0x20" },
   }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
-    chestPoolBps: 7000,
-    topN: 3,
-    presetId: 6,
+    ...nativeTerms,
     start: startSeconds,
-    end: startSeconds + 40 * 7200,
+    end: startSeconds + 40 * dayUnit,
     seed: "1",
-    dayUnit: 7200,
-    claimWindow: 86400,
   });
   spyOn(funding, "readFrontierFunding").mockRejectedValue(new Error("frontier_funding_missing"));
   globalThis.fetch = (async (url) => {
@@ -236,9 +242,9 @@ async function coldFunding(lords: string, held: bigint) {
         phases: [
           {
             phase: "frontier",
-            presetId: 6,
+            presetId: preset.id,
             startsAt: start,
-            endsAt: new Date((startSeconds + 40 * 7200) * 1000).toISOString(),
+            endsAt: new Date((startSeconds + 40 * dayUnit) * 1000).toISOString(),
           },
         ],
       });
@@ -257,7 +263,7 @@ async function coldFunding(lords: string, held: bigint) {
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "3", "7000"];
+        if (entrypoint === "get_preset") return ledgerPreset;
         if (entrypoint === "lords") return [lords];
         throw new Error("Unexpected ledger read");
       },
@@ -283,7 +289,7 @@ test.each([
   const written = run.written()!;
   expect(run.balanceOwners).toEqual([run.coldAdmin]);
   expect(written.account).toBe(run.coldAdmin);
-  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe("6");
+  expect((written.calls.at(-1)!.calldata as string[])[2]).toBe(String(preset.id));
   expect(written.calls.map((call) => call.entrypoint)).toEqual([...calls]);
   if (held === 0n)
     expect(written.calls[0]).toEqual({
