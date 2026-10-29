@@ -27,9 +27,18 @@ export const shardConnection = (shard: {
   firstRelease: firstReleaseOf(shard.releaseSchemas),
 });
 
+/** The first release of the shard a Herald serves, from its manifest, refused when Herald names another chain. */
+export const readFirstRelease = async (heraldUrl: string, chainId: string, network: typeof fetch = fetch) => {
+  const response = await network(new URL("/manifest", heraldUrl), { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error("herald_manifest_unavailable");
+  const manifest = (await response.json()) as { chainId: string; releaseSchemas: Record<string, string> };
+  if (BigInt(manifest.chainId) !== BigInt(chainId)) throw new Error("herald_manifest_chain_differs");
+  return firstReleaseOf(manifest.releaseSchemas);
+};
+
 /** Releases are registered one after another from the chain's first, so the manifest's lowest is where it began. */
-const firstReleaseOf = (releaseSchemas: Record<string, string>) => {
-  const releases = Object.keys(releaseSchemas).map(Number);
+export const firstReleaseOf = (releaseSchemas: Record<string, string>) => {
+  const releases = Object.keys(releaseSchemas ?? {}).map(Number);
   if (!releases.length || !releases.every((release) => Number.isSafeInteger(release) && release > 0))
     throw new Error("invalid_shard_manifest_releases");
   return Math.min(...releases);

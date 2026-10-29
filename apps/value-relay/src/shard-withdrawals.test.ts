@@ -3,7 +3,7 @@ import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-a
 import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ShardReader, shardConnection } from "./shard-rpc";
+import { ShardReader, readFirstRelease, shardConnection } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { RelayFailure } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
@@ -409,8 +409,23 @@ it("connects to a registered shard from the first release its manifest maps", ()
     shardConnection({ ...manifest, releaseSchemas: { "3": "0xs", "1": "0xs", "4": "0xs", "2": "0xs" } }).firstRelease,
   ).toBe(1);
   expect(() => shardConnection({ ...manifest, releaseSchemas: {} })).toThrow("invalid_shard_manifest_releases");
+  expect(() => shardConnection({ ...manifest } as unknown as Parameters<typeof shardConnection>[0])).toThrow(
+    "invalid_shard_manifest_releases",
+  );
   expect(() => shardConnection({ ...manifest, releaseSchemas: { latest: "0xs" } })).toThrow(
     "invalid_shard_manifest_releases",
+  );
+});
+
+it("reads a shard's first release from the manifest its Herald serves, for that chain only", async () => {
+  const herald = (status: number, body: unknown) => (async () => Response.json(body, { status })) as typeof fetch;
+  const manifest = { chainId: DEV_CHAIN, releaseSchemas: { "6": "0xs", "5": "0xs" } };
+  expect(await readFirstRelease("https://herald.test", DEV_CHAIN, herald(200, manifest))).toBe(5);
+  await expect(readFirstRelease("https://herald.test", "0x1", herald(200, manifest))).rejects.toThrow(
+    "herald_manifest_chain_differs",
+  );
+  await expect(readFirstRelease("https://herald.test", DEV_CHAIN, herald(503, {}))).rejects.toThrow(
+    "herald_manifest_unavailable",
   );
 });
 
