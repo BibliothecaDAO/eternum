@@ -16,6 +16,8 @@ interface MapSelectionSnapshot {
   hovered: { id: number; ownedByViewer: boolean; selectedHolding: boolean } | null;
   /** The camera target in contract hexes, used to check map links and the realm site after a day turn. */
   camera: { col: number; row: number } | null;
+  /** Where the screen draws the selected hex (page px): a tapped chest, once a phone's camera has framed it. */
+  hexOnScreen: { x: number; y: number } | null;
 }
 
 interface MapSelectionWindow {

@@ -47,8 +47,8 @@ export async function startResultCapture(devTools, timeOrigin) {
  * few pixels changed by then (the result was absent, or later than three frames), or when it was shown more than a frame
  * before its mark (the mark came late). The frames around it are written to `dir`.
  */
-export async function proveResultOnScreen({ frames, region, target, before, visible, frameMs, dir }) {
-  if (target) return proveTargetState({ frames, target, before, visible, frameMs, dir });
+export async function proveResultOnScreen({ frames, region, target, onset, before, visible, frameMs, dir }) {
+  if (target) return proveTargetState({ frames, target, onset, before, visible, frameMs, dir });
   const reference = frames.filter((frame) => frame.t < before).at(-1);
   const last = frames.at(-1);
   const settled = frames.filter((frame) => frame.t <= visible + 3 * frameMs).at(-1);
@@ -94,9 +94,11 @@ export async function proveResultOnScreen({ frames, region, target, before, visi
  * state is its mean grey: from the last frame before the facts (`before`) to the last frame it must move by at least
  * MIN_TARGET_CONTRAST levels (an animated ground shimmers pixel by pixel, not in its mean), and it reads as changed
  * from the first frame past half that way, which must come no more than a frame before the mark (`visible`) and no
- * later than three frames after it.
+ * later than three frames after it. A result that sets its target moving (`onset`: a chest's lid lifting, which ends
+ * seconds later with the chest gone) reads as changed from the first frame that has moved MIN_TARGET_CONTRAST levels
+ * from the frame before the facts, whatever its last look.
  */
-async function proveTargetState({ frames, target, before, visible, frameMs, dir }) {
+async function proveTargetState({ frames, target, onset = false, before, visible, frameMs, dir }) {
   const reference = frames.filter((frame) => frame.t < before).at(-1);
   const last = frames.at(-1);
   const settled = frames.filter((frame) => frame.t <= visible + 3 * frameMs).at(-1);
@@ -105,7 +107,7 @@ async function proveTargetState({ frames, target, before, visible, frameMs, dir 
   }
   const [from, to] = await Promise.all([reference, last].map((frame) => meanGrey(frame, target)));
   const verdict = { target, targetGrey: { before: Math.round(from), after: Math.round(to) } };
-  if (Math.abs(to - from) < MIN_TARGET_CONTRAST) {
+  if (!onset && Math.abs(to - from) < MIN_TARGET_CONTRAST) {
     const kept = keepAround(frames, settled, reference, last, dir);
     return {
       shown: false,
@@ -115,7 +117,9 @@ async function proveTargetState({ frames, target, before, visible, frameMs, dir 
     };
   }
   const halfway = (from + to) / 2;
-  const pastHalfway = (grey) => (to > from ? grey >= halfway : grey <= halfway);
+  const pastHalfway = onset
+    ? (grey) => Math.abs(grey - from) >= MIN_TARGET_CONTRAST
+    : (grey) => (to > from ? grey >= halfway : grey <= halfway);
   let first = null;
   for (const frame of frames.filter((candidate) => candidate.t > reference.t)) {
     if (pastHalfway(await meanGrey(frame, target))) {

@@ -915,7 +915,15 @@ export default class WorldmapScene extends WarpTravel {
     const camera = { col: Number(contractHex.x), row: Number(contractHex.y) };
     useUIStore.getState().setCameraTargetHex(camera);
     publishMapSelection({ camera });
+    this.publishSelectedHexOnScreen();
   };
+
+  /** Where the screen draws the selected hex, as the selection report carries it (observability/map-selection). */
+  private publishSelectedHexOnScreen(): void {
+    const hex = useUIStore.getState().selectedHex;
+    const tile = hex && Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
+    publishMapSelection({ hexOnScreen: tile ? projectHexToScreen({ col: tile.x, row: tile.y }, this.camera) : null });
+  }
   private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
   private minimapCameraMoveHandler = (event: Event) => {
@@ -9123,6 +9131,12 @@ export default class WorldmapScene extends WarpTravel {
       }),
     );
     this.storeSubscriptions.push(reportSelectedArmy(this.worldSpatialProjection));
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.selectedHex,
+        () => this.publishSelectedHexOnScreen(),
+      ),
+    );
     this.storeSubscriptions.push(
       useChainTimeStore.subscribe((next, previous) => {
         if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();

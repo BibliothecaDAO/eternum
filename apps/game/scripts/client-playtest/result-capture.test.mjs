@@ -120,4 +120,43 @@ describe("proveResultOnScreen on a target's state", () => {
     expect(proof).toMatchObject({ shown: false });
     expect(proof.reason).toMatch(/never changed/);
   });
+
+  it("fails a chest whose body has not begun to open three frames after its mark, the sheet beside it changing", async () => {
+    const run = new URL("./fixtures/chest-opening/review-5-phone-1/", import.meta.url);
+    const marks = JSON.parse(readFileSync(new URL("marks.json", run), "utf8"));
+    const frames = readdirSync(run)
+      .filter((name) => name.endsWith(".jpg"))
+      .map((name) => ({ t: Number(name.slice(1, -4)), width: 50, jpeg: readFileSync(new URL(name, run)) }))
+      .sort((left, right) => left.t - right.t);
+    const body = { left: 0, top: 0, width: 50, height: 40 };
+    const proof = await proveResultOnScreen({
+      frames,
+      region: body,
+      target: body,
+      onset: true,
+      before: marks.diff,
+      visible: marks.visible,
+      frameMs: marks.frameMs,
+      dir,
+    });
+    expect(proof).toMatchObject({
+      shown: false,
+      reason: "three frames after its mark its target still read as before",
+    });
+  });
+
+  it("holds a target set moving at its mark, whatever its last look", async () => {
+    const frames = await capture({ resultAt: 160 });
+    const proof = await proveResultOnScreen({
+      frames,
+      region,
+      target: { left: 0, top: 0, width: 20, height: 40 },
+      onset: true,
+      before: 100,
+      visible: 160,
+      frameMs: FRAME_MS,
+      dir,
+    });
+    expect(proof).toMatchObject({ shown: true, lagMs: 0 });
+  });
 });
