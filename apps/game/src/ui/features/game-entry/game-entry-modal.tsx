@@ -10,7 +10,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
-import { RealmNumberPicker } from "./realm-number-picker";
+import { HomeSourcePicker } from "./home-source-picker";
+import { RealmNumberPicker, isRealmNumber } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
@@ -104,9 +105,7 @@ export const GameEntryModal = ({
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
   const [settlementError, setSettlementError] = useState<string | null>(null);
-  const validHeldRealm =
-    heldRealmNumber === "" ||
-    (/^\d+$/.test(heldRealmNumber) && Number(heldRealmNumber) >= 1 && Number(heldRealmNumber) <= 8000);
+  const validHeldRealm = heldRealmNumber === "" || isRealmNumber(heldRealmNumber);
   const accountError = useAccountStore((state) => state.provisioningError);
   const markOpening = useAutoSettleStore((state) => state.markOpening);
   const markSettling = useAutoSettleStore((state) => state.markSettling);
@@ -145,8 +144,7 @@ export const GameEntryModal = ({
   const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
   const [devSettlementTarget, setDevSettlementTarget] = useState<number | null>(null);
-  const validDevRealmNumber =
-    Number.isInteger(Number(devRealmNumber)) && Number(devRealmNumber) >= 1 && Number(devRealmNumber) <= 8000;
+  const validDevRealmNumber = isRealmNumber(devRealmNumber);
   const resolvedEntryIntent = isSpectateMode ? "spectate" : entryIntent;
   const entryContext = useMemo(
     () =>
@@ -612,9 +610,9 @@ export const GameEntryModal = ({
         !foundsOnItsOwn &&
         (settleStage === "idle" || (isFrontierMode && settleStage === "error")) && (
           <>
-            {isFrontierMode && (
-              <RealmNumberPicker
-                purpose="held"
+            {isFrontierMode && worldMeta && (
+              <HomeSourcePicker
+                presetId={worldMeta.preset_id}
                 value={heldRealmNumber}
                 onChange={setHeldRealmNumber}
                 disabled={isSettling || registeredRealmId != null}
@@ -622,12 +620,7 @@ export const GameEntryModal = ({
             )}
             {settlementError && <HudNotice tone="bad" line={settlementError} />}
             {isEternumDevMode && (
-              <RealmNumberPicker
-                purpose="development"
-                value={devRealmNumber}
-                onChange={setDevRealmNumber}
-                disabled={isSettling}
-              />
+              <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
             )}
             <button
               type="button"

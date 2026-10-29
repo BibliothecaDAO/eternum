@@ -1,15 +1,11 @@
 import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
 import { CAMPAIGNS, type CampaignKey } from "@realms-world/identity";
 
+import { laborRulesOf } from "@/services/home-claim-rules";
 import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
 
 /** The Devcon preset's LaborRules row, as the deployer writes it onchain for the Devcon season's games. */
-export const DEVCON_LABOR_RULES: LaborRuleAmounts = {
-  amount: frontierDevconPreset.labor.amount,
-  campaign_essence: frontierDevconPreset.labor.campaignEssence,
-  golden_amount: frontierDevconPreset.labor.goldenAmount,
-  golden_essence: frontierDevconPreset.labor.goldenEssence,
-};
+export const DEVCON_LABOR_RULES: LaborRuleAmounts = laborRulesOf(frontierDevconPreset.labor);
 
 const CAMPAIGN = "devcon-2026" satisfies CampaignKey;
 

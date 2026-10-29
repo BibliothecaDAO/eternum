@@ -4,6 +4,7 @@
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
+import type { CampaignKey } from "@realms-world/identity";
 import {
   BuildingType,
   XP,
@@ -575,8 +576,20 @@ export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
 export const YOUR_REALMS = "Your Realms";
+export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
+export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
 export const FREE_REALM_ENTRY = "Free home · no daily Labor";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
+/** A campaign's name where its homes are named: on the Realm step, the home a ticket founds. */
+const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };
+export const campaignHomeName = (campaign: CampaignKey, golden: boolean) =>
+  `${golden ? "Golden " : ""}${CAMPAIGN_NAMES[campaign]} home`;
+/** The home the Realm step founds and what it claims each game day, by the claim's own rule (homeSourceClaim). */
+export const homeClaimLine = (home: string, claim: { labor: number; essence: number }) =>
+  `${home} · ${[
+    ...(claim.labor > 0 ? [`${formatExact(claim.labor)} Labor`] : []),
+    ...(claim.essence > 0 ? [`${formatExact(claim.essence)} Essence`] : []),
+  ].join(" · ")} each day`;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
