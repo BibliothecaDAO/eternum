@@ -13,7 +13,7 @@ import { UserAvatar } from "./user-avatar";
  */
 export const useMute = (playerId: string) => {
   const actions = useRealtimeChatActions();
-  const muted = useRealtimeChatSelector((state) => state.blockedPlayers.includes(playerId));
+  const muted = useRealtimeChatSelector((state) => state.blockedPlayers?.includes(playerId) ?? false);
   const toggle = () =>
     (muted ? actions.unblockPlayer(playerId) : actions.blockPlayer(playerId)).catch((error: unknown) =>
       toast.failed(error, muted ? CHAT_WORDS.unmuteFailed : CHAT_WORDS.muteFailed),

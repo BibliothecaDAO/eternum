@@ -1,5 +1,5 @@
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
-import { HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useMemo } from "react";
 import { useShallow } from "zustand/react/shallow";
@@ -7,12 +7,14 @@ import { useShallow } from "zustand/react/shallow";
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
 import { threadUnread } from "../../model/direct-unread";
 import { whenSent } from "../../model/message-grouping";
+import { useMute } from "../shared/player-card";
 import { UserAvatar } from "../shared/user-avatar";
 
 /**
  * Messages: the player's private conversations, the latest first, each by the other player's name with its last line,
  * and what is unread in it, else when it was last written. A press opens it. A conversation with nothing written yet is
- * not listed; one starts from a player's name in a room.
+ * not listed; one starts from a player's name in a room. Last, every player the player muted, from the server's block
+ * list (a muted player's conversation is not listed, and their messages never arrive), each with Unmute.
  */
 export function MessagesList() {
   const actions = useRealtimeChatActions();
@@ -23,6 +25,7 @@ export function MessagesList() {
     useShallow((state) => Object.fromEntries(Object.keys(state.dmThreads).map((id) => [id, threadUnread(state, id)]))),
   );
   const names = usePlayerNames();
+  const muted = useRealtimeChatSelector((state) => state.blockedPlayers) ?? [];
 
   const conversations = useMemo(
     () =>
@@ -36,7 +39,7 @@ export function MessagesList() {
     [threads, self, unread],
   );
 
-  if (conversations.length === 0)
+  if (conversations.length === 0 && muted.length === 0)
     return (
       <p className="flex flex-1 items-center justify-center text-hud-body text-hud-muted">{CHAT_WORDS.noMessages}</p>
     );
@@ -64,6 +67,34 @@ export function MessagesList() {
           />
         );
       })}
+      {muted.length > 0 && (
+        <section aria-label={CHAT_WORDS.mutedPlayers} className="mt-2 flex flex-col gap-0.5">
+          <h3 className="px-1.5 text-hud-label text-hud-cue">{CHAT_WORDS.mutedPlayers}</h3>
+          {muted.map((playerId) => (
+            <MutedPlayer
+              key={playerId}
+              playerId={playerId}
+              name={resolveChatSenderName(names, playerId, online[playerId]?.displayName)}
+            />
+          ))}
+        </section>
+      )}
     </div>
   );
 }
+
+/** A muted player in Messages: their portrait and name, and Unmute, which brings their conversation back. */
+const MutedPlayer = ({ playerId, name }: { playerId: string; name: string }) => {
+  const { toggle } = useMute(playerId);
+  return (
+    <HudRow
+      lead={<UserAvatar name={name} address={playerId} size="lg" className="rounded-full" />}
+      title={name}
+      trail={
+        <HudButton kind="secondary" size="sm" onClick={toggle}>
+          {CHAT_WORDS.unmute}
+        </HudButton>
+      }
+    />
+  );
+};

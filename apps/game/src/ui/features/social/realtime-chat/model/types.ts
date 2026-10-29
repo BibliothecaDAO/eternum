@@ -84,8 +84,14 @@ export interface RealtimeChatState {
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
   view: ChatView;
-  /** Accounts this player muted: their direct messages never arrive, and what they write is hidden. */
-  blockedPlayers: string[];
+  /**
+   * Accounts this player muted, as the server's block list says: their direct messages never arrive, and what they
+   * write is hidden. Null until that list is read: a room's messages wait for it (heldWorldMessages), since who is muted
+   * is not known, never taken to be nobody.
+   */
+  blockedPlayers: string[] | null;
+  /** Room messages that arrived before the block list was read, taken in order once it is. */
+  heldWorldMessages: HeldWorldMessage[];
   /** The rooms the player has where they stand (chatRooms), as the transport opens them; setRooms moves them. */
   rooms: string[];
   /** Rooms the player reads but may not write in, as each room answered at its open (a Blitz lobby's, unregistered). */
@@ -95,6 +101,12 @@ export interface RealtimeChatState {
 }
 
 export type RoomRefusal = "rate-limited" | "refused";
+
+export interface HeldWorldMessage {
+  zoneId: string;
+  message: WorldChatMessage;
+  clientMessageId?: string;
+}
 
 export interface InitializeRealtimeClientParams {
   baseUrl: string;

@@ -79,6 +79,8 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
   });
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
+    // The block list as the server answered it: nobody muted.
+    blockedPlayers: [],
     identity: { playerId: "0x7", displayName: "You" },
     joinedZoneIds: [GLOBAL_CHAT_CHANNEL_ID],
     activeZoneId: GLOBAL_CHAT_CHANNEL_ID,

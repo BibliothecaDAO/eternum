@@ -79,6 +79,8 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   // A player's card, opened under the message whose name was pressed; one at a time.
   const [card, setCard] = useState<string | null>(null);
   const self = useRealtimeChatSelector((state) => state.identity?.playerId);
+  // Null until the server's list of who is muted is read: the room waits for it, its messages held, never shown as if
+  // nobody were muted.
   const muted = useRealtimeChatSelector((state) => state.blockedPlayers);
   // A room the player only reads (a Blitz lobby's, unregistered) shows who writes there instead of the field.
   const readOnly = useRealtimeChatSelector((state) => state.readOnlyZoneIds.includes(resolvedZoneId ?? ""));
@@ -132,7 +134,10 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
         {!hasChannelAccess && (
           <p className="text-hud-body text-hud-cue">{reconnecting ? "Reconnecting…" : "Chat unavailable."}</p>
         )}
-        {hasChannelAccess && zone && (
+        {hasChannelAccess && zone && muted === null && (
+          <p className="text-hud-body text-hud-cue">{CHAT_WORDS.loading}</p>
+        )}
+        {hasChannelAccess && zone && muted !== null && (
           <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
             <div ref={scrollerRef} className="flex flex-1 min-h-0 flex-col overflow-y-auto pr-1">
               {zone.historyError && (
@@ -260,7 +265,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
             setReplying(null);
           }}
           placeholder={`${CHAT_WORDS.message} ${name}`}
-          disabled={!hasChannelAccess}
+          disabled={!hasChannelAccess || muted === null}
           mentions={mentionable.choices}
           replying={
             replying

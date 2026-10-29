@@ -256,11 +256,23 @@ const labReply = (answered: number) =>
     content: MENTIONS[answered] ?? LONG_LINE,
   });
 
-/** Identity's answer for the room's players, as the identity Worker serves their names; anything else goes on. */
-const answerRoomProfiles = () => {
+/**
+ * The servers chat reads, answered in the tab: identity's names for the room's players, as the identity Worker serves
+ * them, and the account's block list, as the chat Worker keeps it. Anything else goes on.
+ */
+const answerChatServers = () => {
   const network = window.fetch.bind(window);
+  // The account's block list, kept in the tab: Mute adds an account, Unmute takes it off, each answering the list.
+  let blocked: string[] = [];
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname.startsWith("/api/chat/blocks")) {
+      if (init?.method === "POST")
+        blocked = [...blocked, (JSON.parse(String(init.body)) as { realmsId: string }).realmsId];
+      if (init?.method === "DELETE")
+        blocked = blocked.filter((id) => id !== decodeURIComponent(url.pathname.split("/").at(-1)!));
+      return Promise.resolve(Response.json({ blocked }));
+    }
     if (url.pathname !== "/api/profiles") return network(input, init);
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
     const profiles = Object.fromEntries(
@@ -340,10 +352,12 @@ const LAB_THREADS = [
  * Messages or Isolde's conversation, as the tabs and the list do.
  */
 function installLabRoom(view: string | null): true {
-  answerRoomProfiles();
+  answerChatServers();
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
+    // The tab answers the chat server's block list here.
+    baseUrl: window.location.origin,
     identity: { playerId: LAB_SELF, displayName: "Maelis" },
     onlinePlayers: Object.fromEntries(
       [ALDRIC, CORWIN].map((playerId) => [
@@ -366,6 +380,8 @@ function installLabRoom(view: string | null): true {
       },
     },
     unreadWorldTotal: 3,
+    // Who is muted is known, as the server's list answers it: nobody yet.
+    blockedPlayers: [],
     view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
     actions: {
       ...actions,
@@ -373,13 +389,6 @@ function installLabRoom(view: string | null): true {
       resetClient: () => undefined,
       loadWorldHistory: () => Promise.resolve(),
       loadDirectHistory: () => Promise.resolve(),
-      // Muting is answered as the server answers it: the account joins the list, or leaves it.
-      blockPlayer: async (playerId) =>
-        useRealtimeChatStore.setState((state) => ({ blockedPlayers: [...state.blockedPlayers, playerId] })),
-      unblockPlayer: async (playerId) =>
-        useRealtimeChatStore.setState((state) => ({
-          blockedPlayers: state.blockedPlayers.filter((blocked) => blocked !== playerId),
-        })),
       // What the lab's player sends comes back from the room as the room broadcasts it.
       sendWorldMessage: async (zoneId, { content, metadata }) =>
         actions.receiveWorldMessage(zoneId, ownMessage(zoneId, content, metadata)),

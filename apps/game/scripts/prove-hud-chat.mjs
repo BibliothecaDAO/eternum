@@ -39,8 +39,8 @@
  *
  * - a player's card, at 1440×900 and on a phone (390×844), in the open pane: beside the tabs, how many players are
  *   online; Aldric's name pressed opens his card under his message, inside the pane and the screen, with his realm as a
- *   place that opens, Message and Mute; Mute leaves his messages as his name and "muted", Unmute brings them back, and
- *   Message opens his conversation.
+ *   place that opens, Message and Mute; Mute leaves his messages as his name and "muted" and lists him in Messages
+ *   under Muted, with Unmute; Unmute brings them back, and Message opens his conversation.
  *
  * - the app's chat, on the app lab's pages (/lab/app/<screen>/<page>, the real shell over its fixtures and the lab's
  *   answered chat sockets): at 1440×900, the bar's Chat opens the pane over Play, inside the screen, with Global (its
@@ -601,6 +601,31 @@ const CARD = `(() => {
 })()`;
 
 const ALDRIC_NAME = '[data-lab="chat"] li[data-message-id] p button';
+
+/** Messages' Muted group: who it lists, its Unmute buttons, and whether each stands whole in the pane. */
+const MUTED_GROUP = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const group = pane?.querySelector('section[aria-label="Muted"]');
+  return {
+    pane: rect(pane),
+    words: group?.textContent ?? null,
+    unmute: [...(group?.querySelectorAll("button") ?? [])].map((button) => ({ words: button.textContent, box: rect(button) })),
+  };
+})()`;
+const chatTab = (words) => `(() => {
+  const tab = [...document.querySelectorAll('[data-lab="chat"] [role="tab"]')].find((t) => t.textContent.startsWith(${JSON.stringify(words)}));
+  if (!tab) return false;
+  tab.click();
+  return true;
+})()`;
+const openAldricCard = `(() => {
+  const name = [...document.querySelectorAll(${JSON.stringify(ALDRIC_NAME)})].findLast((button) => button.textContent === "Aldric");
+  if (!name) return false;
+  name.scrollIntoView({ block: "center" });
+  name.click();
+  return true;
+})()`;
 const cardPress = (words) => `(() => {
   const button = [...document.querySelectorAll('[data-lab="chat"] [data-player-card] button')].find((b) => b.textContent === ${JSON.stringify(words)});
   if (!button) return false;
@@ -658,6 +683,25 @@ const proveCard = async (b, out, record, phone) => {
       record.measures.muted.card?.buttons.some((button) => button.words === "Unmute") === true,
   });
   b.run("screenshot", join(out, `card-muted-${tag}.png`));
+
+  // Muted, he stands in Messages under Muted, with Unmute: reachable wherever he last wrote, or never wrote in a room.
+  record.presses.push({ press: "Messages", status: b.evaluate(chatTab("Messages")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.mutedGroup = b.evaluate(MUTED_GROUP);
+  const group = record.measures.mutedGroup;
+  record.checks.push({
+    check: "Messages lists him under Muted, with an Unmute whole inside the pane",
+    ok:
+      group.words?.includes("Aldric") === true &&
+      group.unmute.length === 1 &&
+      group.unmute[0].words === "Unmute" &&
+      inside(group.unmute[0].box, group.pane),
+  });
+  b.run("screenshot", join(out, `card-muted-messages-${tag}.png`));
+  record.presses.push({ press: "Global", status: b.evaluate(chatTab("Global")) ? "led" : "missing" });
+  await sleep(300);
+  record.presses.push({ press: "Aldric's name, again", status: b.evaluate(openAldricCard) ? "led" : "missing" });
+  await sleep(300);
 
   record.presses.push({ press: "Unmute", status: b.evaluate(cardPress("Unmute")) ? "led" : "missing" });
   await sleep(300);

@@ -752,6 +752,12 @@ export const CHAT_WORDS = {
   unmuteFailed: "Unmute did not go through. Try again.",
   /** Where a muted player's messages stood in a room, under their name: pressed, their card offers Unmute. */
   muted: "muted",
+  /** Messages' last group: every player the player muted, each with Unmute. */
+  mutedPlayers: "Muted",
+  /** When the muted players could not be read: rooms wait for them, and chat reads them again by itself. */
+  mutesUnavailable: "Chat could not read who you muted. It tries again.",
+  /** A room while who is muted is not known yet. */
+  loading: "Loading…",
   /** Beside the chat's tabs: how many players are in it now ("4 online"). */
   online: "online",
   /** Where chat stands for a player not signed in: the chat strip's line, the app's Chat page and pane. */

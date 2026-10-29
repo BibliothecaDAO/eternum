@@ -22,6 +22,7 @@ import type {
   WorldChatZoneState,
 } from "./types";
 import { fetchApi } from "@/runtime/app-api";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { receiptDue } from "./direct-unread";
 
 const normalizeHttpBaseUrl = (raw: string): string => {
@@ -213,7 +214,8 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   typingIndicators: {},
   pendingReadReceipts: [],
   view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
-  blockedPlayers: [],
+  blockedPlayers: null,
+  heldWorldMessages: [],
   rooms: [],
   readOnlyZoneIds: [],
   roomRefusals: {},
@@ -230,6 +232,9 @@ const requestBlockList = async (baseUrl: string | undefined, method: string, pat
   if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
   return ((await response.json()) as { blocked: string[] }).blocked;
 };
+
+/** The first wait before the block list is read again after a failed read; each further one doubles, up to a minute. */
+const MUTES_RETRY_MS = 2_000;
 
 export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
   ...initialState,
@@ -399,10 +404,25 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         connectionStatus: "connecting",
         joinedZoneIds: [],
         lastConnectionError: undefined,
+        blockedPlayers: null,
+        heldWorldMessages: [],
       });
-      get()
-        .actions.loadBlockedPlayers()
-        .catch((error) => console.error("chat_block_list_unavailable", error));
+      // Who is muted is read before any room message is shown, counted or heard. A failed read is told once and tried
+      // again, later each time, for as long as this connection stands.
+      const readMutes = (attempt: number): Promise<void> =>
+        get()
+          .actions.loadBlockedPlayers()
+          .catch((error: unknown) => {
+            if (get().client !== client) return;
+            if (attempt === 0) toast.failed(error, CHAT_WORDS.mutesUnavailable);
+            setTimeout(
+              () => {
+                if (get().client === client && get().blockedPlayers === null) void readMutes(attempt + 1);
+              },
+              Math.min(MUTES_RETRY_MS * 2 ** attempt, 60_000),
+            );
+          });
+      void readMutes(0);
     },
     setRooms: (rooms) => {
       const before = get().rooms;
@@ -576,6 +596,15 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
     receiveWorldMessage: (zoneId, message, options) => {
       const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen, blockedPlayers } = get();
+      if (blockedPlayers === null) {
+        set((state) => ({
+          heldWorldMessages: [
+            ...state.heldWorldMessages,
+            { zoneId, message, clientMessageId: options?.clientMessageId },
+          ],
+        }));
+        return;
+      }
       const zoneState = worldZones[zoneId] ?? createWorldZoneState(zoneId);
       const normalizedMessage = normalizeWorldChatMessage(message);
 
@@ -1146,10 +1175,11 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
     },
     loadBlockedPlayers: async () => {
       const blocked = await requestBlockList(get().baseUrl, "GET");
-      if (blocked) set({ blockedPlayers: blocked });
+      if (blocked) knowMutes(blocked);
     },
-    // Blocking hides the thread: the chat leaves it for Messages and its messages leave this client. The server drops
-    // the account's future messages; unblocking lets later ones through, and a new message brings the thread back.
+    // Blocking hides the thread: the chat leaves it for Messages, which lists the muted players (from the block list,
+    // so after a reload too), and its messages leave this client. The server drops the account's future messages;
+    // unblocking lets later ones through and brings the conversation back, its history read again.
     blockPlayer: async (playerId) => {
       const blocked = await requestBlockList(get().baseUrl, "POST", "", { realmsId: playerId });
       if (!blocked) return;
@@ -1161,11 +1191,23 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       );
       const { view } = get();
       const showing = view.kind === "conversation" && hidden.includes(view.threadId);
-      set({ blockedPlayers: blocked, dmThreads, ...(showing ? { view: { kind: "messages" as const } } : {}) });
+      set({ dmThreads, ...(showing ? { view: { kind: "messages" as const } } : {}) });
+      knowMutes(blocked);
     },
     unblockPlayer: async (playerId) => {
       const blocked = await requestBlockList(get().baseUrl, "DELETE", `/${encodeURIComponent(playerId)}`);
-      if (blocked) set({ blockedPlayers: blocked });
+      if (!blocked) return;
+      knowMutes(blocked);
+      const threadId = get().actions.ensureDirectThread(playerId);
+      if (threadId) await get().actions.loadDirectHistory(threadId);
     },
   },
 }));
+
+/** The server's block list, now known: every room message held for it is taken, as it would have been on arrival. */
+const knowMutes = (blocked: string[]) => {
+  const held = useRealtimeChatStore.getState().heldWorldMessages;
+  useRealtimeChatStore.setState({ blockedPlayers: blocked, heldWorldMessages: [] });
+  for (const { zoneId, message, clientMessageId } of held)
+    useRealtimeChatStore.getState().actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+};
