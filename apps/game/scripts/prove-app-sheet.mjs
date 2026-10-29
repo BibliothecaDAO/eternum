@@ -1,7 +1,8 @@
 /**
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
- * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
- * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
+ * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, with a Blitz on, the
+ * next one scheduled and none left in the season, Blitz's column checked live or idle; the Blitz lobby, Season, Results
+ * sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844 (Play whole), and checked; so are
  * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
  * each of its holds (`doorway`).
  *
@@ -27,7 +28,10 @@ const SETTLE_MS = 2_000;
  * open (none on a full-screen step: the lobby).
  */
 const SHEET_PAGES = {
-  play: { path: "home", place: "Play" },
+  play: { path: "home", place: "Play", blitz: "live" },
+  // Play with no Blitz left in the season: Blitz's column idle, no Build orders; and with the next one scheduled.
+  "play-no-blitz": { path: "no-blitz", place: "Play", blitz: "idle" },
+  "play-next-blitz": { path: "blitz-next", place: "Play", blitz: "live" },
   // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
   "play-seated": { path: "blitz-seat", place: "Play" },
   // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
@@ -145,13 +149,14 @@ const pageChecks = (b) => [
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
 ];
 
-const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
+const shoot = async (b, baseUrl, out, { name, path, act, more, still }) => {
   b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
   const record = { name, ready: await waitFor(b, DRAWN, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
   await sleep(SETTLE_MS);
   await act?.(b, record);
   b.run("screenshot", join(out, `${name}.png`));
+  if (still) b.run("screenshot", still.selector, join(out, `${name}-${still.name}.png`));
   record.checks.push(...pageChecks(b), ...(more?.(b) ?? []));
   return record;
 };
@@ -274,8 +279,8 @@ const sheetPageChecks = (page) => (b) => {
       ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),
     },
     {
-      check: "an age's band of painting is 96 px on a desktop, 64 px on a phone",
-      ok: measure.ageBands.every((band) => band === (desktop ? "96px" : "64px")),
+      check: "an age's band of painting is 96 px, on a desktop and a phone",
+      ok: measure.ageBands.every((band) => band === "96px"),
     },
     ...(desktop
       ? []
@@ -356,11 +361,39 @@ const barCases = () =>
   BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(bar) }));
 
 const sheetPages = (desktop) =>
-  Object.entries(SHEET_PAGES).map(([page, { path, place }]) => ({
+  Object.entries(SHEET_PAGES).map(([page, { path, place, blitz }]) => ({
     name: `${desktop ? "app" : "phone"}-${page}`,
     path: `/lab/app/${path}?capture=1`,
-    more: sheetPageChecks({ desktop, place }),
+    // Blitz's column on its own, as well: a phone's first screen ends before it.
+    still: blitz === undefined ? undefined : { name: "blitz", selector: '.app-age-column[data-age="blitz"]' },
+    more: (b) => [...sheetPageChecks({ desktop, place })(b), ...(blitz ? blitzColumnChecks(b, blitz) : [])],
   }));
+
+/**
+ * Blitz's column on Play: with a game or the next one scheduled, live (its games, Build orders); with none left in the
+ * season, idle: its one line, no Build orders, drawn dimmed.
+ */
+const blitzColumnChecks = (b, expected) => {
+  const column = b.evaluate(`(() => {
+    const column = document.querySelector('.app-age-column[data-age="blitz"]');
+    if (!column) return null;
+    return {
+      idle: column.hasAttribute("data-idle"),
+      buildOrders: column.innerText.includes("Build orders"),
+      dimmed: getComputedStyle(column.querySelector(".app-age-column__painting")).filter !== "none",
+    };
+  })()`);
+  const idle = expected === "idle";
+  return [
+    {
+      check: idle
+        ? "Blitz with none scheduled reads idle: dimmed, its line alone, no Build orders"
+        : "Blitz with a game to play reads live, with Build orders",
+      ok: column !== null && column.idle === idle && column.dimmed === idle && column.buildOrders === !idle,
+      column,
+    },
+  ];
+};
 
 /** An element's name as a file name: "Game card" is sheet-game-card.png. */
 const fileOf = (name) =>

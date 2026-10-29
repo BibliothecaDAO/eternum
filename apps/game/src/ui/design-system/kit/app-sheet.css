@@ -507,6 +507,14 @@
   height: 100%;
   object-fit: cover;
 }
+/* An age with nothing to play and none to come (AppAgeColumn's idle): its painting and lockup in grey, dimmed, its
+   panel without its lift; its one line reads as it does. */
+.app-age-column[data-idle] {
+  box-shadow: none;
+}
+.app-age-column[data-idle] :is(.app-age-column__painting, .app-game-name__lockup) {
+  filter: grayscale(1) brightness(0.6);
+}
 .app-age-column__body {
   display: flex;
   flex-direction: column;
@@ -515,27 +523,26 @@
   background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
   padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
 }
-/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen.
-   It follows the rules it narrows, so it wins at their specificity. */
+/* A phone stacks the columns, each as tall as what it holds over its band of painting (the same band as a desktop's: the
+   lockup's stamp gone, its games come as far up the first screen as they did under the shorter band). It follows the
+   rule it narrows, so it wins at its specificity. */
 @media (max-width: 1023px) {
   .app-age-column {
     min-height: 0;
   }
-  .app-age-column__body {
-    padding-top: theme(spacing.16);
-  }
 }
-/* ── A game's name: its age's lockup, whole, then one game's start in the title face. ── */
+/* ── A game's name: its age's lockup (emblem over title, no stamp), then one game's start in the title face. ── */
 .app-game-name {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: theme(spacing.1);
 }
+/* The emblem and title at the size they had over the stamp, when the lockup stood 8rem with it (three quarters of it). */
 .app-game-name__lockup {
   display: block;
   width: auto;
-  height: 8rem;
+  height: 6rem;
 }
 .app-game-name__when {
   font-family: var(--app-face-game);
@@ -545,7 +552,7 @@
   color: var(--app-ink);
 }
 .app-game-card[data-size="lead"] .app-game-name__lockup {
-  height: min(12rem, 40vw);
+  height: min(9rem, 30vw);
 }
 /* Eternum's lockup is inked for parchment (the kit's Play card): its column and card grade to parchment and read in
    umber, the painting still above. */

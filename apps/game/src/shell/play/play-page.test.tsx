@@ -215,26 +215,32 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
-it("keeps Blitz on Play once an ended Blitz's results were seen, saying none is scheduled (live-qa-night-1 P3-12)", async () => {
+it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
   const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [ended], next: null, failures: [] });
   const page = await mount();
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
+  const idle = () => page.container.querySelector('section[aria-label="Blitz"]')?.hasAttribute("data-idle") ?? null;
   // Its results not yet opened: they stand in Blitz's column.
   expect(blitz()).toContain("Results");
   expect(blitz()).not.toContain("No Blitz scheduled");
 
   localStorage.setItem("realms.seen-results", JSON.stringify(["0xa:2"]));
   await page.render();
-  expect(blitz()).toBe("No Blitz scheduled this season.Build ordersThe game's order");
+  // None left in the season: Blitz is idle, its line alone, with no build orders to prepare (owner, 29 October 2026).
+  expect(blitz()).toBe("No Blitz scheduled this season.");
+  expect(idle()).toBe(true);
   expect(page.text()).toContain("Resume");
 
-  // A slot the operator opens takes the line's place; a slot outage is said as the outage, never as "none".
+  // A slot the operator opens takes the line's place, and Blitz is live again with its build orders; a slot outage is
+  // said as the outage, never as "none".
   reads.slots = answered({ slots: [slot] });
   await page.render();
   expect(blitz()).toContain("Join");
+  expect(blitz()).toContain("Build orders");
+  expect(idle()).toBe(false);
   expect(blitz()).not.toContain("No Blitz scheduled");
   reads.slots = failed();
   await page.render();
@@ -306,6 +312,8 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   expect(blitz()).toBe(
     `Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m${orders}`,
   );
+  // A Blitz to come: the column is as live as with one open.
+  expect(page.container.querySelector('section[aria-label="Blitz"]')!.hasAttribute("data-idle")).toBe(false);
 
   // Its entry due: the schedule's next tick opens it.
   reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });

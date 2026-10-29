@@ -97,21 +97,22 @@ no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unn
 Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
 with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
 local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
-and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and ends on **Build orders**,
-naming the order the player's games follow; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on
-three fixture orders whose saves the tab keeps) the account's orders, and on a desktop the followed one's steps beside
-them; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's
-figures over Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and
-points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a
-tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees
-them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the compact
-HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab realm,
-which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the
-HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army
-beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill points; its panel's Level
-up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's player on the
-same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab
-player's last realm lost, a Hyperstructure still held, playing then watching);
+and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`: then the column is dimmed, with
+nothing to press and no Build orders), and otherwise ends on **Build orders**, naming the order the player's games
+follow; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the
+tab keeps) the account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who
+is in, the entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards;
+Results (`/results/:id`, with **See the end map**) the player's place and points, the game's board, points by kind and
+the chest at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every release.
+`/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm.
+`/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the compact HUD), as the game mounts
+it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab realm, which has nothing to build
+now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the HUD, every control under it
+still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map
+opens it), `frontier`, `frontier-army` (an army out holding skill points; its panel's Level up sends spend_skill_point,
+recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's player on the same HUD, in Eternum's
+colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a
+Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
 reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
@@ -189,12 +190,13 @@ full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand
 English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
 its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
 the bar and the share card, the small globe on the favicon and the status page, the contour globe on the install icons
-and a loader; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the kit's
-parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the
-token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails) hold
-a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a
-surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or
-mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
+and a loader; `AGE_LOCKUP`, each age's emblem over its title, without the kit's Realms stamp, on Play's cards and
+columns and the Devcon landing, Eternum's on the kit's parchment grade), exported from the kit by
+`scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the token file (the boot, 404 and offline pages,
+the status page, the docs site's styles and config, the player emails) hold a copy written by
+`pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a surface left on a
+v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or mark a standalone
+surface writes on its own, and on email headers drawn from older brand inputs
 (`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
 is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
 enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the
