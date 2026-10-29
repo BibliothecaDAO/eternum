@@ -7,7 +7,7 @@ import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 
-import { type SharedPlace, sharedPlaceOf } from "../../model/place";
+import { placeKey, type SharedPlace, sharedPlaceOf } from "../../model/place";
 import { type ChatMap, ChatMapContext, useChatMap, usePlaceReader } from "./use-chat-map";
 
 /**
@@ -55,6 +55,7 @@ export const PlaceChip = ({ place }: { place: SharedPlace }) => {
     <span
       className={cn("inline-flex items-center gap-1 align-middle", gone && "line-through opacity-50")}
       data-place={name}
+      data-place-key={placeKey(place)}
       data-elsewhere={elsewhere || undefined}
     >
       <HudChip icons={[icon]} onPress={open ?? undefined} disabled={map !== null && open === null}>

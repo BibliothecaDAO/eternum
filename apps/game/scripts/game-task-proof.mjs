@@ -30,10 +30,12 @@ export const spiralPoints = ([cx, cy], { radius, step }) => {
  * map's tooltip naming an order), and clicks there (with `button`, right for an order sent at once); for `hover`, moves it out until the page shows words
  * matching that pattern and stops there, clicking nothing; for `holdingTile`, moves it out until it rests on
  * another of the player's holdings than the one selected, and clicks there; for `fill`, types `value` into that
- * field; for `key`, presses that key; for `word`, clicks the element showing that word, as agent-browser finds it.
- * False when nothing matched.
+ * field (a function of the run's token makes words this run alone wrote); for `drag`, drags the map from the screen's
+ * centre by that offset, as a player moves it; for `key`, presses that key; for `word`, clicks the element showing
+ * that word, as agent-browser finds it. A text press's `within` keeps only those holding the words `having` gives for
+ * the run's token, and with `inside`, looks in what matches that inside them. False when nothing matched.
  */
-const pressStep = async (b, press, layout) => {
+const pressStep = async (b, press, layout, token) => {
   if (press.key) {
     await b.run("press", press.key);
     return true;
@@ -47,7 +49,17 @@ const pressStep = async (b, press, layout) => {
     return true;
   }
   if (press.fill) {
-    await b.run("fill", press.fill, press.value);
+    await b.run("fill", press.fill, typeof press.value === "function" ? press.value(token) : press.value);
+    return true;
+  }
+  if (press.drag) {
+    const [cx, cy] = VIEWPORTS[layout].map((side) => side / 2);
+    const [dx, dy] = press.drag;
+    await b.run("mouse", "move", String(cx), String(cy));
+    await b.run("mouse", "down", "left");
+    for (const step of [1, 2, 3, 4])
+      await b.run("mouse", "move", String(cx + (dx * step) / 4), String(cy + (dy * step) / 4));
+    await b.run("mouse", "up", "left");
     return true;
   }
   if (press.tile)
@@ -68,9 +80,25 @@ const pressStep = async (b, press, layout) => {
         `new RegExp(${JSON.stringify(press.hover)}).test(document.body.innerText)`,
       )) !== null
     );
-  const selector = await b.evaluate(`(() => {
+  const selector = await b.evaluate(findControl(press, token));
+  if (!selector) return false;
+  await b.run("scrollintoview", selector);
+  await b.run("click", selector);
+  return true;
+};
+
+/**
+ * The page script a text press runs: marks the first visible control inside `within` (kept to those holding the
+ * run's `having` words, then what matches `inside` in them) whose words or label match `text`, and names it; null when
+ * none does.
+ */
+const findControl = (press, token) => `(() => {
     const CONTROL = "button, a[href], [role=button], [role=tab]";
-    const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})];
+    const having = ${JSON.stringify(press.having ? press.having(token) : null)};
+    const inside = ${JSON.stringify(press.inside ?? null)};
+    const scope = [...document.querySelectorAll(${JSON.stringify(press.within ?? "body")})]
+      .filter((root) => having === null || root.innerText.includes(having))
+      .flatMap((root) => (inside === null ? [root] : [...root.querySelectorAll(inside)]));
     const pattern = new RegExp(${JSON.stringify(press.text)});
     const control = scope
       .flatMap((root) => [root, ...root.querySelectorAll(CONTROL)].filter((el) => el.matches(CONTROL)))
@@ -84,12 +112,7 @@ const pressStep = async (b, press, layout) => {
     document.querySelectorAll("[data-proof-press]").forEach((el) => el.removeAttribute("data-proof-press"));
     control.setAttribute("data-proof-press", "");
     return "[data-proof-press]";
-  })()`);
-  if (!selector) return false;
-  await b.run("scrollintoview", selector);
-  await b.run("click", selector);
-  return true;
-};
+  })()`;
 
 /** The pointer rests on one of the player's holdings other than the one the HUD has selected. */
 const ANOTHER_HOLDING_HOVERED = `(() => {
@@ -132,31 +155,34 @@ export const proveTask = async (b, base, addresses, name, layout, out) => {
     };
   await sleep(AT_REST_SETTLE_MS);
   const presses = task.presses.filter((each) => !each.layout || each.layout === layout);
+  // A token this run alone writes (a message's words), which its reading finds again.
+  const token = `${name}-${Date.now().toString(36)}`;
+  const reading = typeof task.reading === "function" ? task.reading(token) : task.reading;
   record.screenshots.push(await shot(b, out, `task-${name}-${layout}-before.png`));
   let before;
   for (const [index, press] of presses.entries()) {
     // The reading is taken where the order is given, just before its last press, so opening a panel counts for nothing.
-    if (index === presses.length - 1 && task.reading) before = await b.evaluate(task.reading);
-    const pressed = await pressStep(b, press, layout);
+    if (index === presses.length - 1 && reading) before = await b.evaluate(reading);
+    const pressed = await pressStep(b, press, layout, token);
     await sleep(1500);
     record.inputs.push({ ...press, pressed });
     record.screenshots.push(await shot(b, out, `task-${name}-${layout}-${record.inputs.length}.png`));
     if (!pressed) return { ...record, problem: `nothing to press for ${press.name}` };
   }
   record.clicks = record.inputs.length;
-  const outcome = await waitForOutcome(b, task, before);
+  const outcome = await waitForOutcome(b, task, reading, before);
   record.done = outcome.problem === null;
-  if (task.reading) record.reading = { before, after: outcome.after };
+  if (reading) record.reading = { token, before, after: outcome.after };
   record.screenshots.push(await shot(b, out, `task-${name}-${layout}-done.png`));
   return outcome.problem ? { ...record, problem: outcome.problem } : record;
 };
 
 /** Waits for a task's end state and, for a task that changes the game, for its reading to change as it expects. */
-const waitForOutcome = async (b, task, before) => {
+const waitForOutcome = async (b, task, reading, before) => {
   const until = Date.now() + STEP_TIMEOUT_MS;
   let outcome;
   do {
-    const after = task.reading ? await b.evaluate(task.reading) : undefined;
+    const after = reading ? await b.evaluate(reading) : undefined;
     outcome = {
       after,
       problem: (await b.evaluate(`Boolean(${task.done})`))

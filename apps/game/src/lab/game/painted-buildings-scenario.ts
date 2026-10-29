@@ -6,6 +6,7 @@ import {
   TileOccupier,
   StructureType,
 } from "@bibliothecadao/types";
+import { MAP_SITES } from "@/config/map-sites";
 import type { LabFact, LabScenario } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
@@ -105,7 +106,7 @@ export const paintedBuildingsScenario = (): LabScenario => {
         labor_paid: "0",
       },
     })),
-    ...[TileOccupier.Shrine, TileOccupier.Well].map((category, index) => ({
+    ...MAP_SITES.map(({ occupier: category }, index) => ({
       model: "TileOccupancy",
       key: `0x1ab6${index}`,
       value: {

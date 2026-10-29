@@ -1,29 +1,23 @@
-import { formatGain, TileOccupier } from "@bibliothecadao/types";
+import { formatGain } from "@bibliothecadao/types";
 import { nativeRuleConstants, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
+import { type MapSiteKind, mapSiteOf } from "@/config/map-sites";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { SHRINE, STAMINA, WELL, XP } from "@/ui/design-system/kit/words";
 
-/**
- * The single-use sites a tile can hold, each by its occupier category (these sites have no Structure), as the map names
- * and paints it: the one list the site's card and a place shared in chat read.
- */
-export const MAP_SITES = [
-  { kind: "Shrine", occupier: TileOccupier.Shrine, name: SHRINE, icon: "shrine" },
-  { kind: "Well", occupier: TileOccupier.Well, name: WELL, icon: "well" },
-] as const satisfies readonly { kind: string; occupier: number; name: string; icon: IconMeaning }[];
+export type { MapSiteKind } from "@/config/map-sites";
 
-type MapSite = (typeof MAP_SITES)[number];
-export type MapSiteKind = MapSite["kind"];
-
-/** A tile's single-use site, from its occupier category alone. */
-export const mapSiteOf = (occupierType: number | undefined): MapSite | null =>
-  MAP_SITES.find((site) => site.occupier === occupierType) ?? null;
+/** How the HUD names and paints each site of the map's catalog (MAP_SITES), the site card and chat alike. */
+const SITE_FACES: Record<MapSiteKind, { name: string; icon: IconMeaning }> = {
+  Shrine: { name: SHRINE, icon: "shrine" },
+  Well: { name: WELL, icon: "well" },
+};
 
 export const mapSiteKind = (occupierType: number | undefined): MapSiteKind | null =>
   mapSiteOf(occupierType)?.kind ?? null;
 
-export const mapSite = (kind: MapSiteKind): MapSite => MAP_SITES.find((site) => site.kind === kind)!;
+/** A site of the map's catalog as the HUD names and paints it. */
+export const mapSite = (kind: MapSiteKind) => ({ kind, ...SITE_FACES[kind] });
 
 /** What one use gives: a Shrine its fixed XP, a Well stamina; unknown while the game's XP rules are. */
 export const siteGain = (

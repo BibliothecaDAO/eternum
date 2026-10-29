@@ -1,7 +1,8 @@
 import type { MapSelectionIntent } from "@/hooks/store/map-selection";
 import { readStructureMeaning, troopMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { type IconMeaning, iconMeanings } from "@/ui/design-system/icon-meaning";
-import { MAP_SITES, type MapSiteKind, mapSite, mapSiteOf } from "@/ui/features/frontier/sites/map-site-plan";
+import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
+import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import { activeTileOccupancy, getEntityName } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
@@ -36,6 +37,17 @@ export type SharedPlace = PlaceTarget & {
   icon: IconMeaning;
   /** When it was shared (chain seconds): Frontier's map is built again each day, so a place from a closed day is gone. */
   at: number;
+};
+
+/**
+ * A place's identity in one spelling, its game then what it is: "0x1ab:1/structure:7", "0x1ab:1/army:31",
+ * "0x1ab:1/site:Well@30,30,surface". The chip carries it, so a check outside the page names the place it opens.
+ */
+export const placeKey = (place: SharedPlace): string => {
+  const game = `${place.game.chainId}:${place.game.gameId}`;
+  if (place.kind !== "site") return `${game}/${place.kind}:${place.entityId}`;
+  const { col, row, alt } = place.tile;
+  return `${game}/site:${place.site}@${col},${row},${alt ? "depth" : "surface"}`;
 };
 
 /** The metadata a message carrying a place is sent with. */

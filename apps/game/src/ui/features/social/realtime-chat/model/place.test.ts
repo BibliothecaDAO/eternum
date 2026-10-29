@@ -1,18 +1,19 @@
 import { expect, it } from "vitest";
 
-import { MAP_SITES } from "@/ui/features/frontier/sites/map-site-plan";
+import { MAP_SITES, type MapSite } from "@/config/map-sites";
+import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import { messageWords, placeMetadata, placeOf, type SharedPlace } from "./place";
 
 const GAME = { chainId: "0x1ab", gameId: 3, name: "Frontier 3" };
 const MOONDEEP = { kind: "structure", entityId: 4242, game: GAME, name: "Moondeep", icon: "ruin", at: 1_000 } as const;
 const ARMY = { kind: "army", entityId: 77, game: GAME, name: "Iron Wardens", icon: "knight-t2", at: 1_000 } as const;
-const siteAt = (site: (typeof MAP_SITES)[number]): SharedPlace => ({
+const siteAt = (site: MapSite): SharedPlace => ({
   kind: "site",
   site: site.kind,
   tile: { col: 4, row: 9, alt: true },
   game: GAME,
-  name: site.name,
-  icon: site.icon,
+  name: mapSite(site.kind).name,
+  icon: mapSite(site.kind).icon,
   at: 1_000,
 });
 

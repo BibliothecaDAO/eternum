@@ -167,31 +167,67 @@ const verbAloneAtRight = (within, verb) => `(() => {
 })()`;
 
 /**
- * What the chat-place task reads where its last press is given and after it: the map's selection (its structure, its
- * hex) and where the camera looks, and the place in the room's last message (its name, whether it opens).
+ * What the chat-place task reads where its last press is given and after it: the message this run sent (the one with
+ * its token) and the place it carries (its key, whether it is this game's and opens), the map's selection (structure,
+ * army, hex), where the camera looks and on which layer, and whether chat covers the map (a phone's page).
  */
-const CHAT_PLACE_READING = `(() => {
+const chatPlaceReading = (token) => `(() => {
   const map = window.__eternumMapSelection ?? {};
-  const chip = [...document.querySelectorAll('section[aria-label="Chat"] li[data-message-id] [data-place]')].at(-1);
+  const pane = document.querySelector('section[aria-label="Chat"]');
+  const sent = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].findLast((row) =>
+    row.innerText.includes(${JSON.stringify(token)}),
+  );
+  const chip = sent?.querySelector("[data-place-key]");
   return {
+    phone: innerWidth < 1024,
+    chatShown: Boolean(pane && pane.getBoundingClientRect().height > 0),
+    sent: chip
+      ? {
+          key: chip.getAttribute("data-place-key"),
+          here: !chip.hasAttribute("data-elsewhere"),
+          opens: !(chip.querySelector("button")?.disabled ?? true),
+        }
+      : null,
     structure: map.structure ?? null,
+    army: map.army ?? null,
     hex: map.hex ?? null,
     camera: map.camera ?? null,
-    chip: chip ? { name: chip.getAttribute("data-place"), opens: !(chip.querySelector("button")?.disabled ?? true) } : null,
+    layer: map.layer ?? null,
   };
 })()`;
 
+const nearHex = (a, b) => Boolean(a && b) && Math.abs(a.col - b.col) <= 1 && Math.abs(a.row - b.row) <= 1;
+
+/** A place key (placeKey in the client): its game, then what it is. */
+const parsePlaceKey = (key) => {
+  const target = /^[^/]+\/(structure|army):(\d+)$/.exec(key ?? "");
+  if (target) return { kind: target[1], entityId: Number(target[2]) };
+  const site = /^[^/]+\/site:[^@]+@(\d+),(\d+),(surface|depth)$/.exec(key ?? "");
+  return site
+    ? { kind: "site", tile: { col: Number(site[1]), row: Number(site[2]) }, depth: site[3] === "depth" }
+    : null;
+};
+
 /**
- * The chat-place task's outcome: the message sent came back with its place as a chip that opens, and pressing it left
- * one of the player's own structures selected with the camera on its hex.
+ * The chat-place task's outcome: the message this run sent came back carrying a place of this game that opens; the map
+ * was elsewhere when it was pressed (the camera off the place); and pressing it selected that very place (the structure
+ * or army by its id, a site by its tile), the camera on it and, for a site, on its layer, with the map in view again on
+ * a phone (its chat page put away).
  */
-export const chatPlaceOpened = (before, after) =>
-  Boolean(before?.chip?.opens) &&
-  Boolean(after?.structure?.ownedByViewer) &&
-  after.hex !== null &&
-  after.camera !== null &&
-  Math.abs(after.camera.col - after.hex.col) <= 1 &&
-  Math.abs(after.camera.row - after.hex.row) <= 1;
+export const chatPlaceOpened = (before, after) => {
+  if (!before?.sent?.here || !before.sent.opens || !after) return false;
+  const place = parsePlaceKey(before.sent.key);
+  if (!place) return false;
+  const reached =
+    place.kind === "structure"
+      ? after.structure?.id === place.entityId && after.hex
+      : place.kind === "army"
+        ? after.army?.id === place.entityId && after.army.hex
+        : nearHex(after.hex, place.tile) && after.layer === place.depth && place.tile;
+  if (!reached) return false;
+  const mapInView = !after.phone || !after.chatShown;
+  return !nearHex(before.camera, reached) && nearHex(after.camera, reached) && mapInView;
+};
 
 export const GAME_TASKS = {
   // The boot smoke: a signed-in player enters, the HUD and its lazy chat load, and the page raises no error (every
@@ -205,27 +241,37 @@ export const GAME_TASKS = {
     done: `document.querySelector('section[aria-label="Chat"]') !== null`,
   },
   // Sharing a place in chat, as a player does it: the realm selected on the map, Chat opened (on a phone its tab puts
-  // the realm's card away), the place button, words, Send; then the place in the message that comes back, pressed.
+  // the realm's card away), the place button, words this run alone writes, Send. Then the map is moved off the realm
+  // (on a phone, Chat put away to reach it and opened again), and the place in the message this run sent is pressed.
   "chat-place": {
-    goal: "Share the selected realm in Global and open it from the message that comes back",
+    goal: "Share the selected realm in Global, move the map away, and open the realm from the message sent",
     layouts: PHONE_AND_DESKTOP,
     view: "map",
     presses: [
       { name: "the next structure", key: "Shift+Tab" },
       { name: "Chat", text: "^Chat( strip)?$" },
       { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share the selected place$" },
-      { name: "words", fill: 'section[aria-label="Chat"] input[aria-label="Message"]', value: "hold here" },
+      {
+        name: "words",
+        fill: 'section[aria-label="Chat"] input[aria-label="Message"]',
+        value: (token) => `hold here ${token}`,
+      },
       { name: "Send", within: 'section[aria-label="Chat"] form', text: "^Send$" },
+      { name: "Chat, put away", layout: "phone", within: 'nav[aria-label="Places"]', text: "^Chat" },
+      { name: "the map, dragged away", drag: [-260, -180] },
+      { name: "Chat, again", layout: "phone", within: 'nav[aria-label="Places"]', text: "^Chat" },
       {
         name: "the place in the message sent",
-        within: 'section[aria-label="Chat"] li[data-message-id]:last-child [data-place]',
+        within: 'section[aria-label="Chat"] li[data-message-id]',
+        having: (token) => token,
+        inside: "[data-place-key]",
         text: ".",
       },
     ],
-    reading: CHAT_PLACE_READING,
-    changes: "the map opens on the shared realm, selected",
+    reading: chatPlaceReading,
+    changes: "the map opens on the very place sent, selected, the camera on it",
     expect: chatPlaceOpened,
-    done: `window.__eternumMapSelection?.structure?.ownedByViewer === true`,
+    done: `window.__eternumMapSelection?.camera !== undefined`,
   },
   "gate-build": {
     goal: "Before play opens: press Build on the action strip",

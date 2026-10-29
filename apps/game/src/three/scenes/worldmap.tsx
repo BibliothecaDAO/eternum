@@ -910,7 +910,7 @@ export default class WorldmapScene extends WarpTravel {
     const contractHex = Position.fromNormalized({ x: normalizedHex.col, y: normalizedHex.row }).getContract();
     const camera = { col: Number(contractHex.x), row: Number(contractHex.y) };
     useUIStore.getState().setCameraTargetHex(camera);
-    publishMapSelection({ camera });
+    publishMapSelection({ camera, layer: useUIStore.getState().mapLayer });
   };
   private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;

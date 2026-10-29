@@ -40,7 +40,8 @@ const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-suppo
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { readStructureMeaning } = await import("@/ui/design-system/domain-icon-meaning");
-const { MAP_SITES } = await import("@/ui/features/frontier/sites/map-site-plan");
+const { MAP_SITES } = await import("@/config/map-sites");
+const { mapSite } = await import("@/ui/features/frontier/sites/map-site-plan");
 const { useGameChat } = await import("@/ui/features/world/containers/hud-chat-window");
 const { GLOBAL_ROOM } = await import("../model/chat-rooms");
 const { useRealtimeChatStore } = await import("../model/store");
@@ -259,6 +260,7 @@ describe("places in chat, in a Frontier game", () => {
 
   it("draws a place a message carries as its painting and name, after the words, and opens the map on it", () => {
     expect(chip("m1").textContent).toBe(game.realmName);
+    expect(chip("m1").getAttribute("data-place-key")).toBe(`0x1ab:1/structure:${REALM}`);
     expect(chip("m1").querySelector("img")).not.toBeNull();
     expect(host.querySelector('li[data-message-id="m1"]')!.textContent).toContain(`meet me at ${game.realmName}`);
     act(() => chip("m1").querySelector("button")!.click());
@@ -307,6 +309,7 @@ describe("places in chat, in a Frontier game", () => {
       expect(chip(id).textContent).not.toContain(game.realmName);
       expect(chip(id).textContent).toContain(`in ${gameName}`);
       expect(chip(id).hasAttribute("data-elsewhere")).toBe(true);
+      expect(chip(id).getAttribute("data-place-key")).not.toBe(`0x1ab:1/structure:${REALM}`);
       expect(chip(id).className).not.toContain("line-through");
       chip(id).querySelector("button")?.click();
     }
@@ -365,8 +368,8 @@ describe("places in chat, in a Frontier game", () => {
     expect(placeButton().disabled).toBe(true);
   });
 
-  // Every site the map knows (MAP_SITES): one the list adds is covered here, or fails here.
-  it.each(MAP_SITES.map((site, index) => [site.kind, site, index] as const))(
+  // Every site of the map's own catalog (MAP_SITES, which the renderer draws from): one it adds is covered here.
+  it.each(MAP_SITES.map((entry, index) => [entry.kind, { ...entry, ...mapSite(entry.kind) }, index] as const))(
     "shares a %s selected on its tile, opens its tile, and strikes it through once spent",
     async (_, site, index) => {
       const tile = siteTile(index);
@@ -389,6 +392,9 @@ describe("places in chat, in a Frontier game", () => {
 
       arrives("m11", site.name, sentPlace().metadata!);
       expect(chip("m11").textContent).toBe(site.name);
+      expect(chip("m11").getAttribute("data-place-key")).toBe(
+        `0x1ab:1/site:${site.kind}@${tile.col},${tile.row},surface`,
+      );
       act(() => chip("m11").querySelector("button")!.click());
       const [position, select] = moved.openOnMap.mock.calls.at(-1)!;
       expect(position.getContract()).toEqual({ x: tile.col, y: tile.row });
