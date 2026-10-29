@@ -32,6 +32,8 @@ import sys
 import time
 from pathlib import Path
 
+# Run as root inside a deploy checkout that an unprivileged deploy later removes: bytecode written here would be root's.
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from stack_lock import LOCK, isolated_stack_lock
 
