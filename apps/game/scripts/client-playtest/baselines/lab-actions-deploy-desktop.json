@@ -1,0 +1,23 @@
+{
+  "measured": {
+    "commit": "56070bec851f3f8a7555ac748e9db898f51221f8",
+    "steps": "lab-actions-deploy",
+    "device": "desktop",
+    "run": "evidence/click-latency/r5-deploy-035018/desktop/lab-actions-deploy/2026-10-29T02-50-20-081Z-spectator",
+    "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
+  },
+  "byMode": {
+    "webgpu-auto": {
+      "steps": {
+        "deploy": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 341.4,
+            "min": 338,
+            "max": 342.4
+          }
+        }
+      }
+    }
+  }
+}
