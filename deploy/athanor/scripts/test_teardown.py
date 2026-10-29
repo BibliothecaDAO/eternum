@@ -1,10 +1,12 @@
 import importlib.util
 import io
+import os
 from pathlib import Path
 import unittest
 import json
 import shutil
 import subprocess
+import sys
 import tempfile
 from contextlib import ExitStack, nullcontext
 from unittest.mock import patch
@@ -469,6 +471,20 @@ class ReadOnlyStandInTest(unittest.TestCase):
                     with patch.object(verify_backup, "volume_path", return_value=config), \
                             patch.object(verify_backup, "docker", side_effect=docker):
                         self.assertFalse(verify_backup.writes_closed("realms-production"))
+
+
+class BackupBytecodeTest(unittest.TestCase):
+    """Root runs backup.py from a deploy checkout; the unprivileged deploy later removes that checkout."""
+
+    def test_running_backup_writes_no_bytecode_into_its_checkout(self):
+        shard_directory = Path(__file__).resolve().parents[3] / "deploy/shard"
+        with tempfile.TemporaryDirectory() as temporary:
+            checkout = Path(temporary)
+            for name in ("backup.py", "stack_lock.py"):
+                shutil.copy(shard_directory / name, checkout / name)
+            environment = {key: value for key, value in os.environ.items() if key != "PYTHONDONTWRITEBYTECODE"}
+            subprocess.run([sys.executable, str(checkout / "backup.py")], env=environment, capture_output=True)
+            self.assertEqual(sorted(path.name for path in checkout.iterdir()), ["backup.py", "stack_lock.py"])
 
 
 spec_backup = importlib.util.spec_from_file_location("shard_backup", Path(__file__).resolve().parents[3] / "deploy/shard/backup.py")
