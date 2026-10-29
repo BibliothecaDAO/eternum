@@ -55,7 +55,7 @@ it("closes the question before removing a device on the system back, staying on 
   document.body.append(container);
   const root = createRoot(container);
   const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-  const asking = () => container.querySelector('[role="dialog"]') !== null;
+  const asking = () => document.body.querySelector('[role="dialog"]') !== null;
   try {
     await act(async () => root.render(<DevicesCard realmsId="0x7" />));
     await settle();

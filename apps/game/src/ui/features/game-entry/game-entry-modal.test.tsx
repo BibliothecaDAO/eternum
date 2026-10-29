@@ -402,6 +402,30 @@ it.each([
   },
 );
 
+it("waits on an unreadable ticket: says so, founds nothing, and offers the ticket once Try again answers", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  settlement.presetId = 6;
+  setViewportWidth(1440);
+  signIn("0x456");
+  vi.spyOn(identityClient, "redeemCampaignTicket")
+    .mockRejectedValueOnce(new IdentityRequestError(503, "campaigns_unavailable"))
+    .mockResolvedValue({ campaign: "devcon-2026", tier: "golden" });
+  const registered = relay(() => held(711));
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Your ticket cannot be read right now"));
+    expect(entry.featured()).toBeNull();
+    expect(entry.found().disabled).toBe(true);
+    await entry.press("Try again");
+    await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
+    expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
+    await entry.press("Found your realm");
+    expect(registered).toEqual([{ gameId: 8 }]);
+  } finally {
+    await entry.close();
+  }
+});
+
 it("waits to found until it knows what the account holds, so a holder never founds a free home by a quick press", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   signIn("0x456");

@@ -2,14 +2,12 @@ import "./home-source-picker.css";
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { useQuery } from "@tanstack/react-query";
 import { canonicalRealm, homeSourceClaim, type HomeClaimSource, type LaborRuleAmounts } from "@bibliothecadao/eternum";
 import { orders } from "@bibliothecadao/types";
-import { IdentityRequestError, type CampaignKey, type CampaignTicket, type HeldRealm } from "@realms-world/identity";
+import type { CampaignKey, HeldRealm } from "@realms-world/identity";
 
-import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { useHeldRealms, useHeldTicket } from "@/hooks/use-holdings";
 import { campaignOfPreset, presetLaborRules } from "@/services/home-claim-rules";
-import { readHeldRealms } from "@/services/realm-entry";
 import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
@@ -23,6 +21,7 @@ import {
   TICKET_UNREADABLE,
   TRY_AGAIN,
   campaignTicketName,
+  numberedRealm,
 } from "@/ui/design-system/kit/words";
 
 /**
@@ -193,7 +192,7 @@ const choiceName = (choice: Choice) =>
   choice.kind === "ticket" ? campaignTicketName(choice.campaign, choice.golden) : choice.name;
 
 const choiceLabel = (choice: Choice) =>
-  choice.kind === "ticket" ? choiceName(choice) : `${choice.realmId} · ${choice.name}`;
+  choice.kind === "ticket" ? choiceName(choice) : numberedRealm(choice.realmId, choice.name);
 
 /**
  * The other choices: a strip of the first ones (three, two on a phone: what the doorway's width holds), then All,
@@ -432,53 +431,32 @@ interface HomeSources {
   ready: boolean;
   /** Ask the Realms again: set while they could not be read. */
   realmsUnreadable: (() => void) | null;
-  /** Ask the ticket again: set while it could not be read. */
+  /** Ask the ticket again: set while it could not be read; until it is known, nothing is offered or founded. */
   ticketUnreadable: (() => void) | null;
   rules: LaborRuleAmounts | null;
 }
 
+/**
+ * The account's sources from the holdings reads every screen shares (useHeldRealms, useHeldTicket). The step is ready
+ * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
+ * than offering a free home or a lesser default without it.
+ */
 function useHomeSources(presetId: number): HomeSources {
-  const { session } = useIdentitySession();
-  const wallet = session?.user.address ?? null;
+  const { session, wallet, held } = useHeldRealms();
   const campaign = campaignOfPreset(presetId);
-  const held = useQuery({
-    queryKey: ["held-realms", session?.user.realmsId ?? null, wallet] as const,
-    queryFn: readHeldRealms,
-    enabled: wallet !== null,
-    retry: false,
-    staleTime: 60_000,
-  });
-  const ticket = useQuery({
-    queryKey: ["campaign-ticket", session?.user.realmsId ?? null, campaign] as const,
-    queryFn: () => (campaign === null ? null : heldCampaignTicket(campaign)),
-    enabled: session !== null && campaign !== null,
-    retry: false,
-    staleTime: 60_000,
-  });
+  const ticket = useHeldTicket(campaign);
   const rules = useMemo(() => presetLaborRules(presetId), [presetId]);
   const heldKnown = wallet === null || held.data !== undefined;
-  const ticketKnown = campaign === null || ticket.data !== undefined;
   return {
     wallet,
-    ticket: campaign && ticket.data ? { kind: "ticket", campaign, golden: ticket.data.tier === "golden" } : null,
+    ticket: ticketChoice(campaign, ticket),
     realms: held.data ?? [],
-    ready: session !== null && heldKnown && ticketKnown,
+    ready: session !== null && heldKnown && (ticket.state === "none" || ticket.state === "held"),
     realmsUnreadable: held.isError ? () => void held.refetch() : null,
-    ticketUnreadable: ticket.isError ? () => void ticket.refetch() : null,
+    ticketUnreadable: ticket.state === "unreadable" ? ticket.retry : null,
     rules,
   };
 }
 
-/** The ticket the account already holds to this campaign; null when it holds none. Opens no flyer. */
-async function heldCampaignTicket(campaign: CampaignKey): Promise<CampaignTicket | null> {
-  try {
-    return await identityClient.redeemCampaignTicket(campaign, null);
-  } catch (cause) {
-    if (
-      cause instanceof IdentityRequestError &&
-      (cause.code === "invalid_redemption" || cause.code === "campaign_closed")
-    )
-      return null;
-    throw cause;
-  }
-}
+const ticketChoice = (campaign: CampaignKey | null, ticket: ReturnType<typeof useHeldTicket>): Choice | null =>
+  campaign && ticket.state === "held" ? { kind: "ticket", campaign, golden: ticket.ticket.tier === "golden" } : null;

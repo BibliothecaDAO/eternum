@@ -12,7 +12,7 @@ import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
-import { ConnectWindow } from "../sign-in/connect-window";
+import { ShellWindow } from "../frame/shell-window";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
@@ -94,9 +94,9 @@ export const LabConnect = () => {
   return (
     <PageAddress.Provider value="/">
       <PlayPage />
-      <ConnectWindow title={shown.title} onClose={noop}>
+      <ShellWindow title={shown.title} onClose={noop}>
         {shown.body}
-      </ConnectWindow>
+      </ShellWindow>
     </PageAddress.Provider>
   );
 };

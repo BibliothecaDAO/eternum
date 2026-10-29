@@ -574,6 +574,11 @@ export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} op
 export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
 export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
+export const YOUR_REALMS = "Your Realms";
+/** A held Realm as a pick or a row names it: its number, then its name where it has one ("711 · Ket ek Ëtläl"). */
+export const numberedRealm = (realmId: number, name: string | undefined) =>
+  name ? `${realmId} · ${name}` : String(realmId);
+export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
 export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
 export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
@@ -848,6 +853,12 @@ export const PROFILE_WORDS = {
   /** Music outside a match, on this device. */
   music: "Music",
   recentGames: "Recent games",
+  /** The counts at the foot of the player's own card, each opening its sheet. */
+  holdings: "Holdings",
+  realms: "Realms",
+  ticket: "Ticket",
+  /** Under a count the holdings could not read: it says why in its sheet. */
+  unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */
   noGamesOwn: "Your finished games will show here.",
   noGames: "No finished games yet.",

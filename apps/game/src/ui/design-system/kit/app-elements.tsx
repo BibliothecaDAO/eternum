@@ -12,6 +12,7 @@ import {
   useRef,
 } from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 import { BACK } from "./words";
 
@@ -810,9 +811,11 @@ export const AppDialog = ({
 };
 
 /**
- * The one layer that opens over the page (a dialog, Connect): the page dimmed behind it and inert while it is open, so
- * neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a press beside it,
- * Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing in the middle.
+ * The one layer that opens over the page (a dialog, Connect, a holding's sheet): the page dimmed behind it and inert
+ * while it is open, so neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a
+ * press beside it, Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing
+ * in the middle. It is drawn at the body's end, whoever opens it: inside a panel (whose backdrop filter holds fixed
+ * children to the panel) it would open in the panel rather than over the page.
  */
 export const AppModalLayer = ({
   onClose,
@@ -826,7 +829,7 @@ export const AppModalLayer = ({
   useSheetCloses(onClose);
   const layer = useRef<HTMLDivElement>(null);
   useInertOutside(layer);
-  return (
+  return createPortal(
     <div
       ref={layer}
       data-surface="shell"
@@ -834,7 +837,8 @@ export const AppModalLayer = ({
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 };
 

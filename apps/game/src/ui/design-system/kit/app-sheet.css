@@ -486,6 +486,35 @@
   flex-direction: column;
 }
 
+/* ── Holdings: what the player holds, counted at the foot of their own card; each count opens its sheet. ── */
+.app-holdings {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  margin-top: theme(spacing.4);
+  border-top: 1px solid var(--app-line);
+}
+.app-holdings__item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: theme(spacing[0.5]);
+  padding: theme(spacing.3) theme(spacing.1) theme(spacing.1);
+  border-left: 1px solid var(--app-line);
+  text-align: center;
+}
+.app-holdings__item:first-child {
+  border-left: 0;
+}
+.app-holdings__item:hover {
+  background: color-mix(in srgb, rgb(var(--app-gold)) 8%, transparent);
+}
+.app-holdings__item:focus-visible {
+  outline: 2px solid rgb(var(--app-gold));
+  outline-offset: -2px;
+}
+
 /* ── Age column: an age, tall on its painting, its games in its well. ── */
 .app-age-column {
   position: relative;
@@ -1100,7 +1129,7 @@
 }
 
 /* ── Connect: signing in over the page, its painting at the head. ── */
-.app-connect {
+.app-window {
   display: flex;
   width: 30rem;
   max-width: 100%;
@@ -1113,14 +1142,14 @@
   box-shadow: var(--app-shadow-dialog);
   color: var(--app-ink);
 }
-.app-connect[data-layout="phone"] {
+.app-window[data-layout="phone"] {
   width: 100%;
   max-height: 92dvh;
   border-bottom: 0;
   border-radius: var(--app-radius-panel) var(--app-radius-panel) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
 }
-.app-connect__head {
+.app-window__head {
   position: relative;
   isolation: isolate;
   display: flex;
@@ -1130,11 +1159,11 @@
   overflow: hidden;
   padding: theme(spacing.5) theme(spacing.6);
 }
-.app-connect[data-layout="phone"] .app-connect__head {
+.app-window[data-layout="phone"] .app-window__head {
   min-height: 132px;
   padding: theme(spacing.4) theme(spacing.5);
 }
-.app-connect__painting {
+.app-window__painting {
   position: absolute;
   inset: 0;
   z-index: -2;
@@ -1143,20 +1172,20 @@
   object-fit: cover;
   object-position: center 40%;
 }
-.app-connect__head::after {
+.app-window__head::after {
   content: "";
   position: absolute;
   inset: 0;
   z-index: -1;
   background: linear-gradient(0deg, var(--app-surface) 2%, transparent 85%);
 }
-.app-connect__head h2 {
+.app-window__head h2 {
   font-family: var(--app-face-title);
   font-size: var(--app-text-title);
   line-height: var(--app-leading-title);
   text-shadow: 0 1px 8px rgb(0 0 0 / 0.6);
 }
-.app-connect__close {
+.app-window__close {
   position: absolute;
   top: theme(spacing.3);
   right: theme(spacing.3);
@@ -1168,13 +1197,13 @@
   background: rgb(0 0 0 / 0.45);
   color: var(--app-ink);
 }
-.app-connect__body {
+.app-window__body {
   display: flex;
   flex-direction: column;
   gap: theme(spacing.5);
   padding: theme(spacing.2) theme(spacing.6) theme(spacing.6);
 }
-.app-connect[data-layout="phone"] .app-connect__body {
+.app-window[data-layout="phone"] .app-window__body {
   padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
 }
 

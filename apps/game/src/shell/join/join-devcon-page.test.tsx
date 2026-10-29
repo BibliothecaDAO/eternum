@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -54,14 +55,16 @@ const Where = () => {
 const visit = (address: string) =>
   act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[address]}>
-        <Routes>
-          <Route path="/join/devcon" element={<JoinDevconPage />} />
-          <Route path="/join/devcon/:code" element={<JoinDevconPage />} />
-          <Route path="*" element={null} />
-        </Routes>
-        <Where />
-      </MemoryRouter>,
+      <QueryClientProvider client={new QueryClient()}>
+        <MemoryRouter initialEntries={[address]}>
+          <Routes>
+            <Route path="/join/devcon" element={<JoinDevconPage />} />
+            <Route path="/join/devcon/:code" element={<JoinDevconPage />} />
+            <Route path="*" element={null} />
+          </Routes>
+          <Where />
+        </MemoryRouter>
+      </QueryClientProvider>,
     ),
   );
 const signIn = () => {

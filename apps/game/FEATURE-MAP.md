@@ -250,6 +250,12 @@ its icon and verbs; a words-only notice keeps its text.
   address, through the device's share sheet (a phone), else copied ("Link copied"), else shown to select. A sealed
   chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who did not play sees
   the game (by its name and date, else its number) and the board, and, signed in, that they had no seat.
+- **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
+  by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**
+  ticket (regular or **Golden ticket**) opens it with its realm's daily claim and **Play**; a ticket just opened on the
+  Devcon landing shows here at once; when the ticket cannot be read the count is **— Ticket**, whose sheet says so with
+  **Try again**. With no linked wallet the first count is **Link wallet** (Settings, then back). LORDS, chests and
+  cosmetics are not shown yet.
 - **Settings**: **Name** offers **Claim name** once the name differs from the one held; **Devices** lists this device as
   soon as you are signed in. It opens the payout wallet directly when a page sent you to link one
   (`/profile/settings?next=…`) and returns you there once it is linked. Its groups are the app sheet's panels and each
