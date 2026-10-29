@@ -91,7 +91,7 @@ const installRoom = () => {
         { playerId, displayName: null, isOnline: true, isTypingInThreadIds: [] },
       ]),
     ),
-    blockedPlayers: [],
+    blockList: { blocked: [], version: 0 },
     unreadWorldTotal: 0,
     dmThreads: {},
     view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
@@ -99,8 +99,26 @@ const installRoom = () => {
   });
 };
 
-/** The account's block list on the server: POST adds an account, DELETE takes it off, each answering the list. */
+/**
+ * The account's block list on the server, as its inbox keeps it: POST adds an account, DELETE takes it off, and a
+ * change raises its version; every answer is the list with its version.
+ */
 let blocked: string[] = [];
+let blockVersion = 0;
+/** The server's list changed by other means (an earlier session, another device): a change, its version raised. */
+const serverMutes = (list: string[]) => {
+  blocked = list;
+  blockVersion += 1;
+};
+const commit = (next: string[]) => {
+  if (next.length === blocked.length && next.every((id) => blocked.includes(id))) return;
+  blocked = next;
+  blockVersion += 1;
+};
+/** How the server takes a Mute or an Unmute: at once, or held before it commits until the test lets it go. */
+let blockWrite: "now" | "held" = "now";
+let heldWrites: (() => void)[] = [];
+const commitOldestWrite = () => act(async () => heldWrites.shift()!());
 /** While set, the block list refuses every change, as a server that is down does. */
 let blockListDown = false;
 /** How the server answers a read of the block list: at once, held until the test lets it go, or refused. */
@@ -122,20 +140,27 @@ const serve = vi.fn(async (input: string | URL, init?: RequestInit) => {
   if (url.pathname === "/api/chat/blocks" && (init?.method ?? "GET") === "GET") {
     if (blockRead === "down") return new Response("{}", { status: 503 });
     if (blockRead === "held") {
-      const asked = [...blocked];
+      const asked = { blocked: [...blocked], version: blockVersion };
       await new Promise<void>((resolve) => heldReads.push(resolve));
-      return new Response(JSON.stringify({ blocked: asked }), { status: 200 });
+      return new Response(JSON.stringify(asked), { status: 200 });
     }
   }
   if (url.pathname.startsWith("/api/chat/dm/threads/"))
     return new Response(JSON.stringify({ messages: [DAGNA_LINE], nextCursor: null }), { status: 200 });
   if (blockListDown && url.pathname.startsWith("/api/chat/blocks") && init?.method)
     return new Response("{}", { status: 503 });
-  if (url.pathname === "/api/chat/blocks" && init?.method === "POST")
-    blocked = [...blocked, (JSON.parse(String(init.body)) as { realmsId: string }).realmsId];
-  if (url.pathname.startsWith("/api/chat/blocks/") && init?.method === "DELETE")
-    blocked = blocked.filter((id) => id !== decodeURIComponent(url.pathname.split("/").at(-1)!));
-  return new Response(JSON.stringify({ blocked, messages: [], nextCursor: null, profiles: {} }), { status: 200 });
+  if (url.pathname.startsWith("/api/chat/blocks") && (init?.method === "POST" || init?.method === "DELETE")) {
+    if (blockWrite === "held") await new Promise<void>((resolve) => heldWrites.push(resolve));
+    if (init.method === "POST") {
+      const realmsId = (JSON.parse(String(init.body)) as { realmsId: string }).realmsId;
+      commit(blocked.includes(realmsId) ? blocked : [...blocked, realmsId]);
+    } else commit(blocked.filter((id) => id !== decodeURIComponent(url.pathname.split("/").at(-1)!)));
+    return new Response(JSON.stringify({ blocked, version: blockVersion }), { status: 200 });
+  }
+  return new Response(
+    JSON.stringify({ blocked, version: blockVersion, messages: [], nextCursor: null, profiles: {} }),
+    { status: 200 },
+  );
 });
 
 /** The chat strip's line, as the game's chat hook makes it. */
@@ -192,6 +217,9 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   undoLayout = layOutChatLists();
   blocked = [];
+  blockVersion = 0;
+  blockWrite = "now";
+  heldWrites = [];
   blockListDown = false;
   blockRead = "now";
   heldReads = [];
@@ -295,7 +323,7 @@ describe("a player's card, in a game", () => {
     act(() => nameButton("m1")!.click());
     await act(async () => cardButton("Mute")!.click());
     expect(useEventFeedStore.getState().notices.map((notice) => notice.kind)).toEqual(["error"]);
-    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([]);
+    expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([]);
     expect(host.textContent).toContain("gg on the spire");
     expect(cardButton("Mute")).toBeDefined();
   });
@@ -383,7 +411,7 @@ describe("a player muted who only wrote privately", () => {
 
     // A reload: the client starts with nothing, the server's inbox leaves her conversation out, and its block list
     // names her again.
-    act(() => useRealtimeChatStore.setState({ blockedPlayers: null, dmThreads: {} }));
+    act(() => useRealtimeChatStore.setState({ blockList: null, dmThreads: {} }));
     expect(muted()).toBeNull();
     await act(async () => useRealtimeChatStore.getState().actions.loadBlockedPlayers());
     expect(muted()!.textContent).toContain("Dagna");
@@ -426,7 +454,7 @@ describe("chat starting, before it knows who is muted", () => {
 
   beforeEach(async () => {
     // Aldric was muted in an earlier session; the server's list says so.
-    blocked = [ALDRIC];
+    serverMutes([ALDRIC]);
     await mount();
     act(() => tab("Messages").click());
     act(() => tab("Global").click());
@@ -464,11 +492,11 @@ describe("chat starting, before it knows who is muted", () => {
 
   it("takes nothing from a replaced connection's late answer: the current list stands, and the room goes on", async () => {
     // The first connection's read is held with the list as it was then: nobody muted.
-    blocked = [];
+    serverMutes([]);
     blockRead = "held";
     await start();
     // A new connection reads the list as it is now: Aldric muted.
-    blocked = [ALDRIC];
+    serverMutes([ALDRIC]);
     blockRead = "now";
     await start();
     await act(async () => {});
@@ -478,7 +506,7 @@ describe("chat starting, before it knows who is muted", () => {
 
     await answerOldestRead();
     await act(async () => {});
-    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([ALDRIC]);
+    expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([ALDRIC]);
     expect(host.textContent).not.toContain("muted on the new connection");
     expect(host.textContent).not.toContain("gg on the spire");
     expect(tab("Global").textContent).toBe("Global");
@@ -494,7 +522,7 @@ describe("chat starting, before it knows who is muted", () => {
   });
 
   it("keeps a Mute made while an older read was out: its answer stands, and Unmute stays in reach", async () => {
-    blocked = [];
+    serverMutes([]);
     blockRead = "held";
     await start();
     openDagna();
@@ -505,7 +533,7 @@ describe("chat starting, before it knows who is muted", () => {
     // The read asked before the Mute comes back with the list from before it: it is not taken.
     await answerOldestRead();
     await act(async () => {});
-    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([DAGNA]);
+    expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([DAGNA]);
     expect(muted()!.textContent).toContain("Dagna");
     expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
     expect(host.textContent).not.toContain("see you at dawn");
@@ -523,7 +551,7 @@ describe("chat starting, before it knows who is muted", () => {
   });
 
   it("keeps an Unmute made while an older read was out: the player stays unmuted, their words shown", async () => {
-    blocked = [DAGNA];
+    serverMutes([DAGNA]);
     await start();
     await act(async () => {});
     openDagna();
@@ -542,11 +570,96 @@ describe("chat starting, before it knows who is muted", () => {
 
     await answerOldestRead();
     await act(async () => reading);
-    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([]);
+    expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([]);
     expect(muted()).toBeNull();
     expect(host.textContent).toContain("see you at dawn");
 
     // What she writes in a room afterwards is hers to read: shown, counted, heard.
+    const heard = vi.spyOn(AudioManager.getInstance(), "play");
+    act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
+    arrive("m7", DAGNA, "Dagna", "back again", 7);
+    expect(tab("Global").textContent).toBe("Global1");
+    expect(heard).toHaveBeenCalledTimes(1);
+    act(() => tab("Global").click());
+    expect(host.textContent).toContain("back again");
+  });
+
+  it("keeps a slower Mute that commits after a later read was answered: the newer list is the Mute's", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    serverMutes([]);
+    // The startup read fails, and its retry waits.
+    blockRead = "down";
+    await start();
+    await act(async () => {});
+    // Mute is pressed in Dagna's conversation, and the server holds it before it commits.
+    blockWrite = "held";
+    openDagna();
+    act(() => {
+      void headMute().click();
+    });
+    // The retry, sent after the Mute, reads the list before the Mute commits: nobody muted.
+    blockRead = "now";
+    await act(async () => vi.advanceTimersByTime(2_000));
+    await act(async () => {});
+    expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [], version: blockVersion });
+
+    // The Mute commits and answers its list, a higher version: it is the one held.
+    await commitOldestWrite();
+    await act(async () => {});
+    expect(blocked).toEqual([DAGNA]);
+    expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [DAGNA], version: blockVersion });
+    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "messages" });
+    expect(host.textContent).not.toContain("see you at dawn");
+    expect(muted()!.textContent).toContain("Dagna");
+    expect(muted()!.querySelector("button")!.textContent).toBe("Unmute");
+
+    // In the room, her words are hidden and count nothing; Corwin's count and sound.
+    blockWrite = "now";
+    const heard = vi.spyOn(AudioManager.getInstance(), "play");
+    act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
+    arrive("m7", DAGNA, "Dagna", "can you hear me", 7);
+    arrive("m8", CORWIN, "Corwin", "still there", 8);
+    expect(tab("Global").textContent).toBe("Global1");
+    expect(heard).toHaveBeenCalledTimes(1);
+    act(() => tab("Global").click());
+    expect(host.textContent).not.toContain("can you hear me");
+    expect(host.textContent).toContain("still there");
+
+    // Recovery: Unmute, and she is back.
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    await act(async () => muted()!.querySelector("button")!.click());
+    expect(blocked).toEqual([]);
+    expect(muted()).toBeNull();
+    expect(host.textContent).toContain("see you at dawn");
+  });
+
+  it("keeps a slower Unmute that commits after a later read was answered: the newer list is the Unmute's", async () => {
+    serverMutes([DAGNA]);
+    await start();
+    await act(async () => {});
+    openDagna();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(muted()!.textContent).toContain("Dagna");
+
+    // Unmute is pressed, and the server holds it before it commits.
+    blockWrite = "held";
+    act(() => {
+      muted()!.querySelector("button")!.click();
+    });
+    // A read sent after it is answered first, with Dagna still muted: the same version as held, nothing new.
+    await act(async () => useRealtimeChatStore.getState().actions.loadBlockedPlayers());
+    expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [DAGNA], version: blockVersion });
+    expect(muted()!.textContent).toContain("Dagna");
+
+    // The Unmute commits and answers its list, a higher version: it is the one held.
+    await commitOldestWrite();
+    await act(async () => {});
+    expect(blocked).toEqual([]);
+    expect(useRealtimeChatStore.getState().blockList).toEqual({ blocked: [], version: blockVersion });
+    expect(muted()).toBeNull();
+    expect(host.textContent).toContain("see you at dawn");
+
+    // In the room, what she writes now is shown, counted and heard.
     const heard = vi.spyOn(AudioManager.getInstance(), "play");
     act(() => useRealtimeChatStore.getState().actions.setShellOpen(false));
     arrive("m7", DAGNA, "Dagna", "back again", 7);
@@ -566,14 +679,14 @@ describe("chat starting, before it knows who is muted", () => {
 
     expect(useEventFeedStore.getState().notices.map((notice) => notice.kind)).toEqual(["error"]);
     expect(host.textContent).toContain("Loading…");
-    expect(useRealtimeChatStore.getState().blockedPlayers).toBeNull();
+    expect(useRealtimeChatStore.getState().blockList).toBeNull();
     expect(tab("Global").textContent).toBe("Global");
 
     // The server comes back: the next read, two seconds on, takes the room as it would have been.
     blockRead = "now";
     await act(async () => vi.advanceTimersByTime(2_000));
     await act(async () => {});
-    expect(useRealtimeChatStore.getState().blockedPlayers).toEqual([ALDRIC]);
+    expect(useRealtimeChatStore.getState().blockList?.blocked).toEqual([ALDRIC]);
     expect(host.textContent).toContain("still there");
     expect(host.textContent).not.toContain("gg on the spire");
     expect(tab("Global").textContent).toBe("Global1");

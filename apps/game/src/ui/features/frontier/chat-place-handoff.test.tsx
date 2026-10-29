@@ -68,7 +68,10 @@ beforeEach(() => {
   undoLayout = layOutChatLists();
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify({ blocked: [], messages: [], nextCursor: null }), { status: 200 })),
+    vi.fn(
+      async () =>
+        new Response(JSON.stringify({ blocked: [], version: 0, messages: [], nextCursor: null }), { status: 200 }),
+    ),
   );
   host = document.createElement("div");
   document.body.append(host);

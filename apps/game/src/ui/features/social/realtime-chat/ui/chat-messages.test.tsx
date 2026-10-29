@@ -62,7 +62,7 @@ const install = () => {
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
     // The block list as the server answered it: nobody muted.
-    blockedPlayers: [],
+    blockList: { blocked: [], version: 0 },
     identity: { playerId: SELF, displayName: "You" },
     joinedZoneIds: [GLOBAL_CHAT_CHANNEL_ID],
     activeZoneId: GLOBAL_CHAT_CHANNEL_ID,

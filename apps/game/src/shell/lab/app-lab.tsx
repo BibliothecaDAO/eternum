@@ -214,7 +214,7 @@ const answerAppReads = (screen: LabScreen) => {
         messages: url.searchParams.get("zoneId")?.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT,
         nextCursor: null,
       }),
-    "/api/chat/blocks": () => json({ blocked: [] }),
+    "/api/chat/blocks": () => json({ blocked: [], version: 0 }),
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);

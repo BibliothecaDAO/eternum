@@ -85,7 +85,7 @@ const connected = () =>
       connectionStatus: "connected",
       identity: { playerId: "0x7", displayName: "You" },
       joinedZoneIds: [GLOBAL_CHAT_CHANNEL_ID],
-      blockedPlayers: [],
+      blockList: { blocked: [], version: 0 },
     }),
   );
 /** A message from another player arriving in Global. */

@@ -25,7 +25,7 @@ export function MessagesList() {
     useShallow((state) => Object.fromEntries(Object.keys(state.dmThreads).map((id) => [id, threadUnread(state, id)]))),
   );
   const names = usePlayerNames();
-  const muted = useRealtimeChatSelector((state) => state.blockedPlayers) ?? [];
+  const muted = useRealtimeChatSelector((state) => state.blockList?.blocked) ?? [];
 
   const conversations = useMemo(
     () =>

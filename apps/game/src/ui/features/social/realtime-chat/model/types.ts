@@ -1,4 +1,5 @@
 import type {
+  BlockList,
   DirectMessage,
   DirectMessageCreatePayload,
   DirectMessageReadReceipt,
@@ -85,11 +86,11 @@ export interface RealtimeChatState {
   pendingReadReceipts: DirectMessageReadReceipt[];
   view: ChatView;
   /**
-   * Accounts this player muted, as the server's block list says: their direct messages never arrive, and what they
-   * write is hidden. Null until that list is read: a room's messages wait for it (heldWorldMessages), since who is muted
-   * is not known, never taken to be nobody.
+   * The server's block list, the accounts this player muted, with its version: their direct messages never arrive, and
+   * what they write is hidden. Null until that list is read: a room's messages wait for it (heldWorldMessages), since
+   * who is muted is not known, never taken to be nobody. Of two answers, the higher version is held.
    */
-  blockedPlayers: string[] | null;
+  blockList: BlockList | null;
   /** Room messages that arrived before the block list was read, taken in order once it is. */
   heldWorldMessages: HeldWorldMessage[];
   /** The rooms the player has where they stand (chatRooms), as the transport opens them; setRooms moves them. */

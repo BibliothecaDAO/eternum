@@ -95,7 +95,7 @@ beforeEach(() => {
       const body =
         url.pathname === "/api/chat/world"
           ? { messages: url.searchParams.get("zoneId") === LOBBY ? history : [], nextCursor: null }
-          : { blocked: [], profiles: {} };
+          : { blocked: [], version: 0, profiles: {} };
       return new Response(JSON.stringify(body), { status: 200 });
     }),
   );

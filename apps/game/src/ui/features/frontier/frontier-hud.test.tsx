@@ -68,7 +68,7 @@ beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify({ blocked: [] }), { status: 200 })),
+    vi.fn(async () => new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 })),
   );
   host = document.createElement("div");
   document.body.append(host);
@@ -232,7 +232,7 @@ it("draws every realm on the Season board with its rank and depth, from Herald's
     vi.fn(async (url: string | URL) =>
       String(url).includes("/leaderboard")
         ? new Response(JSON.stringify(board), { status: 200 })
-        : new Response(JSON.stringify({ blocked: [] }), { status: 200 }),
+        : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
     ),
   );
   viewport.set(1920);

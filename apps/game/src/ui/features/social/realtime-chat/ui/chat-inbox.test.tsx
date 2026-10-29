@@ -99,7 +99,7 @@ const serve = (
     const { pathname } = new URL(String(input));
     const json = (body: unknown) => new Response(JSON.stringify(body), { status: 200 });
     if (pathname === `/api/chat/dm/threads/${THREAD}/messages`) return json(page);
-    if (pathname === "/api/chat/blocks") return json({ blocked: [] });
+    if (pathname === "/api/chat/blocks") return json({ blocked: [], version: 0 });
     if (pathname === "/api/chat/world") return json({ messages: [], nextCursor: null });
     return new Response("{}", { status: 404 });
   });

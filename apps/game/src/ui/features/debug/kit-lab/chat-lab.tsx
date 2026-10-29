@@ -262,16 +262,22 @@ const labReply = (answered: number) =>
  */
 const answerChatServers = () => {
   const network = window.fetch.bind(window);
-  // The account's block list, kept in the tab: Mute adds an account, Unmute takes it off, each answering the list.
-  let blocked: string[] = [];
+  // The account's block list, kept in the tab as the inbox keeps it: Mute adds an account, Unmute takes it off, a change
+  // raises its version, and each answers the list with its version.
+  let list = { blocked: [] as string[], version: 0 };
+  const change = (blocked: string[]) => {
+    if (blocked.length !== list.blocked.length) list = { blocked, version: list.version + 1 };
+  };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     if (url.pathname.startsWith("/api/chat/blocks")) {
-      if (init?.method === "POST")
-        blocked = [...blocked, (JSON.parse(String(init.body)) as { realmsId: string }).realmsId];
+      if (init?.method === "POST") {
+        const realmsId = (JSON.parse(String(init.body)) as { realmsId: string }).realmsId;
+        change(list.blocked.includes(realmsId) ? list.blocked : [realmsId, ...list.blocked]);
+      }
       if (init?.method === "DELETE")
-        blocked = blocked.filter((id) => id !== decodeURIComponent(url.pathname.split("/").at(-1)!));
-      return Promise.resolve(Response.json({ blocked }));
+        change(list.blocked.filter((id) => id !== decodeURIComponent(url.pathname.split("/").at(-1)!)));
+      return Promise.resolve(Response.json(list));
     }
     if (url.pathname !== "/api/profiles") return network(input, init);
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
@@ -381,7 +387,7 @@ function installLabRoom(view: string | null): true {
     },
     unreadWorldTotal: 3,
     // Who is muted is known, as the server's list answers it: nobody yet.
-    blockedPlayers: [],
+    blockList: { blocked: [], version: 0 },
     view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
     actions: {
       ...actions,

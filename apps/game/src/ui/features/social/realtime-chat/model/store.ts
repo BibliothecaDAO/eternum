@@ -3,7 +3,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import { AudioManager } from "@/audio/core/AudioManager";
 import { VERBOSE_LOGS_ENABLED } from "@/utils/dev-mode";
-import { GLOBAL_CHAT_CHANNEL_ID, RealtimeClient } from "@bibliothecadao/types";
+import { type BlockList, GLOBAL_CHAT_CHANNEL_ID, isBlockList, RealtimeClient } from "@bibliothecadao/types";
 import type {
   DirectMessage,
   DirectMessageOutboundMessage,
@@ -214,7 +214,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   typingIndicators: {},
   pendingReadReceipts: [],
   view: { kind: "room", zoneId: GLOBAL_CHAT_CHANNEL_ID },
-  blockedPlayers: null,
+  blockList: null,
   heldWorldMessages: [],
   rooms: [],
   readOnlyZoneIds: [],
@@ -387,7 +387,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         connectionStatus: "connecting",
         joinedZoneIds: [],
         lastConnectionError: undefined,
-        blockedPlayers: null,
+        blockList: null,
         heldWorldMessages: [],
       });
       // Who is muted is read before any room message is shown, counted or heard. A failed read is told once and tried
@@ -400,7 +400,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
             if (attempt === 0) toast.failed(error, CHAT_WORDS.mutesUnavailable);
             setTimeout(
               () => {
-                if (get().client === client && get().blockedPlayers === null) void readMutes(attempt + 1);
+                if (get().client === client && get().blockList === null) void readMutes(attempt + 1);
               },
               Math.min(MUTES_RETRY_MS * 2 ** attempt, 60_000),
             );
@@ -578,8 +578,8 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       if (get().activeThreadId !== threadId) set({ activeThreadId: threadId });
     },
     receiveWorldMessage: (zoneId, message, options) => {
-      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen, blockedPlayers } = get();
-      if (blockedPlayers === null) {
+      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen, blockList } = get();
+      if (blockList === null) {
         set((state) => ({
           heldWorldMessages: [
             ...state.heldWorldMessages,
@@ -614,7 +614,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const isActiveZone = activeZoneId === zoneId;
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
       // A muted player's message is kept, as the room has it, but neither heard nor counted.
-      const isMuted = blockedPlayers.includes(normalizedMessage.sender.playerId);
+      const isMuted = blockList.blocked.includes(normalizedMessage.sender.playerId);
       const shouldIncrement = !isOwnMessage && !isMuted && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
       if (shouldIncrement) {
@@ -1156,67 +1156,60 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         });
       }
     },
-    loadBlockedPlayers: async () => {
-      const blocked = await askBlockList("GET");
-      if (blocked) knowMutes(blocked);
-    },
-    // Blocking hides the thread: the chat leaves it for Messages, which lists the muted players (from the block list,
-    // so after a reload too), and its messages leave this client. The server drops the account's future messages;
-    // unblocking lets later ones through and brings the conversation back, its history read again.
-    blockPlayer: async (playerId) => {
-      const blocked = await askBlockList("POST", "", { realmsId: playerId });
-      if (!blocked) return;
-      const hidden = Object.keys(get().dmThreads).filter((threadId) =>
-        get().dmThreads[threadId]!.thread.participants.includes(playerId),
-      );
-      const dmThreads = Object.fromEntries(
-        Object.entries(get().dmThreads).filter(([threadId]) => !hidden.includes(threadId)),
-      );
-      const { view } = get();
-      const showing = view.kind === "conversation" && hidden.includes(view.threadId);
-      set({ dmThreads, ...(showing ? { view: { kind: "messages" as const } } : {}) });
-      knowMutes(blocked);
-    },
-    unblockPlayer: async (playerId) => {
-      const blocked = await askBlockList("DELETE", `/${encodeURIComponent(playerId)}`);
-      if (!blocked) return;
-      knowMutes(blocked);
-      const threadId = get().actions.ensureDirectThread(playerId);
-      if (threadId) await get().actions.loadDirectHistory(threadId);
-    },
+    loadBlockedPlayers: () => askBlockList("GET"),
+    blockPlayer: (playerId) => askBlockList("POST", "", { realmsId: playerId }),
+    unblockPlayer: (playerId) => askBlockList("DELETE", `/${encodeURIComponent(playerId)}`),
   },
 }));
 
-/** How many block-list requests were made, in order, and which of them gave the list now held. */
-let blockListAsked = 0;
-let blockListTaken = 0;
-
 /**
- * The signed-in account's block list, as the server returns it after a read or a change, taken only while it still
- * speaks for the list: its connection is still the current one, and no answer to a later request was taken first. A
- * read answered after a Mute or an Unmute asked after it, or a reply that came after its connection was replaced, is
- * dropped (null), as no answer.
+ * Asks the server for the account's block list (a read, a block, an unblock: each answers the list with its version)
+ * and holds the answer when it is the latest list this connection has seen, by its version, whatever order the
+ * answers arrive in. A reply that came after its connection was replaced is not this connection's.
  */
-const askBlockList = async (method: string, path = "", body?: unknown): Promise<string[] | null> => {
+const askBlockList = async (method: string, path = "", body?: unknown): Promise<void> => {
   const { baseUrl, client } = useRealtimeChatStore.getState();
-  if (!baseUrl) return null;
-  const asked = ++blockListAsked;
+  if (!baseUrl) return;
   const response = await fetchApi(new URL(`/api/chat/blocks${path}`, baseUrl), {
     method,
     credentials: "include",
     ...(body === undefined ? {} : { headers: { "content-type": "application/json" }, body: JSON.stringify(body) }),
   });
   if (!response.ok) throw new Error(`Block list request failed (${response.status})`);
-  const { blocked } = (await response.json()) as { blocked: string[] };
-  if (useRealtimeChatStore.getState().client !== client || asked < blockListTaken) return null;
-  blockListTaken = asked;
-  return blocked;
+  const list: unknown = await response.json();
+  if (!isBlockList(list)) throw new Error("Block list answer without its version");
+  const held = useRealtimeChatStore.getState();
+  if (held.client !== client || (held.blockList && list.version <= held.blockList.version)) return;
+  await holdBlockList({ blocked: [...list.blocked], version: list.version });
 };
 
-/** The server's block list, now known: every room message held for it is taken, as it would have been on arrival. */
-const knowMutes = (blocked: string[]) => {
-  const held = useRealtimeChatStore.getState().heldWorldMessages;
-  useRealtimeChatStore.setState({ blockedPlayers: blocked, heldWorldMessages: [] });
-  for (const { zoneId, message, clientMessageId } of held)
-    useRealtimeChatStore.getState().actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+/**
+ * The latest block list, held, and what follows from it alone: a muted player's conversations leave this client (the
+ * server drops their messages and its inbox leaves them out; Messages lists them under Muted), the room messages held
+ * for the list are taken as they would have been on arrival, and a player no longer muted since the list held before
+ * has their conversation back, its history read again.
+ */
+const holdBlockList = async (list: BlockList) => {
+  const { blockList: before, heldWorldMessages, dmThreads, view } = useRealtimeChatStore.getState();
+  const muted = new Set(list.blocked);
+  const hidden = Object.keys(dmThreads).filter((threadId) =>
+    dmThreads[threadId]!.thread.participants.some((participant) => muted.has(participant)),
+  );
+  const showing = view.kind === "conversation" && hidden.includes(view.threadId);
+  useRealtimeChatStore.setState({
+    blockList: list,
+    heldWorldMessages: [],
+    dmThreads: Object.fromEntries(Object.entries(dmThreads).filter(([threadId]) => !hidden.includes(threadId))),
+    ...(showing ? { view: { kind: "messages" as const } } : {}),
+  });
+  const { actions } = useRealtimeChatStore.getState();
+  for (const { zoneId, message, clientMessageId } of heldWorldMessages)
+    actions.receiveWorldMessage(zoneId, message, { clientMessageId });
+  const unmuted = (before?.blocked ?? []).filter((playerId) => !muted.has(playerId));
+  await Promise.all(
+    unmuted.map(async (playerId) => {
+      const threadId = actions.ensureDirectThread(playerId);
+      if (threadId) await actions.loadDirectHistory(threadId);
+    }),
+  );
 };

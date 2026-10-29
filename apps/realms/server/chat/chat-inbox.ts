@@ -7,6 +7,7 @@ import {
   directMessageCreateSchema,
   directMessageReadReceiptSchema,
   directMessageTypingSchema,
+  type BlockList,
   type DirectMessage,
   type DirectMessageReadReceipt,
   type DirectMessageThread,
@@ -60,7 +61,9 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
        CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, threadId TEXT NOT NULL, senderId TEXT NOT NULL,
          recipientId TEXT NOT NULL, content TEXT NOT NULL, metadata TEXT, createdAt INTEGER NOT NULL);
        CREATE INDEX IF NOT EXISTS messages_thread ON messages (threadId, createdAt);
-       CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL)`,
+       CREATE TABLE IF NOT EXISTS blocks (realmsId TEXT PRIMARY KEY, blockedAt INTEGER NOT NULL);
+       CREATE TABLE IF NOT EXISTS block_list (version INTEGER NOT NULL);
+       INSERT INTO block_list (version) SELECT 0 WHERE NOT EXISTS (SELECT 1 FROM block_list)`,
     );
     // An inbox made before threads kept their read boundary gains it, once.
     const columns = ctx.storage.sql.exec<{ name: string }>("PRAGMA table_info(threads)").toArray();
@@ -125,25 +128,36 @@ export class ChatInbox extends DurableObject<Record<string, unknown>> {
     for (const socket of this.ctx.getWebSockets()) sendChat(socket, { type: "direct:read", receipt });
   }
 
-  /** The accounts the owner blocked, most recent first. */
-  async blocked(): Promise<string[]> {
-    return this.ctx.storage.sql
+  /**
+   * The accounts the owner blocked, most recent first, with the list's version. The version rises with each change
+   * and only then, so a client holding two answers keeps the higher: the list as it stands later.
+   */
+  async blockList(): Promise<BlockList> {
+    const sql = this.ctx.storage.sql;
+    const blocked = sql
       .exec<{ realmsId: string }>("SELECT realmsId FROM blocks ORDER BY blockedAt DESC")
       .toArray()
       .map(({ realmsId }) => realmsId);
+    const { version } = sql.exec<{ version: number }>("SELECT version FROM block_list").one();
+    return { blocked, version };
   }
 
-  async block(realmsId: string): Promise<void> {
-    this.ctx.storage.sql.exec(
+  /** Blocks an account, and answers the list as it stands after: a change, if it was not blocked, raises the version. */
+  async block(realmsId: string): Promise<BlockList> {
+    const added = this.ctx.storage.sql.exec(
       "INSERT INTO blocks (realmsId, blockedAt) VALUES (?, ?) ON CONFLICT DO NOTHING",
       realmsId,
       Date.now(),
-    );
+    ).rowsWritten;
+    if (added > 0) this.ctx.storage.sql.exec("UPDATE block_list SET version = version + 1");
+    return this.blockList();
   }
 
   /** Unblocking lets future messages through; what was dropped while blocked stays dropped. */
-  async unblock(realmsId: string): Promise<void> {
-    this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId);
+  async unblock(realmsId: string): Promise<BlockList> {
+    const removed = this.ctx.storage.sql.exec("DELETE FROM blocks WHERE realmsId = ?", realmsId).rowsWritten;
+    if (removed > 0) this.ctx.storage.sql.exec("UPDATE block_list SET version = version + 1");
+    return this.blockList();
   }
 
   /**

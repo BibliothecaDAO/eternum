@@ -81,7 +81,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const self = useRealtimeChatSelector((state) => state.identity?.playerId);
   // Null until the server's list of who is muted is read: the room waits for it, its messages held, never shown as if
   // nobody were muted.
-  const muted = useRealtimeChatSelector((state) => state.blockedPlayers);
+  const muted = useRealtimeChatSelector((state) => state.blockList?.blocked ?? null);
   // A room the player only reads (a Blitz lobby's, unregistered) shows who writes there instead of the field.
   const readOnly = useRealtimeChatSelector((state) => state.readOnlyZoneIds.includes(resolvedZoneId ?? ""));
   const refusal = useRealtimeChatSelector((state) => state.roomRefusals[resolvedZoneId ?? ""]);

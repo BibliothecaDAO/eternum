@@ -385,8 +385,12 @@ it("drops a blocked player's direct messages before socket and push, and deliver
         headers: { cookie: recipient.cookie, origin: ORIGIN, "content-type": "application/json" },
         ...(body ? { body: JSON.stringify(body) } : {}),
       })
-      .then((response) => response.json() as Promise<{ blocked: string[] }>);
-  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId] });
+      .then((response) => response.json() as Promise<{ blocked: string[]; version: number }>);
+  // Every answer is the list with its version, which rises with each change and only then.
+  expect(await blocks("GET")).toEqual({ blocked: [], version: 0 });
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 1 });
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 1 });
+  expect(await blocks("GET")).toEqual({ blocked: [sender.realmsId], version: 1 });
 
   const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
   await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
@@ -410,7 +414,8 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   expect(ofType(inbox.received, "direct:message")).toEqual([]);
   expect(pushes).toEqual([]);
 
-  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [] });
+  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [], version: 2 });
+  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [], version: 2 });
   send("sorry");
   await waitUntil(() => pushes.length >= 1, 10_000);
   expect(pushes).toEqual([PUSH_ENDPOINT]);

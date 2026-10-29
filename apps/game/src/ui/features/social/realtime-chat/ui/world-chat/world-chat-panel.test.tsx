@@ -57,7 +57,7 @@ const drawRoom = (messages: WorldChatMessage[], { inGame = true, online = [] as 
   useRealtimeChatStore.setState({
     connectionStatus: "connected",
     // The block list as the server answered it: nobody muted.
-    blockedPlayers: [],
+    blockList: { blocked: [], version: 0 },
     identity: { playerId: "0x7", displayName: "Maelis" },
     onlinePlayers: Object.fromEntries(
       online.map(([playerId, displayName]) => [
