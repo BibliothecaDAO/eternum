@@ -17,6 +17,9 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
+import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
+import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
 import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
@@ -154,6 +157,944 @@ const PLAYER_STEPS = [
     confirmed: 1,
   }),
 ];
+
+/**
+ * An action timed from the player's press to its result on screen (owner, 2026-10-28: "I want to reduce as max we can
+ * the time between an action submitted and it appearing on the suers screen"). `sends` is the game command it measures
+ * (commands.cairo's variant; the lab's relay grant for a labor claim), `press` plays it as a player does and
+ * reports the screen region its result shows in; `resultOf` names exactly that result (click-latency.mjs) from what was
+ * pressed and what the client and, in the lab, the chain recorded. The step waits long enough for the chain to answer,
+ * then cuts the press to the result at each mark the client recorded. With --capture-results it also records the
+ * page's frames and fails unless they show the result in its region at its mark (result-capture.mjs).
+ */
+const clickToResultStep = (name, sends, press, resultOf, { settleMs = RESULT_SETTLE_MS } = {}) => ({
+  name,
+  sends,
+  play: async (context) => {
+    const stopCapture = context.captureResults
+      ? await startResultCapture(context.devTools, context.browser.observe().timeOrigin)
+      : null;
+    const chainFrom = context.browser.read(LAB_CHAIN_LENGTH);
+    const { locate, ...pressed } = { ...(await press(context)), chainFrom };
+    await context.owner.sleep(settleMs);
+    // A result whose place is known only once it shows (a deployed army) is found after the settle: reading the page
+    // while the frames are recorded would hold their acknowledgements, and the screencast with them.
+    const played = locate ? { ...pressed, region: locate() } : pressed;
+    if (!stopCapture) return played;
+    capturedFrames.set(context.base, await stopCapture());
+    return { ...played, capturedAs: context.base };
+  },
+  settleMs: 0,
+  verify: async ({ played, probe, actionLatency, window }) => {
+    const result = resultOf({ played, actionLatency, since: window.from });
+    if (!result) return judgeClickToResult(played, { missing: ["result"] });
+    const measured = measureClickToResult({
+      probe,
+      actionLatency,
+      since: window.from,
+      result: { ...result, region: undefined },
+    });
+    const verdict = sentAsDeclared(judgeClickToResult(played, measured), played, actionLatency, sends);
+    if (!played.capturedAs) return verdict;
+    const frames = capturedFrames.get(played.capturedAs) ?? [];
+    capturedFrames.delete(played.capturedAs);
+    if (verdict.status !== "completed") return verdict;
+    const place = result.target ?? result.region ?? played.region;
+    if (!place) return failed("its result's place on the screen was not found", { clickToResult: measured });
+    if (!isOnScreen(place))
+      return failed(`its result's place ${JSON.stringify(place)} is not on the screen`, { clickToResult: measured });
+    const onScreen = await proveResultOnScreen({
+      frames,
+      region: result.region ?? played.region,
+      target: result.target,
+      onset: result.onset,
+      before: measured.marks.diff,
+      visible: measured.marks.visible,
+      pageFrames: probe.frames,
+      dir: `${played.capturedAs}-frames`,
+    });
+    return onScreen.shown
+      ? completed({ ...verdict, onScreen })
+      : failed(`the screen did not show ${JSON.stringify(result)} at its mark: ${onScreen.reason}`, {
+          clickToResult: measured,
+          onScreen,
+        });
+  },
+});
+/** A box wholly inside the page's viewport: one past its edge is not what the player sees. */
+const isOnScreen = ({ left, top, width, height }) =>
+  left >= 0 && top >= 0 && left + width <= VIEWPORT.width && top + height <= VIEWPORT.height;
+
+// How many commands the lab's chain has been sent; null outside the lab.
+const LAB_CHAIN_LENGTH = `JSON.stringify(window.__labChain ? window.__labChain.sent.length : null)`;
+
+/**
+ * In the lab, a step's press must have sent the command it measures (action-coverage.test.ts counts each player command
+ * by the step that declares it): one that sent something else measured another action.
+ */
+const sentAsDeclared = (verdict, played, actionLatency, sends) => {
+  if (verdict.status !== "completed" || played.chainFrom == null) return verdict;
+  const sent = (actionLatency.chainAnswers ?? []).slice(played.chainFrom).map(({ kind }) => kind);
+  return sent.includes(sends)
+    ? verdict
+    : failed(`the press sent ${sent.join(", ") || "nothing"}, not ${sends}`, played);
+};
+
+/** Long enough for a live shard's answer and the frames after it; the lab's chain answers in 300 ms. */
+const RESULT_SETTLE_MS = 6_000;
+/** A season's entry: the settle answered, then the game booted and the realm drawn, on a throttled phone too. */
+const SETTLE_RESULT_MS = 25_000;
+/** Frames a step recorded with --capture-results, held until its verdict reads them: never in its transcript. */
+const capturedFrames = new Map();
+
+/**
+ * The tile an explore targeted, as its own record names it: the one tile its result may show, and on screen, its
+ * ground, which must read as explored, not its fog (an outline or a plate changing round it proves nothing).
+ */
+const exploredTile = ({ played, actionLatency, since }) => {
+  const record = (actionLatency.clientActions ?? []).find(
+    (action) => action.operation === "explore_reveal" && action.phases.click >= since && action.targetHex,
+  );
+  return (
+    record && {
+      presented: `explore:${record.targetHex.col},${record.targetHex.row}`,
+      target: played.target && tileInterior(played.target),
+    }
+  );
+};
+
+/** The building the lab's chain wrote for the step's CreateBuilding: its plot and its category. */
+const builtBuilding = ({ actionLatency }) => {
+  const building = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "CreateBuilding")
+    .at(-1)
+    ?.answered.find(({ model }) => model === "Building")?.value;
+  return building && { presented: `building:${building.inner_col},${building.inner_row}:${building.category}` };
+};
+
+/**
+ * Every action a player's press sends, each timed from the press to the frame that shows its result: on the map, an
+ * explore (its tile's terrain presented) and a move (the army's walk started); in the realm, the castle raised a level
+ * (its sheet naming exactly the next level) and a building placed (that building, on that plot, drawn).
+ */
+const ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("explore", "Explore", exploreBesideArmy, exploredTile),
+  clickToResultStep(
+    "move",
+    "Move",
+    (context) => orderBesideArmy(context, "Move"),
+    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
+  ),
+  { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+  clickToResultStep("level-up", "LevelUp", raiseTheCastle, ({ played }) => played.raisedTo && { watch: "level-up" }),
+  clickToResultStep("build", "CreateBuilding", buildOnAnOpenPlot, builtBuilding),
+];
+
+/**
+ * The spire's depth entered (the lab's spire game): the army selected, the spire beside it tapped for its card, then
+ * Enter on Ethereal II; the result is the army setting off into the depth (its walk), seen on its figure.
+ */
+const SPIRE_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
+  clickToResultStep(
+    "enter-depth",
+    "EnterDepth",
+    enterEtherealIIFromItsCard,
+    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
+  ),
+];
+
+async function enterEtherealIIFromItsCard({ browser }) {
+  const selection = browser.observe().selection;
+  const armyAt = armyOnScreen(browser, selection?.army?.id);
+  browser.click("Enter Ethereal II");
+  return { armyId: selection?.army?.id ?? null, region: armyAt && armyRegion(armyAt) };
+}
+
+/**
+ * A fight (the lab's fight game): the army selected, the ruin beside it opened for its card from the tile that offers
+ * Attack (a desktop's right-click, a phone's two taps), then the card's Attack; the result is the army's token showing
+ * exactly the troops the chain left it.
+ */
+const FIGHT_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep(
+    "attack",
+    "BattleGuard",
+    attackFromTheSiteCard,
+    ({ played }) => played.watching && { watch: "fought" },
+  ),
+];
+
+async function attackFromTheSiteCard({ browser }) {
+  const army = browser.observe().selection?.army?.id;
+  const armyAt = armyOnScreen(browser, army);
+  if (!army || !armyAt) return { army, offered: [] };
+  const target = await findTheAttack(browser, armyAt);
+  if (!target.offset) return { army, offered: target.offered };
+  if (onADesktop()) browser.rightClick(target.offset);
+  else if (!target.opened) browser.tap(target.offset);
+  const sheet = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (shown) => shown.buttons.includes("Attack"),
+    SHEET_WAIT_MS,
+  );
+  if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
+  const token = browser.read(armyToken(army));
+  watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
+  browser.click("Attack");
+  return { army, offered: target.offered, target: target.offset, watching: true, region: token?.region };
+}
+
+/**
+ * The tile beside the army that offers Attack: a desktop reads each one's hover; a phone taps each one, and a site's
+ * tap opens its card (or an order bar naming Attack, which a second tap opens).
+ */
+async function findTheAttack(browser, armyAt) {
+  if (onADesktop()) {
+    const { target, scanned } = await findOrderTile(browser, ["Attack"], armyAt);
+    return { offset: target?.offset, offered: scanned.map((seen) => seen.verb) };
+  }
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    browser.tap(offset);
+    await sleep(HOVER_SETTLE_MS);
+    if (browser.read(MERGE_STATE).buttons.includes("Attack")) return { offset, offered, opened: true };
+    const offer = orderVerb(browser.orderBar());
+    offered.push(offer);
+    if (offer === "Attack") return { offset, offered };
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { offset: null, offered };
+}
+
+/** An army's mark on the map (its token, or its plate while open): its box on the page, read before its result changes it. */
+const armyToken = (army) => `JSON.stringify((() => {
+  const rect = document.querySelector('.mp-at[data-key="army:${army}"]')?.firstElementChild?.getBoundingClientRect();
+  return rect ? { region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) } } : null;
+})())`;
+
+/**
+ * Every army the lab chain's last `kind` answer wrote troops for shows exactly that count on its token, as the token
+ * writes a count: the fight's attacker, both armies of a transfer.
+ */
+const tokensShowTheChainsCounts = (kind) => `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "${kind}").at(-1);
+  const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
+  return rows.length > 0 && rows.every(({ value }) =>
+    document.querySelector('.mp-at[data-key="army:' + value.explorer_id + '"] .mp-count')?.textContent ===
+      (BigInt(value.troops.count) / 1000000000n).toLocaleString("en-US"));
+})()`;
+
+/**
+ * A Shrine and a Well used (the lab's sites game): each beside the army, used as a player uses it (a desktop's
+ * right-click on the tile whose hover offers Use and what it gives; a phone's tap, which opens the site's sheet, then
+ * Use); the result is that site leaving the map from its tile.
+ */
+const SITE_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep("shrine", "InteractSite", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
+  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
+];
+
+async function useTheSite({ browser }, site, gives) {
+  await focusTheArmyFromItsDock(browser);
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
+  if (!armyAt) return { site, offered: [] };
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    if (onADesktop()) {
+      browser.hover(offset);
+      await sleep(HOVER_SETTLE_MS);
+      const tip = browser.read(TOOLTIP_TEXT);
+      offered.push(tip);
+      if (/^Use\b/.test(tip ?? "") && tip.includes(gives)) {
+        browser.rightClick(offset);
+        return { site, offered, target: offset, region: tileRegion(offset) };
+      }
+      continue;
+    }
+    browser.tap(offset);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name !== null,
+      SHEET_WAIT_MS,
+    );
+    offered.push(sheet);
+    if (sheet === site) {
+      // A phone frames the tapped tile above the site's sheet: its result shows where the map now draws it.
+      const at = await settledHexOnScreen(browser);
+      browser.click("Use");
+      return { site, offered, target: offset, region: at && tileRegionAt(at) };
+    }
+    if (sheet !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { site, offered };
+}
+
+// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "+200 XP").
+const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+
+/** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
+function siteUsedUp({ actionLatency }) {
+  const vacated = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "InteractSite")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
+  const [, , col, row] = vacated?.key.split(":") ?? [];
+  return col && { presented: `site-gone:${col},${row}` };
+}
+
+/**
+ * Two of the realm's armies merged (the lab's merge game): the spire's army picked, the other right-clicked for the
+ * transfer card, then its Merge; the result is the army the chain removed leaving the map.
+ */
+function mergeActionSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    clickToResultStep("merge", "ManageTroops", (context) => mergeTheArmies(context, tiles), mergedAway),
+  ];
+}
+
+/**
+ * Presses the transfer card's merge, then confirms it as a player does: a merge that costs the army its XP asks once
+ * more ("Lose 100 XP, merge into Army 2"), and that second press sends it. Each is pressed where it is drawn.
+ */
+async function mergeTheArmies({ browser }, tiles) {
+  const merge = browser.read(MERGE_BUTTON);
+  if (!merge) return { merge, tiles: tiles.byArmy };
+  browser.tap(merge.offset);
+  const confirm = await readUntil(
+    () => browser.read(MERGE_BUTTON),
+    (shown) => shown && shown.name !== merge.name,
+    SHEET_WAIT_MS,
+  );
+  if (confirm && confirm.name !== merge.name) browser.tap(confirm.offset);
+  return { merge, confirm, tiles: tiles.byArmy };
+}
+
+/**
+ * The open sheet's button whose text or label matches `pattern` (a regular expression, any case): its name and where it
+ * is, scrolled into the sheet's view as a player scrolls to it (a phone's sheet runs past its screen). A button that
+ * shows only a figure is named by its label ("Refill 73").
+ */
+const sheetButton = (pattern) => `JSON.stringify((() => {
+  const matches = (text) => new RegExp(${JSON.stringify(pattern)}, "i").test(text ?? "");
+  const button = [...document.querySelectorAll("[data-kit-sheet] button")]
+    .find((candidate) => matches(candidate.textContent.trim()) || matches(candidate.getAttribute("aria-label")));
+  if (!button) return null;
+  button.scrollIntoView({ block: "nearest" });
+  const rect = button.getBoundingClientRect();
+  return {
+    name: button.textContent.trim(),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+    row: (({ left, top, width, height }) => ({ left: Math.round(left), top: Math.round(top), width: Math.round(width), height: Math.round(height) }))(button.parentElement.getBoundingClientRect()),
+  };
+})())`;
+
+const MERGE_BUTTON = sheetButton("merge into");
+
+/**
+ * Troops moved from one of the realm's armies to the other beside it (the lab's merge game): the spire's army picked,
+ * the other right-clicked for the transfer card, then 500 typed as the troops it sends and Move pressed; the result is
+ * both armies' tokens showing exactly the counts the chain answered.
+ */
+function transferActionSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-transfer", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    clickToResultStep(
+      "transfer",
+      "ManageTroops",
+      (context) => sendSomeTroops(context, tiles),
+      ({ played }) => played.watching && { watch: "transferred" },
+    ),
+  ];
+}
+
+const TROOPS_SENT = 500;
+const TRANSFER_AMOUNT = '[data-kit-sheet] input[aria-label^="Troops "]';
+
+/** Types the troops sent, then presses the card's Move where it is drawn, watching both armies' counts. */
+async function sendSomeTroops({ browser }, tiles) {
+  browser.run(["fill", TRANSFER_AMOUNT, String(TROOPS_SENT)]);
+  const move = await readUntil(() => browser.read(sheetButton("^Move ")), Boolean, SHEET_WAIT_MS);
+  if (!move) return { move };
+  const tokens = Object.keys(tiles.byArmy ?? {}).map((army) => browser.read(armyToken(army))?.region);
+  if (tokens.length !== 2 || !tokens.every(Boolean)) return { move: move.name, tokens };
+  watchFor(browser, "transferred", tokensShowTheChainsCounts("ManageTroops"));
+  browser.tap(move.offset);
+  return { move: move.name, watching: true, region: boxAround(tokens) };
+}
+
+/** The smallest box holding every region given. */
+const boxAround = (regions) => {
+  const left = Math.min(...regions.map((region) => region.left));
+  const top = Math.min(...regions.map((region) => region.top));
+  const right = Math.max(...regions.map((region) => region.left + region.width));
+  const bottom = Math.max(...regions.map((region) => region.top + region.height));
+  return { left, top, width: right - left, height: bottom - top };
+};
+
+/**
+ * A new army deployed (the lab's actions game): the dock's Deploy slot, the sheet's Max, then its Deploy; the result is
+ * the army the chain created drawn on the map, beside the realm.
+ */
+const DEPLOY_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
+];
+
+async function deployFromTheDock({ browser }) {
+  const before = Object.keys(browser.read(ARMY_TILES));
+  browser.click("Deploy");
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Deploy",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Deploy") return { sheet };
+  browser.click("Max");
+  const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
+  if (!deploy) return { sheet, deploy };
+  browser.tap(deploy.offset);
+  const locate = () => {
+    const arrived = Object.entries(browser.read(ARMY_TILES)).find(([army]) => !before.includes(army));
+    return arrived ? armyRegion(arrived[1]) : null;
+  };
+  return { sheet, before, locate };
+}
+
+/** The army the lab's chain created for the step's CreateExplorer, drawn on the map. */
+function armyDeployed({ actionLatency }) {
+  const army = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "CreateExplorer")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "ExplorerTroops" && value !== null)?.value.explorer_id;
+  return army && { presented: `army-shown:${army}` };
+}
+
+/**
+ * A season's entry (the lab's settle game, which opens on the home page): the Frontier card's Play, the doorway settling
+ * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
+ * answered.
+ */
+const SETTLE_ACTION_STEPS = [
+  clickToResultStep("settle", "SettleSeason", playFromTheHomeCard, enteredOnTheRealm, { settleMs: SETTLE_RESULT_MS }),
+];
+
+/**
+ * The map on the realm, as the player sees it once the doorway goes (the map is drawn under the doorway first, where
+ * the player cannot see it). The target is the screen's lower third, below the doorway's plate and steps, where the
+ * doorway shows only its painting and the map replaces it: its grey past half the way from the painting's at the mark.
+ * A box on the realm would not do, as the doorway's steps light up over it before the mark.
+ */
+function enteredOnTheRealm({ played }) {
+  const third = Math.floor(VIEWPORT.height / 3);
+  return (
+    played.entry && {
+      presented: "entered",
+      target: { left: 0, top: VIEWPORT.height - third, width: VIEWPORT.width, height: third },
+    }
+  );
+}
+
+async function playFromTheHomeCard({ browser, owner }) {
+  const entry = await findHomeCardEntry(browser, owner, SHEET_WAIT_MS * 6, { card: LAB_SETTLE.card, game: LAB_SETTLE });
+  browser.run(["click", ENTRY_BUTTON]);
+  return { entry: entry.entry };
+}
+
+/**
+ * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
+ * is that node showing the Shrine researched once the chain has answered it learned.
+ */
+const RESEARCH_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep(
+    "research",
+    "Research",
+    researchTheShrine,
+    ({ played }) => played.watching && { watch: "researched" },
+  ),
+];
+
+const SHRINE_NODE = '[data-node="shrine"]';
+
+async function researchTheShrine({ browser }) {
+  browser.click("Research");
+  const node = await readUntil(() => browser.read(elementAt(SHRINE_NODE)), Boolean, SHEET_WAIT_MS);
+  if (!node || node.state !== "ready") return { node };
+  browser.tap(node.offset);
+  const research = await readUntil(() => browser.read(buttonNamed("Research Shrine")), Boolean, SHEET_WAIT_MS);
+  if (!research) return { node, research };
+  watchFor(browser, "researched", shrineResearched);
+  browser.tap(research.offset);
+  return { node: node.state, watching: true, region: node.region };
+}
+
+/** The Shrine's node reads Researched, and the lab's chain has answered its Research with the Shrine learned. */
+const shrineResearched = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
+  const learned = answer?.answered.find(({ model }) => model === "RealmKnowledge")?.value.learned;
+  return learned !== undefined && ((BigInt(learned) >> 44n) & 1n) === 1n &&
+    document.querySelector(${JSON.stringify(SHRINE_NODE)})?.dataset.state === "done";
+})()`;
+
+/** An element's box, where it is from the screen's centre, and its state; null while it is not drawn. */
+const elementAt = (selector) => `JSON.stringify((() => {
+  const element = document.querySelector(${JSON.stringify(selector)});
+  if (!element) return null;
+  const rect = element.getBoundingClientRect();
+  return {
+    state: element.dataset.state ?? null,
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+  };
+})())`;
+
+/** A button by its whole text, where it is from the screen's centre; null while none is drawn. */
+const buttonNamed = (name) => `JSON.stringify((() => {
+  const button = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent.trim() === ${JSON.stringify(name)});
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return { offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+})())`;
+
+/**
+ * A Realm's labor claimed (the lab's claim game, whose relay the tab answers): Realms opened (a desktop's purse, a
+ * phone's Menu), then its daily Claim; the result is the sheet saying that Realm's labor was claimed today, once the
+ * chain has granted it.
+ */
+const CLAIM_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
+];
+
+const REALMS_SHEET = '[data-kit-sheet][aria-label="Realms"]';
+
+async function claimARealmsLabor({ browser }) {
+  // A desktop's purse opens Realms; a phone's Menu holds it.
+  if (!onADesktop()) {
+    browser.click("Menu");
+    await readUntil(() => browser.read(buttonNamed("Realms")), Boolean, SHEET_WAIT_MS);
+  }
+  browser.click("Realms");
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Realms",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Realms") return { sheet };
+  const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
+  if (!claim) return { sheet, claim };
+  const region = browser.read(sheetRegion(REALMS_SHEET));
+  watchFor(browser, "claimed", realmClaimed);
+  browser.tap(claim.offset);
+  return { sheet, watching: true, region };
+}
+
+/** The lab chain granted the Realm's labor, and the Realms sheet lists that Realm as claimed today. */
+const realmClaimed = `(() => {
+  const grant = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "GrantLabor").at(-1)
+    ?.answered.find(({ model }) => model === "LaborGrant");
+  const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.textContent ?? "";
+  return String(grant?.value.home) === "7" && sheet.includes("Claimed today");
+})()`;
+
+/**
+ * An army's upkeep (the lab's upkeep game): its panel opened from the dock, then Refill and its confirm (the result: the
+ * panel reading the stamina the chain refilled it to), then Level up and Level up again on Battle (the result: the
+ * panel naming the tier the chain bought).
+ */
+const ARMY_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("refill", "RefillStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
+  clickToResultStep(
+    "tier",
+    "SpendSkillPoint",
+    levelUpTheArmy,
+    ({ played }) => played.watching && { watch: "tier-bought" },
+  ),
+];
+
+/**
+ * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
+ * A panel already open (a phone's stands where its dock was) is used as it is.
+ */
+async function openTheArmyPanel(browser) {
+  const open = browser.read(SHEET_NAME);
+  if (/^Army \d+$/.test(open ?? "")) {
+    return { army: open, sheet: open, region: browser.read(sheetRegion(`[data-kit-sheet][aria-label="${open}"]`)) };
+  }
+  const army = await focusTheArmyFromItsDock(browser);
+  if (!army) return { army };
+  if (browser.read(SHEET_NAME) !== army) {
+    const details = browser.read(buttonLabelled(`^${army}(: details)?$`));
+    if (details) browser.tap(details.offset);
+  }
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === army,
+    SHEET_WAIT_MS,
+  );
+  return {
+    army,
+    sheet,
+    region: sheet === army ? browser.read(sheetRegion(`[data-kit-sheet][aria-label="${army}"]`)) : null,
+  };
+}
+
+async function refillTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (panel.sheet !== panel.army) return panel;
+  const refill = browser.read(sheetButton("^Refill"));
+  if (!refill) return { ...panel, refill };
+  browser.tap(refill.offset);
+  const confirm = await readUntil(
+    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill$")),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  if (!confirm) return { ...panel, refill: refill.name, confirm };
+  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army));
+  browser.tap(confirm.offset);
+  return { ...panel, refill: refill.name, watching: true };
+}
+
+/** The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. */
+const panelReadsTheChainsStamina = (army) => `(() => {
+  const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
+  const amount = refill?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
+  return amount !== undefined && text.includes(amount + "/" + amount);
+})()`;
+
+async function levelUpTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (panel.sheet !== panel.army) return panel;
+  const choose = browser.read(sheetButton("^Level up$"));
+  if (!choose) return { ...panel, choose };
+  browser.tap(choose.offset);
+  const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
+  if (!battle) return { ...panel, battle };
+  const buy = browser.read(sheetButton("^Level up$"));
+  if (!buy) return { ...panel, buy };
+  watchFor(browser, "tier-bought", panelNamesTheChainsTier(panel.army));
+  browser.tap(buy.offset);
+  // The result shows beside the press: its row names the next tier from the one bought.
+  return { ...panel, watching: true, region: buy.row };
+}
+
+const ROMAN_TIERS = ["I", "II", "III", "IV", "V"];
+
+/** The army's panel names the Battle tier the lab's chain bought: its Battle choice now reads from that tier ("BattleII→III"). */
+const panelNamesTheChainsTier = (army) => `(() => {
+  const bought = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "SpendSkillPoint").at(-1);
+  const tier = bought?.answered.find(({ model }) => model === "ArmyProgress")?.value.battle;
+  const choices = [...(document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.querySelectorAll("button") ?? [])];
+  return tier !== undefined &&
+    choices.some((button) => button.textContent.replace(/\s+/g, "").startsWith("Battle" + ${JSON.stringify(ROMAN_TIERS)}[tier - 1] + "→"));
+})()`;
+
+/**
+ * A building demolished (the lab's upkeep game): the realm, a first-ring building tapped for its card, Delete, then
+ * Confirm delete; the result is the building the chain removed leaving its plot.
+ */
+const DEMOLISH_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+  clickToResultStep("demolish", "DestroyBuilding", demolishABuilding, buildingDemolished),
+];
+
+async function demolishABuilding({ browser }) {
+  browser.press("Escape");
+  const tapped = [];
+  for (const offset of FIRST_RING_CANDIDATES) {
+    browser.tap(offset);
+    const remove = await readUntil(() => browser.read(sheetButton("^Delete$")), Boolean, SHEET_WAIT_MS);
+    tapped.push({ offset, sheet: browser.read(SHEET_NAME) });
+    if (remove) {
+      browser.tap(remove.offset);
+      const confirm = await readUntil(() => browser.read(sheetButton("^Confirm delete$")), Boolean, SHEET_WAIT_MS);
+      if (!confirm) return { tapped, confirm };
+      browser.tap(confirm.offset);
+      return { tapped, plot: offset, region: tileRegion(offset) };
+    }
+    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+  }
+  return { tapped };
+}
+
+// The first ring round the castle, from its top-left clockwise, where a Settlement's buildings stand: as a desktop
+// draws it, then as a phone's narrower view does.
+const FIRST_RING = [
+  [-80, -120],
+  [75, -120],
+  [160, -5],
+  [90, 110],
+  [-90, 110],
+  [-170, -20],
+];
+const FIRST_RING_CANDIDATES = [
+  ...FIRST_RING,
+  ...FIRST_RING.map(([dx, dy]) => [Math.round(dx * 0.6), Math.round(dy * 0.6)]),
+];
+
+/**
+ * The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. Its screen proof is open: the
+ * plot changes again after it (the Build sheet's highlight, then its chosen building's ghost), and the proof reads the
+ * plot's last look, so a capture run fails it.
+ */
+function buildingDemolished({ actionLatency }) {
+  const removed = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "DestroyBuilding")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "Building" && value === null);
+  const [, , col, row] = removed?.key.split(":") ?? [];
+  return col && { presented: `building-gone:${col},${row}` };
+}
+
+/**
+ * A chest opened (the lab's upkeep game): the army selected, the tile beside it that holds a chest opened as a player
+ * does (a desktop's right-click on the tile whose hover offers Open crate; a phone's tap, then its card's Open); the
+ * result is that chest consumed off its tile.
+ */
+const CHEST_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep("chest", "OpenRelicChest", openTheChest, chestOpened),
+];
+
+async function openTheChest({ browser }) {
+  await focusTheArmyFromItsDock(browser);
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
+  if (!armyAt) return { offered: [] };
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    if (onADesktop()) {
+      browser.hover(offset);
+      await sleep(HOVER_SETTLE_MS);
+      const tip = browser.read(TOOLTIP_TEXT);
+      offered.push(tip);
+      if (/^Open crate\b/.test(tip ?? "")) {
+        // A desktop's camera stays where it was: the chest stands where it was aimed.
+        browser.rightClick(offset);
+        return { offered, target: offset, chest: chestBody(screenPoint(offset)) };
+      }
+      continue;
+    }
+    browser.tap(offset);
+    const open = await readUntil(() => browser.read(sheetButton("^Open")), Boolean, SHEET_WAIT_MS);
+    offered.push(browser.read(SHEET_NAME));
+    if (open) {
+      // A phone frames the tapped tile above its card: the chest is found where the map now draws it.
+      const at = await settledHexOnScreen(browser);
+      browser.tap(open.offset);
+      return { offered, target: offset, chest: at && chestBody(at) };
+    }
+    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { offered };
+}
+
+// Where the screen draws the selected hex (page px), as the map reports it.
+const HEX_ON_SCREEN = `JSON.stringify(window.__eternumMapSelection?.hexOnScreen ?? null)`;
+
+/** The selected hex's place once the camera has stopped framing it: two readings a frame apart that agree. */
+async function settledHexOnScreen(browser) {
+  let previous = null;
+  for (let reads = 0; reads < 20; reads += 1) {
+    const at = browser.read(HEX_ON_SCREEN);
+    if (at && previous && Math.abs(at.x - previous.x) < 1 && Math.abs(at.y - previous.y) < 1) return at;
+    previous = at;
+    await sleep(100);
+  }
+  return null;
+}
+
+const screenPoint = ([dx, dy]) => ({ x: VIEWPORT.width / 2 + dx, y: VIEWPORT.height / 2 + dy });
+
+/** A chest's body on its tile (page px): what its lid lifting changes, not the tile round it. */
+const chestBody = ({ x, y }) => ({ left: Math.round(x - 25), top: Math.round(y - 35), width: 50, height: 40 });
+
+/**
+ * The chest the lab's chain consumed for the step's OpenRelicChest: its opening starting on its tile (the chest sinks
+ * away seconds later), seen on the chest's own body where the map drew it.
+ */
+function chestOpened({ played, actionLatency }) {
+  const vacated = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "OpenRelicChest")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
+  const [, , col, row] = vacated?.key.split(":") ?? [];
+  return col && played.chest && { presented: `chest-opened:${col},${row}`, target: played.chest, onset: true };
+}
+
+/**
+ * LORDS withdrawn (the lab's upkeep game, whose L2 ledger reads the tab answers): the purse's LORDS opened for Withdraw,
+ * its Maximum, then Withdraw; the result is the purse reading the LORDS the chain debited the realm to (the ledger's
+ * payment on L2 comes later, the relay's doing).
+ */
+const WITHDRAW_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep(
+    "withdraw",
+    "WithdrawLords",
+    withdrawTheLords,
+    ({ played }) => played.watching && { watch: "withdrawn" },
+  ),
+];
+
+async function withdrawTheLords({ browser }) {
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return { purse };
+  browser.tap(purse.offset);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Withdraw",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Withdraw") return { purse: purse.name, sheet };
+  const most = browser.read(sheetButton("^Maximum"));
+  if (!most) return { purse: purse.name, sheet, most };
+  browser.tap(most.offset);
+  const withdraw = await readUntil(() => browser.read(sheetButton("^Withdraw$")), Boolean, SHEET_WAIT_MS);
+  if (!withdraw) return { purse: purse.name, sheet, withdraw };
+  watchFor(browser, "withdrawn", purseReadsTheChainsLords);
+  browser.tap(withdraw.offset);
+  return { purse: purse.name, sheet, watching: true, region: purse.region };
+}
+
+/** The purse reads the LORDS the lab's chain debited the realm to for the step's WithdrawLords. */
+const purseReadsTheChainsLords = `(() => {
+  const withdrawal = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "WithdrawLords").at(-1);
+  const balance = withdrawal?.answered.find(({ model }) => model === "ResourceBalance")?.value.balance;
+  if (balance === undefined) return false;
+  const lords = (BigInt(balance) / 1000000000n).toLocaleString("en-US");
+  return [...document.querySelectorAll("button")].some((button) => button.getAttribute("aria-label") === "LORDS " + lords);
+})()`;
+
+/** A button on the page whose label (or text) matches `pattern`: its name and where it is from the screen's centre. */
+const buttonLabelled = (pattern) => `JSON.stringify((() => {
+  const button = [...document.querySelectorAll("button")]
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.getAttribute("aria-label") ?? candidate.textContent.trim()));
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return {
+    name: button.getAttribute("aria-label") ?? button.textContent.trim(),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+  };
+})())`;
+
+/** A button in the sheet `selector` names, whose text matches `pattern`: its name and where it is. */
+const buttonIn = (selector, pattern) => `JSON.stringify((() => {
+  const button = [...(document.querySelector(${JSON.stringify(selector)})?.querySelectorAll("button") ?? [])]
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.textContent.trim()));
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return { name: button.textContent.trim(), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+})())`;
+
+/** The army the lab's chain removed in the merge, leaving the map from its tile. */
+const mergedAway = ({ played, actionLatency }) => {
+  const removed = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "ManageTroops")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "ExplorerTroops" && value === null);
+  const army = removed?.key.split(":").at(-1);
+  const tile = army && played.tiles?.[army];
+  return tile && { presented: `army-gone:${army}`, region: tileRegion(tile) };
+};
+
+const sheetRegion = (selector) => `JSON.stringify((() => {
+  const rect = document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();
+  return { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) };
+})())`;
+
+const REALM_LEVELS = ["Settlement", "City", "Kingdom", "Empire"];
+const CASTLE_SHEET_TEXT = `document.querySelector('[data-kit-sheet][aria-label="Castle"]')?.textContent ?? ""`;
+const SHEET_NAME = `JSON.stringify(document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null)`;
+const SHEET_WAIT_MS = 3_000;
+
+/**
+ * Taps the keep at the realm's centre for its Castle sheet, which names the level now and the next, then presses
+ * Upgrade, watching for the sheet to name exactly the next level as its own and the one after as its next.
+ */
+async function raiseTheCastle({ browser }) {
+  browser.tap([0, 0]);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Castle",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Castle") return { sheet };
+  const shown = browser.read(`JSON.stringify(${CASTLE_SHEET_TEXT})`);
+  const level = REALM_LEVELS.findIndex((word) => shown.includes(word));
+  const raisedTo = REALM_LEVELS[level + 1];
+  if (level === -1 || !raisedTo) return { sheet, level: REALM_LEVELS[level] ?? null };
+  const after = REALM_LEVELS[level + 2];
+  const nowRaised = [
+    `!text.includes(${JSON.stringify(REALM_LEVELS[level])})`,
+    `text.includes(${JSON.stringify(raisedTo)})`,
+    ...(after ? [`text.includes(${JSON.stringify(after)})`] : []),
+  ].join(" && ");
+  watchFor(browser, "level-up", `((text) => text !== "" && ${nowRaised})(${CASTLE_SHEET_TEXT})`);
+  const region = browser.read(SHEET_REGION);
+  browser.click("Upgrade");
+  return { sheet, level: REALM_LEVELS[level], raisedTo, region };
+}
+
+const SHEET_REGION = sheetRegion('[data-kit-sheet][aria-label="Castle"]');
+
+/**
+ * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
+ * the outermost open plot is the second ring's, nearer on a phone than on a desktop), then presses Build for the sheet's
+ * first offer.
+ */
+async function buildOnAnOpenPlot({ browser }) {
+  browser.press("Escape");
+  const tapped = [];
+  for (const offset of PLOT_CANDIDATES) {
+    browser.tap(offset);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name !== null,
+      SHEET_WAIT_MS,
+    );
+    tapped.push({ offset, sheet });
+    if (sheet === "Build") {
+      browser.click("Build");
+      return { tapped, plot: offset, region: tileRegion(offset) };
+    }
+    if (sheet !== null) browser.press("Escape");
+  }
+  return { tapped };
+}
+
+const PLOT_CANDIDATES = [-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]);
+
+/** Has the probe report the first frame `expression` holds in, under `name`. */
+function watchFor(browser, name, expression) {
+  browser.run(["eval", `window.__playtest.watch(${JSON.stringify(name)}, ${JSON.stringify(expression)})`]);
+}
 
 /**
  * Presses a place's control until its scene holds on a playable page. A first trip to the map may reload the page
@@ -610,7 +1551,7 @@ async function selectTheReadiestArmy({ browser }) {
   return { armies, army: await focusTheReadiestArmy(browser, armies) };
 }
 
-/** An order clears the selection, so every order starts by selecting (and centring) the army that can act. */
+/** Selects the army with the most stamina from the dock (a desktop's pick centres it; a phone's may not). */
 async function focusTheReadiestArmy(browser, armies = browser.armies()) {
   const readiest = armies.toSorted((left, right) => (right.stamina || 0) - (left.stamina || 0))[0];
   if (!readiest) return null;
@@ -623,11 +1564,13 @@ async function pickArmy(browser, army) {
   await sleep(ARMY_FLIGHT_MS);
 }
 
+/** The army pressed is the one the map reports selected: a phone's dock names its button otherwise ("Army 1: details"). */
 function armySelected({ seen, played }) {
   if (!played.army) return blocked("the player has no army on the HUD");
-  return seen.pressed.includes(played.army)
-    ? completed({ army: played.army, armies: played.armies })
-    : failed(`${played.army} is not selected (pressed: ${seen.pressed.join(", ") || "none"})`);
+  const selected = seen.selection?.army ?? null;
+  return selected
+    ? completed({ army: played.army, selected, armies: played.armies })
+    : failed(`${played.army} was pressed and the map reports no army selected`);
 }
 
 /**
@@ -635,39 +1578,114 @@ function armySelected({ seen, played }) {
  * tooltip offers Explore and right-clicks it (the map's own order, as in Blitz); on a phone, taps them until one's order
  * bar names Explore and taps that tile again, which sends it, other offers cancelled.
  */
-async function exploreBesideArmy({ browser, extraScreenshot }) {
-  const army = await focusTheReadiestArmy(browser);
-  if (!army) return { offered: [], army };
+function exploreBesideArmy(context) {
+  return orderBesideArmy(context, "Explore");
+}
+
+/**
+ * Selects the readiest army from the dock. A phone keeps an army selected after its order, its panel where the dock
+ * was: the panel is put away first, as a player does to pick an army again.
+ */
+async function focusTheArmyFromItsDock(browser) {
+  if (browser.armies().length === 0 && browser.observe().selection?.army) {
+    browser.press("Escape");
+    await waitFor(browser, () => browser.armies().length > 0, BURST_SELECT_WAIT_MS);
+  }
+  return focusTheReadiestArmy(browser);
+}
+
+/**
+ * Gives the readiest army the order `verb` (Explore, Move) on a tile beside it, aimed from where the army stands on
+ * screen (its token; the camera is left where it is: picking an army does not always centre it), and names the region
+ * its result shows in: the explored tile, or the army's figure, which a move sets off.
+ */
+async function orderBesideArmy({ browser, extraScreenshot }, verb) {
+  const armyName = await focusTheArmyFromItsDock(browser);
+  if (!armyName) return { offered: [], army: armyName };
+  const selection = browser.observe().selection;
+  const armyId = selection?.army?.id ?? null;
+  const armyAt = armyOnScreen(browser, armyId);
+  if (!armyAt)
+    return { army: armyName, armyId, offered: [], aimed: "the army is not within reach of the view's centre" };
+  const regionOf = (target) => (verb === "Explore" ? tileRegion(target) : armyRegion(armyAt));
   if (onADesktop()) {
-    const { target, scanned } = await findOrderTile(browser, "Explore");
-    const offered = scanned.map(({ verb }) => verb);
-    if (!target) return { army, offered };
+    const { target, scanned } = await findOrderTile(browser, [verb], armyAt);
+    const offered = scanned.map((seen) => seen.verb);
+    if (!target) return { army: armyName, armyId, armyAt, offered };
     const before = extraScreenshot("before");
     const pressedAt = browser.observe().now;
     browser.rightClick(target.offset);
-    return { army, offered, pressedAt, before, target: target.offset };
+    return {
+      army: armyName,
+      armyId,
+      armyAt,
+      offered,
+      pressedAt,
+      before,
+      target: target.offset,
+      region: regionOf(target.offset),
+    };
   }
   const offered = [];
+  const offMap = [];
+  const taps = [];
   // The army's paths are planned once it is selected; a pass where no tile pins anything is tried once more.
   for (let pass = 1; pass <= TAP_PASSES; pass += 1) {
-    for (const offset of NEIGHBOUR_RING) {
+    for (const step of NEIGHBOUR_RING) {
+      // A pinned order may frame its tile above its card: the army is found again before each tap.
+      const army = armyOnScreen(browser, armyId) ?? armyAt;
+      const at = [army[0] + step[0], army[1] + step[1]];
+      if (!onTheOpenMap(at)) {
+        offMap.push(at);
+        continue;
+      }
       const pinnedAt = browser.observe().now;
-      browser.tap(offset);
-      const verb = orderVerb(browser.orderBar());
-      offered.push(verb);
-      if (verb === "Explore") {
+      browser.tap(at);
+      const offer = orderVerb(browser.orderBar());
+      offered.push(offer);
+      const selection = browser.observe().selection;
+      taps.push({ at, offer, camera: selection?.camera ?? null, armySelected: Boolean(selection?.army) });
+      // A tile holding something else (a structure, the spire) takes the selection: pick the army again.
+      if (offer !== verb && !selection?.army) await focusTheArmyFromItsDock(browser);
+      if (offer === verb) {
         const before = extraScreenshot("before");
         const pressedAt = browser.observe().now;
         // The phone's own confirmation (owner, 27 October 2026: "double tapping to explore on mobile"): the same tile again.
-        browser.tap(offset);
-        return { army, offered, pinnedAt, pressedAt, before, target: offset };
+        browser.tap(at);
+        return {
+          army: armyName,
+          armyId,
+          armyAt: army,
+          offered,
+          pinnedAt,
+          pressedAt,
+          before,
+          target: at,
+          region: verb === "Explore" ? tileRegion(at) : armyRegion(army),
+          taps,
+        };
       }
     }
     if (offered.some(Boolean)) break;
     await sleep(ARMY_FLIGHT_MS);
   }
   browser.press("Escape");
-  return { army, offered };
+  return { army: armyName, armyId, armyAt, offered, offMap, taps };
+}
+
+/** A phone's open map, between its top bars and its dock: a tap outside it lands on the HUD or off the page. */
+const OPEN_MAP_MARGINS = { side: 30, top: 140, bottom: 260 };
+const onTheOpenMap = ([dx, dy]) =>
+  Math.abs(dx) <= VIEWPORT.width / 2 - OPEN_MAP_MARGINS.side &&
+  dy >= OPEN_MAP_MARGINS.top - VIEWPORT.height / 2 &&
+  dy <= VIEWPORT.height / 2 - OPEN_MAP_MARGINS.bottom;
+
+/**
+ * Where an army stands on screen, from the view's centre: its token, as the map places it over the army, lowered to its
+ * tile (TOKEN_ABOVE_TILE_PX at the map's default zoom); null when its token is not drawn.
+ */
+function armyOnScreen(browser, army) {
+  return army === undefined || army === null ? null : (browser.read(ARMY_TILES)[String(army)] ?? null);
 }
 
 /**
@@ -679,9 +1697,26 @@ async function explored({ played, actionLatency, screenshot, probe }) {
   return judgeExplore({ ...played, tileChange, plateStamina: probe.plateStamina }, actionLatency.clientActions);
 }
 
+/**
+ * The army's figure standing on its tile at `offset` from the screen centre, at the map's default zoom: where its walk
+ * shows first. Its tile's own highlights (the orders lit round it, the selected outline) fall outside it, and they
+ * change when the selection does, not when the army moves.
+ */
+function armyRegion([dx, dy]) {
+  return { left: VIEWPORT.width / 2 + dx - 25, top: VIEWPORT.height / 2 + dy - 60, width: 50, height: 60 };
+}
+
 /** A 120×100 patch centred on a tile tapped at `offset` from the screen centre. */
 function tileRegion([dx, dy]) {
   return { left: VIEWPORT.width / 2 + dx - 60, top: VIEWPORT.height / 2 + dy - 50, width: 120, height: 100 };
+}
+
+/** A tile's box (page px) round the point the map draws it at. */
+const tileRegionAt = ({ x, y }) => ({ left: Math.round(x - 60), top: Math.round(y - 50), width: 120, height: 100 });
+
+/** A tile's ground inside its outline: what its terrain alone fills. */
+function tileInterior([dx, dy]) {
+  return { left: VIEWPORT.width / 2 + dx - 32, top: VIEWPORT.height / 2 + dy - 25, width: 64, height: 50 };
 }
 
 /**
@@ -1023,18 +2058,18 @@ async function pollDevTools(read, timeoutMs) {
 }
 
 /**
- * Hovers tiles around the army until one's tooltip offers it one of `verbs` (a move or an explore), as a player reads
- * it.
+ * Hovers tiles around the army (standing `around` the view's centre) until one's tooltip offers it one of `verbs` (a
+ * move or an explore), as a player reads it.
  */
-async function findOrderTile(browser, ...verbs) {
-  const wanted = verbs.length > 0 ? verbs : ["Move", "Explore"];
+async function findOrderTile(browser, verbs = ["Move", "Explore"], around = [0, 0]) {
   const scanned = [];
-  for (const offset of ORDER_TILE_CANDIDATES) {
+  for (const [dx, dy] of ORDER_TILE_CANDIDATES) {
+    const offset = [around[0] + dx, around[1] + dy];
     browser.hover(offset);
     await sleep(HOVER_SETTLE_MS);
     const verb = browser.read(ORDER_TOOLTIP_TITLE);
     scanned.push({ offset, verb });
-    if (wanted.includes(verb)) return { target: { offset, verb }, scanned };
+    if (verbs.includes(verb)) return { target: { offset, verb }, scanned };
   }
   return { target: null, scanned };
 }
@@ -1042,13 +2077,8 @@ async function findOrderTile(browser, ...verbs) {
 // The army's ring, then the ring past it: a moved army may stand a tile off the centre.
 const ORDER_TILE_CANDIDATES = [...NEIGHBOUR_RING, ...NEIGHBOUR_RING.map(([dx, dy]) => [dx * 2, dy * 2])];
 
-// The hover tooltip's title (Move, Explore, Attack…), shown over a tile the selected army has an order on.
-const ORDER_TOOLTIP_TITLE = `JSON.stringify((() => {
-  const hint = [...document.querySelectorAll("span")].find((span) => span.textContent.trim() === "Right-click to confirm");
-  let tooltip = hint;
-  while (tooltip && !tooltip.querySelector("span.px-1")) tooltip = tooltip.parentElement;
-  return tooltip?.querySelector("span.px-1")?.textContent.trim() ?? null;
-})())`;
+// The hover tooltip's title (Move, Explore, Attack…), its first line over a tile the selected army has an order on.
+const ORDER_TOOLTIP_TITLE = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"] .ui-tip__line')?.textContent.trim() ?? null)`;
 
 /**
  * The army kept selected through an order's confirmation: selected when the step began (no click or Tab in between),
@@ -1281,6 +2311,25 @@ async function pressSpire({ browser }) {
     SPIRE_WAIT_MS,
   );
   return { spire: "Spire", state };
+}
+
+async function tapAroundTheArmyForTheSpire(browser) {
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id) ?? [0, 0];
+  const scanned = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    browser.tap(offset);
+    const state = await readUntil(
+      () => browser.read(SPIRE_STATE),
+      (shown) => shown.sheet !== null,
+      SHEET_WAIT_MS,
+    );
+    scanned.push({ offset, tip: state.sheet });
+    if (state.sheet === "Spire") return { spire: offset, scanned, state };
+    if (state.sheet !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { spire: null, scanned };
 }
 
 function spireCardOffersDepths({ played, seen }) {
@@ -1537,6 +2586,8 @@ function eachCardIsItsHover({ played }) {
 
 /** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
+/** The spire's game before its player settled: the run opens on the home page, and its first step enters the game. */
+const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
 const PICKED_ARMY = 201;
 const MERGE_WAIT_MS = 10_000;
@@ -2562,6 +3613,17 @@ const DISMISSED_AT_EXPRESSION = `JSON.stringify(
   (window.__eternumGameEntryTimeline ?? []).find((milestone) => milestone.name === "overlay-dismissed")?.timestamp ?? null
 )`;
 
+/**
+ * The player commands Frontier's preset enables that no lab action step sends, each with why none does. Every other one
+ * is measured by the step that declares it (`sends`), on desktop and phone, with baselines; action-coverage.test.ts
+ * fails a command that is neither.
+ */
+export const UNMEASURED_COMMANDS = {
+  MarkGameSettled:
+    "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
+  SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
+};
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
@@ -2576,6 +3638,7 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  actions: { game: FRONTIER, steps: ACTION_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
   "blitz-spectator": { game: BLITZ, steps: BLITZ_SPECTATOR_STEPS },
@@ -2596,6 +3659,20 @@ export const STEP_SETS = {
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
   },
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
+  "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
+  "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
+  "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
+  "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
+  "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
+  "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
+  "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
+  "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
+  "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
+  "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
+  "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
+  "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
+  "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },

@@ -14,6 +14,7 @@ import {
   touchAtPhoneWidth,
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
+import { clickToResultTable } from "./client-playtest/click-latency.mjs";
 import { startClient } from "./client-playtest/client-server.mjs";
 import {
   assertInTargetGame,
@@ -128,6 +129,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
     gameId: Number(option("--game-id", "0")),
     gpu,
+    captureResults: argv.includes("--capture-results"),
     headed: argv.includes("--headed"),
     iterations: integer("--iterations", DEFAULTS.iterations, 1),
     network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
@@ -231,6 +233,8 @@ function finish({ options, output, owner, results, runDir }) {
     finishedAt: new Date().toISOString(),
   };
   if (runDir) writeJson(join(runDir, "summary.json"), summary);
+  const actionTable = clickToResultTable(summary.byMode ?? {});
+  if (runDir && actionTable) writeFileSync(join(runDir, "click-to-result.md"), `${actionTable}\n`);
   console.log(JSON.stringify({ runDir, ok: summary.ok, failures, warnings: judged.gateEvaluation?.warnings }, null, 2));
   process.exitCode = summary.ok ? 0 : 1;
 }
@@ -322,6 +326,24 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    // Each step's evidence is named by its place in the list, from `first` on.
+    const playSteps = async (played, first) => {
+      for (const [index, step] of played.entries()) {
+        owner.throwIfCancelled();
+        const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
+        const result = await playStep({
+          browser,
+          captureResults: context.captureResults,
+          devTools,
+          owner,
+          step,
+          base,
+          profiled: context.profileSteps.includes(step.name),
+        });
+        record.steps.push(result);
+        if (result.cancelled) throw result.cancelled;
+      }
+    };
     await touchAtPhoneWidth(devTools, VIEWPORT.width);
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     if (context.network) await emulateNetwork(devTools, context.network);
@@ -337,6 +359,9 @@ async function playRun(context) {
     if (profileBoot) await startCpuProfile(devTools);
     if (!player) browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
+    // A game entered from the home page is entered by the first step, which times that entry; the boot runs to after it.
+    const entering = stepsGame.entersFromHome ? steps.slice(0, 1) : [];
+    await playSteps(entering, 0);
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     if (profileBoot) await writeCpuProfile(devTools, join(runDir, `${label}-00-boot.cpuprofile`));
     if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
@@ -350,14 +375,7 @@ async function playRun(context) {
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
 
-    for (const [index, step] of steps.entries()) {
-      owner.throwIfCancelled();
-      const base = join(runDir, `${label}-${String(index + 1).padStart(2, "0")}-${step.name}`);
-      const profiled = context.profileSteps.includes(step.name);
-      const played = await playStep({ browser, devTools, owner, step, base, profiled });
-      record.steps.push(played);
-      if (played.cancelled) throw played.cancelled;
-    }
+    await playSteps(steps.slice(entering.length), entering.length);
   } catch (error) {
     record.error = error.message;
     record.cancelled = error instanceof Cancelled;
@@ -381,7 +399,7 @@ async function playRun(context) {
  * Marks the step, plays it, lets it settle, and judges it by what the page then shows and what the probe saw. Any
  * failure, capture included, is kept as the step's verdict with what it attempted and whatever could still be read.
  */
-async function playStep({ browser, devTools, owner, step, base, profiled }) {
+async function playStep({ browser, captureResults, devTools, owner, step, base, profiled }) {
   const screenshot = `${base}.png`;
   const attempt = { name: step.name, played: {} };
   let startedOn = null;
@@ -390,7 +408,7 @@ async function playStep({ browser, devTools, owner, step, base, profiled }) {
     startedOn = JSON.parse(browser.eval(`window.__playtest.step(${JSON.stringify(step.name)})`));
     const extraScreenshot = (suffix) => takeScreenshot(browser, `${base}-${suffix}.png`);
     if (profiled) await startCpuProfile(devTools);
-    attempt.played = (await step.play?.({ base, browser, devTools, extraScreenshot, owner })) ?? {};
+    attempt.played = (await step.play?.({ base, browser, captureResults, devTools, extraScreenshot, owner })) ?? {};
     await owner.sleep(step.settleMs);
     if (profiled) attempt.played.cpuProfile = await writeCpuProfile(devTools, `${base}.cpuprofile`);
     browser.screenshot(screenshot);
@@ -570,11 +588,13 @@ function readLocalJson(url) {
 }
 
 // The client's own action timelines (click to rendered marker, admission to visible, army movement phases); empty as
-// a spectator, filled by a player's actions.
+// a spectator, filled by a player's actions. In the lab's game, also what its chain answered each signed command with:
+// what the action's result must show.
 const ACTION_LATENCY_EXPRESSION = `JSON.stringify({
   admissionToVisibleMs: globalThis.__admissionToVisibleMs ?? [],
   armyMovement: globalThis.__armyMovementLatencyTraceEntries ?? [],
   clientActions: globalThis.__clientActionLatencyMeasurements ?? [],
+  chainAnswers: (globalThis.__labChain?.sent ?? []).map(({ command, answered }) => ({ kind: command.kind, answered })),
 })`;
 
 const GPU_RENDERER_EXPRESSION = `(() => {

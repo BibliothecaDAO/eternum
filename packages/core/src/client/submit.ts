@@ -335,6 +335,8 @@ function reconcile(
 }
 
 /** An ordinary v3 invoke at this nonce with the shard's fixed bounds and tip 0. */
+export type PlayFrame = ReturnType<typeof playFrame>;
+
 function playFrame(nonce: string, shard: GameplayShard, details: UniversalDetails | undefined) {
   return {
     ...details,
@@ -350,11 +352,11 @@ function playFrame(nonce: string, shard: GameplayShard, details: UniversalDetail
 }
 
 /** The hash the node gives this invoke: the stamp extends only the signature, which the hash does not cover. */
-function ordinaryHash(
+export function ordinaryHash(
   senderAddress: string,
   calls: AllowArray<Call>,
   shard: GameplayShard,
-  frame: ReturnType<typeof playFrame>,
+  frame: PlayFrame,
 ): string {
   return hash.calculateInvokeTransactionHash({
     ...frame,

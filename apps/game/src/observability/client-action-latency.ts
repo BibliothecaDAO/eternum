@@ -50,6 +50,9 @@ let nextActionSequence = 0;
 let measurements: ClientActionLatencyMeasurement[] = [];
 let admissionToVisibleMs: number[] = [];
 const listeners = new Set<() => void>();
+/** Transactions the stream reported before a record named them, newest last, with their phases. */
+let unclaimedPhases = new Map<string, ClientActionLatencyMeasurement["phases"]>();
+const MAX_UNCLAIMED_TRANSACTIONS = 64;
 
 const now = (): number => (typeof performance === "undefined" ? Date.now() : performance.now());
 
@@ -120,7 +123,10 @@ export function recordClientActionSendStage(
         }
       : measurement,
   );
-  if (transactionHash) joinSendToAction(transactionHash);
+  if (transactionHash) {
+    joinSendToAction(transactionHash);
+    claimKeptPhases(transactionHash);
+  }
   publish();
 }
 
@@ -217,6 +223,7 @@ export function recordClientActionSubmitted(actionId: string, transactionHash: s
       : measurement,
   );
   joinSendToAction(transactionHash);
+  claimKeptPhases(transactionHash);
   publish();
 }
 
@@ -244,9 +251,34 @@ export function recordClientActionStoreApplied(transactionHash: string): void {
   recordTransactionPhase(transactionHash, "store_applied");
 }
 
+/**
+ * A transaction's phase, on the record that names it. One no record names yet is kept, and the record that names it
+ * later takes it: a relayed action (the labor claim) learns its transaction from the relay's reply, after its facts.
+ */
 function recordTransactionPhase(transactionHash: string, phase: ClientActionLatencyPhase): void {
   const actionId = findActionIdByTransactionHash(transactionHash);
-  if (actionId) recordClientActionPhase(actionId, phase);
+  if (actionId) {
+    recordClientActionPhase(actionId, phase);
+    return;
+  }
+  const hash = normalizeTransactionHash(transactionHash);
+  const phases = unclaimedPhases.get(hash) ?? {};
+  unclaimedPhases.delete(hash);
+  unclaimedPhases.set(hash, phases[phase] === undefined ? { ...phases, [phase]: now() } : phases);
+  for (const oldest of unclaimedPhases.keys()) {
+    if (unclaimedPhases.size <= MAX_UNCLAIMED_TRANSACTIONS) break;
+    unclaimedPhases.delete(oldest);
+  }
+}
+
+/** The phases kept for a transaction before any record named it, given to the record that now does. */
+function claimKeptPhases(transactionHash: string): void {
+  const hash = normalizeTransactionHash(transactionHash);
+  const kept = unclaimedPhases.get(hash);
+  const actionId = findActionIdByTransactionHash(transactionHash);
+  if (!kept || !actionId) return;
+  unclaimedPhases.delete(hash);
+  updateMeasurement(actionId, (measurement) => ({ ...measurement, phases: earliestOfEach(measurement.phases, kept) }));
 }
 
 export function recordClientActionRendered(actionId: string): void {
@@ -304,6 +336,7 @@ export function summarizeClientActionLatency(operation?: string): ClientActionLa
 
 export function clearClientActionLatency(): void {
   measurements = [];
+  unclaimedPhases = new Map();
   admissionToVisibleMs = [];
   publish();
 }

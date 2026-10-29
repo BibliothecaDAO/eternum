@@ -162,8 +162,9 @@ const OBSERVE_EXPRESSION = `JSON.stringify({
   now: performance.now(),
 })`;
 
-// The player's army buttons on the HUD, each with the stamina its meter shows.
-const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].map((button) => ({
+// The player's army buttons on the HUD, each with the stamina its meter shows. An open slot (Deploy, or one waiting for
+// an earlier slot) is drawn as a row like an army's, its meter the stamina its army would start on: it is no army.
+const ARMIES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('nav[aria-label="Armies"] button[aria-pressed]')].filter((button) => !button.disabled && button.getAttribute("aria-label") !== "Deploy").map((button) => ({
   label: button.getAttribute("aria-label"),
   stamina: Number(button.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? NaN),
 })))`;

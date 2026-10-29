@@ -1,3 +1,4 @@
+import { presentResult } from "@/three/presented-results";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
@@ -303,6 +304,9 @@ export class ChestManager {
           wasVisible: this.chestInstanceIndices.has(change.entityId),
         });
         const chest = change.current ?? change.previous;
+        if (change.previous && !change.current) {
+          presentResult(`chest-opened:${change.previous.hexCoords.col},${change.previous.hexCoords.row}`);
+        }
         if (kind && chest)
           this.chestTransitions.start(
             this.transitionKey(chest),

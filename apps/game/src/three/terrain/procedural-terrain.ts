@@ -308,6 +308,11 @@ export class ProceduralTerrain {
     this.fogField.queueReveal(col, row, source);
   }
 
+  /** Calls `shown` once an explored cell reads as explored: half its fog cleared, or at once with none to clear. */
+  whenShroudRevealed(col: number, row: number, shown: () => void): void {
+    this.fogField.whenRevealed(col, row, shown);
+  }
+
   update(deltaSeconds: number): void {
     this.fogField.updateAnimation(deltaSeconds);
     this.movementEffects.update(deltaSeconds);

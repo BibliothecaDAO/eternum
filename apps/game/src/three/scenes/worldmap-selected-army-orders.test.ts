@@ -70,6 +70,7 @@ describe("SelectedArmyOrders on a selected army", () => {
     const army = createRefillingArmy(22);
     const orders = new SelectedArmyOrders({
       reach: army.reach,
+      isBusy: () => false,
       offerOrders: () => highlights.highlightHexes(army.orders() as never),
     });
     const confirmedHead = () => {
@@ -90,4 +91,42 @@ describe("SelectedArmyOrders on a selected army", () => {
     finishRollIn();
     expect(drawnHexes(scene)).toEqual(["0,-1@0.98", "0,1@0.98", "1,0@0.92", "2,0@0.92", "3,0@0.92"]);
   });
+
+  it("keeps its orders drawn while an action it sent lands, then changes only the hex the action changed, in place", () => {
+    const scene = new THREE.Scene();
+    const highlights = new HighlightHexManager(scene, FLAT_TERRAIN_SURFACE, gridSpace);
+    const army = createArmyBesideAWell();
+    let busy = false;
+    const orders = new SelectedArmyOrders({
+      reach: () => ({ stamina: 60, travelSteps: 2, canExplore: true }),
+      isBusy: () => busy,
+      // As the world map does: an army whose order is in flight is offered none.
+      offerOrders: () => highlights.highlightHexes(busy ? [] : (army.orders() as never)),
+    });
+
+    orders.offer(ARMY, PLAYER);
+    finishRollIn();
+    expect(drawnHexes(scene)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
+
+    busy = true;
+    army.useTheWell();
+    orders.followMapChange(ARMY, PLAYER);
+    orders.followConfirmedHead(ARMY, PLAYER);
+    expect(drawnHexes(scene)).toEqual(["0,1@0.98", "1,0@0.92", "2,0@0.92"]);
+
+    busy = false;
+    orders.offer(ARMY, PLAYER);
+    expect(drawnHexes(scene)).toEqual(["0,1@0.92", "1,0@0.92", "2,0@0.92"]);
+  });
 });
+
+/** An army at (0, 0) with moves east and a Well north of it, which it can use once; then that tile is a move. */
+const createArmyBesideAWell = () => {
+  let wellUsed = false;
+  const orders = () => [
+    order(1, 0, "move", "route"),
+    order(2, 0, "move", "route"),
+    wellUsed ? order(0, 1, "move", "route") : { ...order(0, 1, "use", "route"), isEndpoint: true },
+  ];
+  return { orders, useTheWell: () => (wellUsed = true) };
+};

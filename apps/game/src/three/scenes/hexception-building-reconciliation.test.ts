@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  buildingEntrance,
   buildingKey,
   isTierChange,
   reconcileBuildingUpdate,
@@ -152,5 +153,16 @@ describe("a building's tier change", () => {
     expect(isTierChange(farm(1, "pending"), farm(2))).toBe(false);
     expect(isTierChange("buildings:28:26:ready:tier1", farm(2))).toBe(false);
     expect(isTierChange(undefined, farm(1))).toBe(false);
+  });
+});
+
+describe("buildingEntrance", () => {
+  it("takes the place of the player's own ghost at once, where the build sheet pinned it", () => {
+    expect(buildingEntrance({ col: 10, row: 8 }, { col: 10, row: 8 })).toBe("overshoot");
+  });
+
+  it("grows in on any other plot, or with no ghost pinned", () => {
+    expect(buildingEntrance({ col: 10, row: 8 }, { col: 11, row: 8 })).toBe("grow");
+    expect(buildingEntrance({ col: 10, row: 8 }, null)).toBe("grow");
   });
 });

@@ -87,6 +87,7 @@ function probedPage() {
     gpuDoneMs: () => lastFrame().gpuDoneMs.at(-1),
     device: new GPUDevice(),
     pass: new GPURenderPassEncoder(),
+    window,
     queue: new GPUQueue(),
     gl: new WebGL2RenderingContext(),
     frame: () => lastFrame().gpu.at(-1).uploadBytes,
@@ -171,4 +172,17 @@ it("times a frame's GPU work from its first submit to the GPU reporting it done"
   await page.submitTakingGpu(4);
   expect(page.gpuDoneMs()).toBe(7);
   expect(page.gpuDoneMs()).toBe(null);
+});
+
+it("reports the first frame a watched condition holds in, once", () => {
+  const page = probedPage();
+  page.window.level = "Settlement";
+  page.window.__playtest.watch("raised", 'window.level === "City"');
+
+  page.frame();
+  page.window.level = "City";
+  page.frame();
+  page.frame();
+
+  expect(JSON.parse(page.window.__playtest.read()).watched).toEqual([{ name: "raised", t: 32, at: 0 }]);
 });

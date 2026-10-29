@@ -50,6 +50,7 @@ beforeEach(() => {
   rpc.admin.mockImplementation(async (method: string, args: Record<string, unknown>) => {
     new CallData(gamesAbi).compile(method, args as never);
     saved = grant;
+    return { transactionHash: "0xabc" };
   });
 });
 it("writes one home claim using the published ABI and retries without a second write", async () => {
@@ -60,13 +61,14 @@ it("writes one home claim using the published ABI and retries without a second w
     home: "9",
     amount: "1000",
     essence: "0",
+    transactionHash: "0xabc",
   });
   expect(rpc.admin).toHaveBeenCalledExactlyOnceWith("grant_labor", {
     home: { game_id: 7, home: 9n },
     day: 0,
     account: "0x123",
   });
-  expect(await Effect.runPromise(writeLaborGrant(target, claim))).toEqual(result);
+  expect(await Effect.runPromise(writeLaborGrant(target, claim))).toEqual({ ...result, transactionHash: null });
   expect(rpc.admin).toHaveBeenCalledTimes(1);
 });
 it.each([
@@ -126,7 +128,14 @@ const route = () => ({
   authenticate: async () => ({ realmsId: "0x2" }),
   accountForRealmsId: async () => "0x123",
   currentDay: vi.fn(() => Effect.succeed(4)),
-  grant: vi.fn(async () => ({ gameId: 7, account: "0x123", home: "9", amount: "1000", essence: "0" })),
+  grant: vi.fn(async () => ({
+    gameId: 7,
+    account: "0x123",
+    home: "9",
+    amount: "1000",
+    essence: "0",
+    transactionHash: "0xabc",
+  })),
 });
 it("derives the account and day, accepting only one settled home", async () => {
   const deps = route();
@@ -134,7 +143,7 @@ it("derives the account and day, accepting only one settled home", async () => {
   expect(response.status).toBe(200);
   expect(await response.json()).toEqual({
     day: 4,
-    grant: { gameId: 7, account: "0x123", home: "9", amount: "1000", essence: "0" },
+    grant: { gameId: 7, account: "0x123", home: "9", amount: "1000", essence: "0", transactionHash: "0xabc" },
   });
   expect(deps.currentDay).toHaveBeenCalledExactlyOnceWith(7);
   expect(deps.grant).toHaveBeenCalledExactlyOnceWith({ ...claim, day: 4 });

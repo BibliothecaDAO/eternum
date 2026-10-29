@@ -87,6 +87,14 @@ describe("arcane reward tile lifecycle", () => {
     summoning.dispose();
   });
 
+  it("opens the lid visibly on the first frame after the chest is opened", () => {
+    const { lid, summoning } = createTile();
+    summoning.update(3);
+    summoning.open();
+    summoning.update(1 / 30);
+    expect(lid.rotation.x).toBeLessThan(-0.3);
+  });
+
   it("lights the opened chest, closes and settles it before swallowing every part of the tile", () => {
     const { world, tile, body, lid, summoning } = createTile();
     summoning.update(3);

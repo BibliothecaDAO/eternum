@@ -18,7 +18,12 @@ import type NodeMaterial from "three/src/materials/nodes/NodeMaterial.js";
 import { terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
 
-export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.3;
+/**
+ * How long an explored tile's fog takes to clear (owner, 2026-10-29: "I quite like the fog animation so we can def
+ * shorten it"): the shortest that still reads as the fog's sweep, for the player's own explore and every other reveal
+ * alike, as a tile turning explored looks the same whoever explored it.
+ */
+export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.12;
 
 interface Reveal {
   col: number;
@@ -30,6 +35,8 @@ interface Reveal {
 /** Transient presentation only: one record per newly explored hex, uploaded on start/end, never each frame. */
 export class TerrainFogReveal {
   private readonly reveals = new Map<string, Reveal>();
+  /** Who waits, by cell, for its reveal to clear half its fog: when its explored ground reads as explored. */
+  private readonly waiting = new Map<string, Array<() => void>>();
   private readonly clock = uniform(0);
   private readonly count = uniform(0);
   private readonly bounds = uniform(new Vector4(0, 0, 1, 1));
@@ -47,19 +54,41 @@ export class TerrainFogReveal {
     return this.reveals.size;
   }
 
+  has(col: number, row: number): boolean {
+    return this.reveals.has(terrainCellKey(col, row));
+  }
+
   start(col: number, row: number, direction: readonly [number, number]): void {
-    if (this.reducedMotion) return;
     const key = terrainCellKey(col, row);
+    if (this.reducedMotion) {
+      this.cleared(key);
+      return;
+    }
     if (this.reveals.has(key)) return;
     this.reveals.set(key, { col, row, direction, start: this.clock.value });
     this.upload();
+  }
+
+  /**
+   * Calls `shown` once the cell's reveal has cleared half its fog: each patch of fog clears at its own moment across the
+   * reveal (createFogDissolveThreshold), half of them by its middle. A cell whose reveal is still queued is told once
+   * it has started and reached its middle.
+   */
+  whenHalfClear(col: number, row: number, shown: () => void): void {
+    const key = terrainCellKey(col, row);
+    this.waiting.set(key, [...(this.waiting.get(key) ?? []), shown]);
+    const reveal = this.reveals.get(key);
+    if (!reveal) return;
+    if (this.clock.value - reveal.start >= TERRAIN_FOG_REVEAL_DURATION_SECONDS / 2) this.cleared(key);
   }
 
   update(deltaSeconds: number): void {
     this.clock.value += Math.max(0, deltaSeconds);
     let changed = false;
     this.reveals.forEach((reveal, key) => {
-      if (this.clock.value - reveal.start < TERRAIN_FOG_REVEAL_DURATION_SECONDS) return;
+      const elapsed = this.clock.value - reveal.start;
+      if (elapsed >= TERRAIN_FOG_REVEAL_DURATION_SECONDS / 2) this.cleared(key);
+      if (elapsed < TERRAIN_FOG_REVEAL_DURATION_SECONDS) return;
       this.reveals.delete(key);
       changed = true;
     });
@@ -70,6 +99,7 @@ export class TerrainFogReveal {
     this.reducedMotion = reduced;
     if (!reduced || this.reveals.size === 0) return;
     this.reveals.clear();
+    this.clearAllWaiting();
     this.upload();
   }
 
@@ -105,7 +135,20 @@ export class TerrainFogReveal {
 
   clear(): void {
     this.reveals.clear();
+    this.clearAllWaiting();
     this.count.value = 0;
+  }
+
+  /** The cell's fog is half clear, or gone at once: whoever waits on it is told. */
+  private cleared(key: string): void {
+    const waiting = this.waiting.get(key);
+    if (!waiting) return;
+    this.waiting.delete(key);
+    waiting.forEach((shown) => shown());
+  }
+
+  private clearAllWaiting(): void {
+    [...this.waiting.keys()].forEach((key) => this.cleared(key));
   }
 
   dispose(): void {
@@ -150,7 +193,7 @@ function createFogDissolveThreshold(
     .add(0.5)
     .clamp(0, 1);
   // The bounded threshold (0.04..0.96) guarantees full coverage at the start
-  // and no surviving fragments when the 300ms reveal record expires.
+  // and no surviving fragments when the reveal record expires.
   return distance.mul(0.42).add(billows.mul(0.38)).add(wisps.mul(0.12)).add(0.04);
 }
 

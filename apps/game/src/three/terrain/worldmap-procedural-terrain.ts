@@ -305,6 +305,10 @@ export class WorldmapProceduralTerrain {
     this.terrain.queueShroudReveal(col, row, source);
   }
 
+  whenShroudRevealed(col: number, row: number, shown: () => void): void {
+    this.terrain.whenShroudRevealed(col, row, shown);
+  }
+
   update(deltaSeconds: number): void {
     this.terrain.update(deltaSeconds);
   }

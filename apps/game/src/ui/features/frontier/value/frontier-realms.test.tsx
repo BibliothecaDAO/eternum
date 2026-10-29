@@ -67,6 +67,7 @@ vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => facts.now }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0x52", gameId: 3 }) }));
 vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: facts.balance, limit: 18000 } }) }));
+import { snapshotClientActionLatency } from "@/observability/client-action-latency";
 import { FrontierRealms } from "./frontier-realms";
 import { useRealmLabor } from "./use-realm-labor";
 const home = { game_id: 3, entity_id: 412n, owner: 0xaccn, metadata: { realm_id: 711 } } as NativeRows["Structure"];
@@ -93,7 +94,7 @@ it("claims its settled home once and takes the result from the next native facts
   const requests: unknown[] = [];
   vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
     requests.push(JSON.parse(String(init.body)));
-    return Response.json({ grant: { amount: "1000000000000" } });
+    return Response.json({ grant: { amount: "1000000000000", transactionHash: "0xabc" } });
   });
   const host = document.createElement("div");
   const root = createRoot(host);
@@ -107,6 +108,10 @@ it("claims its settled home once and takes the result from the next native facts
     const claim = [...host.querySelectorAll("button")].find((button) => button.textContent === "Claim 1,000 Labor")!;
     await act(async () => claim.click());
     expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    expect(snapshotClientActionLatency().at(-1)).toMatchObject({
+      transactionHash: "0xabc",
+      send: { stages: [{ stage: "command" }, { stage: "included", detail: "relay" }] },
+    });
     expect(host.textContent).not.toContain("Claimed today");
     facts.claimedDay = 0n;
     await show();
@@ -143,7 +148,7 @@ it("shows each campaign tier's daily Labor and Essence and wears its campaign ma
   const requests: unknown[] = [];
   vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
     requests.push(JSON.parse(String(init.body)));
-    return Response.json({ grant: { amount: "1000000000000" } });
+    return Response.json({ grant: { amount: "1000000000000", transactionHash: "0xabc" } });
   });
   const host = document.createElement("div");
   const root = createRoot(host);
@@ -162,6 +167,10 @@ it("shows each campaign tier's daily Labor and Essence and wears its campaign ma
       [...host.querySelectorAll("button")].find((b) => b.textContent?.startsWith("Claim"))!.click(),
     );
     expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    expect(snapshotClientActionLatency().at(-1)).toMatchObject({
+      transactionHash: "0xabc",
+      send: { stages: [{ stage: "command" }, { stage: "included", detail: "relay" }] },
+    });
 
     facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
@@ -181,7 +190,7 @@ it("lets both campaign tiers claim their Essence at full Labor storage", async (
   const requests: unknown[] = [];
   vi.stubGlobal("fetch", async (_url: unknown, init: RequestInit) => {
     requests.push(JSON.parse(String(init.body)));
-    return Response.json({ grant: { amount: "0", essence: "1000000000000" } });
+    return Response.json({ grant: { amount: "0", essence: "1000000000000", transactionHash: "0xabc" } });
   });
   const host = document.createElement("div");
   const root = createRoot(host);
@@ -198,6 +207,10 @@ it("lets both campaign tiers claim their Essence at full Labor storage", async (
       [...host.querySelectorAll("button")].find((b) => b.textContent === "Claim 2,000 Essence")!.click(),
     );
     expect(requests).toEqual([{ gameId: 3, home: "412" }]);
+    expect(snapshotClientActionLatency().at(-1)).toMatchObject({
+      transactionHash: "0xabc",
+      send: { stages: [{ stage: "command" }, { stage: "included", detail: "relay" }] },
+    });
     // The receipt arrives in the native facts: today is claimed.
     facts.claimedDay = 0n;
     await show();

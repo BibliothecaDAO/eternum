@@ -1,0 +1,23 @@
+{
+  "measured": {
+    "commit": "1fe3c8acfa0199b6a822c6367a53ff578716bb4c",
+    "steps": "lab-actions-withdraw",
+    "device": "phone",
+    "run": "evidence/click-latency/r6-052614/phone/lab-actions-withdraw/2026-10-29T05-38-59-940Z-spectator",
+    "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
+  },
+  "byMode": {
+    "webgpu-auto": {
+      "steps": {
+        "withdraw": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 351.9,
+            "min": 350.8,
+            "max": 353
+          }
+        }
+      }
+    }
+  }
+}

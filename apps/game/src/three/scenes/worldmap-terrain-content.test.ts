@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { WorldmapTerrainContent } from "./worldmap-terrain-content";
+import { takeShownTiles, WorldmapTerrainContent } from "./worldmap-terrain-content";
 
 const cells = [
   { biomeKey: "Grassland", col: 11, row: 0 },
@@ -79,5 +79,35 @@ describe("worldmap authoritative terrain content", () => {
     content.invalidate();
     content.presented(old);
     expect(content.capture(input()).commitMode).toBe("atomic");
+  });
+});
+
+describe("takeShownTiles", () => {
+  const center = 100;
+  // Ten-tile pages from the origin: (5, -2) lies on the page starting at row -10, col 0.
+  const page = { key: "-10,0", size: { width: 10, height: 10 }, origin: { col: 0, row: 0 } };
+
+  it("shows an awaited tile once a presented cell draws its biome, and only once", () => {
+    const awaiting = new Map([["105,98", ["explore-1"]]]);
+    const cells = [{ col: 5, row: -2, biomeKey: "Grassland" }];
+
+    expect(takeShownTiles(awaiting, cells, center, page)).toEqual([["105,98", ["explore-1"]]]);
+    expect(takeShownTiles(awaiting, cells, center, page)).toEqual([]);
+  });
+
+  it("keeps waiting while the presented cell still draws the unexplored outline, or is not presented at all", () => {
+    const awaiting = new Map([["105,98", ["explore-1"]]]);
+
+    expect(takeShownTiles(awaiting, [{ col: 5, row: -2, biomeKey: "Outline" }], center, page)).toEqual([]);
+    expect(takeShownTiles(awaiting, [{ col: 6, row: -2, biomeKey: "Grassland" }], center, page)).toEqual([]);
+    expect(awaiting.has("105,98")).toBe(true);
+  });
+
+  it("keeps waiting while the page presented is not the one that draws the tile", () => {
+    const awaiting = new Map([["105,98", ["explore-1"]]]);
+    const cells = [{ col: 5, row: -2, biomeKey: "Grassland" }];
+
+    expect(takeShownTiles(awaiting, cells, center, { ...page, key: "0,0" })).toEqual([]);
+    expect(takeShownTiles(awaiting, cells, center, page)).toEqual([["105,98", ["explore-1"]]]);
   });
 });

@@ -2,6 +2,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { nextFrameOrTimeout } from "@/utils/frame-or-timeout";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { projectionChangesForLayer } from "@bibliothecadao/eternum/game-sync";
+import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
 import { activeMapLayer } from "@/three/map-layer";
 import { arePlayersAllied, onSidesChanged, watchedSide } from "@/utils/entity-ownership";
 import { accountAddress, useAccountStore } from "@/hooks/store/use-account-store";
@@ -104,7 +105,8 @@ import {
   type DrawnSlotPositionEntry,
 } from "./army-slot-auditor";
 import { reportArmyIntegrityHealOnce } from "./army-integrity-diagnostics";
-import { resolveMovementPath } from "./army-move-path";
+import { presentResult } from "@/three/presented-results";
+import { isRoutable, orderedRouteFor, resolveMovementPath } from "./army-move-path";
 import { shouldUseWorkerPathForArmy } from "./army-movement-path-strategy";
 import { addVisibleArmyOrderEntry, removeVisibleArmyOrderEntry, replaceVisibleArmyOrder } from "./army-visible-order";
 import { resolveArmyVisibilityBoundsDecision } from "./army-visibility";
@@ -233,6 +235,8 @@ export class ArmyManager {
   private armyAttachmentSignatures: Map<number, string> = new Map();
   private activeArmyAttachmentEntities: Set<number> = new Set();
   private armyAttachmentTransformScratch = new Map<string, AttachmentTransform>();
+  /** The route each of the player's armies was last ordered along, held until its facts move it (expectOrderedRoute). */
+  private orderedRoutes = new Map<ID, Position[]>();
   private chunkStride: number;
   private isDestroyed = false;
   private layerRevision = 0;
@@ -1166,6 +1170,8 @@ export class ArmyManager {
       army.entityId,
     );
     this.refreshArmyInstance(army, slot, modelType);
+    markShadowCastersChanged();
+    if (army.isMine) presentResult(`army-shown:${numericId}`);
   }
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {
@@ -1230,6 +1236,7 @@ export class ArmyManager {
     }
 
     this.visibleArmyIndices.delete(entityId);
+    markShadowCastersChanged();
     removeVisibleArmyOrderEntry(
       {
         order: this.visibleArmyOrder,
@@ -1817,6 +1824,22 @@ export class ArmyManager {
     };
   }
 
+  /**
+   * The route the player just ordered `entityId` along, start to target. When the order's facts move the army there, it
+   * walks this route at once instead of asking the path worker for it again, a round trip behind the tile updates the
+   * same facts queued there.
+   */
+  public expectOrderedRoute(entityId: ID, route: Position[]): void {
+    this.orderedRoutes.set(entityId, route);
+  }
+
+  /** The ordered route, once, if it runs from where the army stands to where its facts now put it. */
+  private takeOrderedRoute(entityId: ID, from: Position, to: Position): Position[] | null {
+    const route = this.orderedRoutes.get(entityId);
+    this.orderedRoutes.delete(entityId);
+    return orderedRouteFor(route, from, to);
+  }
+
   public async computeMovementPlan(entityId: ID, hexCoords: Position): Promise<ArmyMovementPlan | null> {
     const armyData = this.armyPresentations.get(entityId);
     if (!armyData) return null;
@@ -1840,16 +1863,22 @@ export class ArmyManager {
         )
       : undefined;
 
-    const shouldUseWorkerPath = maxHex !== undefined && shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
+    const orderedRoute = this.takeOrderedRoute(entityId, armyData.hexCoords, hexCoords);
+    const shouldUseWorkerPath =
+      !orderedRoute &&
+      maxHex !== undefined &&
+      isRoutable(armyData.hexCoords, hexCoords, maxHex) &&
+      shouldUseWorkerPathForArmy({ isMine: armyData.isMine });
     if (!shouldUseWorkerPath) {
       incrementWorldmapRenderCounter("workerFindPathBypasses");
     }
 
-    const workerPath =
-      shouldUseWorkerPath && maxHex !== undefined
+    const route =
+      orderedRoute ??
+      (shouldUseWorkerPath && maxHex !== undefined
         ? await gameWorkerManager.findPath(armyData.hexCoords, hexCoords, maxHex)
-        : null;
-    const path = resolveMovementPath(armyData.hexCoords, hexCoords, workerPath);
+        : null);
+    const path = resolveMovementPath(armyData.hexCoords, hexCoords, route);
     const worldPath = path.map((pos) => this.getArmyWorldPositionInto(new Vector3(), pos));
 
     return {
@@ -1905,6 +1934,7 @@ export class ArmyManager {
     if (walkingFrom) worldPath[0] = walkingFrom;
     this.armyModel.setMovementCompleteCallback(numericEntityId, undefined);
     this.armyModel.startMovement(numericEntityId, worldPath, matrixIndex, plan.armyCategory, plan.armyTier);
+    if (armyData.isMine) presentResult(`walk:${numericEntityId}`);
     this.armyModel.setMovementCompleteCallback(numericEntityId, () => {
       if (!this.armyPresentations.has(entityId)) return;
       this.cleanupMovementSourceBucket(entityId);
@@ -1937,6 +1967,7 @@ export class ArmyManager {
     }
 
     const numericEntityId = this.toNumericId(entityId);
+    if (this.armyPresentations.get(entityId)?.isMine) presentResult(`army-gone:${numericEntityId}`);
     if (playDefeatFx && this.proceduralArmyCharacterLayer.playDefeat(numericEntityId)) {
       this.activeProceduralArmyEntityIds.delete(numericEntityId);
     }
@@ -2582,7 +2613,7 @@ export class ArmyManager {
       return;
     }
 
-    this.hexagonScene?.requestShadowContentRefresh();
+    markShadowCastersChanged();
   }
 
   private syncArmyBoundsForMovementState() {

@@ -1032,10 +1032,6 @@ export abstract class HexagonScene {
     this.worldFx.emit({ kind: "burst", count, position, seed: Date.now() >>> 0 });
   }
 
-  public requestShadowContentRefresh(): void {
-    this.shadowRefreshPolicy.markContentChanged();
-  }
-
   update(deltaTime: number): void {
     PerformanceMonitor.recordFrame();
     PerformanceMonitor.begin("scene.update");
@@ -1384,10 +1380,7 @@ export abstract class HexagonScene {
     const shadow = this.mainDirectionalLight.shadow;
     shadow.intensity = active ? 1 : 0;
     shadow.autoUpdate = false;
-    if (active) {
-      this.shadowRefreshPolicy.markContentChanged();
-      shadow.needsUpdate = true;
-    }
+    if (active) shadow.needsUpdate = true;
   }
 
   private applyResolvedCameraView(view: CameraView): void {

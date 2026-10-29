@@ -219,7 +219,7 @@ const armyProgressed = (store: NativeFactStore, startsAt: number): LabFact[] => 
 };
 
 /** The research page's rules: each row's tier priced (Essence 2,000 and labor 1,000 a tier), and XP's prices. */
-const researchPriced = (): LabFact[] => [
+export const researchPriced = (): LabFact[] => [
   ...Array.from({ length: research.ROW_COUNT }, (_, row) =>
     [1, 2, 3, 4].map((tier) => ({
       model: "ResearchPrice",

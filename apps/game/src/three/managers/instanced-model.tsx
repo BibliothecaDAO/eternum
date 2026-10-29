@@ -1,5 +1,6 @@
 import { heldHeadingCorrection, poleAxisOf, yawOfPlacement } from "../structures/held-heading";
 import { LOCAL_GLOW_MATERIALS, LocalEmissiveGlow } from "../structures/local-emissive-glow";
+import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { createInstancedMesh } from "../utils/create-instanced-mesh";
 import { MinesMaterialsParams, PREVIEW_BUILD_COLOR_INVALID } from "@/three/constants";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -394,6 +395,7 @@ export default class InstancedModel {
     this.instancedMeshes.forEach((mesh) => {
       mesh.instanceMatrix.needsUpdate = true;
     });
+    markShadowCastersChanged();
 
     if (this.contactShadowMesh) {
       this.contactShadowMesh.instanceMatrix.needsUpdate = true;
