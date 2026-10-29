@@ -223,7 +223,7 @@ describe("Connect", () => {
       await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
     };
     const newCode = (ui: Awaited<ReturnType<typeof mount>>) =>
-      [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("New code"));
+      [...ui.container.querySelectorAll("button")].some((button) => button.textContent?.includes("New code"));
 
     const known = await mount("/results");
     try {

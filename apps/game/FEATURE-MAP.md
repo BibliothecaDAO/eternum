@@ -97,47 +97,50 @@ no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unn
 Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
 with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
 local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
-and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and ends on **Build orders**,
-naming the order the player's games follow; Build orders (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on
-three fixture orders whose saves the tab keeps) the account's orders, and on a desktop the followed one's steps beside
-them; a Blitz lobby (`/blitz/:id`) who is in, the entry and the chat side by side; Season (`/season`) the player's
-figures over Frontier's and Blitz's boards; Results (`/results/:id`, with **See the end map**) the player's place and
-points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch notes, a
-tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player sees
-them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the compact
-HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab realm,
-which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the
-HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army
-beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill points; its panel's Level
-up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's player on the
-same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab
-player's last realm lost, a Hyperstructure still held, playing then watching);
-`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
-reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
-claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
-route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
-steps), and the panel as built on a fixture account holding two orders (its choice of order saves nothing there; each
-row the game's own rule on a realm's case: population short or not, an army short of full, a full army).
-`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
-Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
-phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate or
-Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a game
-loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that
-vibrates, the keys only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings`
-measures it against a 1080 px screen and opens its keys with Show and leaves with Back; every window it draws must keep
-each tab strip inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms,
-villages, a camp, rifts, a Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an
-army out beside the lab realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the
-receiving army’s relic load; `/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements;
-`/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes,
-Military picker and window body, Combat and crate panel as the game draws them (the crate from afar: a line saying what
-opening it needs, no button), on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and otherwise ends on **Build
+orders**, naming the order the player's games follow; a mode's card with nothing to do now (no game on it with a verb;
+for Blitz's column, none on or to come), the lead or a column, is idle, dimmed with nothing to press and its one line
+saying when it opens or that none is scheduled (Eternum before it opens, in its column on the `/lab/app` screens and
+leading on `/lab/app/eternum-lead`, then open on `/lab/app/eternum-open`; Blitz on `/lab/app/no-blitz`); Build orders
+(`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the
+account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the
+entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards; Results
+(`/results/:id`, with **See the end map**) the player's place and points, the game's board, points by kind and the chest
+at its tier; What's new (`/scroll`) a release's patch notes, a tab per section, and every release. `/lab/kit/panels` the
+HUD's holdings and selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the
+in-game HUD every mode shares (a phone's width draws the compact HUD), as the game mounts it on the lab's game: `blitz`
+(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-start` (the same
+realm stocked to build, as the game begins: its news over the HUD, every control under it still taking its clicks),
+`blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
+`frontier-army` (an army out holding skill points; its panel's Level up sends spend_skill_point, recorded on the page as
+`window.__labSkillPointSpent`), `eternum` (Eternum's player on the same HUD, in Eternum's colours), `blitz-spectator`,
+`blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held,
+playing then watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and
+Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content
+past its edge, every control reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom
+at 27/42 with 1,000 labor to claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal
+in the top bar, Next up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a
+newcomer (no build steps), and the panel as built on a fixture account holding two orders (its choice of order saves
+nothing there; each row the game's own rule on a realm's case: population short or not, an army short of full, a full
+army). `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels
+on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one
+alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame
+rate or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as
+here; a game loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a
+phone that vibrates, the keys only where there is a keyboard);
+`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
+keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
+`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
+Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
+realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving army’s relic load;
+`/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements; `/lab/kit/windows/frontier-build` shows a
+raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and
+crate panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy
+fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
+`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
+`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
+on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
+on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
@@ -188,13 +191,14 @@ full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand
 (`src/brand/palette.json`, read by `src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell
 English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
 its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
-the bar and the share card, the small globe on the favicon and the status page, the contour globe on the install icons
-and a loader; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the kit's
-parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the
-token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails) hold
-a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a
-surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or
-mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
+the bar, the share card and the 512 px install icon, the small globe on the favicon (its master resampled, its ground
+clear), a phone's home-screen and launcher icons and the status page, the contour globe on a loader and an iPad's
+home-screen icons; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the
+kit's parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import
+the token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails)
+hold a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails
+on a surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour,
+face or mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
 (`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
 is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
 enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the
@@ -210,7 +214,7 @@ notice with action buttons shows its icon and verbs; a words-only notice keeps i
 | A player's card and finished games                                                                                                                                                                                                           | `/p/:address`                                                  | A row of Frontier's board (Season or a result); **Back** returns to it                                                                                                                                                                                                         |
 | You: your card, finished games, Settings, docs                                                                                                                                                                                               | `/profile`                                                     | Top bar **You**, the player's name at its end (signed out: **Sign in**)                                                                                                                                                                                                        |
 | Settings: account, payout wallet, notifications, music, devices, sign out                                                                                                                                                                    | `/profile/settings`                                            | You, **Settings**                                                                                                                                                                                                                                                              |
-| How to play (the Blitz guide, docs.realms.party/blitz, a new tab)                                                                                                                                                                            | —                                                              | You, **How to play**                                                                                                                                                                                                                                                           |
+| How to play (the Frontier guide, docs.realms.party/frontier, a new tab)                                                                                                                                                                      | —                                                              | You, **How to play**                                                                                                                                                                                                                                                           |
 | What's new: a release's patch notes (All modes, Frontier, Blitz, Eternum), a tab per section, every release, the full rules (docs)                                                                                                           | `/scroll` (an old `/scroll/:post` goes to realms.world/scroll) | Top bar **What's new** (a phone's tabs too); a section opens from its tab, a release from **Releases** (the page goes to its notes)                                                                                                                                            |
 | Patch notes: one file per release (`content/patch-notes/`, its `AGENTS.md`), generated by `node scripts/generate-patch-notes.mjs`                                                                                                            | —                                                              | What's new; the docs site's **Changelog** (`/changelog`) renders the same releases                                                                                                                                                                                             |
 | Chat: Global and **Messages**, as in a game (the same chat, one connection while signed in); signed out, **Sign in to chat**                                                                                                                 | `/chat` (a phone's page, the chat filling it)                  | A phone's **Chat** tab, its unread counted on it; a desktop's top bar **Chat** opens it over the page at the right (its × or `Escape` closes it); on a page that draws the chat itself (`/chat`, a lobby) there is no pane, and on `/chat` the bar's **Chat** is the place lit |
@@ -245,8 +249,10 @@ notice with action buttons shows its icon and verbs; a words-only notice keeps i
   the game (by its name and date, else its number) and the board, and, signed in, that they had no seat.
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
   by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**
-  ticket (regular or **Golden ticket**) opens it with its realm's daily claim and **Play**. With no linked wallet the
-  first count is **Link wallet** (Settings, then back). LORDS, chests and cosmetics are not shown yet.
+  ticket (regular or **Golden ticket**) opens it with its realm's daily claim and **Play**; a ticket just opened on the
+  Devcon landing shows here at once; when the ticket cannot be read the count is **— Ticket**, whose sheet says so with
+  **Try again**. With no linked wallet the first count is **Link wallet** (Settings, then back). LORDS, chests and
+  cosmetics are not shown yet.
 - **Settings**: **Name** offers **Claim name** once the name differs from the one held; **Devices** lists this device as
   soon as you are signed in. It opens the payout wallet directly when a page sent you to link one
   (`/profile/settings?next=…`) and returns you there once it is linked. Its groups are the app sheet's panels and each
@@ -273,14 +279,16 @@ notice with action buttons shows its icon and verbs; a words-only notice keeps i
   mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
   **Results**. Eternum: when it opens.
 - A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
-- Founding a Frontier home (the game's entry, **Found your realm**): **Your Realms** lists the Realms your linked wallet
-  holds, from the marketplace's Realm index; press one to pick it, again to let it go. With no linked wallet it says
-  **No wallet linked** with **Link wallet** (Settings, then back); a wallet holding none says so; only when the index
-  cannot be read is **Realm number (optional)** typed instead. The line under it says the home you will found and its
-  daily claim, by the game's preset: the picked Realm's Labor, else your campaign ticket's (**Devcon home**, **Golden
-  Devcon home**), else **Free home · no daily Labor**. The list is the signed-in account's own and is asked again for
-  another account or a changed wallet. The relay checks the holder live on Starknet, so a Realm just bought counts and
-  one just sold does not; when Starknet does not answer it says **Realm check unavailable. Try again.**
+- Founding a Frontier home (the game's entry, **Choose your home**, then **Found your realm**): the chosen home stands
+  large (a Realm's map from the marketplace's Realm index, its name, number, Order, resources and wonder; or your Devcon
+  ticket) with what it claims each day by the game's preset. Under it a strip of the other choices (six, two on a
+  phone); past that **All N** opens every choice in a grid with **Search N Realms** (name or number), maps loading as
+  they scroll in. It starts on your ticket when you hold one, else your first Realm (wonders first, then the most
+  resources, then by number). No Realm number is typed: with neither a ticket nor a Realm it offers **A free home** (and
+  **Link the wallet that holds your Realms** without a linked wallet); when the index cannot be read it says so with
+  **Try again**. **Found your realm** waits until the step knows what you hold. A Realm already registered for the game
+  shows alone, **Registered for this game**. The relay checks the holder live on Starknet, so a Realm just bought counts
+  and one just sold does not; when Starknet does not answer it says **Realm check unavailable. Try again.**
 - A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
   Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby's **Back**
   leads to Play. Sign-in from You or Settings returns to the page it was asked from.

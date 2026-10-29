@@ -172,9 +172,13 @@ it("asks the player to retry, never refuses, when no holdings source answers", a
 });
 it("lists the linked wallet's Realms for the settle picker, none without a wallet, and a retry when the index is down", async () => {
   const deps = { ...route(), identity: target.identity };
-  io.held.mockResolvedValue([3, 251]);
+  const held = [
+    { realmId: 3, map: "https://market.test/assets/3.svg" },
+    { realmId: 251, map: null },
+  ];
+  io.held.mockResolvedValue(held);
   const listed = await handleHeldRealmsRequest(request({}), deps);
-  expect(await listed.json()).toEqual({ realms: [3, 251] });
+  expect(await listed.json()).toEqual({ realms: held });
   expect(io.held).toHaveBeenCalledExactlyOnceWith("0x456");
   io.wallet.mockResolvedValue(null);
   expect(await (await handleHeldRealmsRequest(request({}), deps)).json()).toEqual({ realms: [] });

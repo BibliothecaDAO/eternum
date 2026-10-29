@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { useTicketOpened } from "@/hooks/use-holdings";
 import { Icon } from "@/ui/design-system/icon";
 import { AppButton, AppNotice, AppTicket } from "@/ui/design-system/kit/app-elements";
 import { DEVCON as DEVCON_NAME, JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
@@ -46,9 +47,14 @@ export const JoinDevconPage = () => {
   }, [code]);
   const { status, session } = useIdentitySession();
   const [opening, setOpening] = useState<Opening>({ kind: "sealed" });
+  const ticketOpened = useTicketOpened();
   const open = () => {
     setOpening({ kind: "opening" });
-    void redeemTicket().then(setOpening);
+    void redeemTicket().then((answer) => {
+      // Every screen that shows the account's ticket (You, a game's Realm step) shows this one at once.
+      if ("tier" in answer) ticketOpened(DEVCON.campaign, answer);
+      setOpening(answer);
+    });
   };
   if (!session) return <DevconLanding waiting={status === "loading"} />;
   if ("tier" in opening) return <OpenedTicket tier={opening.tier} />;

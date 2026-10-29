@@ -36,6 +36,14 @@ export type PlayBoard = {
 
 const WHEN_ORDER: readonly PlayItem["when"][] = ["now", "next", "done"];
 
+/**
+ * A mode's card (Play's lead or an age's column) is idle when it holds nothing to do now: none of its games offers a
+ * verb, and nothing else on it does (Blitz's Build orders). Owner, 29 October 2026: "blitz deactivated looks good,
+ * eternum deactivated should exist as well".
+ */
+export const idleCard = (items: readonly PlayItem[], buildOrders = false): boolean =>
+  !buildOrders && items.every((item) => item.verb === null);
+
 export type PlayBoardFacts = {
   signedIn: boolean;
   /** The directory's live and upcoming games. */

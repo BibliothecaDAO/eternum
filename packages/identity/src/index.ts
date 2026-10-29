@@ -3,6 +3,7 @@ export * from "./mentions";
 export * from "./address";
 export * from "./campaigns";
 export * from "./client";
+export * from "./holdings";
 export * from "./operator";
 export * from "./profiles";
 export * from "./siws";

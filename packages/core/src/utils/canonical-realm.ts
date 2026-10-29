@@ -7,16 +7,30 @@ interface CanonicalRealm {
   order: number;
   /** The resources it was minted with, by name. */
   resources: string[];
+  /** Its wonder, for the 50 Realms minted with one. */
+  wonder: string | null;
 }
 
-/** The 8,000 Realms, by number less one: each one's name, Order id and resources (indexes into `resources`). */
-const table = canonicalRealms as { resources: string[]; realms: [name: string, order: number, resources: number[]][] };
+/**
+ * The 8,000 Realms, by number less one: each one's name, Order id, resources (indexes into `resources`) and, for the 50
+ * that have one, its wonder (an index into `wonders`).
+ */
+const table = canonicalRealms as {
+  resources: string[];
+  wonders: string[];
+  realms: [name: string, order: number, resources: number[], wonder?: number][];
+};
 
 /** A Realm's canonical traits, by its number (1 to 8000). */
 export function canonicalRealm(realmId: number): CanonicalRealm {
   if (!Number.isInteger(realmId) || realmId < 1 || realmId > table.realms.length) {
     throw new Error("Choose a realm number from 1 to 8000.");
   }
-  const [name, order, resources] = table.realms[realmId - 1]!;
-  return { name, order, resources: resources.map((resource) => table.resources[resource]!) };
+  const [name, order, resources, wonder] = table.realms[realmId - 1]!;
+  return {
+    name,
+    order,
+    resources: resources.map((resource) => table.resources[resource]!),
+    wonder: wonder === undefined ? null : table.wonders[wonder]!,
+  };
 }

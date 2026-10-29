@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
-import { useHeldRealms, useHeldTicket } from "@/hooks/use-holdings";
+import { useHeldRealms, useHeldTicket, type HeldTicket } from "@/hooks/use-holdings";
 import { realmSkinIcon } from "@/three/structures/realm-skins";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
@@ -13,6 +13,7 @@ import {
   JOIN_WORDS,
   NO_HELD_REALMS,
   PROFILE_WORDS,
+  TICKET_UNREADABLE,
   TRY_AGAIN,
   WORDS,
   YOUR_REALMS,
@@ -39,7 +40,7 @@ export const HoldingsStrip = () => {
   const [sheet, setSheet] = useState<Sheet | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const golden = ticket?.tier === "golden";
+  const golden = ticket.state === "held" && ticket.ticket.tier === "golden";
   return (
     <>
       <div className="app-holdings" role="group" aria-label={PROFILE_WORDS.holdings}>
@@ -57,25 +58,18 @@ export const HoldingsStrip = () => {
             onPress={() => setSheet("realms")}
           />
         )}
-        {ticket && (
+        {(ticket.state === "held" || ticket.state === "unreadable") && (
           <Holding
             icon={realmSkinIcon(golden ? "devcon-golden" : "devcon")}
-            count={DEVCON_NAME}
+            count={ticket.state === "held" ? DEVCON_NAME : PROFILE_WORDS.unknownCount}
             label={golden ? JOIN_WORDS.golden : PROFILE_WORDS.ticket}
             onPress={() => setSheet("ticket")}
           />
         )}
       </div>
       {sheet === "realms" && <RealmsSheet held={held} onClose={() => setSheet(null)} />}
-      {sheet === "ticket" && ticket && (
-        <ShellWindow title={golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket} onClose={() => setSheet(null)}>
-          <div className="flex flex-col items-center gap-4 text-center">
-            <DevconTicket tier={ticket.tier} />
-            <AppButton kind="primary" icon="play" to="/">
-              {WORDS.play}
-            </AppButton>
-          </div>
-        </ShellWindow>
+      {sheet === "ticket" && (ticket.state === "held" || ticket.state === "unreadable") && (
+        <TicketSheet ticket={ticket} onClose={() => setSheet(null)} />
       )}
     </>
   );
@@ -100,6 +94,39 @@ const Holding = ({
   </button>
 );
 
+/** The account's Devcon ticket, as the landing shows it opened; or, while it cannot be read, why, and Try again. */
+const TicketSheet = ({
+  ticket,
+  onClose,
+}: {
+  ticket: Extract<HeldTicket, { state: "held" | "unreadable" }>;
+  onClose: () => void;
+}) => {
+  const golden = ticket.state === "held" && ticket.ticket.tier === "golden";
+  return (
+    <ShellWindow title={golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket} onClose={onClose}>
+      {ticket.state === "held" ? (
+        <div className="flex flex-col items-center gap-4 text-center">
+          <DevconTicket tier={ticket.ticket.tier} />
+          <AppButton kind="primary" icon="play" to="/">
+            {WORDS.play}
+          </AppButton>
+        </div>
+      ) : (
+        <AppEmpty
+          icon={realmSkinIcon("devcon")}
+          line={TICKET_UNREADABLE}
+          action={
+            <AppButton kind="secondary" onClick={ticket.retry}>
+              {TRY_AGAIN}
+            </AppButton>
+          }
+        />
+      )}
+    </ShellWindow>
+  );
+};
+
 /** The linked wallet's Realms, each by its number and name; the Market sells and buys them. */
 const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>["held"]; onClose: () => void }) => (
   <ShellWindow title={YOUR_REALMS} onClose={onClose}>
@@ -118,7 +145,7 @@ const RealmsSheet = ({ held, onClose }: { held: ReturnType<typeof useHeldRealms>
         <AppEmpty icon="realm" line={NO_HELD_REALMS} />
       ) : (
         <ul className="flex flex-col gap-2" aria-label={YOUR_REALMS}>
-          {held.data?.map((realmId) => (
+          {held.data?.map(({ realmId }) => (
             <li key={realmId} className="flex items-center gap-3 text-app-strong text-app-ink">
               <Icon name="realm" size={36} />
               {numberedRealm(realmId, canonicalRealm(realmId)?.name)}

@@ -1,0 +1,228 @@
+/* The Realm step: the chosen home large, the other choices in a strip, every choice under All. */
+.home-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.home-picker__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  color: var(--hud-muted);
+}
+.home-picker__head h2 {
+  color: rgb(var(--hud-ink));
+  font-family: var(--font-heading, "IM Fell English SC", serif);
+  font-size: 1.35rem;
+}
+.home-picker__featured {
+  display: grid;
+  grid-template-columns: minmax(0, 13rem) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: center;
+  padding: 0.75rem;
+  border: 2px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-chosen);
+}
+.home-picker__featured .home-picker__art {
+  height: 10rem;
+}
+.home-picker__about {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.home-picker__about h3 {
+  color: rgb(var(--hud-ink));
+  font-family: var(--font-display, "Cinzel", serif);
+  font-size: 1.4rem;
+  line-height: 1.1;
+}
+.home-picker__sub {
+  color: var(--hud-muted);
+}
+.home-picker__order,
+.home-picker__resources {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex-wrap: wrap;
+}
+.home-picker__wonder {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.55rem;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-gold));
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+.home-picker__claim {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  color: rgb(var(--hud-ink));
+  font-weight: 600;
+}
+.home-picker__claim li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+/* A picture: a Realm's map in the parchment's tones, a ticket's realm on its colour. */
+.home-picker__art {
+  display: grid;
+  overflow: hidden;
+  place-items: center;
+  border-radius: calc(var(--hud-radius-panel) - 2px);
+  background: #e6d8bb;
+}
+.home-picker__map {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: sepia(0.75) contrast(1.05) brightness(0.92);
+}
+.home-picker__art[data-ticket="golden"] {
+  background: radial-gradient(circle at 50% 40%, #ffe39a, #d99a2b 60%, #7a4a0c);
+}
+.home-picker__art[data-ticket="regular"] {
+  background: radial-gradient(circle at 50% 40%, #e8d9bd, #9a7f58 60%, #4a3a26);
+}
+.home-picker__art[data-ticket="free"],
+.home-picker__art[data-map="none"] {
+  background: rgb(var(--hud-dark) / 0.6);
+}
+.home-picker__strip {
+  display: flex;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+.home-picker__choice,
+.home-picker__all {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  overflow: hidden;
+  border: 2px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-hover);
+  text-align: left;
+  transition: border-color var(--hud-fast) var(--hud-ease);
+}
+.home-picker__choice .home-picker__art {
+  height: 4.6rem;
+  border-radius: 0;
+}
+.home-picker__choice[aria-pressed="true"] {
+  border-color: rgb(var(--hud-gold));
+  box-shadow: 0 0 0 3px var(--hud-chosen);
+}
+.home-picker__choice:focus-visible,
+.home-picker__all:focus-visible {
+  box-shadow: var(--hud-focus);
+}
+.home-picker__caption {
+  overflow: hidden;
+  padding: 0.3rem 0.4rem;
+  color: rgb(var(--hud-ink));
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.home-picker__all {
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border-style: dashed;
+  border-color: rgb(var(--hud-gold));
+  color: rgb(var(--hud-gold));
+  font-weight: 700;
+}
+.home-picker__allgrid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.75rem;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-panel);
+}
+.home-picker__search {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.5rem;
+  padding: 0 0.75rem;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: rgb(var(--hud-dark) / 0.5);
+}
+.home-picker__search input {
+  flex: 1;
+  min-width: 0;
+  background: transparent;
+  color: rgb(var(--hud-ink));
+  outline: none;
+}
+.home-picker__grid {
+  display: grid;
+  max-height: 22rem;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.6rem;
+  overflow-y: auto;
+}
+.home-picker__grid .home-picker__choice {
+  flex: none;
+}
+.home-picker__grid .home-picker__art {
+  height: 5.5rem;
+}
+.home-picker__traits {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 0.4rem 0.4rem;
+}
+.home-picker__traits .home-picker__wonder {
+  font-size: 0.7rem;
+}
+.home-picker__link {
+  width: fit-content;
+  color: rgb(var(--hud-gold));
+  font-weight: 600;
+  text-decoration: underline;
+}
+.home-picker__notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--hud-muted);
+}
+.home-picker__waiting {
+  height: 12rem;
+  border-radius: var(--hud-radius-panel);
+  background: var(--hud-hover);
+}
+
+@media (max-width: 640px) {
+  .home-picker__featured {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .home-picker__featured .home-picker__art {
+    height: 10rem;
+  }
+  .home-picker__about h3 {
+    font-size: 1.35rem;
+  }
+}

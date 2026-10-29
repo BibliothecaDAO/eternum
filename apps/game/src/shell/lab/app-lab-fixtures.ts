@@ -152,6 +152,15 @@ const eternum = game({
   },
 });
 
+/** The same Eternum game open, the player on its roster: Enter. */
+const openEternum = game({
+  ...eternum,
+  status: "Live",
+  ready: true,
+  clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 60 * DAY, end_grace_seconds: 0 },
+  player_state: { registered: true, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
+});
+
 /** One state per screen the painted pass draws. */
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
@@ -170,6 +179,9 @@ export const LAB_SCREENS = {
   // No Blitz open, the calendar's next ranked game due: its column shows the start and when entry opens (the owner's
   // 10:08, before the 12:00 game's entry opens at 10:25).
   "blitz-next": { signedIn: true, games: [frontier(true), eternum] },
+  // Only Eternum, not open yet: it leads Play, idle as its column would be, beside an idle Blitz; then open, to enter.
+  "eternum-lead": { signedIn: true, games: [eternum] },
+  "eternum-open": { signedIn: true, games: [openEternum] },
   unnamed: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "no-realm": { signedIn: true, games: [frontier(false), liveBlitz(false), eternum] },
   "blitz-seat": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
@@ -339,9 +351,27 @@ export const labCalendar = (screen: LabScreen) => {
   return { phases: [], nextBlitz: { name: "blitz-next", startsAt: at(112), closesAt: at(107), opensAt: at(17) } };
 };
 
+/** The screens with no Blitz slot open. */
+const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
+  "no-blitz",
+  "blitz-next",
+  "blitz-results-lead",
+  "eternum-lead",
+  "eternum-open",
+];
+
+/** The screens whose player has no finished game to open. */
+export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
+  "no-games",
+  "no-blitz",
+  "blitz-next",
+  "eternum-lead",
+  "eternum-open",
+];
+
 /** The slot closing at 16:30, two hours away, on the lab's shard; on the after-close screens, closed and split. */
 export const labSlots = (screen: LabScreen) => {
-  if (screen === "no-blitz" || screen === "blitz-next" || screen === "blitz-results-lead") return { slots: [] };
+  if (QUIET_BLITZ_SCREENS.includes(screen)) return { slots: [] };
   const closed = CLOSED_SLOT_SCREENS.includes(screen);
   const closesAt = closed ? CLOSED_ENTRY.close : screen === "blitz-seat-late-slot" ? LATE_SLOT_CLOSE : ENTRY.close;
   return {

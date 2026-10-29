@@ -25,7 +25,7 @@ import { HOW_TO_PLAY } from "../community";
 
 /**
  * You (spec 10, the place): the player's page as others see it, their finished games, then two rows: Settings and How
- * to play (the Blitz guide on the docs site). Signed out, one card with Sign in above How to play; a device removed
+ * to play (the Frontier guide on the docs site). Signed out, one card with Sign in above How to play; a device removed
  * elsewhere, one card with Sign in to add it back. What's new is a place of its own, beside Play and Season.
  */
 export const ProfilePage = () => (
@@ -200,7 +200,7 @@ const Rows = () => {
   );
 };
 
-/** How to play: the Blitz guide, in a new tab. */
+/** How to play: the Frontier guide, in a new tab. */
 const HowToPlayRow = () => <AppSetting icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />;
 
 const MusicSwitch = () => {
