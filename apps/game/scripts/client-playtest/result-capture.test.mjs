@@ -39,6 +39,12 @@ describe("proveResultOnScreen", () => {
     expect(proof).toMatchObject({ shown: true, lagMs: 0, resultPercent: 50 });
   });
 
+  it("holds on a still page, whose frames stop once the result is shown", async () => {
+    const frames = (await capture({ resultAt: 160 })).filter((frame) => frame.t <= 160);
+    const proof = await proveResultOnScreen({ frames, region, before: 100, visible: 160, frameMs: FRAME_MS, dir });
+    expect(proof).toMatchObject({ shown: true, lagMs: 0, resultPercent: 50 });
+  });
+
   it("holds when the region changes again later, for another reason, than the result", async () => {
     const proof = await prove({ resultAt: 160, laterAt: 320 });
     expect(proof).toMatchObject({ shown: true, lagMs: 0, resultPercent: 50 });

@@ -40,16 +40,17 @@ export async function startResultCapture(devTools, timeOrigin) {
  * Whether the captured frames show the result in `region` (CSS px of the page) at its mark (`visible`): the result's
  * pixels are those of the region that changed from the last frame before the action's facts arrived (`before`) to the
  * last frame, and already held their last value three frames after the mark (a later change there, the next orders'
- * highlights, is not this result). It was shown at the first frame where half of them did. The verdict fails when too
+ * highlights, is not this result). The screen at a moment is the last frame sent by then: a still page sends no frame
+ * until it changes again. It was shown at the first frame where half of them did. The verdict fails when too
  * few pixels changed by then (the result was absent, or later than three frames), or when it was shown more than a frame
  * before its mark (the mark came late). The frames around it are written to `dir`.
  */
 export async function proveResultOnScreen({ frames, region, before, visible, frameMs, dir }) {
   const reference = frames.filter((frame) => frame.t < before).at(-1);
   const last = frames.at(-1);
-  const settled = frames.find((frame) => frame.t >= visible + 3 * frameMs);
+  const settled = frames.filter((frame) => frame.t <= visible + 3 * frameMs).at(-1);
   if (!reference || !settled || settled === reference) {
-    return { shown: false, reason: "no frame before the facts and three frames after the mark", region };
+    return { shown: false, reason: "no frame between the facts and three frames after the mark", region };
   }
   const [base, final, atSettled] = await Promise.all(
     [reference, last, settled].map((frame) => regionGrey(frame, region)),
