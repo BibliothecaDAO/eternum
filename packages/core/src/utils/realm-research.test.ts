@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import {
   buildingTypeTier,
+  learnResearch,
   realmLearned,
   researchChoice,
   researchedDepth,
@@ -63,5 +64,20 @@ describe("realm research", () => {
     expect(researchedDepth(store(undefined), 7, 9)).toBeUndefined();
     expect(researchedDepth(store(0n), 7, 9)).toBe(0);
     expect(researchedDepth(store(learned), 7, 9)).toBe(2);
+  });
+
+  it("learns a row's next tier with its side, as the chain packs it", () => {
+    const farmRare = learnResearch(learned, research.ROW_FARM, research.CHOICE_STORE);
+    expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_MAKE)).toBe(1);
+    expect(researchPicks(farmRare, research.ROW_FARM, research.CHOICE_STORE)).toBe(2);
+    expect(farmRare - learned).toBe(1n << 3n);
+    const scouts = learnResearch(learned, research.ROW_SCOUTS_LODGE, 1);
+    expect(researchTier(scouts, research.ROW_SCOUTS_LODGE)).toBe(4);
+    expect(researchChoice(scouts, research.ROW_SCOUTS_LODGE, 4)).toBe(1);
+    const well = learnResearch(learned, research.ROW_WELL, 0);
+    expect(researchTier(well, research.ROW_WELL)).toBe(1);
+    expect(well - learned).toBe(1n << 47n);
+    expect(() => learnResearch(learned, research.ROW_WELL, 1)).toThrow("Invalid research side");
+    expect(() => learnResearch(well, research.ROW_WELL, 0)).toThrow("Research side is complete");
   });
 });

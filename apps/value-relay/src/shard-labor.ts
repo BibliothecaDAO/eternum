@@ -44,9 +44,10 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
     if ((await operator.view<bigint>("ledger_operator", [])) !== BigInt(felt(target.operatorAddress)))
       throw new Error("only_ledger_operator");
     const read = () => operator.view<CairoOption<RecordedGrant>>("labor_grant", [home.game_id, home.home, claim.day]);
+    let transactionHash: string | null = null;
     let grant = (await read()).unwrap();
     if (!grant) {
-      await operator.admin("grant_labor", { home, day: claim.day, account: claim.account });
+      ({ transactionHash } = await operator.admin("grant_labor", { home, day: claim.day, account: claim.account }));
       grant = (await read()).unwrap();
     }
     if (!grant) throw new Error("labor_grant_not_recorded");
@@ -57,6 +58,7 @@ export const writeLaborGrant = (target: LaborTarget, claim: LaborClaim) =>
     )
       throw new Error("labor_already_claimed");
     return {
+      transactionHash,
       gameId: Number(grant.game_id),
       account: felt(claim.account),
       home: String(grant.home),

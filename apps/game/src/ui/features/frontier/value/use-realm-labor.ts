@@ -1,6 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { recordClientActionSendStage } from "@/observability/client-action-latency";
 import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
 import { dayOf, homeDailyClaim, type ExpeditionRules } from "@bibliothecadao/eternum";
@@ -50,6 +51,8 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
 
 export const claimRealmLabor = async (home: NativeRows["Structure"]): Promise<void> => {
   const game = requireActiveGame();
+  const send = `labor:${(laborClaims += 1)}`;
+  recordClientActionSendStage(send, "command");
   const response = await fetchApi(`/api/value/labor?chainId=${game.chainId}`, {
     method: "POST",
     credentials: "include",
@@ -57,4 +60,8 @@ export const claimRealmLabor = async (home: NativeRows["Structure"]): Promise<vo
     body: JSON.stringify({ gameId: home.game_id, home: String(home.entity_id) }),
   });
   if (!response.ok) throw new Error("The labor could not be claimed.");
+  const reply = (await response.json()) as { grant: { transactionHash: string | null } };
+  recordClientActionSendStage(send, "included", "relay", reply.grant.transactionHash ?? undefined);
 };
+
+let laborClaims = 0;

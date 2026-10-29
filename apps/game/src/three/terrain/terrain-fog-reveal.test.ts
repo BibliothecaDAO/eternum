@@ -1,7 +1,7 @@
 import { DataTexture } from "three";
 import { describe, expect, it } from "vitest";
 import { terrainHexToWorld, terrainNeighborCoordinates } from "./terrain-coordinates";
-import { resolveFogRevealDirection, TerrainFogReveal } from "./terrain-fog-reveal";
+import { resolveFogRevealDirection, TERRAIN_FOG_REVEAL_DURATION_SECONDS, TerrainFogReveal } from "./terrain-fog-reveal";
 
 describe("directional exploration reveal", () => {
   it("travels from all six explorer origins, including negative odd rows", () => {
@@ -16,16 +16,17 @@ describe("directional exploration reveal", () => {
     expect(resolveFogRevealDirection(target, undefined, [-1, 0])).toEqual([1, -0]);
   });
 
-  it("ends after 300ms without uploading a texture each animation frame or restarting duplicates", () => {
+  it("ends after its 120 ms without uploading a texture each animation frame or restarting duplicates", () => {
+    expect(TERRAIN_FOG_REVEAL_DURATION_SECONDS).toBe(0.12);
     const reveal = new TerrainFogReveal();
     reveal.start(-2, 3, [1, 0]);
     const map = (reveal as unknown as { map: DataTexture }).map;
     const version = map.version;
-    reveal.update(0.15);
+    reveal.update(0.06);
     reveal.start(-2, 3, [0, 1]);
     expect(reveal.size).toBe(1);
     expect(map.version).toBe(version);
-    reveal.update(0.15);
+    reveal.update(0.06);
     expect(reveal.size).toBe(0);
     expect(map.version).toBe(version);
     reveal.dispose();
@@ -48,6 +49,27 @@ describe("directional exploration reveal", () => {
     expect(reveal.size).toBe(0);
     reveal.start(1, 0, [1, 0]);
     expect(reveal.size).toBe(0);
+    reveal.dispose();
+  });
+
+  it("tells who waits on a cell once half its fog has cleared, its sweep queued or running, and on a cleared sweep", () => {
+    const reveal = new TerrainFogReveal();
+    const told: string[] = [];
+    reveal.start(4, 4, [1, 0]);
+    reveal.whenHalfClear(4, 4, () => told.push("running"));
+    reveal.whenHalfClear(9, 9, () => told.push("queued"));
+    reveal.update(0.05);
+    expect(told).toEqual([]);
+    reveal.update(0.02);
+    expect(told).toEqual(["running"]);
+    reveal.start(9, 9, [0, 1]);
+    reveal.update(0.06);
+    expect(told).toEqual(["running", "queued"]);
+
+    reveal.start(5, 5, [1, 0]);
+    reveal.whenHalfClear(5, 5, () => told.push("cut short"));
+    reveal.setReducedMotion(true);
+    expect(told.at(-1)).toBe("cut short");
     reveal.dispose();
   });
 });

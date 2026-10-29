@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { ShadowRefreshPolicy } from "./shadow-refresh-policy";
+import { markShadowCastersChanged, ShadowRefreshPolicy } from "./shadow-refresh-policy";
 
 describe("ShadowRefreshPolicy", () => {
-  it("refreshes once for a content change instead of polling forever", () => {
+  it("refreshes once for a caster change instead of polling forever", () => {
     const policy = new ShadowRefreshPolicy();
 
     expect(policy.consumeRefresh(0, 100)).toBe(true);
     expect(policy.consumeRefresh(1_000, 100)).toBe(false);
 
-    policy.markContentChanged();
+    markShadowCastersChanged();
     expect(policy.consumeRefresh(0, 100)).toBe(true);
     expect(policy.consumeRefresh(1_000, 100)).toBe(false);
   });
@@ -32,14 +32,27 @@ describe("ShadowRefreshPolicy", () => {
     policy.consumeRefresh(0, 250);
 
     policy.observeSun([1, 2, 3]);
-    policy.markContentChanged();
+    markShadowCastersChanged();
     expect(policy.consumeRefresh(16, 250)).toBe(true);
 
     policy.observeSun([1.01, 2, 3]);
     expect(policy.consumeRefresh(16, 250)).toBe(true);
-    policy.markContentChanged();
+    markShadowCastersChanged();
     expect(policy.consumeRefresh(16, 250)).toBe(false);
     expect(policy.consumeRefresh(250, 250)).toBe(true);
     expect(policy.consumeRefresh(250, 250)).toBe(false);
+  });
+
+  it("draws each scene's shadow again once for a caster changed anywhere", () => {
+    const worldMap = new ShadowRefreshPolicy();
+    const realm = new ShadowRefreshPolicy();
+    worldMap.consumeRefresh(0, 100);
+    realm.consumeRefresh(0, 100);
+
+    markShadowCastersChanged();
+    expect(worldMap.consumeRefresh(100, 100)).toBe(true);
+    expect(worldMap.consumeRefresh(100, 100)).toBe(false);
+    expect(realm.consumeRefresh(100, 100)).toBe(true);
+    expect(realm.consumeRefresh(100, 100)).toBe(false);
   });
 });

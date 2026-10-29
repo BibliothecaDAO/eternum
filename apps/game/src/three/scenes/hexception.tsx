@@ -4,6 +4,8 @@ import {
   resolveBuildingModelSelection,
   type BuildingModelSelection,
 } from "./hexception-building-model";
+import { markShadowCastersChanged } from "@/three/shadow-refresh-policy";
+import { presentResult } from "@/three/presented-results";
 import { holdPartHeadings } from "../structures/held-heading";
 import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buildings";
 import { buildingTypeTier } from "@bibliothecadao/eternum";
@@ -65,6 +67,7 @@ import type { TerrainSurface } from "@/three/terrain/terrain-surface";
 import type { PreparedTerrainPage, TerrainCellInput } from "@/three/terrain/terrain-types";
 import {
   type BuildingInstanceAction,
+  buildingEntrance,
   buildingKey,
   reconcileBuildingUpdate,
   isTierChange,
@@ -617,31 +620,35 @@ export default class HexceptionScene extends HexagonScene {
 
   private getOrCreateBuildingPreview(): BuildingPreview {
     if (!this.buildingPreview) {
-      this.buildingPreview = new BuildingPreview(this.scene, (group, building) => {
-        const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
-        const tier =
-          this.mode.id === "frontier" && group === BUILDINGS_GROUPS.BUILDINGS
-            ? buildingTypeTier(
-                this.game.store,
-                configManager.getActiveGameId(),
-                this.shownRealmId,
-                building as BuildingType,
-              )
-            : 1;
-        const tierPath = tier > 1 ? frontierPaintedBuildingPath(building as BuildingType, tier) : undefined;
-        const path = tierPath ?? groupPaths[building.toString()];
-        if (!path) {
-          return null;
-        }
+      this.buildingPreview = new BuildingPreview(
+        this.scene,
+        (group, building) => {
+          const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
+          const tier =
+            this.mode.id === "frontier" && group === BUILDINGS_GROUPS.BUILDINGS
+              ? buildingTypeTier(
+                  this.game.store,
+                  configManager.getActiveGameId(),
+                  this.shownRealmId,
+                  building as BuildingType,
+                )
+              : 1;
+          const tierPath = tier > 1 ? frontierPaintedBuildingPath(building as BuildingType, tier) : undefined;
+          const path = tierPath ?? groupPaths[building.toString()];
+          if (!path) {
+            return null;
+          }
 
-        return {
-          cacheKey: path,
-          load: async () => {
-            await this.models.request(path);
-            return this.models.get(path)?.model ?? null;
-          },
-        };
-      });
+          return {
+            cacheKey: path,
+            load: async () => {
+              await this.models.request(path);
+              return this.models.get(path)?.model ?? null;
+            },
+          };
+        },
+        this.compilePipelines,
+      );
     }
 
     return this.buildingPreview;
@@ -1447,8 +1454,9 @@ export default class HexceptionScene extends HexagonScene {
     if (action === "remove" || action === "replace") {
       this.removeBuilding(position.col, position.row);
     }
+    if (action === "remove") presentResult(`building-gone:${key}`);
     if (building && selection && signature !== undefined && (action === "create" || action === "replace")) {
-      this.addBuildingInstance(building, selection, signature);
+      this.addBuildingInstance(building, selection, signature, buildingEntrance(building, this.pinnedPlot));
     }
 
     if (building) {
@@ -1490,7 +1498,7 @@ export default class HexceptionScene extends HexagonScene {
       model.group.userData[BUILDING_RENDER_SIGNATURE] = signature;
       this.scene.add(model.group);
       this.buildingInstances.set(key, model.group);
-      this.requestShadowContentRefresh();
+      markShadowCastersChanged();
       return;
     }
 
@@ -1522,6 +1530,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.scene.add(instance);
     this.buildingInstances.set(key, instance);
+    if (!building.pending) presentResult(`building:${key}:${building.category}`);
     this.enterBuilding(instance, entrance);
     this.startBuildingAnimations(key, instance, buildingData.animations);
   }
@@ -1600,7 +1609,7 @@ export default class HexceptionScene extends HexagonScene {
    * size: the sun's shadow map is drawn only when asked, and one drawn mid-growth would keep a building's shadow tiny.
    */
   private enterBuilding(instance: Group, entrance: "grow" | "overshoot"): void {
-    const standing = () => this.requestShadowContentRefresh();
+    const standing = () => markShadowCastersChanged();
     if (entrance === "overshoot") {
       instance.scale.set(0.8, 0.8, 0.8);
       gsap.to(instance.scale, { x: 1, y: 1, z: 1, duration: 0.35, ease: "back.out(3)", onComplete: standing });
@@ -1891,7 +1900,7 @@ export default class HexceptionScene extends HexagonScene {
         disposeClonedBuildingMaterials(instance);
       }
       this.buildingInstances.delete(key);
-      this.requestShadowContentRefresh();
+      markShadowCastersChanged();
     }
 
     this.wonderAuras.get(key)?.dispose();

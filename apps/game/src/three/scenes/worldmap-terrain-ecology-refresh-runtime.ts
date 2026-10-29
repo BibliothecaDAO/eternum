@@ -1,3 +1,4 @@
+import { UNEXPLORED_TERRAIN_BIOME } from "./worldmap-terrain-content";
 import type { WorldSpatialBounds, WorldSpatialHex, WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
 import type { StructureType } from "@bibliothecadao/types";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -62,7 +63,7 @@ export function collectWorldmapTerrainEcologyAnchors(input: CollectWorldmapTerra
   const visibleCells = new Set<number>();
   const localBounds = createEmptyWorldSpatialBounds();
   for (const { biomeKey, col, row } of input.cells) {
-    if (biomeKey === "Outline" || biomeKey === "Empty") continue;
+    if (biomeKey === UNEXPLORED_TERRAIN_BIOME || biomeKey === "Empty") continue;
     visibleCells.add(hexCellKey(col, row));
     localBounds.maxCol = Math.max(localBounds.maxCol, col);
     localBounds.maxRow = Math.max(localBounds.maxRow, row);

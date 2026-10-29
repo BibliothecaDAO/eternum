@@ -18,6 +18,8 @@ interface MapSelectionSnapshot {
   camera: { col: number; row: number } | null;
   /** The layer the map shows: the depth below (true) or the surface. */
   layer: boolean;
+  /** Where the screen draws the selected hex (page px): a tapped chest, once a phone's camera has framed it. */
+  hexOnScreen: { x: number; y: number } | null;
 }
 
 interface MapSelectionWindow {

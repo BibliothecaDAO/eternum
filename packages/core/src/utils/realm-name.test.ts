@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { realmName, StructureType } from "@bibliothecadao/types";
-import names from "../data/realm-names.json";
+import metadata from "../data/canonical-realms.json";
 import { getStructureName } from "./entities";
 import { NativeFactStore } from "../client/native-fact-store";
 import { advanceGames } from "../../../../apps/launch-service/src/release";
@@ -39,7 +39,7 @@ const storeFor = (release: number, settledHome?: bigint) => {
 
 describe("Realm identity", () => {
   it("excludes every canonical name from every generated combination", () => {
-    const canonical = new Set(Object.values(names).map((name) => name.toLowerCase()));
+    const canonical = new Set(metadata.realms.map(([name]) => String(name).toLowerCase()));
     const generated = new Set(Array.from({ length: 100_000 }, (_, id) => realmName(id)));
     expect(generated.size).toBe(1024);
     for (const name of generated) {

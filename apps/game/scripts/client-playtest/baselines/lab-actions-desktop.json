@@ -1,0 +1,47 @@
+{
+  "measured": {
+    "commit": "8385693c97b0d797afb84b07605668caed1c4177",
+    "steps": "lab-actions",
+    "device": "desktop",
+    "run": "evidence/click-latency/r8-111829/desktop/lab-actions/2026-10-29T10-18-47-161Z-spectator",
+    "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
+  },
+  "byMode": {
+    "webgpu-auto": {
+      "steps": {
+        "explore": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 467.9,
+            "min": 467.7,
+            "max": 484.7
+          }
+        },
+        "move": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 321,
+            "min": 320.3,
+            "max": 327.7
+          }
+        },
+        "level-up": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 322.7,
+            "min": 320.1,
+            "max": 326
+          }
+        },
+        "build": {
+          "verdict.clickToResult.totalMs": {
+            "n": 5,
+            "median": 323.8,
+            "min": 322.5,
+            "max": 325.1
+          }
+        }
+      }
+    }
+  }
+}

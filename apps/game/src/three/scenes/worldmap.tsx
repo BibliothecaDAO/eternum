@@ -2,6 +2,7 @@ import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
+import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
 import { followArmyLayerChange } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
@@ -440,7 +441,8 @@ import {
   bindWorldmapTerrainEcologyRefresh,
   collectWorldmapTerrainEcologyAnchors,
 } from "./worldmap-terrain-ecology-refresh-runtime";
-import { WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
+import { takeShownTiles, WorldmapTerrainContent, type TerrainCellFacts } from "./worldmap-terrain-content";
+import { presentResult } from "@/three/presented-results";
 import {
   WORLDMAP_CAMERA_ZOOM,
   resolveWorldmapCameraFieldOfViewDegrees,
@@ -785,6 +787,8 @@ export default class WorldmapScene extends WarpTravel {
   private latestRenderVisualProfile?: RenderVisualProfile;
   private pendingArmyMovementVisualLifecycleDisposers: Map<ID, () => void> = new Map();
   private pendingExploreLatencyActions: Map<ID, { actionId: string; targetKey: string }> = new Map();
+  /** Explored tiles, by contract key, waiting for a presented terrain to draw them, with the explores that revealed them. */
+  private readonly exploredTilesAwaitingPresentation = new Map<string, string[]>();
   private get hydratedChunkRefreshes(): Set<string> {
     return this.hydratedRefreshQueueState.queuedChunkKeys;
   }
@@ -921,7 +925,15 @@ export default class WorldmapScene extends WarpTravel {
     const camera = { col: Number(contractHex.x), row: Number(contractHex.y) };
     useUIStore.getState().setCameraTargetHex(camera);
     publishMapSelection({ camera, layer: useUIStore.getState().mapLayer });
+    this.publishSelectedHexOnScreen();
   };
+
+  /** Where the screen draws the selected hex, as the selection report carries it (observability/map-selection). */
+  private publishSelectedHexOnScreen(): void {
+    const hex = useUIStore.getState().selectedHex;
+    const tile = hex && Position.fromContract({ x: hex.col, y: hex.row }).getNormalized();
+    publishMapSelection({ hexOnScreen: tile ? projectHexToScreen({ col: tile.x, row: tile.y }, this.camera) : null });
+  }
   private minimapCameraMoveTarget: Position | null = null;
   private minimapCameraMoveThrottled?: ReturnType<typeof throttle>;
   private minimapCameraMoveHandler = (event: Event) => {
@@ -1069,6 +1081,7 @@ export default class WorldmapScene extends WarpTravel {
         explorerId: entityId,
         currentDefaultTick: getBlockTimestamp().currentDefaultTick,
       }),
+    isBusy: (entityId) => this.hasOrderInFlight(entityId),
     offerOrders: (entityId, playerAddress) => this.offerSelectedArmyOrders(entityId, playerAddress),
   });
   private isApplyingLocalActionPathUpdate = false;
@@ -1604,8 +1617,8 @@ export default class WorldmapScene extends WarpTravel {
         origin ? { col: origin.x, row: origin.y } : undefined,
       );
     }
-    const terrainPageRebuild = this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
-    if (current) this.recordExploreRevealAfterRender(current.hexCoords, terrainPageRebuild);
+    void this.applyProjectedExploredTileChange(normalized.x, normalized.y, current);
+    if (current) this.awaitExploredTilePresentation(current.hexCoords);
   }
 
   private applyProjectedExploredTileChange(
@@ -3181,6 +3194,12 @@ export default class WorldmapScene extends WarpTravel {
     const isTravelAction = actionType === ActionType.Move || actionType === ActionType.SpireTravel;
     if (actionPath.length > 0) {
       playUnitCommandSoundForWorldmapAction(actionType);
+      if (actionType === ActionType.Move || actionType === ActionType.Explore) {
+        this.armyManager.expectOrderedRoute(
+          selectedEntityId,
+          actionPath.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })),
+        );
+      }
 
       // Get the target position for the effect
       const targetHex =
@@ -3907,7 +3926,7 @@ export default class WorldmapScene extends WarpTravel {
   /** The map under the selected army changed (tiles, occupancy, its own tile): its orders are planned again. */
   private refreshSelectedArmyOrders(): void {
     const entityId = this.selectedOrderableArmyId();
-    if (entityId !== null) this.selectedArmyOrders.offer(entityId, this.getArmyOwnerAddress(entityId));
+    if (entityId !== null) this.selectedArmyOrders.followMapChange(entityId, this.getArmyOwnerAddress(entityId));
   }
 
   /**
@@ -4754,23 +4773,46 @@ export default class WorldmapScene extends WarpTravel {
     }
   }
 
-  private recordExploreRevealAfterRender(hexCoords: HexPosition, terrainPageRebuild: Promise<void>): void {
+  /**
+   * An explored tile its explore is waiting to see: the explore is rendered once a terrain presentation draws the tile
+   * (presentExploredTiles), not when its page was rebuilt, which the composite and the terrain's own pages follow.
+   */
+  private awaitExploredTilePresentation(hexCoords: HexPosition): void {
     const targetKey = `${hexCoords.col},${hexCoords.row}`;
-    const completedActions = Array.from(this.pendingExploreLatencyActions.entries()).flatMap(([entityId, action]) => {
+    const revealedBy = Array.from(this.pendingExploreLatencyActions.entries()).flatMap(([entityId, action]) => {
       if (action.targetKey !== targetKey) return [];
       this.pendingExploreLatencyActions.delete(entityId);
       return [action.actionId];
     });
-    if (completedActions.length === 0) return;
+    if (revealedBy.length === 0) return;
+    this.exploredTilesAwaitingPresentation.set(targetKey, [
+      ...(this.exploredTilesAwaitingPresentation.get(targetKey) ?? []),
+      ...revealedBy,
+    ]);
+  }
 
-    void terrainPageRebuild.then(() => {
-      const recordRendered = () => completedActions.forEach((actionId) => recordClientActionRendered(actionId));
-      if (typeof window.requestAnimationFrame !== "function") {
-        recordRendered();
-        return;
-      }
-      window.requestAnimationFrame(recordRendered);
-    });
+  /**
+   * A terrain page presented with an awaited explored tile on it (its biome, not the unexplored outline) draws that
+   * explore's ground: the page that draws the tile, not the camera's critical pages, which may be presented already.
+   * The explore is rendered once that ground reads as explored, half of the fog over it swept away.
+   */
+  private presentExploredTiles(
+    cells: readonly { biomeKey: string; col: number; row: number }[],
+    pageKey: string,
+    pageOrigin: { col: number; row: number },
+  ): void {
+    if (this.exploredTilesAwaitingPresentation.size === 0) return;
+    for (const [targetKey, revealedBy] of takeShownTiles(this.exploredTilesAwaitingPresentation, cells, FELT_CENTER(), {
+      key: pageKey,
+      size: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
+      origin: pageOrigin,
+    })) {
+      const [col, row] = targetKey.split(",").map((value) => Number(value) - FELT_CENTER());
+      this.proceduralTerrain.whenShroudRevealed(col, row, () => {
+        revealedBy.forEach((actionId) => recordClientActionRendered(actionId));
+        presentResult(`explore:${targetKey}`);
+      });
+    }
   }
 
   isColRowInCurrentRenderBounds(col: number, row: number) {
@@ -6275,6 +6317,7 @@ export default class WorldmapScene extends WarpTravel {
       onCriticalPagesReady = resolve;
     });
     const content = this.captureTerrainPresentationContent(composite.cells);
+    const pageOrigin = this.getVisualTerrainPageOrigin();
     const { settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(content.cells);
     const presentation = this.proceduralTerrain
       .presentAsync(
@@ -6285,7 +6328,7 @@ export default class WorldmapScene extends WarpTravel {
           commitMode: content.commitMode,
           mapCenter: configManager.getMapCenter(),
           pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-          pageOrigin: this.getVisualTerrainPageOrigin(),
+          pageOrigin,
           pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
           visiblePageKeys: this.visualTerrainWindow?.pageKeys,
           criticalPageKeys: this.visualTerrainWindow?.criticalPageKeys,
@@ -6298,7 +6341,10 @@ export default class WorldmapScene extends WarpTravel {
           subdivisions: 2,
         },
         this.chunkWorkQueue,
-        (event) => this.handleTerrainPresentationEvent(event),
+        (event) => {
+          this.handleTerrainPresentationEvent(event);
+          if (event.kind === "page_complete") this.presentExploredTiles(content.cells, event.pageKey, pageOrigin);
+        },
       )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
@@ -6317,14 +6363,13 @@ export default class WorldmapScene extends WarpTravel {
           presentationChunkKeys: composite.presentationChunkKeys,
         });
         incrementWorldmapRenderCounter("terrainCompositeRebuilt");
-        this.requestShadowContentRefresh();
+        markShadowCastersChanged();
       })
       .catch((error) => {
         if (!this.isSwitchedOff) console.error("[WorldMap] Procedural terrain presentation failed", error);
         throw error;
       });
     this.terrainPresentationPromise = Promise.race([criticalReady, presentation]);
-    void this.terrainPresentationPromise.catch(() => undefined);
   }
 
   private captureTerrainPresentationContent(cells: readonly { biomeKey: string; col: number; row: number }[]) {
@@ -9079,6 +9124,12 @@ export default class WorldmapScene extends WarpTravel {
       }),
     );
     this.storeSubscriptions.push(reportSelectedArmy(this.worldSpatialProjection));
+    this.storeSubscriptions.push(
+      useUIStore.subscribe(
+        (state) => state.selectedHex,
+        () => this.publishSelectedHexOnScreen(),
+      ),
+    );
     this.storeSubscriptions.push(
       useChainTimeStore.subscribe((next, previous) => {
         if (next.executionFloorMs !== previous.executionFloorMs) this.followSelectedArmyReach();

@@ -1,8 +1,10 @@
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
-import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
+import { afterBattleScenario, fightScenario, lowStaminaScenario } from "./after-battle-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
+import { actionsScenario } from "./actions-scenario";
+import { claimScenario } from "./claim-scenario";
 import { exploreScenario } from "./explore-scenario";
 import { mergeScenario } from "./merge-scenario";
 import { dayTurnScenario } from "./day-turn-scenario";
@@ -14,10 +16,14 @@ import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { visitScenario } from "./visit-scenario";
+import { researchScenario } from "./research-scenario";
+import { settleScenario } from "./settle-scenario";
+import { upkeepScenario } from "./upkeep-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  actions: actionsScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
@@ -27,6 +33,11 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
   "cleared-camp": clearedCampScenario,
+  fight: fightScenario,
+  research: researchScenario,
+  claim: claimScenario,
+  upkeep: upkeepScenario,
+  settle: settleScenario,
   explore: exploreScenario,
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),

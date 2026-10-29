@@ -20,6 +20,9 @@ import {
 } from "./reward-summoning-effects";
 
 const smooth = (start: number, end: number, time: number) => MathUtils.smoothstep(time, start, end);
+/** Fast from its start and slow into its end: what a player's press sets moving shows on its first frame. */
+const easeOut = (start: number, end: number, time: number) =>
+  1 - (1 - MathUtils.clamp((time - start) / (end - start), 0, 1)) ** 3;
 /** How long a chest takes to arrive, its summon, in seconds. */
 const SUMMONING_DURATION = 1;
 /** How long an opened chest stays before it is absorbed and gone, in seconds. */
@@ -327,7 +330,9 @@ export class RewardSummoning {
   }
 
   private sampleChest(departure: number): void {
-    const opening = smooth(0, 0.4, departure) * (1 - smooth(1.15, 1.65, departure));
+    // The opening is the player's open answered: the lid moves from its first frame (an eased start showed nothing
+    // for some 100 ms), then slows to fully open.
+    const opening = easeOut(0, 0.4, departure) * (1 - smooth(1.15, 1.65, departure));
     // A pending chest's lid sits a crack open, and its glow is the larger of that leak and the opening.
     const glow = Math.max(opening, this.seam * (this.openedAt === null ? 1 : 0));
     for (const content of this.contents) content.visible = this.elapsed >= SUMMONING_DURATION * 0.5;

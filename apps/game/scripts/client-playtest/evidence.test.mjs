@@ -589,6 +589,78 @@ describe("comparePlaytestSummary", () => {
   });
 });
 
+describe("comparePlaytestSummary for click to result", () => {
+  const timed = (median, max, n = 5) => ({
+    byMode: {
+      "webgpu-auto": { steps: { explore: { "verdict.clickToResult.totalMs": { n, median, min: median - 20, max } } } },
+    },
+  });
+
+  it("passes a median inside the baseline's spread, or up to a frame past it", () => {
+    expect(comparePlaytestSummary(timed(400, 450), timed(440, 600)).ok).toBe(true);
+    expect(comparePlaytestSummary(timed(400, 450), timed(466, 470)).ok).toBe(true);
+  });
+
+  it("fails a median more than a frame past the baseline's slowest run", () => {
+    expect(comparePlaytestSummary(timed(400, 450), timed(470, 500, 3)).failures).toEqual([
+      "webgpu-auto explore: click to result median 470ms (n=3) is past the baseline's slowest 450ms and a frame (median 400ms, n=5)",
+    ]);
+  });
+
+  it("lists an action the baseline never timed as new, without judging it", () => {
+    const comparison = comparePlaytestSummary({ byMode: { "webgpu-auto": { steps: {} } } }, timed(900, 900));
+    expect(comparison.ok).toBe(true);
+    expect(comparison.newActions).toEqual(["webgpu-auto explore"]);
+  });
+});
+
+describe("comparePlaytestSummary for a lost click-to-result population, through the runs' summary", () => {
+  /** One run as the runner records it: each action step completed with its total, or blocked. */
+  const run = (index, { mode = "webgpu-auto", load = 3, moves = "completed" } = {}) => ({
+    label: `run-${index}`,
+    rendererMode: mode,
+    ok: true,
+    bootOk: true,
+    machine: { loadAverageMax: load },
+    steps: [
+      { name: "explore", verdict: { status: "completed", clickToResult: { totalMs: 360 + index } } },
+      moves === "completed"
+        ? { name: "move", verdict: { status: "completed", clickToResult: { totalMs: 315 + index } } }
+        : { name: "move", verdict: { status: "blocked", reason: "no tile offered the order" } },
+    ],
+  });
+  const summaryOf = (runs) => summarizePlaytestResults(runs);
+  const baseline = summaryOf([run(1), run(2), run(3)]);
+
+  it("passes the same population timed again", () => {
+    expect(comparePlaytestSummary(baseline, summaryOf([run(1), run(2)])).ok).toBe(true);
+  });
+
+  it("fails an action that was blocked in every run", () => {
+    const comparison = comparePlaytestSummary(
+      baseline,
+      summaryOf([run(1, { moves: "blocked" }), run(2, { moves: "blocked" })]),
+    );
+    expect(comparison.failures).toEqual(['webgpu-auto move: no timed run (verdicts {"blocked":2})']);
+  });
+
+  it("fails an action whose every run was left out for the machine's load", () => {
+    const comparison = comparePlaytestSummary(baseline, summaryOf([run(1, { load: 15 }), run(2, { load: 13 })]));
+    expect(comparison.ok).toBe(false);
+    expect(comparison.failures).toEqual([
+      'webgpu-auto explore: no timed run (verdicts {"completed":2})',
+      'webgpu-auto move: no timed run (verdicts {"completed":2})',
+    ]);
+  });
+
+  it("fails a renderer mode the baseline timed and this summary never ran", () => {
+    const comparison = comparePlaytestSummary(baseline, summaryOf([run(1, { mode: "webgpu-force-webgl" })]));
+    expect(comparison.failures).toEqual([
+      "webgpu-auto: the baseline times 2 action(s) on this renderer, and none was run",
+    ]);
+  });
+});
+
 describe("collectBrowserErrors", () => {
   it("fails entry on logged manager timeouts even when no exception escaped", () => {
     expect(

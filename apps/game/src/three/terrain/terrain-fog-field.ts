@@ -198,6 +198,15 @@ export class TerrainFogField {
     this.reveal.clear();
   }
 
+  /**
+   * Calls `shown` once the cell's explored ground reads as explored: half its fog cleared by its reveal, queued or
+   * running; at once when it has none.
+   */
+  whenRevealed(col: number, row: number, shown: () => void): void {
+    if (!this.queuedReveals.has(terrainCellKey(col, row)) && !this.reveal.has(col, row)) return shown();
+    this.reveal.whenHalfClear(col, row, shown);
+  }
+
   applyRevealToMaterial(material: NodeMaterial): void {
     this.reveal.applyToMaterial(material);
   }

@@ -4,6 +4,7 @@ import type { endgameFrame } from "./effects/endgame/sequence";
 import { CameraView } from "@/three/scenes/camera-view";
 import type { Camera, Scene } from "three";
 import { runWithFrameWorkOwner } from "./frame-work-owner";
+import { markPresentedResults } from "./presented-results";
 import { setRendererDiagnosticSceneName } from "./renderer-diagnostics";
 import type { RendererBackend, RendererOverlayPass } from "./renderer-backend";
 import type { RendererSurfaceLike } from "./renderer-backend";
@@ -100,6 +101,7 @@ export function runRendererFrame(input: RunRendererFrameInput): boolean {
     resolvedFrame,
     shouldRenderLabels,
   });
+  markPresentedResults();
   resolvedFrame.sceneController.onFrameRendered?.(input.now?.() ?? performance.now());
   input.captureStatsSample();
 

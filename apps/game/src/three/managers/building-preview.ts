@@ -3,6 +3,7 @@ import { HoverSound } from "@/three/sound/hover-sound";
 import { ResourceIdToMiningType } from "@bibliothecadao/eternum";
 import { BuildingType, ResourceMiningTypes, ResourcesIds } from "@bibliothecadao/types";
 import * as THREE from "three";
+import type { PipelineCompiler } from "../pipeline-compiler";
 import { holdPartHeadings } from "../structures/held-heading";
 
 interface BuildingPreviewSource {
@@ -26,6 +27,11 @@ export class BuildingPreview {
   constructor(
     private readonly scene: THREE.Scene,
     private readonly resolveSource: ResolveBuildingPreviewSource,
+    /**
+     * A ghost's materials are its own clones, which no building has drawn: their pipelines are prepared before it joins
+     * the scene, or the frame that first draws it (the one that shows a demolished plot empty) stalls on them.
+     */
+    private readonly compilePipelines: PipelineCompiler,
   ) {}
 
   public getBuildingModel(
@@ -158,12 +164,13 @@ export class BuildingPreview {
 
     const loadPromise = source
       .load()
-      .then((template) => {
+      .then(async (template) => {
         if (!template) {
           return null;
         }
 
         const model = clonePreviewModel(template);
+        await this.compilePipelines(model, this.scene);
         if (this.isDisposed) {
           disposePreviewModel(model);
           return null;

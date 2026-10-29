@@ -1,6 +1,7 @@
 import { getNeighborHexes } from "@bibliothecadao/types";
 import { SPIRE_ARMY, SPIRE_ARMY_TILE_KEY } from "@/ui/features/frontier/spire-fixture";
 
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { type LabScenario, wire } from "./lab-chain";
 import { spireScenario } from "./spire-scenario";
 
@@ -14,7 +15,12 @@ const EDGE_TILE_KEY = "0x1ac0";
  */
 export const exploreScenario = (): LabScenario => {
   const spire = spireScenario();
-  const { store } = spire;
+  standTheArmyAtTheEdge(spire.store);
+  return spire;
+};
+
+/** Moves the spire's army to the free revealed tile nearest it that has fog beside it. */
+export const standTheArmyAtTheEdge = (store: NativeFactStore) => {
   const army = store.entityOccupancy(1, SPIRE_ARMY)!;
   const revealed = (hex: { col: number; row: number }) =>
     Boolean(store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }));
@@ -27,7 +33,6 @@ export const exploreScenario = (): LabScenario => {
     { model: "TileOccupancy", key: SPIRE_ARMY_TILE_KEY, value: null },
     { model: "TileOccupancy", key: EDGE_TILE_KEY, value: wire({ ...army, col: edge.col, row: edge.row }) },
   ] as never);
-  return spire;
 };
 
 const distance = (a: { col: number; row: number }, b: { col: number; row: number }) =>

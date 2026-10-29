@@ -7,16 +7,19 @@ import {
 } from "@bibliothecadao/types";
 
 import type { LabFact, LabScenario } from "./lab-chain";
-import { spireScenario } from "./spire-scenario";
+import { balancesPaid, spireScenario } from "./spire-scenario";
 
-/** The first ring's six plots, each with a building, as a Settlement fills them before it is raised. */
+/**
+ * The first ring's six plots, each with a building Frontier raises (frontier/build/building-names.ts), as a Settlement
+ * fills them before it is raised.
+ */
 const FIRST_RING = [
   BuildingType.WorkersHut,
-  BuildingType.Storehouse,
   BuildingType.ResourceWheat,
-  BuildingType.ResourceWood,
-  BuildingType.ResourceStone,
   BuildingType.ResourceLabor,
+  BuildingType.ResourceKnightT1,
+  BuildingType.WarHall,
+  BuildingType.SupplyYard,
 ];
 
 /** Each castle level's price in labor, which the castle card reads (the HUD fixture's wheat price is none it takes). */
@@ -71,21 +74,9 @@ const firstRingBuilt = (): LabFact[] =>
 /** The realm one level up, its labor less that level's price, each row under the key the chain holds it by. */
 const raiseRealm = (chain: LabScenario["store"]): LabFact[] => {
   const [realmKey, realm] = [...chain.entries("Structure")].find(([, row]) => row.entity_id === 7n)!;
-  const [laborKey, labor] = [...chain.entries("ResourceBalance")].find(
-    ([, row]) => row.entity_id === 7n && row.resource_type === ResourcesIds.Labor,
-  )!;
   const wire = JSON.parse(JSON.stringify(realm, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
   return [
     { model: "Structure", key: realmKey, value: { ...wire, base: { ...wire.base, level: realm.base.level + 1 } } },
-    {
-      model: "ResourceBalance",
-      key: laborKey,
-      value: {
-        game_id: 1,
-        entity_id: 7,
-        resource_type: ResourcesIds.Labor,
-        balance: String(labor.balance - levelPrice(realm.base.level + 1)),
-      },
-    },
+    ...balancesPaid(chain, 7n, [{ resource: ResourcesIds.Labor, amount: levelPrice(realm.base.level + 1) }]),
   ];
 };

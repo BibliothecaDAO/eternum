@@ -3,7 +3,8 @@ import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 
-import { type LabFact, type LabScenario, wire } from "./lab-chain";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
 const PRECISION = 1_000_000_000n;
@@ -134,6 +135,67 @@ export const lowStaminaScenario = (): LabScenario => {
     }),
   ] as never);
   return spire;
+};
+
+/** The guard's losses and the attacker's, in the lab's fight: the guard falls, the attacker loses a third of its count. */
+const ATTACKER_LOSS_DIVISOR = 3n;
+
+/**
+ * The same army beside the same ruin, ready to fight (/lab/game?scenario=fight): its stamina full and no cooldown on
+ * either side. The chain answers BattleGuard as a won fight writes it (guards.cairo's battle_guard): the guard's troops
+ * gone and the guard destroyed at the fight's moment, the attacker's count less its losses, its attack stamina paid and
+ * its battle cooldown set. The losses are the lab's own fixed outcome, not the combat formula: what is timed is the
+ * client drawing the fight's facts.
+ */
+export const fightScenario = (): LabScenario => {
+  const spire = spireScenario();
+  const { store } = spire;
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
+  store.applyFacts([
+    ...ruinAt(store, besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!), {
+      ...army.troops,
+      count: 999n * PRECISION,
+    }),
+  ] as never);
+  return {
+    ...spire,
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" ? answerFight(command, chain, now) : spire.answer(command, chain, now),
+  };
+};
+
+const answerFight = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
+  const [attackerId, defenderId] = command.calldata.slice(5).map((felt) => BigInt(felt));
+  const [guardKey, guard] = [...chain.entries("Guard")].find(([, row]) => row.structure_id === defenderId)!;
+  const [armyKey, army] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === attackerId)!;
+  const rules = chain.require("SliceRules", { game_id: 1 });
+  const stamina = army.troops.stamina as { Inline: { amount: bigint } };
+  return [
+    {
+      model: "Guard",
+      key: guardKey,
+      value: wire({ ...guard, troops: { ...guard.troops, count: 0n }, destroyed_tick: now }),
+    },
+    {
+      model: "ExplorerTroops",
+      key: armyKey,
+      value: wire({
+        ...army,
+        troops: {
+          ...army.troops,
+          count: army.troops.count - army.troops.count / ATTACKER_LOSS_DIVISOR,
+          stamina: {
+            Inline: {
+              amount: stamina.Inline.amount - BigInt(rules.troop_stamina_config.stamina_attack_req),
+              settled_at: now,
+              remainder: 0,
+            },
+          },
+          battle_cooldown_end: now + rules.battle_config.cooldown_seconds,
+        },
+      }),
+    },
+  ];
 };
 
 /**

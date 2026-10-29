@@ -4,13 +4,16 @@ import { ID, RealmInfo } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import { configManager, ResourceManager } from "..";
 import type { PlayerNameResolver } from "./entities";
-import realmsJson from "../data/realms.json";
+import { canonicalRealm } from "./canonical-realm";
 import { unpackValue } from "./packed-data";
 
+/** A Realm's canonical name; none for a number that is no Realm's. */
 export const getRealmNameById = (realmId: ID): string => {
-  const features = realmsJson["features"][realmId - 1];
-  if (!features) return "";
-  return features["name"];
+  try {
+    return canonicalRealm(realmId).name;
+  } catch {
+    return "";
+  }
 };
 
 export function getRealmInfo(

@@ -91,6 +91,7 @@ export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> 
   paymentTransactionHash: string;
 }
 export interface LaborGrant {
+  transactionHash: string | null;
   gameId: number;
   account: string;
   home: string;
