@@ -197,6 +197,44 @@ describe("RealtimeClient", () => {
     expect(paths().filter((path) => path.includes("slot"))).toHaveLength(2);
   });
 
+  it("tells a room when it is seen and on which device, the room it leaves that it no longer is, and a reopened room again", () => {
+    const lobby = "slot:0x1:blitz-1630";
+    const { client, sockets } = connect([lobby, "world:global"]);
+    sockets[0].open();
+    sockets[0].receive({ type: "connected", playerId: "p", channels: ["world:global"] });
+    const room = (part: string) => sockets.filter(({ url }) => url.includes(part)).at(-1)!;
+    const seen = (socket: FakeSocket) =>
+      socket.sent
+        .map((data) => JSON.parse(data) as { type: string; device?: unknown })
+        .filter(({ type }) => type === "room:seen");
+    const DEVICE = "11111111-1111-4111-8111-111111111111";
+
+    // Seen before its socket opened: told once it opens.
+    client.setSeenRoom({ zoneId: "world:global", device: DEVICE });
+    expect(seen(room("world"))).toEqual([]);
+    room("world").open();
+    expect(seen(room("world"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+    // The same again tells nothing.
+    client.setSeenRoom({ zoneId: "world:global", device: DEVICE });
+    expect(seen(room("world"))).toHaveLength(1);
+
+    // Another room shown: the one left hears it is no longer seen.
+    room("slot").open();
+    client.setSeenRoom({ zoneId: lobby, device: DEVICE });
+    expect(seen(room("world")).at(-1)).toEqual({ type: "room:seen", device: null });
+    expect(seen(room("slot"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+
+    // Its socket drops and opens again: the new socket hears it, as the room forgot it with the old one.
+    room("slot").drop();
+    vi.advanceTimersByTime(1_000);
+    room("slot").open();
+    expect(seen(room("slot"))).toEqual([{ type: "room:seen", device: DEVICE }]);
+
+    // Nothing shown (the page hidden, chat closed): the room hears it.
+    client.setSeenRoom(null);
+    expect(seen(room("slot")).at(-1)).toEqual({ type: "room:seen", device: null });
+  });
+
   it("names the room an error came from: a room's refusal is that room's", () => {
     const lobby = "slot:0x1:blitz-1630";
     const { sockets, messages } = connect([lobby]);

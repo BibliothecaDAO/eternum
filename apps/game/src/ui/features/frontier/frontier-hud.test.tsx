@@ -16,6 +16,7 @@ vi.mock("@bibliothecadao/types", async (original) => ({
       wire.made += 1;
     }
     close = wire.close;
+    setSeenRoom = vi.fn();
   },
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
@@ -413,4 +414,33 @@ it("tells a spectator on a phone that they are spectating, where a player's purs
     overrideSpectateIntent(false);
     await act(async () => useUIStore.setState({ isSpectating: false }));
   }
+});
+
+/** The service worker's word to this window when a chat alert is pressed: what to open. */
+const pressAlert = (kind: "mention" | "direct-message", target: string, tag: string) =>
+  act(async () =>
+    (navigator as unknown as { serviceWorker: EventTarget }).serviceWorker.dispatchEvent(
+      new MessageEvent("message", { data: { type: "chat-alert-pressed", kind, target, tag } }),
+    ),
+  );
+const chatOpen = () => host.querySelector('input[aria-label="Message"]') !== null;
+
+it("opens chat on Global over the game when a mention's alert is pressed, the game left as it was, desktop and phone", async () => {
+  Object.defineProperty(navigator, "serviceWorker", { value: new EventTarget(), configurable: true });
+  for (const width of [1440, 390]) {
+    viewport.set(width);
+    await renderHud();
+    // Chat closed, Messages the last view: the press opens it on Global.
+    await act(async () => useRealtimeChatStore.getState().actions.showMessages());
+    expect(chatOpen()).toBe(false);
+    const labor = host.querySelector('[aria-label="Realm Labor"]') !== null;
+    await pressAlert("mention", "/chat", "mention:global");
+    expect(chatOpen()).toBe(true);
+    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "room", zoneId: "world:global" });
+    // The game stays where it was: its HUD, not another page.
+    expect(host.querySelector('[aria-label="Realm Labor"]') !== null).toBe(labor);
+    act(() => root.unmount());
+    root = createRoot(host);
+  }
+  Reflect.deleteProperty(navigator, "serviceWorker");
 });

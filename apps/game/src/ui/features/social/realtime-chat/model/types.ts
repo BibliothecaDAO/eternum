@@ -78,6 +78,11 @@ export interface RealtimeChatState {
   activeZoneId?: string;
   activeThreadId?: string;
   isShellOpen: boolean;
+  /**
+   * How many times chat was asked to open on what an alert is about (openAlert): each chat surface opens itself when it
+   * rises (the rail's window, a phone's chat page, the app's pane or page).
+   */
+  chatRevealed: number;
   worldZones: Record<string, WorldChatZoneState>;
   dmThreads: Record<string, DirectMessageThreadState>;
   unreadWorldTotal: number;
@@ -139,6 +144,8 @@ export interface RealtimeChatActions {
   /** A room did not take the player's message (`code`, as the room said it): it leaves the room, and why is shown. */
   refuseInRoom(zoneId: string, code: string): void;
   setShellOpen(isOpen: boolean): void;
+  /** Opens chat on what a pressed alert is about: a room, or a conversation (its thread). */
+  openAlert(alert: { room: string } | { thread: string }): void;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;

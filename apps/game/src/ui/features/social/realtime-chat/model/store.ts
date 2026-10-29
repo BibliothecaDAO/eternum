@@ -207,6 +207,7 @@ const initialState: Omit<RealtimeChatStore, "actions"> = {
   activeZoneId: undefined,
   activeThreadId: undefined,
   isShellOpen: false,
+  chatRevealed: 0,
   worldZones: {},
   dmThreads: {},
   unreadWorldTotal: 0,
@@ -516,6 +517,16 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
         worldZones: nextWorldZones,
         unreadWorldTotal: nextUnreadTotal,
       });
+    },
+    openAlert: (alert) => {
+      const { actions, identity } = get();
+      if ("room" in alert) actions.showRoom(alert.room);
+      else {
+        const peer = alert.thread.split("|").find((player) => player !== identity?.playerId);
+        if (peer) actions.openConversation(peer);
+        else actions.showMessages();
+      }
+      set((state) => ({ chatRevealed: state.chatRevealed + 1 }));
     },
     setShellOpen: (isOpen) => {
       const { isShellOpen } = get();

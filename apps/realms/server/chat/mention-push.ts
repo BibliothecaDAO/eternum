@@ -59,21 +59,22 @@ const mentionedAccounts = async (db: D1Database, content: string): Promise<strin
 };
 
 /**
- * A room message's mentions, told to each player mentioned who is not in the room to read it: on each device that takes
- * chat alerts, at their alert level, unless they muted the sender. Like a private message's alert, it names the sender
- * and the place, never the words.
+ * A room message's mentions, told to each player mentioned: on each device that takes chat alerts, at their alert
+ * level, unless they muted the sender, and not on a device that shows them the room now (`seenOn`: what the room's
+ * sockets said they show; a socket open in the background is no reader). Like a private message's alert, it names the
+ * sender and the place, never the words.
  */
 export const pushMentions = async (
   rawEnv: Record<string, unknown>,
   room: string,
   message: RoomMessage,
-  inRoom: (realmsId: string) => boolean,
+  seenOn: (realmsId: string) => ReadonlySet<string>,
 ): Promise<void> => {
   const place = placeOf(room);
   if (!place) return;
   const env = decodeIdentityEnv(rawEnv);
   const targets = (await mentionedAccounts(env.DB, message.content)).filter(
-    (realmsId) => realmsId !== message.senderId && !inRoom(realmsId),
+    (realmsId) => realmsId !== message.senderId,
   );
   if (targets.length === 0) return;
   await Effect.runPromise(
@@ -94,7 +95,9 @@ export const pushMentions = async (
           },
           Date.now(),
         );
-        for (const device of yield* store.chatAlertDevices(owner, Date.now())) {
+        const seen = seenOn(owner);
+        const devices = (yield* store.chatAlertDevices(owner, Date.now())).filter((device) => !seen.has(device.id));
+        for (const device of devices) {
           const outcome = yield* Effect.promise(() =>
             sendPush(vapidKeysOf(env), device, {
               version: 1,

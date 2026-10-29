@@ -1,10 +1,17 @@
 import { useEffect, useMemo, useRef } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
+import { chatAlertOpening, useChatAlertPresses } from "@/pwa/chat-alert-press";
+import { usePushDeviceId } from "@/pwa/use-push-device-id";
+import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
+import { CHAT_PATH } from "@bibliothecadao/notifications";
+import { layoutNow } from "../frame/layout";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { AppButton, AppIconButton, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { CHAT_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { RealtimeChatShell, useRealtimeChatInitializer, useRealtimeChatSelector } from "@/ui/features/social";
+import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { lobbyRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 
 import { useRequestSignIn } from "../sign-in/connect";
@@ -25,6 +32,24 @@ export const AppChatConnection = () => {
   const rooms = useAppChatRooms();
   const config = useMemo(() => ({ baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) }), [rooms]);
   useRealtimeChatInitializer(config);
+  useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));
+  // A chat alert pressed brings the app forward on what it is about: a lobby's page (whose room it opens), or chat on
+  // its room or conversation, on the page that shows chat, else the desktop's pane or the phone's Chat page.
+  const navigate = useNavigate();
+  const { pathname } = useLocation();
+  const openAlert = useRealtimeChatSelector((state) => state.actions.openAlert);
+  useChatAlertPresses((press) => {
+    const opening = chatAlertOpening(press);
+    if (!("page" in opening)) return openAlert(opening);
+    const { lobby } = useAppChatPlace.getState();
+    if (pathname === opening.page && lobby) openAlert({ room: lobby.zoneId });
+    else navigate(opening.page);
+  });
+  useChatRevealed(() => {
+    if (useAppChatPlace.getState().pages > 0) return;
+    if (layoutNow() === "desktop") useAppChatPlace.setState({ paneOpen: true });
+    else navigate(CHAT_PATH);
+  });
   // Chat is open while any chat is drawn, whichever went first: a page's and the pane's never answer for each other.
   const shown = useAppChatPlace((state) => state.shown > 0);
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);

@@ -20,6 +20,9 @@ vi.mock("@realms-world/identity", async (original) => ({
     Object.fromEntries(accounts.map((account) => [account, { name: null, portrait: null }])),
 }));
 vi.mock("../account-runtime", () => ({ default: () => null }));
+// This device takes alerts, under this push id.
+const DEVICE = "11111111-1111-4111-8111-111111111111";
+vi.mock("@/pwa/use-push-device-id", () => ({ usePushDeviceId: () => DEVICE }));
 
 const { AppShell } = await import("../app-shell");
 const { LobbyChat } = await import("./app-chat");
@@ -318,6 +321,103 @@ describe.each([
     expectWriting();
     expect(inboxes()).toHaveLength(1);
     await expectLive("r1", 11);
+  });
+});
+
+it("tells the room it shows on this device, visibly: none hidden, on Messages, or once another room is shown", async () => {
+  let visibility: DocumentVisibilityState = "visible";
+  Object.defineProperty(document, "visibilityState", { configurable: true, get: () => visibility });
+  const setVisibility = (next: DocumentVisibilityState) =>
+    act(() => {
+      visibility = next;
+      document.dispatchEvent(new Event("visibilitychange"));
+    });
+  const told = (socket: FakeSocket) => socket.sent.filter(({ type }) => type === "room:seen").at(-1)?.device;
+  const tab = (name: string) =>
+    act(() =>
+      [...host.querySelectorAll<HTMLElement>('[role="tab"]')]
+        .find((each) => each.textContent?.startsWith(name))!
+        .click(),
+    );
+
+  await draw("lobby");
+  await connect(true);
+  const global = FakeSocket.made.find(({ url }) => url.includes(encodeURIComponent("world:global")))!;
+  await act(async () => {
+    global.open();
+    global.receive({ type: "joined:zone", zoneId: "world:global", canWrite: true });
+  });
+  expect(told(lobbySocket())).toBe(DEVICE);
+  expect(told(global)).toBeUndefined();
+
+  tab("Global");
+  expect(told(lobbySocket())).toBeNull();
+  expect(told(global)).toBe(DEVICE);
+
+  setVisibility("hidden");
+  expect(told(global)).toBeNull();
+  setVisibility("visible");
+  expect(told(global)).toBe(DEVICE);
+
+  tab("Messages");
+  expect(told(global)).toBeNull();
+  Reflect.deleteProperty(document, "visibilityState");
+});
+
+describe("a pressed alert for a lobby's mention", () => {
+  const LOBBY_PAGE = "/blitz/slot-blitz-1630";
+  /** The app at an address: Play at "/", the lobby's page at its own. */
+  const visit = (at: string) =>
+    act(async () =>
+      root.render(
+        <MemoryRouter initialEntries={[at]}>
+          <QueryClientProvider client={new QueryClient()}>
+            <Routes>
+              <Route element={<AppShell />}>
+                <Route path="/" element={<p>Play</p>} />
+                <Route path="/blitz/:id" element={<LobbyChat slot={SLOT} membership="0x4a1:false:0:false" />} />
+              </Route>
+            </Routes>
+          </QueryClientProvider>
+        </MemoryRouter>,
+      ),
+    );
+  const pressAlert = () =>
+    act(async () =>
+      (navigator as unknown as { serviceWorker: EventTarget }).serviceWorker.dispatchEvent(
+        new MessageEvent("message", {
+          data: { type: "chat-alert-pressed", kind: "mention", target: LOBBY_PAGE, tag: "mention:lobby:blitz-1630" },
+        }),
+      ),
+    );
+  const selected = () => host.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null;
+
+  beforeEach(() => {
+    Object.defineProperty(navigator, "serviceWorker", { value: new EventTarget(), configurable: true });
+  });
+  afterEach(() => {
+    Reflect.deleteProperty(navigator, "serviceWorker");
+  });
+
+  it("turns the lobby's open chat back to Lobby from another tab", async () => {
+    await visit(LOBBY_PAGE);
+    await connect(false);
+    const global = [...host.querySelectorAll<HTMLElement>('[role="tab"]')].find((tab) => tab.textContent === "Global")!;
+    act(() => global.click());
+    expect(selected()).toBe("Global");
+    await pressAlert();
+    expect(selected()).toBe("Lobby");
+  });
+
+  it("goes to the lobby from another page, its chat open on Lobby", async () => {
+    const onPlay = () => [...host.querySelectorAll("p")].some((line) => line.textContent === "Play");
+    await visit("/");
+    expect(onPlay()).toBe(true);
+    await pressAlert();
+    await connect(false);
+    expect(onPlay()).toBe(false);
+    expect(host.querySelector('section[aria-label="Chat"]')).not.toBeNull();
+    expect(selected()).toBe("Lobby");
   });
 });
 

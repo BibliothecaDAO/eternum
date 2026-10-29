@@ -163,6 +163,8 @@ export class RealtimeClient {
   #allowed: readonly string[] = [];
   #options: RealtimeClientOptions;
   #closed = false;
+  /** The room this page shows the player now, visibly, on its push device: told to that room (room:seen). */
+  #seen: { zoneId: string; device: string } | null = null;
   /** Failures in a row and the pending reopen, per connection: the inbox, or a room by its zone. */
   #failures = new Map<string, number>();
   #reopening = new Map<string, ReturnType<typeof setTimeout>>();
@@ -182,6 +184,24 @@ export class RealtimeClient {
     this.#options = { ...this.#options, rooms };
     for (const zoneId of before) if (!rooms.includes(zoneId)) this.leaveZone(zoneId);
     this.#openRooms();
+  }
+
+  /**
+   * The room this page shows the player now, visibly, and the push device it is on; null when it shows none (chat
+   * closed, another view, the page hidden, or no push device). The room hears it, and a mention there skips that device
+   * alone; a socket open in the background is never taken as a reader. A room opened again hears it again.
+   */
+  setSeenRoom(seen: { zoneId: string; device: string } | null) {
+    const before = this.#seen;
+    if (before?.zoneId === seen?.zoneId && before?.device === seen?.device) return;
+    this.#seen = seen;
+    // A room still opening hears it when it opens (#connectRoom); one open hears it now.
+    const tell = (zoneId: string, device: string | null) => {
+      const room = this.#rooms.get(zoneId);
+      if (room?.readyState === WebSocket.OPEN) room.send(JSON.stringify({ type: "room:seen", device }));
+    };
+    if (before && before.zoneId !== seen?.zoneId) tell(before.zoneId, null);
+    if (seen) tell(seen.zoneId, seen.device);
   }
 
   /** A room opened again: its answer (who writes) is the room's at the open, so a changed registration reopens it. */
@@ -269,7 +289,9 @@ export class RealtimeClient {
       this.#options.onMessage?.(message.type === "error" ? { ...message, zoneId } : message, event);
     });
     socket.addEventListener("open", () => {
-      if (this.#rooms.get(zoneId) === socket) this.#failures.delete(zoneId);
+      if (this.#rooms.get(zoneId) !== socket) return;
+      this.#failures.delete(zoneId);
+      if (this.#seen?.zoneId === zoneId) socket.send(JSON.stringify({ type: "room:seen", device: this.#seen.device }));
     });
     socket.addEventListener("close", () => {
       if (this.#rooms.get(zoneId) !== socket) return;

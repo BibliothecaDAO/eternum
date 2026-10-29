@@ -39,6 +39,7 @@ beforeEach(() => {
   vi.stubGlobal("WebSocket", SilentSocket);
   vi.stubGlobal("fetch", () => new Promise<Response>(() => {}));
   undoLayout = layOutChatLists();
+  Object.defineProperty(navigator, "serviceWorker", { value: new EventTarget(), configurable: true });
   host = document.createElement("div");
   document.body.replaceChildren(host);
 });
@@ -50,6 +51,7 @@ afterEach(async () => {
   // The pane as a new visit finds it: closed.
   useAppChatPlace.setState({ paneOpen: false });
   undoLayout();
+  Reflect.deleteProperty(navigator, "serviceWorker");
   vi.unstubAllGlobals();
 });
 
@@ -180,5 +182,70 @@ describe("chat in the app, page or pane, never both", () => {
     expect(shellOpen()).toBe(false);
     arrives("a3");
     expect(place("Chat")!.querySelector("[data-count]")!.textContent).toBe("1");
+  });
+});
+
+/** The service worker's word to this window when a chat alert is pressed: what to open. */
+const pressAlert = (kind: "mention" | "direct-message", target: string, tag: string) =>
+  act(async () =>
+    (navigator as unknown as { serviceWorker: EventTarget }).serviceWorker.dispatchEvent(
+      new MessageEvent("message", { data: { type: "chat-alert-pressed", kind, target, tag } }),
+    ),
+  );
+/** The tab each chat drawn shows. */
+const shownTabs = () =>
+  [...host.querySelectorAll('[data-hud-mode="app"] [role="tab"][aria-selected="true"]')].map((tab) => tab.textContent);
+
+describe("a pressed chat alert, in the app", () => {
+  it("opens the desktop's pane on Global, from Play with chat closed and Messages last shown", async () => {
+    await open("/", 1440);
+    connected();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(chats()).toEqual([]);
+    await pressAlert("mention", "/chat", "mention:global");
+    expect(host.querySelector('section[aria-label="Chat"]')).not.toBeNull();
+    expect(shownTabs()).toEqual(["Global"]);
+    expect(shellOpen()).toBe(true);
+  });
+
+  it("goes to the phone's Chat page on Global, from Play", async () => {
+    await open("/", 390);
+    connected();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    await pressAlert("mention", "/chat", "mention:global");
+    expect(place("Chat")!.getAttribute("aria-current")).toBe("page");
+    expect(shownTabs()).toEqual(["Global"]);
+  });
+
+  it("turns Chat's page from Messages to Global, the page already open", async () => {
+    await open("/chat", 390);
+    connected();
+    act(() => useRealtimeChatStore.getState().actions.showMessages());
+    expect(shownTabs()).toEqual(["Messages"]);
+    await pressAlert("mention", "/chat", "mention:global");
+    expect(shownTabs()).toEqual(["Global"]);
+  });
+
+  it("opens a private message's conversation in the desktop's pane", async () => {
+    await open("/", 1440);
+    connected();
+    act(() =>
+      useRealtimeChatStore.setState({
+        dmThreads: {
+          "0x64|0x7": {
+            thread: { id: "0x64|0x7", participants: ["0x64", "0x7"], createdAt: "", unreadCounts: {} },
+            messages: [],
+            pendingMessages: [],
+            hasMoreHistory: false,
+            lastFetchedCursor: null,
+            isFetchingHistory: false,
+          } as never,
+        },
+      }),
+    );
+    await pressAlert("direct-message", "/", "direct-thread:0x64|0x7");
+    expect(host.querySelector('section[aria-label="Chat"]')).not.toBeNull();
+    expect(useRealtimeChatStore.getState().view).toEqual({ kind: "conversation", threadId: "0x64|0x7" });
+    expect(shownTabs()).toEqual(["Messages"]);
   });
 });

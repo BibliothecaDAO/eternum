@@ -12,6 +12,7 @@ vi.mock("@bibliothecadao/types", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/types")>()),
   RealtimeClient: class {
     close() {}
+    setSeenRoom() {}
     send(frame: unknown) {
       wire.sent.push(frame);
     }

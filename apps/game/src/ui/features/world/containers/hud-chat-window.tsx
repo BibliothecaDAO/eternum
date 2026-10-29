@@ -1,4 +1,8 @@
-import { useIdentitySession } from "@/hooks/context/identity-session";
+import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
+import { chatAlertOpening, useChatAlertPresses } from "@/pwa/chat-alert-press";
+import { usePushDeviceId } from "@/pwa/use-push-device-id";
+import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
+import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -61,6 +65,13 @@ const useGameChatRoom = () => {
 export function GameChatConnection() {
   const { initializer, zoneId } = useGameChatRoom();
   useRealtimeChatInitializer(initializer);
+  useSeenRoom(usePushDeviceId(notificationOwnerOf(useIdentitySession().session)));
+  // A chat alert pressed brings this game forward: chat opens on what it is about, the game left as it is.
+  const openAlert = useRealtimeChatSelector((state) => state.actions.openAlert);
+  useChatAlertPresses((press) => {
+    const opening = chatAlertOpening(press);
+    if (!("page" in opening)) openAlert(opening);
+  });
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const loadWorldHistory = useRealtimeChatSelector((state) => state.actions.loadWorldHistory);
@@ -157,6 +168,7 @@ export function HudChatWindow({
 }) {
   const { status, initializer, requestSignIn, rooms, unread, stripLine } = useGameChat(open);
   const pane = useRef<HTMLDivElement>(null);
+  useChatRevealed(() => onOpenChange(true));
 
   useEffect(() => {
     if (open) pane.current?.querySelector<HTMLInputElement | HTMLTextAreaElement>("input,textarea")?.focus();
