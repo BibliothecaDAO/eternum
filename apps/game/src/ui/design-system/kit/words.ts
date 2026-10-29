@@ -747,6 +747,16 @@ export const CHAT_WORDS = {
   removePlace: "Take the place off",
   /** After a place shared in another game: that game, by its name ("in Frontier 3"); it opens nothing here. */
   inGame: "in",
+  /** On a player's card: hide everything they write, here and in private (the server drops their messages to you). */
+  mute: "Mute",
+  unmute: "Unmute",
+  /** When the server did not take a Mute or an Unmute: nothing changed. */
+  muteFailed: "Mute did not go through. Try again.",
+  unmuteFailed: "Unmute did not go through. Try again.",
+  /** Where a muted player's messages stood in a room, under their name: pressed, their card offers Unmute. */
+  muted: "muted",
+  /** Beside the chat's tabs: how many players are in it now ("4 online"). */
+  online: "online",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

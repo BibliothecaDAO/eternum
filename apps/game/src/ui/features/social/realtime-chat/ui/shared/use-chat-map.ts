@@ -29,6 +29,8 @@ export interface PlaceReading {
 export interface ChatMap {
   selected: SharedPlace | null;
   read: (place: SharedPlace) => PlaceReading;
+  /** A player's realm in this game, by their Realms id, as a place to open; none for a player with no realm here. */
+  realmOf: (playerId: string) => SharedPlace | null;
 }
 
 export const ChatMapContext = createContext<ChatMap | null>(null);

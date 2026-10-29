@@ -16,6 +16,7 @@ import { computeDateSeparators, startsRun } from "../../model/message-grouping";
 import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
+import { PlayerCard } from "../shared/player-card";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useChatMentions } from "../../hooks/use-chat-mentions";
@@ -72,6 +73,10 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const section = useRef<HTMLElement>(null);
   const quoted = useShowMessage(section);
   const [replying, setReplying] = useState<WorldChatMessage | null>(null);
+  // A player's card, opened under the message whose name was pressed; one at a time.
+  const [card, setCard] = useState<string | null>(null);
+  const self = useRealtimeChatSelector((state) => state.identity?.playerId);
+  const muted = useRealtimeChatSelector((state) => state.blockedPlayers);
 
   useEffect(() => {
     if (resolvedZoneId && hasChannelAccess) {
@@ -151,6 +156,10 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                     previous && { senderId: previous.sender.playerId, createdAt: previous.createdAt },
                     { senderId, createdAt: message.createdAt, replies: reply !== null },
                   );
+                  const head = run || dateSeparators.has(index);
+                  // A muted player's run reads as their name and "muted", once; its card offers Unmute.
+                  const isMuted = muted.includes(senderId);
+                  if (isMuted && !head) return null;
                   return (
                     <Fragment key={message.id}>
                       {dateSeparators.has(index) && (
@@ -163,18 +172,21 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                       <MessageRow
                         id={message.id}
                         run={
-                          run || dateSeparators.has(index)
+                          head
                             ? {
                                 name: senderName,
                                 playerId: senderId,
                                 avatarUrl: message.sender.avatarUrl,
                                 time: formatWorldMessageTime(message),
-                                onName: () => actions.openConversation(senderId),
+                                onName:
+                                  senderId === self
+                                    ? undefined
+                                    : () => setCard((open) => (open === message.id ? null : message.id)),
                               }
                             : undefined
                         }
                         quote={
-                          reply
+                          reply && !isMuted
                             ? {
                                 name: formatSenderName(names, reply.playerId, byId.get(reply.id)?.sender.displayName),
                                 excerpt: reply.excerpt,
@@ -182,25 +194,34 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                               }
                             : undefined
                         }
-                        mentionsMe={mentions(messageParts(message.content, mentionable.names), mentionable.me)}
+                        mentionsMe={
+                          !isMuted && mentions(messageParts(message.content, mentionable.names), mentionable.me)
+                        }
                         lit={quoted.lit === message.id}
-                        onReply={() => setReplying(message)}
+                        onReply={isMuted ? undefined : () => setReplying(message)}
                       >
-                        {place?.name !== message.content.trim() && (
-                          <MessageText
-                            content={message.content}
-                            names={mentionable.names}
-                            me={mentionable.me}
-                            onLink={links.open}
-                          />
-                        )}
-                        {place && (
+                        {isMuted ? (
+                          <span className="text-hud-cue">{CHAT_WORDS.muted}</span>
+                        ) : (
                           <>
-                            {" "}
-                            <PlaceChip place={place} />
+                            {place?.name !== message.content.trim() && (
+                              <MessageText
+                                content={message.content}
+                                names={mentionable.names}
+                                me={mentionable.me}
+                                onLink={links.open}
+                              />
+                            )}
+                            {place && (
+                              <>
+                                {" "}
+                                <PlaceChip place={place} />
+                              </>
+                            )}
                           </>
                         )}
                       </MessageRow>
+                      {card === message.id && <PlayerCard playerId={senderId} name={senderName} />}
                     </Fragment>
                   );
                 })}

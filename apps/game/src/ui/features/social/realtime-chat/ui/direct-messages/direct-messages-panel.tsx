@@ -16,6 +16,7 @@ import { computeDateSeparators, startsRun } from "../../model/message-grouping";
 import { placeMetadata, placeOf } from "../../model/place";
 import { replyMetadata, replyOf } from "../../model/reply";
 import { PlaceChip } from "../shared/chat-map";
+import { useMute } from "../shared/player-card";
 import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useLinkOpener } from "../shared/leaving-realms";
@@ -47,7 +48,7 @@ const toDisplayTime = (message: DirectMessage) => {
 
 /**
  * One private conversation, opened from Messages or a player's name: the other player by name, the way back to
- * Messages, Block, the messages and the field. A player who is offline is written to all the same: the server keeps the
+ * Messages, Mute, the messages and the field. A player who is offline is written to all the same: the server keeps the
  * message for them and tells their devices.
  */
 export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, className }: DirectMessagesPanelProps) {
@@ -84,10 +85,6 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
   const [replying, setReplying] = useState<DirectMessage | null>(null);
   const isOwn = (playerId: string) => selfAliases.includes(playerId);
   const labelOf = (playerId: string) => (isOwn(playerId) ? "You" : nameOf(playerId));
-  const isRecipientBlocked = useRealtimeChatSelector(
-    (state) => recipientId !== undefined && state.blockedPlayers.includes(recipientId),
-  );
-  const chatActions = useRealtimeChatSelector((state) => state.actions);
 
   // Open, it is read whenever a receipt is due: on opening, as the other player's lines arrive or a page of history
   // brings them, and again on a new connection.
@@ -136,18 +133,7 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
         <header className="flex items-center gap-2 border-b border-hud-line px-2 py-1 text-hud-label">
           <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
           <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{recipientLabel}</span>
-          <button
-            type="button"
-            className="rounded border border-hud-line px-2 py-0.5 text-hud-accent hover:bg-hud-hover"
-            onClick={() =>
-              (isRecipientBlocked
-                ? chatActions.unblockPlayer(recipientId)
-                : chatActions.blockPlayer(recipientId)
-              ).catch((error) => console.error("chat_block_failed", error))
-            }
-          >
-            {isRecipientBlocked ? "Unblock" : "Block"}
-          </button>
+          <MuteButton playerId={recipientId} />
         </header>
       )}
       <div className="flex-1 min-h-0 px-3 py-2">
@@ -252,3 +238,17 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
     </section>
   );
 }
+
+/** The conversation's Mute, as the player's card presses it. */
+const MuteButton = ({ playerId }: { playerId: string }) => {
+  const { muted, toggle } = useMute(playerId);
+  return (
+    <button
+      type="button"
+      className="rounded border border-hud-line px-2 py-0.5 text-hud-accent hover:bg-hud-hover"
+      onClick={() => void toggle()}
+    >
+      {muted ? CHAT_WORDS.unmute : CHAT_WORDS.mute}
+    </button>
+  );
+};

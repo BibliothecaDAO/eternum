@@ -37,6 +37,7 @@ vi.mock("@/ui/features/social", () => ({
       joinedZoneIds: ["global"],
       worldZones: { global: fixture.zone },
       unreadWorldTotal: 2,
+      blockedPlayers: [],
       // One conversation the server counts one unread in.
       identity: { playerId: "0x7" },
       dmThreads: { "0x7|0xa": { thread: { unreadCounts: { "0x7": 1 } } } },

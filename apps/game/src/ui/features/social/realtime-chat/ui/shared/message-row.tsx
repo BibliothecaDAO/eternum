@@ -35,7 +35,8 @@ export const MessageRow = ({
   mentionsMe?: boolean;
   /** Shown just now, from a reply's quote. */
   lit?: boolean;
-  onReply: () => void;
+  /** Answering it; none for a row that offers no Reply (a muted player's). */
+  onReply?: () => void;
   children: ReactNode;
 }) => {
   const [actions, setActions] = useState(false);
@@ -49,7 +50,7 @@ export const MessageRow = ({
     if (!start || (event.target as Element).closest("a, button")) return;
     const dx = event.clientX - start.x;
     const dy = Math.abs(event.clientY - start.y);
-    if (start.touch && dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply();
+    if (start.touch && dx >= SWIPE_PX && dy < SWIPE_PX / 2) onReply?.();
     else if (Math.abs(dx) < TAP_PX && dy < TAP_PX) setActions((shown) => !shown);
   };
 
@@ -97,11 +98,13 @@ export const MessageRow = ({
         )}
         <p className="break-words">{children}</p>
       </div>
-      <span className={cn("absolute right-1 top-0 group-focus-within:flex", actions ? "flex" : "hidden")}>
-        <HudButton kind="secondary" size="sm" onClick={onReply}>
-          {CHAT_WORDS.reply}
-        </HudButton>
-      </span>
+      {onReply && (
+        <span className={cn("absolute right-1 top-0 group-focus-within:flex", actions ? "flex" : "hidden")}>
+          <HudButton kind="secondary" size="sm" onClick={onReply}>
+            {CHAT_WORDS.reply}
+          </HudButton>
+        </span>
+      )}
     </li>
   );
 };

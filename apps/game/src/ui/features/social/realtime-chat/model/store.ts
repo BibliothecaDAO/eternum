@@ -531,7 +531,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       if (get().activeThreadId !== threadId) set({ activeThreadId: threadId });
     },
     receiveWorldMessage: (zoneId, message, options) => {
-      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen } = get();
+      const { worldZones, activeZoneId, unreadWorldTotal, identity, isShellOpen, blockedPlayers } = get();
       const zoneState = worldZones[zoneId] ?? createWorldZoneState(zoneId);
       const normalizedMessage = normalizeWorldChatMessage(message);
 
@@ -557,7 +557,9 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
       const isActiveZone = activeZoneId === zoneId;
       const isOwnMessage = matchesIdentityAlias(identity, normalizedMessage.sender.playerId);
-      const shouldIncrement = !isOwnMessage && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
+      // A muted player's message is kept, as the room has it, but neither heard nor counted.
+      const isMuted = blockedPlayers.includes(normalizedMessage.sender.playerId);
+      const shouldIncrement = !isOwnMessage && !isMuted && replacementIndex === -1 && (!isShellOpen || !isActiveZone);
 
       if (shouldIncrement) {
         AudioManager.getInstance().play("ui.msg_receive");

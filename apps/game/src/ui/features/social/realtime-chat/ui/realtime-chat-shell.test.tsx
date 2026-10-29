@@ -180,13 +180,16 @@ describe("the chat: rooms, then Messages", () => {
     expect(host.textContent).not.toContain("offline");
   });
 
-  it("opens the conversation with a player from their name in the room", () => {
+  it("opens the conversation with a player from their name in the room, through their card's Message", () => {
     open();
     act(() =>
       [...host.querySelectorAll<HTMLButtonElement>("li[data-message-id] p button")]
         .find((name) => name.textContent === "Aldric")
         ?.click(),
     );
+    const card = host.querySelector('[data-player-card="' + ALDRIC + '"]')!;
+    expect(card.textContent).toContain("Aldric");
+    act(() => [...card.querySelectorAll("button")].find((button) => button.textContent === "Message")!.click());
     expect(chosenTab()).toBe("Messages");
     expect(host.querySelector("header")?.textContent).toContain("Aldric");
   });

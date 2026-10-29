@@ -59,7 +59,18 @@ const fetchGuardian = async (): Promise<GuardianIdentity> => {
 export const realmsPlayerOf = (realmsId: string | undefined, guardian: GuardianIdentity | undefined): string | null =>
   realmsId && guardian ? realmsAccountAddress(realmsId, guardian.accountClassHash, guardian.publicKey) : null;
 
-const GUARDIAN_QUERY = { queryKey: ["shell", "guardian"], queryFn: fetchGuardian, staleTime: Infinity } as const;
+export const GUARDIAN_QUERY = {
+  queryKey: ["shell", "guardian"],
+  queryFn: fetchGuardian,
+  staleTime: Infinity,
+} as const;
+
+/** Any player's account address on our shards, by their Realms id (chat names players by it): null until the guardian
+ * has answered. */
+export const useRealmsAccountOf = (): ((realmsId: string) => string | null) => {
+  const guardian = useQuery(GUARDIAN_QUERY);
+  return (realmsId) => realmsPlayerOf(realmsId, guardian.data);
+};
 
 export const useRealmsPlayer = () => {
   const { session } = useIdentitySession();

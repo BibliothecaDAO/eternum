@@ -78,7 +78,10 @@ export function useGameChat(open: boolean) {
   const requestSignIn = useRequestSignIn();
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
-  const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  // The strip reads the room's last message from a player not muted.
+  const lastMessage = useRealtimeChatSelector((state) =>
+    state.worldZones[zoneId]?.messages.findLast((message) => !state.blockedPlayers.includes(message.sender.playerId)),
+  );
   // The strip names a place as its chip does: one reading of it.
   const readPlace = usePlaceReader();
   const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;

@@ -4,10 +4,11 @@ import { getActiveGame } from "@/runtime/world/store";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
-import { getBlockTimestamp } from "@bibliothecadao/eternum";
+import { useRealmsAccountOf } from "@/shell/herald";
+import { getBlockTimestamp, isRealmCategory } from "@bibliothecadao/eternum";
 import type { ReactNode } from "react";
 
-import { placeKey, type SharedPlace, sharedPlaceOf } from "../../model/place";
+import { placeKey, placeOnMap, type SharedPlace, sharedPlaceOf } from "../../model/place";
 import { type ChatMap, ChatMapContext, useChatMap, usePlaceReader } from "./use-chat-map";
 
 /**
@@ -19,20 +20,23 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
     setup: { store },
   } = useGame();
   const read = usePlaceReader();
+  const accountOf = useRealmsAccountOf();
   const selection = useUIStore((state) => state.mapSelection ?? state.setAsidePick);
   const layer = useUIStore((state) => state.mapLayer);
   const here = getActiveGame();
+  const game = here && { chainId: here.chainId, gameId: here.gameId, name: here.name };
+  const now = getBlockTimestamp().currentBlockTimestamp;
   const map: ChatMap = {
-    selected: here
-      ? sharedPlaceOf(
-          store,
-          { chainId: here.chainId, gameId: here.gameId, name: here.name },
-          selection,
-          layer,
-          getBlockTimestamp().currentBlockTimestamp,
-        )
-      : null,
+    selected: game ? sharedPlaceOf(store, game, selection, layer, now) : null,
     read,
+    realmOf: (playerId) => {
+      const account = game && accountOf(playerId);
+      if (!game || !account) return null;
+      for (const structure of store.structuresOwnedBy(game.gameId, BigInt(account)))
+        if (isRealmCategory(structure.base.category))
+          return placeOnMap(store, game, { kind: "structure", entityId: Number(structure.entity_id) }, now);
+      return null;
+    },
   };
   return <ChatMapContext.Provider value={map}>{children}</ChatMapContext.Provider>;
 };

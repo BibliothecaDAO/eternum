@@ -37,6 +37,11 @@
  *   field, and the message sent comes back carrying it as a chip that opens. (Opening one moves the game's route, which
  *   the lab has not; the chat's tests press it, and the game proof's chat-place task in a game.)
  *
+ * - a player's card, at 1440×900 and on a phone (390×844), in the open pane: beside the tabs, how many players are
+ *   online; Aldric's name pressed opens his card under his message, inside the pane and the screen, with his realm as a
+ *   place that opens, Message and Mute; Mute leaves his messages as his name and "muted", Unmute brings them back, and
+ *   Message opens his conversation.
+ *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
  * check fails.
  */
@@ -361,7 +366,8 @@ const LAST = `(() => {
   const last = [...document.querySelectorAll('[data-lab="chat"] section[aria-label="Chat"] li[data-message-id]')].at(-1);
   return last
     ? {
-        sender: last.querySelector("p button")?.textContent ?? null,
+        // The run's head names its sender: a button for another player (their card), plain words for the player.
+        sender: last.querySelector("p")?.firstElementChild?.textContent ?? null,
         words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null,
         mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent),
       }
@@ -556,6 +562,111 @@ const provePlaces = async (b, out, record, phone) => {
   b.run("screenshot", join(out, `places-sent-${tag}.png`));
 };
 
+/** The pane's player card, its online count, and Aldric's rows: what a press on his name and the card's buttons show. */
+const CARD = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const card = pane?.querySelector("[data-player-card]");
+  const buttons = [...(card?.querySelectorAll("button") ?? [])];
+  const chip = card?.querySelector("[data-place]");
+  const aldric = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].filter(
+    (row) => row.querySelector("p button")?.textContent === "Aldric",
+  );
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    pane: rect(pane),
+    online: document.querySelector('[data-lab="chat"] [data-online]')?.textContent ?? null,
+    card: card
+      ? {
+          box: rect(card),
+          after: card.previousElementSibling?.querySelector("p button")?.textContent ?? null,
+          words: card.textContent,
+          buttons: buttons.map((button) => ({ words: button.textContent, box: rect(button) })),
+          realm: chip ? { name: chip.getAttribute("data-place"), opens: !(chip.querySelector("button")?.disabled ?? true) } : null,
+        }
+      : null,
+    aldric: aldric.map((row) => row.textContent),
+    conversation: document.querySelector('[data-lab="chat"] header')?.textContent ?? null,
+  };
+})()`;
+
+const ALDRIC_NAME = '[data-lab="chat"] li[data-message-id] p button';
+const cardPress = (words) => `(() => {
+  const button = [...document.querySelectorAll('[data-lab="chat"] [data-player-card] button')].find((b) => b.textContent === ${JSON.stringify(words)});
+  if (!button) return false;
+  button.click();
+  return true;
+})()`;
+
+/** The card on one device: the online count, Aldric's card opened from his name, Mute and Unmute, then Message. */
+const proveCard = async (b, out, record, phone) => {
+  const tag = phone ? "phone" : "desktop";
+  record.measures = { closed: b.evaluate(CARD) };
+  record.checks.push({
+    check: "beside the tabs, the players online: 2",
+    ok: record.measures.closed.online === "2 online",
+  });
+
+  const opened = b.evaluate(`(() => {
+    const name = [...document.querySelectorAll(${JSON.stringify(ALDRIC_NAME)})].findLast((button) => button.textContent === "Aldric");
+    if (!name) return false;
+    name.scrollIntoView({ block: "center" });
+    name.click();
+    return true;
+  })()`);
+  record.presses.push({ press: "Aldric's name", status: opened ? "led" : "missing" });
+  await sleep(400);
+  const open = b.evaluate(CARD);
+  record.measures.open = open;
+  const words = (open.card?.buttons ?? []).map((button) => button.words);
+  record.checks.push(
+    {
+      check: "his card opens under his message",
+      ok: open.card?.after === "Aldric" && open.card.words.includes("Aldric"),
+    },
+    { check: "it shows his realm as a place that opens", ok: Boolean(open.card?.realm?.opens) },
+    { check: "it offers Message and Mute", ok: words.includes("Message") && words.includes("Mute") },
+    {
+      check: "the card and each of its buttons are whole inside the pane and the screen",
+      ok:
+        open.card !== null &&
+        inside(open.card.box, open.pane) &&
+        open.card.box.right <= open.viewport.width &&
+        open.card.buttons.every((button) => inside(button.box, open.card.box)),
+    },
+  );
+  b.run("screenshot", join(out, `card-${tag}.png`));
+
+  record.presses.push({ press: "Mute", status: b.evaluate(cardPress("Mute")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.muted = b.evaluate(CARD);
+  record.checks.push({
+    check: "muted, his messages read as his name and muted, the card offering Unmute",
+    ok:
+      record.measures.muted.aldric.length > 0 &&
+      record.measures.muted.aldric.every((row) => row.includes("muted")) &&
+      record.measures.muted.card?.buttons.some((button) => button.words === "Unmute") === true,
+  });
+  b.run("screenshot", join(out, `card-muted-${tag}.png`));
+
+  record.presses.push({ press: "Unmute", status: b.evaluate(cardPress("Unmute")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.unmuted = b.evaluate(CARD);
+  record.checks.push({
+    check: "unmuted, his messages read again",
+    ok: record.measures.unmuted.aldric.some((row) => !row.includes("muted")),
+  });
+
+  record.presses.push({ press: "Message", status: b.evaluate(cardPress("Message")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.written = b.evaluate(CARD);
+  record.checks.push({
+    check: "Message opens his conversation",
+    ok: record.measures.written.conversation?.includes("Aldric") === true,
+  });
+  b.run("screenshot", join(out, `card-message-${tag}.png`));
+};
+
 const above = (upper, lower, slack = 1) => upper !== null && lower !== null && upper.bottom <= lower.top + slack;
 
 /** The rail with chat open: the details and chat share the column, the Events name whole, the tag under the column. */
@@ -706,6 +817,16 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         records.push(places);
         places.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
         if (places.ready) await provePlaces(b, out, places, phone);
+      }
+
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const card = { state: `player card, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(card);
+        card.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+        if (card.ready) await proveCard(b, out, card, phone);
       }
 
       const strip = { state: "closed, 1440×900", ready: false, presses: [], checks: [] };

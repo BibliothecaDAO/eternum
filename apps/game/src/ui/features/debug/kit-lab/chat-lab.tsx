@@ -3,7 +3,10 @@ import { useDocumentClass } from "@/hooks/use-document-class";
 import { useGame } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getBlockTimestamp } from "@bibliothecadao/eternum";
-import { LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { LAB_GUARDIAN, LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
+import { GUARDIAN_QUERY } from "@/shell/herald";
+import { appQueryClient } from "@/runtime/query-client";
+import { realmsAccountAddress } from "@realms-world/identity/account";
 import { placeMetadata, sharedPlaceOf } from "@/ui/features/social/realtime-chat/model/place";
 import { replyMetadata } from "@/ui/features/social/realtime-chat/model/reply";
 import { setActiveGame } from "@/runtime/world/store";
@@ -111,6 +114,26 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
         },
       },
     ] as never);
+    // Aldric's own realm, owned by his account as the guardian makes it from his Realms id: his card shows it.
+    appQueryClient.setQueryData(GUARDIAN_QUERY.queryKey, LAB_GUARDIAN);
+    const labRealm = store.require("Structure", { game_id: 1, entity_id: 7 });
+    store.applyFacts([
+      {
+        model: "Structure",
+        key: "0x2ad",
+        value: JSON.parse(
+          JSON.stringify(
+            {
+              ...labRealm,
+              entity_id: ALDRIC_REALM,
+              owner: realmsAccountAddress(ALDRIC, LAB_GUARDIAN.accountClassHash, LAB_GUARDIAN.publicKey),
+              metadata: { ...labRealm.metadata, realm_id: 2 },
+            },
+            (_, field) => (typeof field === "bigint" ? field.toString() : field),
+          ),
+        ),
+      },
+    ] as never);
     const now = getBlockTimestamp().currentBlockTimestamp;
     const realm = sharedPlaceOf(store, game, LAB_REALM, false, now);
     const well = sharedPlaceOf(store, game, { kind: "hex", hex: LAB_WELL }, false, now);
@@ -138,6 +161,7 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
 /** The lab game's realm, as the map selects it; a Well on a tile of its own. */
 const LAB_REALM = { kind: "structure" as const, entityId: 7 };
 const LAB_WELL = { col: 12, row: 12 };
+const ALDRIC_REALM = 77;
 const FRONTIER_PRESET = 5;
 
 const noop = () => undefined;
@@ -349,6 +373,13 @@ function installLabRoom(view: string | null): true {
       resetClient: () => undefined,
       loadWorldHistory: () => Promise.resolve(),
       loadDirectHistory: () => Promise.resolve(),
+      // Muting is answered as the server answers it: the account joins the list, or leaves it.
+      blockPlayer: async (playerId) =>
+        useRealtimeChatStore.setState((state) => ({ blockedPlayers: [...state.blockedPlayers, playerId] })),
+      unblockPlayer: async (playerId) =>
+        useRealtimeChatStore.setState((state) => ({
+          blockedPlayers: state.blockedPlayers.filter((blocked) => blocked !== playerId),
+        })),
       // What the lab's player sends comes back from the room as the room broadcasts it.
       sendWorldMessage: async (zoneId, { content, metadata }) =>
         actions.receiveWorldMessage(zoneId, ownMessage(zoneId, content, metadata)),
