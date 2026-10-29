@@ -188,19 +188,20 @@ full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand
 (`src/brand/palette.json`, read by `src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell
 English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
 its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
-the bar and the share card, the small globe on the favicon (on a Hearth disc), the install icons and the status page,
-the contour globe on a loader; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's
-on the kit's parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot
-import the token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player
-emails) hold a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`).
-`src/brand/brand.test.ts` fails on a surface left on a v2 face, mark or colour, on a copy that differs from what the
-token file writes, on a colour, face or mark a standalone surface writes on its own, and on email headers drawn from
-older brand inputs (`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under
-the bar; a painting is its ground, never space above it. `Enter` presses the page's step button (the one marked as its
-step) when it is enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are
-a tab bar at the foot. The app's notice (offline, an update ready, or Install, which only Play offers) sits in the
-desktop's top bar before You, and on a phone just above the foot, one row: Install is its icon, Later and Install; under
-1280 wide a notice with action buttons shows its icon and verbs; a words-only notice keeps its text.
+the bar, the share card and the 512 px install icon, the small globe on the favicon (on a Hearth disc), a phone's
+home-screen and launcher icons and the status page, the contour globe on a loader and an iPad's home-screen icons;
+`AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the kit's parchment grade),
+exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the token file (the
+boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails) hold a copy written
+by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a surface left on
+a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or mark a
+standalone surface writes on its own, and on email headers drawn from older brand inputs
+(`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
+is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
+enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the
+foot. The app's notice (offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar
+before You, and on a phone just above the foot, one row: Install is its icon, Later and Install; under 1280 wide a
+notice with action buttons shows its icon and verbs; a words-only notice keeps its text.
 
 | Feature                                                                                                                                                                                                                                      | Route                                                          | How to reach it                                                                                                                                                                                                                                                                |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
