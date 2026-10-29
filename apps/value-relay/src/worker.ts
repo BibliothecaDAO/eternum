@@ -1,3 +1,4 @@
+import type { HeldRealm } from "@realms-world/identity";
 import {
   handleHeldRealmsRequest,
   handleRealmEntryRequest,
@@ -52,7 +53,7 @@ interface RelayEnv extends RelaySettings {
   IDENTITY: ShardDirectory & {
     l2ChainId(): Promise<string>;
     holdsRealm(wallet: string, realmId: number): Promise<boolean>;
-    heldRealms(wallet: string): Promise<number[]>;
+    heldRealms(wallet: string): Promise<HeldRealm[]>;
     campaignTicket(
       realmsId: string,
       presetId: number,

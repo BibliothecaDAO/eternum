@@ -63,7 +63,12 @@ const answerIndex = (url: URL) => {
   const page = Number(url.searchParams.get("cursor") ?? 0);
   return Response.json({
     data: {
-      items: pages[page]!.map((id) => ({ tokenId: String(id), owner: account[1] })),
+      // The index draws a map of every Realm but 251, as an address on its own site.
+      items: pages[page]!.map((id) => ({
+        tokenId: String(id),
+        owner: account[1],
+        image: id === 251 ? null : `/api/marketplace/v1/chains/SN_MAIN/assets/${id}.svg`,
+      })),
       nextCursor: page + 1 < pages.length ? String(page + 1) : null,
     },
   });
@@ -105,7 +110,12 @@ it("asks for a retry instead of refusing when the chain does not answer", async 
 
 it("lists every page of a wallet's Realms in order, and has no chain fallback for the list", async () => {
   indexer.holdings[HOLDER] = [[934, 3], [251]];
-  expect(await heldRealms(env, HOLDER)).toEqual([3, 251, 934]);
+  const map = (id: number) => `https://market.test/api/marketplace/v1/chains/SN_MAIN/assets/${id}.svg`;
+  expect(await heldRealms(env, HOLDER)).toEqual([
+    { realmId: 3, map: map(3) },
+    { realmId: 251, map: null },
+    { realmId: 934, map: map(934) },
+  ]);
   expect(await heldRealms(env, OTHER)).toEqual([]);
   indexer.down = true;
   await expect(heldRealms(env, HOLDER)).rejects.toBeInstanceOf(RealmHoldingsUnavailableError);
@@ -125,5 +135,7 @@ it("says why the index could not be read, and follows no redirect", async () => 
     ["realm_index_unavailable", { route: "accounts", cause: "TypeError: fetch failed" }],
   ]);
   indexer.down = false;
-  expect(await heldRealms(env, HOLDER)).toEqual([711]);
+  expect(await heldRealms(env, HOLDER)).toEqual([
+    { realmId: 711, map: "https://market.test/api/marketplace/v1/chains/SN_MAIN/assets/711.svg" },
+  ]);
 });

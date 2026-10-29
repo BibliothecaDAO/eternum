@@ -1,5 +1,6 @@
 import { nativeRuleConstants } from "../../../contracts/l3/world-native/schema/client.gen";
 import { Schema } from "effect";
+import type { HeldRealm } from "@realms-world/identity";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { shortString, type CairoOption } from "starknet";
 import { ShardReader, sameFelt, type ShardConnection } from "./shard-rpc";
@@ -41,10 +42,10 @@ export const handleHeldRealmsRequest = (request: Request, route: PlayerIdentity 
 
 interface HoldingsIdentity {
   linkedWallet(id: string): Promise<string | null>;
-  heldRealms(wallet: string): Promise<number[]>;
+  heldRealms(wallet: string): Promise<HeldRealm[]>;
 }
 
-async function readHeldRealms(identity: HoldingsIdentity, realmsId: string): Promise<number[]> {
+async function readHeldRealms(identity: HoldingsIdentity, realmsId: string): Promise<HeldRealm[]> {
   const wallet = await identity.linkedWallet(realmsId);
   if (!wallet) return [];
   return identity.heldRealms(wallet).catch(() => {

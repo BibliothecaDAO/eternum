@@ -13,6 +13,7 @@ const state = vi.hoisted(() => ({
     name: "frontier",
     mode: "frontier",
     dev_mode_on: false,
+    preset_id: 5,
     ready: true,
     clock: { start_settling_at: 1, start_main_at: 1, end_at: 9999999999 },
   },
@@ -62,7 +63,14 @@ it.each(["play", "settle"] as const)(
     state.navigate.mockClear();
     state.milestone.mockClear();
     useAccountStore.setState({ account: { address: "0x111" } as never });
-    useIdentitySessionStore.setState({ status: "signed-in" });
+    // An account with no linked wallet: the Realm step offers the free home at once.
+    useIdentitySessionStore.setState({
+      status: "signed-in",
+      session: {
+        session: { id: "s", expiresAt: "2099-01-01T00:00:00Z", userId: "u" },
+        user: { id: "u", realmsId: "0x2", address: null, name: "u", email: "u@test" },
+      } as never,
+    });
     // The relay registers the home's source before founding: this account names no Realm and holds no ticket.
     vi.stubGlobal("fetch", async () => Response.json({}));
     const host = document.createElement("div");

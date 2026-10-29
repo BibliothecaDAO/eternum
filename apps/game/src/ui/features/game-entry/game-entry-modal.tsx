@@ -104,6 +104,8 @@ export const GameEntryModal = ({
   const account = useAccountStore((state) => state.account);
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
+  /** The Realm step's pick stands on what the account holds (its reads answered); founding waits for it. */
+  const [homeSettled, setHomeSettled] = useState(false);
   const [settlementError, setSettlementError] = useState<string | null>(null);
   const validHeldRealm = heldRealmNumber === "" || isRealmNumber(heldRealmNumber);
   const accountError = useAccountStore((state) => state.provisioningError);
@@ -615,6 +617,7 @@ export const GameEntryModal = ({
                 registered={registeredRealmId}
                 value={heldRealmNumber}
                 onChange={setHeldRealmNumber}
+                onSettled={setHomeSettled}
                 disabled={isSettling}
               />
             )}
@@ -624,7 +627,11 @@ export const GameEntryModal = ({
             )}
             <button
               type="button"
-              disabled={isSettling || (isEternumDevMode && !validDevRealmNumber) || (isFrontierMode && !validHeldRealm)}
+              disabled={
+                isSettling ||
+                (isEternumDevMode && !validDevRealmNumber) ||
+                (isFrontierMode && (!validHeldRealm || !homeSettled))
+              }
               onClick={() => void handleSettle()}
               className="frontier-primary w-full"
             >

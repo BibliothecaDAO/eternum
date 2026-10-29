@@ -51,6 +51,13 @@ export function resourceMeaning(resource: ResourcesIds): IconMeaning {
   return entry.meaning as IconMeaning;
 }
 
+/** A resource's artwork by the name a Realm was minted with ("Cold Iron"); the catalog spells it without its spaces. */
+export function mintedResourceMeaning(name: string): IconMeaning {
+  const entry = Object.values(resources).find((resource) => resource.name === name.replaceAll(" ", ""));
+  if (!entry) throw new Error(`Unknown resource icon: ${name}`);
+  return entry.meaning as IconMeaning;
+}
+
 const orderMeanings = new Map(
   iconMeanings.flatMap((name) => {
     const entry = iconDefinition(name);

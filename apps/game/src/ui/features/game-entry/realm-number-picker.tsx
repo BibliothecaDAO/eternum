@@ -6,7 +6,7 @@ import { HudField } from "@/ui/design-system/kit/hud-elements";
 /** A Realm number from 1 to 8,000, typed. */
 export const isRealmNumber = (value: string) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 8000;
 
-export function RealmNumberField({
+function RealmNumberField({
   value,
   onChange,
   disabled,
