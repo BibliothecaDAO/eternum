@@ -1,3 +1,4 @@
+import { resolveWorldmapVisualTerrainPageKeyForHex } from "./worldmap-terrain-presentation-runtime";
 /** The biome a terrain cell draws while its tile is unexplored: its outline. */
 export const UNEXPLORED_TERRAIN_BIOME = "Outline";
 
@@ -56,19 +57,29 @@ export class WorldmapTerrainContent {
   }
 }
 
+/** A terrain page as it was presented: its key, and the page size and origin that key its cells. */
+interface PresentedPage {
+  key: string;
+  size: { width: number; height: number };
+  origin: { col: number; row: number };
+}
+
 /**
- * The awaited tiles a presented terrain draws, taken from `awaiting` (keyed "<col>,<row>" in contract coordinates; the
- * cells are centred on `center`): a cell still drawing the unexplored outline does not show its tile yet.
+ * The awaited tiles one presented terrain page draws, taken from `awaiting` (keyed "<col>,<row>" in contract
+ * coordinates; the cells are centred on `center`): a cell on another page, or still drawing the unexplored outline,
+ * does not show its tile yet.
  */
 export function takeShownTiles<T>(
   awaiting: Map<string, T>,
   cells: readonly TerrainCoverageCell[],
   center: number,
+  page: PresentedPage,
 ): Array<[string, T]> {
   const shown: Array<[string, T]> = [];
   for (const cell of cells) {
     if (awaiting.size === 0) break;
     if (cell.biomeKey === UNEXPLORED_TERRAIN_BIOME) continue;
+    if (resolveWorldmapVisualTerrainPageKeyForHex(cell, page.size, page.origin).pageKey !== page.key) continue;
     const key = `${cell.col + center},${cell.row + center}`;
     const waiting = awaiting.get(key);
     if (waiting === undefined) continue;

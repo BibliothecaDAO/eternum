@@ -4767,13 +4767,21 @@ export default class WorldmapScene extends WarpTravel {
     ]);
   }
 
-  /** A presented terrain that draws an awaited explored tile (its biome, not the unexplored outline) renders its explore. */
-  private presentExploredTiles(cells: readonly { biomeKey: string; col: number; row: number }[]): void {
-    for (const [targetKey, revealedBy] of takeShownTiles(
-      this.exploredTilesAwaitingPresentation,
-      cells,
-      FELT_CENTER(),
-    )) {
+  /**
+   * A terrain page presented with an awaited explored tile on it (its biome, not the unexplored outline) renders that
+   * explore: the page that draws the tile, not the camera's critical pages, which may be presented already.
+   */
+  private presentExploredTiles(
+    cells: readonly { biomeKey: string; col: number; row: number }[],
+    pageKey: string,
+    pageOrigin: { col: number; row: number },
+  ): void {
+    if (this.exploredTilesAwaitingPresentation.size === 0) return;
+    for (const [targetKey, revealedBy] of takeShownTiles(this.exploredTilesAwaitingPresentation, cells, FELT_CENTER(), {
+      key: pageKey,
+      size: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
+      origin: pageOrigin,
+    })) {
       revealedBy.forEach((actionId) => recordClientActionRendered(actionId));
       presentResult(`explore:${targetKey}`);
     }
@@ -6282,6 +6290,7 @@ export default class WorldmapScene extends WarpTravel {
       onCriticalPagesReady = resolve;
     });
     const content = this.captureTerrainPresentationContent(composite.cells);
+    const pageOrigin = this.getVisualTerrainPageOrigin();
     const { settlementAnchors } = this.collectVisibleTerrainEcologyAnchors(content.cells);
     const presentation = this.proceduralTerrain
       .presentAsync(
@@ -6292,7 +6301,7 @@ export default class WorldmapScene extends WarpTravel {
           commitMode: content.commitMode,
           mapCenter: configManager.getMapCenter(),
           pageHeight: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.height,
-          pageOrigin: this.getVisualTerrainPageOrigin(),
+          pageOrigin,
           pageWidth: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize.width,
           visiblePageKeys: this.visualTerrainWindow?.pageKeys,
           criticalPageKeys: this.visualTerrainWindow?.criticalPageKeys,
@@ -6305,7 +6314,10 @@ export default class WorldmapScene extends WarpTravel {
           subdivisions: 2,
         },
         this.chunkWorkQueue,
-        (event) => this.handleTerrainPresentationEvent(event),
+        (event) => {
+          this.handleTerrainPresentationEvent(event);
+          if (event.kind === "page_complete") this.presentExploredTiles(content.cells, event.pageKey, pageOrigin);
+        },
       )
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
@@ -6331,7 +6343,6 @@ export default class WorldmapScene extends WarpTravel {
         throw error;
       });
     this.terrainPresentationPromise = Promise.race([criticalReady, presentation]);
-    void this.terrainPresentationPromise.then(() => this.presentExploredTiles(content.cells)).catch(() => undefined);
   }
 
   private captureTerrainPresentationContent(cells: readonly { biomeKey: string; col: number; row: number }[]) {
