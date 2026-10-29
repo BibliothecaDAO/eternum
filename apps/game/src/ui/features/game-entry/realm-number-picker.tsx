@@ -1,6 +1,5 @@
-import { getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
-import { HudField, HudLoading, HudNotice } from "@/ui/design-system/kit/hud-elements";
-import { useQuery } from "@tanstack/react-query";
+import { canonicalRealm } from "@bibliothecadao/eternum";
+import { HudField } from "@/ui/design-system/kit/hud-elements";
 
 export function RealmNumberPicker({
   value,
@@ -13,12 +12,7 @@ export function RealmNumberPicker({
 }) {
   const realmId = Number(value);
   const valid = Number.isInteger(realmId) && realmId >= 1 && realmId <= 8000;
-  const { data, isPending, error } = useQuery({
-    queryKey: ["canonical-realm-metadata", realmId],
-    queryFn: () => getCanonicalRealmMetadata(realmId),
-    enabled: valid,
-    staleTime: Infinity,
-  });
+  const realm = valid ? canonicalRealm(realmId) : null;
 
   return (
     <div className="mb-4 flex flex-col gap-2 rounded-xl border border-hud-line p-3">
@@ -35,18 +29,14 @@ export function RealmNumberPicker({
         disabled={disabled}
       />
       <div aria-live="polite" className="text-hud-body text-hud-ink">
-        {!valid ? (
-          <p>Choose a realm number, 1 to 8000.</p>
-        ) : error ? (
-          <HudNotice tone="bad" line={error.message} />
-        ) : isPending ? (
-          <HudLoading line="Loading realm…" />
-        ) : data ? (
+        {realm ? (
           <>
-            <p className="text-hud-strong">{data.name}</p>
-            <p className="text-hud-muted">{data.resources.join(", ")}</p>
+            <p className="text-hud-strong">{realm.name}</p>
+            <p className="text-hud-muted">{realm.resources.join(", ")}</p>
           </>
-        ) : null}
+        ) : (
+          <p>Choose a realm number, 1 to 8000.</p>
+        )}
       </div>
     </div>
   );

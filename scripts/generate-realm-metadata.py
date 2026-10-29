@@ -1,4 +1,5 @@
-"""Generate the immutable gameplay traits from the bundled 8,000 realm metadata records."""
+"""Generate the immutable gameplay traits from the 8,000 realm metadata records: the native world's packed traits, and
+the client's canonical table (each Realm's name, Order and resources), so the client never loads the records."""
 import argparse
 import json
 from pathlib import Path
@@ -6,6 +7,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "packages/core/src/data/full-realms.json"
 TARGET = ROOT / "config/deployer/clean/world/native/realm-traits.json"
+CLIENT_TARGET = ROOT / "packages/core/src/data/canonical-realms.json"
 
 
 # Canonical realm NFT IDs. These differ from the game resource IDs.
@@ -124,12 +126,29 @@ def realm_trait_records():
     return packed
 
 
+def canonical_realm_table():
+    """Each Realm by number less one: its name, its Order's id and its resources, as indexes into `resources`."""
+    realms = json.loads(SOURCE.read_text())
+    names = sorted(RESOURCE_IDS, key=RESOURCE_IDS.get)
+    rows = []
+    for realm_id in range(1, 8001):
+        realm = realms[str(realm_id)]
+        attributes = realm["attributes"]
+        order = next(ORDER_IDS[a["value"]] for a in attributes if a["trait_type"] == "Order")
+        resources = [RESOURCE_IDS[a["value"]] - 1 for a in attributes if a["trait_type"] == "Resource"]
+        rows.append([realm["name"], order, resources])
+    return {"resources": names, "realms": rows}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     records = realm_trait_records()
+    table = canonical_realm_table()
     if args.check:
         assert json.loads(TARGET.read_text()) == records, "Regenerate native realm metadata"
+        assert json.loads(CLIENT_TARGET.read_text()) == table, "Regenerate the client's canonical realms"
     else:
         TARGET.write_text(json.dumps(records, indent=2) + "\n")
+        CLIENT_TARGET.write_text(json.dumps(table, ensure_ascii=False, separators=(",", ":")) + "\n")

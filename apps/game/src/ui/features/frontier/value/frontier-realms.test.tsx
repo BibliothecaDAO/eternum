@@ -28,7 +28,7 @@ vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: 0,
 vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/eternum")>()),
   configManager: { getActiveGameId: () => 3 },
-  getCanonicalRealmMetadata: async (realmId: number) => ({ name: `Realm ${realmId}`, order: 1 }),
+  canonicalRealm: (realmId: number) => ({ name: `Realm ${realmId}`, order: 1, resources: [] }),
 }));
 
 import { FrontierRealms } from "./frontier-realms";
@@ -82,8 +82,6 @@ const openSheet = async () => {
       ),
     );
   await show();
-  // The Realms' names answer in their own turn.
-  for (let turn = 0; turn < 5; turn++) await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   unmount = async () => {
     await act(async () => root.unmount());
     container.remove();

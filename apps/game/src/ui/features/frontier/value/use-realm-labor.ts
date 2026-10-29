@@ -1,4 +1,3 @@
-import { useQueries } from "@tanstack/react-query";
 import { useState } from "react";
 
 import { useGame } from "@/hooks/context/game-context";
@@ -9,7 +8,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { recordClientActionSendStage } from "@/observability/client-action-latency";
 import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
-import { configManager, type ExpeditionRules, getCanonicalRealmMetadata } from "@bibliothecadao/eternum";
+import { canonicalRealm, configManager, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { feltEquals, type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
 import { useRealmStores } from "../realm-stores";
@@ -58,7 +57,7 @@ export const useRealmLabor = (
   const grants = realm
     ? [...setup.store.rows("LaborGrant")].filter((grant) => feltEquals(grant.account, realm.owner))
     : [];
-  const known = useKnownRealms([...new Set(grants.map((grant) => grant.realm_id))].toSorted((a, b) => a - b));
+  const known = knownRealms([...new Set(grants.map((grant) => grant.realm_id))].toSorted((a, b) => a - b));
   const laborRules = setup.store.get("LaborRules", { game_id: configManager.getActiveGameId() });
   if (!session || !laborRules || !realm) return undefined;
   const perRealm = Number(laborRules.amount);
@@ -94,15 +93,12 @@ export const useRealmLabor = (
 const LABOR_MODELS = ["LaborRules", "LaborGrant"] as const;
 const NO_REFUSALS = { wallet: null, realmIds: [] };
 
-/** Each known Realm with its canonical name and Order, in the order given; one still being read is left out. */
-const useKnownRealms = (realmIds: readonly number[]) =>
-  useQueries({
-    queries: realmIds.map((realmId) => ({
-      queryKey: ["canonical-realm-metadata", realmId],
-      queryFn: () => getCanonicalRealmMetadata(realmId),
-      staleTime: Infinity,
-    })),
-  }).flatMap(({ data }, index) => (data ? [{ realmId: realmIds[index], name: data.name, order: data.order }] : []));
+/** Each known Realm with its canonical name and Order, in the order given. */
+const knownRealms = (realmIds: readonly number[]) =>
+  realmIds.map((realmId) => {
+    const { name, order } = canonicalRealm(realmId);
+    return { realmId, name, order };
+  });
 
 /** What the relay did with a claim: the Realms it had granted, and those it refused as not in the linked wallet. */
 interface LaborClaimOutcome {
