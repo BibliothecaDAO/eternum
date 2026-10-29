@@ -58,7 +58,8 @@
  *   and Blitz's compact HUD (/lab/kit/unified/blitz, its Chat tab), the field is focused, the keyboard opens, a message
  *   is typed and sent: the field stays whole above the keyboard with the focus, the message sent shows just above it,
  *   the chat's tabs stay on screen, and the bars for moving between places step aside; and Frontier's Withdraw sheet
- *   (/lab/kit/hud/withdraw), upright with that keyboard and sideways (844×390) with a 200 px one: an amount typed, its
+ *   (/lab/kit/hud/withdraw), upright with that keyboard (once with the view panned down and back, a scroll alone, as
+ *   iOS Safari pans it) and sideways (844×390) with a 200 px one: an amount typed, its
  *   field stands whole above the keyboard, its confirm too once the sheet is scrolled to it, and the keyboard closed,
  *   the sheet stands where it stood; the keyboard closed, they are back. `keyboard` as a third
  *   argument runs these records alone.
@@ -1077,6 +1078,8 @@ const pressChatPlace = (selector) => `(() => {
 /** Frontier's Withdraw sheet, its amount typed with the keyboard open: upright on a phone, and held sideways. */
 const SHEET_PAGES = [
   { name: "upright", viewport: ["390", "844"], keyboard: KEYBOARD_PX },
+  // The keyboard opening on a view panned 100 px down the page, which then pans back: the sheet follows the scroll.
+  { name: "upright, panned and back", viewport: ["390", "844"], keyboard: KEYBOARD_PX, pan: 100 },
   { name: "sideways", viewport: ["844", "390"], keyboard: 200 },
 ];
 const SHEET_FIELD = ".ui-sheet input";
@@ -1099,7 +1102,13 @@ const proveSheetKeyboard = async (b, out, record, page) => {
   const closed = b.evaluate(SHEET_VIEW);
   const press = clickAsPlayer(b, SHEET_FIELD);
   record.presses.push({ press: "the amount", status: press === null ? "led" : press });
+  // Panned (iOS): the keyboard opens on a view already 100 px down the page, then the view pans back, a scroll alone.
+  if (page.pan) b.evaluate(`window.__pan(${page.pan})`);
   b.evaluate(`window.__keyboard(${page.keyboard})`);
+  if (page.pan) {
+    await sleep(300);
+    b.evaluate("window.__pan(0)");
+  }
   await sleep(500);
   b.run("type", SHEET_FIELD, "100");
   await sleep(300);
@@ -1122,7 +1131,7 @@ const proveSheetKeyboard = async (b, out, record, page) => {
     },
     { check: "the sheet ends above the keyboard, its top on screen", ok: onScreen(open.sheet, open.visible) },
   );
-  b.run("screenshot", join(out, `keyboard-withdraw-${page.name}.png`));
+  b.run("screenshot", join(out, `keyboard-withdraw-${page.name.replaceAll(/[ ,]+/g, "-")}.png`));
   b.evaluate("window.__keyboard(0)");
   await sleep(500);
   const after = b.evaluate(SHEET_VIEW);

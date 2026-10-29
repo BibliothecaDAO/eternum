@@ -1,5 +1,6 @@
 import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
+import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
 import { useSideways } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
@@ -132,13 +133,14 @@ const UnderSheet = ({ action, dock }: { action: ReactNode; dock: ReactNode }) =>
 );
 
 /**
- * An edge of an element on screen, read again whenever the element or the screen changes size, the part of it the
- * player sees (the visual viewport, which an on-screen keyboard shrinks) included.
+ * An edge of an element on screen, read again whenever the element or the screen changes size, and whenever the
+ * on-screen keyboard does (useKeyboardHeight: the bands end on it, so everything in them moves with it).
  */
 const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) => {
   const [value, setValue] = useState(0);
   const read = useRef(edge);
   read.current = edge;
+  const keyboard = useKeyboardHeight();
   useLayoutEffect(() => {
     const element = ref.current;
     if (!element) return;
@@ -148,12 +150,10 @@ const useEdge = (ref: RefObject<HTMLElement>, edge: (rect: DOMRect) => number) =
     const observer = typeof ResizeObserver !== "undefined" ? new ResizeObserver(measure) : null;
     observer?.observe(element);
     window.addEventListener("resize", measure);
-    window.visualViewport?.addEventListener("resize", measure);
     return () => {
       observer?.disconnect();
       window.removeEventListener("resize", measure);
-      window.visualViewport?.removeEventListener("resize", measure);
     };
-  }, [ref]);
+  }, [ref, keyboard]);
   return value;
 };

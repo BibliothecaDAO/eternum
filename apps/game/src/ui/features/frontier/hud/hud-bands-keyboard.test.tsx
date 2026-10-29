@@ -130,3 +130,30 @@ it("stands an amount sheet on the keyboard while it is open, and on the place ba
   await relayout();
   expect(sheetBottom()).toBe(SCREEN - BAR - 6);
 });
+
+it("keeps the sheet on the keyboard when the visible part of the page only scrolls, as iOS pans it", async () => {
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <Phone />
+      </MemoryRouter>,
+    ),
+  );
+  await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Amount"]')!.focus());
+  // The keyboard opens with the view panned 100 px down the page: 236 px of the page's foot hidden.
+  await act(async () => {
+    visual.height = 508;
+    visual.offsetTop = 100;
+    visual.dispatchEvent(new Event("resize"));
+  });
+  await relayout();
+  expect(sheetBottom()).toBe(SCREEN - 236 - 6);
+
+  // The view pans back, the keyboard as it was: only a scroll, no resize, no box changing size.
+  await act(async () => {
+    visual.offsetTop = 0;
+    visual.dispatchEvent(new Event("scroll"));
+  });
+  expect(document.documentElement.style.getPropertyValue("--keyboard")).toBe("336px");
+  expect(sheetBottom()).toBe(508 - 6);
+});

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 
 /** Less than this lost at the screen's foot is a browser bar coming and going, not an on-screen keyboard. */
 const KEYBOARD_LEAST_PX = 120;
@@ -11,6 +11,30 @@ const keyboardInsetOf = (layoutHeight: number, visual: { height: number; offsetT
   const inset = Math.round(layoutHeight - visual.height - visual.offsetTop);
   return inset >= KEYBOARD_LEAST_PX ? inset : 0;
 };
+
+/** The keyboard's height as last read, and who follows it: one reading, whatever changed it (a resize, a scroll). */
+let held = 0;
+const followers = new Set<() => void>();
+const hold = (inset: number) => {
+  if (inset === held) return;
+  held = inset;
+  for (const follow of followers) follow();
+};
+const follow = (change: () => void) => {
+  followers.add(change);
+  return () => followers.delete(change);
+};
+
+/**
+ * The on-screen keyboard's height now (0 closed), as useKeyboardInset last read it: for code that measures what the
+ * keyboard moves (a sheet's anchor), so it measures again on every change of it, whatever caused the change.
+ */
+export const useKeyboardHeight = (): number =>
+  useSyncExternalStore(
+    follow,
+    () => held,
+    () => 0,
+  );
 
 /**
  * The on-screen keyboard, for every layout that stands on the screen's foot: `--keyboard` on the root is how tall it is
@@ -28,6 +52,7 @@ export const useKeyboardInset = () =>
       root.style.setProperty("--keyboard", `${inset}px`);
       if (inset > 0) root.dataset.keyboard = "open";
       else delete root.dataset.keyboard;
+      hold(inset);
     };
     update();
     visual.addEventListener("resize", update);
@@ -37,5 +62,6 @@ export const useKeyboardInset = () =>
       visual.removeEventListener("scroll", update);
       root.style.removeProperty("--keyboard");
       delete root.dataset.keyboard;
+      hold(0);
     };
   }, []);

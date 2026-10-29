@@ -3,7 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it } from "vitest";
 
-import { useKeyboardInset } from "./use-keyboard-inset";
+import { useKeyboardHeight, useKeyboardInset } from "./use-keyboard-inset";
 
 /** A phone's visual viewport: the part of the 844 px layout the player sees, which a keyboard shrinks. */
 class Visual extends EventTarget {
@@ -18,10 +18,13 @@ class Visual extends EventTarget {
 
 let visual: Visual;
 let root: Root;
+/** The keyboard's height as the code that measures with it reads it, drawn. */
 const Probe = () => {
   useKeyboardInset();
-  return null;
+  return <output>{useKeyboardHeight()}</output>;
 };
+let page: HTMLDivElement;
+const read = () => Number(page.querySelector("output")!.textContent);
 const keyboard = () => ({
   inset: document.documentElement.style.getPropertyValue("--keyboard"),
   open: document.documentElement.dataset.keyboard ?? null,
@@ -32,7 +35,8 @@ beforeEach(() => {
   visual = new Visual();
   Object.defineProperty(window, "visualViewport", { configurable: true, value: visual });
   Object.defineProperty(document.documentElement, "clientHeight", { configurable: true, value: 844 });
-  root = createRoot(document.createElement("div"));
+  page = document.createElement("div");
+  root = createRoot(page);
   act(() => root.render(<Probe />));
 });
 afterEach(() => {
@@ -64,6 +68,19 @@ it("leaves the page as it was once gone", () => {
   act(() => visual.show(508));
   act(() => root.unmount());
   expect(keyboard()).toEqual({ inset: "", open: null });
-  root = createRoot(document.createElement("div"));
+  page = document.createElement("div");
+  root = createRoot(page);
   act(() => root.render(<Probe />));
+});
+
+it("tells the code that measures with it the height on every change, a scroll alone included", () => {
+  act(() => visual.show(508, 100));
+  expect(read()).toBe(236);
+  act(() => {
+    visual.offsetTop = 0;
+    visual.dispatchEvent(new Event("scroll"));
+  });
+  expect(read()).toBe(336);
+  act(() => visual.show(844));
+  expect(read()).toBe(0);
 });
