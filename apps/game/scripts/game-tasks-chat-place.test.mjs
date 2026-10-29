@@ -47,6 +47,22 @@ describe("the chat-place task", () => {
     expect(chatPlaceOpened(before, { ...after, camera: before.camera })).toBe(false);
   });
 
+  it("fails without both camera readings: a start never read is no proof the map moved", () => {
+    expect(chatPlaceOpened({ ...before, camera: null }, after)).toBe(false);
+    expect(chatPlaceOpened({ ...before, camera: undefined }, after)).toBe(false);
+    expect(chatPlaceOpened(before, { ...after, camera: null })).toBe(false);
+  });
+
+  it("fails unless the map ends centred on the place's tile, not a hex beside it", () => {
+    expect(chatPlaceOpened(before, { ...after, camera: at(41, 12) })).toBe(false);
+  });
+
+  it("fails when the chip pressed was another entity's: the map selected what was sent, not what was pressed", () => {
+    const otherChip = { ...before, sent: { key: "0x1ab:1/structure:9", here: true, opens: true } };
+    expect(chatPlaceOpened(otherChip, after)).toBe(false);
+    expect(chatPlaceOpened({ ...before, sent: { key: "0x1ab:1/army:7", here: true, opens: true } }, after)).toBe(false);
+  });
+
   it("fails when the map opened another of the player's realms than the one sent", () => {
     expect(chatPlaceOpened(before, { ...after, structure: OTHER_REALM, hex: at(5, 5), camera: at(5, 5) })).toBe(false);
   });
@@ -64,6 +80,8 @@ describe("the chat-place task", () => {
     expect(chatPlaceOpened(well, onWell)).toBe(true);
     expect(chatPlaceOpened(well, { ...onWell, layer: false })).toBe(false);
     expect(chatPlaceOpened(well, { ...onWell, hex: at(31, 33), camera: at(31, 33) })).toBe(false);
+    // A tile beside the Well selected, the camera on the Well: the selection is the Well's exact tile, or it is not.
+    expect(chatPlaceOpened(well, { ...onWell, hex: at(31, 30), camera: at(30, 30) })).toBe(false);
 
     const army = { ...before, sent: { key: "0x1ab:1/army:31", here: true, opens: true } };
     const onArmy = { ...after, structure: null, army: { id: 31, hex: at(8, 9), orders: 0 }, camera: at(8, 9) };

@@ -357,9 +357,10 @@ pnpm --dir apps/game prove:play --base-url <url> --game <chain>:<game> --profile
 
 The **boot** task enters the game and opens Chat at desktop and phone sizes. The **chat-place** task selects the
 player's realm, opens Chat, shares the realm with the place button, sends it to Global in words only that run writes,
-drags the map away, and presses the place in that message: the map must select that very place, the camera on it (a site
-on its layer), and on a phone show the map again. It requires the rendered map and Chat, and fails on page or console
-errors. It is a signed-in game proof, separate from the signed-out Play/shell fixtures. The same runner's
+drags the map away, and presses the place in that message: the map must select that very place (by its id; a site by its
+exact tile and layer), centred on its tile, and on a phone show the map again. It requires the rendered map and Chat,
+and fails on page or console errors. It is a signed-in game proof, separate from the signed-out Play/shell fixtures. The
+same runner's
 `blitz-build-window,blitz-farm,blitz-army,blitz-deploy,blitz-explore,blitz-transfer,blitz-transfer-window,blitz-transfer-gesture,blitz-standings,blitz-standings-detail`
 tasks play a seated Blitz player's orders through the HUD (`blitz-standings` also checks the leaderboard's window fits
 its table and rows, and at 1440 and 1920 wide that each column header is one title line over one points line, and

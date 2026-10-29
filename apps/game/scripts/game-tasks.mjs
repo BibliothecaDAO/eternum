@@ -196,7 +196,9 @@ const chatPlaceReading = (token) => `(() => {
   };
 })()`;
 
-const nearHex = (a, b) => Boolean(a && b) && Math.abs(a.col - b.col) <= 1 && Math.abs(a.row - b.row) <= 1;
+const isHex = (hex) => Number.isInteger(hex?.col) && Number.isInteger(hex?.row);
+const sameHex = (a, b) => isHex(a) && isHex(b) && a.col === b.col && a.row === b.row;
+const nearHex = (a, b) => isHex(a) && isHex(b) && Math.abs(a.col - b.col) <= 1 && Math.abs(a.row - b.row) <= 1;
 
 /** A place key (placeKey in the client): its game, then what it is. */
 const parsePlaceKey = (key) => {
@@ -209,24 +211,32 @@ const parsePlaceKey = (key) => {
 };
 
 /**
- * The chat-place task's outcome: the message this run sent came back carrying a place of this game that opens; the map
- * was elsewhere when it was pressed (the camera off the place); and pressing it selected that very place (the structure
- * or army by its id, a site by its tile), the camera on it and, for a site, on its layer, with the map in view again on
- * a phone (its chat page put away).
+ * The chat-place task's outcome, as the player sees the map: the message this run sent came back carrying a place of
+ * this game that opens; where the camera stood before the press and after it were both read; the camera stood off the
+ * place (more than a hex away) when it was pressed; and after it the map has that very place selected (the structure or
+ * army by its id, a site by its exact tile and its layer) and is centred on its tile, with the map in view again on a
+ * phone (its chat page put away).
  */
 export const chatPlaceOpened = (before, after) => {
   if (!before?.sent?.here || !before.sent.opens || !after) return false;
   const place = parsePlaceKey(before.sent.key);
-  if (!place) return false;
-  const reached =
+  if (!place || !isHex(before.camera) || !isHex(after.camera)) return false;
+  // The tile the place stands on, as the map gives it once that very place is selected; none for anything else.
+  const tile =
     place.kind === "structure"
-      ? after.structure?.id === place.entityId && after.hex
+      ? after.structure?.id === place.entityId
+        ? after.hex
+        : null
       : place.kind === "army"
-        ? after.army?.id === place.entityId && after.army.hex
-        : nearHex(after.hex, place.tile) && after.layer === place.depth && place.tile;
-  if (!reached) return false;
+        ? after.army?.id === place.entityId
+          ? after.army.hex
+          : null
+        : sameHex(after.hex, place.tile) && after.layer === place.depth
+          ? place.tile
+          : null;
+  if (!isHex(tile)) return false;
   const mapInView = !after.phone || !after.chatShown;
-  return !nearHex(before.camera, reached) && nearHex(after.camera, reached) && mapInView;
+  return !nearHex(before.camera, tile) && sameHex(after.camera, tile) && mapInView;
 };
 
 export const GAME_TASKS = {
