@@ -13,6 +13,8 @@ import { SceneName } from "./types";
 interface RendererFrameSceneController {
   getCurrentCameraView(): CameraView | undefined;
   getInteractionOverlayScene(): Scene;
+  /** A reward staged over everything (the world map's chest), drawn last; none while nothing is staged. */
+  getRewardStagePasses(): RendererOverlayPass[];
   getScene(): Scene;
   hasActiveLabelAnimations(): boolean;
   onFrameRendered?(atMs: number): void;
@@ -26,7 +28,6 @@ interface RendererFrameHudController {
   getCamera(): Camera;
   getScene(): Scene;
   getWeatherState(): unknown;
-  hasActiveLabelAnimations(): boolean;
   update(deltaTime: number, cycleProgress: number): void;
 }
 
@@ -183,10 +184,6 @@ function resolveRendererFrameLabelState(input: {
     labelsActive = input.hexceptionScene.hasActiveLabelAnimations();
   }
 
-  if (input.hudScene.hasActiveLabelAnimations()) {
-    labelsActive = true;
-  }
-
   return {
     cadenceView: resolveRendererFrameCadenceView(view),
     labelsActive,
@@ -222,6 +219,7 @@ function resolveRendererFrameOverlayPasses(input: {
       name: "hud",
       scene: input.hudScene.getScene(),
     },
+    ...input.sceneController.getRewardStagePasses(),
   ];
 }
 

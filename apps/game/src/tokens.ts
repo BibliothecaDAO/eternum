@@ -679,6 +679,20 @@ export const SEAT_COLOURS = [
   "#ab81ef",
 ] as const;
 
+/** How a playing viewer stands to a thing's owner: theirs, an ally's, another player's, or nobody's (a beast's). */
+export type Side = "own" | "ally" | "enemy" | "neutral";
+
+/**
+ * The colour each side is drawn in, the one rule the map's labels and the minimap both read (HUD_SHEET own, ally,
+ * enemy): nobody's is drawn as an enemy's, as everything not the viewer's or an ally's is red.
+ */
+export const SIDE_COLOURS: Record<Side, string> = {
+  own: "var(--hud-own)",
+  ally: "var(--hud-ally)",
+  enemy: "var(--hud-enemy)",
+  neutral: "var(--hud-enemy)",
+};
+
 /** A side told by seat: the seat's colour and the ink its initial is written in; nobody's (no seat) in neutral grey. */
 export type SeatSide = { seat: number; colour: string; ink: "dark" | "light" } | { seat: null; colour: string };
 

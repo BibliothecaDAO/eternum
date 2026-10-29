@@ -1,8 +1,8 @@
 /* The map plates (map-plates.tsx; map-labels rounds 2 to 6, the owner's pick) on the HUD sheet's tokens (tokens.ts
-   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. A thing's side is one of
-   three colours (HUD_SHEET own, ally, enemy): yours green, an ally's blue, anyone else's red, nobody's too. It reads as
-   a token's ring and plate, a plate's left bar and its player's name, and every stamina bar. To a watching viewer the
-   side is the player's seat colour instead, set on each label (map-plate-layer, `watchedSide`). Every reading is at the body size
+   HUD_SHEET, HUD_MODES, HUD_TYPE): the age's panel surface, line and accent, the sheet's face. A thing's side colour,
+   `--mp-side`, is set on each label from SIDE_COLOURS (tokens.ts, the minimap's too; `plateSideStyle`): yours green, an
+   ally's blue, anyone else's red, nobody's too; to a watching viewer, its player's seat colour. It reads as a token's
+   ring and plate, a plate's left bar and its player's name, and every stamina bar. Every reading is at the body size
    and every row the same height (owner, 17 October 2026: "it makes little sense to have the bottom row smaller"); a
    place's name is told by its weight and the accent, a count by its weight, a label or a time by its colour. */
 .mp {
@@ -19,17 +19,6 @@
 .mp * {
   pointer-events: none !important;
 }
-.mp [data-relation="own"] {
-  --mp-side: var(--hud-own);
-}
-.mp [data-relation="ally"] {
-  --mp-side: var(--hud-ally);
-}
-.mp [data-relation="enemy"],
-.mp [data-relation="neutral"] {
-  --mp-side: var(--hud-enemy);
-}
-
 .mp-at {
   position: absolute;
   left: 0;

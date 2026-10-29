@@ -4,11 +4,17 @@ interface TerrainCoverageCell {
   row: number;
 }
 
+/** What the current facts say of one cell: its biome once explored, whether terrain levels a pad under it, its surface. */
+export interface TerrainCellFacts {
+  projectedBiome: string | undefined;
+  occupied: boolean;
+  surfacePresentation: "ethereal" | undefined;
+}
+
 interface CaptureTerrainContentInput {
   cells: readonly TerrainCoverageCell[];
-  getProjectedBiome: (col: number, row: number) => string | undefined;
-  isOccupied: (col: number, row: number) => boolean;
-  getSurfacePresentation: (col: number, row: number) => "ethereal" | undefined;
+  /** One read per cell: each lookup into the projection costs a key build, and a page has thousands of cells. */
+  readCell: (col: number, row: number) => TerrainCellFacts;
   simulateAllExplored: boolean;
 }
 
@@ -31,14 +37,16 @@ export class WorldmapTerrainContent {
     return {
       revision: this.revision,
       commitMode: this.presentedRevision < this.revision ? "atomic" : "ambient",
-      cells: input.cells.map((cell) => ({
-        biomeKey:
-          input.getProjectedBiome(cell.col, cell.row) ?? (input.simulateAllExplored ? cell.biomeKey : "Outline"),
-        col: cell.col,
-        occupied: input.isOccupied(cell.col, cell.row),
-        surfacePresentation: input.getSurfacePresentation(cell.col, cell.row),
-        row: cell.row,
-      })),
+      cells: input.cells.map((cell) => {
+        const facts = input.readCell(cell.col, cell.row);
+        return {
+          biomeKey: facts.projectedBiome ?? (input.simulateAllExplored ? cell.biomeKey : "Outline"),
+          col: cell.col,
+          occupied: facts.occupied,
+          surfacePresentation: facts.surfacePresentation,
+          row: cell.row,
+        };
+      }),
     };
   }
 

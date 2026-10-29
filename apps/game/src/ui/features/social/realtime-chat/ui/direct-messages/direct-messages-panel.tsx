@@ -1,5 +1,5 @@
 import { formatClockTime } from "@bibliothecadao/types";
-import { Fragment, useEffect, useMemo, useRef } from "react";
+import { Fragment, useEffect, useMemo } from "react";
 
 import {
   useDirectMessageControls,
@@ -9,6 +9,8 @@ import {
 } from "../../hooks/use-realtime-chat";
 import type { DirectMessage } from "../../model/types";
 import { computeDateSeparators } from "../../model/message-grouping";
+import { useStickToLatest } from "@/hooks/use-stick-to-latest";
+import { JumpToLatest } from "../shared/jump-to-latest";
 import { MessageComposer } from "../shared/message-composer";
 import { UserAvatar } from "../shared/user-avatar";
 
@@ -45,7 +47,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   const identity = useRealtimeChatSelector((state) => state.identity);
   const identityId = identity?.playerId ?? "";
   const typingIndicators = useRealtimeTypingIndicators();
-  const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
   const selfAliases = useMemo(() => {
     const aliases: string[] = [];
@@ -79,8 +80,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     (state) => recipientId !== undefined && state.blockedPlayers.includes(recipientId),
   );
   const chatActions = useRealtimeChatSelector((state) => state.actions);
-  const topSentinelRef = useRef<HTMLDivElement | null>(null);
-  const isLoadingRef = useRef(false);
 
   useEffect(() => {
     if (resolvedThreadId) {
@@ -101,38 +100,6 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
     }
   }, [resolvedThreadId, thread, loadHistory]);
 
-  // Intersection Observer for auto-loading older messages on scroll
-  useEffect(() => {
-    const sentinel = topSentinelRef.current;
-    if (!sentinel || !thread?.hasMoreHistory) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const entry = entries[0];
-        if (entry.isIntersecting && !thread.isFetchingHistory && thread.hasMoreHistory && !isLoadingRef.current) {
-          isLoadingRef.current = true;
-          const currentScrollHeight = scrollContainerRef.current?.scrollHeight ?? 0;
-
-          loadHistory(thread.lastFetchedCursor ?? undefined).then(() => {
-            // Maintain scroll position after loading
-            requestAnimationFrame(() => {
-              if (scrollContainerRef.current) {
-                const newScrollHeight = scrollContainerRef.current.scrollHeight;
-                const scrollDiff = newScrollHeight - currentScrollHeight;
-                scrollContainerRef.current.scrollTop += scrollDiff;
-              }
-              isLoadingRef.current = false;
-            });
-          });
-        }
-      },
-      { threshold: 0.1, rootMargin: "100px" },
-    );
-
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [thread?.hasMoreHistory, thread?.isFetchingHistory, thread?.lastFetchedCursor, loadHistory]);
-
   const typing = useMemo(() => {
     if (!resolvedThreadId) return [];
     return Object.values(typingIndicators).filter(
@@ -143,45 +110,14 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
   const dmMessages = thread?.messages ?? NO_MESSAGES;
   const dateSeparators = useMemo(() => computeDateSeparators(dmMessages), [dmMessages]);
 
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-    const isAtBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
-    if (isAtBottom || thread?.unreadCount === 0) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [thread?.messages.length, thread?.unreadCount]);
-
-  // Scroll to bottom when panel becomes visible or resizes
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el || !resolvedThreadId) return;
-
-    // Delay to ensure content is rendered
-    const timer = setTimeout(() => {
-      el.scrollTop = el.scrollHeight;
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, [resolvedThreadId]);
-
-  // Scroll to bottom when container height changes (expand/collapse)
-  useEffect(() => {
-    const el = scrollContainerRef.current;
-    if (!el) return;
-
-    const resizeObserver = new ResizeObserver(() => {
-      // Scroll to bottom when height increases
-      requestAnimationFrame(() => {
-        if (el) {
-          el.scrollTop = el.scrollHeight;
-        }
-      });
-    });
-
-    resizeObserver.observe(el);
-    return () => resizeObserver.disconnect();
-  }, []);
+  const loadOlder = () => {
+    if (thread?.hasMoreHistory && !thread.isFetchingHistory) void loadHistory(thread.lastFetchedCursor ?? undefined);
+  };
+  const { scrollerRef, hasNewer, jumpToLatest } = useStickToLatest({
+    oldest: dmMessages[0]?.id,
+    newest: dmMessages.at(-1)?.id,
+    onNearOldest: loadOlder,
+  });
 
   return (
     <section className={`flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
@@ -205,11 +141,8 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
       <div className="flex-1 min-h-0 px-4 py-3">
         {!thread && <p className="text-hud-body text-hud-cue">Select a conversation to get started.</p>}
         {thread && (
-          <div className="flex h-full min-h-0 flex-col overflow-hidden">
-            <div ref={scrollContainerRef} className="flex-1 min-h-0 overflow-y-auto pr-1 scroll-smooth">
-              {/* Sentinel for auto-loading older messages */}
-              <div ref={topSentinelRef} className="h-1" />
-
+          <div className="relative flex h-full min-h-0 flex-col overflow-hidden">
+            <div ref={scrollerRef} className="flex-1 min-h-0 overflow-y-auto pr-1">
               {thread.isFetchingHistory && (
                 <div className="flex justify-center py-2">
                   <span className="text-hud-label text-hud-cue">Loading older messages...</span>
@@ -249,6 +182,7 @@ export function DirectMessagesPanel({ threadId, className }: DirectMessagesPanel
                 {thread.messages.length === 0 && <li className="text-hud-body text-hud-cue">No messages yet.</li>}
               </ul>
             </div>
+            {hasNewer && <JumpToLatest onJump={jumpToLatest} />}
             {typing.length > 0 && (
               <div className="px-4 py-1 text-hud-label text-hud-cue italic">
                 {typing.length === 1 ? "Someone is" : `${typing.length} people are`} typing

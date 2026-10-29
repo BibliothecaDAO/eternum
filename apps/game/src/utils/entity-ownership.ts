@@ -2,7 +2,7 @@ import { ContractAddress } from "@bibliothecadao/types";
 import { configManager, isViewerOwner, nativeGameModeOf } from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { gameKey, getActiveGame } from "@/runtime/world/store";
-import { seatSide, type SeatSide } from "@/tokens";
+import { seatSide, type SeatSide, type Side } from "@/tokens";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { isWatching } from "./can-issue-orders";
 
@@ -49,6 +49,13 @@ export function arePlayersAllied(
   if (!playerGuild) return false;
   return store.get("GuildMember", { game_id: configManager.getActiveGameId(), actor: owner })?.guild_id === playerGuild;
 }
+
+/**
+ * How a playing viewer stands to a thing, the one rule the map's labels and the minimap take its side from: theirs, a
+ * tribe member's (`arePlayersAllied`), nobody's (owner zero) or another player's.
+ */
+export const sideOf = (thing: { isMine: boolean; isAlly?: boolean; owner: { address: bigint } }): Side =>
+  thing.isMine ? "own" : thing.isAlly ? "ally" : thing.owner.address === 0n ? "neutral" : "enemy";
 
 /**
  * An open game's players in seat order (`useOpenGameSeats`), for the one game they were read for: its shard's chain id

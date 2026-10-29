@@ -134,4 +134,34 @@ describe("a name on the one tooltip", () => {
     act(() => void vi.advanceTimersByTime(500));
     expect(tip()).toBeNull();
   });
+
+  // Owner, 28 October 2026: "why is there a ruin". A ruin's chest, a full-screen button named Ruin, pinned its name
+  // at the screen's right edge.
+  it("names nothing that covers the whole screen, as a backdrop does, by mouse or by hold", () => {
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <button type="button" aria-label="Ruin" />
+        </>,
+      ),
+    );
+    const layer = host.querySelector<HTMLElement>('button[aria-label="Ruin"]')!;
+    const sized = (width: number, height: number) =>
+      (layer.getBoundingClientRect = () => ({ left: 0, top: 0, width, height }) as DOMRect);
+
+    sized(window.innerWidth, window.innerHeight);
+    pointer("pointerover", layer, "mouse");
+    expect(tip()).toBeNull();
+    pointer("pointerdown", layer, "touch");
+    act(() => void vi.advanceTimersByTime(500));
+    expect(tip()).toBeNull();
+    pointer("pointerup", layer, "touch");
+
+    // The same control as a thing on the screen still says its name.
+    sized(44, 44);
+    pointer("pointerover", host, "mouse");
+    pointer("pointerover", layer, "mouse");
+    expect(tip()).toBe("Ruin");
+  });
 });

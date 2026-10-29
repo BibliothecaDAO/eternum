@@ -15,6 +15,7 @@ vi.mock("@/hooks/context/identity-session", async (importOriginal) => ({
   useIdentitySession: () => ({ session: session.current }),
 }));
 
+import { layOutChatLists, scrollOf, scrollTo } from "@/hooks/use-stick-to-latest.test-support";
 import { LobbyChatPanel } from "./lobby-chat-panel";
 
 /** The room socket, as the test drives it: what the lobby sent, and a way to deliver what the room broadcasts. */
@@ -54,12 +55,14 @@ beforeEach(() => {
       Response.json({ messages: [message("b", "0x7", "on my way", 2), message("a", "0x64", "gl hf", 1)] }),
     ),
   );
-  Element.prototype.scrollTo = () => {};
+  undoLayout = layOutChatLists();
 });
 
+let undoLayout: () => void;
 let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
   await unmount?.();
+  undoLayout();
   vi.unstubAllGlobals();
   session.current = { user: { realmsId: "0x7" } };
 });
@@ -85,6 +88,8 @@ const mount = async (membership = "0x4a1:false:0:false") => {
     lines: () => [...container.querySelectorAll("li")].map((line) => line.textContent),
     field: () => container.querySelector("input"),
     text: () => container.textContent,
+    list: () => container.querySelector("ol")!,
+    jump: () => [...container.querySelectorAll("button")].find((button) => button.textContent === "New messages"),
   };
 };
 
@@ -98,6 +103,27 @@ it("reads the history and the room as one list, oldest first, each message once,
   // Its sender's name was asked as the row drew; the list redraws with the answer (the unclaimed rule here).
   await act(async () => new Promise((resolve) => setTimeout(resolve, 0)));
   expect(chat.lines()).toEqual(["Aldricgl hf", "Youon my way", "Lord 0065ready"]);
+});
+
+it("opens on the newest message, and leaves a reader scrolled up where they read, with a jump to the newest", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () =>
+      Response.json({
+        messages: Array.from({ length: 8 }, (_, index) => message(`m${index}`, "0x64", `line ${index}`, 8 - index)),
+      }),
+    ),
+  );
+  const chat = await mount();
+  expect(chat.lines().at(-1)).toContain("line 0");
+  expect(scrollOf(chat.list()).top).toBe(scrollOf(chat.list()).latest);
+  await act(async () => scrollTo(chat.list(), 0));
+  await act(async () => FakeRoom.last!.deliver({ type: "world:message", message: message("n", "0x64", "new", 9) }));
+  expect(chat.lines().at(-1)).toContain("new");
+  expect(scrollOf(chat.list()).top).toBe(0);
+  await act(async () => chat.jump()?.click());
+  expect(scrollOf(chat.list()).top).toBe(scrollOf(chat.list()).latest);
+  expect(chat.jump()).toBeUndefined();
 });
 
 it("shows the field only once the room says this reader may write, and sends the message to the slot's room", async () => {

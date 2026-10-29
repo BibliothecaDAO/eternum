@@ -134,6 +134,7 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
   const controller = {
     getCurrentCameraView: () => undefined,
     getInteractionOverlayScene: () => new Scene(),
+    getRewardStagePasses: () => [],
     getScene: () => scene,
     hasActiveLabelAnimations: () => false,
     setWeatherAtmosphereState: () => {},
@@ -157,7 +158,6 @@ async function harness(ended = false, discovered = false, revealWhilePreparing =
         getCamera: () => camera,
         getScene: () => new Scene(),
         getWeatherState: () => ({ intensity: 0, stormIntensity: 0 }),
-        hasActiveLabelAnimations: () => false,
         update,
       },
       labelRuntime: { render: () => {}, shouldRender: () => false },

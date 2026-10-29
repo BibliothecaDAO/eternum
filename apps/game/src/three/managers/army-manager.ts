@@ -3066,6 +3066,11 @@ ${
     this.hideAllLabels();
   }
 
+  /** The armies' character runtime, created ahead of the first army that needs it (the map's entry asks for it). */
+  public prepareCharacterRuntime(): void {
+    this.proceduralArmyCharacterLayer.prepare();
+  }
+
   public destroy() {
     if (this.isDestroyed) {
       console.warn("ArmyManager already destroyed, skipping cleanup");

@@ -97,6 +97,18 @@ def require_verified_backup(environment, directory, backup):
     temporary.replace(path)
 
 
+def remove_strays(project):
+    """Containers labelled into the shard's project that compose never made, such as the read-only proxy backup.py
+    quiesce runs in an older proxy's place: compose down neither counts them as orphans nor removes the network
+    they hold, so they go first."""
+    listed = subprocess.run([*shard.DOCKER, "ps", "-a", "--filter", f"label=com.docker.compose.project={project}",
+                             "--format", '{{.ID}} {{.Label "com.docker.compose.config-hash"}}'],
+                            capture_output=True, text=True, check=True).stdout.splitlines()
+    strays = [line.split()[0] for line in listed if len(line.split()) == 1]
+    if strays:
+        subprocess.run([*shard.DOCKER, "rm", "-f", *strays], capture_output=True, text=True, check=True)
+
+
 def complete_verification_record(environment):
     """A finished teardown keeps its record under its chain, so the next teardown starts from none."""
     path = verification_record(environment)
@@ -117,6 +129,8 @@ def teardown(arguments, report_stage):
         if directory.exists():
             report_stage("stop and remove volumes")
             if (directory / "compose.yml").exists():
+                if (directory / ".env").exists():
+                    remove_strays(shard_identity(directory)["project"])
                 subprocess.run([*deploy.compose(directory), "down", "--volumes", "--remove-orphans"], check=True,
                                stdout=sys.stdout, stderr=sys.stderr)
             report_stage("keep deployment logs")

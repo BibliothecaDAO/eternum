@@ -2,7 +2,8 @@ import { ec } from "starknet";
 import { dlopen, FFIType, ptr } from "bun:ffi";
 import { readPrivateJson } from "../scripts/private-file";
 import { fileURLToPath } from "node:url";
-import { felt, MAX_TRANSACTION_BYTES, STAMP_TAG, type PlayInvoke } from "./transaction";
+import { SHARD_RPC_MAX_REQUEST_BYTES } from "../../../packages/value-ledger/src/shard-rpc-limits";
+import { felt, STAMP_TAG, type PlayInvoke } from "./transaction";
 
 const ORDER = ec.starkCurve.CURVE.n;
 function bytes(value: string): Uint8Array {
@@ -41,7 +42,7 @@ export function openProver(keyFile: string, chainId: string): StampProvider & { 
     publicKey: { x: hex(point.subarray(0, 32)), y: hex(point.subarray(32)) },
     stamp(transaction: PlayInvoke) {
       const raw = new TextEncoder().encode(JSON.stringify(transaction));
-      if (closed || raw.length > MAX_TRANSACTION_BYTES) throw new Error("Transaction refused");
+      if (closed || raw.length > SHARD_RPC_MAX_REQUEST_BYTES) throw new Error("Transaction refused");
       const output = new Uint8Array(192);
       if (library.symbols.realms_vrf_stamp(ptr(raw), raw.length, ptr(key), ptr(chain), ptr(output)) !== 0)
         throw new Error("Transaction refused");

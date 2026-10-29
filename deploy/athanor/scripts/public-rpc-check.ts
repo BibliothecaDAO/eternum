@@ -1,9 +1,5 @@
 import { hash } from "starknet";
-const WRITE_METHODS = [
-  "starknet_addInvokeTransaction",
-  "starknet_addDeployAccountTransaction",
-  "starknet_addDeclareTransaction",
-];
+import { WRITE_METHODS } from "./public-rpc";
 
 export async function assertPublicRpcBoundary(
   url: string,
@@ -100,7 +96,7 @@ export async function assertPublicRpcBoundary(
   return {
     url,
     chainId: read.result,
-    rejected: WRITE_METHODS,
+    rejected: [...WRITE_METHODS],
     mixedBatchesRejected: true,
     websocketRejected: true,
     refusedShapes,

@@ -5,7 +5,8 @@ import { activeMapLayer } from "@/three/map-layer";
 import { resolveChestTransition } from "../rewards/chest-transition-policy";
 import { ChestModelPath } from "@/three/constants";
 import { RewardTileModel } from "../rewards/reward-tile-model";
-import { ChestTransitions } from "../rewards/chest-transitions";
+import { type ChestGlow, type ChestPresentationBeats, ChestTransitions } from "../rewards/chest-transitions";
+import { chestRewardPrizes } from "../rewards/chest-reward-reveal";
 import type { PipelineCompiler } from "../pipeline-compiler";
 import { FELT_CENTER } from "@/ui/config";
 import { Position, nativeGameModeOf, configManager, type ChestReward } from "@bibliothecadao/eternum";
@@ -21,6 +22,8 @@ import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { CameraView, HexagonScene } from "../scenes/hexagon-scene";
 import { resolveWorldmapContentLadder, type WorldmapContentLadder } from "../scenes/worldmap-content-ladder";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain } from "../terrain/terrain-surface";
+import { type ReadyStage, RewardStage } from "../rewards/reward-stage";
+import type { RendererOverlayPass } from "../renderer-backend";
 import { RenderChunkSize } from "../types/common";
 import { getRenderBounds } from "../utils/chunk-geometry";
 import { getWorldPositionForHex } from "../utils";
@@ -60,6 +63,8 @@ export class ChestManager {
   private chestModel?: RewardTileModel;
   private modelLoadPromise?: Promise<void>;
   private chestTransitions?: ChestTransitions;
+  /** The reward stage's own chest, drawn over the map in the stage's pass. */
+  private stagedChest?: ChestTransitions;
   private renderedChunk: string | null = null;
   private renderChunkSize: RenderChunkSize;
   private hexagonScene?: HexagonScene;
@@ -223,6 +228,8 @@ export class ChestManager {
     }
 
     this.chestTransitions?.dispose();
+    this.rewardStage.dispose();
+    this.stagedChest?.dispose();
 
     // Clean up points renderer
     if (this.pointsRenderer) {
@@ -255,22 +262,28 @@ export class ChestManager {
   private async loadModel(): Promise<void> {
     let model: RewardTileModel | undefined;
     let transitions: ChestTransitions | undefined;
+    let staged: ChestTransitions | undefined;
     try {
       const gltf = await gltfLoader.loadAsync(ChestModelPath);
       model = new RewardTileModel(gltf, MAX_INSTANCES);
       transitions = new ChestTransitions(gltf);
+      staged = new ChestTransitions(gltf, 1);
       await this.compilePipelines(model.group, this.scene);
       await transitions.prepare(this.compilePipelines, this.scene);
+      await staged.prepare(this.compilePipelines, this.rewardStage.scene);
       if (this.isDestroyed) {
+        staged.dispose();
         transitions.dispose();
         model.dispose();
         return;
       }
       this.chestModel = model;
       this.chestTransitions = transitions;
+      this.stagedChest = staged;
       this.scene.add(model.group, transitions.group);
       this.applyContentLadder(this.contentLadder);
     } catch (error) {
+      staged?.dispose();
       transitions?.dispose();
       model?.dispose();
       throw error;
@@ -310,13 +323,42 @@ export class ChestManager {
     const key = this.transitionKey(tile);
     const opened = this.chestTransitions.start(key, "open", this.chestPlacement(tile), this.chestModel.time);
     if (!opened) return false;
-    this.chestTransitions.revealReward(key, reward);
+    this.chestTransitions.revealReward(key, chestRewardPrizes(reward));
     const chest = this.worldSpatialProjection.getChestsAtHex(hexCoords)[0];
     const instance = chest ? this.chestInstanceIndices.get(chest.entityId) : undefined;
     if (instance !== undefined) this.chestModel.removeInstance(instance);
     this.updateChestMarkers();
     return true;
   }
+
+  /**
+   * A reward's chest, staged over everything at the centre of the screen (RewardStage): it arrives, opens by itself in
+   * `glow`, and goes, telling `beats` as it reaches each. A chest already staged there ends first. Nothing on the map is
+   * replaced or held. The chest's model loads first when no chest on the map has needed it yet; a request ended or
+   * superseded meanwhile stages nothing.
+   */
+  public presentAtScreenCentre(beats: ChestPresentationBeats, glow?: ChestGlow): Promise<boolean> {
+    return this.rewardStage.present(beats, glow);
+  }
+
+  /** Ends the staged chest and any still loading, as when the map is left mid-moment. */
+  public endScreenCentrePresentation(): void {
+    this.rewardStage.end();
+  }
+
+  /** The reward stage's passes, drawn over the map while a chest is staged; none otherwise. */
+  public getRewardStagePasses(): RendererOverlayPass[] {
+    return this.rewardStage.passes();
+  }
+
+  /** The stage's chest once its model is ready; none when the manager is gone. */
+  private readonly prepareRewardStage = async (): Promise<ReadyStage | null> => {
+    await this.prepareModel();
+    if (this.isDestroyed || !this.chestModel || !this.stagedChest) return null;
+    return { transitions: this.stagedChest, time: this.chestModel.time };
+  };
+
+  private readonly rewardStage = new RewardStage(this.prepareRewardStage);
 
   private transitionKey(chest: Pick<ChestSpatialRenderable, "hexCoords">): string {
     return `${chest.hexCoords.col},${chest.hexCoords.row}`;
@@ -666,10 +708,12 @@ export class ChestManager {
   }
 
   public update(deltaTime: number) {
-    const cameraPosition = this.hexagonScene?.getCamera().position;
+    const camera = this.hexagonScene?.getCamera();
+    const cameraPosition = camera?.position;
     const nightAmount = resolveRewardNightAmount(useUIStore.getState().cycleProgress);
     this.chestModel?.updatePresentation(nightAmount, cameraPosition);
     this.chestModel?.updateAnimations(deltaTime);
+    if (this.chestModel && camera) this.rewardStage.update(deltaTime, this.chestModel.time, camera);
     if (
       this.chestModel &&
       this.chestTransitions?.update(deltaTime, this.chestModel.time, cameraPosition, nightAmount)
