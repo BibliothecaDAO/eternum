@@ -45,9 +45,7 @@ export async function startResultCapture(devTools, timeOrigin) {
  * highlights, is not this result). The screen at a moment is the last frame sent by then: a still page sends no frame
  * until it changes again. It was shown at the first frame where half of them did. The verdict fails when too
  * few pixels changed by then (the result was absent, or later than three frames), or when it was shown more than a frame
- * before its mark (the mark came late). A result its place changes again after (`onset`: a demolished building's
- * plot, which the Build sheet's ghost fills next) is what changed there by three frames after the mark, not its last
- * look. Frames are the page's own (`pageFrames`, each frame's start): a slow frame is one frame, and it widens the
+ * before its mark (the mark came late). Frames are the page's own (`pageFrames`, each frame's start): a slow frame is one frame, and it widens the
  * window only where it falls. The frames around it are written to `dir`.
  */
 export async function proveResultOnScreen({ frames, region, target, onset, before, visible, pageFrames, dir }) {
@@ -60,7 +58,7 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
     return { shown: false, reason: "no frame between the facts and three frames after the mark", region };
   }
   const [base, final, atSettled] = await Promise.all(
-    [reference, onset ? settled : last, settled].map((frame) => regionGrey(frame, region)),
+    [reference, last, settled].map((frame) => regionGrey(frame, region)),
   );
   const resultPixels = [];
   for (let index = 0; index < base.length; index += 1) {

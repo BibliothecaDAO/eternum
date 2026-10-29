@@ -843,9 +843,9 @@ const FIRST_RING_CANDIDATES = [
 ];
 
 /**
- * The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. The plot changes again after
- * it (the Build sheet's highlight, then its chosen building's ghost), so the result is what changed there by three
- * frames after the mark, not the plot's last look.
+ * The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. Its screen proof is open: the
+ * plot changes again after it (the Build sheet's highlight, then its chosen building's ghost), and the proof reads the
+ * plot's last look, so a capture run fails it.
  */
 function buildingDemolished({ actionLatency }) {
   const removed = (actionLatency.chainAnswers ?? [])
@@ -853,7 +853,7 @@ function buildingDemolished({ actionLatency }) {
     .at(-1)
     ?.answered.find(({ model, value }) => model === "Building" && value === null);
   const [, , col, row] = removed?.key.split(":") ?? [];
-  return col && { presented: `building-gone:${col},${row}`, onset: true };
+  return col && { presented: `building-gone:${col},${row}` };
 }
 
 /**

@@ -78,34 +78,26 @@ describe("proveResultOnScreen", () => {
   });
 });
 
-/** A 40×40 frame, dark, lit from `resultAt`, then the same pixels mid-grey from `laterAt` (page ms). */
-const relitFrameAt = async (t, { resultAt, laterAt }) => {
-  const level = t >= laterAt ? 120 : t >= resultAt ? 220 : 20;
+/** A 40×40 frame, dark, lit from `litAt` until `backAt` (page ms): a plot's highlight, the building on it unchanged. */
+const highlightAt = async (t, { litAt, backAt }) => {
+  const level = t >= litAt && t < backAt ? 220 : 20;
   const jpeg = await sharp(Buffer.alloc(40 * 40, level), { raw: { width: 40, height: 40, channels: 1 } })
     .jpeg({ quality: 90 })
     .toBuffer();
   return { t, width: 40, jpeg };
 };
 
-describe("proveResultOnScreen on a place that changes again after the result", () => {
-  const proveRelit = async (lit, onset) =>
-    proveResultOnScreen({
-      frames: await Promise.all(PAGE_FRAMES.map((t) => relitFrameAt(t, lit))),
+describe("proveResultOnScreen on a passing highlight", () => {
+  it("fails a region that lights up at the mark and returns, its result never drawn (review 7)", async () => {
+    const proof = await proveResultOnScreen({
+      frames: await Promise.all(PAGE_FRAMES.map((t) => highlightAt(t, { litAt: 160, backAt: 240 }))),
       region,
-      onset,
       before: 100,
       visible: 160,
       pageFrames: PAGE_FRAMES,
       dir,
     });
-
-  it("holds the result from its first change, its place's last look being another's", async () => {
-    expect(await proveRelit({ resultAt: 160, laterAt: 320 }, true)).toMatchObject({ shown: true, lagMs: 0 });
-    expect(await proveRelit({ resultAt: 160, laterAt: 320 }, false)).toMatchObject({ shown: false });
-  });
-
-  it("fails it when nothing changed there by three frames after its mark", async () => {
-    expect(await proveRelit({ resultAt: 320, laterAt: 360 }, true)).toMatchObject({ shown: false });
+    expect(proof).toMatchObject({ shown: false });
   });
 });
 

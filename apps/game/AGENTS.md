@@ -226,15 +226,16 @@ frames after, counting the page's own frames, so a slow frame is one frame; the 
 sent by then); an explore names its tile's ground as its target instead, which must read explored (its mean grey past
 half the way from its fog to its last look) within that window, whatever changed round it; a chest names its body where
 the map drew it (a phone's from the selected hex the page reports, `window.__eternumMapSelection.hexOnScreen`), which
-must start to change (its grey 16 levels from before) in the window, as the chest sinks away seconds later, and a
-demolished building's result is what changed on its plot by three frames after the mark, as the Build sheet's ghost
-fills it next; a season's entry names the whole screen, which turns from the doorway to the map. A result's place past
-the screen's edge fails the step. The frames around it are kept. Each run writes `click-to-result.md`, each action's
-segments and total as median (min–max) over its quiet runs), `--compare <summary.json>` (fails when boot regresses, when
-an action the baseline timed has no timed run or a renderer mode it timed is missing, or when an action's
-press-to-result median is past the slowest run of that baseline by more than a frame; actions the baseline never timed
-are listed as new; `scripts/client-playtest/baselines/` keeps the lab's, one per step list and device, measured on the
-lanes' machine), `--headed`. Paths are taken from where the command is run.
+must start to change (its grey 16 levels from before) in the window, as the chest sinks away seconds later; a season's
+entry names the screen's lower third, below the doorway's steps, which turns from the doorway's painting to the map; a
+demolished building's proof is open (the Build sheet's ghost fills its plot next, and the proof reads the plot's last
+look), so a capture run fails it. A result's place past the screen's edge fails the step. The frames around it are kept.
+Each run writes `click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
+`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
+mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
+than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
+one per step list and device, measured on the lanes' machine), `--headed`. Paths are taken from where the command is
+run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
