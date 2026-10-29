@@ -166,6 +166,33 @@ const verbAloneAtRight = (within, verb) => `(() => {
     (others.length === 0 || Math.abs(Math.min(...others.map((other) => other.left)) - left) <= 1);
 })()`;
 
+/**
+ * What the chat-place task reads where its last press is given and after it: the map's selection (its structure, its
+ * hex) and where the camera looks, and the place in the room's last message (its name, whether it opens).
+ */
+const CHAT_PLACE_READING = `(() => {
+  const map = window.__eternumMapSelection ?? {};
+  const chip = [...document.querySelectorAll('section[aria-label="Chat"] li[data-message-id] [data-place]')].at(-1);
+  return {
+    structure: map.structure ?? null,
+    hex: map.hex ?? null,
+    camera: map.camera ?? null,
+    chip: chip ? { name: chip.getAttribute("data-place"), opens: !(chip.querySelector("button")?.disabled ?? true) } : null,
+  };
+})()`;
+
+/**
+ * The chat-place task's outcome: the message sent came back with its place as a chip that opens, and pressing it left
+ * one of the player's own structures selected with the camera on its hex.
+ */
+export const chatPlaceOpened = (before, after) =>
+  Boolean(before?.chip?.opens) &&
+  Boolean(after?.structure?.ownedByViewer) &&
+  after.hex !== null &&
+  after.camera !== null &&
+  Math.abs(after.camera.col - after.hex.col) <= 1 &&
+  Math.abs(after.camera.row - after.hex.row) <= 1;
+
 export const GAME_TASKS = {
   // The boot smoke: a signed-in player enters, the HUD and its lazy chat load, and the page raises no error (every
   // step fails on one). A rollout runs it against the deployed build.
@@ -176,6 +203,29 @@ export const GAME_TASKS = {
     // The desktop's Chat strip, or a phone's Chat tab.
     presses: [{ name: "Chat", text: "^Chat( strip)?$" }],
     done: `document.querySelector('section[aria-label="Chat"]') !== null`,
+  },
+  // Sharing a place in chat, as a player does it: the realm selected on the map, Chat opened (on a phone its tab puts
+  // the realm's card away), the place button, words, Send; then the place in the message that comes back, pressed.
+  "chat-place": {
+    goal: "Share the selected realm in Global and open it from the message that comes back",
+    layouts: PHONE_AND_DESKTOP,
+    view: "map",
+    presses: [
+      { name: "the next structure", key: "Shift+Tab" },
+      { name: "Chat", text: "^Chat( strip)?$" },
+      { name: "the place button", within: 'section[aria-label="Chat"]', text: "^Share the selected place$" },
+      { name: "words", fill: 'section[aria-label="Chat"] input[aria-label="Message"]', value: "hold here" },
+      { name: "Send", within: 'section[aria-label="Chat"] form', text: "^Send$" },
+      {
+        name: "the place in the message sent",
+        within: 'section[aria-label="Chat"] li[data-message-id]:last-child [data-place]',
+        text: ".",
+      },
+    ],
+    reading: CHAT_PLACE_READING,
+    changes: "the map opens on the shared realm, selected",
+    expect: chatPlaceOpened,
+    done: `window.__eternumMapSelection?.structure?.ownedByViewer === true`,
   },
   "gate-build": {
     goal: "Before play opens: press Build on the action strip",

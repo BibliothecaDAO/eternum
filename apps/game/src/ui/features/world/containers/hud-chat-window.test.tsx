@@ -17,6 +17,10 @@ vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => fixture.sign
 const NAMES = vi.hoisted(() => ({ text: () => "Ada", reading: () => ({ state: "waiting" as const, text: "…" }) }));
 vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada", usePlayerNames: () => NAMES }));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
+// No game here: a place reads as its message has it (chat-places.test.tsx reads places in a game).
+vi.mock("@/ui/features/social/realtime-chat/ui/shared/use-chat-map", () => ({
+  usePlaceReader: () => (place: { name: string; icon: string }) => ({ ...place, open: null, elsewhere: true }),
+}));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: {} }));
 vi.mock("@bibliothecadao/types", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@bibliothecadao/types")>()),

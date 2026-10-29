@@ -6,7 +6,7 @@ import { getBlockTimestamp } from "@bibliothecadao/eternum";
 import { LAB_SEAT_PROFILES, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { placeMetadata, sharedPlaceOf } from "@/ui/features/social/realtime-chat/model/place";
 import { replyMetadata } from "@/ui/features/social/realtime-chat/model/reply";
-
+import { setActiveGame } from "@/runtime/world/store";
 import { useRealtimeChatStore } from "@/ui/features/social/realtime-chat/model/store";
 import type {
   DirectMessage,
@@ -19,9 +19,10 @@ import { EventsPanel } from "@/ui/features/world/hud/events-card";
 import { SelectedWorldmapEntity } from "@/ui/features/world/components/actions/selected-worldmap-entity";
 import { RailFrame, TileDetails } from "@/ui/features/world/hud/guided-rail";
 import { BuildTag } from "@/ui/layouts/build-tag";
-import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
+import { GLOBAL_CHAT_CHANNEL_ID, TileOccupier } from "@bibliothecadao/types";
 import { type ReactNode, useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
+import { labGameProfile } from "./fixture-game";
 import { TileGame } from "./panels-lab";
 
 /**
@@ -85,19 +86,45 @@ const RoomPlayers = ({ children }: { children: ReactNode }) => {
 };
 
 /**
- * Places in the room, as sharing makes them: message 32 carries the lab game's realm (sharedPlaceOf on its store, as the
- * place button reads it), message 31 an army since gone, struck through. With `select`, the realm stands selected on the
- * map, so the place button shares it; the rail keeps its picked army's tile.
+ * Places in the room, as sharing makes them (sharedPlaceOf on the lab game's store, as the place button reads it):
+ * message 32 carries the lab game's realm, 30 a Well on a tile beside it, 31 an army since gone (struck through) and 29
+ * a realm of the same number in another game (named with its game, opening nothing here). With `select`, the realm
+ * stands selected on the map, so the place button shares it; the rail keeps its picked army's tile.
  */
 const LabPlaces = ({ select = false, children }: { select?: boolean; children: ReactNode }) => {
   const { store } = useGame().setup;
   useState(() => {
-    const realm = sharedPlaceOf(store, 1, LAB_REALM, getBlockTimestamp().currentBlockTimestamp);
-    const gone = { kind: "army" as const, entityId: 999, name: "Iron Wardens", icon: "knight-t2" as const, at: 0 };
+    const profile = labGameProfile(FRONTIER_PRESET);
+    setActiveGame(profile);
+    const game = { chainId: profile.chainId, gameId: profile.gameId, name: profile.name };
+    store.applyFacts([
+      {
+        model: "TileOccupancy",
+        key: "0x1ee",
+        value: {
+          game_id: 1,
+          alt: false,
+          ...LAB_WELL,
+          entity_id: 901,
+          category: TileOccupier.Well,
+          is_structure: false,
+        },
+      },
+    ] as never);
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    const realm = sharedPlaceOf(store, game, LAB_REALM, false, now);
+    const well = sharedPlaceOf(store, game, { kind: "hex", hex: LAB_WELL }, false, now);
+    const gone = { kind: "army", entityId: 999, game, name: "Iron Wardens", icon: "knight-t2", at: 0 } as const;
+    const elsewhere = { ...realm!, game: { chainId: "0x2b", gameId: 4, name: "Frontier 4" }, name: "Moondeep" };
     useRealtimeChatStore.setState((state) => {
       const zone = state.worldZones[GLOBAL_CHAT_CHANNEL_ID];
-      if (!zone || !realm) return state;
-      const placed: Record<string, object> = { "lab-31": placeMetadata(gone), "lab-32": placeMetadata(realm) };
+      if (!zone || !realm || !well) return state;
+      const placed: Record<string, object> = {
+        "lab-29": placeMetadata(elsewhere),
+        "lab-30": placeMetadata(well),
+        "lab-31": placeMetadata(gone),
+        "lab-32": placeMetadata(realm),
+      };
       const messages = zone.messages.map((message) =>
         placed[message.id] ? { ...message, metadata: { ...message.metadata, ...placed[message.id] } } : message,
       );
@@ -108,8 +135,10 @@ const LabPlaces = ({ select = false, children }: { select?: boolean; children: R
   return children;
 };
 
-/** The lab game's realm, as the map selects it. */
+/** The lab game's realm, as the map selects it; a Well on a tile of its own. */
 const LAB_REALM = { kind: "structure" as const, entityId: 7 };
+const LAB_WELL = { col: 12, row: 12 };
+const FRONTIER_PRESET = 5;
 
 const noop = () => undefined;
 
@@ -168,6 +197,8 @@ const ROOM_PLAYERS = Object.keys(LAB_SEAT_PROFILES);
  * Realms that asks first), a reply to the message before it, a mention of another player and one of the lab's own.
  */
 const MENTIONS: Record<number, string> = {
+  29: "on the other front:",
+  30: "a Well here:",
   31: "yesterday's army is gone:",
   32: "meet me at",
   33: "sent 1,200 knights at the ruin, 3,046 left at home",

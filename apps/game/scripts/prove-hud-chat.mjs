@@ -32,9 +32,10 @@
  *   pnpm --dir apps/game prove:chat <base-url> <out-dir>
  *
  * - places, at 1440×900 and on a phone (390×844), in the open pane: the room's places are chips, painted; the lab realm
- *   shared today opens and the army gone since is struck through and opens nothing; the place button shares the realm
- *   selected on the map, over the field, and the message sent comes back carrying it as a chip that opens. (Opening one
- *   moves the game's route, which the lab has not; the chat's tests press it.)
+ *   shared today and a Well open, the army gone since is struck through and opens nothing, and the realm's number in
+ *   another game names that game and opens nothing; the place button shares the realm selected on the map, over the
+ *   field, and the message sent comes back carrying it as a chip that opens. (Opening one moves the game's route, which
+ *   the lab has not; the chat's tests press it, and the game proof's chat-place task in a game.)
  *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
  * check fails.
@@ -475,7 +476,10 @@ const PLACES = `(() => {
   const chip = (element) => {
     const image = element.querySelector("img");
     return {
+      id: element.closest("li[data-message-id]")?.getAttribute("data-message-id") ?? null,
       name: element.getAttribute("data-place"),
+      elsewhere: element.hasAttribute("data-elsewhere"),
+      words: element.textContent,
       struck: getComputedStyle(element).textDecorationLine.includes("line-through"),
       opens: !(element.querySelector("button")?.disabled ?? true),
       painted: Boolean(image && image.complete && image.naturalWidth > 0),
@@ -498,16 +502,27 @@ const provePlaces = async (b, out, record, phone) => {
   const tag = phone ? "phone" : "desktop";
   record.measures = { history: b.evaluate(PLACES) };
   const { chips, share } = record.measures.history;
-  const today = chips.find((chip) => chip.opens);
+  const of = (id) => chips.find((chip) => chip.id === id);
+  const [elsewhere, well, gone, today] = ["lab-29", "lab-30", "lab-31", "lab-32"].map(of);
   record.checks.push(
     {
       check: "the room's places are chips, each painted",
-      ok: chips.length >= 2 && chips.every((chip) => chip.painted),
+      ok: chips.length >= 4 && chips.every((chip) => chip.painted),
     },
-    { check: "a place shared today opens, and is not struck through", ok: Boolean(today) && !today.struck },
+    { check: "the realm shared today opens, and is not struck through", ok: Boolean(today?.opens) && !today.struck },
+    { check: "the Well shared today opens, named as the map names it", ok: well?.name === "Well" && well.opens },
     {
       check: "the army gone since is struck through and opens nothing",
-      ok: chips.some((chip) => chip.name === "Iron Wardens" && chip.struck && !chip.opens),
+      ok: gone?.name === "Iron Wardens" && gone.struck && !gone.opens,
+    },
+    {
+      check: "the realm's number in another game names that game, and opens nothing here",
+      ok:
+        elsewhere?.elsewhere === true &&
+        elsewhere.name === "Moondeep" &&
+        elsewhere.words.includes("in Frontier 4") &&
+        !elsewhere.struck &&
+        !elsewhere.opens,
     },
     { check: "the place button can share the realm selected on the map", ok: share?.enabled === true },
   );

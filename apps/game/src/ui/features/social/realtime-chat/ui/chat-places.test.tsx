@@ -21,31 +21,52 @@ vi.mock("@/hooks/helpers/use-navigate", async (original) => ({
   ...(await original<typeof import("@/hooks/helpers/use-navigate")>()),
   useSelectArmyOnMap: () => moved.selectArmy,
 }));
+// Signed in, as the strip reads it.
+vi.mock("@/hooks/context/identity-session", async (original) => ({
+  ...(await original<typeof import("@/hooks/context/identity-session")>()),
+  useIdentitySession: () => ({ status: "signed-in", session: { user: { id: "u1", realmsId: "0x7", name: "You" } } }),
+}));
+// The room is the test's: no connection opens one (the strip's own hook, useGameChat, stays the real one).
+vi.mock("@/ui/features/world/containers/hud-chat-window", async (original) => ({
+  ...(await original<typeof import("@/ui/features/world/containers/hud-chat-window")>()),
+  GameChatConnection: () => null,
+}));
 // These read places, with no one to mention.
 vi.mock("../hooks/use-chat-mentions", () => ({ useChatMentions: () => ({ me: null, choices: [], names: [] }) }));
 
-const { GLOBAL_CHAT_CHANNEL_ID, StructureType } = await import("@bibliothecadao/types");
+const { GLOBAL_CHAT_CHANNEL_ID, StructureType, TileOccupier } = await import("@bibliothecadao/types");
 const { getBlockTimestamp, getEntityName } = await import("@bibliothecadao/eternum");
 const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-support");
 const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { readStructureMeaning } = await import("@/ui/design-system/domain-icon-meaning");
+const { MAP_SITES } = await import("@/ui/features/frontier/sites/map-site-plan");
+const { useGameChat } = await import("@/ui/features/world/containers/hud-chat-window");
 const { GLOBAL_ROOM } = await import("../model/chat-rooms");
 const { useRealtimeChatStore } = await import("../model/store");
 const { GameChatMap } = await import("./shared/chat-map");
 const { RealtimeChatShell } = await import("./realtime-chat-shell");
 
+type Store = import("@bibliothecadao/eternum/game-client").NativeFactStore;
+
 const REALM = 7;
 const GONE_ARMY = 999;
 /** A camp the store holds whose tile the map does not: a place on no tile. */
 const UNPLACED_CAMP = 712;
+/** The lab game, as the page plays it (LabGame's setActiveGame). */
+const LAB = { chainId: "0x1ab", gameId: 1, name: "Lab" };
+/** The tile each of the map's sites stands on in these tests, in MAP_SITES' order. */
+const siteTile = (index: number) => ({ col: 30 + index, row: 30, alt: false });
 const sendWorldMessage = vi.fn(() => Promise.resolve());
 
-/** Global with three places in it: the lab realm shared today, the same from a closed day, and an army since gone. */
+/**
+ * Global with its places: the lab realm shared today, the same from a closed day, an army since gone, a camp on no
+ * tile, the realm as a forged message names it, and the realm's number in another game on this chain and on another.
+ */
 const installRoom = (realmName: string, realmIcon: string, today: number) => {
   const { actions } = useRealtimeChatStore.getState();
-  const place = (entityId: number, kind: string, at: number, icon: string, name: string) => ({
-    place: { kind, entityId, name, icon, at },
+  const place = (entityId: number, kind: string, at: number, icon: string, name: string, game: object = LAB) => ({
+    place: { kind, entityId, game, name, icon, at },
   });
   const said = (id: string, content: string, metadata: object) => ({
     id,
@@ -70,6 +91,13 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
           said("m4", "the camp", place(UNPLACED_CAMP, "structure", today, "camp", "Gloomsgrasp")),
           // Sent by a client that names and paints the lab realm as another player's camp.
           said("m5", "come home", place(REALM, "structure", today, "camp", "Isolde's Realm")),
+          // The realm's number in another game: on this chain, and on another chain.
+          said(
+            "m6",
+            "here",
+            place(REALM, "structure", today, "camp", "Moondeep", { ...LAB, gameId: 4, name: "Lab 4" }),
+          ),
+          said("m7", "there", place(REALM, "structure", today, "camp", "Ashfall", { ...LAB, chainId: "0x2b" })),
         ] as never,
         unreadCount: 0,
         hasMoreHistory: false,
@@ -90,48 +118,84 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
   });
 };
 
+/** The chat strip's line, as the game's chat hook makes it. */
+const Strip = () => <p data-strip>{useGameChat(false).stripLine}</p>;
+
 let host: HTMLDivElement;
 let root: Root;
 let undoLayout: () => void;
-let game: { realmName: string; realmIcon: string };
+let game: { realmName: string; realmIcon: string; store: Store };
 
-beforeEach(async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  undoLayout = layOutChatLists();
-  moved.openOnMap.mockClear();
-  sendWorldMessage.mockClear();
-  host = document.createElement("div");
-  document.body.append(host);
-  root = createRoot(host);
+/**
+ * The lab game, mounted as the game mounts it: Frontier (preset 5, its map built again each day), or a game with one map
+ * all game (Blitz, preset 2: no day, the realm on its own tile). Each map site stands on its tile.
+ */
+const mount = async (mode: "frontier" | "blitz") => {
   await act(async () =>
     root.render(
       <MemoryRouter>
         <QueryClientProvider client={new QueryClient()}>
           <LabGame
-            preset={5}
+            preset={mode === "frontier" ? 5 : 2}
             facts={(store) => {
               const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
+              const rules = store.require("SliceRules", { game_id: 1 });
+              const json = (value: object) =>
+                JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
               return [
                 {
                   model: "Structure",
                   key: "0x2c8",
-                  value: JSON.parse(
-                    JSON.stringify(
-                      { ...realm, entity_id: UNPLACED_CAMP, base: { ...realm.base, category: StructureType.Camp } },
-                      (_, field) => (typeof field === "bigint" ? field.toString() : field),
-                    ),
-                  ),
+                  value: json({
+                    ...realm,
+                    entity_id: UNPLACED_CAMP,
+                    base: { ...realm.base, category: StructureType.Camp },
+                  }),
                 },
+                ...MAP_SITES.map((site, index) => ({
+                  model: "TileOccupancy",
+                  key: `0x5170${index}`,
+                  value: {
+                    game_id: 1,
+                    ...siteTile(index),
+                    entity_id: 900 + index,
+                    category: site.occupier,
+                    is_structure: false,
+                  },
+                })),
+                ...(mode === "blitz"
+                  ? [
+                      { model: "SliceRules", key: "0x100", value: json({ ...rules, day_unit_seconds: 0 }) },
+                      {
+                        model: "TileOccupancy",
+                        key: "0x5171",
+                        value: {
+                          game_id: 1,
+                          col: 20,
+                          row: 20,
+                          alt: false,
+                          entity_id: REALM,
+                          category: TileOccupier.RealmRegularLevel1,
+                          is_structure: true,
+                        },
+                      },
+                    ]
+                  : []),
               ];
             }}
           >
             {(store) => {
               moved.store = store;
               const realm = store.require("Structure", { game_id: 1, entity_id: REALM });
-              game = { realmName: getEntityName(REALM, store)!, realmIcon: readStructureMeaning(store, realm) };
+              game = {
+                realmName: getEntityName(REALM, store)!,
+                realmIcon: readStructureMeaning(store, realm),
+                store,
+              };
               return (
                 <GameChatMap>
                   <RealtimeChatShell rooms={[GLOBAL_ROOM]} />
+                  <Strip />
                 </GameChatMap>
               );
             }}
@@ -141,6 +205,17 @@ beforeEach(async () => {
     ),
   );
   act(() => installRoom(game.realmName, game.realmIcon, getBlockTimestamp().currentBlockTimestamp));
+};
+
+beforeEach(() => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  undoLayout = layOutChatLists();
+  moved.openOnMap.mockClear();
+  moved.selectArmy.mockClear();
+  sendWorldMessage.mockClear();
+  host = document.createElement("div");
+  document.body.append(host);
+  root = createRoot(host);
 });
 
 afterEach(() => {
@@ -148,6 +223,7 @@ afterEach(() => {
   host.remove();
   undoLayout();
   act(() => useUIStore.getState().selectOnMap(null));
+  act(() => useUIStore.getState().setMapLayer(false));
 });
 
 const chip = (id: string) => host.querySelector<HTMLElement>(`li[data-message-id="${id}"] [data-place]`)!;
@@ -159,8 +235,28 @@ const type = (text: string) =>
     field.dispatchEvent(new Event("input", { bubbles: true }));
   });
 const send = () => act(async () => host.querySelector<HTMLButtonElement>('button[type="submit"]')!.click());
+const sentPlace = () =>
+  (sendWorldMessage.mock.calls.at(-1) as unknown as [string, { metadata?: { place?: unknown } }])[1];
+/** A message from Aldric, added last to the room. */
+const arrives = (id: string, content: string, metadata: object) =>
+  act(() =>
+    useRealtimeChatStore.setState((state) => {
+      const room = state.worldZones[GLOBAL_CHAT_CHANNEL_ID]!;
+      const message = {
+        id,
+        zoneId: GLOBAL_CHAT_CHANNEL_ID,
+        sender: { playerId: "0xa1d", displayName: "Aldric" },
+        content,
+        createdAt: new Date(Date.UTC(2026, 9, 28, 13, Number(id.slice(1)))).toISOString(),
+        metadata,
+      };
+      return { worldZones: { [GLOBAL_CHAT_CHANNEL_ID]: { ...room, messages: [...room.messages, message] as never } } };
+    }),
+  );
 
-describe("places in chat, in a game", () => {
+describe("places in chat, in a Frontier game", () => {
+  beforeEach(() => mount("frontier"));
+
   it("draws a place a message carries as its painting and name, after the words, and opens the map on it", () => {
     expect(chip("m1").textContent).toBe(game.realmName);
     expect(chip("m1").querySelector("img")).not.toBeNull();
@@ -169,12 +265,25 @@ describe("places in chat, in a game", () => {
     expect(moved.openOnMap).toHaveBeenCalledWith(expect.anything(), { kind: "structure", entityId: REALM });
   });
 
-  it("names and paints a place as the map does, whatever the message claims", () => {
+  it("names and paints a place as the map does, whatever the message claims, in the room and on the strip", () => {
     expect(chip("m5").textContent).toBe(game.realmName);
     expect(chip("m5").querySelector("img")!.getAttribute("src")).toBe(
       chip("m1").querySelector("img")!.getAttribute("src"),
     );
     expect(host.querySelector('li[data-message-id="m5"]')!.textContent).not.toContain("Isolde's Realm");
+    // The strip reads the room's last message, here a forged one: the chip's name, not the message's.
+    arrives("m10", "come home", {
+      place: {
+        kind: "structure",
+        entityId: REALM,
+        game: LAB,
+        name: "Isolde's Realm",
+        icon: "camp",
+        at: getBlockTimestamp().currentBlockTimestamp,
+      },
+    });
+    expect(host.querySelector("[data-strip]")!.textContent).toBe(`Aldric: come home ${game.realmName}`);
+    expect(chip("m10").textContent).toBe(game.realmName);
   });
 
   it("strikes through a place from a closed Frontier day, one gone, and one on no tile: none opens", () => {
@@ -188,7 +297,23 @@ describe("places in chat, in a game", () => {
     );
   });
 
-  it("shares the place selected on the map, as the map names and paints it, with the words sent", async () => {
+  it("reads a place in another game as the message has it, names that game, and opens nothing here", () => {
+    for (const [id, name, gameName] of [
+      ["m6", "Moondeep", "Lab 4"],
+      ["m7", "Ashfall", "Lab"],
+    ] as const) {
+      // Never the lab realm that has the same number here.
+      expect(chip(id).querySelector("button, [role]")?.textContent ?? chip(id).textContent).toContain(name);
+      expect(chip(id).textContent).not.toContain(game.realmName);
+      expect(chip(id).textContent).toContain(`in ${gameName}`);
+      expect(chip(id).hasAttribute("data-elsewhere")).toBe(true);
+      expect(chip(id).className).not.toContain("line-through");
+      chip(id).querySelector("button")?.click();
+    }
+    expect(moved.openOnMap).not.toHaveBeenCalled();
+  });
+
+  it("shares the place selected on the map, as the map names and paints it, with its game and the words sent", async () => {
     expect(placeButton().disabled).toBe(true);
     act(() => useUIStore.getState().selectOnMap({ kind: "structure", entityId: REALM }));
     expect(placeButton().disabled).toBe(false);
@@ -203,6 +328,7 @@ describe("places in chat, in a game", () => {
         place: {
           kind: "structure",
           entityId: REALM,
+          game: LAB,
           name: game.realmName,
           icon: game.realmIcon,
           at: expect.any(Number),
@@ -237,5 +363,57 @@ describe("places in chat, in a game", () => {
   it("offers no place for a bare tile", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 1, row: 1 } }));
     expect(placeButton().disabled).toBe(true);
+  });
+
+  // Every site the map knows (MAP_SITES): one the list adds is covered here, or fails here.
+  it.each(MAP_SITES.map((site, index) => [site.kind, site, index] as const))(
+    "shares a %s selected on its tile, opens its tile, and strikes it through once spent",
+    async (_, site, index) => {
+      const tile = siteTile(index);
+      act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: tile.col, row: tile.row } }));
+      expect(placeButton().disabled).toBe(false);
+      act(() => placeButton().click());
+      const picked = host.querySelector<HTMLElement>("form [data-place]")!;
+      expect(picked.textContent).toBe(site.name);
+      await send();
+      const place = {
+        kind: "site",
+        site: site.kind,
+        tile,
+        game: LAB,
+        name: site.name,
+        icon: site.icon,
+        at: expect.any(Number),
+      };
+      expect(sentPlace()).toEqual({ content: site.name, zoneId: GLOBAL_CHAT_CHANNEL_ID, metadata: { place } });
+
+      arrives("m11", site.name, sentPlace().metadata!);
+      expect(chip("m11").textContent).toBe(site.name);
+      act(() => chip("m11").querySelector("button")!.click());
+      const [position, select] = moved.openOnMap.mock.calls.at(-1)!;
+      expect(position.getContract()).toEqual({ x: tile.col, y: tile.row });
+      expect(select).toBe("tile");
+
+      // Used: its tile empties, and the place it was opens nothing.
+      act(() => game.store.applyFacts([{ model: "TileOccupancy", key: `0x5170${index}`, value: null }] as never));
+      expect(chip("m11").className).toContain("line-through");
+      expect(chip("m11").querySelector("button")?.disabled ?? true).toBe(true);
+    },
+  );
+});
+
+describe("places in chat, in a game with one map all game (Blitz)", () => {
+  beforeEach(() => mount("blitz"));
+
+  it("opens a place shared days ago: the map is the same", () => {
+    expect(chip("m2").className).not.toContain("line-through");
+    act(() => chip("m2").querySelector("button")!.click());
+    expect(moved.openOnMap).toHaveBeenCalledWith(expect.anything(), { kind: "structure", entityId: REALM });
+  });
+
+  it("still opens nothing for the same number in another game", () => {
+    chip("m6").querySelector("button")?.click();
+    chip("m7").querySelector("button")?.click();
+    expect(moved.openOnMap).not.toHaveBeenCalled();
   });
 });

@@ -14,7 +14,8 @@ import {
 import type { RealtimeConnectionStatus } from "@/ui/features/social/realtime-chat/model/types";
 import { chatRooms } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { directUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
-import { messageWords } from "@/ui/features/social/realtime-chat/model/place";
+import { messageWords, placeOf } from "@/ui/features/social/realtime-chat/model/place";
+import { usePlaceReader } from "@/ui/features/social/realtime-chat/ui/shared/use-chat-map";
 import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
@@ -78,6 +79,9 @@ export function useGameChat(open: boolean) {
   const connection = useRealtimeChatSelector((state) => state.connectionStatus);
   const hasGameChat = useRealtimeChatSelector((state) => state.joinedZoneIds.includes(zoneId));
   const lastMessage = useRealtimeChatSelector((state) => state.worldZones[zoneId]?.messages.at(-1));
+  // The strip names a place as its chip does: one reading of it.
+  const readPlace = usePlaceReader();
+  const lastPlace = lastMessage ? placeOf(lastMessage.metadata) : null;
   const history = useRealtimeChatSelector((state) => historyState(state.worldZones[zoneId]));
   const unread = useRealtimeChatSelector((state) => state.unreadWorldTotal + directUnread(state));
   const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
@@ -95,7 +99,7 @@ export function useGameChat(open: boolean) {
     history,
     last:
       lastMessage &&
-      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastMessage.metadata)}`,
+      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace).name : null)}`,
   });
   return { status, initializer, requestSignIn, rooms, unread, stripLine };
 }

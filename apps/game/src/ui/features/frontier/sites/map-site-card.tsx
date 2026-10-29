@@ -8,7 +8,7 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { HudButton, HudChip, HudCost, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { MOVE, SHRINE, STAMINA, TROOPS, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
+import { MOVE, STAMINA, TROOPS, USE, USING, XP } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
@@ -19,7 +19,7 @@ import { useFrontierRealm } from "../frontier-home";
 import { useOrderAt } from "../hud/army-order";
 import { armyArt, useDockArmies } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { type MapSiteKind, mapSiteKind, siteGain } from "./map-site-plan";
+import { type MapSiteKind, mapSite, mapSiteKind, siteGain } from "./map-site-plan";
 import { pickArmyFor, useSelectedOwnArmy } from "./selected-army";
 import { ArmyChoices, inFlightWord, SiteMark } from "./site-card-view";
 import { sendSiteUse } from "./use-site";
@@ -73,10 +73,10 @@ export const MapSiteCard = ({
     });
   };
 
-  const word = plan.kind === "Shrine" ? SHRINE : WELL;
+  const { name: word, icon } = mapSite(plan.kind);
   return (
     <HudSheet label={word} onClose={onClose}>
-      <SiteMark icon={plan.kind === "Shrine" ? "shrine" : "well"} />
+      <SiteMark icon={icon} />
       <div className="flex items-center justify-center gap-2.5">
         {user && (
           <HudChip icons={[armyArt(user.army.troops)]} label={TROOPS}>

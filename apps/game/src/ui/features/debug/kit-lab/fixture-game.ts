@@ -18,6 +18,12 @@ import preset from "../../../../../../../contracts/l3/world-native/tests/fixture
 /** The panels lab's and the style sheet's fixture game: the deploy fixture's realm, its player, and Events rows. */
 
 /** The fixture's player, who holds its realm (entity 7) and has no army in the field. */
+/** The lab game's chain: a shard at an address that answers nothing, so every history read fails as an offline one. */
+export const LAB_CHAIN = "0x1ab";
+
+/** The lab game as the page plays it (setActiveGame): its chain, game 1 there, its preset. */
+export const labGameProfile = (preset: number) => ({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab" });
+
 export const PLAYER = "0x111";
 
 /**

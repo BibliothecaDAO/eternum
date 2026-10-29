@@ -745,6 +745,8 @@ export const CHAT_WORDS = {
   sharePlace: "Share the selected place",
   /** Over the field while a place goes with the message: take it off. */
   removePlace: "Take the place off",
+  /** After a place shared in another game: that game, by its name ("in Frontier 3"); it opens nothing here. */
+  inGame: "in",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */
