@@ -159,8 +159,11 @@ const clickToResultStep = (name, press, resultOf) => ({
     const stopCapture = context.captureResults
       ? await startResultCapture(context.devTools, context.browser.observe().timeOrigin)
       : null;
-    const played = await press(context);
+    const { locate, ...pressed } = await press(context);
     await context.owner.sleep(RESULT_SETTLE_MS);
+    // A result whose place is known only once it shows (a deployed army) is found after the settle: reading the page
+    // while the frames are recorded would hold their acknowledgements, and the screencast with them.
+    const played = locate ? { ...pressed, region: locate() } : pressed;
     if (!stopCapture) return played;
     capturedFrames.set(context.base, await stopCapture());
     return { ...played, capturedAs: context.base };
@@ -508,12 +511,11 @@ async function deployFromTheDock({ browser }) {
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
-  const arrived = await readUntil(
-    () => Object.entries(browser.read(ARMY_TILES)).find(([army]) => !before.includes(army)),
-    Boolean,
-    MERGE_WAIT_MS,
-  );
-  return { sheet, before, arrived: arrived?.[0] ?? null, region: arrived && armyRegion(arrived[1]) };
+  const locate = () => {
+    const arrived = Object.entries(browser.read(ARMY_TILES)).find(([army]) => !before.includes(army));
+    return arrived ? armyRegion(arrived[1]) : null;
+  };
+  return { sheet, before, locate };
 }
 
 /** The army the lab's chain created for the step's CreateExplorer, drawn on the map. */
