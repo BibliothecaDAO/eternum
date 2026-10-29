@@ -1,7 +1,13 @@
 import { installLabGame } from "@/ui/features/debug/kit-lab/fixture-game";
 import { SPIRE_DAY_NOW, spireDay } from "@/ui/features/frontier/spire-fixture";
 import { entityHomeNamespace, expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum";
-import { BiomeType, BiomeTypeToId, getHexesWithinRadius, getNeighborHexes } from "@bibliothecadao/types";
+import {
+  BiomeType,
+  BiomeTypeToId,
+  getHexesWithinRadius,
+  getNeighborHexes,
+  type ResourcesIds,
+} from "@bibliothecadao/types";
 
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -124,6 +130,20 @@ export const armySpent = (chain: NativeFactStore, explorerId: bigint, cost: numb
     }),
   };
 };
+
+/** A holding's balances once it has paid each cost, under the keys the chain holds them by. */
+export const balancesPaid = (
+  chain: NativeFactStore,
+  entityId: bigint,
+  costs: readonly { resource: ResourcesIds; amount: bigint }[],
+): LabFact[] =>
+  costs.map(({ resource, amount }) => {
+    const [key, held] = [...chain.entries("ResourceBalance")].find(
+      ([, row]) => row.entity_id === entityId && row.resource_type === resource,
+    )!;
+    if (held.balance < amount) throw new Error(`The lab's holding ${entityId} cannot pay ${amount} of ${resource}`);
+    return { model: "ResourceBalance", key, value: wire({ ...held, balance: held.balance - amount }) };
+  });
 
 /**
  * The spire's game on high ground (/lab/game?scenario=high-ground): the same realm, army and revealed land, every

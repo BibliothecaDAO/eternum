@@ -1,11 +1,25 @@
-import { BiomeType, BUILDINGS_CENTER, getNeighborOffsets } from "@bibliothecadao/types";
+import {
+  entityHomeNamespace,
+  expeditionRealmSite,
+  getTroopResourceId,
+  readExpeditionRules,
+  readTroopRaiseCost,
+} from "@bibliothecadao/eternum";
+import {
+  BiomeType,
+  BUILDINGS_CENTER,
+  getNeighborOffsets,
+  RESOURCE_PRECISION,
+  TroopTier,
+  TroopType,
+} from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 
 import { standTheArmyAtTheEdge } from "./explore-scenario";
 import { wire, type LabCommand, type LabFact, type LabScenario } from "./lab-chain";
 import { realmScenario } from "./realm-scenario";
-import { armySpent, revealedTile } from "./spire-scenario";
+import { armySpent, balancesPaid, revealedTile } from "./spire-scenario";
 
 type Hex = { col: number; row: number };
 type Answer = (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[];
@@ -14,13 +28,19 @@ type Answer = (command: LabCommand, chain: NativeFactStore, now: number) => LabF
  * The game the click-latency steps play (/lab/game?scenario=actions): realm 7 a full Settlement with the labor to be
  * raised, its army at the edge of the land it has seen. The chain answers each command a player's click sends as the
  * contract writes its facts: Move and Explore (movement.cairo: the army on its last tile, its stamina paid, an explored
- * tile revealed), CreateBuilding (construction.cairo: the building on its plot), LevelUp and EnterDepth as the realm and
- * spire games do.
+ * tile revealed), CreateBuilding (construction.cairo: the building on its plot), CreateExplorer (troops.cairo: a new
+ * army beside the realm's site, its troops and their raise paid), LevelUp and EnterDepth as the realm and spire games
+ * do.
  */
 export const actionsScenario = (): LabScenario => {
   const realm = realmScenario();
   standTheArmyAtTheEdge(realm.store);
-  const answers: Record<string, Answer> = { Move: moveArmy, Explore: exploreTile, CreateBuilding: placeBuilding };
+  const answers: Record<string, Answer> = {
+    Move: moveArmy,
+    Explore: exploreTile,
+    CreateBuilding: placeBuilding,
+    CreateExplorer: deployArmy,
+  };
   return {
     ...realm,
     answer: (command, chain, now) => (answers[command.kind] ?? realm.answer)(command, chain, now),
@@ -91,5 +111,51 @@ const placeBuilding: Answer = (command) => {
         labor_paid: "0",
       },
     },
+  ];
+};
+
+/**
+ * CreateExplorer: a new army of the realm's, its stamina full, on the tile beside the realm's site the command names;
+ * the troops leave home and their raise (the wheat) is paid. The lab's realm deploys the same troops as its first army,
+ * so the new army stands as that one's kind does.
+ */
+const deployArmy: Answer = (command, chain, now) => {
+  const structureId = BigInt(command.fields.structure_id);
+  const category = Object.keys(TroopType)[Number(command.fields.category)] as TroopType;
+  const tier = Object.keys(TroopTier)[Number(command.fields.tier)] as TroopTier;
+  const amount = BigInt(command.fields.amount);
+  const [, first] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.owner === structureId)!;
+  if (first.troops.category !== category || first.troops.tier !== tier)
+    throw new Error(`The lab deploys ${first.troops.category} ${first.troops.tier} only, not ${category} ${tier}`);
+  const [, firstAt] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === first.explorer_id)!;
+  const explorerId =
+    1n +
+    [...chain.entries("ExplorerTroops")].reduce(
+      (most, [, row]) => (row.explorer_id > most ? row.explorer_id : most),
+      0n,
+    );
+  const site = expeditionRealmSite(readExpeditionRules(chain, 1)!, entityHomeNamespace(structureId), now)!;
+  const to = walk(site, [Number(command.fields.direction)]);
+  const troops = getTroopResourceId(category, tier);
+  const whole = Number(amount / BigInt(RESOURCE_PRECISION));
+  const raise = readTroopRaiseCost(chain, 1, Number(structureId), troops, whole, now);
+  if (!raise) throw new Error(`The lab's realm ${structureId} holds an unknown balance its raise needs`);
+  const stamina = staminaRules(chain)[`stamina_${category.toLowerCase()}_max` as "stamina_knight_max"];
+  return [
+    {
+      model: "ExplorerTroops",
+      key: `0x1b0${explorerId}`,
+      value: wire({
+        ...first,
+        explorer_id: explorerId,
+        troops: {
+          ...first.troops,
+          count: amount,
+          stamina: { Inline: { amount: stamina, settled_at: now, remainder: 0 } },
+        },
+      }),
+    },
+    { model: "TileOccupancy", key: `0x1b1${explorerId}`, value: wire({ ...firstAt, ...to, entity_id: explorerId }) },
+    ...balancesPaid(chain, structureId, [{ resource: troops, amount }, ...raise]),
   ];
 };

@@ -6,8 +6,9 @@
 let queued: string[] = [];
 
 /**
- * Queues `result` for the next rendered frame: "explore:<col>,<row>", "walk:<army>", "army-gone:<army>" (an army of the
- * player's leaves the map: merged, fallen), "site-gone:<col>,<row>" (a Shrine or Well used up), "building:<col>,<row>:<category>".
+ * Queues `result` for the next rendered frame: "explore:<col>,<row>", "walk:<army>", "army-shown:<army>" (an army of
+ * the player's drawn on the map: deployed, or come into view), "army-gone:<army>" (an army of the player's leaves the
+ * map: merged, fallen), "site-gone:<col>,<row>" (a Shrine or Well used up), "building:<col>,<row>:<category>".
  */
 export const presentResult = (result: string): void => {
   queued.push(result);

@@ -4,10 +4,10 @@ import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
-import { dayOf, readExpeditionRules } from "@bibliothecadao/eternum";
+import { dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import type { NativeWorldBindings } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, type NativeWorldBindings } from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -57,6 +57,8 @@ export interface LabScenario {
   historyAnswersAt?: number;
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
   startDevice?: () => void;
+  /** The payout wallet the player's account has linked, which a labor claim needs; none: the lab player has none. */
+  wallet?: string;
 }
 
 interface LabChainRecord {
@@ -105,18 +107,29 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence() };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
-  // The chain's own state, keyed as its Herald serves each row: the snapshot, the scope and every answer agree.
-  const chain = new NativeFactStore();
-  chain.applyFacts(rowsOf(scenario.store) as never);
+  const chain = chainOf(scenario);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
   const herald = new LabHerald(chain, now, () => (record.streams += 1));
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
+  answerLaborClaims(scenario, chain, record, herald, now);
   answerLabChat(true, [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)]);
-  signInLabPlayer();
+  signInLabPlayer(scenario.wallet);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return scenario;
+};
+
+/**
+ * The chain's own state, keyed as its Herald serves each row: the snapshot, the scope and every answer agree. The chain
+ * holds every row, so a row it lacks is absent (a realm with no wheat production makes none), as the client's store
+ * knows once Herald's snapshot is complete.
+ */
+export const chainOf = (scenario: LabScenario): NativeFactStore => {
+  const chain = new NativeFactStore();
+  chain.applyFacts(rowsOf(scenario.store) as never);
+  chain.setSnapshot({ gameId: LAB_GAME.gameId, complete: true, actor: scenario.player, timestamp: scenario.startsAt });
+  return chain;
 };
 
 /**
@@ -185,9 +198,80 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
  * The lab's player is signed in as the app lab's (its session and guardian), so the game's HUD reads as a signed-in
  * player's. The identity client holds its own fetch, so its session read is answered on the client itself.
  */
-const signInLabPlayer = () => {
-  identityClient.getSession = async () => LAB_SESSION;
-  useIdentitySessionStore.getState().applySession(LAB_SESSION);
+const signInLabPlayer = (wallet: string | undefined) => {
+  const session = wallet ? { ...LAB_SESSION, user: { ...LAB_SESSION.user, address: wallet } } : LAB_SESSION;
+  identityClient.getSession = async () => session;
+  useIdentitySessionStore.getState().applySession(session);
+};
+
+/**
+ * The value relay's labor claims, answered in this tab as the relay and the shard do them: the shard grants each Realm
+ * named its day's labor into the home given (entry.cairo's grant_realm_labor: the grant recorded, the labor added),
+ * in a transaction of the relay's whose facts land as a command's do; the relay replies once its block has closed,
+ * after the facts, naming that transaction. The lab's homes keep room for the labor: a full store fails loudly.
+ */
+const answerLaborClaims = (
+  scenario: LabScenario,
+  chain: NativeFactStore,
+  record: LabChainRecord,
+  herald: LabHerald,
+  now: () => number,
+) => {
+  const network = window.fetch.bind(window);
+  window.fetch = async (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
+    if (url.pathname !== "/api/value/labor" || init?.method !== "POST") return network(input, init);
+    const { realms } = JSON.parse(String(init.body)) as { realms: { gameId: number; realmId: number; home: string }[] };
+    const day = Math.floor(now() / 86_400);
+    const hash = `0x1ab${(record.sent.length + 1).toString(16).padStart(4, "0")}de1a`;
+    const command: LabCommand = { kind: "GrantLabor", fields: { day: String(day) }, calldata: [] };
+    const answered = grantLabor(chain, scenario.player, realms, day).map(keyedAsHeldOnChain);
+    record.sent.push({ hash, command, answered });
+    await new Promise((applied) => setTimeout(applied, LAB_BLOCK_MS));
+    herald.apply(hash, answered);
+    await new Promise((closed) => setTimeout(closed, LAB_BLOCK_MS));
+    const grants = answered
+      .filter(({ model }) => model === "LaborGrant")
+      .map(({ value }) => value as { game_id: number; realm_id: number; home: string; amount: string });
+    return new Response(
+      JSON.stringify({
+        day,
+        grants: grants.map((grant) => ({
+          realmId: String(grant.realm_id),
+          gameId: grant.game_id,
+          account: scenario.player,
+          home: grant.home,
+          amount: grant.amount,
+        })),
+        refused: [],
+        transactionHash: hash,
+      }),
+      { status: 200, headers: { "content-type": "application/json" } },
+    );
+  };
+};
+
+/** Each Realm's grant for the day and its home's labor after them, as the shard writes them. */
+const grantLabor = (
+  chain: NativeFactStore,
+  account: string,
+  realms: readonly { gameId: number; realmId: number; home: string }[],
+  day: number,
+): LabFact[] => {
+  const amount = chain.require("LaborRules", { game_id: LAB_GAME.gameId }).amount * BigInt(RESOURCE_PRECISION);
+  const grants = realms.map((realm) => ({
+    model: "LaborGrant",
+    key: `0x1ab6${realm.realmId.toString(16)}${day.toString(16)}`,
+    value: wire({ realm_id: realm.realmId, day, game_id: realm.gameId, account, home: realm.home, amount }),
+  }));
+  const home = BigInt(realms[0]!.home);
+  const [key, labor] = [...chain.entries("ResourceBalance")].find(
+    ([, row]) => row.entity_id === home && row.resource_type === ResourcesIds.Labor,
+  )!;
+  const limit = new ResourceManager(chain, Number(home), LAB_GAME.gameId).storeLimit(ResourcesIds.Labor);
+  const granted = labor.balance + amount * BigInt(realms.length);
+  if (limit !== undefined && granted > limit) throw new Error(`The lab's home ${home} has no room for the labor`);
+  return [...grants, { model: "ResourceBalance", key, value: wire({ ...labor, balance: granted }) }];
 };
 
 /**
@@ -200,6 +284,9 @@ const answerAccountJoin = (rpcUrl: string, accountClassHash: string) =>
     getClassHashAt: async () => accountClassHash,
     callContract: async () => ["0x1"],
   });
+
+/** How long the lab's chain takes to close a block: a command's facts land this long after it is sent. */
+const LAB_BLOCK_MS = 300;
 
 /** Herald's answer for a day that has not closed (day_ranks_not_closed). */
 const NOT_CLOSED = Symbol("not closed");
@@ -315,7 +402,7 @@ const labAccount = (
         } catch (error) {
           console.error("[lab chain] the answer to", command.kind, "could not apply", error);
         }
-      }, 300);
+      }, LAB_BLOCK_MS);
       return { transaction_hash: hash };
     },
   };

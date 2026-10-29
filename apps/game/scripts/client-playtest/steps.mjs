@@ -293,7 +293,7 @@ async function attackFromTheSiteCard({ browser }) {
   );
   if (!sheet.buttons.includes("Attack")) return { army, offered: target.offered, target: target.offset, sheet };
   const token = browser.read(armyToken(army));
-  watchFor(browser, "fought", tokenShowsTheChainsCount(army));
+  watchFor(browser, "fought", tokensShowTheChainsCounts("BattleGuard"));
   browser.click("Attack");
   return { army, offered: target.offered, target: target.offset, watching: true, region: token?.region };
 }
@@ -321,19 +321,22 @@ async function findTheAttack(browser, armyAt) {
   return { offset: null, offered };
 }
 
-/** An army's token on the map: its box on the page, read before its result changes it. */
+/** An army's mark on the map (its token, or its plate while open): its box on the page, read before its result changes it. */
 const armyToken = (army) => `JSON.stringify((() => {
-  const rect = document.querySelector('.mp-at[data-key="army:${army}"] .mp-token')?.getBoundingClientRect();
+  const rect = document.querySelector('.mp-at[data-key="army:${army}"]')?.firstElementChild?.getBoundingClientRect();
   return rect ? { region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) } } : null;
 })())`;
 
-/** The army's token count is the troops the lab's chain answered the fight with, as the token writes a count. */
-const tokenShowsTheChainsCount = (army) => `(() => {
-  const fight = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BattleGuard").at(-1);
-  const row = fight?.answered.find(({ model, value }) => model === "ExplorerTroops" && String(value.explorer_id) === "${army}");
-  if (!row) return false;
-  const want = (BigInt(row.value.troops.count) / 1000000000n).toLocaleString("en-US");
-  return document.querySelector('.mp-at[data-key="army:${army}"] .mp-count')?.textContent === want;
+/**
+ * Every army the lab chain's last `kind` answer wrote troops for shows exactly that count on its token, as the token
+ * writes a count: the fight's attacker, both armies of a transfer.
+ */
+const tokensShowTheChainsCounts = (kind) => `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "${kind}").at(-1);
+  const rows = (answer?.answered ?? []).filter(({ model, value }) => model === "ExplorerTroops" && value !== null);
+  return rows.length > 0 && rows.every(({ value }) =>
+    document.querySelector('.mp-at[data-key="army:' + value.explorer_id + '"] .mp-count')?.textContent ===
+      (BigInt(value.troops.count) / 1000000000n).toLocaleString("en-US"));
 })()`;
 
 /**
@@ -427,9 +430,10 @@ async function mergeTheArmies({ browser }, tiles) {
   return { merge, confirm, tiles: tiles.byArmy };
 }
 
-const MERGE_BUTTON = `JSON.stringify((() => {
+/** The open sheet's button whose text matches `pattern` (a regular expression, any case): its name and where it is. */
+const sheetButton = (pattern) => `JSON.stringify((() => {
   const button = [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])]
-    .find((candidate) => /merge into/i.test(candidate.textContent));
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}, "i").test(candidate.textContent.trim()));
   if (!button) return null;
   const rect = button.getBoundingClientRect();
   return {
@@ -437,6 +441,185 @@ const MERGE_BUTTON = `JSON.stringify((() => {
     offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
   };
 })())`;
+const MERGE_BUTTON = sheetButton("merge into");
+
+/**
+ * Troops moved from one of the realm's armies to the other beside it (the lab's merge game): the spire's army picked,
+ * the other right-clicked for the transfer card, then 500 typed as the troops it sends and Move pressed; the result is
+ * both armies' tokens showing exactly the counts the chain answered.
+ */
+function transferActionSteps() {
+  const tiles = { byArmy: null };
+  return [
+    { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+    { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
+    { name: "open-transfer", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
+    clickToResultStep(
+      "transfer",
+      (context) => sendSomeTroops(context, tiles),
+      ({ played }) => played.watching && { watch: "transferred" },
+    ),
+  ];
+}
+
+const TROOPS_SENT = 500;
+const TRANSFER_AMOUNT = '[data-kit-sheet] input[aria-label^="Troops "]';
+
+/** Types the troops sent, then presses the card's Move where it is drawn, watching both armies' counts. */
+async function sendSomeTroops({ browser }, tiles) {
+  browser.run(["fill", TRANSFER_AMOUNT, String(TROOPS_SENT)]);
+  const move = await readUntil(() => browser.read(sheetButton("^Move ")), Boolean, SHEET_WAIT_MS);
+  if (!move) return { move };
+  const tokens = Object.keys(tiles.byArmy ?? {}).map((army) => browser.read(armyToken(army))?.region);
+  if (tokens.length !== 2 || !tokens.every(Boolean)) return { move: move.name, tokens };
+  watchFor(browser, "transferred", tokensShowTheChainsCounts("ManageTroops"));
+  browser.tap(move.offset);
+  return { move: move.name, watching: true, region: boxAround(tokens) };
+}
+
+/** The smallest box holding every region given. */
+const boxAround = (regions) => {
+  const left = Math.min(...regions.map((region) => region.left));
+  const top = Math.min(...regions.map((region) => region.top));
+  const right = Math.max(...regions.map((region) => region.left + region.width));
+  const bottom = Math.max(...regions.map((region) => region.top + region.height));
+  return { left, top, width: right - left, height: bottom - top };
+};
+
+/**
+ * A new army deployed (the lab's actions game): the dock's Deploy slot, the sheet's Max, then its Deploy; the result is
+ * the army the chain created drawn on the map, beside the realm.
+ */
+const DEPLOY_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("deploy", deployFromTheDock, armyDeployed),
+];
+
+async function deployFromTheDock({ browser }) {
+  const before = Object.keys(browser.read(ARMY_TILES));
+  browser.click("Deploy");
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Deploy",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Deploy") return { sheet };
+  browser.click("Max");
+  const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
+  if (!deploy) return { sheet, deploy };
+  browser.tap(deploy.offset);
+  const arrived = await readUntil(
+    () => Object.entries(browser.read(ARMY_TILES)).find(([army]) => !before.includes(army)),
+    Boolean,
+    MERGE_WAIT_MS,
+  );
+  return { sheet, before, arrived: arrived?.[0] ?? null, region: arrived && armyRegion(arrived[1]) };
+}
+
+/** The army the lab's chain created for the step's CreateExplorer, drawn on the map. */
+function armyDeployed({ actionLatency }) {
+  const army = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "CreateExplorer")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "ExplorerTroops" && value !== null)?.value.explorer_id;
+  return army && { presented: `army-shown:${army}` };
+}
+
+/**
+ * A research bought (the lab's research game): Research opened, the Shrine's node picked, then its Research; the result
+ * is that node showing the Shrine researched once the chain has answered it learned.
+ */
+const RESEARCH_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("research", researchTheShrine, ({ played }) => played.watching && { watch: "researched" }),
+];
+
+const SHRINE_NODE = '[data-node="shrine"]';
+
+async function researchTheShrine({ browser }) {
+  browser.click("Research");
+  const node = await readUntil(() => browser.read(elementAt(SHRINE_NODE)), Boolean, SHEET_WAIT_MS);
+  if (!node || node.state !== "ready") return { node };
+  browser.tap(node.offset);
+  const research = await readUntil(() => browser.read(buttonNamed("Research Shrine")), Boolean, SHEET_WAIT_MS);
+  if (!research) return { node, research };
+  watchFor(browser, "researched", shrineResearched);
+  browser.tap(research.offset);
+  return { node: node.state, watching: true, region: node.region };
+}
+
+/** The Shrine's node reads Researched, and the lab's chain has answered its Research with the Shrine learned. */
+const shrineResearched = `(() => {
+  const answer = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "Research").at(-1);
+  const learned = answer?.answered.find(({ model }) => model === "RealmKnowledge")?.value.learned;
+  return learned !== undefined && ((BigInt(learned) >> 44n) & 1n) === 1n &&
+    document.querySelector(${JSON.stringify(SHRINE_NODE)})?.dataset.state === "done";
+})()`;
+
+/** An element's box, where it is from the screen's centre, and its state; null while it is not drawn. */
+const elementAt = (selector) => `JSON.stringify((() => {
+  const element = document.querySelector(${JSON.stringify(selector)});
+  if (!element) return null;
+  const rect = element.getBoundingClientRect();
+  return {
+    state: element.dataset.state ?? null,
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+  };
+})())`;
+
+/** A button by its whole text, where it is from the screen's centre; null while none is drawn. */
+const buttonNamed = (name) => `JSON.stringify((() => {
+  const button = [...document.querySelectorAll("button")].find((candidate) => candidate.textContent.trim() === ${JSON.stringify(name)});
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return { offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+})())`;
+
+/**
+ * A Realm's labor claimed (the lab's claim game, whose relay the tab answers): Realms opened (a desktop's purse, a
+ * phone's Menu), a Realm
+ * added by its number, then its Claim; the result is the sheet saying that Realm's labor was claimed today, once the
+ * chain has granted it.
+ */
+const CLAIM_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("claim", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
+];
+
+const CLAIMED_REALM = 3098;
+const REALMS_SHEET = '[data-kit-sheet][aria-label="Realms"]';
+
+async function claimARealmsLabor({ browser }) {
+  // A desktop's purse opens Realms; a phone's Menu holds it.
+  if (!onADesktop()) {
+    browser.click("Menu");
+    await readUntil(() => browser.read(buttonNamed("Realms")), Boolean, SHEET_WAIT_MS);
+  }
+  browser.click("Realms");
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Realms",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Realms") return { sheet };
+  browser.run(["fill", `${REALMS_SHEET} input[aria-label="Realm number"]`, String(CLAIMED_REALM)]);
+  const claim = await readUntil(() => browser.read(sheetButton("^Claim$")), Boolean, SHEET_WAIT_MS);
+  if (!claim) return { sheet, claim };
+  const region = browser.read(sheetRegion(REALMS_SHEET));
+  watchFor(browser, "claimed", realmClaimed);
+  browser.tap(claim.offset);
+  return { sheet, watching: true, region };
+}
+
+/** The lab chain granted the Realm's labor, and the Realms sheet lists that Realm as claimed today. */
+const realmClaimed = `(() => {
+  const grant = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "GrantLabor").at(-1)
+    ?.answered.find(({ model }) => model === "LaborGrant");
+  const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.textContent ?? "";
+  return grant?.value.realm_id === ${CLAIMED_REALM} && sheet.includes("Claimed today") &&
+    sheet.includes(${JSON.stringify(`#${CLAIMED_REALM.toLocaleString("en-US")}`)});
+})()`;
 
 /** The army the lab's chain removed in the merge, leaving the map from its tile. */
 const mergedAway = ({ played, actionLatency }) => {
@@ -2531,6 +2714,10 @@ export const STEP_SETS = {
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-keeps-picked"), steps: mergeActionSteps() },
+  "lab-actions-transfer": { game: labSpireGame("merge-keeps-picked"), steps: transferActionSteps() },
+  "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
+  "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
+  "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },

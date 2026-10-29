@@ -45,6 +45,24 @@ export function researchChoice(learned: bigint, row: number, tier: number): numb
   return field(learned, offset + width * BigInt(tier - 1), width);
 }
 
+/**
+ * The knowledge after a row's next tier is learned, with `side` the choice at that tier on a row that has one, as
+ * research.cairo's learn packs it. Throws for a side the row does not offer.
+ */
+export function learnResearch(learned: bigint, row: number, side: number): bigint {
+  const offset = tierFields[row]?.[0];
+  if (offset === undefined) throw new Error(`Unknown research row ${row}`);
+  const next = researchTier(learned, row) + 1;
+  const choice = choiceFields[row];
+  if (!choice) {
+    if (side !== 0) throw new Error(`Research row ${row} has no choice`);
+    return learned + (1n << offset);
+  }
+  const [choiceOffset, choiceWidth] = choice;
+  if (side < 0 || side >= 1 << Number(choiceWidth)) throw new Error(`Research row ${row} has no side ${side}`);
+  return learned + (1n << offset) + (BigInt(side) << (choiceOffset + choiceWidth * BigInt(next - 1)));
+}
+
 /** Unknown realm knowledge stays unknown. */
 export function realmLearned(
   store: Pick<NativeFactStore, "get">,

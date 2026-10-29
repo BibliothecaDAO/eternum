@@ -1171,6 +1171,7 @@ export class ArmyManager {
     );
     this.refreshArmyInstance(army, slot, modelType);
     markShadowCastersChanged();
+    if (army.isMine) presentResult(`army-shown:${numericId}`);
   }
 
   private refreshArmyInstance(army: ArmyData, slot: number, modelType: ModelType, reResolveCosmetics?: boolean): void {

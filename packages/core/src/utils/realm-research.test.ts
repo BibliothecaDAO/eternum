@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { realmLearned, researchChoice, researchedDepth, researchTier } from "./realm-research";
+import { learnResearch, realmLearned, researchChoice, researchedDepth, researchTier } from "./realm-research";
 
 // research.cairo's learn(): a row's tier counts up in its field, and each tier's choice follows the row's tier field.
 const learned =
@@ -46,5 +46,21 @@ describe("realm research", () => {
     expect(researchedDepth(store(undefined), 7, 9)).toBeUndefined();
     expect(researchedDepth(store(0n), 7, 9)).toBe(0);
     expect(researchedDepth(store(learned), 7, 9)).toBe(2);
+  });
+
+  it("learns a row's next tier with its side, as the chain packs it", () => {
+    const farmEpic = learnResearch(learned, research.ROW_FARM, research.CHOICE_STORE);
+    expect(researchTier(farmEpic, research.ROW_FARM)).toBe(3);
+    expect([1, 2, 3].map((tier) => researchChoice(farmEpic, research.ROW_FARM, tier))).toEqual([
+      research.CHOICE_MAKE,
+      research.CHOICE_STORE,
+      research.CHOICE_STORE,
+    ]);
+    expect(farmEpic - learned).toBe(1n + (1n << 5n));
+
+    const well = learnResearch(learned, research.ROW_WELL, 0);
+    expect(researchTier(well, research.ROW_WELL)).toBe(1);
+    expect(well - learned).toBe(1n << 45n);
+    expect(() => learnResearch(learned, research.ROW_WELL, 1)).toThrow("has no choice");
   });
 });
