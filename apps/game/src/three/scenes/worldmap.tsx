@@ -4768,8 +4768,9 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * A terrain page presented with an awaited explored tile on it (its biome, not the unexplored outline) renders that
-   * explore: the page that draws the tile, not the camera's critical pages, which may be presented already.
+   * A terrain page presented with an awaited explored tile on it (its biome, not the unexplored outline) draws that
+   * explore's ground: the page that draws the tile, not the camera's critical pages, which may be presented already.
+   * The explore is rendered once that ground reads as explored, half of the fog over it swept away.
    */
   private presentExploredTiles(
     cells: readonly { biomeKey: string; col: number; row: number }[],
@@ -4782,8 +4783,11 @@ export default class WorldmapScene extends WarpTravel {
       size: WORLDMAP_CHUNK_POLICY.visualPresentation.visualPageSize,
       origin: pageOrigin,
     })) {
-      revealedBy.forEach((actionId) => recordClientActionRendered(actionId));
-      presentResult(`explore:${targetKey}`);
+      const [col, row] = targetKey.split(",").map((value) => Number(value) - FELT_CENTER());
+      this.proceduralTerrain.whenShroudRevealed(col, row, () => {
+        revealedBy.forEach((actionId) => recordClientActionRendered(actionId));
+        presentResult(`explore:${targetKey}`);
+      });
     }
   }
 

@@ -50,4 +50,25 @@ describe("directional exploration reveal", () => {
     expect(reveal.size).toBe(0);
     reveal.dispose();
   });
+
+  it("tells who waits on a cell once half its fog has cleared, its sweep queued or running, and on a cleared sweep", () => {
+    const reveal = new TerrainFogReveal();
+    const told: string[] = [];
+    reveal.start(4, 4, [1, 0]);
+    reveal.whenHalfClear(4, 4, () => told.push("running"));
+    reveal.whenHalfClear(9, 9, () => told.push("queued"));
+    reveal.update(0.14);
+    expect(told).toEqual([]);
+    reveal.update(0.02);
+    expect(told).toEqual(["running"]);
+    reveal.start(9, 9, [0, 1]);
+    reveal.update(0.15);
+    expect(told).toEqual(["running", "queued"]);
+
+    reveal.start(5, 5, [1, 0]);
+    reveal.whenHalfClear(5, 5, () => told.push("cut short"));
+    reveal.setReducedMotion(true);
+    expect(told.at(-1)).toBe("cut short");
+    reveal.dispose();
+  });
 });
