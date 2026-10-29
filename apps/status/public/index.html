@@ -3,15 +3,15 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#130F0C" />
+    <meta name="theme-color" content="#130f0c" />
     <title>Realms — Status</title>
     <!-- The status page: its own static site on status.realms.world, so it stands when the app does not. One file with
          no build, no app bundle and no font service; it reads the monitor's /status.json (apps/status/functions) every
          minute and ages what it holds on its own clock, so an old document never shows a fresh green. Colours are the
-         game client's token file (apps/game/src/tokens.ts). -->
+         game client's token file (apps/game/src/tokens.ts), written in by its build-brand-surfaces script. -->
     <style>
+      /* brand: written from apps/game/src/tokens.ts by apps/game/scripts/build-brand-surfaces.ts */
       :root {
-        color-scheme: dark;
         --ground: #130f0c;
         --plate: #201a16;
         --plate2: #2a221c;
@@ -20,9 +20,20 @@
         --cream: #f4ebdc;
         --muted: #b7a78a;
         --gold: #dfaa54;
-        --sage: #b5bd75;
+        --gold2: #f3d08a;
+        --peach: #f6c297;
         --amber: #e39001;
+        --ember: #ef5858;
         --red: #fc4c4c;
+        --sage: #b5bd75;
+        --hot: #f6ac1d;
+        --ink: #1b1207;
+        --veil: #0a0806;
+        --shade: #000000;
+      }
+      /* brand: end */
+      :root {
+        color-scheme: dark;
         background: var(--ground);
         color: var(--cream);
         font:

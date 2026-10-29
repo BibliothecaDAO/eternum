@@ -37,17 +37,40 @@
     <meta property="og:type" content="website" />
     <link rel="icon" href="/images/game-favicon.ico" />
     <link rel="apple-touch-icon" href="/images/game-apple-touch-icon-180x180.png" sizes="180x180" />
-    <meta name="theme-color" content="#130F0C" />
+    <meta name="theme-color" content="#130f0c" />
 
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="%APP_ADDRESS%/images/covers/og-image.png" />
     <link rel="preload" href="/fonts/realms-titling-bold.woff2" as="font" type="font/woff2" crossorigin />
     <link rel="preload" href="/fonts/exo-2.woff2" as="font" type="font/woff2" crossorigin />
     <style>
+      /* brand: written from apps/game/src/tokens.ts by apps/game/scripts/build-brand-surfaces.ts */
+      :root {
+        --ground: #130f0c;
+        --plate: #201a16;
+        --plate2: #2a221c;
+        --line: #46351c;
+        --line2: #6b5230;
+        --cream: #f4ebdc;
+        --muted: #b7a78a;
+        --gold: #dfaa54;
+        --gold2: #f3d08a;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --ember: #ef5858;
+        --red: #fc4c4c;
+        --sage: #b5bd75;
+        --hot: #f6ac1d;
+        --ink: #1b1207;
+        --veil: #0a0806;
+        --shade: #000000;
+      }
+      /* brand: end */
+
       /* The first frame (spec 14): the lettered mark on the ground, the same as the install's splash; never a black page. */
       html[data-boot-state="booting"] body,
       html[data-boot-state="react-mounted"] body {
-        background: #130f0c;
+        background: var(--ground);
       }
 
       #boot-shell {
@@ -56,7 +79,7 @@
         z-index: 2147483647;
         display: grid;
         place-items: center;
-        background: #130f0c;
+        background: var(--ground);
         transition:
           opacity 360ms ease,
           visibility 360ms ease;
