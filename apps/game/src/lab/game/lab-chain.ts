@@ -3,6 +3,7 @@ import { useAccountStore } from "@/hooks/store/use-account-store";
 import { LAB_GUARDIAN, LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
 import { answerLabChat } from "@/shell/lab/lab-chat";
 import { gameChatZoneId } from "@/ui/features/world/containers/hud-chat-window";
+import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
@@ -114,6 +115,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
   answerLaborClaims(scenario, chain, record, herald, now);
+  answerLedgerReads(now);
   answerLabChat(true, [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)]);
   signInLabPlayer(scenario.wallet);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
@@ -284,6 +286,24 @@ const answerAccountJoin = (rpcUrl: string, accountClassHash: string) =>
     getClassHashAt: async () => accountClassHash,
     callContract: async () => ["0x1"],
   });
+
+/**
+ * The L2 ledger's reads a withdrawal makes, answered in this tab: payouts are not paused, its block is the lab chain's
+ * second, and no payment has landed yet (the relay pays a claim on L2, which the lab has no stand-in for). Every other
+ * read goes to the network as before.
+ */
+const answerLedgerReads = (now: () => number) => {
+  const ledger = l2Provider();
+  const call = ledger.callContract.bind(ledger);
+  const events = ledger.getEvents.bind(ledger);
+  Object.assign(ledger, {
+    callContract: async (request: Parameters<typeof call>[0], block?: Parameters<typeof call>[1]) =>
+      request.entrypoint === "is_paused" && request.contractAddress === L2_LEDGER ? ["0x0"] : call(request, block),
+    getBlockNumber: async () => now(),
+    getEvents: async (filter: Parameters<typeof events>[0]) =>
+      filter.address === L2_LEDGER ? { events: [], continuation_token: undefined } : events(filter),
+  });
+};
 
 /** How long the lab's chain takes to close a block: a command's facts land this long after it is sent. */
 const LAB_BLOCK_MS = 300;

@@ -1426,6 +1426,7 @@ export default class HexceptionScene extends HexagonScene {
     if (action === "remove" || action === "replace") {
       this.removeBuilding(position.col, position.row);
     }
+    if (action === "remove") presentResult(`building-gone:${key}`);
     if (building && selection && signature !== undefined && (action === "create" || action === "replace")) {
       this.addBuildingInstance(building, selection, signature, buildingEntrance(building, this.pinnedPlot));
     }

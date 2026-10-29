@@ -11,6 +11,7 @@ import { realmScenario } from "./realm-scenario";
 import { researchScenario } from "./research-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
+import { upkeepScenario } from "./upkeep-scenario";
 import { highGroundScenario, spireScenario } from "./spire-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
@@ -28,6 +29,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   sites: sitesScenario,
   research: researchScenario,
   claim: claimScenario,
+  upkeep: upkeepScenario,
   explore: exploreScenario,
   "painted-buildings": paintedBuildingsScenario,
   "day-turn": dayTurnScenario("live"),

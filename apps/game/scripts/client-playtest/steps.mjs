@@ -147,19 +147,22 @@ const PLAYER_STEPS = [
 
 /**
  * An action timed from the player's press to its result on screen (owner, 2026-10-28: "I want to reduce as max we can
- * the time between an action submitted and it appearing on the suers screen"). `press` plays it as a player does and
+ * the time between an action submitted and it appearing on the suers screen"). `sends` is the game command it measures
+ * (commands.cairo's variant; the lab's relay grant for a labor claim), `press` plays it as a player does and
  * reports the screen region its result shows in; `resultOf` names exactly that result (click-latency.mjs) from what was
  * pressed and what the client and, in the lab, the chain recorded. The step waits long enough for the chain to answer,
  * then cuts the press to the result at each mark the client recorded. With --capture-results it also records the
  * page's frames and fails unless they show the result in its region at its mark (result-capture.mjs).
  */
-const clickToResultStep = (name, press, resultOf) => ({
+const clickToResultStep = (name, sends, press, resultOf) => ({
   name,
+  sends,
   play: async (context) => {
     const stopCapture = context.captureResults
       ? await startResultCapture(context.devTools, context.browser.observe().timeOrigin)
       : null;
-    const { locate, ...pressed } = await press(context);
+    const chainFrom = context.browser.read(LAB_CHAIN_LENGTH);
+    const { locate, ...pressed } = { ...(await press(context)), chainFrom };
     await context.owner.sleep(RESULT_SETTLE_MS);
     // A result whose place is known only once it shows (a deployed army) is found after the settle: reading the page
     // while the frames are recorded would hold their acknowledgements, and the screencast with them.
@@ -178,7 +181,7 @@ const clickToResultStep = (name, press, resultOf) => ({
       since: window.from,
       result: { ...result, region: undefined },
     });
-    const verdict = judgeClickToResult(played, measured);
+    const verdict = sentAsDeclared(judgeClickToResult(played, measured), played, actionLatency, sends);
     if (!played.capturedAs) return verdict;
     const frames = capturedFrames.get(played.capturedAs) ?? [];
     capturedFrames.delete(played.capturedAs);
@@ -186,6 +189,7 @@ const clickToResultStep = (name, press, resultOf) => ({
     const onScreen = await proveResultOnScreen({
       frames,
       region: result.region ?? played.region,
+      target: result.target,
       before: measured.marks.diff,
       visible: measured.marks.visible,
       frameMs: medianFrameMs(probe.frames, window),
@@ -199,6 +203,21 @@ const clickToResultStep = (name, press, resultOf) => ({
         });
   },
 });
+// How many commands the lab's chain has been sent; null outside the lab.
+const LAB_CHAIN_LENGTH = `JSON.stringify(window.__labChain ? window.__labChain.sent.length : null)`;
+
+/**
+ * In the lab, a step's press must have sent the command it measures (action-coverage.test.ts counts each player command
+ * by the step that declares it): one that sent something else measured another action.
+ */
+const sentAsDeclared = (verdict, played, actionLatency, sends) => {
+  if (verdict.status !== "completed" || played.chainFrom == null) return verdict;
+  const sent = (actionLatency.chainAnswers ?? []).slice(played.chainFrom).map(({ kind }) => kind);
+  return sent.includes(sends)
+    ? verdict
+    : failed(`the press sent ${sent.join(", ") || "nothing"}, not ${sends}`, played);
+};
+
 /** Long enough for a live shard's answer and the frames after it; the lab's chain answers in 300 ms. */
 const RESULT_SETTLE_MS = 6_000;
 /** Frames a step recorded with --capture-results, held until its verdict reads them: never in its transcript. */
@@ -213,12 +232,20 @@ const medianFrameMs = (frames, { from, to }) => {
   return Math.max(1000 / 60, gaps[Math.floor(gaps.length / 2)] ?? 0);
 };
 
-/** The tile an explore targeted, as its own record names it: the one tile its result may show. */
-const exploredTile = ({ actionLatency, since }) => {
+/**
+ * The tile an explore targeted, as its own record names it: the one tile its result may show, and on screen, its
+ * ground, which must read as explored, not its fog (an outline or a plate changing round it proves nothing).
+ */
+const exploredTile = ({ played, actionLatency, since }) => {
   const record = (actionLatency.clientActions ?? []).find(
     (action) => action.operation === "explore_reveal" && action.phases.click >= since && action.targetHex,
   );
-  return record && { presented: `explore:${record.targetHex.col},${record.targetHex.row}` };
+  return (
+    record && {
+      presented: `explore:${record.targetHex.col},${record.targetHex.row}`,
+      target: played.target && tileInterior(played.target),
+    }
+  );
 };
 
 /** The building the lab's chain wrote for the step's CreateBuilding: its plot and its category. */
@@ -237,15 +264,16 @@ const builtBuilding = ({ actionLatency }) => {
  */
 const ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("explore", exploreBesideArmy, exploredTile),
+  clickToResultStep("explore", "Explore", exploreBesideArmy, exploredTile),
   clickToResultStep(
     "move",
+    "Move",
     (context) => orderBesideArmy(context, "Move"),
     ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
   ),
   { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
-  clickToResultStep("level-up", raiseTheCastle, ({ played }) => played.raisedTo && { watch: "level-up" }),
-  clickToResultStep("build", buildOnAnOpenPlot, builtBuilding),
+  clickToResultStep("level-up", "LevelUp", raiseTheCastle, ({ played }) => played.raisedTo && { watch: "level-up" }),
+  clickToResultStep("build", "CreateBuilding", buildOnAnOpenPlot, builtBuilding),
 ];
 
 /**
@@ -258,6 +286,7 @@ const SPIRE_ACTION_STEPS = [
   { name: "spire-card", play: tapTheSpire, settleMs: 0, verify: spireCardOffersDepths },
   clickToResultStep(
     "enter-depth",
+    "EnterDepth",
     enterEtherealIIFromItsCard,
     ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
   ),
@@ -278,7 +307,12 @@ async function enterEtherealIIFromItsCard({ browser }) {
 const FIGHT_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("attack", attackFromTheSiteCard, ({ played }) => played.watching && { watch: "fought" }),
+  clickToResultStep(
+    "attack",
+    "BattleGuard",
+    attackFromTheSiteCard,
+    ({ played }) => played.watching && { watch: "fought" },
+  ),
 ];
 
 async function attackFromTheSiteCard({ browser }) {
@@ -350,8 +384,8 @@ const tokensShowTheChainsCounts = (kind) => `(() => {
 const SITE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("shrine", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
-  clickToResultStep("well", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
+  clickToResultStep("shrine", "InteractSite", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
+  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
 ];
 
 async function useTheSite({ browser }, site, gives) {
@@ -412,7 +446,7 @@ function mergeActionSteps() {
     { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
     { name: "pick-army", play: pickTheSpireArmy, settleMs: 0, verify: spireArmyPicked },
     { name: "open-merge", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
-    clickToResultStep("merge", (context) => mergeTheArmies(context, tiles), mergedAway),
+    clickToResultStep("merge", "ManageTroops", (context) => mergeTheArmies(context, tiles), mergedAway),
   ];
 }
 
@@ -433,17 +467,26 @@ async function mergeTheArmies({ browser }, tiles) {
   return { merge, confirm, tiles: tiles.byArmy };
 }
 
-/** The open sheet's button whose text matches `pattern` (a regular expression, any case): its name and where it is. */
+/**
+ * The open sheet's button whose text or label matches `pattern` (a regular expression, any case): its name and where it
+ * is, scrolled into the sheet's view as a player scrolls to it (a phone's sheet runs past its screen). A button that
+ * shows only a figure is named by its label ("Refill 73").
+ */
 const sheetButton = (pattern) => `JSON.stringify((() => {
-  const button = [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])]
-    .find((candidate) => new RegExp(${JSON.stringify(pattern)}, "i").test(candidate.textContent.trim()));
+  const matches = (text) => new RegExp(${JSON.stringify(pattern)}, "i").test(text ?? "");
+  const button = [...document.querySelectorAll("[data-kit-sheet] button")]
+    .find((candidate) => matches(candidate.textContent.trim()) || matches(candidate.getAttribute("aria-label")));
   if (!button) return null;
+  button.scrollIntoView({ block: "nearest" });
   const rect = button.getBoundingClientRect();
   return {
     name: button.textContent.trim(),
     offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+    row: (({ left, top, width, height }) => ({ left: Math.round(left), top: Math.round(top), width: Math.round(width), height: Math.round(height) }))(button.parentElement.getBoundingClientRect()),
   };
 })())`;
+
 const MERGE_BUTTON = sheetButton("merge into");
 
 /**
@@ -459,6 +502,7 @@ function transferActionSteps() {
     { name: "open-transfer", play: (context) => openTheMerge(context, tiles), settleMs: 0, verify: mergeCardOpen },
     clickToResultStep(
       "transfer",
+      "ManageTroops",
       (context) => sendSomeTroops(context, tiles),
       ({ played }) => played.watching && { watch: "transferred" },
     ),
@@ -495,7 +539,7 @@ const boxAround = (regions) => {
  */
 const DEPLOY_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("deploy", deployFromTheDock, armyDeployed),
+  clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
 async function deployFromTheDock({ browser }) {
@@ -533,7 +577,12 @@ function armyDeployed({ actionLatency }) {
  */
 const RESEARCH_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("research", researchTheShrine, ({ played }) => played.watching && { watch: "researched" }),
+  clickToResultStep(
+    "research",
+    "Research",
+    researchTheShrine,
+    ({ played }) => played.watching && { watch: "researched" },
+  ),
 ];
 
 const SHRINE_NODE = '[data-node="shrine"]';
@@ -586,7 +635,7 @@ const buttonNamed = (name) => `JSON.stringify((() => {
  */
 const CLAIM_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
-  clickToResultStep("claim", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
+  clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
 ];
 
 const CLAIMED_REALM = 3098;
@@ -622,6 +671,268 @@ const realmClaimed = `(() => {
   return grant?.value.realm_id === ${CLAIMED_REALM} && sheet.includes("Claimed today") &&
     sheet.includes(${JSON.stringify(`#${CLAIMED_REALM.toLocaleString("en-US")}`)});
 })()`;
+
+/**
+ * An army's upkeep (the lab's upkeep game): its panel opened from the dock, then Refill and its confirm (the result: the
+ * panel reading the stamina the chain refilled it to), then Level up and Level up again on Battle (the result: the
+ * panel naming the tier the chain bought).
+ */
+const ARMY_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep("refill", "RefillStamina", refillTheArmy, ({ played }) => played.watching && { watch: "refilled" }),
+  clickToResultStep("tier", "BuyTier", levelUpTheArmy, ({ played }) => played.watching && { watch: "tier-bought" }),
+];
+
+/**
+ * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
+ * A panel already open (a phone's stands where its dock was) is used as it is.
+ */
+async function openTheArmyPanel(browser) {
+  const open = browser.read(SHEET_NAME);
+  if (/^Army \d+$/.test(open ?? "")) {
+    return { army: open, sheet: open, region: browser.read(sheetRegion(`[data-kit-sheet][aria-label="${open}"]`)) };
+  }
+  const army = await focusTheArmyFromItsDock(browser);
+  if (!army) return { army };
+  if (browser.read(SHEET_NAME) !== army) {
+    const details = browser.read(buttonLabelled(`^${army}(: details)?$`));
+    if (details) browser.tap(details.offset);
+  }
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === army,
+    SHEET_WAIT_MS,
+  );
+  return {
+    army,
+    sheet,
+    region: sheet === army ? browser.read(sheetRegion(`[data-kit-sheet][aria-label="${army}"]`)) : null,
+  };
+}
+
+async function refillTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (panel.sheet !== panel.army) return panel;
+  const refill = browser.read(sheetButton("^Refill"));
+  if (!refill) return { ...panel, refill };
+  browser.tap(refill.offset);
+  const confirm = await readUntil(
+    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill$")),
+    Boolean,
+    SHEET_WAIT_MS,
+  );
+  if (!confirm) return { ...panel, refill: refill.name, confirm };
+  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army));
+  browser.tap(confirm.offset);
+  return { ...panel, refill: refill.name, watching: true };
+}
+
+/** The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. */
+const panelReadsTheChainsStamina = (army) => `(() => {
+  const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
+  const amount = refill?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
+  return amount !== undefined && text.includes(amount + "/" + amount);
+})()`;
+
+async function levelUpTheArmy({ browser }) {
+  const panel = await openTheArmyPanel(browser);
+  if (panel.sheet !== panel.army) return panel;
+  const choose = browser.read(sheetButton("^Level up$"));
+  if (!choose) return { ...panel, choose };
+  browser.tap(choose.offset);
+  const battle = await readUntil(() => browser.read(sheetButton("^Battle")), Boolean, SHEET_WAIT_MS);
+  if (!battle) return { ...panel, battle };
+  const buy = browser.read(sheetButton("^Level up$"));
+  if (!buy) return { ...panel, buy };
+  watchFor(browser, "tier-bought", panelNamesTheChainsTier(panel.army));
+  browser.tap(buy.offset);
+  // The result shows beside the press: its row names the next tier from the one bought.
+  return { ...panel, watching: true, region: buy.row };
+}
+
+const ROMAN_TIERS = ["I", "II", "III", "IV", "V"];
+
+/** The army's panel names the Battle tier the lab's chain bought: its Battle choice now reads from that tier ("BattleII→III"). */
+const panelNamesTheChainsTier = (army) => `(() => {
+  const bought = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "BuyTier").at(-1);
+  const tier = bought?.answered.find(({ model }) => model === "ArmyProgress")?.value.battle;
+  const choices = [...(document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.querySelectorAll("button") ?? [])];
+  return tier !== undefined &&
+    choices.some((button) => button.textContent.replace(/\s+/g, "").startsWith("Battle" + ${JSON.stringify(ROMAN_TIERS)}[tier - 1] + "→"));
+})()`;
+
+/**
+ * A building demolished (the lab's upkeep game): the realm, a first-ring building tapped for its card, Delete, then
+ * Confirm delete; the result is the building the chain removed leaving its plot.
+ */
+const DEMOLISH_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+  clickToResultStep("demolish", "DestroyBuilding", demolishABuilding, buildingDemolished),
+];
+
+async function demolishABuilding({ browser }) {
+  browser.press("Escape");
+  const tapped = [];
+  for (const offset of FIRST_RING_CANDIDATES) {
+    browser.tap(offset);
+    const remove = await readUntil(() => browser.read(sheetButton("^Delete$")), Boolean, SHEET_WAIT_MS);
+    tapped.push({ offset, sheet: browser.read(SHEET_NAME) });
+    if (remove) {
+      browser.tap(remove.offset);
+      const confirm = await readUntil(() => browser.read(sheetButton("^Confirm delete$")), Boolean, SHEET_WAIT_MS);
+      if (!confirm) return { tapped, confirm };
+      browser.tap(confirm.offset);
+      return { tapped, plot: offset, region: tileRegion(offset) };
+    }
+    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+  }
+  return { tapped };
+}
+
+// The first ring round the castle, from its top-left clockwise, where a Settlement's buildings stand: as a desktop
+// draws it, then as a phone's narrower view does.
+const FIRST_RING = [
+  [-80, -120],
+  [75, -120],
+  [160, -5],
+  [90, 110],
+  [-90, 110],
+  [-170, -20],
+];
+const FIRST_RING_CANDIDATES = [
+  ...FIRST_RING,
+  ...FIRST_RING.map(([dx, dy]) => [Math.round(dx * 0.6), Math.round(dy * 0.6)]),
+];
+
+/** The building the lab's chain removed for the step's DestroyBuilding, leaving its plot. */
+function buildingDemolished({ actionLatency }) {
+  const removed = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "DestroyBuilding")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "Building" && value === null);
+  const [, , col, row] = removed?.key.split(":") ?? [];
+  return col && { presented: `building-gone:${col},${row}` };
+}
+
+/**
+ * A chest opened (the lab's upkeep game): the army selected, the tile beside it that holds a chest opened as a player
+ * does (a desktop's right-click on the tile whose hover offers Open crate; a phone's tap, then its card's Open); the
+ * result is that chest consumed off its tile.
+ */
+const CHEST_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  clickToResultStep("chest", "OpenRelicChest", openTheChest, chestOpened),
+];
+
+async function openTheChest({ browser }) {
+  await focusTheArmyFromItsDock(browser);
+  const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
+  if (!armyAt) return { offered: [] };
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    const offset = [armyAt[0] + dx, armyAt[1] + dy];
+    if (onADesktop()) {
+      browser.hover(offset);
+      await sleep(HOVER_SETTLE_MS);
+      const tip = browser.read(TOOLTIP_TEXT);
+      offered.push(tip);
+      if (/^Open crate\b/.test(tip ?? "")) {
+        browser.rightClick(offset);
+        return { offered, target: offset, region: tileRegion(offset) };
+      }
+      continue;
+    }
+    browser.tap(offset);
+    const open = await readUntil(() => browser.read(sheetButton("^Open")), Boolean, SHEET_WAIT_MS);
+    offered.push(browser.read(SHEET_NAME));
+    if (open) {
+      browser.tap(open.offset);
+      return { offered, target: offset, region: tileRegion(offset) };
+    }
+    if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+    if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
+  }
+  return { offered };
+}
+
+/** The chest the lab's chain consumed for the step's OpenRelicChest: its tile, vacated. */
+function chestOpened({ actionLatency }) {
+  const vacated = (actionLatency.chainAnswers ?? [])
+    .filter(({ kind }) => kind === "OpenRelicChest")
+    .at(-1)
+    ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
+  const [, , col, row] = vacated?.key.split(":") ?? [];
+  return col && { presented: `chest-opened:${col},${row}` };
+}
+
+/**
+ * LORDS withdrawn (the lab's upkeep game, whose L2 ledger reads the tab answers): the purse's LORDS opened for Withdraw,
+ * its Maximum, then Withdraw; the result is the purse reading the LORDS the chain debited the realm to (the ledger's
+ * payment on L2 comes later, the relay's doing).
+ */
+const WITHDRAW_ACTION_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  clickToResultStep(
+    "withdraw",
+    "WithdrawLords",
+    withdrawTheLords,
+    ({ played }) => played.watching && { watch: "withdrawn" },
+  ),
+];
+
+async function withdrawTheLords({ browser }) {
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return { purse };
+  browser.tap(purse.offset);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "Withdraw",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "Withdraw") return { purse: purse.name, sheet };
+  const most = browser.read(sheetButton("^Maximum"));
+  if (!most) return { purse: purse.name, sheet, most };
+  browser.tap(most.offset);
+  const withdraw = await readUntil(() => browser.read(sheetButton("^Withdraw$")), Boolean, SHEET_WAIT_MS);
+  if (!withdraw) return { purse: purse.name, sheet, withdraw };
+  watchFor(browser, "withdrawn", purseReadsTheChainsLords);
+  browser.tap(withdraw.offset);
+  return { purse: purse.name, sheet, watching: true, region: purse.region };
+}
+
+/** The purse reads the LORDS the lab's chain debited the realm to for the step's WithdrawLords. */
+const purseReadsTheChainsLords = `(() => {
+  const withdrawal = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "WithdrawLords").at(-1);
+  const balance = withdrawal?.answered.find(({ model }) => model === "ResourceBalance")?.value.balance;
+  if (balance === undefined) return false;
+  const lords = (BigInt(balance) / 1000000000n).toLocaleString("en-US");
+  return [...document.querySelectorAll("button")].some((button) => button.getAttribute("aria-label") === "LORDS " + lords);
+})()`;
+
+/** A button on the page whose label (or text) matches `pattern`: its name and where it is from the screen's centre. */
+const buttonLabelled = (pattern) => `JSON.stringify((() => {
+  const button = [...document.querySelectorAll("button")]
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.getAttribute("aria-label") ?? candidate.textContent.trim()));
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return {
+    name: button.getAttribute("aria-label") ?? button.textContent.trim(),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    region: { left: Math.round(rect.left), top: Math.round(rect.top), width: Math.round(rect.width), height: Math.round(rect.height) },
+  };
+})())`;
+
+/** A button in the sheet `selector` names, whose text matches `pattern`: its name and where it is. */
+const buttonIn = (selector, pattern) => `JSON.stringify((() => {
+  const button = [...(document.querySelector(${JSON.stringify(selector)})?.querySelectorAll("button") ?? [])]
+    .find((candidate) => new RegExp(${JSON.stringify(pattern)}).test(candidate.textContent.trim()));
+  if (!button) return null;
+  const rect = button.getBoundingClientRect();
+  return { name: button.textContent.trim(), offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)] };
+})())`;
 
 /** The army the lab's chain removed in the merge, leaving the map from its tile. */
 const mergedAway = ({ played, actionLatency }) => {
@@ -1312,6 +1623,11 @@ function armyRegion([dx, dy]) {
 /** A 120×100 patch centred on a tile tapped at `offset` from the screen centre. */
 function tileRegion([dx, dy]) {
   return { left: VIEWPORT.width / 2 + dx - 60, top: VIEWPORT.height / 2 + dy - 50, width: 120, height: 100 };
+}
+
+/** A tile's ground inside its outline: what its terrain alone fills. */
+function tileInterior([dx, dy]) {
+  return { left: VIEWPORT.width / 2 + dx - 32, top: VIEWPORT.height / 2 + dy - 25, width: 64, height: 50 };
 }
 
 /**
@@ -2686,6 +3002,19 @@ function reloadOnTheRealm(labScenario) {
   };
 }
 
+/**
+ * The player commands Frontier's preset enables that no lab action step sends, each with why none does. Every other one
+ * is measured by the step that declares it (`sends`), on desktop and phone, with baselines; action-coverage.test.ts
+ * fails a command that is neither.
+ */
+export const UNMEASURED_COMMANDS = {
+  SettleSeason:
+    "a season's entry, once per account, from the home page's Play before the game's map exists: the --player run times it as the boot",
+  MarkGameSettled:
+    "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
+  SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
+};
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "unit-assets-spectator": {
@@ -2720,6 +3049,10 @@ export const STEP_SETS = {
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
+  "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
+  "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
+  "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
+  "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-merge-keeps-picked": { game: labSpireGame("merge-keeps-picked"), steps: labMergeSteps() },

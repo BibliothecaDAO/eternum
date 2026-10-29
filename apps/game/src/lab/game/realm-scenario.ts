@@ -9,14 +9,17 @@ import {
 import type { LabFact, LabScenario } from "./lab-chain";
 import { balancesPaid, spireScenario } from "./spire-scenario";
 
-/** The first ring's six plots, each with a building, as a Settlement fills them before it is raised. */
+/**
+ * The first ring's six plots, each with a building Frontier raises (frontier/build/building-names.ts), as a Settlement
+ * fills them before it is raised.
+ */
 const FIRST_RING = [
   BuildingType.WorkersHut,
-  BuildingType.Storehouse,
   BuildingType.ResourceWheat,
-  BuildingType.ResourceWood,
-  BuildingType.ResourceStone,
   BuildingType.ResourceLabor,
+  BuildingType.ResourceKnightT1,
+  BuildingType.WarHall,
+  BuildingType.SupplyYard,
 ];
 
 /** Each castle level's price in labor, which the castle card reads (the HUD fixture's wheat price is none it takes). */

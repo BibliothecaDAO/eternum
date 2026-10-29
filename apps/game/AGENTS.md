@@ -198,24 +198,35 @@ the army attacked from its card; `--steps lab-actions-sites`, a Shrine and a Wel
 `--steps lab-actions-deploy`, a new army from the dock's Deploy (Max, then Deploy); `--steps lab-actions-research`, the
 Shrine researched from Research (`scenario=research`); and `--steps lab-actions-claim`, a Realm's labor claimed from
 Realms (a desktop's purse, a phone's Menu: Add a Realm, its number, Claim; `scenario=claim`, whose value relay the tab
-answers as the relay does: the grant's facts first, then the reply naming their transaction). Each names its exact
-result: the renderer's mark once the frame drawing it was rendered (`presented:<result>`,
-`src/three/presented-results.ts`: the explored tile's terrain, the army's walk, the deployed army drawn, the merged army
-leaving the map, that building on that plot, that Shrine or Well leaving its tile), or a page condition: the Castle
-sheet naming exactly the next level, each army a fight or transfer changed showing exactly the count the chain answered,
-the Shrine's node researched, the Realms sheet listing the Realm claimed today; another target's result is not the
-action's. Each is cut where the client records its way: handled (the press to the command), sent (signed and answered by
-the RPC), confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn
-(to the result); a claim, which the relay signs, has no sent segment, and its confirmed runs from the request. A step
-completes only with every mark reached and every frame from the press to the result observed. `--capture-results` also
-records the page's frames and fails a step unless, in its result's region of the screen, the pixels that show it appear
-at its mark (not a frame before, not absent three frames after; the screen at a moment is the last frame sent by then);
-the frames around it are kept. Each run writes `click-to-result.md`, each action's segments and total as median
-(min–max) over its quiet runs), `--compare <summary.json>` (fails when boot regresses, when an action the baseline timed
-has no timed run or a renderer mode it timed is missing, or when an action's press-to-result median is past the slowest
-run of that baseline by more than a frame; actions the baseline never timed are listed as new;
-`scripts/client-playtest/baselines/` keeps the lab's, one per step list and device, measured on the lanes' machine),
-`--headed`. Paths are taken from where the command is run.
+answers as the relay does: the grant's facts first, then the reply naming their transaction); on `scenario=upkeep`
+(LORDS held, the army short of stamina with XP to spend, a chest beside it, a payout wallet linked),
+`--steps lab-actions-army`, the army's panel's Refill (and its confirm) then Level up on Battle,
+`--steps lab-actions-demolish`, a first-ring building's Delete then Confirm delete, `--steps lab-actions-chest`, the
+chest beside the army opened (a desktop's right-click on the tile offering Open crate; a phone's tap, then Open), and
+`--steps lab-actions-withdraw`, the purse's LORDS withdrawn (Maximum, then Withdraw; the tab answers the L2 ledger's
+pause and payment reads). Each step declares the game command it sends (`sends`) and fails in the lab when its press
+sent another; `src/lab/game/action-coverage.test.ts` fails a command of the catalog Frontier enables that no step sends
+and `UNMEASURED_COMMANDS` does not name with its reason. Each names its exact result: the renderer's mark once the frame
+drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the explored tile's ground, once half
+its fog has swept away, the army's walk, the deployed army drawn, the merged army leaving the map, that building on that
+plot or leaving it, that Shrine or Well leaving its tile, that chest consumed), or a page condition: the Castle sheet
+naming exactly the next level, each army a fight or transfer changed showing exactly the count the chain answered, the
+Shrine's node researched, the Realms sheet listing the Realm claimed today, the army's panel reading the stamina
+refilled to or naming the tier bought, the purse reading the LORDS left; another target's result is not the action's.
+Each is cut where the client records its way: handled (the press to the command), sent (signed and answered by the RPC),
+confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the
+result); a claim, which the relay signs, has no sent segment, and its confirmed runs from the request. A step completes
+only with every mark reached and every frame from the press to the result observed. `--capture-results` also records the
+page's frames and fails a step unless, in its result's region of the screen, the pixels that show it appear at its mark
+(not a frame before, not absent three frames after; the screen at a moment is the last frame sent by then); an explore
+names its tile's ground as its target instead, which must read explored (its mean grey past half the way from its fog to
+its last look) within that window, whatever changed round it; the frames around it are kept. Each run writes
+`click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
+`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
+mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
+than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
+one per step list and device, measured on the lanes' machine), `--headed`. Paths are taken from where the command is
+run.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 
