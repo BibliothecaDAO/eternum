@@ -12,7 +12,7 @@ export const REALMS_MARK = {
   lettered: "/images/logos/realms-lettered.webp",
   /** The unlettered globe, 64 to 120 px: a loader. */
   contour: "/images/logos/realms-contour.webp",
-  /** The retained small globe, under 64 px: the status page's header and the favicon. */
+  /** The retained small globe, under 64 px: the status page's header, the favicon and the install icons. */
   small: "/images/logos/realms-small.webp",
 } as const;
 

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
-# each age's transparent lockup, the install icons and favicon (the contour globe, gold on Hearth; the dev set adds a
-# hatched corner), and the share card (the lettered mark on a painting under Hearth at 80%, the deck's page 19).
+# each age's transparent lockup, the install icons (the small globe, gold on Hearth) and the favicon (the small globe on
+# a Hearth disc; the dev sets add a hatched corner), and the share card (the lettered mark on a painting under Hearth at
+# 80%, the deck's page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
 
@@ -46,22 +47,38 @@ hatch() {
   magick "$1" "$WORK/hatch.png" -compose Over -composite -strip "$1"
 }
 
-# exact <kit export> <file>: one of the kit's exact-size exports, unchanged, on Hearth.
-exact() {
-  magick "$1" -background "$HEARTH" -flatten -strip "$2"
+# The small globe's master, square, and a Hearth disc under it: a tab draws the favicon on its own light or dark ground,
+# where a square of Hearth shows as a dark tile and gold alone fades on a light tab.
+magick "$SMALL" -trim +repage -gravity center -background none -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" "$WORK/globe.png"
+G=$(magick identify -format "%w" "$WORK/globe.png")
+GOLD=$(magick "$WORK/globe.png" -channel A -threshold 90% +channel -scale 1x1! -alpha off -format "#%[hex:p{0,0}]" info:)
+magick -size "${G}x$G" xc:none -fill "$HEARTH" -draw "circle $((G / 2)),$((G / 2)) $((G / 2)),0" "$WORK/disc.png"
+
+# tab <size> <file>: the favicon at one size. 32 and 48 px take the kit's own exports on the disc. The kit has no 16 px
+# globe and its lines are a third of a pixel there, so that size is rendered from the master: the lines at half
+# strength, the ring widened to one pixel, scaled in linear light.
+tab() {
+  local kit="$KIT/01-Logos/Realms/Small/realms-small-$1.png" c=$((G / 2))
+  if [[ -f $kit ]]; then
+    magick "$WORK/disc.png" -resize "$1x$1" "$kit" -compose Over -composite -strip "$2"
+    return
+  fi
+  magick "$WORK/globe.png" \( -size "${G}x$G" xc:none -fill white -draw "circle $c,$c $c,$((G / 20))" \) \
+    -compose DstIn -composite -channel A -evaluate multiply 0.5 +channel "$WORK/lines.png"
+  magick "$WORK/disc.png" "$WORK/lines.png" -compose Over -composite \
+    -fill none -stroke "$GOLD" -strokewidth $((G / 16)) -draw "circle $c,$c $c,$((G / 32))" \
+    -colorspace RGB -resize "$1x$1" -colorspace sRGB -strip "$2"
 }
 
-# set_of_icons <prefix>: one environment's icons, named game-<prefix>...; the globe fills the icon as the kit's own
-# exports do, and the favicon's sizes take the small globe (the kit's 32 and 48 px exports).
+# set_of_icons <prefix>: one environment's icons, named game-<prefix>.... Home screens and launchers show them at 48 to
+# 83 px, so they take the small globe, filling the icon as the kit's own exports do; the favicon's frames are tab's.
 set_of_icons() {
-  icon "$CONTOUR" "$OUT/game-$1pwa-192x192.png" 192 88
-  icon "$CONTOUR" "$OUT/game-$1pwa-512x512.png" 512 88
+  icon "$SMALL" "$OUT/game-$1pwa-192x192.png" 192 88
+  icon "$SMALL" "$OUT/game-$1pwa-512x512.png" 512 88
   # A maskable icon keeps the globe inside the 80% safe circle.
-  icon "$CONTOUR" "$OUT/game-$1maskable-icon-512x512.png" 512 78
-  icon "$CONTOUR" "$OUT/game-$1apple-touch-icon-180x180.png" 180 88
-  icon "$SMALL" "$WORK/16.png" 16 100
-  exact "$KIT/01-Logos/Realms/Small/realms-small-32.png" "$WORK/32.png"
-  exact "$KIT/01-Logos/Realms/Small/realms-small-48.png" "$WORK/48.png"
+  icon "$SMALL" "$OUT/game-$1maskable-icon-512x512.png" 512 78
+  icon "$SMALL" "$OUT/game-$1apple-touch-icon-180x180.png" 180 88
+  for size in 16 32 48; do tab $size "$WORK/$size.png"; done
 }
 
 # The parent mark by the size it is drawn: the first frame's (240 px), the bar's (28 px), the loader's (96 px).
