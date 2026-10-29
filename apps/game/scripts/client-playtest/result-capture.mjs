@@ -94,7 +94,7 @@ export async function proveResultOnScreen({ frames, region, target, onset, befor
  * frame starts. From the start of the frame its mark fell in (painted by the frame before: a frame early) to the start
  * of the fourth frame after it (painted by the third after). Where the page recorded no frame, a 60 Hz one stands in.
  */
-export function frameWindow(pageFrames, visible) {
+function frameWindow(pageFrames, visible) {
   const at = pageFrames.findLastIndex((frame) => frame <= visible);
   const nominal = 1000 / 60;
   return {
