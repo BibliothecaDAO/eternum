@@ -1,4 +1,5 @@
-import { campaignScenario } from "./campaign-scenario";
+import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
+import { campaignScenario, devconSeasonScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, lowStaminaScenario } from "./after-battle-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
@@ -39,8 +40,15 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "day-later-quiet": dayTurnScenario("later", "unplayed"),
   "day-later-played-on": dayTurnScenario("later", "played-on"),
   "season-opens": seasonOpensScenario,
+  ...Object.fromEntries(
+    REALM_SKIN_MODELS.map(({ skin, level }) => [
+      `${skin}-${level}`,
+      campaignScenario(skin === "devcon" ? "regular" : "golden", level),
+    ]),
+  ),
   devcon: campaignScenario("regular"),
   "devcon-golden": campaignScenario("golden"),
+  "devcon-season": devconSeasonScenario,
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

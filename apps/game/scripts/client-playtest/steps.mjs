@@ -1,3 +1,5 @@
+import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
+import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
 
 import {
@@ -2425,6 +2427,102 @@ function reloadOn(place, scene, labScenario = null) {
   };
 }
 
+/** Each approved family through the real map, HUD and local keep, opened through the lab game's route. */
+const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, icon, label }]) =>
+  realmAssets
+    .filter((asset) => !asset.wonder)
+    .flatMap(({ id, level }) => {
+      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon, label };
+      return [
+        {
+          name: `${skin}-${id}-map`,
+          settleMs: 1_000,
+          play: async ({ browser }) => {
+            const url = new URL(browser.run(["get", "url"]));
+            url.pathname = "/lab/game";
+            url.search = new URLSearchParams({ scenario: `${skin}-${level}` }).toString();
+            browser.run(["open", url.href]);
+            await waitFor(browser, (seen) => seen.playable && isIn(seen, "Map", "map"), PLAYABLE_WAIT_MS);
+            await sleep(SCENE_HOLD_MS);
+            return readDevconArt(browser, expected);
+          },
+          verify: devconArtShown("map"),
+        },
+        {
+          name: `${skin}-${id}-realm`,
+          settleMs: 1_000,
+          play: async (context) => {
+            await goTo("Realm", "hex")(context);
+            await sleep(SCENE_HOLD_MS);
+            context.extraScreenshot("scene");
+            context.browser.tap([0, 0]);
+            await sleep(1_000);
+            const castle = context.browser.read("JSON.stringify(!!document.querySelector('[data-castle-card]'))");
+            context.extraScreenshot("castle");
+            context.browser.run(["press", "Escape"]);
+            if (!onADesktop()) {
+              context.browser.click("Menu");
+              await sleep(500);
+              context.browser.click("Realm Labor");
+              await sleep(1_000);
+            }
+            return { ...readDevconArt(context.browser, expected), castle };
+          },
+          verify: devconArtShown("hex"),
+        },
+      ];
+    }),
+);
+
+function readDevconArt(browser, expected) {
+  return {
+    expected,
+    ...browser.read(`JSON.stringify({
+    assets: JSON.parse(window.__playtest.read()).resources.map(entry => entry.url.replace(/[.][0-9a-f]{12}(?=[.]glb$)/, "")),
+    icons: [...document.querySelectorAll('img')].filter(img => img.complete && img.naturalWidth > 0).map(img => new URL(img.currentSrc).pathname),
+    text: document.body.innerText,
+    markers: [...document.querySelectorAll('[data-marker]')].map(node => node.dataset.marker),
+  })`),
+  };
+}
+
+function devconArtShown(scene) {
+  return ({ seen, played }) => {
+    const view = inScene(scene)({ seen });
+    if (view.status !== "completed") return view;
+    const { expected, assets, icons, text } = played;
+    if (scene === "hex" && !played.castle) return failed("the central keep did not open its castle card", played);
+    if (!assets.includes(expected.path)) return failed("approved realm model was not loaded", played);
+    if (!icons.some((path) => path.endsWith(`/${expected.icon}.webp`)))
+      return failed("campaign HUD icon is missing", played);
+    if (onADesktop() && !text.includes(expected.label))
+      return failed("campaign identity is missing from the HUD", played);
+    return completed(played);
+  };
+}
+
+const devconSeasonStep = {
+  name: "devcon-season",
+  play: async ({ browser }) => {
+    if (!onADesktop()) {
+      browser.click("Menu");
+      await sleep(500);
+    }
+    browser.click("Season");
+    await sleep(2_000);
+    return browser.read(
+      `JSON.stringify([...document.querySelectorAll('section[aria-label="Season"] img')].map(img => img.complete && img.naturalWidth > 0 ? new URL(img.currentSrc).pathname.split('/').pop() : null))`,
+    );
+  },
+  verify: ({ seen, played }) => {
+    if (!seen.panels.includes("Season")) return failed("Season did not open", played);
+    const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
+    if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
+      return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);
+    return completed(played);
+  },
+};
+
 /**
  * The game entered, cold then warm, and what keeps running once it is: the boot (a fresh profile), then a still window
  * read for the frame callbacks, timers, CSS animations, hidden full-screen layers and canvases still alive after the
@@ -2490,6 +2588,8 @@ export const STEP_SETS = {
     steps: plateSteps(FRONTIER_MAP, { selectArmy: true }),
     devOverlays: true,
   },
+  "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
+  "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-merge-loses-xp": {
     game: labSpireGame("merge-loses-xp"),

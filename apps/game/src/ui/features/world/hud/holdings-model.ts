@@ -12,7 +12,7 @@ import { StructureType, structurePlural, type StructureNamingMode } from "@bibli
  */
 type ListedHolding = Pick<
   StructureWithMetadata,
-  "category" | "displayName" | "isFavorite" | "realmLevel" | "structure"
+  "category" | "displayName" | "isFavorite" | "realmLevel" | "realmSkin" | "structure"
 >;
 
 /** Every kind a player can hold, in the order the tabs show them. */
@@ -94,10 +94,10 @@ export const listHoldings = <T extends ListedHolding>(holdings: T[], kind: LeftL
 
 /** A realm shows its age's painting, a mine its kind's (a rift's rift), every other holding its category's. */
 export const holdingIcon = (
-  holding: Pick<ListedHolding, "category" | "realmLevel" | "structure">,
+  holding: Pick<ListedHolding, "category" | "realmLevel" | "realmSkin" | "structure">,
   mode?: StructureNamingMode,
 ): IconMeaning => {
-  if (holding.category === StructureType.Realm) return realmMeaning(holding.realmLevel);
+  if (holding.category === StructureType.Realm) return realmMeaning(holding.realmLevel, holding.realmSkin);
   const mineKind = mineKindOf(holding);
   return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType, mode);
 };

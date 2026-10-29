@@ -1,3 +1,5 @@
+import { realmSkinIcon } from "../structures/realm-skins";
+
 import type { CSSProperties } from "react";
 import type { FrontierSpecies } from "../structures/frontier-beast";
 import { beastMeaning, mineMeaning, structureMeaning } from "@/ui/design-system/domain-icon-meaning";
@@ -158,6 +160,7 @@ export const buildStructurePlate = (
     | "guardArmies"
     | "incomingTroopArrivals"
     | "frontierBeast"
+    | "realmSkin"
     | "battleTimerLeft"
   > & { watched?: SeatSide | null },
   nowSeconds = 0,
@@ -194,7 +197,9 @@ export const buildStructurePlate = (
       ? beastMeaning(structure.frontierBeast.beast)
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
-        : structureMeaning(structure.structureType),
+        : structure.realmSkin
+          ? realmSkinIcon(structure.realmSkin)
+          : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),
     ...watchedOf(structure.watched, ownerOf(structure.owner)),

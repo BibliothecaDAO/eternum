@@ -154,6 +154,7 @@ it("shows each campaign tier's daily Labor and Essence and wears its campaign ma
     facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.textContent).toContain("Golden Devcon");
+    expect(host.querySelector('img[src$="/devcon-golden-realm.webp"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Labor per game day +2K"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Essence per game day +2K"]')).not.toBeNull();
     expect(buttons()).toContain("Claim 2,000 Labor · 2,000 Essence");
@@ -165,6 +166,7 @@ it("shows each campaign tier's daily Labor and Essence and wears its campaign ma
     facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
     expect(host.textContent).toContain("Devcon");
+    expect(host.querySelector('img[src$="/devcon-realm.webp"]')).not.toBeNull();
     expect(host.textContent).not.toMatch(/Golden/);
     expect(host.querySelector('[aria-label="Labor per game day +1K"]')).not.toBeNull();
     expect(host.querySelector('[aria-label="Essence per game day +1K"]')).not.toBeNull();

@@ -1,3 +1,4 @@
+import { REALM_SKINS, realmSkinIcon, type RealmSkin } from "../structures/realm-skins";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
@@ -25,7 +26,7 @@ import {
   type SlotDirtyRange,
 } from "../utils/instance-update-ranges";
 
-export type StrategicStructureMarkerKind = "realm" | "village" | "hyperstructure" | "bank" | "mine";
+export type StrategicStructureMarkerKind = RealmSkin | "realm" | "village" | "hyperstructure" | "bank" | "mine";
 export type StrategicArmyMarkerTier = "T1" | "T2" | "T3";
 
 export interface StrategicMarkerLayerMetrics {
@@ -60,6 +61,9 @@ const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKi
   mine: iconUrl(structureMeaning(StructureType.Mine)),
   realm: iconUrl(structureMeaning(StructureType.Realm)),
   village: iconUrl(structureMeaning(StructureType.Village)),
+  ...(Object.fromEntries(
+    Object.keys(REALM_SKINS).map((skin) => [skin, iconUrl(realmSkinIcon(skin as RealmSkin))]),
+  ) as Record<RealmSkin, string>),
 };
 const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");
 export const STRATEGIC_MARKER_HEIGHT = 0.6;
@@ -71,6 +75,7 @@ const STRUCTURE_MARKER_CAPACITY: Readonly<Record<StrategicStructureMarkerKind, n
   hyperstructure: 256,
   mine: 512,
   realm: 1024,
+  ...(Object.fromEntries(Object.keys(REALM_SKINS).map((skin) => [skin, 1024])) as Record<RealmSkin, number>),
   village: 2048,
 };
 const ARMY_MARKER_CAPACITY = 2048;

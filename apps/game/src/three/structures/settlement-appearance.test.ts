@@ -113,3 +113,29 @@ it("clears stale local realm heraldry when metadata disappears during artwork lo
     mesh.material.dispose();
   }
 });
+
+it("keeps the Devcon diamond pixels intact while only its white background changes with ownership", async () => {
+  const painted: number[][] = [];
+  const context = {
+    fillRect: vi.fn(),
+    clearRect: vi.fn(),
+    drawImage: vi.fn(),
+    getImageData: () => ({ data: new Uint8ClampedArray([255, 255, 255, 255, 65, 90, 200, 255]) }),
+    putImageData: (image: ImageData) => painted.push([...image.data]),
+  };
+  vi.stubGlobal("document", { createElement: () => ({ getContext: () => context }) });
+  vi.spyOn(ImageLoader.prototype, "loadAsync").mockResolvedValue({ width: 1024, height: 1024 } as HTMLImageElement);
+  const source = new Group();
+  const banner = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
+  banner.userData.orderCloth = "banner";
+  const masonry = new Mesh(new BoxGeometry(), new MeshStandardMaterial({ color: "#9b793f" }));
+  source.add(banner, masonry);
+  const appearance = new SettlementAppearance(source, [banner, masonry], "/textures/realms/devcon-diamond.png");
+  await appearance.setOrder(0);
+  appearance.setRelationship("owned");
+  expect(painted.at(-1)).toEqual([67, 139, 70, 255, 65, 90, 200, 255]);
+  appearance.setRelationship("enemy");
+  expect(painted.at(-1)).toEqual([170, 48, 40, 255, 65, 90, 200, 255]);
+  expect(masonry.material.color.getHexString()).toBe("9b793f");
+  appearance.dispose();
+});

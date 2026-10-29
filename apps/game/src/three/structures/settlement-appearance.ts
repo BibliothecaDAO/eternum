@@ -29,7 +29,11 @@ export class SettlementAppearance {
   private revision = 0;
   private disposed = false;
 
-  constructor(source: Object3D, instances: readonly Mesh[]) {
+  constructor(
+    source: Object3D,
+    instances: readonly Mesh[],
+    private readonly bannerArtwork?: string,
+  ) {
     const surfaces = new Map<string, boolean>();
     let isRealm = false;
     source.traverse((node) => {
@@ -65,7 +69,7 @@ export class SettlementAppearance {
     for (const material of this.cloth) material.color.set(appearance.color);
     if (this.banners.size === 0) return;
     this.bannerTexture ??= createBannerTexture();
-    if (this.isRealm) paintOrderBanner(this.bannerTexture, appearance.color, this.artwork);
+    if (this.isRealm) paintOrderBanner(this.bannerTexture, appearance.color, this.artwork, !!this.bannerArtwork);
     else paintVillageBanner(this.bannerTexture, appearance.color);
     this.applyBannerTexture();
   }
@@ -75,6 +79,13 @@ export class SettlementAppearance {
     const revision = ++this.revision;
     this.artwork = undefined;
     this.setRelationship(this.relationship);
+    if (this.bannerArtwork) {
+      const artwork = await new ImageLoader().loadAsync(this.bannerArtwork);
+      if (this.disposed || revision !== this.revision) return;
+      this.artwork = artwork;
+      this.setRelationship(this.relationship);
+      return;
+    }
     if (orderId === undefined) return;
     const row = resolveOrderRow(orderId);
     const artwork = (await loadOrderArtwork())[row];
@@ -168,11 +179,16 @@ function drawCampHelmet(context: CanvasRenderingContext2D): void {
   context.fill();
 }
 
-function paintOrderBanner(texture: CanvasTexture, color: string, artwork?: HTMLImageElement): void {
+function paintOrderBanner(texture: CanvasTexture, color: string, artwork?: HTMLImageElement, fullColor = false): void {
   const canvas = texture.image as HTMLCanvasElement;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner canvas is unavailable");
   context.clearRect(0, 0, 256, 512);
+  if (artwork && fullColor) {
+    paintCampaignBanner(context, artwork, color);
+    texture.needsUpdate = true;
+    return;
+  }
   if (artwork) {
     const scale = 172 / Math.max(artwork.width, artwork.height);
     const width = artwork.width * scale;
@@ -188,6 +204,32 @@ function paintOrderBanner(texture: CanvasTexture, color: string, artwork?: HTMLI
   context.globalCompositeOperation = "source-over";
   texture.name = "Realm order heraldry";
   texture.needsUpdate = true;
+}
+
+/** The approved bake samples this crop; only the source's white background becomes ownership cloth. */
+function paintCampaignBanner(context: CanvasRenderingContext2D, artwork: HTMLImageElement, color: string): void {
+  context.drawImage(
+    artwork,
+    artwork.width * 0.34,
+    artwork.height * 0.025,
+    artwork.width * 0.32,
+    artwork.height * 0.95,
+    0,
+    0,
+    256,
+    512,
+  );
+  const pixels = context.getImageData(0, 0, 256, 512);
+  const red = parseInt(color.slice(1, 3), 16);
+  const green = parseInt(color.slice(3, 5), 16);
+  const blue = parseInt(color.slice(5, 7), 16);
+  for (let offset = 0; offset < pixels.data.length; offset += 4) {
+    if (Math.min(pixels.data[offset], pixels.data[offset + 1], pixels.data[offset + 2]) < 237) continue;
+    pixels.data[offset] = red;
+    pixels.data[offset + 1] = green;
+    pixels.data[offset + 2] = blue;
+  }
+  context.putImageData(pixels, 0, 0);
 }
 
 function drawStampPolygon(context: CanvasRenderingContext2D, points: readonly (readonly [number, number])[]): void {
@@ -275,16 +317,17 @@ function loadOrderArtwork(): Promise<HTMLImageElement[]> {
   }));
 }
 
-export async function prepareRealmBannerAtlas(atlas: CanvasTexture): Promise<void> {
-  const images = await loadOrderArtwork();
+export async function prepareRealmBannerAtlas(atlas: CanvasTexture, bannerArtwork?: string): Promise<void> {
+  const artwork = bannerArtwork ? await new ImageLoader().loadAsync(bannerArtwork) : undefined;
+  const images = artwork ? [] : await loadOrderArtwork();
   const canvas = atlas.image as HTMLCanvasElement;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Realm banner atlas canvas is unavailable");
   const stamp = createBannerTexture();
   for (const relationship of SETTLEMENT_RELATIONSHIP_ORDER) {
-    for (const [index, order] of orders.entries()) {
-      const row = resolveRealmBannerRow(order.orderId, relationship);
-      paintOrderBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color, images[index]);
+    for (const [index, order] of [...orders, undefined].entries()) {
+      const row = resolveRealmBannerRow(order?.orderId, relationship);
+      paintOrderBanner(stamp, SETTLEMENT_RELATIONSHIPS[relationship].color, artwork ?? images[index], !!artwork);
       context.drawImage(
         stamp.image as HTMLCanvasElement,
         (row % REALM_ATLAS_COLUMNS) * 128,

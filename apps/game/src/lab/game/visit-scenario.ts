@@ -139,6 +139,7 @@ const ownRealmRows = (store: LabScenario["store"], model: (typeof RESOURCE_MODEL
 const boardEntry = (address: string, structureId: number, rank: number): HeraldFrontierLeaderboardEntry => ({
   address,
   structure_id: String(structureId),
+  campaign: null,
   rank,
   sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,
