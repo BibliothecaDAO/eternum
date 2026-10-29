@@ -38,7 +38,7 @@ vi.mock("@realms-world/value-ledger/shard", () => ({
 }));
 const claim: RealmEntryClaim = { gameId: 7, realmId: 711, chainId: "0x1", realmsId: "0x2", account: "0x123" };
 const target = {
-  connection: { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" },
+  connection: { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc", firstRelease: 1 },
   heraldUrl: "https://shard.test",
   operatorAddress: "0x20",
   privateKey: "0x1",

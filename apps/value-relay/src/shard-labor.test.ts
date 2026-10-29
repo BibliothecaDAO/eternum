@@ -25,7 +25,7 @@ vi.mock("./shard-snapshot", async (original) => ({
   readConfirmedSnapshot: rpc.snapshot,
 }));
 const target = {
-  connection: { chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: "0x10" },
+  connection: { chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: "0x10", firstRelease: 1 },
   operatorAddress: "0x20",
   privateKey: "0x1",
 };

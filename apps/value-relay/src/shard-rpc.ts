@@ -10,7 +10,39 @@ export interface ShardConnection {
   rpcUrl: string;
   gamesAddress: string;
   chainId: string;
+  /** The release the shard's chain began at: a fresh chain begins at the release current when it was deployed. */
+  firstRelease: number;
 }
+
+/** A registered shard's connection, from the manifest its directory row serves. */
+export const shardConnection = (shard: {
+  rpcUrl: string;
+  chainId: string;
+  contracts: Record<string, string>;
+  releaseSchemas: Record<string, string>;
+}): ShardConnection => ({
+  rpcUrl: shard.rpcUrl,
+  gamesAddress: shard.contracts.games!,
+  chainId: shard.chainId,
+  firstRelease: firstReleaseOf(shard.releaseSchemas),
+});
+
+/** The first release of the shard a Herald serves, from its manifest, refused when Herald names another chain. */
+export const readFirstRelease = async (heraldUrl: string, chainId: string, network: typeof fetch = fetch) => {
+  const response = await network(new URL("/manifest", heraldUrl), { signal: AbortSignal.timeout(10_000) });
+  if (!response.ok) throw new Error("herald_manifest_unavailable");
+  const manifest = (await response.json()) as { chainId: string; releaseSchemas: Record<string, string> };
+  if (BigInt(manifest.chainId) !== BigInt(chainId)) throw new Error("herald_manifest_chain_differs");
+  return firstReleaseOf(manifest.releaseSchemas);
+};
+
+/** Releases are registered one after another from the chain's first, so the manifest's lowest is where it began. */
+export const firstReleaseOf = (releaseSchemas: Record<string, string>) => {
+  const releases = Object.keys(releaseSchemas ?? {}).map(Number);
+  if (!releases.length || !releases.every((release) => Number.isSafeInteger(release) && release > 0))
+    throw new Error("invalid_shard_manifest_releases");
+  return Math.min(...releases);
+};
 interface ShardEvent {
   from_address: string;
   keys: string[];
@@ -225,7 +257,7 @@ export class ShardReader {
     const address = this.connection.gamesAddress;
     const games = await readShardAbi(provider, address, number);
     const prefixes = rowSetPrefixes(games);
-    for (const classHash of await releaseClasses(provider, address, number, games))
+    for (const classHash of await releaseClasses(provider, address, number, games, this.connection.firstRelease))
       prefixes.push(...(await logicClassPrefixes(provider, classHash)));
     const unique = new Map(prefixes.map((prefix) => [prefix.map(felt).join(), prefix]));
     if (!unique.size) throw new Error("rowset_abi_unavailable");
@@ -281,19 +313,22 @@ const logicClassPrefixes = async (provider: RpcProvider, classHash: string) => {
   return prefixes;
 };
 
-/** The logic and migration classes of every release the Games contract has registered by a block. */
+/** The logic and migration classes of every release the Games contract has registered by a block, from its first. */
 const releaseClasses = async (
   provider: RpcProvider,
   address: string,
   number: number,
   games: unknown,
+  firstRelease: number,
 ): Promise<string[]> => {
   const call = (entrypoint: string, calldata: string[]) =>
     provider.callContract({ contractAddress: address, entrypoint, calldata }, number);
   const [current] = await call("current_release", []);
+  const latest = BigInt(current ?? "0");
+  if (latest > 0n && latest < BigInt(firstRelease)) throw new Error("shard_release_before_manifest");
   const classes = new Set<string>();
-  const layout = BigInt(current ?? "0") > 0n ? releaseLayout(games) : null;
-  for (let release = 1n; layout && release <= BigInt(current!); release++) {
+  const layout = latest > 0n ? releaseLayout(games) : null;
+  for (let release = BigInt(firstRelease); layout && release <= latest; release++) {
     const answer = await call("release", [release.toString()]);
     if (answer.length !== layout.size) throw new Error("invalid_release_classes");
     // A zero migration class is a release that migrates nothing.

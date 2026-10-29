@@ -4,6 +4,7 @@ import { hash, type Call } from "starknet";
 import approved from "../../config/source/frontier/extension.json";
 import { rpcAt } from "../../packages/value-ledger/src/rpc";
 import { readFrontierExtension, requireExtendedFrontier } from "../../apps/value-relay/src/frontier-extension";
+import { readFirstRelease } from "../../apps/value-relay/src/shard-rpc";
 
 type Proof = Awaited<ReturnType<typeof readFrontierExtension>>;
 
@@ -87,6 +88,7 @@ async function main() {
     rpcUrl,
     chainId: manifest.shard.chainId as string,
     gamesAddress: manifest.world.address as string,
+    firstRelease: await readFirstRelease(herald, manifest.shard.chainId),
   };
   const proof = await readFrontierExtension(connection, herald, ledgerRpc);
   if (process.argv.includes("--reconcile-calendar")) {

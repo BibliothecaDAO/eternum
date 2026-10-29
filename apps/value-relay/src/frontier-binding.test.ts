@@ -31,7 +31,7 @@ vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
           callContract: rpc.ledgerCall,
         },
 }));
-const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1" });
+const reader = new ShardReader({ rpcUrl: "https://shard.test", gamesAddress: "0x77", chainId: "0x1", firstRelease: 1 });
 const bind = () =>
   frontierReceiptBindings(
     reader,

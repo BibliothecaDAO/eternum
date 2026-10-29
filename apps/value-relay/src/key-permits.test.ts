@@ -21,6 +21,7 @@ vi.mock("@realms-world/value-ledger", async (original) => ({
     chainId: "0x1",
     rpcUrl: "https://proxy.test/rpc/v0_10_2",
     contracts: { games: "0x77" },
+    releaseSchemas: { "1": "0xs" },
     url: "https://shard.test",
     status: "active",
   }),

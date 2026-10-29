@@ -11,7 +11,7 @@ import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
-import { ShardReader } from "./shard-rpc";
+import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
 import { shardResultPort } from "./shard-results";
@@ -264,11 +264,7 @@ type LedgerPorts = MonitorPorts["ledger"];
 const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): MonitorPorts => {
   const shardPorts = async (chainId: string) => {
     const shard = await readRegisteredShard(env.IDENTITY, chainId);
-    const reader = new ShardReader({
-      rpcUrl: shard.rpcUrl,
-      gamesAddress: shard.contracts.games!,
-      chainId: shard.chainId,
-    });
+    const reader = new ShardReader(shardConnection(shard));
     return { reader, shard };
   };
   // Resolved per read: a missing ledger fails that read, never the whole tick.

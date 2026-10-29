@@ -27,7 +27,7 @@ import { onIdentityChain } from "./ledger-chain";
 import { openSlotOnLedger, refundSlotOnLedger, markSlotRefundable } from "./blitz-launch";
 import { currentLaborDay, writeLaborGrant } from "./shard-labor";
 import { handleLaborRequest } from "./labor-route";
-import { ShardReader } from "./shard-rpc";
+import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -215,7 +215,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   private async publishPools(chainId: string) {
     const shard = await readRegisteredShard(this.env.IDENTITY, chainId);
     const target = {
-      ...connectionOf(shard),
+      ...shardConnection(shard),
       accountAddress: relayAccountAddress(shard),
       privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
     };
@@ -346,7 +346,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
               const shard = await readRegisteredShard(this.env.IDENTITY, claim.chainId);
               return registerHomeSource(
                 {
-                  connection: connectionOf(shard),
+                  connection: shardConnection(shard),
                   heraldUrl: shard.url,
                   operatorAddress: relayAccountAddress(shard),
                   privateKey: this.env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
@@ -382,7 +382,7 @@ export class ValueRelay extends DurableObject<RelayEnv> {
             readRegisteredShard(relay.env.IDENTITY, claim.chainId),
           );
           if (progress.halted) return yield* Effect.fail(new Error("relay_halted_or_wrong_chain"));
-          const day = yield* currentLaborDay(connectionOf(shard), shard.url, claim.gameId);
+          const day = yield* currentLaborDay(shardConnection(shard), shard.url, claim.gameId);
           if (claim.day !== day) return yield* Effect.fail(new RelayFailure({ operation: "labor_day_differs" }));
           return yield* grantDailyLabor(ports, claim);
         }),
@@ -468,13 +468,8 @@ export class ValueRelay extends DurableObject<RelayEnv> {
 }
 
 type LedgerPermit = <A>(effect: import("./ports").RelayEffect<A>) => import("./ports").RelayEffect<A>;
-const connectionOf = (shard: Awaited<ReturnType<typeof readRegisteredShard>>) => ({
-  rpcUrl: shard.rpcUrl,
-  gamesAddress: shard.contracts.games!,
-  chainId: shard.chainId,
-});
 const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegisteredShard>>): RelayPorts => {
-  const reader = new ShardReader(connectionOf(shard));
+  const reader = new ShardReader(shardConnection(shard));
   return {
     identity: identityAdapter(env.IDENTITY),
     ledger: {
@@ -506,7 +501,7 @@ const relayPortsOf = (env: RelayEnv, shard: Awaited<ReturnType<typeof readRegist
           return Effect.runPromise(
             writeLaborGrant(
               {
-                connection: connectionOf(shard),
+                connection: shardConnection(shard),
                 operatorAddress: relayAccountAddress(shard),
                 privateKey: env.SHARD_LEDGER_OPERATOR_PRIVATE_KEY,
               },
@@ -583,7 +578,7 @@ export class ValueLaunch extends WorkerEntrypoint<RelayEnv> {
   async verifyFrontierExtension() {
     await requireActiveChain(this.env.IDENTITY, approvedExtension.chainId);
     const shard = await readRegisteredShard(this.env.IDENTITY, approvedExtension.chainId);
-    return requireExtendedFrontier(await readFrontierExtension(connectionOf(shard), shard.url, this.env.L2_RPC_URL));
+    return requireExtendedFrontier(await readFrontierExtension(shardConnection(shard), shard.url, this.env.L2_RPC_URL));
   }
 }
 export default {
@@ -655,7 +650,7 @@ export default {
         chainId,
         accountForRealmsId: (id) => env.IDENTITY.accountForRealmsId(id),
         authenticate: (cookie) => env.IDENTITY.authenticate(cookie),
-        currentDay: (gameId) => currentLaborDay(connectionOf(shard), shard.url, gameId),
+        currentDay: (gameId) => currentLaborDay(shardConnection(shard), shard.url, gameId),
         grant: (claim) => relayOf(env, claim.chainId).labor(claim),
       });
     }

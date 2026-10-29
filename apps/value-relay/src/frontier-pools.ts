@@ -2,11 +2,11 @@ import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import { optionalRow, readConfirmedSnapshot } from "./shard-snapshot";
-import { ShardReader, uint } from "./shard-rpc";
+import { ShardReader, uint, type ShardConnection } from "./shard-rpc";
 
 /** Confirmed snapshots own publication state; the contract refuses duplicate publication while Herald catches up. */
 export async function publishFrontierPools(
-  target: ShardTarget,
+  target: ShardTarget & ShardConnection,
   heraldUrl: string,
   ledger: { rpcUrl: string; address: string },
 ) {
@@ -25,7 +25,7 @@ export async function publishFrontierPools(
 }
 
 async function publishGamePool(
-  target: ShardTarget,
+  target: ShardTarget & ShardConnection,
   heraldUrl: string,
   ledger: { rpcUrl: string; address: string },
   gameId: number,
