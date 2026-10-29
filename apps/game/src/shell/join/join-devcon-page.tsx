@@ -154,8 +154,7 @@ const ContinueToPlay = () => (
   </AppButton>
 );
 
-// The emblem and title at the size they had over the stamp, when the lockup stood h-28 with it.
-const TicketArt = () => <img src={AGE_LOCKUP.frontier} alt={AGES.frontier.game} className="h-[5.25rem] w-auto" />;
+const TicketArt = () => <img src={AGE_LOCKUP.frontier} alt={AGES.frontier.game} className="h-28 w-auto" />;
 
 /** What this ticket's realm claims each Frontier day. */
 const DailyClaim = ({ golden }: { golden: boolean }) => {

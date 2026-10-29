@@ -18,10 +18,9 @@ SMALL="$KIT/01-Logos/Realms/Small/realms-small-master.png"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
-# web <master> <out.webp> <size>: the master cropped to its art and written at that size, an ImageMagick geometry
-# ("480x" a width, "x480" a height), about twice its largest use.
+# web <master> <out.webp> <width>: the master cropped to its art and written at that width (twice its largest use).
 web() {
-  magick "$1" -trim +repage -resize "$3" -strip -quality 90 -define webp:method=6 "$2"
+  magick "$1" -trim +repage -resize "$3x" -strip -quality 90 -define webp:method=6 "$2"
 }
 
 # icon <master> <file> <size> <the mark's width as a percent of the icon>: the mark centred on Hearth.
@@ -66,27 +65,15 @@ set_of_icons() {
 }
 
 # The parent mark by the size it is drawn: the first frame's (240 px), the bar's (28 px), the loader's (96 px).
-web "$LETTERED" "$LOGOS/realms-lettered.webp" 480x
-web "$SMALL" "$LOGOS/realms-small.webp" 112x
-web "$CONTOUR" "$LOGOS/realms-contour.webp" 192x
-# Each age's lockup above its Realms stamp, with real alpha, for its painting: Play's cards (owner, 29 October 2026:
-# "so I think we can remove the realms below frontier & blitz"; the parent mark stays in the bar). It is the kit's own
-# composition, emblem over title, cut at a row between the title and the stamp: every kit lockup draws its title above
-# row 724 and its stamp from row 760 of its 1536x1024 canvas. The cut row must be empty, so a kit that moves the stamp
-# stops the build instead of cutting through its art.
-STAMP_CUT=740
+web "$LETTERED" "$LOGOS/realms-lettered.webp" 480
+web "$SMALL" "$LOGOS/realms-small.webp" 112
+web "$CONTOUR" "$LOGOS/realms-contour.webp" 192
+# Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting: Play's cards.
 for age in blitz frontier eternum; do
-  lockup="$KIT/01-Logos/${age^}/Transparent/$age-lockup.png"
-  if [[ $(magick "$lockup" -crop "1536x1+0+$STAMP_CUT" -format "%[fx:maxima.a]" info:) != 0 ]]; then
-    echo "$lockup has art on row $STAMP_CUT: the stamp moved, read its rows again" >&2
-    exit 1
-  fi
-  magick "$lockup" -crop "1536x$STAMP_CUT+0+0" +repage "$WORK/$age-lockup.png"
-  # By height, as the cards draw it (at most 9rem, a lead's): its art's width varies by age.
-  web "$WORK/$age-lockup.png" "$LOGOS/$age-lockup.webp" x480
+  web "$KIT/01-Logos/${age^}/Transparent/$age-lockup.png" "$LOGOS/$age-lockup.webp" 640
 done
 # The status page's header mark (40 px); that site shares no file with the app.
-web "$SMALL" "$STATUS/realms-small.webp" 160x
+web "$SMALL" "$STATUS/realms-small.webp" 160
 
 set_of_icons ""
 magick "$WORK/16.png" "$WORK/32.png" "$WORK/48.png" "$OUT/game-favicon.ico"

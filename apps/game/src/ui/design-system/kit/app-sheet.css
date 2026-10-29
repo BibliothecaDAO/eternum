@@ -507,8 +507,8 @@
   height: 100%;
   object-fit: cover;
 }
-/* An age with nothing to play and none to come (AppAgeColumn's idle): its painting and lockup in grey, dimmed, its
-   panel without its lift; its one line reads as it does. */
+/* An age with nothing to do now (AppAgeColumn's idle): its painting and lockup in grey, dimmed, its panel without its
+   lift; its one line reads as it does. */
 .app-age-column[data-idle] {
   box-shadow: none;
 }
@@ -523,26 +523,24 @@
   background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
   padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
 }
-/* A phone stacks the columns, each as tall as what it holds over its band of painting (the same band as a desktop's: the
-   lockup's stamp gone, its games come as far up the first screen as they did under the shorter band). It follows the
-   rule it narrows, so it wins at its specificity. */
+/* A phone stacks the columns, each as tall as what it holds, over the same band of painting as a desktop's. It follows
+   the rule it narrows, so it wins at its specificity. */
 @media (max-width: 1023px) {
   .app-age-column {
     min-height: 0;
   }
 }
-/* ── A game's name: its age's lockup (emblem over title, no stamp), then one game's start in the title face. ── */
+/* ── A game's name: its age's lockup, whole, then one game's start in the title face. ── */
 .app-game-name {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: theme(spacing.1);
 }
-/* The emblem and title at the size they had over the stamp, when the lockup stood 8rem with it (three quarters of it). */
 .app-game-name__lockup {
   display: block;
   width: auto;
-  height: 6rem;
+  height: 8rem;
 }
 .app-game-name__when {
   font-family: var(--app-face-game);
@@ -552,7 +550,7 @@
   color: var(--app-ink);
 }
 .app-game-card[data-size="lead"] .app-game-name__lockup {
-  height: min(9rem, 30vw);
+  height: min(12rem, 40vw);
 }
 /* Eternum's lockup is inked for parchment (the kit's Play card): its column and card grade to parchment and read in
    umber, the painting still above. */
@@ -562,6 +560,10 @@
   --app-ink: var(--app-parchment-ink);
   --app-muted: var(--app-parchment-muted);
   --app-well: color-mix(in srgb, var(--app-parchment-ink) 8%, transparent);
+}
+/* Idle, its parchment greys and dims with its painting, as a dark ground does, its line still read in umber. */
+.app-age-column[data-age="eternum"][data-idle] .app-age-column__body {
+  filter: grayscale(1) brightness(0.6);
 }
 
 /* ── Well: a list's recess inside a painted surface. ── */

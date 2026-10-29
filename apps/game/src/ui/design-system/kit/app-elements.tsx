@@ -403,7 +403,7 @@ export const AppPanel = ({
 );
 
 /**
- * A game's name as its age's lockup (emblem over title, the Realms stamp left to the bar's mark), never typed; then, for
+ * A game's name as its age's lockup, the kit's complete title (emblem, title and Realms stamp), never typed; then, for
  * one game of the age, its start ("19:15").
  */
 export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?: string }) => (
@@ -415,8 +415,8 @@ export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?
 
 /**
  * An age as a tall column on its painting: its lockup over what it holds (Play's games of that age), in the age's
- * accent, the painting showing above. `idle`, an age with nothing to play and none to come: dimmed, with nothing to
- * press, its one line saying so.
+ * accent, the painting showing above. `idle`, an age with nothing to do now: dimmed, without its lift, its one line
+ * (when it opens, or that none is scheduled) reading as it does.
  */
 export const AppAgeColumn = ({
   age,

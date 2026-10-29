@@ -106,9 +106,10 @@ const SourceGaps = ({ gaps }: { gaps: readonly SourceGap[] }) =>
 
 /**
  * One age's column: its painting and its name, then its games in its well (Blitz's, with none and no Blitz in the lead:
- * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders, unless
- * none is left in the season: then it is idle, its line alone (owner, 29 October 2026: "for blitz if no season dont
- * display the build orders, and maybe dim the panel").
+ * the calendar's next game, or none left in the season); Blitz's ends on the way to the player's build orders while a
+ * Blitz is on or to come. An age with nothing to do now is idle: dimmed, its one line alone (owner, 29 October 2026:
+ * "for blitz if no season dont display the build orders, and maybe dim the panel", then "eternum deactivated should
+ * exist as well").
  */
 const AgeColumn = ({
   mode,
@@ -120,17 +121,17 @@ const AgeColumn = ({
   items: PlayBoard["ages"][PlayMode];
 }) => {
   const age = ageOf(mode);
-  // Blitz with no game listed, none leading and none left in the season: nothing to play, nor to prepare for.
-  const idle =
-    mode === "blitz" && items.length === 0 && facts.board?.lead?.mode !== "blitz" && facts.nextBlitz === null;
+  const blitzLeads = facts.board?.lead?.mode === "blitz";
+  const buildOrders = mode === "blitz" && (items.length > 0 || blitzLeads || facts.nextBlitz !== null);
+  const idle = !items.some((item) => item.verb !== null) && !buildOrders;
   return (
     <AppAgeColumn age={mode} painting={age.painting} name={age.name} idle={idle}>
       {items.length > 0 ? (
         <ItemRows items={items} now={facts.now} signedIn={facts.signedIn} />
       ) : (
-        facts.board?.lead?.mode !== "blitz" && <NextBlitz next={facts.nextBlitz} now={facts.now} />
+        !blitzLeads && <NextBlitz next={facts.nextBlitz} now={facts.now} />
       )}
-      {mode === "blitz" && !idle && <BuildOrdersRow />}
+      {buildOrders && <BuildOrdersRow />}
     </AppAgeColumn>
   );
 };

@@ -16,10 +16,7 @@ export const REALMS_MARK = {
   small: "/images/logos/realms-small.webp",
 } as const;
 
-/**
- * Each age's lockup, emblem over title, the kit's own composition above its Realms stamp (the parent mark stands in the
- * bar), with real alpha, for its painting or a dark field.
- */
+/** Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting or a dark field. */
 export const AGE_LOCKUP = {
   blitz: "/images/logos/blitz-lockup.webp",
   frontier: "/images/logos/frontier-lockup.webp",

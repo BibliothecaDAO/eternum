@@ -248,6 +248,48 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying
   expect(page.text()).not.toContain("No Blitz scheduled");
 });
 
+it("dims Eternum's column while its game is still to open, saying when it opens; lit once the player can enter", async () => {
+  const opening = game({
+    game_id: 9,
+    mode: "eternum",
+    name: "eternum-1",
+    status: "Registration",
+    ready: false,
+    clock: {
+      start_settling_at: 3_900_000_000,
+      start_main_at: 3_900_000_000,
+      end_at: 4_000_000_000,
+      end_grace_seconds: 0,
+    },
+  } as Partial<DirectoryGame>);
+  reads.directory = answered({ games: [ownSeason, opening] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const eternum = () => page.container.querySelector<HTMLElement>('section[aria-label="Eternum"]')!;
+  // Frontier's day leads; Eternum stands beside it with its opening alone, idle, nothing in it to press.
+  expect(page.text()).toContain("Resume");
+  expect(eternum().textContent).toMatch(/^EternumOpens \d{1,2} \w{3} 2093, \d\d:\d\d$/);
+  expect(eternum().hasAttribute("data-idle")).toBe(true);
+  expect(eternum().querySelector("a, button")).toBeNull();
+
+  // Open, with the player on its roster: Enter, and the column is live.
+  reads.directory = answered({
+    games: [
+      ownSeason,
+      {
+        ...opening,
+        status: "Live",
+        ready: true,
+        player_state: { ...opening.player_state, registered: true },
+      } as DirectoryGame,
+    ],
+  });
+  await page.render();
+  expect(eternum().textContent).toContain("Enter");
+  expect(eternum().hasAttribute("data-idle")).toBe(false);
+});
+
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
   const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [] });
