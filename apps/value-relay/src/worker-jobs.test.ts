@@ -27,7 +27,12 @@ vi.mock("@realms-world/value-ledger", async (importOriginal) => ({
   requireActiveChain: async () => {},
   relayAccountAddress: () => "0x5",
   activeShards: async () => [{ chainId: "0x1" }],
-  readRegisteredShard: async () => ({ chainId: "0x1", rpcUrl: "https://shard.test", contracts: { games: "0x2" } }),
+  readRegisteredShard: async () => ({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test",
+    contracts: { games: "0x2" },
+    releaseSchemas: { "1": "0xs" },
+  }),
 }));
 const finish = vi.hoisted(() => vi.fn());
 vi.mock("./chests", () => ({ DurableChestStore: class {}, finishRequestedChests: finish }));

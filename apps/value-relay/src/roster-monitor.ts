@@ -9,7 +9,7 @@ import {
   type ShardDirectory,
   type SlotCohort,
 } from "@realms-world/value-ledger";
-import { ShardReader } from "./shard-rpc";
+import { ShardReader, shardConnection } from "./shard-rpc";
 
 /** The same historical resolver checks both the pairs and eligible payers omitted from all of a slot's games. */
 export async function checkSlotRoster(
@@ -67,11 +67,7 @@ export const slotRosterReads = (
   },
   roster: async (gameId: number) => {
     const shard = await readRegisteredShard(identity, cohort.chainId);
-    const reader = new ShardReader({
-      rpcUrl: shard.rpcUrl,
-      chainId: shard.chainId,
-      gamesAddress: shard.contracts.games!,
-    });
+    const reader = new ShardReader(shardConnection(shard));
     const head = await reader.head();
     return readBlitzRoster(reader.provider(), shard.contracts.games!, gameId, head);
   },

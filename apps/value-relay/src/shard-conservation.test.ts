@@ -13,7 +13,7 @@ vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),
   rpcAt: () => ({ getChainId: rpc.chain, getBlock: rpc.block }),
 }));
-const connection = { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc" };
+const connection = { chainId: "0x1", gamesAddress: "0x10", rpcUrl: "https://shard.test/rpc", firstRelease: 1 };
 const directory = () => ({
   chain: "0x1",
   world_address: "0x10",

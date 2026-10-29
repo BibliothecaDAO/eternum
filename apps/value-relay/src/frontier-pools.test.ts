@@ -32,6 +32,7 @@ const target = {
   rpcUrl: "https://shard.test",
   chainId: "0x1",
   gamesAddress: "0x10",
+  firstRelease: 1,
   accountAddress: "0x20",
   privateKey: "0x1",
 };

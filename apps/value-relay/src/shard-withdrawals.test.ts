@@ -3,7 +3,7 @@ import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-a
 import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
 import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
-import { ShardReader } from "./shard-rpc";
+import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardWithdrawalPorts } from "./shard-withdrawals";
 import { RelayFailure } from "./ports";
 import { SHARD_PAGE_BLOCKS } from "./shard-page";
@@ -53,7 +53,12 @@ const receipt = () => ({
 const emitted = () => ({ ...event(), transaction_hash: "0xabc", block_number: 10, block_hash: "0xa" });
 const header = { block_number: 10, block_hash: "0xa", parent_hash: "0x9", timestamp: 1000, status: "ACCEPTED_ON_L2" };
 const fixture = () => {
-  const reader = new ShardReader({ chainId: "0x1", rpcUrl: "https://shard.test/rpc", gamesAddress: address });
+  const reader = new ShardReader({
+    chainId: "0x1",
+    rpcUrl: "https://shard.test/rpc",
+    gamesAddress: address,
+    firstRelease: 1,
+  });
   const bindings = {
     realmsIdForAccount: vi.fn(async (_account: string) => "0x2"),
     frontierSeason: vi.fn(() => Effect.succeed(3)),
@@ -320,8 +325,13 @@ const shardWithGameTen = (gamesClass: unknown[], release: string[]) => {
 };
 
 /** Every Blitz result the relay reads from block 10, through each event filter. */
-const resultsAtBlockTen = async () => {
-  const reader = new ShardReader({ chainId: DEV_CHAIN, rpcUrl: "https://shard.test/rpc", gamesAddress: address });
+const resultsAtBlockTen = async (firstRelease = 1) => {
+  const reader = new ShardReader({
+    chainId: DEV_CHAIN,
+    rpcUrl: "https://shard.test/rpc",
+    gamesAddress: address,
+    firstRelease,
+  });
   const ports = shardWithdrawalPorts(reader, fixture().bindings);
   const results = [];
   let cursor: string | null = null;
@@ -360,6 +370,48 @@ it("reads a release laid out with one more logic class than today, from the Game
     .members!.push({ name: "season_rules", type: "core::starknet::class_hash::ClassHash" });
   shardWithGameTen([...abi, ...games], [...Array(17).fill("0x66"), PRIZES_LOGIC, "0x0"]);
   expect(await resultsAtBlockTen()).toEqual(GAME_TEN);
+});
+
+it("reads a fresh chain from the release it began at, never asking for releases it does not hold", async () => {
+  // A chain deployed at release 5 holds release 5 alone: its Games contract reverts "unknown release" below it.
+  shardWithGameTen([...abi, ...gamesAbi], []);
+  const asked: string[] = [];
+  rpc.call.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata: string[] }) => {
+    if (entrypoint === "current_release") return ["0x5"];
+    asked.push(calldata[0]!);
+    if (BigInt(calldata[0]!) < 5n) throw new Error("unknown release");
+    return [...Array(17).fill(PRIZES_LOGIC), "0x0"];
+  });
+  expect(await resultsAtBlockTen(5)).toEqual(GAME_TEN);
+  expect(new Set(asked)).toEqual(new Set(["5"]));
+});
+
+it("refuses a chain whose current release is older than the first its manifest names", async () => {
+  shardWithGameTen([...abi, ...gamesAbi], [...Array(17).fill(PRIZES_LOGIC), "0x0"]);
+  const reader = new ShardReader({
+    chainId: DEV_CHAIN,
+    rpcUrl: "https://shard.test/rpc",
+    gamesAddress: address,
+    firstRelease: 6,
+  });
+  await expect(reader.page(10, 10, null)).rejects.toThrow("shard_release_before_manifest");
+});
+
+it("connects to a registered shard from the first release its manifest maps", () => {
+  const manifest = { rpcUrl: "https://shard.test/rpc", chainId: DEV_CHAIN, contracts: { games: address } };
+  expect(shardConnection({ ...manifest, releaseSchemas: { "5": "0xs" } })).toEqual({
+    rpcUrl: "https://shard.test/rpc",
+    chainId: DEV_CHAIN,
+    gamesAddress: address,
+    firstRelease: 5,
+  });
+  expect(
+    shardConnection({ ...manifest, releaseSchemas: { "3": "0xs", "1": "0xs", "4": "0xs", "2": "0xs" } }).firstRelease,
+  ).toBe(1);
+  expect(() => shardConnection({ ...manifest, releaseSchemas: {} })).toThrow("invalid_shard_manifest_releases");
+  expect(() => shardConnection({ ...manifest, releaseSchemas: { latest: "0xs" } })).toThrow(
+    "invalid_shard_manifest_releases",
+  );
 });
 
 it("pays a withdrawal the relics logic emits under its own event enum, read from its transaction receipt", async () => {
