@@ -48,7 +48,8 @@ const SHEET_PAGES = {
   season: { path: "season-running/season", place: "Season" },
   results: { path: "reward-sealed/results/0x5245414c4d53-7", place: "You" },
   "results-opened": { path: "reward-lords/results/0x5245414c4d53-7", place: "You" },
-  "whats-new": { path: "home/scroll", place: "What's new" },
+  // What's new is read from You: You is lit there.
+  "whats-new": { path: "home/scroll", place: "You" },
 };
 
 /** The socials realms.world links, in its order, each with its official mark (src/shell/community.ts). */
@@ -72,7 +73,7 @@ const BAR_CASES = [
     desktop: true,
     place: "Play",
   },
-  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "What's new" },
+  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "You" },
   { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
 

@@ -21,12 +21,13 @@ import { DevicesCard } from "./devices-page";
 import { NotificationsCard } from "./notifications";
 import { PlayerCard, ProfileView, RecentGames } from "./profile-view";
 import { SETTINGS_PATH } from "./settings-route";
-import { HOW_TO_PLAY } from "../community";
+import { HOW_TO_PLAY, MARKET } from "../community";
+import { WHATS_NEW_PATH } from "../frame/tabs";
 
 /**
- * You (spec 10, the place): the player's page as others see it, their finished games, then two rows: Settings and How
- * to play (the Frontier guide on the docs site). Signed out, one card with Sign in above How to play; a device removed
- * elsewhere, one card with Sign in to add it back. What's new is a place of its own, beside Play and Season.
+ * You (spec 10, the place): the player's page as others see it, their finished games, then its rows: Settings, then
+ * what is read now and then (What's new, How to play, Realms' marketplace). Signed out, one card with Sign in above
+ * those three; a device removed elsewhere, one card with Sign in to add it back.
  */
 export const ProfilePage = () => (
   <PageFrame title={useLayout() === "desktop" ? WORDS.you : undefined}>
@@ -36,12 +37,12 @@ export const ProfilePage = () => (
   </PageFrame>
 );
 
-/** Signed out: the card that says why, then How to play. */
+/** Signed out: the card that says why, then what is read now and then. */
 const SignedOut = ({ card }: { card: ReactNode }) => (
   <div className="flex max-w-column flex-col gap-4">
     {card}
     <AppPanel flush>
-      <HowToPlayRow />
+      <ReadingRows />
     </AppPanel>
   </div>
 );
@@ -189,19 +190,31 @@ const OwnProfile = ({ account }: { account: string }) => {
   );
 };
 
-/** Settings, then How to play. */
+/** Settings, then what is read now and then. */
 const Rows = () => {
   const navigate = useNavigate();
   return (
     <AppPanel flush>
       <AppSetting icon="person" name={PROFILE_WORDS.settings} onClick={() => navigate(SETTINGS_PATH)} />
-      <HowToPlayRow />
+      <ReadingRows />
     </AppPanel>
   );
 };
 
-/** How to play: the Frontier guide, in a new tab. */
-const HowToPlayRow = () => <AppSetting icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />;
+/**
+ * What is read now and then, never where a player plays: What's new (the patch notes), How to play (the Frontier guide)
+ * and Realms' marketplace, both on sites of their own, in a new tab.
+ */
+const ReadingRows = () => {
+  const navigate = useNavigate();
+  return (
+    <>
+      <AppSetting icon="chronicles" name={WORDS.whatsNew} onClick={() => navigate(WHATS_NEW_PATH)} />
+      <AppSetting icon="guide" name={PROFILE_WORDS.howToPlay} href={HOW_TO_PLAY} />
+      <AppSetting icon="trade" name={WORDS.market} href={MARKET} />
+    </>
+  );
+};
 
 const MusicSwitch = () => {
   const on = useAppMusic();

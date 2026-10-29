@@ -26,3 +26,6 @@ export const X_HANDLE = REALMS_X_TAG;
  * page only points at each game.
  */
 export const HOW_TO_PLAY = "https://docs.realms.party/frontier";
+
+/** Realms' marketplace: a site of its own, opened from You in a new tab. */
+export const MARKET = "https://realms.market/";

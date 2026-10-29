@@ -34,6 +34,7 @@ const open = async (path: string, width: number) => {
       <MemoryRouter initialEntries={[path]}>
         <Routes>
           <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/scroll" element={<p>patch notes</p>} />
           <Route path="*" element={null} />
         </Routes>
       </MemoryRouter>,
@@ -45,12 +46,26 @@ const open = async (path: string, width: number) => {
 
 const body = (page: HTMLElement) => page.querySelector('[data-band="body"]')!;
 
-it("offers a signed-out reader Sign in and How to play on the Frontier guide in a new tab", async () => {
+it("offers a signed-out reader Sign in, What's new, then How to play and Realms' marketplace in a new tab", async () => {
   const page = await open("/profile", 390);
   const controls = [...body(page).querySelectorAll("a, button")].map((control) => control.textContent);
-  expect(controls).toEqual(["Sign in", "How to play"]);
-  const docs = body(page).querySelector<HTMLAnchorElement>("a")!;
-  expect([docs.href, docs.target]).toEqual(["https://docs.realms.party/frontier", "_blank"]);
+  expect(controls).toEqual(["Sign in", "What's new", "How to play", "Market"]);
+  const away = [...body(page).querySelectorAll<HTMLAnchorElement>("a")].map((link) => [
+    link.textContent,
+    link.href,
+    link.target,
+  ]);
+  expect(away).toEqual([
+    ["How to play", "https://docs.realms.party/frontier", "_blank"],
+    ["Market", "https://realms.market/", "_blank"],
+  ]);
+  // What's new is read here, in the app: its row opens the patch notes.
+  await act(async () =>
+    [...body(page).querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => button.textContent === "What's new")!
+      .click(),
+  );
+  expect(page.textContent).toContain("patch notes");
 });
 
 // The docs site answers every address with its shell, so a page renamed there would open blank: the guide must be a
