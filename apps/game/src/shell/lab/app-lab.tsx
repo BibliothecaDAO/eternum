@@ -208,13 +208,6 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
-    // A lobby's room its lobby's lines, Global its own.
-    "/api/chat/world": (url) =>
-      json({
-        messages: url.searchParams.get("zoneId")?.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT,
-        nextCursor: null,
-      }),
-    "/api/chat/blocks": () => json({ blocked: [], version: 0 }),
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
@@ -257,7 +250,11 @@ const answerChat = (screen: LabScreen) => {
     registration?.registered === true &&
     registration.paid > 0n &&
     !registration.refundable;
-  answerLabChat({ lobbyWrites: canWrite });
+  // A lobby's room has its lobby's lines, Global its own.
+  answerLabChat({
+    lobbyWrites: canWrite,
+    history: (zoneId) => (zoneId.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT),
+  });
 };
 
 /** Three orders a player saved, Coal rush the one followed. */

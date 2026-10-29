@@ -80,7 +80,7 @@ interface LaneLayout {
  */
 const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
   portrait: {
-    shell: "inset-x-0 bottom-0 flex-col",
+    shell: "inset-x-0 bottom-[var(--keyboard,0px)] flex-col",
     panels: "",
     sheet: "max-h-[55dvh] rounded-t-xl",
     sheetStyle: SAFE_SIDES,
@@ -90,7 +90,7 @@ const LANE_LAYOUT: Record<CompactLane, LaneLayout> = {
     actionsStyle: SAFE_SIDES,
   },
   landscape: {
-    shell: `${BELOW_HEADER} bottom-0 right-0 flex-row`,
+    shell: `${BELOW_HEADER} bottom-[var(--keyboard,0px)] right-0 flex-row`,
     panels: "w-[min(380px,50vw)]",
     sheet: "min-h-0 flex-1 rounded-l-xl rounded-t-none",
     tabBar: "w-16 box-content flex-col overflow-y-auto overscroll-contain border-l px-1 pt-1",
@@ -182,6 +182,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
         {lane === "portrait" && <StructureActionStrip lane={lane} />}
         <nav
           ref={navigation}
+          data-keyboard-hides
           aria-label="HUD tabs"
           className={cn(
             "pointer-events-auto flex h-auto items-stretch gap-1 border-gold/20 bg-[#101c23]",
@@ -218,6 +219,7 @@ const StructureActionStrip = ({ lane }: { lane: CompactLane }) => {
         </p>
       )}
       <nav
+        data-keyboard-hides
         aria-label="Structure actions"
         className={cn("pointer-events-auto flex items-stretch gap-1 border-gold/20 bg-[#101c23]", layout.actions)}
         style={layout.actionsStyle}

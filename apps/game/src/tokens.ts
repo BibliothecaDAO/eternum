@@ -574,7 +574,11 @@ export const HUD_LAYOUT = {
   "phone-panel": "45dvh",
   "chat-width": "800px",
   "chat-height": "600px",
-  "chat-pane": "min(60vh, 520px)",
+  /**
+   * The open chat's pane, and never taller than what the on-screen keyboard leaves (--keyboard, useKeyboardInset) less
+   * the phone's top bar (phone-header, 100px) and the strip under the pane (60px): typing, its tabs stay on screen.
+   */
+  "chat-pane": "min(60vh, 520px, calc(100dvh - var(--keyboard, 0px) - 160px))",
   /** The open chat's least height in the right column, its strip included: the composer and a few lines of history. */
   "chat-least": "300px",
   /** The picked tile's details' least height in the right column (less when they hold less): a header and a body. */
