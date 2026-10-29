@@ -1,4 +1,4 @@
-import { FRONTIER_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
@@ -12,6 +12,7 @@ import {
   AppField,
   AppFigure,
   AppGameCard,
+  AppGameName,
   AppNotice,
   AppPageHead,
   AppPanel,
@@ -435,14 +436,14 @@ const GameCardSection = () => (
   <Element
     name="Game card"
     wide
-    rule="A game on its age's painting and in its age's accent: its title, what stands, its one verb. The lead carries the page's gold verb; the rest sit among others."
+    rule="A game on its age's painting and in its age's accent: its age's lockup (Eternum's on parchment), what stands, its one verb. The lead carries the page's gold verb; the rest sit among others."
     sheet={
       <div className="grid grid-cols-[1.4fr_1fr_1fr] gap-4">
         <AppGameCard
           age="frontier"
           painting="frontier-mist"
           size="lead"
-          title="Frontier"
+          title={<AppGameName age="frontier" name="Frontier" />}
           facts={
             <>
               <AppChip tone="gold">Your realm</AppChip>
@@ -458,7 +459,7 @@ const GameCardSection = () => (
         <AppGameCard
           age="blitz"
           painting="blitz-spires"
-          title="Blitz 16:30"
+          title={<AppGameName age="blitz" name="Blitz" when="16:30" />}
           facts={<AppChip tone="warn">Entry closes in 2h 4m</AppChip>}
           verb={
             <AppButton kind="secondary" icon="plus">
@@ -469,7 +470,7 @@ const GameCardSection = () => (
         <AppGameCard
           age="eternum"
           painting="eternum-restoration"
-          title="Eternum"
+          title={<AppGameName age="eternum" name="Eternum" />}
           facts={<AppChip>Opens in 6 days</AppChip>}
         />
       </div>
@@ -639,7 +640,7 @@ const ChoiceSection = () => (
 );
 
 const TicketSection = () => {
-  const art = <img src={FRONTIER_LOCKUP} alt="Frontier" className="h-24 w-auto" />;
+  const art = <img src={AGE_LOCKUP.frontier} alt="Frontier" className="h-24 w-auto" />;
   return (
     <Element
       name="Ticket"

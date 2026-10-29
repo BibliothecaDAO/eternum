@@ -1,7 +1,7 @@
 import { formatCount } from "@bibliothecadao/types";
 import { type IconMeaning } from "@/ui/design-system/icon";
 
-import { AppButton, AppChip, AppGameCard, AppRow } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppChip, AppGameCard, AppGameName, AppRow } from "@/ui/design-system/kit/app-elements";
 import { AppClockChip, clockLine } from "@/ui/design-system/kit/clock-chip";
 import {
   BLITZ_WORDS,
@@ -16,11 +16,11 @@ import {
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 
-import { lobbyId, lobbyTitle } from "../blitz/lobby";
+import { lobbyId, lobbyStart, lobbyTitle } from "../blitz/lobby";
 import { SeatsChip } from "../blitz/seats-chip";
 import { entryHref } from "../game-links";
 import { type DirectoryGame, gameRefOf } from "../herald";
-import { gameTitle } from "../season-tab/history-row";
+import { gameStart, gameTitle } from "../season-tab/history-row";
 import { resultsHref } from "../season-tab/results-link";
 import { directoryDay } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
@@ -75,6 +75,13 @@ const titleOf = (item: PlayItem): string => {
   if (item.source === "row") return lobbyTitle(item.row);
   if (item.verb === "results") return gameTitle(item.game);
   return ageOf(item.mode).name;
+};
+
+/** One game's start, where the item is one game of its age (a Blitz, a finished game); a season has none. */
+const startOf = (item: PlayItem): string | undefined => {
+  if (item.source === "row") return lobbyStart(item.row);
+  if (item.verb === "results") return gameStart(item.game);
+  return undefined;
 };
 
 /** What is so of an item, as its chips: live or when, and its seats; a season's day; a result's end. */
@@ -166,7 +173,7 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
         painting={age.painting}
         size="lead"
         className="h-full"
-        title={titleOf(item)}
+        title={<AppGameName age={item.mode} name={age.name} when={startOf(item)} />}
         facts={<ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />}
         verb={<ItemVerbButton item={item} signedIn={signedIn} lead />}
       />

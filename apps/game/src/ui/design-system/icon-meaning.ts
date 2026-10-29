@@ -16,8 +16,12 @@ export const REALMS_MARK = {
   small: "/images/logos/realms-small.webp",
 } as const;
 
-/** Frontier's complete lockup, with real alpha, for a painting or a dark field. */
-export const FRONTIER_LOCKUP = "/images/logos/frontier-lockup.webp";
+/** Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting or a dark field. */
+export const AGE_LOCKUP = {
+  blitz: "/images/logos/blitz-lockup.webp",
+  frontier: "/images/logos/frontier-lockup.webp",
+  eternum: "/images/logos/eternum-lockup.webp",
+} as const;
 
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;

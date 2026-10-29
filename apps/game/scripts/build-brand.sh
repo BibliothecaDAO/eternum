@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
-# Frontier's transparent lockup, the install icons and favicon (the contour globe, gold on Hearth; the dev set adds a
+# each age's transparent lockup, the install icons and favicon (the contour globe, gold on Hearth; the dev set adds a
 # hatched corner), and the share card (the lettered mark on a painting under Hearth at 80%, the deck's page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
@@ -68,7 +68,10 @@ set_of_icons() {
 web "$LETTERED" "$LOGOS/realms-lettered.webp" 480
 web "$SMALL" "$LOGOS/realms-small.webp" 112
 web "$CONTOUR" "$LOGOS/realms-contour.webp" 192
-web "$KIT/01-Logos/Frontier/Transparent/frontier-lockup.png" "$LOGOS/frontier-lockup.webp" 640
+# Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting: Play's cards.
+for age in blitz frontier eternum; do
+  web "$KIT/01-Logos/${age^}/Transparent/$age-lockup.png" "$LOGOS/$age-lockup.webp" 640
+done
 # The status page's header mark (40 px); that site shares no file with the app.
 web "$SMALL" "$STATUS/realms-small.webp" 160
 

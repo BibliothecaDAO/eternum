@@ -788,6 +788,13 @@ export const APP_SHEET = {
   "line-strong": SHELL_COLORS.line2,
   /** A field's or a list's recess. */
   well: "rgb(0 0 0 / 0.35)",
+  /**
+   * Eternum's ground where its lockup stands (the kit's Play card grades Eternum to parchment, its title being inked
+   * for parchment), and what reads on it: umber ink, and the Realms stamp's brown for what is secondary.
+   */
+  parchment: BRAND.parchment,
+  "parchment-ink": BRAND["umber-ink"],
+  "parchment-muted": KIT.games.eternum.stamp.toLowerCase(),
   /** How a thing stands: good (live, gained), bad (refused, lost), warn (closing soon, waiting). */
   good: SHELL_COLORS.sage,
   bad: SHELL_COLORS.red,

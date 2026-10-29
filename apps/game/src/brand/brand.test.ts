@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { FONT_FACES, HUD_COLORS, SHELL_COLORS } from "@/tokens";
-import { FRONTIER_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import KIT from "./palette.json";
 
 const path = (relative: string) => fileURLToPath(new URL(relative, import.meta.url));
@@ -72,7 +72,7 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
     const files = [
       ...FONT_FACES.map((face) => /url\("([^"]+)"\)/.exec(face.src)![1]),
       ...Object.values(REALMS_MARK),
-      FRONTIER_LOCKUP,
+      ...Object.values(AGE_LOCKUP),
     ];
     expect(files.filter((file) => !existsSync(publicFile(file)))).toEqual([]);
   });
