@@ -9,6 +9,7 @@ export const frontierDevconPreset = {
   ...frontierPreset,
   id: FRONTIER_DEVCON_PRESET_ID,
   clockScale: { days: 2, activity: 3 },
+  chests: { ...frontierPreset.chests, topN: 3 },
   labor: { ...frontierPreset.labor, campaignEssence: 1000, goldenAmount: 2000, goldenEssence: 2000 },
   research: [
     ...frontierPreset.research.filter(({ row }) => row !== research.ROW_DEPTH),

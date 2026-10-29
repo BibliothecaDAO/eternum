@@ -88,7 +88,7 @@ test.each([
   spyOn(box, "nativeDocument").mockImplementation(async () => ({ shard: { chainId }, world: { address: "0x20" } }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
     chestPoolBps: 7000,
-    topN: 10,
+    topN: 3,
     presetId: changes === "wrong preset" ? 5 : 6,
     start: startSeconds,
     end: startSeconds + 40 * 7200 + (changes === "wrong end" ? 40 : 0),
@@ -142,7 +142,7 @@ test.each([
     provider: {
       getBlockNumber: async () => observedBlock ?? nonce,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "3", "7000"];
         if (entrypoint === "lords") return ["0x2"];
         throw new Error("Unexpected ledger read");
       },
@@ -220,7 +220,7 @@ async function coldFunding(lords: string, held: bigint) {
   }));
   spyOn(native, "readFrontierGame").mockResolvedValue({
     chestPoolBps: 7000,
-    topN: 10,
+    topN: 3,
     presetId: 6,
     start: startSeconds,
     end: startSeconds + 40 * 7200,
@@ -257,7 +257,7 @@ async function coldFunding(lords: string, held: bigint) {
     provider: {
       getBlockNumber: async () => 7,
       callContract: async ({ entrypoint }: { entrypoint: string }) => {
-        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "10", "7000"];
+        if (entrypoint === "get_preset") return [...Array(16).fill("0"), "7200", "86400", "3", "7000"];
         if (entrypoint === "lords") return [lords];
         throw new Error("Unexpected ledger read");
       },

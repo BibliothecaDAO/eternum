@@ -864,6 +864,22 @@ describe("Devcon's fast Frontier preset", () => {
     );
   });
 
+  test("registers Devcon's 70-percent chest split and top three without changing normal Frontier", () => {
+    const normal = definition(FRONTIER_PRESET_ID).economy.chests.unwrap();
+    const devcon = definition(FRONTIER_DEVCON_PRESET_ID).economy.chests.unwrap();
+    const ledger = buildLedgerEconomicPreset("frontier", { presetId: FRONTIER_DEVCON_PRESET_ID });
+    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10 });
+    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3 });
+    expect(ledger).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
+    const normalChests = nativePresets[FRONTIER_PRESET_ID]!.chests;
+    if (!normalChests) throw new Error("Frontier must define chest rules");
+    expect(nativePresets[FRONTIER_DEVCON_PRESET_ID]!.chests).toEqual({
+      ...normalChests,
+      topN: 3,
+    });
+    expect(definition(FRONTIER_PRESET_ID).economy.chests.unwrap()).toEqual(normal);
+  });
+
   test("every seeded bag has five 4–12-hour days while activity stays at three times normal", () => {
     const preset = nativePresets[FRONTIER_DEVCON_PRESET_ID]!;
     const unit = seasonDayUnitSeconds(preset);
