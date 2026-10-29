@@ -348,12 +348,13 @@ class RestartUnfinishedTest(unittest.TestCase):
 class PublishReleasesTest(unittest.TestCase):
     """Herald serves the release mapping it read at its start; a release init registered later needs a restart."""
 
-    def publish(self, served):
+    def publish(self, served, release_id=2, release_schemas=None):
         with tempfile.TemporaryDirectory() as temporary:
             directory = Path(temporary)
             (directory / "data").mkdir()
             (directory / "data/native-world.json").write_text(json.dumps({"native": {
-                "releaseId": 2, "activeSchema": "0xs", "releaseSchemas": {"1": "0xs", "2": "0xs"}}}))
+                "releaseId": release_id, "activeSchema": "0xs",
+                "releaseSchemas": release_schemas or {"1": "0xs", "2": "0xs"}}}))
             stages = []
             with (
                 patch.object(deploy, "service_json", side_effect=[{"releaseSchemas": value} for value in served]) as read,
@@ -376,6 +377,17 @@ class PublishReleasesTest(unittest.TestCase):
     def test_a_herald_still_missing_a_release_after_its_restart_stops_the_deployment(self):
         with self.assertRaisesRegex(RuntimeError, r"Herald does not publish releases \[2\]"):
             self.publish([{"1": "0xs"}, {"1": "0xs"}])
+
+    def test_a_fresh_chain_begun_at_a_later_release_publishes_only_the_releases_it_holds(self):
+        self.assertEqual(self.publish([{"5": "0xs"}, {"5": "0xs"}], 5, {"5": "0xs"}), [])
+
+    def test_a_fresh_chain_whose_herald_lacks_its_release_stops_the_deployment(self):
+        with self.assertRaisesRegex(RuntimeError, r"Herald does not publish releases \[5\]"):
+            self.publish([{}, {}], 5, {"5": "0xs"})
+
+    def test_a_shard_whose_manifest_lacks_its_current_release_stops_the_deployment(self):
+        with self.assertRaisesRegex(RuntimeError, r"Herald does not publish releases \[5\]"):
+            self.publish([{"4": "0xs"}, {"4": "0xs"}], 5, {"4": "0xs"})
 
 
 class ChainIdentityTest(unittest.TestCase):
