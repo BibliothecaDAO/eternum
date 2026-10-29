@@ -60,6 +60,8 @@ export interface LabScenario {
   startDevice?: () => void;
   /** The payout wallet the player's account has linked, which a labor claim needs; none: the lab player has none. */
   wallet?: string;
+  /** The player enters from the home page's game card, as one not yet settled does; otherwise on the map. */
+  entersFromHome?: boolean;
 }
 
 interface LabChainRecord {
@@ -111,7 +113,14 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   const chain = chainOf(scenario);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
   const herald = new LabHerald(chain, now, () => (record.streams += 1));
-  answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
+  answerDirectory(
+    now,
+    (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()),
+    () => playerState(chain, scenario.player),
+    // The home page's entry reads the game's clock against the wall clock, as a live chain's runs with it: a game
+    // entered from there has its clock in wall seconds, the lab chain's offset from it added.
+    scenario.entersFromHome ? Math.floor(startedAt / 1000) - scenario.startsAt : 0,
+  );
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
   answerLaborClaims(scenario, chain, record, herald, now);
@@ -139,7 +148,31 @@ export const chainOf = (scenario: LabScenario): NativeFactStore => {
  * shard alone, with the one Frontier game on it, ending a month into the season. Any other read the shard is asked
  * fails as an offline shard's.
  */
-const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
+/**
+ * The player's row of the lab shard's directory, as Herald derives it from the chain: registered, and settled once the
+ * chain holds a structure of theirs, each listed.
+ */
+const playerState = (chain: NativeFactStore, player: string) => {
+  const structures = [...chain.rows("Structure")]
+    .filter((structure) => BigInt(structure.owner) === BigInt(player))
+    .map((structure) => ({
+      entity_id: Number(structure.entity_id),
+      category: structure.base.category,
+      level: structure.base.level,
+      realm_id: structure.metadata.realm_id,
+      coord_x: null,
+      coord_y: null,
+      resources_packed: String(structure.resources_packed),
+    }));
+  return { registered: true, settled: structures.length > 0, roster_wallet: null, structures };
+};
+
+const answerDirectory = (
+  now: () => number,
+  read: (url: URL) => unknown,
+  playerStateNow: () => ReturnType<typeof playerState>,
+  clockOffset: number,
+) => {
   const network = window.fetch.bind(window);
   const manifest = {
     version: 1,
@@ -159,9 +192,16 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     ready: true,
     dev_mode_on: false,
     expedition: { day_unit_seconds: 3600, seed: "1" },
-    clock: { start_settling_at: 1, start_main_at: 100, end_at: LAB_GAME_ENDS_AT, end_grace_seconds: 0 },
+    clock: {
+      start_settling_at: 1 + clockOffset,
+      start_main_at: 100 + clockOffset,
+      end_at: LAB_GAME_ENDS_AT + clockOffset,
+      end_grace_seconds: 0,
+    },
     player_count: 1,
-    player_state: { registered: true, settled: true, roster_wallet: null, structures: [] },
+    get player_state() {
+      return playerStateNow();
+    },
     roster_count: 0,
     preset_id: LAB_GAME.presetId,
     registration: null,
@@ -180,6 +220,9 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     // The game's chat has no messages yet, and the player blocks nobody.
     if (url.pathname === "/api/chat/world") return json({ messages: [], nextCursor: null });
     if (url.pathname === "/api/chat/blocks") return json({ blocked: [] });
+    // The lab's season has no Blitz: no slot open, none scheduled.
+    if (url.pathname === "/api/slots") return json({ slots: [] });
+    if (url.pathname === "/api/factory/calendar") return json({ nextBlitz: null });
     if (url.pathname === "/api/directory")
       return json({
         shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],

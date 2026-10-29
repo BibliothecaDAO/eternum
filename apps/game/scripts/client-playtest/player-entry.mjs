@@ -14,7 +14,7 @@ const DAY_SUMMARY_WAIT_MS = 3_000;
 const SIGN_IN_CODE_WAIT_MS = 10 * 60_000;
 const EMAIL_FIELD = 'input[type="email"]';
 const CODE_FIELD = 'input[autocomplete="one-time-code"]';
-const ENTRY_BUTTON = "[data-playtest-entry]";
+export const ENTRY_BUTTON = "[data-playtest-entry]";
 
 /**
  * Signs the profile in from the home page, which shows the session in its bar: a signed-in player's place shows them,
@@ -83,6 +83,18 @@ async function waitForSignInCode(owner, email, codeFile) {
 export async function enterAsPlayer(browser, owner, timeoutMs, { card, game }) {
   // Orders tap tiles at the default zoom's offsets; a zoom an earlier session left in this profile is cleared first.
   const clearedZoom = browser.read(CLEAR_STORED_ZOOM_EXPRESSION);
+  const entry = await findHomeCardEntry(browser, owner, timeoutMs, { card, game });
+  browser.run(["click", ENTRY_BUTTON]);
+  const click = browser.read(trustedPointerDownSince(entry.t));
+  if (!click) throw new Error(`the click on ${entry.entry} never reached the page`);
+  return { ...entry, t: click.t, clearedZoom };
+}
+
+/**
+ * The steps' game's card on the home page, once its call to action is enabled, closing what opens over the page first;
+ * the call to action is marked as ENTRY_BUTTON for the browser to click.
+ */
+export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game }) {
   const startedAt = Date.now();
   let entry = null;
   while (!(entry = browser.read(markHomeCardEntryExpression(card, game)))) {
@@ -92,10 +104,7 @@ export async function enterAsPlayer(browser, owner, timeoutMs, { card, game }) {
     browser.press("Escape");
     await owner.sleep(POLL_MS);
   }
-  browser.run(["click", ENTRY_BUTTON]);
-  const click = browser.read(trustedPointerDownSince(entry.t));
-  if (!click) throw new Error(`the click on ${entry.entry} never reached the page`);
-  return { ...entry, t: click.t, clearedZoom };
+  return entry;
 }
 
 /**

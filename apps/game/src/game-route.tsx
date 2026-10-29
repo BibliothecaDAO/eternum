@@ -6,7 +6,7 @@ import { getGameModeId } from "@/config/game-modes";
  */
 import { ErrorBoundary, WorldLoading } from "@/ui/shared";
 import { TransactionAudioCues } from "@/ui/shared/components/transaction-audio-cues";
-import { useEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { PlaySceneHandoff } from "./game-entry/play-scene-handoff";
 import { markGameEntryMilestone } from "./ui/layouts/game-entry-timeline";
 import { Navigate } from "react-router-dom";
@@ -20,6 +20,7 @@ import type { SetupResult } from "./init/bootstrap";
 import { NewsHeadlineBridge } from "./ui/features/news-headlines";
 import { StoryEventAudioCues } from "./ui/features/story-events";
 import { PlayRouteDoorway } from "./ui/features/game-entry/doorway/play-route-doorway";
+import { presentUncovered } from "./three/presented-results";
 import { useBootDocumentState } from "./ui/modules/boot-loader";
 import { World } from "./ui/layouts/world";
 import { resolveGameRouteView } from "./game-route.utils";
@@ -92,6 +93,10 @@ const GameRoute = ({ backgroundImage }: { backgroundImage: string }) => {
   useEffect(() => {
     markGameEntryMilestone("overlay-mounted");
   }, [bootToken]);
+  // The doorway leaves in this commit, uncovering the scene drawn under it.
+  useLayoutEffect(() => {
+    if (phase === "ready") presentUncovered("entered");
+  }, [phase]);
 
   const currentTaskLabel = resolveCurrentTaskLabel({ currentTask, phase, tasks });
 

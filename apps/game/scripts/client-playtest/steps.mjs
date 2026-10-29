@@ -13,6 +13,7 @@ import {
   contextLossErrors,
 } from "./evidence.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
@@ -154,7 +155,7 @@ const PLAYER_STEPS = [
  * then cuts the press to the result at each mark the client recorded. With --capture-results it also records the
  * page's frames and fails unless they show the result in its region at its mark (result-capture.mjs).
  */
-const clickToResultStep = (name, sends, press, resultOf) => ({
+const clickToResultStep = (name, sends, press, resultOf, { settleMs = RESULT_SETTLE_MS } = {}) => ({
   name,
   sends,
   play: async (context) => {
@@ -163,7 +164,7 @@ const clickToResultStep = (name, sends, press, resultOf) => ({
       : null;
     const chainFrom = context.browser.read(LAB_CHAIN_LENGTH);
     const { locate, ...pressed } = { ...(await press(context)), chainFrom };
-    await context.owner.sleep(RESULT_SETTLE_MS);
+    await context.owner.sleep(settleMs);
     // A result whose place is known only once it shows (a deployed army) is found after the settle: reading the page
     // while the frames are recorded would hold their acknowledgements, and the screencast with them.
     const played = locate ? { ...pressed, region: locate() } : pressed;
@@ -186,13 +187,18 @@ const clickToResultStep = (name, sends, press, resultOf) => ({
     const frames = capturedFrames.get(played.capturedAs) ?? [];
     capturedFrames.delete(played.capturedAs);
     if (verdict.status !== "completed") return verdict;
+    const place = result.target ?? result.region ?? played.region;
+    if (!place) return failed("its result's place on the screen was not found", { clickToResult: measured });
+    if (!isOnScreen(place))
+      return failed(`its result's place ${JSON.stringify(place)} is not on the screen`, { clickToResult: measured });
     const onScreen = await proveResultOnScreen({
       frames,
       region: result.region ?? played.region,
       target: result.target,
+      onset: result.onset,
       before: measured.marks.diff,
       visible: measured.marks.visible,
-      frameMs: medianFrameMs(probe.frames, window),
+      frameMs: frameMsAround(probe.frames, measured.marks.visible),
       dir: `${played.capturedAs}-frames`,
     });
     return onScreen.shown
@@ -203,6 +209,10 @@ const clickToResultStep = (name, sends, press, resultOf) => ({
         });
   },
 });
+/** A box wholly inside the page's viewport: one past its edge is not what the player sees. */
+const isOnScreen = ({ left, top, width, height }) =>
+  left >= 0 && top >= 0 && left + width <= VIEWPORT.width && top + height <= VIEWPORT.height;
+
 // How many commands the lab's chain has been sent; null outside the lab.
 const LAB_CHAIN_LENGTH = `JSON.stringify(window.__labChain ? window.__labChain.sent.length : null)`;
 
@@ -220,16 +230,21 @@ const sentAsDeclared = (verdict, played, actionLatency, sends) => {
 
 /** Long enough for a live shard's answer and the frames after it; the lab's chain answers in 300 ms. */
 const RESULT_SETTLE_MS = 6_000;
+/** A season's entry: the settle answered, then the game booted and the realm drawn, on a throttled phone too. */
+const SETTLE_RESULT_MS = 25_000;
 /** Frames a step recorded with --capture-results, held until its verdict reads them: never in its transcript. */
 const capturedFrames = new Map();
 
-const medianFrameMs = (frames, { from, to }) => {
-  const inside = frames.filter((frame) => frame >= from && frame <= to);
-  const gaps = inside
-    .slice(1)
-    .map((frame, index) => frame - inside[index])
-    .sort((a, b) => a - b);
-  return Math.max(1000 / 60, gaps[Math.floor(gaps.length / 2)] ?? 0);
+/**
+ * A frame, for the proof's window round a mark: the longest the page took from the frame before the mark's to the third
+ * after it, not the step's median. A phone's map frames take 100 ms while the game boots, and a frame there is one of
+ * those, not six of a quiet page's.
+ */
+const frameMsAround = (frames, mark) => {
+  const at = frames.findLastIndex((frame) => frame <= mark);
+  const around = frames.slice(Math.max(0, at - 1), at + 5);
+  const gaps = around.slice(1).map((frame, index) => frame - around[index]);
+  return Math.max(1000 / 60, ...gaps);
 };
 
 /**
@@ -414,8 +429,10 @@ async function useTheSite({ browser }, site, gives) {
     );
     offered.push(sheet);
     if (sheet === site) {
+      // A phone frames the tapped tile above the site's sheet: its result shows where the map now draws it.
+      const at = await settledHexOnScreen(browser);
       browser.click("Use");
-      return { site, offered, target: offset, region: tileRegion(offset) };
+      return { site, offered, target: offset, region: at && tileRegionAt(at) };
     }
     if (sheet !== null) browser.press("Escape");
     if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
@@ -569,6 +586,37 @@ function armyDeployed({ actionLatency }) {
     .at(-1)
     ?.answered.find(({ model, value }) => model === "ExplorerTroops" && value !== null)?.value.explorer_id;
   return army && { presented: `army-shown:${army}` };
+}
+
+/**
+ * A season's entry (the lab's settle game, which opens on the home page): the Frontier card's Play, the doorway settling
+ * the player's realm, then the game opening on it, on that realm. The wait covers the game's boot after the chain has
+ * answered.
+ */
+const SETTLE_ACTION_STEPS = [
+  clickToResultStep("settle", "SettleSeason", playFromTheHomeCard, enteredOnTheRealm, { settleMs: SETTLE_RESULT_MS }),
+];
+
+/**
+ * The map on the realm, as the player sees it once the doorway goes (the map is drawn under the doorway first, where
+ * the player cannot see it). The target is the screen's lower third, below the doorway's plate and steps, where the
+ * doorway shows only its painting and the map replaces it: its grey past half the way from the painting's at the mark.
+ * A box on the realm would not do, as the doorway's steps light up over it before the mark.
+ */
+function enteredOnTheRealm({ played }) {
+  const third = Math.floor(VIEWPORT.height / 3);
+  return (
+    played.entry && {
+      presented: "entered",
+      target: { left: 0, top: VIEWPORT.height - third, width: VIEWPORT.width, height: third },
+    }
+  );
+}
+
+async function playFromTheHomeCard({ browser, owner }) {
+  const entry = await findHomeCardEntry(browser, owner, SHEET_WAIT_MS * 6, { card: LAB_SETTLE.card, game: LAB_SETTLE });
+  browser.run(["click", ENTRY_BUTTON]);
+  return { entry: entry.entry };
 }
 
 /**
@@ -840,8 +888,9 @@ async function openTheChest({ browser }) {
       const tip = browser.read(TOOLTIP_TEXT);
       offered.push(tip);
       if (/^Open crate\b/.test(tip ?? "")) {
+        // A desktop's camera stays where it was: the chest stands where it was aimed.
         browser.rightClick(offset);
-        return { offered, target: offset, region: tileRegion(offset) };
+        return { offered, target: offset, chest: chestBody(screenPoint(offset)) };
       }
       continue;
     }
@@ -849,8 +898,10 @@ async function openTheChest({ browser }) {
     const open = await readUntil(() => browser.read(sheetButton("^Open")), Boolean, SHEET_WAIT_MS);
     offered.push(browser.read(SHEET_NAME));
     if (open) {
+      // A phone frames the tapped tile above its card: the chest is found where the map now draws it.
+      const at = await settledHexOnScreen(browser);
       browser.tap(open.offset);
-      return { offered, target: offset, region: tileRegion(offset) };
+      return { offered, target: offset, chest: at && chestBody(at) };
     }
     if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
     if (!browser.observe().selection?.army) await focusTheArmyFromItsDock(browser);
@@ -858,14 +909,37 @@ async function openTheChest({ browser }) {
   return { offered };
 }
 
-/** The chest the lab's chain consumed for the step's OpenRelicChest: its tile, vacated. */
-function chestOpened({ actionLatency }) {
+// Where the screen draws the selected hex (page px), as the map reports it.
+const HEX_ON_SCREEN = `JSON.stringify(window.__eternumMapSelection?.hexOnScreen ?? null)`;
+
+/** The selected hex's place once the camera has stopped framing it: two readings a frame apart that agree. */
+async function settledHexOnScreen(browser) {
+  let previous = null;
+  for (let reads = 0; reads < 20; reads += 1) {
+    const at = browser.read(HEX_ON_SCREEN);
+    if (at && previous && Math.abs(at.x - previous.x) < 1 && Math.abs(at.y - previous.y) < 1) return at;
+    previous = at;
+    await sleep(100);
+  }
+  return null;
+}
+
+const screenPoint = ([dx, dy]) => ({ x: VIEWPORT.width / 2 + dx, y: VIEWPORT.height / 2 + dy });
+
+/** A chest's body on its tile (page px): what its lid lifting changes, not the tile round it. */
+const chestBody = ({ x, y }) => ({ left: Math.round(x - 25), top: Math.round(y - 35), width: 50, height: 40 });
+
+/**
+ * The chest the lab's chain consumed for the step's OpenRelicChest: its opening starting on its tile (the chest sinks
+ * away seconds later), seen on the chest's own body where the map drew it.
+ */
+function chestOpened({ played, actionLatency }) {
   const vacated = (actionLatency.chainAnswers ?? [])
     .filter(({ kind }) => kind === "OpenRelicChest")
     .at(-1)
     ?.answered.find(({ model, value }) => model === "TileOccupancy" && value === null);
   const [, , col, row] = vacated?.key.split(":") ?? [];
-  return col && { presented: `chest-opened:${col},${row}` };
+  return col && played.chest && { presented: `chest-opened:${col},${row}`, target: played.chest, onset: true };
 }
 
 /**
@@ -1625,6 +1699,9 @@ function tileRegion([dx, dy]) {
   return { left: VIEWPORT.width / 2 + dx - 60, top: VIEWPORT.height / 2 + dy - 50, width: 120, height: 100 };
 }
 
+/** A tile's box (page px) round the point the map draws it at. */
+const tileRegionAt = ({ x, y }) => ({ left: Math.round(x - 60), top: Math.round(y - 50), width: 120, height: 100 });
+
 /** A tile's ground inside its outline: what its terrain alone fills. */
 function tileInterior([dx, dy]) {
   return { left: VIEWPORT.width / 2 + dx - 32, top: VIEWPORT.height / 2 + dy - 25, width: 64, height: 50 };
@@ -2302,6 +2379,8 @@ const SPIRE_WAIT_MS = 5_000;
 
 /** A lab game built on the spire's (src/lab/game): the merge games and the owner's army after its fight. */
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
+/** The spire's game before its player settled: the run opens on the home page, and its first step enters the game. */
+const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
 const PICKED_ARMY = 201;
 const MERGE_WAIT_MS = 10_000;
@@ -3008,8 +3087,6 @@ function reloadOnTheRealm(labScenario) {
  * fails a command that is neither.
  */
 export const UNMEASURED_COMMANDS = {
-  SettleSeason:
-    "a season's entry, once per account, from the home page's Play before the game's map exists: the --player run times it as the boot",
   MarkGameSettled:
     "sent by the value relay's operator once a season's game has ended (apps/value-relay), never by a player",
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
@@ -3052,6 +3129,7 @@ export const STEP_SETS = {
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
+  "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
   "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },

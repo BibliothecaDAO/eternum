@@ -23,7 +23,7 @@ export const GameLabView = () => {
     installLabChain(scenario, startLabGame(name).startedAt).then(
       (game) => {
         game.startDevice?.();
-        navigate(mapHref(game.opensOn, params), { replace: true });
+        navigate(game.entersFromHome ? "/" : mapHref(game.opensOn, params), { replace: true });
       },
       (error: unknown) => setFailed(String(error)),
     );

@@ -301,6 +301,16 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    // Each step's evidence is named by its place in the list, from `first` on.
+    const playSteps = async (played, first) => {
+      for (const [index, step] of played.entries()) {
+        owner.throwIfCancelled();
+        const base = join(runDir, `${label}-${String(first + index + 1).padStart(2, "0")}-${step.name}`);
+        const result = await playStep({ browser, captureResults: context.captureResults, devTools, owner, step, base });
+        record.steps.push(result);
+        if (result.cancelled) throw result.cancelled;
+      }
+    };
     await touchAtPhoneWidth(devTools, VIEWPORT.width);
     if (cpuThrottle > 1) await devTools.send("Emulation.setCPUThrottlingRate", { rate: cpuThrottle });
     if (context.network) await emulateNetwork(devTools, context.network);
@@ -313,6 +323,9 @@ async function playRun(context) {
     if (player) record.signIn = await signInAsPlayer({ ...context, browser, url: record.url });
     else browser.run(["open", record.url]);
     const entered = player ? await enterAsPlayer(browser, owner, timeoutMs, { card: stepsGame.card, game }) : null;
+    // A game entered from the home page is entered by the first step, which times that entry; the boot runs to after it.
+    const entering = stepsGame.entersFromHome ? steps.slice(0, 1) : [];
+    await playSteps(entering, 0);
     record.boot = { ...(await waitForEntrySnapshot(browser, owner, timeoutMs)), entered };
     if (context.trace) browser.run(["trace", "stop", join(runDir, `${label}-trace.json`)]);
     // The boot as a step: from the page's start to now, its downloads, long frames, GPU work and scene marks.
@@ -325,13 +338,7 @@ async function playRun(context) {
     // No order is sent before the run is proven to be in the game it was asked to play.
     record.game = assertInTargetGame(browser.observe().path, game);
 
-    for (const [index, step] of steps.entries()) {
-      owner.throwIfCancelled();
-      const base = join(runDir, `${label}-${String(index + 1).padStart(2, "0")}-${step.name}`);
-      const played = await playStep({ browser, captureResults: context.captureResults, devTools, owner, step, base });
-      record.steps.push(played);
-      if (played.cancelled) throw played.cancelled;
-    }
+    await playSteps(steps.slice(entering.length), entering.length);
   } catch (error) {
     record.error = error.message;
     record.cancelled = error instanceof Cancelled;
