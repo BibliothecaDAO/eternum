@@ -51,13 +51,17 @@ export const useHeldTicket = (campaign: CampaignKey | null): HeldTicket => {
 
 /**
  * Records a ticket the account has just opened (the Devcon landing), so every screen that shows the account's ticket
- * shows it at once rather than after its last answer goes stale.
+ * shows it at once rather than after its last answer goes stale. A read of that ticket that set out before the opening
+ * answers for an earlier moment ("none"), so it is cancelled first: its answer, whenever it comes, never lands.
  */
 export const useTicketOpened = () => {
   const client = useQueryClient();
   const { session } = useIdentitySession();
-  return (campaign: CampaignKey, ticket: CampaignTicket) =>
-    client.setQueryData(heldTicketKey(session?.user.realmsId ?? null, campaign), ticket);
+  return async (campaign: CampaignKey, ticket: CampaignTicket) => {
+    const key = heldTicketKey(session?.user.realmsId ?? null, campaign);
+    await client.cancelQueries({ queryKey: key, exact: true });
+    client.setQueryData(key, ticket);
+  };
 };
 
 const heldTicketKey = (realmsId: string | null, campaign: CampaignKey | null) =>

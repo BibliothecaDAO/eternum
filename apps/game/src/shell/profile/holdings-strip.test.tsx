@@ -228,6 +228,34 @@ it("shows a ticket just opened on the landing on You and on a game's Realm step 
   expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, "TEST0000"]);
 });
 
+it.each([1440, 390])(
+  "keeps a ticket opened on the landing when a read sent before the opening answers late, at %i px",
+  async (width) => {
+    relay(() => held());
+    let answerFirstRead: (reason: unknown) => void = () => undefined;
+    const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, code) => {
+      if (code) return { campaign: DEVCON.campaign, tier: "golden" };
+      return new Promise((_resolve, reject) => (answerFirstRead = reject)) as never;
+    });
+    const you = await openYou(width);
+    await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(1));
+
+    await you.follow("Test flyer");
+    await you.press("Open your ticket");
+    await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
+    await you.follow("Test you");
+    expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
+
+    // The read You sent before the opening answers now, for that earlier moment: no ticket.
+    await act(async () => answerFirstRead(new IdentityRequestError(400, "invalid_redemption")));
+    await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
+    expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
+    await you.follow("Test step");
+    expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
+    expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, "TEST0000"]);
+  },
+);
+
 it("says an unreadable ticket cannot be read, and shows it once Try again answers", async () => {
   relay(() => held());
   const reads = vi

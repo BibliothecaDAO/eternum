@@ -50,9 +50,9 @@ export const JoinDevconPage = () => {
   const ticketOpened = useTicketOpened();
   const open = () => {
     setOpening({ kind: "opening" });
-    void redeemTicket().then((answer) => {
+    void redeemTicket().then(async (answer) => {
       // Every screen that shows the account's ticket (You, a game's Realm step) shows this one at once.
-      if ("tier" in answer) ticketOpened(DEVCON.campaign, answer);
+      if ("tier" in answer) await ticketOpened(DEVCON.campaign, answer);
       setOpening(answer);
     });
   };
