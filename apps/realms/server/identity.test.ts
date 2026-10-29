@@ -1082,7 +1082,7 @@ describe("identity Worker", () => {
       .filter(Boolean);
     await env.DB.batch(statements.map((statement) => env.DB.prepare(statement)));
 
-    const tiers = [];
+    const tiers: string[] = [];
     for (const [index, page] of pages.entries()) {
       const [, qr, url] = page.split(",");
       expect([qr, url]).toEqual([
@@ -1101,6 +1101,11 @@ describe("identity Worker", () => {
     // The generator prints exactly the campaign's golden count, the number the landing's "One of N" reads too.
     expect(tiers.filter((tier) => tier === "golden")).toHaveLength(CAMPAIGNS["devcon-2026"].golden);
     expect(tiers.filter((tier) => tier === "regular")).toHaveLength(24 - CAMPAIGNS["devcon-2026"].golden);
+    // Our private list names exactly the pages that opened golden.
+    const goldenPages = pages
+      .filter((_, index) => tiers[index] === "golden")
+      .map((page) => page.replace(/,qr\/\d+\.svg,/, ","));
+    expect(readFileSync(join(out, "golden.csv"), "utf8")).toBe(`page,url\n${goldenPages.join("\n")}\n`);
     // A flyer passed on after use opens nothing for the next account.
     const next = createBrowser();
     await signInWithCode(next, "flyer-passed-on@realms.test");
