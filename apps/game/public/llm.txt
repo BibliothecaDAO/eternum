@@ -11,7 +11,7 @@ import { BLITZ } from "@/utils/blitz";
     <img src="/images/covers/twilight-tundra.png" alt="" />
   </div>
 
-  <img src="/images/logos/realms-lockup.svg" alt="Realms" />
+  <img src="/images/logos/realms-lettered.webp" alt="Realms" width="240" />
 
   <HomePage.Description>
     Two strategy games, played onchain. Frontier is free: a new map every day, and nobody can attack you. Blitz is a
@@ -3533,7 +3533,7 @@ Food is the cornerstone of your realm's economy:
 * Required for most production chains
 * Essential for maintaining troops and construction
 
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid var(--line)" }} />
 
 ### Strategic Materials
 
@@ -3556,7 +3556,7 @@ Military units have unique properties:
 * Once deployed, they can still be transferred between armies if they are located on adjacent hexes and are of the same
   type and tier
 
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid var(--line)" }} />
 
 #### Transport (Donkeys)
 
@@ -3569,7 +3569,7 @@ Essential for logistics:
 * Required for transferring and trading materials
 * Consumed after a single use
 
-<div style={{ margin: "1.5rem 0", borderTop: "1px solid #4d3923" }} />
+<div style={{ margin: "1.5rem 0", borderTop: "1px solid var(--line)" }} />
 
 ### Special Materials
 

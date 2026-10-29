@@ -109,34 +109,35 @@ HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel un
 which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news over the
 HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an enemy army
 beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill points; its panel's Level
-up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `blitz-spectator`, `blitz-finished`,
-`blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held, playing then
-watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's
-states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its
-edge, every control reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42
-with 1,000 labor to claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the
-top bar, Next up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a
-newcomer (no build steps), and the panel as built on a fixture account holding two orders (its choice of order saves
-nothing there; each row the game's own rule on a realm's case: population short or not, an army short of full, a full
-army). `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels
-on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one
-alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame
-rate or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as
-here; a game loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a
-phone that vibrates, the keys only where there is a keyboard);
-`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
-keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
-`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
-Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
-realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving army’s relic load;
-`/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements; `/lab/kit/windows/frontier-build` shows a
-raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and
-crate panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy
-fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
-`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
-`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
-on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
-on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
+up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's player on the
+same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab
+player's last realm lost, a Hyperstructure still held, playing then watching);
+`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
+1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
+reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
+claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
+route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
+steps), and the panel as built on a fixture account holding two orders (its choice of order saves nothing there; each
+row the game's own rule on a realm's case: population short or not, an army short of full, a full army).
+`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
+Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
+phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate or
+Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a game
+loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that
+vibrates, the keys only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings`
+measures it against a 1080 px screen and opens its keys with Show and leaves with Back; every window it draws must keep
+each tab strip inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms,
+villages, a camp, rifts, a Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an
+army out beside the lab realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the
+receiving army’s relic load; `/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements;
+`/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes,
+Military picker and window body, Combat and crate panel as the game draws them (the crate from afar: a line saying what
+opening it needs, no button), on the deploy fixture's realm; capture them with
+`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
+number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
+text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
+number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
+`node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
@@ -179,16 +180,27 @@ player and judges each step by what the page shows (`apps/game/AGENTS.md`).
 ## Shell (outside a game)
 
 On a desktop, every page stands on its painting (the age or mode it shows, else the app's landscape) under the app
-sheet's bar: the lockup, Play, Season, What's new and Market with their icons, the page's notice, and the player (name
-and portrait, or You) at its right end. `Esc` goes back and `Enter` takes the page's step, neither key printed on its
-button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`, `shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and
-`AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A full-screen step (sign-in, a lobby) keeps the bar with the
-lockup alone. Every page's content starts at the top, under the bar; a painting is its ground, never space above it.
-`Enter` presses the page's step button (the one marked as its step) when it is enabled, nothing has focus that answers
-Enter itself, and no dialog is open. On a phone the places are a tab bar at the foot. The app's notice (offline, an
-update ready, or Install, which only Play offers) sits in the desktop's top bar before You, and on a phone just above
-the foot, one row: Install is its icon, Later and Install; under 1280 wide a notice with action buttons shows its icon
-and verbs; a words-only notice keeps its text.
+sheet's bar: the brand's lettered mark (56 px; 48 px in a phone's top row), Play, Season, What's new and Market with
+their icons, the page's notice, and the player (name and portrait, or You) at its right end. `Esc` goes back and `Enter`
+takes the page's step, neither key printed on its button (`shell/frame/page-frame.tsx`, `shell/frame/tabs.tsx`,
+`shell/frame/desktop-keys.ts`, the sheet's `AppTopBar` and `AppPageHead` in `ui/design-system/kit/app-elements.tsx`). A
+full-screen step (sign-in, a lobby) keeps the bar with the mark alone. The brand is the Realms Brand Kit v3: its palette
+(`src/brand/palette.json`, read by `src/tokens.ts`), its faces (Realms Titling for one game's start on its card, IM Fell
+English SC for headings, Cinzel for buttons, tabs and the bar's places, Exo 2 for everything read, the HUD included) and
+its marks by displayed size (`REALMS_MARK` in `ui/design-system/icon-meaning.ts`: the lettered mark on the first frame,
+the bar and the share card, the small globe on the favicon and the status page, the contour globe on the install icons
+and a loader; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the kit's
+parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import the
+token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails) hold
+a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails on a
+surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour, face or
+mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
+(`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
+is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
+enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the places are a tab bar at the
+foot. The app's notice (offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar
+before You, and on a phone just above the foot, one row: Install is its icon, Later and Install; under 1280 wide a
+notice with action buttons shows its icon and verbs; a words-only notice keeps its text.
 
 | Feature                                                                                                                                                                                                                                      | Route                                                          | How to reach it                                                                                                                                                                                                                                                                |
 | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

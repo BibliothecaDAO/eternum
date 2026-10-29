@@ -70,7 +70,7 @@
   cursor: pointer;
 }
 .day-end-panel button[aria-pressed="true"] {
-  border-color: #f6c297;
+  border-color: var(--peach);
   background: #3a2c18;
 }
 .day-end-panel button:disabled {

@@ -3,16 +3,38 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#130F0C" />
+    <meta name="theme-color" content="#130f0c" />
     <title>Realms — Offline</title>
     <!-- The installed app's page with no connection (spec 14): one plate with the mark, Offline and Try again. Colours are
          the token file's (src/tokens.ts); only precached files may load here, so the title is set in a plain serif (the
          display face is not precached). -->
     <style>
+      /* brand: written from apps/game/src/tokens.ts by apps/game/scripts/build-brand-surfaces.ts */
+      :root {
+        --ground: #130f0c;
+        --plate: #201a16;
+        --plate2: #2a221c;
+        --line: #46351c;
+        --line2: #6b5230;
+        --cream: #f4ebdc;
+        --muted: #b7a78a;
+        --gold: #dfaa54;
+        --gold2: #f3d08a;
+        --peach: #f6c297;
+        --amber: #e39001;
+        --ember: #ef5858;
+        --red: #fc4c4c;
+        --sage: #b5bd75;
+        --hot: #f6ac1d;
+        --ink: #1b1207;
+        --veil: #0a0806;
+        --shade: #000000;
+      }
+      /* brand: end */
       :root {
         color-scheme: dark;
-        background: #130f0c;
-        color: #f4ebdc;
+        background: var(--ground);
+        color: var(--cream);
         font-family: system-ui, sans-serif;
       }
       body {
@@ -31,9 +53,9 @@
         width: min(30rem, calc(100% - 2rem));
         padding: 1.5rem;
         box-sizing: border-box;
-        border: 1px solid #6b5230;
+        border: 1px solid var(--line2);
         border-radius: 16px;
-        background: #201a16;
+        background: var(--plate);
         box-shadow: 0 22px 50px rgb(0 0 0 / 0.55);
       }
       img {
@@ -49,17 +71,17 @@
         align-self: stretch;
         min-height: 48px;
         padding: 0 1.5rem;
-        border: 2px solid #6b5230;
+        border: 2px solid var(--line2);
         border-radius: 16px;
         background: transparent;
-        color: #f4ebdc;
+        color: var(--cream);
         font:
           600 1rem system-ui,
           sans-serif;
         cursor: pointer;
       }
       button:focus-visible {
-        outline: 3px solid #f6c297;
+        outline: 3px solid var(--peach);
         outline-offset: 3px;
       }
     </style>

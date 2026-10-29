@@ -1,0 +1,128 @@
+{
+  "brand": {
+    "hearth": "#130F0C",
+    "plate": "#201A16",
+    "line": "#46351C",
+    "cream": "#F4EBDC",
+    "muted": "#B7A78A",
+    "mark-gold": "#F3D08A",
+    "action-gold": "#DFAA54",
+    "night": "#04192A",
+    "parchment": "#F1E7D4",
+    "ember": "#753000",
+    "umber-ink": "#2A1F14",
+    "spark": "#FFE45E"
+  },
+  "lighting": "Upper-left light; lighter top/left faces, darker lower/right faces.",
+  "materialSwatches": "Guide for new drawings. Preserve the supplied raster artwork rather than recoloring it to swatches.",
+  "games": {
+    "blitz": {
+      "ground": "#753000",
+      "title": "#FFE45E",
+      "stamp": "#F3D08A",
+      "materials": [
+        {
+          "name": "Lightning",
+          "light": {
+            "name": "Spark",
+            "hex": "#FFE45E"
+          },
+          "shade": {
+            "name": "Amber",
+            "hex": "#F4A644"
+          }
+        },
+        {
+          "name": "Shield",
+          "light": {
+            "name": "Shield",
+            "hex": "#FBE9CD"
+          },
+          "shade": {
+            "name": "Seal",
+            "hex": "#F3D08A"
+          }
+        }
+      ],
+      "mediumIcon": [
+        "#FFE45E",
+        "#FBE9CD"
+      ],
+      "smallIcon": [
+        "#FFE45E"
+      ]
+    },
+    "frontier": {
+      "ground": "#14101D",
+      "title": "#BE96FB",
+      "stamp": "#F3D08A",
+      "materials": [
+        {
+          "name": "Hexagon and compass",
+          "light": {
+            "name": "Gold light",
+            "hex": "#F3D08A"
+          },
+          "shade": {
+            "name": "Gold shade",
+            "hex": "#C18D50"
+          }
+        },
+        {
+          "name": "Mist and claws",
+          "light": {
+            "name": "Mist light",
+            "hex": "#BB93F9"
+          },
+          "shade": {
+            "name": "Mist shade",
+            "hex": "#6238A0"
+          }
+        }
+      ],
+      "mediumIcon": [
+        "#F3D08A",
+        "#BB93F9"
+      ],
+      "smallIcon": [
+        "#BB93F9"
+      ]
+    },
+    "eternum": {
+      "ground": "#F1E7D4",
+      "title": "#271602",
+      "stamp": "#6F4D09",
+      "materials": [
+        {
+          "name": "Hyperstructure",
+          "light": {
+            "name": "Structure light",
+            "hex": "#A0A0A0"
+          },
+          "shade": {
+            "name": "Structure",
+            "hex": "#4C4C4C"
+          }
+        },
+        {
+          "name": "Ring",
+          "light": {
+            "name": "Ink light",
+            "hex": "#5C3D12"
+          },
+          "shade": {
+            "name": "Ink",
+            "hex": "#271602"
+          }
+        }
+      ],
+      "mediumIcon": [
+        "#514F4E",
+        "#8E4E12"
+      ],
+      "smallIcon": [
+        "#514F4E"
+      ]
+    }
+  }
+}

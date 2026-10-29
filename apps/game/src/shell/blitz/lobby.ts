@@ -9,9 +9,12 @@ import type { DirectoryGame } from "../herald";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { ageOf } from "../play/ages";
 
+/** A lobby's game's start time: "16:30". */
+export const lobbyStart = (row: BlitzRow) =>
+  formatClockTime(row.startsAt ?? (row.kind === "game" ? row.game.clock.start_main_at : undefined));
+
 /** A lobby's title is its game's start time: "Blitz 16:30". */
-export const lobbyTitle = (row: BlitzRow) =>
-  `${ageOf("blitz").name} ${formatClockTime(row.startsAt ?? (row.kind === "game" ? row.game.clock.start_main_at : undefined))}`;
+export const lobbyTitle = (row: BlitzRow) => `${ageOf("blitz").name} ${lobbyStart(row)}`;
 
 /** A Blitz row's lobby address: its row key with the colons a URL segment cannot carry plainly. */
 export const lobbyId = (row: Pick<BlitzRow, "key">) => row.key.replaceAll(":", "-");

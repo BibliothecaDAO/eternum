@@ -31,7 +31,7 @@ hashes. Formulas and inherited player colours are described below rather than co
 ## Proposed map scope
 
 `MAP_SHEET` in `src/tokens.ts` derives ownership from **the same `HUD_SHEET`**: you gold, ally teal, enemy coral,
-neutral and unowned stone. `mapAgeAccent()` reads `HUD_MODES`: Blitz `#e8a65a`, Frontier `#b49cf0`, Eternum `#e6c27a`.
+neutral and unowned stone. `mapAgeAccent()` reads `HUD_MODES`: Blitz `#ffe45e`, Frontier `#be96fb`, Eternum `#e6c27a`.
 No map-only colour palette. Age indicates intent/selection; coral means hostile/refused; teal means transfer. Ownership
 does not change with age. State symbols and endpoint chevrons supplement colour.
 

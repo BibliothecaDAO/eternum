@@ -1,4 +1,5 @@
 import type { Email } from "./email";
+import BRAND from "./brand.gen.json";
 import { EMAIL_ART, type EmailArt } from "./email-art.gen";
 
 /** The two emails a player gets, in the Realms look: a sign-in code, and a change to their payout wallet. */
@@ -73,15 +74,10 @@ interface PlayerMessage {
   idempotencyKey?: string;
 }
 
-// The shell's palette (apps/game/src/tokens.ts) and faces every client has; the title is lettered in the art.
-const NIGHT = "#130f0c";
-const LINE = "#46351c";
-const CREAM = "#f4ebdc";
-const MUTED = "#a2926f";
-const GOLD = "#dfaa54";
-const GOLD2 = "#f3d08a";
-const INK = "#1b1207";
-const BODY = "'Atkinson Hyperlegible Next','Segoe UI',Helvetica,Arial,sans-serif";
+// The brand's colours and reading face, written from the game's token file (apps/game/src/brand/surfaces.ts), after
+// the face the fallbacks every client has; the title is lettered in the art.
+const { ground: NIGHT, line: LINE, cream: CREAM, muted: MUTED, gold: GOLD, gold2: GOLD2, ink: INK } = BRAND.colors;
+const BODY = `'${BRAND.faces.body.family}','Segoe UI',Helvetica,Arial,sans-serif`;
 const MONO = "'SFMono-Regular',Menlo,Consolas,'Liberation Mono',monospace";
 
 const ART_ID = "header";

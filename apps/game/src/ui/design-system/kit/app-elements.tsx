@@ -1,5 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import {
   type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
@@ -402,7 +403,18 @@ export const AppPanel = ({
 );
 
 /**
- * An age as a tall column on its painting: its name over what it holds (Play's games of that age), in the age's
+ * A game's name as its age's lockup, the kit's complete title (emblem, title and Realms stamp), never typed; then, for
+ * one game of the age, its start ("19:15").
+ */
+export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?: string }) => (
+  <span className="app-game-name">
+    <img className="app-game-name__lockup" src={AGE_LOCKUP[age]} alt={name} />
+    {when && <span className="app-game-name__when">{when}</span>}
+  </span>
+);
+
+/**
+ * An age as a tall column on its painting: its lockup over what it holds (Play's games of that age), in the age's
  * accent, the painting showing above.
  */
 export const AppAgeColumn = ({
@@ -424,14 +436,17 @@ export const AppAgeColumn = ({
       sizes="(min-width: 1024px) 25vw, 100vw"
     />
     <div className="app-age-column__body">
-      <h2 className="app-age-column__name">{name}</h2>
+      <h2 className="app-age-column__name">
+        <AppGameName age={age} name={name} />
+      </h2>
       {children}
     </div>
   </section>
 );
 
 /**
- * A game, on its age's painting and in its age's accent: its title, what stands (facts), and its one verb. `lead` is
+ * A game, on its age's painting and in its age's accent: its title (an AppGameName, or a line where no game stands),
+ * what stands (facts), and its one verb. `lead` is
  * Play's first card, the one gold verb of the page; `tile` sits among others.
  */
 export const AppGameCard = ({

@@ -1,0 +1,21 @@
+REALMS TITLING — UPSTREAM NOTICES
+
+Cinzel Decorative Bold
+Copyright (c) 2012 Natanael Gama (info@ndiscovered.com).
+Reserved Font Name: Cinzel. Licensed under the SIL Open Font License 1.1.
+https://github.com/google/fonts/tree/main/ofl/cinzeldecorative
+Unchanged license: Licenses/CinzelDecorative-OFL.txt
+Used as the outline foundation for the quiet capital forms and punctuation.
+
+IM Fell English SC
+Copyright (c) 2010 Igino Marini (mail@iginomarini.com).
+The font's embedded metadata also carries copyright 2007 Igino Marini and
+Reserved Font Name IM FELL English SC. Licensed under the SIL OFL 1.1.
+https://github.com/google/fonts/tree/main/ofl/imfellenglishsc
+Unchanged license: Licenses/IMFellEnglishSC-OFL.txt
+Used as a normalized capital-width proportion reference, not as lowercase.
+
+The modified output family is named Realms Titling. It does not use an upstream
+reserved name as its family name. The original designers are credited for the
+source materials; no endorsement is implied. The modified font is distributed
+under the SIL OFL 1.1 in OFL.txt, with the required copyright and license notices.

@@ -4,7 +4,7 @@ import test from "node:test";
 
 import { configColorsOf, findStylesheetViolations, findViolations, fontsOf, unlisted } from "./check.mjs";
 
-const FONTS = ["display", "ui", "body"];
+const FONTS = ["game", "display", "ui", "body"];
 const COLORS = ["gold", "danger", "light-red", "order"];
 const matches = (source) => findViolations(source, "a.tsx", FONTS, COLORS).map(({ match }) => match);
 const stylesheetMatches = (source) => findStylesheetViolations(source, "index.css").map(({ match }) => match);

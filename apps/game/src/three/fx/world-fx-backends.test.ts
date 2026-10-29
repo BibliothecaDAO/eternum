@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resolveRendererFxCapabilities } from "../renderer-fx-capabilities";
 import { createWorldFxBackend } from "./world-fx-backends";
@@ -116,6 +117,39 @@ describe("createWorldFxBackend", () => {
     });
 
     expect(collectObjectTypes(scene)).not.toContain("CSS2DObject");
+  });
+});
+
+describe("world effect words", () => {
+  it("draws an icon's label and a floating figure in the HUD sheet's face, never the app's labels face", () => {
+    const scene = new THREE.Scene();
+    const backend = createWorldFxBackend({
+      capabilities: {
+        activeMode: "webgpu",
+        supportsBillboardMeshFx: true,
+        supportsDomLabelFx: true,
+        supportsSpriteSceneFx: false,
+      },
+      scene,
+    });
+    backend.spawnIconFx({
+      animate: () => true,
+      isInfinite: true,
+      labelText: "traveling",
+      size: 1,
+      texture: createTexture(),
+      type: "travel",
+      x: 0,
+      y: 0,
+      z: 0,
+    });
+    backend.spawnTextFx({ color: "#fff", text: "+120", x: 0, y: 0, z: 0 });
+
+    const words: string[] = [];
+    scene.traverse((node) => {
+      if (node instanceof CSS2DObject) words.push(`${node.element.textContent} ${node.element.style.fontFamily}`);
+    });
+    expect(words).toEqual(["traveling var(--hud-font)", "+120 var(--hud-font)"]);
   });
 });
 

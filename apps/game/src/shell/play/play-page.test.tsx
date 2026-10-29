@@ -228,7 +228,7 @@ it("keeps Blitz on Play once an ended Blitz's results were seen, saying none is 
 
   localStorage.setItem("realms.seen-results", JSON.stringify(["0xa:2"]));
   await page.render();
-  expect(blitz()).toBe("BlitzNo Blitz scheduled this season.Build ordersThe game's order");
+  expect(blitz()).toBe("No Blitz scheduled this season.Build ordersThe game's order");
   expect(page.text()).toContain("Resume");
 
   // A slot the operator opens takes the line's place; a slot outage is said as the outage, never as "none".
@@ -251,7 +251,30 @@ it("keeps the way to the build orders when the player's ended Blitz leads Play",
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
   // Its results lead; Blitz's column under it holds only the way to the build orders.
   expect(page.text()).toContain("Results");
-  expect(blitz()).toBe("BlitzBuild ordersThe game's order");
+  expect(blitz()).toBe("Build ordersThe game's order");
+});
+
+it("names each game by its age's lockup, and a Blitz lead by Blitz's with its start", async () => {
+  const lockups = (page: { container: HTMLElement }) =>
+    [...page.container.querySelectorAll<HTMLImageElement>("[data-age] h2 img, [data-age] h3 img")].map(
+      (img) => `${img.closest("[data-age]")!.getAttribute("data-age")} ${img.alt} ${img.getAttribute("src")}`,
+    );
+  reads.directory = answered({ games: [ownSeason] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const season = await mount();
+  expect(lockups(season)).toEqual([
+    "frontier Frontier /images/logos/frontier-lockup.webp",
+    "blitz Blitz /images/logos/blitz-lockup.webp",
+  ]);
+  await cleanup?.();
+
+  reads.directory = answered({ games: [] });
+  reads.slots = answered({ slots: [slot] });
+  const blitzLead = await mount();
+  const lead = blitzLead.container.querySelector('[data-size="lead"] h3')!;
+  expect(lead.querySelector("img")?.getAttribute("src")).toBe("/images/logos/blitz-lockup.webp");
+  expect(`${lead.querySelector("img")?.alt} ${lead.textContent}`).toMatch(/^Blitz \d\d:\d\d$/);
 });
 
 it("says nothing of Blitz being unscheduled when a Blitz is the lead", async () => {
@@ -281,13 +304,13 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   const at = (iso: string) => formatClockTime(Date.parse(iso) / 1000);
   const orders = "Build ordersThe game's order";
   expect(blitz()).toBe(
-    `BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m${orders}`,
+    `Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m${orders}`,
   );
 
   // Its entry due: the schedule's next tick opens it.
   reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });
   await page.render();
-  expect(blitz()).toBe(`BlitzNext ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment${orders}`);
+  expect(blitz()).toBe(`Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens in a moment${orders}`);
 
   // Published: the game stands as today, and the calendar's line goes.
   reads.slots = answered({ slots: [slot] });
