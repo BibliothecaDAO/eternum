@@ -22,12 +22,14 @@ function createTemplate(): {
   return { geometry, material, model };
 }
 
+const compileNow = async () => {};
+
 describe("BuildingPreview", () => {
   it("loads lazily, dedupes by source, and only owns cloned materials", async () => {
     const scene = new THREE.Scene();
     const template = createTemplate();
     const load = vi.fn().mockResolvedValue(template.model);
-    const preview = new BuildingPreview(scene, () => ({ cacheKey: "building/shared.glb", load }));
+    const preview = new BuildingPreview(scene, () => ({ cacheKey: "building/shared.glb", load }), compileNow);
     const sourceGeometryDispose = vi.spyOn(template.geometry, "dispose");
 
     expect(load).not.toHaveBeenCalled();
@@ -63,12 +65,16 @@ describe("BuildingPreview", () => {
     const workersLoad = new Promise<THREE.Group>((resolve) => {
       resolveWorkers = resolve;
     });
-    const preview = new BuildingPreview(scene, (group, building) => {
-      expect(group).toBe(BUILDINGS_GROUPS.BUILDINGS);
-      return building === BuildingType.WorkersHut
-        ? { cacheKey: "workers.glb", load: () => workersLoad }
-        : { cacheKey: "storehouse.glb", load: () => Promise.resolve(storehouse.model) };
-    });
+    const preview = new BuildingPreview(
+      scene,
+      (group, building) => {
+        expect(group).toBe(BUILDINGS_GROUPS.BUILDINGS);
+        return building === BuildingType.WorkersHut
+          ? { cacheKey: "workers.glb", load: () => workersLoad }
+          : { cacheKey: "storehouse.glb", load: () => Promise.resolve(storehouse.model) };
+      },
+      compileNow,
+    );
 
     preview.setPreviewBuilding({ type: BuildingType.WorkersHut });
     preview.setPreviewBuilding({ type: BuildingType.Storehouse });
@@ -90,7 +96,7 @@ describe("BuildingPreview", () => {
     const load = new Promise<THREE.Group>((resolve) => {
       finishLoad = resolve;
     });
-    const preview = new BuildingPreview(scene, () => ({ cacheKey: "late.glb", load: () => load }));
+    const preview = new BuildingPreview(scene, () => ({ cacheKey: "late.glb", load: () => load }), compileNow);
     const cloneSpy = vi.spyOn(template.material, "clone");
     const disposeSpy = vi.spyOn(THREE.MeshStandardMaterial.prototype, "dispose");
 
@@ -101,5 +107,26 @@ describe("BuildingPreview", () => {
 
     expect(scene.children).toHaveLength(0);
     expect(disposeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("prepares a ghost's pipelines before it joins the scene", async () => {
+    const scene = new THREE.Scene();
+    const template = createTemplate();
+    let compiled: (() => void) | undefined;
+    const compile = vi.fn(() => new Promise<void>((resolve) => (compiled = resolve)));
+    const preview = new BuildingPreview(
+      scene,
+      () => ({ cacheKey: "farm.glb", load: () => Promise.resolve(template.model) }),
+      compile,
+    );
+
+    preview.setPreviewBuilding({ type: BuildingType.WorkersHut });
+    await vi.waitFor(() => expect(compile).toHaveBeenCalledOnce());
+    expect(compile).toHaveBeenCalledWith(expect.any(THREE.Group), scene);
+    expect(scene.children).toHaveLength(0);
+
+    compiled!();
+    await vi.waitFor(() => expect(scene.children).toHaveLength(1));
+    preview.dispose();
   });
 });

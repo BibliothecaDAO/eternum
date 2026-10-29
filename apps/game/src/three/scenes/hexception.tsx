@@ -606,31 +606,35 @@ export default class HexceptionScene extends HexagonScene {
 
   private getOrCreateBuildingPreview(): BuildingPreview {
     if (!this.buildingPreview) {
-      this.buildingPreview = new BuildingPreview(this.scene, (group, building) => {
-        const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
-        const tier =
-          this.mode.id === "frontier" && group === BUILDINGS_GROUPS.BUILDINGS
-            ? buildingTypeTier(
-                this.game.store,
-                configManager.getActiveGameId(),
-                this.state.structureEntityId,
-                building as BuildingType,
-              )
-            : 1;
-        const tierPath = tier > 1 ? frontierPaintedBuildingPath(building as BuildingType, tier) : undefined;
-        const path = tierPath ?? groupPaths[building.toString()];
-        if (!path) {
-          return null;
-        }
+      this.buildingPreview = new BuildingPreview(
+        this.scene,
+        (group, building) => {
+          const groupPaths = this.mode.assets.buildingModelPaths[group] as Record<string, string>;
+          const tier =
+            this.mode.id === "frontier" && group === BUILDINGS_GROUPS.BUILDINGS
+              ? buildingTypeTier(
+                  this.game.store,
+                  configManager.getActiveGameId(),
+                  this.state.structureEntityId,
+                  building as BuildingType,
+                )
+              : 1;
+          const tierPath = tier > 1 ? frontierPaintedBuildingPath(building as BuildingType, tier) : undefined;
+          const path = tierPath ?? groupPaths[building.toString()];
+          if (!path) {
+            return null;
+          }
 
-        return {
-          cacheKey: path,
-          load: async () => {
-            await this.models.request(path);
-            return this.models.get(path)?.model ?? null;
-          },
-        };
-      });
+          return {
+            cacheKey: path,
+            load: async () => {
+              await this.models.request(path);
+              return this.models.get(path)?.model ?? null;
+            },
+          };
+        },
+        this.compilePipelines,
+      );
     }
 
     return this.buildingPreview;
