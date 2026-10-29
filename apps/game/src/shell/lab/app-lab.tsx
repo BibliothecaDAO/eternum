@@ -31,6 +31,7 @@ import {
   LAB_SEAT_PROFILES,
   LAB_SESSION,
   LAB_CHAT,
+  LAB_GLOBAL_CHAT,
   LAB_EMAIL_CODE,
   LAB_ENTRY_TERMS,
   LAB_GAME_KEYS,
@@ -48,6 +49,8 @@ import {
 } from "./app-lab-fixtures";
 import { LabConnect, LabDoorway } from "./app-lab-flows";
 import { answerLabChat } from "./lab-chat";
+import { AppChatConnection } from "../chat/app-chat";
+import { ChatPage } from "../chat/chat-page";
 
 /**
  * The dev build's app lab: the real pages over one fixture state per screen, for the painted pass's captures of states
@@ -79,6 +82,8 @@ const LabScreenView = ({ screen }: { screen: LabScreen }) => {
   return (
     <QueryClientProvider client={client}>
       <LabPages screen={screen} />
+      {/* The app shell's one chat connection, for a signed-in screen, over the lab's answered sockets. */}
+      {LAB_SCREENS[screen].signedIn && <AppChatConnection />}
     </QueryClientProvider>
   );
 };
@@ -99,6 +104,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="profile/settings" element={<SettingsPage />} />
         <Route path="p/:address" element={<PlayerPage />} />
         <Route path="scroll" element={<WhatsNewPage />} />
+        <Route path="chat" element={<ChatPage />} />
         <Route path="terms" element={<TermsPage />} />
         <Route path="privacy" element={<PrivacyPage />} />
         <Route path="credits" element={<CreditsPage />} />
@@ -164,7 +170,7 @@ function installLabFixtures(screen: LabScreen): () => void {
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
   );
   answerAppReads(screen);
-  answerLobbyChat(screen);
+  answerChat(screen);
   answerIdentity();
   return () => {
     window.fetch = previousFetch;
@@ -202,7 +208,13 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
-    "/api/chat/world": () => json({ messages: LAB_CHAT, nextCursor: null }),
+    // A lobby's room its lobby's lines, Global its own.
+    "/api/chat/world": (url) =>
+      json({
+        messages: url.searchParams.get("zoneId")?.startsWith("slot:") ? LAB_CHAT : LAB_GLOBAL_CHAT,
+        nextCursor: null,
+      }),
+    "/api/chat/blocks": () => json({ blocked: [], version: 0 }),
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
@@ -237,15 +249,15 @@ const answerIdentity = () => {
   });
 };
 
-/** The lobby chat's room, answered in the tab: a wallet registered in the slot, and not refunded, writes. */
-const answerLobbyChat = (screen: LabScreen) => {
+/** The chat's rooms, answered in the tab: Global writes, and a lobby's room for a wallet registered in its slot, not refunded. */
+const answerChat = (screen: LabScreen) => {
   const registration = LAB_ENTRY_TERMS[screen]?.registration;
   const canWrite =
     LAB_ENTRY_TERMS[screen]?.cancelled !== true &&
     registration?.registered === true &&
     registration.paid > 0n &&
     !registration.refundable;
-  answerLabChat(canWrite);
+  answerLabChat({ lobbyWrites: canWrite });
 };
 
 /** Three orders a player saved, Coal rush the one followed. */

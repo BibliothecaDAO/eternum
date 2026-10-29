@@ -215,6 +215,8 @@ type AppBarPlace = {
   /** The place's own word where it shows the player ("You"): what assistive technology names it, with the player. */
   place?: string;
   current: boolean;
+  /** What waits behind the place (Chat's unread), beside its word; none shows nothing. */
+  count?: number;
 };
 
 /**
@@ -258,6 +260,11 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) =>
     >
       {place.icon && <Icon name={place.icon} size={24} />}
       {place.label}
+      {place.count ? (
+        <span data-count className="app-bar__count">
+          {place.count}
+        </span>
+      ) : null}
     </button>
   ) : (
     <AppLink
@@ -352,8 +359,8 @@ export const AppTabs = <K extends string>({
 
 /**
  * The app's one panel: its name (its icon before it, a cue at its end) over a rule, then its body. A panel about one
- * game or mode carries that mode's painting in its head. `flush` lets a list run to its edges. `className` places it,
- * never its look.
+ * game or mode carries that mode's painting in its head. `flush` lets a list run to its edges; `fill` gives its body the
+ * panel's height, for a body that scrolls inside it (a chat). `className` places it, never its look; `label` names it.
  */
 export const AppPanel = ({
   title,
@@ -361,7 +368,9 @@ export const AppPanel = ({
   painting,
   cue,
   flush = false,
+  fill = false,
   className,
+  label,
   children,
 }: {
   title?: ReactNode;
@@ -369,10 +378,17 @@ export const AppPanel = ({
   painting?: Painting;
   cue?: ReactNode;
   flush?: boolean;
+  fill?: boolean;
   className?: string;
+  label?: string;
   children: ReactNode;
 }) => (
-  <section className={cn("app-panel", className)} data-flush={flush || undefined}>
+  <section
+    className={cn("app-panel", className)}
+    aria-label={label}
+    data-flush={flush || undefined}
+    data-fill={fill || undefined}
+  >
     {title !== undefined && (
       <header className="app-panel__head" data-painted={painting !== undefined || undefined}>
         {painting && <img className="app-panel__painting" alt="" {...paintingSources(painting)} sizes="50vw" />}

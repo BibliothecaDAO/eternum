@@ -31,19 +31,6 @@ export const useRealtimeConnection = () => {
   );
 };
 
-export const useRealtimeTotals = () => {
-  const unreadWorldTotal = useRealtimeChatStore((state) => state.unreadWorldTotal);
-  const unreadDirectTotal = useRealtimeChatStore((state) => state.unreadDirectTotal);
-
-  return useMemo(
-    () => ({
-      unreadWorldTotal,
-      unreadDirectTotal,
-    }),
-    [unreadWorldTotal, unreadDirectTotal],
-  );
-};
-
 export const useRealtimePresence = (): PlayerPresence[] => {
   const onlinePlayers = useRealtimeChatStore((state) => state.onlinePlayers);
 
@@ -114,9 +101,9 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
   const actions = useRealtimeChatActions();
 
   const sendMessage = useCallback(
-    (content: string) => {
+    (content: string, metadata?: Readonly<Record<string, unknown>>) => {
       if (!recipientId) return Promise.resolve();
-      return actions.sendDirectMessage(threadId, recipientId, content);
+      return actions.sendDirectMessage(threadId, recipientId, content, metadata);
     },
     [actions, recipientId, threadId],
   );
@@ -144,9 +131,11 @@ export const useDirectMessageControls = (threadId?: string, recipientId?: string
 
 export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientParams | null) => {
   const actions = useRealtimeChatActions();
-  // The client starts again only for another server or other zones, with the config as it stands then.
+  // The client starts again only for another server, with the config as it stands then; the rooms move with the player
+  // on the one connection (setRooms), so walking onto a lobby's page opens its room and nothing else.
   const startedWith = useLatest(config);
-  const clientKey = config ? `${config.baseUrl} ${JSON.stringify(config.joinZones ?? [])}` : null;
+  const clientKey = config ? config.baseUrl : null;
+  const roomsKey = config ? JSON.stringify(config.rooms) : null;
 
   useEffect(() => {
     const current = startedWith.current;
@@ -156,6 +145,11 @@ export const useRealtimeChatInitializer = (config?: InitializeRealtimeClientPara
       actions.resetClient();
     };
   }, [actions, clientKey, startedWith]);
+
+  useEffect(() => {
+    const current = startedWith.current;
+    if (current && roomsKey !== null && useRealtimeChatStore.getState().client) actions.setRooms(current.rooms);
+  }, [actions, roomsKey, startedWith]);
 };
 
 export const useRealtimeChatSelector = <T>(

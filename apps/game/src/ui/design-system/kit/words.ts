@@ -716,13 +716,51 @@ export const BLITZ_WORDS = {
 export const CHAT_WORDS = {
   chat: "Chat",
   message: "Message",
-  signInToRead: "Sign in to read the lobby's chat.",
-  /** A lobby's chat with no message yet. */
-  empty: "Nobody has written yet.",
   /** Under the chat of a reader the room does not let write. */
   registeredWrite: "Players registered in this Blitz write here.",
   rateLimited: "Too fast. Wait a moment.",
   refused: "That message was not sent.",
+  /** Over a chat scrolled up to read, once a newer message arrived: it jumps to the latest. */
+  newMessages: "New messages",
+  /** The private conversations' tab, beside the rooms. */
+  messages: "Messages",
+  /** A room, a conversation or Messages with nothing written yet. */
+  noMessages: "No messages yet",
+  /** What a conversation's count says. */
+  unread: "unread",
+  /** A message's action: answer it, its quote over the answer. */
+  reply: "Reply",
+  /** Over the field while a reply is written: put it away. */
+  cancelReply: "Cancel the reply",
+  /** Asked before a link off Realms' own sites opens: its whole address, then Cancel or Open. */
+  leavingRealms: "Leaving Realms",
+  open: "Open",
+  /** Beside the field: the place selected on the map goes with the message. */
+  sharePlace: "Share the selected place",
+  /** Over the field while a place goes with the message: take it off. */
+  removePlace: "Take the place off",
+  /** After a place shared in another game: that game, by its name ("in Frontier 3"); it opens nothing here. */
+  inGame: "in",
+  /** On a player's card: hide everything they write, here and in private (the server drops their messages to you). */
+  mute: "Mute",
+  unmute: "Unmute",
+  /** When the server did not take a Mute or an Unmute: nothing changed. */
+  muteFailed: "Mute did not go through. Try again.",
+  unmuteFailed: "Unmute did not go through. Try again.",
+  /** Where a muted player's messages stood in a room, under their name: pressed, their card offers Unmute. */
+  muted: "muted",
+  /** Messages' last group: every player the player muted, each with Unmute. */
+  mutedPlayers: "Muted",
+  /** When the muted players could not be read: rooms wait for them, and chat reads them again by itself. */
+  mutesUnavailable: "Chat could not read who you muted. It tries again.",
+  /** A room while who is muted is not known yet. */
+  loading: "Loading…",
+  /** Beside the chat's tabs: how many players are in it now ("4 online"). */
+  online: "online",
+  /** Where chat stands for a player not signed in: the chat strip's line, the app's Chat page and pane. */
+  signInToChat: "Sign in to chat",
+  /** The app's pane over a page: what closes it. */
+  closeChat: "Close chat",
 } as const;
 
 /** The doorway into a match: its four steps and what holds it until the player acts. */

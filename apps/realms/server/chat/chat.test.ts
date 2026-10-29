@@ -385,8 +385,12 @@ it("drops a blocked player's direct messages before socket and push, and deliver
         headers: { cookie: recipient.cookie, origin: ORIGIN, "content-type": "application/json" },
         ...(body ? { body: JSON.stringify(body) } : {}),
       })
-      .then((response) => response.json() as Promise<{ blocked: string[] }>);
-  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId] });
+      .then((response) => response.json() as Promise<{ blocked: string[]; version: number }>);
+  // Every answer is the list with its version, which rises with each change and only then.
+  expect(await blocks("GET")).toEqual({ blocked: [], version: 0 });
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 1 });
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 1 });
+  expect(await blocks("GET")).toEqual({ blocked: [sender.realmsId], version: 1 });
 
   const outbox = await connect(worker, sender.cookie, "/api/chat/inbox");
   await waitUntil(() => ofType(outbox.received, "connected").length > 0, 5_000);
@@ -410,7 +414,8 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   expect(ofType(inbox.received, "direct:message")).toEqual([]);
   expect(pushes).toEqual([]);
 
-  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [] });
+  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [], version: 2 });
+  expect(await blocks("DELETE", `/${encodeURIComponent(sender.realmsId)}`)).toEqual({ blocked: [], version: 2 });
   send("sorry");
   await waitUntil(() => pushes.length >= 1, 10_000);
   expect(pushes).toEqual([PUSH_ENDPOINT]);
@@ -419,6 +424,211 @@ it("drops a blocked player's direct messages before socket and push, and deliver
   send("hello again");
   await waitUntil(() => ofType(reopened.received, "direct:message").length > 0, 5_000);
   expect(ofType(reopened.received, "direct:message")[0]!.message).toMatchObject({ content: "hello again" });
+
+  // Blocked again, the conversation is still listed at the next handshake: the client hides it by the block list.
+  expect(await blocks("POST", "", { realmsId: sender.realmsId })).toEqual({ blocked: [sender.realmsId], version: 3 });
+  const later = await connect(worker, recipient.cookie, "/api/chat/inbox");
+  await waitUntil(() => ofType(later.received, "connected").length > 0, 5_000);
+  const [greeting] = ofType(later.received, "connected");
+  const listed = (greeting?.threads ?? []) as { lastMessage: { content: string } | null }[];
+  expect(listed.map((entry) => entry.lastMessage?.content)).toEqual(["hello again"]);
+
+  await worker.dispose();
+}, 120_000);
+
+it("tells a player mentioned in Global on each device not showing them the room, never from a player they muted", async () => {
+  const DESKTOP = "https://fcm.googleapis.com/fcm/send/mention-desktop";
+  const PHONE = "https://fcm.googleapis.com/fcm/send/mention-phone";
+  const [DESKTOP_ID, PHONE_ID] = [crypto.randomUUID(), crypto.randomUUID()];
+  const pushes: string[] = [];
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: (request) => {
+      const device = [DESKTOP, PHONE].includes(request.url);
+      if (device) pushes.push(request.url);
+      return new Response(null, { status: device ? 201 : 599 });
+    },
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const [sender, mentioned] = [await signIn(worker), await signIn(worker)];
+  const [desktop, phone] = [await deviceKeys(), await deviceKeys()];
+  const device = (id: string, endpoint: string, keys: { p256dh: string; auth: string }) =>
+    worker.db
+      .prepare(
+        `INSERT INTO "notification_push_subscriptions" ("id", "owner", "endpoint", "p256dh", "auth", "revocationHash", "directMessagesEnabledAt", "createdAt") VALUES (?, ?, ?, ?, ?, 'x', ?, ?)`,
+      )
+      .bind(id, mentioned.realmsId, endpoint, keys.p256dh, keys.auth, Date.now(), Date.now());
+  await worker.db.batch([
+    worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Ser Ada", sender.realmsId),
+    worker.db.prepare('UPDATE "user" SET "name" = ? WHERE "realmsId" = ?').bind("Isolde", mentioned.realmsId),
+    worker.db
+      .prepare(`INSERT INTO "notification_preferences" ("owner", "level", "revision") VALUES (?, 'important', 1)`)
+      .bind(mentioned.realmsId),
+    device(DESKTOP_ID, DESKTOP, desktop),
+    device(PHONE_ID, PHONE, phone),
+  ]);
+  const GLOBAL = `/api/chat/rooms/${encodeURIComponent("world:global")}`;
+  const room = await connect(worker, sender.cookie, GLOBAL);
+  await waitUntil(() => ofType(room.received, "joined:zone").length > 0, 5_000);
+  let said = 0;
+  const say = async (content: string) => {
+    room.socket?.send(
+      JSON.stringify({ type: "world:publish", zoneId: "world:global", payload: { zoneId: "world:global", content } }),
+    );
+    said += 1;
+    await waitUntil(() => ofType(room.received, "world:message").length >= said, 5_000);
+  };
+  /** The pushes since the last look, by device. */
+  let seenPushes = 0;
+  const newPushes = async (expected: number) => {
+    await waitUntil(() => pushes.length >= seenPushes + expected, 10_000);
+    await pause(500);
+    const fresh = [...pushes.slice(seenPushes)].sort();
+    seenPushes = pushes.length;
+    return fresh;
+  };
+
+  // Isolde's desktop has Global open in a background tab, showing nothing: both her devices are told.
+  const tab = await connect(worker, mentioned.cookie, GLOBAL);
+  await waitUntil(() => ofType(tab.received, "joined:zone").length > 0, 5_000);
+  await say("@isolde hold the east gate");
+  expect(await newPushes(2)).toEqual([DESKTOP, PHONE].sort());
+
+  // No name a player holds, or the sender's own: nobody is told.
+  await say("@Nobody here and @Ser Ada too");
+  expect(await newPushes(0)).toEqual([]);
+
+  // The desktop shows her Global now: only the phone is told.
+  tab.socket?.send(JSON.stringify({ type: "room:seen", device: DESKTOP_ID }));
+  // Its own socket: let the room take it before Ser Ada's next message, on another.
+  await pause(300);
+  await say("@Isolde are you there");
+  expect(await newPushes(1)).toEqual([PHONE]);
+
+  // The tab shows something else again: both are told.
+  tab.socket?.send(JSON.stringify({ type: "room:seen", device: null }));
+  // Its own socket: let the room take it before Ser Ada's next message, on another.
+  await pause(300);
+  await say("@Isolde still there?");
+  expect(await newPushes(2)).toEqual([DESKTOP, PHONE].sort());
+
+  // Having muted the sender: nobody is told.
+  await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/blocks`, {
+    method: "POST",
+    headers: { cookie: mentioned.cookie, origin: ORIGIN, "content-type": "application/json" },
+    body: JSON.stringify({ realmsId: sender.realmsId }),
+  });
+  await say("@Isolde one more");
+  expect(await newPushes(0)).toEqual([]);
+
+  await worker.dispose();
+}, 120_000);
+
+it("counts unread on the server alone: the handshake lists conversations, and a read reaches every device", async () => {
+  const worker = await startWorker({
+    bundle,
+    storage: newStorage(),
+    vapid: await vapidKeys(),
+    outbound: () => new Response(null, { status: 599 }),
+  });
+  await worker.db.batch(migrationStatements().map((statement) => worker.db.prepare(statement)));
+  const [sender, recipient] = [await signIn(worker), await signIn(worker)];
+  interface Thread {
+    id: string;
+    participants: string[];
+    unreadCounts: Record<string, number>;
+  }
+  interface Listed {
+    thread: Thread;
+    lastMessage: { content: string; senderId: string } | null;
+  }
+  /** A device opening chat: its handshake, and every frame after it. */
+  const open = async (player: { cookie: string }) => {
+    const device = await connect(worker, player.cookie, "/api/chat/inbox");
+    await waitUntil(() => ofType(device.received, "connected").length > 0, 5_000);
+    return { ...device, listed: ofType(device.received, "connected")[0]!.threads as Listed[] };
+  };
+  const unreadOf = (thread: Thread) => thread.unreadCounts[recipient.realmsId];
+  /** The thread as the last frame told this device after a read. */
+  const told = (device: { received: Record<string, unknown>[] }) =>
+    (ofType(device.received, "direct:thread").at(-1)?.thread as Thread | undefined) ?? null;
+
+  // The recipient has never opened chat: two messages wait in their inbox.
+  const outbox = await open(sender);
+  for (const [content, sent] of [
+    ["are you there", 1],
+    ["hello?", 2],
+  ] as const) {
+    outbox.socket!.send(
+      JSON.stringify({ type: "direct:message", payload: { recipientId: recipient.realmsId, content } }),
+    );
+    await waitUntil(() => ofType(outbox.received, "direct:message").length >= sent, 5_000);
+    await pause(5);
+  }
+  const [first, second] = ofType(outbox.received, "direct:message").map(
+    ({ message }) => message as { id: string; createdAt: string },
+  );
+
+  // A phone starting empty finds the conversation in its handshake: who, the last line, unread. A desktop opens too.
+  const phone = await open(recipient);
+  const desktop = await open(recipient);
+  expect(phone.listed).toHaveLength(1);
+  const [waiting] = phone.listed;
+  expect(waiting!.thread.participants).toContain(sender.realmsId);
+  expect(waiting!.lastMessage).toMatchObject({ content: "hello?", senderId: sender.realmsId });
+  expect(unreadOf(waiting!.thread)).toBe(2);
+  expect(unreadOf(desktop.listed[0]!.thread)).toBe(2);
+
+  const readThrough = (message: { id: string }) =>
+    phone.socket!.send(
+      JSON.stringify({
+        type: "direct:read",
+        payload: {
+          threadId: waiting!.thread.id,
+          messageId: message.id,
+          readerId: recipient.realmsId,
+          readAt: new Date().toISOString(),
+        },
+      }),
+    );
+  const frames = (device: { received: Record<string, unknown>[] }) => ofType(device.received, "direct:thread").length;
+
+  // The phone reads through the first only: both devices are told one is left.
+  readThrough(first!);
+  await waitUntil(() => frames(desktop) >= 1 && frames(phone) >= 1, 5_000);
+  expect(unreadOf(told(phone)!)).toBe(1);
+  expect(unreadOf(told(desktop)!)).toBe(1);
+
+  // Then through the second, then the first again (a late receipt): read, and never back.
+  readThrough(second!);
+  readThrough(first!);
+  await waitUntil(() => frames(desktop) >= 3, 5_000);
+  expect(ofType(desktop.received, "direct:thread").map(({ thread }) => unreadOf(thread as Thread))).toEqual([1, 0, 0]);
+  expect(unreadOf(told(phone)!)).toBe(0);
+
+  // A reload finds it read.
+  phone.socket!.close();
+  const reloaded = await open(recipient);
+  expect(unreadOf(reloaded.listed[0]!.thread)).toBe(0);
+
+  // The answer is the conversation's last line for both, and nothing unread for the one who wrote it.
+  reloaded.socket!.send(
+    JSON.stringify({ type: "direct:message", payload: { recipientId: sender.realmsId, content: "yes, at dawn" } }),
+  );
+  await waitUntil(() => ofType(outbox.received, "direct:message").length >= 3, 5_000);
+  const [senderLists, recipientLists] = [(await open(sender)).listed, (await open(recipient)).listed];
+  expect(senderLists[0]!.lastMessage).toMatchObject({ content: "yes, at dawn", senderId: recipient.realmsId });
+  expect(senderLists[0]!.thread.unreadCounts[sender.realmsId]).toBe(1);
+  expect(recipientLists[0]!.lastMessage).toMatchObject({ content: "yes, at dawn" });
+  expect(unreadOf(recipientLists[0]!.thread)).toBe(0);
+
+  // The list is the handshake's: the route that listed it is gone.
+  const route = await worker.mf.dispatchFetch(`${ORIGIN}/api/chat/dm/threads`, {
+    headers: { cookie: recipient.cookie, origin: ORIGIN },
+  });
+  expect(route.status).toBe(404);
 
   await worker.dispose();
 }, 120_000);

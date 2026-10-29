@@ -15,10 +15,11 @@ import {
   HudWindowFoot,
   type StaminaBar,
 } from "@/ui/design-system/kit/hud-elements";
+import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { exploresBought, MOVE, SHRINE, STAMINA, type Tier, USE, USING, WELL, XP } from "@/ui/design-system/kit/words";
+import { exploresBought, MOVE, STAMINA, type Tier, USE, USING, XP } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
@@ -29,7 +30,7 @@ import { useOrderAt } from "../hud/army-order";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import type { XpGoal } from "../hud/army-token";
 import { useApproachTile } from "./approach";
-import { type MapSiteKind, mapSiteKind, siteGain } from "./map-site-plan";
+import { type MapSiteKind, mapSite, mapSiteKind, siteGain } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { inFlightWord } from "./site-card-view";
 import { sendSiteUse } from "./use-site";
@@ -83,7 +84,7 @@ export const MapSiteCard = ({
     });
   };
 
-  const word = plan.kind === "Shrine" ? SHRINE : WELL;
+  const { name: word, icon } = mapSite(plan.kind);
   const gain =
     plan.kind === "Well" ? (
       <HudChip icons={["stamina"]} label={STAMINA}>
@@ -99,7 +100,7 @@ export const MapSiteCard = ({
       {army && <SiteUser army={army} kind={plan.kind} gain={plan.gain} />}
       <HudWindowFoot
         note={
-          <SiteGain icon={plan.kind === "Shrine" ? "shrine" : "well"}>
+          <SiteGain icon={icon}>
             {gain}
             {!usable && approach && (
               <HudCost
@@ -129,7 +130,7 @@ export const MapSiteCard = ({
 };
 
 /** What one use gives, beside its verb: the site's painting and the gain, and a Move's cost while the army is away. */
-const SiteGain = ({ icon, children }: { icon: "shrine" | "well"; children: ReactNode }) => (
+const SiteGain = ({ icon, children }: { icon: IconMeaning; children: ReactNode }) => (
   <span className="flex items-center gap-2">
     <SemanticIcon name={icon} size={32} />
     {children}

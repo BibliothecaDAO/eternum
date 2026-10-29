@@ -7,10 +7,8 @@ import type { GameClientSetup, NativeFactStore } from "@bibliothecadao/eternum/g
 import { openShard } from "@bibliothecadao/eternum/shard";
 import { type ReactNode, useEffect, useState } from "react";
 
-import { installLabGame, PLAYER } from "./fixture-game";
+import { installLabGame, LAB_CHAIN, labGameProfile, PLAYER } from "./fixture-game";
 
-/** The lab game's chain: a shard at an address that answers nothing, so every history read fails as an offline one. */
-const LAB_CHAIN = "0x1ab";
 const LAB_SCHEMA = "0xlab";
 
 /**
@@ -86,7 +84,7 @@ const useLabShard = (preset: number) => {
       guardianPublicKey: "0x1",
       l2GasBound: "0x1",
     }).then(() => {
-      setActiveGame({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab" });
+      setActiveGame(labGameProfile(preset));
       setOpen(true);
     });
   }, [preset]);

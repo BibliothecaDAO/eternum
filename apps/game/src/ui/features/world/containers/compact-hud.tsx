@@ -14,6 +14,7 @@ import { EventLogPanel } from "@/ui/features/event-feed/event-log-panel";
 import { FeedToasts, UnreadFeedBadge, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { MinimapPanel, useSelectedTileDetails } from "@/ui/features/world/components/bottom-right-panel";
 import { useRealtimeChatSelector } from "@/ui/features/social";
+import { chatUnread } from "@/ui/features/social/realtime-chat/model/direct-unread";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import {
   type CSSProperties,
@@ -113,7 +114,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
   const { isMapView } = useQuery();
   const open = requested === "map" && !isMapView ? null : requested;
   const unread = useUnreadImportantCount(open === "log");
-  const chatUnread = useRealtimeChatSelector((state) => state.unreadWorldTotal + state.unreadDirectTotal);
+  const unreadChat = useRealtimeChatSelector(chatUnread);
   const logTab = useRef<HTMLButtonElement>(null);
 
   if (showBlankOverlay) return null;
@@ -126,7 +127,7 @@ export const CompactHud = memo(({ lane }: { lane: CompactLane }) => {
     },
     ...(isMapView ? [{ id: "map" as const, label: "Map", image: COMPACT_TAB_IMAGES.map }] : []),
     { id: "log", label: "Log", image: COMPACT_TAB_IMAGES.log, badge: unread, ref: logTab },
-    { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: chatUnread },
+    { id: "chat", label: "Chat", image: COMPACT_TAB_IMAGES.chat, badge: unreadChat },
     { id: "details", label: "Details", image: COMPACT_TAB_IMAGES.details },
   ];
   const layout = LANE_LAYOUT[lane];

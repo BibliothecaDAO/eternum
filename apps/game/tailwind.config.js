@@ -430,6 +430,8 @@ export default {
         ...Object.fromEntries(
           Object.keys(HUD_MODES).map((mode) => [`[data-hud-mode="${mode}"]`, hudModeVariables(mode)]),
         ),
+        // The HUD's elements in the app (its chat), in the app's colours.
+        '[data-hud-mode="app"]': hudModeVariables("app"),
         '[data-hud-device="phone"]': phone,
         // The age a game shows in the app, on its card or page.
         ...Object.fromEntries(Object.keys(HUD_MODES).map((age) => [`[data-age="${age}"]`, appAgeVariables(age)])),

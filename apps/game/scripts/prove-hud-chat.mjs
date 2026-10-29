@@ -6,6 +6,10 @@
  *   viewport, and the history scrolls inside the pane without moving the composer;
  * - closed, at 1440×900: the strip stays inside the HUD's column, its last message truncated, its unread count in view;
  * - closed and folded on a phone held upright (390×844): the strip is its icon and its unread count alone;
+ * - opened from the strip, at 1440×900 and 390×844, each frame recorded from the press: the pane's first frame shows the
+ *   newest message and the history never slides after; a message arriving (the lab's **A message arrives**) keeps a
+ *   reader on the newest there with no jump offered; one arriving while the reader scrolled up leaves the history where
+ *   it was and offers **New messages**, which shows the newest and goes;
  * - in the rail (`?state=rail`, the real rail frame, Events panel, the panels lab's real picked-army tile, chat and build
  *   tag over a stand-in map canvas), chat open at 1920×1080, 1440×900, 1440×768 and 1280×720: the details and the open
  *   chat share the column without covering each other, each keeping its least height (the details a header and a body,
@@ -26,6 +30,28 @@
  *   the keyboard staying in the field) and written as "@Corwin "; the message sent comes back drawn with its mention.
  *
  *   pnpm --dir apps/game prove:chat <base-url> <out-dir>
+ *
+ * - places, at 1440×900 and on a phone (390×844), in the open pane: the room's places are chips, painted; the lab realm
+ *   shared today and a Well open, the army gone since is struck through and opens nothing, and the realm's number in
+ *   another game names that game and opens nothing; the place button shares the realm selected on the map, over the
+ *   field, and the message sent comes back carrying it as a chip that opens. (Opening one moves the game's route, which
+ *   the lab has not; the chat's tests press it, and the game proof's chat-place task in a game.)
+ *
+ * - a player's card, at 1440×900 and on a phone (390×844), in the open pane: beside the tabs, how many players are
+ *   online; Aldric's name pressed opens his card under his message, inside the pane and the screen, with his realm as a
+ *   place that opens, Message and Mute; Mute leaves his messages as his name and "muted" and lists him in Messages
+ *   under Muted, with Unmute; Unmute brings them back, and Message opens his conversation.
+ *
+ * - the app's chat, on the app lab's pages (/lab/app/<screen>/<page>, the real shell over its fixtures and the lab's
+ *   answered chat sockets): at 1440×900, the bar's Chat opens the pane over Play, inside the screen, with Global (its
+ *   history, a field) and Messages, and Escape closes it; on a phone (390×844), the Chat tab leads to /chat (the lab's
+ *   tabs lead to the app's own addresses, so the lab's /chat page is opened by its address), lit there, the chat
+ *   filling the page from the top band to the tabs, its field above them, the page never scrolling; the same page grown
+ *   to 1440×900, and opened there, draws one chat and no pane, the bar's Chat the place lit; on a Blitz lobby, at both sizes, the lobby's chat on its page has Lobby first, then Global and Messages,
+ *   the Lobby room read-only for a wallet not registered (no field, who writes there said) and Global written in, and
+ *   on a desktop no bar Chat over it.
+ * - the Frontier phone's Chat page (/lab/kit/hud/chat, 390×844): the page fills the band from the strip to the place
+ *   bar, the map band gone behind it, its field above the bar.
  *
  * Writes a screenshot of each and the measures with each check to <out-dir>/run-<start>/hud-chat.json; exits 1 when a
  * check fails.
@@ -65,7 +91,8 @@ const OPEN = `(() => {
     pane: rect(pane),
     composer: rect(composer),
     scroller: rect(scroller),
-    controls: pane ? [...pane.querySelectorAll("button, input, textarea")].map(rect) : [],
+    // The controls drawn: a message's Reply is drawn only once the message is clicked or holds the keyboard.
+    controls: pane ? [...pane.querySelectorAll("button, input, textarea")].filter((c) => c.getClientRects().length > 0).map(rect) : [],
     scrollHeight: scroller?.scrollHeight ?? null,
     clientHeight: scroller?.clientHeight ?? null,
   };
@@ -154,6 +181,104 @@ const WHEEL_TARGETS = `(() => {
     "chat strip": middle(document.querySelector('[aria-label="Chat strip"]')),
   };
 })()`;
+
+/** The open pane's history: its scroll, the furthest it goes, whether the newest message shows whole, and the jump. */
+const HISTORY = `(() => {
+  const list = document.querySelector('[data-lab="chat"] section[aria-label="Chat"] ul');
+  const scroller = list?.parentElement;
+  const newest = list?.querySelector("li:last-child");
+  const box = scroller?.getBoundingClientRect();
+  const row = newest?.getBoundingClientRect();
+  return {
+    top: scroller ? Math.round(scroller.scrollTop) : null,
+    furthest: scroller ? scroller.scrollHeight - scroller.clientHeight : null,
+    newest: newest?.textContent ?? null,
+    newestInView: Boolean(box && row && row.top >= box.top - 1 && row.bottom <= box.bottom + 1),
+    jump: document.querySelector('[data-lab="chat"] [aria-label="New messages"]') !== null,
+  };
+})()`;
+
+/** Records the history on every frame from the pane's first until 1.2 s after it, into window.__historyFrames. */
+const RECORD_FRAMES = `(() => {
+  window.__historyFrames = [];
+  let first = null;
+  const frame = () => {
+    const history = ${HISTORY};
+    if (history.top !== null) {
+      first ??= performance.now();
+      window.__historyFrames.push({ at: Math.round(performance.now() - first), ...history });
+    }
+    if (first === null || performance.now() - first < 1200) requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
+  return true;
+})()`;
+
+/** The reader scrolls the history to `top`: the position moves and the list hears its scroll, as a wheel's does. */
+const scrollHistoryTo = (top) => `(() => {
+  const scroller = document.querySelector('[data-lab="chat"] section[aria-label="Chat"] ul').parentElement;
+  scroller.scrollTop = ${top};
+  return Math.round(scroller.scrollTop);
+})()`;
+
+/** Opening from the strip: the first frame drawn shows the newest message, and no later frame moves the history. */
+const openingChecks = (frames) => [
+  {
+    check: "the pane's first frame shows the newest message",
+    ok: frames.length > 0 && frames[0].newestInView && frames[0].top === frames[0].furthest,
+  },
+  {
+    check: "the history never slides after it opens",
+    ok: frames.length > 0 && frames.every((frame) => frame.top === frames[0].top),
+  },
+];
+
+const arrivalChecks = ({ atNewest, scrolledUp, readAt, jumped }) => [
+  {
+    check: "a message arriving keeps a reader on the newest there, with no jump offered",
+    ok: atNewest.newestInView && atNewest.newest?.includes("Arrived just now") && !atNewest.jump,
+  },
+  {
+    check: "a message arriving while the reader scrolled up leaves the history where it was, and offers the jump",
+    ok: scrolledUp.top === readAt && !scrolledUp.newestInView && scrolledUp.jump,
+  },
+  {
+    check: "the jump shows the newest message and goes",
+    ok: jumped.newestInView && jumped.top === jumped.furthest && !jumped.jump,
+  },
+];
+
+/** Chat opened from its strip as a player opens it, then two messages arriving: at the newest, and scrolled up. */
+const proveOpening = async (b, out, records, baseUrl, viewport) => {
+  const size = viewport.join("×");
+  const record = { state: `opened from the strip, ${size}`, ready: false, presses: [], checks: [] };
+  records.push(record);
+  record.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed`, viewport);
+  if (!record.ready) return;
+  b.evaluate(RECORD_FRAMES);
+  const opened = clickAsPlayer(b, '[aria-label="Chat strip"]');
+  await waitFor(b, "window.__historyFrames.at(-1)?.at >= 1200", READY_MS);
+  const frames = b.evaluate("window.__historyFrames");
+  record.measures = { opened, frames };
+  record.checks.push(...openingChecks(frames));
+  b.run("screenshot", join(out, `opened-${size}.png`));
+
+  clickAsPlayer(b, '[data-lab="arrive"]');
+  await sleep(500);
+  const atNewest = b.evaluate(HISTORY);
+  const readAt = b.evaluate(scrollHistoryTo(400));
+  await sleep(300);
+  clickAsPlayer(b, '[data-lab="arrive"]');
+  await sleep(500);
+  const scrolledUp = b.evaluate(HISTORY);
+  b.run("screenshot", join(out, `scrolled-up-arrival-${size}.png`));
+  clickAsPlayer(b, '[aria-label="New messages"]');
+  await sleep(500);
+  const jumped = b.evaluate(HISTORY);
+  b.run("screenshot", join(out, `jumped-${size}.png`));
+  record.measures = { ...record.measures, atNewest, readAt, scrolledUp, jumped };
+  record.checks.push(...arrivalChecks({ atNewest, scrolledUp, readAt, jumped }));
+};
 
 const inside = (inner, outer, slack = 1) =>
   inner !== null &&
@@ -249,9 +374,15 @@ const LIST = `(() => {
 
 /** The last message's row: its words and its mentions. */
 const LAST = `(() => {
-  const rows = [...document.querySelectorAll('[data-lab="chat"] section[aria-label="Chat"] li')].filter((row) => row.querySelector("p"));
-  const last = rows.at(-1);
-  return last ? { text: last.textContent, mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent) } : null;
+  const last = [...document.querySelectorAll('[data-lab="chat"] section[aria-label="Chat"] li[data-message-id]')].at(-1);
+  return last
+    ? {
+        // The run's head names its sender: a button for another player (their card), plain words for the player.
+        sender: last.querySelector("p")?.firstElementChild?.textContent ?? null,
+        words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null,
+        mentions: [...last.querySelectorAll("[data-mention]")].map((m) => m.textContent),
+      }
+    : null;
 })()`;
 
 const historyChecks = (read) => [
@@ -349,10 +480,246 @@ const proveMentions = async (b, out, record, phone) => {
   record.checks.push({
     check: "the message sent comes back drawn with its mention",
     ok:
-      record.measures.sent?.text.endsWith("<Maelis> @Corwin hold the gate") &&
+      record.measures.sent?.sender === "Maelis" &&
+      record.measures.sent.words === "@Corwin hold the gate" &&
       record.measures.sent.mentions.join() === "@Corwin",
   });
   b.run("screenshot", join(out, `mentions-sent-${tag}.png`));
+};
+
+/** The pane's places: each chip in the history, the place button, and the place over the field. */
+const PLACES = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const chip = (element) => {
+    const image = element.querySelector("img");
+    return {
+      id: element.closest("li[data-message-id]")?.getAttribute("data-message-id") ?? null,
+      name: element.getAttribute("data-place"),
+      elsewhere: element.hasAttribute("data-elsewhere"),
+      words: element.textContent,
+      struck: getComputedStyle(element).textDecorationLine.includes("line-through"),
+      opens: !(element.querySelector("button")?.disabled ?? true),
+      painted: Boolean(image && image.complete && image.naturalWidth > 0),
+    };
+  };
+  const share = pane?.querySelector('button[aria-label="Share the selected place"]');
+  const picked = pane?.querySelector("form [data-place]");
+  const last = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].at(-1);
+  const lastChip = last?.querySelector("[data-place]");
+  return {
+    chips: [...(pane?.querySelectorAll("li[data-message-id] [data-place]") ?? [])].map(chip),
+    share: share ? { enabled: !share.disabled } : null,
+    picked: picked ? chip(picked) : null,
+    last: last ? { words: [...last.querySelectorAll("p")].at(-1)?.textContent ?? null, chip: lastChip ? chip(lastChip) : null } : null,
+  };
+})()`;
+
+/** Places on one device: the history's chips read, the selected realm shared over the field, and the message sent. */
+const provePlaces = async (b, out, record, phone) => {
+  const tag = phone ? "phone" : "desktop";
+  record.measures = { history: b.evaluate(PLACES) };
+  const { chips, share } = record.measures.history;
+  const of = (id) => chips.find((chip) => chip.id === id);
+  const [elsewhere, well, gone, today] = ["lab-29", "lab-30", "lab-31", "lab-32"].map(of);
+  record.checks.push(
+    {
+      check: "the room's places are chips, each painted",
+      ok: chips.length >= 4 && chips.every((chip) => chip.painted),
+    },
+    { check: "the realm shared today opens, and is not struck through", ok: Boolean(today?.opens) && !today.struck },
+    { check: "the Well shared today opens, named as the map names it", ok: well?.name === "Well" && well.opens },
+    {
+      check: "the army gone since is struck through and opens nothing",
+      ok: gone?.name === "Iron Wardens" && gone.struck && !gone.opens,
+    },
+    {
+      check: "the realm's number in another game names that game, and opens nothing here",
+      ok:
+        elsewhere?.elsewhere === true &&
+        elsewhere.name === "Moondeep" &&
+        elsewhere.words.includes("in Frontier 4") &&
+        !elsewhere.struck &&
+        !elsewhere.opens,
+    },
+    { check: "the place button can share the realm selected on the map", ok: share?.enabled === true },
+  );
+  b.run("screenshot", join(out, `places-history-${tag}.png`));
+
+  const pressed = clickAsPlayer(b, '[data-lab="chat"] button[aria-label="Share the selected place"]');
+  record.presses.push({ press: "the place button", status: pressed ?? "led" });
+  await sleep(300);
+  record.measures.picked = b.evaluate(PLACES).picked;
+  record.checks.push({
+    check: "the selected realm goes over the field, named and painted as in the room",
+    ok: Boolean(today) && record.measures.picked?.name === today.name && record.measures.picked.painted,
+  });
+  b.run("screenshot", join(out, `places-picked-${tag}.png`));
+
+  b.run("type", COMPOSER, "hold here");
+  b.run("press", "Enter");
+  await sleep(500);
+  record.measures.sent = b.evaluate(PLACES);
+  record.checks.push(
+    {
+      check: "the message sent comes back with its words and the place as a chip that opens",
+      ok:
+        Boolean(today) &&
+        record.measures.sent.last?.words?.startsWith("hold here") === true &&
+        record.measures.sent.last.chip?.name === today.name &&
+        record.measures.sent.last.chip.opens,
+    },
+    { check: "the field holds no place after sending", ok: record.measures.sent.picked === null },
+  );
+  b.run("screenshot", join(out, `places-sent-${tag}.png`));
+};
+
+/** The pane's player card, its online count, and Aldric's rows: what a press on his name and the card's buttons show. */
+const CARD = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const card = pane?.querySelector("[data-player-card]");
+  const buttons = [...(card?.querySelectorAll("button") ?? [])];
+  const chip = card?.querySelector("[data-place]");
+  const aldric = [...(pane?.querySelectorAll("li[data-message-id]") ?? [])].filter(
+    (row) => row.querySelector("p button")?.textContent === "Aldric",
+  );
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    pane: rect(pane),
+    online: document.querySelector('[data-lab="chat"] [data-online]')?.textContent ?? null,
+    card: card
+      ? {
+          box: rect(card),
+          after: card.previousElementSibling?.querySelector("p button")?.textContent ?? null,
+          words: card.textContent,
+          buttons: buttons.map((button) => ({ words: button.textContent, box: rect(button) })),
+          realm: chip ? { name: chip.getAttribute("data-place"), opens: !(chip.querySelector("button")?.disabled ?? true) } : null,
+        }
+      : null,
+    aldric: aldric.map((row) => row.textContent),
+    conversation: document.querySelector('[data-lab="chat"] header')?.textContent ?? null,
+  };
+})()`;
+
+const ALDRIC_NAME = '[data-lab="chat"] li[data-message-id] p button';
+
+/** Messages' Muted group: who it lists, its Unmute buttons, and whether each stands whole in the pane. */
+const MUTED_GROUP = `(() => {
+  const pane = document.querySelector('[data-lab="chat"] section[aria-label="Chat"]');
+  const rect = (element) => (element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null);
+  const group = pane?.querySelector('section[aria-label="Muted"]');
+  return {
+    pane: rect(pane),
+    words: group?.textContent ?? null,
+    unmute: [...(group?.querySelectorAll("button") ?? [])].map((button) => ({ words: button.textContent, box: rect(button) })),
+  };
+})()`;
+const chatTab = (words) => `(() => {
+  const tab = [...document.querySelectorAll('[data-lab="chat"] [role="tab"]')].find((t) => t.textContent.startsWith(${JSON.stringify(words)}));
+  if (!tab) return false;
+  tab.click();
+  return true;
+})()`;
+const openAldricCard = `(() => {
+  const name = [...document.querySelectorAll(${JSON.stringify(ALDRIC_NAME)})].findLast((button) => button.textContent === "Aldric");
+  if (!name) return false;
+  name.scrollIntoView({ block: "center" });
+  name.click();
+  return true;
+})()`;
+const cardPress = (words) => `(() => {
+  const button = [...document.querySelectorAll('[data-lab="chat"] [data-player-card] button')].find((b) => b.textContent === ${JSON.stringify(words)});
+  if (!button) return false;
+  button.click();
+  return true;
+})()`;
+
+/** The card on one device: the online count, Aldric's card opened from his name, Mute and Unmute, then Message. */
+const proveCard = async (b, out, record, phone) => {
+  const tag = phone ? "phone" : "desktop";
+  record.measures = { closed: b.evaluate(CARD) };
+  record.checks.push({
+    check: "beside the tabs, the players online: 2",
+    ok: record.measures.closed.online === "2 online",
+  });
+
+  const opened = b.evaluate(`(() => {
+    const name = [...document.querySelectorAll(${JSON.stringify(ALDRIC_NAME)})].findLast((button) => button.textContent === "Aldric");
+    if (!name) return false;
+    name.scrollIntoView({ block: "center" });
+    name.click();
+    return true;
+  })()`);
+  record.presses.push({ press: "Aldric's name", status: opened ? "led" : "missing" });
+  await sleep(400);
+  const open = b.evaluate(CARD);
+  record.measures.open = open;
+  const words = (open.card?.buttons ?? []).map((button) => button.words);
+  record.checks.push(
+    {
+      check: "his card opens under his message",
+      ok: open.card?.after === "Aldric" && open.card.words.includes("Aldric"),
+    },
+    { check: "it shows his realm as a place that opens", ok: Boolean(open.card?.realm?.opens) },
+    { check: "it offers Message and Mute", ok: words.includes("Message") && words.includes("Mute") },
+    {
+      check: "the card and each of its buttons are whole inside the pane and the screen",
+      ok:
+        open.card !== null &&
+        inside(open.card.box, open.pane) &&
+        open.card.box.right <= open.viewport.width &&
+        open.card.buttons.every((button) => inside(button.box, open.card.box)),
+    },
+  );
+  b.run("screenshot", join(out, `card-${tag}.png`));
+
+  record.presses.push({ press: "Mute", status: b.evaluate(cardPress("Mute")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.muted = b.evaluate(CARD);
+  record.checks.push({
+    check: "muted, his messages read as his name and muted, the card offering Unmute",
+    ok:
+      record.measures.muted.aldric.length > 0 &&
+      record.measures.muted.aldric.every((row) => row.includes("muted")) &&
+      record.measures.muted.card?.buttons.some((button) => button.words === "Unmute") === true,
+  });
+  b.run("screenshot", join(out, `card-muted-${tag}.png`));
+
+  // Muted, he stands in Messages under Muted, with Unmute: reachable wherever he last wrote, or never wrote in a room.
+  record.presses.push({ press: "Messages", status: b.evaluate(chatTab("Messages")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.mutedGroup = b.evaluate(MUTED_GROUP);
+  const group = record.measures.mutedGroup;
+  record.checks.push({
+    check: "Messages lists him under Muted, with an Unmute whole inside the pane",
+    ok:
+      group.words?.includes("Aldric") === true &&
+      group.unmute.length === 1 &&
+      group.unmute[0].words === "Unmute" &&
+      inside(group.unmute[0].box, group.pane),
+  });
+  b.run("screenshot", join(out, `card-muted-messages-${tag}.png`));
+  record.presses.push({ press: "Global", status: b.evaluate(chatTab("Global")) ? "led" : "missing" });
+  await sleep(300);
+  record.presses.push({ press: "Aldric's name, again", status: b.evaluate(openAldricCard) ? "led" : "missing" });
+  await sleep(300);
+
+  record.presses.push({ press: "Unmute", status: b.evaluate(cardPress("Unmute")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.unmuted = b.evaluate(CARD);
+  record.checks.push({
+    check: "unmuted, his messages read again",
+    ok: record.measures.unmuted.aldric.some((row) => !row.includes("muted")),
+  });
+
+  record.presses.push({ press: "Message", status: b.evaluate(cardPress("Message")) ? "led" : "missing" });
+  await sleep(300);
+  record.measures.written = b.evaluate(CARD);
+  record.checks.push({
+    check: "Message opens his conversation",
+    ok: record.measures.written.conversation?.includes("Aldric") === true,
+  });
+  b.run("screenshot", join(out, `card-message-${tag}.png`));
 };
 
 const above = (upper, lower, slack = 1) => upper !== null && lower !== null && upper.bottom <= lower.top + slack;
@@ -462,6 +829,203 @@ const open = async (b, url, viewport) => {
   return ready;
 };
 
+/** The app's chat where it stands: its box, its tabs, its rows, its field, and the frame's bands around it. */
+const APP_CHAT = `(() => {
+  const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
+  const chat = document.querySelector('section[aria-label="Chat"]') ?? document.querySelector('[data-band="body"] [data-hud-mode="app"]');
+  const band = (name) => rect(document.querySelector('[data-band="' + name + '"]'));
+  const place = document.querySelector('[data-band="bar"] button[data-role="tab"], [data-band="bar"] a[href$="/chat"], [data-band="tabs"] a[href$="/chat"]');
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    scrolls: document.scrollingElement.scrollHeight > innerHeight + 1,
+    path: location.pathname,
+    chats: document.querySelectorAll('[data-hud-mode="app"] [role="tablist"]').length,
+    pane: document.querySelector('section[aria-label="Chat"]') !== null,
+    chat: rect(chat),
+    tabs: chat ? [...chat.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent) : [],
+    current: chat ? chat.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null : null,
+    rows: chat ? chat.querySelectorAll("li[data-message-id]").length : 0,
+    field: rect(chat?.querySelector('input[aria-label="Message"]')),
+    words: chat?.textContent ?? "",
+    place: place ? { words: place.textContent, href: place.getAttribute("href"), count: place.querySelector("[data-count]")?.textContent ?? null, current: place.getAttribute("aria-current") } : null,
+    top: band("top"),
+    body: band("body"),
+    nav: band("tabs"),
+  };
+})()`;
+const APP_CHAT_PLACE = '[data-band="bar"] button[data-role="tab"]';
+const READ_ONLY = "Players registered in this Blitz write here.";
+const LOBBY = "/lab/app/entry-choose/blitz/slot-blitz-1630?capture=1";
+
+const openApp = async (b, url, viewport, ready) => {
+  b.run("set", "viewport", ...viewport);
+  b.run("open", url, "--ignore-https-errors");
+  const shown = await waitFor(b, ready, READY_MS);
+  await sleep(SETTLE_MS);
+  return shown;
+};
+const pressTab = (words) => `(() => {
+  const tab = [...document.querySelectorAll('section[aria-label="Chat"] [role="tab"]')].find((t) => t.textContent === ${JSON.stringify(words)});
+  if (!tab) return false;
+  tab.click();
+  return true;
+})()`;
+
+/** The desktop's pane: the bar's Chat (its unread counted), the pane over Play, Escape. */
+const proveAppPane = async (b, out, record) => {
+  const press = clickAsPlayer(b, APP_CHAT_PLACE);
+  record.presses.push({ press: "Chat, in the bar", status: press === null ? "led" : press });
+  await sleep(600);
+  const open = b.evaluate(APP_CHAT);
+  record.measures = { open };
+  record.checks.push(
+    { check: "the bar's Chat is lit while the pane is open", ok: open.place?.current === "page" },
+    {
+      check: "the pane is whole inside the screen",
+      ok:
+        open.chat !== null &&
+        inside(open.chat, { left: 0, top: 0, right: open.viewport.width, bottom: open.viewport.height }),
+    },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(open.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "Global shows its history and a field to write in",
+      ok: open.rows >= 3 && open.field !== null && inside(open.field, open.chat),
+    },
+    { check: "the page stays under it: Play is still the page", ok: open.path.endsWith("/home") },
+  );
+  b.run("screenshot", join(out, "app-chat-pane.png"));
+  b.run("press", "Escape");
+  await sleep(300);
+  record.measures.closed = b.evaluate(APP_CHAT);
+  record.checks.push({ check: "Escape closes the pane", ok: record.measures.closed.chat === null });
+};
+
+/** The phone's Chat page, the chat filling it from the top band to the tabs. */
+const proveAppPhonePage = async (b, out, record) => {
+  const page = b.evaluate(APP_CHAT);
+  record.measures = { page };
+  record.checks.push(
+    {
+      check: "the Chat tab leads to /chat, and is lit there",
+      ok: page.place?.href === "/chat" && page.place.current === "page",
+    },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(page.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "the chat fills the page: from the top band's foot to within 8 px of the tabs",
+      ok:
+        page.chat !== null &&
+        page.top !== null &&
+        page.nav !== null &&
+        Math.abs(page.chat.top - page.top.bottom) <= 1 &&
+        page.chat.bottom <= page.nav.top &&
+        page.nav.top - page.chat.bottom <= 8,
+    },
+    {
+      check: "its field stands above the tabs, inside the screen",
+      ok: page.field !== null && page.field.bottom <= page.nav.top && page.nav.bottom <= page.viewport.height + 1,
+    },
+    { check: "the page itself never scrolls", ok: !page.scrolls },
+  );
+  b.run("screenshot", join(out, "app-chat-phone.png"));
+};
+
+/** Chat's own page on a desktop: one chat, the page's, no pane over it, the bar's Chat the place lit there. */
+const proveDesktopChatPage = (b, out, record, still) => {
+  const page = b.evaluate(APP_CHAT);
+  record.measures = { page };
+  record.checks.push(
+    { check: "one chat is drawn, the page's, with no pane over it", ok: page.chats === 1 && !page.pane },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(page.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "the bar's Chat is the place lit there, a way to /chat, not a pane to open",
+      ok: page.place?.href === "/chat" && page.place.current === "page",
+    },
+  );
+  b.run("screenshot", join(out, still));
+};
+
+/** A Blitz lobby's chat on its page: Lobby first, read-only for a wallet not registered; Global written in. */
+const proveLobbyChat = async (b, out, record, phone) => {
+  b.evaluate(
+    `(() => { document.querySelector('section[aria-label="Chat"]')?.scrollIntoView({ block: "center" }); return true; })()`,
+  );
+  await sleep(300);
+  const lobby = b.evaluate(APP_CHAT);
+  record.measures = { lobby };
+  record.checks.push(
+    {
+      check: "its tabs are Lobby, Global, then Messages, on Lobby",
+      ok: JSON.stringify(lobby.tabs) === JSON.stringify(["Lobby", "Global", "Messages"]) && lobby.current === "Lobby",
+    },
+    { check: "Lobby shows its history", ok: lobby.rows >= 3 },
+    {
+      check: "a wallet not registered reads Lobby with no field, told who writes there",
+      ok: lobby.field === null && lobby.words.includes(READ_ONLY),
+    },
+    {
+      check: "the chat is whole across the screen",
+      ok: lobby.chat !== null && lobby.chat.left >= 0 && lobby.chat.right <= lobby.viewport.width,
+    },
+  );
+  if (!phone)
+    record.checks.push({
+      check: "the page shows its chat, so the bar offers no Chat over it",
+      ok: lobby.place === null,
+    });
+  b.run("screenshot", join(out, `app-chat-lobby-${phone ? "phone" : "desktop"}.png`));
+  record.presses.push({ press: "Global", status: b.evaluate(pressTab("Global")) ? "led" : "missing" });
+  await sleep(500);
+  record.measures.global = b.evaluate(APP_CHAT);
+  record.checks.push({
+    check: "Global, on the same chat, is written in",
+    ok: record.measures.global.field !== null && !record.measures.global.words.includes(READ_ONLY),
+  });
+};
+
+/** The Frontier phone's Chat page: the whole band from the strip to the place bar. */
+const FRONTIER_PAGE = `(() => {
+  const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
+  const hud = document.querySelector('[aria-label="Frontier HUD"]');
+  const page = hud?.querySelector("[data-page]");
+  return {
+    viewport: innerHeight,
+    top: rect(hud?.querySelector("[data-hud-top]")),
+    page: rect(page),
+    chat: rect(hud?.querySelector("[data-page-fills]")),
+    map: rect(hud?.querySelector("[data-map-band]")),
+    field: rect(hud?.querySelector('[data-page-fills] input[aria-label="Message"]')),
+    bar: rect(page?.nextElementSibling),
+  };
+})()`;
+const frontierPageChecks = (m) => [
+  {
+    check: "the page stands on the place bar",
+    ok: m.page !== null && m.bar !== null && m.bar.top - m.page.bottom <= 8 && m.page.bottom <= m.bar.top,
+  },
+  {
+    check: "it reaches up to the strip: within 14 px of its foot",
+    ok: m.top !== null && m.page !== null && m.page.top >= m.top.bottom && m.page.top - m.top.bottom <= 14,
+  },
+  {
+    check: "the chat fills the page",
+    ok: m.chat !== null && Math.abs(m.chat.top - m.page.top) <= 1 && Math.abs(m.chat.bottom - m.page.bottom) <= 1,
+  },
+  { check: "the map band is gone behind it", ok: m.map !== null && m.map.height === 0 },
+  {
+    check: "its field stands above the place bar",
+    ok: m.field !== null && m.field.bottom <= m.bar.top && m.bar.bottom <= m.viewport + 1,
+  },
+];
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
   await runProof(
@@ -497,6 +1061,26 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         if (mention.ready) await proveMentions(b, out, mention, phone);
       }
 
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const places = { state: `places, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(places);
+        places.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+        if (places.ready) await provePlaces(b, out, places, phone);
+      }
+
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const card = { state: `player card, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(card);
+        card.ready = await open(b, `${baseUrl}/lab/kit/chat?state=open`, viewport);
+        if (card.ready) await proveCard(b, out, card, phone);
+      }
+
       const strip = { state: "closed, 1440×900", ready: false, presses: [], checks: [] };
       records.push(strip);
       strip.ready = await open(b, `${baseUrl}/lab/kit/chat?state=closed`, ["1440", "900"]);
@@ -504,6 +1088,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         strip.measures = b.evaluate(STRIP);
         strip.checks.push(...stripChecks(strip.measures));
         b.run("screenshot", join(out, "chat-strip.png"));
+      }
+
+      for (const viewport of [
+        ["1440", "900"],
+        ["390", "844"],
+      ]) {
+        await proveOpening(b, out, records, baseUrl, viewport);
       }
 
       for (const viewport of RAIL_OPEN_SIZES) {
@@ -560,6 +1151,75 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
           );
           b.run("screenshot", join(out, `rail-closed-${size}.png`));
         }
+      }
+
+      const appPane = { state: "app, Chat pane, 1440×900", ready: false, presses: [], checks: [] };
+      records.push(appPane);
+      appPane.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home?capture=1`,
+        ["1440", "900"],
+        `document.querySelector('${APP_CHAT_PLACE}') !== null`,
+      );
+      if (appPane.ready) await proveAppPane(b, out, appPane);
+
+      const phonePage = { state: "app, Chat page, 390×844", ready: false, presses: [], checks: [] };
+      records.push(phonePage);
+      phonePage.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home/chat?capture=1`,
+        ["390", "844"],
+        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+      );
+      if (phonePage.ready) await proveAppPhonePage(b, out, phonePage);
+
+      // The same page, its window grown to a desktop's: the page stays Chat's, one chat.
+      const grown = { state: "app, Chat page, 390×844 grown to 1440×900", ready: false, presses: [], checks: [] };
+      records.push(grown);
+      if (phonePage.ready) {
+        b.run("set", "viewport", "1440", "900");
+        grown.ready = await waitFor(b, `document.querySelector('[data-band="bar"]') !== null`, READY_MS);
+        await sleep(SETTLE_MS);
+        if (grown.ready) proveDesktopChatPage(b, out, grown, "app-chat-page-grown-desktop.png");
+      }
+
+      const desktopPage = { state: "app, Chat page, 1440×900", ready: false, presses: [], checks: [] };
+      records.push(desktopPage);
+      desktopPage.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home/chat?capture=1`,
+        ["1440", "900"],
+        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+      );
+      if (desktopPage.ready) proveDesktopChatPage(b, out, desktopPage, "app-chat-page-desktop.png");
+
+      for (const [viewport, phone] of [
+        [["1440", "900"], false],
+        [["390", "844"], true],
+      ]) {
+        const lobby = { state: `app, Blitz lobby chat, ${viewport.join("×")}`, ready: false, presses: [], checks: [] };
+        records.push(lobby);
+        lobby.ready = await openApp(
+          b,
+          `${baseUrl}${LOBBY}`,
+          viewport,
+          `document.querySelector('section[aria-label="Chat"] li[data-message-id]') !== null`,
+        );
+        if (lobby.ready) await proveLobbyChat(b, out, lobby, phone);
+      }
+
+      const frontier = { state: "Frontier phone, Chat page, 390×844", ready: false, presses: [], checks: [] };
+      records.push(frontier);
+      frontier.ready = await openApp(
+        b,
+        `${baseUrl}/lab/kit/hud/chat?capture=1`,
+        ["390", "844"],
+        `document.querySelector("[data-page-fills]") !== null`,
+      );
+      if (frontier.ready) {
+        frontier.measures = b.evaluate(FRONTIER_PAGE);
+        frontier.checks.push(...frontierPageChecks(frontier.measures));
+        b.run("screenshot", join(out, "frontier-chat-page-phone.png"));
       }
 
       const folded = { state: "closed and folded, 390×844", ready: false, presses: [], checks: [] };

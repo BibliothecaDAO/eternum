@@ -37,7 +37,10 @@ vi.mock("../play/play-facts", () => ({
 vi.mock("./entry-panel", () => ({
   PaidEntry: ({ owner }: { owner: string | null }) => <output data-owner>{owner}</output>,
 }));
-vi.mock("./lobby-chat-panel", () => ({ LobbyChatPanel: () => null }));
+vi.mock("../chat/app-chat", async (original) => ({
+  ...(await original<typeof import("../chat/app-chat")>()),
+  LobbyChat: () => null,
+}));
 
 import { BlitzLobbyPage } from "./blitz-pages";
 

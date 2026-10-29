@@ -35,7 +35,10 @@ export interface DirectMessage {
   readonly metadata?: Readonly<Record<string, unknown>>;
 }
 export interface DirectMessageCreatePayload extends Schema.Schema.Type<typeof directMessageCreateSchema> {}
-/** A two-player thread as the chat server sends it, with each participant's unread count. */
+/**
+ * A two-player thread as the chat server sends it, with the receiving participant's unread count: the only count of
+ * what that player has not read, kept by their inbox from its own copy of every message.
+ */
 export interface DirectMessageThread {
   readonly id: string;
   readonly participants: string[];
@@ -47,3 +50,17 @@ export interface DirectMessageThread {
 }
 export interface DirectMessageTyping extends Schema.Schema.Type<typeof directMessageTypingSchema> {}
 export interface DirectMessageReadReceipt extends Schema.Schema.Type<typeof directMessageReadReceiptSchema> {}
+
+/**
+ * An account's block list as its inbox holds it, with its version: the version rises with each change, so of two
+ * answers the one with the higher version is the later list, whatever order they arrive in. Every reply of
+ * /api/chat/blocks (a read, a block, an unblock) is one.
+ */
+const blockListSchema = Schema.Struct({
+  blocked: Schema.Array(playerIdSchema),
+  version: Schema.Number,
+});
+
+export interface BlockList extends Schema.Schema.Type<typeof blockListSchema> {}
+
+export const isBlockList = Schema.is(blockListSchema);

@@ -9,8 +9,15 @@ import {
 } from "@bibliothecadao/types";
 
 import { chatMemberOf, consumeChatBudget, readChatFrame, sendChat, type ChatMember } from "./chat-sockets";
+import { pushMentions } from "./mention-push";
+import { isPushDeviceId } from "@bibliothecadao/notifications";
 interface RoomMember extends ChatMember {
   canWrite: boolean;
+  /**
+   * The push device this socket's page shows the room on, visibly, as the page last said (room:seen); null or absent
+   * while it does not. A socket open in the background shows nothing.
+   */
+  seenOn?: string | null;
 }
 
 /** A room keeps thirty days of messages, and never more than its last five hundred. */
@@ -31,8 +38,8 @@ interface MessageRow extends Record<string, SqlStorageValue> {
  * One chat room: its members' sockets and its history. Sockets use the hibernation API only, with no timer or
  * interval, so a room with no traffic is evicted from memory and costs nothing until the next message wakes it.
  */
-export class ChatRoom extends DurableObject<unknown> {
-  constructor(ctx: DurableObjectState, env: unknown) {
+export class ChatRoom extends DurableObject<Record<string, unknown>> {
+  constructor(ctx: DurableObjectState, env: Record<string, unknown>) {
     super(ctx, env);
     ctx.storage.sql.exec(
       `CREATE TABLE IF NOT EXISTS messages (id TEXT PRIMARY KEY, senderId TEXT NOT NULL, senderName TEXT, content TEXT NOT NULL,
@@ -65,6 +72,14 @@ export class ChatRoom extends DurableObject<unknown> {
     const member = socket.deserializeAttachment() as RoomMember;
     const frame = readChatFrame(socket, data);
     if (!frame || !consumeChatBudget(socket)) return;
+    if (frame.type === "room:seen") {
+      const device = (frame as { device?: unknown }).device;
+      socket.serializeAttachment({
+        ...(socket.deserializeAttachment() as RoomMember),
+        seenOn: isPushDeviceId(device) ? device : null,
+      } satisfies RoomMember);
+      return;
+    }
     if (frame.type !== "world:publish") {
       sendChat(socket, { type: "error", code: "invalid_message", message: "Rooms take world:publish only." });
       return;
@@ -135,6 +150,15 @@ export class ChatRoom extends DurableObject<unknown> {
       clientMessageId: message.clientMessageId,
       message: toWorldChatMessage(room, row),
     });
+    // A player it mentions is told on each device not showing this room to them now.
+    await pushMentions(this.env, room, row, (realmsId) => this.seenOn(realmsId));
+  }
+
+  /** The push devices an account's sockets here show the room on, visibly, now. */
+  private seenOn(realmsId: string): ReadonlySet<string> {
+    return new Set(
+      this.ctx.getWebSockets(realmsId).flatMap((socket) => (socket.deserializeAttachment() as RoomMember).seenOn ?? []),
+    );
   }
 
   private leave(socket: WebSocket) {

@@ -1,3 +1,4 @@
+import { CHAT_ALERT_PRESSED, type ChatAlertPress } from "./chat-alert";
 import {
   notificationMatchesGame,
   isNotificationGameClient,
@@ -167,13 +168,21 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
     if (push && (!pushDevice || pushDevice.state !== "active" || pushDevice.id !== push.subscriptionId)) return;
     if (push?.kind === "game" && !pushDevice?.automatic) return;
     const clients = await worker.clients.matchAll({ type: "window", includeUncontrolled: true });
-    const matching = clients.find((client) =>
-      push?.kind === "direct-message"
-        ? isDirectMessageClient(client.url, worker.location.origin)
-        : notificationMatchesGame(client.url, payload.target, worker.location.origin),
-    );
+    const chat = push?.kind === "direct-message" || push?.kind === "mention" ? push.kind : null;
+    const matching = chat
+      ? (clients.find((client) => new URL(client.url).pathname === payload.target) ??
+        clients.find((client) => isChatClient(client.url, payload.target, worker.location.origin)))
+      : clients.find((client) => notificationMatchesGame(client.url, payload.target, worker.location.origin));
     if (matching) {
       await matching.focus();
+      // The window opens chat on what the alert is about itself: a game keeps its place, the app goes to its chat.
+      if (chat)
+        matching.postMessage({
+          type: CHAT_ALERT_PRESSED,
+          kind: chat,
+          target: payload.target,
+          ...(payload.tag ? { tag: payload.tag } : {}),
+        } satisfies ChatAlertPress);
       return;
     }
     // Opening a separate entry flow leaves an existing game's transactions and navigation untouched.
@@ -183,9 +192,14 @@ async function openNotificationGame(worker: ServiceWorkerGlobalScope, value: unk
   }
 }
 
-function isDirectMessageClient(clientUrl: string, origin: string): boolean {
-  const client = new URL(clientUrl);
-  return client.origin === origin && (client.pathname === "/" || isNotificationGameClient(clientUrl, origin));
+/**
+ * A Realms window that can open a chat alert's chat itself (told by CHAT_ALERT_PRESSED): any app page, which can go to
+ * the chat, or a game, whose chat opens over it, keeping the game where it is. A mention in a lobby needs the lobby's
+ * page, so only an app page, which goes there.
+ */
+function isChatClient(clientUrl: string, target: string, origin: string): boolean {
+  if (new URL(clientUrl).origin !== origin) return false;
+  return !target.startsWith("/blitz/") || !isNotificationGameClient(clientUrl, origin);
 }
 
 async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {

@@ -19,6 +19,7 @@ vi.mock("@/hooks/context/identity-session", () => ({
   useIdentitySessionStore: { getState: () => identity.state },
   // The frame's notice reads the session; the fixture pages here draw a signed-out visitor.
   useIdentitySession: () => ({ status: "signed-out", session: null }),
+  notificationOwnerOf: () => null,
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
 vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () => null, FrontierPage: () => null }));
@@ -133,7 +134,7 @@ it.each([
   );
   const lab = await renderLab(`/lab/app/first-visit/${page}`);
   const places = [...lab.querySelectorAll('[data-role="tab"]')];
-  expect(places).toHaveLength(5);
+  expect(places).toHaveLength(6);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
 });

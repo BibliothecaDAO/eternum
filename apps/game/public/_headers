@@ -48,6 +48,8 @@
   Cache-Control: no-cache
 /scroll
   Cache-Control: no-cache
+/chat
+  Cache-Control: no-cache
 /terms
   Cache-Control: no-cache
 /privacy

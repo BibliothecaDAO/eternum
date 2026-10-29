@@ -116,7 +116,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerDirectory(now, (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()));
   answerAccountJoin(LAB_SHARD_RPC, LAB_ACCOUNT_CLASS);
   answerHeraldSocket(herald);
-  answerLabChat(true, [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)]);
+  answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)] });
   signInLabPlayer();
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now));
   return scenario;
@@ -167,7 +167,7 @@ const answerDirectory = (now: () => number, read: (url: URL) => unknown) => {
     if (url.pathname === "/api/guardian") return json(LAB_GUARDIAN);
     // The game's chat has no messages yet, and the player blocks nobody.
     if (url.pathname === "/api/chat/world") return json({ messages: [], nextCursor: null });
-    if (url.pathname === "/api/chat/blocks") return json({ blocked: [] });
+    if (url.pathname === "/api/chat/blocks") return json({ blocked: [], version: 0 });
     if (url.pathname === "/api/directory")
       return json({
         shards: [{ url: LAB_GAME.url, chainId: LAB_GAME.chainId, status: "active", games: [game], manifest }],

@@ -19,7 +19,7 @@ type Bands = {
   strip: ReactNode;
   /** The realm's LORDS and its Realms' labor, beside Next up under the strip. */
   purse?: ReactNode;
-  /** A nav page, standing on the place bar. */
+  /** A nav page, standing on the place bar; one marked `data-page-fills` (Chat) takes the band up to the strip. */
   page?: ReactNode;
   nextUp?: ReactNode;
   notices?: ReactNode;
@@ -37,7 +37,9 @@ type Bands = {
  * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
  * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height. While either is open, the action
  * row and the dock step aside under it and Next up's row folds away, so the map keeps what they took (owner, 26 October
- * 2026: layout A); the notices stay. A desktop has the HUD every mode shares (FrontierDesktop).
+ * 2026: layout A); the notices stay. A page that marks itself `data-page-fills` (Chat) takes the whole band from the strip
+ * to the place bar, the map hidden behind it: a page read and written in, not glanced at over the map. The page says
+ * so itself, so wherever it is drawn (the game, the lab) it stands the same. A desktop has the HUD every mode shares (FrontierDesktop).
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
@@ -48,18 +50,20 @@ const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, 
   return (
     <div
       aria-label="Frontier HUD"
-      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden"
+      className="pointer-events-none fixed inset-0 z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
     >
       <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
         <TopRow nextUp={nextUp} purse={purse} />
       </div>
-      <div className="relative min-h-0 flex-1" />
-      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5">
+      <div data-map-band className="relative min-h-0 flex-1" />
+      <div {...HUD_FOOT_MARK} className="flex min-h-0 flex-col gap-1.5 [&:has([data-page-fills])]:flex-1">
         <div className="flex flex-col gap-1.5">{notices}</div>
         {page ? (
-          <PageBand className="max-h-hud-phone-panel">{page}</PageBand>
+          <PageBand className="max-h-hud-phone-panel [&:has([data-page-fills])]:max-h-none [&:has([data-page-fills])]:flex-1">
+            {page}
+          </PageBand>
         ) : (
           <UnderSheet action={action} dock={dock} />
         )}

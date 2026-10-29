@@ -59,6 +59,12 @@ type DirectBroadcastMessage = {
   clientMessageId?: string;
 };
 
+/** A thread's state after its owner read it, to every device of the owner: its unread as the inbox recounted it. */
+type DirectThreadBroadcastMessage = {
+  type: "direct:thread";
+  thread: DirectMessageThread;
+};
+
 type DirectTypingBroadcastMessage = {
   type: "direct:typing";
   typing: DirectMessageTyping;
@@ -85,22 +91,39 @@ type PresenceRemoveBroadcastMessage = {
 };
 
 export type RealtimeServerMessage =
-  | { type: "connected"; playerId: string; displayName?: string | null; channels: string[] }
+  | {
+      type: "connected";
+      playerId: string;
+      displayName?: string | null;
+      channels: string[];
+      /** From the inbox: the player's conversations, the latest first, each with its last line and unread. */
+      threads?: { thread: DirectMessageThread; lastMessage: DirectMessage | null }[];
+    }
   | { type: "joined:zone"; zoneId: string; canWrite?: boolean }
   | { type: "left:zone"; zoneId: string }
   | WorldBroadcastMessage
   | DirectBroadcastMessage
+  | DirectThreadBroadcastMessage
   | DirectTypingBroadcastMessage
   | DirectReadBroadcastMessage
   | PresenceSyncBroadcastMessage
   | PresenceUpdateBroadcastMessage
   | PresenceRemoveBroadcastMessage
-  | { type: "error"; message: string; code?: string }
+  /** A refusal or a fault; a room's names its room (`zoneId`), the client adding it. */
+  | { type: "error"; message: string; code?: string; zoneId?: string }
   | { type: string; [key: string]: unknown };
 
 export interface RealtimeClientOptions {
   /** The app's origin: chat is served under its /api/chat. */
   baseUrl: string;
+  /**
+   * The rooms the player has where they stand (Global, a game's own where its mode keeps one, a Blitz lobby's on its
+   * page). The inbox's handshake names every room the account may read; only these are opened, so a room the player is
+   * not shown never streams to them, and every handshake (each reconnect) opens them again. A lobby's room is open to
+   * any signed-in reader (the room decides who writes), so it opens without the handshake naming it. `setRooms` changes
+   * them as the player moves.
+   */
+  rooms: readonly string[];
   /**
    * Optional factory for constructing WebSocket instances.
    * This enables dependency injection during tests or on platforms
@@ -122,6 +145,9 @@ export interface RealtimeClientOptions {
 const RECONNECT_DELAYS_MS = [1_000, 2_000, 5_000, 10_000, 30_000];
 const INBOX = "inbox";
 
+/** A Blitz lobby's room (`slot:<shard>:<name>`): any signed-in player reads it; the room decides who writes. */
+export const isLobbyRoom = (zoneId: string) => zoneId.startsWith("slot:");
+
 /**
  * The chat transport: one socket to the account's inbox, which carries direct messages and names the rooms the account
  * may join, and one socket per joined room. Its user sees one message stream, as with a single connection. Presence
@@ -133,8 +159,12 @@ const INBOX = "inbox";
 export class RealtimeClient {
   #inbox: WebSocket;
   #rooms = new Map<string, WebSocket>();
+  /** The rooms the last handshake said the account may read. */
+  #allowed: readonly string[] = [];
   #options: RealtimeClientOptions;
   #closed = false;
+  /** The room this page shows the player now, visibly, on its push device: told to that room (room:seen). */
+  #seen: { zoneId: string; device: string } | null = null;
   /** Failures in a row and the pending reopen, per connection: the inbox, or a room by its zone. */
   #failures = new Map<string, number>();
   #reopening = new Map<string, ReturnType<typeof setTimeout>>();
@@ -146,6 +176,43 @@ export class RealtimeClient {
 
   joinZone(zoneId: string) {
     if (!this.#rooms.has(zoneId)) this.#rooms.set(zoneId, this.#connectRoom(zoneId));
+  }
+
+  /** The rooms where the player now stands: a room gone is left, a new one opened once the account may read it. */
+  setRooms(rooms: readonly string[]) {
+    const before = this.#options.rooms;
+    this.#options = { ...this.#options, rooms };
+    for (const zoneId of before) if (!rooms.includes(zoneId)) this.leaveZone(zoneId);
+    this.#openRooms();
+  }
+
+  /**
+   * The room this page shows the player now, visibly, and the push device it is on; null when it shows none (chat
+   * closed, another view, the page hidden, or no push device). The room hears it, and a mention there skips that device
+   * alone; a socket open in the background is never taken as a reader. A room opened again hears it again.
+   */
+  setSeenRoom(seen: { zoneId: string; device: string } | null) {
+    const before = this.#seen;
+    if (before?.zoneId === seen?.zoneId && before?.device === seen?.device) return;
+    this.#seen = seen;
+    // A room still opening hears it when it opens (#connectRoom); one open hears it now.
+    const tell = (zoneId: string, device: string | null) => {
+      const room = this.#rooms.get(zoneId);
+      if (room?.readyState === WebSocket.OPEN) room.send(JSON.stringify({ type: "room:seen", device }));
+    };
+    if (before && before.zoneId !== seen?.zoneId) tell(before.zoneId, null);
+    if (seen) tell(seen.zoneId, seen.device);
+  }
+
+  /** A room opened again: its answer (who writes) is the room's at the open, so a changed registration reopens it. */
+  reopenZone(zoneId: string) {
+    this.leaveZone(zoneId);
+    this.#openRooms();
+  }
+
+  #openRooms() {
+    for (const zoneId of this.#options.rooms)
+      if (this.#allowed.includes(zoneId) || isLobbyRoom(zoneId)) this.joinZone(zoneId);
   }
 
   leaveZone(zoneId: string) {
@@ -194,7 +261,8 @@ export class RealtimeClient {
       const message = safeParse(event.data);
       if (!message) return;
       if (message.type === "connected") {
-        for (const zoneId of (message.channels as string[] | undefined) ?? []) this.joinZone(zoneId);
+        this.#allowed = (message.channels as string[] | undefined) ?? [];
+        this.#openRooms();
       }
       this.#options.onMessage?.(message, event);
     });
@@ -217,10 +285,13 @@ export class RealtimeClient {
       const message = safeParse(event.data);
       if (!message) return;
       if (message.type.startsWith("presence:") && zoneId !== GLOBAL_CHAT_CHANNEL_ID) return;
-      this.#options.onMessage?.(message, event);
+      // A room's error is about that room (a message it did not take): it says which.
+      this.#options.onMessage?.(message.type === "error" ? { ...message, zoneId } : message, event);
     });
     socket.addEventListener("open", () => {
-      if (this.#rooms.get(zoneId) === socket) this.#failures.delete(zoneId);
+      if (this.#rooms.get(zoneId) !== socket) return;
+      this.#failures.delete(zoneId);
+      if (this.#seen?.zoneId === zoneId) socket.send(JSON.stringify({ type: "room:seen", device: this.#seen.device }));
     });
     socket.addEventListener("close", () => {
       if (this.#rooms.get(zoneId) !== socket) return;

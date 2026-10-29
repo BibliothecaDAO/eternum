@@ -26,7 +26,7 @@ import { PaidEntry, SignInToJoin } from "./entry-panel";
 import { SeatsChip } from "./seats-chip";
 import { type LobbyStep, lobbyRowOf, lobbyStep, lobbyTitle, seatsOf } from "./lobby";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
-import { LobbyChatPanel } from "./lobby-chat-panel";
+import { LobbyChat } from "../chat/app-chat";
 import { RegisteredCount, RosterGrid, SeatGrid } from "./seat-grid";
 
 const BLITZ = ageOf("blitz");
@@ -186,7 +186,7 @@ const GameAction = ({ game, step }: { game: DirectoryGame; step: LobbyStep }) =>
  */
 const SlotChat = ({ slot, wallet }: { slot: PlaytestSlot; wallet: string | null }) => {
   const ledger = environmentLedger();
-  if (!ledger || !wallet) return <LobbyChatPanel slot={slot} membership={chatMembershipOf(wallet, undefined)} />;
+  if (!ledger || !wallet) return <LobbyChat slot={slot} membership={chatMembershipOf(wallet, undefined)} />;
   return <RegistrantChat ledger={ledger} slot={slot} address={wallet} />;
 };
 
@@ -200,7 +200,7 @@ const RegistrantChat = ({
   address: string;
 }) => {
   const terms = useEntryTerms(ledger, slotKeyOf(slot), address).data;
-  return <LobbyChatPanel slot={slot} membership={chatMembershipOf(address, terms ?? undefined)} />;
+  return <LobbyChat slot={slot} membership={chatMembershipOf(address, terms ?? undefined)} />;
 };
 
 /**

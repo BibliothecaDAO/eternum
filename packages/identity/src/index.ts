@@ -1,4 +1,5 @@
 export * from "./account-rules";
+export * from "./mentions";
 export * from "./address";
 export * from "./client";
 export * from "./operator";

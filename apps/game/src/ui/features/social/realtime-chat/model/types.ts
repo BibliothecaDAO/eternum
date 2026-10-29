@@ -1,4 +1,5 @@
 import type {
+  BlockList,
   DirectMessage,
   DirectMessageCreatePayload,
   DirectMessageReadReceipt,
@@ -35,16 +36,14 @@ export interface PendingMessage {
   errorMessage?: string;
 }
 
-export type ChatTabType = "world" | "zone" | "dm";
-
-export interface ChatTab {
-  id: string;
-  type: ChatTabType;
-  label: string;
-  targetId: string; // zoneId for world/zone, threadId for dm
-  unreadCount: number;
-  closeable?: boolean; // If false, tab cannot be closed (e.g., World tab)
-}
+/**
+ * What the chat shows: a room, the list of private conversations (Messages), or one conversation. Private messages are
+ * never drawn in a room (owner, 28 October 2026: "its a bit weird mixing the dm with the global chat imo").
+ */
+export type ChatView =
+  | { kind: "room"; zoneId: string }
+  | { kind: "messages" }
+  | { kind: "conversation"; threadId: string };
 
 export interface WorldChatZoneState {
   historyError?: string;
@@ -58,9 +57,11 @@ export interface WorldChatZoneState {
 }
 
 export interface DirectMessageThreadState {
+  /** The thread as the server last sent it: its unread count is the only one (directUnread reads it). */
   thread: DirectMessageThread;
   messages: DirectMessage[];
-  unreadCount: number;
+  /** The other player's line this connection last told the server the player read through (receiptDue). */
+  receiptSent?: string;
   hasMoreHistory: boolean;
   lastFetchedCursor?: string | null;
   isFetchingHistory: boolean;
@@ -77,22 +78,46 @@ export interface RealtimeChatState {
   activeZoneId?: string;
   activeThreadId?: string;
   isShellOpen: boolean;
+  /**
+   * How many times chat was asked to open on what an alert is about (openAlert): each chat surface opens itself when it
+   * rises (the rail's window, a phone's chat page, the app's pane or page).
+   */
+  chatRevealed: number;
   worldZones: Record<string, WorldChatZoneState>;
   dmThreads: Record<string, DirectMessageThreadState>;
   unreadWorldTotal: number;
-  unreadDirectTotal: number;
   onlinePlayers: Record<string, PlayerPresence>;
   typingIndicators: Record<string, DirectMessageTyping>;
   pendingReadReceipts: DirectMessageReadReceipt[];
-  openTabs: ChatTab[];
-  activeTabId: string | null;
-  /** Accounts this player blocked: their direct messages never arrive, and their threads are hidden. */
-  blockedPlayers: string[];
+  view: ChatView;
+  /**
+   * The server's block list, the accounts this player muted, with its version: their direct messages never arrive, and
+   * what they write is hidden. Null until that list is read: a room's messages wait for it (heldWorldMessages), since
+   * who is muted is not known, never taken to be nobody. Of two answers, the higher version is held.
+   */
+  blockList: BlockList | null;
+  /** Room messages that arrived before the block list was read, taken in order once it is. */
+  heldWorldMessages: HeldWorldMessage[];
+  /** The rooms the player has where they stand (chatRooms), as the transport opens them; setRooms moves them. */
+  rooms: string[];
+  /** Rooms the player reads but may not write in, as each room answered at its open (a Blitz lobby's, unregistered). */
+  readOnlyZoneIds: string[];
+  /** Why a room did not take the player's last message, until they send again: too fast, or refused. */
+  roomRefusals: Record<string, RoomRefusal>;
+}
+
+export type RoomRefusal = "rate-limited" | "refused";
+
+export interface HeldWorldMessage {
+  zoneId: string;
+  message: WorldChatMessage;
+  clientMessageId?: string;
 }
 
 export interface InitializeRealtimeClientParams {
   baseUrl: string;
-  joinZones?: string[];
+  /** The rooms the player has where they stand (chatRooms): the only rooms opened, of those the server allows. */
+  rooms: string[];
 }
 
 export interface LoadWorldChatHistoryParams extends Pick<WorldChatHistoryQuery, "cursor" | "limit" | "since"> {
@@ -105,10 +130,22 @@ export interface RealtimeChatActions {
   resetClient(): void;
   setConnectionStatus(status: RealtimeConnectionStatus, errorMessage?: string): void;
   joinZone(zoneId: string): void;
-  setWorldChatChannel(zoneId: string): void;
+  /** Shows a room, joined and read there. */
+  showRoom(zoneId: string): void;
+  /** Shows the list of private conversations. */
+  showMessages(): void;
+  /** Opens the conversation with a player, started if there is none: a name pressed in a room leads here. */
+  openConversation(playerId: string): void;
   setActiveZone(zoneId: string | undefined): void;
+  /** The rooms where the player now stands: the transport leaves the ones gone and opens the new ones. */
+  setRooms(rooms: readonly string[]): void;
+  /** A room opened again, so it answers anew who writes there (after the player registered in a Blitz lobby). */
+  reopenRoom(zoneId: string): void;
+  /** A room did not take the player's message (`code`, as the room said it): it leaves the room, and why is shown. */
+  refuseInRoom(zoneId: string, code: string): void;
   setShellOpen(isOpen: boolean): void;
-  openDirectThread(playerId: string): string | undefined;
+  /** Opens chat on what a pressed alert is about: a room, or a conversation (its thread). */
+  openAlert(alert: { room: string } | { thread: string }): void;
   ensureDirectThread(participantId: string): string | undefined;
   setActiveThread(threadId: string | undefined): void;
   receiveWorldMessage(zoneId: string, message: WorldChatMessage, options?: { clientMessageId?: string }): void;
@@ -122,17 +159,18 @@ export interface RealtimeChatActions {
   enqueuePendingMessage(message: PendingMessage): void;
   resolvePendingMessage(messageId: string, updates: Partial<PendingMessage>): void;
   sendWorldMessage(zoneId: string, payload: WorldChatPublishPayload): Promise<void>;
-  sendDirectMessage(threadId: string | undefined, recipientId: string, content: string): Promise<void>;
+  sendDirectMessage(
+    threadId: string | undefined,
+    recipientId: string,
+    content: string,
+    metadata?: Readonly<Record<string, unknown>>,
+  ): Promise<void>;
   acknowledgeDirectRead(receipt: DirectMessageReadReceipt): Promise<void>;
   updateTypingState(payload: DirectMessageTyping): void;
   setWorldHistoryLoading(zoneId: string, isLoading: boolean): void;
   setDirectHistoryLoading(threadId: string, isLoading: boolean): void;
   loadWorldHistory(params: LoadWorldChatHistoryParams): Promise<void>;
   loadDirectHistory(threadId: string, cursor?: string): Promise<void>;
-  addTab(tab: ChatTab): void;
-  removeTab(tabId: string): void;
-  setActiveTab(tabId: string | null): void;
-  updateTabUnread(tabId: string, unreadCount: number): void;
   loadBlockedPlayers(): Promise<void>;
   blockPlayer(playerId: string): Promise<void>;
   unblockPlayer(playerId: string): Promise<void>;

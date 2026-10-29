@@ -4,6 +4,8 @@ import type { PlaytestSlot } from "../blitz-slot";
 
 import type { BlitzRow } from "../blitz-rows";
 import type { DirectoryGame } from "../herald";
+import { lobbyPath } from "@bibliothecadao/notifications";
+
 import { lobbyId, lobbyRowOf, lobbyStep, seatsOf } from "./lobby";
 
 const slotRow = (): BlitzRow => ({
@@ -84,4 +86,8 @@ describe("a Blitz lobby", () => {
       Array.from({ length: 3 }, () => ({ account: null, wallet: null, own: false, prepared: undefined })),
     );
   });
+});
+
+it("is where a mention alert in a slot's lobby opens: the alert's address is this route's", () => {
+  expect(lobbyPath("blitz-1630")).toBe(`/blitz/${lobbyId(slotRow())}`);
 });
