@@ -1,3 +1,4 @@
+import { readRealmSkin, isRealmSkinPath, DEVCON_BANNER_ART } from "../structures/realm-skins";
 import {
   getBuildingDisplayName,
   resolveBuildingModelSelection,
@@ -602,8 +603,9 @@ export default class HexceptionScene extends HexagonScene {
       }
     });
     if (isSettlementModelPath(path)) {
-      const appearance = new SettlementAppearance(model, meshes);
+      const appearance = new SettlementAppearance(model, meshes, isRealmSkinPath(path) ? DEVCON_BANNER_ART : undefined);
       appearance.setRelationship("enemy");
+      if (isRealmSkinPath(path)) await appearance.setOrder(undefined);
       this.settlementPresentations.set(path, { appearance, animation: new SettlementAnimation(model, meshes) });
       model.userData.settlementModelPath = path;
     }
@@ -1534,6 +1536,13 @@ export default class HexceptionScene extends HexagonScene {
       mainStructureType,
       wonder: !!this.tileManager.getWonder(this.shownRealmId),
       frontier: this.mode.id === "frontier",
+      realmSkin:
+        mainStructureType === StructureType.Realm
+          ? readRealmSkin(this.game.store, {
+              game_id: configManager.getActiveGameId(),
+              entity_id: BigInt(this.state.structureEntityId),
+            })
+          : undefined,
     });
   }
 
@@ -1814,11 +1823,18 @@ export default class HexceptionScene extends HexagonScene {
   private answerFactChanges(changes: readonly NativeFactChange[]): void {
     if (changes.some((change) => this.changesShownHyperstructure(change))) this.syncHyperstructureConstruction();
     const level = changes.map((change) => this.changedCastleLevel(change)).find((value) => value !== undefined);
-    if (level !== undefined) {
-      if (level > this.structureStage) this.newRingRadius = buildableRadius(level);
+    const skinChanged = changes.some(
+      (change) =>
+        change.model === "CampaignHome" &&
+        (change.current ?? change.previous)?.home === BigInt(this.state.structureEntityId) &&
+        (change.current ?? change.previous)?.game_id === configManager.getActiveGameId(),
+    );
+    if (level !== undefined || skinChanged) {
+      if (level !== undefined && level > this.structureStage) this.newRingRadius = buildableRadius(level);
       this.removeCastleFromScene();
     }
-    if (level !== undefined || changes.some((change) => this.changesShownGround(change))) this.redrawStaleGrid();
+    if (level !== undefined || skinChanged || changes.some((change) => this.changesShownGround(change)))
+      this.redrawStaleGrid();
   }
 
   private changesShownHyperstructure(change: NativeFactChange): boolean {

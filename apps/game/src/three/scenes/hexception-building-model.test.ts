@@ -1,3 +1,4 @@
+import { REALM_SKIN_MODELS } from "../structures/realm-skins";
 import { describe, expect, it } from "vitest";
 import { BUILDINGS_CENTER, BuildingType, RealmLevels, StructureType } from "@bibliothecadao/types";
 import { buildingModelPaths, BUILDINGS_GROUPS, castleLevelToRealmCastle } from "../constants/scene-constants";
@@ -60,3 +61,12 @@ describe("Workshops and central keeps share Labor but keep their own identity", 
     expect(resolveBuildingModelSelection(labor, { ...context, wonder: true }).tierPath).toBeUndefined();
   });
 });
+
+it.each(REALM_SKIN_MODELS)(
+  "draws $skin at level $level as the local keep, including a wonder realm",
+  ({ skin, level, path }) => {
+    const selection = resolveBuildingModelSelection(keep, { ...context, stage: level, realmSkin: skin, wonder: true });
+    expect(selection.tierPath).toBe(path);
+    expect(selection.group).toBe(BUILDINGS_GROUPS.REALMS);
+  },
+);

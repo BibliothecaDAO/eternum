@@ -2,7 +2,7 @@ import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
-import { realmMeaning, readStructureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { readStructureMeaning, mineMeaning } from "@/ui/design-system/domain-icon-meaning";
 import {
   Position,
   configManager,
@@ -52,6 +52,7 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     "HyperstructureProgress",
     "HyperstructureShares",
     "Structure",
+    "CampaignHome",
     "GameRegistry",
     "ExpeditionSite",
     "SliceRules",
@@ -94,11 +95,9 @@ export const useStructureEntityDetail = ({ structureEntityId }: UseStructureEnti
     if (!structure?.base?.category) return undefined;
 
     return iconUrl(
-      structure.base.category === StructureType.Realm
-        ? realmMeaning(structure.base.level)
-        : structure.base.category === StructureType.Mine
-          ? mineMeaning(structure.metadata.mine_kind)
-          : readStructureMeaning(facts.store, structure),
+      structure.base.category === StructureType.Mine
+        ? mineMeaning(structure.metadata.mine_kind)
+        : readStructureMeaning(facts.store, structure),
       256,
     );
   }, [structure, facts]);

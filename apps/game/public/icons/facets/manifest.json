@@ -1480,6 +1480,16 @@
       "art": "beast-dark-fey",
       "label": "Dark fey",
       "family": "Beasts"
+    },
+    "devcon-realm": {
+      "label": "Devcon realm",
+      "family": "Structures",
+      "art": "devcon-realm"
+    },
+    "devcon-golden-realm": {
+      "label": "Golden Devcon realm",
+      "family": "Structures",
+      "art": "devcon-golden-realm"
     }
   },
   "resources": {

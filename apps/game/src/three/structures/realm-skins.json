@@ -1,0 +1,4 @@
+{
+  "devcon": { "directory": "regular", "icon": "devcon-realm", "label": "Devcon" },
+  "devcon-golden": { "directory": "gold", "icon": "devcon-golden-realm", "label": "Golden Devcon" }
+}

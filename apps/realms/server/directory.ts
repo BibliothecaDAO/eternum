@@ -141,17 +141,20 @@ const isComplete = ({ launchDirectory, listings }: DirectoryListing) =>
   launchDirectory !== null && listings.every((listing) => listing.games !== null);
 
 /** Every listed shard's games and manifest, each shard read on its own so one that fails is named and the rest answer. */
-const listShards = async (dependencies: DirectoryDependencies, player: string | null) => {
-  const results = (await registeredShards(dependencies.db)).filter(
-    (row) => row.status === "active" || row.status === "draining",
-  );
-  const query = player ? `?player=${player}` : "";
-  return Promise.all(
-    results.map((shard) =>
-      listShard(shard, () => readShard(shard, `${shard.url}/games${query}`, dependencies.fetchShard)),
+const listShards = async (dependencies: DirectoryDependencies, player: string | null) =>
+  Promise.all(
+    (await listedShards(dependencies.db)).map((shard) =>
+      listShard(shard, () => readShard(shard, gamesUrl(shard, player), dependencies.fetchShard)),
     ),
   );
-};
+
+/** The shards players see: active ones, and draining ones still finishing their games. */
+export const listedShards = async (db: D1Database) =>
+  (await registeredShards(db)).filter((row) => row.status === "active" || row.status === "draining");
+
+/** A shard's game directory, as everyone sees it or with one player's standing in each game. */
+export const gamesUrl = (shard: ListedShard, player: string | null) =>
+  `${shard.url}/games${player ? `?player=${player}` : ""}`;
 
 const isSettled = (game: HeraldGameDirectoryEntry) => game.status === "Settled";
 
@@ -244,7 +247,8 @@ const readShard = async (shard: ListedShard, gamesUrl: string, fetchShard: typeo
   return { games, manifest: manifest as ShardManifest };
 };
 
-const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {
+/** A shard's games, read within the shard timeout and refused unless its Herald folds the shard's own chain. */
+export const fetchShardGames = async (shard: ListedShard, url: string, fetchShard: typeof fetch) => {
   const response = await fetchShard(url, { signal: AbortSignal.timeout(SHARD_TIMEOUT_MS), redirect: "manual" });
   if (!response.ok) throw new Error(`games directory answered ${response.status}`);
   const directory = (await response.json()) as HeraldGameDirectory;

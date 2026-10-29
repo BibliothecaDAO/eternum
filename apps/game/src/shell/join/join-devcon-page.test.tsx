@@ -17,12 +17,15 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   useIdentitySession: () => service.session,
 }));
 
-import { IdentityRequestError } from "@realms-world/identity";
+import { CAMPAIGNS, IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { useConnectStore } from "../sign-in/connect";
 import { JoinDevconPage } from "./join-devcon-page";
+import { homeDailyClaim } from "@bibliothecadao/eternum";
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { campaignHomeFacts } from "@/lab/game/campaign-scenario";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -78,7 +81,7 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(useConnectStore.getState().request).toEqual({ next: "/join/devcon/T9HW3NPB" });
   expect(service.redeemCampaignTicket).not.toHaveBeenCalled();
 
-  // Signed in, even back on the shared link (Discord finished elsewhere, the home-screen app reloaded): the kept code.
+  // Signed in, even back on the bare link (Discord finished elsewhere, the home-screen app reloaded): the kept code.
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "golden" });
   await visit("/join/devcon");
@@ -89,7 +92,8 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", "T9HW3NPB"]]);
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden ticket");
-  expect(text()).toContain("One of 20 at Devcon");
+  // The count printed on flyers and the one the landing tells are the campaign's one golden count.
+  expect(text()).toContain(`One of ${CAMPAIGNS["devcon-2026"].golden} at Devcon`);
   expect(text()).toContain("2,000 Labor each day");
   expect(text()).toContain("2,000 Essence each day");
   expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
@@ -97,12 +101,12 @@ it("keeps a flyer's code through sign-in, and only the opened ticket says it is 
   expect(path).toBe("/");
 });
 
-it("opens a regular ticket from the shared link: the Devcon realm with its Labor and Essence", async () => {
+it("opens a regular ticket from a flyer's code: the Devcon realm with its Labor and Essence", async () => {
   signIn();
   service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
-  await visit("/join/devcon");
+  await visit("/join/devcon/K7M2QX4R");
   await press("Open your ticket");
-  expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", null]]);
+  expect(service.redeemCampaignTicket.mock.calls).toEqual([["devcon-2026", "K7M2QX4R"]]);
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).toContain("A Devcon realm is yours");
   expect(text()).toContain("1,000 Labor each day");
@@ -110,7 +114,7 @@ it("opens a regular ticket from the shared link: the Devcon realm with its Labor
   expect(text()).toContain("1,000 Essence each day");
 });
 
-it("says a closed campaign, and offers Try again when the ticket could not be opened", async () => {
+it("offers Try again when the ticket could not be opened, and Play once the campaign has closed", async () => {
   signIn();
   await visit("/join/devcon/K7M2QX4R");
   service.redeemCampaignTicket.mockRejectedValueOnce(new Error("offline"));
@@ -121,4 +125,42 @@ it("says a closed campaign, and offers Try again when the ticket could not be op
   await press("Try again");
   expect(text()).toContain("Devcon tickets have closed.");
   expect(service.redeemCampaignTicket).toHaveBeenLastCalledWith("devcon-2026", "K7M2QX4R");
+  expect(text()).not.toContain("Try again");
+  await press("Continue");
+  expect(path).toBe("/");
+});
+
+it.each([
+  ["/join/devcon/K7M2QX4R", 410, "ticket_taken", "Another player already opened this ticket."],
+  ["/join/devcon/K7M2QX4R", 409, "realm_founded", "Your realm is already founded: give this flyer to a friend."],
+  ["/join/devcon", 400, "invalid_redemption", "This link holds no ticket. Scan the QR on your Devcon flyer."],
+])("on %s, says why no ticket opens (%i %s) and leads on to Play", async (address, status, code, line) => {
+  signIn();
+  service.redeemCampaignTicket.mockRejectedValueOnce(new IdentityRequestError(status, code));
+  await visit(address);
+  await press("Open your ticket");
+  expect(text()).toContain(line);
+  expect(text()).not.toMatch(/Open your ticket|Try again/);
+  // The flyer is not this account's to use: its code is let go, not kept for another try.
+  expect(localStorage.getItem("realms:campaign-code:devcon-2026")).toBeNull();
+  await press("Continue");
+  expect(path).toBe("/");
+});
+
+it.each([
+  ["regular", "opened", { labor: 1_000, essence: 1_000 }],
+  ["golden", "golden", { labor: 2_000, essence: 2_000 }],
+] as const)("promises a %s ticket what its realm then claims in the game", async (tier, face, claim) => {
+  // The realm as the contract founds it, read by the game's Realm sheet and the Day open push alike.
+  const store = new NativeFactStore();
+  store.applyFacts(campaignHomeFacts(tier) as never);
+  expect(homeDailyClaim(store, { gameId: 1, entityId: 7, realmId: 0 })).toEqual(claim);
+
+  signIn();
+  service.redeemCampaignTicket.mockResolvedValue({ campaign: "devcon-2026", tier });
+  await visit("/join/devcon/K7M2QX4R");
+  await press("Open your ticket");
+  expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe(face);
+  expect(text()).toContain(`${claim.labor.toLocaleString("en-US")} Labor each day`);
+  expect(text()).toContain(`${claim.essence.toLocaleString("en-US")} Essence each day`);
 });

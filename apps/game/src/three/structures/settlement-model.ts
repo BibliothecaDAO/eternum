@@ -37,8 +37,10 @@ export class SettlementModel extends InstancedModel {
     capacity: number,
     readonly kind: "village" | "realm" = "village",
     wonder = false,
+    private readonly bannerArtwork?: string,
+    sourceAssetOwnership: "cache" | "consumer" = "consumer",
   ) {
-    super(gltf, capacity, false, kind === "village" ? "Village" : "Realm");
+    super(gltf, capacity, false, kind === "village" ? "Village" : "Realm", sourceAssetOwnership);
     this.bannerAtlas = kind === "village" ? createVillageBannerAtlas() : createRealmBannerAtlas();
     const cloth = new Map<string, boolean>();
     gltf.scene.traverse((node) => {
@@ -102,7 +104,7 @@ export class SettlementModel extends InstancedModel {
 
   prepare(): Promise<void> {
     if (this.kind === "village") return Promise.resolve();
-    return (this.preparation ??= prepareRealmBannerAtlas(this.bannerAtlas));
+    return (this.preparation ??= prepareRealmBannerAtlas(this.bannerAtlas, this.bannerArtwork));
   }
 
   setOrderAt(index: number, orderId: number | undefined): void {

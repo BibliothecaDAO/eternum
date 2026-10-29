@@ -5,6 +5,7 @@ import { boardRows, ownRank, wholeLords, earnedResource } from "./standings";
 const entry = (rank: number, address = `0x${(0xa00 + rank).toString(16)}`): HeraldFrontierLeaderboardEntry => ({
   address,
   structure_id: String(rank),
+  campaign: null,
   rank,
   sites_cleared: { total: 10 - rank, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
   chests_earned: 0,

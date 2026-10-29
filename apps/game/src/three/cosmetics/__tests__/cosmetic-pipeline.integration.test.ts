@@ -1,22 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@bibliothecadao/types", () => ({
-  TroopType: {
-    Knight: "Knight",
-    Crossbowman: "Crossbowman",
-    Paladin: "Paladin",
-  },
-  TroopTier: {
-    T1: "T1",
-    T2: "T2",
-    T3: "T3",
-  },
-  StructureType: {
-    1: "Realm",
-    Realm: 1,
-  },
-}));
-
 vi.mock("@/three/constants/scene-constants", () => ({
   getStructureModelPaths: () => ({
     1: ["structures/realm.glb"],

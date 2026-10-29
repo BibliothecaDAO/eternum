@@ -1,3 +1,4 @@
+import type { RealmSkin } from "@/three/structures/realm-skins";
 import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
@@ -38,7 +39,7 @@ export type SeasonListRow = {
   rank: number;
   order: number;
   /** The realm's rank and its depth, as the board's entry gives them. */
-  realm: { level: number; depth: number };
+  realm: { level: number; depth: number; skin?: RealmSkin };
   name: ReactNode;
   label: string;
   sitesCleared: number;
@@ -137,7 +138,7 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
     <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
-    <RealmBadge level={row.realm.level} depth={row.realm.depth} />
+    <RealmBadge level={row.realm.level} depth={row.realm.depth} skin={row.realm.skin} />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>
