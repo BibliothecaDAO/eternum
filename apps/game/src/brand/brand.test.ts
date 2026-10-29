@@ -77,6 +77,14 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
     expect(files.filter((file) => !existsSync(publicFile(file)))).toEqual([]);
   });
 
+  it("keeps the game's HUD on its reading face: no HUD code reads the app's labels face (Cinzel)", () => {
+    const hud = ["../three/", "../ui/features/", "../ui/modules/", "../ui/components/"].flatMap((dir) =>
+      sourcesUnder(path(dir)).filter((file) => !file.includes("/debug/")),
+    );
+    const readers = hud.filter((file) => /--font-ui|\bfont-ui\b/.test(readFileSync(file, "utf8")));
+    expect(readers.map((file) => file.replace(path("../../../../"), ""))).toEqual([]);
+  });
+
   it("leaves no surface on a retired brand value", () => {
     const hits = SURFACES.flatMap((file) => {
       const text = readFileSync(file, "utf8").toLowerCase();
