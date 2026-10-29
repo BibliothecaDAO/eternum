@@ -1,9 +1,9 @@
 {
   "measured": {
-    "commit": "1fe3c8acfa0199b6a822c6367a53ff578716bb4c",
+    "commit": "ec67a8ac893113f006123ad7b6cd0f86f55ce46d",
     "steps": "lab-actions",
     "device": "phone",
-    "run": "evidence/click-latency/r6-052614/phone/lab-actions/2026-10-29T04-33-21-362Z-spectator",
+    "run": "evidence/click-latency/r7-095415/phone/lab-actions/2026-10-29T09-01-24-114Z-spectator",
     "machine": "the lanes' laptop (16 threads, desktop GPU; phone: CPU 4x, 20 Mbit/40 ms, low-power GPU)"
   },
   "byMode": {
@@ -12,33 +12,33 @@
         "explore": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 703.2,
-            "min": 686.8,
-            "max": 703.6
+            "median": 707.1,
+            "min": 688.9,
+            "max": 748.7
           }
         },
         "move": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 359.1,
-            "min": 356.2,
-            "max": 362.6
+            "median": 371.8,
+            "min": 364.3,
+            "max": 406.8
           }
         },
         "level-up": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 366.2,
-            "min": 361.7,
-            "max": 373.6
+            "median": 379.1,
+            "min": 362.4,
+            "max": 395.4
           }
         },
         "build": {
           "verdict.clickToResult.totalMs": {
             "n": 5,
-            "median": 365.8,
-            "min": 364.2,
-            "max": 370.6
+            "median": 369.2,
+            "min": 366.8,
+            "max": 382.7
           }
         }
       }
