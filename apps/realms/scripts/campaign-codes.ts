@@ -8,6 +8,7 @@
  * - `qr/game.svg`: the game's own address (`<base>`), for posters and promotion, which grant nothing;
  * - `print.csv`: page, QR file and address, for the printer's variable data. Nothing in it says which pages are golden:
  *   the print order is shuffled;
+ * - `golden.csv`: page and address of each golden flyer. It is ours alone: it never goes to the printer;
  * - `codes.sql`: every code hashed with its tier, for the identity Worker's D1
  *   (`wrangler d1 execute <database> --remote --file <out>/codes.sql`). Safe to run twice.
  *
@@ -34,13 +35,16 @@ async function main() {
   mkdirSync(join(out, "qr"), { recursive: true });
   writeFileSync(join(out, "qr", "game.svg"), await qrSvg(base));
   const rows = ["page,qr,url"];
+  const goldenRows = ["page,url"];
   for (const [index, code] of printed.entries()) {
     const page = String(index + 1).padStart(4, "0");
     const url = `${base}${CAMPAIGNS[campaign].link}/${code}`;
     writeFileSync(join(out, "qr", `${page}.svg`), await qrSvg(url));
     rows.push(`${page},qr/${page}.svg,${url}`);
+    if (golden.has(code)) goldenRows.push(`${page},${url}`);
   }
   writeFileSync(join(out, "print.csv"), `${rows.join("\n")}\n`);
+  writeFileSync(join(out, "golden.csv"), `${goldenRows.join("\n")}\n`);
   writeFileSync(join(out, "codes.sql"), await codesSql(campaign, codes, golden));
   console.log(JSON.stringify({ campaign, codes: codes.length, golden: golden.size, out }));
 }
