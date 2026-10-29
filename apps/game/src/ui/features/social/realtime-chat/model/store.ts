@@ -246,19 +246,16 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
       const client = new RealtimeClient({
         baseUrl: params.baseUrl,
         rooms: params.rooms,
+        // The inbox's own events. The rooms the player is in are each room's to say (joined:zone, left:zone): the inbox
+        // dropping or coming back leaves a room whose socket stands as it is.
         onOpen: () => {
           if (get().client !== client) return;
-          set({
-            connectionStatus: "connecting",
-            joinedZoneIds: [],
-            lastConnectionError: undefined,
-          });
+          set({ connectionStatus: "connecting", lastConnectionError: undefined });
         },
         onClose: (event) => {
           if (get().client !== client) return;
           set({
             connectionStatus: event.wasClean ? "idle" : "error",
-            joinedZoneIds: [],
             lastConnectionError: event.reason || undefined,
           });
         },
@@ -266,7 +263,6 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
           if (get().client !== client) return;
           set({
             connectionStatus: "error",
-            joinedZoneIds: [],
             lastConnectionError: event instanceof Event ? event.type : String(event),
           });
         },
@@ -280,16 +276,14 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
 
           switch (message.type) {
             case "connected":
-              // Of the rooms the server allows this account, only the player's are joined: the client opens no other.
+              // The transport opens the player's rooms the server allows; each says it is joined when it opens.
               set({
                 connectionStatus: "connected",
-                joinedZoneIds: (message.channels as string[]).filter((zoneId) => get().rooms.includes(zoneId)),
                 identity: {
                   playerId: message.playerId as string,
                   displayName: (message.displayName as string | null | undefined) ?? undefined,
                 },
               });
-              get().joinedZoneIds.forEach((zoneId) => actions.joinZone(zoneId));
               // The inbox's handshake (a reconnect's too) lists the conversations, those that came while away with them.
               if (Array.isArray(message.threads)) {
                 const listed = message.threads as { thread: unknown; lastMessage: unknown }[];
@@ -319,6 +313,7 @@ export const useRealtimeChatStore = create<RealtimeChatStore>((set, get) => ({
                 // A room that dropped and came back ends the reconnecting it started.
                 connectionStatus: state.connectionStatus === "reconnecting" ? "connected" : state.connectionStatus,
               }));
+              actions.joinZone(message.zoneId as string);
               break;
             case "left:zone":
               set((state) => ({ joinedZoneIds: state.joinedZoneIds.filter((zoneId) => zoneId !== message.zoneId) }));

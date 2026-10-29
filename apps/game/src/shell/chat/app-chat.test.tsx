@@ -3,7 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The app as it runs: its shell (which opens the one chat connection for a signed-in player), the lobby's chat, the real
 // store and transport. Only the network stands in: the sockets, the server's answers, and the identity.
@@ -59,6 +59,11 @@ class FakeSocket {
   }
   receive(message: unknown) {
     this.#listeners.get("message")?.forEach((listener) => listener({ data: JSON.stringify(message) }));
+  }
+  /** The connection lost, as a network drops it: closed, not by the client. */
+  drop() {
+    this.readyState = FakeSocket.CLOSED;
+    this.#listeners.get("close")?.forEach((listener) => listener({ wasClean: false, code: 1006, reason: "" }));
   }
 }
 
@@ -127,7 +132,8 @@ const draw = (page: "lobby" | "elsewhere", membership = "0x4a1:false:0:false") =
     ),
   );
 
-const inbox = () => FakeSocket.made.find(({ url }) => url.endsWith("/api/chat/inbox"))!;
+const inboxes = () => FakeSocket.made.filter(({ url }) => url.endsWith("/api/chat/inbox"));
+const inbox = () => inboxes().at(-1)!;
 const lobbySockets = () => FakeSocket.made.filter(({ url }) => url.includes(encodeURIComponent(LOBBY)));
 const lobbySocket = () => lobbySockets().at(-1)!;
 /** The inbox's handshake, and the lobby's room saying whether the player writes there. */
@@ -170,7 +176,7 @@ it("opens the lobby's room on its page, first, on the app's one connection, and 
   await draw("elsewhere");
   expect(lobbySocket().closed).toBe(true);
   // The one connection held: no second inbox.
-  expect(FakeSocket.made.filter(({ url }) => url.endsWith("/api/chat/inbox"))).toHaveLength(1);
+  expect(inboxes()).toHaveLength(1);
 });
 
 it("reads the lobby's history and its room as one list, oldest first, each message once", async () => {
@@ -229,6 +235,90 @@ it("says why a message was not taken, and takes it out of the list", async () =>
   await act(async () => lobbySocket().receive({ type: "error", code: "rate_limited", message: "slow" }));
   expect(host.textContent).toContain("Too fast. Wait a moment.");
   expect(lines().some((line) => line?.includes("spam"))).toBe(false);
+});
+
+/** The inbox's handshake on a connection opened again: it names Global only, never a lobby's room. */
+const greetAgain = async () =>
+  act(async () => {
+    inbox().open();
+    inbox().receive({
+      type: "connected",
+      playerId: "0x7",
+      displayName: "You",
+      channels: ["world:global"],
+      threads: [],
+    });
+  });
+/** Time passing on the transport's clock, for its reopen to come due. */
+const wait = (ms: number) => act(async () => vi.advanceTimersByTime(ms));
+
+describe.each([
+  { membership: "registered", canWrite: true },
+  { membership: "not registered", canWrite: false },
+])("the lobby's room through a dropped connection, a player $membership", ({ canWrite }) => {
+  /** The room as the player meets it: a field to write in, or the line saying who writes there. */
+  const expectWriting = () => {
+    if (canWrite) {
+      expect(field()!.disabled).toBe(false);
+      expect(host.textContent).not.toContain("Players registered in this Blitz write here.");
+    } else {
+      expect(field()).toBeNull();
+      expect(host.textContent).toContain("Players registered in this Blitz write here.");
+    }
+  };
+  /** A message arriving in the lobby's room, and, for a writer, one sent there on the socket that stands. */
+  const expectLive = async (id: string, minute: number) => {
+    await act(async () =>
+      lobbySocket().receive({
+        type: "world:message",
+        zoneId: LOBBY,
+        message: said(id, "0x65", "Corwin", `live ${id}`, minute),
+      }),
+    );
+    expect(lines()).toContain(`live ${id}`);
+    if (!canWrite) return;
+    await type(`sent ${id}`);
+    expect(lobbySocket().sent.at(-1)).toMatchObject({
+      type: "world:publish",
+      zoneId: LOBBY,
+      payload: { content: `sent ${id}` },
+    });
+  };
+
+  beforeEach(async () => {
+    await draw("lobby", canWrite ? "0x4a1:true:500:false" : "0x4a1:false:0:false");
+    await connect(canWrite);
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+  });
+  afterEach(() => vi.useRealTimers());
+
+  it("keeps the room as it was when only the inbox drops and comes back, on the same room socket", async () => {
+    expectWriting();
+    await act(async () => inbox().drop());
+    await wait(1_000);
+    expect(inboxes()).toHaveLength(2);
+    await greetAgain();
+
+    expectWriting();
+    expect(lobbySockets()).toHaveLength(1);
+    expect(lobbySocket().closed).toBe(false);
+    await expectLive("i1", 10);
+  });
+
+  it("takes the room away while its own socket is down, and back once the room opens again", async () => {
+    await act(async () => lobbySocket().drop());
+    expect(field()?.disabled ?? true).toBe(true);
+    await wait(1_000);
+    expect(lobbySockets()).toHaveLength(2);
+    await act(async () => {
+      lobbySocket().open();
+      lobbySocket().receive({ type: "joined:zone", zoneId: LOBBY, canWrite });
+    });
+
+    expectWriting();
+    expect(inboxes()).toHaveLength(1);
+    await expectLive("r1", 11);
+  });
 });
 
 it("asks a signed-out player to sign in, and opens no chat at all", async () => {

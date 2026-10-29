@@ -186,9 +186,10 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
       mark={<Lockup />}
       places={
         places
-          ? TABS.filter((tab) => tab !== YOU_TAB && !(tab === CHAT_TAB && chatOnPage)).map((tab) =>
-              // Chat opens over the page, as in a game; a page that shows it itself (a lobby's) offers none.
-              tab === CHAT_TAB
+          ? TABS.filter((tab) => tab !== YOU_TAB).map((tab) =>
+              // Chat opens over the page, as in a game; on a page that draws it itself, Chat is the place it is
+              // (lit on /chat), never a second chat over it.
+              tab === CHAT_TAB && !chatOnPage
                 ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
                 : placeOf(tab),
             )

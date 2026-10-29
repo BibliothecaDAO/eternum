@@ -46,7 +46,8 @@
  *   answered chat sockets): at 1440×900, the bar's Chat opens the pane over Play, inside the screen, with Global (its
  *   history, a field) and Messages, and Escape closes it; on a phone (390×844), the Chat tab leads to /chat (the lab's
  *   tabs lead to the app's own addresses, so the lab's /chat page is opened by its address), lit there, the chat
- *   filling the page from the top band to the tabs, its field above them, the page never scrolling; on a Blitz lobby, at both sizes, the lobby's chat on its page has Lobby first, then Global and Messages,
+ *   filling the page from the top band to the tabs, its field above them, the page never scrolling; the same page grown
+ *   to 1440×900, and opened there, draws one chat and no pane, the bar's Chat the place lit; on a Blitz lobby, at both sizes, the lobby's chat on its page has Lobby first, then Global and Messages,
  *   the Lobby room read-only for a wallet not registered (no field, who writes there said) and Global written in, and
  *   on a desktop no bar Chat over it.
  * - the Frontier phone's Chat page (/lab/kit/hud/chat, 390×844): the page fills the band from the strip to the place
@@ -833,11 +834,13 @@ const APP_CHAT = `(() => {
   const rect = (element) => element ? JSON.parse(JSON.stringify(element.getBoundingClientRect())) : null;
   const chat = document.querySelector('section[aria-label="Chat"]') ?? document.querySelector('[data-band="body"] [data-hud-mode="app"]');
   const band = (name) => rect(document.querySelector('[data-band="' + name + '"]'));
-  const place = document.querySelector('[data-band="bar"] button[data-role="tab"], [data-band="tabs"] a[href$="/chat"]');
+  const place = document.querySelector('[data-band="bar"] button[data-role="tab"], [data-band="bar"] a[href$="/chat"], [data-band="tabs"] a[href$="/chat"]');
   return {
     viewport: { width: innerWidth, height: innerHeight },
     scrolls: document.scrollingElement.scrollHeight > innerHeight + 1,
     path: location.pathname,
+    chats: document.querySelectorAll('[data-hud-mode="app"] [role="tablist"]').length,
+    pane: document.querySelector('section[aria-label="Chat"]') !== null,
     chat: rect(chat),
     tabs: chat ? [...chat.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent) : [],
     current: chat ? chat.querySelector('[role="tab"][aria-selected="true"]')?.textContent ?? null : null,
@@ -930,6 +933,24 @@ const proveAppPhonePage = async (b, out, record) => {
     { check: "the page itself never scrolls", ok: !page.scrolls },
   );
   b.run("screenshot", join(out, "app-chat-phone.png"));
+};
+
+/** Chat's own page on a desktop: one chat, the page's, no pane over it, the bar's Chat the place lit there. */
+const proveDesktopChatPage = (b, out, record, still) => {
+  const page = b.evaluate(APP_CHAT);
+  record.measures = { page };
+  record.checks.push(
+    { check: "one chat is drawn, the page's, with no pane over it", ok: page.chats === 1 && !page.pane },
+    {
+      check: "its tabs are Global, then Messages",
+      ok: JSON.stringify(page.tabs) === JSON.stringify(["Global", "Messages"]),
+    },
+    {
+      check: "the bar's Chat is the place lit there, a way to /chat, not a pane to open",
+      ok: page.place?.href === "/chat" && page.place.current === "page",
+    },
+  );
+  b.run("screenshot", join(out, still));
 };
 
 /** A Blitz lobby's chat on its page: Lobby first, read-only for a wallet not registered; Global written in. */
@@ -1151,6 +1172,26 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
       );
       if (phonePage.ready) await proveAppPhonePage(b, out, phonePage);
+
+      // The same page, its window grown to a desktop's: the page stays Chat's, one chat.
+      const grown = { state: "app, Chat page, 390×844 grown to 1440×900", ready: false, presses: [], checks: [] };
+      records.push(grown);
+      if (phonePage.ready) {
+        b.run("set", "viewport", "1440", "900");
+        grown.ready = await waitFor(b, `document.querySelector('[data-band="bar"]') !== null`, READY_MS);
+        await sleep(SETTLE_MS);
+        if (grown.ready) proveDesktopChatPage(b, out, grown, "app-chat-page-grown-desktop.png");
+      }
+
+      const desktopPage = { state: "app, Chat page, 1440×900", ready: false, presses: [], checks: [] };
+      records.push(desktopPage);
+      desktopPage.ready = await openApp(
+        b,
+        `${baseUrl}/lab/app/home/chat?capture=1`,
+        ["1440", "900"],
+        `document.querySelector('[data-band="body"] input[aria-label="Message"]') !== null`,
+      );
+      if (desktopPage.ready) proveDesktopChatPage(b, out, desktopPage, "app-chat-page-desktop.png");
 
       for (const [viewport, phone] of [
         [["1440", "900"], false],

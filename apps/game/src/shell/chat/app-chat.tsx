@@ -8,7 +8,14 @@ import { RealtimeChatShell, useRealtimeChatInitializer, useRealtimeChatSelector 
 import { lobbyRoom } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 
 import { useRequestSignIn } from "../sign-in/connect";
-import { useAppChatPane, useAppChatPlace, useAppChatRooms, useChatOnPage } from "./app-chat-place";
+import {
+  useAppChatPane,
+  useAppChatPlace,
+  useAppChatRooms,
+  useChatOnPage,
+  useChatPage,
+  useChatShown,
+} from "./app-chat-place";
 
 /**
  * The app's one chat connection, while a player is signed in: the same chat as a game's (one implementation), on the
@@ -18,6 +25,12 @@ export const AppChatConnection = () => {
   const rooms = useAppChatRooms();
   const config = useMemo(() => ({ baseUrl: window.location.origin, rooms: rooms.map((room) => room.zoneId) }), [rooms]);
   useRealtimeChatInitializer(config);
+  // Chat is open while any chat is drawn, whichever went first: a page's and the pane's never answer for each other.
+  const shown = useAppChatPlace((state) => state.shown > 0);
+  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
+  useEffect(() => {
+    setShellOpen(shown);
+  }, [setShellOpen, shown]);
   return null;
 };
 
@@ -29,11 +42,7 @@ const AppChatView = ({ className }: { className?: string }) => {
   const { status, session } = useIdentitySession();
   const requestSignIn = useRequestSignIn();
   const rooms = useAppChatRooms();
-  const setShellOpen = useRealtimeChatSelector((state) => state.actions.setShellOpen);
-  useEffect(() => {
-    setShellOpen(true);
-    return () => setShellOpen(false);
-  }, [setShellOpen]);
+  useChatShown();
   return (
     <div data-hud-mode="app" className={cn("flex min-h-0 flex-col", className)}>
       {session ? (
@@ -52,12 +61,18 @@ const AppChatView = ({ className }: { className?: string }) => {
   );
 };
 
-/** Chat as a page (the phone's Chat tab): it fills the page between the top and the tabs. */
-export const AppChatPage = () => <AppChatView className="h-full" />;
+/**
+ * Chat as a page (/chat: the phone's Chat tab, and on a desktop the bar's Chat lit there): it fills the page between
+ * the top and the tabs, and no pane stands over it.
+ */
+export const AppChatPage = () => {
+  useChatPage();
+  return <AppChatView className="h-full" />;
+};
 
 /**
  * Chat over a desktop page (the bar's Chat), at the page's right, as in a game: its rooms and Messages, closed by the
- * cross in its head or Escape. A page that shows the chat itself (a lobby's) has no pane.
+ * cross in its head or Escape. A page that draws the chat itself (Chat's, a lobby's) has no pane.
  */
 export const AppChatPane = () => {
   const { open, toggle } = useAppChatPane();
@@ -95,6 +110,7 @@ export const LobbyChat = ({ slot, membership }: { slot: { chainId: string; name:
   const { chainId, name } = slot;
   const room = useMemo(() => lobbyRoom({ chainId, name }), [chainId, name]);
   const actions = useRealtimeChatSelector((state) => state.actions);
+  useChatPage();
   useEffect(() => {
     useAppChatPlace.setState({ lobby: room });
     actions.showRoom(room.zoneId);
