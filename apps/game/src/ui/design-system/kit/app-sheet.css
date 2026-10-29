@@ -507,6 +507,15 @@
   height: 100%;
   object-fit: cover;
 }
+/* A mode's card with nothing to do now (an idle AppAgeColumn or AppGameCard): its painting and lockup in grey, dimmed,
+   its panel without its lift; its one line reads as it does. */
+:is(.app-age-column, .app-game-card)[data-idle] {
+  box-shadow: none;
+}
+:is(.app-age-column, .app-game-card)[data-idle]
+  :is(.app-age-column__painting, .app-game-card__painting, .app-game-name__lockup) {
+  filter: grayscale(1) brightness(0.6);
+}
 .app-age-column__body {
   display: flex;
   flex-direction: column;
@@ -515,14 +524,11 @@
   background: linear-gradient(0deg, var(--app-age-to) 70%, transparent);
   padding: theme(spacing.24) theme(spacing.5) theme(spacing.5);
 }
-/* A phone stacks the columns: each keeps a band of its painting, short, so its games come up into the first screen.
-   It follows the rules it narrows, so it wins at their specificity. */
+/* A phone stacks the columns, each as tall as what it holds, over the same band of painting as a desktop's. It follows
+   the rule it narrows, so it wins at its specificity. */
 @media (max-width: 1023px) {
   .app-age-column {
     min-height: 0;
-  }
-  .app-age-column__body {
-    padding-top: theme(spacing.16);
   }
 }
 /* ── A game's name: its age's lockup, whole, then one game's start in the title face. ── */
@@ -555,6 +561,12 @@
   --app-ink: var(--app-parchment-ink);
   --app-muted: var(--app-parchment-muted);
   --app-well: color-mix(in srgb, var(--app-parchment-ink) 8%, transparent);
+}
+/* Idle, its parchment greys and dims with its painting, as a dark ground does, its line still read in umber. */
+.app-age-column[data-age="eternum"][data-idle] .app-age-column__body,
+.app-game-card[data-age="eternum"][data-idle]::after,
+.app-game-card[data-age="eternum"][data-idle] .app-game-card__body {
+  filter: grayscale(1) brightness(0.6);
 }
 
 /* ── Well: a list's recess inside a painted surface. ── */

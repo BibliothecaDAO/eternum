@@ -415,20 +415,23 @@ export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?
 
 /**
  * An age as a tall column on its painting: its lockup over what it holds (Play's games of that age), in the age's
- * accent, the painting showing above.
+ * accent, the painting showing above. `idle`, an age with nothing to do now: dimmed, without its lift, its one line
+ * (when it opens, or that none is scheduled) reading as it does.
  */
 export const AppAgeColumn = ({
   age,
   painting,
   name,
+  idle = false,
   children,
 }: {
   age: Age;
   painting: Painting;
   name: string;
+  idle?: boolean;
   children: ReactNode;
 }) => (
-  <section className="app-age-column" data-age={age} aria-label={name}>
+  <section className="app-age-column" data-age={age} data-idle={idle || undefined} aria-label={name}>
     <img
       className="app-age-column__painting"
       alt=""
@@ -447,7 +450,8 @@ export const AppAgeColumn = ({
 /**
  * A game, on its age's painting and in its age's accent: its title (an AppGameName, or a line where no game stands),
  * what stands (facts), and its one verb. `lead` is
- * Play's first card, the one gold verb of the page; `tile` sits among others.
+ * Play's first card, the one gold verb of the page; `tile` sits among others. `idle`, as AppAgeColumn's: nothing to do
+ * now, dimmed.
  */
 export const AppGameCard = ({
   age,
@@ -456,6 +460,7 @@ export const AppGameCard = ({
   facts,
   verb,
   size = "tile",
+  idle = false,
   className,
 }: {
   age: Age;
@@ -464,10 +469,11 @@ export const AppGameCard = ({
   facts?: ReactNode;
   verb?: ReactNode;
   size?: "lead" | "tile";
+  idle?: boolean;
   /** Places it (its height in a column), never its look. */
   className?: string;
 }) => (
-  <article className={cn("app-game-card", className)} data-age={age} data-size={size}>
+  <article className={cn("app-game-card", className)} data-age={age} data-size={size} data-idle={idle || undefined}>
     <img className="app-game-card__painting" alt="" {...paintingSources(painting)} sizes="50vw" />
     <div className="app-game-card__body">
       <h3 className="app-game-card__title">{title}</h3>
