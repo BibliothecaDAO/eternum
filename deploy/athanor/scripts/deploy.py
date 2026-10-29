@@ -281,7 +281,8 @@ def start(directory, config, report_stage=ignore_stage):
 
 def publish_releases(directory, config, report_stage=ignore_stage):
     """Herald reads the shard's manifest once, when it starts, and init may register a release after that: Herald
-    restarts from the published manifest until its /manifest maps every release from 1 to the shard's current one."""
+    restarts from the published manifest until its /manifest maps every release the shard holds, from the one its chain
+    began at (a fresh chain begins at the current release) to its current one."""
     report_stage("publish releases")
     native = json.loads((directory / "data/native-world.json").read_text())["native"]
     if served_releases(config) != native["releaseSchemas"]:
@@ -289,8 +290,8 @@ def publish_releases(directory, config, report_stage=ignore_stage):
                        check=True, stdout=sys.stdout, stderr=sys.stderr)
         wait_for_identity(config)
     served = served_releases(config)
-    unpublished = [release for release in range(1, native["releaseId"] + 1)
-                   if served.get(str(release)) != native["activeSchema"]]
+    releases = sorted({*map(int, native["releaseSchemas"]), native["releaseId"]})
+    unpublished = [release for release in releases if served.get(str(release)) != native["activeSchema"]]
     if served != native["releaseSchemas"] or unpublished:
         raise RuntimeError(f"Herald does not publish releases {unpublished or sorted(native['releaseSchemas'])}")
 
