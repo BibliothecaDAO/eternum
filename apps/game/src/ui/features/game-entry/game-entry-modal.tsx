@@ -1,4 +1,4 @@
-import { registerHomeSource } from "@/services/realm-entry";
+import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
@@ -11,7 +11,7 @@ import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
 import { HomeSourcePicker } from "./home-source-picker";
-import { RealmNumberPicker, isRealmNumber } from "./realm-number-picker";
+import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";

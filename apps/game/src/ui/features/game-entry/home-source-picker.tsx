@@ -56,7 +56,9 @@ export function HomeSourcePicker({
   const choices = choicesOf(sources);
   const offered = usePickOffered(choices, sources.ready, registered, value, onChange, disabled);
   const settled = registered !== null || (sources.ready && offered);
-  useEffect(() => onSettled(settled), [settled, onSettled]);
+  useEffect(() => {
+    onSettled(settled);
+  }, [settled, onSettled]);
   const picked = registered !== null ? realmChoice({ realmId: registered, map: null }) : pickedChoice(choices, value);
   return (
     <section className="home-picker" aria-label={HOME_STEP_WORDS.title}>
@@ -99,7 +101,7 @@ const valueOf = (choice: Choice) => (choice.kind === "ticket" ? "" : String(choi
 /** The ticket first (its home claims Essence on top of Labor), then the Realms: wonders first, the richest, by number. */
 const choicesOf = (sources: HomeSources): Choice[] => [
   ...(sources.ticket ? [sources.ticket] : []),
-  ...sources.realms.map(realmChoice).sort(byRealmOrder),
+  ...sources.realms.map(realmChoice).toSorted(byRealmOrder),
 ];
 
 const byRealmOrder = (a: Choice, b: Choice) =>

@@ -2,9 +2,7 @@ import { REALM_NUMBER, INVALID_REALM_NUMBER } from "@/ui/design-system/kit/words
 import { orders } from "@bibliothecadao/types";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 import { HudField } from "@/ui/design-system/kit/hud-elements";
-
-/** A Realm number from 1 to 8,000, typed. */
-export const isRealmNumber = (value: string) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 8000;
+import { isRealmNumber } from "@/services/realm-entry";
 
 function RealmNumberField({
   value,

@@ -41,3 +41,6 @@ export async function readHeldRealms(): Promise<HeldRealm[]> {
   if (!response.ok) throw new Error("held_realms_unavailable");
   return ((await response.json()) as { realms: HeldRealm[] }).realms;
 }
+
+/** A Realm number from 1 to 8,000, as typed. */
+export const isRealmNumber = (value: string) => /^\d+$/.test(value) && Number(value) >= 1 && Number(value) <= 8000;

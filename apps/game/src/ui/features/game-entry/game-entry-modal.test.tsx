@@ -141,7 +141,7 @@ const openEntry = async () => {
 };
 
 it("renders spectator entry before any head without reading the chain clock", async () => {
-  (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   useChainTimeStore.setState({
     lastHeartbeat: null,
     executionFloorMs: null,
