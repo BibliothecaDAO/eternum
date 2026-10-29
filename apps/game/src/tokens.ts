@@ -570,6 +570,8 @@ export const HUD_LAYOUT = {
   summary: "400px",
   /** A phone's top bar, both its rows (Blitz's and Frontier's end by 94px): the game's news stands under it. */
   "phone-header": "100px",
+  /** The phone layouts stand above the keyboard inset shared by the root viewport hook. */
+  keyboard: "var(--keyboard, 0px)",
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
