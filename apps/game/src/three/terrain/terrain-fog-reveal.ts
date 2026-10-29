@@ -18,7 +18,12 @@ import type NodeMaterial from "three/src/materials/nodes/NodeMaterial.js";
 import { terrainCellKey, terrainHexToWorld } from "./terrain-coordinates";
 import { nearestHexLocalPosition } from "./terrain-hex-node";
 
-export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.3;
+/**
+ * How long an explored tile's fog takes to clear (owner, 2026-10-29: "I quite like the fog animation so we can def
+ * shorten it"): the shortest that still reads as the fog's sweep, for the player's own explore and every other reveal
+ * alike, as a tile turning explored looks the same whoever explored it.
+ */
+export const TERRAIN_FOG_REVEAL_DURATION_SECONDS = 0.12;
 
 interface Reveal {
   col: number;
@@ -188,7 +193,7 @@ function createFogDissolveThreshold(
     .add(0.5)
     .clamp(0, 1);
   // The bounded threshold (0.04..0.96) guarantees full coverage at the start
-  // and no surviving fragments when the 300ms reveal record expires.
+  // and no surviving fragments when the reveal record expires.
   return distance.mul(0.42).add(billows.mul(0.38)).add(wisps.mul(0.12)).add(0.04);
 }
 
