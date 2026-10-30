@@ -53,7 +53,8 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
 /**
  * A place in a message, as a chip: its painting and its name, as usePlaceReader reads them. Pressed, the map opens on
  * it. One that opens nothing here is drawn inert and says why in the chip: "gone" where the map has it no more (gone, or
- * from a closed Frontier day), the game it stands in for another game's. With no map (outside a game) it is only read.
+ * from a closed Frontier day), else the game it stands in: another game's, or any place outside a game (the app's and a
+ * lobby's chat), where no map opens.
  */
 export const PlaceChip = ({ place }: { place: SharedPlace }) => {
   const map = useChatMap();
@@ -63,7 +64,7 @@ export const PlaceChip = ({ place }: { place: SharedPlace }) => {
     open: null,
     elsewhere: true,
   };
-  const inert = map !== null && open === null;
+  const inert = open === null;
   const why = !inert ? null : elsewhere ? `${CHAT_WORDS.inGame} ${place.game.name}` : CHAT_WORDS.placeGone;
   return (
     <span

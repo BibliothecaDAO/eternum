@@ -153,6 +153,29 @@ it("lists, in the app, the room's own speakers and the players online, never the
   expect(names()).toEqual(["Isolde"]);
 });
 
+it("reads a shared place in the app's chat as inert, with the game it stands in, never as gone", () => {
+  const shared = {
+    ...message("p1", "Brannoc", "here"),
+    metadata: {
+      place: {
+        kind: "structure",
+        entityId: 42,
+        game: { chainId: "0x1", gameId: 4, name: "Frontier 4" },
+        name: "Moondeep",
+        icon: "camp",
+        at: 100,
+      },
+    },
+  } as WorldChatMessage;
+  drawRoom([shared], { inGame: false });
+  const chip = host.querySelector<HTMLElement>('li[data-message-id="p1"] [data-place]')!;
+  const press = chip.querySelector("button")!;
+  expect(press.disabled).toBe(true);
+  expect(press.textContent).toBe("Moondeep · in Frontier 4");
+  expect(chip.textContent).toBe(press.textContent);
+  expect(chip.hasAttribute("data-gone")).toBe(false);
+});
+
 it("writes the picked name into the message, and sends it as the plain text typed", async () => {
   drawRoom([]);
   type("hold the ridge @a");
