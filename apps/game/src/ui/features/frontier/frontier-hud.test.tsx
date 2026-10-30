@@ -537,6 +537,75 @@ it.each(Object.entries(PHONE_SURFACES))("stands a phone's %s in the kit's one fr
   expect(surfaceNamed(label)).toBeNull();
 });
 
+/** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
+const historySettles = () => act(async () => new Promise((settled) => setTimeout(settled, 50)));
+/** The system back, as a phone's back gesture sends it. */
+const systemBack = async () => {
+  window.history.back();
+  await historySettles();
+};
+/** A phone's HUD in a game reached from another page, so a back that leaves the game lands there. */
+const enterFromAnotherPage = async () => {
+  viewport.set(390);
+  await renderHud();
+  window.history.replaceState({}, "", "/before-the-game");
+  window.history.pushState({}, "", "/g/0x1ab9/1/map?col=1&row=1");
+};
+/** The open frame named `label`'s ×, pressed. */
+const closeFrame = (label: string) =>
+  act(async () => surfaceNamed(label)!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+
+// Review, 30 October 2026: every page now keeps a history entry, so a page that replaces another in one press (Menu's
+// Season) must take over its entry, or the next back lands on an entry no surface owns and does nothing.
+it("leaves one back to the page before the game once the Menu's Season is opened and closed", async () => {
+  await enterFromAnotherPage();
+  await fromMenu("Season");
+  expect([surfaceNamed("Season") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
+  await closeFrame("Season");
+  await historySettles();
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("closes the Menu's Season with the system back, and the next back leaves the game", async () => {
+  await enterFromAnotherPage();
+  await fromMenu("Season");
+  await historySettles();
+  await systemBack();
+  expect([surfaceNamed("Season"), surfaceNamed("Menu")]).toEqual([null, null]);
+  expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("keeps one entry while the place bar swaps pages, and one back closes the last", async () => {
+  await enterFromAnotherPage();
+  for (const place of ["Feed", "Chat", "Research", "Menu"]) await pressPlace(place);
+  await historySettles();
+  expect(surfaceNamed("Menu")).not.toBeNull();
+  await systemBack();
+  expect(["Feed", "Chat", "Research", "Menu"].map(surfaceNamed)).toEqual([null, null, null, null]);
+  expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("leaves no entry behind however often pages open and close", async () => {
+  await enterFromAnotherPage();
+  for (let round = 0; round < 3; round++) {
+    await pressPlace("Menu");
+    await pressPlace("Menu");
+    await fromMenu("Today");
+    await closeFrame("Today");
+    await fromMenu("Season");
+    await pressPlace("Feed");
+    await closeFrame("Feed");
+    await historySettles();
+  }
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
 it("keeps the extended season live past its old end and reloads its final day from fresh facts", async () => {
   const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
