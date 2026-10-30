@@ -1106,7 +1106,7 @@ export const HudLab = () => {
         purse={
           lab.purse && (
             <PurseRow>
-              {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} onOpen={noop} />}
+              {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
               <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
             </PurseRow>
           )

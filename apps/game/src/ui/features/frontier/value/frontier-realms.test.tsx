@@ -238,7 +238,9 @@ it("lets both campaign tiers claim their Essence at full Labor storage", async (
 });
 
 /** The Realms chip as the HUD wires it: the home's plan, its one reading of what waits, the chip. */
-const Chip = () => <RealmsChip waiting={dailyClaimWaiting(useRealmLabor(rules, home)?.plan)} onOpen={() => {}} />;
+const Chip = ({ narrow }: { narrow?: boolean }) => (
+  <RealmsChip waiting={dailyClaimWaiting(useRealmLabor(rules, home)?.plan)} narrow={narrow} onOpen={() => {}} />
+);
 
 it.each([
   {
@@ -286,6 +288,25 @@ it.each([
     expect(chip.getAttribute("aria-label")).toBe(name);
     expect(chip.textContent).toBe(shows);
     expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual(icons);
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+it("on a phone's purse row, lets the amounts' icons say what the chip is: no realm icon beside them", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  facts.held = false;
+  facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(<Chip narrow />));
+    const chip = host.querySelector("button")!;
+    expect(chip.getAttribute("aria-label")).toBe("Realm Labor +2,000 labor +2,000 Essence");
+    expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual([
+      "labor",
+      "essence",
+    ]);
   } finally {
     await act(async () => root.unmount());
   }

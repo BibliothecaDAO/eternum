@@ -576,7 +576,7 @@ const RealmPurse = ({
   onRealms: () => void;
 }) => (
   <PurseRow>
-    {waiting && <RealmsChip waiting={waiting} onOpen={onRealms} />}
+    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
     <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
   </PurseRow>
 );

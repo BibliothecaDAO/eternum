@@ -42,12 +42,23 @@ export const LordsPurse = ({
   </HudPill>
 );
 
-/** The settled home's daily claim: the Labor and a campaign home's Essence waiting today, each by its icon. */
-export const RealmsChip = ({ waiting, onOpen }: { waiting: DailyClaimWaiting | null; onOpen: () => void }) => (
+/**
+ * The settled home's daily claim: the Labor and a campaign home's Essence waiting today, each by its icon. On a phone's
+ * purse row (`narrow`), beside Next up, the amounts' icons say what the chip is, so the realm's icon goes while they show.
+ */
+export const RealmsChip = ({
+  waiting,
+  narrow = false,
+  onOpen,
+}: {
+  waiting: DailyClaimWaiting | null;
+  narrow?: boolean;
+  onOpen: () => void;
+}) => (
   <HudPill label={[REALM_LABOR, ...claimWords(waiting)].join(" ")} onPress={onOpen}>
     {[
       <span key="claim" className="flex items-center gap-1 tabular-nums">
-        <SemanticIcon name="realm" size={24} />
+        {!(narrow && waiting) && <SemanticIcon name="realm" size={24} />}
         {waiting && waiting.labor > 0 && <ClaimAmount icon="labor" amount={waiting.labor} />}
         {waiting && waiting.essence > 0 && <ClaimAmount icon="essence" amount={waiting.essence} />}
       </span>,
