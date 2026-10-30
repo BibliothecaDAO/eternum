@@ -33,18 +33,18 @@ const chainAt = (seconds: number) => {
 };
 
 /**
- * The fixture realm with one guard slot, as the chain sends it (its bar still wrapped, `{ Inline }`), in a Blitz game
+ * The fixture realm with one guard slot, as the chain sends it (its bar still wrapped, `{ Inline }`), in an Eternum game
  * (preset 3: knights capped at 120, a tier adds 20, 20 stamina a 60 s tick, 30 an explore: a segment of its bar) or a
  * Frontier game (`frontierDay`: knights capped at 150, no tier bonus).
  */
 const realmWithGuard = (
-  game: "blitz" | "frontier",
+  game: "eternum" | "frontier",
   tier: "T2" | "T3",
   stamina: { amount: number; settledAt: number },
 ) => {
   const { store, row } = frontierDay();
   store.applyFacts([
-    ...(game === "blitz"
+    ...(game === "eternum"
       ? [{ model: "SliceRules", key: "0x100", value: { ...preset.rules, game_id: 1, day_unit_seconds: 0 } }]
       : []),
     { model: "Structure", key: "0x7", value: { ...row, base: { ...row.base, troop_max_guard_count: 1 } } },
@@ -109,8 +109,8 @@ const managerOver = (store: ReturnType<typeof realmWithGuard>, tier: number) => 
 };
 
 describe("a structure's guard stamina on its map plate, as the chain's time runs on", () => {
-  it("shows a Blitz guard's balance and its regeneration, its cap with its tier's bonus", () => {
-    const store = realmWithGuard("blitz", "T2", { amount: 60, settledAt: 100 });
+  it("keeps an Eternum realm guard's stamina on its plate: its balance, its regeneration, its cap with its tier's bonus", () => {
+    const store = realmWithGuard("eternum", "T2", { amount: 60, settledAt: 100 });
     const { said } = managerOver(store, 2);
     chainAt(100);
     expect(said()).toEqual({ current: 60, max: 140, perExplore: 30 });

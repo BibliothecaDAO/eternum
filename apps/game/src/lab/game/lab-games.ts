@@ -2,6 +2,7 @@ import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
 import { afterBattleScenario, fightScenario, lowStaminaScenario } from "./after-battle-scenario";
+import { campScenario } from "./camp-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { claimScenario } from "./claim-scenario";
@@ -33,6 +34,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
+  camp: campScenario,
   "cleared-camp": clearedCampScenario,
   fight: fightScenario,
   research: researchScenario,
