@@ -6,9 +6,10 @@ import type { HudSurface } from "./frontier-nav";
 
 /**
  * The one place that decides what Frontier has open (owner, 20 October 2026: "it opens panel over panel this is bad
- * UI/UX"): a HUD surface (a page, the Menu, a sheet one of them opens), the card of what the map has selected
- * (useSelectionCard), or the deploy order. The one opened last stands alone, and opening one puts the others away, so
- * no panel ever opens over another:
+ * UI/UX"): a HUD surface (a page such as the Feed, Research or the Season, the Menu, a sheet one of them opens), the card
+ * of what the map has selected (useSelectionCard), or the deploy order. The one opened last stands alone, and opening one
+ * puts the others away, so no panel ever opens over another; nothing is open until the player opens it, and closing what
+ * is open leaves nothing (owner, 30 October 2026: "no special rules for feed please"):
  *
  * - a surface lets go of the tapped tile and its card, and closes the deploy order;
  * - a new card (a new tap) closes the surface and the deploy order;
@@ -36,9 +37,6 @@ export const useOnePanel = (
 ) => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
   const [hidden, setHidden] = useState<string | null>(null);
-  // The desktop rail's Feed, which its × closes (owner, 26 October 2026: "I should also be able to close the feed so I
-  // see nothing on the right panel sometimes").
-  const [feedOpen, setFeedOpen] = useState(true);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
   const pick = useUIStore((state) => mapPick(state.entityActions, state.selectedHex));
   const selected = useUIStore((state) => state.entityActions.selectedEntityId ?? null);
@@ -89,17 +87,7 @@ export const useOnePanel = (
     if (deploying && showsCard) closeDeployOrder();
   }, [deploying, showsCard]);
 
-  /** Back to the rail's home, its Feed open: the surface, the tapped tile with its card, and the deploy order all go. */
-  const goHome = () => {
-    letGoOfTheTile();
-    closeDeployOrder();
-    setSurface(null);
-    setFeedOpen(true);
-  };
-  // Nothing stands in the rail's panel: its Feed shows, unless it was closed.
-  const home = surface === null && !showsCard && !deploying;
-
-  return { surface, openSurface, showsCard, home, goHome, feedOpen, closeFeed: () => setFeedOpen(false) };
+  return { surface, openSurface, showsCard };
 };
 
 /**

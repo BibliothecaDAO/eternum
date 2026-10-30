@@ -47,7 +47,7 @@ const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierHud } = await import("./frontier-hud");
-const { BuildingType } = await import("@bibliothecadao/types");
+const { BuildingType, BUILDINGS_CENTER } = await import("@bibliothecadao/types");
 const { buildingName } = await import("./build/building-names");
 
 /** The frame's width, as the layout reads it: a desktop from 1024 px, told to the layout when it changes. */
@@ -189,23 +189,49 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
 });
 
-it("closes the desktop's Feed with its ×, leaving the rail empty under Next up, and opens it again from its place", async () => {
+it("treats the desktop's Feed as any other panel: closed at start, opened from its place, replaced and closed as the others", async () => {
+  // Owner, 30 October 2026: "the feed is opened by default … whereas it should be replaced by season, it works like that
+  // for season and research already", "no special rules for feed please".
   viewport.set(1920);
+  const route = window.location.pathname + window.location.search;
+  const { selectedBuildingHex } = useUIStore.getState();
   await renderHud();
-  const rail = () => host.querySelector("[data-frontier-rail]")!;
-  const feedPlace = () => host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
-  const feed = () => rail().querySelector('[data-rail-home] section[aria-label="Feed"]');
-  expect(feed()).not.toBeNull();
-  expect(feedPlace().getAttribute("aria-pressed")).toBe("true");
-  await act(async () => feed()!.querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
-  expect(feed()).toBeNull();
-  expect(rail().querySelector("[data-rail-home]")!.childElementCount).toBe(0);
-  expect(feedPlace().getAttribute("aria-pressed")).toBe("false");
-  await act(async () => feedPlace().click());
-  expect(feed()).not.toBeNull();
-  // Lit, its place closes it too, as Research's and the Season's close theirs.
-  await act(async () => feedPlace().click());
-  expect(feed()).toBeNull();
+  const panel = () => host.querySelector("[data-frontier-rail] [data-rail-panel]")!;
+  const open = (name: string) => panel().querySelector(`section[aria-label="${name}"]`) !== null;
+  const place = (name: string) =>
+    host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!;
+  const press = (name: string) => act(async () => place(name).click());
+  try {
+    // Nothing stands in the rail until the player opens it.
+    expect(panel().childElementCount).toBe(0);
+    expect(place("Feed").getAttribute("aria-pressed")).toBe("false");
+    await press("Feed");
+    expect([open("Feed"), place("Feed").getAttribute("aria-pressed")]).toEqual([true, "true"]);
+    // The Season replaces it, and closing the Season leaves nothing: the Feed does not come back.
+    await press("Season");
+    expect([open("Feed"), open("Season"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+    await press("Season");
+    expect(panel().childElementCount).toBe(0);
+    // Its place closes it, as Research's and the Season's close theirs; so does its ×.
+    await press("Feed");
+    await press("Feed");
+    expect(open("Feed")).toBe(false);
+    await press("Feed");
+    await act(async () => panel().querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
+    expect(panel().childElementCount).toBe(0);
+    // A card the map opens replaces it: an open plot tapped on the realm's board, its Build sheet.
+    await press("Feed");
+    window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+    await act(async () =>
+      useUIStore.setState({
+        selectedBuildingHex: { structureId: 7, innerCol: BUILDINGS_CENTER[0] + 1, innerRow: BUILDINGS_CENTER[1] },
+      }),
+    );
+    expect([open("Feed"), open("Build"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+  } finally {
+    window.history.replaceState(null, "", route);
+    await act(async () => useUIStore.setState({ selectedBuildingHex }));
+  }
 });
 
 it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {
@@ -216,6 +242,8 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   const rail = () => host.querySelector("[data-frontier-rail]")!;
   try {
     await act(async () => toast.error("Not enough stamina"));
+    const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
+    await act(async () => feed.click());
     expect(rail().querySelector('section[aria-label="Feed"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
     // The Season stands in the rail's panel, the feed steps aside; the notice stays.

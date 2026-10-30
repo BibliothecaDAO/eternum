@@ -21,7 +21,6 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import { FrontierFeed } from "@/ui/features/frontier/hud/frontier-feed";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -1489,7 +1488,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           armies={slots.dock}
           nextUp={slots.nextUp}
           page={slots.page}
-          feed={<FrontierFeed onClose={noop} />}
           foot={
             <>
               {slots.notices}
@@ -1497,17 +1495,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             </>
           }
           places={
-            !lab.visiting && (
-              <FrontierPlaces
-                surface={labSurface(lab)}
-                home={labSurface(lab) === null}
-                feedOpen
-                onCloseFeed={noop}
-                onSurface={noop}
-                onHome={noop}
-                research={!lab.offline}
-              />
-            )
+            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
           }
         >
           {slots.children}
