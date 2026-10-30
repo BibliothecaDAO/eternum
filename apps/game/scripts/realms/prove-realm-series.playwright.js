@@ -58,7 +58,11 @@
     await page.goto(`${baseUrl}/lab/models?family=realms&level=${reference ? 1 : 0}&distance=20${comparisonQuery}`);
     await ready();
     if (reference) {
-      for (const level of [1, 2, 3]) {
+      const levels = await page
+        .getByLabel("Age", { exact: true })
+        .locator("option")
+        .evaluateAll((options) => options.map((option) => Number(option.value)));
+      for (const level of levels) {
         await select("Age", level);
         for (const distance of [20, 6]) {
           await select("Distance", distance);
