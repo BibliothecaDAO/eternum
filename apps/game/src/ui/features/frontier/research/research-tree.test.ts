@@ -53,7 +53,11 @@ describe("the castle's tree as the contract rules it", () => {
       { essence: 1_000, labor: 1_000 },
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({ name: "Barracks 2 purchases", met: true });
+    expect(node(MID_REALM, "row-2").gate).toEqual({
+      name: "Barracks 2 purchases",
+      met: true,
+      line: "The four training buildings are open",
+    });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 

@@ -242,7 +242,6 @@ const NodeChoice = ({
               type="button"
               onClick={() => setSide(index)}
               aria-pressed={side === index}
-              title={option.line}
               className={cn(
                 "flex items-center gap-2 rounded-md border px-2 py-1.5 text-left",
                 side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
@@ -251,6 +250,7 @@ const NodeChoice = ({
               <Icon name={option.icon} size={28} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
+                <span className="text-hud-label leading-tight text-hud-muted">{option.line}</span>
                 <span className="truncate text-hud-label tabular-nums text-hud-good">
                   {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
                 </span>
@@ -267,6 +267,7 @@ const NodeChoice = ({
           </span>
         </span>
       )}
+      {node.gate && <span className="text-hud-label text-hud-muted">{node.gate.line}</span>}
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />

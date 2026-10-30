@@ -734,6 +734,7 @@ const STATES = {
   },
   "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
+  "building-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "hut" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
   // In the realm with its labor store full (audit 10-27): Next up says so, with no "Open the realm" that goes nowhere.
@@ -1361,6 +1362,7 @@ const LAB_BUILDINGS = {
     essence: SHORT_ESSENCE,
   },
   "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
+  hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
   "scouts-lodge": { category: BuildingType.ScoutsLodge, row: research.ROW_SCOUTS_LODGE, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;
 

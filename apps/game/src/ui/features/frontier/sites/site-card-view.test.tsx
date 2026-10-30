@@ -500,11 +500,12 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
       />,
     ),
   );
-  expect(host.textContent).toContain("Ethereal II");
-  expect(host.textContent).toContain("First ruin clear or day end");
-  expect(host.querySelector("dd")?.getAttribute("data-tip")).toBe(
-    "Your first ruin clear removes every other ruin, across all depths.",
+  // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
+  // explicit !").
+  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(
+    "Ethereal II · One ruin a day: clearing any removes your other ruins, on every depth. Otherwise it's gone at day end.",
   );
+  expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
     (button) => button.textContent === "Attack",

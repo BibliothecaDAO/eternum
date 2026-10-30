@@ -83,7 +83,7 @@ async (page) => {
         const sheet = page.locator("[data-kit-sheet]");
         await sheet.waitFor();
         if (state === "site-ruin") {
-          await assertText(sheet, "First ruin clear or day end");
+          await assertText(sheet, "One ruin a day");
           await assertText(sheet, "+128");
         } else {
           await assertText(sheet, "6,000");
