@@ -91,19 +91,65 @@ it("sends nothing before the season ends or after all awards were issued", async
   await run();
   expect(calls.admin).not.toHaveBeenCalled();
 });
-it("keeps fewer entrants and retries an interrupted award batch from the immutable list", async () => {
+/**
+ * The ledger as entry.cairo keeps a season's prizes, behind the relay's operator and snapshot: the winners and their
+ * count fixed by the first posting, which refuses any other list, and each rank awarded once.
+ */
+const ledger = (winners: string[] | null = null, awarded: number[] = []) => {
+  const state = { winners, awarded: new Set(awarded) };
+  calls.snapshot.mockImplementation(async () => ({
+    ...snapshot(),
+    models: [
+      {
+        model: "FrontierPrize",
+        rows: [{ value: { pool: "300", issued: "0", count: state.winners && String(state.winners.length) } }],
+      },
+    ],
+  }));
+  calls.admin.mockImplementation(async (entry: string, call: { winners?: string[]; rank?: number }) => {
+    if (entry === "award_frontier_prize") return void state.awarded.add(call.rank!);
+    if (state.winners && state.winners.join() !== call.winners!.join()) throw new Error("prize winners already fixed");
+    state.winners = call.winners!;
+  });
+  return state;
+};
+it("keeps fewer entrants and resumes an interrupted award batch on the fixed list", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => board(["0x8", "0x2"])),
   );
-  calls.admin.mockResolvedValueOnce(undefined).mockRejectedValueOnce(new Error("disconnected"));
+  const state = ledger();
+  const award = calls.admin.getMockImplementation()!;
+  calls.admin
+    .mockImplementationOnce(award)
+    .mockImplementationOnce(award)
+    .mockRejectedValueOnce(new Error("disconnected"));
   await expect(run()).rejects.toThrow("disconnected");
   await run();
-  expect(calls.admin.mock.calls.slice(-3)).toEqual([
+  expect(calls.admin.mock.calls).toEqual([
     ["post_frontier_top", { game_id: 7, winners: ["0x8", "0x2"] }],
     ["award_frontier_prize", { game_id: 7, rank: 1 }],
     ["award_frontier_prize", { game_id: 7, rank: 2 }],
+    ["award_frontier_prize", { game_id: 7, rank: 1 }],
+    ["award_frontier_prize", { game_id: 7, rank: 2 }],
   ]);
+  expect(state.awarded).toEqual(new Set([1, 2]));
+});
+it("finishes a list fixed before the site rule, paying its winner who cleared none", async () => {
+  // The previous relay posted three, 0x5 with no site cleared among them, paid first place and stopped.
+  const state = ledger(["0x8", "0x2", "0x5"], [1]);
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => board(["0x8", "0x2", "0x5", "0x1"], "10", [4, 2, 0, 0])),
+  );
+  await run();
+  expect(calls.admin.mock.calls).toEqual([
+    ["award_frontier_prize", { game_id: 7, rank: 1 }],
+    ["award_frontier_prize", { game_id: 7, rank: 2 }],
+    ["award_frontier_prize", { game_id: 7, rank: 3 }],
+  ]);
+  expect(fetch).not.toHaveBeenCalled();
+  expect(state).toEqual({ winners: ["0x8", "0x2", "0x5"], awarded: new Set([1, 2, 3]) });
 });
 it("pays only players who cleared a site: 2 qualifying of 5 posts 2", async () => {
   vi.stubGlobal(
