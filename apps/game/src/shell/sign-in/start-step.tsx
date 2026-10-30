@@ -61,6 +61,7 @@ export const StartStep = ({
           {SIGN_IN_WORDS.sendCode}
         </AppButton>
       </form>
+      <p className="text-app-label text-app-muted">{SIGN_IN_WORDS.firstSignIn}</p>
       <FailureLine line={error} />
     </div>
   );

@@ -135,9 +135,14 @@ const openEntry = async () => {
     query.clear();
   };
   const found = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
+  /** The tiles wearing the chosen mark (its check), by name. */
+  const checked = () =>
+    [...host.querySelectorAll(".home-picker__choice")]
+      .filter((choice) => choice.querySelector(".home-picker__check"))
+      .map((choice) => choice.getAttribute("aria-label"));
   /** The holdings asked again, as a later read of the step does (a refetch, a remount). */
   const askHoldingsAgain = async () => act(async () => query.invalidateQueries({ queryKey: ["held-realms"] }));
-  return { host, featured, strip, pick, press, found, askHoldingsAgain, close };
+  return { host, featured, strip, checked, pick, press, found, askHoldingsAgain, close };
 };
 
 it("renders spectator entry before any head without reading the chain clock", async () => {
@@ -235,8 +240,11 @@ it.each(["the ticket", "a Realm"])(
     try {
       await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
       expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
+      expect(entry.checked()).toEqual(["Golden Devcon ticket"]);
       if (chosen === "a Realm") await entry.pick(realmChoice(711));
       expect(entry.featured()).toBe(chosen === "a Realm" ? name(711) : "Golden Devcon ticket");
+      // The chosen mark follows the pick, on a golden ticket's art as on a Realm's map.
+      expect(entry.checked()).toEqual([chosen === "a Realm" ? realmChoice(711) : "Golden Devcon ticket"]);
       await entry.press("Found your realm");
       expect(registered).toEqual([chosen === "a Realm" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
     } finally {
@@ -435,12 +443,47 @@ it("waits to found until it knows what the account holds, so a holder never foun
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.host.querySelector(".home-picker__waiting")).not.toBeNull());
+    // The step says what it waits for; Found is faint, not busy.
+    expect(entry.host.querySelector('.home-picker__waiting [role="status"]')?.textContent).toBe(
+      "Reading what you hold…",
+    );
     expect(entry.found().disabled).toBe(true);
+    expect(entry.found().getAttribute("aria-busy")).toBeNull();
     await act(async () => answer(held(711)));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(entry.found().disabled).toBe(false);
     await entry.press("Found your realm");
     expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
+  } finally {
+    await entry.close();
+  }
+});
+
+it("spins while the realm is founded and says so, at full strength, until the founding answers", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  signIn("0x456");
+  noTicket();
+  // The relay holds its answer to the home's registration, the founding's first leg, with the step still on screen.
+  const registered: unknown[] = [];
+  let answer: () => void = () => undefined;
+  vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
+    if (url === HELD_REALMS) return held(711);
+    registered.push(JSON.parse(String(init.body)));
+    await new Promise<void>((resolve) => (answer = resolve));
+    return Response.json({});
+  });
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
+    await entry.press("Found your realm");
+    const founding = [...entry.host.querySelectorAll("button")].find(
+      (button) => button.textContent === "Founding your realm…",
+    )!;
+    expect(founding.getAttribute("aria-busy")).toBe("true");
+    expect(founding.querySelector(".ui-spinner")).not.toBeNull();
+    expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
+    await act(async () => answer());
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
   } finally {
     await entry.close();
   }
@@ -462,6 +505,8 @@ it.each([
     try {
       await vi.waitFor(() => expect(entry.featured()).toBe(name(538)));
       expect(entry.strip()).toHaveLength(strip);
+      // A Wonder's tile wears the chosen mark too.
+      expect(entry.checked()).toEqual([realmChoice(538)]);
       await entry.press(`All ${many.length}`);
       const grid = () => [...entry.host.querySelectorAll(".home-picker__grid .home-picker__choice")];
       expect(grid()).toHaveLength(many.length);

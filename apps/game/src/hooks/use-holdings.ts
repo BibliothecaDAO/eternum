@@ -68,7 +68,7 @@ const heldTicketKey = (realmsId: string | null, campaign: CampaignKey | null) =>
   ["campaign-ticket", realmsId, campaign] as const;
 
 /** The ticket the account already holds to this campaign; null when it holds none. Opens no flyer. */
-async function heldCampaignTicket(campaign: CampaignKey): Promise<CampaignTicket | null> {
+export async function heldCampaignTicket(campaign: CampaignKey): Promise<CampaignTicket | null> {
   try {
     return await identityClient.redeemCampaignTicket(campaign, null);
   } catch (cause) {

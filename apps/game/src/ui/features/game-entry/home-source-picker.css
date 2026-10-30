@@ -137,9 +137,26 @@
   height: 4.6rem;
   border-radius: 0;
 }
+/* The chosen tile reads at a glance on any art (a golden ticket, a pale map): a solid gold ring outside it, and a check
+   on a dark disc. */
+.home-picker__choice {
+  position: relative;
+}
 .home-picker__choice[aria-pressed="true"] {
   border-color: rgb(var(--hud-gold));
-  box-shadow: 0 0 0 3px var(--hud-chosen);
+  box-shadow: 0 0 0 3px rgb(var(--hud-gold));
+}
+.home-picker__check {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 2px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-dark));
 }
 .home-picker__choice:focus-visible,
 .home-picker__all:focus-visible {
@@ -222,7 +239,9 @@
   color: var(--hud-muted);
 }
 .home-picker__waiting {
+  display: grid;
   height: 12rem;
+  place-items: center;
   border-radius: var(--hud-radius-panel);
   background: var(--hud-hover);
 }

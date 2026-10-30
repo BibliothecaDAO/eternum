@@ -595,6 +595,11 @@ export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
+  /** The step's one verb, and what it says while the home is founded. */
+  found: "Found your realm",
+  founding: "Founding your realm…",
+  /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
+  loading: "Reading what you hold…",
   freeHome: "A free home",
   freeHomeLine: "No daily Labor. Hold a Realm or a Devcon ticket to found with it.",
   linkWallet: "Link the wallet that holds your Realms",
@@ -690,6 +695,8 @@ export const SIGN_IN_WORDS = {
   claimName: "Claim name",
   saving: "Saving…",
   portrait: "Portrait",
+  /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
+  firstSignIn: "New here? Your first sign-in creates your Realms account.",
   /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
   handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
@@ -699,8 +706,9 @@ export const SIGN_IN_WORDS = {
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
 export const JOIN_WORDS = {
   realm: "A Devcon realm is yours",
-  claim: "Claim your realm",
   yourTicket: "Your ticket",
+  /** A second flyer on an account that already holds its ticket: the held one, never the flyer's. */
+  alreadyHeld: "You already hold your Devcon ticket",
   open: "Open your ticket",
   opening: "Opening…",
   sealed: "A realm waits for you",

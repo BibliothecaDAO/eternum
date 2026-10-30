@@ -74,8 +74,9 @@
   cursor: not-allowed;
   opacity: 0.45;
 }
+/* Busy is not refused: the button stays at full strength, its spinner and words saying what is under way. */
 .app-button[aria-busy="true"] {
-  opacity: 0.8;
+  opacity: 1;
   cursor: progress;
 }
 

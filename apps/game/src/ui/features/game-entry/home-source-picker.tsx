@@ -14,6 +14,7 @@ import { returnPathOf } from "@/shell/return-path";
 import { realmSkinIcon } from "@/three/structures/realm-skins";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
+import { HudLoading } from "@/ui/design-system/kit/hud-elements";
 import {
   HELD_REALMS_UNREADABLE,
   HOME_STEP_WORDS,
@@ -70,8 +71,10 @@ export function HomeSourcePicker({
         <Featured choice={picked} rules={sources.rules} locked={registered !== null} />
       ) : sources.ready ? (
         <FreeHome unlinked={sources.wallet === null} />
-      ) : (
-        <div className="home-picker__waiting" aria-busy />
+      ) : sources.ticketUnreadable || sources.realmsUnreadable ? null : (
+        <div className="home-picker__waiting">
+          <HudLoading line={HOME_STEP_WORDS.loading} />
+        </div>
       )}
       {registered === null && choices.length > 1 && (
         <Choices choices={choices} value={value} onChange={onChange} disabled={disabled} />
@@ -323,6 +326,11 @@ function ChoiceButton({
       disabled={disabled}
     >
       <ChoiceArt choice={choice} />
+      {picked && (
+        <span className="home-picker__check" aria-hidden="true">
+          <Icon name="check" size={14} />
+        </span>
+      )}
       <span className="home-picker__caption">{choiceLabel(choice)}</span>
       {traits && choice.kind === "realm" && (
         <span className="home-picker__traits">

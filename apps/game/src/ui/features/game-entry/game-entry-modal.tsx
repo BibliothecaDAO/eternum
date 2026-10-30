@@ -5,7 +5,7 @@ import { HudNotice } from "@/ui/design-system/kit/hud-elements";
  * hand-off to the game's route, where the doorway carries on while the map boots.
  */
 
-import { BLITZ_WORDS } from "@/ui/design-system/kit/words";
+import { BLITZ_WORDS, HOME_STEP_WORDS } from "@/ui/design-system/kit/words";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -625,18 +625,11 @@ export const GameEntryModal = ({
             {isEternumDevMode && (
               <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
             )}
-            <button
-              type="button"
-              disabled={
-                isSettling ||
-                (isEternumDevMode && !validDevRealmNumber) ||
-                (isFrontierMode && (!validHeldRealm || !homeSettled))
-              }
-              onClick={() => void handleSettle()}
-              className="frontier-primary w-full"
-            >
-              Found your realm
-            </button>
+            <FoundButton
+              founding={isSettling}
+              ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
+              onFound={() => void handleSettle()}
+            />
           </>
         )}
       {phase === "ready" && !isSpectateMode && isEternumDevMode && (
@@ -654,3 +647,20 @@ export const GameEntryModal = ({
     </DoorwayScreen>
   );
 };
+
+/**
+ * The Realm step's verb. Its two waits look different: while the home is founded it spins and says so, at full
+ * strength; while the step has not settled on a home it is faint, and the step itself says what it waits for.
+ */
+const FoundButton = ({ founding, ready, onFound }: { founding: boolean; ready: boolean; onFound: () => void }) => (
+  <button
+    type="button"
+    disabled={founding || !ready}
+    aria-busy={founding || undefined}
+    onClick={onFound}
+    className="frontier-primary flex w-full items-center justify-center gap-3"
+  >
+    {founding && <span className="ui-spinner" aria-hidden="true" />}
+    {founding ? HOME_STEP_WORDS.founding : HOME_STEP_WORDS.found}
+  </button>
+);
