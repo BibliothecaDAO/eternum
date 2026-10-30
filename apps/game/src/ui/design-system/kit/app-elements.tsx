@@ -98,7 +98,12 @@ const AppButtonFace = ({
     data-size={size}
     data-tone={tone}
   >
-    {icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />}
+    {/* Busy, the sheet's one spinner stands in its icon's place: the press is under way, not refused. */}
+    {busy !== undefined ? (
+      <span className="ui-spinner" aria-hidden="true" />
+    ) : (
+      icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />
+    )}
     <span>{busy ?? children}</span>
   </button>
 );

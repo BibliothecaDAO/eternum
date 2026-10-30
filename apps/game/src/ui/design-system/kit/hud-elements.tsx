@@ -99,7 +99,12 @@ export const HudButton = forwardRef<
       data-tone={tone}
       onClick={(event) => sending.press(() => onClick?.(event))}
     >
-      {icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />}
+      {/* Busy, the sheet's one spinner stands in its icon's place: the order is under way, not refused. */}
+      {waits ? (
+        <span className="ui-spinner" aria-hidden="true" />
+      ) : (
+        icon && <Icon name={icon} size={size === "sm" ? 16 : 20} />
+      )}
       {busy ?? children}
     </button>
   );

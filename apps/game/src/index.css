@@ -452,6 +452,11 @@ html.classic-hud :is(.hud-caps, .hud-caps-tight) {
   opacity: 0.45;
   box-shadow: var(--primary-shadow-disabled);
 }
+/* Busy is not refused: the button stays at full strength, its spinner and words saying what is under way. */
+.frontier-primary[aria-busy="true"] {
+  opacity: 1;
+  cursor: progress;
+}
 .frontier-title {
   font-family: var(--font-body);
   font-weight: 800;

@@ -27,7 +27,7 @@ export const DevconTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
 };
 
 /** What this ticket's realm claims each Frontier day. */
-export const DailyClaim = ({ golden }: { golden: boolean }) => {
+const DailyClaim = ({ golden }: { golden: boolean }) => {
   const { labor, essence } = DEVCON.claim(golden);
   return (
     <AppPanel className="w-full max-w-[20rem]">
