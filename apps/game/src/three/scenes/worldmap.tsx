@@ -1336,7 +1336,13 @@ export default class WorldmapScene extends WarpTravel {
       this.createRuleSpires(),
       this.compilePipelines,
     );
-    this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
+    this.mapSiteManager = new MapSiteManager(
+      this.scene,
+      this.worldSpatialProjection,
+      this.game.store,
+      this.mapPlates.createScope("shrine"),
+      this.getTerrainSurface(),
+    );
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -2413,6 +2419,7 @@ export default class WorldmapScene extends WarpTravel {
       this.currentHoverLabelHex = null;
       this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
+      this.hoverMapSite(null);
       this.refreshSelectedPlate();
       return;
     }
@@ -2439,6 +2446,7 @@ export default class WorldmapScene extends WarpTravel {
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
     this.reconcileHoverLabels("hover");
+    this.hoverMapSite(hexCoords);
     this.refreshSelectedPlate();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
@@ -2502,6 +2510,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
+  private hoverMapSite(hex: HexPosition | null): void {
+    const tile = hex && Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
+    this.mapSiteManager?.hover(tile ? { col: tile.x, row: tile.y } : null);
+  }
+
   private nameOrderAt(
     hexCoords: HexPosition,
     refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true)),
@@ -2509,7 +2522,7 @@ export default class WorldmapScene extends WarpTravel {
     const key = ActionPaths.posKey(hexCoords, true);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
-    const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
+    const site = this.usableSiteAt(hexCoords);
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
@@ -4430,6 +4443,7 @@ export default class WorldmapScene extends WarpTravel {
   private detachWorldmapManagerLabels(): void {
     this.clearPendingHoverLabelRecovery("detach");
     this.hoverLabelManager.onHexLeave();
+    this.hoverMapSite(null);
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
@@ -9053,6 +9067,7 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(new Map());
     this.highlightHexManager.highlightHexes([]);
     this.hoverLabelManager.onHexLeave();
+    this.hoverMapSite(null);
     this.clearTileEntityCache();
     this.interactiveHexWindowKey = null;
     if (!this.isSwitchedOff) {

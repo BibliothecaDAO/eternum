@@ -1,17 +1,8 @@
+import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { shrineRewardAt } from "./use-site";
+import { reloadSiteFacts, sitesBeside, FAR_SHRINE_TILE } from "./site-fixture";
 import { describe, expect, it } from "vitest";
-import { mapSiteKind, siteGain } from "./map-site-plan";
-
-const RULES = {
-  common_xp: 100,
-  game_id: 1,
-  reveal_xp: 2,
-  reveal_xp_per_depth: 1,
-  fixed_xp: 200,
-  uncommon_xp: 250,
-  rare_xp: 500,
-  epic_xp: 1000,
-  legendary_xp: 2000,
-};
+import { mapSiteKind, siteGain, siteGainLine } from "./map-site-plan";
 
 describe("a Shrine or Well", () => {
   it("is read from its tile's occupier alone", () => {
@@ -20,10 +11,22 @@ describe("a Shrine or Well", () => {
     expect(mapSiteKind(37)).toBeNull();
   });
 
-  it("gives the fixed XP at a Shrine and the rule's stamina at a Well", () => {
-    expect(siteGain("Shrine", RULES)).toBe(200);
+  it("reads the stored Shrine rank and the rule’s stamina at a Well", () => {
+    expect(siteGain("Shrine", { game_id: 1, entity_id: 901n, rank: 3 })).toBe(3);
     expect(siteGain("Shrine", undefined)).toBeUndefined();
-    expect(siteGain("Well", RULES)).toBe(60);
+    expect(siteGain("Well", { game_id: 1, entity_id: 901n, rank: 3 })).toBe(60);
     expect(siteGain("Well", undefined)).toBe(60);
   });
+});
+
+it("recovers the distant Shrine's exact reward from a cold snapshot", () => {
+  const { store } = sitesBeside(40n);
+  const restored = reloadSiteFacts(store);
+  expect(restored).toBeInstanceOf(NativeFactStore);
+  const reward = shrineRewardAt(restored, FAR_SHRINE_TILE);
+  expect(siteGainLine("Shrine", siteGain("Shrine", reward), undefined)).toBe("Legendary skill point");
+});
+
+it("refuses an invalid stored rank", () => {
+  expect(() => siteGain("Shrine", { game_id: 1, entity_id: 901n, rank: 0 })).toThrow("Invalid skill point rank");
 });

@@ -621,8 +621,9 @@ recorded where the game would sign it (`window.__siteUseLab`); the site then goe
 
 `/lab/game?scenario=sites` is the spire's game with a Well and a Shrine beside its army, the army at 40 stamina and 40
 XP: select it (dock or **Armies**), tap either site. Its card shows the army as one use will leave it (a Well's refill
-on its bar with the explores it buys; a Shrine's XP with the attribute tier it then buys), what the site gives, and
-**Use**.
+on its bar with the explores it buys), the Shrine's stored Rare skill point, and **Use**. The Shrine's plate and hover
+show that rank before walking. Use adds exactly one Rare point, leaves XP unchanged, and removes the site and reward
+row. `playtest --steps lab-actions-sites` drives both uses and records their resulting facts.
 
 With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run
 `scripts/outposts/prove-runtime.playwright.js` through the browser connection with the page as its argument (remove the

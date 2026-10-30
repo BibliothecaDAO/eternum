@@ -407,7 +407,12 @@ const tokensShowTheChainsCounts = (kind) => `(() => {
 const SITE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("shrine", "InteractSite", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
+  clickToResultStep(
+    "shrine",
+    "InteractSite",
+    (context) => useTheSite(context, "Shrine", "Rare skill point"),
+    shrinePointGranted,
+  ),
   clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
 ];
 
@@ -448,8 +453,26 @@ async function useTheSite({ browser }, site, gives) {
   return { site, offered };
 }
 
-// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "+200 XP").
+// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "Rare skill point").
 const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+
+/** The discovery fixture promises one Rare point; using it leaves the army's XP alone. */
+function shrinePointGranted(context) {
+  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
+  const progress = answer?.answered.find(({ model }) => model === "ArmyProgress")?.value;
+  const consumed = answer?.answered.some(({ model, value }) => model === "ShrineReward" && value === null);
+  if (
+    !consumed ||
+    progress?.xp !== 40 ||
+    progress?.rare_points !== 1 ||
+    progress.common_points !== 0 ||
+    progress.uncommon_points !== 0 ||
+    progress.epic_points !== 0 ||
+    progress.legendary_points !== 0
+  )
+    return false;
+  return siteUsedUp(context);
+}
 
 /** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
 function siteUsedUp({ actionLatency }) {

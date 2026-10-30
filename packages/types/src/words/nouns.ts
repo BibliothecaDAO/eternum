@@ -20,6 +20,12 @@ const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
 export const XP = "XP";
+export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+export const skillPointName = (rank: number): string => {
+  const name = Number.isInteger(rank) && TIER_WORDS[rank - 1];
+  if (!name) throw new Error(`Invalid skill point rank ${rank}`);
+  return `${name} skill point`;
+};
 /** Gains and purchases in both the history Log and Frontier's Today sheet. */
 export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
 export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>

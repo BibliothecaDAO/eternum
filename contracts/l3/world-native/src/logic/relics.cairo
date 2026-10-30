@@ -200,16 +200,18 @@ pub mod RelicState {
                 explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
-            let category = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
+            let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
                 crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
                     class_hash: self.logic_classes(game_id).map.read(),
                 },
                 crate::geometry::tile_key(game_id, command.coord),
+                command.explorer_id,
             );
-            let benefit = if category == crate::taxonomy::SHRINE_OCCUPIER {
-                crate::relics::SiteBenefit::Shrine(crate::logic::progression::grant_fixed_xp(key))
-            } else {
-                crate::relics::SiteBenefit::Well(self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context))
+            let benefit = match point {
+                Some(rank) => crate::relics::SiteBenefit::ShrinePoint(rank),
+                None => crate::relics::SiteBenefit::Well(
+                    self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context),
+                ),
             };
             self
                 .emit(

@@ -902,6 +902,7 @@ export function defineFactModels({ struct, model: declare }) {
     model("FrontierPrize", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("entry::FrontierPrize")),
     model("LordsBudget", "game", [{ name: "game_id", type: "core::integer::u32" }], struct("relics::LordsBudget")),
     model("SiteChest", "game", struct("resources::ResourceKey"), struct("relics::SiteChest")),
+    model("ShrineReward", "game", struct("resources::ResourceKey"), struct("relics::ShrineReward")),
     model("RelicChest", "game", struct("resources::ResourceKey"), struct("relics::RelicChest")),
     model(
       "LordsWithdrawal",
@@ -1428,6 +1429,7 @@ export const syncScopes = {
   RealmKnowledge: { realms: ["structure_id"] },
   ExpeditionSite: { regions: [{ alt: "alt", x: "col", y: "row" }], entities: ["entity_id"] },
   SiteChest: { entities: ["entity_id"] },
+  ShrineReward: { entities: ["entity_id"] },
   // A relic chest's pack is public: anyone may open the chest, so every player sees what it holds.
   RelicChest: shared,
   ArmyProgress: { entities: ["explorer_id"] },

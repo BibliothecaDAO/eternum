@@ -1,3 +1,4 @@
+import { skillPointName, TIER_WORDS } from "@bibliothecadao/types";
 import {
   siteUsedLine,
   buildingName,
@@ -72,7 +73,7 @@ type StoryFormatter = (
   resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
-const ATTRIBUTE_TIER_LABELS = ["", "common", "uncommon", "rare", "epic", "legendary"];
+const ATTRIBUTE_TIER_LABELS = ["", ...TIER_WORDS.map((name) => name.toLowerCase())];
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
@@ -249,6 +250,15 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
   },
   SiteUsed: (event, payload, components, resolvePlayerName) => {
     const benefit = payload.benefit as Record<string, unknown> | undefined;
+    if (benefit?.ShrinePoint !== undefined) {
+      const rank = toNumber(benefit.ShrinePoint);
+      if (rank === null) throw new Error("Incomplete shrine point story");
+      return {
+        title: `Shrine used, +1 ${skillPointName(rank)}`,
+        description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
+        icon: "scroll",
+      };
+    }
     const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
     const amount = kind && toNumber(benefit![kind]);
     if (kind === null || amount === null) throw new Error("Incomplete site use story");

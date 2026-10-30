@@ -299,3 +299,19 @@ it.each([60, 5, 0])("decodes the actual capped well gain %s from every story pre
     );
   }
 });
+
+it.each([1, 2, 3, 4, 5])("decodes the granted Shrine rank %s from every story prefix", (rank) => {
+  const variant = storyVariants().findIndex((v) => v.name === "SiteUsed");
+  expect(variant).toBeGreaterThanOrEqual(0);
+  for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
+    assertDecoded(
+      raw({
+        from_address: manifest.world.address,
+        keys: [...layout.prefix, "2", "1", "0", "17", "0", "7", "0x55"],
+        data: [String(variant), "7", "1", "12", "34", "2", String(rank), "140"],
+      }),
+      { game_id: 1n, owner: 17n, entity_id: 7n, tx_hash: 85n },
+      { story: { SiteUsed: { explorer_id: 7n, coord, benefit: { ShrinePoint: BigInt(rank) } } }, timestamp: 140n },
+    );
+  }
+});

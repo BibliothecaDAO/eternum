@@ -1,3 +1,4 @@
+import { skillPointName } from "@bibliothecadao/types";
 import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
@@ -907,4 +908,9 @@ it.each([
   expect(
     buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
   ).toMatchObject({ title, description: "Lord 0123's army" });
+});
+
+it.each([1, 2, 3, 4, 5])("names the exact Shrine point at rank %s", (rank) => {
+  const event = story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: rank } });
+  expect(buildStoryEventPresentation(event).title).toBe(`Shrine used, +1 ${skillPointName(rank)}`);
 });

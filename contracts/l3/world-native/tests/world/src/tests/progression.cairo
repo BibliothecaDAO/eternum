@@ -194,7 +194,7 @@ fn packed_progress_round_trips_every_tier_and_the_full_xp_range(xp: u32, a: u8, 
 }
 
 #[test]
-fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
+fn reveals_and_clears_pay_their_xp() {
     let d = super::registrar::setup();
     let (game_id, _, category) = super::registrar::expedition_home(d);
     let (key, _) = super::registrar::expedition_armies(d, game_id, category);
@@ -207,10 +207,9 @@ fn reveals_clears_shrines_and_relic_chests_pay_their_xp() {
             crate::logic::progression::award_xp(
                 key, crate::progression::XpAward::Clear(1300 * crate::rules::RESOURCE_PRECISION),
             );
-            crate::logic::progression::grant_fixed_xp(key);
         },
     );
-    assert_eq!(read_progress(d, key).xp, 2 + 90 + 200);
+    assert_eq!(read_progress(d, key).xp, 2 + 90);
 }
 
 #[test]
@@ -246,7 +245,7 @@ fn zero_rank_progress_exists_and_destroying_it_removes_its_points() {
     snforge_std::interact_with_state(
         d.games,
         || {
-            crate::logic::progression::grant_fixed_xp(key);
+            crate::logic::progression::grant_point(key, 1);
             assert_eq!(crate::logic::progression::require(key).common_points, 1);
             crate::logic::progression::destroy(key);
             assert!(crate::logic::progression::read(key).is_none());
@@ -464,4 +463,94 @@ fn trained_scouting_carries_every_choice_from_the_lodge() {
     assert_eq!(progress.scouting, 5);
     assert_eq!(progress.scouting_kinds, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256);
     assert_eq!(progress.xp, 0);
+}
+
+#[test]
+fn shrine_roll_boundaries_shift_one_rank_per_depth_and_cap_at_legendary() {
+    for depth in 0_u8..4 {
+        for (draw, surface_rank) in array![
+            (0_u32, 1_u8), (4999, 1), (5000, 2), (7999, 2), (8000, 3), (9499, 3), (9500, 4), (9899, 4), (9900, 5),
+            (9999, 5),
+        ] {
+            let rank = crate::progression::shrine_point(depth, draw);
+            assert_eq!(rank, core::cmp::min(surface_rank + depth, 5));
+            let before = ArmyProgress { xp: 199, common_points: 2, ..crate::progression::initial() };
+            let mut after = before;
+            crate::progression::earn_point(ref after, rank);
+            assert_eq!(after.xp, before.xp);
+            for held_rank in 1_u8..6 {
+                assert_eq!(
+                    crate::progression::points(after, held_rank),
+                    crate::progression::points(before, held_rank) + if held_rank == rank {
+                        1
+                    } else {
+                        0
+                    },
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_xp() {
+    for depth in 0_u8..4 {
+        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        place_army_at_depth(d, key, depth);
+        let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
+        let rules = super::preset_projection::frontier_discovery_rules();
+        let unlocked = crate::expeditions::FrontierDiscoveryRules { well_bps: 0, ..rules };
+        snforge_std::interact_with_state(
+            d.games,
+            || {
+                crate::logic::research::write(
+                    crate::resources::ResourceKey { game_id, entity_id: army.owner },
+                    crate::research::RealmKnowledge {
+                        learned: crate::research::learn(0, crate::research::ROW_SHRINE, 0),
+                    },
+                );
+            },
+        );
+        let root = super::registrar::discovery_root(
+            game_id, unlocked, 0, Some(super::registrar::any_chest()), crate::discovery::Discovery::Shrine,
+        );
+        let target = super::frontier_explore_chest::destination(d, key);
+        super::frontier_explore_chest::explore(d, key, root, 360);
+        let occupied = snforge_std::interact_with_state(
+            d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, target)).unwrap(),
+        );
+        assert_eq!(occupied.category, crate::taxonomy::SHRINE_OCCUPIER);
+        let site = crate::resources::ResourceKey { game_id, entity_id: occupied.entity_id };
+        let reward = snforge_std::interact_with_state(d.games, || crate::logic::shrines::read(site).unwrap());
+        let mut recorded = root;
+        let seed = crate::random::game_root(ref recorded, game_id);
+        assert_eq!(
+            reward.rank,
+            crate::progression::shrine_point(
+                depth, crate::random::range(seed, 'shrine point', 10000).try_into().unwrap(),
+            ),
+        );
+        assert!(reward.rank > depth);
+        let before = read_progress(d, key);
+        let action = super::play_fixture::TestAction {
+            game_id,
+            actor: d.actor,
+            command: crate::commands::Command::InteractSite(
+                crate::relics::InteractSite { explorer_id: key.explorer_id, coord: target },
+            ),
+        };
+        assert!(super::play_fixture::play(d.games, action, 987654321, 361));
+        let mut expected = before;
+        crate::progression::earn_point(ref expected, reward.rank);
+        assert_eq!(read_progress(d, key), expected);
+        assert!(snforge_std::interact_with_state(d.games, || crate::logic::shrines::read(site)).is_none());
+        assert!(
+            snforge_std::interact_with_state(
+                d.games, || crate::logic::map::occupancy(crate::geometry::tile_key(game_id, target)),
+            )
+                .is_none(),
+        );
+        assert!(!super::play_fixture::play(d.games, action, 123456789, 362));
+        assert_eq!(read_progress(d, key), expected);
+    }
 }

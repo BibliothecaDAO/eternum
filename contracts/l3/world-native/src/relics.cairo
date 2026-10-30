@@ -425,6 +425,12 @@ pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, t
 pub enum SiteBenefit {
     Shrine: u32,
     Well: u64,
+    ShrinePoint: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ShrineReward {
+    pub rank: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

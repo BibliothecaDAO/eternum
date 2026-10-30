@@ -27,13 +27,15 @@ export const readRevealXp = (
 
 export const SKILL_POINT_RANKS: readonly SkillPointRank[] = [1, 2, 3, 4, 5];
 
-export const heldSkillPoints = (progress: Progress): readonly number[] => [
-  progress.common_points,
-  progress.uncommon_points,
-  progress.rare_points,
-  progress.epic_points,
-  progress.legendary_points,
-];
+export const SKILL_POINT_FIELDS = [
+  "common_points",
+  "uncommon_points",
+  "rare_points",
+  "epic_points",
+  "legendary_points",
+] as const satisfies readonly (keyof Progress)[];
+export const heldSkillPoints = (progress: Progress): readonly number[] =>
+  SKILL_POINT_FIELDS.map((field) => progress[field]);
 
 export const lowestFittingPoint = (progress: Progress, nextRank: number): SkillPointRank | undefined => {
   const held = heldSkillPoints(progress);

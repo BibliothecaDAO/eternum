@@ -1,5 +1,10 @@
 {
   "ruleConstants": {
+    "SHRINE_COMMON_BPS": 5000,
+    "SHRINE_UNCOMMON_BPS": 3000,
+    "SHRINE_RARE_BPS": 1500,
+    "SHRINE_EPIC_BPS": 400,
+    "SHRINE_LEGENDARY_BPS": 100,
     "ATTRIBUTE_CAP": 5,
     "SKILL_POINT_REFILL_BASE": 10,
     "SKILL_POINT_REFILL_STEP": 10,
@@ -2856,12 +2861,6 @@
           "feltLength": 1
         },
         {
-          "name": "fixed_xp",
-          "type": "core::integer::u32",
-          "id": "0x66697865645f7870",
-          "feltLength": 1
-        },
-        {
           "name": "common_xp",
           "type": "core::integer::u32",
           "id": "0x636f6d6d6f6e5f7870",
@@ -2893,7 +2892,7 @@
         }
       ],
       "keyLength": 1,
-      "valueLength": 8,
+      "valueLength": 7,
       "derivedFrom": "preset"
     },
     {
@@ -3270,6 +3269,33 @@
       ],
       "keyLength": 2,
       "valueLength": 3
+    },
+    {
+      "name": "ShrineReward",
+      "identity": "0x536872696e65526577617264",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "entity_id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8",
+          "id": "0x72616e6b",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
     },
     {
       "name": "RelicChest",
@@ -7598,6 +7624,20 @@
         }
       ]
     },
+    "core::option::Option::<world_native::relics::ShrineReward>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::relics::ShrineReward>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::relics::ShrineReward"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::relics::SiteChest>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::relics::SiteChest>",
@@ -11091,10 +11131,6 @@
           "type": "core::integer::u32"
         },
         {
-          "name": "fixed_xp",
-          "type": "core::integer::u32"
-        },
-        {
           "name": "common_xp",
           "type": "core::integer::u32"
         },
@@ -11654,6 +11690,16 @@
         }
       ]
     },
+    "world_native::relics::ShrineReward": {
+      "type": "struct",
+      "name": "world_native::relics::ShrineReward",
+      "members": [
+        {
+          "name": "rank",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::relics::SiteBenefit": {
       "type": "enum",
       "name": "world_native::relics::SiteBenefit",
@@ -11665,6 +11711,10 @@
         {
           "name": "Well",
           "type": "core::integer::u64"
+        },
+        {
+          "name": "ShrinePoint",
+          "type": "core::integer::u8"
         }
       ]
     },
@@ -13583,5 +13633,5 @@
       ]
     }
   },
-  "identity": "68a2deb3f7a9b33320ddf6d27e1b40e0ce5b0616bc2437ddca51db75f4d88d8c"
+  "identity": "0092fe02630dc5558e96265a37f956d3ba36a7c23102e0381735433a62a6df66"
 }

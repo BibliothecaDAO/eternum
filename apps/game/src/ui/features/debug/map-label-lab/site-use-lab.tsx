@@ -117,7 +117,13 @@ export const SiteUseLab = ({
       },
     } as unknown as GameClient);
 
-    const siteModels = new MapSiteManager(world.stage.scene, projection, world.stage.terrain);
+    const siteModels = new MapSiteManager(
+      world.stage.scene,
+      projection,
+      store,
+      plates.createScope("shrine"),
+      world.stage.terrain,
+    );
     releases.push(() => siteModels.destroy());
     const ground = groundOf(world.stage.terrain, layout.army);
     void gltfLoader.loadAsync("/models/units/default_knight_lvl1.glb").then((gltf) => {
@@ -139,6 +145,7 @@ export const SiteUseLab = ({
       surface: canvas,
       camera: world.stage.camera,
       mapPlates: plates,
+      sites: siteModels,
       army: ARMY,
       player: BigInt(PLAYER),
       tileUnder: (raycaster) => (raycaster.ray.intersectPlane(plane, hit) ? worldHexAt(hit.x, hit.z) : null),

@@ -5,7 +5,6 @@ use crate::troops::ExplorerKey;
 pub struct ArmyProgressionRules {
     pub reveal_xp: u32,
     pub reveal_xp_per_depth: u32,
-    pub fixed_xp: u32,
     pub common_xp: u32,
     pub uncommon_xp: u32,
     pub rare_xp: u32,
@@ -190,6 +189,29 @@ pub fn earn_xp(ref progress: ArmyProgress, rules: ArmyProgressionRules, amount: 
         set_points(ref progress, rank, held + added);
     }
     progress.xp = next;
+}
+
+pub fn earn_point(ref progress: ArmyProgress, rank: u8) {
+    let held = points(progress, rank);
+    set_points(ref progress, rank, held + 1);
+}
+
+/// The surface roll shifts up one rank per depth, with its overflow staying Legendary.
+pub fn shrine_point(depth: u8, mut draw: u32) -> u8 {
+    assert!(depth < 4, "invalid shrine depth");
+    assert!(draw < 10000, "invalid shrine roll");
+    let weights = array![
+        crate::rules::SHRINE_COMMON_BPS, crate::rules::SHRINE_UNCOMMON_BPS, crate::rules::SHRINE_RARE_BPS,
+        crate::rules::SHRINE_EPIC_BPS, crate::rules::SHRINE_LEGENDARY_BPS,
+    ];
+    for rank in 1_u8..6 {
+        let weight = *weights.at((rank - 1).into());
+        if draw < weight {
+            return core::cmp::min(rank + depth, crate::rules::ATTRIBUTE_CAP);
+        }
+        draw -= weight;
+    }
+    panic!("invalid shrine weights")
 }
 
 pub fn lowest_fitting_point(progress: ArmyProgress, tier: u8) -> u8 {

@@ -9,6 +9,13 @@ import type { GameplayAccount, SystemCalls } from "@bibliothecadao/types";
 
 import { type MapSiteKind, mapSiteKind, siteGain } from "./map-site-plan";
 
+export const shrineRewardAt = (store: NativeFactStore, tile: SiteTile) => {
+  const occupied = getTileAt(store, tile.alt, tile.col, tile.row);
+  return (
+    occupied && store.get("ShrineReward", { game_id: configManager.getActiveGameId(), entity_id: occupied.occupier_id })
+  );
+};
+
 type SiteTile = { col: number; row: number; alt: boolean };
 
 /** The usable site (a Shrine or a Well) on a contract tile, as an order names it; null where the tile holds none. */
@@ -25,14 +32,14 @@ import { armWellRefill } from "./well-refill";
  */
 export const siteUseFacts = (
   store: NativeFactStore,
-  site: { kind: MapSiteKind },
+  site: { kind: MapSiteKind; tile: SiteTile },
   army: NativeRows["ExplorerTroops"] | undefined,
   timestamp: number,
 ) => {
   const snapshot = army && getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army) });
   return {
     kind: site.kind,
-    gain: siteGain(site.kind, store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() })),
+    gain: siteGain(site.kind, shrineRewardAt(store, site.tile)),
     stamina: snapshot ? { current: snapshot.current, max: snapshot.max } : undefined,
   };
 };

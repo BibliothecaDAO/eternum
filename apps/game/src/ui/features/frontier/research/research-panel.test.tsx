@@ -105,7 +105,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
+    expect(choice()!.textContent).toContain("Armies find Shrines · 1 skill point each");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },

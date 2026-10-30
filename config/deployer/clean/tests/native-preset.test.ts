@@ -547,7 +547,6 @@ describe("native presets", () => {
       common_xp: 75,
       reveal_xp: 2,
       reveal_xp_per_depth: 1,
-      fixed_xp: 200,
       uncommon_xp: 200,
       rare_xp: 400,
       epic_xp: 800,

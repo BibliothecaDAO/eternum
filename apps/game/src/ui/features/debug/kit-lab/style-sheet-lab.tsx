@@ -822,7 +822,7 @@ const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
   {
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Shrine", gain: 200, stamina: undefined } as const,
+    site: { kind: "Shrine", gain: 3, stamina: undefined } as const,
   },
   {
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],

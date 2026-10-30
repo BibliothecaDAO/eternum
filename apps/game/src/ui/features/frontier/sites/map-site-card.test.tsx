@@ -1,3 +1,4 @@
+import { skillPointName } from "@bibliothecadao/types";
 import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -93,7 +94,7 @@ describe("a Well's tile card", () => {
  */
 const openWith = (
   kind: "Well" | "Shrine",
-  { stamina, xp, tier = 1 }: { stamina: bigint; xp: number; tier?: number },
+  { stamina, xp, tier = 1, rank = 3 }: { stamina: bigint; xp: number; tier?: number; rank?: number },
 ) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside("Camp", true, stamina);
@@ -127,6 +128,14 @@ const openWith = (
         homecoming: tier,
       },
     },
+  ] as never);
+  store.applyFacts([
+    {
+      model: "TileOccupancy",
+      key: "0xaa1",
+      value: { game_id: 1, ...SITE_TILE, entity_id: 901, category: kind === "Shrine" ? 40 : 41, is_structure: false },
+    },
+    { model: "ShrineReward", key: "0xaa2", value: { game_id: 1, entity_id: 901, rank } },
   ] as never);
   useAccountStore.setState({ account: { address: "0x111" } as never });
   const tile = { hexCoords: SITE_TILE, occupierType: kind === "Well" ? 41 : 40 } as unknown as TileSpatialRenderable;
@@ -174,31 +183,13 @@ describe('the army a Well or Shrine acts on (owner, 28 October 2026: "ok for B")
     });
   });
 
-  it("shows a Shrine's XP before and after, and the next skill point it earns", () => {
-    expect(openWith("Shrine", { stamina: 100n, xp: 40 })).toEqual({
-      row: "Army 140 → 240 XPI",
-      meter: null,
-      gem: "Common",
-      foot: "+200 XP",
-    });
-  });
-
-  it("shows no rank when the Shrine's XP still falls short of its next skill point", () => {
-    // The next point is Legendary at 1,500 XP; 800 plus this Shrine remains short.
-    expect(openWith("Shrine", { stamina: 100n, xp: 800, tier: 4 })).toEqual({
-      row: "Army 1800 → 1K XP",
-      meter: null,
-      gem: null,
-      foot: "+200 XP",
-    });
-  });
-});
-
-it("shows the next Shrine skill point even when every attribute is already V", () => {
-  expect(openWith("Shrine", { stamina: 100n, xp: 40, tier: 5 })).toEqual({
-    row: "Army 140 → 240 XPI",
-    meter: null,
-    gem: "Common",
-    foot: "+200 XP",
+  it.each([1, 2, 3, 4, 5])("shows stored rank %s before walking, independent of army XP", (rank) => {
+    for (const xp of [40, 800])
+      expect(openWith("Shrine", { stamina: 100n, xp, rank })).toEqual({
+        row: "Army 1",
+        meter: null,
+        gem: null,
+        foot: skillPointName(rank),
+      });
   });
 });

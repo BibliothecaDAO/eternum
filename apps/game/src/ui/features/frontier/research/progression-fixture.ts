@@ -70,7 +70,6 @@ const realmOn = (
     // A Knight deploys for 2 wheat; each Rations pick cuts 0.2.
     wheatPerTroop: (rations) => 2 - rations * 0.2,
     laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 4000)) / 10_000,
-    shrineXp: frontierArmyRules().fixed_xp,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
 };

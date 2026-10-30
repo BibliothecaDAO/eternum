@@ -8,7 +8,6 @@ import {
   type Rank,
   tierNumeral,
   WELL,
-  XP,
 } from "@/ui/design-system/kit/words";
 import {
   battleBonusBps,
@@ -59,7 +58,6 @@ export interface RealmResearchFacts {
   wheatPerTroop: (rations: number) => number;
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
-  shrineXp: number;
   wellStamina: number;
 }
 
@@ -388,7 +386,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       castleNode("shrine", ROWS.shrine, SHRINE, "shrine", {
         line: RESEARCH_TREE.armiesFind(SHRINE),
         now: "—",
-        next: RESEARCH_TREE.each(`+${formatExact(realm.shrineXp)} ${XP}`),
+        next: RESEARCH_TREE.each("1 skill point"),
       }),
     ],
     ROW_WELL: [
