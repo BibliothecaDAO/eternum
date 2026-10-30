@@ -720,12 +720,15 @@ fn different_season_lengths_share_one_preset_and_keep_their_own_unlock_and_close
         start_cheat_caller_address(fixture.ledger_address, OPERATOR());
         fixture.ledger.report_withdrawal('shard', season_id, season_id.into(), 1, 0, 0);
         start_cheat_block_timestamp(fixture.ledger_address, deadline);
-        assert!(safe.report_withdrawal('shard', season_id, (season_id + 100).into(), 1, 0, 0).is_err());
+        let late_claim = (season_id + 100).into();
+        fixture.ledger.report_withdrawal('shard', season_id, late_claim, 1, 0, 0);
+        fixture.ledger.pay('shard', season_id, late_claim, player(0), 1);
         start_cheat_caller_address(fixture.ledger_address, ADMIN());
         fixture.ledger.close_frontier('shard', season_id);
         assert!(fixture.ledger.get_frontier('shard', season_id).closed);
     }
-    assert!(fixture.ledger.frontier_carry('shard') == 3000);
+    assert!(fixture.ledger.frontier_carry('shard') == 2997);
+    assert!(fixture.lords.balance_of(player(0)) == 3);
     assert!(fixture.lords.balance_of(TREASURY()) == 0);
 }
 
