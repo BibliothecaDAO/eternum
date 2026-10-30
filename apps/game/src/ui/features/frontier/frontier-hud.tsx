@@ -107,15 +107,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
-  const {
-    surface,
-    openSurface: setSurface,
-    showsCard,
-    home,
-    goHome,
-    feedOpen,
-    closeFeed,
-  } = useOnePanel(card?.key ?? null, !desktop);
+  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const research = useResearchTree(realm);
   useEffect(() => {
@@ -178,6 +170,8 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onVisited={close} onClose={close} />
+    ) : surface === "feed" ? (
+      <FrontierFeed onClose={close} />
     ) : surface === "menu" ? (
       <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
     ) : undefined;
@@ -262,7 +256,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       armies={dock}
       nextUp={nextUp}
       page={page}
-      feed={feedOpen && <FrontierFeed onClose={closeFeed} />}
       foot={
         <>
           {notices}
@@ -273,11 +266,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         !(visit && realm) && (
           <FrontierPlaces
             surface={surface}
-            home={home}
-            feedOpen={feedOpen}
-            onCloseFeed={closeFeed}
             onSurface={setSurface}
-            onHome={goHome}
             research={realm ? canResearchNow(research?.nodes) : undefined}
           />
         )
@@ -357,8 +346,6 @@ const FrontierPhoneHud = ({
             onSignIn={chat.requestSignIn}
             pane={chatPane}
           />
-        ) : surface === "feed" ? (
-          <FrontierFeed onClose={() => onSurface(null)} />
         ) : (
           page
         )

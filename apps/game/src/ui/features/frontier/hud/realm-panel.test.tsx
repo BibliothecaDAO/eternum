@@ -3,6 +3,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+// The Feed's unread count, as the game's important stories make it; two arrived since it was last read.
+vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
+  ...(await original<typeof import("@/ui/features/event-feed/quick-feed")>()),
+  useUnreadImportantCount: (open: boolean) => (open ? 0 : 2),
+}));
+
 import { dayClock } from "./day-clock";
 import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
@@ -137,37 +143,29 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, the Feed and the Season; the lit Feed closes, an unlit one goes home", () => {
-  const onHome = vi.fn();
-  const onCloseFeed = vi.fn();
-  const places = (home: boolean, feedOpen: boolean) => {
-    act(() =>
-      root.render(
-        <FrontierPlaces
-          surface={home ? null : "research"}
-          home={home}
-          feedOpen={feedOpen}
-          onCloseFeed={onCloseFeed}
-          onSurface={vi.fn()}
-          onHome={onHome}
-          research={false}
-        />,
-      ),
-    );
+it("offers a desktop's places, Research, the Feed and the Season, each a panel its press opens and a second press closes", () => {
+  const onSurface = vi.fn();
+  const places = (surface: "research" | "feed" | "season" | null) => {
+    act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={false} />));
     return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
   };
-  const open = places(true, true);
-  expect(open.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
-  expect(open[1].getAttribute("aria-pressed")).toBe("true");
-  act(() => open[1].click());
-  expect(onCloseFeed).toHaveBeenCalledTimes(1);
-  const closed = places(true, false);
-  expect(closed[1].getAttribute("aria-pressed")).toBe("false");
+  const closed = places(null);
+  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-pressed")])).toEqual([
+    ["Research", "false"],
+    ["Feed", "false"],
+    ["Season", "false"],
+  ]);
+  // Closed, the Feed counts what is unread, as a phone's place bar does.
+  expect(closed[1].textContent).toContain("2");
   act(() => closed[1].click());
-  const research = places(false, true);
-  act(() => research[1].click());
-  expect(onHome).toHaveBeenCalledTimes(2);
-  expect(onCloseFeed).toHaveBeenCalledTimes(1);
+  expect(onSurface).toHaveBeenLastCalledWith("feed");
+  const feed = places("feed");
+  expect(feed[1].getAttribute("aria-pressed")).toBe("true");
+  expect(feed[1].textContent).not.toContain("2");
+  act(() => feed[1].click());
+  expect(onSurface).toHaveBeenLastCalledWith(null);
+  act(() => feed[2].click());
+  expect(onSurface).toHaveBeenLastCalledWith("season");
 });
 
 it.each(REALM_SKIN_MODELS)("shows the $skin painting on the HUD at level $level", ({ skin, level }) => {
