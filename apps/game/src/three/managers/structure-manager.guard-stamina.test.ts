@@ -13,6 +13,7 @@ import { CameraView } from "../scenes/camera-view";
 import { StructureManager } from "./structure-manager";
 import { campBeside, SITE, SITE_TILE } from "@/ui/features/frontier/sites/site-fixture";
 import { WorldSpatialProjection } from "@bibliothecadao/eternum/game-sync";
+import type { SiteKind } from "@bibliothecadao/eternum";
 
 const REALM = 7;
 
@@ -200,4 +201,60 @@ it("sets no plate on a cleared site, and takes away the one it had: the standard
   expect(plates.removeLabel).toHaveBeenCalledWith(SITE);
   expect(manager.compactLabelIds.has(SITE)).toBe(false);
   projection.dispose();
+});
+
+// Owner, 30 October 2026: "we can drop the stamina bar for enemies in frontier". A site's guards never move or explore.
+describe("a Frontier site's guards on its map plate", () => {
+  const SITE_TYPES = {
+    Ruin: StructureType.Ruin,
+    Camp: StructureType.Camp,
+    Beasts: StructureType.Beasts,
+    Rift: StructureType.Rift,
+  } satisfies Record<SiteKind, StructureType>;
+
+  /** The site's guard on the plate the manager's refresh says, with the site's real guard row in the store. */
+  const guardOnPlate = (kind: SiteKind, siteKind: SiteKind | undefined) => {
+    const { store } = campBeside(kind);
+    const plates: StructurePlate[] = [];
+    const manager = Object.assign(Object.create(StructureManager.prototype), {
+      store,
+      isDestroyed: false,
+      currentCameraView: CameraView.Medium,
+      compactLabelIds: new Set([SITE]),
+      metrics: { structureInfoCacheHits: 0, structureInfoCacheMisses: 0, compactLabelsShown: 1 },
+      worldSpatialProjection: { getStructure: () => ({ entityId: SITE, reserved: false }) },
+      structureInfoCache: new Map([
+        [
+          SITE,
+          {
+            entityId: SITE,
+            structureName: "Titangate",
+            structureType: SITE_TYPES[kind],
+            siteKind,
+            isMine: false,
+            isAlly: false,
+            owner: { address: 0n, ownerName: "", guildName: "" },
+            guardArmies: [{ slot: 0, category: "Knight", tier: 1, count: 1_100 }],
+            incomingTroopArrivals: [],
+          },
+        ],
+      ]),
+      resolveStructureCompactLabelPosition: () => new Vector3(),
+      plates: { setLabel: vi.fn(({ plate }: { plate: StructurePlate }) => plates.push(plate)), removeLabel: vi.fn() },
+    }) as { refreshLivePlates(): void };
+    chainAt(400);
+    manager.refreshLivePlates();
+    return plates.at(-1)!.guards![0];
+  };
+
+  it.each(Object.keys(SITE_TYPES) as SiteKind[])(
+    "tells no stamina on a standing %s's guard, only its count",
+    (kind) => {
+      expect(guardOnPlate(kind, kind)).toEqual({ type: "knight", tier: 1, count: 1_100 });
+    },
+  );
+
+  it("reads the same guard's stamina for a structure that is not a standing site", () => {
+    expect(guardOnPlate("Camp", undefined).stamina).toMatchObject({ current: 13, max: 120 });
+  });
 });
