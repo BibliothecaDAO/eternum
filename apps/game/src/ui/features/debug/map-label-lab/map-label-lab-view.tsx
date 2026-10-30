@@ -25,6 +25,7 @@ import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 
 import { SiteUseLab } from "./site-use-lab";
+import { drawPathStudy, PATH_STUDIES, studyFocus, type PathStudy } from "./path-study";
 
 type MapZoom = "play" | "close" | "far";
 type World = { stage: TerrainBenchmarkStage; entities: MapLabelEntity[] };
@@ -64,6 +65,7 @@ export const MapLabelLabView = () => {
   const spectate = params.get("spectate") === "1";
   useMapWorld(canvasRef, busy, forceWebGL, setWorld, setError);
   useZoom(world, zoom, params.get("focus") ?? params.get("hover"));
+  usePathStudy(world, zoom, pathStudyOf(params.get("paths")), params.get("focus") ?? params.get("hover"));
   const layer = usePlates(
     world,
     frontier,
@@ -438,6 +440,21 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
 /** `far` is the world map's farthest camera distance (WORLDMAP_CAMERA_ZOOM.maxDistance), where labels still show. */
 const ZOOM_DISTANCE: Record<MapZoom, number> = { play: 22, close: 12, far: WORLDMAP_CAMERA_ZOOM.maxDistance };
 const PITCH = Math.PI / 3;
+
+/** The armies' paths study, when the address asks for one (`paths=walk|preview`). */
+const pathStudyOf = (value: string | null): PathStudy | null => PATH_STUDIES.find((style) => style === value) ?? null;
+
+/** The armies' paths study drawn on the world, the camera on its walks unless a focus is asked. */
+const usePathStudy = (world: World | null, zoom: MapZoom, style: PathStudy | null, focus: string | null) => {
+  useEffect(() => {
+    if (!world || !style) return;
+    return drawPathStudy(world.stage.scene, world.stage.terrain, world.entities, style);
+  }, [world, style]);
+  useEffect(() => {
+    if (!world || !style || focus) return;
+    aimCamera(world, studyFocus(world.entities), ZOOM_DISTANCE[zoom]);
+  }, [world, style, zoom, focus]);
+};
 
 const useZoom = (world: World | null, zoom: MapZoom, focus: string | null) => {
   useEffect(() => {

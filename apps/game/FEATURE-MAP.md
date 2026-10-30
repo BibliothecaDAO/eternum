@@ -494,6 +494,12 @@ Watch a running Blitz from Play (**Watch**) to reach the map without signing in;
   ring lights every hex where that player holds a structure or has an army out. Selecting another hex, or one with no
   player's structure, clears them. They read only the selected hex, and follow captures (to the structure's new owner),
   new and fallen armies, moves and the layer switch (`src/three/scenes/worldmap-ownership-rings.ts`).
+- **Armies' paths**: the selected army's walk shows as a trail of chevrons along the curve it walks and a ring on its
+  end tile; with an army selected, hovering (on a phone, tapping) a tile it can move or explore to shows its trail there
+  before the order; the army under the pointer shows a slim arrow to its end; every other walking army only a pin on its
+  end tile. All in the army's side colour (yours green, allies blue, everyone else red; a spectator's seat colours), as
+  the labels and the minimap (`src/three/managers/path-renderer.ts`, `army-path-colour.ts`). Dev:
+  `/lab/map-labels?mode=frontier&busy=1&paths=walk` (sixteen armies walking at once) and `paths=preview`.
 - **A selected structure that moves takes the selection with it**: when a Frontier realm is raised on its next day's
   site, the selected hex, its ring, the tile panel and the ownership rings move there together
   (`src/three/scenes/worldmap-selection-follow.ts`).
