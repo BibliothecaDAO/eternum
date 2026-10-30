@@ -2,7 +2,7 @@ import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { siteClearXp } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds, StructureType } from "@bibliothecadao/types";
+import { getNeighborHexes, ResourcesIds, StructureType } from "@bibliothecadao/types";
 
 import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
@@ -27,18 +27,30 @@ const ATTACK_STAMINA = 50n;
  * receipt, the army loses 4 troops and the attack's stamina and gains the clear's XP, and the transaction emits the
  * ruin's payout story with its winning battle. Every other command is the spire's.
  */
-export const ruinFightScenario = (): LabScenario => {
+export const ruinFightScenario = (): LabScenario => ruinScenario(ARMY_TROOPS, GUARD_TROOPS, besideOnOpenLand);
+
+/**
+ * The owner's card of 31 October (/lab/game?scenario=ruin-far): 1,626 knights two tiles from a ruin guarded by 3,000,
+ * out of an attack's reach. The card forecasts the attack all the same; only Attack waits for the army to arrive.
+ */
+export const ruinFarScenario = (): LabScenario => ruinScenario(1_626n, 3_000n, twoTilesFrom);
+
+const ruinScenario = (
+  armyTroops: bigint,
+  guardTroops: bigint,
+  place: (store: NativeFactStore, army: { col: number; row: number }) => { col: number; row: number },
+): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
-  const ruinTile = besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!);
+  const ruinTile = place(store, store.entityOccupancy(1, SPIRE_ARMY)!);
   store.applyFacts([
     {
       model: "ExplorerTroops",
       key: "0x74",
-      value: wire({ ...army, troops: { ...army.troops, count: ARMY_TROOPS * PRECISION } }),
+      value: wire({ ...army, troops: { ...army.troops, count: armyTroops * PRECISION } }),
     },
-    ...siteAt(store, ruinTile, { ...army.troops, count: GUARD_TROOPS * PRECISION }, StructureType.Ruin),
+    ...siteAt(store, ruinTile, { ...army.troops, count: guardTroops * PRECISION }, StructureType.Ruin),
   ] as never);
   return {
     ...spire,
@@ -47,6 +59,22 @@ export const ruinFightScenario = (): LabScenario => {
         ? clearTheRuin(chain, BigInt(command.fields.attacker_id), spire.player, now)
         : spire.answer(command, chain, now),
   };
+};
+
+/** An open, revealed tile two steps from the army: beside a tile beside it, and not beside the army itself. */
+const twoTilesFrom = (store: NativeFactStore, army: { col: number; row: number }) => {
+  const near = new Set([army, ...getNeighborHexes(army.col, army.row)].map((hex) => `${hex.col},${hex.row}`));
+  const taken = new Set([...store.entries("TileOccupancy")].map(([, row]) => `${row.col},${row.row}`));
+  const tile = getNeighborHexes(army.col, army.row)
+    .flatMap((step) => getNeighborHexes(step.col, step.row))
+    .find(
+      (hex) =>
+        !near.has(`${hex.col},${hex.row}`) &&
+        !taken.has(`${hex.col},${hex.row}`) &&
+        store.get("TileOpt", { game_id: 1, alt: false, col: hex.col, row: hex.row }),
+    );
+  if (!tile) throw new Error("The lab finds no open tile two steps from the spire's army");
+  return { col: tile.col, row: tile.row };
 };
 
 /** The key the chain holds a row under, found by the row. */

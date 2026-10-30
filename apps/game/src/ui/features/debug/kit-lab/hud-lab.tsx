@@ -682,7 +682,8 @@ const STATES = {
     },
   },
   // The owner's desktop card on prod (10-27, "this panel doesnt match at all our new battle panels"): Shadeglow's troll
-  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP.
+  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP. Far as it is, the card forecasts
+  // the attack (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
   "site-shadeglow": {
     clock: CLOCK,
     stores: STORES,
@@ -693,7 +694,7 @@ const STATES = {
       beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
       army: { ...ARMY_CHIP, troops: 7_100 },
       guard: 1_300,
-      fight: undefined,
+      fight: WIN(1, 140),
       pay: { icon: "labor", amount: 650 },
       xp: 90,
       verb: { kind: "far" },

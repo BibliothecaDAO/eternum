@@ -156,6 +156,14 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
   return { host, store, attack, button, unmount };
 };
 
+/** Each side of the fight as the card reads it aloud: its troops now, and what this attack leaves it. */
+const fightSides = (host: HTMLElement) =>
+  [...host.querySelectorAll('[role="img"]')]
+    .map((side) => side.getAttribute("aria-label"))
+    .filter((l) => l?.includes("→"));
+/** The fixture army's attack on the camp from beside it: what the card shows near or far. */
+const FORECAST = ["Army 1,498 → 1,178", "Troll 1,100 → 492"];
+
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {
     const { host, attack, button, unmount } = renderCard("beside");
@@ -211,12 +219,22 @@ describe("the tile card", () => {
     expect(button("Move")?.disabled).toBe(false);
     expect(button("Attack")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
+    expect(fightSides(host)).toEqual(FORECAST);
     unmount();
   });
 
-  it("tells the selected army the site is too far when it stands out of reach with no order leading beside it", () => {
+  it("forecasts the fight for an army out of reach with no order leading beside it, Attack held back as too far", () => {
+    const beside = renderCard("beside");
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    expect(fightSides(beside.host)).toEqual(FORECAST);
+    beside.unmount();
+
     const { host, button, unmount } = renderCard("far");
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+    // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
+    // would send from beside the site, and its headline; only Attack waits for the army to get there.
+    expect(fightSides(host)).toEqual(FORECAST);
+    expect(host.querySelector(".ui-sheet__body header")?.textContent).toBe("The guard holds+550+82 XP");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
