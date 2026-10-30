@@ -96,6 +96,10 @@ const InTheHud = ({
   });
   return (
     <>
+      <button type="button" onClick={() => openSurface("menu")}>
+        Menu
+      </button>
+      {surface === "menu" && <section aria-label="Menu page" />}
       {showsCard && <TileCard {...card} />}
       {surface === "army" && <section aria-label="Army details" />}
       {surface === "army-lost" && <ArmyLostSheet onClose={() => openSurface(null)} />}
@@ -475,10 +479,12 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     store.applyFacts(ARMY_GONE as never);
   };
 
+  /** The map's own clearing of the selection, as its clearEntitySelection deselects. */
+  const mapClears = () => useUIStore.getState().deselectEntity();
   /** The army's deletion, then the map's own cleanup of its selection (worldmap's letGoOfLostSelection), before settling. */
   const armyFallsAndTheMapLetsGo = (store: ReturnType<typeof renderCard>["store"]) => {
     armyFalls(store);
-    expect(letGoOfLostSelection(store)).toBe(true);
+    expect(letGoOfLostSelection(store, mapClears)).toBe(true);
     expect(selection()).toBeNull();
   };
 
@@ -507,12 +513,29 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     },
   );
 
+  it.each(["desktop", "phone"] as const)(
+    "keeps a %s player's newer choice when they open Menu after the map let go of the lost army: Menu stays, no loss",
+    async (hud) => {
+      const menuPage = () => document.querySelector('[aria-label="Menu page"]');
+      const { unmount } = await attackThatLands(
+        (store) => {
+          armyFallsAndTheMapLetsGo(store);
+          [...document.querySelectorAll("button")].find((button) => button.textContent === "Menu")!.click();
+        },
+        { hud },
+      );
+      expect(menuPage()).not.toBeNull();
+      expect(lossSheet()).toBeNull();
+      unmount();
+    },
+  );
+
   it("keeps the player's choice when they let go before the army fell and the map cleaned up: no loss over it", async () => {
     const { unmount } = await attackThatLands(
       (store) => {
         armyFalls(store);
         // Nothing is selected any more: the map's cleanup has nothing to let go of, and says nothing.
-        expect(letGoOfLostSelection(store)).toBe(false);
+        expect(letGoOfLostSelection(store, mapClears)).toBe(false);
       },
       { meanwhile: () => useUIStore.getState().selectOnMap(null) },
     );

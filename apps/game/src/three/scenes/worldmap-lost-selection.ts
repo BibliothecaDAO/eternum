@@ -6,11 +6,12 @@ import { getLiveWorldmapEntityActions } from "./worldmap-interaction-state";
 
 /**
  * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can give.
- * Read from the facts themselves, since the armies' list is only as fresh as its last change. The map says why it let
- * go (letGoOfLostArmy), so the attack that cost the army still shows its loss: this is no player's newer choice.
- * Returns whether it let go; the map then clears what it drew for the selection.
+ * Read from the facts themselves, since the armies' list is only as fresh as its last change. `clear` is the map's own
+ * clearing of the selection (worldmap's clearEntitySelection, which deselects); once it has run, the map records why it
+ * let go (markSelectionLost), so the attack that cost the army still shows its loss: this is no player's newer choice.
+ * The record lasts until the selection is touched again. Returns whether it let go.
  */
-export const letGoOfLostSelection = (store: Pick<NativeFactStore, "get">): boolean => {
+export const letGoOfLostSelection = (store: Pick<NativeFactStore, "get">, clear: () => void): boolean => {
   const { selectedEntityId } = getLiveWorldmapEntityActions();
   if (selectedEntityId === null || selectedEntityId === undefined) return false;
   const gameId = configManager.getActiveGameId();
@@ -18,6 +19,7 @@ export const letGoOfLostSelection = (store: Pick<NativeFactStore, "get">): boole
     store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) != null ||
     store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) != null;
   if (stands) return false;
-  useUIStore.getState().letGoOfLostArmy();
+  clear();
+  useUIStore.getState().markSelectionLost(selectedEntityId);
   return true;
 };

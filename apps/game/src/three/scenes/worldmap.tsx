@@ -8948,9 +8948,9 @@ export default class WorldmapScene extends WarpTravel {
     this.orderTargetRing.showHover(x, z);
   }
 
-  /** A selected army that is gone lets go of the map (letGoOfLostSelection), and what the map drew for it goes. */
+  /** A selected army that is gone lets go of the map, what the map drew for it with it (letGoOfLostSelection). */
   private letGoOfLostSelection(): void {
-    if (letGoOfLostSelection(this.game.store)) this.clearEntitySelection();
+    letGoOfLostSelection(this.game.store, () => this.clearEntitySelection());
   }
 
   private handleEntityActionsStoreUpdate(
