@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import type { GameRef } from "@bibliothecadao/eternum/shard";
-import type { HeraldFrontierLeaderboardEntry, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboard, HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { buildLandingLeaderboard } from "@/services/leaderboard/landing-leaderboard-service";
@@ -52,6 +52,7 @@ import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
 import { FrontierRow } from "./frontier-row";
+import { SeasonPodium } from "./season-podium";
 import { gameTitle } from "./history-row";
 import { gameOfResults, resultsHref } from "./results-link";
 import { type RewardSeat, useSealedChest } from "./reward";
@@ -145,7 +146,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
       </ResultsFrame>
     );
   return board.data.mode === "frontier" ? (
-    <FrontierResult gameRef={gameRef} entries={board.data.entries} player={player} fromList={fromList} />
+    <FrontierResult gameRef={gameRef} board={board.data} player={player} fromList={fromList} />
   ) : (
     <BlitzResult gameRef={gameRef} game={game} entries={board.data.entries} player={player} fromList={fromList} />
   );
@@ -377,15 +378,16 @@ const GameLine = ({ game, gameRef }: { game: DirectoryGame | undefined; gameRef:
  */
 const FrontierResult = ({
   gameRef,
-  entries,
+  board,
   player,
   fromList,
 }: {
   gameRef: GameRef;
-  entries: HeraldFrontierLeaderboardEntry[];
+  board: HeraldFrontierLeaderboard;
   player: string | null;
   fromList: boolean;
 }) => {
+  const { entries } = board;
   const own = findOwnEntry(entries, player);
   const rows = boardRows(entries, player, ROWS[useLayout()]);
   const frontier = ageOf("frontier");
@@ -438,6 +440,7 @@ const FrontierResult = ({
         </AppPanel>
         <div data-age="frontier" className="lg:col-span-4">
           <AppPanel title={frontier.name} icon="leaderboard" painting={frontier.painting} flush>
+            <SeasonPodium board={board} ended own={own?.address} />
             {rows.map(({ entry, own: isOwn }) => (
               <FrontierRow key={entry.address} entry={entry} own={isOwn} />
             ))}

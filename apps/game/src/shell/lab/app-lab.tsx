@@ -23,6 +23,8 @@ import {
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
+  LAB_FRONTIER_FINAL_BOARD,
+  LAB_FRONTIER_UNPUBLISHED_BOARD,
   LAB_GUARDIAN,
   LAB_PLAYER,
   LAB_PROFILES,
@@ -136,7 +138,11 @@ const useLabSession = (screen: LabScreen) => {
 /** The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game. */
 const createLabClient = (screen: LabScreen) => {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  for (const gameId of [1, 3]) client.setQueryData(["shell", "leaderboard", LAB_CHAIN, gameId], LAB_FRONTIER_BOARD);
+  client.setQueryData(
+    ["shell", "leaderboard", LAB_CHAIN, 1],
+    screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
+  );
+  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FRONTIER_FINAL_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];

@@ -1,5 +1,6 @@
 import type {
   HeraldFrontierLeaderboard,
+  HeraldFrontierPrize,
   HeraldFrontierLeaderboardEntry,
   HeraldHistoryEvent,
 } from "@bibliothecadao/eternum/game-sync";
@@ -39,7 +40,22 @@ export function buildFrontierLeaderboard(
     if (index === 0 || compareStandings(standings[index - 1]!, standing) !== 0) rank = index + 1;
     return { ...standing.entry, rank };
   });
-  return { game_id: integer(gameId).toString(), mode: "frontier", entries };
+  return { game_id: integer(gameId).toString(), mode: "frontier", entries, prize: prizeOf(modelRows, gameId) };
+}
+
+/**
+ * The season's top prizes from the game's own rows: FrontierPrize's pool (whole LORDS) and posted count, and ChestRules'
+ * top_n. None while the pool is not published (no row, or a zero pool) or the chest rules are unknown.
+ */
+function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): HeraldFrontierPrize | null {
+  const prize = gameRows(modelRows("FrontierPrize"), gameId)[0];
+  const chests = gameRows(modelRows("ChestRules"), gameId)[0];
+  if (!prize || !chests || integer(prize.pool) === 0n) return null;
+  return {
+    pool: integer(prize.pool).toString(),
+    top_n: number(chests.top_n),
+    count: prize.count === null || prize.count === undefined ? null : number(prize.count),
+  };
 }
 
 function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, Standing> {

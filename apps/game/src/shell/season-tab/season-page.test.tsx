@@ -85,3 +85,70 @@ it("titles the page Season and names Frontier's own season on its board; an empt
     await unmount();
   }
 });
+
+const entry = (address: string, rank: number, sites: number) => ({
+  address,
+  rank,
+  order: 1,
+  structure_id: String(rank),
+  campaign: null,
+  sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
+  chests_earned: 0,
+  rewards: { lords: "0", essence: "0", labor: "0" },
+  deepest_depth: 0,
+  level: 0,
+});
+/** The podium's tiles as drawn, second, first and third: each one's place, LORDS and who holds it. */
+const tiles = (container: HTMLElement) =>
+  [...container.querySelectorAll('[aria-label="Season prizes"] li[data-place]')].map((tile) => [
+    tile.getAttribute("data-place"),
+    tile.textContent,
+  ]);
+
+it("shows the season's three prizes over Frontier's board, each place's holder, and Open where no one who cleared a site holds it", async () => {
+  reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
+  // 300 LORDS among the top 3; only two players have cleared a site.
+  reads.board = {
+    data: {
+      mode: "frontier",
+      entries: [entry("0xa1", 1, 5), entry("0xb2", 2, 2), entry("0xc3", 3, 0)],
+      prize: { pool: "300", top_n: 3, count: null },
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(390);
+  try {
+    expect(tiles(container).map(([place, text]) => [place, text?.replace(/0x[0-9a-f]+$|[^0-9#]+$/, "")])).toEqual([
+      ["2", "2100"],
+      ["1", "1150"],
+      ["3", "350"],
+    ]);
+    expect(tiles(container)[2]![1]).toMatch(/Open$/);
+    expect(tiles(container)[0]![1]).not.toMatch(/Open$/);
+    // A phone's board reads as a desktop's: each row one line, its figures in columns.
+    expect([...container.querySelectorAll("button.app-row")].every((row) => row.hasAttribute("data-line"))).toBe(true);
+  } finally {
+    await unmount();
+  }
+});
+
+it("says no prize is published yet, its medals standing with no amount", async () => {
+  reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
+  reads.board = {
+    data: { mode: "frontier", entries: [entry("0xa1", 1, 5)], prize: null },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(1440);
+  try {
+    expect(tiles(container)).toEqual([
+      ["2", "2—"],
+      ["1", "1—"],
+      ["3", "3—"],
+    ]);
+    expect(container.querySelector('[aria-label="Season prizes"]')!.textContent).toContain("Pool not published yet");
+  } finally {
+    await unmount();
+  }
+});

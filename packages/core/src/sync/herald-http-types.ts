@@ -165,6 +165,18 @@ export interface HeraldFrontierLeaderboard {
   game_id: string;
   mode: "frontier";
   entries: HeraldFrontierLeaderboardEntry[];
+  /**
+   * The season's top prizes, as the game holds them (FrontierPrize, ChestRules): the prize pool in whole LORDS, how many
+   * places the game pays at most, and how many the ledger was told to pay once the winners are posted (the board's first
+   * `count` entries). Null while no prize pool is published.
+   */
+  prize: HeraldFrontierPrize | null;
+}
+
+export interface HeraldFrontierPrize {
+  pool: string;
+  top_n: number;
+  count: number | null;
 }
 
 /** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */

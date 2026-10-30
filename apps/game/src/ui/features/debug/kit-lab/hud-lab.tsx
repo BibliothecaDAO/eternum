@@ -53,6 +53,7 @@ import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
+import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
@@ -434,7 +435,30 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
  * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 700_000, prize: { lords: 300_000, topN: 10 }, today: 35_000 };
+const SEASON_POOL_FIGURES = { lords: 700_000, today: 35_000 };
+
+/**
+ * The lab season's podium, read by the game's own rule (seasonPodium) from a board of the lab's rows: 300 LORDS among
+ * the top 3. `final`, the season over and its three winners posted; `open`, only the first player has cleared a site,
+ * so the other two places stand open.
+ */
+const labPodium = (season: NonNullable<LabState["season"]>) => {
+  if (season === "unpublished") return null;
+  const entries = SEASON_NAMES.map((name, index) => ({
+    address: name,
+    sites_cleared: {
+      total: season === "open" && index > 0 ? 0 : SEASON_SITES[index],
+      camps: 0,
+      rifts: 0,
+      ruins: 0,
+      beasts: 0,
+    },
+  }));
+  return seasonPodium(
+    { prize: { pool: "300", top_n: 3, count: season === "final" ? 3 : null }, entries },
+    season === "final",
+  );
+};
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -812,6 +836,9 @@ const STATES = {
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
+  // The season over, its prize's three winners posted; and one where only the leader has cleared a site.
+  "season-final": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "final" },
+  "season-open": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "open" },
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
   "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
   visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
@@ -995,7 +1022,7 @@ type LabState = {
   results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
   seasonLords?: "open" | "closed";
-  season?: "list" | "detail" | "unpublished" | "loading" | "failed";
+  season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
@@ -1131,6 +1158,7 @@ export const HudLab = () => {
                 rank={12}
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
+                podium={labPodium(lab.season)}
                 rows={SEASON_ROWS}
                 pinned={OWN_ROW}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}

@@ -50,9 +50,17 @@ const snapshot = (issued = "0") => ({
   game_id: "7",
   models: [{ model: "FrontierPrize", rows: [{ value: { pool: "300", issued, count: null } }] }],
 });
-const board = (addresses = ["0x8", "0x2", "0x5", "0x1"], block = "10") =>
+const board = (addresses = ["0x8", "0x2", "0x5", "0x1"], block = "10", sites: number[] = addresses.map(() => 1)) =>
   Response.json(
-    { game_id: "7", mode: "frontier", entries: addresses.map((address, index) => ({ address, rank: index + 1 })) },
+    {
+      game_id: "7",
+      mode: "frontier",
+      entries: addresses.map((address, index) => ({
+        address,
+        rank: index + 1,
+        sites_cleared: { total: sites[index]!, camps: sites[index]!, rifts: 0, ruins: 0, beasts: 0 },
+      })),
+    },
     { headers: { "X-Confirmed-Block": block } },
   );
 beforeEach(() => {
@@ -96,6 +104,26 @@ it("keeps fewer entrants and retries an interrupted award batch from the immutab
     ["award_frontier_prize", { game_id: 7, rank: 1 }],
     ["award_frontier_prize", { game_id: 7, rank: 2 }],
   ]);
+});
+it("pays only players who cleared a site: 2 qualifying of 5 posts 2", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => board(["0x8", "0x2", "0x5", "0x1", "0x9"], "10", [4, 0, 2, 0, 0])),
+  );
+  await run();
+  expect(calls.admin.mock.calls).toEqual([
+    ["post_frontier_top", { game_id: 7, winners: ["0x8", "0x5"] }],
+    ["award_frontier_prize", { game_id: 7, rank: 1 }],
+    ["award_frontier_prize", { game_id: 7, rank: 2 }],
+  ]);
+});
+it("posts no winner and awards nothing when no player cleared a site", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => board(["0x8", "0x2", "0x5"], "10", [0, 0, 0])),
+  );
+  await run();
+  expect(calls.admin.mock.calls).toEqual([["post_frontier_top", { game_id: 7, winners: [] }]]);
 });
 it("refuses a board from before the final snapshot", async () => {
   vi.stubGlobal(

@@ -40,6 +40,23 @@ const clear = (kind: keyof typeof CATEGORY, index: number, owner = 10) =>
   story("SitePayout", { category: CATEGORY[kind], reward: REWARD[kind] }, index, owner);
 
 describe("Frontier season standings", () => {
+  it("carries the season's top prizes: the pool, the places paid at most, and the count posted at the end", () => {
+    const { read, rows } = facts();
+    // No pool published: no prize, whether or not its row exists.
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    rows.ChestRules = [{ key: "rules", value: { game_id: "1", top_n: 3 } }];
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "300", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({ pool: "300", top_n: 3, count: null });
+    // The winners posted: two players, so two places.
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0x12c", issued: "0", count: "0x2" } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({ pool: "300", top_n: 3, count: 2 });
+    // Another game's prize is not this one's.
+    rows.FrontierPrize = [{ key: "other", value: { game_id: "2", pool: "300", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+  });
+
   it("includes each home's campaign identity from the complete game, including ordinary homes", () => {
     const { read, rows } = facts([0, 0, 0]);
     rows.CampaignHome = [

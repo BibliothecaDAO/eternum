@@ -721,6 +721,38 @@
 .app-row:has(> .app-row__trail > .app-setting__value) > .app-row__words {
   flex-basis: 6rem;
 }
+/* A board's row stands on one line at any width: its words give way and its figures keep their columns, as on a
+   desktop (owner, 30 October 2026: "fix the alignment btw on mobile"). */
+.app-row[data-line] {
+  flex-wrap: nowrap;
+}
+.app-row[data-line] > .app-row__words {
+  flex-basis: 0;
+}
+.app-row[data-line] > .app-row__trail {
+  flex: none;
+  flex-wrap: nowrap;
+}
+.app-row[data-line] > .app-row__trail > .app-chip {
+  min-width: 3.75rem;
+  justify-content: flex-end;
+}
+/* On a phone the figures stand as bare columns, the chips' boxes and the gaps narrower, so the name keeps its room. */
+@media (max-width: 639px) {
+  .app-row[data-line] {
+    gap: theme(spacing.2);
+    padding-inline: theme(spacing.3);
+  }
+  .app-row[data-line] > .app-row__trail {
+    gap: theme(spacing.2);
+  }
+  .app-row[data-line] > .app-row__trail > .app-chip {
+    min-width: 3.25rem;
+    border-color: transparent;
+    background: none;
+    padding-inline: 0;
+  }
+}
 .app-row__title {
   overflow: hidden;
   max-width: 100%;

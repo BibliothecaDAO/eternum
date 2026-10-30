@@ -212,6 +212,8 @@ export const LAB_SCREENS = {
   "reward-lords": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "reward-credit": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-running": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  // Frontier's season before its prize pool is published.
+  "season-unpublished": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "season-review": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-claim": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
@@ -430,7 +432,19 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     level: Math.min(3, Math.floor((12 - index) / 4)),
     order: (index % 16) + 1,
   })),
+  // The dev pool: 300 LORDS among the top 3, the winners not posted while the season runs.
+  prize: { pool: "300", top_n: 3, count: null },
 };
+
+/** The same board once the season is over and its three winners are posted (the Results' podium). */
+export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
+  ...LAB_FRONTIER_BOARD,
+  game_id: "3",
+  prize: { pool: "300", top_n: 3, count: 3 },
+};
+
+/** The board before any prize pool is published (the Season tab's podium says so). */
+export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
 /** Blitz's points for one of each scoring action, as its balance grants them (stored in millionths). */
 const BLITZ_POINTS = {

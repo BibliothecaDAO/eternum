@@ -1,4 +1,4 @@
-import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import { frontierPrizeHolders, type HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
@@ -85,5 +85,6 @@ async function finalWinners(
   const addresses = board.entries.map((entry) => felt(entry.address));
   if (new Set(addresses).size !== addresses.length || addresses.some((address) => BigInt(address) === 0n))
     throw new Error("frontier_final_board_duplicates");
-  return addresses.slice(0, topN);
+  // Only a player who cleared a site is paid; with none, an empty list is posted and nothing is awarded.
+  return frontierPrizeHolders(board.entries, topN).map((entry) => felt(entry.address));
 }
