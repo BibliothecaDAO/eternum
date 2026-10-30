@@ -3,8 +3,11 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { useInstall } from "@/pwa/install-state";
 import { useThisDevice } from "./this-device";
 
-/** The game's ask to turn alerts on: what its button does, or null when there is nothing to ask. */
-export type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | null;
+/**
+ * The game's ask to turn alerts on: what its button does; "on" once this device gets the day's push; null when nothing
+ * can be asked (signed out, its preferences unread, a device that blocks alerts or cannot show them).
+ */
+export type AlertsAsk = { kind: "remind" | "install"; busy: boolean; act: () => void } | { kind: "on" } | null;
 
 /**
  * Offered while this device would not get the day's push: alerts off on it, or the account's level Off. One tap turns
@@ -36,7 +39,7 @@ export const useAlertsAsk = (): AlertsAsk => {
         },
       };
     case "on":
-      return levelOff ? { kind: "remind", busy: preferences.status === "saving", act: raiseLevel } : null;
+      return levelOff ? { kind: "remind", busy: preferences.status === "saving", act: raiseLevel } : { kind: "on" };
     default:
       return null;
   }

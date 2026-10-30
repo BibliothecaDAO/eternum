@@ -1,20 +1,21 @@
 import { useState } from "react";
+import { useHeldRealms } from "@/hooks/use-holdings";
 import { useAlertsAsk } from "@/shell/profile/alerts-ask";
 import { toast } from "@/ui/features/event-feed/notify";
+import type { LaborHome } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import type { useRealmLabor } from "./use-realm-labor";
 
 export const FrontierRealms = ({
   labor,
-  onRealm,
   onClose,
 }: {
   labor: ReturnType<typeof useRealmLabor>;
-  onRealm: () => void;
   onClose: () => void;
 }) => {
   const [sending, setSending] = useState(false);
   const ask = useAlertsAsk();
+  const map = useHeldRealmMap(labor?.home ?? null);
   if (!labor) return null;
   const claim = async () => {
     setSending(true);
@@ -27,18 +28,13 @@ export const FrontierRealms = ({
     }
   };
   return (
-    <RealmsSheet
-      plan={labor.plan}
-      dailyAmount={labor.dailyAmount}
-      dailyEssence={labor.dailyEssence}
-      mark={labor.mark}
-      secondsLeft={labor.secondsLeft}
-      nextDay={labor.nextDay}
-      ask={ask}
-      sending={sending}
-      onClaim={() => void claim()}
-      onRealm={onRealm}
-      onClose={onClose}
-    />
+    <RealmsSheet labor={labor} map={map} ask={ask} sending={sending} onClaim={() => void claim()} onClose={onClose} />
   );
+};
+
+/** A held Realm home's map, from the account's held-Realms answer the Realm step read too; null for any other home. */
+const useHeldRealmMap = (home: LaborHome | null): string | null => {
+  const { held } = useHeldRealms();
+  if (home?.kind !== "realm") return null;
+  return held.data?.find((realm) => realm.realmId === home.realmId)?.map ?? null;
 };

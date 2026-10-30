@@ -83,7 +83,14 @@ const NEIGHBOUR_RING = [
  * words.ts: MENU, SEASON, EVENTS_WORDS.feed, CLOSE, CHAT); steps.test.mjs fails when they differ (playtest 30 October 2026,
  * B6: the phone's Log became its Feed, and the Season board's Back its ×).
  */
-export const HUD_WORDS = { menu: "Menu", season: "Season", feed: "Feed", close: "Close", chat: "Chat" };
+export const HUD_WORDS = {
+  menu: "Menu",
+  season: "Season",
+  feed: "Feed",
+  close: "Close",
+  chat: "Chat",
+  realmLabor: "Realm Labor",
+};
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
@@ -693,21 +700,29 @@ const CLAIM_ACTION_STEPS = [
   clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
 ];
 
-const REALMS_SHEET = '[data-kit-sheet][aria-label="Realms"]';
+const REALMS_SHEET = `[data-kit-sheet][aria-label="${HUD_WORDS.realmLabor}"]`;
 
 async function claimARealmsLabor({ browser }) {
-  // A desktop's purse opens Realms; a phone's Menu holds it.
-  if (!onADesktop()) {
+  // A desktop's purse chip opens Realm Labor (its name goes on with what waits); a phone's Menu holds it.
+  if (onADesktop()) {
+    const chip = await readUntil(
+      () => browser.read(buttonLabelled(`^${HUD_WORDS.realmLabor}`)),
+      Boolean,
+      SHEET_WAIT_MS,
+    );
+    if (!chip) return { chip };
+    browser.tap(chip.offset);
+  } else {
     browser.click(HUD_WORDS.menu);
-    await readUntil(() => browser.read(buttonNamed("Realms")), Boolean, SHEET_WAIT_MS);
+    await readUntil(() => browser.read(buttonNamed(HUD_WORDS.realmLabor)), Boolean, SHEET_WAIT_MS);
+    browser.click(HUD_WORDS.realmLabor);
   }
-  browser.click("Realms");
   const sheet = await readUntil(
     () => browser.read(SHEET_NAME),
-    (name) => name === "Realms",
+    (name) => name === HUD_WORDS.realmLabor,
     SHEET_WAIT_MS,
   );
-  if (sheet !== "Realms") return { sheet };
+  if (sheet !== HUD_WORDS.realmLabor) return { sheet };
   const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
   if (!claim) return { sheet, claim };
   const region = browser.read(sheetRegion(REALMS_SHEET));
@@ -716,12 +731,12 @@ async function claimARealmsLabor({ browser }) {
   return { sheet, watching: true, region };
 }
 
-/** The lab chain granted the Realm's labor, and the Realms sheet lists that Realm as claimed today. */
+/** The lab chain granted the Realm's labor, and the Realm Labor sheet's strip shows today claimed. */
 const realmClaimed = `(() => {
   const grant = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "GrantLabor").at(-1)
     ?.answered.find(({ model }) => model === "LaborGrant");
-  const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.textContent ?? "";
-  return String(grant?.value.home) === "7" && sheet.includes("Claimed today");
+  const today = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.querySelector('[aria-current="date"]');
+  return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
 })()`;
 
 /**
@@ -3524,7 +3539,7 @@ const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, i
             if (!onADesktop()) {
               context.browser.click(HUD_WORDS.menu);
               await sleep(500);
-              context.browser.click("Realm Labor");
+              context.browser.click(HUD_WORDS.realmLabor);
               await sleep(1_000);
             }
             return { ...readDevconArt(context.browser, expected), castle };

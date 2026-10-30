@@ -3,9 +3,7 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AlertsAsk } from "@/shell/profile/alerts-ask";
-import { planRealmLabor } from "./realm-labor";
-import { RealmsSheet } from "./realms-sheet";
+import { planRealmLabor, seasonStrip } from "./realm-labor";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
 import { SeasonWithdrawRow } from "./season-withdraw";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
@@ -188,81 +186,42 @@ describe("the settled Realm's labor", () => {
       planRealmLabor({ eligible: true, claimed: true, amount: 1000, essence: 0, held: 0, limit: 18000 }).total,
     ).toBe(0);
   });
-  it("shows one claim, explains partial storage, and offers no claim for a free home", () => {
-    const onClaim = vi.fn(),
-      onRealm = vi.fn();
-    const show = (eligible: boolean, claimed: boolean, held: number) =>
-      act(() =>
-        root.render(
-          <RealmsSheet
-            plan={planRealmLabor({ eligible, claimed, amount: 1000, essence: 0, held, limit: 18000 })}
-            dailyAmount={1000}
-            dailyEssence={0}
-            mark={null}
-            secondsLeft={3600}
-            nextDay={5}
-            ask={null}
-            sending={false}
-            onClaim={onClaim}
-            onRealm={onRealm}
-            onClose={() => undefined}
-          />,
-        ),
+  it("shows the days around today on the strip: five before, today and the next, kept inside the season", () => {
+    const strip = (today: number, last: number | undefined, founded = 0, claimedToday = false) =>
+      seasonStrip({ today, last, founded, claimed: (index) => index % 2 === 0, claimedToday }).map(
+        ({ day, state, today: isToday }) => `${day}${isToday ? "*" : ""}:${state}`,
       );
-    show(true, false, 0);
-    expect(host.querySelector('[aria-label="Labor per game day +1K"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="Essence per game day +1K"]')).toBeNull();
-    act(() => button("Claim 1,000 Labor")!.click());
-    expect(onClaim).toHaveBeenCalledTimes(1);
-    expect(host.querySelector("input")).toBeNull();
-    show(true, false, 17600);
-    expect(host.textContent).toContain("400 of 1,000 fit");
-    expect(host.textContent).toContain("remainder lost");
-    act(() => button("Realm")!.click());
-    expect(onRealm).toHaveBeenCalledTimes(1);
-    show(true, true, 0);
-    expect(host.textContent).toContain("Claimed today");
-    expect(button("Claim 1,000 Labor")).toBeUndefined();
-    show(false, false, 0);
-    expect(host.textContent).toContain("No daily Labor claim");
-    expect(button("Claim 1,000 Labor")).toBeUndefined();
-  });
-  it("asks for the next day's push once claimed, while this device would not get it", () => {
-    const remind = vi.fn(),
-      install = vi.fn();
-    const show = (claimed: boolean, ask: AlertsAsk, nextDay: number | null = 5) =>
-      act(() =>
-        root.render(
-          <RealmsSheet
-            plan={planRealmLabor({ eligible: true, claimed, amount: 1000, essence: 0, held: 0, limit: 18000 })}
-            dailyAmount={1000}
-            dailyEssence={0}
-            mark={null}
-            secondsLeft={3600}
-            nextDay={nextDay}
-            ask={ask}
-            sending={false}
-            onClaim={() => undefined}
-            onRealm={() => undefined}
-            onClose={() => undefined}
-          />,
-        ),
-      );
-    show(true, { kind: "remind", busy: false, act: remind });
-    act(() => button("Remind me when Day 5 opens")!.click());
-    expect(remind).toHaveBeenCalledTimes(1);
-    show(true, { kind: "remind", busy: true, act: remind });
-    expect(button("Turning on")?.disabled).toBe(true);
-    show(true, { kind: "install", busy: false, act: install });
-    act(() => button("Add to Home Screen for reminders")!.click());
-    expect(install).toHaveBeenCalledTimes(1);
-    // Alerts already reach this device, the claim is still to take, or no day follows: nothing to ask.
-    show(true, null);
-    expect(button("Remind me when Day 5 opens")).toBeUndefined();
-    expect(button("Add to Home Screen for reminders")).toBeUndefined();
-    show(false, { kind: "remind", busy: false, act: remind });
-    expect(button("Remind me when Day 5 opens")).toBeUndefined();
-    show(true, { kind: "remind", busy: false, act: remind }, null);
-    expect(button("Remind me when Day 5 opens")).toBeUndefined();
+    expect(strip(11, 104)).toEqual([
+      "7:claimed",
+      "8:missed",
+      "9:claimed",
+      "10:missed",
+      "11:claimed",
+      "12*:open",
+      "13:ahead",
+    ]);
+    // Day 1: today first, six days ahead. The last day: the six before it.
+    expect(strip(0, 104, 0, true)).toEqual([
+      "1*:claimed",
+      "2:ahead",
+      "3:ahead",
+      "4:ahead",
+      "5:ahead",
+      "6:ahead",
+      "7:ahead",
+    ]);
+    expect(strip(104, 104)).toEqual([
+      "99:claimed",
+      "100:missed",
+      "101:claimed",
+      "102:missed",
+      "103:claimed",
+      "104:missed",
+      "105*:open",
+    ]);
+    // Days before the home was founded are not missed; a season shorter than the strip shows its days only.
+    expect(strip(3, 104, 2)).toEqual(["1:before", "2:before", "3:claimed", "4*:open", "5:ahead", "6:ahead", "7:ahead"]);
+    expect(strip(1, 2)).toEqual(["1:claimed", "2*:open", "3:ahead"]);
+    expect(strip(11, undefined)).toHaveLength(7);
   });
 });

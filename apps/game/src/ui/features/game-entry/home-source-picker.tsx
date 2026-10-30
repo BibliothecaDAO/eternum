@@ -12,6 +12,7 @@ import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
 import { realmSkinIcon } from "@/three/structures/realm-skins";
+import { HomeArt } from "@/ui/shared/components/home-art";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
 import {
@@ -335,23 +336,16 @@ function ChoiceButton({
 }
 
 /** A Realm's map from the Realm index (fetched once it nears the screen), or a ticket's realm painting on its colour. */
-function ChoiceArt({ choice, eager = false }: { choice: Choice; eager?: boolean }) {
-  if (choice.kind === "ticket")
-    return (
-      <span className="home-picker__art" data-ticket={choice.golden ? "golden" : "regular"}>
-        <Icon name={realmSkinIcon(choice.golden ? "devcon-golden" : "devcon")} size={112} />
-      </span>
-    );
-  return (
-    <span className="home-picker__art" data-map={choice.map ? "drawn" : "none"}>
-      {choice.map ? (
-        <img className="home-picker__map" src={choice.map} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
-      ) : (
-        <Icon name="realm" size={72} />
-      )}
-    </span>
+const ChoiceArt = ({ choice, eager = false }: { choice: Choice; eager?: boolean }) =>
+  choice.kind === "ticket" ? (
+    <HomeArt
+      icon={realmSkinIcon(choice.golden ? "devcon-golden" : "devcon")}
+      size={112}
+      tier={choice.golden ? "golden" : "regular"}
+    />
+  ) : (
+    <HomeArt map={choice.map} icon="realm" size={72} eager={eager} />
   );
-}
 
 const OrderName = ({ order }: { order: number }) => (
   <span className="home-picker__order">
@@ -379,9 +373,7 @@ const Wonder = ({ wonder }: { wonder: string }) => (
 function FreeHome({ unlinked }: { unlinked: boolean }) {
   return (
     <div className="home-picker__featured" data-kind="free">
-      <span className="home-picker__art" data-ticket="free">
-        <Icon name="realm" size={96} />
-      </span>
+      <HomeArt icon="realm" size={96} tier="free" />
       <div className="home-picker__about">
         <h3>{HOME_STEP_WORDS.freeHome}</h3>
         <p className="home-picker__sub">{HOME_STEP_WORDS.freeHomeLine}</p>
