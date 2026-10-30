@@ -31,6 +31,8 @@ import { handleLaborRequest } from "./labor-route";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { publishFrontierPools } from "./frontier-pools";
 import { awardFrontierPrizes } from "./frontier-prizes";
+import { sweepFrontierLords, type FrontierSettlement } from "./frontier-sweep";
+import { settleFrontier } from "./frontier-settlement";
 import { frontierReceiptBindings } from "./frontier-binding";
 import approvedExtension from "../../../config/source/frontier/extension.json";
 import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
@@ -229,7 +231,22 @@ export class ValueRelay extends DurableObject<RelayEnv> {
         unavailable ??= error;
       }
     }
+    try {
+      await sweepFrontierLords(target, shard.url, ledger, (settlement) =>
+        ledgerOf(this.env).settleFrontier(settlement),
+      );
+    } catch (error) {
+      unavailable ??= error;
+    }
     if (unavailable) throw unavailable;
+  }
+  settleFrontier(settlement: FrontierSettlement) {
+    return Effect.runPromise(
+      this.ledgerPermit(
+        relayOperation("settle Frontier season", () => settleFrontier(ledgerCredentialsOf(this.env), settlement)),
+        [settlement.chainId],
+      ),
+    );
   }
   async alarm() {
     await this.tick();

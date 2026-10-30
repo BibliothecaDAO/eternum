@@ -95,6 +95,19 @@ pub mod EntryAdministration {
             self.data.entry.prize_count.write(game_id, Some(count));
             self.record_frontier_prize(game_id);
         }
+        fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
+            super::assert_ledger_operator();
+            self.assert_prize_ready(game_id);
+            let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
+            crate::relics::ILordsDispatcherTrait::sweep_lords(
+                crate::relics::ILordsLibraryDispatcher {
+                    class_hash: get_dep_component!(@self, Life).classes(game_id).relics.read(),
+                },
+                game_id,
+                structure_id,
+                crate::commands::action_context(context),
+            );
+        }
         fn award_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32, rank: u16) {
             super::assert_ledger_operator();
             if self.data.entry.prize_awarded.read((game_id, rank)) {

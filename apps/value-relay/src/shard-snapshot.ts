@@ -1,4 +1,4 @@
-import { ShardReader, uint, type ShardConnection } from "./shard-rpc";
+import { ShardReader, felt, uint, type ShardConnection } from "./shard-rpc";
 
 export interface ConfirmedSnapshot {
   confirmed_block: number;
@@ -58,3 +58,43 @@ export const optionalRow = (snapshot: ConfirmedSnapshot, name: string) => {
   if (!model || model.rows.length > 1) throw new Error("snapshot_row_missing");
   return model.rows[0]?.value ?? null;
 };
+
+export function withdrawalTotals(snapshot: ConfirmedSnapshot) {
+  let chest = 0n,
+    prize = 0n;
+  const claims = new Set<string>();
+  for (const { value } of snapshot.models.find((model) => model.model === "LordsWithdrawal")!.rows) {
+    if (
+      Object.keys(value).sort().join() !==
+      ["game_id", "claim_id", "account", "amount", "prize_rank", "prize_count"].sort().join()
+    )
+      throw new Error("invalid_withdrawal_snapshot");
+    for (const field of [value.claim_id, value.account, value.amount, value.prize_rank, value.prize_count])
+      if (typeof field !== "string" && (typeof field !== "number" || !Number.isSafeInteger(field)))
+        throw new Error("invalid_withdrawal_snapshot");
+    const claim = felt(String(value.claim_id));
+    const amount = snapshotUint(value.amount, 128);
+    const rank = snapshotUint(value.prize_rank, 16),
+      count = snapshotUint(value.prize_count, 16);
+    if (
+      claims.has(claim) ||
+      BigInt(claim) === 0n ||
+      BigInt(felt(String(value.account))) === 0n ||
+      amount === 0n ||
+      (rank === 0n) !== (count === 0n) ||
+      rank > count ||
+      count > 100n
+    )
+      throw new Error("invalid_withdrawal_snapshot");
+    claims.add(claim);
+    if (rank === 0n) chest += amount;
+    else prize += amount;
+  }
+  return { chest, prize };
+}
+
+export function snapshotUint(value: unknown, bits: number): bigint {
+  if (typeof value !== "string" && (typeof value !== "number" || !Number.isSafeInteger(value)))
+    throw new Error("unsafe_snapshot_integer");
+  return uint(String(value), bits);
+}

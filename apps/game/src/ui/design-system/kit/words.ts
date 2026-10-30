@@ -550,8 +550,7 @@ export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
 /** The season's last hour of withdrawals is kept for paying the ones already made. */
 export const WITHDRAWALS_CLOSED = "Withdrawals have closed";
-/** After the season, on its last card: the moment its withdrawals close. */
-export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
+export const AUTOMATIC_LORDS_PAYOUT = "LORDS are paid out automatically at season end";
 export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;

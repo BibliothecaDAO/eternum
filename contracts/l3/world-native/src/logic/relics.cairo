@@ -281,6 +281,25 @@ pub mod RelicState {
             ()
         }
 
+        fn sweep_lords(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            structure_id: u64,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::entry::assert_ledger_operator();
+            let context = crate::commands::execution_context(game_id, context);
+            let realm = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(realm);
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
+            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
+            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
+            if balance == 0 {
+                return;
+            }
+            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
+        }
+
         // Whole LORDS leave the realm and are recorded for fulfilment on L2.
         fn withdraw_lords(
             ref self: ComponentState<TContractState>,
@@ -298,19 +317,7 @@ pub mod RelicState {
             let record = crate::logic::structures::record(realm);
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
             assert!(record.owner == actor, "actor does not own structure");
-            self
-                .resources(game_id)
-                .spend_resource(
-                    realm,
-                    crate::resources::LORDS,
-                    command.amount * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            let withdrawal = crate::relics::LordsWithdrawal {
-                account: actor, amount: command.amount, prize_rank: 0, prize_count: 0,
-            };
-            self.record_lords_withdrawal(realm, withdrawal, context.timestamp);
+            self.withdraw_realm_lords(realm, actor, command.amount, context);
             ()
         }
     }
@@ -576,6 +583,31 @@ pub mod RelicState {
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
             self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
+        }
+
+        fn withdraw_realm_lords(
+            ref self: ComponentState<TContractState>,
+            realm: ResourceKey,
+            account: ContractAddress,
+            amount: u128,
+            context: ExecutionContext,
+        ) {
+            assert!(account != 0.try_into().unwrap(), "withdrawal owner missing");
+            self
+                .resources(realm.game_id)
+                .spend_resource(
+                    realm,
+                    crate::resources::LORDS,
+                    amount * crate::rules::RESOURCE_PRECISION,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            self
+                .record_lords_withdrawal(
+                    realm,
+                    crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 },
+                    context.timestamp,
+                );
         }
 
         fn record_lords_withdrawal(

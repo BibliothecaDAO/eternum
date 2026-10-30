@@ -2183,6 +2183,13 @@ pub mod GamesFixture {
                 winners,
             )
         }
+        fn sweep_lords(ref self: TContractState, game_id: u32, structure_id: u64) {
+            crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
+                game_id,
+                structure_id,
+            )
+        }
         fn award_frontier_prize(ref self: TContractState, game_id: u32, rank: u16) {
             crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },

@@ -1,4 +1,3 @@
-import { formatMoment } from "@bibliothecadao/types";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -7,7 +6,7 @@ import type { AlertsAsk } from "@/shell/profile/alerts-ask";
 import { planRealmLabor } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
-import { SeasonWithdrawRow } from "./season-withdraw";
+import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
 let host: HTMLDivElement;
@@ -141,30 +140,21 @@ describe("a withdrawal's rules", () => {
 });
 
 describe("the realm's LORDS on the season-over card", () => {
-  // The season's withdrawals close at 10,000.
-  const show = (lords: number | undefined, now: number, onOpen = vi.fn()) => {
-    act(() => root.render(<SeasonWithdrawRow lords={lords} closesAt={10_000} now={now} onOpen={onOpen} />));
-    return onOpen;
+  const show = (lords: number | undefined) => {
+    act(() => root.render(<SeasonPayoutRow lords={lords} />));
   };
 
-  it("offers Withdraw, with the moment withdrawals close, while the season's claim window is open", () => {
-    const onOpen = show(1_240, 9_999);
+  it("shows the remaining LORDS and automatic payout without requiring a withdrawal", () => {
+    show(1_240);
     expect(host.textContent).toContain("1,240");
-    expect(host.textContent).toContain(`Withdraw until ${formatMoment(10_000, 9_999)}`);
-    act(() => button("Withdraw")!.click());
-    expect(onOpen).toHaveBeenCalledTimes(1);
-  });
-
-  it("says withdrawals have closed from that moment, and offers nothing to press", () => {
-    show(1_240, 10_000);
-    expect(host.textContent).toContain("Withdrawals have closed");
+    expect(host.textContent).toContain("LORDS are paid out automatically at season end");
     expect(host.querySelector("button")).toBeNull();
   });
 
-  it("shows nothing for a realm that holds no LORDS, or whose count is not known yet", () => {
-    show(0, 9_999);
+  it("shows nothing after the sweep consumes the balance, or while the balance is unknown", () => {
+    show(0);
     expect(host.textContent).toBe("");
-    show(undefined, 9_999);
+    show(undefined);
     expect(host.textContent).toBe("");
   });
 });

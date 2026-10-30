@@ -889,6 +889,9 @@ importers:
       '@bibliothecadao/eternum':
         specifier: workspace:*
         version: link:../../packages/core
+      '@bibliothecadao/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@realms-world/chain':
         specifier: workspace:*
         version: link:../../packages/chain

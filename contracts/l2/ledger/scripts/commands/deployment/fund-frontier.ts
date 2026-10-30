@@ -145,7 +145,8 @@ export async function carryFrontier(
     account.callContract({ contractAddress: ledger, entrypoint, calldata }, head.number);
   const previous = decodeFrontierSeason(await read("get_frontier", [shard.chainId, String(previousGameId)]));
   const preset = decodeLedgerPreset(await read("get_preset", [String(previous.presetId)]));
-  if (head.time < previous.end + preset.claimWindow) throw new Error("Previous chest claim window is open");
+  if (!previous.closed && head.time < previous.end + preset.claimWindow)
+    throw new Error("Previous chest claim window is open");
   if (target.closed || head.time >= target.end || target.start < previous.end)
     throw new Error("Invalid carry destination");
   const carry = await read("frontier_carry", [shard.chainId]);
@@ -154,7 +155,9 @@ export async function carryFrontier(
     BigInt(ledgerU256(carry[0]!, carry[1]!)) + (previous.closed ? 0n : BigInt(previous.pool) - BigInt(previous.paid));
   if (previous.closed && amount === 0n) return { chainId: shard.chainId, gameId, frontier: target };
   const submitted = await account.execute([
-    { contractAddress: ledger, entrypoint: "close_frontier", calldata: [shard.chainId, String(previousGameId)] },
+    ...(previous.closed
+      ? []
+      : [{ contractAddress: ledger, entrypoint: "close_frontier", calldata: [shard.chainId, String(previousGameId)] }]),
     { contractAddress: ledger, entrypoint: "apply_frontier_carry", calldata: [shard.chainId, String(gameId)] },
   ]);
   const receipt = await account.waitForTransaction(submitted.transaction_hash);

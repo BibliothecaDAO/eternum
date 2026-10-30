@@ -303,41 +303,44 @@ test("funding refuses a network name instead of an environment", async () => {
   expect(execute).not.toHaveBeenCalled();
 });
 
-test("carries an expired chest remainder once, preserving both prize pots", async () => {
-  const previous = [...season];
-  previous[1] = "0";
-  previous[2] = "100";
-  previous[5] = String(200000n * 10n ** 18n);
-  const oldPreset = [...preset];
-  oldPreset[17] = "50";
-  let closed = false;
-  let moved = false;
-  ledgerRead.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata?: string[] }) => {
-    if (entrypoint === "get_frontier") {
-      if (calldata?.[1] === "41") return previous.map((x, i) => (i === 7 ? String(Number(closed)) : x));
-      return season.map((x, i) => (i === 3 && moved ? String(1200000n * 10n ** 18n) : x));
-    }
-    if (entrypoint === "get_preset") return oldPreset;
-    if (entrypoint === "frontier_carry") return ["0", "0"];
-    throw new Error("Unexpected carry read");
-  });
-  models[1]!.rows[0]!.value.claim_window_seconds = 50;
-  execute.mockImplementationOnce(async () => {
-    closed = true;
-    moved = true;
-    return { transaction_hash: "0xabc" };
-  });
-  const runCarry = () => carryFrontier(account, provider, shard, "https://herald.test", 41, 42, "dev");
-  const result = await runCarry();
-  expect(result.frontier.pool).toBe(String(1200000n * 10n ** 18n));
-  expect(result.frontier.prizePool).toBe(String(300000n * 10n ** 18n));
-  expect(execute.mock.calls[0]![0]).toEqual([
-    { contractAddress: "0x123", entrypoint: "close_frontier", calldata: ["0x7", "41"] },
-    { contractAddress: "0x123", entrypoint: "apply_frontier_carry", calldata: ["0x7", "42"] },
-  ]);
-  await runCarry();
-  expect(execute).toHaveBeenCalledTimes(1);
-});
+test.each([false, true])(
+  "carries a closed chest remainder once (already swept: %s), preserving both prize pots",
+  async (alreadySwept) => {
+    const previous = [...season];
+    previous[1] = "0";
+    previous[2] = "100";
+    previous[5] = String(200000n * 10n ** 18n);
+    const oldPreset = [...preset];
+    oldPreset[17] = alreadySwept ? "604800" : "50";
+    let closed = alreadySwept;
+    let moved = false;
+    ledgerRead.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata?: string[] }) => {
+      if (entrypoint === "get_frontier") {
+        if (calldata?.[1] === "41") return previous.map((x, i) => (i === 7 ? String(Number(closed)) : x));
+        return season.map((x, i) => (i === 3 && moved ? String(1200000n * 10n ** 18n) : x));
+      }
+      if (entrypoint === "get_preset") return oldPreset;
+      if (entrypoint === "frontier_carry") return [alreadySwept && !moved ? String(500000n * 10n ** 18n) : "0", "0"];
+      throw new Error("Unexpected carry read");
+    });
+    models[1]!.rows[0]!.value.claim_window_seconds = Number(oldPreset[17]);
+    execute.mockImplementationOnce(async () => {
+      closed = true;
+      moved = true;
+      return { transaction_hash: "0xabc" };
+    });
+    const runCarry = () => carryFrontier(account, provider, shard, "https://herald.test", 41, 42, "dev");
+    const result = await runCarry();
+    expect(result.frontier.pool).toBe(String(1200000n * 10n ** 18n));
+    expect(result.frontier.prizePool).toBe(String(300000n * 10n ** 18n));
+    expect(execute.mock.calls[0]![0]).toEqual([
+      ...(alreadySwept ? [] : [{ contractAddress: "0x123", entrypoint: "close_frontier", calldata: ["0x7", "41"] }]),
+      { contractAddress: "0x123", entrypoint: "apply_frontier_carry", calldata: ["0x7", "42"] },
+    ]);
+    await runCarry();
+    expect(execute).toHaveBeenCalledTimes(1);
+  },
+);
 
 test.each(["dev", "production"] as const)(
   "%s funds the 80-hour Devcon game with 300k split into 210k chests and 90k top-three prizes",

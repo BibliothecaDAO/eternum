@@ -26,7 +26,7 @@ const FRONTIER_STATES = [
   "season",
   "season-detail",
   "season-over",
-  "season-over-withdraw",
+  "season-over-payout",
   "visiting",
   "next-up-deploy",
 ];
@@ -142,6 +142,13 @@ const proveSurface = async (b, baseUrl, out, surface) => {
   await sleep(SETTLE_MS);
   b.run("screenshot", join(out, fileName(surface)));
   record.checks.push(...windowChecks(b));
+  if (surface === "frontier/season-over-payout")
+    record.checks.push({
+      check: "The remaining LORDS are paid automatically, with no end-of-season withdrawal action",
+      ok: b.evaluate(`document.body.innerText.includes("1,240") &&
+      document.body.innerText.includes("LORDS are paid out automatically at season end") &&
+      ![...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Withdraw")`),
+    });
   if (surface === "settings") await proveSettings(b, out, record);
   // A tab can change the tabs beside it (a market's view): the list is read again after each press.
   const shown = new Set();

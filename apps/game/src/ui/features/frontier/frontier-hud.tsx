@@ -47,7 +47,7 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
-import { SeasonWithdraw } from "./value/season-withdraw";
+import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useCampaignMark } from "./value/campaign-home";
 import { useRealmLabor } from "./value/use-realm-labor";
@@ -229,7 +229,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
       {surface !== "season" && surface !== "withdraw" && (
         <SeasonOver
-          withdraw={realm && !visit && <SeasonWithdraw realm={realm} onOpen={() => setSurface("withdraw")} />}
+          withdraw={realm && !visit && <SeasonPayout realm={realm} />}
           onSeason={() => setSurface("season")}
         />
       )}

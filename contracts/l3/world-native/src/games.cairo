@@ -110,6 +110,13 @@ pub mod Games {
                 winners,
             )
         }
+        fn sweep_lords(ref self: ContractState, game_id: u32, structure_id: u64) {
+            crate::entry::ILedgerOperatorDispatcherTrait::sweep_lords(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                structure_id,
+            )
+        }
         fn award_frontier_prize(ref self: ContractState, game_id: u32, rank: u16) {
             crate::entry::ILedgerOperatorDispatcherTrait::award_frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
