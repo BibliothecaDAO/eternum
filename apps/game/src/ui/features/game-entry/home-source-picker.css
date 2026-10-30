@@ -15,7 +15,9 @@
 .home-picker__head h2 {
   color: rgb(var(--hud-ink));
   font-family: var(--font-heading, "IM Fell English SC", serif);
-  font-size: 1.35rem;
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
 }
 .home-picker__featured {
   display: grid;
@@ -39,8 +41,9 @@
 .home-picker__about h3 {
   color: rgb(var(--hud-ink));
   font-family: var(--font-display, "Cinzel", serif);
-  font-size: 1.4rem;
-  line-height: 1.1;
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
 }
 .home-picker__sub {
   color: var(--hud-muted);
@@ -61,8 +64,9 @@
   border-radius: var(--hud-radius-round);
   background: var(--hud-chosen);
   color: rgb(var(--hud-gold));
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
 }
 .home-picker__claim {
   display: flex;
@@ -76,13 +80,13 @@
   align-items: center;
   gap: 0.5rem;
 }
-/* A picture: a Realm's map in the parchment's tones, a ticket's realm on its colour. */
+/* A picture: a Realm's map in the parchment's tones, a ticket's realm on its colour, lit from the middle. */
 .home-picker__art {
   display: grid;
   overflow: hidden;
   place-items: center;
   border-radius: calc(var(--hud-radius-panel) - 2px);
-  background: #e6d8bb;
+  background: rgb(var(--hud-ink));
 }
 .home-picker__map {
   width: 100%;
@@ -91,10 +95,20 @@
   filter: sepia(0.75) contrast(1.05) brightness(0.92);
 }
 .home-picker__art[data-ticket="golden"] {
-  background: radial-gradient(circle at 50% 40%, #ffe39a, #d99a2b 60%, #7a4a0c);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 55%, rgb(var(--hud-ink))),
+    rgb(var(--hud-gold)) 60%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 50%, rgb(var(--hud-dark)))
+  );
 }
 .home-picker__art[data-ticket="regular"] {
-  background: radial-gradient(circle at 50% 40%, #e8d9bd, #9a7f58 60%, #4a3a26);
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, rgb(var(--hud-ink)) 85%, rgb(var(--hud-gold))),
+    color-mix(in srgb, rgb(var(--hud-gold)) 45%, rgb(var(--hud-dark))) 60%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 20%, rgb(var(--hud-dark)))
+  );
 }
 .home-picker__art[data-ticket="free"],
 .home-picker__art[data-map="none"] {
@@ -135,8 +149,9 @@
   overflow: hidden;
   padding: 0.3rem 0.4rem;
   color: rgb(var(--hud-ink));
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: var(--hud-text-label);
+  line-height: var(--hud-leading-label);
+  font-weight: var(--hud-weight-label);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -193,9 +208,6 @@
   gap: 0.25rem;
   padding: 0 0.4rem 0.4rem;
 }
-.home-picker__traits .home-picker__wonder {
-  font-size: 0.7rem;
-}
 .home-picker__link {
   width: fit-content;
   color: rgb(var(--hud-gold));
@@ -218,11 +230,5 @@
 @media (max-width: 640px) {
   .home-picker__featured {
     grid-template-columns: minmax(0, 1fr);
-  }
-  .home-picker__featured .home-picker__art {
-    height: 10rem;
-  }
-  .home-picker__about h3 {
-    font-size: 1.35rem;
   }
 }
