@@ -1,4 +1,4 @@
-import { RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 import { totalToday } from "./today-totals";
 
@@ -38,6 +38,14 @@ describe("the player's day in totals", () => {
       }),
       story("SitePayout", { category: 11, reward: null }),
       story("SitePayout", {
+        category: StructureType.Beasts,
+        reward: { resource_type: ResourcesIds.Labor, amount: whole(137) },
+      }),
+      story("SitePayout", {
+        category: StructureType.Beasts,
+        reward: { resource_type: ResourcesIds.Labor, amount: whole(80) },
+      }),
+      story("SitePayout", {
         category: 10,
         reward: { Some: { resource_type: ResourcesIds.Lords, amount: whole(200) } },
       }),
@@ -47,10 +55,10 @@ describe("the player's day in totals", () => {
     ];
     expect(totalToday(stories, "0x0111", { startMs: 1_000, endMs: 9_000 })).toEqual({
       reveals: 2,
-      cleared: 3,
+      cleared: 5,
       chests: 1,
       essence: 150,
-      labor: 699,
+      labor: 916,
       lords: 200,
     });
   });

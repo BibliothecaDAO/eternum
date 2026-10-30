@@ -27,8 +27,8 @@ export type ExplorerRewardSystemUpdate = {
   timestamp: number;
 };
 /**
- * A site cleared, as its payout story and the winning exchange before it tell it (one transaction): what the site was,
- * what it paid home in whole units (beasts pay only XP, a ruin its chest), where it stood and what the fight cost.
+ * A site cleared, as its payout story and winning exchange tell it (one transaction): what the site was,
+ * what the receipt paid home in whole units, where it stood and what the fight cost.
  */
 export type SitePayoutSystemUpdate = {
   explorerId: ID;

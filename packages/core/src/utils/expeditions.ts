@@ -61,9 +61,9 @@ export const siteKindOf = (category: number): SiteKind => {
 
 /**
  * What clearing a site still pays home in resources, as the contract's site_reward computes it from the guard it
- * started with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. A cleared
- * site has paid and pays nothing again (the contract refuses a second payout); beasts pay only XP; a ruin pays its
- * chest.
+ * started with: a camp half its troops in labor, beasts a quarter, a rift three times them in Essence, all in game
+ * precision. A cleared site has paid and pays nothing again; a ruin pays its stored chest. Actual credits are read
+ * from the clear receipt, including reductions when a store was full.
  */
 export const siteReward = (
   kind: SiteKind,
