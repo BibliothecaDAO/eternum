@@ -98,57 +98,70 @@ export const BuildView = ({
   sending: boolean;
   onBuild: () => void;
   onClose: () => void;
-}) => (
-  <HudSheet label={BUILD} onClose={onClose}>
-    {population && (
-      <header className="flex items-center justify-end">
-        <HudChip icons={["person"]} label={POPULATION} tip={formatPopulationInWords(population.used, population.total)}>
-          {formatPopulation(population.used, population.total)}
-        </HudChip>
-      </header>
-    )}
-    <div className="grid grid-cols-3 gap-1.5">
-      {tiles.map((tile, index) => (
-        <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
-      ))}
-    </div>
-    {scouting && (
-      <fieldset className="flex flex-col gap-2">
-        <legend className="text-hud-label">Common Scouting</legend>
-        <div className="flex flex-wrap gap-2">
-          {availableScoutingChoices((row) => researchTier(scouting.learned, row)).map(({ name, side, icon }) => (
-            <HudButton
-              key={name}
-              kind={side === scouting.kind ? "secondary" : "quiet"}
-              aria-pressed={side === scouting.kind}
-              onClick={() => scouting.onChoose(side)}
-            >
-              <span className="flex flex-col items-center">
-                <IconGroup name={icon} size={18} />
-                {name}
-              </span>
+}) => {
+  const scoutingOptions = scouting ? availableScoutingChoices((row) => researchTier(scouting.learned, row)) : [];
+  const needsScoutingChoice = scouting !== undefined && !scoutingOptions.some(({ side }) => side === scouting.kind);
+  return (
+    <HudSheet label={BUILD} onClose={onClose}>
+      {population && (
+        <header className="flex items-center justify-end">
+          <HudChip
+            icons={["person"]}
+            label={POPULATION}
+            tip={formatPopulationInWords(population.used, population.total)}
+          >
+            {formatPopulation(population.used, population.total)}
+          </HudChip>
+        </header>
+      )}
+      <div className="grid grid-cols-3 gap-1.5">
+        {tiles.map((tile, index) => (
+          <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
+        ))}
+      </div>
+      {scouting && (
+        <fieldset className="flex flex-col gap-2">
+          <legend className="text-hud-label">Common Scouting</legend>
+          <div className="flex flex-wrap gap-2">
+            {scoutingOptions.map(({ name, side, icon }) => (
+              <HudButton
+                key={name}
+                kind={side === scouting.kind ? "secondary" : "quiet"}
+                aria-pressed={side === scouting.kind}
+                onClick={() => scouting.onChoose(side)}
+              >
+                <span className="flex flex-col items-center">
+                  <IconGroup name={icon} size={18} />
+                  {name}
+                </span>
+              </HudButton>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {refusal ? (
+        <HudWindowFoot note={<RefusalNote refusal={refusal} />}>
+          {refusal.fix && (
+            <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
+              {refusal.fix.word}
             </HudButton>
-          ))}
-        </div>
-      </fieldset>
-    )}
-    {refusal ? (
-      <HudWindowFoot note={<RefusalNote refusal={refusal} />}>
-        {refusal.fix && (
-          <HudButton kind="primary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
-            {refusal.fix.word}
+          )}
+        </HudWindowFoot>
+      ) : (
+        <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
+          <HudButton
+            kind="primary"
+            busy={sending ? BUILDING : undefined}
+            disabled={needsScoutingChoice}
+            onClick={onBuild}
+          >
+            {BUILD}
           </HudButton>
-        )}
-      </HudWindowFoot>
-    ) : (
-      <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
-        <HudButton kind="primary" busy={sending ? BUILDING : undefined} onClick={onBuild}>
-          {BUILD}
-        </HudButton>
-      </HudWindowFoot>
-    )}
-  </HudSheet>
-);
+        </HudWindowFoot>
+      )}
+    </HudSheet>
+  );
+};
 
 /**
  * Why the building cannot rise, in the foot where Build would stand, over the price of the way past it (the Hut that
