@@ -67,6 +67,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
 import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
@@ -875,15 +876,33 @@ const STATES = {
       fight: WIN(3, 1, 98_765_432_099),
     },
   },
-  "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
+  "value-hud": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+  },
   // The purse and Next up at once, as a signed-in player meets them: the layout check holds them apart.
-  "purse-next-up": { clock: CLOCK, stores: STORES, armies: [], purse: { lords: 1_240, realms: 2_000 } },
+  "purse-next-up": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+  },
   // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
   "realm-claim": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 1_000 },
+    purse: { lords: 1_240, realms: { labor: 1_000, essence: 0 } },
+    realm: { level: 2, population: { used: 27, total: 42 } },
+  },
+  // A golden Devcon home's day: its Labor and its Essence, both on the chip.
+  "realm-claim-essence": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 2_000 } },
     realm: { level: 2, population: { used: 27, total: 42 } },
   },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
@@ -891,7 +910,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
     menu: true,
     menuRealms: true,
   },
@@ -1027,7 +1046,7 @@ type LabState = {
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
-  purse?: { lords: number; gain?: number; realms?: number };
+  purse?: { lords: number; gain?: number; realms?: DailyClaimWaiting };
   /** The realm's rank and population, in place of the lab's City at 9/18. */
   realm?: { level: number; population: { used: number; total: number } };
   menuRealms?: boolean;
@@ -1087,7 +1106,7 @@ export const HudLab = () => {
         purse={
           lab.purse && (
             <PurseRow>
-              {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
+              {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
               <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
             </PurseRow>
           )
@@ -1455,7 +1474,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               onHome={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
-                labor: lab.purse?.realms,
+                waiting: lab.purse?.realms,
                 storeCards: lab.storeCard && {
                   kinds: MADE_STORES,
                   open: lab.storeCard.kind,

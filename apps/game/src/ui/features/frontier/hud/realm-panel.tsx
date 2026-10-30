@@ -8,7 +8,7 @@ import {
 } from "@bibliothecadao/types";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudChip, HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
 import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
 import { useLandedValue } from "@/ui/motion/landing-hold";
 import { TickNumber } from "@/ui/motion/tick-number";
@@ -18,6 +18,7 @@ import { RankSteps } from "../realm/rank-steps";
 import type { RealmPopulation } from "../realm/realm-population";
 import type { CampaignMark } from "../value/campaign-home";
 import { RealmsChip } from "../value/lords-purse";
+import type { DailyClaimWaiting } from "../value/realm-labor";
 import { FRONTIER_STORES } from "../stores";
 import { LandingDelta, STORE_TONES, type StoreReading, storeLine } from "./status-strip";
 
@@ -36,7 +37,7 @@ export const RealmPanel = ({
   population,
   stores,
   lords,
-  labor = 0,
+  waiting = null,
   onHome,
   storeCards,
   onWithdraw,
@@ -52,8 +53,8 @@ export const RealmPanel = ({
   stores: StoreReading[];
   /** The realm's LORDS; absent for a realm not the player's. */
   lords?: number;
-  /** The labor the player's Realms have waiting today, which the Realms chip wears. */
-  labor?: number;
+  /** What the home's daily claim has waiting today, which the Realms chip wears. */
+  waiting?: DailyClaimWaiting | null;
   /** The header's press: the map centred on the realm. */
   onHome?: () => void;
   /** The stores whose ring opens their card, the one open, and that card under the rings. */
@@ -87,15 +88,15 @@ export const RealmPanel = ({
     <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 text-hud-strong text-hud-ink">
       {level !== undefined && (
         <span className="flex items-center gap-2">
-          <SemanticIcon name={mark?.icon ?? realmMeaning(level)} size={24} />
+          {/* A campaign home's pavilion stands for its rank's icon; its campaign's name is the icon's tip. */}
+          <SemanticIcon name={mark?.icon ?? realmMeaning(level)} size={24} alt={mark?.line} data-tip={mark?.line} />
           {rankName(level)}
         </span>
       )}
-      {mark && <HudChip icons={[mark.icon]}>{mark.line}</HudChip>}
       {population && <PopulationReading population={population} />}
       {onRealms && (
         <span className="ml-auto">
-          <RealmsChip labor={labor} onOpen={onRealms} />
+          <RealmsChip waiting={waiting} onOpen={onRealms} />
         </span>
       )}
     </div>

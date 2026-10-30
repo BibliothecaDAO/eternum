@@ -1,4 +1,5 @@
-import { BUILDINGS_CENTER, BuildingType } from "@bibliothecadao/types";
+import { ResourceManager } from "@bibliothecadao/eternum";
+import { BUILDINGS_CENTER, BuildingType, ResourcesIds } from "@bibliothecadao/types";
 import { shortString } from "starknet";
 import { DEVCON, DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { LAB_FRONTIER_BOARD } from "@/shell/lab/app-lab-fixtures";
@@ -39,6 +40,27 @@ export const campaignScenario = (tier: "regular" | "golden", level?: number) => 
       },
     ] as never);
   }
+  return spire;
+};
+
+/**
+ * A golden Devcon home whose Labor store is full (/lab/game?scenario=devcon-golden-full): today's claim lands only its
+ * Essence, so the daily claim must still show while no Labor fits.
+ */
+export const fullLaborCampaignScenario = (): LabScenario => {
+  const spire = campaignScenario("golden")();
+  const limit = new ResourceManager(spire.store, 7, 1).storeLimit(ResourcesIds.Labor);
+  if (limit === undefined) throw new Error("The lab realm's Labor store has no limit");
+  const held = [...spire.store.entries("ResourceBalance")].find(
+    ([, row]) => row.entity_id === 7n && row.resource_type === ResourcesIds.Labor,
+  );
+  spire.store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: held?.[0] ?? "0x1abc2",
+      value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Labor, balance: String(limit) },
+    },
+  ] as never);
   return spire;
 };
 
