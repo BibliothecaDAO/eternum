@@ -2402,6 +2402,7 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
       this.previouslyHoveredHex = null;
+      this.armyManager.setHoveredArmy(null);
       this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
       publishMapSelection({ hovered: null });
@@ -2426,7 +2427,8 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
     this.previouslyHoveredHex = hexCoords;
-    const { structure: hoveredStructure } = this.getHexagonEntity(hexCoords);
+    const { structure: hoveredStructure, army: hoveredArmy } = this.getHexagonEntity(hexCoords);
+    this.armyManager.setHoveredArmy(hoveredArmy?.id ?? null);
     publishMapSelection({
       hovered: hoveredStructure
         ? {
@@ -8948,6 +8950,24 @@ export default class WorldmapScene extends WarpTravel {
     this.orderTargetRing.showHover(x, z);
   }
 
+  /**
+   * The selected army's walk drawn in full, and its route to the tile under the pointer before the order, as HoMM and
+   * Humankind preview a move (owner, 30 October 2026, "ok for A yes", reports/army-path-3.md): only a route the army
+   * would walk, a Move or an Explore.
+   */
+  private showSelectedArmyRoutes(): void {
+    const army = this.selectedArmyId();
+    this.armyManager.setSelectedArmy(army);
+    const { hoveredHex, actionPaths } = getLiveWorldmapEntityActions();
+    const path = army !== null && hoveredHex ? actionPaths.get(ActionPaths.posKey(hoveredHex, true)) : undefined;
+    const actionType = path && ActionPaths.getActionType(path);
+    const walks = actionType === ActionType.Move || actionType === ActionType.Explore;
+    this.armyManager.previewRoute(
+      army,
+      path && walks ? path.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })) : null,
+    );
+  }
+
   /** A selected army that is gone lets go of the map, what the map drew for it with it (letGoOfLostSelection). */
   private letGoOfLostSelection(): void {
     letGoOfLostSelection(this.game.store, () => this.clearEntitySelection());
@@ -8992,6 +9012,12 @@ export default class WorldmapScene extends WarpTravel {
       nextEntityActions.selectedEntityId !== previousEntityActions?.selectedEntityId
     )
       this.markOrderTarget();
+    if (
+      nextEntityActions.hoveredHex !== previousEntityActions?.hoveredHex ||
+      nextEntityActions.selectedEntityId !== previousEntityActions?.selectedEntityId ||
+      nextEntityActions.actionPaths !== previousEntityActions?.actionPaths
+    )
+      this.showSelectedArmyRoutes();
 
     if (this.isMissingActionPathOwnershipState()) {
       this.logInteractionDebug("clearing_entity_selection_for_missing_ownership", {
