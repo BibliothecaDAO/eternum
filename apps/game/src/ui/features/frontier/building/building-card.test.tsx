@@ -26,9 +26,9 @@ afterEach(() => {
  * (rules.cairo: +10%, +20%, +30%, +40%), Rifts 10 + 20.
  */
 const LODGE_LEGENDARY = [
-  ["Trolls", "+55%"],
-  ["Rifts", "+25%"],
-  ["Beasts", "+20%"],
+  ["Trolls", "Found more", "+55%"],
+  ["Rifts", "Found more", "+25%"],
+  ["Beasts", "Found more", "+20%"],
 ];
 
 const nodeOf = (realm: RealmResearchFacts, row: number) =>
@@ -71,9 +71,15 @@ const draw = (
   return { onResearch, onFix };
 };
 const card = () => host.querySelector("[data-building-card]")!;
+/** Each figure's row as read: its word, what it does (the line under the word), then its figures. */
 const rows = () =>
   [...card().querySelectorAll("[data-compare] > :not(:first-child)")].map((row) =>
-    [...row.children].map((cell) => cell.textContent),
+    [...row.children].flatMap((cell, index) => {
+      const line = cell.querySelector("[data-line]")?.textContent;
+      return index === 0
+        ? [cell.textContent!.slice(0, cell.textContent!.length - (line?.length ?? 0)), line]
+        : [cell.textContent];
+    }),
   );
 /** The tier gems as drawn: the head's, then the table's now and next. */
 const gems = () => [...card().querySelectorAll(".ui-tier")].map((gem) => gem.textContent);
@@ -97,8 +103,8 @@ it("says what all the Farms make as one number, and their research only as gems"
 it("reads each side now against the next tier, picks a side by its row, and researches the side picked", () => {
   const { onResearch } = draw(research.ROW_FARM);
   expect(rows()).toEqual([
-    ["Fields", "+20%", "→", "+40%"],
-    ["Granary", "+40%", "→", "+80%"],
+    ["Fields", "Farm wheat", "+20%", "→", "+40%"],
+    ["Granary", "Wheat storage", "+40%", "→", "+80%"],
   ]);
   expect(button(/^Research Fields$/)).toBeDefined();
   act(() => button(/^Granary/)!.click());
@@ -154,7 +160,7 @@ it("shows a training building's one figure, what every new army starts with, now
   draw(research.ROW_WAR_HALL, { standing: 1 });
   expect(card().textContent).toContain("1 building");
   expect(card().textContent).not.toContain("1 buildings");
-  expect(rows()).toEqual([["Battle", "+10% damage", "→", "+25% damage"]]);
+  expect(rows()).toEqual([["Battle", "Every new army", "+10% damage", "→", "+25% damage"]]);
   expect(button(/^Research$/)).toBeDefined();
   // Common is I on the card and current column; the next tier is II.
   expect(gems()).toEqual(["I", "I", "II"]);
@@ -167,8 +173,8 @@ it("at Legendary shows what research gave, with no next column and no Research",
   };
   draw(research.ROW_FARM, { realm: legendary });
   expect(rows()).toEqual([
-    ["Fields", "+100%"],
-    ["Granary", "+200%"],
+    ["Fields", "Farm wheat", "+100%"],
+    ["Granary", "Wheat storage", "+200%"],
   ]);
   expect(button(/^Research/)).toBeUndefined();
   expect(gems()).toEqual(["V", "V"]);
@@ -179,8 +185,8 @@ it("reads a viewer's building as it stands: what it makes and its tier, with not
   expect(card().textContent).toContain("+25/min");
   expect(card().textContent).toContain("4 buildings");
   expect(rows()).toEqual([
-    ["Fields", "+20%"],
-    ["Granary", "+40%"],
+    ["Fields", "Farm wheat", "+20%"],
+    ["Granary", "Wheat storage", "+40%"],
   ]);
   expect(gems()).toEqual(["I", "I"]);
   // The sheet's close is its one control.
@@ -196,9 +202,9 @@ it("shows the Scouts' lodge's three kinds, each held now and next, and researche
   const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: RICH, standing: 1 });
   // The lodge took Rifts at Uncommon.
   expect(rows()).toEqual([
-    ["Trolls", "0%", "→", "+15%"],
-    ["Rifts", "+10%", "→", "+25%"],
-    ["Beasts", "0%", "→", "+15%"],
+    ["Trolls", "Found more", "0%", "→", "+15%"],
+    ["Rifts", "Found more", "+10%", "→", "+25%"],
+    ["Beasts", "Found more", "0%", "→", "+15%"],
   ]);
   act(() => button(/^Rifts/)!.click());
   act(() => button(/^Research Rifts$/)!.click());
@@ -229,4 +235,19 @@ it("lets the owner choose the other research side after the first reaches V", ()
   expect(button(/^Research Granary$/)).toBeDefined();
   act(() => button(/^Research Granary$/)!.click());
   expect(onResearch).toHaveBeenCalledWith(1);
+});
+
+it("says under every research figure, on every building's card, what the figure does, the Barracks' gate too", () => {
+  const buildings = readResearchTree(MID_REALM).filter((node) => node.maxTier === 5);
+  expect(buildings.map(({ name }) => name)).toEqual(
+    expect.arrayContaining(["Farm", "Workshop", "Barracks", "Hut", "War hall", "Scouts' lodge"]),
+  );
+  for (const node of buildings) {
+    draw(node.row);
+    const shown = rows().map(([word, line]) => [word, line]);
+    expect(shown).toEqual(node.figures.map(({ name, line }) => [name, line]));
+    for (const [, line] of shown) expect(line).toMatch(/\w{3,}/);
+  }
+  draw(research.ROW_BARRACKS);
+  expect(card().textContent).toContain("Training buildings open");
 });

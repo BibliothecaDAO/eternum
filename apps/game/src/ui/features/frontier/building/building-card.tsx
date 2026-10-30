@@ -166,6 +166,7 @@ export const BuildingCardView = ({
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
+              line: figure.line,
               now: figure.now,
               next: orders && figure.next,
               grows: orders !== undefined && (!node.sides || index === side),
@@ -173,6 +174,7 @@ export const BuildingCardView = ({
             }))}
           />
         )}
+        {node?.gate && <span className="px-2 text-hud-label text-hud-muted">{node.gate.line}</span>}
         {next && orders && (
           <ResearchFoot
             node={next}

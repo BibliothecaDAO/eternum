@@ -136,7 +136,8 @@ export const FULL = "Full";
  */
 export const STORAGE = "Storage";
 /** On a payout's Full mark: the storage took what it had room for. */
-export const REST_DID_NOT_FIT = "Storage full: the rest did not fit";
+/** A clear's payout over the store's room, on its chip: what goes past the limit is lost. */
+export const REST_DID_NOT_FIT = "Full: the rest did not fit";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
 /** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
@@ -308,6 +309,11 @@ export const xpTowardTip = (held: string, milestone: string, tier: string) =>
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
 export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
+/**
+ * A ruin's rule, on its card, as the contract keeps it (expeditions.cairo, close_ruins): a realm clears one ruin a day,
+ * and that clear removes its other ruins on every depth (owner, 30 October: one short line).
+ */
+export const RUIN_RULE = `One ${RUIN.toLowerCase()} a day · the rest vanish`;
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 /**
@@ -483,7 +489,7 @@ export const STORE_MAKERS = {
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 /** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
-export const comesHomeAtDayEnd = (troops: string) => `${troops} come home when the day ends`;
+export const comesHomeAtDayEnd = (troops: string) => `${troops} come home at day end`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
@@ -1339,12 +1345,12 @@ export const RESEARCH_TREE = {
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {
-    fields: ["Fields", "Wheat from every Farm"],
-    granary: ["Granary", "The castle's wheat storage"],
-    tools: ["Tools", "Labor from every Workshop"],
-    storeroom: ["Storeroom", "The castle's labor storage"],
-    drill: ["Drill", "Troops from every Barracks"],
-    rations: ["Rations", "Wheat a deployed troop costs"],
+    fields: ["Fields", "Farm wheat"],
+    granary: ["Granary", "Wheat storage"],
+    tools: ["Tools", "Workshop labor"],
+    storeroom: ["Storeroom", "Labor storage"],
+    drill: ["Drill", "Barracks troops"],
+    rations: ["Rations", "Wheat per troop"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: {
@@ -1352,14 +1358,17 @@ export const RESEARCH_TREE = {
     rift: structurePlural(StructureType.Rift, undefined, "frontier"),
     beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
   },
-  foundByNewArmies: (kind: string) => `${kind} found by new armies`,
+  /** A Scouts' lodge kind's side: new armies find more of it. */
+  foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
-  hutLine: "Population from every Hut",
+  hutLine: "Hut population",
   population: "Population",
-  gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
-  gateOpen: "The four training buildings are open",
+  gateLine: "Opens the 4 training buildings",
+  gateOpen: "Training buildings open",
   gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
+  /** A training building's figure, under the attribute's name on its card: what that level is given to. */
+  everyNewArmy: "Every new army",
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
   /**

@@ -193,18 +193,19 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
 );
 
 /**
- * In the day's last hour, what an army's Homecoming sends home when the day ends, on its own token (under its troops)
- * or row (beside its XP): by the army it is about, not a bubble repeating the troops (player, 25 October).
+ * In the day's last hour, what an army's Homecoming sends home when the day ends, by the army it is about, not a bubble
+ * repeating the troops (player, 25 October): on a phone's token, under its troops, its mark and figure; on a desktop's
+ * row, where there is room, in words ("450 come home at day end").
  */
-export const HomecomingReturn = ({ troops }: { troops: number }) => (
+export const HomecomingReturn = ({ troops, words = false }: { troops: number; words?: boolean }) => (
   <span
     role="img"
     aria-label={comesHomeAtDayEnd(formatExact(troops))}
-    data-tip={comesHomeAtDayEnd(formatExact(troops))}
-    className="flex h-5 shrink-0 items-center rounded-full border border-hud-line bg-hud-dark pr-1 text-hud-label leading-none text-hud-good tabular-nums"
+    data-tip={words ? undefined : comesHomeAtDayEnd(formatExact(troops))}
+    className="flex h-5 shrink-0 items-center self-start rounded-full border border-hud-line bg-hud-dark pr-1.5 text-hud-label leading-none text-hud-good tabular-nums"
   >
     <SemanticIcon name="order-enlightenment" size={16} />
-    {formatGain(troops)}
+    {words ? comesHomeAtDayEnd(formatExact(troops)) : formatGain(troops)}
   </span>
 );
 

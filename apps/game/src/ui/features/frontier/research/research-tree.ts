@@ -84,8 +84,11 @@ export type Side = SideEffect & {
   needs: Need[];
 };
 
-/** One thing a building row's research gives: its mark and word, its figure now, and with the next tier (none at the top). */
-export type Figure = { icon: IconMeaning; name: string; now: string; next?: string };
+/**
+ * One thing a building row's research gives: its mark and word, what it does, its figure now, and with the next tier
+ * (none at the top). Every surface that shows the figure shows what it does beside it.
+ */
+export type Figure = { icon: IconMeaning; name: string; line: string; now: string; next?: string };
 
 export interface TreeNode {
   key: string;
@@ -114,8 +117,8 @@ export interface TreeNode {
   figures: Figure[];
   /** The nodes this one leads to (the tree's lines). */
   leadsTo: string[];
-  /** The Barracks purchase gate to the training buildings, and whether it is reached. */
-  gate?: { name: string; met: boolean };
+  /** The Barracks purchase gate to the training buildings, whether it is reached, and that in words. */
+  gate?: { name: string; met: boolean; line: string };
 }
 
 const ROWS = {
@@ -252,6 +255,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         ? sides.map((side) => ({
             icon: side.icon,
             name: side.name,
+            line: side.line,
             now: side.now,
             next: side.state === "done" ? undefined : side.next,
           }))
@@ -306,10 +310,19 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
 
+  const gateLine = gateNeed.met ? RESEARCH_TREE.gateOpen : RESEARCH_TREE.gateLine;
+
   const trainingNode = ({ row, category, attribute, word }: (typeof TRAINING)[keyof typeof TRAINING]): TreeNode =>
     buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
       extra: [gateNeed],
-      figures: (tier) => [{ icon: ATTRIBUTE_MARKS[word], name: word, ...attributeStep(attribute, tier) }],
+      figures: (tier) => [
+        {
+          icon: ATTRIBUTE_MARKS[word],
+          name: word,
+          line: RESEARCH_TREE.everyNewArmy,
+          ...attributeStep(attribute, tier),
+        },
+      ],
       ...(row === research.ROW_SCOUTS_LODGE
         ? {
             sides: (tier: number, done: boolean) =>
@@ -321,7 +334,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
                 return {
                   icon: kind.icon,
                   name: kind.name,
-                  line: RESEARCH_TREE.foundByNewArmies(kind.name),
+                  line: RESEARCH_TREE.foundMore,
                   now: percent(now),
                   next: done ? percent(now) : percent(now + scoutingStep(tier + 1)),
                 };
@@ -356,7 +369,11 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.WorkersHut,
         "economy",
         (tier) => ({ line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) }),
-        { figures: (tier) => [{ icon: "person", name: RESEARCH_TREE.population, ...hutPopulation(tier) }] },
+        {
+          figures: (tier) => [
+            { icon: "person", name: RESEARCH_TREE.population, line: RESEARCH_TREE.hutLine, ...hutPopulation(tier) },
+          ],
+        },
       ),
     ],
     ROW_BARRACKS: [
@@ -365,7 +382,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         BuildingType.ResourceKnightT1,
         "army",
         (tier) => ({
-          line: !gateNeed.met ? RESEARCH_TREE.gateLine(gateBarracks) : RESEARCH_TREE.gateOpen,
+          line: gateLine,
           now: tierShown(tier),
           next: tier < 5 ? tierShown(tier + 1) : undefined,
         }),
@@ -376,7 +393,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
             { icon: "rations", words: sides.rations, at: rations },
           ),
           leadsTo: Object.values(TRAINING).map(({ row }) => `row-${row}`),
-          gate: { name: gateBarracks, met: gateNeed.met },
+          gate: { name: gateBarracks, met: gateNeed.met, line: gateLine },
         },
       ),
     ],

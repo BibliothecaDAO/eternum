@@ -58,18 +58,14 @@ export const ArmyRow = ({
     title={
       <RowLine
         words={label}
-        figure={
-          <>
-            {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
-            <span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>
-          </>
-        }
+        figure={<span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>}
       />
     }
     // The troops line is figures throughout, set as the HUD sets figures.
     detail={
-      <span className="block tabular-nums">
+      <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
+        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} words />}
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.

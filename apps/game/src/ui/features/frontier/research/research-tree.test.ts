@@ -53,7 +53,11 @@ describe("the castle's tree as the contract rules it", () => {
       { essence: 1_000, labor: 1_000 },
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
-    expect(node(MID_REALM, "row-2").gate).toEqual({ name: "Barracks 2 purchases", met: true });
+    expect(node(MID_REALM, "row-2").gate).toEqual({
+      name: "Barracks 2 purchases",
+      met: true,
+      line: "Training buildings open",
+    });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
   });
 
@@ -88,7 +92,7 @@ describe("Frontier's camp is its Troll on the progression views (the shared stru
   it("names the Scouts' lodge's camp kind Trolls, and nothing in the tree Camp", () => {
     const lodge = node(MID_REALM, "row-6");
     expect(lodge.sides?.[0]?.name).toBe("Trolls");
-    expect(lodge.sides?.[0]?.line).toBe("Trolls found by new armies");
+    expect(lodge.sides?.[0]?.line).toBe("Found more");
     // Internal keys and icons stay "camp"; no word a player reads says Camp.
     expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
   });
@@ -146,5 +150,17 @@ it("requires construction for the first training level, with no separate researc
     expect(training.needs.some((need) => need.kind === "stands" && !need.met)).toBe(true);
     expect(training.needs.some((need) => need.kind === "labor" || need.kind === "essence")).toBe(false);
     expect(training.state).toBe("locked");
+  }
+});
+
+// Owner, 30 October 2026: "bit loo long on mobile as well". A side's or figure's line stands on one line in a phone's
+// side button (measured at 390 px: "Barracks troops" and "Wheat per troop" fit), the gate's in one short line.
+it("keeps every research line short enough for one line on a phone", () => {
+  for (const realm of [EARLY_REALM, MID_REALM]) {
+    for (const each of readResearchTree(realm)) {
+      for (const line of [...(each.sides ?? []), ...each.figures].map((figure) => figure.line))
+        expect(line.length, line).toBeLessThanOrEqual(16);
+      if (each.gate) expect(each.gate.line.length, each.gate.line).toBeLessThanOrEqual(30);
+    }
   }
 });

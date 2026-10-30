@@ -89,14 +89,13 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   expect(onFix).toHaveBeenCalledOnce();
 });
 
-it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
+it("names the Scouts' lodge's camp kind Trolls, never Camp, and says on each kind what it does", () => {
   draw("row-6");
   const choice = host.querySelector("[data-lab='node-choice']")!;
-  expect([...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.getAttribute("title"))).toEqual([
-    "Trolls found by new armies",
-    "Rifts found by new armies",
-    "Beasts found by new armies",
-  ]);
+  // In sight on the side itself, never only on a hover a phone has not got.
+  expect(
+    [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.children[1]!.children[1]!.textContent),
+  ).toEqual(["Found more", "Found more", "Found more"]);
   expect(host.textContent).not.toMatch(/Camp/);
 });
 
@@ -123,7 +122,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Population from every Hut · +100%");
+    expect(choice()!.textContent).toContain("Hut population · +100%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -171,7 +170,8 @@ it("shows the chosen research shares without a production formula", () => {
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toBe("Fields+20% → +40%");
+  expect(button(/^Fields/)!.textContent).toBe("FieldsFarm wheat+20% → +40%");
+  expect(button(/^Fields/)!.hasAttribute("title")).toBe(false);
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
   // The choice reads from its cards: no line explaining the sides or that they are kept.
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
@@ -267,4 +267,22 @@ it("renders every generated research row and submits every permitted lodge kind"
     expect(onResearch).toHaveBeenLastCalledWith(lodge, sideCodes[index]);
   }
   expect(onResearch).toHaveBeenCalledTimes(kinds.length);
+});
+
+it("says on every side of every row what it does, in sight on the side, never only on a hover", () => {
+  const sided = nodes.filter((node) => node.sides);
+  expect(sided.map(({ key }) => key)).toEqual(expect.arrayContaining(["row-0", "row-1", "row-2", "row-6"]));
+  for (const node of sided) {
+    draw(node.key);
+    const choice = host.querySelector("[data-lab='node-choice']")!;
+    const shown = [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.textContent);
+    expect(shown).toHaveLength(node.sides!.length);
+    node.sides!.forEach((side, index) => expect(shown[index]).toContain(`${side.name}${side.line}`));
+    expect(choice.querySelector("[title]")).toBeNull();
+  }
+  // The Barracks' gate to the training buildings, said under its two sides.
+  draw("row-2");
+  expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain(
+    nodes.find((n) => n.key === "row-2")!.gate!.line,
+  );
 });

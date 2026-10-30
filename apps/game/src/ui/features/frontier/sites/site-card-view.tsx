@@ -20,11 +20,11 @@ import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
-  FULL,
   MOVE,
   ON_ITS_WAY,
   REALM,
   REST_DID_NOT_FIT,
+  RUIN_RULE,
   siteTitle,
   STORAGE,
   tooFarFrom,
@@ -151,12 +151,10 @@ export const SiteCardView = ({
         </span>
       </header>
       {ruinChoice && (
-        <dl className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-hud-label">
-          <dt className="text-hud-muted">{ruinChoice.depth} · Disappears</dt>
-          <dd className="text-hud-ink" data-tip="Your first ruin clear removes every other ruin, across all depths.">
-            First ruin clear or day end
-          </dd>
-        </dl>
+        <p data-ruin-rule className="text-hud-label">
+          <span className="text-hud-muted">{ruinChoice.depth} · </span>
+          <span className="text-hud-ink">{RUIN_RULE}</span>
+        </p>
       )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
@@ -263,8 +261,8 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
         +{formatExact(short ? pay.fits : pay.amount)}
       </span>
       {short && (
-        <HudChip label={STORAGE} tone="bad" tip={REST_DID_NOT_FIT}>
-          {FULL}
+        <HudChip label={STORAGE} tone="bad">
+          {REST_DID_NOT_FIT}
         </HudChip>
       )}
     </span>

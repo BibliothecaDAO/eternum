@@ -9,6 +9,8 @@ import type { ReactNode } from "react";
 type CompareRow = {
   icon: IconMeaning;
   word: string;
+  /** What the figure is of, under its word, wrapped at any width (a research side's "Wheat from every Farm"). */
+  line?: string;
   now: string;
   next?: string;
   grows: boolean;
@@ -55,7 +57,14 @@ export const CompareRows = ({
           <>
             <span className={cn(WORD, "text-hud-ink")}>
               <Icon name={row.icon} size={24} />
-              <span className="truncate">{row.word}</span>
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{row.word}</span>
+                {row.line && (
+                  <span data-line className="text-hud-label leading-tight text-hud-muted">
+                    {row.line}
+                  </span>
+                )}
+              </span>
             </span>
             <span className={cn(FIGURE, "text-hud-ink")}>{row.now}</span>
             {next !== undefined && (
