@@ -310,7 +310,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
 
-  const gateLine = gateNeed.met ? RESEARCH_TREE.gateOpen : RESEARCH_TREE.gateLine(gateBarracks);
+  const gateLine = gateNeed.met ? RESEARCH_TREE.gateOpen : RESEARCH_TREE.gateLine;
 
   const trainingNode = ({ row, category, attribute, word }: (typeof TRAINING)[keyof typeof TRAINING]): TreeNode =>
     buildingNode(row, category, "army", (tier) => trainingGives(attribute, word, tier), {
@@ -319,7 +319,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         {
           icon: ATTRIBUTE_MARKS[word],
           name: word,
-          line: RESEARCH_TREE.newArmiesStart(word),
+          line: RESEARCH_TREE.everyNewArmy,
           ...attributeStep(attribute, tier),
         },
       ],
@@ -334,7 +334,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
                 return {
                   icon: kind.icon,
                   name: kind.name,
-                  line: RESEARCH_TREE.foundByNewArmies(kind.name),
+                  line: RESEARCH_TREE.foundMore,
                   now: percent(now),
                   next: done ? percent(now) : percent(now + scoutingStep(tier + 1)),
                 };

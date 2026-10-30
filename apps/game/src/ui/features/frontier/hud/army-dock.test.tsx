@@ -118,14 +118,24 @@ it.each(["phone", "desktop"] as const)(
       ARMIES_OUT.map(({ label }) =>
         host
           .querySelector(`button[aria-label="${label}"]`)!
-          .querySelector('[aria-label$="come home when the day ends"]')
+          .querySelector('[aria-label$="come home at day end"]')
           ?.getAttribute("aria-label"),
+      );
+    /** What each army's chip reads in sight: words on a desktop's row, the figure on a phone's token. */
+    const shown = () =>
+      ARMIES_OUT.map(
+        ({ label }) =>
+          host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label$="come home at day end"]')
+            ?.textContent,
       );
     try {
       draw(false);
       expect(returns()).toEqual([undefined, undefined]);
       draw(true);
-      expect(returns()).toEqual(["134 come home when the day ends", "0 come home when the day ends"]);
+      expect(returns()).toEqual(["134 come home at day end", "0 come home at day end"]);
+      expect(shown()).toEqual(
+        size === "desktop" ? ["134 come home at day end", "0 come home at day end"] : ["+134", "+0"],
+      );
     } finally {
       act(() => root.unmount());
       host.remove();

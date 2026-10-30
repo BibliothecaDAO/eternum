@@ -20,7 +20,6 @@ import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
-  FULL,
   MOVE,
   ON_ITS_WAY,
   REALM,
@@ -262,8 +261,8 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
         +{formatExact(short ? pay.fits : pay.amount)}
       </span>
       {short && (
-        <HudChip label={STORAGE} tone="bad" tip={REST_DID_NOT_FIT}>
-          {FULL}
+        <HudChip label={STORAGE} tone="bad">
+          {REST_DID_NOT_FIT}
         </HudChip>
       )}
     </span>

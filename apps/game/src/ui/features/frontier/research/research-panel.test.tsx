@@ -95,7 +95,7 @@ it("names the Scouts' lodge's camp kind Trolls, never Camp, and says on each kin
   // In sight on the side itself, never only on a hover a phone has not got.
   expect(
     [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.children[1]!.children[1]!.textContent),
-  ).toEqual(["Trolls found by new armies", "Rifts found by new armies", "Beasts found by new armies"]);
+  ).toEqual(["Found more", "Found more", "Found more"]);
   expect(host.textContent).not.toMatch(/Camp/);
 });
 
@@ -122,7 +122,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Population from every Hut · +100%");
+    expect(choice()!.textContent).toContain("Hut population · +100%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -170,7 +170,7 @@ it("shows the chosen research shares without a production formula", () => {
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toBe("FieldsWheat from every Farm+20% → +40%");
+  expect(button(/^Fields/)!.textContent).toBe("FieldsFarm wheat+20% → +40%");
   expect(button(/^Fields/)!.hasAttribute("title")).toBe(false);
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
   // The choice reads from its cards: no line explaining the sides or that they are kept.

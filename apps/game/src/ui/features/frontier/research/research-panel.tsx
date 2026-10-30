@@ -7,6 +7,8 @@ import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } f
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
+import { useLayout } from "@/shell/frame/layout";
+
 import {
   type Branch,
   researchSideNode,
@@ -215,6 +217,7 @@ const NodeChoice = ({
     Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
   );
   const node = researchSideNode(rowNode, side);
+  const desktop = useLayout() === "desktop";
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
@@ -235,7 +238,13 @@ const NodeChoice = ({
         </button>
       </div>
       {node.sides ? (
-        <div className={cn("grid gap-2", node.sides.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+        // Three sides stand in a column on a phone: three across leave no room for a side's name, line or figure.
+        <div
+          className={cn(
+            "grid gap-2",
+            node.sides.length === 3 ? (desktop ? "grid-cols-3" : "grid-cols-1") : "grid-cols-2",
+          )}
+        >
           {node.sides.map((option, index) => (
             <button
               key={option.name}

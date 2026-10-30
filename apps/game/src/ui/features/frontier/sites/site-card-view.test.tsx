@@ -244,8 +244,9 @@ describe("a guarded site's card", () => {
       ),
     );
     const header = document.querySelector(".ui-sheet__body header")!;
-    expect(header.textContent).toBe("This attack earns+120Full+82 XP");
-    expect(header.querySelector('[data-tip="Storage full: the rest did not fit"]')).not.toBeNull();
+    expect(header.textContent).toBe("This attack earns+120Full: the rest did not fit+82 XP");
+    // The loss is said in sight on the chip, never only on a hover a phone has not got.
+    expect(header.querySelector('[data-tip*="did not fit"]')).toBeNull();
     act(() =>
       buttons()
         .find((button) => button.textContent === "Realm")!
@@ -502,9 +503,7 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
   );
   // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
   // explicit !").
-  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(
-    "Ethereal II · One ruin a day: clearing any removes your other ruins, on every depth. Otherwise it's gone at day end.",
-  );
+  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe("Ethereal II · One ruin a day · the rest vanish");
   expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
