@@ -67,7 +67,6 @@ describe("the day log's line for a story", () => {
           game_id: 1,
           reveal_xp: 2,
           reveal_xp_per_depth: 1,
-          fixed_xp: 200,
           uncommon_xp: 250,
           rare_xp: 500,
           epic_xp: 1000,
@@ -101,6 +100,7 @@ describe("the day log's line for a story", () => {
 
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ ShrinePoint: 3 }, "Shrine used, +1 Rare skill point"],
   [{ Well: 60 }, "Well used, +60 stamina"],
   [{ Well: 5 }, "Well used, +5 stamina"],
   [{ Well: 0 }, "Well used, +0 stamina"],

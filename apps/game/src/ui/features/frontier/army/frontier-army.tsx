@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
-import { scoutingKindsOf, heldSkillPoints, type SkillPointChoice } from "@bibliothecadao/eternum";
+import { realmLearned, scoutingKindsOf, heldSkillPoints, type SkillPointChoice } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { useArmyRevealYield } from "../frontier-reveal-yield";
@@ -15,7 +15,7 @@ import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
 
-const PROGRESS_MODELS = ["ArmyProgress", "ArmyProgressionRules"] as const;
+const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
 /**
  * The selected army's detail over the game's facts, the one army panel: opened by selecting the army, on the map or
@@ -58,7 +58,10 @@ const ArmyPanel = ({
   const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!progress || !rules || !army.stamina) return null;
+  const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
+  if (learned === undefined) return null;
   const facts: ArmyDetailFacts = {
+    learned,
     name: army.label,
     art: army.art,
     troops: army.troops,

@@ -1,3 +1,4 @@
+import type { MapSiteManager } from "../managers/map-site-manager";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { buildArmyPathIndexes, findArmyPaths, getBlockTimestamp } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
@@ -74,6 +75,7 @@ export const mountWorldmapSiteHarness = ({
   surface,
   camera,
   mapPlates,
+  sites,
   army,
   player,
   tileUnder,
@@ -83,6 +85,7 @@ export const mountWorldmapSiteHarness = ({
   surface: HTMLElement;
   camera: Camera;
   mapPlates: Pick<MapPlateLayer, "placeOrderLine" | "thingHitBy">;
+  sites: Pick<MapSiteManager, "hover">;
   army: number;
   player: bigint;
   /** The scene hex (normalized) under the pointer, from the input manager's raycaster. */
@@ -101,6 +104,7 @@ export const mountWorldmapSiteHarness = ({
     state: useUIStore.getState(),
     camera,
     mapPlates,
+    mapSiteManager: sites,
     inputManager,
     interactiveHexManager: { pick: (ray: Raycaster) => hit(ray), surfacePosition: WORLD_HEX_SPACE.positionForHex },
     worldSpatialProjection: projection,
@@ -125,7 +129,11 @@ export const mountWorldmapSiteHarness = ({
   };
   inputManager.addListener("click", scene.handleClick.bind(scene));
   inputManager.addListener("contextmenu", scene.handleRightClick.bind(scene));
-  inputManager.addListener("mousemove", (_event, ray) => scene.pointerOrderTip.point(tileUnder(ray)));
+  inputManager.addListener("mousemove", (_event, ray) => {
+    const hex = tileUnder(ray);
+    scene.pointerOrderTip.point(hex);
+    scene.hoverMapSite(hex);
+  });
   inputManager.setSurface(surface);
   inputManager.activate();
 

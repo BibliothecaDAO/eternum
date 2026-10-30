@@ -1,13 +1,13 @@
+import { SKILL_POINT_FIELDS } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { TileOccupier } from "@bibliothecadao/types";
 
-import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { nativeRuleConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
 import { armySpent, armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /**
- * The army's stamina and XP as it reaches the sites: a Well's 60 fits under its bar, and a Shrine's XP takes it past
- * the price of its first tier.
+ * The army reaches the sites with room for a Well refill and a discovered Rare point.
  */
 const STAMINA = 40n;
 const XP = 40;
@@ -42,6 +42,9 @@ export const sitesScenario = (): LabScenario => {
       },
     ] as never);
   }
+  store.applyFacts([
+    { model: "ShrineReward", key: "0x1af10", value: { game_id: 1, entity_id: 952, rank: 3 } },
+  ] as never);
   return {
     ...spire,
     answer: (command, chain, now) =>
@@ -61,7 +64,6 @@ export const siteAt = (
   value: { game_id: 1, alt: false, col: tile.col, row: tile.row, entity_id: entity, category, is_structure: false },
 });
 
-const WELL_STAMINA = 60;
 /** InteractSite: [explorer, coord.alt, coord.x, coord.y]. */
 const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [explorerId, , x, y] = command.calldata.slice(5).map((felt) => BigInt(felt));
@@ -69,14 +71,19 @@ const answerSiteUse = (command: LabCommand, chain: NativeFactStore, now: number)
     ([, row]) => BigInt(row.col) === x && BigInt(row.row) === y,
   )!;
   const vacated: LabFact = { model: "TileOccupancy", key: siteKey, value: null };
-  if (site.category === TileOccupier.Shrine) return [vacated, shrineXp(chain, explorerId)];
+  if (site.category === TileOccupier.Shrine) return [vacated, ...shrinePoint(chain, explorerId, site.entity_id)];
   return [vacated, wellStamina(chain, explorerId, now)];
 };
 
-const shrineXp = (chain: NativeFactStore, explorerId: bigint): LabFact => {
+const shrinePoint = (chain: NativeFactStore, explorerId: bigint, siteId: bigint): LabFact[] => {
   const [key, progress] = [...chain.entries("ArmyProgress")].find(([, row]) => row.explorer_id === explorerId)!;
-  const fixed = chain.require("ArmyProgressionRules", { game_id: 1 }).fixed_xp;
-  return { model: "ArmyProgress", key, value: wire({ ...progress, xp: progress.xp + fixed }) };
+  const [rewardKey, reward] = [...chain.entries("ShrineReward")].find(([, row]) => row.entity_id === siteId)!;
+  const field = SKILL_POINT_FIELDS[reward.rank - 1];
+  if (!field) throw new Error(`Invalid Shrine rank ${reward.rank}`);
+  return [
+    { model: "ArmyProgress", key, value: wire({ ...progress, [field]: progress[field] + 1 }) },
+    { model: "ShrineReward", key: rewardKey, value: null },
+  ];
 };
 
 /** A Well's stamina, held to the army's bar as grant_stamina clamps it. */
@@ -84,5 +91,5 @@ const wellStamina = (chain: NativeFactStore, explorerId: bigint, now: number): L
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId });
   const maximum = chain.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_knight_max;
   const held = Number((army.troops.stamina as { Inline: { amount: bigint } }).Inline.amount);
-  return armySpent(chain, explorerId, -Math.min(WELL_STAMINA, maximum - held), now);
+  return armySpent(chain, explorerId, -Math.min(nativeRuleConstants.WELL_STAMINA, maximum - held), now);
 };

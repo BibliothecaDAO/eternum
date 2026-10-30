@@ -2,10 +2,12 @@
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { learnResearch } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 import bindings from "../../../../../../../contracts/l3/world-native/schema/bindings.json";
 
-import { EARLY_ARMY } from "../research/progression-fixture";
+import { EARLY_ARMY, VETERAN_ARMY } from "../research/progression-fixture";
 import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
 import { ArmyDetail } from "./army-panel";
 
@@ -151,7 +153,7 @@ const variants = (name: string) =>
 
 it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
   const spent = vi.fn();
-  const army = readArmyDetail({ ...EARLY_ARMY, points: [1, 1, 1, 1, 1] });
+  const army = readArmyDetail({ ...VETERAN_ARMY, points: [1, 1, 1, 1, 1] });
   act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
   const uses = variants("SkillPointUse");
   expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
@@ -169,7 +171,12 @@ it("offers and submits every skill-point use and Scouting kind in the generated 
       const kinds = variants("ScoutingKind");
       expect(
         [...host.querySelectorAll("[data-scout-kind]")].map((button) => button.getAttribute("data-scout-kind")),
-      ).toEqual(kinds.map(({ name }) => name.toLowerCase()));
+      ).toEqual(["rift", "camp", "sanctuaries"]);
+      expect(
+        new Set(
+          [...host.querySelectorAll("[data-scout-kind]")].map((button) => button.getAttribute("data-scout-kind")),
+        ),
+      ).toEqual(new Set(kinds.map(({ name }) => name.toLowerCase())));
       for (const kind of kinds) {
         act(() => host.querySelector<HTMLButtonElement>(`[data-scout-kind="${kind.name.toLowerCase()}"]`)!.click());
         submit();
@@ -182,3 +189,23 @@ it("offers and submits every skill-point use and Scouting kind in the generated 
   }
   expect(spent).toHaveBeenCalledTimes(uses.length - 1 + variants("ScoutingKind").length);
 });
+
+it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, research.ROW_WELL, 0)])(
+  "offers Sanctuaries only after either site unlock and submits its command (%s)",
+  (learned) => {
+    const spent = vi.fn();
+    const army = readArmyDetail({ ...EARLY_ARMY, learned, points: [1, 0, 0, 0, 0] });
+    act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
+    act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
+    expect(host.querySelector('[data-scout-kind="beasts"]')).toBeNull();
+    const button = host.querySelector<HTMLButtonElement>('[data-scout-kind="sanctuaries"]');
+    expect(Boolean(button)).toBe(learned !== 0n);
+    if (!button) return;
+    expect(button.textContent).toBe("Sanctuaries");
+    expect([...button.querySelectorAll("img")].map((icon) => icon.dataset.icon)).toEqual(["shrine", "well"]);
+    act(() => button.click());
+    act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Level up")!.click());
+    expect(spent).toHaveBeenCalledOnce();
+    expect(spent).toHaveBeenCalledWith({ kind: "Scouting", value: { kind: "Sanctuaries", value: undefined } });
+  },
+);

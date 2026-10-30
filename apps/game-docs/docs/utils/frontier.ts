@@ -124,7 +124,6 @@ export const FRONTIER = {
     reveal: frontierPreset.depths.map((_, depth) =>
       n(frontierPreset.progression.revealXp + depth * frontierPreset.progression.revealXpPerDepth),
     ),
-    shrine: n(frontierPreset.progression.fixedXp),
     pointThresholds: [
       frontierPreset.progression.commonXp,
       frontierPreset.progression.uncommonXp,

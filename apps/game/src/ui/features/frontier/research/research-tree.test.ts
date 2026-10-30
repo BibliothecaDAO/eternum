@@ -69,9 +69,9 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     // The lodge's uncommon went to rifts (+10%); its rare adds 20% more to the kind picked.
     expect(node(MID_REALM, "row-6").sides?.map(({ name, now, next }) => [name, now, next])).toEqual([
-      ["Trolls", "0%", "+15%"],
       ["Rifts", "+10%", "+25%"],
-      ["Beasts", "0%", "+15%"],
+      ["Trolls", "0%", "+15%"],
+      ["Sanctuaries", "0%", "+15%"],
     ]);
   });
 
@@ -91,8 +91,7 @@ describe("the castle's tree as the contract rules it", () => {
 describe("Frontier's camp is its Troll on the progression views (the shared structure naming rule)", () => {
   it("names the Scouts' lodge's camp kind Trolls, and nothing in the tree Camp", () => {
     const lodge = node(MID_REALM, "row-6");
-    expect(lodge.sides?.[0]?.name).toBe("Trolls");
-    expect(lodge.sides?.[0]?.line).toBe("Found more");
+    expect(lodge.sides?.find(({ name }) => name === "Trolls")?.line).toBe("Found more");
     // Internal keys and icons stay "camp"; no word a player reads says Camp.
     expect(JSON.stringify(readResearchTree(MID_REALM))).not.toMatch(/Camp/);
   });

@@ -31,7 +31,12 @@ pub const CHOICE_RATIONS: u8 = 1;
 // The kind each Scouts' lodge tier finds more of.
 pub const KIND_CAMPS: u8 = 0;
 pub const KIND_RIFTS: u8 = 1;
-pub const KIND_BEASTS: u8 = 2;
+pub const KIND_SANCTUARIES: u8 = 2;
+
+pub fn scouting_available(learned: u64, kind: u8) -> bool {
+    assert!(kind < choice_count(ROW_SCOUTS_LODGE), "invalid Scouting kind");
+    kind != KIND_SANCTUARIES || tier(learned, ROW_SHRINE) != 0 || tier(learned, ROW_WELL) != 0
+}
 
 // Building categories with a row; the four training buildings are unique on a realm board.
 pub const HUT: u8 = 1;
@@ -215,6 +220,9 @@ pub fn side_tier(learned: u64, row: u8, side: u8) -> u8 {
 // Adds one upgrade to the chosen side, or the next shared tier for Scouts and single-sided rows.
 pub fn learn(learned: u64, row: u8, side: u8) -> u64 {
     assert!(side < choice_count(row), "invalid research choice");
+    if row == ROW_SCOUTS_LODGE {
+        assert!(scouting_available(learned, side), "research Shrine or Well first");
+    }
     let next = side_tier(learned, row, side) + 1;
     assert!(next <= max_tier(row), "research side is complete");
     let (scale, _) = tier_slot(row);

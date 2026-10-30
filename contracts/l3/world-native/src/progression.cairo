@@ -5,7 +5,6 @@ use crate::troops::ExplorerKey;
 pub struct ArmyProgressionRules {
     pub reveal_xp: u32,
     pub reveal_xp_per_depth: u32,
-    pub fixed_xp: u32,
     pub common_xp: u32,
     pub uncommon_xp: u32,
     pub rare_xp: u32,
@@ -17,7 +16,7 @@ pub struct ArmyProgressionRules {
 pub enum ScoutingKind {
     Camp,
     Rift,
-    Beasts,
+    Sanctuaries,
 }
 
 /// A point raises one side, or its named rank is exchanged for stamina alone.
@@ -28,6 +27,48 @@ pub enum SkillPointUse {
     Scouting: ScoutingKind,
     Homecoming,
     Stamina: u8,
+}
+
+// History keeps the Beasts discriminant; current commands can select only the three supported kinds.
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum RecordedScoutingKind {
+    Camp,
+    Rift,
+    Beasts,
+    Sanctuaries,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub enum RecordedSkillPointUse {
+    Battle,
+    Logistics,
+    Scouting: RecordedScoutingKind,
+    Homecoming,
+    Stamina: u8,
+}
+
+fn recorded_choice(choice: SkillPointUse) -> RecordedSkillPointUse {
+    match choice {
+        SkillPointUse::Battle => RecordedSkillPointUse::Battle,
+        SkillPointUse::Logistics => RecordedSkillPointUse::Logistics,
+        SkillPointUse::Homecoming => RecordedSkillPointUse::Homecoming,
+        SkillPointUse::Stamina(rank) => RecordedSkillPointUse::Stamina(rank),
+        SkillPointUse::Scouting(kind) => RecordedSkillPointUse::Scouting(
+            match kind {
+                ScoutingKind::Camp => RecordedScoutingKind::Camp,
+                ScoutingKind::Rift => RecordedScoutingKind::Rift,
+                ScoutingKind::Sanctuaries => RecordedScoutingKind::Sanctuaries,
+            },
+        ),
+    }
+}
+
+pub fn scouting_side(kind: ScoutingKind) -> u8 {
+    match kind {
+        ScoutingKind::Camp => crate::research::KIND_CAMPS,
+        ScoutingKind::Rift => crate::research::KIND_RIFTS,
+        ScoutingKind::Sanctuaries => crate::research::KIND_SANCTUARIES,
+    }
 }
 
 /// Lifetime XP, unspent points and ranks 0..5. Each Scouting rank owns two choice bits.
@@ -93,7 +134,7 @@ pub struct SpendSkillPoint {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct SkillPointSpent {
     pub explorer_id: u64,
-    pub choice: SkillPointUse,
+    pub choice: RecordedSkillPointUse,
     pub point_rank: u8,
     pub tier: Option<u8>,
     pub stamina: u64,
@@ -192,6 +233,29 @@ pub fn earn_xp(ref progress: ArmyProgress, rules: ArmyProgressionRules, amount: 
     progress.xp = next;
 }
 
+pub fn earn_point(ref progress: ArmyProgress, rank: u8) {
+    let held = points(progress, rank);
+    set_points(ref progress, rank, held + 1);
+}
+
+/// The surface roll shifts up one rank per depth, with its overflow staying Legendary.
+pub fn shrine_point(depth: u8, mut draw: u32) -> u8 {
+    assert!(depth < 4, "invalid shrine depth");
+    assert!(draw < 10000, "invalid shrine roll");
+    let weights = array![
+        crate::rules::SHRINE_COMMON_BPS, crate::rules::SHRINE_UNCOMMON_BPS, crate::rules::SHRINE_RARE_BPS,
+        crate::rules::SHRINE_EPIC_BPS, crate::rules::SHRINE_LEGENDARY_BPS,
+    ];
+    for rank in 1_u8..6 {
+        let weight = *weights.at((rank - 1).into());
+        if draw < weight {
+            return core::cmp::min(rank + depth, crate::rules::ATTRIBUTE_CAP);
+        }
+        draw -= weight;
+    }
+    panic!("invalid shrine weights")
+}
+
 pub fn lowest_fitting_point(progress: ArmyProgress, tier: u8) -> u8 {
     assert!(tier > 0 && tier <= crate::rules::ATTRIBUTE_CAP, "attribute is legendary");
     for rank in tier..6 {
@@ -226,11 +290,7 @@ pub fn spend_skill_point(ref progress: ArmyProgress, command: SpendSkillPoint) -
         SkillPointUse::Logistics => progress.logistics = tier.unwrap(),
         SkillPointUse::Homecoming => progress.homecoming = tier.unwrap(),
         SkillPointUse::Scouting(kind) => {
-            let code: u16 = match kind {
-                ScoutingKind::Camp => 1,
-                ScoutingKind::Rift => 2,
-                ScoutingKind::Beasts => 3,
-            };
+            let code: u16 = (scouting_side(kind) + 1).into();
             progress.scouting = tier.unwrap();
             progress.scouting_kinds += code * scouting_kind_shift(tier.unwrap());
         },
@@ -243,7 +303,11 @@ pub fn spend_skill_point(ref progress: ArmyProgress, command: SpendSkillPoint) -
         1
     };
     SkillPointSpent {
-        explorer_id: command.explorer_id, choice: command.choice, point_rank: rank, tier, stamina: refill.into(),
+        explorer_id: command.explorer_id,
+        choice: recorded_choice(command.choice),
+        point_rank: rank,
+        tier,
+        stamina: refill.into(),
     }
 }
 
@@ -261,17 +325,17 @@ fn scouting_kind_shift(tier: u8) -> u16 {
 pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32, u32) {
     let mut camp = 0;
     let mut rift = 0;
-    let mut beasts = 0;
+    let mut sanctuaries = 0;
     for tier in 1_u8..progress.scouting + 1 {
         let increment = crate::rules::scouting_increment_bps(tier);
         match progress.scouting_kinds / scouting_kind_shift(tier) % 4 {
             1 => camp += increment,
             2 => rift += increment,
-            3 => beasts += increment,
+            3 => sanctuaries += increment,
             _ => panic!("missing Scouting kind"),
         }
     }
-    (camp, rift, beasts)
+    (camp, rift, sanctuaries)
 }
 
 /// A clear pays 2.5 x the square root of the guard's starting strength in whole troops, rounded down: exactly

@@ -70,10 +70,6 @@ pub fn pay_ruin(key: ResourceKey, home_id: u64, context: ExecutionContext) -> cr
     pay(key, context)
 }
 
-pub fn common_candidate(game_id: u32, context: ExecutionContext) -> SiteChest {
-    priced_chest(game_id, 0, context)
-}
-
 fn priced_chest(game_id: u32, tier: u8, context: ExecutionContext) -> SiteChest {
     let today = today(game_id, context);
     if budget(game_id) != Some(today) {

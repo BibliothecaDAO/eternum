@@ -62,8 +62,9 @@ using the [environment's funding command](../../contracts/l2/ledger/README.md#fu
 that deposit and publishes the pool to the shard. No ruin chest exists before publication; confirm the positive pool in
 Herald's `LordsBudget` row. The preset carries no pool.
 
-Close a Frontier pool only after `frontier_claim_deadline(shard, season_id)` and with an empty relay queue for that
-pool. Payments can still complete after the claim deadline; `close_frontier` voids all unpaid reports.
+For automatic payouts, settlement checks and the carry command, follow the ledger's
+[Frontier settlement and carry](../../contracts/l2/ledger/README.md#frontier-settlement-and-carry) procedure, including
+its compatible-deployment rehearsal requirement and existing dev-ledger limitation.
 
 ## Uptime qualification
 

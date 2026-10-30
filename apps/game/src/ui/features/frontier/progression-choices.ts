@@ -2,7 +2,7 @@ import type { SkillPointChoice, SkillPointRank } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
-import type { IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 
 type SpendKind = SkillPointChoice["kind"];
@@ -29,19 +29,24 @@ export const POINT_CHOICES = {
   };
 };
 
-/** Research side codes keep the lodge's choices in contract order. */
+/** Display order and the contract side code for each lodge choice. */
 export const SCOUTING_CHOICES = {
-  Camp: { key: "camp", side: research.KIND_CAMPS, icon: structureMeaning(StructureType.Camp, "frontier") },
   Rift: { key: "rift", side: research.KIND_RIFTS, icon: structureMeaning(StructureType.Rift, "frontier") },
-  Beasts: { key: "beasts", side: research.KIND_BEASTS, icon: structureMeaning(StructureType.Beasts, "frontier") },
-} satisfies { [K in ScoutingChoice["kind"]]: { key: Lowercase<K>; side: number; icon: IconMeaning } };
+  Camp: { key: "camp", side: research.KIND_CAMPS, icon: structureMeaning(StructureType.Camp, "frontier") },
+  Sanctuaries: { key: "sanctuaries", side: research.KIND_SANCTUARIES, icon: ["shrine", "well"] },
+} satisfies { [K in ScoutingChoice["kind"]]: { key: Lowercase<K>; side: number; icon: IconMark } };
 
-export const scoutingChoices = Object.entries(SCOUTING_CHOICES)
-  .map(([kind, option]) => ({
-    ...option,
-    name: RESEARCH_TREE.kinds[option.key],
-    choice: { kind: kind as ScoutingChoice["kind"], value: undefined },
-  }))
-  .sort((a, b) => a.side - b.side);
+export const scoutingChoices = Object.entries(SCOUTING_CHOICES).map(([kind, option]) => ({
+  ...option,
+  name: RESEARCH_TREE.kinds[option.key],
+  choice: { kind: kind as ScoutingChoice["kind"], value: undefined },
+}));
+
+export type { ScoutingSide } from "@bibliothecadao/eternum";
+
+export const availableScoutingChoices = (tier: (row: number) => number) =>
+  scoutingChoices.filter(
+    (option) => option.key !== "sanctuaries" || tier(research.ROW_SHRINE) > 0 || tier(research.ROW_WELL) > 0,
+  );
 
 export const pointChoices = Object.entries(POINT_CHOICES).map(([name, option]) => ({ ...option, name }));

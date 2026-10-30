@@ -183,7 +183,7 @@ const SITES_LAYOUT: SitesLayout = { army: ARMY_TILE, shrine: SHRINE_TILE, well: 
 /**
  * The deploy fixture's Frontier day, where the game allows site use as Frontier's preset does, with the realm's
  * 1,498-knight army (explorer 201) on revealed grassland: a Shrine and a Well beside it, a Shrine eight tiles off, and the
- * game's XP rules (200 XP a Shrine). The army's bar holds `stamina` of its 150. `layout` places them elsewhere (the lab
+ * Shrines' discovered ranks. The army's bar holds `stamina` of its 150. `layout` places them elsewhere (the lab
  * puts them on its drawn world); the Shrine and the Well must stand beside the army.
  */
 export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT) => {
@@ -219,6 +219,8 @@ export const sitesBeside = (stamina: bigint, layout: SitesLayout = SITES_LAYOUT)
     set("0x74", "ExplorerTroops", { game_id: 1, explorer_id: 201, owner: 7, troops: troops(1_498n, stamina) }),
     site("0x75", layout.army, 201, TileOccupier.ExplorerKnightT1),
     ...sites.map(([key, tile, entity, category]) => site(key, tile, entity, category)),
+    set("0xa901", "ShrineReward", { game_id: 1, entity_id: 901, rank: 3 }),
+    set("0xa903", "ShrineReward", { game_id: 1, entity_id: 903, rank: 5 }),
   ] as never);
   /** The chain's answer to a use: the site's tile emptied, as the contract vacates it. */
   const vacate = (tile: { col: number; row: number }) => {

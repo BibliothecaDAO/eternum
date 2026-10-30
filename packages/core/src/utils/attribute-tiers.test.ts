@@ -32,14 +32,28 @@ describe("attribute tiers", () => {
   });
 
   it("reads Scouting's kinds and sums each tier's increment onto its kind, as progression.cairo's vectors do", () => {
-    // Rift, Camp, Rift, Rift: uncommon, epic and legendary on rifts, rare on camps.
+    // Rifts at ranks I, III and V; Trolls at II; Sanctuaries at IV.
     const mixed = 2 + 1 * 4 + 2 * 16 + 3 * 64 + 2 * 256;
-    expect(scoutingKindsOf(5, mixed)).toEqual(["Rift", "Camp", "Rift", "Beasts", "Rift"]);
-    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 1500, Rift: 6000, Beasts: 2500 });
-    expect(scoutingBonusBps(5, 2 + 2 * 4 + 2 * 16 + 2 * 64 + 2 * 256)).toEqual({ Camp: 0, Rift: 10000, Beasts: 0 });
-    expect(scoutingBonusBps(5, 3 + 3 * 4 + 3 * 16 + 3 * 64 + 3 * 256)).toEqual({ Camp: 0, Rift: 0, Beasts: 10000 });
-    // A lodge trained Rift, Camp, Beasts, Rift.
-    expect(scoutingKindsOf(5, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256)).toEqual(["Rift", "Camp", "Beasts", "Rift", "Beasts"]);
-    expect(scoutingBonusBps(0, 0)).toEqual({ Camp: 0, Rift: 0, Beasts: 0 });
+    expect(scoutingKindsOf(5, mixed)).toEqual(["Rift", "Camp", "Rift", "Sanctuaries", "Rift"]);
+    expect(scoutingBonusBps(5, mixed)).toEqual({ Camp: 1500, Rift: 6000, Sanctuaries: 2500 });
+    expect(scoutingBonusBps(5, 2 + 2 * 4 + 2 * 16 + 2 * 64 + 2 * 256)).toEqual({
+      Camp: 0,
+      Rift: 10000,
+      Sanctuaries: 0,
+    });
+    expect(scoutingBonusBps(5, 3 + 3 * 4 + 3 * 16 + 3 * 64 + 3 * 256)).toEqual({
+      Camp: 0,
+      Rift: 0,
+      Sanctuaries: 10000,
+    });
+    // A lodge trained Rift, Camp, Sanctuaries, Rift, Sanctuaries.
+    expect(scoutingKindsOf(5, 2 + 4 + 3 * 16 + 2 * 64 + 3 * 256)).toEqual([
+      "Rift",
+      "Camp",
+      "Sanctuaries",
+      "Rift",
+      "Sanctuaries",
+    ]);
+    expect(scoutingBonusBps(0, 0)).toEqual({ Camp: 0, Rift: 0, Sanctuaries: 0 });
   });
 });

@@ -43,7 +43,6 @@ const XP_RULES = {
     game_id: 1,
     reveal_xp: 2,
     reveal_xp_per_depth: 1,
-    fixed_xp: 200,
     uncommon_xp: 250,
     rare_xp: 500,
     epic_xp: 1000,

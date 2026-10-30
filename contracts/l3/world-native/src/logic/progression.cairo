@@ -74,11 +74,8 @@ pub fn award_xp(key: ExplorerKey, award: XpAward) {
     write(key, progress);
 }
 
-/// A shrine's XP: a fixed amount, whatever its quality.
-pub fn grant_fixed_xp(key: ExplorerKey) -> u32 {
+pub fn grant_point(key: ExplorerKey, rank: u8) {
     let mut progress = require(key);
-    let amount = rules(key.game_id).expect('missing progression rules').fixed_xp;
-    crate::progression::earn_xp(ref progress, rules(key.game_id).expect('missing progression rules'), amount);
+    crate::progression::earn_point(ref progress, rank);
     write(key, progress);
-    amount
 }

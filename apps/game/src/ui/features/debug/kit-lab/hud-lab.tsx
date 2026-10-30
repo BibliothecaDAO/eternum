@@ -60,7 +60,7 @@ import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/fea
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
-import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
+import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
@@ -853,8 +853,7 @@ const STATES = {
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
-  "season-over-withdraw": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "open" },
-  "season-over-closed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "closed" },
+  "season-over-payout": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: true },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
@@ -1081,8 +1080,8 @@ type LabState = {
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
   results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
-  /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
-  seasonLords?: "open" | "closed";
+  /** The realm's LORDS waiting for automatic payout. */
+  seasonLords?: boolean;
   season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
@@ -1695,16 +1694,7 @@ const LabResults = ({
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
-      withdraw={
-        seasonLords && (
-          <SeasonWithdrawRow
-            lords={1_240}
-            closesAt={NOW + (seasonLords === "open" ? 6 * 24 * HOUR + 23 * HOUR : -HOUR)}
-            now={NOW}
-            onOpen={noop}
-          />
-        )
-      }
+      withdraw={seasonLords && <SeasonPayoutRow lords={1_240} />}
       onSeason={noop}
       onExit={noop}
     />

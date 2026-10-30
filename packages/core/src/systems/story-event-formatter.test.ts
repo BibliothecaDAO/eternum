@@ -1,3 +1,4 @@
+import { skillPointName } from "@bibliothecadao/types";
 import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
@@ -276,6 +277,20 @@ it("shows the tier an Upgrade reached and the XP it cost from history", () => {
       story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
     ),
   ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · rare point · +30 stamina" });
+});
+
+it.each(["Beasts", "Sanctuaries"])("reads a recorded %s Scouting point", (kind) => {
+  expect(
+    buildStoryEventPresentation(
+      story("SkillPointSpent", {
+        explorer_id: 7,
+        choice: { Scouting: kind },
+        tier: 1,
+        point_rank: 1,
+        stamina: 20,
+      }),
+    ),
+  ).toMatchObject({ title: "Scouting common", description: "Lord 0123's army · common point · +20 stamina" });
 });
 
 /** A story the viewer's own account told. */
@@ -907,4 +922,9 @@ it.each([
   expect(
     buildStoryEventPresentation(story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit })),
   ).toMatchObject({ title, description: "Lord 0123's army" });
+});
+
+it.each([1, 2, 3, 4, 5])("names the exact Shrine point at rank %s", (rank) => {
+  const event = story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: rank } });
+  expect(buildStoryEventPresentation(event).title).toBe(`Shrine used, +1 ${skillPointName(rank)}`);
 });

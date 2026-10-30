@@ -59,7 +59,7 @@ fn current_frontier_requires_complete_progression_rules() {
         if invalid == 1 {
             progression.reveal_xp = 0;
         } else if invalid == 2 {
-            progression.fixed_xp = 0;
+            progression.common_xp = 0;
         } else if invalid == 3 {
             progression.uncommon_xp = 0;
         } else if invalid == 4 {

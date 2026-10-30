@@ -18,15 +18,47 @@ submit once the independent L2 gate fits. Do not trust a relay-supplied future t
 conceal clock lag. Operator payments are immediate, retry-safe and bounded by the cumulative unlock. They carry no
 treasury cut. Only the admin unpauses; the pauser can pause payouts.
 
-The immutable `claim_window_seconds` preset defaults to seven days. The shard stops new withdrawals one hour before
-`season.end + claim_window_seconds`, leaving the constant 3600-second reporting grace period. The ledger accepts a first
-report strictly before that deadline. Reports move no money and have no aggregate cap or counter; payment remains
+## Frontier settlement and carry
+
+Players can withdraw LORDS manually during the season. The immutable `claim_window_seconds` preset defaults to seven
+days; the shard's manual withdrawal cutoff remains one hour before `season.end + claim_window_seconds`. That window does
+not limit automatic sweeps or ledger reporting and does not determine when the season closes.
+
+After the game ends, the relay sweeps each realm's remaining LORDS to its owner through `sweep_lords`, producing the
+same withdrawal receipt as a manual withdrawal. An empty realm is a no-op. The relay reports and pays these receipts
+alongside the season prizes through the existing ledger path. Chest reports remain accepted while the season is open,
+including after the manual claim window. Reports move no money and have no aggregate cap or counter; payment remains
 bounded by the pool's unlocked amount. There is no administrative report correction entry.
 
-`close_frontier` runs at or after the deadline, voids every unpaid report without scanning individual claims, and
-returns `pool - paid` to the treasury. The existing closed season plus payment record determines whether the report is
-void; the relay must recover that fact from the views and stop retrying voided claims. Paid retries remain harmless;
-unpaid payments after closure refuse.
+Before settlement, the relay requires a confirmed post-end snapshot with no remaining realm LORDS, chest receipts equal
+to the consumed world budget, all prize receipts issued, and confirmed ledger paid totals matching both receipt totals.
+A held receipt, missing payout wallet, paused payment or service outage keeps settlement pending; retries resume the
+same sweep, report and payment paths.
+
+`settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn)` is the only closure entrypoint. It requires the
+operator role, the season's end, and exact equality between the supplied totals and the ledger's `paid` and `prize_paid`
+counters. The operator is trusted to attest that those totals include every world obligation: equality alone does not
+prove that Herald's snapshot or the supplied totals are complete. There is no administrator deadline-close path or
+scheduled forfeiture of unpaid claims.
+
+Settlement marks the season closed and credits chest `pool - paid` to the shard's carry balance once. It transfers
+nothing to the treasury and does not add the prize reserve to carry. Repeating settlement with the same totals is
+harmless. Funding an eligible later season consumes available carry; for an already funded season, use:
+
+```sh
+pnpm --dir contracts/l2/ledger/scripts carry:frontier <dev|production> <previous-game-id> <next-game-id>
+```
+
+The command requires the previous season to be closed, then calls only `apply_frontier_carry`. The destination must be
+open, not yet ended, and start at or after the carried season's end. Applying carry consumes its balance once; zero
+carry is a no-op. Settled carry does not wait for the manual claim deadline.
+
+This lifecycle requires the new Games root, matching libraries and release, fresh ledger, relay and client together. The
+existing dev ledger retains its deployed behavior; the updated carry command still refuses an open previous season there
+and never initiates its legacy close. Rehearse sweep, payment, settlement and carry against compatible contracts before
+enabling production value.
+
+## Blitz custody and rewards
 
 Blitz settlement takes one `protocol_cut_bps` treasury cut on the whole incoming game pot: entries and paid
 swords/shields. The default is 2000 bps. The remaining pot splits by `chest_lords_bps` into the season's chest reserve
@@ -110,7 +142,7 @@ Season ratings freeze at the end. The operator posts the top list; anyone may ch
 one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot
 pay. Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller
 at that position and pays its geometric preset share once. Pause blocks withdrawals, chest finishes and season claims;
-refunds and expired Frontier returns remain available; registrations, Frontier funding, result settlement, chest
+refunds and fully paid Frontier settlement remain available; registrations, Frontier funding, result settlement, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
 ## Package checks

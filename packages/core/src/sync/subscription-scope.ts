@@ -7,6 +7,7 @@ import {
   seasonDay,
   type ExpeditionRules,
 } from "../utils/expeditions";
+import { isTileOccupierUsableSite } from "../utils/map/hex";
 import { hasSingleTilePosition } from "../client/native-occupancy";
 import { gameSyncRegion, syncScalar, type GameSyncScope } from "./model-manifest";
 
@@ -77,6 +78,7 @@ export function deriveGameSyncScope(
   for (const { value } of read("TileOccupancy", spacing, [...regions].map(scopeLookup.occupancyIn))) {
     if (
       Number(value.category) === TileOccupier.Chest ||
+      isTileOccupierUsableSite(Number(value.category)) ||
       (value.is_structure === true &&
         hasSingleTilePosition({ entity_id: syncScalar(value.entity_id), category: syncScalar(value.category) }))
     )

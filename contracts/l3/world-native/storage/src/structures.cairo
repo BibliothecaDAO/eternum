@@ -5,6 +5,7 @@ pub struct StructureStateStorage<TStructureRecord, TExpeditionSite, TSiteChest> 
     pub structures: Map<(u32, u64), TStructureRecord>,
     pub expedition_sites: Map<(u32, u64), Option<TExpeditionSite>>,
     pub site_chests: Map<(u32, u64), Option<TSiteChest>>,
+    pub shrine_rewards: Map<(u32, u64), Option<u8>>,
 }
 
 #[starknet::storage_node]

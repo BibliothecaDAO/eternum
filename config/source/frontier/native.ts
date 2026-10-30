@@ -115,7 +115,6 @@ export const frontierPreset = {
   progression: {
     revealXp: 2,
     revealXpPerDepth: 1,
-    fixedXp: 200,
     commonXp: 75,
     uncommonXp: 200,
     rareXp: 400,

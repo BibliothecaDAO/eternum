@@ -1,5 +1,6 @@
+import { researchHasIndependentSides } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudPage, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
@@ -11,6 +12,7 @@ import { useLayout } from "@/shell/frame/layout";
 import {
   type Branch,
   researchSideNode,
+  researchSideChoice,
   firstMissing,
   type Need,
   needLine,
@@ -138,7 +140,7 @@ export const NodeTile = ({
   const look = STATE_LOOK[node.state];
   const reading =
     node.maxTier === 5 ? (
-      node.sides?.length === 2 ? (
+      researchHasIndependentSides(node.row) && node.sides ? (
         <span className="flex gap-2">
           {node.sides.map((side) => (
             <span
@@ -146,7 +148,7 @@ export const NodeTile = ({
               className="flex items-center gap-0.5"
               aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
             >
-              <Icon name={side.icon} size={14} />
+              <IconGroup name={side.icon} size={14} />
               <HudTier tier={side.tier as Rank} />
             </span>
           ))}
@@ -209,6 +211,7 @@ const NodeChoice = ({
   );
   const node = researchSideNode(rowNode, side);
   const desktop = useLayout() === "desktop";
+  const choice = researchSideChoice(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
@@ -243,11 +246,11 @@ const NodeChoice = ({
               onClick={() => setSide(index)}
               aria-pressed={side === index}
               className={cn(
-                "flex items-center gap-2 rounded-md border px-2 py-1.5 text-left",
+                "flex flex-col items-center gap-1 rounded-md border px-2 py-1.5 text-center",
                 side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
               )}
             >
-              <Icon name={option.icon} size={28} />
+              <IconGroup name={option.icon} size={28} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
                 <span className="text-hud-label leading-tight text-hud-muted">{option.line}</span>
@@ -299,9 +302,9 @@ const NodeChoice = ({
           )}
           <HudButton
             kind="primary"
-            disabled={node.state !== "ready"}
+            disabled={node.state !== "ready" || choice === undefined}
             busy={sending ? RESEARCHING : undefined}
-            onClick={() => onResearch(side)}
+            onClick={() => choice !== undefined && onResearch(choice)}
           >
             {RESEARCH_TREE.research(verb)}
           </HudButton>

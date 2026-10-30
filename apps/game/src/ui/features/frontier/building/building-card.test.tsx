@@ -22,13 +22,13 @@ afterEach(() => {
 });
 
 /**
- * Rifts took Uncommon and Rare, Beasts Epic, Trolls Legendary: each kind holds its own tiers' Scouting steps
- * (rules.cairo: +10%, +20%, +30%, +40%), Rifts 10 + 20.
+ * Rifts took the first two ranks, Sanctuaries the third, Trolls the last two: each kind holds its own Scouting steps
+ * (rules.cairo: +10%, +15%, +20%, +25%, +30%).
  */
 const LODGE_LEGENDARY = [
-  ["Trolls", "Found more", "+55%"],
   ["Rifts", "Found more", "+25%"],
-  ["Beasts", "Found more", "+20%"],
+  ["Trolls", "Found more", "+55%"],
+  ["Sanctuaries", "Found more", "+20%"],
 ];
 
 const nodeOf = (realm: RealmResearchFacts, row: number) =>
@@ -202,16 +202,30 @@ it("shows the Scouts' lodge's three kinds, each held now and next, and researche
   const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: RICH, standing: 1 });
   // The lodge took Rifts at Uncommon.
   expect(rows()).toEqual([
-    ["Trolls", "Found more", "0%", "→", "+15%"],
     ["Rifts", "Found more", "+10%", "→", "+25%"],
-    ["Beasts", "Found more", "0%", "→", "+15%"],
+    ["Trolls", "Found more", "0%", "→", "+15%"],
+    ["Sanctuaries", "Found more", "0%", "→", "+15%"],
   ]);
   act(() => button(/^Rifts/)!.click());
   act(() => button(/^Research Rifts$/)!.click());
   expect(onResearch).toHaveBeenLastCalledWith(1);
-  act(() => button(/^Beasts/)!.click());
-  act(() => button(/^Research Beasts$/)!.click());
+  act(() => button(/^Sanctuaries/)!.click());
+  act(() => button(/^Research Sanctuaries$/)!.click());
   expect(onResearch).toHaveBeenLastCalledWith(2);
+});
+
+it("requires a valid selection again if a provisional Sanctuary unlock disappears", () => {
+  draw(research.ROW_SCOUTS_LODGE, { realm: RICH });
+  act(() => button(/^Sanctuaries/)!.click());
+  const learned = { ...RICH.learned };
+  delete learned[research.ROW_SHRINE];
+  delete learned[research.ROW_WELL];
+  const { onResearch } = draw(research.ROW_SCOUTS_LODGE, { realm: { ...RICH, learned } });
+  expect(button(/^Sanctuaries/)).toBeUndefined();
+  expect(button(/^Research/)).toBeUndefined();
+  act(() => button(/^Rifts/)!.click());
+  act(() => button(/^Research Rifts$/)!.click());
+  expect(onResearch).toHaveBeenCalledWith(research.KIND_RIFTS);
 });
 
 it("at the lodge's Legendary says which kind holds what research gave it", () => {

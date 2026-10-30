@@ -106,7 +106,7 @@ const sendWithdrawal = async (
 const CLOSE_MODELS = ["GameRegistry", "ChestRules"] as const;
 
 /** When this season's withdrawals close, from the game's end and its claim window; undefined until both are known. */
-export const useWithdrawalsCloseAt = (): number | undefined => {
+const useWithdrawalsCloseAt = (): number | undefined => {
   const { setup } = useGame();
   useNativeRevision(CLOSE_MODELS);
   const gameId = configManager.getActiveGameId();

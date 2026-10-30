@@ -1,6 +1,11 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "0ce1949d00478066c27292de613ff22aee76f6f2d74294a2d159501f3f014423";
+export const nativeFactSchemaIdentity = "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807";
 export const nativeRuleConstants = {
+  "SHRINE_COMMON_BPS": 5000,
+  "SHRINE_UNCOMMON_BPS": 3000,
+  "SHRINE_RARE_BPS": 1500,
+  "SHRINE_EPIC_BPS": 400,
+  "SHRINE_LEGENDARY_BPS": 100,
   "ATTRIBUTE_CAP": 5,
   "SKILL_POINT_REFILL_BASE": 10,
   "SKILL_POINT_REFILL_STEP": 10,
@@ -70,7 +75,7 @@ export const nativeResearchConstants = {
   "CHOICE_RATIONS": 1,
   "KIND_CAMPS": 0,
   "KIND_RIFTS": 1,
-  "KIND_BEASTS": 2,
+  "KIND_SANCTUARIES": 2,
   "HUT": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,
@@ -187,7 +192,7 @@ export interface NativeRows {
   SeasonWinThreshold: { readonly game_id: number; readonly points: bigint };
   ExtractionRewards: { readonly game_id: number; readonly rewards: readonly ({ readonly resource_type: number; readonly percent: bigint; readonly percent_max: bigint; readonly weight: bigint })[] };
   RelicRules: { readonly game_id: number; readonly rules: readonly ({ readonly rate_bps: number; readonly duration: number; readonly uses: number; readonly essence_cost: bigint; readonly draw_weight: bigint })[] };
-  ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly fixed_xp: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
+  ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
@@ -196,6 +201,7 @@ export interface NativeRows {
   FrontierPrize: { readonly game_id: number; readonly pool: bigint; readonly issued: bigint; readonly count: (number) | null };
   LordsBudget: { readonly game_id: number; readonly pool: bigint; readonly pool_left: bigint; readonly open: bigint; readonly day: bigint; readonly price: bigint; readonly rolled_shares: bigint; readonly yesterday_shares: bigint; readonly yesterday_ticks: bigint };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint; readonly tier: number; readonly amount: bigint; readonly reservation_day: bigint };
+  ShrineReward: { readonly game_id: number; readonly entity_id: bigint; readonly rank: number };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint; readonly pack: "War" | "Explore" | "Produce" | "Fortress"; readonly lucky: boolean };
   LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint; readonly account: bigint; readonly amount: bigint; readonly prize_rank: number; readonly prize_count: number };
   RelicDiscovery: { readonly game_id: number; readonly last_at: bigint };
@@ -291,6 +297,7 @@ export interface NativeKeys {
   FrontierPrize: { readonly game_id: number };
   LordsBudget: { readonly game_id: number };
   SiteChest: { readonly game_id: number; readonly entity_id: bigint };
+  ShrineReward: { readonly game_id: number; readonly entity_id: bigint };
   RelicChest: { readonly game_id: number; readonly entity_id: bigint };
   LordsWithdrawal: { readonly game_id: number; readonly claim_id: bigint };
   RelicDiscovery: { readonly game_id: number };
@@ -538,7 +545,6 @@ export const nativeFactModels = {
       "game_id": "u32",
       "reveal_xp": "u32",
       "reveal_xp_per_depth": "u32",
-      "fixed_xp": "u32",
       "common_xp": "u32",
       "uncommon_xp": "u32",
       "rare_xp": "u32",
@@ -678,6 +684,18 @@ export const nativeFactModels = {
       "tier": "u8",
       "amount": "u128",
       "reservation_day": "u64"
+    }
+  },
+  "ShrineReward": {
+    "keys": [
+      "game_id",
+      "entity_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "entity_id": "u64",
+      "rank": "u8"
     }
   },
   "RelicChest": {
@@ -2357,6 +2375,11 @@ export const nativeSyncScopes = {
     ]
   },
   "SiteChest": {
+    "entities": [
+      "entity_id"
+    ]
+  },
+  "ShrineReward": {
     "entities": [
       "entity_id"
     ]
