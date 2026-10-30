@@ -15,6 +15,12 @@ vi.mock("../frontier-home", async (original) => ({
   ...(await original<typeof import("../frontier-home")>()),
   useGoToFrontierPlace: () => (expedition: boolean) => place.goTo.push(expedition),
 }));
+// The screen the sheet is drawn on: a desktop's rows for the slots, a phone's tokens.
+const layout = vi.hoisted(() => ({ current: "desktop" as "desktop" | "phone" }));
+vi.mock("@/shell/frame/layout", async (original) => ({
+  ...(await original<typeof import("@/shell/frame/layout")>()),
+  useLayout: () => layout.current,
+}));
 // The production clock the sheet reads; a test moves it to watch a store fill.
 const clock = vi.hoisted(() => ({ tick: 3 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({
@@ -37,6 +43,7 @@ import { frontierDay } from "./deploy-fixture";
 import { DeploySheet } from "./deploy-sheet";
 
 afterEach(() => {
+  layout.current = "desktop";
   clock.tick = 3;
   place.map = true;
   place.goTo.length = 0;
@@ -76,12 +83,22 @@ const press = (host: HTMLElement, word: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
 const outOf = (host: HTMLElement) => host.querySelector(".ui-amount__of")?.textContent;
 
-/** The stamina the sheet shows the new army starting on: the number beside its bar, and the bar's reading. */
+/** The open slots the sheet offers, as the Armies card draws them: each one's name, and whether it is the one chosen. */
+const slotsOffered = (host: HTMLElement) =>
+  [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Army slots"] button[aria-label]')].map((slot) => [
+    slot.getAttribute("aria-label"),
+    slot.getAttribute("aria-pressed"),
+  ]);
+const slotButton = (host: HTMLElement, name: string) =>
+  host.querySelector<HTMLButtonElement>(`[aria-label="Army slots"] button[aria-label="${name}"]`)!;
+
+/** The stamina the new army starts on, read off the chosen slot: the number beside its bar, and the bar's reading. */
 const startReading = (host: HTMLElement) => {
-  const meter = host.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
+  const chosen = host.querySelector('[aria-label="Army slots"] [aria-pressed="true"]');
+  const meter = chosen?.querySelector<HTMLElement>('[role="meter"][aria-label="stamina"]');
   return {
-    number: meter?.parentElement?.parentElement?.textContent ?? null,
-    meter: meter && [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))],
+    number: meter?.parentElement?.parentElement?.lastElementChild?.textContent ?? null,
+    meter: meter ? [Number(meter.getAttribute("aria-valuenow")), Number(meter.getAttribute("aria-valuemax"))] : null,
   };
 };
 
@@ -109,7 +126,7 @@ const deployButton = (host: HTMLElement) =>
   [...host.querySelectorAll("button")].find((button) => button.textContent?.startsWith("Deploy"));
 
 describe("the Deploy sheet", () => {
-  it("shows every slot, requires a choice, and sends the higher fresh slot instead of the tired lower slot", async () => {
+  it("offers the open slots as the Armies card does, the first chosen when none was named, and sends the slot pressed", async () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -136,19 +153,113 @@ describe("the Deploy sheet", () => {
     } as unknown as GameClient);
     const { host, root } = render(store, row);
     try {
-      const slots = [...host.querySelectorAll<HTMLButtonElement>('[aria-label="Army slots"] button')];
-      expect(slots).toHaveLength(3);
-      expect(slots[0].disabled).toBe(true);
-      expect(slots[1].textContent).toContain("7/150 stamina");
-      expect(slots[2].textContent).toContain("150/150 stamina");
-      expect(deployButton(host)).toBeUndefined();
-      act(() => slots[0].click());
-      expect(deployButton(host)).toBeUndefined();
-      act(() => slots[2].click());
-      expect(slots[2].getAttribute("aria-pressed")).toBe("true");
+      // Army 1 is out, so its slot is not offered; Deploy opened from the map named no slot, so the first open one is
+      // chosen and Deploy stands (owner's pick A, 30 October; before, nothing was chosen and Deploy never showed).
+      expect(slotsOffered(host)).toEqual([
+        ["Army 2", "true"],
+        ["Army 3", "false"],
+      ]);
+      expect(slotButton(host, "Army 2").textContent).toContain("7/150");
+      expect(slotButton(host, "Army 3").textContent).toContain("150/150");
+      expect(deployButton(host)).toBeDefined();
+      // One stamina bar a slot: no second bar for the start apart from the slots.
+      expect(host.querySelectorAll('[role="meter"][aria-label="stamina"]')).toHaveLength(2);
+      act(() => slotButton(host, "Army 3").click());
+      expect(slotsOffered(host)).toEqual([
+        ["Army 2", "false"],
+        ["Army 3", "true"],
+      ]);
       press(host, "Max");
       await act(async () => deployButton(host)!.click());
       expect(createExplorerArmy).toHaveBeenCalledWith(expect.objectContaining({ slot: 2 }));
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  });
+
+  it("offers the open slots on a phone as the dock's tokens, the chosen one framed as a picked army", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    layout.current = "phone";
+    const { store, row } = frontierDay();
+    const { host, root } = render(store, row);
+    try {
+      expect(slotsOffered(host)).toEqual([
+        ["Army 2", "true"],
+        ["Army 3", "false"],
+      ]);
+      // A token, its stamina in segments and in words on its hover, as in the dock.
+      expect(slotButton(host, "Army 2").getAttribute("data-tip")).toBe("Army 2 starts full: 150/150 stamina.");
+      expect(slotButton(host, "Army 2").className).toContain("border-2");
+      expect(slotButton(host, "Army 3").className).not.toContain("border-2");
+      act(() => slotButton(host, "Army 3").click());
+      expect(slotButton(host, "Army 3").getAttribute("aria-pressed")).toBe("true");
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  });
+
+  it.each(["desktop", "phone"] as const)(
+    "chooses the one open slot on its own when opened from the map, and sends it (%s)",
+    async (screen) => {
+      // Owner, 30 October 2026: "when a single slot is available for army deploy it should be picked by default by the
+      // client of course."
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      layout.current = screen;
+      const { store, row } = frontierDay();
+      // Army 1 holds the first slot already; Army 2 takes the second: only the third is open.
+      store.applyFacts([
+        {
+          model: "ArmySlot",
+          key: "0x91",
+          value: {
+            game_id: 1,
+            structure_id: 7,
+            epoch: "0",
+            slot: 1,
+            explorer_id: 71,
+            stamina: { amount: "150", settled_at: "3", remainder: 0 },
+          },
+        },
+      ] as never);
+      const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+      installActiveGameClient({
+        connect() {},
+        disconnect() {},
+        dispose() {},
+        actions: { createExplorerArmy },
+        waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+      } as unknown as GameClient);
+      // A tile beside the realm held on the map: an order with its aim and no slot.
+      openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST });
+      const { host, root } = render(store, row);
+      try {
+        expect(slotsOffered(host)).toEqual([["Army 3", "true"]]);
+        expect(deployButton(host)).toBeDefined();
+        press(host, "Max");
+        await act(async () => deployButton(host)!.click());
+        expect(createExplorerArmy).toHaveBeenCalledWith(
+          expect.objectContaining({ slot: 2, spawnDirection: Direction.WEST }),
+        );
+      } finally {
+        act(() => root.unmount());
+        host.remove();
+      }
+    },
+  );
+
+  it("opens on the slot the Armies card's Deploy named", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    openArmyDeployment({ structureId: 7, isExplorer: true, slot: 2 });
+    const { host, root } = render(store, row);
+    try {
+      expect(slotsOffered(host)).toEqual([
+        ["Army 2", "false"],
+        ["Army 3", "true"],
+      ]);
+      expect(deployButton(host)).toBeDefined();
     } finally {
       act(() => root.unmount());
       host.remove();
