@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "0ce1949d00478066c27292de613ff22aee76f6f2d74294a2d159501f3f014423";
+export const nativeFactSchemaIdentity = "b4fc7cf6e986467f9bab02d8abbabc9553518dd8ccdbb47990e20c642f5f2d46";
 export const nativeRuleConstants = {
   "ATTRIBUTE_CAP": 5,
   "SKILL_POINT_REFILL_BASE": 10,
@@ -70,7 +70,7 @@ export const nativeResearchConstants = {
   "CHOICE_RATIONS": 1,
   "KIND_CAMPS": 0,
   "KIND_RIFTS": 1,
-  "KIND_BEASTS": 2,
+  "KIND_SANCTUARIES": 2,
   "HUT": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,

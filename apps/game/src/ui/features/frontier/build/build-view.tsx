@@ -1,3 +1,5 @@
+import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
+import { researchTier } from "@bibliothecadao/eternum";
 import {
   formatExact,
   formatCharge,
@@ -5,7 +7,7 @@ import {
   formatPopulationInWords,
   formatShortDuration,
 } from "@bibliothecadao/types";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudCard,
@@ -87,7 +89,7 @@ export const BuildView = ({
 }: {
   /** The realm's population, used of all it can hold; unknown is left out. */
   population: RealmPopulation | undefined;
-  scouting?: { kind: 0 | 1 | 2; onChoose: (kind: 0 | 1 | 2) => void };
+  scouting?: { learned: bigint; kind: ScoutingSide; onChoose: (kind: ScoutingSide) => void };
   tiles: BuildTile[];
   chosen: number;
   onChoose: (index: number) => void;
@@ -112,16 +114,19 @@ export const BuildView = ({
     </div>
     {scouting && (
       <fieldset className="flex flex-col gap-2">
-        <legend className="text-hud-label">Uncommon Scouting · find more</legend>
-        <div className="flex gap-2">
-          {(["Camps", "Rifts", "Beasts"] as const).map((name, kind) => (
+        <legend className="text-hud-label">Common Scouting</legend>
+        <div className="flex flex-wrap gap-2">
+          {availableScoutingChoices((row) => researchTier(scouting.learned, row)).map(({ name, side, icon }) => (
             <HudButton
               key={name}
-              kind={kind === scouting.kind ? "secondary" : "quiet"}
-              aria-pressed={kind === scouting.kind}
-              onClick={() => scouting.onChoose(kind as 0 | 1 | 2)}
+              kind={side === scouting.kind ? "secondary" : "quiet"}
+              aria-pressed={side === scouting.kind}
+              onClick={() => scouting.onChoose(side)}
             >
-              {name}
+              <span className="flex flex-col items-center">
+                <IconGroup name={icon} size={18} />
+                {name}
+              </span>
             </HudButton>
           ))}
         </div>

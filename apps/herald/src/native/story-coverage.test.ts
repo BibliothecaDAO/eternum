@@ -235,6 +235,28 @@ function assertDecoded(event: ReturnType<typeof raw>, key: unknown, value: Recor
 }
 
 describe("compiled native history coverage", () => {
+  it.each([
+    [2, "Beasts"],
+    [3, "Sanctuaries"],
+  ] as const)("keeps Scouting history code %i as %s", (kind, name) => {
+    const variant = storyVariants().findIndex((variant) => variant.name === "SkillPointSpent");
+    for (const layout of schema.games.events.filter(({ name }) => name === "StoryEvent")) {
+      assertDecoded(
+        raw({
+          from_address: manifest.world.address,
+          keys: [...layout.prefix, "2", "1", "0", "17", "0", "3", "0x55"],
+          data: [variant, 7, 2, kind, 3, 0, 3, 40, 140].map(String),
+        }),
+        { game_id: 1n, owner: 17n, entity_id: 3n, tx_hash: 85n },
+        {
+          story: {
+            SkillPointSpent: { explorer_id: 7n, choice: { Scouting: name }, point_rank: 3n, tier: 3n, stamina: 40n },
+          },
+          timestamp: 140n,
+        },
+      );
+    }
+  });
   for (const [name, { fields, expected }] of Object.entries(stories)) {
     it(`decodes ${name} from every Games event prefix`, () => {
       const variant = storyVariants().findIndex((variant) => variant.name === name);

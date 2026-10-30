@@ -1,3 +1,4 @@
+import type { ScoutingSide } from "../../utils/attribute-tiers";
 import type { BuildingType, HexPosition, ID } from "@bibliothecadao/types";
 
 import { TileManager } from "../../managers/tile-manager";
@@ -9,7 +10,7 @@ export interface PlaceBuildingInput {
   /** The slot inside the structure's local grid. */
   hex: HexPosition;
   useSimpleCost: boolean;
-  scoutingKind?: 0 | 1 | 2;
+  scoutingKind?: ScoutingSide;
 }
 
 export interface BuildingSlotInput {

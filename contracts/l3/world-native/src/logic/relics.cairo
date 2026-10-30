@@ -158,6 +158,13 @@ pub mod RelicState {
                 );
                 assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
             }
+            if let crate::progression::SkillPointUse::Scouting(kind) = command.choice {
+                let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
+                assert!(
+                    crate::research::scouting_available(learned, crate::progression::scouting_side(kind)),
+                    "research Shrine or Well first",
+                );
+            }
             let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);
             bought.stamina = self.grant_stamina(key, explorer, bought.stamina.try_into().unwrap(), context);

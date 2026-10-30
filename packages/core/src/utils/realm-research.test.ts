@@ -18,7 +18,7 @@ const learned =
   (1n << 7n) + // Workshop uncommon, Tools
   (3n << 30n) + // Scouts' lodge epic
   (1n << 36n) + // ...first tier on rifts
-  (2n << 40n) + // ...third tier on beasts
+  (2n << 40n) + // ...third tier on Sanctuaries
   (1n << 46n) + // Shrine
   (2n << 48n); // Ethereal II
 
@@ -26,6 +26,17 @@ const store = (value: bigint | undefined) =>
   ({ get: () => (value === undefined ? undefined : { game_id: 7, structure_id: 9, learned: value }) }) as never;
 
 describe("realm research", () => {
+  it("requires either site research before buying Sanctuaries and preserves the chosen rank", () => {
+    expect(() => learnResearch(0n, research.ROW_SCOUTS_LODGE, research.KIND_SANCTUARIES)).toThrow(
+      "Research Shrine or Well first",
+    );
+    for (const row of [research.ROW_SHRINE, research.ROW_WELL]) {
+      const unlocked = learnResearch(0n, row, 0);
+      const bought = learnResearch(unlocked, research.ROW_SCOUTS_LODGE, research.KIND_SANCTUARIES);
+      expect(researchTier(bought, research.ROW_SCOUTS_LODGE)).toBe(1);
+      expect(researchChoice(bought, research.ROW_SCOUTS_LODGE, 1)).toBe(research.KIND_SANCTUARIES);
+    }
+  });
   it("reads each row's tier from the chain's packing", () => {
     expect(researchTier(learned, research.ROW_FARM)).toBe(1);
     expect(researchTier(learned, research.ROW_WORKSHOP)).toBe(1);
@@ -42,7 +53,7 @@ describe("realm research", () => {
     expect([1, 2, 3].map((tier) => researchChoice(learned, research.ROW_SCOUTS_LODGE, tier))).toEqual([
       research.KIND_RIFTS,
       research.KIND_CAMPS,
-      research.KIND_BEASTS,
+      research.KIND_SANCTUARIES,
     ]);
     expect(() => researchChoice(learned, research.ROW_FARM, 1)).toThrow("has no choice");
     expect(() => researchChoice(learned, research.ROW_HUT, 1)).toThrow("has no choice");

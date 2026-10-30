@@ -420,8 +420,8 @@ pub mod MapLogic {
                     .chest;
                 Some(crate::logic::lords_budget::candidate(key.game_id, odds, seed, context))
             };
-            let (camp, rift, beasts) = crate::progression::scouting_bonus(progress);
-            let result = crate::discovery::frontier(rules, camp, rift, beasts, day.empty_reveals, ruin, seed);
+            let (camp, rift, sanctuaries) = crate::progression::scouting_bonus(progress);
+            let result = crate::discovery::frontier(rules, camp, rift, sanctuaries, day.empty_reveals, ruin, seed);
             crate::logic::expeditions::record_discovery(counter, result);
             if let Some(category) = crate::discovery::tile_occupier(result) {
                 crate::logic::map::MapState::occupy(

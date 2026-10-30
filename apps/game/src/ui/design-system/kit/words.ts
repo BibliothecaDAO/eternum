@@ -1326,7 +1326,7 @@ export const RESEARCH_TREE = {
   kinds: {
     camp: structurePlural(StructureType.Camp, undefined, "frontier"),
     rift: structurePlural(StructureType.Rift, undefined, "frontier"),
-    beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
+    sanctuaries: "Sanctuaries",
   },
   foundByNewArmies: (kind: string) => `${kind} found by new armies`,
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,

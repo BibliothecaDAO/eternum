@@ -8,6 +8,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
   select: vi.fn(),
+  learned: 0n,
   signer: { address: "0x111" },
   progress: {
     common_points: 0,
@@ -51,7 +52,14 @@ const army = {
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
-      store: { get: (model: string) => (model === "ArmyProgress" ? game.progress : game.rules) },
+      store: {
+        get: (model: string) =>
+          model === "ArmyProgress"
+            ? game.progress
+            : model === "RealmKnowledge"
+              ? { learned: game.learned }
+              : game.rules,
+      },
       systemCalls: { spend_skill_point: game.spendPoint },
     },
     account: { account: game.signer },
@@ -85,6 +93,7 @@ beforeEach(() => {
   document.body.append(host);
   root = createRoot(host);
   vi.clearAllMocks();
+  game.learned = 0n;
   game.progress.xp = 12;
   game.progress.common_points = 0;
 });

@@ -11,8 +11,8 @@ import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { configManager, type GameClient, setBlockTimestampSource, learnResearch } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
@@ -667,11 +667,24 @@ it("chooses the free Scouts kind on the build sheet and submits it with construc
     expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
     expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
     expect(card.querySelector('[aria-label="1,500 labor"]')).not.toBeNull();
-    const beasts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Beasts",
+    expect(host.textContent).not.toContain("Beasts");
+    expect(host.textContent).not.toContain("Sanctuaries");
+    const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+    act(() =>
+      store.applyFacts([
+        {
+          model: "RealmKnowledge",
+          key: "0x77",
+          value: { ...knowledge, learned: learnResearch(knowledge.learned, research.ROW_SHRINE, 0) },
+        },
+      ]),
+    );
+    const sanctuaries = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+      (button) => button.textContent === "Sanctuaries",
     )!;
-    act(() => beasts.click());
-    expect(beasts.getAttribute("aria-pressed")).toBe("true");
+    expect(sanctuaries.querySelectorAll("img[data-icon]").length).toBe(2);
+    act(() => sanctuaries.click());
+    expect(sanctuaries.getAttribute("aria-pressed")).toBe("true");
     const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
       (button) => button.textContent === "Build",
     )!;
