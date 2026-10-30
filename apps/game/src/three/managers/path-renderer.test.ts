@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import * as THREE from "three";
+import Renderer from "three/src/renderers/common/Renderer.js";
+import LightsNode from "three/src/nodes/lighting/LightsNode.js";
 import { PathRenderer } from "./path-renderer";
 
 // The node environment has no animation frames: the renderer rebuilds on update() instead.
@@ -36,6 +38,32 @@ const drawn = (scene: THREE.Scene) => {
     return { at: new THREE.Vector3().setFromMatrixPosition(matrix), colour };
   });
   return { chevrons, markPoints, markColours };
+};
+
+/**
+ * The passes the renderer submits for what the paths left visible: Three's own Renderer.renderObject, which draws a
+ * transparent double-sided material twice (back, then front) unless it is forced to one pass, run with a backend
+ * that only counts what it is handed.
+ */
+const dispatchedPasses = (scene: THREE.Scene) => {
+  let passes = 0;
+  const backend = { _handleObjectFunction: () => (passes += 1) };
+  const camera = new THREE.PerspectiveCamera();
+  const lights = new LightsNode();
+  scene.traverseVisible((object) => {
+    if (!(object instanceof THREE.Mesh)) return;
+    Renderer.prototype.renderObject.call(
+      backend,
+      object,
+      scene,
+      camera,
+      object.geometry,
+      object.material,
+      null,
+      lights,
+    );
+  });
+  return passes;
 };
 
 const renderer = () => {
@@ -133,19 +161,25 @@ describe("an army's path on the map", () => {
     ).toBe(true);
   });
 
-  it("draws Blitz's many walking armies in two meshes, and nothing once they arrive", () => {
+  it("draws Blitz's many walking armies in two render passes, as the renderer dispatches them, and nothing once they arrive", () => {
     const { scene, paths, frame } = renderer();
     for (let army = 0; army < 20; army += 1) paths.createPath(army, walkEast(army * 3), army % 2 ? RED : GREEN);
     paths.setSelectedPath(0);
     paths.setHoveredPath(1);
     frame();
-    expect(paths.getStats()).toMatchObject({ activePaths: 20, drawCalls: 2 });
-    const meshes: THREE.Object3D[] = [];
-    scene.traverseVisible((object) => object instanceof THREE.Mesh && meshes.push(object));
-    expect(meshes).toHaveLength(2);
+    expect(paths.getStats()).toMatchObject({ activePaths: 20, meshes: 2 });
+    expect(dispatchedPasses(scene)).toBe(2);
     for (let army = 0; army < 20; army += 1) paths.removePath(army);
     frame();
-    expect(paths.getStats()).toMatchObject({ activePaths: 0, chevrons: 0, markVertices: 0, drawCalls: 0 });
+    expect(paths.getStats()).toMatchObject({ activePaths: 0, chevrons: 0, markVertices: 0, meshes: 0 });
+    expect(dispatchedPasses(scene)).toBe(0);
+  });
+
+  it("draws an ordinary army's pin in 32 triangles: a twelve-sided ring and an eight-sided dot", () => {
+    const { paths, frame } = renderer();
+    paths.createPath(1, walkEast(), GREEN);
+    frame();
+    expect(paths.getStats()).toMatchObject({ chevrons: 0, markVertices: 96 });
   });
 
   it("leaves the scene when disposed", () => {

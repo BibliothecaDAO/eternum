@@ -38,7 +38,8 @@ import { buildMovementSpline } from "../utils/spline-path";
  *
  * Each in the colour its caller gives (the army's side's: armyPathColour). Everything lies on the ground, depth-tested
  * and writing no depth, so the models standing on it hide it where they stand and the labels stay above. However many
- * armies walk, it draws in two meshes: the chevrons (instanced) and every ring, pin and arrow (one flat mesh).
+ * armies walk, it draws in two meshes of one pass each: the chevrons (instanced) and every ring, pin and arrow (one
+ * flat mesh).
  */
 export type PathDisplayState = "selected" | "hover" | "moving" | "preview";
 type PathMark = "trail" | "ring" | "arrow" | "pin";
@@ -214,15 +215,15 @@ export class PathRenderer {
     return false;
   }
 
-  /** The walks drawn, and what they cost: the chevrons, the flat marks' vertices and the meshes drawn (2 at most). */
-  public getStats(): { activePaths: number; chevrons: number; markVertices: number; drawCalls: number } {
+  /** The walks drawn: the chevrons, the flat marks' vertices and the meshes drawing them (2 at most). */
+  public getStats(): { activePaths: number; chevrons: number; markVertices: number; meshes: number } {
     const chevrons = this.trail?.count ?? 0;
     const markVertices = this.marks?.geometry.drawRange.count ?? 0;
     return {
       activePaths: this.activePaths.size,
       chevrons,
       markVertices,
-      drawCalls: Number(chevrons > 0) + Number(markVertices > 0),
+      meshes: Number(chevrons > 0) + Number(markVertices > 0),
     };
   }
 
@@ -388,7 +389,10 @@ const prepared = <T extends Mesh>(mesh: T): T => {
   return mesh;
 };
 
-/** A stock material, lit by nothing, writing no depth, held off the ground's surface. */
+/**
+ * A stock material, lit by nothing, writing no depth, held off the ground's surface. Flat on the ground, its marks are
+ * seen from either face in one pass: a transparent double-sided material would otherwise draw twice, back then front.
+ */
 const groundMaterial = (map?: DataTexture): MeshBasicMaterial =>
   new MeshBasicMaterial({
     map: map ?? null,
@@ -397,6 +401,7 @@ const groundMaterial = (map?: DataTexture): MeshBasicMaterial =>
     opacity: map ? 1 : 0.9,
     depthWrite: false,
     side: DoubleSide,
+    forceSinglePass: true,
     polygonOffset: true,
     polygonOffsetFactor: -2,
     polygonOffsetUnits: -2,
@@ -450,12 +455,14 @@ class FlatWriter {
     this.ring(centre, inner, outer, 6, Math.PI / 6, colour);
   }
 
+  /** A pin's ring: twelve sides read round at its size (24 triangles). */
   public roundRing(centre: Vector3, inner: number, outer: number, colour: Color): void {
-    this.ring(centre, inner, outer, 24, 0, colour);
+    this.ring(centre, inner, outer, 12, 0, colour);
   }
 
+  /** A pin's dot: eight sides (8 triangles). */
   public disc(centre: Vector3, radius: number, colour: Color): void {
-    const sides = 16;
+    const sides = 8;
     for (let side = 0; side < sides; side += 1)
       this.triangle(centre, around(centre, radius, side, sides, 0), around(centre, radius, side + 1, sides, 0), colour);
   }
