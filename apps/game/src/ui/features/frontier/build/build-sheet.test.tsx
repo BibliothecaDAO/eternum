@@ -391,6 +391,7 @@ describe("the build sheet", () => {
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
+    expect(document.querySelector("[data-price-raised]")).toBeNull();
     const base = sheet.card("Farm").querySelector(".ui-chip")!.textContent;
     sheet.close();
 
@@ -406,6 +407,8 @@ describe("the build sheet", () => {
     const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
     // One line of why, never the sum behind it (owner, 26 October: "its a game not a math demo").
     expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    // The Farm chosen, its foot says it in sight, for a phone that has no hover (owner, 30 October).
+    expect(document.querySelector("[data-price-raised]")?.textContent).toBe("Costs more with each one standing: 2");
     expect(risen.card("Farm").querySelector(".ui-chip")!.textContent).not.toBe(base);
     risen.close();
   });
