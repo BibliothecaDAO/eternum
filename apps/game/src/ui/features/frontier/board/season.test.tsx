@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
+import { seasonPodium } from "./season-pool";
 import { SeasonOverCard } from "./season-over-card";
 import { TARGET_MARKS } from "../sites/site-marks";
 
@@ -167,6 +168,61 @@ describe("the season list", () => {
     expect(own.host.querySelector("[aria-label='Depth II']")).not.toBeNull();
     expect(button(own.host, "Visit")).toBeUndefined();
     own.unmount();
+  });
+});
+
+describe("the season's prizes in game", () => {
+  const sheet = (podium: Parameters<typeof SeasonList>[0]["podium"]) =>
+    render(
+      <SeasonList
+        rank={2}
+        podium={podium}
+        rows={[row(1), row(2), row(3), row(4)]}
+        pinned={undefined}
+        state="ready"
+        onRetry={vi.fn()}
+        onOpen={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+  const tiles = (host: HTMLElement) =>
+    [...host.querySelectorAll('[aria-label="Season prizes"] li[data-place]')].map((tile) => tile.textContent);
+
+  it("stands a podium of the prizes over the board, second, first and third, each with who holds it or Open", () => {
+    // The game's own rule over a board where only two players cleared a site.
+    const podium = seasonPodium({
+      prize: { pool: "300", top_n: 3, count: null, awards: [] },
+      entries: [
+        { address: "Realm 1", sites_cleared: { total: 5, camps: 5, rifts: 0, ruins: 0, beasts: 0 } },
+        { address: "Realm 2", sites_cleared: { total: 1, camps: 1, rifts: 0, ruins: 0, beasts: 0 } },
+        { address: "Realm 3", sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 } },
+      ],
+    })!.map(({ place, lords, holder }) => ({
+      place,
+      lords,
+      holder: typeof holder === "string" ? holder : { name: holder.address },
+    }));
+    const { host, unmount } = sheet(podium);
+    expect(tiles(host)).toEqual(["2100Realm 2", "1150Realm 1", "350Open"]);
+    // The board's first three rows wear the podium's medals; the fourth its number.
+    expect(
+      [...host.querySelectorAll(".ui-table-row")].map(
+        (row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null,
+      ),
+    ).toEqual(["1", "2", "3", null]);
+    unmount();
+  });
+
+  it("says no prize pool is published yet, its medals standing with no amount, and stands nothing once no place is paid", () => {
+    const unpublished = sheet(null);
+    expect(tiles(unpublished.host)).toEqual(["2—", "1—", "3—"]);
+    expect(unpublished.host.querySelector('[aria-label="Season prizes"]')!.textContent).toContain(
+      "Pool not published yet",
+    );
+    unpublished.unmount();
+    const none = sheet([]);
+    expect(none.host.querySelector('[aria-label="Season prizes"]')).toBeNull();
+    none.unmount();
   });
 });
 

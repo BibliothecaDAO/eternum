@@ -305,6 +305,77 @@ it.each([false, true])(
   },
 );
 
+/** The real HUD with Herald's Frontier board answering `prize`, its Season opened; returns the podium's tiles and words. */
+const openSeasonWith = async (prize: unknown) => {
+  const entry = (address: string, rank: number, sites: number) => ({
+    address,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: 1,
+    level: 1,
+    order: rank,
+    campaign: null,
+  });
+  const board = { game_id: "1", mode: "frontier", entries: [entry("0xa01", 1, 9), entry("0xa02", 2, 0)], prize };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
+    ),
+  );
+  await renderHud();
+  // A desktop's place bar opens the Season; a phone's opens it from the Menu.
+  const places = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')];
+  const desktopSeason = places.find((button) => button.getAttribute("aria-label") === "Season");
+  if (desktopSeason) await act(async () => desktopSeason.click());
+  else {
+    await act(async () => places.find((button) => button.textContent === "Menu")!.click());
+    const row = [...document.querySelectorAll<HTMLButtonElement>('section[aria-label="Menu"] button')].find((button) =>
+      button.textContent?.startsWith("Season"),
+    )!;
+    await act(async () => row.click());
+  }
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const podium = document.querySelector('section[aria-label="Season"] [aria-label="Season prizes"]');
+  return {
+    tiles: [...(podium?.querySelectorAll("li[data-place]") ?? [])].map((tile) => tile.textContent),
+    words: podium?.textContent ?? null,
+  };
+};
+
+it.each([390, 1440])(
+  "says the season's prize pool is not published yet at %i px, from Herald's board",
+  async (width) => {
+    viewport.set(width);
+    const { tiles, words } = await openSeasonWith(null);
+    expect(tiles).toEqual(["2—", "1—", "3—"]);
+    expect(words).toContain("Pool not published yet");
+  },
+);
+
+it.each([390, 1440])(
+  "names the season's fixed winners by their receipts at %i px, a place still being awarded",
+  async (width) => {
+    viewport.set(width);
+    // Two places fixed; first paid to 0xa02, who cleared no site and ranks second today, second not yet paid.
+    const { tiles } = await openSeasonWith({
+      pool: "300",
+      top_n: 3,
+      count: 2,
+      awards: [{ rank: 1, address: "0xa02", lords: "200" }],
+    });
+    expect(tiles).toHaveLength(2);
+    expect(tiles[0]).toBe("2100Pending");
+    expect(tiles[1]).toMatch(/^1200/);
+    expect(tiles[1]).not.toContain("Open");
+  },
+);
+
 it.each([390, 1440])(
   "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
   async (width) => {

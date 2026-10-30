@@ -74,6 +74,13 @@ export const HUD_COLORS = {
 
 type Palette = { readonly [name in keyof typeof HUD_COLORS]: string };
 
+/** Prize medals share their gold, silver and bronze faces and rims across the app and in-game boards. */
+export const MEDAL_COLORS = {
+  ink: "#1b1622",
+  faces: ["#e8bf5e", "#c9ced8", "#c8875a"],
+  rims: ["#fff0b8", "#f2f4f8", "#efb88e"],
+} as const;
+
 /** The shell's palette: every page outside a game. Same roles as the HUD's; today the same values. */
 export const SHELL_COLORS: Palette = {
   ground: BRAND.hearth,

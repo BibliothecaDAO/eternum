@@ -1,4 +1,9 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import {
+  frontierPrizeHolders,
+  type HeraldFrontierLeaderboardEntry,
+  type HeraldFrontierPrize,
+} from "@bibliothecadao/eternum/game-sync";
 
 import type { SeasonPoolFigures } from "./season-list";
 
@@ -60,7 +65,7 @@ export interface SeasonLords {
  * none is published. Without today's price there is no chest to quote.
  */
 export const seasonLordsOf = (
-  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined; prize?: { pool: bigint; topN: number } },
+  facts: { budget: Budget | undefined; chestRules: ChestRules | undefined },
   season: Span,
   today: (Span & { index: number }) | null,
 ): SeasonLords => {
@@ -70,9 +75,60 @@ export const seasonLordsOf = (
   return {
     pool: {
       lords: Number(budget.pool),
-      ...(facts.prize ? { prize: { lords: Number(facts.prize.pool), topN: facts.prize.topN } } : {}),
       today: today ? Number(releasedInDay(budget.pool, season, today)) : undefined,
     },
     chest: chestRules && price !== null ? commonChestAt(chestRules.shares, price) : undefined,
   };
+};
+
+/**
+ * What each prize place takes of the season's prize pool, first to last, as the ledger pays it
+ * (frontier_prizes.cairo, prize_amount): rank r of `count` takes `count + 1 - r` shares of `count (count + 1) / 2`,
+ * each place below the first rounded down, and the first takes what the others leave, so the rounding stays with it.
+ */
+export const prizeShares = (pool: bigint, count: number): bigint[] => {
+  if (!Number.isInteger(count) || count <= 0 || count > 100) throw new Error(`invalid prize count ${count}`);
+  const n = BigInt(count);
+  const shares = (n * (n + 1n)) / 2n;
+  const below = Array.from({ length: count - 1 }, (_, index) => (pool * (n - BigInt(index + 1))) / shares);
+  return [pool - below.reduce((sum, share) => sum + share, 0n), ...below];
+};
+
+/**
+ * Who holds a prize place: a player; "open" while no player who cleared a site does; "awarding" once the ledger fixed the
+ * place's winner but has not paid it yet, so no receipt names them.
+ */
+export type PodiumHolder = { address: string } | "open" | "awarding";
+
+/** A prize place on the season's podium: its place, its LORDS, and who holds it. */
+export type PodiumPlace = { place: number; lords: number; holder: PodiumHolder };
+
+/**
+ * The season's podium from Herald's board: null while no prize pool is published. Until the winners are posted, the
+ * game's `top_n` places and what each would take, each held by the board's next player who cleared a site
+ * (frontierPrizeHolders, the rule the relay posts by) or open. Once posted, the `count` places the ledger fixed, each
+ * named by its award receipt: the fixed list is the ledger's, never the board's again.
+ */
+export const seasonPodium = (board: {
+  prize: HeraldFrontierPrize | null;
+  entries: readonly Pick<HeraldFrontierLeaderboardEntry, "address" | "sites_cleared">[];
+}): PodiumPlace[] | null => {
+  const { prize } = board;
+  if (!prize) return null;
+  const places = prize.count ?? prize.top_n;
+  if (places === 0) return [];
+  const shares = prizeShares(BigInt(prize.pool), places);
+  if (prize.count !== null)
+    return shares.map((lords, index) => {
+      const award = prize.awards.find((each) => each.rank === index + 1);
+      return award
+        ? { place: index + 1, lords: Number(award.lords), holder: { address: award.address } }
+        : { place: index + 1, lords: Number(lords), holder: "awarding" };
+    });
+  const holders = frontierPrizeHolders(board.entries, places);
+  return shares.map((lords, index) => ({
+    place: index + 1,
+    lords: Number(lords),
+    holder: holders[index] ? { address: holders[index].address } : "open",
+  }));
 };

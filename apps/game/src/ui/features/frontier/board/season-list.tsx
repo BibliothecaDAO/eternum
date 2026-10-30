@@ -1,8 +1,10 @@
 import type { RealmSkin } from "@/three/structures/realm-skins";
 import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
   HudButton,
+  HudPlaceMedal,
   HudChip,
   HudEmpty,
   HudIconButton,
@@ -23,6 +25,8 @@ import {
   CLOSE,
   SEASON,
   SEASON_ERROR,
+  SEASON_PRIZES,
+  PRIZE_UNHELD,
   SITES,
   SITES_CLEARED,
   TRY_AGAIN,
@@ -60,6 +64,7 @@ export const SeasonList = ({
   rank,
   chest,
   pool,
+  podium,
   rows,
   pinned,
   state,
@@ -74,6 +79,8 @@ export const SeasonList = ({
   chest?: { lords: number };
   /** The season's pool; null while none is published, absent until the game's facts are known. */
   pool?: SeasonPoolFigures | null;
+  /** The season's top prizes, each paid place and its LORDS; null while none is published, absent until known. */
+  podium?: readonly SeasonPodiumPlace[] | null;
   rows: readonly SeasonListRow[];
   pinned: SeasonListRow | undefined;
   state: "ready" | "loading" | "failed";
@@ -97,6 +104,7 @@ export const SeasonList = ({
         <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />
       </header>
       {ends && <SeasonEnds {...ends} />}
+      {podium !== undefined && <SeasonPodium podium={podium} />}
       {state === "failed" ? (
         <Failed onRetry={onRetry} />
       ) : (
@@ -129,7 +137,7 @@ const SeasonEnds = ({ at, day, lastDay }: { at: number; day?: number; lastDay?: 
 );
 
 /** The season's pool in whole LORDS and what today releases of it (absent before the season starts and after it ends). */
-export type SeasonPoolFigures = { lords: number; prize?: { lords: number; topN: number }; today: number | undefined };
+export type SeasonPoolFigures = { lords: number; today: number | undefined };
 
 /** Rank, the realm's rank and depth, name, sites cleared (what ranks) and LORDS: the head and rows share these columns. */
 const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
@@ -137,7 +145,7 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 /** One realm on the list, a row of the sheet's table that opens its detail; the player's own carries the chosen bar. */
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
   <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
-    <span className="text-center tabular-nums">{formatAmount(row.rank)}</span>
+    <RankCell rank={row.rank} />
     <RealmBadge level={row.realm.level} depth={row.realm.depth} skin={row.realm.skin} />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
@@ -207,12 +215,68 @@ const poolLine = (pool: SeasonPoolFigures | null | undefined) =>
   pool === null
     ? POOL_NOT_PUBLISHED
     : pool &&
-      [
-        seasonPool(formatExact(pool.lords), pool.today === undefined ? undefined : formatExact(pool.today)),
-        pool.prize && `Top ${pool.prize.topN}: ${formatExact(pool.prize.lords)} LORDS at season end`,
-      ]
+      [seasonPool(formatExact(pool.lords), pool.today === undefined ? undefined : formatExact(pool.today))]
         .filter(Boolean)
         .join(". ");
+
+/** A prize place on the podium: its LORDS, and who holds it by name, or why no one does (PodiumHolder). */
+export type SeasonPodiumPlace = { place: number; lords: number; holder: { name: ReactNode } | "open" | "awarding" };
+
+/** Second, first and third, the first raised; any further place after them. */
+const podiumOrder = (places: readonly SeasonPodiumPlace[]) =>
+  [places[1], places[0], ...places.slice(2)].filter((place): place is SeasonPodiumPlace => place !== undefined);
+
+/**
+ * The season's top prizes over the board (the owner's pick A, 30 October 2026: "A is great I think for the top
+ * prizes"): a tile per prize place, its medal, its LORDS and who holds it, or why no one does yet. While no pool is
+ * published, the medals stand with "—" and say so.
+ */
+const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null }) => {
+  if (podium?.length === 0) return null;
+  const places = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" as const }));
+  return (
+    <ol aria-label={SEASON_PRIZES} className="my-1 grid shrink-0 grid-cols-3 items-end gap-1.5">
+      {podiumOrder(places).map(({ place, lords, holder }) => (
+        <li
+          key={place}
+          data-place={place}
+          className={cn(
+            "flex min-w-0 flex-col items-center gap-1 rounded-md border border-hud-line bg-hud-well px-1 py-2",
+            place === 1 && "py-3",
+          )}
+        >
+          <HudPlaceMedal place={place} size={place === 1 ? 30 : 24} below={`#${place}`} />
+          <span className="inline-flex items-center gap-1 text-hud-strong tabular-nums text-hud-gold">
+            <SemanticIcon name="lords" size={16} />
+            {Number.isNaN(lords) ? "—" : formatExact(lords)}
+          </span>
+          {podium !== null && (
+            <span
+              className={cn(
+                "max-w-full truncate text-hud-label",
+                typeof holder === "string" ? "text-hud-muted" : "text-hud-ink",
+              )}
+            >
+              {typeof holder === "string" ? PRIZE_UNHELD[holder] : holder.name}
+            </span>
+          )}
+        </li>
+      ))}
+      {podium === null && (
+        <li className="col-span-3 text-center text-hud-label text-hud-muted">{POOL_NOT_PUBLISHED}</li>
+      )}
+    </ol>
+  );
+};
+
+/** A row's rank: a medal for the first three places, the number below them. */
+const RankCell = ({ rank }: { rank: number }) => {
+  return (
+    <span className="flex justify-center tabular-nums">
+      <HudPlaceMedal place={rank} below={formatAmount(rank)} />
+    </span>
+  );
+};
 
 /** What failed, by name, with Try again on the card itself. */
 const Failed = ({ onRetry }: { onRetry: () => void }) => (

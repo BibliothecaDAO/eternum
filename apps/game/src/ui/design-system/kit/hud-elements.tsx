@@ -1,3 +1,4 @@
+import { MEDAL_COLORS } from "@/tokens";
 import {
   formatTypedNumber,
   formatExact,
@@ -35,6 +36,42 @@ import { BACK, CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TR
  * (src/tokens.ts: HUD_TYPE, HUD_SHEET, HUD_MODES) by its classes (hud-sheet.css). A screen takes these and gives them
  * words and values, never a look of its own. /lab/kit shows each in every state, age and device.
  */
+
+/**
+ * A place's mark, the same in the game and the app (the owner, 30 October 2026: "yeah medal simple"): for the first three
+ * places a gold, silver or bronze disc with its place, the first with the crown over it; below them, `below` (the rank
+ * as the board writes it).
+ */
+export const HudPlaceMedal = ({ place, size = 22, below }: { place: number; size?: number; below: ReactNode }) =>
+  place >= 1 && place <= 3 ? (
+    <span
+      role="img"
+      aria-label={`#${place}`}
+      data-medal={place}
+      className="relative inline-flex shrink-0 items-center justify-center"
+      style={{ width: size, height: size }}
+    >
+      {place === 1 && (
+        <span aria-hidden className="absolute left-1/2 top-0 -translate-x-1/2 -translate-y-[55%]">
+          <Icon name="crown" size={Math.round(size * 0.6)} />
+        </span>
+      )}
+      <span
+        aria-hidden
+        className="flex size-full items-center justify-center rounded-full border-2 font-bold leading-none tabular-nums"
+        style={{
+          background: MEDAL_COLORS.faces[place - 1],
+          borderColor: MEDAL_COLORS.rims[place - 1],
+          color: MEDAL_COLORS.ink,
+          fontSize: Math.round(size * 0.48),
+        }}
+      >
+        {place}
+      </span>
+    </span>
+  ) : (
+    below
+  );
 
 /** The gold verb, a second choice, a quiet one, and what destroys something (delete, disband, dismiss). */
 type ButtonKind = "primary" | "secondary" | "quiet" | "danger";

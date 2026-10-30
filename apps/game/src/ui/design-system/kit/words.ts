@@ -644,6 +644,10 @@ export const commonChestPays = (lords: string) => `A Common chest pays ${lords} 
 export const seasonPool = (lords: string, today: string | undefined) =>
   `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
+/** The season's top prizes, as a podium names itself to assistive technology. */
+export const SEASON_PRIZES = "Season prizes";
+/** A prize place no one holds: no player who cleared a site yet, or a winner the ledger fixed and has not paid yet. */
+export const PRIZE_UNHELD = { open: "Open", awarding: "Pending" } as const;
 // The app's words outside a match (the shell's pages).
 
 /**

@@ -10,7 +10,7 @@ import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
-import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -18,9 +18,9 @@ import { useNavigate } from "react-router-dom";
 import { seasonDay } from "../hud/day-clock";
 import { useSeasonEndsAt } from "../hud/season-end";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
-import { SeasonList, type SeasonListRow } from "./season-list";
+import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
-import { type SeasonLords, seasonLordsOf } from "./season-pool";
+import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
 type Entry = HeraldFrontierLeaderboardEntry;
@@ -32,7 +32,10 @@ const LIST_LENGTH = 50;
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
  * first. Herald ranks; the client only reads, and an unknown board shows as "—".
  */
-export const useSeasonBoard = () => {
+export const useSeasonBoard = () => useFrontierBoard((board) => board.entries);
+
+/** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
+const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
@@ -41,10 +44,32 @@ export const useSeasonBoard = () => {
       const board = await fetchHeraldLeaderboard(shard, gameId);
       // The Frontier HUD only mounts in a Frontier game, whose board is always the season's.
       if (board.mode !== "frontier") throw new Error(`Game ${gameId} ranks points, not a Frontier season`);
-      return board.entries;
+      return board;
     },
+    select,
     refetchInterval: REFRESH_MS,
   });
+};
+
+/**
+ * The season's podium as the Season page draws it: each prize place, its LORDS and who holds it (seasonPodium). Null
+ * while no prize pool is published, undefined until the board is known.
+ */
+const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | undefined => {
+  const board = useFrontierBoard((board) => board);
+  if (!board.data) return undefined;
+  const podium = seasonPodium(board.data);
+  return (
+    podium &&
+    podium.map(({ place, lords, holder }) => ({
+      place,
+      lords,
+      holder:
+        typeof holder === "string"
+          ? holder
+          : { name: <LordName account={holder.address} you={holder.address === own} /> },
+    }))
+  );
 };
 
 const useViewer = () => useAccountStore((state) => state.account?.address ?? null);
@@ -77,6 +102,7 @@ export const FrontierSeason = ({
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
+  const podium = useSeasonPodium(own?.address);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
     startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOn: "realm" });
@@ -96,6 +122,7 @@ export const FrontierSeason = ({
       rank={ownRank(board.data, viewer)}
       chest={chest}
       pool={pool}
+      podium={podium}
       rows={rows}
       pinned={pinned}
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
@@ -120,17 +147,14 @@ const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
   const game = setup.store.get("GameRegistry", { game_id: gameId });
   if (!game) return {};
   const season = { start: Number(game.start_main_at), end: Number(game.end_at) };
-  const prize = setup.store.get("FrontierPrize", { game_id: gameId });
-  const chests = setup.store.get("ChestRules", { game_id: gameId });
   const facts = {
-    prize: prize && chests ? { pool: prize.pool, topN: chests.top_n } : undefined,
     budget: setup.store.get("LordsBudget", { game_id: gameId }),
     chestRules: setup.store.get("ChestRules", { game_id: gameId }),
   };
   return seasonLordsOf(facts, season, now < season.end ? dayOf(rules, now) : null);
 };
 
-const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules", "FrontierPrize"] as const;
+const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
 
 /**
  * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
