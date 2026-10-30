@@ -495,11 +495,11 @@ fn shrine_roll_boundaries_shift_one_rank_per_depth_and_cap_at_legendary() {
 #[test]
 fn discovery_stores_a_depth_scaled_point_and_public_use_grants_it_once_without_xp() {
     for depth in 0_u8..4 {
-        let (d, game_id, key) = super::registrar::setup_frontier_chests();
-        place_army_at_depth(d, key, depth);
-        let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         let rules = super::preset_projection::frontier_discovery_rules();
         let unlocked = crate::expeditions::FrontierDiscoveryRules { well_bps: 0, ..rules };
+        let (d, game_id, key) = super::registrar::setup_frontier_chests_with_rules(Some(unlocked));
+        place_army_at_depth(d, key, depth);
+        let army = super::state::GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
         snforge_std::interact_with_state(
             d.games,
             || {

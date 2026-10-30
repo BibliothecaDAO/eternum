@@ -22,6 +22,8 @@ it("opens a Kingdom with eight distinct buildings, tier III production and two u
   for (const category of [TileOccupier.Shrine, TileOccupier.Well]) {
     expect([...store.rows("TileOccupancy")].filter((tile) => tile.category === category)).toHaveLength(1);
   }
+  const shrine = [...store.rows("TileOccupancy")].find((tile) => tile.category === TileOccupier.Shrine)!;
+  expect(store.require("ShrineReward", { game_id: 1, entity_id: shrine.entity_id }).rank).toBe(3);
   // Frontier's sites as its contracts make them: nobody's, standing, guarded.
   for (const [entityId, guard] of [
     [711, 300n],
