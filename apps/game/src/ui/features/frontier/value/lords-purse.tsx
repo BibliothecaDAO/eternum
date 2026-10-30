@@ -1,8 +1,10 @@
 import { formatExact, formatGain, LORDS, formatShort } from "@bibliothecadao/types";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
-import { LABOR, REALM_LABOR } from "@/ui/design-system/kit/words";
+import { ESSENCE, LABOR, REALM_LABOR } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
+
+import type { DailyClaimWaiting } from "./realm-labor";
 
 /**
  * Under the phone's strip, beside Next up at its right: the realm's LORDS count (it opens Withdraw where one exists)
@@ -40,19 +42,28 @@ export const LordsPurse = ({
   </HudPill>
 );
 
-/** The settled home's daily Labor claim, showing what is available today. */
-export const RealmsChip = ({ labor, onOpen }: { labor: number; onOpen: () => void }) => (
-  <HudPill label={labor > 0 ? `${REALM_LABOR} ${formatGain(labor)} ${LABOR}` : REALM_LABOR} onPress={onOpen}>
+/** The settled home's daily claim: the Labor and a campaign home's Essence waiting today, each by its icon. */
+export const RealmsChip = ({ waiting, onOpen }: { waiting: DailyClaimWaiting | null; onOpen: () => void }) => (
+  <HudPill label={[REALM_LABOR, ...claimWords(waiting)].join(" ")} onPress={onOpen}>
     {[
-      <span key="labor" className="flex items-center gap-1 tabular-nums">
+      <span key="claim" className="flex items-center gap-1 tabular-nums">
         <SemanticIcon name="realm" size={24} />
-        {labor > 0 && (
-          <>
-            <SemanticIcon name="labor" size={22} />
-            {formatShort(labor, { signed: true })}
-          </>
-        )}
+        {waiting && waiting.labor > 0 && <ClaimAmount icon="labor" amount={waiting.labor} />}
+        {waiting && waiting.essence > 0 && <ClaimAmount icon="essence" amount={waiting.essence} />}
       </span>,
     ]}
   </HudPill>
 );
+
+const ClaimAmount = ({ icon, amount }: { icon: "labor" | "essence"; amount: number }) => (
+  <>
+    <SemanticIcon name={icon} size={22} />
+    {formatShort(amount, { signed: true })}
+  </>
+);
+
+/** The chip's name for assistive technology: "+2,000 labor +2,000 Essence". */
+const claimWords = (waiting: DailyClaimWaiting | null): string[] => [
+  ...(waiting && waiting.labor > 0 ? [`${formatGain(waiting.labor)} ${LABOR}`] : []),
+  ...(waiting && waiting.essence > 0 ? [`${formatGain(waiting.essence)} ${ESSENCE}`] : []),
+];

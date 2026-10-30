@@ -69,6 +69,8 @@ vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "
 vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: facts.balance, limit: 18000 } }) }));
 import { snapshotClientActionLatency } from "@/observability/client-action-latency";
 import { FrontierRealms } from "./frontier-realms";
+import { RealmsChip } from "./lords-purse";
+import { dailyClaimWaiting } from "./realm-labor";
 import { useRealmLabor } from "./use-realm-labor";
 const home = { game_id: 3, entity_id: 412n, owner: 0xaccn, metadata: { realm_id: 711 } } as NativeRows["Structure"];
 const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, spacing: 50 };
@@ -230,6 +232,77 @@ it("lets both campaign tiers claim their Essence at full Labor storage", async (
       { gameId: 3, home: "412" },
     ]);
     expect(buttons()).toContain("Realm");
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+/** The Realms chip as the HUD wires it: the home's plan, its one reading of what waits, the chip. */
+const Chip = () => <RealmsChip waiting={dailyClaimWaiting(useRealmLabor(rules, home)?.plan)} onOpen={() => {}} />;
+
+it.each([
+  {
+    home: "a golden Devcon home",
+    campaign: { campaign_id: DEVCON_ID, tier: 2 },
+    balance: 0,
+    name: "Realm Labor +2,000 labor +2,000 Essence",
+    shows: "+2K+2K",
+    icons: ["realm", "labor", "essence"],
+  },
+  {
+    home: "a regular Devcon home",
+    campaign: { campaign_id: DEVCON_ID, tier: 1 },
+    balance: 0,
+    name: "Realm Labor +1,000 labor +1,000 Essence",
+    shows: "+1K+1K",
+    icons: ["realm", "labor", "essence"],
+  },
+  {
+    home: "a golden Devcon home whose Labor store is full",
+    campaign: { campaign_id: DEVCON_ID, tier: 2 },
+    balance: 18000,
+    name: "Realm Labor +2,000 labor +2,000 Essence",
+    shows: "+2K+2K",
+    icons: ["realm", "labor", "essence"],
+  },
+  {
+    home: "a home founded with a held Realm",
+    campaign: undefined,
+    balance: 0,
+    name: "Realm Labor +1,000 labor",
+    shows: "+1K",
+    icons: ["realm", "labor"],
+  },
+])("shows on the Realms chip what $home claims today", async ({ campaign, balance, name, shows, icons }) => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  facts.held = campaign === undefined;
+  facts.campaign = campaign;
+  facts.balance = balance;
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(<Chip />));
+    const chip = host.querySelector("button")!;
+    expect(chip.getAttribute("aria-label")).toBe(name);
+    expect(chip.textContent).toBe(shows);
+    expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual(icons);
+  } finally {
+    await act(async () => root.unmount());
+  }
+});
+
+it("has nothing waiting once today is claimed: the chip names Realm Labor alone", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  facts.held = false;
+  facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+  facts.claimedDay = 0n;
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  try {
+    await act(async () => root.render(<Chip />));
+    const chip = host.querySelector("button")!;
+    expect(chip.getAttribute("aria-label")).toBe("Realm Labor");
+    expect(chip.textContent).toBe("");
   } finally {
     await act(async () => root.unmount());
   }

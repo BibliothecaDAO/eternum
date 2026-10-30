@@ -50,6 +50,7 @@ import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { SeasonWithdraw } from "./value/season-withdraw";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useCampaignMark } from "./value/campaign-home";
+import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
@@ -117,6 +118,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     closeFeed,
   } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
+  const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
@@ -167,7 +169,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     !visit && (
       <RealmPurse
         realm={realm}
-        laborWaiting={realmLabor?.plan.total ?? 0}
+        waiting={claimWaiting}
         onWithdraw={() => setSurface("withdraw")}
         onRealms={() => setSurface("realms")}
       />
@@ -179,7 +181,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onVisited={close} onClose={close} />
     ) : surface === "menu" ? (
-      <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
+      <HudMenu realm={realm} claimWaiting={claimWaiting !== null} onOpen={setSurface} onClose={close} />
     ) : undefined;
   const notices = (
     <>
@@ -253,7 +255,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             rules={rules}
             realm={shown}
             own={own}
-            labor={realmLabor?.plan.total ?? 0}
+            waiting={claimWaiting}
             storeCards={storeCards}
             onSurface={setSurface}
           />
@@ -486,13 +488,13 @@ const PendingOrder = ({
 /** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
-  laborWaiting,
+  claimWaiting,
   onOpen,
   onClose,
 }: {
   realm: NativeRows["Structure"] | null;
-  /** Whether the player's Realms have labor to give today: the Realms row wears a dot. */
-  laborWaiting: boolean;
+  /** Whether the home's daily claim has Labor or Essence waiting today: the Realms row wears a dot. */
+  claimWaiting: boolean;
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
 }) => {
@@ -503,7 +505,7 @@ const HudMenu = ({
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}
-      realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
+      realms={realm ? { waiting: claimWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
       onExit={() => navigate("/")}
       onClose={onClose}
@@ -520,7 +522,7 @@ const FrontierRealmPanel = ({
   rules,
   realm,
   own,
-  labor,
+  waiting,
   storeCards,
   onSurface,
 }: {
@@ -528,7 +530,7 @@ const FrontierRealmPanel = ({
   realm: NativeRows["Structure"];
   /** The player's own realm, the one read; null while watching or visiting. */
   own: NativeRows["Structure"] | null;
-  labor: number;
+  waiting: DailyClaimWaiting | null;
   storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
   onSurface: (surface: HudSurface) => void;
 }) => {
@@ -549,7 +551,7 @@ const FrontierRealmPanel = ({
       onHome={() => goToPlace(true)}
       {...(own && {
         lords,
-        labor,
+        waiting,
         storeCards,
         onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
@@ -559,22 +561,22 @@ const FrontierRealmPanel = ({
 };
 
 /**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the player's Realms
- * have labor to give today.
+ * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
+ * has Labor or Essence waiting today.
  */
 const RealmPurse = ({
   realm,
-  laborWaiting,
+  waiting,
   onWithdraw,
   onRealms,
 }: {
   realm: NativeRows["Structure"];
-  laborWaiting: number;
+  waiting: DailyClaimWaiting | null;
   onWithdraw: () => void;
   onRealms: () => void;
 }) => (
   <PurseRow>
-    {laborWaiting > 0 && <RealmsChip labor={laborWaiting} onOpen={onRealms} />}
+    {waiting && <RealmsChip waiting={waiting} onOpen={onRealms} />}
     <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
   </PurseRow>
 );

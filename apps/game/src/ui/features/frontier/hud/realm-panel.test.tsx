@@ -53,7 +53,7 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
         level={1}
         stores={STORES}
         lords={1_240}
-        labor={2_000}
+        waiting={{ labor: 2_000, essence: 0 }}
         onWithdraw={onWithdraw}
         onRealms={onRealms}
       />,
@@ -170,19 +170,26 @@ it("offers a desktop's places, Research, the Feed and the Season; the lit Feed c
   expect(onCloseFeed).toHaveBeenCalledTimes(1);
 });
 
-it.each(REALM_SKIN_MODELS)("shows the $skin painting on the HUD at level $level", ({ skin, level }) => {
-  const icon = realmSkinIcon(skin);
-  act(() =>
-    root.render(
-      <RealmPanel
-        name="Devcon home"
-        level={level}
-        highest={3}
-        stores={STORES}
-        mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
-      />,
-    ),
-  );
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.querySelectorAll(`img[src$="/${icon}.webp"]`).length).toBe(2);
-});
+it.each(REALM_SKIN_MODELS)(
+  "shows the $skin painting on the HUD at level $level, its name as a tip",
+  ({ skin, level }) => {
+    const icon = realmSkinIcon(skin);
+    act(() =>
+      root.render(
+        <RealmPanel
+          name="Duskbite"
+          level={level}
+          highest={3}
+          stores={STORES}
+          mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
+        />,
+      ),
+    );
+    const panel = host.querySelector('section[aria-label="Realm"]')!;
+    // The painting alone carries the campaign: no tag spells its name beside the rank, the tip names it.
+    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"]`)];
+    expect(paintings.map((painting) => painting.getAttribute("data-tip"))).toEqual([REALM_SKINS[skin].label]);
+    expect(paintings[0].getAttribute("alt")).toBe(REALM_SKINS[skin].label);
+    expect(panel.textContent).not.toContain(REALM_SKINS[skin].label);
+  },
+);
