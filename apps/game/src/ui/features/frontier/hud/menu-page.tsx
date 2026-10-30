@@ -1,6 +1,6 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
-import { EXIT, MENU, REALM_LABOR, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
+import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { EXIT, MENU, REALM_LABOR, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 const MENU_WORDS = {
@@ -11,10 +11,10 @@ const MENU_WORDS = {
 } as const;
 
 /**
- * The Menu, a page on the place bar as Research, the Log and Chat are: its title and no close of its own, since the
- * place bar's Menu closes it as theirs do (player, 25 October: the one window with an X and a tall header). The ways
- * that are not places (Today, Season with the player's rank, Settings), then Exit to the app and Resume, which closes
- * it. Realms, with a dot while their labor waits, opens the Realm holder's labor where its facts are served.
+ * The Menu, a page on the place bar as Research, the Feed and Chat are, in their one frame: its × closes it, as the
+ * place bar's Menu does (owner, 30 October: "Ok to cut resume"). The ways that are not places (Today, Season with the
+ * player's rank, Settings), then Exit to the app. Realms, with a dot while their labor waits, opens the Realm holder's
+ * labor where its facts are served.
  */
 export const MenuPage = ({
   rank,
@@ -33,7 +33,7 @@ export const MenuPage = ({
   onExit: () => void;
   onClose: () => void;
 }) => (
-  <HudPanel label={MENU} title={MENU} icon="menu" collapsible={false} bodyClassName="flex flex-col gap-2">
+  <HudPage label={MENU} icon="menu" onClose={onClose}>
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
       <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
@@ -46,17 +46,12 @@ export const MenuPage = ({
       )}
       <MenuRow icon="settings" onClick={onSettings} />
     </nav>
-    <div className="grid grid-cols-3 gap-2">
+    <div className="grid">
       <HudButton kind="secondary" icon="exit" onClick={onExit}>
         {EXIT}
       </HudButton>
-      <span className="col-span-2 grid">
-        <HudButton kind="primary" onClick={onClose}>
-          {RESUME}
-        </HudButton>
-      </span>
     </div>
-  </HudPanel>
+  </HudPage>
 );
 
 const MenuRow = ({
@@ -71,12 +66,8 @@ const MenuRow = ({
   <HudRow
     lead={<SemanticIcon name={icon} size={22} />}
     title={MENU_WORDS[icon]}
-    trail={
-      <>
-        {badge}
-        <SemanticIcon name="chevron-right" size={20} />
-      </>
-    }
+    trail={badge}
+    opens
     onClick={onClick}
   />
 );

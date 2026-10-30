@@ -28,9 +28,11 @@ beforeEach(() => {
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
   host.remove();
+  // A sheet closed steps back off its history entry a moment later: that step lands here, not in the next test.
+  await new Promise((settled) => setTimeout(settled, 20));
 });
 
 describe("the clock", () => {
@@ -239,9 +241,9 @@ describe("Sheet", () => {
 
   it("closes on the system back, which leaves the page under it where it was", () => {
     const onClose = vi.fn();
-    const before = window.history.length;
     renderSheet(onClose);
-    expect(window.history.length).toBe(before + 1);
+    // Its own entry, on top of the page's: the system back leaves that one where it was.
+    expect((window.history.state as { kitSheets?: string[] }).kitSheets).toHaveLength(1);
     act(() => {
       window.history.replaceState(null, "");
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));

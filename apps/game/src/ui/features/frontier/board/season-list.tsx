@@ -7,14 +7,11 @@ import {
   HudPlaceMedal,
   HudChip,
   HudEmpty,
-  HudIconButton,
-  HudPanel,
+  HudPage,
   HudSkeleton,
   HudTableHead,
   HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
-
-import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
 
 import { RealmBadge } from "./realm-marks";
 import {
@@ -22,7 +19,6 @@ import {
   POOL_NOT_PUBLISHED,
   RANK,
   REALM,
-  CLOSE,
   SEASON,
   SEASON_ERROR,
   SEASON_PRIZES,
@@ -90,19 +86,14 @@ export const SeasonList = ({
   /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
   ends?: { at: number; day?: number; lastDay?: number };
 }) => {
-  useSheetCloses(onClose);
   return (
-    <HudPanel
+    <HudPage
       label={SEASON}
-      collapsible={false}
-      className="pointer-events-auto flex min-h-0 flex-1 flex-col"
-      bodyClassName="flex min-h-0 flex-1 flex-col gap-1"
+      icon="victory"
+      cue={<SeasonChip chest={chest} rank={rank} pool={pool} />}
+      onClose={onClose}
+      bodyClassName="gap-1"
     >
-      <header className="flex shrink-0 items-center gap-1.5">
-        <h2 className="flex-1 text-hud-title text-hud-accent">{SEASON}</h2>
-        <SeasonChip chest={chest} rank={rank} pool={pool} />
-        <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />
-      </header>
       {ends && <SeasonEnds {...ends} />}
       {podium !== undefined && <SeasonPodium podium={podium} />}
       {state === "failed" ? (
@@ -120,7 +111,7 @@ export const SeasonList = ({
           {pinned && <ListRow row={pinned} onOpen={onOpen} />}
         </>
       )}
-    </HudPanel>
+    </HudPage>
   );
 };
 

@@ -306,7 +306,7 @@ describe("a row pressed to choose it", () => {
       ),
     );
     const [chosen, sender] = [...host.querySelectorAll<HTMLButtonElement>("button.ui-row")];
-    expect(chosen.getAttribute("aria-selected")).toBe("true");
+    expect(chosen.getAttribute("aria-pressed")).toBe("true");
     act(() => chosen.click());
     act(() => sender.click());
     expect(pick.mock.calls).toEqual([["Hetokamohuti"]]);

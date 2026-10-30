@@ -551,7 +551,7 @@ export const GAME_TASKS = {
       { name: "the army", within: '[aria-label="Armies"]', text: "^Army" },
       { name: "a tile it can attack, right-clicked", tile: ATTACK_TILE, button: "right" },
     ],
-    done: verbAloneAtRight("[data-kit-sheet] .ui-sheet__body", "^Attack$"),
+    done: verbAloneAtRight("[data-kit-sheet] .ui-frame__body", "^Attack$"),
   },
   explore: {
     goal: "Explore a tile with an army",

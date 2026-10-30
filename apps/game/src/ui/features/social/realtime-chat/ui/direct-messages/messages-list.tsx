@@ -98,7 +98,7 @@ const MutedPlayer = ({ playerId, name }: { playerId: string; name: string }) => 
     <HudRow
       lead={<UserAvatar name={name} address={playerId} size="lg" className="rounded-full" />}
       title={name}
-      trail={
+      controls={
         <HudButton kind="secondary" size="sm" onClick={toggle}>
           {CHAT_WORDS.unmute}
         </HudButton>

@@ -208,8 +208,6 @@ export const EVENTS_WORDS = {
   nothingYet: "Nothing here yet.",
   /** Frontier's one feed in its rail: the world's history, and lenses on it. */
   feed: "Feed",
-  /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
-  closeFeed: "Close the feed",
   /** The lenses' group, for assistive technology: Events, the Log and the Feed alike. */
   lens: "Show",
   lenses: { important: "Important", all: "All" },
@@ -235,7 +233,6 @@ export const SETTINGS_WORDS = {
   show: "Show",
 } as const;
 export const EXIT = "Exit";
-export const RESUME = "Resume";
 export const SIGN_IN = "Sign in";
 
 /** An army's two ways across the map, and backing out of an order. */
@@ -671,7 +668,7 @@ export const WORDS = {
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
   playFree: "Play free",
-  resume: RESUME,
+  resume: "Resume",
   /** Go into a Blitz game the player is on. */
   enter: "Enter",
   /** Look at a Blitz game the player is not on. */

@@ -342,6 +342,7 @@ const FrontierPhoneHud = ({
             signedIn={chat.initializer !== null}
             onSignIn={chat.requestSignIn}
             pane={chatPane}
+            onClose={() => onSurface(null)}
           />
         ) : (
           page

@@ -1,5 +1,5 @@
 import { useAccountStore } from "@/hooks/store/use-account-store";
-import { HudIconButton, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudNotice, HudPage } from "@/ui/design-system/kit/hud-elements";
 import { EVENTS_WORDS } from "@/ui/design-system/kit/words";
 import { type FeedLens, involvesPlayer } from "@/ui/features/event-feed/event-stories";
 import { FEED_LENSES, LensSwitch } from "@/ui/features/event-feed/events-filter-switch";
@@ -19,22 +19,15 @@ import { useState } from "react";
 export const FrontierFeed = ({ onClose }: { onClose: () => void }) => {
   const [lens, setLens] = useState<FeedLens>("all");
   return (
-    <HudPanel
+    <HudPage
       label={EVENTS_WORDS.feed}
-      title={EVENTS_WORDS.feed}
       icon="chronicles"
-      collapsible={false}
-      cue={
-        <span className="inline-flex items-center gap-1">
-          <LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />
-          <HudIconButton icon="close" label={EVENTS_WORDS.closeFeed} kind="quiet" size="sm" onClick={onClose} />
-        </span>
-      }
-      className="pointer-events-auto flex min-h-0 flex-1 flex-col"
-      bodyClassName="min-h-0 flex-1 overflow-y-auto overflow-x-hidden scrollbar-thin"
+      cue={<LensSwitch lens={lens} onLens={setLens} words={FEED_LENSES} />}
+      onClose={onClose}
+      bodyClassName="gap-0 overflow-x-hidden scrollbar-thin"
     >
       <FeedStories lens={lens} />
-    </HudPanel>
+    </HudPage>
   );
 };
 
