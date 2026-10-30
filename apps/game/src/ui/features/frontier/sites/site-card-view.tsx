@@ -211,8 +211,8 @@ const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode 
 
 /**
  * The fight's two sides, in every state of the card (owner, 10-27: "this panel doesnt match at all our new battle
- * panels"): in reach, each side's troops now and what this attack leaves it; out of reach, short of stamina or refused,
- * the same sides with a dash where no forecast is known. The state itself is the line under them and the held step.
+ * panels"): each side's troops now and what this attack leaves it, near or far; refused, the same sides with a dash
+ * where no forecast is known. The state itself is the line under them and the held step.
  */
 const FightPanel = ({
   army,

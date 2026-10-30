@@ -12,7 +12,7 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
-import { ruinFightScenario } from "./ruin-fight-scenario";
+import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
@@ -34,6 +34,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "after-battle": afterBattleScenario,
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
+  "ruin-far": ruinFarScenario,
   camp: campScenario,
   "cleared-camp": clearedCampScenario,
   fight: fightScenario,

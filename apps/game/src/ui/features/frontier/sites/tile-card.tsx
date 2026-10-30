@@ -130,7 +130,7 @@ export const TileCard = ({
   const facts = useNativeFacts(SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const plan = useMemo(() => readTarget(facts.store, selected, attack), [attack, facts, selected]);
-  const approach = useOrderAt(useApproachTile(siteTile, actor !== null && plan.fight === undefined));
+  const approach = useOrderAt(useApproachTile(siteTile, actor !== null && !plan.inReach));
   const stamina = useArmyStamina(actor ? safeInteger(actor.army.explorer_id) : null, plan.attackStamina);
   const realm = useFrontierRealm();
   const goToPlace = useGoToFrontierPlace(realm);
@@ -170,7 +170,7 @@ export const TileCard = ({
       ? { kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }
       : siteVerb({
           hasArmy: actor !== null,
-          inReach: plan.fight !== undefined,
+          inReach: plan.inReach,
           approach,
           stamina,
           attack: { stamina: plan.attackStamina, inFlight, refused, onAttack: () => void attackSite() },

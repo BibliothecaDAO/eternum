@@ -2720,8 +2720,23 @@ const LAB_AFTER_BATTLE_STEPS = [
 const LAB_RUIN_FIGHT_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
-  { name: "open-the-fight", play: openTheRuinsCard, settleMs: 0, verify: fightCardOpenedCameraStill },
+  {
+    name: "open-the-fight",
+    play: openTheRuinsCardUntil(offersAttack),
+    settleMs: 0,
+    verify: fightCardOpenedCameraStill,
+  },
   { name: "attack", play: attackTheRuin, settleMs: 0, verify: ruinClearedCameraStill },
+];
+/**
+ * The owner's card of 31 October ("I should still have the projection even if I'm too far I think"): the army two tiles
+ * from the ruin (`scenario=ruin-far`), its card opened from the map. Each side reads what this attack leaves it, and
+ * Attack waits for the army to get there.
+ */
+const LAB_RUIN_FAR_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
@@ -2732,6 +2747,8 @@ const FIGHT_STATE = `JSON.stringify({
   army: window.__eternumMapSelection?.army ?? null,
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
+  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   ruinToken: (() => {
@@ -2772,38 +2789,66 @@ function cameraWentToTheArmy({ played }) {
  * show here as a move. Its tile's offset below the screen's middle, in pixels: under the card, still clear of the row.
  */
 const UNDER_THE_CARD_PX = [70, 160];
+/** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
+const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
 async function panTheRuinUnderTheCard(browser) {
-  let key = "KeyW";
+  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
+  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+}
+
+/**
+ * Pans the map in bursts along one axis until the ruin's token stands within `band` on it. `keys` are first taken as
+ * the one that moves the token forward on the axis and the one that moves it back; a key that moved it the other way
+ * is turned round.
+ */
+async function panTheRuinInto(browser, axis, band, keys) {
+  let [forward, back] = keys;
   let last = browser.read(FIGHT_STATE).ruinToken;
-  for (let burst = 0; burst < PAN_BURSTS && last && !underTheCard(last); burst += 1) {
-    // Lower while above the band, higher once past it.
-    const lower = last[1] < UNDER_THE_CARD_PX[0];
-    browser.run(["eval", `void window.__playtest.pan(["${lower ? key : key === "KeyW" ? "KeyS" : "KeyW"}"], 30)`]);
+  for (let burst = 0; burst < PAN_BURSTS && last && (last[axis] < band[0] || last[axis] > band[1]); burst += 1) {
+    const ahead = last[axis] < band[0];
+    browser.run(["eval", `void window.__playtest.pan(["${ahead ? forward : back}"], 30)`]);
     await sleep(CAMERA_REPORT_MS);
     const now = browser.read(FIGHT_STATE).ruinToken;
-    // The way that lowers the ruin on screen is learnt from the first moves: one that raised it is turned round.
-    if (lower && now && now[1] < last[1]) key = key === "KeyW" ? "KeyS" : "KeyW";
+    if (now && (ahead ? now[axis] < last[axis] : now[axis] > last[axis])) [forward, back] = [back, forward];
     last = now;
   }
 }
 
-/** Opens the ruin's card from the map with the army selected: a desktop's right-click, a phone's tap. */
-async function openTheRuinsCard({ browser, extraScreenshot }) {
-  if (!onADesktop()) await panTheRuinUnderTheCard(browser);
-  const before = browser.read(FIGHT_STATE);
-  if (!before.ruinToken) return { before, after: before };
-  extraScreenshot("before-fight");
-  if (onADesktop()) browser.rightClick(before.ruinToken);
-  else browser.tap(before.ruinToken);
-  const after = await readUntil(
-    () => browser.read(FIGHT_STATE),
-    (shown) => shown.buttons.some((text) => text.startsWith("Attack")),
-    MERGE_WAIT_MS,
-  );
-  extraScreenshot("fight-card");
-  return { before, after };
+function offersAttack(shown) {
+  return shown.buttons.some((text) => text.startsWith("Attack"));
+}
+function showsBothSides(shown) {
+  return shown.sides.length === 2;
+}
+
+/**
+ * Opens the ruin's card from the map with the army selected, a desktop's right-click, a phone's tap, and reads it
+ * once it shows what `ready` waits for.
+ */
+function openTheRuinsCardUntil(ready) {
+  return async ({ browser, extraScreenshot }) => {
+    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+    const before = browser.read(FIGHT_STATE);
+    if (!before.ruinToken) return { before, after: before };
+    extraScreenshot("before-fight");
+    if (onADesktop()) browser.rightClick(before.ruinToken);
+    else browser.tap(before.ruinToken);
+    const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
+    extraScreenshot("fight-card");
+    return { before, after };
+  };
+}
+
+/** The far card forecasts both sides, each with what this attack leaves it, and holds Attack back. */
+function farCardForecasts({ played }) {
+  const { before, after } = played;
+  if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
+  if (!showsBothSides(after)) return failed("the ruin's card shows no fight", played);
+  if (after.sides.some((side) => side.endsWith("—"))) return failed(`no forecast: ${after.sides.join(" · ")}`, played);
+  if (!after.attackHeld) return failed("Attack can be pressed from out of reach", played);
+  return completed({ sheet: after.sheet, sides: after.sides, buttons: after.buttons });
 }
 
 function fightCardOpenedCameraStill({ played }) {
@@ -3765,6 +3810,7 @@ export const STEP_SETS = {
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
+  "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },
