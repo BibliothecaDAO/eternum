@@ -1,0 +1,245 @@
+{
+ "note": "Pass criteria for a bound character on the family skeleton with helper joints elbow_half and knee_half. 'template' is what the reference body itself scores on the range-of-motion set (harness/template-*.harness.json); a character may not be much worse than the reference. Starting values, set 2026-10-04 from the template and the baseline Knight test subject; recalibrate after the first finished troop. 2026-10-05: the pose solver was corrected (collarbone, leg twist, two impossible poses) and the reference figures below were re-measured; thresholds unchanged. The harness also reports stretch weighted by edge length (stretch_len_p995); the thresholds still read the count-based figure. 2026-10-06: recalibrated from the first finished bind, the v13 Knight (user decision at gate B: accept the bind and recalibrate the stretch and poke-depth limits from it, keeping the count-based stretch figure). Stretch and triangle-collapse limits are the Knight's worst figure with about 10% margin. The poke-depth figure is no longer a limit: it measures only the few deepest points and rises as fewer points come through; it is still reported. Previous values are kept under 'previous'. The knight_v13 reference figures are from its bind r31 (2026-10-06, all joints built out); the limits were not moved again and the Knight now sits within 3% of both stretch limits.",
+ "helpers": [
+  "elbow_half",
+  "knee_half"
+ ],
+ "static": {
+  "max_influences": 4,
+  "unweighted": 0,
+  "rigid_not_single_bone": 0
+ },
+ "range_of_motion": {
+  "rigid_max_dev": {
+   "max": 0.001,
+   "template": null
+  },
+  "elbow.outer_p05": {
+   "min": 0.85,
+   "template": 0.937,
+   "template_without_helpers": 0.728
+  },
+  "knee.outer_p05": {
+   "min": 0.8,
+   "template": 0.89,
+   "template_without_helpers": 0.655
+  },
+  "ankle.outer_p05": {
+   "min": 0.75,
+   "template": 0.834
+  },
+  "wrist.outer_p05": {
+   "min": 0.75,
+   "template": 0.988
+  },
+  "stretch_p995": {
+   "max": 3.4,
+   "template": 1.79,
+   "exempt_poses": [
+    "arm-p0-e170",
+    "arm-p45-e170",
+    "arm-p90-e170",
+    "reach-up-twist"
+   ],
+   "exempt_max": 4.0,
+   "template_len_weighted": 1.97,
+   "previous_max": 2.5,
+   "knight_v13": 3.29
+  },
+  "area_p01": {
+   "min": 0.22,
+   "template": 0.5,
+   "previous_min": 0.25,
+   "knight_v13": 0.262
+  }
+ },
+ "pose_library": {
+  "stretch_p995": {
+   "max": 3.3,
+   "template": 1.74,
+   "template_len_weighted": 1.91,
+   "previous_max": 2.2,
+   "knight_v13": 3.21
+  },
+  "rigid_max_dev": {
+   "max": 0.001
+  },
+  "poke_through_share_of_under_plate_verts": {
+   "max": 0.03
+  },
+  "poke_depth_p95_mm": {
+   "reported_only": true,
+   "decision": "user, 2026-10-06: keep it as report only and flag instances when it is excessively high; suggest a limit, but do not implement one",
+   "previous_max": 5.0,
+   "knight_v13_worst": 26.8
+  },
+  "through_steel_depth_p95_mm": {
+   "max": 15,
+   "scope": "armour plates in pose-library poses; the head class (a body part against a collar) excluded",
+   "flag_over_mm": 10,
+   "decision": "user, 2026-10-06: adopt 15 mm",
+   "what": "per pose and plate, the 95th-percentile depth of the soft vertices that come through the plate away from its rim (hb_contact.py: through_depth_p95_mm)",
+   "knight_v13": {
+    "library_pose_plates": 924,
+    "over_10_mm": 11,
+    "over_15_mm": 3,
+    "worst_armour_plate": [
+     15.7,
+     "lying-prone",
+     "helmet"
+    ],
+    "worst_head": [
+     22.7,
+     "fall-to-knees"
+    ]
+   },
+   "measured_from": "2026-10-06 (fourth pass): a vertex counts as under a plate only with a clear line to it, the first plate face on that line met from behind, and no plate face about as near facing it. Earlier figures counted straps beside a plate's upstanding lip and are not comparable. Knight, recomputed: r31 15.7 mm (helmet, lying-prone), r66 3.2 mm (breastplate, reach-up-both)"
+  }
+ },
+ "helpers_with_shoulder_plates": [
+  "elbow_half",
+  "knee_half",
+  "upperarm_twist"
+ ],
+ "see_rest": {
+  "max_share": 0.005,
+  "what": "rest-pose identity (tools/hb_rest_check.py): the share of rays at any joint, from any of six sides, that meet a different surface (more than 1.5 mm nearer or further) or colour (more than 0.12) on the bound mesh at rest than on the mesh as generated; only patches count (three of a ray's eight neighbours differ too)",
+  "calibrated": "2026-10-07 on the Knight: r31 (third gate) 0.86% at the neck and 0.54% at the right wrist, generated surface showing at rest; r66 (fourth gate) 0.00% at every joint (1.1% counting single rays)"
+ },
+ "see_inside": {
+  "max_hole_share": 0.03,
+  "what": "see-inside check (tools/hb_gap_check.py): at any joint in any pose of the range-of-motion, general and troop sets, from any of six sides, the share of what is seen where a one-sided renderer shows the background through the figure (the first surface is seen from behind and nothing is met from the front behind it), above the same share in the rest pose; a ray counts only with another hole ray beside it",
+  "reported_only": "the share whose first surface is seen from behind at all (not a defect where something drawn lies behind it)",
+  "calibrated": "2026-10-07 on the Knight: r31 (third gate) worst 12.2% at the neck, 12 joint-poses over 3%; r66 (fourth gate) worst 0.8% at the neck, none over 3%"
+ },
+ "equipment": {
+  "note": "Items on sockets (tools/hb_gear.py, tools/hb_item_aim.py). Fit figures are at rest; pose figures are over the troop's own pose sets. A gear spec item may carry its own \"allow\" entry that replaces a default here. Every limit here was set on 2026-10-07 with the Knight (bind r68) as the only case: the fit limits from the user's allowances for the Knight, the others chosen. They are not yet tested on a second troop.",
+  "hand_depth_mm": {
+   "max": 4.0,
+   "note": "deepest hand vertex inside a gripped item. The Knight's allowances are 5 mm in palm and fingers, 8 mm at the thumb base and 4 mm at the thumb tip; the default is the tightest of them. Calibration, Knight r68: 1.96."
+  },
+  "forearm_depth_mm": {
+   "max": 1.2,
+   "note": "deepest forearm surface vertex inside a strapped item (the Knight's shield: about 1 mm allowed). Knight r68: 1.0 by the fit, 0.77 by an independent test."
+  },
+  "handle_proud_of_hand_mm": {
+   "max": 1.0,
+   "note": "how far a handle's surface (a cylinder of the grip's radius) stands outside the hand's own surface anywhere round the fist. Under a millimetre is the rim of an opening between fingers and palm, where a handle is seen anyway; more is a handle through the skin. The user's rule is no show-through: this number does not replace a look at the grip close-ups. Knight r68: 0.76 (15 of 720 samples, all on the finger-to-palm crease); 3.1 with the handle canted 10 degrees in the fist, 5.6 at 15."
+  },
+  "item_inside_body_span_mm": {
+   "max": 10.0,
+   "note": "length of an item, along its long axis, that lies inside the body in any pose of the troop's sets (sampled at about 700 points of the item, counted in 5 mm steps). Knight r68: version 1 aimed for direction only, 115 to 130 mm in three poses; after re-authoring, 5."
+  },
+  "direction_error_deg": {
+   "max": 12.0,
+   "note": "angle between where an item points and where the pose file says it should. 12 degrees is also the aim tool's own stopping tolerance, so a set that has been through the tool passes this by construction; the check guards against a pose file and a socket drifting apart later. The gate also reports how many directions were restated since the set was first authored."
+  },
+  "body_in_item_depth_mm": {
+   "max": 2.0,
+   "note": "deepest body vertex inside an item in any pose of the troop's sets (the hand that holds it and what it is strapped to left out). Knight r68: about 0.5 (the cross-guard's tip against a thigh strap in one pose and a shoulder plate in another)."
+  },
+  "items_touching_poses": {
+   "max": 0,
+   "note": "poses in which one item is inside another by more than 0.5 mm. The pose tools keep 8 mm between one item's axis and the other's stand-in when making room; the gate checks contact only. Knight r68: 0 (nearest surfaces 4.4 mm apart)."
+  }
+ },
+ "reduced": {
+  "note": "A reduced level of detail (tools/hb_reduce.py) is held to the bind's own limits on rigidity, influences and thickness kept at the joints, to the stretch limit on the measure weighted by rest length, and to a collapse limit on the measure weighted by rest area that is set against the bind's own figure (see area_w_p01). The count-based percentiles the bind is held to are reported beside them and are not limits here: a reduction keeps its triangles where the body bends, so the share of triangles (not of surface) lying in a crease rises as triangles are taken from everywhere else, and it rises further the better the joints are protected. Measured on the Knight (bind r69, 111,303 triangles; near 13,500; mid 4,500), worst pose of each set: collapse by count 0.257 / 0.209 / 0.218 against 0.249 / 0.224 / 0.234 by area; protecting the joints more (bend 6 to 30 at 13,500 triangles) moved the count figure from 0.203 to 0.205 and the area figure from 0.208 to 0.224. Set 2026-10-07 with the Knight as the only case.",
+  "stretch_len_p995": {
+   "range_of_motion_max": 3.4,
+   "range_of_motion_exempt_max": 4.0,
+   "pose_library_max": 3.3,
+   "note": "the bind's count-based limits, applied to the length-weighted measure"
+  },
+  "area_w_p01": {
+   "near": {
+    "max_drop_below_bind": 0.05
+   },
+   "mid": {
+    "max_drop_below_bind": 0.07
+   },
+   "floor": 0.15,
+   "min_without_bind": 0.22,
+   "note": "Recalibrated 2026-10-08 at the owner's decision. A level is judged against its own bind by the same measure: its first percentile by area may be at most this far below the bind's, and never under the floor. Reason: the collapsed surface in the worst poses is the hip crease the bind has itself (reach-down: 0.76% of the bind's soft surface under 0.22, 1.18% at both levels, same pieces), and reducer settings moved the figure by 0.01 either way. Knight, bind r71: bind 0.256 / 0.249 (range of motion / pose library), near 0.244 / 0.207, mid 0.207 / 0.191. The first limit was an absolute 0.22 borrowed from the bind's count-based one; it is kept as min_without_bind for a run given no bind. Mid applies to a mesh of at most reduced_see.mid_at_most_triangles. Knight is the only case."
+  },
+  "calibration": {
+   "knight_r69_bend_20_10": {
+    "near": {
+     "stretch_len_p995": [
+      2.64,
+      2.57
+     ],
+     "area_w_p01": [
+      0.225,
+      0.224
+     ],
+     "count_based": {
+      "stretch_p995": [
+       3.04,
+       3.12
+      ],
+      "area_p01": [
+       0.21,
+       0.209
+      ]
+     }
+    },
+    "mid": {
+     "stretch_len_p995": [
+      2.38,
+      2.31
+     ],
+     "area_w_p01": [
+      0.245,
+      0.234
+     ],
+     "count_based": {
+      "stretch_p995": [
+       3.51,
+       3.36
+      ],
+      "area_p01": [
+       0.216,
+       0.218
+      ]
+     }
+    },
+    "bind": {
+     "stretch_len_p995": [
+      2.7,
+      2.62
+     ],
+     "area_w_p01": [
+      0.256,
+      0.249
+     ],
+     "count_based": {
+      "stretch_p995": [
+       3.32,
+       3.26
+      ],
+      "area_p01": [
+       0.266,
+       0.257
+      ]
+     }
+    },
+    "order": "[range of motion, pose library]"
+   }
+  }
+ },
+ "reduced_see": {
+  "note": "What a viewer sees of a reduced level of detail against its bind, at rest (tools/hb_lod_see.py: shares of the rays that hit the bind, eight sides, 2 mm apart). Hidden surface showing is the defect that reads as dark wedges and holes; another piece showing is one layer through another; lost is the outline drawn in. Set 2026-10-07 on the Knight as the only case (bind r71; near 13,500 triangles: 0.07%, 0.40%, 1.3%; mid 4,500: 0.40%, 3.9%, 4.2%), after the reducer was taught to keep rims and the tuck step was added; before that the same meshes read 0.25% / 1.9% hidden surface showing and showed black wedges on every plate.",
+  "near": {
+   "hidden_surface_showing": 0.001,
+   "another_piece_showing": 0.006,
+   "lost": 0.02
+  },
+  "mid": {
+   "hidden_surface_showing": 0.006,
+   "another_piece_showing": 0.05,
+   "lost": 0.06
+  },
+  "mid_at_most_triangles": 6000
+ }
+}

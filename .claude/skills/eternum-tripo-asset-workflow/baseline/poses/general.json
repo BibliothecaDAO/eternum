@@ -1,0 +1,2262 @@
+{
+ "set": "general",
+ "applies_to": "all",
+ "version": 1,
+ "poses": [
+  {
+   "id": "idle-neutral",
+   "name": "Idle, neutral",
+   "description": "Upright, feet about hip width and turned out about 10 degrees, weight even, knees unlocked, arms hanging with a slight bend at the elbows and the palms facing the thighs. Head level.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.2,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 8,
+     "rot": 5,
+     "elbow": 20,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 8,
+     "rot": 5,
+     "elbow": 20,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed neutral stance. Not the anatomical zero in SCHEMA.md: the elbows are bent 20 and the feet turned out 8 so the model does not read as stiff.",
+   "sources": []
+  },
+  {
+   "id": "idle-contrapposto",
+   "name": "Idle, weight on right leg",
+   "description": "Stance first: weight sits on the straight right leg, the left knee is released and the left foot is placed forward and out. The pelvis tilts down on the free side and the spine curves back the other way, shoulders level. Head turned slightly. Left hand relaxed a little in front.",
+   "support": [
+    "foot_r",
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.01,
+    "weight_front": 0.15,
+    "facing_yaw": 20
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 4,
+     "pitch": 0,
+     "roll": -4,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": -3,
+     "side": -7
+    },
+    "head": {
+     "yaw": 8,
+     "pitch": 0,
+     "roll": 3
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 12,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 22,
+     "rot": 5,
+     "elbow": 40,
+     "pron": 20,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -7,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 6,
+     "hip_abd": 12,
+     "hip_rot": -13,
+     "knee": 14,
+     "ankle": 2,
+     "toe": 6
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed contrapposto: hip roll -4 with spine side -7 gives the S curve.",
+   "sources": []
+  },
+  {
+   "id": "weight-shift-left",
+   "name": "Weight shift onto left leg",
+   "description": "Stance first: the pelvis has moved over the left foot, the left leg takes all the weight with the hip pushed out, and the right foot rests lightly to the side with a bent knee. The chest leans back over the pelvis and the arms hang a little away from the body.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.28,
+    "length": 0.01,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 4,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": -6
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": -3
+    },
+    "arm_r": {
+     "plane": 50,
+     "elev": 18,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 50,
+     "elev": 10,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 3,
+     "hip_abd": 14,
+     "hip_rot": 0,
+     "knee": 8,
+     "ankle": 1,
+     "toe": 4
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": -2,
+     "hip_rot": 0,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  },
+  {
+   "id": "walk-contact-l",
+   "name": "Walk, left heel contact",
+   "phase_of": "walk-cycle",
+   "description": "Stance first: left heel has just landed ahead with the knee almost straight, right foot is rolling off its toes behind with the heel raised. Pelvis and chest counter-rotate; the right arm swings forward and the left arm back.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.1,
+    "length": 0.84,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 8,
+     "side": 0
+    },
+    "head": {
+     "yaw": -3,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 80,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": -35,
+     "elev": 30,
+     "rot": -5,
+     "elbow": 18,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -16,
+     "hip_abd": 2,
+     "hip_rot": 4,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 28,
+     "hip_abd": 3,
+     "hip_rot": -4,
+     "knee": 5,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-004-walk.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Heel-strike frame: forward thigh about 25 degrees, trailing thigh about -18, trailing heel raised, opposite arm swing. Arm back-swing is limited by plane >= -40, so it is expressed as a slightly abducted arm.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-004-walk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_walking_(rbm-QP301M8-1887-004).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "walk-contact-r",
+   "name": "Walk, right heel contact",
+   "phase_of": "walk-cycle",
+   "description": "Mirror of left heel contact: right heel has landed ahead, left foot rolling off its toes behind, left arm forward and right arm back.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.1,
+    "length": 0.84,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 5,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 2,
+     "twist": -8,
+     "side": 0
+    },
+    "head": {
+     "yaw": 3,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -35,
+     "elev": 30,
+     "rot": -5,
+     "elbow": 18,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 28,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 28,
+     "hip_abd": 3,
+     "hip_rot": -4,
+     "knee": 5,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": -16,
+     "hip_abd": 2,
+     "hip_rot": 4,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 26
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-004-walk.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Heel-strike frame: forward thigh about 25 degrees, trailing thigh about -18, trailing heel raised, opposite arm swing. Arm back-swing is limited by plane >= -40, so it is expressed as a slightly abducted arm.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-004-walk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_walking_(rbm-QP301M8-1887-004).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "walk-passing-l",
+   "name": "Walk, passing, left stance",
+   "phase_of": "walk-cycle",
+   "description": "Stance first: weight is carried on the left leg with a slightly bent knee while the right leg swings through with the knee bent about 60 degrees and the foot clearing the floor. The pelvis lists a few degrees down on the swing side. Both arms are near mid-swing.",
+   "support": [
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.2,
+    "length": 0.08,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 2,
+     "roll": 3,
+     "height": 0.99
+    },
+    "spine": {
+     "flex": 1,
+     "twist": 0,
+     "side": -1
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 80,
+     "elev": 10,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 10,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 24,
+     "hip_abd": 0,
+     "hip_rot": 0,
+     "knee": 62,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 5,
+     "hip_abd": 2,
+     "hip_rot": 0,
+     "knee": 12,
+     "ankle": 9,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-004-walk.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Passing frame: stance knee slightly bent, swing knee about 60 degrees, arms near the sides.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-004-walk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_walking_(rbm-QP301M8-1887-004).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "walk-passing-r",
+   "name": "Walk, passing, right stance",
+   "phase_of": "walk-cycle",
+   "description": "Mirror of the left-stance passing pose: weight on the right leg, left leg swinging through.",
+   "support": [
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.2,
+    "length": 0.08,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 2,
+     "roll": -3,
+     "height": 0.99
+    },
+    "spine": {
+     "flex": 1,
+     "twist": 0,
+     "side": 1
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 80,
+     "elev": 10,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 10,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 5,
+     "hip_abd": 2,
+     "hip_rot": 0,
+     "knee": 12,
+     "ankle": 9,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 24,
+     "hip_abd": 0,
+     "hip_rot": 0,
+     "knee": 62,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-004-walk.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Passing frame: stance knee slightly bent, swing knee about 60 degrees, arms near the sides.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-004-walk.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_walking_(rbm-QP301M8-1887-004).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "run-contact",
+   "name": "Run, contact",
+   "phase_of": "run-cycle",
+   "description": "Stance first: the left forefoot has just landed under a bent knee ahead of the body while the right leg trails behind with the knee bent about 85 degrees and the heel kicked up. The body leans forward about 10 degrees, the right arm drives forward and the left arm back, both elbows bent about 95.",
+   "support": [
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.08,
+    "length": 0.9,
+    "weight_front": 0.7,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -8,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.97
+    },
+    "spine": {
+     "flex": 6,
+     "twist": 14,
+     "side": 0
+    },
+    "head": {
+     "yaw": -6,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 85,
+     "elev": 55,
+     "rot": 0,
+     "elbow": 95,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": -35,
+     "elev": 50,
+     "rot": -10,
+     "elbow": 95,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -18,
+     "hip_abd": 3,
+     "hip_rot": 6,
+     "knee": 85,
+     "ankle": -25,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 36,
+     "hip_abd": 4,
+     "hip_rot": -6,
+     "knee": 22,
+     "ankle": -14,
+     "toe": 8
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-065-run-full-speed.jpg",
+    "refs/general/muybridge-066-run.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Contact frame of the run plates: soft landing knee about 20-25, trailing knee about 85-90, elbows near 90, opposite arm and leg. Back-swing of the left arm is limited by plane >= -40.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-065-run-full-speed.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_running_at_full_speed_(rbm-QP301M8-1887-065).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    },
+    {
+     "file": "refs/general/muybridge-066-run.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_running_(rbm-QP301M8-1887-066).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "run-flight",
+   "name": "Run, flight",
+   "phase_of": "run-cycle",
+   "description": "Both feet off the ground. The left thigh has swung forward to about 60 degrees with the knee bent 60 while the right leg trails with the knee bent about 95 degrees. The body is pitched forward, the arms swing opposite to the legs with elbows bent about 90, pelvis at the top of its travel.",
+   "support": [],
+   "targets": {
+    "pelvis": {
+     "yaw": -6,
+     "pitch": 8,
+     "roll": 0,
+     "height": 1.03
+    },
+    "spine": {
+     "flex": 6,
+     "twist": 12,
+     "side": 0
+    },
+    "head": {
+     "yaw": -4,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 85,
+     "elev": 60,
+     "rot": 0,
+     "elbow": 95,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": -35,
+     "elev": 55,
+     "rot": -10,
+     "elbow": 95,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -18,
+     "hip_abd": 3,
+     "hip_rot": 5,
+     "knee": 95,
+     "ankle": -20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 68,
+     "hip_abd": 4,
+     "hip_rot": -5,
+     "knee": 62,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-065-run-full-speed.jpg",
+    "refs/general/muybridge-066-run.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Flight frame: both feet clear, forward thigh 55-65 degrees, trailing leg flexed. Pelvis height 1.03 is the top of the pelvis path (limit 1.05).",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-065-run-full-speed.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_running_at_full_speed_(rbm-QP301M8-1887-065).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    },
+    {
+     "file": "refs/general/muybridge-066-run.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_running_(rbm-QP301M8-1887-066).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "sidestep",
+   "name": "Sidestep left",
+   "description": "Stance first: a lateral step to the left. The left foot has landed wide to the side with the leg abducted about 22 degrees and the right leg is bent and ready to push; feet about shoulder-width plus a step apart, both pointing forward. Torso upright with a slight lean toward the step, arms out a little for balance.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.7,
+    "length": 0.22,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": -3
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 25,
+     "elev": 35,
+     "rot": 0,
+     "elbow": 30,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 25,
+     "elev": 35,
+     "rot": 0,
+     "elbow": 30,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -8,
+     "hip_abd": 3,
+     "hip_rot": 0,
+     "knee": 22,
+     "ankle": 20,
+     "toe": 10
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 22,
+     "hip_rot": 0,
+     "knee": 8,
+     "ankle": 8,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  },
+  {
+   "id": "turn-pivot",
+   "name": "Turn, pivot to the left",
+   "description": "Stance first: pivoting about 90 degrees to the left on the ball of the left foot, which stays planted pointing the old way, so the left hip is rotated inward at its limit. The right foot steps round. The pelvis has turned about 40 degrees, the chest 22 more, and the head leads another 30. Arms counter-swing for balance.",
+   "support": [
+    "toe_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.2,
+    "length": 0.12,
+    "weight_front": 0.5,
+    "facing_yaw": 25
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 40,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.05
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 22,
+     "side": 0
+    },
+    "head": {
+     "yaw": 30,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 40,
+     "rot": 0,
+     "elbow": 60,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 30,
+     "rot": 0,
+     "elbow": 50,
+     "pron": 5,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 18,
+     "hip_abd": 4,
+     "hip_rot": -12,
+     "knee": 32,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 2,
+     "hip_abd": 3,
+     "hip_rot": 32,
+     "knee": 15,
+     "ankle": -2,
+     "toe": 15
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed: head leads, then chest, then pelvis, then the planted foot.",
+   "sources": []
+  },
+  {
+   "id": "crouch",
+   "name": "Crouch",
+   "description": "Stance first: feet about shoulder width, knees and hips bent to roughly 80 and 70 degrees, weight over the mid-foot. The pelvis tips forward, the back stays straight and inclined about 35 degrees, head up. Arms come forward for balance.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.3,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 15,
+     "roll": 0,
+     "height": 0.78
+    },
+    "spine": {
+     "flex": 20,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -20,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 88,
+     "elev": 50,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 88,
+     "elev": 50,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 70,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 80,
+     "ankle": 20,
+     "toe": 5
+    },
+    "leg_l": {
+     "hip_flex": 70,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 80,
+     "ankle": 20,
+     "toe": 5
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [
+    "refs/general/muybridge-257-crouch-lying.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 257 contains crouch frames; not matched numerically, so angles are designed from the limits.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-257-crouch-lying.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_lying_on_the_ground_(rbm-QP301M8-1887-257).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "deep-squat",
+   "name": "Deep squat",
+   "description": "Stance first: feet shoulder width apart and turned out, knees near the end of their range and the hips deeply flexed so the pelvis sits very low. The shins lean forward more than the ankle's 20 degree use limit allows, so the heels lift slightly. The back is straight and leans about 30 degrees, head up, arms forward.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.35,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.46
+    },
+    "spine": {
+     "flex": 20,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -30,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 90,
+     "elev": 70,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 90,
+     "elev": 70,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 105,
+     "hip_abd": 10,
+     "hip_rot": 0,
+     "knee": 135,
+     "ankle": 20,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 105,
+     "hip_abd": 10,
+     "hip_rot": 0,
+     "knee": 135,
+     "ankle": 20,
+     "toe": 20
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed. A flat-footed deep squat needs about 40 degrees of dorsiflexion; limits.json allows 20, so the heels are raised (toe extension) instead. 2026-10-05: hip abduction +0 and hip rotation +12 each side so the lower legs clear each other on a wide-hipped rig (limb clearance check).",
+   "sources": []
+  },
+  {
+   "id": "kneel-one-knee",
+   "name": "Kneel on one knee",
+   "description": "Stance first: right knee on the ground with the shin back and the toes tucked, left foot flat in front with the knee at about 90 degrees and the shin vertical. Torso upright, leaning a little forward, head level. Left forearm rests on the left thigh, right hand on the right thigh.",
+   "support": [
+    "foot_l",
+    "knee_r",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.82,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.58
+    },
+    "spine": {
+     "flex": 10,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 65,
+     "elev": 0,
+     "rot": -3,
+     "elbow": 24,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 43,
+     "elev": 18,
+     "rot": 15,
+     "elbow": 72,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 16,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 105,
+     "ankle": -20,
+     "toe": 45
+    },
+    "leg_l": {
+     "hip_flex": 93,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 90,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-356-kneel.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 356 shows the kneel-and-rise sequence; thigh and shin angles read from it.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-356-kneel.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Man_in_pelvis_cloth_kneeling,_firing_a_bayonet_and_rising_(rbm-QP301M8-1887-356).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "sit-chair",
+   "name": "Sit on a chair, legs forward",
+   "description": "Seated at chair height (seat about 0.26 of body height), thighs horizontal, shins vertical and feet flat in front. Torso upright, hands resting on the thighs, head level.",
+   "support": [
+    "seat",
+    "foot_l",
+    "foot_r"
+   ],
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.54
+    },
+    "spine": {
+     "flex": 3,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 0,
+     "rot": -2,
+     "elbow": 52,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 0,
+     "rot": -2,
+     "elbow": 52,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 90,
+     "hip_abd": 4,
+     "hip_rot": 0,
+     "knee": 90,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 90,
+     "hip_abd": 4,
+     "hip_rot": 0,
+     "knee": 90,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-249-rise-from-chair.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 249 (rising from a chair) shows the seated start frame: thigh horizontal, shin vertical. The chair is not part of the pose.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-249-rise-from-chair.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_rising_from_chair_(rbm-QP301M8-1887-249).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "look-over-shoulder",
+   "name": "Look over right shoulder",
+   "description": "Stance first: feet planted forward. The pelvis turns slightly right, the chest turns about 30 degrees more, and the head turns about 50 degrees beyond the chest to look back over the right shoulder. Arms hang relaxed.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.2,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -10,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": -30,
+     "side": 0
+    },
+    "head": {
+     "yaw": -50,
+     "pitch": 0,
+     "roll": 3
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 14,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 60,
+     "elev": 10,
+     "rot": 5,
+     "elbow": 22,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": 8,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -8,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed. Total head turn is about 90 degrees from the pelvis and about 50 from the chest, inside the 75 degree head limit.",
+   "sources": []
+  },
+  {
+   "id": "reach-up-both",
+   "name": "Reach up with both arms",
+   "description": "Stance first: standing tall with the heels slightly raised. The back extends a little, head tilts up, both arms are raised close to overhead with the elbows nearly straight and the palms facing forward.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.22,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.04
+    },
+    "spine": {
+     "flex": -12,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 80,
+     "elev": 160,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 160,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": 0,
+     "knee": 3,
+     "ankle": -7,
+     "toe": 10
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": 0,
+     "knee": 3,
+     "ankle": -7,
+     "toe": 10
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed; elevation 160 keeps inside the 170 use limit.",
+   "sources": []
+  },
+  {
+   "id": "reach-down",
+   "name": "Reach down to the ground",
+   "description": "Stance first: knees bent about 70 degrees, feet flat and shoulder width. The pelvis tips forward 20 degrees and the back bends forward another 50 so the hands hang near the ground in front. Head lifts to look ahead.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.3,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 20,
+     "roll": 0,
+     "height": 0.8
+    },
+    "spine": {
+     "flex": 50,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 88,
+     "elev": 80,
+     "rot": 0,
+     "elbow": 15,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 88,
+     "elev": 80,
+     "rot": 0,
+     "elbow": 15,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 70,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 70,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 70,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 70,
+     "ankle": 20,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-318-stoop-lift.jpg",
+    "refs/general/muybridge-490-stoop-sit.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plates 318 and 490 show stooping with bent knees and forward-flexed trunk; the split between pelvis tilt and spine flexion is judged.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-318-stoop-lift.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Man_in_pelvis_cloth_lifting_rock_(rbm-QP301M8-1887-318).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    },
+    {
+     "file": "refs/general/muybridge-490-stoop-sit.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_sitting_down_(rbm-QP301M8-1887-490).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "brace-push",
+   "name": "Brace and push",
+   "description": "Stance first: a long braced stance with the left foot forward and the right leg extended behind with the heel raised. The whole body leans into the push about 25 degrees, both arms reach forward at shoulder height with the elbows slightly bent and the palms flat, head looking ahead.",
+   "support": [
+    "foot_l",
+    "toe_r",
+    "hand_l",
+    "hand_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.83,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.86
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 88,
+     "elev": 88,
+     "rot": 0,
+     "elbow": 35,
+     "pron": 20,
+     "wrist_flex": -25,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 88,
+     "elev": 88,
+     "rot": 0,
+     "elbow": 35,
+     "pron": 20,
+     "wrist_flex": -25,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -12,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 30,
+     "ankle": 20,
+     "toe": 32
+    },
+    "leg_l": {
+     "hip_flex": 55,
+     "hip_abd": 8,
+     "hip_rot": 0,
+     "knee": 50,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-393-push.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 393 (pushing a roller): forward lean, rear leg extended, arms forward. Palms are shown flat by wrist extension -25.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-393-push.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_pushing_a_garden_roller_(rbm-QP301M8-1887-393).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "hit-front",
+   "name": "Hit reaction, from the front",
+   "description": "Struck in the chest: the torso is driven back and the spine extends, the head snaps back, the weight is thrown onto the rear leg with the front foot light, and both arms are flung out and forward.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.28,
+    "length": 0.66,
+    "weight_front": 0.15,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -6,
+     "roll": 0,
+     "height": 0.96
+    },
+    "spine": {
+     "flex": -18,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 30,
+     "elev": 75,
+     "rot": -10,
+     "elbow": 40,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 30,
+     "elev": 75,
+     "rot": -10,
+     "elbow": 40,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -11,
+     "hip_abd": 10,
+     "hip_rot": 0,
+     "knee": 35,
+     "ankle": 20,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 26,
+     "hip_abd": 8,
+     "hip_rot": 0,
+     "knee": 22,
+     "ankle": -22,
+     "toe": 12
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [
+    "refs/general/muybridge-336-boxing.jpg"
+   ],
+   "ref_notes": "Designed. The Muybridge boxing plate (336) was consulted for the general head and torso recoil; no angles were measured from it.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-336-boxing.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Two_men_in_pelvis_clothes_boxing_(rbm-QP301M8-1887-336).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "hit-back",
+   "name": "Hit reaction, from behind",
+   "description": "Struck between the shoulder blades: the chest is thrown forward and arched, the head snaps back, the arms fly out and back, and the legs stumble into a forward lunge step.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.77,
+    "weight_front": 0.7,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 12,
+     "roll": 0,
+     "height": 0.91
+    },
+    "spine": {
+     "flex": -12,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -30,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -35,
+     "elev": 55,
+     "rot": -10,
+     "elbow": 40,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": -35,
+     "elev": 55,
+     "rot": -10,
+     "elbow": 40,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -10,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 25,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 47,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 35,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed. Arm swing back is limited by plane >= -40, so the arms go back and outward.",
+   "sources": []
+  },
+  {
+   "id": "hit-side",
+   "name": "Hit reaction, from the left side",
+   "description": "Struck on the left side: the torso bends hard to the right, the pelvis is pushed sideways, the right foot steps out wide to catch the weight, the head tilts away, the struck (left) arm flies up and the right arm swings out for balance.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.55,
+    "length": 0.31,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 8,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.87
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": -22
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": -15
+    },
+    "arm_r": {
+     "plane": 25,
+     "elev": 60,
+     "rot": 0,
+     "elbow": 30,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 20,
+     "elev": 85,
+     "rot": 0,
+     "elbow": 50,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 28,
+     "hip_rot": -6,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": -8,
+     "hip_abd": -4,
+     "hip_rot": 6,
+     "knee": 52,
+     "ankle": 20,
+     "toe": 40
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  },
+  {
+   "id": "stagger",
+   "name": "Stagger",
+   "description": "Off-balance walking: pelvis and chest twisted against each other, a lurching side bend, the head rolled and turned, one leg catching under the body with a bent knee while the other is dragged behind with the heel up. Arms out of step, one high for balance.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.52,
+    "weight_front": 0.6,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 12,
+     "pitch": 4,
+     "roll": 5,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": 8,
+     "twist": -18,
+     "side": 10
+    },
+    "head": {
+     "yaw": -12,
+     "pitch": 0,
+     "roll": 12
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 75,
+     "rot": 0,
+     "elbow": 40,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 60,
+     "elev": 35,
+     "rot": 10,
+     "elbow": 60,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -2,
+     "hip_abd": 10,
+     "hip_rot": -10,
+     "knee": 45,
+     "ankle": 14,
+     "toe": 37
+    },
+    "leg_l": {
+     "hip_flex": 26,
+     "hip_abd": 8,
+     "hip_rot": 10,
+     "knee": 30,
+     "ankle": 8,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  },
+  {
+   "id": "fall-to-knees",
+   "name": "Fall to the knees",
+   "description": "Both knees on the ground with the shins back and the toes tucked, the thighs nearly vertical. The torso is slumped forward, the head hangs, and the arms hang loosely with the hands near the floor.",
+   "support": [
+    "knee_l",
+    "knee_r"
+   ],
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 6,
+     "roll": 0,
+     "height": 0.63
+    },
+    "spine": {
+     "flex": 30,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 25,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 75,
+     "elev": 12,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 75,
+     "elev": 12,
+     "rot": 5,
+     "elbow": 25,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 14,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 100,
+     "ankle": -30,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 14,
+     "hip_abd": 6,
+     "hip_rot": 0,
+     "knee": 100,
+     "ankle": -30,
+     "toe": 20
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [
+    "refs/general/muybridge-257-crouch-lying.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 257 contains frames of kneeling down and getting up; used only for context.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-257-crouch-lying.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_lying_on_the_ground_(rbm-QP301M8-1887-257).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "lying-prone",
+   "name": "Lying prone",
+   "description": "Lying face down. One arm is bent up beside the head, the other lies along the side, the legs are straight and slightly apart with the feet relaxed, the head is turned to the right. The body is horizontal, so the pelvis is pitched forward 90 degrees and its height is near the ground. Both exceed the standard pelvis limits.",
+   "support": [
+    "front"
+   ],
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 90,
+     "roll": 0,
+     "height": 0.12
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": -70,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 35,
+     "elev": 140,
+     "rot": -30,
+     "elbow": 100,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 30,
+     "elev": 20,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 5,
+     "hip_rot": 0,
+     "knee": 5,
+     "ankle": -20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 5,
+     "hip_rot": 0,
+     "knee": 5,
+     "ankle": -20,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "over_limit": [
+    "pelvis.pitch",
+    "pelvis.height"
+   ],
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-556-lying.jpg",
+    "refs/general/muybridge-257-crouch-lying.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plates 556 and 257 show the model lying face down and rolling over. Pelvis pitch 90 and height 0.12 exceed limits.json (pitch max 60, height min 0.25) because the whole body is rotated onto the ground; the harness should rotate the root instead. Marked over_limit.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-556-lying.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_lying_on_the_ground_(rbm-QP301M8-1887-556).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    },
+    {
+     "file": "refs/general/muybridge-257-crouch-lying.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_lying_on_the_ground_(rbm-QP301M8-1887-257).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "lying-supine",
+   "name": "Lying supine",
+   "description": "Lying on the back with the legs straight and slightly apart, the feet relaxed and rolled out, the arms resting a little away from the body with the palms turned up, the head neutral. The pelvis is pitched back 90 degrees and its height is near the ground. Both exceed the standard pelvis limits.",
+   "support": [
+    "back"
+   ],
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -90,
+     "roll": 0,
+     "height": 0.12
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 40,
+     "elev": 18,
+     "rot": -10,
+     "elbow": 18,
+     "pron": -35,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 40,
+     "elev": 18,
+     "rot": -10,
+     "elbow": 18,
+     "pron": -35,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 8,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": -10,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 8,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": -10,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "over_limit": [
+    "pelvis.pitch",
+    "pelvis.height"
+   ],
+   "confidence": "estimated",
+   "refs": [
+    "refs/general/muybridge-556-lying.jpg"
+   ],
+   "ref_notes": "Muybridge plates are public-domain scientific photographs (Animal Locomotion, 1887); angles were read by eye from the multi-frame plate. Plate 556 shows the model lying and rising. Pelvis pitch -90 and height 0.12 exceed limits.json (pitch min -30, height min 0.25); marked over_limit for the same reason as the prone pose.",
+   "sources": [
+    {
+     "file": "refs/general/muybridge-556-lying.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Nude_man_lying_on_the_ground_(rbm-QP301M8-1887-556).jpg",
+     "credit": "Muybridge, Eadweard, 1830-1904",
+     "licence": "Public domain"
+    }
+   ]
+  },
+  {
+   "id": "cheer",
+   "name": "Cheer",
+   "description": "Standing with the feet slightly apart, chest lifted and the back extended a little, head tilted up. Both arms are thrown up and out in a V with the elbows nearly straight.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.3,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.99
+    },
+    "spine": {
+     "flex": -10,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 150,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": 60,
+     "elev": 150,
+     "rot": 0,
+     "elbow": 25,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 8,
+     "hip_rot": 0,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 8,
+     "hip_rot": 0,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  },
+  {
+   "id": "salute",
+   "name": "Salute",
+   "description": "Attention stance: heels together and the feet turned out about 45 degrees. The right upper arm is raised out to the side near horizontal, the forearm bent up so the flat hand touches the brow; the left arm hangs straight by the side. Chest out, head level.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.08,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": -2,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 0,
+     "elev": 102,
+     "rot": -43,
+     "elbow": 139,
+     "pron": 25,
+     "wrist_flex": 0,
+     "wrist_dev": 15
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 6,
+     "rot": 0,
+     "elbow": 15,
+     "pron": 10,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 3,
+     "hip_rot": -18,
+     "knee": 0,
+     "ankle": 0,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 3,
+     "hip_rot": -18,
+     "knee": 0,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed. Hand near the brow was checked with the arm-chain length estimate in the harness-independent script.",
+   "sources": []
+  },
+  {
+   "id": "point",
+   "name": "Point",
+   "description": "Stance first: weight on the left leg, the right foot slightly forward. The pelvis and chest turn a little to the right and the head turns further, following the line of the pointing right arm, which is raised forward and out to shoulder height with the elbow nearly straight. The left hand rests on the left hip.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.25,
+    "length": 0.06,
+    "weight_front": 0.35,
+    "facing_yaw": -10
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -10,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": -8,
+     "side": 0
+    },
+    "head": {
+     "yaw": -18,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 85,
+     "rot": 0,
+     "elbow": 20,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "arm_l": {
+     "plane": -40,
+     "elev": 73,
+     "rot": 45,
+     "elbow": 96,
+     "pron": 20,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 6,
+     "hip_abd": 8,
+     "hip_rot": 0,
+     "knee": 8,
+     "ankle": 2,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -8,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {},
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits.",
+   "sources": []
+  }
+ ]
+}
