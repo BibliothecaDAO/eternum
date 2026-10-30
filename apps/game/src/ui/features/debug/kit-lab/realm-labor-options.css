@@ -1,0 +1,310 @@
+/* Layout study for the Realm Labor sheet (lab only). */
+.rl {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: rgb(var(--hud-ink));
+}
+.rl-art {
+  display: grid;
+  flex-shrink: 0;
+  overflow: hidden;
+  place-items: center;
+  border-radius: var(--hud-radius-control);
+  background: rgb(var(--hud-dark) / 0.6);
+}
+/* A painting fills its frame (about nine tenths), whatever size the frame takes. */
+.rl-art[data-map="none"] > img {
+  width: 90%;
+  height: 90%;
+  object-fit: contain;
+}
+.rl-c__banner > .rl-art[data-map="none"] > img {
+  width: auto;
+  height: 100%;
+}
+.rl-art[data-map="drawn"] img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: sepia(0.75) contrast(1.05) brightness(0.92);
+}
+.rl-art[data-home="golden"] {
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 55%, rgb(var(--hud-ink))),
+    rgb(var(--hud-gold)) 60%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 50%, rgb(var(--hud-dark)))
+  );
+}
+.rl-art[data-home="devcon"] {
+  background: radial-gradient(
+    circle at 50% 40%,
+    color-mix(in srgb, rgb(var(--hud-ink)) 85%, rgb(var(--hud-gold))),
+    color-mix(in srgb, rgb(var(--hud-gold)) 45%, rgb(var(--hud-dark))) 60%,
+    color-mix(in srgb, rgb(var(--hud-gold)) 20%, rgb(var(--hud-dark)))
+  );
+}
+.rl-name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.rl-name strong {
+  font-family: var(--font-display, "Cinzel", serif);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-display);
+}
+.rl-name span {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
+.rl-next {
+  display: flex;
+  min-height: var(--hud-control);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  font-weight: 600;
+}
+.rl-next > span:first-of-type {
+  flex: 1;
+}
+.rl-reminder-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-label);
+}
+.rl-none {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--hud-muted);
+}
+.rl-none .rl-art {
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+/* A · Home card */
+.rl-a__card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.rl-a__card > .rl-art {
+  width: 7.5rem;
+  height: 7.5rem;
+  border: 2px solid rgb(var(--hud-gold) / 0.7);
+}
+.rl-a__about {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.rl-a__lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+.rl-a__lines li {
+  display: flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+@media (max-width: 1023px) {
+  .rl-a__card > .rl-art {
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .rl-a__card {
+    gap: 0.75rem;
+  }
+}
+.rl-a__lines li[data-claimed] {
+  color: var(--hud-muted);
+}
+.rl-a__lines li[data-claimed] > :last-child {
+  margin-inline-start: auto;
+}
+.rl-a__lines li[data-warn] {
+  color: var(--hud-warn);
+}
+
+/* B · Reward tiles */
+.rl-b__head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.rl-b__head > .rl-art {
+  width: 2.75rem;
+  height: 2.75rem;
+}
+.rl-b__day {
+  margin-inline-start: auto;
+  padding: 0.1rem 0.6rem;
+  border-radius: var(--hud-radius-round);
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-label);
+}
+.rl-b__tiles {
+  display: grid;
+  grid-auto-columns: minmax(0, 1fr);
+  grid-auto-flow: column;
+  gap: 0.6rem;
+}
+.rl-b__tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.8rem 0.5rem 0.7rem;
+  border: 2px solid rgb(var(--hud-gold) / 0.6);
+  border-radius: var(--hud-radius-panel);
+  background: radial-gradient(circle at 50% 30%, rgb(var(--hud-gold) / 0.22), transparent 70%), var(--hud-well);
+}
+.rl-b__tile strong {
+  font-size: var(--hud-text-display);
+  line-height: var(--hud-leading-display);
+  font-weight: var(--hud-weight-display);
+}
+.rl-b__tile > span {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
+.rl-b__tile[data-warn] {
+  border-color: color-mix(in srgb, var(--hud-warn) 70%, transparent);
+}
+.rl-b__tile[data-warn] > span {
+  color: var(--hud-warn);
+}
+.rl-b__tile[data-claimed] {
+  border-color: var(--hud-line);
+  background: var(--hud-well);
+}
+.rl-b__tile[data-claimed] > :is(svg, img, strong, span:not(.rl-b__stamp)) {
+  opacity: 0.45;
+}
+.rl-b__stamp {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  border-radius: 50%;
+  background: rgb(var(--hud-gold));
+}
+
+/* C · Banner and calendar */
+.rl-c__banner {
+  position: relative;
+  overflow: hidden;
+  height: 8rem;
+  border: 2px solid rgb(var(--hud-gold) / 0.7);
+  border-radius: var(--hud-radius-panel);
+}
+.rl-c__banner > .rl-art {
+  position: absolute;
+  inset: 0;
+  justify-items: end;
+  padding-inline-end: 1rem;
+  border-radius: 0;
+}
+.rl-c__banner > .rl-art[data-map="drawn"] {
+  padding: 0;
+}
+.rl-c__over {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: 72%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  background: linear-gradient(90deg, rgb(var(--hud-dark) / 0.92) 55%, transparent);
+}
+.rl-c__amounts {
+  display: flex;
+  white-space: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+}
+.rl-c__amounts {
+  column-gap: 0.75rem;
+}
+.rl-c__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.rl-c__per {
+  color: var(--hud-muted);
+  font-weight: 500;
+}
+.rl-c__days {
+  display: flex;
+  gap: 0.35rem;
+}
+.rl-c__days li {
+  position: relative;
+  display: grid;
+  flex: 1;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  color: var(--hud-muted);
+  font-weight: 700;
+}
+.rl-c__days li > :is(svg, img) {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+}
+.rl-c__days li[data-state="claimed"],
+.rl-c__days li[data-state="claimed today"] {
+  border-color: rgb(var(--hud-gold) / 0.6);
+  color: rgb(var(--hud-gold));
+}
+.rl-c__days li[data-state="today"] {
+  border: 2px solid rgb(var(--hud-gold));
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-ink));
+}
+.rl-c__days li[data-state="claimed today"] {
+  border-width: 2px;
+}
+.rl-c__days li[data-state="missed"] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.rl-c__days li[data-state="ahead"] {
+  opacity: 0.6;
+}
+@media (max-width: 1023px) {
+  .rl-c__amounts {
+    flex-wrap: wrap;
+  }
+  .rl-c__per {
+    flex-basis: 100%;
+  }
+}

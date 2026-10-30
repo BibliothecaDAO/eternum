@@ -72,6 +72,13 @@ import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
 import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
+import {
+  REALM_LABOR_PICK_OPTIONS,
+  REALM_LABOR_PICK_STATES,
+  RealmLaborOptionSheet,
+  type RealmLaborFacts,
+  type RealmLaborPickOption,
+} from "./realm-labor-options";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -1003,6 +1010,7 @@ const STATES = {
     purse: { lords: 1240 },
     realms: { eligible: false, claimed: false, labor: 9640, limit: 18000 },
   },
+  ...realmLaborPickStates(),
 } as const;
 
 type LabState = {
@@ -1052,6 +1060,7 @@ type LabState = {
   menuRealms?: boolean;
   withdraw?: LabWithdraw;
   realms?: LabRealms;
+  laborPick?: { option: RealmLaborPickOption; facts: RealmLaborFacts };
 };
 
 /** Every state the HUD lab draws, by the name in its address: the HUD room lists them. */
@@ -1240,6 +1249,7 @@ export const HudLab = () => {
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
+        {lab.laborPick && <LabLaborPick {...lab.laborPick} />}
       </LabBands>
     </>
   );
@@ -1701,6 +1711,49 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     onClose={noop}
   />
 );
+
+/** The Realm Labor layout study: each option in each state, `labor-<option>-<state>`. */
+function realmLaborPickStates() {
+  return Object.fromEntries(
+    REALM_LABOR_PICK_OPTIONS.flatMap((option) =>
+      Object.entries(REALM_LABOR_PICK_STATES).map(([name, facts]) => [
+        `labor-${option}-${name}`,
+        { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1240 }, laborPick: { option, facts } },
+      ]),
+    ),
+  ) as Record<string, LabState>;
+}
+
+const LabLaborPick = ({ option, facts }: { option: RealmLaborPickOption; facts: RealmLaborFacts }) =>
+  option === "today" ? (
+    <RealmsSheet
+      plan={facts.plan}
+      dailyAmount={facts.dailyAmount}
+      dailyEssence={facts.dailyEssence}
+      mark={
+        facts.home.kind === "golden" || facts.home.kind === "devcon"
+          ? {
+              line: facts.home.name,
+              golden: facts.home.kind === "golden",
+              icon: facts.home.kind === "golden" ? "devcon-golden-realm" : "devcon-realm",
+            }
+          : null
+      }
+      secondsLeft={facts.secondsLeft}
+      nextDay={facts.nextDay}
+      ask={
+        facts.reminder === "ask" || facts.reminder === "install"
+          ? { kind: facts.reminder === "ask" ? "remind" : "install", busy: false, act: noop }
+          : null
+      }
+      sending={false}
+      onClaim={noop}
+      onRealm={noop}
+      onClose={noop}
+    />
+  ) : (
+    <RealmLaborOptionSheet option={option} facts={facts} />
+  );
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
