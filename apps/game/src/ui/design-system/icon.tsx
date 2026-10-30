@@ -3,6 +3,20 @@ import { cn } from "./atoms/lib/utils";
 import { iconDefinition, iconUrl, type IconMeaning } from "./icon-meaning";
 export type { IconMeaning } from "./icon-meaning";
 
+export type IconMark = IconMeaning | readonly IconMeaning[];
+
+/** A choice may name one thing or a group of things, using their existing paintings together. */
+export function IconGroup({ name, size = 24 }: { name: IconMark; size?: number }) {
+  const names = typeof name === "string" ? [name] : name;
+  return (
+    <span className="inline-flex shrink-0 items-center">
+      {names.map((name) => (
+        <Icon key={name} name={name} size={size} />
+      ))}
+    </span>
+  );
+}
+
 type IconProps = Omit<ComponentPropsWithoutRef<"img">, "src" | "srcSet" | "name"> & {
   name: IconMeaning;
   size?: number | string;

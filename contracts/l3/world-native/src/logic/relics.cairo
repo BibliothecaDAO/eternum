@@ -7,6 +7,7 @@ pub mod RelicState {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
+    use crate::progression::{ScoutingKind, SkillPointUse};
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
@@ -152,11 +153,18 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            if let crate::progression::SkillPointUse::Stamina(_) = command.choice {
+            if let SkillPointUse::Stamina(_) = command.choice {
                 let maximum = crate::progression::stamina_max(
                     progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
                 );
                 assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
+            }
+            if let SkillPointUse::Scouting(ScoutingKind::Sanctuaries) = command.choice {
+                let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
+                assert!(
+                    crate::research::scouting_available(learned, crate::research::KIND_SANCTUARIES),
+                    "research Shrine or Well first",
+                );
             }
             let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);

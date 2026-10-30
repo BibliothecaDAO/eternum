@@ -1,4 +1,4 @@
-import type { IconMeaning } from "@/ui/design-system/icon";
+import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import {
   depthName,
   RESEARCH_TREE,
@@ -19,7 +19,7 @@ import {
 import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, formatExact, formatFigure, formatPercent, rankName } from "@bibliothecadao/types";
 
-import { POINT_CHOICES, scoutingChoices, type AttributeKey } from "../progression-choices";
+import { POINT_CHOICES, availableScoutingChoices, scoutingChoices, type AttributeKey } from "../progression-choices";
 
 import { buildingIcon, buildingName } from "../build/building-names";
 
@@ -73,7 +73,7 @@ export type Need =
   | { kind: "essence" | "labor"; met: boolean; have: number; need: number };
 
 /** A side a tier can take: its mark, its word, what it does, and its figure now and with one more pick. */
-type SideEffect = { icon: IconMeaning; name: string; line: string; now: string; next: string };
+type SideEffect = { choice: number; icon: IconMark; name: string; line: string; now: string; next: string };
 export type Side = SideEffect & {
   tier: number;
   nextTier?: Tier;
@@ -83,7 +83,7 @@ export type Side = SideEffect & {
 };
 
 /** One thing a building row's research gives: its mark and word, its figure now, and with the next tier (none at the top). */
-export type Figure = { icon: IconMeaning; name: string; now: string; next?: string };
+export type Figure = { icon: IconMark; name: string; now: string; next?: string };
 
 export interface TreeNode {
   key: string;
@@ -101,10 +101,10 @@ export interface TreeNode {
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
   gives: { line: string; now: string; next?: string };
-  /** Side upgrades with their own price and availability; the command choice is the side's index. */
+  /** Side upgrades with their own price, availability and command choice code. */
   sides?: Side[];
   /** The marks of bought sides; only Scouts keeps purchase order. */
-  taken: IconMeaning[];
+  taken: IconMark[];
   /**
    * What a building row's research gives, without its tier's word: each side, or its one figure (a Hut's population, a
    * training building's attribute), now and with the next tier; a building's own card reads it. None for a castle node.
@@ -191,7 +191,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     options: {
       extra?: Need[];
       sides?: (tier: number, done: boolean) => SideEffect[];
-      taken?: () => IconMeaning[];
+      taken?: () => IconMark[];
       /** The row's figures where it has no sides; a row with sides shows its sides. */
       figures?: (tier: number) => Figure[];
       leadsTo?: string[];
@@ -208,8 +208,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       return constructionGrant ? needs.filter((need) => need.kind === "stands" || need.kind === "tier") : needs;
     };
     const needs = next === undefined ? [] : nextNeeds(next);
-    const sides = options.sides?.(tier, next === undefined).map((side, index): Side => {
-      const sideTier = researchHasIndependentSides(row) ? picks(row, index) : tier;
+    const sides = options.sides?.(tier, next === undefined).map((side): Side => {
+      const sideTier = researchHasIndependentSides(row) ? picks(row, side.choice) : tier;
       const done = sideTier === 5;
       const sideNeeds = done ? [] : nextNeeds(sideTier + 1);
       return {
@@ -264,6 +264,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   const twoSides = (row: number, make: SideRule, other: SideRule) => ({
     sides: (): SideEffect[] =>
       [make, other].map((side, index) => ({
+        choice: index,
         icon: side.icon,
         name: side.words[0],
         line: side.words[1],
@@ -311,12 +312,13 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       ...(row === research.ROW_SCOUTS_LODGE
         ? {
             sides: (tier: number, done: boolean) =>
-              scoutingChoices.map((kind) => {
+              availableScoutingChoices((row) => learned(row).tier).map((kind) => {
                 // A lodge tier starts new armies' Scouting one level higher, on the kind it picked.
                 const now = learned(row)
                   .sides.map((side, at) => (side === kind.side ? scoutingStep(at + 1) : 0))
                   .reduce((sum, step) => sum + step, 0);
                 return {
+                  choice: kind.side,
                   icon: kind.icon,
                   name: kind.name,
                   line: RESEARCH_TREE.foundByNewArmies(kind.name),
@@ -517,6 +519,10 @@ export const needLine = (need: Need): string => {
 /** Whether the realm can research anything now: the nav's Research dot. */
 export const canResearchNow = (nodes: readonly TreeNode[] | undefined): boolean =>
   nodes?.some(({ state }) => state === "ready") ?? false;
+
+/** Missing selections stay unavailable when a provisional unlock is withdrawn. */
+export const researchSideChoice = (node: TreeNode, side: number): number | undefined =>
+  node.sides ? node.sides[side]?.choice : 0;
 
 /** A chosen side supplies its own level, price and availability to every research control. */
 export const researchSideNode = (node: TreeNode, side: number): TreeNode => {

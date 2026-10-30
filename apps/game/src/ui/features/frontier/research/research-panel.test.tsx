@@ -93,9 +93,9 @@ it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
   draw("row-6");
   const choice = host.querySelector("[data-lab='node-choice']")!;
   expect([...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.getAttribute("title"))).toEqual([
-    "Trolls found by new armies",
     "Rifts found by new armies",
-    "Beasts found by new armies",
+    "Trolls found by new armies",
+    "Sanctuaries found by new armies",
   ]);
   expect(host.textContent).not.toMatch(/Camp/);
 });
@@ -235,6 +235,81 @@ it.each([
   expect(effect?.textContent).toBe(`New armies start with Battle · ${label}`);
 });
 
+it.each([null, research.ROW_SHRINE, research.ROW_WELL])(
+  "gates the Sanctuary research choice on either site (%s)",
+  (unlock) => {
+    const learned = { ...MID_REALM.learned };
+    delete learned[research.ROW_SHRINE];
+    delete learned[research.ROW_WELL];
+    if (unlock !== null) learned[unlock] = { tier: 1, sides: [] };
+    const available = readResearchTree({ ...MID_REALM, learned });
+    const lodge = available.find(({ row }) => row === research.ROW_SCOUTS_LODGE)!;
+    const onResearch = vi.fn();
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={available}
+          fixFor={() => undefined}
+          picked={lodge.key}
+          onPick={vi.fn()}
+          sending={new Set()}
+          onResearch={onResearch}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+    const options = [...host.querySelectorAll<HTMLButtonElement>("[data-lab='node-choice'] button[aria-pressed]")];
+    expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual(
+      unlock === null ? ["Rifts", "Trolls"] : ["Rifts", "Trolls", "Sanctuaries"],
+    );
+    const chosen = options.at(-1)!;
+    act(() => chosen.click());
+    act(() => button(/^Research /)!.click());
+    expect(onResearch).toHaveBeenCalledWith(lodge, unlock === null ? research.KIND_CAMPS : research.KIND_SANCTUARIES);
+    if (unlock !== null)
+      expect([...chosen.querySelectorAll("img")].map((icon) => icon.dataset.icon)).toEqual(["shrine", "well"]);
+  },
+);
+
+it("cannot buy a different kind when a provisional Sanctuary unlock disappears", () => {
+  const onResearch = vi.fn();
+  const show = (unlocked: boolean) => {
+    const learned = { ...MID_REALM.learned };
+    if (!unlocked) {
+      delete learned[research.ROW_SHRINE];
+      delete learned[research.ROW_WELL];
+    }
+    const nodes = readResearchTree({ ...MID_REALM, learned });
+    const lodge = nodes.find(({ row }) => row === research.ROW_SCOUTS_LODGE)!;
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={nodes}
+          picked={lodge.key}
+          fixFor={() => undefined}
+          onPick={vi.fn()}
+          sending={new Set()}
+          onResearch={onResearch}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+  };
+  show(true);
+  act(() => button(/^Sanctuaries/)!.click());
+  show(false);
+  expect(button(/^Sanctuaries/)).toBeUndefined();
+  expect(button(/^Research /)!.disabled).toBe(true);
+  act(() => button(/^Research /)!.click());
+  expect(onResearch).not.toHaveBeenCalled();
+  act(() => button(/^Rifts/)!.click());
+  act(() => button(/^Research /)!.click());
+  expect(onResearch).toHaveBeenCalledWith(
+    expect.objectContaining({ row: research.ROW_SCOUTS_LODGE }),
+    research.KIND_RIFTS,
+  );
+});
+
 it("renders every generated research row and submits every permitted lodge kind", () => {
   const onPick = vi.fn();
   draw(null, vi.fn(), onPick);
@@ -253,9 +328,14 @@ it("renders every generated research row and submits every permitted lodge kind"
   draw(lodge.key, onResearch);
   const kinds = bindings.commandAbi.find((item) => item.name === "world_native::progression::ScoutingKind")!.variants!;
   const options = [...host.querySelectorAll<HTMLButtonElement>("[data-lab='node-choice'] button[aria-pressed]")];
-  expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual(
-    kinds.map(({ name }) => RESEARCH_TREE.kinds[name.toLowerCase() as keyof typeof RESEARCH_TREE.kinds]),
+  expect(new Set(options.map((option) => option.querySelector(".truncate")!.textContent))).toEqual(
+    new Set(kinds.map(({ name }) => RESEARCH_TREE.kinds[name.toLowerCase() as keyof typeof RESEARCH_TREE.kinds])),
   );
+  expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual([
+    "Rifts",
+    "Trolls",
+    "Sanctuaries",
+  ]);
   const sideCodes = Object.entries(research)
     .filter(([key]) => key.startsWith("KIND_"))
     .map(([, code]) => code)
@@ -264,7 +344,10 @@ it("renders every generated research row and submits every permitted lodge kind"
   for (const [index, option] of options.entries()) {
     act(() => option.click());
     act(() => button(/^Research /)!.click());
-    expect(onResearch).toHaveBeenLastCalledWith(lodge, sideCodes[index]);
+    expect(onResearch).toHaveBeenLastCalledWith(
+      lodge,
+      [research.KIND_RIFTS, research.KIND_CAMPS, research.KIND_SANCTUARIES][index],
+    );
   }
   expect(onResearch).toHaveBeenCalledTimes(kinds.length);
 });

@@ -1,5 +1,5 @@
 {
-  "schemaIdentity": "0092fe02630dc5558e96265a37f956d3ba36a7c23102e0381735433a62a6df66",
+  "schemaIdentity": "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807",
   "commandAbi": [
     {
       "type": "interface",
@@ -1398,7 +1398,7 @@
           "type": "()"
         },
         {
-          "name": "Beasts",
+          "name": "Sanctuaries",
           "type": "()"
         }
       ]

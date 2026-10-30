@@ -1,4 +1,8 @@
-import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
+import type { SkillPointChoice } from "./skill-points";
+import {
+  nativeRuleConstants,
+  nativeResearchConstants as research,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 
 /** An attribute tier as the contract stores it: 0 (untrained) to 5 (legendary). */
 const tierIndex = (tier: number): number => {
@@ -63,8 +67,13 @@ export const homecomingReturn = (wholeTroops: number, homecomingTier: number): n
   Math.floor((Math.floor(wholeTroops) * homecomingBps(homecomingTier)) / 10_000);
 
 /** The kinds a Scouting tier can raise, by the code progression.cairo packs for each (1, 2, 3). */
-const SCOUTING_KINDS = ["Camp", "Rift", "Beasts"] as const;
-type ScoutingKind = (typeof SCOUTING_KINDS)[number];
+type ScoutingKind = Extract<SkillPointChoice, { kind: "Scouting" }>["value"]["kind"];
+export type ScoutingSide = (typeof research)["KIND_CAMPS" | "KIND_RIFTS" | "KIND_SANCTUARIES"];
+const SCOUTING_CODES = {
+  Camp: research.KIND_CAMPS + 1,
+  Rift: research.KIND_RIFTS + 1,
+  Sanctuaries: research.KIND_SANCTUARIES + 1,
+} satisfies Record<ScoutingKind, number>;
 
 /**
  * The kind each Scouting tier went to, Common first, as progression.cairo packs `scouting_kinds`: two
@@ -72,7 +81,8 @@ type ScoutingKind = (typeof SCOUTING_KINDS)[number];
  */
 export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[] =>
   Array.from({ length: Math.max(0, scouting) }, (_, index) => {
-    const kind = SCOUTING_KINDS[(Math.floor(packed / 4 ** index) % 4) - 1];
+    const code = Math.floor(packed / 4 ** index) % 4;
+    const kind = (Object.keys(SCOUTING_CODES) as ScoutingKind[]).find((kind) => SCOUTING_CODES[kind] === code);
     if (!kind) throw new Error(`Scouting tier ${index + 1} has no kind`);
     return kind;
   });
@@ -82,7 +92,7 @@ export const scoutingKindsOf = (scouting: number, packed: number): ScoutingKind[
  * scouting_bonus sums each tier's increment onto the kind chosen for it.
  */
 export const scoutingBonusBps = (scouting: number, packed: number): Record<ScoutingKind, number> => {
-  const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Beasts: 0 };
+  const bonus: Record<ScoutingKind, number> = { Camp: 0, Rift: 0, Sanctuaries: 0 };
   scoutingKindsOf(scouting, packed).forEach((kind, index) => (bonus[kind] += scoutingIncrementBps(index + 1)));
   return bonus;
 };

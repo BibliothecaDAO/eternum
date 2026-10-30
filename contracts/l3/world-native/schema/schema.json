@@ -74,7 +74,7 @@
     "CHOICE_RATIONS": 1,
     "KIND_CAMPS": 0,
     "KIND_RIFTS": 1,
-    "KIND_BEASTS": 2,
+    "KIND_SANCTUARIES": 2,
     "HUT": 1,
     "WORKSHOP": 25,
     "BARRACKS": 28,
@@ -11152,6 +11152,54 @@
         }
       ]
     },
+    "world_native::progression::RecordedScoutingKind": {
+      "type": "enum",
+      "name": "world_native::progression::RecordedScoutingKind",
+      "variants": [
+        {
+          "name": "Camp",
+          "type": "()"
+        },
+        {
+          "name": "Rift",
+          "type": "()"
+        },
+        {
+          "name": "Beasts",
+          "type": "()"
+        },
+        {
+          "name": "Sanctuaries",
+          "type": "()"
+        }
+      ]
+    },
+    "world_native::progression::RecordedSkillPointUse": {
+      "type": "enum",
+      "name": "world_native::progression::RecordedSkillPointUse",
+      "variants": [
+        {
+          "name": "Battle",
+          "type": "()"
+        },
+        {
+          "name": "Logistics",
+          "type": "()"
+        },
+        {
+          "name": "Scouting",
+          "type": "world_native::progression::RecordedScoutingKind"
+        },
+        {
+          "name": "Homecoming",
+          "type": "()"
+        },
+        {
+          "name": "Stamina",
+          "type": "core::integer::u8"
+        }
+      ]
+    },
     "world_native::progression::ScoutingKind": {
       "type": "enum",
       "name": "world_native::progression::ScoutingKind",
@@ -11165,7 +11213,7 @@
           "type": "()"
         },
         {
-          "name": "Beasts",
+          "name": "Sanctuaries",
           "type": "()"
         }
       ]
@@ -11180,7 +11228,7 @@
         },
         {
           "name": "choice",
-          "type": "world_native::progression::SkillPointUse"
+          "type": "world_native::progression::RecordedSkillPointUse"
         },
         {
           "name": "point_rank",
@@ -13633,5 +13681,5 @@
       ]
     }
   },
-  "identity": "0092fe02630dc5558e96265a37f956d3ba36a7c23102e0381735433a62a6df66"
+  "identity": "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807"
 }

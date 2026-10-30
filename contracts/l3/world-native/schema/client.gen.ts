@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "0092fe02630dc5558e96265a37f956d3ba36a7c23102e0381735433a62a6df66";
+export const nativeFactSchemaIdentity = "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807";
 export const nativeRuleConstants = {
   "SHRINE_COMMON_BPS": 5000,
   "SHRINE_UNCOMMON_BPS": 3000,
@@ -75,7 +75,7 @@ export const nativeResearchConstants = {
   "CHOICE_RATIONS": 1,
   "KIND_CAMPS": 0,
   "KIND_RIFTS": 1,
-  "KIND_BEASTS": 2,
+  "KIND_SANCTUARIES": 2,
   "HUT": 1,
   "WORKSHOP": 25,
   "BARRACKS": 28,

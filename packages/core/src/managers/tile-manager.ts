@@ -1,3 +1,4 @@
+import type { ScoutingSide } from "../utils/attribute-tiers";
 import { extractErrorMessage } from "@bibliothecadao/provider";
 import { buildableRadius } from "../utils/castle-reach";
 import {
@@ -112,7 +113,7 @@ export class TileManager {
     buildingType: BuildingType,
     hexCoords: HexPosition,
     useSimpleCost: boolean,
-    scoutingKind?: 0 | 1 | 2,
+    scoutingKind?: ScoutingSide,
   ) => {
     if (buildingType === BuildingType.ScoutsLodge && scoutingKind === undefined) {
       throw new Error("Choose the Scouts' lodge's first kind before building");
