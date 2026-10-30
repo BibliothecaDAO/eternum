@@ -64,7 +64,7 @@ const boardShown = (title, rows) =>
 const placeLit = (word) =>
   `[...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].some((tab) => tab.innerText.trim() === ${JSON.stringify(word)})`;
 
-/** The Connect window, open (shell/sign-in/connect-window.tsx). */
+/** The Connect window, open (shell/frame/shell-window.tsx). */
 const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connect"]') !== null`;
 
 /** Each flow's end, checked in the page. */
@@ -78,10 +78,10 @@ const END = {
   musicOn: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") === "true"`,
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,
   docs: `[...document.querySelectorAll("a[href]")].some((a) => a.href.startsWith("https://docs.realms.party") && a.target === "_blank")`,
-  // Realms' marketplace, a place of the bar (a phone's tabs) that opens its own site in a new tab.
-  market: `[...document.querySelectorAll('[data-role="tab"]')].some((a) => a.href === "https://realms.market/" && a.target === "_blank")`,
-  // What's new under its place, a section's tab chosen and that section's changes shown under its name.
-  news: `location.pathname === "/scroll" && ${placeLit("What's new")} && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
+  // Realms' marketplace, You's row (the footer's, signed out), which opens its own site in a new tab.
+  market: `[...document.querySelectorAll("a[href]")].some((a) => a.href === "https://realms.market/" && a.target === "_blank")`,
+  // What's new, read from You (lit there; Connect, signed out), a section's tab chosen and its changes under its name.
+  news: `location.pathname === "/scroll" && (${placeLit("You")} || ${placeLit("Connect")}) && [...document.querySelectorAll('[role="tab"][aria-selected="true"]')].some((tab) => tab.innerText.trim() === "Blitz") && [...document.querySelectorAll(".app-panel h2")].some((name) => name.innerText.trim() === "Blitz")`,
   // The terms, read from the footer: a page no place holds, so none is lit (qa-app-1 P3-3).
   terms: `location.pathname === "/terms" && document.querySelectorAll('[data-role="tab"][aria-current="page"]').length === 0`,
   // Connect, open over the page it was asked from: Play from the bar, the lobby from its Sign in.
@@ -100,21 +100,23 @@ const flows = (layout, persona) => {
     standing: { steps: [tab("Season")], end: END.frontierBoard },
     blitzboard: { steps: blitz, end: END.blitzBoard, outage: RATINGS_DOWN },
     rival: { steps: [tab("Season"), firstRow()], end: END.player },
-    market: { steps: [link("Market")], end: END.market },
-    news: { steps: [tab("What's new"), view("Blitz")], end: END.news },
-    terms: { steps: [tab("What's new"), link("Terms of Service")], end: END.terms },
+    terms: { steps: [link("Terms of Service")], end: END.terms },
   };
   if (persona === "new-visitor")
     return {
       ...shared,
-      // Signed out, You is Connect, and How to play is the footer's.
+      // Signed out, You is Connect, and You's rows are the footer's.
       guide: { steps: [link("How to play")], end: END.docs },
+      market: { steps: [link("Market")], end: END.market },
+      news: { steps: [link("What's new"), view("Blitz")], end: END.news },
       signin: { steps: [tab("Connect")], end: END.connect },
       join: { steps: [joinSlot(), press("Sign in")], end: END.lobbyConnect },
     };
   return {
     ...shared,
     guide: { steps: [tab("You"), link("How to play")], end: END.docs },
+    market: { steps: [tab("You"), link("Market")], end: END.market },
+    news: { steps: [tab("You"), press("What's new"), view("Blitz")], end: END.news },
     older: { steps: [tab("You"), finishedGame()], end: END.results },
     alerts: { steps: [tab("You"), press("Settings"), view("Important")], end: END.important, setting: "level" },
     music: { steps: [tab("You"), press("Settings"), toggle("Music")], end: END.musicOn, setting: "music" },

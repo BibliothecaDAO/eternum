@@ -4,6 +4,7 @@
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
+import type { CampaignKey } from "@realms-world/identity";
 import {
   BuildingType,
   XP,
@@ -309,6 +310,12 @@ export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
 export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
+/**
+ * A site as its map hover and its card both name it: its own name, then its kind ("Brimdeep Rift"); the kind alone
+ * where it has no name. A kind that is its guard (a camp's Troll) is said once, as the guard, so it is left out here.
+ */
+export const siteTitle = (place: string | undefined, kind: string, guard: string | undefined): string =>
+  [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
@@ -573,10 +580,37 @@ export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} op
 export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
 export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
-export const OPTIONAL_REALM_NUMBER = "Realm number (optional)";
 export const YOUR_REALMS = "Your Realms";
-export const FREE_REALM_ENTRY = "Free home · no daily Labor";
+/** A held Realm as a pick or a row names it: its number, then its name where it has one ("711 · Ket ek Ëtläl"). */
+export const numberedRealm = (realmId: number, name: string | undefined) =>
+  name ? `${realmId} · ${name}` : String(realmId);
+export const NO_HELD_REALMS = "Your linked wallet holds no Realm";
+export const HELD_REALMS_UNREADABLE = "Your Realms cannot be read right now";
+export const TICKET_UNREADABLE = "Your ticket cannot be read right now";
 export const INVALID_REALM_NUMBER = "Enter a Realm number from 1–8,000.";
+/** A campaign's name where its tickets are named: on the Realm step, the ticket a home can be founded with. */
+const CAMPAIGN_NAMES: Record<CampaignKey, string> = { "devcon-2026": DEVCON };
+export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
+  `${golden ? "Golden " : ""}${CAMPAIGN_NAMES[campaign]} ticket`;
+/** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
+export const HOME_STEP_WORDS = {
+  title: "Choose your home",
+  freeHome: "A free home",
+  freeHomeLine: "No daily Labor. Hold a Realm or a Devcon ticket to found with it.",
+  linkWallet: "Link the wallet that holds your Realms",
+  registered: "Registered for this game",
+  noMatch: "No Realm matches",
+  /** A Realm by its number, under its name. */
+  realm: (realmId: number) => `Realm ${realmId}`,
+  /** The strip's last tile: every choice, in a grid with search. */
+  all: (count: number) => `All ${count}`,
+  search: (count: number) => `Search ${count} Realms`,
+  /** Over the choices: "1 ticket · 3 Realms". */
+  count: (tickets: number, realms: number) =>
+    [tickets ? formatCount(tickets, "ticket") : null, realms ? formatCount(realms, "Realm") : null]
+      .filter(Boolean)
+      .join(" · "),
+} as const;
 
 /** The Season chip's tip: what a common chest pays today, and the pool the season pays chests from. */
 export const commonChestPays = (lords: string) => `A Common chest pays ${lords} LORDS today`;
@@ -741,8 +775,10 @@ export const CHAT_WORDS = {
   sharePlace: "Share the selected place",
   /** Over the field while a place goes with the message: take it off. */
   removePlace: "Take the place off",
-  /** After a place shared in another game: that game, by its name ("in Frontier 3"); it opens nothing here. */
+  /** In a place shared in another game, after its name: that game ("in Frontier 3"); it opens nothing here. */
   inGame: "in",
+  /** In a place the map has no more (gone, or from a closed Frontier day), after its name: why it opens nothing. */
+  placeGone: "gone",
   /** On a player's card: hide everything they write, here and in private (the server drops their messages to you). */
   mute: "Mute",
   unmute: "Unmute",
@@ -825,6 +861,12 @@ export const PROFILE_WORDS = {
   /** Music outside a match, on this device. */
   music: "Music",
   recentGames: "Recent games",
+  /** The counts at the foot of the player's own card, each opening its sheet. */
+  holdings: "Holdings",
+  realms: "Realms",
+  ticket: "Ticket",
+  /** Under a count the holdings could not read: it says why in its sheet. */
+  unknownCount: "—",
   /** Recent games with none finished yet: the player's own, and another player's. */
   noGamesOwn: "Your finished games will show here.",
   noGames: "No finished games yet.",

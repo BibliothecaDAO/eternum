@@ -184,6 +184,60 @@ describe("a realm visit", () => {
   });
 });
 
+// A place shared in chat out of the player's view (playtest 29 October 2026, B5): its owner's realm visited, opened as
+// the visit opens any realm, read-only, on the place's tile with it selected, and Leave returns home.
+describe("a visit opened from a place shared in chat", () => {
+  const sharedArmy = {
+    tile: { col: 752, row: 51, alt: true },
+    select: { kind: "army" as const, entityId: 31, tile: "own" as const },
+  };
+
+  it.each(["desktop", "phone"] as const)(
+    "opens the place read-only on its tile once the realm arrives, then Leave returns home (%s)",
+    (layout) => {
+      useUIStore.setState({ isSpectating: false, structureEntityId: 7 });
+      renderFoot(undefined, layout);
+      act(() => startRealmVisit({ player: "0x222", structureId: 8, opensOn: sharedArmy }));
+      expect(visit).toHaveBeenLastCalledWith("0x222");
+      // Nothing moves until the visit's scope has brought the realm.
+      expect(goTo).not.toHaveBeenCalled();
+
+      act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+      expect(goTo).toHaveBeenCalledOnce();
+      const [realm, position, onMap, options] = goTo.mock.calls[0];
+      expect([realm, position.getContract(), onMap, options]).toEqual([
+        8,
+        { x: 752, y: 51 },
+        true,
+        { spectator: true },
+      ]);
+      expect(useUIStore.getState().mapLayer).toBe(true);
+      expect(useUIStore.getState().mapSelection).toEqual(sharedArmy.select);
+      expect(useUIStore.getState().isSpectating).toBe(true);
+
+      act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === "Leave")!.click());
+      expect(visit).toHaveBeenLastCalledWith(null);
+      expect(goTo).toHaveBeenLastCalledWith(7, expect.anything(), false, { spectator: false });
+      expect(useUIStore.getState().isSpectating).toBe(false);
+      expect(host.textContent).toBe("");
+    },
+  );
+
+  it("opens a shared realm on its own tile, selected as the realm", () => {
+    renderFoot();
+    act(() =>
+      startRealmVisit({
+        player: "0x222",
+        structureId: 8,
+        opensOn: { tile: { col: 750, row: 50, alt: false }, select: { kind: "structure", entityId: 8 } },
+      }),
+    );
+    act(() => store.applyFacts([realmRow(8, "0x222")] as never));
+    const [realm, position, onMap, options] = goTo.mock.calls.at(-1)!;
+    expect([realm, position.getContract(), onMap, options]).toEqual([8, { x: 750, y: 50 }, true, { spectator: true }]);
+  });
+});
+
 it("returns the viewing selection home when replacing the gameplay account clears a visit", () => {
   renderFoot();
   act(() => store.applyFacts([realmRow(8, "0x222")] as never));

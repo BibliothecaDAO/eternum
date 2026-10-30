@@ -160,7 +160,7 @@ it("closes Sign out's question on the system back without leaving Settings, and 
     act(async () =>
       [...container.querySelectorAll("button")].find((button) => button.textContent === "Sign out")!.click(),
     );
-  const asking = () => container.querySelector('[role="dialog"][aria-label="Sign out?"]') !== null;
+  const asking = () => document.body.querySelector('[role="dialog"][aria-label="Sign out?"]') !== null;
   try {
     await act(async () => root.render(<SignOut />));
     await signOut();
@@ -174,7 +174,7 @@ it("closes Sign out's question on the system back without leaving Settings, and 
     await signOut();
     await settle();
     await act(async () =>
-      [...container.querySelectorAll("button")].find((button) => button.textContent === "Keep")!.click(),
+      [...document.body.querySelectorAll("button")].find((button) => button.textContent === "Keep")!.click(),
     );
     await settle();
     await signOut();

@@ -88,7 +88,8 @@ const renderLab = async (path: string) => {
     ),
   );
   await vi.waitFor(() => expect(container.textContent).not.toContain("Loading app fixtures"));
-  return container;
+  // The page and any window over it, which opens at the body's end.
+  return document.body;
 };
 
 it.each([
@@ -134,7 +135,7 @@ it.each([
   );
   const lab = await renderLab(`/lab/app/first-visit/${page}`);
   const places = [...lab.querySelectorAll('[data-role="tab"]')];
-  expect(places).toHaveLength(6);
+  expect(places).toHaveLength(4);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
 });

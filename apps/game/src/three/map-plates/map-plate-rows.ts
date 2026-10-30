@@ -1,6 +1,6 @@
 import { formatDuration } from "@bibliothecadao/types";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { ARRIVING, UNDEFENDED } from "@/ui/design-system/kit/words";
+import { ARRIVING, siteTitle, UNDEFENDED } from "@/ui/design-system/kit/words";
 
 import { attackOrder, type ArmyPlate, type MapPlate, type PlateTroops, type StructurePlate } from "./map-plate-model";
 
@@ -63,8 +63,7 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
   // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
   const holds = plate.reward ? [{ kind: "divider" } as const, { kind: "label", text: plate.reward } as const] : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
-  const kind = plate.name === plate.beast ? undefined : plate.name;
-  const owner = plate.beast ? [plate.place, kind].filter(Boolean).join(" ") : plate.owner;
+  const owner = plate.beast ? siteTitle(plate.place, plate.name, plate.beast) : plate.owner;
   const rows: PlateRow[] = [
     owner ? [{ kind: "owner", text: owner }] : [],
     !plate.beast && plate.place ? [name, { kind: "word", text: plate.name }] : [name],

@@ -37,6 +37,8 @@ export interface ToldReading {
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
   /** What it paid, as its story's rule writes it: a find under a unit pays nothing to show (findGain). */
   reward?: { amountText: string; icon: IconMeaning; name: string };
+  /** The site whose clear this is: the row also says the XP the clear paid, as the site's receipt does. */
+  clearOf?: number;
 }
 
 /**
@@ -79,6 +81,7 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
         object: siteObject(payload.site_id),
         outcome: Number(payload.category) === StructureType.Ruin ? { word: CHEST_EARNED, tone: "good" } : undefined,
         reward: reward ? paid(reward.resource_type, reward.amount, formatGain) : undefined,
+        clearOf: Number(payload.site_id),
       };
     }
     case "BattleEvent": {

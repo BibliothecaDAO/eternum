@@ -3,7 +3,6 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   readResourceManager,
-  siteKindOf,
   siteReward,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
@@ -34,7 +33,7 @@ export const holdsGrowingReward = (structure: Pick<StructureInfo, "structureType
 export const readPlateReward = (store: NativeFactStore, structure: RewardSource): PlateReward | undefined => {
   const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: structure.entityId });
   if (site) {
-    const payout = siteReward(siteKindOf(structure.structureType), site);
+    const payout = siteReward(site);
     return payout
       ? { amount: divideByPrecision(Number(payout.amount)), unit: resourceName(payout.resourceType) }
       : undefined;

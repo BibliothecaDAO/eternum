@@ -73,6 +73,7 @@ async function checkInstallAssets(dist, failures) {
   if (manifest.id !== "/" || manifest.scope !== "/" || manifest.start_url !== "/" || manifest.display !== "standalone")
     failures.push("Invalid installed-app identity or scope");
   await checkInstallIcons(dist, manifest, failures);
+  await checkHomeScreenIcons(dist, failures);
   await checkThemeColor(dist, manifest, failures);
   await checkOfflineDependencies(dist, failures);
   await checkCacheHeaders(dist, failures);
@@ -94,6 +95,26 @@ async function checkInstallIcons(dist, manifest, failures) {
       failures.push(`Wrong icon dimensions: ${icon.src}`);
   }
 }
+
+/** The page's home-screen icons, one per size iOS asks for (iPhone 120 and 180, iPad 152 and 167): each at its size. */
+async function checkHomeScreenIcons(dist, failures) {
+  const html = await readFile(join(dist, "index.html"), "utf8");
+  const links = [...html.matchAll(/<link\s+rel="apple-touch-icon"\s+href="([^"]+)"\s+sizes="(\d+)x\2"/g)];
+  const sizes = links.map(([, , size]) => Number(size)).sort((a, b) => a - b);
+  if (JSON.stringify(sizes) !== JSON.stringify(HOME_SCREEN_SIZES)) failures.push(`Home-screen icon sizes: ${sizes}`);
+  for (const [, href, size] of links) {
+    const bytes = await readFile(join(dist, href)).catch(() => null);
+    if (
+      !bytes ||
+      bytes.length < 24 ||
+      bytes.readUInt32BE(16) !== Number(size) ||
+      bytes.readUInt32BE(20) !== Number(size)
+    )
+      failures.push(`Wrong home-screen icon: ${href}`);
+  }
+}
+
+const HOME_SCREEN_SIZES = [120, 152, 167, 180];
 
 async function checkThemeColor(dist, manifest, failures) {
   const html = await readFile(join(dist, "index.html"), "utf8");

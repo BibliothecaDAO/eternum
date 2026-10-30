@@ -215,31 +215,125 @@ it.each([
   expect(page.text()).not.toMatch(/\b1 [Pp]layers\b/);
 });
 
-it("keeps Blitz on Play once an ended Blitz's results were seen, saying none is scheduled (live-qa-night-1 P3-12)", async () => {
+it("keeps Blitz on Play once an ended Blitz's results were seen, idle and saying none is scheduled (live-qa-night-1 P3-12)", async () => {
   const ended = game({ game_id: 2, mode: "blitz", status: "Ended", name: "test-qa-fresh-1" } as Partial<DirectoryGame>);
   reads.directory = answered({ games: [ownSeason] });
   reads.slots = answered({ slots: [] });
   reads.history = answered({ games: [ended], next: null, failures: [] });
   const page = await mount();
   const blitz = () => page.container.querySelector('section[aria-label="Blitz"]')?.textContent ?? null;
+  const idle = () => page.container.querySelector('section[aria-label="Blitz"]')?.hasAttribute("data-idle") ?? null;
   // Its results not yet opened: they stand in Blitz's column.
   expect(blitz()).toContain("Results");
   expect(blitz()).not.toContain("No Blitz scheduled");
 
   localStorage.setItem("realms.seen-results", JSON.stringify(["0xa:2"]));
   await page.render();
-  expect(blitz()).toBe("No Blitz scheduled this season.Build ordersThe game's order");
+  // None left in the season: Blitz is idle, its line alone, with no build orders to prepare (owner, 29 October 2026).
+  expect(blitz()).toBe("No Blitz scheduled this season.");
+  expect(idle()).toBe(true);
   expect(page.text()).toContain("Resume");
 
-  // A slot the operator opens takes the line's place; a slot outage is said as the outage, never as "none".
+  // A slot the operator opens takes the line's place, and Blitz is live again with its build orders; a slot outage is
+  // said as the outage, never as "none".
   reads.slots = answered({ slots: [slot] });
   await page.render();
   expect(blitz()).toContain("Join");
+  expect(blitz()).toContain("Build orders");
+  expect(idle()).toBe(false);
   expect(blitz()).not.toContain("No Blitz scheduled");
   reads.slots = failed();
   await page.render();
   expect(page.text()).toContain("Blitz did not answer.");
   expect(page.text()).not.toContain("No Blitz scheduled");
+});
+
+it("dims Eternum's column while its game is still to open, saying when it opens; lit once the player can enter", async () => {
+  const opening = game({
+    game_id: 9,
+    mode: "eternum",
+    name: "eternum-1",
+    status: "Registration",
+    ready: false,
+    clock: {
+      start_settling_at: 3_900_000_000,
+      start_main_at: 3_900_000_000,
+      end_at: 4_000_000_000,
+      end_grace_seconds: 0,
+    },
+  } as Partial<DirectoryGame>);
+  reads.directory = answered({ games: [ownSeason, opening] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const eternum = () => page.container.querySelector<HTMLElement>('section[aria-label="Eternum"]')!;
+  // Frontier's day leads; Eternum stands beside it with its opening alone, idle, nothing in it to press.
+  const resume = page.container.querySelector<HTMLButtonElement>('[data-play-item] button[data-play-verb="resume"]');
+  expect(resume?.textContent).toBe("Resume");
+  expect(eternum().textContent).toMatch(/^EternumOpens \d{1,2} \w{3} 2093, \d\d:\d\d$/);
+  expect(eternum().hasAttribute("data-idle")).toBe(true);
+  expect(eternum().querySelector("a, button")).toBeNull();
+
+  // Open, with the player on its roster: Enter, and the column is live.
+  reads.directory = answered({
+    games: [
+      ownSeason,
+      {
+        ...opening,
+        status: "Live",
+        ready: true,
+        player_state: { ...opening.player_state, registered: true },
+      } as DirectoryGame,
+    ],
+  });
+  await page.render();
+  expect(eternum().textContent).toContain("Enter");
+  expect(eternum().hasAttribute("data-idle")).toBe(false);
+});
+
+it("dims Eternum leading Play while its game is still to open, as its column would be; lit once it can be entered", async () => {
+  const opening = game({
+    game_id: 9,
+    mode: "eternum",
+    name: "eternum-1",
+    status: "Registration",
+    ready: false,
+    clock: {
+      start_settling_at: 3_900_000_000,
+      start_main_at: 3_900_000_000,
+      end_at: 4_000_000_000,
+      end_grace_seconds: 0,
+    },
+  } as Partial<DirectoryGame>);
+  reads.directory = answered({ games: [opening] });
+  reads.slots = answered({ slots: [] });
+  reads.history = answered({ games: [], next: null, failures: [] });
+  const page = await mount();
+  const lead = () => page.container.querySelector<HTMLElement>('[data-play-item="0xa:9"] .app-game-card')!;
+  // Nothing else running: the unopened Eternum leads, idle, saying when it opens, nothing on it to press.
+  expect(lead().dataset.size).toBe("lead");
+  expect(lead().textContent).toMatch(/Opens \d{1,2} \w{3} 2093, \d\d:\d\d/);
+  expect(lead().hasAttribute("data-idle")).toBe(true);
+  expect(lead().querySelector("a, button")).toBeNull();
+
+  expect(lead().querySelector("[data-play-verb]")).toBeNull();
+
+  // Open, with the player on its roster: the lead's Enter, and it is lit.
+  reads.directory = answered({
+    games: [
+      {
+        ...opening,
+        status: "Live",
+        ready: true,
+        player_state: { ...opening.player_state, registered: true },
+      } as DirectoryGame,
+    ],
+  });
+  await page.render();
+  expect(lead().textContent).toContain("Enter");
+  expect(lead().hasAttribute("data-idle")).toBe(false);
+  // The lead's call to action by its verb's name, whatever its word: what the playtest runner presses to enter.
+  expect(lead().querySelector<HTMLButtonElement>("button[data-play-verb]")!.dataset.playVerb).toBe("enter");
 });
 
 it("keeps the way to the build orders when the player's ended Blitz leads Play", async () => {
@@ -306,6 +400,8 @@ it("shows the calendar's next Blitz, its start and when its entry opens, until t
   expect(blitz()).toBe(
     `Next ranked BlitzStarts ${at(next.startsAt)} · Entry opens ${at(next.opensAt)} · in 17m${orders}`,
   );
+  // A Blitz to come: the column is as live as with one open.
+  expect(page.container.querySelector('section[aria-label="Blitz"]')!.hasAttribute("data-idle")).toBe(false);
 
   // Its entry due: the schedule's next tick opens it.
   reads.nextBlitz = answered({ ...next, opensAt: new Date((now - 1) * 1000).toISOString() });

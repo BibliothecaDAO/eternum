@@ -8,13 +8,12 @@ import {
   revealLine,
   xpGainedLine,
 } from "@/ui/design-system/kit/words";
-import { configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
+import { siteClearXp, configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
-import { siteClearXp } from "../sites/site-card-plan";
 import { fightLogLine } from "./fight-line";
 
 /** A story as the day's log reads it: what it is, what it carries, and the line every mode gives it. */

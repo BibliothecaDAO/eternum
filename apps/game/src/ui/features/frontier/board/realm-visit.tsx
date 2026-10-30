@@ -2,7 +2,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { usePlayerDisplayName } from "@/hooks/use-player-profile";
-import { leaveRealmVisit, type RealmVisit, useRealmVisit } from "@/sync/active-game-client";
+import { leaveRealmVisit, type RealmVisit, useRealmVisit, type VisitPlace } from "@/sync/active-game-client";
 import { LordName } from "./realm-marks";
 import { configManager, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -25,8 +25,9 @@ export const useVisitedRealm = (visit: RealmVisit | null): NativeRows["Structure
 /**
  * A visit's way in and out, held once above the HUD's layouts (FrontierHud), so a desktop<->phone change, which remounts
  * the foot, replays nothing. A visit that opens on arrival (see RealmVisit) opens the realm where it says (its board, or
- * the world map on it) once its rows arrive with the visit's scope, as a realm the player does not own, so every order
- * stays off; it opens once per visit asked for. A spectator's visit that ends returns to the player's own realm.
+ * the world map on it, or a place of it there) once its rows arrive with the visit's scope, as a realm the player does
+ * not own, so every order stays off; it opens once per visit asked for. A spectator's visit that ends returns to the
+ * player's own realm.
  */
 export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) => {
   const { setup } = useGame();
@@ -35,8 +36,19 @@ export const useRealmVisitNavigation = (home: NativeRows["Structure"] | null) =>
   const openedVisit = useRef<RealmVisit | null>(null);
   const visited = useVisitedRealm(visit);
   const goToStructure = useGoToStructure(setup);
-  /** A realm's board, or the world map on it. */
-  const openRealm = (realm: NativeRows["Structure"], spectator: boolean, on: "realm" | "map" = "realm") => {
+  /** A realm's board, the world map on it, or a place of it on the map (its army, or itself, where shared). */
+  const openRealm = (
+    realm: NativeRows["Structure"],
+    spectator: boolean,
+    on: "realm" | "map" | VisitPlace = "realm",
+  ) => {
+    if (typeof on === "object") {
+      const { col, row, alt } = on.tile;
+      useUIStore.getState().setMapLayer(alt);
+      void goToStructure(safeInteger(realm.entity_id), Position.fromContract({ x: col, y: row }), true, { spectator });
+      if (on.select.kind === "army") useUIStore.getState().selectOnMap(on.select);
+      return;
+    }
     const site = structureMapPosition(setup.store, realm);
     if (site)
       void goToStructure(safeInteger(realm.entity_id), Position.fromContract(site), on === "map", { spectator });

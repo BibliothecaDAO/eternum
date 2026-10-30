@@ -16,6 +16,7 @@ import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
 import { visitScenario } from "./visit-scenario";
+import { farPlaceScenario } from "./far-place-scenario";
 import { researchScenario } from "./research-scenario";
 import { settleScenario } from "./settle-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
@@ -42,6 +43,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "painted-buildings": () => paintedBuildingsScenario(),
   "painted-buildings-sands": () => paintedBuildingsScenario(SANDS),
   visit: visitScenario,
+  "far-place": farPlaceScenario,
   sites: sitesScenario,
   "day-turn": dayTurnScenario("live"),
   "day-later": dayTurnScenario("later"),

@@ -6,6 +6,7 @@ import type { NativeRows } from "../../../../contracts/l3/world-native/schema/cl
 import { getNeighborHexes, StructureType } from "@bibliothecadao/types";
 import { getBlockTimestamp } from "./timestamp";
 import { dayOf } from "./days";
+import { previewSiteClearXp, previewSiteReward } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 
 import { entityMapPosition } from "./tile";
 
@@ -59,22 +60,15 @@ export const siteKindOf = (category: number): SiteKind => {
   return kind;
 };
 
-/**
- * What clearing a site still pays home in resources, as the contract's site_reward computes it from the guard it
- * started with: a camp half its troops in labor, a rift three times them in Essence, both in game precision. A cleared
- * site has paid and pays nothing again (the contract refuses a second payout); beasts pay only XP; a ruin pays its
- * chest.
- */
+/** A standing site's reward from the generated Cairo formula; a clear's actual credit lives in its receipt. */
 export const siteReward = (
-  kind: SiteKind,
-  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "clear">,
-): { resourceType: ResourcesIds; amount: bigint } | null => {
-  if (site.clear) return null;
-  if (kind === "Camp") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 2n };
-  if (kind === "Beasts") return { resourceType: ResourcesIds.Labor, amount: site.initial_guard_count / 4n };
-  if (kind === "Rift") return { resourceType: ResourcesIds.Essence, amount: site.initial_guard_count * 3n };
-  return null;
-};
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear">,
+): { resourceType: ResourcesIds; amount: bigint } | null =>
+  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count);
+
+/** The contract's integer XP formula, shared by the preview, receipt and local replay. */
+export const siteClearXp = (site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">): number =>
+  previewSiteClearXp(site.initial_guard_count);
 
 /** The expedition map is laid out in bands of `spacing` rows, four per day: surface, then Ethereal I to III. */
 const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number => Math.floor(coord.y / rules.spacing);

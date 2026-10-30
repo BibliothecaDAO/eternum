@@ -26,6 +26,19 @@ export const campaignHomeClaim = (rules: LaborRuleAmounts, golden: boolean): Hom
 });
 
 /**
+ * Where a home's claim comes from, as the value relay registers it before the home is founded
+ * (apps/value-relay/src/realm-entry.ts): a held Realm, a campaign's ticket, or nothing (a free home).
+ */
+export type HomeClaimSource = { kind: "realm" } | { kind: "campaign"; golden: boolean } | { kind: "free" };
+
+/** What a home from this source claims each game day by the game's LaborRules: a held Realm its Labor, a free home none. */
+export const homeSourceClaim = (rules: LaborRuleAmounts, source: HomeClaimSource): HomeDailyClaim | null => {
+  if (source.kind === "campaign") return campaignHomeClaim(rules, source.golden);
+  if (source.kind === "realm") return { labor: Number(rules.amount), essence: 0 };
+  return null;
+};
+
+/**
  * The one reader of a home's daily claim, for the game's Realm sheet and the notifier's Day open push alike. A home
  * claims when it was founded with a held Realm (SettledRealm names it) or with a campaign's ticket (CampaignHome); any
  * other home has no claim (null). The game's LaborRules give the amounts.
@@ -40,6 +53,6 @@ export const homeDailyClaim = (
   if (!rules) return null;
   const settled = facts.get("SettledRealm", { game_id, realm_id: home.realmId });
   const campaign = facts.get("CampaignHome", { game_id, home: entityId });
-  if (campaign) return campaignHomeClaim(rules, isGoldenCampaignHome(campaign));
-  return settled?.home === entityId ? { labor: Number(rules.amount), essence: 0 } : null;
+  if (campaign) return homeSourceClaim(rules, { kind: "campaign", golden: isGoldenCampaignHome(campaign) });
+  return homeSourceClaim(rules, settled?.home === entityId ? { kind: "realm" } : { kind: "free" });
 };

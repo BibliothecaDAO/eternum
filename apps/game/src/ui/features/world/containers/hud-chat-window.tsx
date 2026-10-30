@@ -25,6 +25,8 @@ import { configManager, nativeGameModeOf } from "@bibliothecadao/eternum";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 
 import { useEffect, useMemo, useRef } from "react";
+
+import { CLICK_SLOP_PX } from "@/three/managers/map-click";
 import { getActiveGame } from "@/runtime/world";
 import { isKeyForSurface } from "@/utils/shortcuts/typing-target";
 import { CHAT_SHORTCUT } from "./chat-shortcut";
@@ -188,14 +190,34 @@ export function HudChatWindow({
       event.preventDefault();
       onOpenChange(true);
     };
+    // A click on the map puts chat away, as the map takes it to pick what is under it; a drag only moves the map, so
+    // chat stays open over it (playtest 29 October 2026: a place shared, the map dragged, the place opened from chat).
+    let press: { id: number; x: number; y: number; dragged: boolean } | null = null;
     const onMapPointerDown = (event: PointerEvent) => {
-      if (open && event.target instanceof HTMLCanvasElement) onOpenChange(false);
+      press =
+        open && event.target instanceof HTMLCanvasElement
+          ? { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false }
+          : null;
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (press?.id === event.pointerId && Math.hypot(event.clientX - press.x, event.clientY - press.y) > CLICK_SLOP_PX)
+        press.dragged = true;
+    };
+    const onPointerUp = (event: PointerEvent) => {
+      if (press?.id !== event.pointerId) return;
+      const clicked = !press.dragged && Math.hypot(event.clientX - press.x, event.clientY - press.y) <= CLICK_SLOP_PX;
+      press = null;
+      if (clicked) onOpenChange(false);
     };
     window.addEventListener("keydown", onKeyDown, true);
     document.addEventListener("pointerdown", onMapPointerDown, true);
+    window.addEventListener("pointermove", onPointerMove, true);
+    window.addEventListener("pointerup", onPointerUp, true);
     return () => {
       window.removeEventListener("keydown", onKeyDown, true);
       document.removeEventListener("pointerdown", onMapPointerDown, true);
+      window.removeEventListener("pointermove", onPointerMove, true);
+      window.removeEventListener("pointerup", onPointerUp, true);
     };
   }, [initializer, onOpenChange, open]);
 

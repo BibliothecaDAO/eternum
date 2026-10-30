@@ -12,6 +12,7 @@ import {
   useRef,
 } from "react";
 import { Link, type To, useNavigate } from "react-router-dom";
+import { createPortal } from "react-dom";
 
 import { BACK } from "./words";
 
@@ -209,6 +210,8 @@ type AppBarPlace = {
   to: string;
   /** A place that opens over the page instead of leading anywhere (Connect), lit when it stands in the page's place. */
   onSelect?: () => void;
+  /** What the place does, by name (`data-action`), for a script to find it whatever its word or position: "connect". */
+  action?: "connect";
   label: string;
   icon?: IconMeaning;
   /** The player's portrait: the place shows the player (their name and portrait) instead of its word and icon. */
@@ -255,6 +258,7 @@ const AppBarLink = ({ place }: { place: AppBarPlace }) =>
     <button
       type="button"
       data-role="tab"
+      data-action={place.action}
       aria-current={place.current ? "page" : undefined}
       onClick={place.onSelect}
       className="app-bar__place"
@@ -415,20 +419,23 @@ export const AppGameName = ({ age, name, when }: { age: Age; name: string; when?
 
 /**
  * An age as a tall column on its painting: its lockup over what it holds (Play's games of that age), in the age's
- * accent, the painting showing above.
+ * accent, the painting showing above. `idle`, an age with nothing to do now: dimmed, without its lift, its one line
+ * (when it opens, or that none is scheduled) reading as it does.
  */
 export const AppAgeColumn = ({
   age,
   painting,
   name,
+  idle = false,
   children,
 }: {
   age: Age;
   painting: Painting;
   name: string;
+  idle?: boolean;
   children: ReactNode;
 }) => (
-  <section className="app-age-column" data-age={age} aria-label={name}>
+  <section className="app-age-column" data-age={age} data-idle={idle || undefined} aria-label={name}>
     <img
       className="app-age-column__painting"
       alt=""
@@ -447,7 +454,8 @@ export const AppAgeColumn = ({
 /**
  * A game, on its age's painting and in its age's accent: its title (an AppGameName, or a line where no game stands),
  * what stands (facts), and its one verb. `lead` is
- * Play's first card, the one gold verb of the page; `tile` sits among others.
+ * Play's first card, the one gold verb of the page; `tile` sits among others. `idle`, as AppAgeColumn's: nothing to do
+ * now, dimmed.
  */
 export const AppGameCard = ({
   age,
@@ -456,6 +464,7 @@ export const AppGameCard = ({
   facts,
   verb,
   size = "tile",
+  idle = false,
   className,
 }: {
   age: Age;
@@ -464,10 +473,11 @@ export const AppGameCard = ({
   facts?: ReactNode;
   verb?: ReactNode;
   size?: "lead" | "tile";
+  idle?: boolean;
   /** Places it (its height in a column), never its look. */
   className?: string;
 }) => (
-  <article className={cn("app-game-card", className)} data-age={age} data-size={size}>
+  <article className={cn("app-game-card", className)} data-age={age} data-size={size} data-idle={idle || undefined}>
     <img className="app-game-card__painting" alt="" {...paintingSources(painting)} sizes="50vw" />
     <div className="app-game-card__body">
       <h3 className="app-game-card__title">{title}</h3>
@@ -801,9 +811,11 @@ export const AppDialog = ({
 };
 
 /**
- * The one layer that opens over the page (a dialog, Connect): the page dimmed behind it and inert while it is open, so
- * neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a press beside it,
- * Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing in the middle.
+ * The one layer that opens over the page (a dialog, Connect, a holding's sheet): the page dimmed behind it and inert
+ * while it is open, so neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a
+ * press beside it, Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing
+ * in the middle. It is drawn at the body's end, whoever opens it: inside a panel (whose backdrop filter holds fixed
+ * children to the panel) it would open in the panel rather than over the page.
  */
 export const AppModalLayer = ({
   onClose,
@@ -817,7 +829,7 @@ export const AppModalLayer = ({
   useSheetCloses(onClose);
   const layer = useRef<HTMLDivElement>(null);
   useInertOutside(layer);
-  return (
+  return createPortal(
     <div
       ref={layer}
       data-surface="shell"
@@ -825,7 +837,8 @@ export const AppModalLayer = ({
       onClick={(event) => event.target === event.currentTarget && onClose()}
     >
       {children}
-    </div>
+    </div>,
+    document.body,
   );
 };
 

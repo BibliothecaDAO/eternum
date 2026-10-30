@@ -47,6 +47,9 @@ jobs:
       - name: Check every word, number, time and name goes through the words module
         run: pnpm words:check
 
+      - name: Check site previews come from the Cairo payout rules
+        run: node --test contracts/l3/world-native/scripts/site-previews.test.mjs
+
       - name: Typecheck game client
         run: pnpm --dir ./apps/game typecheck
 

@@ -27,7 +27,15 @@ export class ValueIdentity extends WorkerEntrypoint<IdentityEnv> {
   holdsRealm(wallet: string, realmId: number) {
     return holdsRealm(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet, realmId);
   }
-  heldRealms(wallet: string) {
+  /**
+   * The Realms `wallet` holds, by number: the answer value relays before the held-Realms maps (10-29) read. It stays
+   * until every running relay asks heldRealmsWithMaps instead.
+   */
+  async heldRealms(wallet: string) {
+    return (await this.heldRealmsWithMaps(wallet)).map((held) => held.realmId);
+  }
+  /** The Realms `wallet` holds, each with the Realm index's map of it. */
+  heldRealmsWithMaps(wallet: string) {
     return heldRealms(decodeIdentityEnv(this.env as unknown as Record<string, unknown>), wallet);
   }
   async recordPayDecisions(decisions: LedgerPayDecision[]) {

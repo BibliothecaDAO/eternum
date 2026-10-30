@@ -116,6 +116,8 @@ describe("the page a run opens", () => {
       "lab-hover-zoom",
       "lab-high-ground",
       "lab-visit",
+      // Its Leave is judged as the visit's is: the player's own realm board, read off the drawn world.
+      "lab-far-place",
     ].map((name) => STEP_SETS[name].steps),
   );
   const worldLists = Object.keys(STEP_SETS).filter((name) => worldSteps.has(STEP_SETS[name].steps));

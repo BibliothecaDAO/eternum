@@ -14,6 +14,7 @@ import {
   structureMapPosition,
   structureLocalPosition,
   siteReward,
+  siteClearXp,
   LOCAL_VIEW_REACH,
 } from "./expeditions";
 
@@ -193,33 +194,69 @@ it("counts season days from the exact start, whatever the time of day", () => {
 });
 
 describe("siteReward", () => {
+  it.each([
+    [548n, 137n],
+    [320n, 80n],
+  ])("previews the Beasts Labor for %s starting troops", (troops, labor) => {
+    expect(
+      siteReward({ category: StructureType.Beasts, initial_guard_count: troops * 1_000_000_000n, clear: null }),
+    ).toEqual({ resourceType: ResourcesIds.Labor, amount: labor * 1_000_000_000n });
+  });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
-    expect(siteReward("Camp", { initial_guard_count: guard, clear: null })).toEqual({
+    expect(siteReward({ category: StructureType.Camp, initial_guard_count: guard, clear: null })).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: 550n * 1_000_000_000n,
     });
-    expect(siteReward("Rift", { initial_guard_count: guard, clear: null })).toEqual({
+    expect(siteReward({ category: StructureType.Rift, initial_guard_count: guard, clear: null })).toEqual({
       resourceType: ResourcesIds.Essence,
       amount: 3_300n * 1_000_000_000n,
     });
     // An odd scaled count halves as the contract's integer division does.
-    expect(siteReward("Camp", { initial_guard_count: 3n, clear: null })?.amount).toBe(1n);
-    expect(siteReward("Beasts", { initial_guard_count: guard, clear: null })).toEqual({
+    expect(siteReward({ category: StructureType.Camp, initial_guard_count: 3n, clear: null })?.amount).toBe(1n);
+    expect(siteReward({ category: StructureType.Beasts, initial_guard_count: guard, clear: null })).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: guard / 4n,
     });
-    expect(siteReward("Ruin", { initial_guard_count: guard, clear: null })).toBeNull();
+    expect(siteReward({ category: StructureType.Ruin, initial_guard_count: guard, clear: null })).toBeNull();
   });
 
   it("pays nothing more once the site is cleared: the contract pays a site once", () => {
     const guard = 1_100n * 1_000_000_000n;
     expect(
-      siteReward("Camp", { initial_guard_count: guard, clear: { explorer_id: 1n, home_id: 7n, reward: null } }),
+      siteReward({
+        category: StructureType.Camp,
+        initial_guard_count: guard,
+        clear: { explorer_id: 1n, home_id: 7n, reward: null },
+      }),
     ).toBeNull();
     expect(
-      siteReward("Rift", { initial_guard_count: guard, clear: { explorer_id: 1n, home_id: 7n, reward: null } }),
+      siteReward({
+        category: StructureType.Rift,
+        initial_guard_count: guard,
+        clear: { explorer_id: 1n, home_id: 7n, reward: null },
+      }),
     ).toBeNull();
+  });
+});
+
+describe("siteClearXp", () => {
+  it.each([
+    [430n, 51],
+    [1300n, 90],
+    [3000n, 136],
+    [25000n, 395],
+    [49500n, 556],
+  ])("matches the contract's clear vector for %s troops", (troops, xp) => {
+    expect(siteClearXp({ initial_guard_count: troops * 1_000_000_000n })).toBe(xp);
+  });
+
+  it("floors fractional troops and keeps integer square-root boundaries exact", () => {
+    expect(siteClearXp({ initial_guard_count: 999_999_999n })).toBe(0);
+    expect(siteClearXp({ initial_guard_count: 1_999_999_999n })).toBe(2);
+    const square = (2n * 30_000_000n) ** 2n;
+    expect(siteClearXp({ initial_guard_count: (square - 1n) * 1_000_000_000n })).toBe(149_999_999);
+    expect(siteClearXp({ initial_guard_count: square * 1_000_000_000n })).toBe(150_000_000);
   });
 });
 

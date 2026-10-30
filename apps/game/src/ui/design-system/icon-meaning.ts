@@ -8,11 +8,11 @@ import type { ResourcesIds } from "@bibliothecadao/types";
  * kit by scripts/build-brand.sh; the static pages (index.html, public/*.html) name the same files.
  */
 export const REALMS_MARK = {
-  /** The parent mark with its word: the first frame, and the bar (the owner's call over the kit's size rule). */
+  /** The parent mark with its word: the first frame, the bar (the owner's call over the kit's size rule), the 512 px install icon. */
   lettered: "/images/logos/realms-lettered.webp",
-  /** The unlettered globe, 64 to 120 px: a loader. */
+  /** The unlettered globe, 64 to 120 px: a loader, an iPad's home-screen icons. */
   contour: "/images/logos/realms-contour.webp",
-  /** The retained small globe, under 64 px: the status page's header and the favicon. */
+  /** The retained small globe, under 64 px: the status page's header, the favicon, a phone's home-screen and launcher icons. */
   small: "/images/logos/realms-small.webp",
 } as const;
 
@@ -48,6 +48,13 @@ export function iconUrl(name: IconMeaning, pixels: IconPixels = 64): string {
 export function resourceMeaning(resource: ResourcesIds): IconMeaning {
   const entry = resources[String(resource) as keyof typeof resources];
   if (!entry) throw new Error(`Unknown resource icon: ${resource}`);
+  return entry.meaning as IconMeaning;
+}
+
+/** A resource's artwork by the name a Realm was minted with ("Cold Iron"); the catalog spells it without its spaces. */
+export function mintedResourceMeaning(name: string): IconMeaning {
+  const entry = Object.values(resources).find((resource) => resource.name === name.replaceAll(" ", ""));
+  if (!entry) throw new Error(`Unknown resource icon: ${name}`);
   return entry.meaning as IconMeaning;
 }
 

@@ -14,7 +14,7 @@ import { failureSentence, type IdentityAction } from "@/ui/modules/identity/iden
 import { returnPathOf } from "../return-path";
 import { CodeStep } from "./code-step";
 import { useConnectStore } from "./connect";
-import { ConnectWindow } from "./connect-window";
+import { ShellWindow } from "../frame/shell-window";
 import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
@@ -52,9 +52,9 @@ export const ConnectFlow = () => {
   if (session) {
     if (nameDismissed && !request) return null;
     return (
-      <ConnectWindow title={SIGN_IN_WORDS.yourName} onClose={close}>
+      <ShellWindow title={SIGN_IN_WORDS.yourName} onClose={close}>
         <ProfileStep session={session} onClaimed={() => void refresh()} />
-      </ConnectWindow>
+      </ShellWindow>
     );
   }
   if (!request && !returned.line && !pending) return null;
@@ -114,7 +114,7 @@ const AnonymousConnect = ({
 
   if (step.kind === "discord")
     return (
-      <ConnectWindow title={SIGN_IN_WORDS.discord} onClose={onClose}>
+      <ShellWindow title={SIGN_IN_WORDS.discord} onClose={onClose}>
         <HandoffStep
           checking={running === "handoff"}
           error={error}
@@ -122,11 +122,11 @@ const AnonymousConnect = ({
           onDiscord={continueWithDiscord}
           onTyping={() => setError(null)}
         />
-      </ConnectWindow>
+      </ShellWindow>
     );
   if (step.kind === "code")
     return (
-      <ConnectWindow title={SIGN_IN_WORDS.codeSent} onClose={onClose}>
+      <ShellWindow title={SIGN_IN_WORDS.codeSent} onClose={onClose}>
         <CodeStep
           email={step.email}
           expiresAt={step.expiresAt}
@@ -143,17 +143,17 @@ const AnonymousConnect = ({
             setStep({ kind: "start" });
           }}
         />
-      </ConnectWindow>
+      </ShellWindow>
     );
   return (
-    <ConnectWindow title={WORDS.connect} onClose={onClose}>
+    <ShellWindow title={WORDS.connect} onClose={onClose}>
       <StartStep
         sending={running === "send-code" || running === "discord"}
         error={error}
         onDiscord={providers.includes("discord") ? continueWithDiscord : undefined}
         onEmail={emailCode}
       />
-    </ConnectWindow>
+    </ShellWindow>
   );
 };
 

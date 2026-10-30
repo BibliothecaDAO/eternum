@@ -5,10 +5,109 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
-import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { CHAT, CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
+import {
+  CLOSEST_CAMERA_DISTANCE,
+  FARTHEST_CAMERA_DISTANCE,
+  HUD_WORDS,
+  leftForHome,
+  openedTheFarPlace,
+  SPECTATOR_STEPS,
+  STEP_SETS,
+} from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
+
+// Playtest 30 October 2026 (B6): the phone's Log became its Feed and the Season board's Back its ×, and the steps
+// pressed words the HUD no longer had.
+describe("the HUD's words the steps press and read", () => {
+  it("are the ones the app writes", () => {
+    expect(HUD_WORDS).toEqual({ menu: MENU, season: SEASON, feed: EVENTS_WORDS.feed, close: CLOSE, chat: CHAT });
+  });
+});
+
+// Playtest 29 October 2026 (B5): a realm and an army out of the player's view, opened from their messages and left.
+describe("the far place's steps", () => {
+  const onMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
+  const own = { actor: "0x111", visit: null, structures: [7], armies: [201] };
+  const visit = { actor: "0x111", visit: "0x222", structures: [7, 8], armies: [201, 211] };
+  const realmOpened = { structure: { id: 8 }, army: null, hex: { col: 750, row: 50 }, camera: { col: 750, row: 50 } };
+  const armyOpened = {
+    structure: null,
+    army: { id: 211, hex: { col: 752, row: 50 } },
+    hex: null,
+    camera: { col: 752, row: 50 },
+  };
+  const played = (scopes, selection) => ({
+    before: {
+      chip: true,
+      scopes: [own],
+      selection: { structure: null, army: null, hex: null, camera: { col: 650, row: 50 } },
+    },
+    after: { chip: false, scopes, selection },
+  });
+  const realm = openedTheFarPlace("structure");
+  const army = openedTheFarPlace("army");
+
+  it("completes when a visit brought the place and the map selected it where it stands, the camera on it", () => {
+    expect(realm({ seen: onMap, played: played([own, visit], realmOpened) }).status).toBe("completed");
+    expect(army({ seen: onMap, played: played([own, visit], armyOpened) }).status).toBe("completed");
+    // A phone's visit banner stands in its place bar: nothing lit, the map still drawn.
+    expect(realm({ seen: { ...onMap, place: null }, played: played([own, visit], realmOpened) }).status).toBe(
+      "completed",
+    );
+    expect(realm({ seen: { ...onMap, rendered: "hex" }, played: played([own, visit], realmOpened) }).status).toBe(
+      "failed",
+    );
+  });
+
+  it("fails when no visit brought it, when it is not selected, or stands nowhere, or the camera is elsewhere", () => {
+    expect(realm({ seen: onMap, played: played([own], realmOpened) }).reason).toBe(
+      "no visit brought the place into the stream",
+    );
+    expect(realm({ seen: onMap, played: played([own, visit], { ...realmOpened, structure: null }) }).reason).toBe(
+      "the structure was not selected",
+    );
+    expect(
+      army({ seen: onMap, played: played([own, visit], { ...armyOpened, army: { id: 211, hex: null } }) }).reason,
+    ).toBe("the selected army stands nowhere on the map");
+    expect(
+      realm({ seen: onMap, played: played([own, visit], { ...realmOpened, camera: { col: 650, row: 50 } }) }).reason,
+    ).toBe("the camera is not on the structure");
+  });
+
+  it("judges by the scope at the press: a visit left before it does not count, nor one served before it", () => {
+    const afterAVisit = {
+      before: { chip: true, scopes: [own, visit, own], selection: {} },
+      after: { chip: false, scopes: [own, visit, own, visit], selection: armyOpened },
+    };
+    expect(army({ seen: onMap, played: afterAVisit }).status).toBe("completed");
+    const nothingNew = { ...afterAVisit, after: { ...afterAVisit.after, scopes: [own, visit, own] } };
+    expect(army({ seen: onMap, played: nothingNew }).reason).toBe("no visit brought the place into the stream");
+  });
+
+  it("is blocked when the place was in view already, and fails with nothing to press", () => {
+    const inView = { ...played([visit, visit], realmOpened), before: { chip: true, scopes: [visit] } };
+    expect(realm({ seen: onMap, played: inView }).status).toBe("blocked");
+    expect(realm({ seen: onMap, played: { before: { chip: false, scopes: [own] }, after: null } }).reason).toBe(
+      "the message's place was not there to press",
+    );
+  });
+
+  it("leaves for home only once the stream has left the visit and dropped what it brought", () => {
+    expect(leftForHome({ seen: onMap, played: { scopes: [own, visit] } }).reason).toBe(
+      "the stream still follows the visit",
+    );
+    expect(leftForHome({ seen: onMap, played: { scopes: [own, visit, { ...own, armies: [201, 211] }] } }).reason).toBe(
+      "the visited realm or its army stayed in the stream",
+    );
+    // The stream back on the player's own scope, the rest is the visit steps' own homecoming (homeAgain).
+    expect(leftForHome({ seen: onMap, played: { scopes: [own, visit, own] } }).reason).toBe(
+      "Leave did not bring the player's realm back",
+    );
+  });
+});
 
 describe("the zoom step", () => {
   const verify = verifyOf("zoom");
@@ -188,9 +287,9 @@ describe("reading the season", () => {
     expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu: the board drew, then its Back closed it", () => {
+  it("reads a phone's season from its Menu: the board drew, then its × closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("no Menu sheet opened");
+    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("the Menu did not open");
     expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
       "the Season's board was not drawn",
     );
@@ -212,10 +311,10 @@ describe("a story opened from the Feed", () => {
     expect(verify({ seen: selected, played }).status).toBe("completed");
   });
 
-  it("fails a phone whose Log never opened, and is blocked only when an opened Feed holds no story", () => {
-    expect(verify({ seen: selected, played: { log: false, row: null } }).reason).toBe("the Log did not open");
-    expect(verify({ seen: selected, played: { log: true, row: null } }).status).toBe("blocked");
-    expect(verify({ seen: selected, played: { ...played, log: true } }).status).toBe("completed");
+  it("fails a phone whose Feed never opened, and is blocked only when an opened Feed holds no story", () => {
+    expect(verify({ seen: selected, played: { feed: false, row: null } }).reason).toBe("the Feed did not open");
+    expect(verify({ seen: selected, played: { feed: true, row: null } }).status).toBe("blocked");
+    expect(verify({ seen: selected, played: { ...played, feed: true } }).status).toBe("completed");
   });
 
   it("fails a page that loaded again, a place not selected, another tile selected, or the camera elsewhere", () => {

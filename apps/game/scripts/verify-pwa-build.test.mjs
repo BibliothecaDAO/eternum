@@ -7,6 +7,21 @@ import { PWA_PRECACHE_FILES } from "../build/pwa-assets.mjs";
 import { verifyPwaBuild } from "./verify-pwa-build.mjs";
 import { test } from "node:test";
 
+const png = (size) => {
+  const bytes = Buffer.alloc(24);
+  bytes.writeUInt32BE(size, 16);
+  bytes.writeUInt32BE(size, 20);
+  return bytes;
+};
+
+const homeScreenLinks = (sizes) =>
+  sizes
+    .map(
+      (size) =>
+        `<link rel="apple-touch-icon" href="/images/game-apple-touch-icon-${size}x${size}.png" sizes="${size}x${size}" />`,
+    )
+    .join("");
+
 async function writeFixture(dist) {
   await mkdir(join(dist, "images"));
   const entries = [];
@@ -20,7 +35,12 @@ async function writeFixture(dist) {
     await writeFile(join(dist, url), bytes);
     entries.push({ url, revision: createHash("md5").update(bytes).digest("hex") });
   }
-  await writeFile(join(dist, "index.html"), '<meta name="theme-color" content="#130F0C">');
+  for (const size of [120, 152, 167, 180])
+    await writeFile(join(dist, `images/game-apple-touch-icon-${size}x${size}.png`), png(size));
+  await writeFile(
+    join(dist, "index.html"),
+    `<meta name="theme-color" content="#130F0C">${homeScreenLinks([120, 152, 167, 180])}`,
+  );
   await writeFile(
     join(dist, "_headers"),
     ["sw.js", "offline.html", "manifest.webmanifest"].map((file) => `/${file}\n  Cache-Control: no-cache`).join("\n"),
@@ -68,6 +88,31 @@ test("actual worker manifest rejects asset expansion, missing files, stale bytes
     const failures = (await verifyPwaBuild(dist)).failures;
     assert.ok(failures.includes("Stale revision: offline.html"));
     assert.ok(failures.includes("Offline document requires uncached resource: /assets/main.js"));
+  } finally {
+    await rm(dist, { recursive: true, force: true });
+  }
+});
+
+test("home-screen icons: one per size iOS asks for, each file at its size", async () => {
+  const dist = await mkdtemp(join(tmpdir(), "pwa-build-"));
+  try {
+    await writeFixture(dist);
+    assert.deepEqual((await verifyPwaBuild(dist)).failures, []);
+    // The iPad Pro's 167 px icon left off the page.
+    await writeFile(
+      join(dist, "index.html"),
+      `<meta name="theme-color" content="#130F0C">${homeScreenLinks([120, 152, 180])}`,
+    );
+    assert.deepEqual((await verifyPwaBuild(dist)).failures, ["Home-screen icon sizes: 120,152,180"]);
+    // Every size named, one file drawn at another size.
+    await writeFile(
+      join(dist, "index.html"),
+      `<meta name="theme-color" content="#130F0C">${homeScreenLinks([120, 152, 167, 180])}`,
+    );
+    await writeFile(join(dist, "images/game-apple-touch-icon-152x152.png"), png(180));
+    assert.deepEqual((await verifyPwaBuild(dist)).failures, [
+      "Wrong home-screen icon: /images/game-apple-touch-icon-152x152.png",
+    ]);
   } finally {
     await rm(dist, { recursive: true, force: true });
   }

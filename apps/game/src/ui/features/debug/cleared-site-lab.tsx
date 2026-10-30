@@ -1,14 +1,13 @@
 import { SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { siteReward } from "@bibliothecadao/eternum";
+import { siteClearXp, siteReward } from "@bibliothecadao/eternum";
 import { formatAmount, resourceName, frontierSiteName, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { mountClearedSiteStudy, type ClearedSiteStudy } from "@/three/debug/model-lab/cleared-site-renderer";
 import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { XP } from "@/ui/design-system/kit/words";
 import { campBeside } from "../frontier/sites/site-fixture";
-import { siteClearXp } from "../frontier/sites/site-card-plan";
 import "./cleared-site-lab.css";
 
 /** The shipped standard and receipt beside the standing site, over native fixture facts. */
@@ -22,7 +21,7 @@ export function ClearedSiteLab() {
   const [error, setError] = useState<string | null>(null);
   const signature = `${kind}:${distance}`;
   const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Beasts"), [kind]);
-  const reward = useMemo(() => siteReward(kind === "camp" ? "Camp" : "Beasts", fixture.site), [kind, fixture]);
+  const reward = useMemo(() => siteReward(fixture.site), [fixture]);
   const cleared = useMemo(() => {
     const source = campBeside(kind === "camp" ? "Camp" : "Beasts");
     source.store.applyFacts([

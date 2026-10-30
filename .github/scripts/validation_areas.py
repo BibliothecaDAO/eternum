@@ -19,6 +19,14 @@ STATIC = [
 ]
 AREAS = {
     "client": [
+        ".prettierrc",
+        "contracts/l3/world-native/scripts/generate-site-previews.mjs",
+        "contracts/l3/world-native/scripts/site-previews.test.mjs",
+        "contracts/l3/world-native/src/expeditions.cairo",
+        "contracts/l3/world-native/src/progression.cairo",
+        "contracts/l3/world-native/src/taxonomy.cairo",
+        "contracts/l3/world-native/src/resources.cairo",
+        "contracts/l3/world-native/src/rules.cairo",
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",

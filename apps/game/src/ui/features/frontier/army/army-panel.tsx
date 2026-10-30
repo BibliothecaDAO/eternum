@@ -25,7 +25,8 @@ import { pointChoices, scoutingChoices } from "../progression-choices";
  * as tiles (each its tier and what it gives, a press
  * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once a held point fits a level,
  * else a way to see the next ranks. Level up turns the same place to the four choices, each with what it gives next
- * and its point, Scouting's kind, and the verb, with a way back.
+ * and its point, Scouting's kind, and the verb, with a way back. Once the army's last point is spent the choices have
+ * nothing left to buy, so the place returns to the status.
  */
 export const ArmyDetail = ({
   army,
@@ -43,6 +44,11 @@ export const ArmyDetail = ({
   onLevelUp: (choice: SkillPointChoice) => unknown;
 }) => {
   const [open, setOpen] = useState(choosing);
+  const [held, setHeld] = useState(army.available);
+  if (held !== army.available) {
+    setHeld(army.available);
+    if (army.available === 0) setOpen(false);
+  }
   const [chosen, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
   const [kind, setKind] = useState<ScoutKind>("camp");
   const [staminaRank, setStaminaRank] = useState<SkillPointRank>(army.staminaPoints[0]?.rank ?? 1);

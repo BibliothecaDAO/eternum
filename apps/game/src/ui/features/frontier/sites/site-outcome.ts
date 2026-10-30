@@ -1,6 +1,6 @@
 import type { SitePayoutSystemUpdate } from "@bibliothecadao/eternum";
 
-/** What the site-cleared moment shows: the site, and what it paid home; a ruin pays its chest, beasts only XP. */
+/** What the site-cleared moment shows: the site and the payout recorded by its receipt. */
 export type SiteClear = Pick<SitePayoutSystemUpdate, "siteId" | "kind" | "reward">;
 
 const MIN_SPRITES = 6;

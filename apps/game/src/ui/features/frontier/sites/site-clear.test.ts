@@ -20,14 +20,16 @@ vi.mock("@/ui/motion/moments/banked-flight", () => ({
   flyToBankedCounter: (flight: { count: number; announce?: number; delayMs?: number }) => flights.push(flight),
 }));
 
-import { WorldUpdateListener } from "@bibliothecadao/eternum";
+import { ResourceManager, WorldUpdateListener } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { ClearedRuinChest } from "../chest/cleared-ruin-chest";
 import { onRewardChestRequest } from "@/three/scenes/worldmap-reward-chest-request";
-import { campBeside, SITE } from "./site-fixture";
+import { campBeside, reloadSiteFacts, SITE, SITE_TILE } from "./site-fixture";
 import { closeRuinChest, playSiteClear, useRuinChest } from "./site-clear-moment";
 import { payoutSprites, type SiteClear } from "./site-outcome";
+import { readClearedSite, SiteReceipt } from "./site-receipt";
+import { renderToStaticMarkup } from "react-dom/server";
 
 const CAMP: SiteClear = { siteId: 9, kind: "Camp", reward: { resourceId: ResourcesIds.Labor, amount: 550 } };
 
@@ -49,6 +51,95 @@ describe("a cleared site", () => {
 });
 
 describe("the site-cleared moment", () => {
+  it.each([137, 80, 0])(
+    "applies a Beasts receipt of %s Labor to the live moment and keeps the confirmed stores",
+    (amount) => {
+      const { store, site } = campBeside("Beasts");
+      const precision = BigInt(RESOURCE_PRECISION);
+      const reward = { resource_type: ResourcesIds.Labor, amount: BigInt(amount) * precision };
+      const balance = (1000n + BigInt(amount)) * precision;
+      const counter = document.createElement("span");
+      counter.dataset.flyTarget = `resource-${ResourcesIds.Labor}`;
+      document.body.append(counter);
+      const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+      const burst = vi.fn();
+      const listener = new WorldUpdateListener({ store } as GameClientSetup);
+      const stop = listener.SitePayouts.onSitePayout((clear) =>
+        playSiteClear({ clear, troopsLost: clear.troopsLost, at: { x: 1, y: 1 }, burst }),
+      );
+      const position = (event_index: number) => ({
+        block_number: 9,
+        transaction_hash: "0xab",
+        transaction_index: 0,
+        event_index,
+      });
+      try {
+        // Herald delivers the credited balance and clear receipt before the transaction's events.
+        store.applyFacts([
+          { model: "Structure", key: "0x71", value: null },
+          { model: "Guard", key: "0x73", value: null },
+          {
+            model: "ExpeditionSite",
+            key: "0x72",
+            value: { ...site, clear: { explorer_id: 201n, home_id: 7n, reward } },
+          },
+          {
+            model: "ResourceBalance",
+            key: "0x79",
+            value: { game_id: 1, entity_id: 7, resource_type: ResourcesIds.Labor, balance },
+          },
+        ]);
+        store.applyEvent({
+          model: "StoryEvent",
+          key: "payout",
+          value: {
+            game_id: 1,
+            owner: "0x111",
+            timestamp: 350,
+            event_position: position(4),
+            story: {
+              SitePayout: { structure_id: 7, explorer_id: 201, site_id: SITE, category: StructureType.Beasts, reward },
+            },
+          },
+        });
+        expect(burst).not.toHaveBeenCalled();
+        store.applyEvent({
+          model: "BattleEvent",
+          key: "battle",
+          value: {
+            game_id: 1,
+            defender_id: SITE,
+            coord: { x: SITE_TILE.col, y: SITE_TILE.row },
+            attacker: { before: "758000000000", after: "728000000000" },
+            defender: { before: "81000000000", after: "0" },
+            event_position: position(5),
+          },
+        });
+        expect(errors).not.toHaveBeenCalled();
+        expect(burst).toHaveBeenCalledTimes(1);
+        expect(flights).toEqual([
+          expect.objectContaining({ resourceId: ResourcesIds.Labor, announce: amount, delayMs: 300 }),
+        ]);
+        vi.advanceTimersByTime(300);
+        expect(plays).toEqual(["combat.victory", "site.clear"]);
+        expect(toasts).toEqual([]);
+        const restored = reloadSiteFacts(store);
+        restored.setSnapshot({ gameId: 1, complete: true, actor: "0x111", timestamp: 350 });
+        for (const facts of [store, restored]) {
+          expect(new ResourceManager(facts, 7, 1).balance(ResourcesIds.Labor)).toBe(balance);
+          const selected = readClearedSite(facts, 1, SITE_TILE)!;
+          expect(selected.site.clear?.reward).toEqual(reward);
+          const receipt = renderToStaticMarkup(createElement(SiteReceipt, { selected }));
+          expect(receipt).toContain(`<strong>${amount}</strong>`);
+          expect(receipt).toContain("Labor");
+        }
+      } finally {
+        stop();
+        errors.mockRestore();
+      }
+    },
+  );
+
   it.each([5, 0])(
     "carries a ruin receipt paying %s LORDS through the listener, flight and a chest that goes by itself",
     (amount) => {

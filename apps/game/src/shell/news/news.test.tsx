@@ -72,32 +72,32 @@ const panel = (page: HTMLElement, title: string) =>
   )!;
 
 describe.each([390, 1440])("What's new at %i px", (width) => {
-  it("is a place of its own: no Back, and its place in the bar is the current one; signed out, You is Connect", async () => {
+  it("is read from You: Back leads to You, the bar holds the four places and You is lit; signed out, You is Connect", async () => {
     const page = await open(width);
-    expect(page.querySelector('[data-role="back"]')).toBeNull();
-    const places = [...page.querySelectorAll<HTMLAnchorElement>('[data-role="tab"]')];
+    expect(page.querySelector<HTMLAnchorElement>('[data-role="back"]')!.getAttribute("href")).toBe("/profile");
+    const places = [...page.querySelectorAll<HTMLElement>('[data-role="tab"]')];
     expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual([
       "Play",
       "Season",
-      "What's new",
       "Chat",
-      "Market",
       "Connect",
     ]);
     const current = places.filter((place) => place.getAttribute("aria-current") === "page");
-    expect(current.map((place) => [place.textContent, place.getAttribute("href")])).toEqual([
-      ["What's new", "/scroll"],
+    expect(current.map((place) => place.textContent)).toEqual(["Connect"]);
+    // Connect, by what it does, for a script to find it whatever its word or place (the playtest runner's sign-in).
+    expect([...page.querySelectorAll('[data-action="connect"]')].map((place) => place.textContent)).toEqual([
+      "Connect",
     ]);
   });
 
-  it("leads to Realms' marketplace in a new tab from the bar, and only from the bar", async () => {
+  it("leads to Realms' marketplace from its footer, in a new tab, never from the bar", async () => {
     const page = await open(width);
     const market = [...page.querySelectorAll<HTMLAnchorElement>("a")].filter((link) =>
       link.href.startsWith("https://realms.market"),
     );
-    expect(market.map((link) => [link.dataset.role, link.textContent, link.href, link.target, link.rel])).toEqual([
-      ["tab", "Market", "https://realms.market/", "_blank", "noopener noreferrer"],
-    ]);
+    expect(
+      market.map((link) => [link.closest('[data-band="footer"]') !== null, link.textContent, link.href, link.target]),
+    ).toEqual([[true, "Market", "https://realms.market/", "_blank"]]);
   });
 
   it("shows a release under a tab per section it changed, in order, and any release picked from the list", async () => {

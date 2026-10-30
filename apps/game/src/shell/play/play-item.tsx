@@ -26,7 +26,7 @@ import { directoryDay } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useRequestSignIn } from "../sign-in/connect";
 import { ageOf } from "./ages";
-import type { PlayItem } from "./play-board";
+import { idleCard, type PlayItem } from "./play-board";
 
 /** An item's verb: where it leads, or, for a signed-out player's Play free, Connect first and then there. */
 type ItemVerb = { word: string; icon: IconMeaning; to: string; connectFirst?: true };
@@ -145,7 +145,11 @@ const ItemVerbButton = ({ item, signedIn, lead }: { item: PlayItem; signedIn: bo
   if (game?.error) return <ServiceFailure service="directory" error={game.error} />;
   const verb = verbOf(item, signedIn);
   if (!verb) return null;
-  const press = verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to };
+  // The verb by its name, whatever its word: what a script presses to take the game's step (the playtest runner).
+  const press = {
+    ...(verb.connectFirst ? { onClick: () => requestSignIn(verb.to) } : { to: verb.to }),
+    "data-play-verb": item.verb,
+  };
   return lead ? (
     <AppButton kind="primary" size="lg" icon={verb.icon} {...press} step>
       {verb.word}
@@ -176,6 +180,7 @@ export const LeadCard = ({ item, now, signedIn, className }: ItemProps & { class
         title={<AppGameName age={item.mode} name={age.name} when={startOf(item)} />}
         facts={<ItemFacts item={item} now={now} firstVisit={!signedIn && item.verb === "play"} />}
         verb={<ItemVerbButton item={item} signedIn={signedIn} lead />}
+        idle={idleCard([item])}
       />
     </div>
   );

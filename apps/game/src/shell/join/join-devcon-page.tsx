@@ -6,14 +6,16 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useLocation, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
+import { useTicketOpened } from "@/hooks/use-holdings";
 import { Icon } from "@/ui/design-system/icon";
-import { AppButton, AppNotice, AppPanel, AppTicket } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppNotice, AppTicket } from "@/ui/design-system/kit/app-elements";
 import { DEVCON as DEVCON_NAME, JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRequestSignIn } from "../sign-in/connect";
 import { DEVCON, forgetCampaignCode, keepCampaignCode, keptCampaignCode } from "./devcon";
+import { DailyClaim, DevconTicket } from "./devcon-ticket";
 
 /** A code as flyers print it; anything else in the address is not kept. */
 const PRINTED_CODE = /^[A-Za-z0-9]{8}$/;
@@ -45,9 +47,14 @@ export const JoinDevconPage = () => {
   }, [code]);
   const { status, session } = useIdentitySession();
   const [opening, setOpening] = useState<Opening>({ kind: "sealed" });
+  const ticketOpened = useTicketOpened();
   const open = () => {
     setOpening({ kind: "opening" });
-    void redeemTicket().then(setOpening);
+    void redeemTicket().then(async (answer) => {
+      // Every screen that shows the account's ticket (You, a game's Realm step) shows this one at once.
+      if ("tier" in answer) await ticketOpened(DEVCON.campaign, answer);
+      setOpening(answer);
+    });
   };
   if (!session) return <DevconLanding waiting={status === "loading"} />;
   if ("tier" in opening) return <OpenedTicket tier={opening.tier} />;
@@ -137,13 +144,7 @@ const OpenedTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
   return (
     <DevconFrame foot={<ContinueToPlay />}>
       <h1 className="text-app-title text-app-ink">{golden ? JOIN_WORDS.golden : JOIN_WORDS.yourTicket}</h1>
-      <AppTicket
-        face={golden ? "golden" : "opened"}
-        art={<Icon name={realmSkinIcon(golden ? "devcon-golden" : "devcon")} size={128} />}
-        line={golden ? JOIN_WORDS.goldenLine : JOIN_WORDS.realm}
-        stub={golden ? JOIN_WORDS.goldenStub(DEVCON.golden) : JOIN_WORDS.stub}
-      />
-      <DailyClaim golden={golden} />
+      <DevconTicket tier={tier} />
     </DevconFrame>
   );
 };
@@ -155,25 +156,6 @@ const ContinueToPlay = () => (
 );
 
 const TicketArt = () => <img src={AGE_LOCKUP.frontier} alt={AGES.frontier.game} className="h-28 w-auto" />;
-
-/** What this ticket's realm claims each Frontier day. */
-const DailyClaim = ({ golden }: { golden: boolean }) => {
-  const { labor, essence } = DEVCON.claim(golden);
-  return (
-    <AppPanel className="w-full max-w-[20rem]">
-      <ul className="flex flex-col gap-3 text-left text-app-strong text-app-ink">
-        <li className="flex items-center gap-3">
-          <Icon name="labor" size={32} />
-          {JOIN_WORDS.laborEachDay(labor)}
-        </li>
-        <li className="flex items-center gap-3">
-          <Icon name="essence" size={32} />
-          {JOIN_WORDS.essenceEachDay(essence)}
-        </li>
-      </ul>
-    </AppPanel>
-  );
-};
 
 /**
  * Every step of the landing stands on Frontier's mist, alone, with no places; Back leads to Play. Its one verb sits under the thumb on a

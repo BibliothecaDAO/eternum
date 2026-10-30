@@ -4,7 +4,6 @@ import { Icon } from "@/ui/design-system/icon";
 import { AppLink, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
 import { NEWS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
-import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { patchNotes } from "../generated/patch-notes";
 import type { PatchNote } from "./patch-note";
@@ -14,13 +13,12 @@ import { changedSections, PatchHead, PatchSection, patchSection, ReleaseRows } f
 const FULL_RULES = "https://docs.realms.party";
 
 /**
- * What's new (spec 13), a place of its own in the bar: the game's patch notes, the page's whole width. A release's head
+ * What's new (spec 13), read from You: the game's patch notes, the page's whole width. A release's head
  * with the link to the full rules, a tab per section it changed (All modes, then Frontier, Blitz, Eternum) over that
  * section on its painting, then every release, newest first; a release picked there is shown from its head, scrolled to
  * and focused (qa-app-1 P3-1). It ends on the footer.
  */
 export const WhatsNewPage = () => {
-  const phone = useLayout() === "phone";
   const [shown, setShown] = useState(0);
   const note = patchNotes[shown];
   const release = useRef<HTMLDivElement | null>(null);
@@ -33,9 +31,8 @@ export const WhatsNewPage = () => {
     });
   };
   return (
-    <PageFrame title={WORDS.whatsNew}>
+    <PageFrame back="/profile" title={WORDS.whatsNew}>
       <div className="flex flex-col gap-6">
-        {phone && <h1 className="text-app-title text-app-ink">{WORDS.whatsNew}</h1>}
         <div ref={release} tabIndex={-1} className="flex scroll-mt-6 flex-col gap-6 outline-none">
           <Release key={note.date} note={note} />
         </div>

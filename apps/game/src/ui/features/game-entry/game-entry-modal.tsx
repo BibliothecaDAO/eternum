@@ -1,4 +1,4 @@
-import { registerHomeSource } from "@/services/realm-entry";
+import { isRealmNumber, registerHomeSource } from "@/services/realm-entry";
 import { HudNotice } from "@/ui/design-system/kit/hud-elements";
 /**
  * The entry into a game, drawn as the doorway (design o5): the account, then the realm founded or prepared, then the
@@ -10,6 +10,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { resolveEntryContextFromLandingSelection } from "@/game-entry/context";
+import { HomeSourcePicker } from "./home-source-picker";
 import { RealmNumberPicker } from "./realm-number-picker";
 import { createAutoSettleEntryKey, useAutoSettleStore } from "@/hooks/store/use-auto-settle-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -103,10 +104,10 @@ export const GameEntryModal = ({
   const account = useAccountStore((state) => state.account);
   const [heldRealmNumber, setHeldRealmNumber] = useState("");
   const [registeredRealmId, setRegisteredRealmId] = useState<number | null>(null);
+  /** The Realm step's pick stands on what the account holds (its reads answered); founding waits for it. */
+  const [homeSettled, setHomeSettled] = useState(false);
   const [settlementError, setSettlementError] = useState<string | null>(null);
-  const validHeldRealm =
-    heldRealmNumber === "" ||
-    (/^\d+$/.test(heldRealmNumber) && Number(heldRealmNumber) >= 1 && Number(heldRealmNumber) <= 8000);
+  const validHeldRealm = heldRealmNumber === "" || isRealmNumber(heldRealmNumber);
   const accountError = useAccountStore((state) => state.provisioningError);
   const markOpening = useAutoSettleStore((state) => state.markOpening);
   const markSettling = useAutoSettleStore((state) => state.markSettling);
@@ -145,8 +146,7 @@ export const GameEntryModal = ({
   const isEternumDevMode = isEternumMode && isDevMode;
   const [devRealmNumber, setDevRealmNumber] = useState("1");
   const [devSettlementTarget, setDevSettlementTarget] = useState<number | null>(null);
-  const validDevRealmNumber =
-    Number.isInteger(Number(devRealmNumber)) && Number(devRealmNumber) >= 1 && Number(devRealmNumber) <= 8000;
+  const validDevRealmNumber = isRealmNumber(devRealmNumber);
   const resolvedEntryIntent = isSpectateMode ? "spectate" : entryIntent;
   const entryContext = useMemo(
     () =>
@@ -320,7 +320,6 @@ export const GameEntryModal = ({
         expectedSettlementCount: expectedSettlementCount,
       });
       setRegisteredRealmId(snapshot.heldRealmId);
-      if (snapshot.heldRealmId != null) setHeldRealmNumber(String(snapshot.heldRealmId));
       setSettledRealmCount(status.settledCount);
       setNeedsSettlement(status.needsSettlement);
       setCanPlay(status.canPlay);
@@ -612,26 +611,27 @@ export const GameEntryModal = ({
         !foundsOnItsOwn &&
         (settleStage === "idle" || (isFrontierMode && settleStage === "error")) && (
           <>
-            {isFrontierMode && (
-              <RealmNumberPicker
-                purpose="held"
+            {isFrontierMode && worldMeta && (
+              <HomeSourcePicker
+                presetId={worldMeta.preset_id}
+                registered={registeredRealmId}
                 value={heldRealmNumber}
                 onChange={setHeldRealmNumber}
-                disabled={isSettling || registeredRealmId != null}
+                onSettled={setHomeSettled}
+                disabled={isSettling}
               />
             )}
             {settlementError && <HudNotice tone="bad" line={settlementError} />}
             {isEternumDevMode && (
-              <RealmNumberPicker
-                purpose="development"
-                value={devRealmNumber}
-                onChange={setDevRealmNumber}
-                disabled={isSettling}
-              />
+              <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
             )}
             <button
               type="button"
-              disabled={isSettling || (isEternumDevMode && !validDevRealmNumber) || (isFrontierMode && !validHeldRealm)}
+              disabled={
+                isSettling ||
+                (isEternumDevMode && !validDevRealmNumber) ||
+                (isFrontierMode && (!validHeldRealm || !homeSettled))
+              }
               onClick={() => void handleSettle()}
               className="frontier-primary w-full"
             >

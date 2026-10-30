@@ -1,5 +1,5 @@
 """Generate the immutable gameplay traits from the 8,000 realm metadata records: the native world's packed traits, and
-the client's canonical table (each Realm's name, Order and resources), so the client never loads the records."""
+the client's canonical table (each Realm's name, Order, resources and wonder), so the client never loads the records."""
 import argparse
 import json
 from pathlib import Path
@@ -127,17 +127,22 @@ def realm_trait_records():
 
 
 def canonical_realm_table():
-    """Each Realm by number less one: its name, its Order's id and its resources, as indexes into `resources`."""
+    """
+    Each Realm by number less one: its name, its Order's id, its resources as indexes into `resources`, and, for the 50
+    Realms that have one, its wonder as an index into `wonders`.
+    """
     realms = json.loads(SOURCE.read_text())
     names = sorted(RESOURCE_IDS, key=RESOURCE_IDS.get)
+    wonders = [name for name in sorted(WONDER_IDS, key=WONDER_IDS.get) if name != "None"]
     rows = []
     for realm_id in range(1, 8001):
         realm = realms[str(realm_id)]
         attributes = realm["attributes"]
         order = next(ORDER_IDS[a["value"]] for a in attributes if a["trait_type"] == "Order")
         resources = [RESOURCE_IDS[a["value"]] - 1 for a in attributes if a["trait_type"] == "Resource"]
-        rows.append([realm["name"], order, resources])
-    return {"resources": names, "realms": rows}
+        wonder = next((a["value"] for a in attributes if a["trait_type"] == "Wonder (translated)"), None)
+        rows.append([realm["name"], order, resources] + ([] if wonder is None else [wonders.index(wonder)]))
+    return {"resources": names, "wonders": wonders, "realms": rows}
 
 
 if __name__ == "__main__":

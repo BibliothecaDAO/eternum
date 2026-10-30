@@ -40,6 +40,7 @@ import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
 import { useOnePanel } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
+import { useNextUpBuilding } from "./next-up/next-up-steps";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -94,8 +95,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
+  // An open plot's build sheet opens on the building Next up asks for.
+  const asked = useNextUpBuilding(rules, realm);
   const card = useSelectionCard({
     realm: shown,
+    asked,
     onResearch: (node) => {
       setResearchPick(node);
       setSurface("research");

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
-# each age's transparent lockup, the install icons and favicon (the contour globe, gold on Hearth; the dev set adds a
-# hatched corner), and the share card (the lettered mark on a painting under Hearth at 80%, the deck's page 19).
+# each age's transparent lockup, the install icons (each surface's mark by the size it shows it, gold on Hearth) and the
+# favicon (the small globe's master, resampled; the dev sets add a hatched corner), and the share card (the lettered
+# mark on a painting under Hearth at 80%, the deck's page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
 
@@ -46,22 +47,24 @@ hatch() {
   magick "$1" "$WORK/hatch.png" -compose Over -composite -strip "$1"
 }
 
-# exact <kit export> <file>: one of the kit's exact-size exports, unchanged, on Hearth.
-exact() {
-  magick "$1" -background "$HEARTH" -flatten -strip "$2"
-}
+# The favicon: the kit's small globe master as it is, padded to square, to be resampled to each of the .ico's sizes,
+# its ground left clear (owner, 29 October 2026: "just use realms-small-master.png from the brand kit as the favicon
+# its not hard ?").
+magick "$SMALL" -gravity center -background none -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" "$WORK/globe.png"
 
-# set_of_icons <prefix>: one environment's icons, named game-<prefix>...; the globe fills the icon as the kit's own
-# exports do, and the favicon's sizes take the small globe (the kit's 32 and 48 px exports).
+# set_of_icons <prefix>: one environment's install icons, named game-<prefix>..., each in the kit's drawing for the size
+# its surface shows it at (small below 64, contour 64-120, lettered above): an iPhone's home screen (60 pt: 120 and
+# 180 px) and an Android launcher (48 dp: 192 px and the maskable icon) the small globe; an iPad's (76 and 83.5 pt: 152
+# and 167 px) the contour; the 512 px icon, which Chrome's splash and a desktop's dock show at about 128, the lettered
+# mark. Then the favicon's three frames.
 set_of_icons() {
-  icon "$CONTOUR" "$OUT/game-$1pwa-192x192.png" 192 88
-  icon "$CONTOUR" "$OUT/game-$1pwa-512x512.png" 512 88
+  icon "$SMALL" "$OUT/game-$1pwa-192x192.png" 192 88
+  icon "$LETTERED" "$OUT/game-$1pwa-512x512.png" 512 88
   # A maskable icon keeps the globe inside the 80% safe circle.
-  icon "$CONTOUR" "$OUT/game-$1maskable-icon-512x512.png" 512 78
-  icon "$CONTOUR" "$OUT/game-$1apple-touch-icon-180x180.png" 180 88
-  icon "$SMALL" "$WORK/16.png" 16 100
-  exact "$KIT/01-Logos/Realms/Small/realms-small-32.png" "$WORK/32.png"
-  exact "$KIT/01-Logos/Realms/Small/realms-small-48.png" "$WORK/48.png"
+  icon "$SMALL" "$OUT/game-$1maskable-icon-512x512.png" 512 78
+  for size in 120 180; do icon "$SMALL" "$OUT/game-$1apple-touch-icon-${size}x$size.png" "$size" 88; done
+  for size in 152 167; do icon "$CONTOUR" "$OUT/game-$1apple-touch-icon-${size}x$size.png" "$size" 88; done
+  for size in 16 32 48; do magick "$WORK/globe.png" -resize "${size}x$size" -strip "$WORK/$size.png"; done
 }
 
 # The parent mark by the size it is drawn: the first frame's (240 px), the bar's (28 px), the loader's (96 px).
@@ -75,13 +78,19 @@ done
 # The status page's header mark (40 px); that site shares no file with the app.
 web "$SMALL" "$STATUS/realms-small.webp" 160
 
+# ico <file>: the favicon's three frames, each with its full alpha (left to itself, the writer gives a frame of few
+# colours a one-bit mask, every faint pixel solid).
+ico() {
+  magick "$WORK/16.png" "$WORK/32.png" "$WORK/48.png" -type TrueColorAlpha "$1"
+}
+
 set_of_icons ""
-magick "$WORK/16.png" "$WORK/32.png" "$WORK/48.png" "$OUT/game-favicon.ico"
+ico "$OUT/game-favicon.ico"
 
 set_of_icons "dev-"
-for file in "$OUT"/game-dev-pwa-*.png "$OUT/game-dev-apple-touch-icon-180x180.png" "$WORK"/{32,48}.png; do hatch "$file" 0 33; done
+for file in "$OUT"/game-dev-pwa-*.png "$OUT"/game-dev-apple-touch-icon-*.png "$WORK"/{32,48}.png; do hatch "$file" 0 33; done
 hatch "$OUT/game-dev-maskable-icon-512x512.png" 15 22
-magick "$WORK/16.png" "$WORK/32.png" "$WORK/48.png" "$OUT/game-dev-favicon.ico"
+ico "$OUT/game-dev-favicon.ico"
 
 # The share card, 1200 x 630: the first visit's painting under Hearth at 80%, the lettered mark at its middle.
 magick "$OUT/landscapes/dark-plains-1600.webp" -resize "1200x630^" -gravity center -extent 1200x630 \

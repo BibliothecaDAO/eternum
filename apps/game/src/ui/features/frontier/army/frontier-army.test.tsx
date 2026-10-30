@@ -158,6 +158,29 @@ it("sends the chosen point rank for Stamina without changing lifetime XP", async
   expect(game.progress.xp).toBe(260);
 });
 
+it("returns to the army's status once its last point is spent, and stays on the choices while one is left", async () => {
+  game.progress.xp = 260;
+  game.progress.common_points = 2;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  const draw = () =>
+    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  draw();
+  act(() => button(/^Level up$/)!.click());
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
+  // The first point lands: one is left, so the choices stay.
+  await act(async () => button(/^Refill$/)!.click());
+  game.progress.common_points = 1;
+  draw();
+  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("choose");
+  // The last lands: nothing is left to buy, and the army's status is back, never "No fitting point".
+  await act(async () => button(/^Refill$/)!.click());
+  expect(game.spendPoint).toHaveBeenCalledTimes(2);
+  game.progress.common_points = 0;
+  draw();
+  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("stats");
+  expect(host.textContent).not.toContain("No fitting point");
+});
+
 it.each([
   [74, "75"],
   [75, "200"],

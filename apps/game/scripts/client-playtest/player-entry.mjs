@@ -48,15 +48,18 @@ async function signInState(browser, owner, email, awaited) {
   return state;
 }
 
-/** The bar's Connect: the You place while no one is signed in (src/shell/frame/tabs.tsx). */
-const CONNECT_PLACE = 'button[data-role="tab"]';
+/**
+ * The bar's Connect, by what it does (`data-action="connect"`, src/shell/frame/tabs.tsx): the You place while no one is
+ * signed in, whatever its word or its place among the others.
+ */
+export const CONNECT_PLACE = '[data-action="connect"]';
 
 const SIGN_IN_STATE = `JSON.stringify(
   [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Claim name")
     ? "claim-name"
     : document.querySelector('[data-role="tab"][data-player]')
       ? "signed-in"
-      : [...document.querySelectorAll(${JSON.stringify(CONNECT_PLACE)})].some((tab) => tab.textContent.trim() === "Connect")
+      : document.querySelector(${JSON.stringify(CONNECT_PLACE)})
         ? "signed-out"
         : null,
 )`;
@@ -99,7 +102,7 @@ export async function findHomeCardEntry(browser, owner, timeoutMs, { card, game 
   let entry = null;
   while (!(entry = browser.read(markHomeCardEntryExpression(card, game)))) {
     if (Date.now() - startedAt > timeoutMs) {
-      throw new Error(`No card for ${card.heading ?? `game ${game.gameId}`} to enter on the home page`);
+      throw new Error(`No card for game ${game.gameId} to ${card.verbs.join(" or ")} on the home page`);
     }
     browser.press("Escape");
     await owner.sleep(POLL_MS);
@@ -130,12 +133,11 @@ const CLEAR_STORED_ZOOM_EXPRESSION = `JSON.stringify((() => {
 })())`;
 
 /**
- * Marks the enter step and tags the card's call to action for the browser's click: the card titled `card.heading`, or
- * else the play item naming the game (`data-play-item` ends in its chain and game). Returns the mark with the button's
- * label, or null while the card is not shown or its button is still disabled.
+ * Marks the enter step and tags the card's call to action for the browser's click: on the play item naming the game
+ * (`data-play-item` ends in its chain and game), the verb named one of `card.verbs` (`data-play-verb`), enabled.
+ * Returns the mark with the button's label, or null while the card is not shown or its button is still disabled.
  */
-const markHomeCardEntryExpression = (card, game) => `JSON.stringify((() => {
-  const heading = ${JSON.stringify(card.heading)};
+export const markHomeCardEntryExpression = (card, game) => `JSON.stringify((() => {
   const namesGame = (element) => {
     const [chainId, gameId] = (element.dataset.playItem ?? "").split(":").slice(-2);
     try {
@@ -144,13 +146,11 @@ const markHomeCardEntryExpression = (card, game) => `JSON.stringify((() => {
       return false;
     }
   };
-  const title = heading === null
-    ? [...document.querySelectorAll("[data-play-item]")].find(namesGame)
-    : [...document.querySelectorAll("h1, h2, h3, h4")].find((element) => element.textContent.trim() === heading);
-  let found = title;
-  while (found && !found.querySelector("button")) found = found.parentElement;
-  const enter = new RegExp(${JSON.stringify(card.enter)});
-  const button = found && [...found.querySelectorAll("button")].find((element) => !element.disabled && enter.test(element.textContent.trim()));
+  const verbs = ${JSON.stringify(card.verbs)};
+  const button = [...document.querySelectorAll("[data-play-item]")]
+    .filter(namesGame)
+    .flatMap((item) => [...item.querySelectorAll("button[data-play-verb]")])
+    .find((element) => !element.disabled && verbs.includes(element.dataset.playVerb));
   if (!button) return null;
   document.querySelectorAll("${ENTRY_BUTTON}").forEach((element) => delete element.dataset.playtestEntry);
   button.dataset.playtestEntry = "";

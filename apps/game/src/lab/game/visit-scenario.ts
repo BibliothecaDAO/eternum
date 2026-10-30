@@ -7,8 +7,8 @@ import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { castlePriced } from "./realm-scenario";
 
 /** The neighbour whose realm the player visits, and the realm. */
-const NEIGHBOUR = "0x222";
-const NEIGHBOUR_REALM = 8;
+export const NEIGHBOUR = "0x222";
+export const NEIGHBOUR_REALM = 8;
 
 /**
  * Each of the neighbour's plots holds another building than the player's same plot does (painted-buildings-scenario's

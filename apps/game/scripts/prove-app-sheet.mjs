@@ -1,7 +1,9 @@
 /**
  * The app sheet's captures: the app's real pages over the app lab's fixtures (/lab/app/<screen>/<page>), each element of
- * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, the Blitz lobby,
- * Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
+ * the app sheet (/lab/kit/app, by its `data-sheet-element`). The pages the sheet has moved (Play, with a Blitz on, the
+ * next one scheduled, none left in the season, and only Eternum before and after it opens, each mode's card, the lead
+ * and every age's column, checked live or idle and shot on its own; the Blitz
+ * lobby, Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
  * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
  * each of its holds (`doorway`).
  *
@@ -27,7 +29,15 @@ const SETTLE_MS = 2_000;
  * open (none on a full-screen step: the lobby).
  */
 const SHEET_PAGES = {
-  play: { path: "home", place: "Play" },
+  // Each mode's card, the lead and each age's column, live or idle (nothing to do now). The lab's Eternum opens in a
+  // week, so it is idle wherever it stands.
+  play: { path: "home", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
+  // Play with no Blitz left in the season: Blitz's column idle, no Build orders; and with the next one scheduled.
+  "play-no-blitz": { path: "no-blitz", place: "Play", cards: { lead: "live", blitz: "idle", eternum: "idle" } },
+  "play-next-blitz": { path: "blitz-next", place: "Play", cards: { lead: "live", blitz: "live", eternum: "idle" } },
+  // Only Eternum: before it opens it leads idle, as its column would be; open, its lead offers Enter.
+  "play-eternum-lead": { path: "eternum-lead", place: "Play", cards: { lead: "idle", blitz: "idle" } },
+  "play-eternum-open": { path: "eternum-open", place: "Play", cards: { lead: "live", blitz: "idle" } },
   // Play as a seated player sees it: the seat's Blitz leads, the open slot's Join in Blitz's column under it.
   "play-seated": { path: "blitz-seat", place: "Play" },
   // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
@@ -38,7 +48,8 @@ const SHEET_PAGES = {
   season: { path: "season-running/season", place: "Season" },
   results: { path: "reward-sealed/results/0x5245414c4d53-7", place: "You" },
   "results-opened": { path: "reward-lords/results/0x5245414c4d53-7", place: "You" },
-  "whats-new": { path: "home/scroll", place: "What's new" },
+  // What's new is read from You: You is lit there.
+  "whats-new": { path: "home/scroll", place: "You" },
 };
 
 /** The socials realms.world links, in its order, each with its official mark (src/shell/community.ts). */
@@ -62,7 +73,7 @@ const BAR_CASES = [
     desktop: true,
     place: "Play",
   },
-  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "What's new" },
+  { name: "tabs-phone-360", path: "home/scroll", viewport: ["360", "640"], desktop: false, place: "You" },
   { name: "notice-phone-360", path: "home", viewport: ["360", "640"], desktop: false, place: "Play" },
 ];
 
@@ -145,7 +156,7 @@ const pageChecks = (b) => [
   { check: "no horizontal overflow", ok: b.evaluate("document.documentElement.scrollWidth <= innerWidth") },
 ];
 
-const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
+const shoot = async (b, baseUrl, out, { name, path, act, more, stills = [] }) => {
   b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
   const record = { name, ready: await waitFor(b, DRAWN, READY_MS), presses: [], checks: [] };
   if (!record.ready) return record;
@@ -153,6 +164,13 @@ const shoot = async (b, baseUrl, out, { name, path, act, more }) => {
   await act?.(b, record);
   b.run("screenshot", join(out, `${name}.png`));
   record.checks.push(...pageChecks(b), ...(more?.(b) ?? []));
+  // An element below the first screen is brought into view first, as a player scrolls to it (a page may scroll in its
+  // own body, which the element's shot does not scroll), and its painting given time to load.
+  for (const still of stills) {
+    b.evaluate(`document.querySelector(${JSON.stringify(still.selector)})?.scrollIntoView({ block: "start" })`);
+    await sleep(800);
+    b.run("screenshot", still.selector, join(out, `${name}-${still.name}.png`));
+  }
   return record;
 };
 
@@ -274,8 +292,8 @@ const sheetPageChecks = (page) => (b) => {
       ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),
     },
     {
-      check: "an age's band of painting is 96 px on a desktop, 64 px on a phone",
-      ok: measure.ageBands.every((band) => band === (desktop ? "96px" : "64px")),
+      check: "an age's band of painting is 96 px, on a desktop and a phone",
+      ok: measure.ageBands.every((band) => band === "96px"),
     },
     ...(desktop
       ? []
@@ -356,11 +374,47 @@ const barCases = () =>
   BAR_CASES.map((bar) => ({ ...bar, path: `/lab/app/${bar.path}?capture=1`, more: sheetPageChecks(bar) }));
 
 const sheetPages = (desktop) =>
-  Object.entries(SHEET_PAGES).map(([page, { path, place }]) => ({
+  Object.entries(SHEET_PAGES).map(([page, { path, place, cards = {} }]) => ({
     name: `${desktop ? "app" : "phone"}-${page}`,
     path: `/lab/app/${path}?capture=1`,
-    more: sheetPageChecks({ desktop, place }),
+    // Each checked card on its own, as well: a phone's first screen ends before the columns.
+    stills: Object.keys(cards).map((card) => ({ name: card, selector: cardSelector(card) })),
+    more: (b) => [...sheetPageChecks({ desktop, place })(b), ...modeCardChecks(b, cards)],
   }));
+
+/** A mode's card on Play: the lead's game card, or an age's column. */
+const cardSelector = (card) =>
+  card === "lead" ? '.app-game-card[data-size="lead"]' : `.app-age-column[data-age="${card}"]`;
+
+/**
+ * Each mode's card on Play (the lead, an age's column), live or idle, by one rule. Live: something to do (a game's
+ * verb; for Blitz's column, Build orders). Idle, nothing to do now: drawn dimmed, nothing on it to press, so no Build
+ * orders.
+ */
+const modeCardChecks = (b, cards) =>
+  Object.entries(cards).map(([card, expected]) => {
+    const found = b.evaluate(`(() => {
+      const card = document.querySelector(${JSON.stringify(cardSelector(card))});
+      if (!card) return null;
+      return {
+        idle: card.hasAttribute("data-idle"),
+        pressable: card.querySelectorAll("a, button").length,
+        buildOrders: card.innerText.includes("Build orders"),
+        dimmed: getComputedStyle(card.querySelector("img[class$='__painting']")).filter !== "none",
+      };
+    })()`);
+    const idle = expected === "idle";
+    const live = found !== null && !found.idle && !found.dimmed && found.pressable > 0;
+    return {
+      check: idle
+        ? `${card} with nothing to do now reads idle: dimmed, nothing to press`
+        : `${card} with something to do reads live${card === "blitz" ? ", with Build orders" : ""}`,
+      ok: idle
+        ? found !== null && found.idle && found.dimmed && found.pressable === 0 && !found.buildOrders
+        : live && (card !== "blitz" || found.buildOrders),
+      card: found,
+    };
+  });
 
 /** An element's name as a file name: "Game card" is sheet-game-card.png. */
 const fileOf = (name) =>

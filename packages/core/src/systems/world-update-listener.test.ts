@@ -20,7 +20,19 @@ function fixture() {
 }
 
 describe("native scene updates", () => {
-  it.each([5, 0])("delivers a ruin's actual %s LORDS payout with its winning battle", (amount) => {
+  it.each([
+    { category: StructureType.Ruin, kind: "Ruin", resourceId: ResourcesIds.Lords, amount: 5 },
+    { category: StructureType.Ruin, kind: "Ruin", resourceId: ResourcesIds.Lords, amount: 0 },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: ResourcesIds.Labor, amount: 137 },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: ResourcesIds.Labor, amount: 80 },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: ResourcesIds.Labor, amount: 0 },
+    { category: StructureType.Camp, kind: "Camp", resourceId: ResourcesIds.Essence, amount: 12 },
+    { category: StructureType.Rift, kind: "Rift", resourceId: ResourcesIds.Labor, amount: 4 },
+    { category: StructureType.Camp, kind: "Camp", resourceId: ResourcesIds.Labor, amount: null },
+    { category: StructureType.Rift, kind: "Rift", resourceId: ResourcesIds.Labor, amount: null },
+    { category: StructureType.Ruin, kind: "Ruin", resourceId: ResourcesIds.Labor, amount: null },
+    { category: StructureType.Beasts, kind: "Beasts", resourceId: ResourcesIds.Labor, amount: null },
+  ])("delivers $kind's recorded $amount payout with its winning battle", ({ category, kind, resourceId, amount }) => {
     const { store, listener } = fixture();
     const delivered = vi.fn();
     const stop = listener.SitePayouts.onSitePayout(delivered);
@@ -43,8 +55,11 @@ describe("native scene updates", () => {
             structure_id: 3,
             explorer_id: 7,
             site_id: 9,
-            category: StructureType.Ruin,
-            reward: { resource_type: ResourcesIds.Lords, amount: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)) },
+            category,
+            reward:
+              amount === null
+                ? null
+                : { resource_type: resourceId, amount: String(BigInt(amount) * BigInt(RESOURCE_PRECISION)) },
           },
         },
       },
@@ -68,8 +83,8 @@ describe("native scene updates", () => {
           explorerId: 7,
           siteId: 9,
           ownerAddress: 0x111n,
-          kind: "Ruin",
-          reward: { resourceId: ResourcesIds.Lords, amount },
+          kind,
+          reward: amount === null ? null : { resourceId, amount },
           coord: { x: 40, y: 12 },
           troopsLost: 100,
         },
@@ -148,7 +163,6 @@ describe("native scene updates", () => {
     );
     battle("0x11", 13);
     expect(payout).toHaveBeenCalledTimes(4);
-    expectReported(() => story("0x12", 11, StructureType.Rift, null), "A cleared Rift pays nothing");
 
     stop();
     story("0x13", 12, StructureType.Camp, { resource_type: 23, amount: "1" });

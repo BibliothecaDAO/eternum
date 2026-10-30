@@ -36,6 +36,12 @@ const connectGameplayAccount = (client: GameClient, account: AccountInterface | 
   useRealmVisitStore.setState({ visit: null });
 };
 
+/** A place on the world map a visit opens on as its rows arrive: its tile and what is selected there. */
+export interface VisitPlace {
+  tile: { col: number; row: number; alt: boolean };
+  select: { kind: "army"; entityId: number; tile: "own" } | { kind: "structure"; entityId: number };
+}
+
 /** Another player's realm this client is viewing: the player Herald streams it for, and the realm to open. */
 export interface RealmVisit {
   player: string;
@@ -43,9 +49,10 @@ export interface RealmVisit {
   /**
    * Where the realm opens once its rows arrive: its board, for a visit the player asked for (the season board's
    * Visit); the world map on it, for a spectator's watch on an address that names no place (a session opens on the
-   * map). Null: the page stays where it is, as one loaded on a map hex does.
+   * map); a place of the realm's on the map, for one shared in chat (its army or the realm, selected where it stood).
+   * Null: the page stays where it is, as one loaded on a map hex does.
    */
-  opensOn: "realm" | "map" | null;
+  opensOn: "realm" | "map" | VisitPlace | null;
 }
 
 const useRealmVisitStore = create<{ visit: RealmVisit | null }>(() => ({ visit: null }));

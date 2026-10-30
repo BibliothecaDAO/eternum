@@ -1,4 +1,5 @@
 import { environmentL2, valuePlaneAddress } from "@realms-world/chain";
+import type { HeldRealm } from "@realms-world/identity";
 import { RpcError } from "starknet";
 import { identityProvider, verifyIdentityChain } from "./l2";
 
@@ -35,18 +36,21 @@ export async function holdsRealm(env: HoldingsEnvironment, wallet: string, realm
   }
 }
 
-/** Every Realm the indexer has `wallet` holding, ascending. The chain cannot list them, so there is no fallback. */
-export async function heldRealms(env: HoldingsEnvironment, wallet: string): Promise<number[]> {
-  const realms: number[] = [];
+/**
+ * Every Realm the indexer has `wallet` holding, ascending, each with the index's map of it. The chain cannot list them,
+ * so there is no fallback.
+ */
+export async function heldRealms(env: HoldingsEnvironment, wallet: string): Promise<HeldRealm[]> {
+  const realms: HeldRealm[] = [];
   let cursor: string | null = null;
   for (let page = 0; page < MAX_HOLDING_PAGES; page += 1) {
     const holdings: HoldingsPage | null = await readIndexer<HoldingsPage>(env, holdingsPath(env, wallet, cursor));
     if (!holdings) throw new RealmHoldingsUnavailableError();
     realms.push(
-      ...holdings.items.filter((token) => sameAddress(token.owner, wallet)).map((token) => Number(token.tokenId)),
+      ...holdings.items.filter((token) => sameAddress(token.owner, wallet)).map((token) => heldRealm(env, token)),
     );
     cursor = holdings.nextCursor;
-    if (!cursor) return realms.sort((a, b) => a - b);
+    if (!cursor) return realms.sort((a, b) => a.realmId - b.realmId);
   }
   throw new RealmHoldingsUnavailableError();
 }
@@ -54,7 +58,14 @@ export async function heldRealms(env: HoldingsEnvironment, wallet: string): Prom
 interface IndexedToken {
   tokenId: string;
   owner: string;
+  /** The index's map of the Realm, an address on the index's own site. */
+  image?: string | null;
 }
+
+const heldRealm = (env: HoldingsEnvironment, token: IndexedToken): HeldRealm => ({
+  realmId: Number(token.tokenId),
+  map: token.image ? new URL(token.image, env.MARKETPLACE_API_URL).href : null,
+});
 interface HoldingsPage {
   items: IndexedToken[];
   nextCursor: string | null;
@@ -66,17 +77,28 @@ const holdingsPath = (env: HoldingsEnvironment, wallet: string, cursor: string |
   return `accounts/${wallet}/holdings?${query}`;
 };
 
-/** One indexer read with a short timeout; any failure is null, so the caller decides what to fall back to. */
+/**
+ * One indexer read with a short timeout; a failure is logged with its cause and is null, so the caller decides what to
+ * fall back to. A redirect is not followed: it answers 3xx and fails like any other non-2xx, since the Workers runtime
+ * has no "error" redirect mode (scripts/check-worker-fetch-options.mjs).
+ */
 async function readIndexer<T>(env: HoldingsEnvironment, path: string): Promise<T | null> {
   const { chain } = environmentL2(env.ENVIRONMENT);
+  const route = path.split("/")[0];
   try {
     const response = await fetch(`${env.MARKETPLACE_API_URL}/v1/chains/${chain}/${path}`, {
       signal: AbortSignal.timeout(INDEXER_TIMEOUT_MS),
-      redirect: "error",
+      redirect: "manual",
     });
-    if (!response.ok) return null;
-    return ((await response.json()) as { data: T }).data ?? null;
-  } catch {
+    if (!response.ok) {
+      console.error("realm_index_unavailable", { route, status: response.status });
+      return null;
+    }
+    const data = ((await response.json()) as { data?: T }).data ?? null;
+    if (data === null) console.error("realm_index_unavailable", { route, status: response.status, cause: "no data" });
+    return data;
+  } catch (error) {
+    console.error("realm_index_unavailable", { route, cause: String(error) });
     return null;
   }
 }

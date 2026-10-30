@@ -8,6 +8,7 @@ import {
   getGuardsByStructure,
   siteKindOf,
   siteReward,
+  siteClearXp,
   StaminaManager,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -89,7 +90,7 @@ export const readSiteCard = (
   const reward =
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
-      : siteReward(kind, site);
+      : siteReward(site);
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
@@ -136,10 +137,6 @@ export const readArmyCard = (
     fight: troops && troops.count > 0n && attack ? forecastFightAt(store, troops, armyTile, attack, false) : undefined,
   };
 };
-
-/** The XP a clear pays, as the contract's clear_xp computes it from the guard the site started with. */
-export const siteClearXp = (site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">): number =>
-  Math.floor(Math.sqrt(25 * Number(site.initial_guard_count / PRECISION)) / 2);
 
 /** A capped reward fits only the room left after the home's accrued production settles. */
 const fittingPayout = (

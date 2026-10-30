@@ -207,8 +207,6 @@ type PaidSite = Omit<SitePayoutSystemUpdate, "coord" | "troopsLost">;
 const paidSite = (payload: Fields, story: Fields): PaidSite => {
   const kind = siteKindOf(integer(payload.category));
   const reward = siteReward(payload.reward);
-  if ((kind === "Beasts") !== (reward === null))
-    throw new Error(`A cleared ${kind} pays ${reward === null ? "nothing" : "a resource"}`);
   return {
     explorerId: integer(payload.explorer_id),
     siteId: integer(payload.site_id),

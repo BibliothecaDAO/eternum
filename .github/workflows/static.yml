@@ -60,6 +60,9 @@ jobs:
           node --test scripts/check-test-scripts-run-once.test.mjs
           node scripts/check-test-scripts-run-once.mjs
 
+      - name: Check Worker code asks fetch for no option the Workers runtime refuses
+        run: pnpm check:worker-fetch
+
       - name: Check the Realms X account is written in one place
         run: pnpm check:realms-x
 

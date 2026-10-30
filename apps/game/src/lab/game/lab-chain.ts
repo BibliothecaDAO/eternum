@@ -7,8 +7,19 @@ import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
 import { getShardRpcProvider } from "@/utils/shard-rpc-provider";
 import { homeDailyClaim, dayOf, readExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
-import type { HeraldFrontierLeaderboardEntry, HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
-import { RESOURCE_PRECISION, ResourcesIds, type NativeWorldBindings } from "@bibliothecadao/types";
+import {
+  deriveGameSyncScope,
+  type HeraldFrontierLeaderboardEntry,
+  type HeraldHistoryEvent,
+  rowInGameSyncScope,
+  scopeInputKeys,
+} from "@bibliothecadao/eternum/game-sync";
+import {
+  RESOURCE_PRECISION,
+  ResourcesIds,
+  type NativeWorldBindings,
+  type WorldChatMessage,
+} from "@bibliothecadao/types";
 import type { AccountInterface, Call } from "starknet";
 
 import { LAB_CHAIN_ID } from "./lab-shard";
@@ -66,6 +77,13 @@ export interface LabScenario {
   wallet?: string;
   /** The player enters from the home page's game card, as one not yet settled does; otherwise on the map. */
   entersFromHome?: boolean;
+  /**
+   * Herald serves each selection its scope alone, as a live shard does: the player's own expedition, and another
+   * player's realm and armies only on a visit. None: the lab's game is all the player's to see.
+   */
+  scoped?: boolean;
+  /** The chat's history by room, as the chat server answers it; none: every room is empty. */
+  chat?: (zoneId: string) => readonly WorldChatMessage[];
 }
 
 interface LabChainRecord {
@@ -75,6 +93,8 @@ interface LabChainRecord {
   streams: number;
   /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
   silence: () => void;
+  /** Each scope the lab's Herald served, in order: its selection and the structures and armies it carried. */
+  scopes: { actor: string | null; visit: string | null; structures: number[]; armies: number[] }[];
 }
 
 declare global {
@@ -94,6 +114,33 @@ export const rowsOf = (store: NativeFactStore): LabFact[] =>
   );
 
 /**
+ * The rows a selection's scope holds, as Herald derives it from the same facts (deriveGameSyncScope over the chain's
+ * own rows, then rowInGameSyncScope): the player's expedition, and a visited player's realm and armies.
+ */
+const scopedRowsOf = (store: NativeFactStore, actor: string | undefined, visit: string | undefined, now: number) => {
+  const gameId = LAB_GAME.gameId;
+  const scope = deriveGameSyncScope(
+    actor,
+    now,
+    readExpeditionRules(store, gameId),
+    (model, spacing, keys) => {
+      const selected = new Set(keys);
+      return [...store.inGame(model, gameId)]
+        .filter((row) =>
+          scopeInputKeys(model, row as Record<string, unknown>, spacing).some((key) => selected.has(key)),
+        )
+        .map((row) => ({ value: row as Record<string, unknown> }));
+    },
+    visit,
+  );
+  return (Object.keys(nativeFactModels) as NativeModelName[]).flatMap((model) =>
+    [...store.entries(model)]
+      .filter(([, value]) => rowInGameSyncScope(model, value as Record<string, unknown>, scope))
+      .map(([key, value]) => ({ model, key, value: wire(value) })),
+  );
+};
+
+/**
  * Plays the game route on a fixture, in this tab only: the directory lists the lab shard, its Herald's socket is
  * answered here (the snapshot, the player's scope, a head each second), the player is signed in with an empty chat, and their account's signed
  * commands are recorded and answered by the scenario as the chain would apply them. Everything past the network is the
@@ -111,13 +158,20 @@ let installing: Promise<LabScenario> | undefined;
 const installOnce = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
   // Building a scenario seats its fixture's player, so it is built only here, once, never over the lab's signing account.
   const scenario = makeScenario();
-  const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence() };
+  const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence(), scopes: [] };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   const chain = chainOf(scenario);
   const now = () => scenario.startsAt + Math.floor((Date.now() - startedAt) / 1000);
   const events = new Set(nativeBindings.events.map((event) => event.name));
-  const herald = new LabHerald(chain, events, now, () => (record.streams += 1));
+  const herald = new LabHerald(
+    chain,
+    events,
+    now,
+    () => (record.streams += 1),
+    scenario.scoped === true,
+    (served) => record.scopes.push(served),
+  );
   answerDirectory(
     now,
     (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()),
@@ -130,7 +184,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
   answerHeraldSocket(herald);
   answerLaborClaims(scenario, chain, record, herald, now);
   answerLedgerReads(now);
-  answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)] });
+  answerLabChat({ gameRooms: [gameChatZoneId(LAB_GAME.chainId, LAB_GAME.gameId)], history: scenario.chat });
   signInLabPlayer(scenario.wallet);
   seatPlayer(labAccount(scenario, chain, nativeBindings, record, herald, now, events));
   return scenario;
@@ -538,6 +592,9 @@ class LabHerald {
     private readonly events: ReadonlySet<string>,
     private readonly now: () => number,
     private readonly opened: () => void,
+    /** Each selection is served its scope alone (LabScenario.scoped). */
+    private readonly scoped: boolean,
+    private readonly served: (scope: LabChainRecord["scopes"][number]) => void,
   ) {}
 
   confirmedBlock(): number {
@@ -595,7 +652,20 @@ class LabHerald {
         1000,
       );
     } else if (message.type === "select_actor") {
-      // The actor's scope: the lab's game is all the player's to see, so it carries every row.
+      // The selection's scope: its rows alone on a scoped game, as Herald derives it; else every row.
+      const actor = message.actor ?? undefined;
+      const visit = message.visit ?? undefined;
+      const set = this.scoped ? scopedRowsOf(this.chain, actor, visit, this.now()) : rowsOf(this.chain);
+      this.served({
+        actor: actor ?? null,
+        visit: visit ?? null,
+        structures: set
+          .filter((row) => row.model === "Structure")
+          .map((row) => Number((row.value as { entity_id: string }).entity_id)),
+        armies: set
+          .filter((row) => row.model === "ExplorerTroops")
+          .map((row) => Number((row.value as { explorer_id: string }).explorer_id)),
+      });
       this.send({
         type: "scope",
         epoch: this.epoch,
@@ -604,7 +674,7 @@ class LabHerald {
         ...(message.actor ? { actor: message.actor } : {}),
         ...(message.visit ? { visit: message.visit } : {}),
         expedition: true,
-        set: rowsOf(this.chain),
+        set,
       });
     }
   }
