@@ -3,7 +3,13 @@ import { readStructureMeaning, troopMeaning } from "@/ui/design-system/domain-ic
 import { type IconMeaning, iconMeanings } from "@/ui/design-system/icon-meaning";
 import { MAP_SITES, type MapSiteKind, mapSiteOf } from "@/config/map-sites";
 import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
-import { activeTileOccupancy, getEntityName, isExpeditionRealm, structureMapPosition } from "@bibliothecadao/eternum";
+import {
+  activeTileOccupancy,
+  getEntityName,
+  isExpeditionRealm,
+  isRealmCategory,
+  structureMapPosition,
+} from "@bibliothecadao/eternum";
 import type { GameRef, NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync";
 
@@ -21,13 +27,22 @@ export interface PlaceTile {
 export type PlaceGame = GameRef & { name: string };
 
 /**
+ * The player whose realm a place belongs to, and that realm: what a visit streams (the realm, its armies and where they
+ * stand), for a player whose map has not loaded the place.
+ */
+interface PlaceOwner {
+  player: string;
+  realm: number;
+}
+
+/**
  * What a place is on its game's map: an army, a structure (a realm, a camp, ...), or a site on a tile (MAP_SITES). An
- * army or a structure also carries the tile it stood on when shared, so a player whose map has not loaded it can still
- * be taken there (a message from an older client carries none).
+ * army or a realm also carries the tile it stood on when shared and its owner, so a player whose map has not loaded it
+ * can still be taken there, their stream visiting its owner (a message from an older client carries neither).
  */
 type PlaceTarget =
-  | { kind: "army"; entityId: number; tile?: PlaceTile }
-  | { kind: "structure"; entityId: number; tile?: PlaceTile }
+  | { kind: "army"; entityId: number; tile?: PlaceTile; owner?: PlaceOwner }
+  | { kind: "structure"; entityId: number; tile?: PlaceTile; owner?: PlaceOwner }
   | { kind: "site"; site: MapSiteKind; tile: PlaceTile };
 
 /**
@@ -81,11 +96,20 @@ const tileOf = (tile: unknown): PlaceTile | null =>
     ? { col: tile.col as number, row: tile.row as number, alt: tile.alt }
     : null;
 
+const ownerOf = (owner: unknown): PlaceOwner | null =>
+  isRecord(owner) &&
+  typeof owner.player === "string" &&
+  /^0x[0-9a-f]+$/i.test(owner.player) &&
+  Number.isSafeInteger(owner.realm)
+    ? { player: owner.player.toLowerCase(), realm: owner.realm as number }
+    : null;
+
 const targetOf = (place: Record<string, unknown>): PlaceTarget | null => {
   const { kind, entityId, site } = place;
   const tile = tileOf(place.tile);
+  const owner = ownerOf(place.owner);
   if ((kind === "army" || kind === "structure") && Number.isSafeInteger(entityId))
-    return tile ? { kind, entityId: entityId as number, tile } : { kind, entityId: entityId as number };
+    return { kind, entityId: entityId as number, ...(tile && { tile }), ...(owner && { owner }) };
   if (kind === "site" && typeof site === "string" && SITES.has(site) && tile)
     return { kind, site: site as MapSiteKind, tile };
   return null;
@@ -140,10 +164,13 @@ export const placeOnMap = (
     if (!army) return null;
     const stands = store.entityOccupancy(gameId, target.entityId);
     const tile = stands ? { col: stands.col, row: stands.row, alt: stands.alt } : target.tile;
+    const home = store.get("Structure", { game_id: gameId, entity_id: Number(army.owner) });
+    const owner = home ? realmOwner(home) : target.owner;
     return {
       kind: "army",
       entityId: target.entityId,
       ...(tile && { tile }),
+      ...(owner && { owner }),
       game,
       name,
       icon: troopMeaning(army.troops),
@@ -156,16 +183,28 @@ export const placeOnMap = (
   const onMap = isExpeditionRealm(store, structure) || store.entityOccupancy(gameId, target.entityId);
   const site = onMap ? structureMapPosition(store, structure) : null;
   const tile = site ? { col: site.x, row: site.y, alt: site.alt } : target.tile;
+  const owner = realmOwner(structure) ?? target.owner;
   return {
     kind: "structure",
     entityId: target.entityId,
     ...(tile && { tile }),
+    ...(owner && { owner }),
     game,
     name,
     icon: readStructureMeaning(store, structure),
     at,
   };
 };
+
+/** A realm's owner, as a visit names them; none for a structure that is no realm (a visit streams realms). */
+const realmOwner = (structure: {
+  entity_id: number | bigint;
+  owner: number | bigint | string;
+  base: { category: number };
+}): PlaceOwner | undefined =>
+  isRealmCategory(structure.base.category)
+    ? { player: `0x${BigInt(structure.owner).toString(16)}`, realm: Number(structure.entity_id) }
+    : undefined;
 
 /**
  * Whether this client's map has loaded what a place names, there or not: an army or a structure by its row; a site by

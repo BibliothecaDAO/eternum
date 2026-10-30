@@ -80,10 +80,10 @@ const NEIGHBOUR_RING = [
  */
 /**
  * The words the in-game HUD gives what the steps press and read, as the app writes them (src/ui/design-system/kit/
- * words.ts: MENU, SEASON, EVENTS_WORDS.feed, CLOSE); steps.test.mjs fails when they differ (playtest 30 October 2026,
+ * words.ts: MENU, SEASON, EVENTS_WORDS.feed, CLOSE, CHAT); steps.test.mjs fails when they differ (playtest 30 October 2026,
  * B6: the phone's Log became its Feed, and the Season board's Back its ×).
  */
-export const HUD_WORDS = { menu: "Menu", season: "Season", feed: "Feed", close: "Close" };
+export const HUD_WORDS = { menu: "Menu", season: "Season", feed: "Feed", close: "Close", chat: "Chat" };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
@@ -3634,6 +3634,15 @@ export const UNMEASURED_COMMANDS = {
   SetEntityName: "no control in the game sends it: only the provider's set_entity_name, which nothing calls",
 };
 
+/**
+ * A place shared out of the player's view, opened from its message (the lab's far-place game: the neighbour's realm,
+ * which the player's Herald scope does not carry, shared in Global). Playtest 29 October 2026, B5.
+ */
+const FAR_PLACE_STEPS = [
+  { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
+  { name: "open-far-place", play: openTheFarPlace, settleMs: 0, verify: openedTheFarPlace },
+];
+
 export const STEP_SETS = {
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
@@ -3676,6 +3685,7 @@ export const STEP_SETS = {
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
+  "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
@@ -3954,6 +3964,67 @@ async function waitUntil(check, timeoutMs) {
     await sleep(POLL_MS);
   }
   return true;
+}
+
+/** The neighbour's realm in the far-place game, and its chip in the message that shares it. */
+const FAR_REALM = 8;
+const FAR_PLACE_CHIP = `section[aria-label="${HUD_WORDS.chat}"] [data-place-key$="/structure:${FAR_REALM}"] button`;
+const FAR_PLACE_WAIT_MS = 20_000;
+
+/**
+ * What the far place's press is read by: the scopes the lab's Herald served (its record), whether the chip is there to
+ * press, and the map's selection.
+ */
+const FAR_PLACE_READING = `JSON.stringify({
+  chip: Boolean(document.querySelector(${JSON.stringify(FAR_PLACE_CHIP)})),
+  scopes: window.__labChain?.scopes ?? [],
+  selection: {
+    structure: window.__eternumMapSelection?.structure ?? null,
+    hex: window.__eternumMapSelection?.hex ?? null,
+    camera: window.__eternumMapSelection?.camera ?? null,
+  },
+})`;
+
+/** Chat opened as a player opens it (the desktop's strip, a phone's Chat place), then the shared realm's chip pressed. */
+async function openTheFarPlace({ browser }) {
+  if (onADesktop()) browser.click(`${HUD_WORDS.chat} strip`);
+  else browser.tapPlace(HUD_WORDS.chat);
+  await sleep(1_500);
+  const before = browser.read(FAR_PLACE_READING);
+  if (!before.chip) return { before, after: null };
+  browser.run(["click", FAR_PLACE_CHIP]);
+  const startedAt = Date.now();
+  let after = browser.read(FAR_PLACE_READING);
+  while (
+    !(after.selection.structure?.id === FAR_REALM && after.selection.hex) &&
+    Date.now() - startedAt < FAR_PLACE_WAIT_MS
+  ) {
+    await sleep(POLL_MS);
+    after = browser.read(FAR_PLACE_READING);
+  }
+  return { before, after };
+}
+
+/**
+ * The far place opened as the stream brings it: out of the player's scope before the press, a visit of its owner's
+ * served after it carrying the realm, and the map with the realm selected on its tile, the camera on it.
+ */
+export function openedTheFarPlace({ seen, played }) {
+  // A visit's banner stands in a phone's place bar, so no place is lit: the route and the drawn scene are the map.
+  if (seen.scene !== "map" || seen.rendered !== "map")
+    return failed(
+      `expected the map, saw the route on ${seen.scene ?? "no scene"}, ${seen.rendered ?? "no scene"} drawn`,
+    );
+  if (!played.after) return failed("the message's place was not there to press", played);
+  if (played.before.scopes.some((scope) => scope.structures.includes(FAR_REALM)))
+    return blocked("the realm was in the player's scope before the press: nothing out of view to open", played);
+  const visited = played.after.scopes.find((scope) => scope.visit !== null && scope.structures.includes(FAR_REALM));
+  if (!visited) return failed("no visit brought the realm into the stream", played);
+  const { structure, hex, camera } = played.after.selection;
+  if (structure?.id !== FAR_REALM) return failed("the realm was not selected", played);
+  if (!hex) return failed("the selected realm stands nowhere on the map", played);
+  if (camera?.col !== hex.col || camera?.row !== hex.row) return failed("the camera is not on the realm", played);
+  return completed(played);
 }
 
 async function waitFor(browser, predicate, timeoutMs) {

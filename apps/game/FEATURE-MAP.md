@@ -586,7 +586,10 @@ screen. `scenario=cleared-camp` stands the realm's second army on a camp it clea
 another cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token.
 `scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double tap or a
 desktop's right-click explores. `--steps lab-merge-loses-xp`, `lab-merge-keeps-tapped` and `lab-after-battle` check that
-hovering the army's tile opens its plate, and that a tile a merge emptied opens none.
+hovering the army's tile opens its plate, and that a tile a merge emptied opens none. `scenario=far-place` serves the
+player's own Herald scope alone, as a live shard does, with the neighbour's Kingdom out of it and shared in Global: the
+chip's press visits its owner (the banner's **Leave** returns home), and the realm arrives and is selected on its tile
+(`--steps lab-far-place`, desktop and phone).
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies

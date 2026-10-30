@@ -5,8 +5,15 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
-import { CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
-import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, HUD_WORDS, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { CHAT, CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
+import {
+  CLOSEST_CAMERA_DISTANCE,
+  FARTHEST_CAMERA_DISTANCE,
+  HUD_WORDS,
+  openedTheFarPlace,
+  SPECTATOR_STEPS,
+  STEP_SETS,
+} from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
@@ -15,7 +22,57 @@ const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).ve
 // pressed words the HUD no longer had.
 describe("the HUD's words the steps press and read", () => {
   it("are the ones the app writes", () => {
-    expect(HUD_WORDS).toEqual({ menu: MENU, season: SEASON, feed: EVENTS_WORDS.feed, close: CLOSE });
+    expect(HUD_WORDS).toEqual({ menu: MENU, season: SEASON, feed: EVENTS_WORDS.feed, close: CLOSE, chat: CHAT });
+  });
+});
+
+// Playtest 29 October 2026 (B5): a realm out of the player's view, opened from the message that shares it.
+describe("the far place's step", () => {
+  const onMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
+  const own = { actor: "0x111", visit: null, structures: [7] };
+  const visit = { actor: "0x111", visit: "0x222", structures: [7, 8] };
+  const opened = { structure: { id: 8 }, hex: { col: 750, row: 50 }, camera: { col: 750, row: 50 } };
+  const played = (scopes, selection) => ({
+    before: { chip: true, scopes: [own], selection: { structure: null, hex: null, camera: { col: 650, row: 50 } } },
+    after: { chip: false, scopes, selection },
+  });
+
+  it("completes when a visit brought the realm and the map selected it on its tile, the camera on it", () => {
+    expect(openedTheFarPlace({ seen: onMap, played: played([own, visit], opened) }).status).toBe("completed");
+    // A phone's visit banner stands in its place bar: nothing lit, the map still drawn.
+    expect(openedTheFarPlace({ seen: { ...onMap, place: null }, played: played([own, visit], opened) }).status).toBe(
+      "completed",
+    );
+    expect(
+      openedTheFarPlace({ seen: { ...onMap, rendered: "hex" }, played: played([own, visit], opened) }).status,
+    ).toBe("failed");
+  });
+
+  it("fails when no visit brought it, when it is not selected, or stands nowhere, or the camera is elsewhere", () => {
+    expect(
+      openedTheFarPlace({ seen: onMap, played: played([own], { ...opened, structure: null, hex: null }) }).reason,
+    ).toBe("no visit brought the realm into the stream");
+    expect(
+      openedTheFarPlace({ seen: onMap, played: played([own, visit], { ...opened, structure: null }) }).reason,
+    ).toBe("the realm was not selected");
+    expect(openedTheFarPlace({ seen: onMap, played: played([own, visit], { ...opened, hex: null }) }).reason).toBe(
+      "the selected realm stands nowhere on the map",
+    );
+    expect(
+      openedTheFarPlace({ seen: onMap, played: played([own, visit], { ...opened, camera: { col: 650, row: 50 } }) })
+        .reason,
+    ).toBe("the camera is not on the realm");
+  });
+
+  it("is blocked when the realm was in view already, and fails with nothing to press", () => {
+    const inView = {
+      ...played([own, visit], opened),
+      before: { chip: true, scopes: [visit], selection: opened.selection },
+    };
+    expect(openedTheFarPlace({ seen: onMap, played: inView }).status).toBe("blocked");
+    expect(
+      openedTheFarPlace({ seen: onMap, played: { before: { chip: false, scopes: [own] }, after: null } }).reason,
+    ).toBe("the message's place was not there to press");
   });
 });
 

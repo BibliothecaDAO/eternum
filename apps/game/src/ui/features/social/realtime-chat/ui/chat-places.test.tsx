@@ -7,11 +7,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // The real chat over the lab's game, its map the real one the HUD reads: only the map's movement stands in, as the
 // test page has no game route to move on.
-const moved = vi.hoisted(() => ({ openOnMap: vi.fn(), selectArmy: vi.fn(), store: null as unknown }));
+const moved = vi.hoisted(() => ({
+  openOnMap: vi.fn(),
+  selectArmy: vi.fn(),
+  visit: vi.fn(),
+  store: null as unknown,
+}));
 // The game the client plays is the lab's: the day a place was shared is read on its rules.
 vi.mock("@/sync/active-game-client", async (original) => ({
   ...(await original<typeof import("@/sync/active-game-client")>()),
   getActiveGameStore: () => moved.store,
+  // The stream's visit, which brings another player's realm and armies (its effect is the sync's: sync tests hold it).
+  startRealmVisit: moved.visit,
 }));
 vi.mock("@/play/navigation/open-place", async (original) => ({
   ...(await original<typeof import("@/play/navigation/open-place")>()),
@@ -57,6 +64,8 @@ const UNSEEN_ARMY = 999;
 const FAR_REALM = 4242;
 const FAR_ARMY = 5150;
 const FAR_REALM_TILE = { col: 65, row: 4, alt: false };
+/** Whose realm they are: the player a visit streams. */
+const FAR_OWNER = { player: "0xf0", realm: FAR_REALM };
 const FAR_ARMY_TILE = { col: 66, row: 4, alt: true };
 /** A camp the store holds whose tile the map does not: a place on no tile. */
 const UNPLACED_CAMP = 712;
@@ -83,7 +92,8 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
     name: string,
     game: object = LAB,
     tile?: object,
-  ) => ({ place: { kind, entityId, game, name, icon, at, ...(tile && { tile }) } });
+    owner?: object,
+  ) => ({ place: { kind, entityId, game, name, icon, at, ...(tile && { tile }), ...(owner && { owner }) } });
   const said = (id: string, content: string, metadata: object) => ({
     id,
     zoneId: GLOBAL_CHAT_CHANNEL_ID,
@@ -108,12 +118,20 @@ const installRoom = (realmName: string, realmIcon: string, today: number) => {
           said("m3", "my army", place(UNSEEN_ARMY, "army", today, "knight-t1", "Iron Wardens")),
           said("m4", "the camp", place(UNPLACED_CAMP, "structure", today, "camp", "Gloomsgrasp")),
           // Out of this player's view, each with the tile it stood on: today, and the realm from a closed day.
-          said("m12", "hold here", place(FAR_REALM, "structure", today, realmIcon, "Aunomipen", LAB, FAR_REALM_TILE)),
-          said("m13", "below", place(FAR_ARMY, "army", today, "knight-t1", "Deep Wardens", LAB, FAR_ARMY_TILE)),
+          said(
+            "m12",
+            "hold here",
+            place(FAR_REALM, "structure", today, realmIcon, "Aunomipen", LAB, FAR_REALM_TILE, FAR_OWNER),
+          ),
+          said(
+            "m13",
+            "below",
+            place(FAR_ARMY, "army", today, "knight-t1", "Deep Wardens", LAB, FAR_ARMY_TILE, FAR_OWNER),
+          ),
           said(
             "m14",
             "back then",
-            place(FAR_REALM, "structure", today - 3 * 86_400, realmIcon, "Aunomipen", LAB, FAR_REALM_TILE),
+            place(FAR_REALM, "structure", today - 3 * 86_400, realmIcon, "Aunomipen", LAB, FAR_REALM_TILE, FAR_OWNER),
           ),
           // Sent by a client that names and paints the lab realm as another player's camp.
           said("m5", "come home", place(REALM, "structure", today, "camp", "Isolde's Realm")),
@@ -360,8 +378,9 @@ describe("places in chat, in a Frontier game", () => {
           name: game.realmName,
           icon: game.realmIcon,
           at: expect.any(Number),
-          // Where it stands, for a player whose map has not loaded it.
+          // Where it stands and whose it is, for a player whose map has not loaded it.
           tile: { col: expect.any(Number), row: expect.any(Number), alt: false },
+          owner: { player: expect.stringMatching(/^0x[0-9a-f]+$/), realm: REALM },
         },
       },
     });
@@ -369,22 +388,26 @@ describe("places in chat, in a Frontier game", () => {
   });
 
   // Playtest 29 October 2026 (B5): another player's realm, out of this one's view, read as gone.
-  it("opens a place out of this player's view where it stood when shared, never as gone", () => {
+  it("opens a place out of this player's view by visiting its owner, where it stood when shared, never as gone", () => {
     expect(chip("m12").className).not.toContain("line-through");
     act(() => chip("m12").querySelector("button")!.click());
+    // The owner's realm visited first, the one way the stream brings it, then the map moved there to select it.
+    expect(moved.visit).toHaveBeenLastCalledWith({ player: FAR_OWNER.player, structureId: FAR_REALM, opensOn: null });
+    expect(moved.visit.mock.invocationCallOrder.at(-1)!).toBeLessThan(moved.openOnMap.mock.invocationCallOrder.at(-1)!);
     let [position, select] = moved.openOnMap.mock.calls.at(-1)!;
     expect(position.getContract()).toEqual({ x: FAR_REALM_TILE.col, y: FAR_REALM_TILE.row });
     expect(select).toEqual({ kind: "structure", entityId: FAR_REALM });
     expect(useUIStore.getState().mapLayer).toBe(false);
 
-    // An army below, selected where it is once the map has it.
+    // An army below: its owner's realm visited, the army selected where it is once its rows arrive.
     act(() => chip("m13").querySelector("button")!.click());
+    expect(moved.visit).toHaveBeenLastCalledWith({ player: FAR_OWNER.player, structureId: FAR_REALM, opensOn: null });
     [position, select] = moved.openOnMap.mock.calls.at(-1)!;
     expect(position.getContract()).toEqual({ x: FAR_ARMY_TILE.col, y: FAR_ARMY_TILE.row });
     expect(select).toEqual({ kind: "army", entityId: FAR_ARMY, tile: "own" });
     expect(useUIStore.getState().mapLayer).toBe(true);
 
-    // One sent with no tile is not known to be gone either: it reads plainly and opens nothing.
+    // One sent with no tile or owner (an older client's) is not known to be gone either: it reads plainly, opens nothing.
     expect(chip("m3").className).not.toContain("line-through");
     expect(chip("m3").querySelector("button")?.disabled ?? true).toBe(true);
   });

@@ -6,6 +6,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { linkFrom, openOnMap } from "@/play/navigation/open-place";
 import { getActiveGame } from "@/runtime/world/store";
+import { startRealmVisit } from "@/sync/active-game-client";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { isExpeditionRealm, Position, structureMapPosition } from "@bibliothecadao/eternum";
 import { type PlaceTile, placeLoaded, placeOnMap, sameGame, type SharedPlace } from "../../model/place";
@@ -49,8 +50,10 @@ const PLACE_MODELS = ["Structure", "ExplorerTroops", "TileOccupancy"] as const;
  * nothing. One in this game is named and painted as the map has it (a message cannot rename a place), else as the
  * message has it, and opens as the Feed opens its stories, on today's map only (linkFrom): an army selected where it
  * stands now, a structure on its tile, a site's tile on its layer. Gone (the map holds it no more, or its day closed),
- * it opens nothing. One this map has not loaded, out of the player's view, is not gone: it opens where it stood when
- * shared, and the map selects it there as it loads (playtest 29 October 2026, B5).
+ * it opens nothing. One this map has not loaded, out of the player's view, is not gone (playtest 29 October 2026, B5):
+ * an army or a realm opens by visiting its owner, the one way the stream brings another player's realm and armies, the
+ * map moving to where it stood when shared and selecting it there as its rows arrive. A site out of view no visit
+ * brings (its region holds it): it opens nothing.
  */
 export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
   const {
@@ -69,8 +72,13 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
     }
     if (placeLoaded(store, place.game, place)) return { ...asSent, open: null, gone: true, elsewhere: false };
     const tile = place.tile;
-    const open = tile ? linkFrom(place.at, () => openWhereShared(place, tile)) : null;
-    return { ...asSent, open, gone: tile !== undefined && open === null, elsewhere: false };
+    const owner = place.kind === "site" ? undefined : place.owner;
+    if (!tile || !owner) return { ...asSent, open: null, gone: false, elsewhere: false };
+    const open = linkFrom(place.at, () => {
+      startRealmVisit({ player: owner.player, structureId: owner.realm, opensOn: null });
+      openWhereShared(place, tile);
+    });
+    return { ...asSent, open, gone: open === null, elsewhere: false };
   };
 };
 
