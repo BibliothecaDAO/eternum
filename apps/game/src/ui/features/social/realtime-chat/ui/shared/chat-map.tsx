@@ -53,18 +53,18 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
 
 /**
  * A place in a message, as a chip: its painting and its name, as usePlaceReader reads them. Pressed, the map opens on
- * it. Where the map has it no more (gone, or from a closed Frontier day) it is struck through and opens nothing; in
- * another game it names that game and opens nothing here; with no map (outside a game) it is only read.
+ * it, loaded or not. Where the map has it no more (gone, or from a closed Frontier day) it is struck through and opens
+ * nothing; in another game it names that game and opens nothing here; with no map (outside a game) it is only read.
  */
 export const PlaceChip = ({ place }: { place: SharedPlace }) => {
   const map = useChatMap();
-  const { name, icon, open, elsewhere } = map?.read(place) ?? {
+  const { name, icon, open, gone, elsewhere } = map?.read(place) ?? {
     name: place.name,
     icon: place.icon,
     open: null,
+    gone: false,
     elsewhere: true,
   };
-  const gone = map !== null && !elsewhere && open === null;
   return (
     <span
       className={cn("inline-flex items-center gap-1 align-middle", gone && "line-through opacity-50")}

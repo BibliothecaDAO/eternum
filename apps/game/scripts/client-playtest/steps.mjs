@@ -78,6 +78,13 @@ const NEIGHBOUR_RING = [
  * with its call to action. Frontier's card has its title; a Blitz card is found by the game it names, and only a player
  * seated in it can Enter.
  */
+/**
+ * The words the in-game HUD gives what the steps press and read, as the app writes them (src/ui/design-system/kit/
+ * words.ts: MENU, SEASON, EVENTS_WORDS.feed, CLOSE); steps.test.mjs fails when they differ (playtest 30 October 2026,
+ * B6: the phone's Log became its Feed, and the Season board's Back its ×).
+ */
+export const HUD_WORDS = { menu: "Menu", season: "Season", feed: "Feed", close: "Close" };
+
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
 const BLITZ = { mode: "blitz", card: { verbs: ["enter"] } };
@@ -691,7 +698,7 @@ const REALMS_SHEET = '[data-kit-sheet][aria-label="Realms"]';
 async function claimARealmsLabor({ browser }) {
   // A desktop's purse opens Realms; a phone's Menu holds it.
   if (!onADesktop()) {
-    browser.click("Menu");
+    browser.click(HUD_WORDS.menu);
     await readUntil(() => browser.read(buttonNamed("Realms")), Boolean, SHEET_WAIT_MS);
   }
   browser.click("Realms");
@@ -1322,15 +1329,15 @@ function recordedStill(onMap) {
 
 /**
  * The season's board as a player reads it: a desktop's Season place opens it in the rail and a second press closes it;
- * a phone opens it from the Menu and closes it with the board's Back, as a phone has no Escape key.
+ * a phone opens it from the Menu and closes it with the board's ×, as a phone has no Escape key.
  */
 async function readTheSeason(input) {
   if (!onADesktop()) return { desktop: false, ...(await readTheSeasonInTheMenu(input)) };
   const { browser } = input;
-  browser.click("Season");
+  browser.click(HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  browser.click("Season");
+  browser.click(HUD_WORDS.season);
   await sleep(1_000);
   return { desktop: true, opened, closed: browser.observe() };
 }
@@ -1347,46 +1354,46 @@ const hexesApart = (from, to) =>
 
 /**
  * The Feed's first story that still opens a place (one from a closed Frontier day is no link), pressed as a player
- * presses it: the map goes where it happened. A desktop's Feed stands in the rail. A phone's stories are in the Log: the
- * player taps Log in the place bar, then the story. A story whose army can be selected puts the Log away for its card;
- * one that only goes to a place leaves the Log open over the map, and the player taps Log again to look at the place
+ * presses it: the map goes where it happened. A desktop's Feed stands in the rail. A phone's stories are in its Feed: the
+ * player taps Feed in the place bar, then the story. A story whose army can be selected puts the Feed away for its card;
+ * one that only goes to a place leaves the Feed open over the map, and the player taps Feed again to look at the place
  * (the place bar's Map would take the camera home). Frontier's realms stand millions of hexes apart, so a story of
  * another realm is a far jump.
  */
 async function openAFeedEvent({ browser }) {
   const before = browser.observe();
   const from = browser.read(ROUTE_HEX_EXPRESSION);
-  const log = onADesktop() ? undefined : await tapTheLog(browser);
-  if (log === false) return { log, row: null };
+  const feed = onADesktop() ? undefined : await tapTheFeed(browser);
+  if (feed === false) return { feed, row: null };
   // A row's button is named by its words, time and line run together; the browser presses the first one where it is.
   const row = browser.read(`JSON.stringify(document.querySelector(".ui-event__open")?.textContent.trim() ?? null)`);
-  if (!row) return { log, row: null };
+  if (!row) return { feed, row: null };
   browser.run(["click", ".ui-event__open"]);
   await waitFor(browser, (seen) => seen.playable && seen.scene === "map", SCENE_WAIT_MS);
   const to = browser.read(ROUTE_HEX_EXPRESSION);
-  const logLeftOpen = log
-    ? !(await waitFor(browser, (seen) => !seen.panels.includes("Log"), LOG_CLOSES_MS))
+  const feedLeftOpen = feed
+    ? !(await waitFor(browser, (seen) => !seen.panels.includes(HUD_WORDS.feed), FEED_CLOSES_MS))
     : undefined;
-  if (logLeftOpen) await tapTheLog(browser);
+  if (feedLeftOpen) await tapTheFeed(browser);
   return {
-    log,
+    feed,
     row,
     from,
     to,
     apart: hexesApart(from, to),
-    logLeftOpen,
+    feedLeftOpen,
     reloaded: browser.observe().timeOrigin !== before.timeOrigin,
   };
 }
 
-/** How long an army's card takes to stand in the Log's place once its story is tapped. */
-const LOG_CLOSES_MS = 3_000;
+/** How long an army's card takes to stand in the Feed's place once its story is tapped. */
+const FEED_CLOSES_MS = 3_000;
 
-/** A phone's Log slot tapped, as a player taps it; whether the Log's panel is drawn after. */
-async function tapTheLog(browser) {
-  browser.tapPlace("Log");
+/** A phone's Feed slot tapped, as a player taps it; whether the Feed's panel is drawn after. */
+async function tapTheFeed(browser) {
+  browser.tapPlace(HUD_WORDS.feed);
   await sleep(1_500);
-  return browser.observe().panels.includes("Log");
+  return browser.observe().panels.includes(HUD_WORDS.feed);
 }
 
 /**
@@ -1394,7 +1401,7 @@ async function tapTheLog(browser) {
  * the selected tile (a contract hex) is the route's (a normalized hex), one map centre apart on both axes.
  */
 function openedInThePage({ seen, played }) {
-  if (played.log === false) return failed("the Log did not open", played);
+  if (played.feed === false) return failed(`the ${HUD_WORDS.feed} did not open`, played);
   if (!played.row) return blocked("the Feed showed no story that opens a place", played);
   if (played.reloaded) return failed("the page loaded again to open the story", played);
   if (!played.to) return failed("the story's address names no hex", played);
@@ -1459,11 +1466,11 @@ async function visitRow(browser, index) {
 
 /** The Season's board row at `index` opened and Visit pressed, as a player does; null when the board has no such row. */
 async function visitFromTheBoard(browser, index) {
-  if (onADesktop()) browser.click("Season");
+  if (onADesktop()) browser.click(HUD_WORDS.season);
   else {
-    browser.click("Menu");
+    browser.click(HUD_WORDS.menu);
     await sleep(1_500);
-    browser.click("Season");
+    browser.click(HUD_WORDS.season);
   }
   await sleep(2_000);
   const rows = `[...document.querySelectorAll('button[aria-label^="#"]')].map((row) => row.getAttribute("aria-label"))`;
@@ -1509,22 +1516,24 @@ function visitMissed(visit) {
  * opened Menu.
  */
 function seasonReadAndClosed({ played }) {
-  if (played.desktop && !played.opened.pressed.includes("Season"))
+  if (played.desktop && !played.opened.pressed.includes(HUD_WORDS.season))
     return failed("the Season place was not lit", played);
-  if (!played.desktop && !played.menu.includes("Menu")) return failed("no Menu sheet opened", played);
-  if (!played.opened.panels.includes("Season")) return failed("the Season's board was not drawn", played);
-  if (played.closed.panels.includes("Season")) return failed("the Season's board did not close", played);
+  if (!played.desktop && !played.menu.includes(HUD_WORDS.menu))
+    return failed(`the ${HUD_WORDS.menu} did not open`, played);
+  if (!played.opened.panels.includes(HUD_WORDS.season)) return failed("the Season's board was not drawn", played);
+  if (played.closed.panels.includes(HUD_WORDS.season)) return failed("the Season's board did not close", played);
   return completed(played);
 }
 
 async function readTheSeasonInTheMenu({ browser }) {
-  browser.click("Menu");
+  browser.click(HUD_WORDS.menu);
   await sleep(1_500);
-  const menu = browser.observe().dialogs;
-  browser.click("Season");
+  // The Menu is a page of the place bar, drawn as a panel over the map.
+  const menu = browser.observe().panels;
+  browser.click(HUD_WORDS.season);
   await sleep(2_000);
   const opened = browser.observe();
-  browser.click("Back");
+  browser.click(HUD_WORDS.close);
   await sleep(1_000);
   return { menu, opened, closed: browser.observe() };
 }
@@ -3513,7 +3522,7 @@ const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, i
             context.extraScreenshot("castle");
             context.browser.run(["press", "Escape"]);
             if (!onADesktop()) {
-              context.browser.click("Menu");
+              context.browser.click(HUD_WORDS.menu);
               await sleep(500);
               context.browser.click("Realm Labor");
               await sleep(1_000);
@@ -3557,17 +3566,17 @@ const devconSeasonStep = {
   name: "devcon-season",
   play: async ({ browser }) => {
     if (!onADesktop()) {
-      browser.click("Menu");
+      browser.click(HUD_WORDS.menu);
       await sleep(500);
     }
-    browser.click("Season");
+    browser.click(HUD_WORDS.season);
     await sleep(2_000);
     return browser.read(
-      `JSON.stringify([...document.querySelectorAll('section[aria-label="Season"] img')].map(img => img.complete && img.naturalWidth > 0 ? new URL(img.currentSrc).pathname.split('/').pop() : null))`,
+      `JSON.stringify([...document.querySelectorAll('section[aria-label="${HUD_WORDS.season}"] img')].map(img => img.complete && img.naturalWidth > 0 ? new URL(img.currentSrc).pathname.split('/').pop() : null))`,
     );
   },
   verify: ({ seen, played }) => {
-    if (!seen.panels.includes("Season")) return failed("Season did not open", played);
+    if (!seen.panels.includes(HUD_WORDS.season)) return failed("Season did not open", played);
     const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
     if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
       return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);

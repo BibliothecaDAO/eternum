@@ -5,10 +5,19 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
-import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
+import { CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
+import { CLOSEST_CAMERA_DISTANCE, FARTHEST_CAMERA_DISTANCE, HUD_WORDS, SPECTATOR_STEPS, STEP_SETS } from "./steps.mjs";
 
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
+
+// Playtest 30 October 2026 (B6): the phone's Log became its Feed and the Season board's Back its ×, and the steps
+// pressed words the HUD no longer had.
+describe("the HUD's words the steps press and read", () => {
+  it("are the ones the app writes", () => {
+    expect(HUD_WORDS).toEqual({ menu: MENU, season: SEASON, feed: EVENTS_WORDS.feed, close: CLOSE });
+  });
+});
 
 describe("the zoom step", () => {
   const verify = verifyOf("zoom");
@@ -188,9 +197,9 @@ describe("reading the season", () => {
     expect(verify({ seen: onTheMap, played: stayed }).reason).toBe("the Season's board did not close");
   });
 
-  it("reads a phone's season from its Menu: the board drew, then its Back closed it", () => {
+  it("reads a phone's season from its Menu: the board drew, then its × closed it", () => {
     expect(verify({ seen: onTheMap, played: phone }).status).toBe("completed");
-    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("no Menu sheet opened");
+    expect(verify({ seen: onTheMap, played: { ...phone, menu: [] } }).reason).toBe("the Menu did not open");
     expect(verify({ seen: onTheMap, played: { ...phone, opened: seen([]) } }).reason).toBe(
       "the Season's board was not drawn",
     );
@@ -212,10 +221,10 @@ describe("a story opened from the Feed", () => {
     expect(verify({ seen: selected, played }).status).toBe("completed");
   });
 
-  it("fails a phone whose Log never opened, and is blocked only when an opened Feed holds no story", () => {
-    expect(verify({ seen: selected, played: { log: false, row: null } }).reason).toBe("the Log did not open");
-    expect(verify({ seen: selected, played: { log: true, row: null } }).status).toBe("blocked");
-    expect(verify({ seen: selected, played: { ...played, log: true } }).status).toBe("completed");
+  it("fails a phone whose Feed never opened, and is blocked only when an opened Feed holds no story", () => {
+    expect(verify({ seen: selected, played: { feed: false, row: null } }).reason).toBe("the Feed did not open");
+    expect(verify({ seen: selected, played: { feed: true, row: null } }).status).toBe("blocked");
+    expect(verify({ seen: selected, played: { ...played, feed: true } }).status).toBe("completed");
   });
 
   it("fails a page that loaded again, a place not selected, another tile selected, or the camera elsewhere", () => {
