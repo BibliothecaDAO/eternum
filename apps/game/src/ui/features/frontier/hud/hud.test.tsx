@@ -329,7 +329,7 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank and Settings, leaves for the app on Exit, and closes on its ×, with no Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
@@ -349,11 +349,16 @@ describe("the Menu", () => {
       ["Season", handlers.onSeason],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
-      ["Resume", handlers.onClose],
     ] as const) {
       act(() => button(word).click());
       expect(handler).toHaveBeenCalled();
     }
+    // Owner, 30 October 2026: "Ok to cut resume": the frame's × closes the Menu, and nothing else says the same.
+    expect(button("Resume")).toBeUndefined();
+    act(() =>
+      document.querySelector<HTMLButtonElement>("section[aria-label='Menu'] button[aria-label='Close']")!.click(),
+    );
+    expect(handlers.onClose).toHaveBeenCalled();
   });
 
   it("has no Production: each store's card opens from its own plate", () => {

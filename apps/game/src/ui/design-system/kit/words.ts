@@ -233,7 +233,6 @@ export const SETTINGS_WORDS = {
   show: "Show",
 } as const;
 export const EXIT = "Exit";
-export const RESUME = "Resume";
 export const SIGN_IN = "Sign in";
 
 /** An army's two ways across the map, and backing out of an order. */
@@ -669,7 +668,7 @@ export const WORDS = {
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
   playFree: "Play free",
-  resume: RESUME,
+  resume: "Resume",
   /** Go into a Blitz game the player is on. */
   enter: "Enter",
   /** Look at a Blitz game the player is not on. */
