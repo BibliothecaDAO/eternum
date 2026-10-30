@@ -54,7 +54,7 @@ const renderHud = (store: ReturnType<typeof spireDay>["store"], viewer = "0x111"
   const enter = vi.fn().mockResolvedValue({ transaction_hash: "0x1" });
   const research = vi.fn();
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
-  const Hud = () => useSelectionCard({ realm, asked: null, onResearch: research, onArmyBack: () => {} })?.sheet ?? null;
+  const Hud = () => useSelectionCard({ realm, asked: null, onResearch: research })?.sheet ?? null;
   const host = document.createElement("div");
   const root = createRoot(host);
   act(() =>
@@ -235,7 +235,7 @@ describe("a realm's spire, from the player's path", () => {
       return spire && <SpireButton explorerId={ARMY} spire={spire} />;
     };
     const Hud = () => {
-      const card = useSelectionCard({ realm, asked: null, onResearch: () => undefined, onArmyBack: () => {} });
+      const card = useSelectionCard({ realm, asked: null, onResearch: () => undefined });
       const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null, layout === "phone");
       useArmyPanelOpens(realm, () => openSurface("army"), layout === "desktop");
       const selected = useUIStore((state) => state.entityActions.selectedEntityId);

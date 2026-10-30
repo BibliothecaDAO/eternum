@@ -29,14 +29,14 @@ import { useTappedBuilding } from "./research/selected-building";
  * another's army on it too, in that army's card. The player's own army selected where it stands is the army's panel,
  * whatever site it stands on (owner, 28 October 2026: "when I click on a tile that was cleared but an army is standing
  * on it, army panel must be displayed not the cleared one"); the clear's Feed row selects the tile itself, and shows the
- * receipt. Its spire too: Spire on the army's panel, or a tap on the spire's tile, opens the spire's card for it. Other empty tiles and armies the dock already shows open no card. No card takes the panel after a fight: a
- * clear hands it back to the army (onArmyBack), and the Feed tells how the fight went.
+ * receipt. Its spire too: Spire on the army's panel, or a tap on the spire's tile, opens the spire's card for it. Other empty tiles and armies the dock already shows open no card. No card outlives the order its army was given
+ * from it: once it settles the one panel hands the panel back to the army (useOnePanel), and the Feed tells how a
+ * fight went.
  */
 export const useSelectionCard = ({
   realm,
   asked,
   onResearch,
-  onArmyBack,
 }: {
   /** The realm the board draws: the player's own, or the realm they visit or watch. */
   realm: NativeRows["Structure"] | null;
@@ -44,8 +44,6 @@ export const useSelectionCard = ({
   asked: BuildingType | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;
-  /** Hands the HUD back to the army a target's card acted for, once it cleared the target (useArmyPanelOpens). */
-  onArmyBack: (armyId: number) => void;
 }): { key: string; sheet: ReactNode } | null => {
   const { isMapView } = useQuery();
   const selectedHex = useUIStore((state) => state.selectedHex);
@@ -81,12 +79,7 @@ export const useSelectionCard = ({
   if (target)
     return card(
       "target",
-      <TileCard
-        selected={target}
-        onClose={close}
-        onArmyBack={onArmyBack}
-        receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined}
-      />,
+      <TileCard selected={target} onClose={close} receipt={cleared ? <SiteReceipt selected={cleared} /> : undefined} />,
     );
   if (cleared && !armyWhereItStands) return card("cleared", <ClearedSiteSheet selected={cleared} onClose={close} />);
   if (mapSite) return card("site", <MapSiteCard selected={mapSite} onClose={close} />);

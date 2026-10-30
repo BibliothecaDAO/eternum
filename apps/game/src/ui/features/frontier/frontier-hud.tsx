@@ -37,7 +37,7 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
-import { useOnePanel } from "./hud/one-panel";
+import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { useNextUpBuilding } from "./next-up/next-up-steps";
@@ -104,7 +104,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       setResearchPick(node);
       setSurface("research");
     },
-    onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
   const {
@@ -131,6 +130,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     },
     desktop,
   );
+  useOrderSettledReturnsToTheArmy(card?.key ?? null, armyPanel.returnTo);
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();

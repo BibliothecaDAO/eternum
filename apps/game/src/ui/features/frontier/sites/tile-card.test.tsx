@@ -29,7 +29,7 @@ import { siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
 import { useArmyPanelOpens } from "../army/army-opens";
-import { useOnePanel } from "../hud/one-panel";
+import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
@@ -77,23 +77,21 @@ const actsOnTheSite = (selection: ReturnType<typeof useUIStore.getState>["mapSel
 
 /**
  * The card inside the HUD's arbitration, as frontier-hud.tsx wires it: the one panel (a new card puts the army's panel
- * away), the army's panel opening on selection (a desktop's), and the card's way back to the army. The army's panel
+ * away, a settled order gives it back), and the army's panel opening on selection (a desktop's). The army's panel
  * stands in as a marked section.
  */
 const InTheHud = ({
   desktop,
   realm,
   ...card
-}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & Omit<
-  ComponentProps<typeof TileCard>,
-  "onArmyBack"
->) => {
+}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & ComponentProps<typeof TileCard>) => {
   const onTheSite = useUIStore((state) => actsOnTheSite(state.mapSelection));
   const { surface, openSurface, showsCard } = useOnePanel(onTheSite ? "target" : null, !desktop);
   const armyPanel = useArmyPanelOpens(realm, () => openSurface("army"), desktop);
+  useOrderSettledReturnsToTheArmy(onTheSite ? "target" : null, armyPanel.returnTo);
   return (
     <>
-      {showsCard && <TileCard {...card} onArmyBack={armyPanel.returnTo} />}
+      {showsCard && <TileCard {...card} />}
       {surface === "army" && <section aria-label="Army details" />}
     </>
   );
@@ -134,7 +132,7 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
             />
           </MemoryRouter>
         ) : (
-          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} onArmyBack={() => {}} />
+          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} />
         )}
       </GameProvider>,
     ),
@@ -235,7 +233,7 @@ describe("the tile card", () => {
           value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
           account={{ address: "0x111" } as never}
         >
-          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} onArmyBack={() => {}} />
+          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
         </GameProvider>,
       ),
     );
@@ -335,7 +333,7 @@ describe("an attack in flight on the tile card", () => {
   });
 });
 
-describe("after the player's attack (owner, 27 October 2026: 'the post fight cards are pretty useless')", () => {
+describe("after the player's attack (owner, 30 October 2026: 'I'd like the army panel to be opened after the fight ends')", () => {
   const gone = (model: string, key: string) => ({ model, key, value: null });
   const ARMY_GONE = [gone("ExplorerTroops", "0x74"), gone("TileOccupancy", "0x75")];
   /** The army's selection, acting on the site's tile, as the site's card is opened for it. */
@@ -370,12 +368,35 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     return card;
   };
 
-  it("keeps the site's card when both sides stand, its Attack there to press again", async () => {
-    const { host, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
-    expect(selection()).toEqual(ON_THE_SITE);
-    expect(button("Attack")).toBeDefined();
+  it("opens the still-selected army's panel on a desktop when the guard holds, the site's card put away", async () => {
+    const { host, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    expect(siteCard(host)).toBeNull();
     noResult(host);
     unmount();
+  });
+
+  it("gives a phone back its army when the guard holds: its own tile for the action row, no card over the map", async () => {
+    const { host, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]), {
+      hud: "phone",
+    });
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(armyPanel(host)).toBeNull();
+    expect(siteCard(host)).toBeNull();
+    unmount();
+  });
+
+  it("opens the army's panel on a desktop when the game refused the attack: the refusal is the army's to read", async () => {
+    waitForAction.mockResolvedValue({ hash: "0x1", block: 9, status: "REVERTED", revertReason: "Army is resting" });
+    const card = renderCard("beside", "desktop");
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: "own" }));
+    act(() => useUIStore.getState().selectOnMap(ON_THE_SITE));
+    await act(async () => card.button("Attack")!.click());
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(card.host)).not.toBeNull();
+    expect(siteCard(card.host)).toBeNull();
+    card.unmount();
   });
 
   it("opens the still-selected army's panel again on a desktop after a clear, with no card of the fight", async () => {
