@@ -9,6 +9,7 @@ import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useWorldSpatialTiles } from "@/hooks/use-world-spatial-tiles";
 import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
+import { toast } from "@/ui/features/event-feed/notify";
 
 import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
@@ -20,14 +21,13 @@ import {
   type NativeRows,
 } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { fightVerdict, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useMemo, type ReactNode } from "react";
 
 import { useFrontierRealm, useGoToFrontierPlace } from "../frontier-home";
 import { type ArmyOrder, type Cost, isCovered, useArmyStamina, useOrderAt } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
 import { useApproachTile } from "./approach";
-import { readFightRecord } from "./fight-record";
 import { fightIsSent, fightWasNotSent, useFightRefusal } from "./fight-refusal";
 import { useSelectedOwnArmy } from "./selected-army";
 import { readArmyCard, readSiteCard, type SiteAttack, type SiteCardPlan } from "./site-card-plan";
@@ -110,20 +110,18 @@ const targetId = (target: AttackTarget): number =>
  * is and pays, and its guard. The card stays between attacks and closes when the target falls. It is the one surface an
  * army's attack is confirmed on, whatever it attacks.
  *
- * After a clear the panel is the still-selected army's again, not the cleared site's (owner, 27 October 2026: "when I
- * clear a camp, the panel on the right should go back to my army panel since its still selected"), through the HUD's
- * `onArmyBack`; selecting the site later shows its own card. An army lost lets go of the map itself.
+ * Once an attack settles, applied or refused, the panel is the still-selected army's again, not this card (owner, 30
+ * October 2026: "when I fight, since the army stays selected, I'd like the army panel to be opened after the fight
+ * ends"): the HUD's one panel hands it back (useOnePanel). Selecting the target later shows its card. An army lost lets
+ * go of the map itself.
  */
 export const TileCard = ({
   selected,
   onClose,
-  onArmyBack,
   receipt,
 }: {
   selected: AttackTarget;
   onClose: () => void;
-  /** Hands the HUD back to the army once it cleared the target (useArmyPanelOpens). */
-  onArmyBack: (armyId: number) => void;
   receipt?: ReactNode;
 }) => {
   const { setup, account } = useGame();
@@ -143,24 +141,27 @@ export const TileCard = ({
   const attackSite = async () => {
     if (!attack || !account.account || armyId === null) return;
     const signer = account.account;
+    let sent = false;
     try {
       if (selected.kind === "site" && ruinDisappeared(setup.store, selected.site))
         throw new Error("This ruin has disappeared.");
       if (readTarget(setup.store, selected, attack).chest?.funded === false)
         throw new Error("Today's LORDS budget cannot fund this ruin.");
-      const fought = await sendOnce("army", armyId, { order: "attack" }, () => {
+      await sendOnce("army", armyId, { order: "attack" }, () => {
+        sent = true;
         fightIsSent();
         playUnitCommandSound("attack");
         return sendAttack(setup.systemCalls, signer, armyId, selected);
       });
-      if (fought !== null && targetFell(setup.store, selected, fought) && stillActsOn(armyId, siteTile))
-        onArmyBack(armyId);
     } catch (error) {
       fightWasNotSent({
         armyId,
         targetId: targetId(selected),
-        line: extractReadableErrorMessage(error, "The attack could not be sent."),
+        line: extractReadableErrorMessage(error, ATTACK_NOT_SENT),
       });
+      // A refusal of an attack that left gives the panel back to the army (useOnePanel): its reason reads where every
+      // army order's does. One caught before it left keeps the card, which says why.
+      if (sent) toast.failed(error, ATTACK_NOT_SENT);
     }
   };
 
@@ -264,32 +265,7 @@ const sitePay = (plan: SiteCardPlan) => {
     : null;
 };
 
-/**
- * The target fell to this attack: its battle's record says the army stands over a fallen guard, or, before any record
- * reaches this screen, the site stands cleared. A fight both sides survive goes on in the target's card.
- */
-const targetFell = (store: NativeFactStore, selected: AttackTarget, transactionHash: string): boolean => {
-  const record = readFightRecord(transactionHash);
-  if (record) return fightVerdict({ army: record.army.after, guard: record.guard.after }) === "victory";
-  if (selected.kind !== "site") return false;
-  const id = safeInteger(selected.site.entity_id);
-  return store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: id })?.clear != null;
-};
-
-/**
- * Whether the army is still selected acting on the attacked tile when the attack's outcome arrives: a player who let
- * go of it, picked another army or another tile meanwhile keeps that newer choice.
- */
-const stillActsOn = (armyId: number, tile: { col: number; row: number }): boolean => {
-  const selection = useUIStore.getState().mapSelection;
-  return (
-    selection?.kind === "army" &&
-    selection.entityId === armyId &&
-    typeof selection.tile === "object" &&
-    selection.tile?.col === tile.col &&
-    selection.tile.row === tile.row
-  );
-};
+const ATTACK_NOT_SENT = "The attack could not be sent.";
 
 const wholeTroops = (army: NativeRows["ExplorerTroops"]): number =>
   Number(army.troops.count / BigInt(RESOURCE_PRECISION));

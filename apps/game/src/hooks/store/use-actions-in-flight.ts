@@ -54,6 +54,14 @@ export const useAllInFlight = <S extends Subject>(subject: S): ReadonlyMap<strin
   }, [flights, subject]);
 };
 
+/** Hears each action as it goes in flight for one kind of subject, by its key, with what it is. */
+export const onSent = <S extends Subject>(subject: S, heard: (key: string, what: InFlight[S]) => void): (() => void) =>
+  useActionsInFlight.subscribe(({ flights }, { flights: before }) => {
+    const prefix = `${subject}:`;
+    for (const [id, what] of flights)
+      if (id.startsWith(prefix) && !before.has(id)) heard(id.slice(prefix.length), what as InFlight[S]);
+  });
+
 /**
  * Hears each outcome for one kind of subject, by its key: the action is no longer in flight (applied, refused or
  * unanswered), and a surface that held its subject can offer it again.

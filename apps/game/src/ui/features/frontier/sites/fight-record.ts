@@ -1,4 +1,3 @@
-import { streamedStoriesOf } from "@/hooks/store/use-story-events-store";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -17,18 +16,6 @@ export const battleRecordOf = (payload: Record<string, unknown>): FightRecord | 
   const army = troopsOf(payload.attacker);
   const guard = troopsOf(payload.defender);
   return army && guard ? { army, guard } : null;
-};
-
-/**
- * The battle an action fought, by its transaction. The story travels with the action's facts, so it is here once the
- * action's outcome is known; undefined when no story of that transaction reached this client.
- */
-export const readFightRecord = (transactionHash: string): FightRecord | undefined => {
-  for (const { story, storyPayload } of streamedStoriesOf(transactionHash)) {
-    const record = story === "BattleEvent" ? battleRecordOf(storyPayload) : null;
-    if (record) return record;
-  }
-  return undefined;
 };
 
 /** One side's whole troops before and after the battle, as its story carries them in game precision. */

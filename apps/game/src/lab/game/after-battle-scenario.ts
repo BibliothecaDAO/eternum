@@ -169,6 +169,30 @@ export const fightScenario = (): LabScenario => {
   };
 };
 
+/**
+ * The same ruin and army (/lab/game?scenario=fight-lost), but the fight costs the army its life: the chain answers its
+ * BattleGuard with the army gone and the guard standing, as the contract leaves a lost attacker, so the HUD's loss can
+ * be played (the playtest's lab-actions-fight-lost).
+ */
+export const fightLostScenario = (): LabScenario => {
+  const fight = fightScenario();
+  return {
+    ...fight,
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" ? answerLostFight(command, chain) : fight.answer(command, chain, now),
+  };
+};
+
+const answerLostFight = (command: LabCommand, chain: NativeFactStore): LabFact[] => {
+  const [attackerId] = command.calldata.slice(5).map((felt) => BigInt(felt));
+  const [armyKey] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === attackerId)!;
+  const [tileKey] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === attackerId)!;
+  return [
+    { model: "TileOccupancy", key: tileKey, value: null },
+    { model: "ExplorerTroops", key: armyKey, value: null },
+  ];
+};
+
 const answerFight = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
   const [attackerId, defenderId] = command.calldata.slice(5).map((felt) => BigInt(felt));
   const [guardKey, guard] = [...chain.entries("Guard")].find(([, row]) => row.structure_id === defenderId)!;

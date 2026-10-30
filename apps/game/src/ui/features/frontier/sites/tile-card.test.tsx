@@ -28,8 +28,10 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
+import { letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
+import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
-import { useOnePanel } from "../hud/one-panel";
+import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
 import { TileCard } from "./tile-card";
 
@@ -77,24 +79,30 @@ const actsOnTheSite = (selection: ReturnType<typeof useUIStore.getState>["mapSel
 
 /**
  * The card inside the HUD's arbitration, as frontier-hud.tsx wires it: the one panel (a new card puts the army's panel
- * away), the army's panel opening on selection (a desktop's), and the card's way back to the army. The army's panel
+ * away, a settled order gives it back), and the army's panel opening on selection (a desktop's). The army's panel
  * stands in as a marked section.
  */
 const InTheHud = ({
   desktop,
   realm,
   ...card
-}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & Omit<
-  ComponentProps<typeof TileCard>,
-  "onArmyBack"
->) => {
+}: { desktop: boolean; realm: Parameters<typeof useArmyPanelOpens>[0] } & ComponentProps<typeof TileCard>) => {
   const onTheSite = useUIStore((state) => actsOnTheSite(state.mapSelection));
   const { surface, openSurface, showsCard } = useOnePanel(onTheSite ? "target" : null, !desktop);
   const armyPanel = useArmyPanelOpens(realm, () => openSurface("army"), desktop);
+  useOrderSettledReturnsToTheArmy(onTheSite ? "target" : null, {
+    returnTo: armyPanel.returnTo,
+    showLoss: () => openSurface("army-lost"),
+  });
   return (
     <>
-      {showsCard && <TileCard {...card} onArmyBack={armyPanel.returnTo} />}
+      <button type="button" onClick={() => openSurface("menu")}>
+        Menu
+      </button>
+      {surface === "menu" && <section aria-label="Menu page" />}
+      {showsCard && <TileCard {...card} />}
       {surface === "army" && <section aria-label="Army details" />}
+      {surface === "army-lost" && <ArmyLostSheet onClose={() => openSurface(null)} />}
     </>
   );
 };
@@ -134,7 +142,7 @@ const renderCard = (army: "beside" | "far", hud?: "desktop" | "phone") => {
             />
           </MemoryRouter>
         ) : (
-          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} onArmyBack={() => {}} />
+          <TileCard selected={{ kind: "site", site, structure, tile }} onClose={() => {}} />
         )}
       </GameProvider>,
     ),
@@ -235,7 +243,7 @@ describe("the tile card", () => {
           value={{ store, systemCalls: { attack_explorer_vs_explorer: attack } } as unknown as GameClientSetup}
           account={{ address: "0x111" } as never}
         >
-          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} onArmyBack={() => {}} />
+          <TileCard selected={{ kind: "army", army: other, tile }} onClose={() => {}} />
         </GameProvider>,
       ),
     );
@@ -335,7 +343,7 @@ describe("an attack in flight on the tile card", () => {
   });
 });
 
-describe("after the player's attack (owner, 27 October 2026: 'the post fight cards are pretty useless')", () => {
+describe("after the player's attack (owner, 30 October 2026: 'I'd like the army panel to be opened after the fight ends')", () => {
   const gone = (model: string, key: string) => ({ model, key, value: null });
   const ARMY_GONE = [gone("ExplorerTroops", "0x74"), gone("TileOccupancy", "0x75")];
   /** The army's selection, acting on the site's tile, as the site's card is opened for it. */
@@ -370,12 +378,35 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     return card;
   };
 
-  it("keeps the site's card when both sides stand, its Attack there to press again", async () => {
-    const { host, button, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
-    expect(selection()).toEqual(ON_THE_SITE);
-    expect(button("Attack")).toBeDefined();
+  it("opens the still-selected army's panel on a desktop when the guard holds, the site's card put away", async () => {
+    const { host, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]));
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    expect(siteCard(host)).toBeNull();
     noResult(host);
     unmount();
+  });
+
+  it("gives a phone back its army when the guard holds: its own tile for the action row, no card over the map", async () => {
+    const { host, unmount } = await attackThatLands(() => battleArrives([1_498, 1_400], [1_100, 600]), {
+      hud: "phone",
+    });
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(armyPanel(host)).toBeNull();
+    expect(siteCard(host)).toBeNull();
+    unmount();
+  });
+
+  it("opens the army's panel on a desktop when the game refused the attack: the refusal is the army's to read", async () => {
+    waitForAction.mockResolvedValue({ hash: "0x1", block: 9, status: "REVERTED", revertReason: "Army is resting" });
+    const card = renderCard("beside", "desktop");
+    act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: "own" }));
+    act(() => useUIStore.getState().selectOnMap(ON_THE_SITE));
+    await act(async () => card.button("Attack")!.click());
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(card.host)).not.toBeNull();
+    expect(siteCard(card.host)).toBeNull();
+    card.unmount();
   });
 
   it("opens the still-selected army's panel again on a desktop after a clear, with no card of the fight", async () => {
@@ -442,13 +473,82 @@ describe("after the player's attack (owner, 27 October 2026: 'the post fight car
     unmount();
   });
 
-  it("shows no card of a lost army: the map lets the army go itself, and the Feed says it was lost", async () => {
-    const { host, unmount } = await attackThatLands((store) => {
-      battleArrives([1_498, 0], [1_100, 1_028]);
-      store.applyFacts(ARMY_GONE as never);
-    });
-    expect(selection()).toEqual(ON_THE_SITE);
-    noResult(host);
+  const lossSheet = () => document.querySelector('[role="dialog"][aria-label="Your army is lost"]');
+  const armyFalls = (store: ReturnType<typeof renderCard>["store"]) => {
+    battleArrives([1_498, 0], [1_100, 1_028]);
+    store.applyFacts(ARMY_GONE as never);
+  };
+
+  /** The map's own clearing of the selection, as its clearEntitySelection deselects. */
+  const mapClears = () => useUIStore.getState().deselectEntity();
+  /** The army's deletion, then the map's own cleanup of its selection (worldmap's letGoOfLostSelection), before settling. */
+  const armyFallsAndTheMapLetsGo = (store: ReturnType<typeof renderCard>["store"]) => {
+    armyFalls(store);
+    expect(letGoOfLostSelection(store, mapClears)).toBe(true);
+    expect(selection()).toBeNull();
+  };
+
+  it.each([
+    { hud: "desktop", lands: armyFalls, case: "a desktop" },
+    { hud: "phone", lands: armyFalls, case: "a phone" },
+    { hud: "desktop", lands: armyFallsAndTheMapLetsGo, case: "a desktop, the map letting go of it first" },
+    { hud: "phone", lands: armyFallsAndTheMapLetsGo, case: "a phone, the map letting go of it first" },
+  ] as const)(
+    "shows a lost army's loss in the panel on $case, then closes it: no card of the target, no panel of a gone army",
+    async ({ hud, lands }) => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      try {
+        const { host, unmount } = await attackThatLands(lands, { hud });
+        expect(lossSheet()?.textContent).toContain("Its troops fell in the fight. Deploy a new army from your realm.");
+        expect(siteCard(host)).toBeNull();
+        expect(armyPanel(host)).toBeNull();
+        act(() => vi.advanceTimersByTime(ARMY_LOST_MS));
+        expect(lossSheet()).toBeNull();
+        expect(siteCard(host)).toBeNull();
+        expect(armyPanel(host)).toBeNull();
+        unmount();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it.each(["desktop", "phone"] as const)(
+    "keeps a %s player's newer choice when they open Menu after the map let go of the lost army: Menu stays, no loss",
+    async (hud) => {
+      const menuPage = () => document.querySelector('[aria-label="Menu page"]');
+      const { unmount } = await attackThatLands(
+        (store) => {
+          armyFallsAndTheMapLetsGo(store);
+          [...document.querySelectorAll("button")].find((button) => button.textContent === "Menu")!.click();
+        },
+        { hud },
+      );
+      expect(menuPage()).not.toBeNull();
+      expect(lossSheet()).toBeNull();
+      unmount();
+    },
+  );
+
+  it("keeps the player's choice when they let go before the army fell and the map cleaned up: no loss over it", async () => {
+    const { unmount } = await attackThatLands(
+      (store) => {
+        armyFalls(store);
+        // Nothing is selected any more: the map's cleanup has nothing to let go of, and says nothing.
+        expect(letGoOfLostSelection(store, mapClears)).toBe(false);
+      },
+      { meanwhile: () => useUIStore.getState().selectOnMap(null) },
+    );
+    expect(selection()).toBeNull();
+    expect(lossSheet()).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when the army falls after they picked another army: no loss over it", async () => {
+    const other = { kind: "army", entityId: 202, tile: "own" } as const;
+    const { unmount } = await attackThatLands(armyFalls, { meanwhile: () => useUIStore.getState().selectOnMap(other) });
+    expect(selection()).toEqual(other);
+    expect(lossSheet()).toBeNull();
     unmount();
   });
 

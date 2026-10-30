@@ -21,6 +21,7 @@ import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board"
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
+import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { useSelectionCard } from "./frontier-selection-sheet";
@@ -37,7 +38,7 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
-import { useOnePanel } from "./hud/one-panel";
+import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { useNextUpBuilding } from "./next-up/next-up-steps";
@@ -105,7 +106,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       setResearchPick(node);
       setSurface("research");
     },
-    onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
@@ -125,6 +125,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     },
     desktop,
   );
+  useOrderSettledReturnsToTheArmy(card?.key ?? null, {
+    returnTo: armyPanel.returnTo,
+    showLoss: () => setSurface("army-lost"),
+  });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
@@ -199,6 +203,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
       {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
+      {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />

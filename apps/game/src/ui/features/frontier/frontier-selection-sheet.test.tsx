@@ -62,9 +62,9 @@ import { transferArmies, TRANSFER_TAPPED } from "./army/transfer-fixture";
 import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 
-/** The selection's card as the HUD draws it; no fight here clears a target, so none hands the HUD back to an army. */
-const FrontierSelectionSheet = (props: Omit<Parameters<typeof useSelectionCard>[0], "onArmyBack" | "asked">) =>
-  useSelectionCard({ asked: null, ...props, onArmyBack: () => {} })?.sheet ?? null;
+/** The selection's card as the HUD draws it. */
+const FrontierSelectionSheet = (props: Omit<Parameters<typeof useSelectionCard>[0], "asked">) =>
+  useSelectionCard({ asked: null, ...props })?.sheet ?? null;
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -371,7 +371,7 @@ it("stands Research alone over the spire card, and shows the next selection's ca
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
   const Hud = () => {
-    const card = useSelectionCard({ realm, asked: null, onResearch: () => undefined, onArmyBack: () => {} });
+    const card = useSelectionCard({ realm, asked: null, onResearch: () => undefined });
     const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
     return (
       <>
