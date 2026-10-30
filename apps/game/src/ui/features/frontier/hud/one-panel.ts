@@ -1,5 +1,5 @@
 import type { MapSelectionIntent } from "@/hooks/store/map-selection";
-import { onOutcome, onSent } from "@/hooks/store/use-actions-in-flight";
+import { onOutcome, onSent, type OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { useEffect, useRef, useState } from "react";
@@ -118,29 +118,35 @@ export const useOnePanel = (
  * that pick still stands: a player who let go, picked another army or another tile meanwhile keeps that newer choice.
  * An order that takes the army to a tile (a move or an explore, the card's own Move beside a guard) keeps the card: its
  * next step (Attack) is there. Orders given with no card standing (a move on the map) leave the selection, and the next
- * order queued on it, as they are. An army the order cost its life gets no panel (returnTo's own check).
+ * order queued on it, as they are. An army an attack cost its life gets no panel: the panel shows the loss instead, then
+ * closes (showLoss); an army merged away by its trade has nothing to tell, and its sheet closes itself.
  */
 export const useOrderSettledReturnsToTheArmy = (
   /** The card standing now (useSelectionCard's key), null while none. */
   card: string | null,
-  /** Gives the panel back to the army (useArmyPanelOpens' returnTo). */
-  returnToArmy: (armyId: number) => void,
+  ways: {
+    /** Gives the panel back to the army (useArmyPanelOpens' returnTo); false when the army is no longer on the map. */
+    returnTo: (armyId: number) => boolean;
+    /** Shows, in the panel's place, that the attack cost the army its life (ArmyLostSheet). */
+    showLoss: () => void;
+  },
 ) => {
-  const now = useRef({ card, returnToArmy });
+  const now = useRef({ card, ways });
   useEffect(() => {
-    now.current = { card, returnToArmy };
+    now.current = { card, ways };
   });
   useEffect(() => {
-    const givenFrom = new Map<string, Pick>();
-    const stopSent = onSent("army", (key, order) => {
-      const selection = useUIStore.getState().mapSelection;
-      if (now.current.card !== null && order.to === undefined && isCardOf(selection, key))
-        givenFrom.set(key, selection);
+    const givenFrom = new Map<string, { pick: Pick; order: OrderInFlight }>();
+    const stopSent = onSent("army", (key, { order, to }) => {
+      const pick = useUIStore.getState().mapSelection;
+      if (now.current.card !== null && to === undefined && isCardOf(pick, key)) givenFrom.set(key, { pick, order });
     });
     const stopSettled = onOutcome("army", (key) => {
       const from = givenFrom.get(key);
       givenFrom.delete(key);
-      if (from && samePick(from, useUIStore.getState().mapSelection)) now.current.returnToArmy(Number(key));
+      if (!from || !samePick(from.pick, useUIStore.getState().mapSelection)) return;
+      const { returnTo, showLoss } = now.current.ways;
+      if (!returnTo(Number(key)) && from.order === "attack") showLoss();
     });
     return () => {
       stopSent();

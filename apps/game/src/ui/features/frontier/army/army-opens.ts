@@ -19,7 +19,7 @@ import { useDockArmies } from "../hud/dock-armies";
  * way back to an army a card acted for, once the card's job is done (an order settled, useOnePanel; owner 27 October
  * 2026: "the panel on the right should go back to my army panel since its still selected"): the selection goes back to
  * the army's own tile, and its panel opens where selecting an army opens it (a desktop's); a phone's action row shows
- * the army again. An army no longer on the map (lost in the fight, merged away) gets neither.
+ * the army again. An army no longer on the map (lost in the fight, merged away) gets neither, and returnTo says so.
  */
 export const useArmyPanelOpens = (
   realm: NativeRows["Structure"] | null,
@@ -30,7 +30,7 @@ export const useArmyPanelOpens = (
    * direction A): a selection shows in the action row, and the panel opens from its details button or a pick here.
    */
   opensOnSelect: boolean,
-): { pick: (explorerId: number, choosing?: boolean) => void; returnTo: (explorerId: number) => void } => {
+): { pick: (explorerId: number, choosing?: boolean) => void; returnTo: (explorerId: number) => boolean } => {
   const { setup } = useGame();
   const armies = useDockArmies(realm);
   const selectedId = useUIStore((state) => state.entityActions.selectedEntityId);
@@ -51,11 +51,12 @@ export const useArmyPanelOpens = (
       if (reopen || !opensOnSelect) open(explorerId, choosing);
     },
     returnTo: (explorerId) => {
-      if (!armyStands(setup.store, explorerId)) return;
+      if (!armyStands(setup.store, explorerId)) return false;
       // Back on its own tile with nothing pinned: no order bar offers a move to where the card's target stood.
       useUIStore.getState().updateEntityActionHoveredHex(null);
       useUIStore.getState().selectOnMap({ kind: "army", entityId: explorerId, tile: "own" });
       if (opensOnSelect) open(explorerId);
+      return true;
     },
   };
 };

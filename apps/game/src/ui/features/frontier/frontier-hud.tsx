@@ -21,6 +21,7 @@ import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board"
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
+import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { useSelectionCard } from "./frontier-selection-sheet";
@@ -130,7 +131,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     },
     desktop,
   );
-  useOrderSettledReturnsToTheArmy(card?.key ?? null, armyPanel.returnTo);
+  useOrderSettledReturnsToTheArmy(card?.key ?? null, {
+    returnTo: armyPanel.returnTo,
+    showLoss: () => setSurface("army-lost"),
+  });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
@@ -213,6 +217,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         />
       )}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
+      {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />

@@ -28,6 +28,7 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
+import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
 import { campBeside, otherArmyAt, SITE, SITE_TILE } from "./site-fixture";
@@ -88,11 +89,15 @@ const InTheHud = ({
   const onTheSite = useUIStore((state) => actsOnTheSite(state.mapSelection));
   const { surface, openSurface, showsCard } = useOnePanel(onTheSite ? "target" : null, !desktop);
   const armyPanel = useArmyPanelOpens(realm, () => openSurface("army"), desktop);
-  useOrderSettledReturnsToTheArmy(onTheSite ? "target" : null, armyPanel.returnTo);
+  useOrderSettledReturnsToTheArmy(onTheSite ? "target" : null, {
+    returnTo: armyPanel.returnTo,
+    showLoss: () => openSurface("army-lost"),
+  });
   return (
     <>
       {showsCard && <TileCard {...card} />}
       {surface === "army" && <section aria-label="Army details" />}
+      {surface === "army-lost" && <ArmyLostSheet onClose={() => openSurface(null)} />}
     </>
   );
 };
@@ -463,13 +468,37 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     unmount();
   });
 
-  it("shows no card of a lost army: the map lets the army go itself, and the Feed says it was lost", async () => {
-    const { host, unmount } = await attackThatLands((store) => {
-      battleArrives([1_498, 0], [1_100, 1_028]);
-      store.applyFacts(ARMY_GONE as never);
-    });
-    expect(selection()).toEqual(ON_THE_SITE);
-    noResult(host);
+  const lossSheet = () => document.querySelector('[role="dialog"][aria-label="Your army is lost"]');
+  const armyFalls = (store: ReturnType<typeof renderCard>["store"]) => {
+    battleArrives([1_498, 0], [1_100, 1_028]);
+    store.applyFacts(ARMY_GONE as never);
+  };
+
+  it.each(["desktop", "phone"] as const)(
+    "shows a lost army's loss in the panel on a %s, then closes it: no card of the target, no panel of a gone army",
+    async (hud) => {
+      vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
+      try {
+        const { host, unmount } = await attackThatLands(armyFalls, { hud });
+        expect(lossSheet()?.textContent).toContain("Its troops fell in the fight. Deploy a new army from your realm.");
+        expect(siteCard(host)).toBeNull();
+        expect(armyPanel(host)).toBeNull();
+        act(() => vi.advanceTimersByTime(ARMY_LOST_MS));
+        expect(lossSheet()).toBeNull();
+        expect(siteCard(host)).toBeNull();
+        expect(armyPanel(host)).toBeNull();
+        unmount();
+      } finally {
+        vi.useRealTimers();
+      }
+    },
+  );
+
+  it("keeps the player's newer choice when the army falls after they picked another army: no loss over it", async () => {
+    const other = { kind: "army", entityId: 202, tile: "own" } as const;
+    const { unmount } = await attackThatLands(armyFalls, { meanwhile: () => useUIStore.getState().selectOnMap(other) });
+    expect(selection()).toEqual(other);
+    expect(lossSheet()).toBeNull();
     unmount();
   });
 

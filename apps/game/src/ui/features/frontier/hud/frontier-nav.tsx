@@ -19,6 +19,7 @@ export type HudSurface =
   | "settings"
   | "season"
   | "army"
+  | "army-lost"
   | "withdraw"
   | "realms";
 

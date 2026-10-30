@@ -194,9 +194,14 @@ describe("an order settled gives the panel back to its army (owner, 30 October 2
           ? `card@${picked.tile.col},${picked.tile.row}`
           : null;
     const { surface, openSurface, showsCard } = useOnePanel(card, false);
-    useOrderSettledReturnsToTheArmy(card, (armyId) => {
-      useUIStore.getState().selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
-      openSurface("army");
+    useOrderSettledReturnsToTheArmy(card, {
+      returnTo: (armyId) => {
+        if (!armyStands) return false;
+        useUIStore.getState().selectOnMap({ kind: "army", entityId: armyId, tile: "own" });
+        openSurface("army");
+        return true;
+      },
+      showLoss: () => openSurface("army-lost"),
     });
     return (
       <>
@@ -224,7 +229,27 @@ describe("an order settled gives the panel back to its army (owner, 30 October 2
   const APPLIED = { hash: "0x1", block: 9, status: "SUCCEEDED" };
   const REFUSED = { hash: "0x1", block: 9, status: "REVERTED", revertReason: "Army is resting" };
 
-  afterEach(() => act(() => useUIStore.getState().selectOnMap(null)));
+  /** Whether the army is still on the map when its order settles (returnTo's own check, from the store). */
+  let armyStands = true;
+  afterEach(() => {
+    armyStands = true;
+    act(() => useUIStore.getState().selectOnMap(null));
+  });
+
+  it("shows the loss in the panel's place when an attack cost the army its life, never the army's panel", async () => {
+    const settle = orderGiven({ order: "attack" });
+    armyStands = false;
+    await settle(APPLIED);
+    expect(open()).toEqual(["army-lost"]);
+  });
+
+  it("tells nothing when a trade merged the army away: its sheet has done its job", async () => {
+    const settle = orderGiven({ order: "move" });
+    armyStands = false;
+    await settle(APPLIED);
+    expect(open()).not.toContain("army-lost");
+    expect(open()).not.toContain("army");
+  });
 
   it.each([
     ["an attack (a site, an army, a structure)", { order: "attack" as const }],
