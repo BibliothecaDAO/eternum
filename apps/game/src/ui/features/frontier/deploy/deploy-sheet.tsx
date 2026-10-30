@@ -48,8 +48,10 @@ export const DeploySheet = ({
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
+  // The slot pressed, else (opened from the map, Next up or a store) the first open one; a slot pressed that an army
+  // has since filled leaves none, never another the player did not choose.
   const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
-  const start = plan?.open.find((slot) => slot.slot === pickedSlot);
+  const start = pickedSlot === undefined ? plan?.open[0] : plan?.open.find((slot) => slot.slot === pickedSlot);
   const pickSlot = (slot: number) =>
     openArmyDeployment({
       structureId: safeInteger(realm.entity_id),
@@ -95,7 +97,7 @@ export const DeploySheet = ({
       amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
       onCount={setCount}
       start={start}
-      slots={{ allowed: realm.base.troop_max_explorer_count, open: plan?.open, onPick: pickSlot }}
+      slots={{ open: plan?.open, onPick: pickSlot }}
       troopsWait={nextTroopIn}
       wheatCost={preview?.wheatCost}
       tile={start && center ? (direction === null ? "none" : "open") : undefined}

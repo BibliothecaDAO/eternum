@@ -87,12 +87,15 @@ export const OpenSlotRow = ({
   pulse,
   filling,
   start,
+  selected,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
+  /** The slot Deploy fills, chosen as an army's row is. */
+  selected?: boolean;
   onDeploy: () => void;
 }) => (
   <HudRow
@@ -102,6 +105,7 @@ export const OpenSlotRow = ({
       <RowLine words={filling ?? label} figure={start && filling === undefined && <RowStamina stamina={start.bar} />} />
     }
     trail={<RowTrail />}
+    selected={selected}
     disabled={filling !== undefined}
     busy={filling !== undefined}
     tip={filling === undefined ? start?.words : undefined}

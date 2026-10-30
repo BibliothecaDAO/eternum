@@ -10,7 +10,6 @@ import {
   ARMY,
   OFFLINE,
   PAYOUTS_PAUSED,
-  startsOn,
   type Rank,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
@@ -50,6 +49,8 @@ import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
+import type { SlotStart } from "@/ui/features/frontier/deploy/deploy-plan";
+import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
@@ -515,6 +516,9 @@ const STATES = {
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
+  // Deploy's slots as the Armies card draws them: no army out of three, or one, the first open one chosen.
+  "deploy-slots": { clock: CLOCK, stores: STORES, armies: [], slots: 3, deploy: DEPLOY },
+  "deploy-slots-mix": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 1), slots: 3, deploy: DEPLOY },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   // A phone's picked army, its card not opened: the row in the dock's place.
@@ -1017,6 +1021,8 @@ type LabState = {
   order?: LabOrder;
   site?: LabSite;
   deploy?: LabDeploy;
+  /** The realm's army slots, where a state draws other than the lab's four. */
+  slots?: number;
   clock: DayClock;
   stores: readonly StoreReading[];
   armies: readonly LabArmy[];
@@ -1175,7 +1181,7 @@ export const HudLab = () => {
           )
         }
       >
-        {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
+        {lab.deploy && <LabDeploySheet deploy={lab.deploy} open={labOpenSlots(lab)} />}
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
@@ -1235,13 +1241,10 @@ const useLabNotice = (notice: string | undefined) => {
   }, [notice]);
 };
 
-/** Deploy on the fiction, live: 2 wheat a troop. */
-const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+/** Deploy on the fiction, live: 2 wheat a troop, the realm's open slots, the first chosen until another is pressed. */
+const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[] }) => {
   const [slot, setSlot] = useState<number | null>(null);
-  const open = [
-    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } },
-    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150, perExplore: LAB_EXPLORE } },
-  ];
+  const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   return (
@@ -1251,12 +1254,12 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      start={open.find((entry) => entry.slot === slot)}
-      slots={{ allowed: 3, open, onPick: setSlot }}
+      start={start}
+      slots={{ open, onPick: setSlot }}
       troopsWait={deploy.troopsWait}
       wheatCost={count * 2}
       tile="open"
-      canDeploy={count > 0 && slot !== null}
+      canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
       wheatShort={undefined}
@@ -1523,7 +1526,7 @@ const labSurface = (lab: LabState): HudSurface | null =>
  * deploy, or a desktop's list of rows with one Deploy (the header counts the slots).
  */
 const LabDock = ({ lab }: { lab: LabState }) => {
-  const open = lab.visiting ? 0 : SLOTS - lab.armies.length;
+  const open = lab.visiting ? 0 : (lab.slots ?? SLOTS) - lab.armies.length;
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
@@ -1548,7 +1551,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             onPick={lab.visiting ? undefined : noop}
           />
         ))}
-        {labSlots(lab, open).map((slot) => (
+        {labSlots(lab).map((slot) => (
           <OpenSlotRow key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
         ))}
       </ArmyList>
@@ -1569,7 +1572,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           onPick={noop}
         />
       ))}
-      {labSlots(lab, open).map((slot) => (
+      {labSlots(lab).map((slot) => (
         <OpenSlot key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
       ))}
     </nav>
@@ -1577,20 +1580,27 @@ const LabDock = ({ lab }: { lab: LabState }) => {
 };
 
 /**
- * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina and can be chosen.
+ * The lab realm's open slots, as the deploy plan reads them: the first after an army starts on the 60 of 150 stamina it
+ * left, a fresh one full. The dock and Deploy read the same.
  */
-const labSlots = (lab: LabState, open: number) =>
-  Array.from({ length: open }, (_, index) => {
-    const number = lab.armies.length + index + 1;
+const labOpenSlots = (lab: LabState): SlotStart[] =>
+  Array.from({ length: lab.visiting ? 0 : (lab.slots ?? SLOTS) - lab.armies.length }, (_, index) => {
+    const inherited = index === 0 && lab.armies.length > 0;
     return {
-      number,
-      pulse: index === 0 && lab.armies.length === 0,
-      start: {
-        bar: { current: 60, max: 150, perExplore: LAB_EXPLORE },
-        words: `${startsOn(`${ARMY} ${number}`, "60/150", true)}.`,
-      },
+      slot: lab.armies.length + index,
+      number: lab.armies.length + index + 1,
+      inherited,
+      start: { current: inherited ? 60 : 150, max: 150, perExplore: LAB_EXPLORE },
     };
   });
+
+/** The open slots as the dock draws them, the first pulsing while no army is out. */
+const labSlots = (lab: LabState) =>
+  labOpenSlots(lab).map((slot, index) => ({
+    number: slot.number,
+    pulse: index === 0 && lab.armies.length === 0,
+    start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
+  }));
 
 const LabResults = ({
   results,

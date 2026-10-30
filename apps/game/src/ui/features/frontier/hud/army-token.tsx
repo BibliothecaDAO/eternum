@@ -126,7 +126,7 @@ export const ArmyToken = ({
       {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
     </>
   );
-  const look = cn(TOKEN, "border bg-hud-surface", selected ? "border-2 border-hud-line-strong" : "border-hud-line");
+  const look = tokenLook(selected);
   return onPick ? (
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={look}>
       {body}
@@ -138,6 +138,10 @@ export const ArmyToken = ({
   );
 };
 
+/** A token's frame, the picked one in the strong border: an army's and an open slot's alike. */
+const tokenLook = (selected: boolean) =>
+  cn(TOKEN, "border bg-hud-surface", selected ? "border-2 border-hud-line-strong" : "border-hud-line");
+
 /**
  * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
  * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
@@ -147,10 +151,13 @@ export const OpenSlot = ({
   pulse,
   filling,
   start,
+  selected,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
+  /** Where the slot is one to pick (Deploy's), whether it is the one Deploy fills, picked as an army's token is. */
+  selected?: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
@@ -161,10 +168,11 @@ export const OpenSlot = ({
     type="button"
     aria-label={filling ?? label}
     aria-busy={filling !== undefined}
+    aria-pressed={selected}
     disabled={filling !== undefined}
     data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={cn(TOKEN, "border border-hud-line bg-hud-surface")}
+    className={tokenLook(selected ?? false)}
   >
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
