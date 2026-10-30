@@ -3635,12 +3635,16 @@ export const UNMEASURED_COMMANDS = {
 };
 
 /**
- * A place shared out of the player's view, opened from its message (the lab's far-place game: the neighbour's realm,
- * which the player's Herald scope does not carry, shared in Global). Playtest 29 October 2026, B5.
+ * Places shared out of the player's view, opened from their messages and left again (the lab's far-place game: the
+ * neighbour's realm and army, which the player's Herald scope does not carry, shared in Global). Playtest 29 October
+ * 2026, B5.
  */
 const FAR_PLACE_STEPS = [
   { name: "enter-on-map", settleMs: 8_000, verify: inScene("map") },
-  { name: "open-far-place", play: openTheFarPlace, settleMs: 0, verify: openedTheFarPlace },
+  { name: "open-far-realm", play: openTheFarPlace("structure"), settleMs: 0, verify: openedTheFarPlace("structure") },
+  { name: "leave-far-realm", play: leaveTheFarVisit, settleMs: 0, verify: leftForHome },
+  { name: "open-far-army", play: openTheFarPlace("army"), settleMs: 0, verify: openedTheFarPlace("army") },
+  { name: "leave-far-army", play: leaveTheFarVisit, settleMs: 0, verify: leftForHome },
 ];
 
 export const STEP_SETS = {
@@ -3685,7 +3689,7 @@ export const STEP_SETS = {
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
-  "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS },
+  "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },
@@ -3966,65 +3970,108 @@ async function waitUntil(check, timeoutMs) {
   return true;
 }
 
-/** The neighbour's realm in the far-place game, and its chip in the message that shares it. */
-const FAR_REALM = 8;
-const FAR_PLACE_CHIP = `section[aria-label="${HUD_WORDS.chat}"] [data-place-key$="/structure:${FAR_REALM}"] button`;
+/** The neighbour's realm and army in the far-place game, each shared by a message with its chip. */
+const FAR_PLACES = { structure: 8, army: 211 };
+const farPlaceChip = (kind) =>
+  `section[aria-label="${HUD_WORDS.chat}"] [data-place-key$="/${kind}:${FAR_PLACES[kind]}"] button`;
 const FAR_PLACE_WAIT_MS = 20_000;
 
 /**
- * What the far place's press is read by: the scopes the lab's Herald served (its record), whether the chip is there to
- * press, and the map's selection.
+ * What a far place's press and its visit's Leave are read by: the scopes the lab's Herald served (its record), whether
+ * the place's chip is there to press, and the map's selection.
  */
-const FAR_PLACE_READING = `JSON.stringify({
-  chip: Boolean(document.querySelector(${JSON.stringify(FAR_PLACE_CHIP)})),
+const farPlaceReading = (kind) => `JSON.stringify({
+  chip: Boolean(document.querySelector(${JSON.stringify(farPlaceChip(kind))})),
   scopes: window.__labChain?.scopes ?? [],
   selection: {
     structure: window.__eternumMapSelection?.structure ?? null,
+    army: window.__eternumMapSelection?.army ?? null,
     hex: window.__eternumMapSelection?.hex ?? null,
     camera: window.__eternumMapSelection?.camera ?? null,
   },
 })`;
 
-/** Chat opened as a player opens it (the desktop's strip, a phone's Chat place), then the shared realm's chip pressed. */
-async function openTheFarPlace({ browser }) {
-  if (onADesktop()) browser.click(`${HUD_WORDS.chat} strip`);
-  else browser.tapPlace(HUD_WORDS.chat);
-  await sleep(1_500);
-  const before = browser.read(FAR_PLACE_READING);
-  if (!before.chip) return { before, after: null };
-  browser.run(["click", FAR_PLACE_CHIP]);
-  const startedAt = Date.now();
-  let after = browser.read(FAR_PLACE_READING);
-  while (
-    !(after.selection.structure?.id === FAR_REALM && after.selection.hex) &&
-    Date.now() - startedAt < FAR_PLACE_WAIT_MS
-  ) {
-    await sleep(POLL_MS);
-    after = browser.read(FAR_PLACE_READING);
-  }
-  return { before, after };
+/** Where the selected place stands: a structure's selected tile, an army's own tile. */
+const placeHex = (kind, selection) => (kind === "army" ? selection.army?.hex : selection.hex) ?? null;
+const placeSelected = (kind, selection) =>
+  selection[kind]?.id === FAR_PLACES[kind] && placeHex(kind, selection) !== null;
+
+/**
+ * Chat opened as a player opens it where its message is not shown (the desktop's strip, a phone's Chat place), then the
+ * shared place's chip pressed, until the map has it selected.
+ */
+function openTheFarPlace(kind) {
+  return async ({ browser }) => {
+    if (!browser.read(farPlaceReading(kind)).chip) {
+      if (onADesktop()) browser.click(`${HUD_WORDS.chat} strip`);
+      else browser.tapPlace(HUD_WORDS.chat);
+      await sleep(1_500);
+    }
+    const before = browser.read(farPlaceReading(kind));
+    if (!before.chip) return { before, after: null };
+    browser.run(["click", farPlaceChip(kind)]);
+    const startedAt = Date.now();
+    let after = browser.read(farPlaceReading(kind));
+    while (!placeSelected(kind, after.selection) && Date.now() - startedAt < FAR_PLACE_WAIT_MS) {
+      await sleep(POLL_MS);
+      after = browser.read(farPlaceReading(kind));
+    }
+    return { before, after };
+  };
 }
 
 /**
  * The far place opened as the stream brings it: out of the player's scope before the press, a visit of its owner's
- * served after it carrying the realm, and the map with the realm selected on its tile, the camera on it.
+ * served after it carrying it, and the map with it selected where it stands, the camera on it.
  */
-export function openedTheFarPlace({ seen, played }) {
-  // A visit's banner stands in a phone's place bar, so no place is lit: the route and the drawn scene are the map.
-  if (seen.scene !== "map" || seen.rendered !== "map")
-    return failed(
-      `expected the map, saw the route on ${seen.scene ?? "no scene"}, ${seen.rendered ?? "no scene"} drawn`,
-    );
-  if (!played.after) return failed("the message's place was not there to press", played);
-  if (played.before.scopes.some((scope) => scope.structures.includes(FAR_REALM)))
-    return blocked("the realm was in the player's scope before the press: nothing out of view to open", played);
-  const visited = played.after.scopes.find((scope) => scope.visit !== null && scope.structures.includes(FAR_REALM));
-  if (!visited) return failed("no visit brought the realm into the stream", played);
-  const { structure, hex, camera } = played.after.selection;
-  if (structure?.id !== FAR_REALM) return failed("the realm was not selected", played);
-  if (!hex) return failed("the selected realm stands nowhere on the map", played);
-  if (camera?.col !== hex.col || camera?.row !== hex.row) return failed("the camera is not on the realm", played);
-  return completed(played);
+export function openedTheFarPlace(kind) {
+  return ({ seen, played }) => {
+    // A visit's banner stands in a phone's place bar, so no place is lit: the route and the drawn scene are the map.
+    if (seen.scene !== "map" || seen.rendered !== "map")
+      return failed(
+        `expected the map, saw the route on ${seen.scene ?? "no scene"}, ${seen.rendered ?? "no scene"} drawn`,
+      );
+    if (!played.after) return failed("the message's place was not there to press", played);
+    const carried = (scope) => (kind === "army" ? scope.armies : scope.structures).includes(FAR_PLACES[kind]);
+    // The scope the stream followed as the chip was pressed, then the ones served after the press.
+    const atPress = played.before.scopes.at(-1);
+    if (!atPress || atPress.visit !== null || carried(atPress))
+      return blocked("the place was in view before the press: nothing out of view to open", played);
+    const served = played.after.scopes.slice(played.before.scopes.length);
+    if (!served.some((scope) => scope.visit !== null && carried(scope)))
+      return failed("no visit brought the place into the stream", played);
+    const { selection } = played.after;
+    if (selection[kind]?.id !== FAR_PLACES[kind]) return failed(`the ${kind} was not selected`, played);
+    const hex = placeHex(kind, selection);
+    if (!hex) return failed(`the selected ${kind} stands nowhere on the map`, played);
+    if (selection.camera?.col !== hex.col || selection.camera?.row !== hex.row)
+      return failed(`the camera is not on the ${kind}`, played);
+    return completed(played);
+  };
+}
+
+/** The visit's Leave pressed as the visit steps press it, then the scopes the stream was served once it left. */
+async function leaveTheFarVisit(input) {
+  const played = await leaveTheVisit(input);
+  const startedAt = Date.now();
+  let scopes = input.browser.read(farPlaceReading("structure")).scopes;
+  while (scopes.at(-1)?.visit !== null && Date.now() - startedAt < FAR_PLACE_WAIT_MS) {
+    await sleep(POLL_MS);
+    scopes = input.browser.read(farPlaceReading("structure")).scopes;
+  }
+  return { ...played, scopes };
+}
+
+/**
+ * Left for home: the stream served the player's own scope again, without the visited realm and its army, and the
+ * player's realm, its board and HUD back as the season board's visit leaves (homeAgain).
+ */
+export function leftForHome({ seen, played }) {
+  const last = played.scopes.at(-1);
+  if (!last || last.visit !== null) return failed("the stream still follows the visit", played);
+  if (last.structures.includes(FAR_PLACES.structure) || last.armies.includes(FAR_PLACES.army))
+    return failed("the visited realm or its army stayed in the stream", played);
+  return homeAgain({ seen, played });
 }
 
 async function waitFor(browser, predicate, timeoutMs) {

@@ -51,9 +51,9 @@ const PLACE_MODELS = ["Structure", "ExplorerTroops", "TileOccupancy"] as const;
  * message has it, and opens as the Feed opens its stories, on today's map only (linkFrom): an army selected where it
  * stands now, a structure on its tile, a site's tile on its layer. Gone (the map holds it no more, or its day closed),
  * it opens nothing. One this map has not loaded, out of the player's view, is not gone (playtest 29 October 2026, B5):
- * an army or a realm opens by visiting its owner, the one way the stream brings another player's realm and armies, the
- * map moving to where it stood when shared and selecting it there as its rows arrive. A site out of view no visit
- * brings (its region holds it): it opens nothing.
+ * an army or a realm opens by visiting its owner, the one way the stream brings another player's realm and armies; as
+ * the visit's rows arrive it opens where the place stood when shared, read-only, selected there, and the visit's Leave
+ * returns home. A site out of view no visit brings (its region holds it): it opens nothing.
  */
 export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
   const {
@@ -71,27 +71,24 @@ export const usePlaceReader = (): ((place: SharedPlace) => PlaceReading) => {
       return { name: now.name, icon: now.icon, open, gone: open === null, elsewhere: false };
     }
     if (placeLoaded(store, place.game, place)) return { ...asSent, open: null, gone: true, elsewhere: false };
-    const tile = place.tile;
-    const owner = place.kind === "site" ? undefined : place.owner;
-    if (!tile || !owner) return { ...asSent, open: null, gone: false, elsewhere: false };
-    const open = linkFrom(place.at, () => {
-      startRealmVisit({ player: owner.player, structureId: owner.realm, opensOn: null });
-      openWhereShared(place, tile);
-    });
+    if (place.kind === "site" || !place.tile || !place.owner)
+      return { ...asSent, open: null, gone: false, elsewhere: false };
+    const { tile, owner } = place;
+    const select =
+      place.kind === "army"
+        ? { kind: "army" as const, entityId: place.entityId, tile: "own" as const }
+        : { kind: "structure" as const, entityId: place.entityId };
+    const open = linkFrom(place.at, () =>
+      startRealmVisit({ player: owner.player, structureId: owner.realm, opensOn: { tile, select } }),
+    );
     return { ...asSent, open, gone: open === null, elsewhere: false };
   };
 };
 
-/**
- * A place opened on the tile the message names (a site's own, or where an army or structure stood when shared), on its
- * layer, with it selected there once the map has it.
- */
-const openWhereShared = (place: SharedPlace, { col, row, alt }: PlaceTile) => {
+/** A site's tile opened on its layer, the tile selected. */
+const openTile = ({ col, row, alt }: PlaceTile) => {
   useUIStore.getState().setMapLayer(alt);
-  const at = Position.fromContract({ x: col, y: row });
-  if (place.kind === "site") openOnMap(at, "tile");
-  else if (place.kind === "army") openOnMap(at, { kind: "army", entityId: place.entityId, tile: "own" });
-  else openOnMap(at, { kind: "structure", entityId: place.entityId });
+  openOnMap(Position.fromContract({ x: col, y: row }), "tile");
 };
 
 const openerOf = (
@@ -102,7 +99,7 @@ const openerOf = (
   const gameId = place.game.gameId;
   if (place.kind === "army")
     return store.entityOccupancy(gameId, place.entityId) ? linkFrom(place.at, () => selectArmy(place.entityId)) : null;
-  if (place.kind === "site") return linkFrom(place.at, () => openWhereShared(place, place.tile));
+  if (place.kind === "site") return linkFrom(place.at, () => openTile(place.tile));
   // A Frontier realm stands on its day's site; any other structure on the tile it occupies, none once it is gone.
   const structure = store.get("Structure", { game_id: gameId, entity_id: place.entityId });
   const onMap = structure && (isExpeditionRealm(store, structure) || store.entityOccupancy(gameId, place.entityId));

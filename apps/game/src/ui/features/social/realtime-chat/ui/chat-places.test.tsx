@@ -391,21 +391,23 @@ describe("places in chat, in a Frontier game", () => {
   it("opens a place out of this player's view by visiting its owner, where it stood when shared, never as gone", () => {
     expect(chip("m12").className).not.toContain("line-through");
     act(() => chip("m12").querySelector("button")!.click());
-    // The owner's realm visited first, the one way the stream brings it, then the map moved there to select it.
-    expect(moved.visit).toHaveBeenLastCalledWith({ player: FAR_OWNER.player, structureId: FAR_REALM, opensOn: null });
-    expect(moved.visit.mock.invocationCallOrder.at(-1)!).toBeLessThan(moved.openOnMap.mock.invocationCallOrder.at(-1)!);
-    let [position, select] = moved.openOnMap.mock.calls.at(-1)!;
-    expect(position.getContract()).toEqual({ x: FAR_REALM_TILE.col, y: FAR_REALM_TILE.row });
-    expect(select).toEqual({ kind: "structure", entityId: FAR_REALM });
-    expect(useUIStore.getState().mapLayer).toBe(false);
+    // The owner's realm visited, the one way the stream brings it, to open on the realm where it stood: the visit opens
+    // it as its rows arrive (realm-visit.test.tsx), so nothing moves here yet.
+    expect(moved.visit).toHaveBeenLastCalledWith({
+      player: FAR_OWNER.player,
+      structureId: FAR_REALM,
+      opensOn: { tile: FAR_REALM_TILE, select: { kind: "structure", entityId: FAR_REALM } },
+    });
+    expect(moved.openOnMap).not.toHaveBeenCalled();
 
-    // An army below: its owner's realm visited, the army selected where it is once its rows arrive.
+    // An army below: its owner's realm visited, to open on the army's tile with the army selected.
     act(() => chip("m13").querySelector("button")!.click());
-    expect(moved.visit).toHaveBeenLastCalledWith({ player: FAR_OWNER.player, structureId: FAR_REALM, opensOn: null });
-    [position, select] = moved.openOnMap.mock.calls.at(-1)!;
-    expect(position.getContract()).toEqual({ x: FAR_ARMY_TILE.col, y: FAR_ARMY_TILE.row });
-    expect(select).toEqual({ kind: "army", entityId: FAR_ARMY, tile: "own" });
-    expect(useUIStore.getState().mapLayer).toBe(true);
+    expect(moved.visit).toHaveBeenLastCalledWith({
+      player: FAR_OWNER.player,
+      structureId: FAR_REALM,
+      opensOn: { tile: FAR_ARMY_TILE, select: { kind: "army", entityId: FAR_ARMY, tile: "own" } },
+    });
+    expect(moved.openOnMap).not.toHaveBeenCalled();
 
     // One sent with no tile or owner (an older client's) is not known to be gone either: it reads plainly, opens nothing.
     expect(chip("m3").className).not.toContain("line-through");

@@ -93,8 +93,8 @@ interface LabChainRecord {
   streams: number;
   /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
   silence: () => void;
-  /** Each scope the lab's Herald served, in order: its selection and the structures it carried. */
-  scopes: { actor: string | null; visit: string | null; structures: number[] }[];
+  /** Each scope the lab's Herald served, in order: its selection and the structures and armies it carried. */
+  scopes: { actor: string | null; visit: string | null; structures: number[]; armies: number[] }[];
 }
 
 declare global {
@@ -662,6 +662,9 @@ class LabHerald {
         structures: set
           .filter((row) => row.model === "Structure")
           .map((row) => Number((row.value as { entity_id: string }).entity_id)),
+        armies: set
+          .filter((row) => row.model === "ExplorerTroops")
+          .map((row) => Number((row.value as { explorer_id: string }).explorer_id)),
       });
       this.send({
         type: "scope",
