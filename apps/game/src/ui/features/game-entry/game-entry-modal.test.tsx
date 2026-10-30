@@ -468,13 +468,11 @@ it.each([
       expect(grid()[0]!.getAttribute("aria-label")).toBe(realmChoice(538));
       // Only the chosen home's map loads at once; every card's waits until it nears the screen.
       expect(
-        [...entry.host.querySelectorAll(".home-picker__grid .home-picker__map")].every(
+        [...entry.host.querySelectorAll(".home-picker__grid .home-art__map")].every(
           (map) => map.getAttribute("loading") === "lazy",
         ),
       ).toBe(true);
-      expect(entry.host.querySelector(".home-picker__featured .home-picker__map")?.getAttribute("loading")).toBe(
-        "eager",
-      );
+      expect(entry.host.querySelector(".home-picker__featured .home-art__map")?.getAttribute("loading")).toBe("eager");
       const search = entry.host.querySelector<HTMLInputElement>(".home-picker__search input")!;
       const type = async (text: string) =>
         act(async () => {

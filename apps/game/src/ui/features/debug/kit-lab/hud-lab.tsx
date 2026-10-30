@@ -1,4 +1,8 @@
+import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
+import type { AlertsAsk } from "@/shell/profile/alerts-ask";
+import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
+import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -70,15 +74,9 @@ import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/l
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
-import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
+import { planRealmLabor, seasonStrip } from "@/ui/features/frontier/value/realm-labor";
+import type { RealmLaborFacts } from "@/ui/features/frontier/value/use-realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
-import {
-  REALM_LABOR_PICK_OPTIONS,
-  REALM_LABOR_PICK_STATES,
-  RealmLaborOptionSheet,
-  type RealmLaborFacts,
-  type RealmLaborPickOption,
-} from "./realm-labor-options";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
@@ -86,14 +84,14 @@ const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
 
 /** The handoff's fiction: Day 12 at 14:26, today ends at 21:40 (7h 14m left), tomorrow lasts 12h. */
-const CLOCK: DayClock = {
+const CLOCK = {
   day: 12,
   endsAt: NOW + 7 * HOUR + 14 * 60,
   secondsLeft: 7 * HOUR + 14 * 60,
   tomorrowSeconds: 12 * HOUR,
   shareLeft: (7 * HOUR + 14 * 60) / (16 * HOUR),
   tone: "calm",
-};
+} satisfies DayClock;
 
 /** The season the fiction's Day 12 stands in: its last day the 14th, ending two days after today at 21:40. */
 const SEASON_LAST_DAY = 14;
@@ -229,16 +227,18 @@ const RUIN_CARD: LabSite = {
   verb: ATTACK_30,
 };
 
-const LAB_PRESET = { realmLabor: 1_000 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
+/**
+ * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
+ * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
+ */
 type LabRealms = {
-  eligible: boolean;
-  claimed: boolean;
-  labor: number;
-  limit: number;
-  /** Once claimed, the ask for the next day's push: on a phone that can take it, or an iPhone's browser. */
-  ask?: "remind" | "install";
+  home: "golden" | "devcon" | "held" | "none";
+  claimed?: boolean;
+  room?: number;
+  ask?: "remind" | "install" | "on";
+  lastDay?: boolean;
 };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
@@ -973,44 +973,64 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: false, labor: 9640, limit: 18000 },
+    realms: { home: "golden" },
   },
-  "realms-claimed": {
+  "realms-devcon": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000 },
+    realms: { home: "devcon" },
   },
-  "realms-remind": {
+  "realms-held": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "remind" },
-  },
-  "realms-install": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "install" },
-  },
-  "realms-full": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { eligible: true, claimed: false, labor: 17600, limit: 18000 },
+    realms: { home: "held" },
   },
   "realms-none": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: false, claimed: false, labor: 9640, limit: 18000 },
+    realms: { home: "none" },
   },
-  ...realmLaborPickStates(),
+  "realms-full": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", room: 1_400 },
+  },
+  "realms-remind": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "remind" },
+  },
+  "realms-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "install" },
+  },
+  "realms-on": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "on" },
+  },
+  "realms-last-day": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
+  },
 } as const;
 
 type LabState = {
@@ -1060,7 +1080,6 @@ type LabState = {
   menuRealms?: boolean;
   withdraw?: LabWithdraw;
   realms?: LabRealms;
-  laborPick?: { option: RealmLaborPickOption; facts: RealmLaborFacts };
 };
 
 /** Every state the HUD lab draws, by the name in its address: the HUD room lists them. */
@@ -1249,7 +1268,6 @@ export const HudLab = () => {
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
-        {lab.laborPick && <LabLaborPick {...lab.laborPick} />}
       </LabBands>
     </>
   );
@@ -1688,72 +1706,79 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
   );
 };
 
-/** Realms on the fiction, planned with the lab's presets against the labor store. */
+/** The Realm Labor sheet on the fiction: the Devcon preset's amounts, the lab's Day 12, a held Realm's real map. */
 const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
   <RealmsSheet
-    plan={planRealmLabor({
-      eligible: realms.eligible,
-      claimed: realms.claimed,
-      amount: LAB_PRESET.realmLabor,
-      essence: 0,
-      held: realms.labor,
-      limit: realms.limit,
-    })}
-    dailyAmount={LAB_PRESET.realmLabor}
-    dailyEssence={0}
-    mark={null}
-    secondsLeft={CLOCK.secondsLeft}
-    nextDay={(CLOCK.day ?? 0) + 1}
-    ask={realms.ask ? { kind: realms.ask, busy: false, act: noop } : null}
+    labor={labRealmLabor(realms)}
+    map={realms.home === "held" ? LAB_REALM_MAP : null}
+    ask={labAlertsAsk(realms.ask)}
     sending={false}
     onClaim={noop}
-    onRealm={noop}
     onClose={noop}
   />
 );
 
-/** The Realm Labor layout study: each option in each state, `labor-<option>-<state>`. */
-function realmLaborPickStates() {
-  return Object.fromEntries(
-    REALM_LABOR_PICK_OPTIONS.flatMap((option) =>
-      Object.entries(REALM_LABOR_PICK_STATES).map(([name, facts]) => [
-        `labor-${option}-${name}`,
-        { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1240 }, laborPick: { option, facts } },
-      ]),
-    ),
-  ) as Record<string, LabState>;
-}
+/** Realm 3's map, as the Realm index serves it. */
+const LAB_REALM_MAP =
+  "https://web-production-2a4cb.up.railway.app/api/marketplace/v1/chains/SN_MAIN/assets/ecbc308f79704c8c36cb0c9eba19545ded12c2409b406f4dcc1bc3f802625cc9.svg";
+const LAB_SEASON_LAST_DAY = 104;
+const LAB_CLAIMED_DAYS = [6, 7, 9, 10];
+const LAB_LABOR_LIMIT = 18_000;
 
-const LabLaborPick = ({ option, facts }: { option: RealmLaborPickOption; facts: RealmLaborFacts }) =>
-  option === "today" ? (
-    <RealmsSheet
-      plan={facts.plan}
-      dailyAmount={facts.dailyAmount}
-      dailyEssence={facts.dailyEssence}
-      mark={
-        facts.home.kind === "golden" || facts.home.kind === "devcon"
-          ? {
-              line: facts.home.name,
-              golden: facts.home.kind === "golden",
-              icon: facts.home.kind === "golden" ? "devcon-golden-realm" : "devcon-realm",
-            }
-          : null
-      }
-      secondsLeft={facts.secondsLeft}
-      nextDay={facts.nextDay}
-      ask={
-        facts.reminder === "ask" || facts.reminder === "install"
-          ? { kind: facts.reminder === "ask" ? "remind" : "install", busy: false, act: noop }
-          : null
-      }
-      sending={false}
-      onClaim={noop}
-      onRealm={noop}
-      onClose={noop}
-    />
-  ) : (
-    <RealmLaborOptionSheet option={option} facts={facts} />
+const labRealmLabor = ({
+  home,
+  claimed = false,
+  room = LAB_LABOR_LIMIT,
+  lastDay = false,
+}: LabRealms): RealmLaborFacts => {
+  const daily = labDailyClaim(home);
+  const today = CLOCK.day - 1;
+  return {
+    plan: planRealmLabor({
+      eligible: daily !== null,
+      claimed,
+      amount: daily?.labor ?? 0,
+      essence: daily?.essence ?? 0,
+      held: LAB_LABOR_LIMIT - room,
+      limit: LAB_LABOR_LIMIT,
+    }),
+    dailyAmount: daily?.labor ?? 0,
+    dailyEssence: daily?.essence ?? 0,
+    home: labLaborHome(home),
+    days: seasonStrip({
+      today,
+      last: lastDay ? today : LAB_SEASON_LAST_DAY,
+      founded: 0,
+      claimed: (index) => LAB_CLAIMED_DAYS.includes(index),
+      claimedToday: claimed,
+    }),
+    secondsLeft: CLOCK.secondsLeft,
+    nextDay: lastDay ? null : today + 2,
+  };
+};
+
+const labDailyClaim = (home: LabRealms["home"]) =>
+  homeSourceClaim(
+    DEVCON_LABOR_RULES,
+    home === "none"
+      ? { kind: "free" }
+      : home === "held"
+        ? { kind: "realm" }
+        : { kind: "campaign", golden: home === "golden" },
   );
+
+const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
+  if (home === "none") return null;
+  if (home === "held") return { kind: "realm", realmId: 3, name: canonicalRealm(3).name };
+  const skin = home === "golden" ? "devcon-golden" : "devcon";
+  return {
+    kind: "campaign",
+    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: realmSkinIcon(skin) },
+  };
+};
+
+const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
+  ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

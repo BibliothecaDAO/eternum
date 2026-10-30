@@ -138,7 +138,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
   const seasonRank = useSeasonRank();
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
-  const goToPlace = useGoToFrontierPlace(realm);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const own = realm && !visit ? realm : null;
@@ -204,16 +203,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
-      {surface === "realms" && realm && !visit && (
-        <FrontierRealms
-          labor={realmLabor}
-          onRealm={() => {
-            close();
-            goToPlace(false);
-          }}
-          onClose={close}
-        />
-      )}
+      {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>

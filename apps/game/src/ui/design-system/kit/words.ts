@@ -558,8 +558,8 @@ export const withdrawalUnknown = (amount: string) => `No answer yet for these ${
 
 export const REALM_LABOR = "Realm Labor";
 export const NO_REALM_LABOR = "No daily Labor claim";
-export const DAILY_REALM_LABOR = "Labor per game day";
-export const DAILY_REALM_ESSENCE = "Essence per game day";
+/** What a home's claim gives each game day, after its amounts. */
+export const EACH_DAY = "each day";
 /** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
 export const claimRealmLaborLabel = (amount: number, essence = 0) =>
   `Claim ${[
@@ -569,15 +569,31 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
 export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
-export const partialRealmLabor = (fits: number, total: number) =>
-  `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
-export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+/** Today's Labor against a full store: what of it lands, the rest is lost with the claim. */
+export const laborFits = (fits: number, total: number) =>
+  `${formatExact(fits)} of ${formatExact(total)} Labor fit · storage full`;
+/** Once claimed: when the next game day, and its claim, opens. */
+export const dayOpensIn = (day: number, secondsLeft: number | undefined) =>
+  `Day ${day} opens in ${dayLength(secondsLeft)}`;
+/** Once claimed on the season's last day: no day follows, only the season's end. */
+export const seasonEndsIn = (secondsLeft: number | undefined) => `Season ends in ${dayLength(secondsLeft)}`;
+/** Each state of a season day on the Realm Labor sheet's strip, as assistive technology names it after the day. */
+export const SEASON_DAY_STATES = {
+  claimed: "claimed",
+  missed: "missed",
+  open: "to claim",
+  ahead: "ahead",
+  before: "before your home",
+} as const;
+export const seasonDayLabel = (day: number, state: keyof typeof SEASON_DAY_STATES) =>
+  `Day ${day} ${SEASON_DAY_STATES[state]}`;
 /** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-/** The claimed sheet's ask: a push when the next game day opens, on this device. */
-export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} opens`;
+/** The claimed sheet's ask for a push when the next game day opens, on this device, and its state once on. */
+export const REMIND_ME = "Remind me";
+export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
-export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
+export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const YOUR_REALMS = "Your Realms";
@@ -708,8 +724,8 @@ export const JOIN_WORDS = {
   golden: "Golden ticket",
   goldenLine: "A golden realm waits",
   goldenStub: (count: number) => `One of ${count} at Devcon`,
-  laborEachDay: (amount: number) => `${formatExact(amount)} Labor each day`,
-  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
+  laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
+  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
