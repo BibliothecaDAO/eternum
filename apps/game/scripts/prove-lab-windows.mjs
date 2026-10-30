@@ -1,17 +1,17 @@
 /**
  * The HUD's windows and modals as the lab draws them (/lab/kit/windows/<surface>, the real components on the lab's
- * fixture game), one screenshot each at 1920×1080, then one per tab the window holds, pressed as a player presses it.
+ * fixture game), one screenshot each at the requested size, then one per tab, pressed as a player presses it.
  * Run before and after a window moves onto the HUD sheet: the two runs show each window the same way. Settings is also
  * measured (one short page) and its keys opened with Show and left with Back.
  *
- *   pnpm --dir apps/game prove:windows <base-url> <out-dir> [surface,surface]   (frontier/<state> for a Frontier window)
+ *   pnpm --dir apps/game prove:windows <base-url> <out-dir> [surface,surface] [widthxheight]
+ * Use frontier/<state> for a Frontier window; the default size is 1920x1080.
  */
 import { resolve, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { runProof, sleep, waitFor } from "./prove-run.mjs";
 
-const VIEWPORT = ["1920", "1080"];
 const READY_MS = 60_000;
 const SETTLE_MS = 2_000;
 
@@ -166,6 +166,9 @@ const proveSurface = async (b, baseUrl, out, surface) => {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const baseUrl = (process.argv[2] ?? "https://127.0.0.1:4176").replace(/\/$/, "");
   const only = process.argv[4]?.split(",");
+  const size = process.argv[5] ?? "1920x1080";
+  if (!/^[1-9][0-9]*x[1-9][0-9]*$/.test(size)) throw new Error("Viewport must be widthxheight");
+  const viewport = size.split("x");
   await runProof(
     {
       parent: resolve(process.argv[3] ?? ".context/lab-windows"),
@@ -174,7 +177,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       where: (record) => ({ surface: record.surface }),
     },
     async (b, out, records) => {
-      b.run("set", "viewport", ...VIEWPORT);
+      b.run("set", "viewport", ...viewport);
       const surfaces = only ?? [
         ...(await listedSurfaces(b, baseUrl)),
         ...FRONTIER_STATES.map((state) => `frontier/${state}`),

@@ -130,6 +130,29 @@ it("never sweeps a live season or a closed ledger", async () => {
   expect(calls.admin).not.toHaveBeenCalled();
   expect(calls.settle).not.toHaveBeenCalled();
 });
+it("keeps unswept and held LORDS open past the old deadline, then settles after payment", async () => {
+  calls.header.mockResolvedValue({ timestamp: 100 + 7 * 24 * 60 * 60 });
+  rows("LordsBudget", [{ pool: "700", pool_left: "300" }]);
+  rows("ResourceBalance", [balance(3, 400)]);
+  await run();
+  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 7, structure_id: "3" }]]);
+  expect(calls.settle).not.toHaveBeenCalled();
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 400)]);
+  await run();
+  expect(calls.settle).not.toHaveBeenCalled();
+  calls.funding.mockResolvedValue({
+    closed: false,
+    pool: wei(700),
+    prizePool: wei(300),
+    paid: wei(400),
+    prizePaid: wei(300),
+  });
+  await run();
+  expect(calls.settle.mock.calls).toEqual([
+    [{ chainId: "0x1", gameId: 7, chestWithdrawn: wei(400), prizeWithdrawn: wei(300) }],
+  ]);
+});
 it.each(["old block", "before end"])(
   "refuses a snapshot %s even when the latest head is past the end",
   async (reason) => {

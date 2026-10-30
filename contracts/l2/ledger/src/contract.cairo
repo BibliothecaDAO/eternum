@@ -49,7 +49,6 @@ pub trait IGameLedger<TState> {
         prize_rank: u16,
         prize_count: u16,
     );
-    fn close_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn settle_frontier(ref self: TState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256);
     fn extend_frontier(ref self: TState, shard: felt252, season_id: u32);
     fn apply_frontier_carry(ref self: TState, shard: felt252, season_id: u32);
@@ -627,19 +626,6 @@ pub mod GameLedger {
             season.end = approved::END;
             assert!(season.paid <= super::frontier_unlock(season, preset, now), "Ledger: extension exceeds unlock");
             self.frontier_days.entry((shard, season_id)).write(season);
-        }
-
-        fn close_frontier(ref self: ContractState, shard: felt252, season_id: u32) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            let season = self.get_frontier(shard, season_id);
-            if season.closed {
-                return;
-            }
-            assert!(
-                starknet::get_block_timestamp() >= self.frontier_claim_deadline(shard, season_id),
-                "Ledger: claim window open",
-            );
-            self.close_frontier_pool(shard, season_id, season);
         }
 
         fn settle_frontier(
