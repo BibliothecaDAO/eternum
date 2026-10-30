@@ -5,28 +5,26 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { PlaceMedal } from "@/ui/design-system/kit/place-medal";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { POOL_NOT_PUBLISHED, PRIZE_OPEN, SEASON_PRIZES } from "@/ui/design-system/kit/words";
+import { POOL_NOT_PUBLISHED, PRIZE_UNHELD, SEASON_PRIZES } from "@/ui/design-system/kit/words";
 import { type PodiumPlace, seasonPodium } from "@/ui/features/frontier/board/season-pool";
 
 /**
  * A Frontier season's top prizes over its board, on the app's Season tab and on a finished season's Results (the
  * owner's pick A, 30 October 2026): a tile per prize place, second, first and third, the first raised; its medal, its
- * LORDS and who holds it (seasonPodium), "Open" while no player who cleared a site does. While no pool is published,
+ * LORDS and who holds it (seasonPodium), or why no one does yet. While no pool is published,
  * the medals stand with "—" and say so; with no place paid, nothing.
  */
 export const SeasonPodium = ({
   board,
-  ended,
   own,
 }: {
   board: HeraldFrontierLeaderboard;
-  ended: boolean;
   /** The player's own address, whose name reads as theirs. */
   own: string | undefined;
 }) => {
-  const podium = seasonPodium(board, ended);
+  const podium = seasonPodium(board);
   if (podium?.length === 0) return null;
-  const places: PodiumPlace[] = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN }));
+  const places: PodiumPlace[] = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" }));
   return (
     <ol aria-label={SEASON_PRIZES} className="grid grid-cols-3 items-end gap-2 px-4 py-3">
       {[places[1], places[0], ...places.slice(2)].map(
@@ -47,9 +45,16 @@ export const SeasonPodium = ({
               </span>
               {podium !== null && (
                 <span
-                  className={cn("max-w-full truncate text-app-label", place.holder ? "text-app-ink" : "text-app-muted")}
+                  className={cn(
+                    "max-w-full truncate text-app-label",
+                    typeof place.holder === "string" ? "text-app-muted" : "text-app-ink",
+                  )}
                 >
-                  {place.holder ? <PlayerName account={place.holder} you={place.holder === own} /> : PRIZE_OPEN}
+                  {typeof place.holder === "string" ? (
+                    PRIZE_UNHELD[place.holder]
+                  ) : (
+                    <PlayerName account={place.holder.address} you={place.holder.address === own} />
+                  )}
                 </span>
               )}
             </li>

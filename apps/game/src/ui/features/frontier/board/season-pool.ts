@@ -94,30 +94,41 @@ export const prizeShares = (pool: bigint, count: number): bigint[] => {
   return [pool - below.reduce((sum, share) => sum + share, 0n), ...below];
 };
 
-/** A prize place on the season's podium: its place, its LORDS, and who holds it; none while no one qualifies for it. */
-export type PodiumPlace = { place: number; lords: number; holder?: string };
+/**
+ * Who holds a prize place: a player; "open" while no player who cleared a site does; "awarding" once the ledger fixed the
+ * place's winner but has not paid it yet, so no receipt names them.
+ */
+export type PodiumHolder = { address: string } | "open" | "awarding";
+
+/** A prize place on the season's podium: its place, its LORDS, and who holds it. */
+export type PodiumPlace = { place: number; lords: number; holder: PodiumHolder };
 
 /**
- * The season's podium from Herald's board: null while no prize pool is published. Each place holds the board's next
- * player who cleared a site (frontierPrizeHolders, the rule the relay posts by), or stands open. During the season, the
- * game's `top_n` places and what each would take; once it is over and the winners are posted, the `count` places the
- * ledger pays. Never ranked again here.
+ * The season's podium from Herald's board: null while no prize pool is published. Until the winners are posted, the
+ * game's `top_n` places and what each would take, each held by the board's next player who cleared a site
+ * (frontierPrizeHolders, the rule the relay posts by) or open. Once posted, the `count` places the ledger fixed, each
+ * named by its award receipt: the fixed list is the ledger's, never the board's again.
  */
-export const seasonPodium = (
-  board: {
-    prize: HeraldFrontierPrize | null;
-    entries: readonly Pick<HeraldFrontierLeaderboardEntry, "address" | "sites_cleared">[];
-  },
-  ended: boolean,
-): PodiumPlace[] | null => {
+export const seasonPodium = (board: {
+  prize: HeraldFrontierPrize | null;
+  entries: readonly Pick<HeraldFrontierLeaderboardEntry, "address" | "sites_cleared">[];
+}): PodiumPlace[] | null => {
   const { prize } = board;
   if (!prize) return null;
-  const count = ended && prize.count !== null ? prize.count : prize.top_n;
-  if (count === 0) return [];
-  const holders = frontierPrizeHolders(board.entries, count);
-  return prizeShares(BigInt(prize.pool), count).map((lords, index) => ({
+  const places = prize.count ?? prize.top_n;
+  if (places === 0) return [];
+  const shares = prizeShares(BigInt(prize.pool), places);
+  if (prize.count !== null)
+    return shares.map((lords, index) => {
+      const award = prize.awards.find((each) => each.rank === index + 1);
+      return award
+        ? { place: index + 1, lords: Number(award.lords), holder: { address: award.address } }
+        : { place: index + 1, lords: Number(lords), holder: "awarding" };
+    });
+  const holders = frontierPrizeHolders(board.entries, places);
+  return shares.map((lords, index) => ({
     place: index + 1,
     lords: Number(lords),
-    ...(holders[index] ? { holder: holders[index].address } : {}),
+    holder: holders[index] ? { address: holders[index].address } : "open",
   }));
 };

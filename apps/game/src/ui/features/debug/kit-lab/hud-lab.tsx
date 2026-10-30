@@ -52,7 +52,7 @@ import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/statu
 import { useParams } from "react-router-dom";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
-import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
+import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
@@ -439,10 +439,10 @@ const SEASON_POOL_FIGURES = { lords: 700_000, today: 35_000 };
 
 /**
  * The lab season's podium, read by the game's own rule (seasonPodium) from a board of the lab's rows: 300 LORDS among
- * the top 3. `final`, the season over and its three winners posted; `open`, only the first player has cleared a site,
- * so the other two places stand open.
+ * the top 3. `final`, the season over and its three winners fixed, the first two paid and the third being awarded;
+ * `open`, only the first player has cleared a site, so the other two places stand open.
  */
-const labPodium = (season: NonNullable<LabState["season"]>) => {
+const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[] | null => {
   if (season === "unpublished") return null;
   const entries = SEASON_NAMES.map((name, index) => ({
     address: name,
@@ -454,10 +454,19 @@ const labPodium = (season: NonNullable<LabState["season"]>) => {
       beasts: 0,
     },
   }));
-  return seasonPodium(
-    { prize: { pool: "300", top_n: 3, count: season === "final" ? 3 : null }, entries },
-    season === "final",
-  );
+  const awards = [
+    { rank: 1, address: SEASON_NAMES[0], lords: "150" },
+    { rank: 2, address: SEASON_NAMES[1], lords: "100" },
+  ];
+  const prize =
+    season === "final"
+      ? { pool: "300", top_n: 3, count: 3, awards }
+      : { pool: "300", top_n: 3, count: null, awards: [] };
+  return seasonPodium({ prize, entries })!.map(({ place, lords, holder }) => ({
+    place,
+    lords,
+    holder: typeof holder === "string" ? holder : { name: holder.address },
+  }));
 };
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {

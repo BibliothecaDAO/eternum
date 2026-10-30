@@ -26,7 +26,7 @@ import {
   SEASON,
   SEASON_ERROR,
   SEASON_PRIZES,
-  PRIZE_OPEN,
+  PRIZE_UNHELD,
   SITES,
   SITES_CLEARED,
   TRY_AGAIN,
@@ -219,8 +219,8 @@ const poolLine = (pool: SeasonPoolFigures | null | undefined) =>
         .filter(Boolean)
         .join(". ");
 
-/** A prize place on the podium: its LORDS, and who holds it, or none while it stands open. */
-export type SeasonPodiumPlace = { place: number; lords: number; holder?: ReactNode };
+/** A prize place on the podium: its LORDS, and who holds it by name, or why no one does (PodiumHolder). */
+export type SeasonPodiumPlace = { place: number; lords: number; holder: { name: ReactNode } | "open" | "awarding" };
 
 /** Second, first and third, the first raised; any further place after them. */
 const podiumOrder = (places: readonly SeasonPodiumPlace[]) =>
@@ -228,12 +228,12 @@ const podiumOrder = (places: readonly SeasonPodiumPlace[]) =>
 
 /**
  * The season's top prizes over the board (the owner's pick A, 30 October 2026: "A is great I think for the top
- * prizes"): a tile per prize place, its medal, its LORDS and who holds it, "Open" while no player who cleared a site
- * does. While no pool is published, the medals stand with "—" and say so.
+ * prizes"): a tile per prize place, its medal, its LORDS and who holds it, or why no one does yet. While no pool is
+ * published, the medals stand with "—" and say so.
  */
 const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null }) => {
   if (podium?.length === 0) return null;
-  const places = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN }));
+  const places = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" as const }));
   return (
     <ol aria-label={SEASON_PRIZES} className="my-1 grid shrink-0 grid-cols-3 items-end gap-1.5">
       {podiumOrder(places).map(({ place, lords, holder }) => (
@@ -251,8 +251,13 @@ const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null 
             {Number.isNaN(lords) ? "—" : formatExact(lords)}
           </span>
           {podium !== null && (
-            <span className={cn("max-w-full truncate text-hud-label", holder ? "text-hud-ink" : "text-hud-muted")}>
-              {holder ?? PRIZE_OPEN}
+            <span
+              className={cn(
+                "max-w-full truncate text-hud-label",
+                typeof holder === "string" ? "text-hud-muted" : "text-hud-ink",
+              )}
+            >
+              {typeof holder === "string" ? PRIZE_UNHELD[holder] : holder.name}
             </span>
           )}
         </li>

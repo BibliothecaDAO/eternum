@@ -55,14 +55,21 @@ const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) =
  * The season's podium as the Season page draws it: each prize place, its LORDS and who holds it (seasonPodium). Null
  * while no prize pool is published, undefined until the board is known.
  */
-const useSeasonPodium = (ended: boolean, own: string | undefined): SeasonPodiumPlace[] | null | undefined => {
+const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | undefined => {
   const board = useFrontierBoard((board) => board);
   if (!board.data) return undefined;
-  return seasonPodium(board.data, ended)?.map(({ place, lords, holder }) => ({
-    place,
-    lords,
-    holder: holder === undefined ? undefined : <LordName account={holder} you={holder === own} />,
-  }));
+  const podium = seasonPodium(board.data);
+  return (
+    podium &&
+    podium.map(({ place, lords, holder }) => ({
+      place,
+      lords,
+      holder:
+        typeof holder === "string"
+          ? holder
+          : { name: <LordName account={holder.address} you={holder.address === own} /> },
+    }))
+  );
 };
 
 const useViewer = () => useAccountStore((state) => state.account?.address ?? null);
@@ -95,7 +102,7 @@ export const FrontierSeason = ({
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
   const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
-  const podium = useSeasonPodium(endsAt !== undefined && now >= endsAt, own?.address);
+  const podium = useSeasonPodium(own?.address);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
     startRealmVisit({ player: entry.address, structureId: safeInteger(entry.structure_id), opensOn: "realm" });

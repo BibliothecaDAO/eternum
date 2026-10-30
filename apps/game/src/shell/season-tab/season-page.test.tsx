@@ -112,7 +112,7 @@ it("shows the season's three prizes over Frontier's board, each place's holder, 
     data: {
       mode: "frontier",
       entries: [entry("0xa1", 1, 5), entry("0xb2", 2, 2), entry("0xc3", 3, 0)],
-      prize: { pool: "300", top_n: 3, count: null },
+      prize: { pool: "300", top_n: 3, count: null, awards: [] },
     },
     isError: false,
     isPending: false,

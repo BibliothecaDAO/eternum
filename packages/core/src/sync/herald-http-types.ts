@@ -166,9 +166,9 @@ export interface HeraldFrontierLeaderboard {
   mode: "frontier";
   entries: HeraldFrontierLeaderboardEntry[];
   /**
-   * The season's top prizes, as the game holds them (FrontierPrize, ChestRules): the prize pool in whole LORDS, how many
-   * places the game pays at most, and how many the ledger was told to pay once the winners are posted (the board's first
-   * `count` entries). Null while no prize pool is published.
+   * The season's top prizes, as the game holds them (FrontierPrize, ChestRules, LordsWithdrawal): the prize pool in whole
+   * LORDS, how many places the game pays at most, how many the ledger fixed once the winners are posted, and each
+   * place's award receipt. Null while no prize pool is published.
    */
   prize: HeraldFrontierPrize | null;
 }
@@ -177,6 +177,14 @@ export interface HeraldFrontierPrize {
   pool: string;
   top_n: number;
   count: number | null;
+  /** The places paid so far, by rank: who the ledger paid and its whole LORDS. A fixed place awaiting its award has none. */
+  awards: HeraldFrontierAward[];
+}
+
+export interface HeraldFrontierAward {
+  rank: number;
+  address: string;
+  lords: string;
 }
 
 /** Immutable ranks at a seeded day's end; confirmed_block is the last block strictly before that instant. */

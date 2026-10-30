@@ -44,17 +44,29 @@ export function buildFrontierLeaderboard(
 }
 
 /**
- * The season's top prizes from the game's own rows: FrontierPrize's pool (whole LORDS) and posted count, and ChestRules'
- * top_n. None while the pool is not published (no row, or a zero pool) or the chest rules are unknown.
+ * The season's top prizes from the game's own rows: FrontierPrize's pool (whole LORDS) and posted count, ChestRules'
+ * top_n, and the award receipts (LordsWithdrawal rows with a prize rank), which name who each paid place went to. None
+ * while the pool is not published (no row, or a zero pool) or the chest rules are unknown.
  */
 function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): HeraldFrontierPrize | null {
   const prize = gameRows(modelRows("FrontierPrize"), gameId)[0];
   const chests = gameRows(modelRows("ChestRules"), gameId)[0];
   if (!prize || !chests || integer(prize.pool) === 0n) return null;
+  const awards = gameRows(modelRows("LordsWithdrawal"), gameId)
+    .filter((receipt) => integer(receipt.prize_rank) > 0n)
+    .map((receipt) => ({
+      rank: number(receipt.prize_rank),
+      address: address(receipt.account),
+      lords: integer(receipt.amount).toString(),
+    }))
+    .sort((a, b) => a.rank - b.rank);
+  if (awards.some((award, index) => award.rank === awards[index - 1]?.rank))
+    throw new Error("Frontier prize awarded twice");
   return {
     pool: integer(prize.pool).toString(),
     top_n: number(chests.top_n),
     count: prize.count === null || prize.count === undefined ? null : number(prize.count),
+    awards,
   };
 }
 

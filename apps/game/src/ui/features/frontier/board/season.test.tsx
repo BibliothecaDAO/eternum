@@ -190,17 +190,18 @@ describe("the season's prizes in game", () => {
 
   it("stands a podium of the prizes over the board, second, first and third, each with who holds it or Open", () => {
     // The game's own rule over a board where only two players cleared a site.
-    const podium = seasonPodium(
-      {
-        prize: { pool: "300", top_n: 3, count: null },
-        entries: [
-          { address: "Realm 1", sites_cleared: { total: 5, camps: 5, rifts: 0, ruins: 0, beasts: 0 } },
-          { address: "Realm 2", sites_cleared: { total: 1, camps: 1, rifts: 0, ruins: 0, beasts: 0 } },
-          { address: "Realm 3", sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 } },
-        ],
-      },
-      false,
-    )!.map(({ place, lords, holder }) => ({ place, lords, holder }));
+    const podium = seasonPodium({
+      prize: { pool: "300", top_n: 3, count: null, awards: [] },
+      entries: [
+        { address: "Realm 1", sites_cleared: { total: 5, camps: 5, rifts: 0, ruins: 0, beasts: 0 } },
+        { address: "Realm 2", sites_cleared: { total: 1, camps: 1, rifts: 0, ruins: 0, beasts: 0 } },
+        { address: "Realm 3", sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 } },
+      ],
+    })!.map(({ place, lords, holder }) => ({
+      place,
+      lords,
+      holder: typeof holder === "string" ? holder : { name: holder.address },
+    }));
     const { host, unmount } = sheet(podium);
     expect(tiles(host)).toEqual(["2100Realm 2", "1150Realm 1", "350Open"]);
     // The board's first three rows wear the podium's medals; the fourth its number.

@@ -4,7 +4,14 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 const player = vi.hoisted(() => ({ current: "0xb7" as string | null }));
-const prize = vi.hoisted(() => ({ current: null as { pool: string; top_n: number; count: number | null } | null }));
+const prize = vi.hoisted(() => ({
+  current: null as {
+    pool: string;
+    top_n: number;
+    count: number | null;
+    awards: { rank: number; address: string; lords: string }[];
+  } | null,
+}));
 const entry = (address: string, rank: number) => ({
   address,
   rank,
@@ -100,16 +107,17 @@ it("leads Back to the list that opened it, with no Continue; opened from Play, C
   expect(fromPlay.button("Continue")!.dataset.kind).toBe("primary");
 });
 
-it("names a finished season's paid players on its podium, the prize split over the winners posted", async () => {
-  // Two players cleared sites: the relay posted two, and the ledger splits 300 LORDS 2/3 and 1/3.
-  prize.current = { pool: "300", top_n: 3, count: 2 };
+it("names a finished season's winners by the ledger's receipts, split over the places fixed, one still being awarded", async () => {
+  // Two winners fixed, the ledger splitting 300 LORDS 2/3 and 1/3. First place went to 0xb7, though today's board
+  // ranks 0xa1 first; second is fixed but not yet paid, so no receipt names it.
+  prize.current = { pool: "300", top_n: 3, count: 2, awards: [{ rank: 1, address: "0xb7", lords: "200" }] };
   const { container } = await open();
   const podium = container.querySelector('[aria-label="Season prizes"]')!;
   expect(
     [...podium.querySelectorAll("li[data-place]")].map((tile) => [tile.getAttribute("data-place"), tile.textContent]),
   ).toEqual([
-    ["2", "2100" + "0xb7"],
-    ["1", "1200" + "0xa1"],
+    ["2", "2100" + "Pending"],
+    ["1", "1200" + "0xb7"],
   ]);
   // The board's top rows wear the same medals, on one line.
   const rows = [...container.querySelectorAll("button.app-row")];

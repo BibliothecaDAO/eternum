@@ -433,14 +433,25 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     order: (index % 16) + 1,
   })),
   // The dev pool: 300 LORDS among the top 3, the winners not posted while the season runs.
-  prize: { pool: "300", top_n: 3, count: null },
+  prize: { pool: "300", top_n: 3, count: null, awards: [] },
 };
 
-/** The same board once the season is over and its three winners are posted (the Results' podium). */
+/**
+ * The same board once the season is over and its three winners are fixed (the Results' podium): first and second paid,
+ * their receipts naming them, third still being awarded.
+ */
 export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
   ...LAB_FRONTIER_BOARD,
   game_id: "3",
-  prize: { pool: "300", top_n: 3, count: 3 },
+  prize: {
+    pool: "300",
+    top_n: 3,
+    count: 3,
+    awards: [
+      { rank: 1, address: LAB_FRONTIER_BOARD.entries[0]!.address, lords: "150" },
+      { rank: 2, address: LAB_FRONTIER_BOARD.entries[1]!.address, lords: "100" },
+    ],
+  },
 };
 
 /** The board before any prize pool is published (the Season tab's podium says so). */

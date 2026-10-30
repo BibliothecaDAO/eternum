@@ -141,7 +141,6 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
 /** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */
 const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   const { season, directory } = useSeason();
-  const now = useNowSeconds();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
   if (directory.isError || board.isError)
@@ -170,13 +169,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
     );
   return (
     <div>
-      {frontier && (
-        <SeasonPodium
-          board={frontier}
-          ended={season.clock.end_at <= now}
-          own={findOwnEntry(frontier.entries, player)?.address}
-        />
-      )}
+      {frontier && <SeasonPodium board={frontier} own={findOwnEntry(frontier.entries, player)?.address} />}
       {rows.map(({ entry, own }) => (
         <FrontierRow key={entry.address} entry={entry} own={own} />
       ))}

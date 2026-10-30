@@ -296,7 +296,7 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
       if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
       // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
       const facts = new Map(
-        ["GameRegistry", "Structure", "CampaignHome", "FrontierPrize", "ChestRules"].map((model) => [
+        ["GameRegistry", "Structure", "CampaignHome", "FrontierPrize", "ChestRules", "LordsWithdrawal"].map((model) => [
           model,
           state.fold.modelRows(model),
         ]),
