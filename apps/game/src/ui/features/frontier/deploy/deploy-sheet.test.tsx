@@ -200,6 +200,55 @@ describe("the Deploy sheet", () => {
     }
   });
 
+  it.each(["desktop", "phone"] as const)(
+    "chooses the one open slot on its own when opened from the map, and sends it (%s)",
+    async (screen) => {
+      // Owner, 30 October 2026: "when a single slot is available for army deploy it should be picked by default by the
+      // client of course."
+      (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+      layout.current = screen;
+      const { store, row } = frontierDay();
+      // Army 1 holds the first slot already; Army 2 takes the second: only the third is open.
+      store.applyFacts([
+        {
+          model: "ArmySlot",
+          key: "0x91",
+          value: {
+            game_id: 1,
+            structure_id: 7,
+            epoch: "0",
+            slot: 1,
+            explorer_id: 71,
+            stamina: { amount: "150", settled_at: "3", remainder: 0 },
+          },
+        },
+      ] as never);
+      const createExplorerArmy = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+      installActiveGameClient({
+        connect() {},
+        disconnect() {},
+        dispose() {},
+        actions: { createExplorerArmy },
+        waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+      } as unknown as GameClient);
+      // A tile beside the realm held on the map: an order with its aim and no slot.
+      openArmyDeployment({ structureId: 7, isExplorer: true, direction: Direction.WEST });
+      const { host, root } = render(store, row);
+      try {
+        expect(slotsOffered(host)).toEqual([["Army 3", "true"]]);
+        expect(deployButton(host)).toBeDefined();
+        press(host, "Max");
+        await act(async () => deployButton(host)!.click());
+        expect(createExplorerArmy).toHaveBeenCalledWith(
+          expect.objectContaining({ slot: 2, spawnDirection: Direction.WEST }),
+        );
+      } finally {
+        act(() => root.unmount());
+        host.remove();
+      }
+    },
+  );
+
   it("opens on the slot the Armies card's Deploy named", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
