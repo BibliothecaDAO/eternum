@@ -447,8 +447,10 @@ button.ui-chip:focus-visible {
   outline: none;
   box-shadow: var(--hud-focus);
 }
+/* A press that does nothing now: drawn faint, so it never reads as one that acts. */
 button.ui-chip:disabled {
   cursor: not-allowed;
+  opacity: 0.5;
 }
 /* A chip on a primary button's gold: its tones are washes over the dark, so on gold it takes the dark under it. */
 .ui-button[data-kind="primary"] .ui-chip {

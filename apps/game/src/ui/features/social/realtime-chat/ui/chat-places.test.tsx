@@ -331,10 +331,12 @@ describe("places in chat, in a Frontier game", () => {
     expect(chip("m10").textContent).toBe(game.realmName);
   });
 
-  it("strikes through a place from a closed Frontier day and one on no tile: none opens", () => {
+  it("draws a place from a closed Frontier day, one gone, and one on no tile inert, saying gone in the chip", () => {
     for (const id of ["m2", "m4", "m14"]) {
-      expect(chip(id).className).toContain("line-through");
-      expect(chip(id).querySelector("button")?.disabled ?? true).toBe(true);
+      const press = chip(id).querySelector("button")!;
+      expect(press.disabled).toBe(true);
+      expect(press.textContent).toMatch(/ · gone$/);
+      expect(chip(id).hasAttribute("data-gone")).toBe(true);
     }
     // A place sent with no words reads as its name once.
     expect(host.querySelector('li[data-message-id="m2"]')!.textContent).not.toContain(
@@ -350,11 +352,15 @@ describe("places in chat, in a Frontier game", () => {
       // Never the lab realm that has the same number here.
       expect(chip(id).querySelector("button, [role]")?.textContent ?? chip(id).textContent).toContain(name);
       expect(chip(id).textContent).not.toContain(game.realmName);
-      expect(chip(id).textContent).toContain(`in ${gameName}`);
+      // Inert, and the chip itself says why: no line beside it.
+      const press = chip(id).querySelector("button")!;
+      expect(press.disabled).toBe(true);
+      expect(press.textContent).toBe(`${name} · in ${gameName}`);
+      expect(chip(id).textContent).toBe(press.textContent);
       expect(chip(id).hasAttribute("data-elsewhere")).toBe(true);
+      expect(chip(id).hasAttribute("data-gone")).toBe(false);
       expect(chip(id).getAttribute("data-place-key")).not.toBe(`0x1ab:1/structure:${REALM}`);
-      expect(chip(id).className).not.toContain("line-through");
-      chip(id).querySelector("button")?.click();
+      press.click();
     }
     expect(moved.openOnMap).not.toHaveBeenCalled();
   });
@@ -389,7 +395,8 @@ describe("places in chat, in a Frontier game", () => {
 
   // Playtest 29 October 2026 (B5): another player's realm, out of this one's view, read as gone.
   it("opens a place out of this player's view by visiting its owner, where it stood when shared, never as gone", () => {
-    expect(chip("m12").className).not.toContain("line-through");
+    expect(chip("m12").hasAttribute("data-gone")).toBe(false);
+    expect(chip("m12").querySelector("button")!.disabled).toBe(false);
     act(() => chip("m12").querySelector("button")!.click());
     // The owner's realm visited, the one way the stream brings it, to open on the realm where it stood: the visit opens
     // it as its rows arrive (realm-visit.test.tsx), so nothing moves here yet.
@@ -410,8 +417,9 @@ describe("places in chat, in a Frontier game", () => {
     expect(moved.openOnMap).not.toHaveBeenCalled();
 
     // One sent with no tile or owner (an older client's) is not known to be gone either: it reads plainly, opens nothing.
-    expect(chip("m3").className).not.toContain("line-through");
-    expect(chip("m3").querySelector("button")?.disabled ?? true).toBe(true);
+    expect(chip("m3").hasAttribute("data-gone")).toBe(false);
+    expect(chip("m3").textContent).toBe("Iron Wardens");
+    expect(chip("m3").querySelector("button")!.disabled).toBe(true);
   });
 
   it("sends a place alone, with no words, as its name", async () => {
@@ -443,7 +451,7 @@ describe("places in chat, in a Frontier game", () => {
 
   // Every site of the map's own catalog (MAP_SITES, which the renderer draws from): one it adds is covered here.
   it.each(MAP_SITES.map((entry, index) => [entry.kind, { ...entry, ...mapSite(entry.kind) }, index] as const))(
-    "shares a %s selected on its tile, opens its tile, and strikes it through once spent",
+    "shares a %s selected on its tile, opens its tile, and marks it gone once spent",
     async (_, site, index) => {
       const tile = siteTile(index);
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: tile.col, row: tile.row } }));
@@ -475,8 +483,8 @@ describe("places in chat, in a Frontier game", () => {
 
       // Used: its tile empties, and the place it was opens nothing.
       act(() => game.store.applyFacts([{ model: "TileOccupancy", key: `0x5170${index}`, value: null }] as never));
-      expect(chip("m11").className).toContain("line-through");
-      expect(chip("m11").querySelector("button")?.disabled ?? true).toBe(true);
+      expect(chip("m11").querySelector("button")!.disabled).toBe(true);
+      expect(chip("m11").textContent).toBe(`${site.name} · gone`);
     },
   );
 });
@@ -485,7 +493,8 @@ describe("places in chat, in a game with one map all game (Blitz)", () => {
   beforeEach(() => mount("blitz"));
 
   it("opens a place shared days ago: the map is the same", () => {
-    expect(chip("m2").className).not.toContain("line-through");
+    expect(chip("m2").hasAttribute("data-gone")).toBe(false);
+    expect(chip("m2").querySelector("button")!.disabled).toBe(false);
     act(() => chip("m2").querySelector("button")!.click());
     expect(moved.openOnMap).toHaveBeenCalledWith(expect.anything(), { kind: "structure", entityId: REALM });
   });

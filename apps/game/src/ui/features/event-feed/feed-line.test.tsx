@@ -7,6 +7,7 @@ import {
   expeditionDepth,
   readExpeditionRules,
   siteDisplayName,
+  siteClearXp,
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { FALLEN_REALM_DEPTHS, ResourcesIds, StructureType } from "@bibliothecadao/types";
@@ -305,6 +306,40 @@ it("keeps a site's guard once the player's map lets the site go, as when their a
   await act(async () => new Promise((settled) => setTimeout(settled, 0)));
   expect(game.store.get("ExpeditionSite", { game_id: 1, entity_id: CAMP })).toBeUndefined();
   expect(paintings()).toEqual(["attack", "beast-troll"]);
+});
+
+it("says a clear's XP at the row's end beside what it paid, as the site's receipt does, near or far", async () => {
+  const clear = (site: number) =>
+    story(DJIZUS, "SitePayout", {
+      site_id: site,
+      category: StructureType.Camp,
+      reward: { resource_type: ResourcesIds.Labor, amount: scaled(700) },
+    });
+  const xps = () =>
+    [...host.querySelectorAll("[data-feed-line] .ui-feed-line__reward")].map((each) => each.textContent);
+  // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 XP.
+  const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
+  expect(siteClearXp(near)).toBe(93);
+  const read = await draw(clear(CAMP), true);
+  expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
+  expect(xps()).toEqual(["+700", "+93 XP"]);
+  // One the map does not hold, from Herald's row of that site.
+  const far = 4_400;
+  herald.set(far, {
+    game_id: "0x1",
+    entity_id: hex(far),
+    category: hex(StructureType.Rift),
+    initial_guard_count: hex(scaled(1_200)),
+    alt: false,
+    col: hex(near.col + 40),
+    row: hex(near.row),
+    clear: null,
+  });
+  await draw(clear(far));
+  expect(xps()).toEqual(["+700", "+86 XP"]);
+  // Neither holds it: what it paid alone, never a guessed XP.
+  await draw(clear(4_401));
+  expect(xps()).toEqual(["+700"]);
 });
 
 it("draws no guard, never an old or guessed one, for a site neither the map nor Herald holds", async () => {

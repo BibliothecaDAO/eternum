@@ -802,21 +802,21 @@ async function levelUpTheArmy({ browser }) {
   if (!battle) return { ...panel, battle };
   const buy = browser.read(sheetButton("^Level up$"));
   if (!buy) return { ...panel, buy };
-  watchFor(browser, "tier-bought", panelNamesTheChainsTier(panel.army));
+  watchFor(browser, "tier-bought", panelShowsTheChainsTier(panel.army));
   browser.tap(buy.offset);
-  // The result shows beside the press: its row names the next tier from the one bought.
-  return { ...panel, watching: true, region: buy.row };
+  return { ...panel, watching: true };
 }
 
-const ROMAN_TIERS = ["I", "II", "III", "IV", "V"];
-
-/** The army's panel names the Battle tier the lab's chain bought: its Battle choice now reads from that tier ("BattleII→III"). */
-const panelNamesTheChainsTier = (army) => `(() => {
+/**
+ * The army's panel shows the Battle tier the lab's chain bought, back on its status: the point was its last, so the
+ * choices have nothing left to buy and the panel returns to the army, its Battle tile at that tier.
+ */
+const panelShowsTheChainsTier = (army) => `(() => {
   const bought = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "SpendSkillPoint").at(-1);
   const tier = bought?.answered.find(({ model }) => model === "ArmyProgress")?.value.battle;
-  const choices = [...(document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.querySelectorAll("button") ?? [])];
+  const sheet = document.querySelector('[data-kit-sheet][aria-label="${army}"]');
   return tier !== undefined &&
-    choices.some((button) => button.textContent.replace(/\s+/g, "").startsWith("Battle" + ${JSON.stringify(ROMAN_TIERS)}[tier - 1] + "→"));
+    sheet?.querySelector('[data-army-step="stats"] button[aria-label^="Battle "] .ui-tier[data-tier="' + tier + '"]') != null;
 })()`;
 
 /**

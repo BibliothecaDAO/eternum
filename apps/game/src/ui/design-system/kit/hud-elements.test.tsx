@@ -7,6 +7,7 @@ import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 import {
   HudButton,
   HudCard,
+  HudChip,
   HudConfirm,
   HudCost,
   HudDeploy,
@@ -388,6 +389,24 @@ describe("a tab's count", () => {
       ),
     );
     expect(host.querySelector(".ui-chip")?.getAttribute("data-tone")).toBe("good");
+  });
+});
+
+describe("a chip", () => {
+  it("drawn disabled is an inert press, with or without an action, and a plain tag otherwise", () => {
+    act(() =>
+      root.render(
+        <>
+          <HudChip disabled>Moondeep · gone</HudChip>
+          <HudChip>Ready</HudChip>
+        </>,
+      ),
+    );
+    const [inert, tag] = [...host.querySelectorAll<HTMLElement>(".ui-chip")];
+    expect(inert!.tagName).toBe("BUTTON");
+    expect((inert as HTMLButtonElement).disabled).toBe(true);
+    expect(inert!.textContent).toBe("Moondeep · gone");
+    expect(tag!.tagName).toBe("SPAN");
   });
 });
 

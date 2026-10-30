@@ -70,6 +70,44 @@ describe("the build sheet", () => {
     host.remove();
   });
 
+  it("opens on the building Next up asks for and stands it on the plot, until the player picks another", async () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, realm } = realmBoard();
+    const plot = { col: 11, row: 10 };
+    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { placeBuilding },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+    } as unknown as GameClient);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <BuildSheet realm={realm} plot={plot} asked={BuildingType.ResourceKnightT1} onClose={() => undefined} />
+        </GameProvider>,
+      ),
+    );
+    const pressed = () =>
+      [...host.querySelectorAll<HTMLButtonElement>('.ui-card__choose[aria-pressed="true"]')].map(
+        (card) => card.querySelector(".ui-card__title")?.textContent,
+      );
+    expect(pressed()).toEqual(["Barracks"]);
+    expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
+    // The player's own pick then holds over Next up's.
+    const farm = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
+      (card) => card.querySelector(".ui-card__title")?.textContent === "Farm",
+    )!;
+    act(() => farm.click());
+    expect(pressed()).toEqual(["Farm"]);
+    act(() => root.unmount());
+    host.remove();
+  });
+
   /** A build sheet whose build is sent and whose outcome the test settles, beside the HUD's ghost of builds in flight. */
   const buildInFlight = () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
