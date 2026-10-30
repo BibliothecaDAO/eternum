@@ -4,7 +4,7 @@ import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 
-import { ruinAt } from "./after-battle-scenario";
+import { siteAt } from "./after-battle-scenario";
 import { type LabFact, type LabScenario, wire } from "./lab-chain";
 import { besideOnOpenLand, spireScenario } from "./spire-scenario";
 
@@ -38,7 +38,7 @@ export const ruinFightScenario = (): LabScenario => {
       key: "0x74",
       value: wire({ ...army, troops: { ...army.troops, count: ARMY_TROOPS * PRECISION } }),
     },
-    ...ruinAt(store, ruinTile, { ...army.troops, count: GUARD_TROOPS * PRECISION }),
+    ...siteAt(store, ruinTile, { ...army.troops, count: GUARD_TROOPS * PRECISION }, StructureType.Ruin),
   ] as never);
   return {
     ...spire,

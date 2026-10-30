@@ -1,5 +1,6 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
+import { siteKindOf } from "@bibliothecadao/eternum";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 
@@ -36,7 +37,7 @@ export const afterBattleScenario = (): LabScenario => {
   });
   store.applyFacts([
     { model: "ExplorerTroops", key: "0x74", value: wire({ ...army, troops: afterTheFight(4_015n) }) },
-    ...ruinAt(store, ruinTile, afterTheFight(999n)),
+    ...siteAt(store, ruinTile, afterTheFight(999n), StructureType.Ruin),
     clearedCampAt(armyTile),
   ] as never);
   return {
@@ -129,10 +130,12 @@ export const lowStaminaScenario = (): LabScenario => {
   };
   store.applyFacts([
     { model: "ExplorerTroops", key: "0x74", value: wire({ ...army, troops: spent }) },
-    ...ruinAt(store, besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!), {
-      ...army.troops,
-      count: 999n * PRECISION,
-    }),
+    ...siteAt(
+      store,
+      besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!),
+      { ...army.troops, count: 999n * PRECISION },
+      StructureType.Ruin,
+    ),
   ] as never);
   return spire;
 };
@@ -152,10 +155,12 @@ export const fightScenario = (): LabScenario => {
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
-    ...ruinAt(store, besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!), {
-      ...army.troops,
-      count: 999n * PRECISION,
-    }),
+    ...siteAt(
+      store,
+      besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!),
+      { ...army.troops, count: 999n * PRECISION },
+      StructureType.Ruin,
+    ),
   ] as never);
   return {
     ...spire,
@@ -224,11 +229,15 @@ export const clearedCampAt = (
   }),
 });
 
-/** A ruin on the tile, guarded by the troops given: its structure, its site, its guard and its tile's blocker. */
-export const ruinAt = (
+/**
+ * A standing site of this kind (a ruin, a camp) on the tile, guarded by the troops given: its structure, its site, its
+ * guard and its tile's blocker.
+ */
+export const siteAt = (
   store: ReturnType<typeof spireScenario>["store"],
   tile: { col: number; row: number },
   guard: object,
+  category: StructureType.Ruin | StructureType.Camp,
 ): LabFact[] => [
   {
     model: "Structure",
@@ -238,7 +247,7 @@ export const ruinAt = (
       entity_id: SITE,
       owner: 0,
       base: {
-        category: StructureType.Ruin,
+        category,
         level: 0,
         created_at: 1,
         troop_max_guard_count: 1,
@@ -253,7 +262,7 @@ export const ruinAt = (
     value: wire({
       game_id: 1,
       entity_id: SITE,
-      category: StructureType.Ruin,
+      category,
       initial_guard_count: 3_000n * PRECISION,
       alt: false,
       ...tile,
@@ -268,6 +277,13 @@ export const ruinAt = (
   {
     model: "TileOccupancy",
     key: "0x1ab95",
-    value: { game_id: 1, alt: false, ...tile, entity_id: SITE, category: TileOccupier.Ruin, is_structure: true },
+    value: {
+      game_id: 1,
+      alt: false,
+      ...tile,
+      entity_id: SITE,
+      category: TileOccupier[siteKindOf(category)],
+      is_structure: true,
+    },
   },
 ];

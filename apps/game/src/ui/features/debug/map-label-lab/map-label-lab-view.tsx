@@ -1,4 +1,4 @@
-import { getTroopResourceId } from "@bibliothecadao/eternum";
+import { getTroopResourceId, type SiteKind } from "@bibliothecadao/eternum";
 import { StructureType, type ID } from "@bibliothecadao/types";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
@@ -19,7 +19,13 @@ import { MapPlateLayer, type MapPlateScope } from "@/three/map-plates/map-plate-
 import { orderLineSize } from "@/three/map-plates/map-plate-layout";
 import { PointerOrderTip } from "@/three/scenes/worldmap-order-tip";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
-import { buildArmyPlate, buildStructurePlate, guardsToTell, type MapPlate } from "@/three/map-plates/map-plate-model";
+import {
+  buildArmyPlate,
+  buildStructurePlate,
+  guardsToTell,
+  tellsGuardStamina,
+  type MapPlate,
+} from "@/three/map-plates/map-plate-model";
 import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terrain-props";
 import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
@@ -364,6 +370,8 @@ const STRUCTURE_TYPES = {
 } as const;
 
 const CATEGORY = { crossbowman: "Crossbowman", knight: "Knight", paladin: "Paladin" } as const;
+/** The lab's kinds that stand for a Frontier world's guarded sites. */
+const LAB_SITE_KINDS: Partial<Record<MapLabelEntity["kind"], SiteKind>> = { camp: "Camp", rift: "Rift" };
 /** The stamina one explore costs in the lab's world, as Frontier's rules set it: a segment of every stamina bar. */
 const EXPLORE_STAMINA = 20;
 
@@ -397,6 +405,8 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
       EXPLORE_STAMINA,
     );
   }
+  // A Frontier world's camps and rifts are its guarded sites, as the map's structures read them (`siteKind`).
+  const siteKind = frontier ? LAB_SITE_KINDS[entity.kind] : undefined;
   return buildStructurePlate(
     {
       entityId: entity.entityId,
@@ -414,7 +424,15 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
           tier: slot.tier,
           count: slot.count,
           // A guard slot's stamina, as the map would read it (getGuardStaminaSnapshot): some rested, some spent.
-          stamina: { current: 20 + ((slot.count * 13 + index * 41) % 100), max: 120, perExplore: EXPLORE_STAMINA },
+          ...(tellsGuardStamina({ siteKind })
+            ? {
+                stamina: {
+                  current: 20 + ((slot.count * 13 + index * 41) % 100),
+                  max: 120,
+                  perExplore: EXPLORE_STAMINA,
+                },
+              }
+            : {}),
         })),
         !frontier,
       ),

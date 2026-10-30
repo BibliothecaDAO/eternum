@@ -587,13 +587,14 @@ before the fight, stamina to attack and no cooldown: select the army, open the r
 camera stays where the player had it (`--steps lab-ruin-fight`), while the ruin's chest opens at the centre of the
 screen. `scenario=cleared-camp` stands the realm's second army on a camp it cleared, away from the spire, and leaves
 another cleared camp empty: tap the army for its panel, and the empty camp shows its standard with no token.
-`scenario=explore` stands the spire's army at the edge of the land it has seen, fog beside it: a phone's double tap or a
-desktop's right-click explores. `--steps lab-merge-loses-xp`, `lab-merge-keeps-tapped` and `lab-after-battle` check that
-hovering the army's tile opens its plate, and that a tile a merge emptied opens none. `scenario=far-place` serves the
-player's own Herald scope alone, as a live shard does, with the neighbour's Kingdom and an army of theirs out of it,
-each shared in Global: a chip's press visits their owner and, once its rows arrive, opens the place read-only where it
-stands, selected; the banner's **Leave** returns home (`--steps lab-far-place`: the realm, Leave, the army, Leave,
-desktop and phone).
+`scenario=camp` stands the spire's army beside a standing camp: hover its tile for the Troll's plate (its count, no
+stamina bar: a site's guards never move). `scenario=explore` stands the spire's army at the edge of the land it has
+seen, fog beside it: a phone's double tap or a desktop's right-click explores. `--steps lab-merge-loses-xp`,
+`lab-merge-keeps-tapped` and `lab-after-battle` check that hovering the army's tile opens its plate, and that a tile a
+merge emptied opens none. `scenario=far-place` serves the player's own Herald scope alone, as a live shard does, with
+the neighbour's Kingdom and an army of theirs out of it, each shared in Global: a chip's press visits their owner and,
+once its rows arrive, opens the place read-only where it stands, selected; the banner's **Leave** returns home
+(`--steps lab-far-place`: the realm, Leave, the army, Leave, desktop and phone).
 
 `/lab/game?scenario=high-ground` is the spire's game with every revealed tile snow, bare rock or tundra: pick the army
 and its lit tiles lie on ground that rises above a flat plate. `--steps lab-high-ground` checks every lit plate lies
