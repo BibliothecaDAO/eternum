@@ -1,5 +1,5 @@
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
-import { HudButton, HudPanel, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPage, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { EXIT, MENU, REALM_LABOR, RESUME, SEASON, SETTINGS, TODAY } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -33,7 +33,7 @@ export const MenuPage = ({
   onExit: () => void;
   onClose: () => void;
 }) => (
-  <HudPanel label={MENU} title={MENU} icon="menu" collapsible={false} bodyClassName="flex flex-col gap-2">
+  <HudPage label={MENU} icon="menu" onClose={onClose}>
     <nav className="flex flex-col">
       <MenuRow icon="clock" onClick={onToday} />
       <MenuRow icon="victory" badge={<span className="text-hud-body tabular-nums">{rank}</span>} onClick={onSeason} />
@@ -56,7 +56,7 @@ export const MenuPage = ({
         </HudButton>
       </span>
     </div>
-  </HudPanel>
+  </HudPage>
 );
 
 const MenuRow = ({
@@ -71,12 +71,8 @@ const MenuRow = ({
   <HudRow
     lead={<SemanticIcon name={icon} size={22} />}
     title={MENU_WORDS[icon]}
-    trail={
-      <>
-        {badge}
-        <SemanticIcon name="chevron-right" size={20} />
-      </>
-    }
+    trail={badge}
+    opens
     onClick={onClick}
   />
 );

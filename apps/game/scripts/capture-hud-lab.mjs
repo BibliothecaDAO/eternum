@@ -47,7 +47,7 @@ const CARDS = [[1440, 900], ...PHONES];
 const READ_ARMY_LIST = `(() => {
   const nav = document.querySelector('nav[aria-label="Armies"]');
   const bars = nav ? [...nav.querySelectorAll('[role="meter"][aria-label="stamina"]')] : [];
-  const rows = nav ? [...nav.querySelectorAll(".ui-row__choose")] : [];
+  const rows = nav ? [...nav.querySelectorAll(".ui-row__words")] : [];
   return {
     entries: nav ? nav.children.length : 0,
     bars: bars.map((bar) => {
@@ -96,7 +96,7 @@ const armyListProblems = ({ entries, bars, rows }) => {
 const READ_SHEET_FIT = `(() => {
   const sheet = document.querySelector("[data-kit-sheet]");
   if (!sheet) return { sheet: false };
-  const body = sheet.querySelector(".ui-sheet__body");
+  const body = sheet.querySelector(".ui-frame__body");
   const verb = sheet.querySelector(".ui-window__foot > button:last-of-type")?.getBoundingClientRect();
   return { sheet: true, scrolls: body.scrollHeight - body.clientHeight, verb: verb && { top: verb.top, bottom: verb.bottom }, height: innerHeight };
 })()`;

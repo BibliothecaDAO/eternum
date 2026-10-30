@@ -568,7 +568,9 @@ const TransferControls = ({
 export const HudCost = ({ line }: { line: string }) => (line ? <span className="ui-cost">{line}</span> : null);
 
 /**
- * The HUD's one panel: a header band naming it (its icon, its title, a cue at its end) over a divider, then its body.
+ * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
+ * its title, a cue at its end) over a divider, then its body. A surface the HUD opens and closes wears the one frame
+ * instead (HudPage, HudSheet).
  * With a `label` it is a named section for assistive technology (a landmark). Its chevron and title fold its body away
  * unless `collapsible` is off; the cue's own controls never fold it. With `onTitle` the whole header band is one press
  * instead (the realm card's way home), and the panel never folds. A `section` is a part of a panel: the same header
@@ -974,8 +976,9 @@ export const HudRing = ({
 };
 
 /**
- * One thing of a list: what it is and what it says; hover lights it, the chosen one carries a bar in the accent. With
- * `onClick` it is a button: choosing it is pressing it.
+ * One thing of a list: what it is and what it says, and what it ends on; hover lights it, the chosen one carries a bar
+ * in the accent. With `onClick` the whole row is one button, its lead, words, figure and chevron alike: choosing it is
+ * pressing it anywhere along it (owner, 30 October: "the whole row should work").
  */
 export const HudRow = ({
   lead,
@@ -983,6 +986,8 @@ export const HudRow = ({
   title,
   detail,
   trail,
+  opens,
+  controls,
   selected,
   state,
   disabled,
@@ -995,12 +1000,15 @@ export const HudRow = ({
   label?: string;
   title: ReactNode;
   detail?: ReactNode;
-  /**
-   * What follows the row's words: its own controls (Provision, Level up) or a figure (a bonus). With them the row is a
-   * container: its lead, its words (the button that chooses it, when it has `onClick`) and its trail side by side,
-   * never one button inside another.
-   */
+  /** What the row ends on, part of it: a figure (a bonus, a count), a chip, a dot. */
   trail?: ReactNode;
+  /** It opens a page of its own: a chevron at its end. */
+  opens?: boolean;
+  /**
+   * The row's own controls (Provision, Level up). With them the row is a container: its lead, the button that chooses
+   * it (its words and trail, when it has `onClick`) and its controls side by side, never one button inside another.
+   */
+  controls?: ReactNode;
   /** Whether the row is the one chosen; absent on a row that does something rather than choosing (Deploy). */
   selected?: boolean;
   state?: string;
@@ -1011,7 +1019,21 @@ export const HudRow = ({
   tip?: string;
   onClick?: () => void;
 }) => {
-  if (trail !== undefined) {
+  const face = (
+    <>
+      <span className="ui-row__words">
+        <span className="ui-row__title">{title}</span>
+        {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+      </span>
+      {(trail !== undefined || opens) && (
+        <span className="ui-row__trail">
+          {trail}
+          {opens && <Icon name="chevron-right" size={20} />}
+        </span>
+      )}
+    </>
+  );
+  if (controls !== undefined) {
     return (
       <div
         className="ui-row"
@@ -1031,41 +1053,29 @@ export const HudRow = ({
             disabled={disabled}
             onClick={onClick}
           >
-            <span className="ui-row__title">{title}</span>
-            {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
+            {face}
           </button>
         ) : (
-          <span className="ui-row__choose">
-            <span className="ui-row__title">{title}</span>
-            {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
-          </span>
+          <span className="ui-row__choose">{face}</span>
         )}
-        <span className="ui-row__controls">{trail}</span>
+        <span className="ui-row__controls">{controls}</span>
       </div>
     );
   }
-  const words = (
-    <>
-      {lead}
-      <span className="flex min-w-0 flex-col">
-        <span className="ui-row__title">{title}</span>
-        {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
-      </span>
-    </>
-  );
   return onClick ? (
     <button
       type="button"
       className="ui-row"
       aria-label={label}
-      role="option"
-      aria-selected={selected ?? false}
+      aria-pressed={selected}
+      aria-busy={busy}
       data-state={state}
       data-tip={tip}
       disabled={disabled}
       onClick={onClick}
     >
-      {words}
+      {lead}
+      {face}
     </button>
   ) : (
     <div
@@ -1076,7 +1086,8 @@ export const HudRow = ({
       data-state={state}
       data-tip={tip}
     >
-      {words}
+      {lead}
+      {face}
     </div>
   );
 };
@@ -1373,51 +1384,96 @@ export const HudWindow = ({
  */
 export const SheetDock = createContext<HTMLElement | null>(null);
 
+/** What a surface's frame holds: its name, the icon and cue its head may carry, its way out and its body. */
+type FrameParts = {
+  label: string;
+  icon?: IconMeaning;
+  /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
+  cue?: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+};
+
 /**
- * A sheet over the stage: the panel's look, its name in the header band and its way out as the cue (a cross, or a back
- * arrow when it opened from another panel, whose place it takes). On a phone it rises from the place bar, as tall as
- * what it holds and at most the phone panel's height, under that one row (owner, 26 October 2026: layout A), which a
- * drag down also closes; the map above it stays playable. From the desktop width
- * up it docks under the top bar or in its host's SheetDock, with the stage playable beside it. Escape and system back
- * close it on both. Its foot is a window's (HudWindowFoot), so the verb and cost stay visible while the body scrolls.
+ * The one frame every HUD surface wears, a page on the place bar as much as a sheet over the stage (owner, 30 October
+ * 2026: "one rule should fit"): the panel's look; its head, one row with its icon, its name, its cue and its way out (a
+ * cross, or a back arrow when a sheet opened from another panel, whose place it takes), which a drag down on a touch
+ * screen also takes; its body, which scrolls; and its foot (HudWindowFoot) under a rule, which keeps the verb and its
+ * cost in view while the body scrolls. Escape and system back close it. It keeps nothing for the screen's safe area:
+ * what it stands on (the place bar, or a sheet's place above the screen's foot) keeps that.
  */
-export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
-  const back = useContext(OpenedFromPanel);
-  const dock = useContext(SheetDock);
+const SurfaceFrame = forwardRef<
+  HTMLElement,
+  FrameParts & { back?: boolean; bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
+>(({ label, icon, cue, onClose, back = false, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
-  const sheet = (
-    <section
-      role="dialog"
-      aria-label={label}
-      data-kit-sheet
-      data-docked={dock ? "" : undefined}
-      className="ui ui-panel ui-sheet"
-    >
-      <div className="ui-sheet__head" {...drag.handlers}>
+  return (
+    <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
+      <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
           title={label}
+          icon={icon}
           cue={
-            <HudIconButton
-              icon={back ? "arrow-left" : "close"}
-              label={back ? BACK : CLOSE}
-              kind="quiet"
-              size="sm"
-              onClick={onClose}
-            />
+            <span className="flex items-center gap-1">
+              {cue}
+              <HudIconButton
+                icon={back ? "arrow-left" : "close"}
+                label={back ? BACK : CLOSE}
+                kind="quiet"
+                size="sm"
+                onClick={onClose}
+              />
+            </span>
           }
           press={null}
         />
       </div>
       <WindowFootContext.Provider value={foot}>
-        <div className="ui-sheet__body">{children}</div>
+        <div className={cn("ui-frame__body", bodyClassName)}>{children}</div>
       </WindowFootContext.Provider>
       <footer ref={setFoot} className="ui-window__foot ui-actions" />
     </section>
   );
+});
+SurfaceFrame.displayName = "SurfaceFrame";
+
+/**
+ * A sheet over the stage, in the one frame (its back arrow when it opened from another panel). On a phone it rises from
+ * the place bar, as tall as what it holds and at most the phone panel's height, under that one row (owner, 26 October
+ * 2026: layout A); the map above it stays playable. From the desktop width up it docks under the top bar or in its
+ * host's SheetDock, with the stage playable beside it.
+ */
+export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
+  const back = useContext(OpenedFromPanel);
+  const dock = useContext(SheetDock);
+  const sheet = (
+    <SurfaceFrame
+      role="dialog"
+      label={label}
+      back={back}
+      onClose={onClose}
+      data-kit-sheet=""
+      data-docked={dock ? "" : undefined}
+      className="ui-sheet"
+    >
+      {children}
+    </SurfaceFrame>
+  );
   return dock ? createPortal(sheet, dock) : sheet;
 };
+
+/**
+ * A page of a place (the Menu, Research, the Feed, Chat, the season's board), in the one frame where its host stands it:
+ * a phone's page band on the place bar, a desktop's rail. `fills` takes the band up to the strip, the map hidden behind
+ * it (Chat: a page read and written in, not glanced at over the map). `bodyClassName` lays its body out, never its look.
+ */
+export const HudPage = forwardRef<
+  HTMLElement,
+  FrameParts & { icon: IconMeaning; fills?: boolean; bodyClassName?: string }
+>(({ fills = false, ...frame }, ref) => <SurfaceFrame ref={ref} {...frame} data-page-fills={fills ? "" : undefined} />);
+HudPage.displayName = "HudPage";
 
 /**
  * The one way to fill a window's or a sheet's foot, as actions (HudActions): the way out on the left with what it

@@ -44,7 +44,7 @@ export const SeasonWithdrawRow = ({
       lead={<SemanticIcon name="lords" size={30} />}
       title={<span className="tabular-nums">{formatExact(lords)}</span>}
       detail={closed ? WITHDRAWALS_CLOSED : withdrawUntil(formatMoment(closesAt, now))}
-      trail={
+      controls={
         closed ? undefined : (
           <HudButton kind="primary" onClick={onOpen}>
             {WITHDRAW}

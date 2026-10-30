@@ -713,7 +713,7 @@ button.ui-ring:focus-visible .ui-ring__face {
 .ui-row:is(:hover, [data-state="hover"]) {
   background: var(--hud-hover);
 }
-.ui-row[aria-selected="true"] {
+.ui-row:is([aria-selected="true"], [aria-pressed="true"]) {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
@@ -748,14 +748,27 @@ button.ui-row {
   line-height: var(--hud-leading-label);
   font-weight: var(--hud-weight-label);
 }
+/* The row's words take the room; what it ends on (a figure, a chip, its chevron) keeps its own at the end. */
+.ui-row__words {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-direction: column;
+}
+.ui-row__trail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: theme(spacing.1);
+}
 /* A row with its own controls: the button that chooses it takes the room, the controls keep theirs. */
 .ui-row__choose {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
-  flex-direction: column;
+  align-items: center;
   align-self: stretch;
-  justify-content: center;
+  gap: theme(spacing.2);
   border: 0;
   background: none;
   padding: 0;
@@ -776,14 +789,6 @@ span.ui-row__choose {
   flex: none;
   align-items: center;
   gap: theme(spacing.1);
-}
-.ui-row__trail {
-  margin-left: auto;
-  color: rgb(var(--hud-ink));
-  font-size: var(--hud-text-strong);
-  line-height: var(--hud-leading-strong);
-  font-weight: var(--hud-weight-strong);
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── Table row: one row of a table (the leaderboard), its columns on the caller's grid (--cols, --cols-wide from a
@@ -961,11 +966,11 @@ span.ui-row__choose {
    phone panel's height, on a desktop it docks under the top bar. It never takes the stage: no backdrop, so the map
    beside or above it still answers a tap (owner, 22 October 2026: mobile direction A; 26 October: panel layout A).
    `--hud-phone-foot` is the height HudBands keeps for its place bar, or for the on-screen keyboard while the bar
-   steps aside for it. ── */
+   steps aside for it; with no place bar the sheet stands above the screen's safe area. ── */
 .ui-sheet {
   position: fixed;
   inset-inline: theme(spacing.2);
-  bottom: var(--hud-phone-foot, 0px);
+  bottom: var(--hud-phone-foot, env(safe-area-inset-bottom));
   z-index: theme(zIndex.hud-sheet);
   display: flex;
   max-height: theme(spacing.hud-phone-panel);
@@ -973,32 +978,45 @@ span.ui-row__choose {
   /* Shown even while the panel it opened from steps aside for it. */
   visibility: visible;
 }
+
+/* ── Frame: the one frame every surface wears, a page as much as a sheet (HudPage, HudSheet): its head, one row with its
+   name, cue and way out; its body, which scrolls; its foot under a rule. A page fills the place its host gives it. ── */
+.ui-frame {
+  min-height: 0;
+}
+.ui-frame:not(.ui-sheet) {
+  flex: 1 1 auto;
+}
 /* The verb stays in view while the body scrolls: the foot never gives up its height to the body. */
-.ui-sheet > .ui-window__foot {
+.ui-frame > .ui-window__foot {
   flex-shrink: 0;
 }
-/* A phone sheet's head is one control-high row: its name and its way out, and a drag down on it closes the sheet. */
+/* A phone's frame head is one control-high row: its name and its way out, and a drag down on it closes the surface. */
 @media (max-width: 1023px) {
-  .ui-sheet__head {
+  .ui-frame__head {
     touch-action: none;
   }
-  .ui-sheet__head > .ui-panel__head {
+  .ui-frame__head > .ui-panel__head {
     min-height: var(--hud-control);
     padding-block: 0;
     padding-inline-end: theme(spacing.1);
   }
 }
-.ui-sheet__body {
+.ui-frame__body {
   display: flex;
   min-height: 0;
   flex: 1;
   flex-direction: column;
-  gap: theme(spacing.2);
   overflow-y: auto;
-  padding: theme(spacing.2) theme(spacing.3) max(theme(spacing.3), env(safe-area-inset-bottom));
 }
-/* A sheet whose body sends all it holds to its foot (HudWindowFoot) keeps no empty band above it. */
-.ui-sheet__body:empty {
+/* The body's padding and gap are defaults a page's layout may change (bodyClassName's p-0, gap-1): no weight of their
+   own, so a utility always wins. */
+:where(.ui-frame__body) {
+  gap: theme(spacing.2);
+  padding: theme(spacing.2) theme(spacing.3) theme(spacing.3);
+}
+/* A frame whose body sends all it holds to its foot (HudWindowFoot) keeps no empty band above it. */
+.ui-frame__body:empty {
   display: none;
 }
 /* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */

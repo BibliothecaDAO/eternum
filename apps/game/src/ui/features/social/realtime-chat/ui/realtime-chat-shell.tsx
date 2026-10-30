@@ -40,7 +40,7 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
   const tab = view.kind === "room" ? (zoneId ?? MESSAGES) : MESSAGES;
   return (
     <div className={cn("flex h-full min-h-0 w-full flex-col", className)}>
-      <div className="flex items-center justify-between gap-2 border-b border-hud-line px-2 py-1">
+      <div className="flex items-center justify-between gap-2 px-2 py-1">
         <HudTabs
           size="sm"
           tabs={[

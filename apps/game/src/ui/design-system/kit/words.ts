@@ -208,8 +208,6 @@ export const EVENTS_WORDS = {
   nothingYet: "Nothing here yet.",
   /** Frontier's one feed in its rail: the world's history, and lenses on it. */
   feed: "Feed",
-  /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
-  closeFeed: "Close the feed",
   /** The lenses' group, for assistive technology: Events, the Log and the Feed alike. */
   lens: "Show",
   lenses: { important: "Important", all: "All" },

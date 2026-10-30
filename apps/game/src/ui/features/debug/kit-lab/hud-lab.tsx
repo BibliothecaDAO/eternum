@@ -1146,7 +1146,7 @@ export const HudLab = () => {
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
     <LabGame preset={FRONTIER_PRESET}>
-      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />}
+      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />}
     </LabGame>
   );
   if (lab.merge)

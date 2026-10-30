@@ -208,7 +208,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
                 title={depthName(depth)}
                 detail={why ?? SPIRE_WORDS.cost(formatCharge(cost))}
                 disabled={!open}
-                trail={
+                controls={
                   <HudButton
                     kind="secondary"
                     size="sm"
@@ -227,7 +227,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
               lead={<Icon name={reachMark(next)} size={22} />}
               title={depthName(next)}
               detail={SPIRE_WORDS.locked}
-              trail={
+              controls={
                 <HudButton kind="secondary" size="sm" onClick={onResearch}>
                   {RESEARCH}
                 </HudButton>

@@ -183,7 +183,7 @@ export const BuildOrderRow = ({
     lead={<Icon name={step.icon} size={28} />}
     title={step.realmName}
     detail={step.reason ?? step.label}
-    trail={
+    controls={
       <HudButton
         kind="secondary"
         size="sm"

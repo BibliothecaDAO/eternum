@@ -1,7 +1,6 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudIconButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
-import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
+import { HudButton, HudPage, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
@@ -49,7 +48,6 @@ export const ResearchPanel = ({
   /** Puts the page away, as every panel closes: its X, Escape or back. */
   onClose: () => void;
 }) => {
-  useSheetCloses(onClose);
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
   const tile = (item: TreeNode) => (
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
@@ -57,15 +55,8 @@ export const ResearchPanel = ({
   const branch = (key: Branch) => nodes.filter((item) => item.branch === key);
   const [barracks, ...training] = branch("army");
   return (
-    <HudPanel
-      title={RESEARCH}
-      icon="research"
-      cue={<HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
-      collapsible={false}
-      className="pointer-events-auto flex min-h-0 flex-1 flex-col"
-      bodyClassName="flex min-h-0 flex-1 flex-col"
-    >
-      <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto px-3 pb-2">
+    <HudPage label={RESEARCH} icon="research" onClose={onClose}>
+      <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto">
         {(Object.keys(RESEARCH_TREE.branches) as Branch[]).map((key) => (
           <BranchHead key={key} branch={key} />
         ))}
@@ -94,7 +85,7 @@ export const ResearchPanel = ({
           onClose={() => onPick(null)}
         />
       )}
-    </HudPanel>
+    </HudPage>
   );
 };
 
@@ -225,7 +216,7 @@ const NodeChoice = ({
   return (
     <div
       data-lab="node-choice"
-      className="mx-2 mb-2 flex shrink-0 flex-col gap-2 rounded-lg border border-hud-line-strong bg-hud-surface p-3 shadow-2xl"
+      className="flex shrink-0 flex-col gap-2 rounded-lg border border-hud-line-strong bg-hud-surface p-3 shadow-2xl"
     >
       <div className="flex items-center gap-2">
         <Icon name={node.icon} size={36} />

@@ -12,10 +12,7 @@ const FEED_PANEL = `<section aria-label="Feed"><div class="ui-event">Krump explo
  * the whole screen (a day end's lifting dawn), which the browser would click instead.
  */
 const browser = ({ close = "works", covered = false } = {}) => {
-  const panel = FEED_PANEL.replace(
-    "__CLOSE__",
-    close === "missing" ? "" : `<button aria-label="Close the feed">×</button>`,
-  );
+  const panel = FEED_PANEL.replace("__CLOSE__", close === "missing" ? "" : `<button aria-label="Close">×</button>`);
   const dom = new JSDOM(`<main><div data-rail-home>${panel}</div><button aria-label="Feed">Feed</button></main>`, {
     runScripts: "outside-only",
   });
@@ -37,7 +34,7 @@ const browser = ({ close = "works", covered = false } = {}) => {
       if (command !== "click") return undefined;
       clicks.push(target);
       const control = document.querySelector(target);
-      if (control.getAttribute("aria-label") === "Close the feed" && close === "works") rail.innerHTML = "";
+      if (control.getAttribute("aria-label") === "Close" && close === "works") rail.innerHTML = "";
       if (control.getAttribute("aria-label") === "Feed" && !rail.firstChild) rail.innerHTML = panel;
       return undefined;
     },

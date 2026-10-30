@@ -162,7 +162,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Troll+550+82 XP");
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+550+82 XP");
       expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
@@ -184,7 +184,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Troll+550+82 XP");
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+550+82 XP");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -250,7 +250,7 @@ describe("the tile card", () => {
     act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
     expect(host.querySelector('section[aria-label="Army"]')).not.toBeNull();
     // The other army stands where a guard does: its 300 troops before this attack, on the guard's side.
-    const sides = [...host.querySelectorAll(".ui-sheet__body > .flex.gap-2 > *")].map((side) => side.textContent);
+    const sides = [...host.querySelectorAll(".ui-frame__body > .flex.gap-2 > *")].map((side) => side.textContent);
     expect(sides[1]).toMatch(/^300 →/);
     const button = [...host.querySelectorAll("button")].find((candidate) => candidate.textContent?.includes("Attack"))!;
     await act(async () => button.click());
@@ -500,6 +500,8 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
       try {
         const { host, unmount } = await attackThatLands(lands, { hud });
         expect(lossSheet()?.textContent).toContain("Its troops fell in the fight. Deploy a new army from your realm.");
+        // In the kit's one frame, as every surface the HUD opens (frontier-hud.test).
+        expect(lossSheet()?.hasAttribute("data-kit-frame")).toBe(true);
         expect(siteCard(host)).toBeNull();
         expect(armyPanel(host)).toBeNull();
         act(() => vi.advanceTimersByTime(ARMY_LOST_MS));

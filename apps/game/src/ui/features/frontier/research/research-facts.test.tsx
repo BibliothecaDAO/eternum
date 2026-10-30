@@ -100,7 +100,9 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
       </GameProvider>,
     ),
   );
-  expect(host.textContent).toBe("The research tree is on its way");
+  // The page says so in its own frame, as it stands once the tree is drawn.
+  const page = host.querySelector('section[data-kit-frame][aria-label="Research"]');
+  expect(page?.querySelector('[role="status"]')?.textContent).toBe("The research tree is on its way");
 
   act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_SHRINE) as never));
   expect(host.textContent).not.toContain("on its way");

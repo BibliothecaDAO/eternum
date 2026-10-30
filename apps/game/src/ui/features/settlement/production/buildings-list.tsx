@@ -67,7 +67,7 @@ export const BuildingsList = ({
         lead={<ResourceIcon resource={selectedProduction.resource} size="md" />}
         title={resourceName(selectedProduction.resource)}
         detail={`${formatCount(selectedProduction.buildings.length, "building")} producing`}
-        trail={
+        controls={
           <HudButton kind="secondary" size="sm" onClick={() => onSelectProduction(null)}>
             Change resource
           </HudButton>
@@ -88,7 +88,7 @@ export const BuildingsList = ({
             title={resourceName(production.resource)}
             detail={formatCount(production.buildings.length, "building")}
             onClick={() => onSelectProduction(production.resource)}
-            trail={
+            controls={
               <span className="w-80 max-w-full">
                 <ResourceChip
                   resourceId={production.resource}

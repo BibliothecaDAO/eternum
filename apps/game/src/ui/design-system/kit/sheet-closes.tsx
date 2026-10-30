@@ -78,14 +78,19 @@ export const isInLayerOpenedFrom = (target: EventTarget | null, from: ParentNode
   return false;
 };
 
+/** Whether `target` is a control whose layer is open now (a field suggesting from its list: chat's mentions). */
+const hasLayerOpen = (target: EventTarget | null) =>
+  target instanceof Element && target.getAttribute("aria-expanded") === "true" && target.hasAttribute("aria-controls");
+
 /**
  * Escape closes the sheet and stops there: taken before the map's shortcuts, which leave a key a surface took. An Escape
- * in a layer a control opened (a select's list) is that layer's: it closes the list, not the sheet.
+ * in a layer a control opened (a select's list), or on the control while its layer is open, is that layer's: it closes
+ * the list, not the sheet.
  */
 const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || isInLayerOpenedFrom(event.target, document)) return;
+      if (event.key !== "Escape" || isInLayerOpenedFrom(event.target, document) || hasLayerOpen(event.target)) return;
       event.preventDefault();
       close();
     };
