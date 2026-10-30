@@ -234,7 +234,7 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".ui-sheet__body header")?.textContent).toBe("The guard holds+550+82 XP");
+    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+550+82 XP");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");
