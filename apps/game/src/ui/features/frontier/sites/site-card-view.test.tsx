@@ -3,7 +3,9 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { type SiteVerb, SiteCardView } from "./site-card-view";
-import type { SiteFight } from "./site-card-plan";
+import { readSiteCard, type SiteFight } from "./site-card-plan";
+import { campBeside, SITE_TILE } from "./site-fixture";
+import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
 
 let host: HTMLDivElement;
@@ -25,6 +27,30 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
+  it("renders the generated Beasts reward and XP in This attack earns", () => {
+    const { store, site, structure, attack } = campBeside("Beasts");
+    const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    expect(plan.payout).toEqual({ resourceId: 23, amount: 250, fits: 250 });
+    expect(plan.xp).toBe(79);
+    const payout = plan.payout!;
+    act(() =>
+      root.render(
+        <SiteCardView
+          site="Beasts"
+          beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
+          army={army}
+          guard={plan.guard?.count}
+          fight={{ outcome: "wins", exchanges: 1, troopsLost: 30, guardLeft: 0 }}
+          pay={{ icon: resourceMeaning(payout.resourceId), amount: payout.amount, fits: payout.fits }}
+          xp={plan.xp}
+          verb={{ kind: "attack", stamina: plan.attackStamina, onAttack: () => {} }}
+          onClose={() => {}}
+        />,
+      ),
+    );
+    expect(document.querySelector(".ui-sheet__body header")?.textContent).toBe("This attack earns+250+79 XP");
+  });
+
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {
     const onAttack = vi.fn();
     act(() =>

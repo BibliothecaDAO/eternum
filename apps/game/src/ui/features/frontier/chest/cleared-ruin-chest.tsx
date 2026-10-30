@@ -2,12 +2,11 @@ import { useGame } from "@/hooks/context/game-context";
 import type { ChestPrize } from "@/three/rewards/chest-reward-reveal";
 import { requestRewardChest } from "@/three/scenes/worldmap-reward-chest-request";
 import { type Tier, TROOPS, XP } from "@/ui/design-system/kit/words";
-import { configManager } from "@bibliothecadao/eternum";
+import { siteClearXp, configManager } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { formatShort, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import { useEffect } from "react";
 
-import { siteClearXp } from "../sites/site-card-plan";
 import { closeRuinChest, useRuinChest } from "../sites/site-clear-moment";
 
 /**

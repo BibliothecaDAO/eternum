@@ -6,10 +6,9 @@ import { Icon } from "@/ui/design-system/icon";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPanel, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { XP } from "@/ui/design-system/kit/words";
-import { configManager, siteDisplayName } from "@bibliothecadao/eternum";
+import { configManager, siteDisplayName, siteClearXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatCharge, formatExact, resourceName, frontierSiteName, scaledToUnits } from "@bibliothecadao/types";
-import { siteClearXp } from "./site-card-plan";
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
 

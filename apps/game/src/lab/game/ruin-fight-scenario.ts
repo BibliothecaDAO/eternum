@@ -1,5 +1,5 @@
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
-import { siteClearXp } from "@/ui/features/frontier/sites/site-card-plan";
+import { siteClearXp } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";

@@ -22,7 +22,7 @@ const structureOf = (structureType: StructureType, owner = 0n) => ({
 });
 
 /** A Frontier site's fact, as the game sends it: a guard of 100 troops to start with, cleared or not. */
-const site = (store: NativeFactStore, cleared: boolean) =>
+const site = (store: NativeFactStore, cleared: boolean, category: StructureType) =>
   store.applyFacts([
     {
       model: "ExpeditionSite",
@@ -30,7 +30,7 @@ const site = (store: NativeFactStore, cleared: boolean) =>
       value: {
         game_id: GAME,
         entity_id: 42,
-        category: StructureType.Camp,
+        category,
         initial_guard_count: String(100n * BigInt(RESOURCE_PRECISION)),
         alt: false,
         col: 1,
@@ -53,14 +53,15 @@ describe("what a plate says taking a camp or a rift gives", () => {
   it.each([
     [StructureType.Camp, "50 Labor"],
     [StructureType.Rift, "300 Essence"],
+    [StructureType.Beasts, "25 Labor"],
   ])("says a Frontier site's payout until its cleared fact arrives, then nothing (category %s)", (category, payout) => {
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
     const store = new NativeFactStore();
-    site(store, false);
+    site(store, false, category);
     expect(said(store, structureOf(category))).toBe(payout);
 
     // Cleared and taken: the site stays on the map, but its payout went home once and is not offered again.
-    site(store, true);
+    site(store, true, category);
     expect(said(store, structureOf(category, 7n))).toBeUndefined();
   });
 
