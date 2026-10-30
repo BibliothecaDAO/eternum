@@ -11,6 +11,8 @@ const facts = vi.hoisted(() => ({
   claimedDay: -1n,
   now: 360,
   balance: 0 as number | undefined,
+  /** A golden home's daily Essence, the preset's; another value shows amounts that differ from its Labor. */
+  goldenEssence: 2000n,
   read: vi.fn(),
   /** The season ends long after day 1, so a next day follows. */
   seasonEnd: 1_000_000n,
@@ -48,7 +50,7 @@ vi.mock("@/hooks/context/game-context", () => ({
           return model === "GameRegistry"
             ? { end_at: facts.seasonEnd }
             : model === "LaborRules"
-              ? { amount: 1000n, campaign_essence: 1000n, golden_amount: 2000n, golden_essence: 2000n }
+              ? { amount: 1000n, campaign_essence: 1000n, golden_amount: 2000n, golden_essence: facts.goldenEssence }
               : model === "CampaignHome"
                 ? facts.campaign
                 : model === "SettledRealm"
@@ -80,6 +82,7 @@ afterEach(() => {
   facts.campaign = undefined;
   facts.claimedDay = -1n;
   facts.balance = 0;
+  facts.goldenEssence = 2000n;
   facts.now = 360;
   facts.read.mockClear();
   facts.seasonEnd = 1_000_000n;
@@ -248,24 +251,33 @@ it.each([
     campaign: { campaign_id: DEVCON_ID, tier: 2 },
     balance: 0,
     name: "Realm Labor +2,000 labor +2,000 Essence",
-    shows: "+2K+2K",
-    icons: ["realm", "labor", "essence"],
+    shows: "+2K",
+    icons: ["labor", "essence"],
+  },
+  {
+    home: "a golden home whose Essence differs from its Labor",
+    campaign: { campaign_id: DEVCON_ID, tier: 2 },
+    balance: 0,
+    goldenEssence: 3000n,
+    name: "Realm Labor +2,000 labor +3,000 Essence",
+    shows: "+2K+3K",
+    icons: ["labor", "essence"],
   },
   {
     home: "a regular Devcon home",
     campaign: { campaign_id: DEVCON_ID, tier: 1 },
     balance: 0,
     name: "Realm Labor +1,000 labor +1,000 Essence",
-    shows: "+1K+1K",
-    icons: ["realm", "labor", "essence"],
+    shows: "+1K",
+    icons: ["labor", "essence"],
   },
   {
     home: "a golden Devcon home whose Labor store is full",
     campaign: { campaign_id: DEVCON_ID, tier: 2 },
     balance: 18000,
     name: "Realm Labor +2,000 labor +2,000 Essence",
-    shows: "+2K+2K",
-    icons: ["realm", "labor", "essence"],
+    shows: "+2K",
+    icons: ["labor", "essence"],
   },
   {
     home: "a home founded with a held Realm",
@@ -273,13 +285,15 @@ it.each([
     balance: 0,
     name: "Realm Labor +1,000 labor",
     shows: "+1K",
-    icons: ["realm", "labor"],
+    icons: ["labor"],
   },
-])("shows on the Realms chip what $home claims today", async ({ campaign, balance, name, shows, icons }) => {
+])("shows on the desktop's Realms chip what $home claims today", async (row) => {
+  const { campaign, balance, goldenEssence = 2000n, name, shows, icons } = row;
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   facts.held = campaign === undefined;
   facts.campaign = campaign;
   facts.balance = balance;
+  facts.goldenEssence = goldenEssence;
   const host = document.createElement("div");
   const root = createRoot(host);
   try {
@@ -293,7 +307,7 @@ it.each([
   }
 });
 
-it("on a phone's purse row, lets the amounts' icons say what the chip is: no realm icon beside them", async () => {
+it("on a phone's purse row, keeps each amount with its own icon", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   facts.held = false;
   facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
@@ -303,6 +317,8 @@ it("on a phone's purse row, lets the amounts' icons say what the chip is: no rea
     await act(async () => root.render(<Chip narrow />));
     const chip = host.querySelector("button")!;
     expect(chip.getAttribute("aria-label")).toBe("Realm Labor +2,000 labor +2,000 Essence");
+    // Each amount keeps its own icon there: +2K Labor, +2K Essence.
+    expect(chip.textContent).toBe("+2K+2K");
     expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual([
       "labor",
       "essence",
@@ -324,6 +340,8 @@ it("has nothing waiting once today is claimed: the chip names Realm Labor alone"
     const chip = host.querySelector("button")!;
     expect(chip.getAttribute("aria-label")).toBe("Realm Labor");
     expect(chip.textContent).toBe("");
+    // Nothing waits: the realm's icon alone says what the chip opens.
+    expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual(["realm"]);
   } finally {
     await act(async () => root.unmount());
   }

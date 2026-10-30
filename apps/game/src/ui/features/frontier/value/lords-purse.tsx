@@ -43,8 +43,10 @@ export const LordsPurse = ({
 );
 
 /**
- * The settled home's daily claim: the Labor and a campaign home's Essence waiting today, each by its icon. On a phone's
- * purse row (`narrow`), beside Next up, the amounts' icons say what the chip is, so the realm's icon goes while they show.
+ * The settled home's daily claim: the Labor and a campaign home's Essence waiting today. While amounts show, their icons
+ * say what the chip is; the realm's icon stands alone when nothing waits. In the desktop card's header row, equal Labor
+ * and Essence (a Devcon home's) share one amount after both icons, so the chip fits beside the rank; on a phone's purse
+ * row (`narrow`) each amount keeps its own icon.
  */
 export const RealmsChip = ({
   waiting,
@@ -58,17 +60,33 @@ export const RealmsChip = ({
   <HudPill label={[REALM_LABOR, ...claimWords(waiting)].join(" ")} onPress={onOpen}>
     {[
       <span key="claim" className="flex items-center gap-1 tabular-nums">
-        {!(narrow && waiting) && <SemanticIcon name="realm" size={24} />}
-        {waiting && waiting.labor > 0 && <ClaimAmount icon="labor" amount={waiting.labor} />}
-        {waiting && waiting.essence > 0 && <ClaimAmount icon="essence" amount={waiting.essence} />}
+        {!waiting && <SemanticIcon name="realm" size={24} />}
+        {claimAmounts(waiting, narrow).map(({ icons, amount }) => (
+          <ClaimAmount key={icons.join()} icons={icons} amount={amount} />
+        ))}
       </span>,
     ]}
   </HudPill>
 );
 
-const ClaimAmount = ({ icon, amount }: { icon: "labor" | "essence"; amount: number }) => (
+type ClaimIcon = "labor" | "essence";
+
+/** The chip's amounts, each after the icons of what it counts: equal Labor and Essence share one, but on a phone. */
+const claimAmounts = (waiting: DailyClaimWaiting | null, narrow: boolean): { icons: ClaimIcon[]; amount: number }[] => {
+  if (!waiting) return [];
+  if (!narrow && waiting.essence > 0 && waiting.essence === waiting.labor)
+    return [{ icons: ["labor", "essence"], amount: waiting.labor }];
+  return [
+    ...(waiting.labor > 0 ? [{ icons: ["labor" as const], amount: waiting.labor }] : []),
+    ...(waiting.essence > 0 ? [{ icons: ["essence" as const], amount: waiting.essence }] : []),
+  ];
+};
+
+const ClaimAmount = ({ icons, amount }: { icons: ClaimIcon[]; amount: number }) => (
   <>
-    <SemanticIcon name={icon} size={22} />
+    {icons.map((icon) => (
+      <SemanticIcon key={icon} name={icon} size={22} />
+    ))}
     {formatShort(amount, { signed: true })}
   </>
 );
