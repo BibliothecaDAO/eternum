@@ -28,6 +28,7 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
+import { letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
 import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
@@ -474,12 +475,24 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     store.applyFacts(ARMY_GONE as never);
   };
 
-  it.each(["desktop", "phone"] as const)(
-    "shows a lost army's loss in the panel on a %s, then closes it: no card of the target, no panel of a gone army",
-    async (hud) => {
+  /** The army's deletion, then the map's own cleanup of its selection (worldmap's letGoOfLostSelection), before settling. */
+  const armyFallsAndTheMapLetsGo = (store: ReturnType<typeof renderCard>["store"]) => {
+    armyFalls(store);
+    expect(letGoOfLostSelection(store)).toBe(true);
+    expect(selection()).toBeNull();
+  };
+
+  it.each([
+    { hud: "desktop", lands: armyFalls, case: "a desktop" },
+    { hud: "phone", lands: armyFalls, case: "a phone" },
+    { hud: "desktop", lands: armyFallsAndTheMapLetsGo, case: "a desktop, the map letting go of it first" },
+    { hud: "phone", lands: armyFallsAndTheMapLetsGo, case: "a phone, the map letting go of it first" },
+  ] as const)(
+    "shows a lost army's loss in the panel on $case, then closes it: no card of the target, no panel of a gone army",
+    async ({ hud, lands }) => {
       vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
       try {
-        const { host, unmount } = await attackThatLands(armyFalls, { hud });
+        const { host, unmount } = await attackThatLands(lands, { hud });
         expect(lossSheet()?.textContent).toContain("Its troops fell in the fight. Deploy a new army from your realm.");
         expect(siteCard(host)).toBeNull();
         expect(armyPanel(host)).toBeNull();
@@ -493,6 +506,20 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
       }
     },
   );
+
+  it("keeps the player's choice when they let go before the army fell and the map cleaned up: no loss over it", async () => {
+    const { unmount } = await attackThatLands(
+      (store) => {
+        armyFalls(store);
+        // Nothing is selected any more: the map's cleanup has nothing to let go of, and says nothing.
+        expect(letGoOfLostSelection(store)).toBe(false);
+      },
+      { meanwhile: () => useUIStore.getState().selectOnMap(null) },
+    );
+    expect(selection()).toBeNull();
+    expect(lossSheet()).toBeNull();
+    unmount();
+  });
 
   it("keeps the player's newer choice when the army falls after they picked another army: no loss over it", async () => {
     const other = { kind: "army", entityId: 202, tile: "own" } as const;

@@ -113,6 +113,7 @@ import {
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
 import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
+import { letGoOfLostSelection } from "./worldmap-lost-selection";
 import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
@@ -8947,18 +8948,9 @@ export default class WorldmapScene extends WarpTravel {
     this.orderTargetRing.showHover(x, z);
   }
 
-  /**
-   * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
-   * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
-   */
+  /** A selected army that is gone lets go of the map (letGoOfLostSelection), and what the map drew for it goes. */
   private letGoOfLostSelection(): void {
-    const { selectedEntityId } = getLiveWorldmapEntityActions();
-    if (selectedEntityId === null || selectedEntityId === undefined) return;
-    const gameId = configManager.getActiveGameId();
-    const stands =
-      this.game.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) !== undefined ||
-      this.game.store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) !== undefined;
-    if (!stands) this.clearEntitySelection();
+    if (letGoOfLostSelection(this.game.store)) this.clearEntitySelection();
   }
 
   private handleEntityActionsStoreUpdate(

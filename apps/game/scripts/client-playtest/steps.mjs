@@ -338,6 +338,55 @@ const FIGHT_ACTION_STEPS = [
   ),
 ];
 
+/**
+ * An attack that costs the army its life (the lab's fight-lost game), from the site's card as lab-actions-fight attacks:
+ * the loss stands in the panel's place, then the panel closes by itself, nothing left standing for the gone army.
+ */
+const FIGHT_LOST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  { name: "attack-lost", play: attackAndReadTheLoss, settleMs: 500, verify: lossShown },
+  { name: "loss-closes", play: readTheLossClose, settleMs: 500, verify: lossClosed },
+];
+const ARMY_LOST = "Your army is lost";
+/** Past the loss's moment in the panel (ArmyLostSheet's ARMY_LOST_MS, 3 s), with room for a slow frame. */
+const LOSS_CLOSES_WAIT_MS = 6_000;
+
+async function attackAndReadTheLoss(context) {
+  const attacked = await attackFromTheSiteCard(context);
+  const shown = await readUntil(
+    () => context.browser.read(MERGE_STATE),
+    (state) => state.sheet === ARMY_LOST,
+    SHEET_WAIT_MS,
+  );
+  return { ...attacked, sheet: shown.sheet, sent: shown.sent, destroyed: shown.destroyed };
+}
+
+function lossShown({ played }) {
+  if (!played.sent?.includes("BattleGuard"))
+    return failed(`no attack was sent (offered ${played.offered?.join(", ")})`);
+  if (!played.destroyed?.includes(played.army)) return failed(`the chain did not answer ${played.army} lost`);
+  return played.sheet === ARMY_LOST
+    ? completed({ army: played.army, sheet: played.sheet })
+    : failed(`expected "${ARMY_LOST}" in the panel, saw ${played.sheet ?? "no sheet"}`);
+}
+
+async function readTheLossClose({ browser }) {
+  const shown = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (state) => state.sheet === null,
+    LOSS_CLOSES_WAIT_MS,
+  );
+  return { sheet: shown.sheet, selected: browser.observe().selection?.army ?? null };
+}
+
+function lossClosed({ played }) {
+  if (played.sheet !== null) return failed(`expected the panel closed after the loss, saw ${played.sheet}`);
+  return played.selected === null
+    ? completed({ closed: true })
+    : failed(`expected no army selected after its loss, saw ${JSON.stringify(played.selected)}`);
+}
+
 async function attackFromTheSiteCard({ browser }) {
   const army = browser.observe().selection?.army?.id;
   const armyAt = armyOnScreen(browser, army);
@@ -3696,6 +3745,7 @@ export const STEP_SETS = {
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
   "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
+  "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
