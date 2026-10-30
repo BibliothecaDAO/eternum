@@ -705,7 +705,8 @@ export const HudTabs = <K extends string | number>({
 
 /**
  * A small tag: a count in the age's accent, or a state in its tone. With `onPress` it is a press at a chip's size, framed
- * as a button, for an action that stands among the tags (the army card's Refill).
+ * as a button, for an action that stands among the tags (the army card's Refill); `disabled`, it is that press drawn
+ * inert, with or without its action, so a chip that does nothing never looks like one that does.
  */
 export const HudChip = ({
   tone,
@@ -741,7 +742,7 @@ export const HudChip = ({
       {children}
     </>
   );
-  return onPress ? (
+  return onPress || disabled ? (
     <button
       type="button"
       className="ui-chip"

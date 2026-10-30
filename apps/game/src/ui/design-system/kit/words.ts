@@ -309,6 +309,12 @@ export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
 export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
+/**
+ * A site as its map hover and its card both name it: its own name, then its kind ("Brimdeep Rift"); the kind alone
+ * where it has no name. A kind that is its guard (a camp's Troll) is said once, as the guard, so it is left out here.
+ */
+export const siteTitle = (place: string | undefined, kind: string, guard: string | undefined): string =>
+  [place, kind === guard ? undefined : kind].filter(Boolean).join(" ");
 export const ARRIVING = "Arriving";
 /** A done site, and the chests the clears paid (screen-reader words; the screen shows Fl and Ch). */
 export const CLEARED = "Cleared";
@@ -741,8 +747,10 @@ export const CHAT_WORDS = {
   sharePlace: "Share the selected place",
   /** Over the field while a place goes with the message: take it off. */
   removePlace: "Take the place off",
-  /** After a place shared in another game: that game, by its name ("in Frontier 3"); it opens nothing here. */
+  /** In a place shared in another game, after its name: that game ("in Frontier 3"); it opens nothing here. */
   inGame: "in",
+  /** In a place the map has no more (gone, or from a closed Frontier day), after its name: why it opens nothing. */
+  placeGone: "gone",
   /** On a player's card: hide everything they write, here and in private (the server drops their messages to you). */
   mute: "Mute",
   unmute: "Unmute",

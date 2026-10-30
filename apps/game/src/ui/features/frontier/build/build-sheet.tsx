@@ -99,16 +99,20 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 
 /**
  * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
- * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait.
+ * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
+ * opens on the building Next up asks for, else the first.
  */
 export const BuildSheet = ({
   realm,
   plot,
+  asked = null,
   onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
+  /** The building Next up asks for (useNextUpBuilding): the one chosen until the player picks another. */
+  asked?: BuildingType | null;
   /** Opens Research, where two Barracks purchases unlock training buildings. */
   onResearch?: () => void;
   onClose: () => void;
@@ -123,8 +127,11 @@ export const BuildSheet = ({
     () => readBuildOptions(facts.store, realm, useSimpleCost, tick),
     [realm, facts, tick, useSimpleCost],
   );
-  const [chosen, setChosen] = useState(0);
+  const [picked, setPicked] = useState<BuildingType | null>(null);
   const [scoutingKind, setScoutingKind] = useState<0 | 1 | 2>(0);
+  const indexOf = (category: BuildingType | null) =>
+    options?.findIndex((candidate) => candidate.category === category) ?? -1;
+  const chosen = [indexOf(picked), indexOf(asked)].find((index) => index >= 0) ?? 0;
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const mode = useGameModeConfig();
@@ -162,8 +169,7 @@ export const BuildSheet = ({
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
   const population = readRealmPopulation(setup.store, realmId);
-  const choose = (category: BuildingType) =>
-    setChosen(options.findIndex((candidate) => candidate.category === category));
+  const choose = (category: BuildingType) => setPicked(category);
   const priceOf = (category: BuildingType) =>
     options
       .find((candidate) => candidate.category === category)!
@@ -249,7 +255,7 @@ export const BuildSheet = ({
           : undefined
       }
       chosen={chosen}
-      onChoose={setChosen}
+      onChoose={(index) => setPicked(options[index]!.category)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
       refusal={refusal()}
       sending={sending}

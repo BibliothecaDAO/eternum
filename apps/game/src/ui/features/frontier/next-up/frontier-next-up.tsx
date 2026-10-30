@@ -1,22 +1,20 @@
 import { useArmyOrder } from "@/ui/features/frontier/hud/army-order";
 import { useLayout } from "@/shell/frame/layout";
-import { useQuery } from "@/hooks/helpers/use-query";
 import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { openOnMap } from "@/play/navigation/open-place";
-import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { useActNowRefusal } from "@/utils/can-issue-orders";
-import { isCoarsePointer } from "@/utils/pointer";
 import { Position } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import { type useExpeditionRules, useGoToFrontierPlace } from "../frontier-home";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
 import type { HudSurface } from "../hud/frontier-nav";
-import { type FrontierCoachAct, type FrontierCoachStep, frontierCoachSteps } from "./frontier-coach";
-import { type NextUpFacts, useNextUpFacts } from "./next-up-facts";
+import { type FrontierCoachAct, type FrontierCoachStep } from "./frontier-coach";
+import type { NextUpFacts } from "./next-up-facts";
+import { useNextUpSteps } from "./next-up-steps";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -37,15 +35,8 @@ export const FrontierNextUp = ({
   /** Picks an army and opens its panel. */
   onOpenArmy: (explorerId: number) => void;
 }) => {
-  const facts = useNextUpFacts(rules, realm);
-  const tips = useWorldAppearanceStore((state) => state.nextUpTips);
+  const { facts, steps } = useNextUpSteps(rules, realm);
   const take = useTakeStep(realm, facts, onSurface, onOpenArmy);
-  const { isMapView } = useQuery();
-  const steps = frontierCoachSteps(facts, {
-    pointer: isCoarsePointer() ? "touch" : "mouse",
-    where: isMapView ? "map" : "realm",
-    tips,
-  });
   // A phone's pinned order draws its own bar with its verb: that is the action at hand.
   const order = useArmyOrder();
   const layout = useLayout();

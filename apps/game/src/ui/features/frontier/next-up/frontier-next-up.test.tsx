@@ -3,6 +3,8 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+import { BuildingType } from "@bibliothecadao/types";
+
 import type { NextUpFacts } from "./next-up-facts";
 
 const moves = vi.hoisted(() => ({
@@ -36,6 +38,7 @@ vi.mock("@/shell/frame/layout", () => ({ useLayout: () => moves.layout }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: moves.onMap }) }));
 
 const { FrontierNextUp } = await import("./frontier-next-up");
+const { useNextUpBuilding } = await import("./next-up-steps");
 
 const MORNING: NextUpFacts = {
   realm: true,
@@ -94,6 +97,39 @@ const show = (
 
 const press = (verb: string) =>
   act(() => [...host.querySelectorAll("button")].find((button) => button.textContent === verb)!.click());
+
+it("names the building its step asks for, from the step itself: what the build sheet opens on", () => {
+  const Asked = () => <output>{String(useNextUpBuilding({} as never, { entity_id: 7 } as never))}</output>;
+  const draw = (facts: Partial<NextUpFacts>) => {
+    show(facts, { onMap: false });
+    act(() =>
+      root.render(
+        <>
+          <FrontierNextUp
+            rules={{} as never}
+            realm={{ entity_id: 7 } as never}
+            onSurface={onSurface}
+            onOpenArmy={onOpenArmy}
+          />
+          <Asked />
+        </>,
+      ),
+    );
+    return {
+      line: host.querySelector('section[aria-label="Next up"]')!.textContent,
+      asked: host.querySelector("output")!.textContent,
+    };
+  };
+  // No barracks: Next up asks for Barracks, and so does the build sheet.
+  expect(draw({ barracks: false })).toEqual({
+    line: expect.stringContaining("an open plot for Barracks"),
+    asked: String(BuildingType.ResourceKnightT1),
+  });
+  // No population left comes first: a Hut.
+  expect(draw({ barracks: false, populationFull: true }).asked).toBe(String(BuildingType.WorkersHut));
+  // A step that names no building asks for none.
+  expect(draw({}).asked).toBe("null");
+});
 
 it("shows the day's step in the Next up panel, and its button opens the realm's Deploy", () => {
   show({});

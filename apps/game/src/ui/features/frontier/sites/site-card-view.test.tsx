@@ -5,6 +5,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { type SiteVerb, SiteCardView } from "./site-card-view";
 import type { SiteFight } from "./site-card-plan";
 import { TARGET_MARKS, type AttackTargetKind } from "./site-marks";
+import { plateRows } from "@/three/map-plates/map-plate-rows";
+import { frontierSiteName, StructureType } from "@bibliothecadao/types";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -260,6 +262,43 @@ describe("a guarded site's card", () => {
 });
 
 describe("a guarded site's card with no army chosen", () => {
+  it("names a rift by its name and kind, as the map's hover does, with an army chosen or not", () => {
+    // The playtest's Brimdeep: its hover reads "Brimdeep Rift" over "Dark fey".
+    const [hover] = plateRows({
+      kind: "structure",
+      relation: "neutral",
+      owner: "",
+      beast: "Dark fey",
+      name: frontierSiteName(StructureType.Rift),
+      named: false,
+      place: "Brimdeep",
+      guards: [{ type: "knight", tier: 1, count: 1_200 }],
+      arrivals: [],
+      icon: "rift",
+    });
+    const hoverTitle = hover!.map((segment) => ("text" in segment ? segment.text : "")).join("");
+    expect(hoverTitle).toBe("Brimdeep Rift");
+    for (const chosen of [null, army]) {
+      act(() =>
+        root.render(
+          <SiteCardView
+            site="Rift"
+            name="Brimdeep"
+            beast={{ name: "Dark fey", beast: "dark-fey", combatClass: "Paladin" }}
+            army={chosen}
+            guard={1_200}
+            fight={undefined}
+            pay={{ icon: "essence", amount: 3_600 }}
+            xp={86}
+            verb={null}
+            onClose={() => {}}
+          />,
+        ),
+      );
+      expect(document.querySelector("section[role=dialog]")!.getAttribute("aria-label")).toBe(hoverTitle);
+    }
+  });
+
   it("keeps a named ruin's distinct kind and guard species beside its strength", () => {
     act(() =>
       root.render(
@@ -277,10 +316,10 @@ describe("a guarded site's card with no army chosen", () => {
         />,
       ),
     );
-    const card = document.querySelector("section[aria-label='North Watch']")!;
+    const card = document.querySelector("section[aria-label='North Watch Ruin']")!;
     expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-    // The guard's token, its strength under it, then what the site is: its kind under its name, and its beast.
-    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Ruin · Basilisk");
+    // Its kind is in its title, as the hover says it; the guard's token, its strength under it, then its beast.
+    expect(card.querySelector(".ui-sheet__body header")?.textContent).toBe("1,100Basilisk");
     expect(card.querySelector("header [role='img']")?.getAttribute("aria-label")).toBe("Basilisk 1,100");
     expect(card.textContent?.match(/1,100|1\.1K/g)).toHaveLength(1);
   });

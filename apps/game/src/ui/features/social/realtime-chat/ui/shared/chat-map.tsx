@@ -1,7 +1,6 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { getActiveGame } from "@/runtime/world/store";
-import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useRealmsAccountOf } from "@/shell/herald";
@@ -53,8 +52,8 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
 
 /**
  * A place in a message, as a chip: its painting and its name, as usePlaceReader reads them. Pressed, the map opens on
- * it. Where the map has it no more (gone, or from a closed Frontier day) it is struck through and opens nothing; in
- * another game it names that game and opens nothing here; with no map (outside a game) it is only read.
+ * it. One that opens nothing here is drawn inert and says why in the chip: "gone" where the map has it no more (gone, or
+ * from a closed Frontier day), the game it stands in for another game's. With no map (outside a game) it is only read.
  */
 export const PlaceChip = ({ place }: { place: SharedPlace }) => {
   const map = useChatMap();
@@ -64,22 +63,19 @@ export const PlaceChip = ({ place }: { place: SharedPlace }) => {
     open: null,
     elsewhere: true,
   };
-  const gone = map !== null && !elsewhere && open === null;
+  const inert = map !== null && open === null;
+  const why = !inert ? null : elsewhere ? `${CHAT_WORDS.inGame} ${place.game.name}` : CHAT_WORDS.placeGone;
   return (
     <span
-      className={cn("inline-flex items-center gap-1 align-middle", gone && "line-through opacity-50")}
+      className="inline-flex items-center align-middle"
       data-place={name}
       data-place-key={placeKey(place)}
       data-elsewhere={elsewhere || undefined}
+      data-gone={(inert && !elsewhere) || undefined}
     >
-      <HudChip icons={[icon]} onPress={open ?? undefined} disabled={map !== null && open === null}>
-        {name}
+      <HudChip icons={[icon]} onPress={open ?? undefined} disabled={inert}>
+        {why ? `${name} · ${why}` : name}
       </HudChip>
-      {elsewhere && (
-        <span className="text-hud-label text-hud-cue">
-          {CHAT_WORDS.inGame} {place.game.name}
-        </span>
-      )}
     </span>
   );
 };

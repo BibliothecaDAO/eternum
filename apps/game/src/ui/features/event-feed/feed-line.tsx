@@ -3,11 +3,12 @@ import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
-import { formatClockTime } from "@bibliothecadao/types";
+import { XP } from "@/ui/design-system/kit/words";
+import { formatClockTime, formatShort } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
 import { useStoryOpener } from "./story-feed-row";
-import { useSiteBeastMeaning } from "./use-site-beast";
+import { useSiteBeastMeaning, useSiteClearXp } from "./use-site-beast";
 
 const OUTCOME_TONES = { good: "text-hud-good", bad: "text-hud-bad", neutral: "text-hud-muted" } as const;
 
@@ -57,7 +58,18 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
           {reading.reward.amountText}
         </span>
       )}
+      {"clearOf" in reading && reading.clearOf !== undefined && <ClearXp site={reading.clearOf} />}
     </div>
+  );
+};
+
+/** The XP a clear paid, at the row's end beside what it paid, as the site's receipt says it; none until it is known. */
+const ClearXp = ({ site }: { site: number }) => {
+  const xp = useSiteClearXp(site);
+  return xp === undefined ? null : (
+    <span className="ui-feed-line__reward" data-feed-xp>
+      {formatShort(xp, { signed: true })} {XP}
+    </span>
   );
 };
 

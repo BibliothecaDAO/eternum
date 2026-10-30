@@ -25,6 +25,7 @@ import {
   ON_ITS_WAY,
   REALM,
   REST_DID_NOT_FIT,
+  siteTitle,
   STORAGE,
   tooFarFrom,
   TROOPS,
@@ -86,7 +87,7 @@ export const SiteCardView = ({
   onClose,
 }: {
   site: AttackTargetKind;
-  /** The site's own name, the one its map plate and every list give it: the card's title, its kind beneath. */
+  /** The site's own name, the one its map plate and every list give it: the card's title with its kind, as the hover. */
   name?: string;
   beast: (Pick<FrontierBeast, "beast" | "name"> & { combatClass: string }) | undefined;
   army: { art: IconMeaning; troops: number } | null;
@@ -106,7 +107,7 @@ export const SiteCardView = ({
 }) => {
   const { word: kind, icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
-  const title = name ?? word;
+  const title = name ? siteTitle(name, kind, beast?.name) : word;
   const lost = fight && fight.outcome === "loses";
   // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
   // no picker"); selecting an army, then the site, gives the fight.
@@ -125,8 +126,8 @@ export const SiteCardView = ({
         )}
       </Reward>
     ) : null;
-  // What the site is, in the words the title has not said: its kind under a site's own name, and its beast.
-  const what = [...new Set([name && kind, beast?.name])].filter((part) => part && part !== title).join(" · ");
+  // What the site is, in the words the title has not said: its beast.
+  const what = beast?.name !== title ? beast?.name : undefined;
   return (
     <HudSheet label={title} onClose={onClose}>
       <header className="flex items-center gap-3">

@@ -1,4 +1,4 @@
-import { frontierSiteName, StructureType } from "@bibliothecadao/types";
+import { BuildingType, frontierSiteName, StructureType } from "@bibliothecadao/types";
 import { LABOR } from "@/ui/design-system/kit/words";
 import type { NextUpFacts } from "./next-up-facts";
 
@@ -8,12 +8,16 @@ import type { NextUpFacts } from "./next-up-facts";
  */
 export type FrontierCoachAct = "realm" | "deploy" | "select-army" | "army" | "camp" | "research";
 
-/** A step: its line, and its button's verb and where it goes; a step taken on the map itself has neither. */
+/**
+ * A step: its line, and its button's verb and where it goes; a step taken on the map itself has neither. A step that
+ * asks for a building names it, and the build sheet opens on it.
+ */
 export interface FrontierCoachStep {
   key: string;
   line: string;
   verb: string | null;
   act: FrontierCoachAct | null;
+  build: BuildingType | null;
 }
 
 /**
@@ -47,9 +51,20 @@ type Pointer = "mouse" | "touch";
 type Where = "realm" | "map";
 type At = { pointer: Pointer; where: Where };
 
-/** A step done in the realm: from the map, its button opens the realm; in the realm, its line says where to press. */
-const realmStep = (key: string, line: string, there: string, { where }: At): FrontierCoachStep =>
-  where === "realm" ? step(key, there) : step(key, line, "Open the realm", "realm");
+/**
+ * A step done in the realm: from the map, its button opens the realm; in the realm, its line says where to press. The
+ * building it asks for, if any, either way.
+ */
+const realmStep = (
+  key: string,
+  line: string,
+  there: string,
+  { where }: At,
+  build: BuildingType | null = null,
+): FrontierCoachStep => ({
+  ...(where === "realm" ? step(key, there) : step(key, line, "Open the realm", "realm")),
+  build,
+});
 
 /** The word for picking something on screen, capitalised to open a line: a mouse clicks, a touch screen taps. */
 const press = (pointer: Pointer) => (pointer === "touch" ? "Tap" : "Click");
@@ -75,6 +90,7 @@ const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
           "No population left: build a Hut",
           `${press(at.pointer)} an open plot for a Hut`,
           at,
+          BuildingType.WorkersHut,
         ),
       ]
     : []),
@@ -84,7 +100,15 @@ const dayLoop = (facts: NextUpFacts, at: At): FrontierCoachStep[] => {
   const { pointer } = at;
   const steps: FrontierCoachStep[] = [];
   if (!facts.barracks)
-    steps.push(realmStep("barracks", "Build barracks", `${press(pointer)} an open plot for Barracks`, at));
+    steps.push(
+      realmStep(
+        "barracks",
+        "Build barracks",
+        `${press(pointer)} an open plot for Barracks`,
+        at,
+        BuildingType.ResourceKnightT1,
+      ),
+    );
   if (facts.armies === 0 && (facts.troopsAtHome ?? 0) >= 1)
     steps.push(step("deploy", "Deploy your armies", "Deploy", "deploy"));
   if (facts.guardInReach) steps.push(step("guard", `${press(pointer)} the guard beside your army`));
@@ -118,4 +142,4 @@ const step = (
   line: string,
   verb: string | null = null,
   act: FrontierCoachAct | null = null,
-): FrontierCoachStep => ({ key: `frontier:${key}`, line, verb, act });
+): FrontierCoachStep => ({ key: `frontier:${key}`, line, verb, act, build: null });
