@@ -1,4 +1,4 @@
-import type { ScoutingSide } from "../progression-choices";
+import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -152,6 +152,13 @@ export const BuildSheet = ({
    * build's own outcome.
    */
   const build = async () => {
+    if (option.category === BuildingType.ScoutsLodge) {
+      const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
+      if (learned === undefined) return;
+      const needsChoice = researchTier(learned, nativeResearchConstants.ROW_SCOUTS_LODGE) === 0;
+      const choices = availableScoutingChoices((row) => researchTier(learned, row));
+      if (needsChoice && !choices.some(({ side }) => side === scoutingKind)) return;
+    }
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
