@@ -68,6 +68,13 @@ export function openCosignerWallets(
       // Persist the observation before refusing so a retry cannot restart or bypass its waiting period.
       if (observation.event !== "cosigner_wallet_change_accepted") throw new Error(observation.event);
     },
+    pendingChanges: () =>
+      db
+        .query<
+          ReturnType<CosignerWallets["pendingChanges"]>,
+          []
+        >("SELECT COUNT(*) AS count, MIN(since) AS oldestSince FROM wallets WHERE pending IS NOT NULL")
+        .get()!,
     close: () => db.close(),
   };
 }

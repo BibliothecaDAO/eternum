@@ -1,4 +1,5 @@
 import { ec } from "starknet";
+import { isLoopbackHttp } from "./source-url";
 import { Effect } from "effect";
 import {
   rpcAt,
@@ -28,6 +29,7 @@ export interface CosignerConfig {
 
 export interface CosignerWallets {
   assertWallet(account: string, realmsId: string, wallet: string): void;
+  pendingChanges(): { count: number; oldestSince: number | null };
 }
 
 /** No operator-provided source, wallet lookup or digest is trusted; source connections belong to the box configuration. */
@@ -43,6 +45,7 @@ export function createCosigner(
   const identity = (account: string) => readPayoutIdentity(config, account, network);
   return {
     publicKey,
+    health: () => ({ service: "payout-cosigner", publicKey, pendingWalletChanges: wallets.pendingChanges() }),
     async sign(input: unknown): Promise<Cosignature> {
       const request = decodeCosignRequest(input);
       const shard = config.shards.find((row) => BigInt(row.chainId) === BigInt(request.shard));
@@ -152,7 +155,7 @@ export async function handleCosignRequest(
   signer: ReturnType<typeof createCosigner>,
 ) {
   if (request.method === "GET" && new URL(request.url).pathname === "/health")
-    return Response.json({ service: "payout-cosigner", publicKey: signer.publicKey });
+    return Response.json(signer.health(), { headers: { "cache-control": "no-store" } });
   if (request.method !== "POST" || new URL(request.url).pathname !== "/sign")
     return new Response(null, { status: 404 });
   const { presentsOperatorToken } = await import("@realms-world/identity");
@@ -170,8 +173,7 @@ function requireLocalShardSources(shards: CosignerConfig["shards"]) {
   for (const shard of shards) {
     for (const endpoint of [shard.rpcUrl, shard.heraldUrl]) {
       const url = new URL(endpoint);
-      if (url.protocol !== "http:" || !["127.0.0.1", "[::1]"].includes(url.hostname) || url.username || url.password)
-        throw new Error("cosigner_shard_requires_numeric_loopback_http");
+      if (!isLoopbackHttp(url)) throw new Error("cosigner_shard_requires_numeric_loopback_http");
     }
   }
 }

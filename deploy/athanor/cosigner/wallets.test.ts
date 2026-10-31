@@ -45,11 +45,13 @@ test("a changed wallet waits 24 hours including after a restart, then becomes th
   wallets.assertWallet("0xa", "0x1", "0x100");
   expect(() => wallets.assertWallet("0xa", "0x1", "0x200")).toThrow("cosigner_wallet_change_waiting");
   reopen();
+  expect(wallets.pendingChanges()).toEqual({ count: 1, oldestSince: 1000 });
   now = 87399;
   expect(() => wallets.assertWallet("0xa", "0x1", "0x200")).toThrow("cosigner_wallet_change_waiting");
   now = 87400;
   expect(() => wallets.assertWallet("0xa", "0x1", "0x200")).not.toThrow();
   expect(warnings.at(-1)?.event).toBe("cosigner_wallet_change_accepted");
+  expect(wallets.pendingChanges()).toEqual({ count: 0, oldestSince: null });
   reopen();
   expect(() => wallets.assertWallet("0xa", "0x1", "0x200")).not.toThrow();
   expect(() => wallets.assertWallet("0xa", "0x1", "0x100")).toThrow("cosigner_wallet_change_waiting");

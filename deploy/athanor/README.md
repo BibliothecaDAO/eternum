@@ -94,10 +94,12 @@ Create `/etc/payout-cosigner/config.json`, owned by `payout-cosigner`, mode `060
 
 Both the key and configuration files must have mode `0600`. The service binds only `127.0.0.1`; startup refuses invalid
 configuration. Install/start the unit after funding bindings and identity routing are available. `/health` identifies
-the process and public key; it is not proof that a particular claim can be verified. Rehearse `/sign` through an actual
-withdrawal, then check the L2 wallet and `get_payment`; also rehearse deadline carry and signer outage/recovery. The
-service signs synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked
-in the deployment rehearsal.
+the process and public key, plus `pendingWalletChanges` (`count` and `oldestSince`, a Unix timestamp or null). It is not
+proof that a particular claim can be verified. Read it directly on the box to inspect holds independently of Cloudflare;
+the journal remains the source of account/identity-change details. Rehearse `/sign` through an actual withdrawal, then
+check the L2 wallet and `get_payment`; also rehearse deadline carry and signer outage/recovery. The service signs
+synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked in the
+deployment rehearsal.
 
 The systemd unit owns `/var/lib/payout-cosigner` (mode `0700`); its `wallets.sqlite` database is mode `0600`. Preserve
 this database across updates, restarts and key rotations, and back it up with the box state. Deleting it or restoring an
