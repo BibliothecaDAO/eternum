@@ -4,7 +4,7 @@ import { frontierDevconPreset } from "../../../../config/source/frontier/devcon"
 import { nativeResearchConstants as research } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { CAMPAIGNS } from "../../../../packages/identity/src/campaigns";
 import { laborRulesOf } from "../../../game/src/services/home-claim-rules";
-import { prizeShares } from "../../../game/src/ui/features/frontier/board/season-pool";
+import { prizeShares } from "../../../../packages/core/src/sync/frontier-prize";
 import { LONG_DAY_UNITS, SHORT_DAY_UNITS } from "./frontier";
 
 /**
