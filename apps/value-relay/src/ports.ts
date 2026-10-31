@@ -85,7 +85,10 @@ export type HeldObligation =
       };
     }
   | { kind: "payment"; reason: string; withdrawal: Withdrawal };
-export type ReportedClaim = Omit<Withdrawal, "realmsId" | "confirmedAt">;
+export interface ReportedClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
+  wallet: string;
+  reportTransactionHash: string;
+}
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
   paidAt: number;

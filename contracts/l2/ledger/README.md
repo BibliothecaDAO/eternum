@@ -16,8 +16,9 @@ timestamp. Numeric day boundaries match exactly for equal launch inputs and time
 bound on cross-chain clock lag: the relay must retain a confirmed claim while L2's unlocked amount is insufficient and
 submit once the independent L2 gate fits. Do not trust a relay-supplied future timestamp or unlock future days to
 conceal clock lag. Operator payments are retry-safe, bounded by the cumulative unlock, and wait for `pay_delay()` after
-reporting (currently 600 seconds). The separate monitor checks reported receipts during that interval and can pause
-before payment. They carry no treasury cut. Only the admin unpauses; the pauser can pause payouts.
+recipient preparation (currently 600 seconds). The separate monitor checks receipts and recipient authority during that
+interval and can pause before payment. They carry no treasury cut. Only the admin unpauses; the pauser can pause
+payouts.
 
 ## Frontier settlement and carry
 
@@ -32,6 +33,13 @@ alongside the season prizes through the existing ledger path. Chest reports rema
 including after the manual claim window. Reports move no money; an unpaid-report counter prevents early closure while
 any recorded claim remains unpaid; payment remains bounded by the pool's unlocked amount. There is no administrative
 report correction entry.
+
+Before a transfer, `prepare_payment(shard, claim_id, wallet)` binds the linked recipient and emits its reported claim
+again. `pay` requires that recipient and waits 600 seconds from preparation. Changing the recipient restarts the delay;
+an identical preparation is a no-op. The relay records the signed recipient decision through identity before broadcast,
+and the separate monitor checks it before payment. This adds one preparation transaction per batch, reuses the existing
+wallet field, and prevents redirecting a mature claim without another monitored delay. Missing-wallet claims can remain
+reported without a recipient; their delay starts once a wallet is linked and prepared.
 
 The relay checks a confirmed post-end snapshot with no remaining realm LORDS and chest receipts equal to the consumed
 world budget. Before the claim deadline, it settles only when the prize pool is fully issued and all chest and prize

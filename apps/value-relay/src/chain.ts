@@ -122,8 +122,9 @@ export const ledgerReportAdapter =
     });
 
 /** Identity journals each signed pay decision; eligibility is never reconstructed from an inclusion clock. */
-export const ledgerPaymentAdapter =
+export const ledgerClaimAdapter =
   (
+    phase: "prepare" | "pay",
     credentials: LedgerCredentials,
     record: (decision: LedgerPayDecision) => Promise<void>,
   ): ((withdrawal: Withdrawal, wallet: string) => RelayEffect<void>) =>
@@ -145,8 +146,8 @@ export const ledgerPaymentAdapter =
       try {
         const transaction = await account.execute({
           contractAddress: credentials.contractAddress,
-          entrypoint,
-          calldata: [...calldata],
+          entrypoint: phase === "prepare" ? "prepare_payment" : entrypoint,
+          calldata: phase === "prepare" ? [withdrawal.chainId, withdrawal.transactionHash, wallet] : [...calldata],
         });
         const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
         if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);

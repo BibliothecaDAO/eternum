@@ -41,6 +41,7 @@ pub trait IGameLedger<TState> {
         seed: felt252,
         amount: u256,
     );
+    fn prepare_payment(ref self: TState, shard: felt252, claim_id: felt252, wallet: ContractAddress);
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(
         ref self: TState,
@@ -237,6 +238,7 @@ pub mod GameLedger {
         #[key]
         claim_id: felt252,
         season_id: u32,
+        wallet: ContractAddress,
         amount: u256,
         prize_rank: u16,
         prize_count: u16,
@@ -568,7 +570,42 @@ pub mod GameLedger {
                 );
             let pending = self.frontier_pending.entry((shard, season_id)).read();
             self.frontier_pending.entry((shard, season_id)).write(pending + 1);
-            self.emit(WithdrawalReported { shard, claim_id, season_id, amount, prize_rank, prize_count });
+            self
+                .emit(
+                    WithdrawalReported {
+                        shard, claim_id, season_id, wallet: 0.try_into().unwrap(), amount, prize_rank, prize_count,
+                    },
+                );
+        }
+
+        fn prepare_payment(ref self: ContractState, shard: felt252, claim_id: felt252, wallet: ContractAddress) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
+            let mut reported = self.get_payment(shard, claim_id);
+            assert!(reported.amount != 0, "Ledger: withdrawal unreported");
+            if reported.paid {
+                return;
+            }
+            assert!(!self.get_frontier(shard, reported.season_id).closed, "Ledger: season closed");
+            assert!(wallet.is_non_zero(), "Ledger: invalid withdrawal");
+            if reported.wallet == wallet {
+                return;
+            }
+            reported.wallet = wallet;
+            reported.reported_at = starknet::get_block_timestamp();
+            self.payments.entry((shard, claim_id)).write(reported);
+            self
+                .emit(
+                    WithdrawalReported {
+                        shard,
+                        claim_id,
+                        season_id: reported.season_id,
+                        wallet,
+                        amount: reported.amount,
+                        prize_rank: reported.prize_rank,
+                        prize_count: reported.prize_count,
+                    },
+                );
         }
 
         fn pay(
@@ -590,7 +627,8 @@ pub mod GameLedger {
             assert!(!season.closed, "Ledger: season closed");
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
-                reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
+                reported.season_id == season_id && reported.amount == amount && reported.wallet == wallet,
+                "Ledger: conflicting withdrawal report",
             );
             assert!(
                 starknet::get_block_timestamp() >= reported.reported_at + super::PAY_DELAY, "Ledger: payment delay",

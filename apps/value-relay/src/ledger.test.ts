@@ -330,6 +330,7 @@ it("continues an anchored scan from its saved block, even one saved below the de
 
 it("enumerates confirmed withdrawal reports before payments using the compiled report event", async () => {
   const event = ledgerEvent("WithdrawalReported", {
+    wallet: "0x0",
     shard: "0x1",
     claim_id: "0xabc",
     season_id: 7,
@@ -343,7 +344,16 @@ it("enumerates confirmed withdrawal reports before payments using the compiled r
   });
   const page = await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).reportedClaims(null));
   expect(page.rows).toEqual([
-    { chainId: event.keys[1], transactionHash: event.keys[2], seasonId: 7, amount: "100", prizeRank: 0, prizeCount: 0 },
+    {
+      wallet: event.data[1],
+      reportTransactionHash: "0xdef",
+      chainId: event.keys[1],
+      transactionHash: event.keys[2],
+      seasonId: 7,
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    },
   ]);
   expect(rpc.events).toHaveBeenCalledWith(
     expect.objectContaining({

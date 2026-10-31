@@ -11,22 +11,23 @@ hashes, parents or regressed heads halt ingestion. One environment-wide durable 
 payments, results, season settlement and chest finishes under the operator key. Another shard's failure does not
 suppress these jobs.
 
-Frontier receipts are reported as debt before wallet lookup. Payments use identity's linked wallet at signing time and
-record that decision before broadcast. Payments wait for the ledger's `pay_delay()` after the report (currently ten
-minutes), plus confirmation and relay scheduling. Missing wallets remain queued and appear as deferred in health;
-unknown accounts are retried from their confirmed receipts. Permanent refusals are recorded separately. A confirmed
-closed season with the claim unpaid removes it from retries, including accounts without wallets. A claim is keyed by its
-shard and withdrawal transaction hash.
+Frontier receipts are reported as debt before wallet lookup. Recipient preparation uses identity's linked wallet at
+signing time and records that decision before broadcast. The ledger binds that wallet before payment. Payments wait for
+the ledger's `pay_delay()` after recipient preparation (currently ten minutes), plus confirmation and relay scheduling.
+Missing wallets remain queued and appear as deferred in health; unknown accounts are retried from their confirmed
+receipts. Permanent refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from
+retries, including accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
 Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
 The shard owns labor eligibility and limits. No daily cap is copied into services.
 
-The independent monitor checks `WithdrawalReported` events against L3 receipts before their payment delay expires. It
-also reads paid claims and results through independent checked-through cursors, verifies recorded payment authority,
-result commitments and shard conservation, and pauses only on proven disagreement. Unavailable verification makes health
-red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof and never
-unpauses the ledger.
+The independent monitor checks `WithdrawalReported` events against L3 receipts and the signed recipient decisions before
+their payment delay expires. A recipient change emits another report and restarts the delay. It also reads paid claims
+and results through independent checked-through cursors, verifies recorded payment authority, result commitments and
+shard conservation, and pauses only on proven disagreement. Unavailable verification makes health red. Later wallet
+changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof and never unpauses the
+ledger.
 
 Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
 checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them

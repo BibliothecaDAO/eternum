@@ -343,6 +343,8 @@ it.each([null, "999"])(
   "pauses on an unpaid forged report before any payment exists (receipt amount %s)",
   async (amount) => {
     const report = {
+      wallet: "0x0",
+      reportTransactionHash: "0xdef",
       chainId: "0x1",
       seasonId: 7,
       transactionHash: "0xabc",
@@ -383,5 +385,59 @@ it.each([null, "999"])(
     expect(paidClaims).not.toHaveBeenCalled();
     await Effect.runPromise(runMonitor(ports, store));
     expect(pause).toHaveBeenCalledTimes(2);
+  },
+);
+
+it.each([false, true])(
+  "checks the identity decision before paying a prepared recipient (authorized=%s)",
+  async (authorized) => {
+    let progress: MonitorProgress = { halted: null };
+    const report = {
+      chainId: "0x1",
+      transactionHash: "0xabc",
+      reportTransactionHash: "0xdef",
+      wallet: "0x999",
+      seasonId: 7,
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    };
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    const pause = vi.fn(() => Effect.void);
+    const decision = vi.fn(() => Effect.succeed(authorized));
+    const ports: MonitorPorts = {
+      identity: { matchesPayDecision: decision },
+      shard: {
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+        withdrawal: () => Effect.succeed({ ...report, realmsId: "0x2", confirmedAt: 1 }),
+      },
+      ledger: {
+        frontierPool: () => Effect.succeed("1000"),
+        pause,
+        reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),
+        paidClaims: () => Effect.succeed({ ...page, rows: [] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    await Effect.runPromise(
+      runMonitor(ports, {
+        load: async () => progress,
+        save: async (next) => {
+          progress = next;
+        },
+      }),
+    );
+    expect(progress.halted).toBe(authorized ? null : "reported_wallet_mismatch:0xabc");
+    expect(pause).toHaveBeenCalledTimes(authorized ? 0 : 1);
+    expect(decision).toHaveBeenCalledWith({
+      chainId: "0x1",
+      claimId: "0xabc",
+      transactionHash: "0xdef",
+      realmsId: "0x2",
+      wallet: "0x999",
+      seasonId: 7,
+      amount: "100",
+    });
   },
 );

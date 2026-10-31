@@ -60,7 +60,7 @@ beforeEach(() => {
             : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0", "0"]),
   );
   rpc.execute.mockImplementation(async (raw) => {
-    for (const call of Array.isArray(raw) ? raw : [raw])
+    for (const call of Array.isArray(raw) ? raw : [raw]) {
       if (call.entrypoint === "report_withdrawal")
         rpc.records.set(call.calldata[2], [
           "0",
@@ -72,11 +72,17 @@ beforeEach(() => {
           call.calldata[6],
           "0",
         ]);
+      if (call.entrypoint === "prepare_payment") {
+        const report = rpc.records.get(call.calldata[1])!;
+        report[2] = call.calldata[2];
+        report[7] = String(rpc.time);
+      }
+    }
     return { transaction_hash: "0xabc" };
   });
   rpc.wait.mockResolvedValue({ isReverted: () => false });
 });
-it("reports a full page in one confirmed transaction and pays it in a separate multicall", async () => {
+it("reports, binds recipients, waits, and pays a full page in separate confirmed multicalls", async () => {
   const journal = vi.fn(async () => {});
   const batch = ledgerBatches(credentials, journal);
   expect((await Effect.runPromise(batch.reportMany(claims))).every((row) => row.error === null)).toBe(true);
@@ -85,6 +91,10 @@ it("reports a full page in one confirmed transaction and pays it in a separate m
   await Effect.runPromise(batch.payMany(claims.map((withdrawal) => ({ withdrawal, wallet: "0x123" }))));
   expect(rpc.execute).toHaveBeenCalledTimes(2);
   expect(rpc.execute.mock.calls[1]![0]).toHaveLength(100);
+  expect(rpc.execute.mock.calls[1]![0][0].entrypoint).toBe("prepare_payment");
+  rpc.time += 600;
+  await Effect.runPromise(batch.payMany(claims.map((withdrawal) => ({ withdrawal, wallet: "0x123" }))));
+  expect(rpc.execute).toHaveBeenCalledTimes(3);
   for (const [index, claim] of claims.entries()) {
     const args = {
       prize_rank: 0,
@@ -97,7 +107,7 @@ it("reports a full page in one confirmed transaction and pays it in a separate m
     expect(rpc.execute.mock.calls[0]![0][index].calldata.map(BigInt)).toEqual(
       ledgerCall("report_withdrawal", args).map(BigInt),
     );
-    expect(rpc.execute.mock.calls[1]![0][index].calldata.map(BigInt)).toEqual(
+    expect(rpc.execute.mock.calls[2]![0][index].calldata.map(BigInt)).toEqual(
       ledgerCall("pay", { ...args, wallet: "0x123" }).map(BigInt),
     );
   }
@@ -109,6 +119,8 @@ it("reports a full page in one confirmed transaction and pays it in a separate m
 it("keeps confirmed reports when a pay reverts and retries unlock exhaustion", async () => {
   const batch = ledgerBatches(credentials, async () => {});
   await Effect.runPromise(batch.reportMany(claims.slice(0, 2)));
+  await Effect.runPromise(batch.payMany(claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" }))));
+  rpc.time += 600;
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: unlock exceeded" });
   const paid = await Effect.runPromise(
     batch.payMany(claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" }))),
@@ -123,6 +135,12 @@ it("pays only the available unlocked prefix and leaves excess claims retryable",
     q.entrypoint === "frontier_unlocked" ? Promise.resolve(["1", "0"]) : original(q),
   );
   await Effect.runPromise(ledgerBatches(credentials, async () => {}).reportMany(claims.slice(0, 2)));
+  await Effect.runPromise(
+    ledgerBatches(credentials, async () => {}).payMany(
+      claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" })),
+    ),
+  );
+  rpc.time += 600;
   const result = await Effect.runPromise(
     ledgerBatches(credentials, async () => {}).payMany(
       claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" })),
@@ -189,21 +207,50 @@ it("refuses unpaid prizes and chests once the season closes", async () => {
   expect(rpc.execute).toHaveBeenCalledTimes(1);
 });
 
-it("keeps immature reports out of a payment batch without blocking mature claims", async () => {
+it("keeps immature recipients out of a payment batch without blocking mature claims", async () => {
   const batch = ledgerBatches(credentials, async () => {});
-  await Effect.runPromise(batch.reportMany(claims.slice(0, 2)));
-  rpc.records.get("0x2")![7] = "1000";
-  rpc.execute.mockClear();
   const rows = claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" }));
+  rpc.time = 0;
+  await Effect.runPromise(batch.reportMany(claims.slice(0, 2)));
+  await Effect.runPromise(batch.payMany([rows[0]!]));
+  rpc.time = 1000;
+  await Effect.runPromise(batch.payMany([rows[1]!]));
+  rpc.execute.mockClear();
   expect(await Effect.runPromise(batch.payMany(rows))).toEqual(
     expect.arrayContaining([
       { claimId: "0x1", error: null },
       { claimId: "0x2", error: "ledger_payment_delay" },
     ]),
   );
+  expect(rpc.execute).toHaveBeenCalledOnce();
   expect(rpc.execute).toHaveBeenCalledWith(
     expect.objectContaining({ entrypoint: "pay", calldata: expect.arrayContaining(["0x1"]) }),
   );
   rpc.time = 1600;
   expect(await Effect.runPromise(batch.payMany([rows[1]!]))).toEqual([{ claimId: "0x2", error: null }]);
+});
+
+it("restarts the monitored delay after a linked-wallet change without completing the withdrawal", async () => {
+  const batch = ledgerBatches(credentials, async () => {});
+  await Effect.runPromise(batch.reportMany(claims.slice(0, 1)));
+  const original = { withdrawal: claims[0]!, wallet: "0x123" };
+  expect(await Effect.runPromise(batch.payMany([original]))).toEqual([
+    { claimId: "0x1", error: "ledger_payment_delay" },
+  ]);
+  rpc.execute.mockClear();
+  rpc.time = 1599;
+  await Effect.runPromise(batch.payMany([original]));
+  expect(rpc.execute).not.toHaveBeenCalled();
+  rpc.time = 1600;
+  const changed = { ...original, wallet: "0x999" };
+  expect(await Effect.runPromise(batch.payMany([changed]))).toEqual([
+    { claimId: "0x1", error: "ledger_payment_delay" },
+  ]);
+  expect(rpc.execute).toHaveBeenLastCalledWith({
+    contractAddress: "0x10",
+    entrypoint: "prepare_payment",
+    calldata: ["0x1", "0x1", "0x999"],
+  });
+  rpc.time = 2200;
+  expect(await Effect.runPromise(batch.payMany([changed]))).toEqual([{ claimId: "0x1", error: null }]);
 });

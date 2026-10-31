@@ -160,11 +160,15 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     wallet: "0xabc",
     amount: "5",
   });
+  expect(decodeWithdrawalPayment(["0", "7", "0xabc", "5", "0", "0", "0", "123"])).toMatchObject({
+    paid: false,
+    wallet: "0xabc",
+    reportedAt: 123,
+  });
   for (const fields of [
     ["0", "7", "0", "0"],
     ["2", "7", "0", "5", "0"],
     ["1", "7", "0", "5", "0"],
-    ["0", "7", "0xabc", "5", "0"],
     ["0", "7", "0", "0", "0"],
     ["0", "7", "0", "0", String(1n << 128n)],
   ])

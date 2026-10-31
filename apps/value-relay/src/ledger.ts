@@ -243,15 +243,8 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
   };
 };
 const decodeReport = (event: EmittedEvent): ReportedClaim => {
-  if (event.keys.length !== 3 || event.data.length !== 5) throw new Error("invalid_report_event");
-  return {
-    chainId: event.keys[1]!,
-    transactionHash: event.keys[2]!,
-    seasonId: ledgerInteger(event.data[0]!),
-    amount: ledgerU256(event.data[1]!, event.data[2]!),
-    prizeRank: ledgerInteger(event.data[3]!),
-    prizeCount: ledgerInteger(event.data[4]!),
-  };
+  const { paymentTransactionHash, ...report } = decodePayment(event);
+  return { ...report, reportTransactionHash: paymentTransactionHash };
 };
 const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   if (

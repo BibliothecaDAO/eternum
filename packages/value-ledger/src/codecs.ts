@@ -169,7 +169,7 @@ export const decodeWithdrawalPayment = (fields: readonly string[]) => {
   const wallet = unsigned(fields[2]!);
   const amount = ledgerU256(fields[3]!, fields[4]!);
   if (amount === "0" && !paid && seasonId === 0 && wallet === 0n && prizeRank === 0 && reportedAt === 0) return null;
-  if (amount === "0" || (paid && wallet === 0n) || (!paid && wallet !== 0n)) throw new Error("invalid_payment_report");
+  if (amount === "0" || (paid && wallet === 0n)) throw new Error("invalid_payment_report");
   return { paid, seasonId, wallet: fields[2]!, amount, prizeRank, prizeCount, reportedAt };
 };
 

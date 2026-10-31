@@ -3,7 +3,6 @@ import type {
   MonitorPorts,
   LedgerPage,
   PaidClaim,
-  ReportedClaim,
   BlitzCommitment,
   Withdrawal,
   BlitzResult,
@@ -107,13 +106,27 @@ const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
     ports.ledger.reportedClaims,
     (row) => `reportedClaims:${row.chainId}:${row.transactionHash}`,
     (row) =>
-      `reportedClaims:${hex(row.chainId)}:${hex(row.transactionHash)}:${row.seasonId}:${BigInt(row.amount)}:${row.prizeRank}:${row.prizeCount}`,
+      `reportedClaims:${hex(row.chainId)}:${hex(row.transactionHash)}:${row.seasonId}:${BigInt(row.amount)}:${row.prizeRank}:${row.prizeCount}:${hex(row.wallet)}:${hex(row.reportTransactionHash)}`,
     (report) =>
       Effect.gen(function* () {
         const receipt = yield* ports.shard.withdrawal(report.chainId, report.transactionHash);
-        return matchesPaidClaim(receipt, report)
-          ? null
-          : { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence: receiptEvidence(receipt) };
+        const evidence = receiptEvidence(receipt);
+        if (!matchesPaidClaim(receipt, report))
+          return { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence };
+        if (
+          BigInt(report.wallet) !== 0n &&
+          !(yield* ports.identity.matchesPayDecision({
+            chainId: report.chainId,
+            claimId: report.transactionHash,
+            transactionHash: report.reportTransactionHash,
+            realmsId: receipt!.realmsId,
+            wallet: report.wallet,
+            seasonId: report.seasonId,
+            amount: report.amount,
+          }))
+        )
+          return { reason: `reported_wallet_mismatch:${report.transactionHash}`, evidence };
+        return null;
       }),
     store,
   );
@@ -232,7 +245,7 @@ const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) 
     return halted;
   });
 
-const matchesPaidClaim = (receipt: Withdrawal | null, paid: ReportedClaim) =>
+const matchesPaidClaim = (receipt: Withdrawal | null, paid: Omit<Withdrawal, "realmsId" | "confirmedAt">) =>
   receipt !== null &&
   BigInt(receipt.chainId) === BigInt(paid.chainId) &&
   BigInt(receipt.transactionHash) === BigInt(paid.transactionHash) &&
