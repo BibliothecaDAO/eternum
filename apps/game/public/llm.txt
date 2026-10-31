@@ -19,7 +19,11 @@ import { BLITZ } from "@/utils/blitz";
   </HomePage.Description>
 
   <HomePage.Buttons>
-    <HomePage.Button href="/frontier" variant="primary">
+    <HomePage.Button href="/devcon" variant="primary">
+      Devcon season
+    </HomePage.Button>
+
+    <HomePage.Button href="/frontier" variant="outline">
       Frontier
     </HomePage.Button>
 
@@ -40,7 +44,7 @@ import { BLITZ } from "@/utils/blitz";
 file: docs/pages/account/lords.mdx
 meta: {
   "title": "LORDS",
-  "description": "Test LORDS today, where LORDS come from in each game, and where they go"
+  "description": "Where LORDS come from in each game, and where they go"
 }
 
 import { Shot } from "@/components/Media";
@@ -49,13 +53,11 @@ import { Shot } from "@/components/Media";
 
 LORDS is the Realms token. Every game pays in it: Blitz entries, chests and prizes, and Frontier's chests.
 
-## Test LORDS for now
+## LORDS and test LORDS
 
-Until the LORDS launch, every game runs on a test LORDS token with no value. Entries, chests, prizes and Frontier
-withdrawals all pay in it. The pages here say LORDS for both; they change at the launch.
-
-You can mint test tokens for free. Under a Blitz entry, **Mint 1,000 test tokens** mints them to your payout wallet. It
-takes one signature, and the wallet pays the network fee.
+From the Devcon season, play.realms.party pays in LORDS. The dev game (play.dev-realms.party) runs on a test LORDS token
+with no value, and you can mint it for free: under a Blitz entry, **Mint 1,000 test tokens** mints them to your payout
+wallet. It takes one signature, and the wallet pays the network fee.
 
 <Shot name="account/mint" caption="A Blitz entry short of LORDS, with Mint 1,000 test tokens under it." />
 
@@ -71,7 +73,10 @@ takes one signature, and the wallet pays the network fee.
 
 * **Chests** pay LORDS into your realm ([Chests and LORDS](/frontier/chests)).
 * **Refill** spends your realm's LORDS on stamina ([Armies](/frontier/armies#stamina)).
-* **Withdraw** sends your realm's LORDS to your payout wallet, until the season's claim window closes.
+* **Withdraw** sends your realm's LORDS to your payout wallet at once, during the season.
+* **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet
+  automatically. With no wallet linked by the claim deadline, they go to the next season
+  ([Chests and LORDS](/frontier/chests#your-lords)).
 
 <Shot frame="panel" name="account/withdraw" caption="A Frontier realm's LORDS, withdrawn to the payout wallet." />
 
@@ -99,16 +104,16 @@ Your payout wallet is the Starknet wallet linked to your Realms account. Frontie
 * pay a Blitz entry, and get its refund back;
 * carry a Blitz rating;
 * receive Blitz chests and claim the season prize;
-* withdraw your Frontier realm's LORDS;
-* claim Frontier labor for the Realms the wallet holds.
+* withdraw your Frontier realm's LORDS, and receive them and any prize when the season ends;
+* found your Frontier home with a Realm the wallet holds, so it claims labor each day.
 
 A game's results, chest and prize go to the wallet its seat was played with, even if you change your payout wallet
 afterwards.
 
 ## Linking a wallet
 
-Open **Settings**, **Payout wallet**. A Blitz lobby's **Link wallet** takes you there and brings you back once it is
-linked.
+Open **Settings**, **Payout wallet**. Every **Link wallet** in the game (a Blitz lobby, your LORDS in Frontier, your
+card on You) takes you there and brings you back once it is linked.
 
 * **I have a wallet:** Ready (formerly Argent), Braavos or Controller.
 * **I need one:** Ready, in this browser with its extension, or by email with no install. On a phone, Ready by email.
@@ -751,6 +756,86 @@ import { PatchNotes } from "@/components/PatchNotes";
 Every release's patch notes, newest first: the same notes as What's new in the game.
 
 <PatchNotes />
+
+
+
+---
+
+file: docs/pages/devcon/index.mdx
+meta: {
+  "title": "Devcon season",
+  "description": "The Devcon Frontier season, how to join it with your ticket, what a ticket gives, and its LORDS"
+}
+
+import { DEVCON } from "@/utils/devcon";
+import { FRONTIER } from "@/utils/frontier";
+
+# Devcon season
+
+A Frontier season at Devcon speed, with 300,000 LORDS to win. It runs from **Tue 3 Nov 12:00 IST**
+(Tue 3 Nov 06:30 UTC) to **Fri 6 Nov 20:00 IST** (Fri 6 Nov 14:30 UTC). It plays like any Frontier season
+([Frontier](/frontier)), only faster.
+
+## Join with your ticket
+
+1. **Scan your flyer's QR code.** It opens your sealed Devcon ticket.
+2. **Open your ticket.** Sign in with Discord or your email ([Sign in](/account/sign-in)). Your first sign-in creates
+   your Realms account. The ticket then shows whether it is regular or golden, and what its realm claims each day.
+3. **Play.** You go straight to the Devcon game's **Choose your home** step, with your ticket chosen. Press **Found your
+   realm**.
+
+Each account holds one Devcon ticket. Scanning a second flyer with an account that already holds one shows the ticket
+you have, and that flyer stays unspent for someone else. Without a flyer you can still play: found your home with a
+Realm your payout wallet holds, or take a free home.
+
+## What your home claims
+
+Your home claims Labor and Essence once every game day: press **Realm Labor** beside your LORDS (on a phone, in
+**Menu**), then **Claim**. A day you miss is lost, and Labor that does not fit in your storage is lost with the claim.
+
+| Home             | Labor | Essence |
+| ---------------- | ----- | ------- |
+| Devcon ticket    | 1,000 | 1,000   |
+| Golden ticket    | 2,000 | 2,000   |
+| A Realm you hold | 1,000 | None    |
+| A free home      | None  | None    |
+
+Every flyer looks the same. 15 of them hold a golden ticket, revealed only when the ticket is opened.
+Devcon and golden realms have their own look on the map and on the Season board.
+
+## The LORDS
+
+The season's pool is 300,000 LORDS:
+
+* **70% pays chests:** 210,000 LORDS, released day by day and paid by the ruins you clear and
+  the chests your armies find ([Chests and LORDS](/frontier/chests)).
+* **30% pays the leaderboard:** 90,000 LORDS to the top 3 realms
+  on the Season board at the season's end: 45,000 for first, 30,000 for second and
+  15,000 for third. Only realms that cleared at least one site take a place.
+
+The Season page shows the podium as the season runs, and each prize as Pending until it is paid.
+
+LORDS go to your payout wallet. Link one in **Settings**, **Payout wallet** ([Payout wallet](/account/payout-wallet)).
+You can withdraw your realm's LORDS at once during the season. When it ends, whatever your realm still holds, and your
+prize, is paid to your linked wallet automatically. Without a linked wallet, link one within
+7 days of the season's end and they are paid to it. After that, unpaid LORDS go to the next
+season.
+
+## What is faster
+
+* A game day lasts 4 to 12 hours (8 to
+  24 in a regular season).
+* Stamina recovers, and your buildings produce, 3 times as fast.
+* The Ethereal depths cost 20,000, 50,000 and 100,000 Essence
+  (100,000, 250,000 and
+  500,000 in a regular season).
+* The leaderboard pays its top 3 (10 in a regular season).
+
+Everything else is as the Frontier pages describe it.
+
+## After Devcon
+
+Frontier season 1 opens on Nov 9.
 
 
 
@@ -1604,13 +1689,14 @@ tile costs 20, a step over known ground 10, and an attack needs
 30\. Every step and every reveal also costs 0.02 wheat per troop, so a
 big army needs farms behind it.
 
-**Refill** tops an army's stamina up at once for 1 LORDS a missing point, paid from your
-realm's LORDS. A well gives 60 stamina. Skill points also restore stamina, and Logistics raises an
-army's maximum by up to 150.
+**Refill** buys an army stamina at once for 1 LORDS a point, paid from your realm's LORDS:
+as much as it is missing, or as much as your LORDS cover. A well gives 60 stamina. Skill points
+also restore stamina, and Logistics raises an army's maximum by up to 150.
 
 ### Stamina stays with the slot
 
-Stamina belongs to the army slot, not to the army in it. Choose an open slot when deploying.
+Stamina belongs to the army slot, not to the army in it. Deploy picks your first open slot; choose another before
+deploying if you like.
 
 * A slot's first army of the day starts with a full bar: 120 stamina, plus what your Supply yard's
   Logistics adds.
@@ -1624,14 +1710,15 @@ Stamina belongs to the army slot, not to the army in it. Choose an open slot whe
 
 ## Merging and disbanding
 
-Two of your armies standing side by side can merge, keeping the lower of their two staminas. An army you disband loses
-its troops; Frontier asks first.
+Two of your armies standing side by side can merge, keeping the lower of their two staminas. The army you merge into is
+the one that stays; when the other holds more XP, ranks or points, Frontier asks once more before they are lost. An army
+you disband loses its troops; Frontier asks first.
 
 ## XP and attributes
 
-An army earns 2 / 3 / 4 / 5 XP per revealed tile at Surface / Ethereal I / Ethereal II / Ethereal III. It also earns XP for cleared guards and 200 XP from a shrine. XP only
-increases. At 75 / 200 / 400 / 800 / 1,500 XP it earns Common, Uncommon, Rare, Epic and Legendary skill
-points. The same milestones repeat every 1,500 XP.
+An army earns 2 / 3 / 4 / 5 XP per revealed tile at Surface / Ethereal I / Ethereal II / Ethereal III. It also earns XP for cleared guards. Shrines grant one skill point of the rank shown when
+discovered. XP only increases. At 75 / 200 / 400 / 800 / 1,500 XP it earns Common, Uncommon, Rare, Epic and
+Legendary skill points. The same milestones repeat every 1,500 XP.
 
 Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
 uses the lowest fitting point you hold. Raising restores 20 / 30 / 40 / 50 / 60 stamina according
@@ -1639,8 +1726,9 @@ to the point spent. Choose Stamina instead to restore double that amount, up to 
 
 * **Battle** hits up to 100% harder.
 * **Logistics** carries up to 150 more stamina.
-* **Scouting** adds 10% / 15% / 20% / 25% / 30% to the chosen kind's find rate at each rank. Putting all
-  five ranks into one kind adds 100%.
+* **Scouting** adds 10% / 15% / 20% / 25% / 30% to the chosen kind's find rate at each rank. The kinds
+  are Trolls (camps), Rifts, and Sanctuaries (Shrines and Wells together, once either is researched). Putting all five
+  ranks into one kind adds 100%.
 * **Homecoming** sends a share of survivors home when the day ends
   ([The expedition](/frontier/expedition#the-days-end)).
 
@@ -1662,7 +1750,7 @@ troops before and after, and what clearing it pays. The ground does not matter: 
 file: docs/pages/frontier/chests.mdx
 meta: {
   "title": "Chests",
-  "description": "What a Frontier chest pays, and how its LORDS reach you"
+  "description": "What a Frontier chest pays, the season's prizes, and how its LORDS reach you"
 }
 
 import { FRONTIER } from "@/utils/frontier";
@@ -1671,8 +1759,8 @@ import { Shot, Video } from "@/components/Media";
 # Chests
 
 Every Frontier chest pays LORDS, from the season's pool, into your realm. There are two: the chest a ruin guards, and
-the rare chest a reveal turns up. A chest pays LORDS and nothing else: no item, relic or cosmetic. Until the LORDS
-launch, these are test LORDS ([LORDS](/account/lords)).
+the rare chest a reveal turns up. A chest pays LORDS and nothing else: no item, relic or cosmetic
+([LORDS](/account/lords)).
 
 ## A ruin's chest
 
@@ -1702,16 +1790,28 @@ across every depth, and your realm finds no more ruins until the next day.
 
 ## A chest in the wild
 
-Each newly revealed surface tile has a 1 in 10,000 chance of a chest, found only while
-the day's budget can fund it. It is always common: one share at today's price, set aside as it is found. Open it with
-one of your armies beside it before the day ends; its LORDS go to that army's realm.
+Each newly revealed tile at any depth has a 1 in 10,000 chance of a chest, found only
+while the day's budget can fund it. Its tier uses the layer's regular chest odds, with its shares at today's price set
+aside as it is found. Open it with one of your armies beside it before the day ends; its LORDS go to that army's realm.
 
 <Video frame="wide" name="frontier/open-chest" caption="A chest found in the wild, opened by the army beside it." />
 
+## The season's prizes
+
+Chests are paid from 70% of the season's pool. The other 30%
+goes to the top 10 realms on the Season board when the season ends, first place taking the most
+and each place below it a little less. Only realms that have cleared at least one site take a place. The Season page
+shows the podium as the season runs, with each place's LORDS and who holds it, and each prize as Pending until it is
+paid.
+
 ## Your LORDS
 
-Your realm's LORDS pay for Refill, and you can withdraw them to your payout wallet until the season's claim window
-closes, 1 hour short of 7 days after the season ends.
+Your realm's LORDS pay for Refill. During the season, **Withdraw** sends them to your payout wallet at once.
+
+When the season ends, whatever your realm still holds, and any prize it won, is paid to your linked payout wallet
+automatically. With no wallet linked, link one within 7 days of the season's end, and they are
+paid to it. After that, unpaid LORDS go to the next season. Until a wallet is linked, the game says so wherever it shows
+your LORDS, with **Link wallet** ([Payout wallet](/account/payout-wallet)).
 
 
 
@@ -1756,13 +1856,19 @@ Surface / Ethereal I / Ethereal II / Ethereal III.
 | Camp   | 4%          | A camp guarded by a Troll. Clearing it pays labor: half its guard's starting troops.                                                                                                              |
 | Rift   | 4%          | A fissure guarded by a Dark fey. Clearing it pays Essence: three times its guard's starting troops.                                                                                               |
 | Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
-| Shrine | 3%          | Once researched: an army beside it uses it for 200 XP, then it is gone.                                                                                                                           |
+| Shrine | 3%          | Once researched: holds one skill point, its rank rolled when found (below) and shown on its card. An army beside it takes that point and consumes the Shrine.                                     |
 | Well   | 3%          | Once researched: an army beside it uses it for 60 stamina, then it is gone.                                                                                                                       |
-| Chest  | 1 in 10,000 | On the surface only, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                                             |
+| Chest  | 1 in 10,000 | At every depth, using that layer’s chest odds, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                   |
 
 After 7 empty reveals in a row, the next reveal draws only among the sites, shrines
 and wells above, so it finds one. After a ruin clear, no further ruins appear that day. Scouting makes the kinds you
-pick for it more likely ([Armies](/frontier/armies#xp-and-attributes)).
+pick for it more likely: Trolls, Rifts, or Sanctuaries (Shrines and Wells)
+([Armies](/frontier/armies#xp-and-attributes)).
+
+A Shrine's skill point is rolled when the Shrine is found. On the surface it is Common
+50% of the time, Uncommon 30%, Rare
+15%, Epic  4% and Legendary
+1%. Each depth below lifts the rolled rank one step, up to Legendary.
 
 To use a shrine or a well, select an army beside it and right-click it (on a phone, press and hold), or tap it and press
 **Use**.
@@ -1803,9 +1909,9 @@ of the day.
 ## The day's end
 
 When the day ends, the map and its fog, every site and every army you sent out are gone. An army with Homecoming first
-sends a share of its survivors home: 8% at uncommon, 14% at rare,
-21% at epic and 30% at legendary. Your realm is raised on the next map with
-its buildings, research, troops and stores, and the game takes you to it.
+sends a share of its survivors home: 3% at Common, 8% at Uncommon,
+14% at Rare, 21% at Epic and 30% at Legendary. Your realm
+is raised on the next map with its buildings, research, troops and stores, and the game takes you to it.
 
 
 
@@ -1823,7 +1929,8 @@ import { Shot, Video } from "@/components/Media";
 # Frontier
 
 Frontier is free to play. Every day a new map opens around your realm. Your armies explore it, clear what guards it, and
-send home what they find. No other player can attack you.
+send home what they find. No other player can attack you. During Devcon, a faster Devcon season runs
+([Devcon season](/devcon)).
 
 <Video name="frontier/realm-tiers" caption="Your realm grows as its castle rises, and is raised again on every new map with all it holds." />
 
@@ -1853,16 +1960,18 @@ holds.
 
 ## What you can do
 
-* Found your realm for free the first time you enter, on any day of the season.
+* Found your realm for free the first time you enter, on any day of the season, on the home you choose: a Realm your
+  payout wallet holds, an event ticket, or a free home.
 * Build farms, barracks, workshops, workers' huts and four training buildings, and raise your castle.
 * Research each building type up to legendary, then shrines, wells and the three Ethereal depths.
 * Field 3 armies of Knights, and up to 6 as the castle rises.
 * Explore, move, and fight the guards of Trolls, rifts, ruins and beasts.
 * Earn skill points with XP, then spend them on Battle, Logistics, Scouting, Homecoming or Stamina.
 * Use a shrine or a well beside one of your armies.
-* Open chests, Refill stamina with LORDS, and withdraw LORDS to your payout wallet.
+* Open chests, Refill stamina with LORDS, and withdraw LORDS to your payout wallet. What your realm holds at the
+  season's end, and the top places' prizes, are paid to it automatically.
 * Merge two of your armies standing side by side, or disband one.
-* Claim labor each day for every Realm in your payout wallet.
+* Claim your home's labor, and a ticket's Essence, each game day.
 * Visit another player's realm from the Season board.
 
 ## What you can't do
@@ -1878,9 +1987,9 @@ holds.
 
 ## Your first day
 
-Your realm is founded the first time you enter the Frontier season, and from then on it is raised again on every new
-map, in its own stretch of wilderness. Entry is free and open for the whole season, so a player who arrives late starts
-the same way as one who arrived on day one.
+Your realm is founded the first time you enter the Frontier season, on the home you choose, and from then on it is
+raised again on every new map, in its own stretch of wilderness. Entry is free and open for the whole season, so a
+player who arrives late starts the same way as one who arrived on day one.
 
 A new realm starts with 1,500 troops, 4,500 wheat and 2,000 labor.
 Build barracks, deploy an army, and walk it into the fog.
@@ -1890,7 +1999,8 @@ Build barracks, deploy an army, and walk it into the fog.
 * [Your realm](/frontier/realm): build the realm that feeds your armies.
 * [Armies](/frontier/armies): field your armies, keep them going, and level them up.
 * [The expedition](/frontier/expedition): read the day's map and pick the fights you can win.
-* [Chests and LORDS](/frontier/chests): what a ruin's chest and a wild chest pay.
+* [Chests and LORDS](/frontier/chests): what a ruin's chest and a wild chest pay, the season's prizes, and your LORDS.
+* [Devcon season](/devcon): join with your ticket, and the Devcon pool.
 
 
 
@@ -1931,23 +2041,24 @@ price. Barracks train for free; deploying costs 2 wheat a troop.
 ## The castle
 
 Raise the castle for 4,000, 15,000, then
-40,000 labor. Each level opens another ring of plots, fields one more army and deploys more
-troops at once:
+40,000 labor. Each level opens another ring of plots, fields one more army, deploys more troops
+at once and stores more wheat and labor:
 
-| Castle level | Armies in the field | Troops per deploy |
-| ------------ | ------------------- | ----------------- |
-| 1            | 3                   | 3,000             |
-| 2            | 4                   | 9,000             |
-| 3            | 5                   | 25,000            |
-| 4            | 6                   | 60,000            |
+| Castle level | Armies in the field | Troops per deploy | Wheat and labor stored |
+| ------------ | ------------------- | ----------------- | ---------------------- |
+| 1            | 3                   | 3,000             | 6,000                  |
+| 2            | 4                   | 9,000             | 18,000                 |
+| 3            | 5                   | 25,000            | 40,000                 |
+| 4            | 6                   | 60,000            | 80,000                 |
 
 ## Research
 
 At the castle, each research side climbs from 0 to Common I through Legendary V, paid in Essence and labor. A tier lifts
 every building of its type at once, and each side advances independently: farms and workshops make
-20% more or store more, barracks train 20% more or take
-0.2 wheat off the  2 wheat each troop costs to deploy, and
-each hut tier houses  20% more.
+20% more or store 40% more, barracks train
+20% more or take 0.2 wheat off the
+2 wheat each troop costs to deploy, and each hut tier houses
+20% more.
 
 | Type                   | Common I                   | Uncommon II                 | Rare III                    | Epic IV                       | Legendary V                   |
 | ---------------------- | -------------------------- | --------------------------- | --------------------------- | ----------------------------- | ----------------------------- |
@@ -1970,11 +2081,21 @@ before reveals can find them.
 
 <Shot frame="panel" name="frontier/research" caption="The castle's research tree, with one node open." />
 
-## Labor from your Realms
+## Your home's daily claim
 
-Each Realm in your payout wallet gives your Frontier realm 1,000 labor once a day: open Realms from
-your realm's panel, add each by its number, then **Claim all**. Link a payout wallet first
-([Payout wallet](/account/payout-wallet)).
+Your realm is founded on the home you choose when you first enter a season (**Choose your home**, then **Found your
+realm**), and that choice decides what it claims each game day:
+
+* **A Realm your payout wallet holds:** 1,000 labor a day. The Realm is checked on Starknet as you
+  found the home, so one just bought counts and one just sold does not. Link a payout wallet first
+  ([Payout wallet](/account/payout-wallet)).
+* **An event ticket**, such as a Devcon ticket: labor and Essence a day ([Devcon season](/devcon)).
+* **A free home:** no daily claim.
+
+Press **Realm Labor** beside your LORDS (on a phone, in **Menu**), then **Claim**. The sheet shows the season's days
+around today, claimed or missed: a day you do not claim is lost. Labor that does not fit in your storage is lost with
+the claim, and the sheet says how much fits first. Once claimed, **Remind me** sends a notification when the next day
+opens.
 
 
 
