@@ -10,6 +10,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
 import { dayClock, endedDay } from "../hud/day-clock";
+import { useSeasonEndsAt } from "../hud/season-end";
 import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
@@ -31,7 +32,8 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
  * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
  * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
  * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
- * answers after the moment went on without the summary, this does.
+ * answers after the moment went on without the summary, this does. The season's end is no day's end (endedDay): the
+ * season-over card tells it.
  */
 export const DayDone = ({
   rules,
@@ -49,7 +51,7 @@ export const DayDone = ({
   useNativeRevision(ARMY_MODELS);
   const gameId = configManager.getActiveGameId();
   const [seen, markSeen] = useSeenDay(gameId, player);
-  const ended = endedDay(rules, now);
+  const ended = endedDay(rules, now, useSeasonEndsAt());
   const played = usePlayerDay(player, ended);
   const rank = useClosingRankChange(ended?.day);
   const openedAt = useOpenedAt(now);

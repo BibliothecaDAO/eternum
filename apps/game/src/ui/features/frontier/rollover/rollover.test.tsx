@@ -13,11 +13,14 @@ import { DayEndScreen } from "./day-end-screen";
 describe("the day's end", () => {
   const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
 
-  it("finds the day that ended last and its bounds, and none on the season's first day", () => {
+  it("finds the day that ended last and its bounds, and none on the season's first day or once the season is over", () => {
     const first = dayOf(rules, 0)!;
     const second = dayOf(rules, first.end)!;
-    expect(endedDay(rules, second.start + 60)).toEqual({ day: 1, start: first.start, end: first.end });
-    expect(endedDay(rules, 60)).toBeNull();
+    expect(endedDay(rules, second.start + 60, 0)).toEqual({ day: 1, start: first.start, end: first.end });
+    expect(endedDay(rules, 60, 0)).toBeNull();
+    // The season ended with day 1: its turn and every later one end no day.
+    expect(endedDay(rules, second.start + 60, first.end)).toBeNull();
+    expect(endedDay(rules, second.end + 60, first.end)).toBeNull();
   });
 
   it("tells the day done, the realm kept, the new day's end, tomorrow's length, the totals and the troops taken", () => {

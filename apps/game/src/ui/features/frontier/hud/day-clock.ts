@@ -81,10 +81,22 @@ export const dayBounds = (
 };
 
 /**
- * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
- * season's first day, which follows no day.
+ * Whether the season is over at `now`: its end (the registry's end_at, 0 while none is set) has come. The turn at the
+ * season's end ends the season, not a day, and no day ends after it: the season-over card tells that end.
  */
-export const endedDay = (calendar: SeasonCalendar, now: number): { day: number; start: number; end: number } | null => {
+export const seasonOver = (seasonEndsAt: number | undefined, now: number): boolean =>
+  Boolean(seasonEndsAt) && now >= seasonEndsAt!;
+
+/**
+ * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
+ * season's first day, which follows no day, and once the season is over.
+ */
+export const endedDay = (
+  calendar: SeasonCalendar,
+  now: number,
+  seasonEndsAt: number | undefined,
+): { day: number; start: number; end: number } | null => {
+  if (seasonOver(seasonEndsAt, now)) return null;
   const today = dayOf(calendar, now);
   const bounds = today && today.index > 0 ? dayBounds(calendar, now, today.index) : null;
   return today && bounds ? { day: today.index, ...bounds } : null;

@@ -17,9 +17,16 @@ const herald = vi.hoisted(() => ({
   withheld: null as Promise<void> | null,
   /** The chain clock the HUD reads. */
   now: 0,
+  /** The game's registry: prod's Season 1 ended on 31 Oct 09:46Z, long after day 2. */
+  game: { end_at: "1793439960" },
+}));
+/** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */
+const facts = vi.hoisted(() => ({
+  get: (model: string) => (model === "GameRegistry" ? herald.game : undefined),
+  structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
-vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: {} } }) }));
+vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
 }));
@@ -83,6 +90,7 @@ beforeEach(() => {
   herald.history = BEFORE_PLAYING_ON.history;
   herald.withheld = null;
   herald.now = BEFORE_PLAYING_ON.now;
+  herald.game = { end_at: "1793439960" };
   host = document.createElement("div");
   document.body.append(host);
   root = createRoot(host);
@@ -128,7 +136,7 @@ const endDay2WithHistoryWithheld = async () => {
   let answer!: () => void;
   herald.withheld = new Promise<void>((resolve) => (answer = resolve));
   window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "1");
-  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
+  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now, 0)!;
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   herald.now = end - 1;
   await act(async () => draw());
@@ -156,7 +164,7 @@ it("sums the player's own day 2 as prod's history holds it, not the tail of the 
 
 it("shows a dash for each total, and says why, when the player's history no longer reaches the day's start", async () => {
   // Five hundred later stories of the player's own, late in day 2, push its start out of the one page Herald gives.
-  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now)!;
+  const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now, 0)!;
   const later = Array.from({ length: 500 }, (_, index) => ({
     block_number: 170_000 + index,
     transaction_index: 0,
@@ -235,7 +243,7 @@ describe("a device arriving in a new day", () => {
   /** Opens the game: the HUD's day end and the day's turn, on the game's clocks, with the camera's moves recorded. */
   const openTheGameHere = async ({ visiting = false } = {}) => {
     stopRollover = watchDayTurn({
-      store: { structuresOwnedBy: () => [{ entity_id: 7 }] } as never,
+      store: facts as never,
       gameId: 1,
       player: RECORDED_DAY.player,
       chainNow: () => herald.now,
@@ -308,7 +316,7 @@ describe("a device arriving in a new day", () => {
   it("leaves the player on the map past the black's longest hold while the block lags, then moves the camera once", async () => {
     herald.history = [];
     // The last block is still day 2's: the realm's day-3 site is not on the map yet.
-    lateBlockAt = endedDay(RULES, BEFORE_PLAYING_ON.now)!.end - 1;
+    lateBlockAt = endedDay(RULES, BEFORE_PLAYING_ON.now, 0)!.end - 1;
     await openTheGameHere();
     expect(phase()).toBe("nightfall");
     await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.blackHold + DAY_END_TIMING.dawn);
@@ -367,5 +375,51 @@ describe("a device arriving in a new day", () => {
     await throughTheBlack();
     expect(navigate.mock.calls).toEqual([[NEW_SITE]]);
     expect(window.localStorage.getItem(MARK)).toBe("2");
+  });
+
+  it("plays no day's end and shows no summary when the day that ended was the season's last", async () => {
+    // The season ended with day 2: the season-over card tells that end.
+    herald.game = { end_at: String(endedDay(RULES, BEFORE_PLAYING_ON.now, 0)!.end) };
+    await openTheGameHere();
+    await seconds(DAY_END_TIMING.summaryWait);
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(phase()).toBe("day");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+});
+
+describe("the chain clock turning in the game", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    client.clear();
+  });
+
+  it.each([
+    ["a day's end", "1793439960", "veil"],
+    ["the season's end", null, "day"],
+  ])("at %s, the rollover rolls the mist only for a day's", async (_turn, endAt, after) => {
+    vi.useFakeTimers();
+    const { end } = endedDay(RULES, BEFORE_PLAYING_ON.now, 0)!;
+    herald.game = { end_at: endAt ?? String(end) };
+    // The player went through day 1's end the day before.
+    window.localStorage.setItem(`frontier.day-done.1.${RECORDED_DAY.player}`, "1");
+    herald.now = end - 1;
+    const stop = watchDayTurn({
+      store: facts as never,
+      gameId: 1,
+      player: RECORDED_DAY.player,
+      chainNow: () => herald.now,
+      blockNow: () => herald.now,
+      reproject: () => {},
+      navigate: () => {},
+    });
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(async () => draw());
+    herald.now = end + 1;
+    await act(async () => draw());
+    await seconds(1);
+    expect(phase()).toBe(after);
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    stop();
   });
 });

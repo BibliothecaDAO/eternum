@@ -14,6 +14,7 @@ import {
 } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { getActiveGameSyncRuntime } from "@bibliothecadao/eternum/game-sync";
+import { seasonOver } from "@/ui/features/frontier/hud/day-clock";
 import { useGame } from "@/hooks/context/game-context";
 import { useEffect } from "react";
 
@@ -111,7 +112,9 @@ export function watchDayTurn(world: DayTurnWorld): () => void {
     // re-projection is let through.
     if (chain !== chainDay) {
       chainDay = chain;
-      if (chain !== null && realmSite()) useDayEndStore.getState().begin("live");
+      const seasonEndsAt = Number(world.store.get("GameRegistry", { game_id: world.gameId })?.end_at ?? 0);
+      if (chain !== null && !seasonOver(seasonEndsAt, world.chainNow()) && realmSite())
+        useDayEndStore.getState().begin("live");
     }
     if (block !== blockDay) {
       blockDay = block;
