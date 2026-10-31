@@ -36,10 +36,10 @@ const config: CosignerConfig = {
   shards: [
     {
       chainId: "0x2",
-      rpcUrl: "https://trusted-shard.test",
+      rpcUrl: "http://127.0.0.1:8080",
       gamesAddress: "0x20",
       firstRelease: 1,
-      heraldUrl: "https://trusted-herald.test",
+      heraldUrl: "http://127.0.0.1:8081",
     },
   ],
 };
@@ -54,7 +54,8 @@ const payment: PayoutTerms = {
   count: 0,
 };
 const identity = vi.fn<typeof fetch>();
-const run = (input: unknown = payment) => createCosigner(config, key, identity).sign(input);
+const wallets = { assertWallet: vi.fn() };
+const run = (input: unknown = payment) => createCosigner(config, key, wallets, identity).sign(input);
 beforeEach(() => {
   vi.resetAllMocks();
   calls.chain.mockResolvedValue(config.l2ChainId);
@@ -81,7 +82,7 @@ beforeEach(() => {
   identity.mockImplementation(async () => Response.json({ identity: { realmsId: "0x1", wallet: "0x123" } }));
 });
 it("serves an exact signature from independent sources in the request, without a clock delay", async () => {
-  const signer = createCosigner(config, key, identity);
+  const signer = createCosigner(config, key, wallets, identity);
   const response = await handleCosignRequest(
     new Request("https://cosigner.test/sign", {
       method: "POST",
@@ -101,6 +102,7 @@ it("serves an exact signature from independent sources in the request, without a
     ),
   ).toBe(true);
   expect(calls.receipt).toHaveBeenCalledExactlyOnceWith("0x2", "0xabc");
+  expect(wallets.assertWallet).toHaveBeenCalledExactlyOnceWith("0x456", "0x1", "0x123");
   expect(calls.funding.mock.calls[0]![0].connection).toEqual(config.shards[0]);
   expect(calls.funding.mock.calls[0]![1]()).toEqual({ rpcUrl: config.l2RpcUrl, address: config.ledgerAddress });
   expect(identity.mock.calls[0]![0].toString()).toBe(
@@ -158,7 +160,7 @@ it("independently verifies settlement and signs only its exact totals", async ()
   const signature = await run(terms);
   expect(calls.settlement).toHaveBeenCalledExactlyOnceWith(
     config.shards[0],
-    "https://trusted-herald.test",
+    "http://127.0.0.1:8081",
     { chainId: "0x2", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" },
     { rpcUrl: config.l2RpcUrl, address: config.ledgerAddress },
   );
@@ -176,8 +178,41 @@ it("rejects unauthenticated HTTP requests before reading game state", async () =
   const response = await handleCosignRequest(
     new Request("https://cosigner.test/sign", { method: "POST", body: JSON.stringify(payment) }),
     config,
-    createCosigner(config, key, identity),
+    createCosigner(config, key, wallets, identity),
   );
   expect(response.status).toBe(401);
   expect(calls.read).not.toHaveBeenCalled();
+});
+
+it.each(["rpcUrl", "heraldUrl"] as const)("refuses a public or DNS-selected %s before any request", (field) => {
+  for (const endpoint of [
+    "https://shard.example",
+    "http://shard.example",
+    "http://localhost:8080",
+    "https://127.0.0.1:8080",
+    "http://127.0.0.1.attacker.test:8080",
+    "http://user@127.0.0.1:8080",
+  ]) {
+    expect(() =>
+      createCosigner({ ...config, shards: [{ ...config.shards[0]!, [field]: endpoint }] }, key, wallets, identity),
+    ).toThrow("cosigner_shard_requires_numeric_loopback_http");
+  }
+  expect(calls.chain).not.toHaveBeenCalled();
+});
+it("withholds the HTTP signature when the independent wallet record refuses a change", async () => {
+  wallets.assertWallet.mockImplementation(() => {
+    throw new Error("cosigner_wallet_change_waiting");
+  });
+  const response = await handleCosignRequest(
+    new Request("https://cosigner.test/sign", {
+      method: "POST",
+      headers: { authorization: `Bearer ${config.requestToken}` },
+      body: JSON.stringify(payment),
+    }),
+    config,
+    createCosigner(config, key, wallets, identity),
+  );
+  expect(response.status).toBe(503);
+  expect(await response.json()).toEqual({ error: "cosigning_refused" });
+  expect(wallets.assertWallet).toHaveBeenCalledExactlyOnceWith("0x456", "0x1", "0x123");
 });

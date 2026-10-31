@@ -109,3 +109,9 @@ seed. For sweep, deadline settlement and carry rules, follow the ledger's
 
 Staging selects `contracts/common/addresses/dev.json`; production selects `production.json`. Both run on `SN_MAIN`, with
 separate ledger and value-token addresses. Dev uses the no-value test token, never production LORDS.
+
+The box co-signer reads shard RPC and Herald through numeric loopback, never their Cloudflare tunnel hostnames. Its
+persistent recipient record holds a changed wallet for 24 hours, while unchanged wallets remain immediate. Known
+gameplay accounts cannot be reassigned to another Realms ID to bypass that record. First-seen identity bindings and
+sustained identity compromise remain outside this protection; see the box deployment procedure for backup and relink
+rehearsal. The relay uses Worker-supported manual redirect handling and refuses every non-success co-signer response.

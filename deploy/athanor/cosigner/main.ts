@@ -1,5 +1,6 @@
 import { existsSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { ec } from "starknet";
+import { openCosignerWallets } from "./wallets";
 import { createCosigner, handleCosignRequest, type CosignerConfig } from "../../../apps/value-relay/src/cosigner";
 
 /** Run only on the independent host; the private key is never an input to Worker deployment. */
@@ -33,14 +34,6 @@ function readConfig(path: string): CosignerConfig & { port: number } {
     )
       throw new Error("cosigner_shard_invalid");
     seen.add(chain);
-    for (const value of [shard.rpcUrl, shard.heraldUrl]) {
-      const url = new URL(value);
-      if (
-        url.protocol !== "https:" &&
-        !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname))
-      )
-        throw new Error("cosigner_shard_url_invalid");
-    }
   }
   return config;
 }
@@ -54,7 +47,11 @@ if (command === "init-key" && configPath && !keyPath) {
   console.log(JSON.stringify({ publicKey: ec.starkCurve.getStarkKey(key) }));
 } else if (command === "serve" && configPath && keyPath) {
   const config = readConfig(configPath);
-  const signer = createCosigner(config, privateFile(keyPath));
+  const signer = createCosigner(
+    config,
+    privateFile(keyPath),
+    openCosignerWallets("/var/lib/payout-cosigner/wallets.sqlite"),
+  );
   Bun.serve({
     hostname: "127.0.0.1",
     port: config.port,

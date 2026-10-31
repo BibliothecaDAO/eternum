@@ -26,8 +26,18 @@ export interface CosignerConfig {
   shards: (ShardConnection & { heraldUrl: string })[];
 }
 
+export interface CosignerWallets {
+  assertWallet(account: string, realmsId: string, wallet: string): void;
+}
+
 /** No operator-provided source, wallet lookup or digest is trusted; source connections belong to the box configuration. */
-export function createCosigner(config: CosignerConfig, privateKey: string, network: typeof fetch = fetch) {
+export function createCosigner(
+  config: CosignerConfig,
+  privateKey: string,
+  wallets: CosignerWallets,
+  network: typeof fetch = fetch,
+) {
+  requireLocalShardSources(config.shards);
   const publicKey = ec.starkCurve.getStarkKey(privateKey);
   const provider = rpcAt(config.l2RpcUrl);
   const identity = (account: string) => readPayoutIdentity(config, account, network);
@@ -47,7 +57,7 @@ export function createCosigner(config: CosignerConfig, privateKey: string, netwo
       if (BigInt(domain.publicKey) !== BigInt(publicKey)) throw new Error("cosigner_key_differs");
       if (paused.length !== 1 || BigInt(paused[0]!) !== 0n) throw new Error("cosigner_ledger_paused");
       if (request.kind === "pay") {
-        await verifyPayment(config, shard, request, identity, read);
+        await verifyPayment(config, shard, request, identity, read, wallets);
       } else {
         await verifySettlement(config, shard, request);
       }
@@ -65,6 +75,7 @@ async function verifyPayment(
   request: PayoutTerms,
   identity: (account: string) => ReturnType<typeof readPayoutIdentity>,
   read: (entrypoint: string, calldata: string[]) => Promise<string[]>,
+  wallets: CosignerWallets,
 ) {
   const reader = new ShardReader(shard);
   const bindings = frontierReceiptBindings(
@@ -81,6 +92,7 @@ async function verifyPayment(
   if (!player || BigInt(player.wallet) !== BigInt(request.wallet)) throw new Error("cosigner_wallet_differs");
   const reported = decodeWithdrawalPayment(await read("get_payment", [request.shard, request.claim]));
   if (!reported || reported.paid || !matchesReceipt(request, reported)) throw new Error("cosigner_report_differs");
+  wallets.assertWallet(receipt.account, player.realmsId, player.wallet);
 }
 async function verifySettlement(
   config: CosignerConfig,
@@ -151,5 +163,15 @@ export async function handleCosignRequest(
     return Response.json(await signer.sign(JSON.parse(body)), { headers: { "cache-control": "no-store" } });
   } catch {
     return Response.json({ error: "cosigning_refused" }, { status: 503 });
+  }
+}
+
+function requireLocalShardSources(shards: CosignerConfig["shards"]) {
+  for (const shard of shards) {
+    for (const endpoint of [shard.rpcUrl, shard.heraldUrl]) {
+      const url = new URL(endpoint);
+      if (url.protocol !== "http:" || !["127.0.0.1", "[::1]"].includes(url.hostname) || url.username || url.password)
+        throw new Error("cosigner_shard_requires_numeric_loopback_http");
+    }
   }
 }

@@ -86,9 +86,11 @@ Create `/etc/payout-cosigner/config.json`, owned by `payout-cosigner`, mode `060
   `/api/operator/payout-identity?account=...` directly for the receipt account's current verified wallet.
 - `requestToken`: the same request token supplied as setup's `cosignerToken`.
 - `port`: the assigned loopback port; expose only `/sign` and `/health` through the host's HTTPS proxy.
-- `shards`: reviewed entries with `chainId`, `rpcUrl`, `gamesAddress`, `firstRelease` and `heraldUrl`, copied from the
-  box's deployment manifests. Requests cannot alter these sources. Add a newly funded shard before sending its claims;
-  keep retiring shards listed until their claims are settled.
+- `shards`: copy only `chainId`, `gamesAddress` and `firstRelease` from the reviewed box manifests. Set `rpcUrl` to
+  `http://127.0.0.1:8080` and `heraldUrl` to `http://127.0.0.1:8081` (the stack's local published ports). Do not copy
+  the public tunnel hostnames. Startup requires HTTP on numeric loopback, including IPv6 `::1`, for both sources. For
+  another local stack, use its explicitly assigned loopback ports. Requests cannot alter these sources. Keep retiring
+  shards listed until their claims are settled.
 
 Both the key and configuration files must have mode `0600`. The service binds only `127.0.0.1`; startup refuses invalid
 configuration. Install/start the unit after funding bindings and identity routing are available. `/health` identifies
@@ -96,6 +98,20 @@ the process and public key; it is not proof that a particular claim can be verif
 withdrawal, then check the L2 wallet and `get_payment`; also rehearse deadline carry and signer outage/recovery. The
 service signs synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked
 in the deployment rehearsal.
+
+The systemd unit owns `/var/lib/payout-cosigner` (mode `0700`); its `wallets.sqlite` database is mode `0600`. Preserve
+this database across updates, restarts and key rotations, and back it up with the box state. Deleting it or restoring an
+older copy loses recipient history. After verifying a payment, the service pins the receipt account's Realms ID and that
+ID's wallet independently of Cloudflare. A different wallet is logged and refused for 24 hours from its first
+observation. Another observed candidate restarts the hold; observing the known wallet cancels it. A changed Realms ID
+for a known gameplay account is refused, so identity cannot bypass the hold by changing the cache key. Investigate
+`cosigner_wallet_change_waiting` and `cosigner_account_identity_changed` journal entries; do not delete the database to
+clear them. Ordinary unchanged wallets have no added delay. Rehearse a relink and restart before player funding.
+
+This is a hold based on observations during signing requests, not a player-signed wallet binding: first-seen account/ID
+bindings still trust identity, and an attacker controlling identity for 24 hours can satisfy a held wallet change.
+Changes between observations are not independently witnessed. Player-signed bindings are still needed to close those
+gaps. The box process must read the game node and Herald directly on loopback; Cloudflare cannot choose those facts.
 
 For rotation, pause the ledger, generate a new box key, have the cold admin call `set_cosigner(public_key)`, update the
 box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch, invalidating
