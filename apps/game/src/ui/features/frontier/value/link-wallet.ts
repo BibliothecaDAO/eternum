@@ -26,7 +26,7 @@ type FrontierClaims = { deadline: number; closed: boolean };
  * deadline and its LORDS carry to the next season): paid; void once the season closed, or its claim deadline passed
  * unpaid; else pending, still owed. Undefined until the ledger answers.
  */
-export const receiptState = (
+const receiptState = (
   paid: boolean | undefined,
   claims: FrontierClaims | undefined,
   now: number,
