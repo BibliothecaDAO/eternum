@@ -295,7 +295,7 @@ it.each([
     home: "a golden Devcon home",
     campaign: { campaign_id: DEVCON_ID, tier: 2 },
     balance: 0,
-    name: "Realm Labor +2,000 labor +2,000 Essence",
+    name: "Realm Labor +2,000 Labor +2,000 Essence",
     shows: "+2K",
     icons: ["labor", "essence"],
   },
@@ -304,7 +304,7 @@ it.each([
     campaign: { campaign_id: DEVCON_ID, tier: 2 },
     balance: 0,
     goldenEssence: 3000n,
-    name: "Realm Labor +2,000 labor +3,000 Essence",
+    name: "Realm Labor +2,000 Labor +3,000 Essence",
     shows: "+2K+3K",
     icons: ["labor", "essence"],
   },
@@ -312,7 +312,7 @@ it.each([
     home: "a regular Devcon home",
     campaign: { campaign_id: DEVCON_ID, tier: 1 },
     balance: 0,
-    name: "Realm Labor +1,000 labor +1,000 Essence",
+    name: "Realm Labor +1,000 Labor +1,000 Essence",
     shows: "+1K",
     icons: ["labor", "essence"],
   },
@@ -320,7 +320,7 @@ it.each([
     home: "a golden Devcon home whose Labor store is full",
     campaign: { campaign_id: DEVCON_ID, tier: 2 },
     balance: 18000,
-    name: "Realm Labor +2,000 labor +2,000 Essence",
+    name: "Realm Labor +2,000 Labor +2,000 Essence",
     shows: "+2K",
     icons: ["labor", "essence"],
   },
@@ -328,7 +328,7 @@ it.each([
     home: "a home founded with a held Realm",
     campaign: undefined,
     balance: 0,
-    name: "Realm Labor +1,000 labor",
+    name: "Realm Labor +1,000 Labor",
     shows: "+1K",
     icons: ["labor"],
   },
@@ -361,7 +361,7 @@ it("on a phone's purse row, keeps each amount with its own icon", async () => {
   try {
     await act(async () => root.render(<Chip narrow />));
     const chip = host.querySelector("button")!;
-    expect(chip.getAttribute("aria-label")).toBe("Realm Labor +2,000 labor +2,000 Essence");
+    expect(chip.getAttribute("aria-label")).toBe("Realm Labor +2,000 Labor +2,000 Essence");
     // Each amount keeps its own icon there: +2K Labor, +2K Essence.
     expect(chip.textContent).toBe("+2K+2K");
     expect([...chip.querySelectorAll("[data-icon]")].map((icon) => icon.getAttribute("data-icon"))).toEqual([

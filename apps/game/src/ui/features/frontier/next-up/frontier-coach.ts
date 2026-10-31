@@ -1,5 +1,5 @@
 import { BuildingType, frontierSiteName, StructureType } from "@bibliothecadao/types";
-import { LABOR } from "@/ui/design-system/kit/words";
+import { FRONTIER_STORES } from "../stores";
 import type { NextUpFacts } from "./next-up-facts";
 
 /**
@@ -75,9 +75,9 @@ const alerts = (facts: NextUpFacts, at: At): FrontierCoachStep[] => [
     ? [
         step(
           "store-full",
-          `Your ${facts.storeFull} storage is full`,
-          // Labor is spent on the realm board; wheat and troops by Deploy.
-          ...(facts.storeFull === LABOR.toLowerCase()
+          `Your ${FRONTIER_STORES[facts.storeFull].word} storage is full`,
+          // Where the store is spent: labor on the realm board, wheat and troops by Deploy.
+          ...(FRONTIER_STORES[facts.storeFull].made.spentAt === "realm"
             ? (["Open the realm", "realm"] as const)
             : (["Deploy", "deploy"] as const)),
         ),

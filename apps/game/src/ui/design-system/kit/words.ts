@@ -16,7 +16,7 @@ import {
   formatDuration,
   getRelicInfo,
   relicEffect,
-  type ResourcesIds,
+  ResourcesIds,
   formatCharge,
   resourceName,
   formatHeldAgainst,
@@ -102,10 +102,12 @@ export const CLOSE = "Close";
 export const KEEP = "Keep";
 
 export { XP, xpGainedLine } from "@bibliothecadao/types";
-export const ESSENCE = "Essence";
-export const LABOR = "labor";
-export const WHEAT = "wheat";
-export const TROOPS = "troops";
+/** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
+export const ESSENCE = resourceName(ResourcesIds.Essence);
+export const LABOR = resourceName(ResourcesIds.Labor);
+export const WHEAT = resourceName(ResourcesIds.Wheat);
+/** The realm's troops, as a store and an army's figure are named. */
+export const TROOPS = "Troops";
 export const STAMINA = "stamina";
 /** The explores a Well's stamina buys the army it refills: "+3 explores". */
 export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
@@ -480,7 +482,7 @@ export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
-export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
+export const troopCount = (count: number) => formatCount(count, "troop");
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -1383,7 +1385,7 @@ export const RESEARCH_TREE = {
     scouting: (value: string) => `${value} discovery`,
     homecoming: (value: string) => `${value} come home`,
   },
-  nouns: { essence: ESSENCE, labor: "Labor" },
+  nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   enters: (depth: string) => `Armies enter ${depth} at the spire`,

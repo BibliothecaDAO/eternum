@@ -51,12 +51,12 @@ describe("Frontier's Next up", () => {
     ]);
     // A full labor store is spent in the realm: there its line stands alone (audit 10-27: "Open the realm" did nothing).
     expect(lines({ barracks: true, armies: 1, storeFull: "labor" }, "mouse", "realm")[0]).toEqual([
-      "Your labor storage is full",
+      "Your Labor storage is full",
       null,
       null,
     ]);
     expect(lines({ barracks: true, armies: 1, storeFull: "labor" }, "mouse", "map")[0]).toEqual([
-      "Your labor storage is full",
+      "Your Labor storage is full",
       "Open the realm",
       "realm",
     ]);

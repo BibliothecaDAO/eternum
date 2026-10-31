@@ -71,9 +71,9 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   expect(named()).toEqual(
     expect.arrayContaining([
       "Essence 18,250",
-      "labor 9,640 of 18,000 · +10/min · Full in 2h",
-      "wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "troops 1,200 of 6,000 · +10/min · Full in 2h",
+      "Labor 9,640 of 18,000 · +10/min · Full in 2h",
+      "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
+      "Troops 1,200 of 6,000 · +10/min · Full in 2h",
       "LORDS 1,240",
     ]),
   );
@@ -113,7 +113,9 @@ it("opens a store's card under the rings from the ring of a store that has one",
   expect(host.textContent).not.toContain("wheat card");
   // Essence has no card: its ring is not a button.
   expect(host.querySelector('button[aria-label="Essence 18,250"]')).toBeNull();
-  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="wheat 4,410"]')!.click());
+  // Pressed by the store it stands for, as the playtest's wheat-store step finds it (steps.mjs).
+  expect(host.querySelector('[data-store="wheat"] button')?.getAttribute("aria-label")).toMatch(/^Wheat 4,410/);
+  act(() => host.querySelector<HTMLButtonElement>('[data-store="wheat"] button')!.click());
   expect(onToggle).toHaveBeenCalledWith("wheat");
   render("wheat");
   expect(host.textContent).toContain("wheat card");

@@ -590,7 +590,7 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
         const sides = [
           ...document.querySelectorAll('section[role=dialog] .ui-frame__body > .flex.gap-2 [role="img"]'),
         ].map((side) => side.getAttribute("aria-label"));
-        expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `troops 1,100 → ${kept[1]}`]);
+        expect(sides).toEqual([`Army 5,000 → ${kept[0]}`, `Troops 1,100 → ${kept[1]}`]);
         expect(document.querySelector('[role="status"]')?.textContent).toBe(line(TARGET_MARKS[target].word));
         expect(buttons().find((button) => button.textContent?.startsWith("Attack"))?.disabled).toBe(!attacks);
         // Attack's stamina is said once: its cost beside it, or why it is held back in the cost's place.
