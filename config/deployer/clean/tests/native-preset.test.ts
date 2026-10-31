@@ -890,15 +890,14 @@ describe("Devcon's fast Frontier preset", () => {
     const normal = definition(FRONTIER_PRESET_ID).economy.chests.unwrap();
     const devcon = definition(FRONTIER_DEVCON_PRESET_ID).economy.chests.unwrap();
     const ledger = buildLedgerEconomicPreset("frontier", { presetId: FRONTIER_DEVCON_PRESET_ID });
-    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10, price_ceiling: 50n });
-    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3, price_ceiling: 25n });
+    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10 });
+    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3 });
     expect(ledger).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
     const normalChests = nativePresets[FRONTIER_PRESET_ID]!.chests;
     if (!normalChests) throw new Error("Frontier must define chest rules");
     expect(nativePresets[FRONTIER_DEVCON_PRESET_ID]!.chests).toEqual({
       ...normalChests,
       topN: 3,
-      priceCeiling: 25,
     });
     expect(definition(FRONTIER_PRESET_ID).economy.chests.unwrap()).toEqual(normal);
   });

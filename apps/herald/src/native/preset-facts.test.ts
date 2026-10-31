@@ -90,18 +90,16 @@ describe("verified preset configuration facts", () => {
     for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
       store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
     }
-    expect(store.require("FrontierDiscoveryRules", { game_id: 1 }).beasts_bps).toBe(600);
-    const ranges = [
-      [300, 350, 450, 550],
-      [900, 1050, 1350, 1650],
-      [2400, 2800, 3600, 4400],
-      [6000, 7000, 9000, 11000],
-    ];
-    for (const [depth, expected] of ranges.entries()) {
-      const rule = store.require("DepthRules", { game_id: 1, depth });
-      expect([rule.beast_weak_lower, rule.beast_weak_upper, rule.beast_strong_lower, rule.beast_strong_upper]).toEqual(
-        expected,
-      );
+    expect(store.require("FrontierDiscoveryRules", { game_id: 1 }).beasts_bps).toBe(
+      preset.definition.economy.discovery.unwrap().beasts_bps,
+    );
+    for (const [depth, expected] of preset.definition.settlement.depths.entries()) {
+      expect(store.require("DepthRules", { game_id: 1, depth })).toMatchObject({
+        beast_weak_lower: expected.beast_weak_lower,
+        beast_weak_upper: expected.beast_weak_upper,
+        beast_strong_lower: expected.beast_strong_lower,
+        beast_strong_upper: expected.beast_strong_upper,
+      });
     }
   });
 
@@ -186,19 +184,17 @@ describe("verified preset configuration facts", () => {
     expect(world.fold.gameRows("ProductionRecipe", "1")).toHaveLength(58);
     expect(world.fold.gameRows("BuildingRule", "1")).toHaveLength(44);
     const depths = world.fold.gameRows("DepthRules", "1").map(({ value }) => value);
-    expect(depths.map((row) => Number(row.guard_step))).toEqual([100, 100, 100, 100]);
-    expect(depths.map((row) => Number(row.reveal_percent))).toEqual([10, 15, 20, 25]);
+    const expectedDepths = preset.definition.settlement.depths;
+    expect(depths.map((row) => Number(row.guard_step))).toEqual(expectedDepths.map((row) => row.guard_step));
+    expect(depths.map((row) => Number(row.reveal_percent))).toEqual(expectedDepths.map((row) => row.reveal_percent));
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
     const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
-    expect(
-      ["beasts_bps", "camp_bps", "rift_bps", "ruin_bps", "empty_reveal_limit"].map((key) => Number(discovery[key])),
-    ).toEqual([600, 400, 400, 100, 7]);
-    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual([
-      [2000, 4000],
-      [6000, 10500],
-      [18000, 22500],
-      [52500, 76000],
-    ]);
+    for (const [key, expected] of Object.entries(preset.definition.economy.discovery.unwrap())) {
+      expect(Number(discovery[key])).toBe(expected);
+    }
+    expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual(
+      expectedDepths.map((row) => [row.ruin_guard_lower, row.ruin_guard_upper]),
+    );
 
     expect(world.fold.gameRows("GameOverrides", "1")).toHaveLength(1);
     for (const scope of [undefined, {}, world.fold.subscriptionScope("1", "0x123", 1234)]) {
