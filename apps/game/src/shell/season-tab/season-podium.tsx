@@ -12,18 +12,21 @@ import { type PodiumPlace, seasonPodium } from "@/ui/features/frontier/board/sea
  * A Frontier season's top prizes over its board, on the app's Season tab and on a finished season's Results (the
  * owner's pick A, 30 October 2026): a tile per prize place, second, first and third, the first raised; its medal, its
  * LORDS and who holds it (seasonPodium), or why no one does yet. While no pool is published,
- * the medals stand with "—" and say so; with no place paid, nothing.
+ * the medals stand with "—" and say so; with no place paid, or a season ended with no pool, nothing.
  */
 export const SeasonPodium = ({
   board,
   own,
+  over,
 }: {
   board: HeraldFrontierLeaderboard;
   /** The player's own address, whose name reads as theirs. */
   own: string | undefined;
+  /** Whether the season has ended, when a pool not published never will be. */
+  over: boolean;
 }) => {
   const podium = seasonPodium(board);
-  if (podium?.length === 0) return null;
+  if (podium?.length === 0 || (podium === null && over)) return null;
   const places: PodiumPlace[] = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" }));
   return (
     <ol aria-label={SEASON_PRIZES} className="grid grid-cols-3 items-end gap-2 px-4 py-3">

@@ -132,3 +132,9 @@ export const seasonPodium = (board: {
     holder: holders[index] ? { address: holders[index].address } : "open",
   }));
 };
+
+/** Who won a season: its first prize place's holder, else the board's first to clear a site; none while no one has. */
+export const seasonWinner = (board: Parameters<typeof seasonPodium>[0]): string | undefined => {
+  const first = seasonPodium(board)?.[0]?.holder;
+  return typeof first === "object" ? first.address : frontierPrizeHolders(board.entries, 1)[0]?.address;
+};

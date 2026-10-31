@@ -440,7 +440,7 @@ const FrontierResult = ({
         </AppPanel>
         <div data-age="frontier" className="lg:col-span-4">
           <AppPanel title={frontier.name} icon="leaderboard" painting={frontier.painting} flush>
-            <SeasonPodium board={board} own={own?.address} />
+            <SeasonPodium board={board} own={own?.address} over />
             {rows.map(({ entry, own: isOwn }) => (
               <FrontierRow key={entry.address} entry={entry} own={isOwn} />
             ))}

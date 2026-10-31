@@ -875,6 +875,8 @@ export const SEASON_WORDS = {
   boardEmpty: "No realm yet. Found one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
+  /** Frontier's seasons that have ended, under its board. */
+  pastSeasons: "Past seasons",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */

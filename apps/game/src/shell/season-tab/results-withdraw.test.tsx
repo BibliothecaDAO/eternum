@@ -124,3 +124,10 @@ it("names a finished season's winners by the ledger's receipts, split over the p
   expect(rows.map((row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null)).toEqual(["1", "2"]);
   expect(rows.every((row) => row.hasAttribute("data-line"))).toBe(true);
 });
+
+it("shows no podium for a season that ended with no prize pool, never one still to be published", async () => {
+  const { container } = await open();
+  expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
+  expect(container.textContent).not.toContain("Pool not published");
+  expect([...container.querySelectorAll("button.app-row")]).toHaveLength(2);
+});

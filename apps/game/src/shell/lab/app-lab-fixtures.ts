@@ -107,13 +107,34 @@ const frontier = (withRealm: boolean) =>
     player_state: withRealm ? owned : null,
   });
 
+/** Frontier's second season, over an hour ago and not settled yet: the directory still lists it. */
 const endedFrontier = game({
   game_id: 3,
   name: "frontier-0",
   status: "Ended",
+  season_number: 2,
+  clock: { start_settling_at: NOW - 21 * DAY, start_main_at: NOW - 21 * DAY, end_at: NOW - 3600, end_grace_seconds: 0 },
   player_count: 1240,
   player_state: owned,
 });
+
+/** Production's first Frontier season as it ended (31 October 2026, 09:46Z), settled: the history holds it. */
+export const LAB_SEASON_ONE = {
+  ...game({
+    game_id: 2,
+    name: "frontier-season-1",
+    status: "Settled",
+    season_number: 1,
+    clock: {
+      start_settling_at: 1_792_575_960,
+      start_main_at: 1_792_575_960,
+      end_at: 1_793_439_960,
+      end_grace_seconds: 0,
+    },
+    player_count: 45,
+  }),
+  shardUrl: "https://lab",
+};
 const liveBlitz = (member: boolean) =>
   game({
     game_id: 7,
@@ -189,6 +210,8 @@ export const LAB_SCREENS = {
   // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
   "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  // No Frontier season listed, the last one settled into the history: production after its first season (10-31).
+  "no-season": { signedIn: true, games: [liveBlitz(false), eternum] },
   // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
   "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -454,6 +477,42 @@ export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
   },
 };
 
+/** Production's first season's top twelve as its Herald served them once it ended: name, sites, chests, LORDS, level, Order. */
+const SEASON_ONE_ROWS = [
+  ["Volcanic", 166, 8, 650, 3, 10],
+  ["djizus", 136, 5, 1450, 3, 13],
+  ["Canzi", 114, 3, 450, 2, 8],
+  ["Nexonik", 59, 0, 0, 2, 13],
+  ["Krump", 50, 1, 50, 2, 7],
+  ["bal7hazar", 41, 3, 600, 2, 8],
+  ["FOCGIE", 38, 1, 500, 1, 15],
+  ["yang", 38, 1, 100, 2, 15],
+  ["dudendy", 28, 1, 1000, 2, 3],
+  ["Astavn", 13, 0, 0, 1, 9],
+  ["TsuAurym", 11, 0, 0, 1, 6],
+  ["Loaf", 9, 1, 50, 1, 4],
+] as const;
+const seasonOnePlayer = (index: number) => `0x${(0xd000 + index).toString(16)}`;
+
+/** Season 1's final board, with no prize pool: that season had none. */
+export const LAB_SEASON_ONE_BOARD: HeraldFrontierLeaderboard = {
+  game_id: "2",
+  mode: "frontier",
+  entries: SEASON_ONE_ROWS.map(([, sites, chests, lords, level, order], index) => ({
+    address: seasonOnePlayer(index),
+    structure_id: String(index + 1),
+    campaign: null,
+    rank: index + 1,
+    sites_cleared: { total: sites, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: chests,
+    rewards: { lords: String(lords), essence: "0", labor: "0" },
+    deepest_depth: 0,
+    level,
+    order,
+  })),
+  prize: null,
+};
+
 /** The board before any prize pool is published (the Season tab's podium says so). */
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
@@ -495,9 +554,10 @@ export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
 };
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
-export const LAB_PROFILES = Object.fromEntries(
-  NAMES.map((name, index) => [rival(index), { name, portrait: `0${(index % 9) + 1}` }]),
-);
+export const LAB_PROFILES = Object.fromEntries([
+  ...NAMES.map((name, index) => [rival(index), { name, portrait: `0${(index % 9) + 1}` }]),
+  ...SEASON_ONE_ROWS.map(([name], index) => [seasonOnePlayer(index), { name, portrait: `0${(index % 9) + 1}` }]),
+]);
 
 export const LAB_FINISHED_BLITZ = {
   ...liveBlitz(true),
