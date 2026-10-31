@@ -92,7 +92,7 @@ export function HomeSourcePicker({
 }
 
 /** One thing the player can found with: the account's campaign ticket, or one of its wallet's Realms. */
-type Choice =
+export type Choice =
   | { kind: "ticket"; campaign: CampaignKey; golden: boolean }
   | {
       kind: "realm";
@@ -104,7 +104,7 @@ type Choice =
       wonder: string | null;
     };
 
-const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
+export const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
 const valueOf = (choice: Choice) => (choice.kind === "ticket" ? "" : String(choice.realmId));
 
 /** The ticket first (its home claims Essence on top of Labor), then the Realms: wonders first, the richest, by number. */
@@ -304,7 +304,7 @@ const matches = (choice: Choice, query: string) => {
   return choice.name.toLowerCase().includes(asked) || String(choice.realmId).startsWith(asked);
 };
 
-function ChoiceButton({
+export function ChoiceButton({
   choice,
   picked,
   onPick,
