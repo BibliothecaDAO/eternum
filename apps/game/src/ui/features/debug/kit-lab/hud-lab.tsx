@@ -61,6 +61,7 @@ import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
+import { linkWalletLine, type PayoutWindow } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
@@ -83,6 +84,8 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
+/** The lab's season over an hour ago, its withdrawals closing a week after its end. */
+const LAB_PAYOUT_WINDOW: PayoutWindow = { endsAt: NOW - 3_600, closesAt: NOW - 3_600 + 7 * 86_400 };
 
 /** The handoff's fiction: Day 12 at 14:26, today ends at 21:40 (7h 14m left), tomorrow lasts 12h. */
 const CLOCK = {
@@ -854,6 +857,14 @@ const STATES = {
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
   "season-over-payout": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: true },
+  "season-over-payout-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    results: "over",
+    seasonLords: true,
+    noWallet: true,
+  },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
@@ -968,6 +979,7 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240 },
     withdraw: { ...WITHDRAW_500, wallet: null },
+    noWallet: true,
   },
   "withdraw-sending": {
     clock: CLOCK,
@@ -1082,6 +1094,8 @@ type LabState = {
   results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS waiting for automatic payout. */
   seasonLords?: boolean;
+  /** The account has no linked wallet to receive its LORDS: the purse marked, Withdraw and the season's card say so. */
+  noWallet?: boolean;
   season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
@@ -1177,7 +1191,12 @@ export const HudLab = () => {
           lab.purse && (
             <PurseRow>
               {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
-              <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
+              <LordsPurse
+                lords={lab.purse.lords}
+                gain={lab.purse.gain}
+                linkWalletLine={lab.noWallet ? linkWalletLine(undefined, NOW) : null}
+                onOpen={noop}
+              />
             </PurseRow>
           )
         }
@@ -1266,7 +1285,7 @@ export const HudLab = () => {
         }
       >
         {lab.deploy && <LabDeploySheet deploy={lab.deploy} open={labOpenSlots(lab)} />}
-        {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
+        {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
@@ -1546,6 +1565,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               onHome={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
+                linkWalletLine: lab.noWallet ? linkWalletLine(undefined, NOW) : null,
                 waiting: lab.purse?.realms,
                 storeCards: lab.storeCard && {
                   kinds: MADE_STORES,
@@ -1682,9 +1702,11 @@ const labSlots = (lab: LabState) =>
 const LabResults = ({
   results,
   seasonLords,
+  noWallet,
 }: {
   results: NonNullable<LabState["results"]>;
   seasonLords: LabState["seasonLords"];
+  noWallet: LabState["noWallet"];
 }) =>
   results === "over" || results === "over-strong" ? (
     <SeasonOverCard
@@ -1697,7 +1719,15 @@ const LabResults = ({
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
-      withdraw={seasonLords && <SeasonPayoutRow lords={1_240} />}
+      withdraw={
+        seasonLords && (
+          <SeasonPayoutRow
+            lords={1_240}
+            linkWalletLine={noWallet ? linkWalletLine(LAB_PAYOUT_WINDOW, NOW) : null}
+            onLinkWallet={noop}
+          />
+        )
+      }
       onSeason={noop}
       onExit={noop}
     />
@@ -1726,6 +1756,7 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
     <WithdrawSheet
       held={withdraw.held}
       wallet={withdraw.wallet}
+      linkWalletLine={linkWalletLine(undefined, NOW)}
       refusal={withdraw.refusal ?? null}
       step={withdraw.step}
       amount={amount}

@@ -27,6 +27,7 @@ const FRONTIER_STATES = [
   "season-detail",
   "season-over",
   "season-over-payout",
+  "season-over-payout-no-wallet",
   "visiting",
   "next-up-deploy",
 ];
@@ -142,6 +143,14 @@ const proveSurface = async (b, baseUrl, out, surface) => {
   await sleep(SETTLE_MS);
   b.run("screenshot", join(out, fileName(surface)));
   record.checks.push(...windowChecks(b));
+  if (surface === "frontier/season-over-payout-no-wallet")
+    record.checks.push({
+      check:
+        "An account with no linked wallet is told the date to link one by, with Link wallet, and no automatic payout",
+      ok: b.evaluate(`/Link a wallet by .+ or these LORDS go to the next season/.test(document.body.innerText) &&
+      !document.body.innerText.includes("paid out automatically") &&
+      [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Link wallet")`),
+    });
   if (surface === "frontier/season-over-payout")
     record.checks.push({
       check: "The remaining LORDS are paid automatically, with no end-of-season withdrawal action",
