@@ -26,7 +26,7 @@ interface FaultRow {
    * with none (a roster check, or one the previous version recorded) waives nothing: its reset re-observes.
    */
   fact?: string;
-  stream?: "reportedClaims" | "paidClaims" | "postedResults";
+  stream?: "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
 }
@@ -38,7 +38,7 @@ export interface MonitorProgress {
    */
   cleared?: string[];
   halted: string | null;
-  cursors?: Partial<Record<"reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
+  cursors?: Partial<Record<"reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -54,6 +54,7 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return progress;
     }
     const checks = [
+      checkReportedSettlements(ports, store),
       checkReportedClaims(ports, store),
       checkConservation(ports, store),
       checkPaidClaims(ports, store),
@@ -99,6 +100,24 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     if (unavailable) return yield* Effect.fail(unavailable);
     return null;
   });
+
+const checkReportedSettlements = (ports: MonitorPorts, store: MonitorStore) =>
+  checkLedgerPage(
+    "reportedSettlements",
+    ports.ledger.reportedSettlements,
+    (row) => `reportedSettlements:${hex(row.chainId)}:${row.gameId}`,
+    (row) =>
+      `reportedSettlements:${hex(row.chainId)}:${row.gameId}:${BigInt(row.chestWithdrawn)}:${BigInt(row.prizeWithdrawn)}`,
+    (report) =>
+      ports.shard
+        .settlementEvidence(report)
+        .pipe(
+          Effect.map((evidence) =>
+            evidence === null ? null : { reason: `reported_settlement_mismatch:${report.gameId}`, evidence },
+          ),
+        ),
+    store,
+  );
 
 const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
   checkLedgerPage(
@@ -181,7 +200,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
-  stream: "reportedClaims" | "paidClaims" | "postedResults",
+  stream: "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults",
   read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   fact: (row: A) => string,

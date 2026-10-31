@@ -133,11 +133,14 @@ const verifyReportedDebt = async (credentials: Credentials, rows: readonly Payab
 const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[]) => {
   if (!rows.length) return [];
   const head = await readConfirmedLedgerHead(context.provider);
-  const delay = await context.provider.callContract(
-    { contractAddress: context.credentials.contractAddress, entrypoint: "pay_delay", calldata: [] },
+  const limits = await context.provider.callContract(
+    { contractAddress: context.credentials.contractAddress, entrypoint: "payout_allowance", calldata: [] },
     head.number,
   );
-  if (delay.length !== 1) throw new Error("invalid_pay_delay");
+  if (limits.length !== 7) throw new Error("invalid_payout_allowance");
+  const capacity = BigInt(ledgerU256(limits[0]!, limits[1]!));
+  let allowance = BigInt(ledgerU256(limits[4]!, limits[5]!));
+  const delay = BigInt(limits[6]!);
   const budgets = new Map<string, bigint | null>(),
     payable: PayableClaim[] = [],
     preparing: PayableClaim[] = [],
@@ -158,17 +161,21 @@ const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[
       waiting.push(resultOf(row.withdrawal, "ledger_season_closed"));
       continue;
     }
-    if (payment && BigInt(payment.wallet) !== BigInt(row.wallet)) {
+    const amount = BigInt(row.withdrawal.amount);
+    const slow = row.withdrawal.prizeRank > 0 || amount > capacity;
+    if (slow && payment && BigInt(payment.wallet) !== BigInt(row.wallet)) {
       preparing.push(row);
       continue;
     }
-    if (!payment || BigInt(head.time) < BigInt(payment.reportedAt) + BigInt(delay[0]!))
+    if (!payment || (slow && BigInt(head.time) < BigInt(payment.reportedAt) + delay))
       waiting.push(resultOf(row.withdrawal, "ledger_payment_delay"));
     else if (BigInt(row.withdrawal.amount) > available)
       waiting.push(resultOf(row.withdrawal, "ledger_unlock_exceeded"));
+    else if (!slow && amount > allowance) waiting.push(resultOf(row.withdrawal, "ledger_payout_allowance_spent"));
     else {
       payable.push(row);
-      budgets.set(key, available - BigInt(row.withdrawal.amount));
+      if (!slow) allowance -= amount;
+      budgets.set(key, available - amount);
     }
   }
   const prepared = (await submitBatch(context, preparing, "prepare")).map((row) => ({

@@ -40,7 +40,11 @@ beforeEach(() => {
   vi.resetAllMocks();
   rpc.head.mockResolvedValue({ number: 10, time: 100 });
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "frontier_claim_deadline" ? ["604900"] : season(),
+    entrypoint === "frontier_claim_deadline"
+      ? ["604900"]
+      : entrypoint === "get_settlement"
+        ? ["400", "0", "300", "0", "100"]
+        : season(),
   );
   rpc.contract.mockResolvedValue({
     abi: [{ type: "interface", items: [{ type: "function", name: "settle_frontier" }] }],
@@ -83,14 +87,6 @@ it("a reverted close remains an error to retry", async () => {
   await expect(run()).rejects.toThrow("frontier_settlement_reverted");
 });
 
-it("keeps the existing dev ledger on its administrator's deadline-based close", async () => {
-  rpc.contract.mockResolvedValue({
-    abi: [{ type: "interface", items: [{ type: "function", name: "close_frontier" }] }],
-  });
-  await run();
-  expect(rpc.execute).not.toHaveBeenCalled();
-});
-
 it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadline passes", async () => {
   rpc.read.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "frontier_claim_deadline" ? ["604900"] : season("300", "200"),
@@ -106,4 +102,25 @@ it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadl
     calldata: ["1", "7", "300", "0", "200", "0"],
   });
   expect(rpc.read).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "frontier_claim_deadline" }), 11);
+});
+
+it("reports an early close, waits until its hour is up, then closes without restarting the clock", async () => {
+  let report = ["0", "0", "0", "0", "0"];
+  rpc.read.mockImplementation(async ({ entrypoint }) =>
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : entrypoint === "get_settlement" ? report : season(),
+  );
+  await run();
+  expect(rpc.execute).toHaveBeenLastCalledWith({
+    contractAddress: "0x30",
+    entrypoint: "report_settlement",
+    calldata: ["1", "7", "400", "0", "300", "0"],
+  });
+  report = ["400", "0", "300", "0", "3700"];
+  rpc.execute.mockClear();
+  rpc.head.mockResolvedValue({ number: 11, time: 3699 });
+  await run();
+  expect(rpc.execute).not.toHaveBeenCalled();
+  rpc.head.mockResolvedValue({ number: 12, time: 3700 });
+  await run();
+  expect(rpc.execute).toHaveBeenLastCalledWith(expect.objectContaining({ entrypoint: "settle_frontier" }));
 });

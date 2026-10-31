@@ -15,10 +15,17 @@ independent of Blitz/MMR season windows. Ledger time is its Starknet block times
 timestamp. Numeric day boundaries match exactly for equal launch inputs and timestamps. There is no documented hard
 bound on cross-chain clock lag: the relay must retain a confirmed claim while L2's unlocked amount is insufficient and
 submit once the independent L2 gate fits. Do not trust a relay-supplied future timestamp or unlock future days to
-conceal clock lag. Operator payments are retry-safe, bounded by the cumulative unlock, and wait for `pay_delay()` after
-recipient preparation (currently 600 seconds). The separate monitor checks receipts and recipient authority during that
-interval and can pause before payment. They carry no treasury cut. Only the admin unpauses; the pauser can pause
-payouts.
+conceal clock lag. Operator payments are retry-safe and bounded by the cumulative unlock. Normal chest withdrawals pay
+immediately from a ledger-wide token bucket, initialized in the constructor with 5,000 LORDS capacity and 5,000
+LORDS/hour refill. `payout_allowance()` returns capacity, hourly refill, available balance and slow-lane delay. The cold
+admin can change capacity and refill through `set_payout_allowance`, each between 1 and 5,000 LORDS; changing settings
+never replenishes the bucket. A depleted allowance defers a claim until refill. These limits apply across all Frontier
+seasons and shards using this ledger. Payments carry no treasury cut.
+
+Prizes and single claims above the current capacity use a one-hour slow lane instead of the bucket. The separate monitor
+checks reports and recipient authority during that interval and can pause before payment. The pauser can pause; only the
+admin unpauses. A monitor outage can expose all unlocked custody once slow-lane claims mature: the allowance bounds
+instant payments, not every payment after an hour.
 
 ## Frontier settlement and carry
 
@@ -34,12 +41,12 @@ including after the manual claim window. Reports move no money; an unpaid-report
 any recorded claim remains unpaid; payment remains bounded by the pool's unlocked amount. There is no administrative
 report correction entry.
 
-Before a transfer, `prepare_payment(shard, claim_id, wallet)` binds the linked recipient and emits its reported claim
-again. `pay` requires that recipient and waits 600 seconds from preparation. Changing the recipient restarts the delay;
-an identical preparation is a no-op. The relay records the signed recipient decision through identity before broadcast,
-and the separate monitor checks it before payment. This adds one preparation transaction per batch, reuses the existing
-wallet field, and prevents redirecting a mature claim without another monitored delay. Missing-wallet claims can remain
-reported without a recipient; their delay starts once a wallet is linked and prepared.
+For slow-lane claims only, `prepare_payment(shard, claim_id, wallet)` binds the linked recipient and emits its reported
+claim again. `pay` requires that recipient and waits one hour from preparation. Changing the recipient restarts the
+delay; an identical preparation is a no-op. The relay records the signed recipient decision through identity before
+broadcast, and the separate monitor checks it before payment. Binding prevents redirection of an already mature large
+claim or prize, which would bypass the instant allowance. Normal claims need no preparation transaction. Missing-wallet
+claims remain reported without a recipient; their slow-lane wait starts once a wallet is prepared.
 
 The relay checks a confirmed post-end snapshot with no remaining realm LORDS and chest receipts equal to the consumed
 world budget. Before the claim deadline, it settles only when the prize pool is fully issued and all chest and prize
@@ -48,8 +55,12 @@ winners qualify, the unallocated prize reserve waits for the deadline too.
 
 `settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn)` is the only closure entrypoint. It requires an
 unpaused ledger, the operator role, the season's end and supplied totals equal to `paid` and `prize_paid`. Before the
-deadline it also requires no unpaid reports and the entire prize pool paid. The operator still attests world receipt
-completeness; the ledger cannot independently prove Herald's history or discover unreported obligations.
+deadline it also requires no unpaid reports, the entire prize pool paid and a matching `report_settlement` proposal at
+least one hour old. `get_settlement` exposes the proposed chest/prize totals and earliest close timestamp. Identical
+proposal retries preserve that timestamp; changed totals restart it. The independent monitor checks each
+`SettlementReported` event against a confirmed post-end shard snapshot, zero remaining realm LORDS, complete prize
+issuance and exact receipts, and pauses on disagreement. The ledger cannot independently prove shard history; preventing
+a forged early close depends on the monitor completing this check and landing a pause within the hour.
 
 Once the claim deadline passes on the confirmed L2 head, the relay settles with the L2 paid totals even if claims remain
 unpaid. Closure voids those claims, including missing-wallet claims, for both chests and prizes. New chest or prize

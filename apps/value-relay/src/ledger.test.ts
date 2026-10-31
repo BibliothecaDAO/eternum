@@ -363,3 +363,21 @@ it("enumerates confirmed withdrawal reports before payments using the compiled r
     }),
   );
 });
+
+it("enumerates compiled settlement reports on a confirmed cursor", async () => {
+  const event = ledgerEvent("SettlementReported", {
+    shard: "0x1",
+    season_id: 7,
+    chest_withdrawn: { low: 400, high: 0 },
+    prize_withdrawn: { low: 300, high: 0 },
+  });
+  rpc.events.mockResolvedValue({
+    events: [{ ...event, from_address: "0x10", transaction_hash: "0xdef", block_number: 900, block_hash: "0xa" }],
+    continuation_token: "",
+  });
+  const page = await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).reportedSettlements(null));
+  expect(page.rows).toEqual([{ chainId: event.keys[1], gameId: 7, chestWithdrawn: "400", prizeWithdrawn: "300" }]);
+  expect(rpc.events).toHaveBeenCalledWith(
+    expect.objectContaining({ keys: [[hash.getSelectorFromName("SettlementReported")]] }),
+  );
+});

@@ -7,7 +7,8 @@ use starknet::ContractAddress;
 
 pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
-pub const PAY_DELAY: u64 = 600;
+pub const SLOW_DELAY: u64 = 3600;
+pub const MAX_PAYOUT_ALLOWANCE: u256 = 5000 * 1000000000000000000;
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 // One settlement tick must fit after the last scheduled game.
@@ -26,7 +27,12 @@ pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
 
 #[starknet::interface]
 pub trait IGameLedger<TState> {
-    fn pay_delay(self: @TState) -> u64;
+    fn payout_allowance(self: @TState) -> (u256, u256, u256, u64);
+    fn set_payout_allowance(ref self: TState, capacity: u256, hourly_refill: u256);
+    fn report_settlement(
+        ref self: TState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
+    );
+    fn get_settlement(self: @TState, shard: felt252, season_id: u32) -> (u256, u256, u64);
     fn lords(self: @TState) -> ContractAddress;
     fn chest_collection(self: @TState) -> ContractAddress;
     fn pause(ref self: TState);
@@ -154,6 +160,11 @@ pub mod GameLedger {
         frontier_prize_count: Map<(felt252, u32), u16>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
         frontier_pending: Map<(felt252, u32), u64>,
+        settlement_reports: Map<(felt252, u32), (u256, u256, u64)>,
+        payout_capacity: u256,
+        payout_hourly_refill: u256,
+        payout_available: u256,
+        payout_updated_at: u64,
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
@@ -201,6 +212,8 @@ pub mod GameLedger {
         UpgradeableEvent: UpgradeableComponent::Event,
         FrontierFunded: FrontierFunded,
         WithdrawalReported: WithdrawalReported,
+        SettlementReported: SettlementReported,
+        PayoutAllowanceChanged: PayoutAllowanceChanged,
         WithdrawalPaid: WithdrawalPaid,
         FrontierClosed: FrontierClosed,
         PresetRegistered: PresetRegistered,
@@ -229,6 +242,22 @@ pub mod GameLedger {
         start: u64,
         end: u64,
         amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct SettlementReported {
+        #[key]
+        shard: felt252,
+        #[key]
+        season_id: u32,
+        chest_withdrawn: u256,
+        prize_withdrawn: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct PayoutAllowanceChanged {
+        capacity: u256,
+        hourly_refill: u256,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -416,6 +445,10 @@ pub mod GameLedger {
 
         self.loot_chest.write(loot_chest);
         self.cosmetics.write(cosmetics);
+        self.payout_capacity.write(super::MAX_PAYOUT_ALLOWANCE);
+        self.payout_hourly_refill.write(super::MAX_PAYOUT_ALLOWANCE);
+        self.payout_available.write(super::MAX_PAYOUT_ALLOWANCE);
+        self.payout_updated_at.write(starknet::get_block_timestamp());
     }
 
     #[abi(embed_v0)]
@@ -428,8 +461,29 @@ pub mod GameLedger {
 
     #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
-        fn pay_delay(self: @ContractState) -> u64 {
-            super::PAY_DELAY
+        fn payout_allowance(self: @ContractState) -> (u256, u256, u256, u64) {
+            let capacity = self.payout_capacity.read();
+            let rate = self.payout_hourly_refill.read();
+            let elapsed: u256 = (starknet::get_block_timestamp() - self.payout_updated_at.read()).into();
+            let available = self.payout_available.read() + elapsed * rate / 3600;
+            (capacity, rate, core::cmp::min(capacity, available), super::SLOW_DELAY)
+        }
+
+        fn set_payout_allowance(ref self: ContractState, capacity: u256, hourly_refill: u256) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(
+                capacity >= 1000000000000000000 && capacity <= super::MAX_PAYOUT_ALLOWANCE, "Ledger: allowance bounds",
+            );
+            assert!(
+                hourly_refill >= 1000000000000000000 && hourly_refill <= super::MAX_PAYOUT_ALLOWANCE,
+                "Ledger: allowance bounds",
+            );
+            let (_, _, available, _) = self.payout_allowance();
+            self.payout_available.write(core::cmp::min(capacity, available));
+            self.payout_updated_at.write(starknet::get_block_timestamp());
+            self.payout_capacity.write(capacity);
+            self.payout_hourly_refill.write(hourly_refill);
+            self.emit(PayoutAllowanceChanged { capacity, hourly_refill });
         }
         fn lords(self: @ContractState) -> ContractAddress {
             self.lords.read()
@@ -588,6 +642,7 @@ pub mod GameLedger {
             }
             assert!(!self.get_frontier(shard, reported.season_id).closed, "Ledger: season closed");
             assert!(wallet.is_non_zero(), "Ledger: invalid withdrawal");
+            assert!(reported.prize_rank > 0 || reported.amount > self.payout_capacity.read(), "Ledger: instant claim");
             if reported.wallet == wallet {
                 return;
             }
@@ -627,12 +682,17 @@ pub mod GameLedger {
             assert!(!season.closed, "Ledger: season closed");
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
-                reported.season_id == season_id && reported.amount == amount && reported.wallet == wallet,
-                "Ledger: conflicting withdrawal report",
+                reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
-            assert!(
-                starknet::get_block_timestamp() >= reported.reported_at + super::PAY_DELAY, "Ledger: payment delay",
-            );
+            let (capacity, _, available, delay) = self.payout_allowance();
+            if reported.prize_rank > 0 || amount > capacity {
+                assert!(reported.wallet == wallet, "Ledger: conflicting withdrawal report");
+                assert!(starknet::get_block_timestamp() >= reported.reported_at + delay, "Ledger: payment delay");
+            } else {
+                assert!(amount <= available, "Ledger: payout allowance spent");
+                self.payout_available.write(available - amount);
+                self.payout_updated_at.write(starknet::get_block_timestamp());
+            }
             let pending = self.frontier_pending.entry((shard, season_id)).read();
             self.frontier_pending.entry((shard, season_id)).write(pending - 1);
             if reported.prize_rank == 0 {
@@ -700,6 +760,37 @@ pub mod GameLedger {
             self.frontier_days.entry((shard, season_id)).write(season);
         }
 
+        fn get_settlement(self: @ContractState, shard: felt252, season_id: u32) -> (u256, u256, u64) {
+            self.settlement_reports.entry((shard, season_id)).read()
+        }
+
+        fn report_settlement(
+            ref self: ContractState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
+        ) {
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
+            let season = self.get_frontier(shard, season_id);
+            assert!(
+                !season.closed && starknet::get_block_timestamp() >= season.end, "Ledger: season not open for close",
+            );
+            assert!(
+                season.paid == chest_withdrawn
+                    && season.prize_paid == prize_withdrawn
+                    && self.frontier_pending.entry((shard, season_id)).read() == 0
+                    && season.prize_paid == season.prize_pool,
+                "Ledger: withdrawals not paid",
+            );
+            let (chest, prize, ready) = self.get_settlement(shard, season_id);
+            if ready != 0 && chest == chest_withdrawn && prize == prize_withdrawn {
+                return;
+            }
+            self
+                .settlement_reports
+                .entry((shard, season_id))
+                .write((chest_withdrawn, prize_withdrawn, starknet::get_block_timestamp() + super::SLOW_DELAY));
+            self.emit(SettlementReported { shard, season_id, chest_withdrawn, prize_withdrawn });
+        }
+
         fn settle_frontier(
             ref self: ContractState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
         ) {
@@ -711,6 +802,14 @@ pub mod GameLedger {
                 season.paid == chest_withdrawn && season.prize_paid == prize_withdrawn, "Ledger: withdrawals not paid",
             );
             if !season.closed && starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id) {
+                let (chest, prize, ready) = self.get_settlement(shard, season_id);
+                assert!(
+                    ready != 0
+                        && starknet::get_block_timestamp() >= ready
+                        && chest == chest_withdrawn
+                        && prize == prize_withdrawn,
+                    "Ledger: settlement delay",
+                );
                 assert!(
                     self.frontier_pending.entry((shard, season_id)).read() == 0
                         && season.prize_paid == season.prize_pool,

@@ -163,6 +163,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
       // The check always disagrees: neither identity nor the shard matches the ledger.
       identity: { matchesPayDecision: () => Effect.succeed(false) },
       shard: {
+        settlementEvidence: () => Effect.succeed(null),
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
           Effect.succeed({
@@ -179,6 +180,15 @@ describe.each(["paidClaims", "postedResults"] as const)(
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
+        reportedSettlements: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
         reportedClaims: () =>
           Effect.succeed({
             rows: [],
@@ -238,7 +248,7 @@ it("records the missing ledger after running shard conservation", async () => {
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     const observation = await f.monitor.tick();
-    expect(observation).toMatchObject({ value: null, value_error: "ledger reports unavailable" });
+    expect(observation).toMatchObject({ value: null, value_error: "ledger settlement reports unavailable" });
     expect(f.data.get("progress")).toBeUndefined();
     expect(f.data.get("observation")).toEqual(observation);
   }

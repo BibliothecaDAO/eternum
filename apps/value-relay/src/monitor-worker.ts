@@ -1,3 +1,4 @@
+import { frontierSettlementEvidence } from "./frontier-sweep";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
@@ -295,6 +296,11 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
           const { reader } = await shardPorts(chainId);
           return Effect.runPromise(shardResultPort(reader)(chainId, gameId));
         }),
+      settlementEvidence: (report) =>
+        relayOperation("audit proposed shard settlement", async () => {
+          const { reader, shard } = await shardPorts(report.chainId);
+          return frontierSettlementEvidence(reader.connection, shard.url, report);
+        }),
       conservation: () =>
         relayOperation("audit official shard conservation", async () => {
           const balances = [];
@@ -311,6 +317,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
       frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
+        ),
+      reportedSettlements: (...read: Parameters<LedgerPorts["reportedSettlements"]>) =>
+        relayOperation("ledger settlement reports unavailable", () =>
+          Effect.runPromise(ledgerReads().reportedSettlements(...read)),
         ),
       reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
         relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),

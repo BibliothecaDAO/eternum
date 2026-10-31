@@ -111,7 +111,10 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
 export const ledgerMonitorReads = (
   rpcUrl: string,
   ledger: LedgerContract,
-): Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool"> => {
+): Pick<
+  MonitorPorts["ledger"],
+  "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool"
+> => {
   const address = ledger.contractAddress;
   return {
     frontierPool: (chainId, gameId) =>
@@ -129,6 +132,10 @@ export const ledgerMonitorReads = (
           ),
         ).pool;
       }),
+    reportedSettlements: (cursor, fromBlock, anchor) =>
+      relayOperation("read ledger settlement reports", () =>
+        ledgerEventPage(rpcAt(rpcUrl), ledger, ["SettlementReported"], cursor, fromBlock, decodeSettlement, anchor),
+      ),
     reportedClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger reported claims", () =>
         ledgerEventPage(rpcAt(rpcUrl), ledger, ["WithdrawalReported"], cursor, fromBlock, decodeReport, anchor),
@@ -242,6 +249,16 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
     ...(typeof cursor.hash === "string" ? { hash: cursor.hash } : {}),
   };
 };
+const decodeSettlement = (event: EmittedEvent) => {
+  if (event.keys.length !== 3 || event.data.length !== 4) throw new Error("invalid_settlement_report_event");
+  return {
+    chainId: event.keys[1]!,
+    gameId: ledgerInteger(event.keys[2]!),
+    chestWithdrawn: ledgerU256(event.data[0]!, event.data[1]!),
+    prizeWithdrawn: ledgerU256(event.data[2]!, event.data[3]!),
+  };
+};
+
 const decodeReport = (event: EmittedEvent): ReportedClaim => {
   const { paymentTransactionHash, ...report } = decodePayment(event);
   return { ...report, reportTransactionHash: paymentTransactionHash };

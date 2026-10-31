@@ -93,10 +93,14 @@ const fixture = () => {
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
     ledger: RelayPorts["ledger"] &
-      Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool">;
-    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation" | "result">;
+      Pick<
+        MonitorPorts["ledger"],
+        "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool"
+      >;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "settlementEvidence" | "conservation" | "result">;
   } = {
     shard: {
+      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
       blockHash: () => Effect.succeed(block.hash),
@@ -144,6 +148,15 @@ const fixture = () => {
         ),
       ),
       postResult: vi.fn(() => Effect.void),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],

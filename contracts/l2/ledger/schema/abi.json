@@ -553,11 +553,71 @@
     "items": [
       {
         "type": "function",
-        "name": "pay_delay",
+        "name": "payout_allowance",
         "inputs": [],
         "outputs": [
           {
-            "type": "core::integer::u64"
+            "type": "(core::integer::u256, core::integer::u256, core::integer::u256, core::integer::u64)"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "set_payout_allowance",
+        "inputs": [
+          {
+            "name": "capacity",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "hourly_refill",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "report_settlement",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "chest_withdrawn",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "prize_withdrawn",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "get_settlement",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "(core::integer::u256, core::integer::u256, core::integer::u64)"
           }
         ],
         "state_mutability": "view"
@@ -1894,6 +1954,50 @@
   },
   {
     "type": "event",
+    "name": "game_ledger::contract::GameLedger::SettlementReported",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "key"
+      },
+      {
+        "name": "chest_withdrawn",
+        "type": "core::integer::u256",
+        "kind": "data"
+      },
+      {
+        "name": "prize_withdrawn",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "game_ledger::contract::GameLedger::PayoutAllowanceChanged",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "capacity",
+        "type": "core::integer::u256",
+        "kind": "data"
+      },
+      {
+        "name": "hourly_refill",
+        "type": "core::integer::u256",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
     "name": "game_ledger::contract::GameLedger::WithdrawalPaid",
     "kind": "struct",
     "members": [
@@ -2332,6 +2436,16 @@
       {
         "name": "WithdrawalReported",
         "type": "game_ledger::contract::GameLedger::WithdrawalReported",
+        "kind": "nested"
+      },
+      {
+        "name": "SettlementReported",
+        "type": "game_ledger::contract::GameLedger::SettlementReported",
+        "kind": "nested"
+      },
+      {
+        "name": "PayoutAllowanceChanged",
+        "type": "game_ledger::contract::GameLedger::PayoutAllowanceChanged",
         "kind": "nested"
       },
       {

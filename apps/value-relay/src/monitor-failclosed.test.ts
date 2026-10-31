@@ -18,12 +18,22 @@ const fixture = () => {
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
+      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: vi.fn(() => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }))),
       result: () => Effect.succeed(null),
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],

@@ -1,3 +1,4 @@
+import type { FrontierSettlement } from "./frontier-sweep";
 import { accountJoinErrors } from "@bibliothecadao/eternum/realms-account";
 import { Effect } from "effect";
 import { RelayFailure } from "./failure";
@@ -169,9 +170,15 @@ export interface MonitorPorts {
   shard: Pick<RelayPorts["shard"], "withdrawal"> & {
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
+    settlementEvidence(report: FrontierSettlement): RelayEffect<string | null>;
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
+    reportedSettlements(
+      after: string | null,
+      fromBlock?: number,
+      anchor?: LedgerAnchor,
+    ): RelayEffect<LedgerPage<FrontierSettlement>>;
     reportedClaims(
       after: string | null,
       fromBlock?: number,

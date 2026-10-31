@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { sweepFrontierLords } from "./frontier-sweep";
+import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
 
@@ -204,7 +204,9 @@ it("does not let an unavailable old season prevent another sweep", async () => {
 it("never closes with unposted or unfinished prizes", async () => {
   rows("ResourceBalance", []);
   rows("FrontierPrize", [{ pool: "300", issued: "0", count: null }]);
+  rows("LordsWithdrawal", [receipt(102, 100)]);
   await run();
+  rows("LordsWithdrawal", [receipt(102, 100), receipt(101, 150, 1)]);
   rows("FrontierPrize", [{ pool: "300", issued: "150", count: 2 }]);
   await run();
   expect(calls.settle).not.toHaveBeenCalled();
@@ -304,4 +306,21 @@ it("expires unpaid receipts only at the confirmed L2 deadline after every realm 
     prizeWithdrawn: wei(300),
   });
   expect(calls.funding).toHaveBeenLastCalledWith(undefined, "0x30", { chainId: "0x1", gameId: 7 }, { end: 100 }, 12);
+});
+
+it("independently audits early settlement against remaining balances and exact confirmed receipts", async () => {
+  const report = { chainId: "0x1", gameId: 7, chestWithdrawn: wei(100), prizeWithdrawn: wei(300) };
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toContain('"realms":["3","9"]');
+  rows("ResourceBalance", []);
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toBeNull();
+  expect(
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, chestWithdrawn: "0" }),
+  ).not.toBeNull();
+  rows("FrontierPrize", [{ pool: "300", issued: "0", count: 0 }]);
+  rows("LordsWithdrawal", [receipt(102, 100)]);
+  expect(
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, prizeWithdrawn: "0" }),
+  ).not.toBeNull();
+  expect(calls.admin).not.toHaveBeenCalled();
 });
