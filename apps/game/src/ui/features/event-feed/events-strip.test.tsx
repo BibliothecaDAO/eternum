@@ -95,7 +95,7 @@ const fight = (id: string, at: number, attacker = "0x5", defender = "0x6") => ({
   owner: attacker,
   participants: [attacker, defender],
   at,
-  payload: { attacker: { player: attacker }, defender: { player: defender } },
+  payload: { defender_id: 900, attacker: { player: attacker }, defender: { player: defender } },
 });
 
 const capture = (id: string, at: number, taker: string, holder: string) => ({

@@ -1,5 +1,6 @@
 import {
   builtLine,
+  clearCostLine,
   deployedLine,
   disbandedLine,
   EXPLORED,
@@ -14,7 +15,7 @@ import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
-import { fightLogLine } from "./fight-line";
+import { fightCost, fightLogLine } from "./fight-line";
 
 /** A story as the day's log reads it: what it is, what it carries, and the line every mode gives it. */
 type LoggedStory = { story: string; storyPayload: Record<string, unknown>; presentation: { title: string } };
@@ -27,13 +28,13 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
 };
 
 /**
- * The day log's line for one of the player's stories, in the names the rest of Frontier uses: a fight by its site and
- * how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its number. Null for
- * a story that only repeats another (a building's placement beside its payment); any other story keeps its title.
- * Each story that moved XP says how much, as the contract counted it: a reveal's `reveal_xp`, a clear's XP from the
- * guard its site started with, a point spent keeps XP unchanged.
+ * The day log's line for one of the player's actions, by its story, in the names the rest of Frontier uses: a fight by
+ * its site and how it ended, a reveal's pay as a whole number, a building by its build card's name, an army by its
+ * number; any other story keeps its title. A clear is one line with the attack that won it (`fight`, the one
+ * fightConcludedBy finds): what the attack cost. Each story that moved XP says how much, as the contract counted it: a
+ * reveal's `reveal_xp`, a clear's XP from the guard its site started with, a point spent keeps XP unchanged.
  */
-export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string | null => {
+export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): string => {
   const payload = story.storyPayload;
   switch (story.story) {
     case "BattleEvent":
@@ -41,13 +42,11 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
     case "ExplorationReward":
       return withRevealXp(revealPayLine(payload) ?? story.presentation.title, payload.coord, store);
     case "SitePayout":
-      return withClearXp(story.presentation.title, payload.site_id, store);
+      return withClearXp(withFightCost(story.presentation.title, fight), payload.site_id, store);
     case "SkillPointSpent":
       return story.presentation.title;
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
-    case "BuildingPlacementStory":
-      return payload.change === "Created" ? null : story.presentation.title;
     case "ExplorerCreateStory":
       return deployedLine(armyLabel(store, Number(payload.explorer_id)));
     case "ExplorerDeleteStory":
@@ -55,6 +54,12 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore): string |
     default:
       return story.presentation.title;
   }
+};
+
+/** A clear's line with what the attack that won it cost, when the day holds that attack. */
+const withFightCost = (line: string, fight: LoggedStory | undefined): string => {
+  const lost = fight && fightCost(fight);
+  return lost ? clearCostLine(line, lost) : line;
 };
 
 /** The recorded tile keeps historical XP correct after an army changes depth or leaves the map. */

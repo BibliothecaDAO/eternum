@@ -37,7 +37,7 @@ const fight = (id: string, at: number, attacker: string, defender: string) =>
     at,
     "BattleEvent",
     attacker,
-    { attacker: { player: attacker }, defender: { player: defender } },
+    { defender_id: 900, attacker: { player: attacker }, defender: { player: defender } },
     {
       participants: [attacker, defender],
     },
@@ -88,12 +88,47 @@ it("shows a Hyperstructure taken by two other players under Important and All, a
   expect(ids([taken], "important", false)).toEqual([]);
 });
 
-it("tells under Important a capture and the fight that won it, one transaction, as one row by its capture, whichever came first", () => {
+it("tells a capture and the fight that won it, one transaction, as one row by its capture, whichever came first", () => {
   const tx = { tx_hash: "0xc1a" };
   const won = fight("fight", 31, "0x1", "0x2");
   const taken = capture("taken", 30, "0x1", "0x2", tx);
   expect(ids([{ ...won, ...tx }, taken], "important")).toEqual(["taken"]);
   expect(ids([taken, { ...won, ...tx }], "important")).toEqual(["taken"]);
+  expect(ids([{ ...won, ...tx }, taken], "all")).toEqual(["taken"]);
+});
+
+/** The ids Frontier's Feed shows through a lens, as player 0x1. */
+const feedIds = (stories: ProcessedStoryEvent[], lens: FeedLens) =>
+  selectFeedStories(stories, lens, "0x1").map(({ id }) => id);
+
+/** A site's guard attacked by 0x1's army, in transaction `tx`. */
+const attack = (id: string, site: number, tx: string) =>
+  story(
+    id,
+    50,
+    "BattleEvent",
+    "0x1",
+    { defender_id: site, attacker: { player: "0x1" }, defender: { player: "0x0" } },
+    { tx_hash: tx },
+  );
+/** 0x1's clear of a site, in transaction `tx`. */
+const payout = (id: string, site: number, tx: string) =>
+  story(id, 50, "SitePayout", "0x1", { site_id: site, category: 6, reward: null }, { tx_hash: tx });
+it("tells an attack that clears its site as one row, the clear, in every Feed lens, as a history read orders them", () => {
+  // Newest on the chain first: the battle is written after the payout in the attack's transaction (dev, 20 of 20).
+  const stories = [attack("attack", 31, "0xA1"), payout("clear", 31, "0x0a1")];
+  for (const lens of ["all", "important", "mine"] as const) expect(feedIds(stories, lens)).toEqual(["clear"]);
+  expect(ids(stories, "all")).toEqual(["clear"]);
+});
+
+it("keeps an attack its own row when it clears nothing: the guard holds, the army is lost, or another army clears", () => {
+  const held = attack("held", 31, "0xb1");
+  // Another site's clear in the same transaction (a batch), and the same site's clear in a later one.
+  const elsewhere = payout("elsewhere", 32, "0xb1");
+  const later = payout("later", 31, "0xb2");
+  expect(feedIds([held, elsewhere], "all")).toEqual(["held", "elsewhere"]);
+  expect(feedIds([later, held], "all")).toEqual(["later", "held"]);
+  expect(feedIds([held], "important")).toEqual(["held"]);
 });
 
 it("tells each capture of a structure on its own, however often it changes the same hands", () => {
@@ -158,10 +193,6 @@ it("reads under All one read of the world's newest stories, whoever the viewer i
   expect(eventsReads("all", "0x1", [900])).toEqual([{ limit: 350 }]);
   expect(eventsReads("all", null, [])).toEqual([{ limit: 350 }]);
 });
-
-/** The ids Frontier's Feed shows through a lens, as player 0x1. */
-const feedIds = (stories: ProcessedStoryEvent[], lens: FeedLens) =>
-  selectFeedStories(stories, lens, "0x1").map(({ id }) => id);
 
 it("shows in the Feed's Important anyone's fights, clears and chests, and in Mine the player's own, routine too", () => {
   // Owner, 27 October: "All / Important (battles but not just mine), then mine".

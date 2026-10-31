@@ -21,7 +21,7 @@ vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { stor
 vi.mock("../hud/dock-armies", () => ({
   useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canSpendSkillPoint: true }] : []),
 }));
-// History answers for the owner it is asked about: the watched player cleared a camp today.
+// History answers for the owner it is asked about: the watched player's attack cleared a camp today, then a guard held.
 vi.mock("@/hooks/store/use-story-events-store", () => ({
   useStoryEvents: (_limit: number, _story: string | undefined, owner: string | undefined) => {
     asked.owners.push(owner);
@@ -42,6 +42,7 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
               const storyPayload = { explorer_id: 9, coord: { x: 3, y: 4 }, benefit };
               return {
                 id: `site-use-${index}`,
+                event_id: `site-use-${index}`,
                 story: "SiteUsed",
                 owner: `0x${OWNER.toString(16)}`,
                 timestampMs: 30_000,
@@ -56,12 +57,16 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
               };
             })
           : [
+              fightOn(41, "held", "0xb2", 400),
+              fightOn(40, "won", "0xb1", 0),
               {
                 id: "clear",
+                event_id: "clear",
+                tx_hash: "0xb1",
                 story: "SitePayout",
                 owner: `0x${OWNER.toString(16)}`,
                 timestampMs: 30_000,
-                storyPayload: { category: StructureType.Camp, reward: null },
+                storyPayload: { site_id: 40, category: StructureType.Camp, reward: null },
                 presentation: { title: "Embergrasp cleared" },
               },
             ]
@@ -75,6 +80,25 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
     };
   },
 }));
+
+/** The owner's army of 500 attacking site `site` in transaction `tx`, its guard left at `guardAfter`; the fight cost 68. */
+function fightOn(site: number, id: string, tx: string, guardAfter: number) {
+  const troops = (whole: number) => String(BigInt(whole) * 1_000_000_000n);
+  return {
+    id,
+    event_id: id,
+    tx_hash: tx,
+    story: "BattleEvent",
+    owner: `0x${OWNER.toString(16)}`,
+    timestampMs: 30_000,
+    storyPayload: {
+      defender_id: site,
+      attacker: { before: troops(500), after: troops(432) },
+      defender: { before: troops(400), after: troops(guardAfter) },
+    },
+    presentation: { title: `Attacked site ${site}` },
+  };
+}
 
 const { FrontierToday } = await import("./frontier-today");
 
@@ -90,7 +114,10 @@ it("shows a spectator the watched realm's day, its owner's clears counted, with 
     expect(asked.owners.at(-1)).toBeDefined();
     expect(BigInt(asked.owners.at(-1)!)).toBe(OWNER);
     expect(host.querySelector('[role="img"][aria-label="Sites cleared 1"]')).not.toBeNull();
-    expect(host.textContent).toContain("Embergrasp cleared");
+    // The attack that cleared the camp is the clear's line, with what it cost; the one the guard held keeps its own.
+    expect(host.textContent).toContain("Embergrasp cleared, lost 68");
+    expect(host.textContent).not.toContain("Attacked site 40");
+    expect(host.textContent).toContain("Attacked site 41");
     // Upgrading armies is the owner's to do: a spectator's Today offers no row for it.
     expect(host.querySelector('[data-icon="picks"]')).toBeNull();
   } finally {
