@@ -179,6 +179,15 @@ describe.each(["paidClaims", "postedResults"] as const)(
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
+        reportedClaims: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
         postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
         pause,
@@ -229,7 +238,7 @@ it("records the missing ledger after running shard conservation", async () => {
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     const observation = await f.monitor.tick();
-    expect(observation).toMatchObject({ value: null, value_error: "ledger paid claims unavailable" });
+    expect(observation).toMatchObject({ value: null, value_error: "ledger reports unavailable" });
     expect(f.data.get("progress")).toBeUndefined();
     expect(f.data.get("observation")).toEqual(observation);
   }

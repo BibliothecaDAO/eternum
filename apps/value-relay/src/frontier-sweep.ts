@@ -1,5 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/types";
-import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
+import { rpcAt, readFrontierFunding, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import {
@@ -66,13 +66,17 @@ async function sweepGame(
     (await reader.header(snapshot.confirmed_block)).timestamp < terms.end
   )
     throw new Error("frontier_sweep_snapshot_before_end");
+  const provider = rpcAt(ledger.rpcUrl);
+  const head = await readConfirmedLedgerHead(provider);
   const funding = await readFrontierFunding(
-    rpcAt(ledger.rpcUrl),
+    provider,
     ledger.address,
     { chainId: target.chainId, gameId },
     terms,
+    head.number,
   );
   if (funding.closed) return;
+  const expired = head.time >= funding.claimDeadline;
   const budget = optionalRow(snapshot, "LordsBudget");
   const prize = optionalRow(snapshot, "FrontierPrize");
   if (!budget || !prize) throw new Error("frontier_pool_unpublished");
@@ -93,13 +97,19 @@ async function sweepGame(
   const prizePool = snapshotUint(prize.pool, 128);
   if (issued > prizePool || (prize.count !== null && snapshotUint(prize.count, 16) === 0n && issued !== 0n))
     throw new Error("frontier_sweep_prize_differs");
-  if (prizePool > 0n && (prize.count === null || (snapshotUint(prize.count, 16) > 0n && issued !== prizePool))) return;
+  if (!expired && issued !== prizePool) return;
   const totals = withdrawalTotals(snapshot);
   const netChest = snapshotUint(budget.pool, 128) - snapshotUint(budget.pool_left, 128);
   if (totals.chest !== netChest || totals.prize !== issued) throw new Error("frontier_sweep_receipts_differ");
   const chestWithdrawn = String(totals.chest * 10n ** 18n);
   const prizeWithdrawn = String(totals.prize * 10n ** 18n);
-  if (BigInt(funding.paid) !== BigInt(chestWithdrawn) || BigInt(funding.prizePaid) !== BigInt(prizeWithdrawn)) return;
+  if (BigInt(funding.paid) > BigInt(chestWithdrawn) || BigInt(funding.prizePaid) > BigInt(prizeWithdrawn))
+    throw new Error("frontier_paid_exceeds_receipts");
+  if (
+    !expired &&
+    (BigInt(funding.paid) !== BigInt(chestWithdrawn) || BigInt(funding.prizePaid) !== BigInt(prizeWithdrawn))
+  )
+    return;
   await settle({ chainId: target.chainId, gameId, chestWithdrawn, prizeWithdrawn });
 }
 

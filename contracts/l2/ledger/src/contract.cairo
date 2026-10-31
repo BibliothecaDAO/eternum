@@ -7,6 +7,7 @@ use starknet::ContractAddress;
 
 pub const PAUSER_ROLE: felt252 = selector!("PAUSER_ROLE");
 pub const OPERATOR_ROLE: felt252 = selector!("OPERATOR_ROLE");
+pub const PAY_DELAY: u64 = 600;
 const BPS: u256 = 10_000;
 const PAYOUT_WEIGHT_SCALE: u256 = 1_000_000_000_000_000_000;
 // One settlement tick must fit after the last scheduled game.
@@ -25,6 +26,7 @@ pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
 
 #[starknet::interface]
 pub trait IGameLedger<TState> {
+    fn pay_delay(self: @TState) -> u64;
     fn lords(self: @TState) -> ContractAddress;
     fn chest_collection(self: @TState) -> ContractAddress;
     fn pause(ref self: TState);
@@ -150,6 +152,7 @@ pub mod GameLedger {
         frontier_prize_claims: Map<(felt252, u32, u16), felt252>,
         frontier_prize_count: Map<(felt252, u32), u16>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
+        frontier_pending: Map<(felt252, u32), u64>,
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
@@ -196,6 +199,7 @@ pub mod GameLedger {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         FrontierFunded: FrontierFunded,
+        WithdrawalReported: WithdrawalReported,
         WithdrawalPaid: WithdrawalPaid,
         FrontierClosed: FrontierClosed,
         PresetRegistered: PresetRegistered,
@@ -224,6 +228,18 @@ pub mod GameLedger {
         start: u64,
         end: u64,
         amount: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct WithdrawalReported {
+        #[key]
+        shard: felt252,
+        #[key]
+        claim_id: felt252,
+        season_id: u32,
+        amount: u256,
+        prize_rank: u16,
+        prize_count: u16,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -410,6 +426,9 @@ pub mod GameLedger {
 
     #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
+        fn pay_delay(self: @ContractState) -> u64 {
+            super::PAY_DELAY
+        }
         fn lords(self: @ContractState) -> ContractAddress {
             self.lords.read()
         }
@@ -498,6 +517,7 @@ pub mod GameLedger {
             prize_count: u16,
         ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             let previous = self.get_payment(shard, claim_id);
             if previous.amount != 0 {
                 assert!(
@@ -511,8 +531,8 @@ pub mod GameLedger {
             }
             assert!(claim_id != 0 && amount > 0, "Ledger: invalid withdrawal");
             let season = self.get_frontier(shard, season_id);
+            assert!(!season.closed, "Ledger: season closed");
             if prize_rank == 0 {
-                assert!(!season.closed, "Ledger: season closed");
                 assert!(prize_count == 0, "Ledger: invalid prize rank");
             } else {
                 assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
@@ -537,9 +557,18 @@ pub mod GameLedger {
                 .entry((shard, claim_id))
                 .write(
                     WithdrawalPayment {
-                        paid: false, season_id, wallet: 0.try_into().unwrap(), amount, prize_rank, prize_count,
+                        paid: false,
+                        season_id,
+                        wallet: 0.try_into().unwrap(),
+                        amount,
+                        prize_rank,
+                        prize_count,
+                        reported_at: starknet::get_block_timestamp(),
                     },
                 );
+            let pending = self.frontier_pending.entry((shard, season_id)).read();
+            self.frontier_pending.entry((shard, season_id)).write(pending + 1);
+            self.emit(WithdrawalReported { shard, claim_id, season_id, amount, prize_rank, prize_count });
         }
 
         fn pay(
@@ -558,11 +587,16 @@ pub mod GameLedger {
             assert!(claim_id != 0 && wallet.is_non_zero() && amount > 0, "Ledger: invalid withdrawal");
             let mut season = self.get_frontier(shard, season_id);
             let reported = self.get_payment(shard, claim_id);
-            assert!(reported.prize_rank > 0 || !season.closed, "Ledger: season closed");
+            assert!(!season.closed, "Ledger: season closed");
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
                 reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
+            assert!(
+                starknet::get_block_timestamp() >= reported.reported_at + super::PAY_DELAY, "Ledger: payment delay",
+            );
+            let pending = self.frontier_pending.entry((shard, season_id)).read();
+            self.frontier_pending.entry((shard, season_id)).write(pending - 1);
             if reported.prize_rank == 0 {
                 assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
                 season.paid += amount;
@@ -632,11 +666,19 @@ pub mod GameLedger {
             ref self: ContractState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
         ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             let season = self.get_frontier(shard, season_id);
             assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
             assert!(
                 season.paid == chest_withdrawn && season.prize_paid == prize_withdrawn, "Ledger: withdrawals not paid",
             );
+            if !season.closed && starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id) {
+                assert!(
+                    self.frontier_pending.entry((shard, season_id)).read() == 0
+                        && season.prize_paid == season.prize_pool,
+                    "Ledger: withdrawals not paid",
+                );
+            }
             if !season.closed {
                 self.close_frontier_pool(shard, season_id, season);
             }
@@ -823,6 +865,7 @@ pub mod GameLedger {
         }
 
         fn register(ref self: ContractState, key: SlotKey, sword: bool, shield: bool) {
+            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let slot = self.assert_registration_open(key, owner);
             let preset = self.presets.entry(slot.preset_id).read();
@@ -851,6 +894,7 @@ pub mod GameLedger {
         }
 
         fn refund(ref self: ContractState, key: SlotKey) {
+            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let mut slot = self.slots.entry(key).read();
             let mut registration = self.registrations.entry((key, owner)).read();
@@ -872,6 +916,7 @@ pub mod GameLedger {
         }
 
         fn apply_results(ref self: ContractState, key: SlotKey, game_id: u32, ranked: Array<RankedPlayer>) {
+            self.pausable.assert_not_paused();
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let slot = self.get_slot(key);
             self.assert_results_open(slot);
@@ -1369,7 +1414,12 @@ pub mod GameLedger {
     #[generate_trait]
     impl SeasonWriterImpl of SeasonWriterTrait {
         fn close_frontier_pool(ref self: ContractState, shard: felt252, season_id: u32, mut season: FrontierSeason) {
-            let returned = season.pool - season.paid;
+            let expired = starknet::get_block_timestamp() >= self.frontier_claim_deadline(shard, season_id);
+            let returned = season.pool - season.paid + if expired {
+                season.prize_pool - season.prize_paid
+            } else {
+                0
+            };
             season.closed = true;
             self.frontier_days.entry((shard, season_id)).write(season);
             self.frontier_carry_pool.entry(shard).write(self.frontier_carry_pool.entry(shard).read() + returned);

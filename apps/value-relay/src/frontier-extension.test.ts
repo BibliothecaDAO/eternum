@@ -4,6 +4,10 @@ import approved from "../../../config/source/frontier/extension.json";
 import { gamesAbi } from "../../../packages/value-ledger/test-support/abi";
 import { readFrontierExtension, requireExtendedFrontier } from "./frontier-extension";
 
+vi.mock("../../../packages/chain/src/value-plane", async (original) => ({
+  ...(await original<typeof import("../../../packages/chain/src/value-plane")>()),
+  valuePlaneAddress: () => "0x10",
+}));
 const rpc = vi.hoisted(() => ({ call: vi.fn(), ledger: vi.fn(), now: 0, l2chain: "0x0", l2status: "ACCEPTED_ON_L2" }));
 vi.mock("../../../packages/value-ledger/src/rpc", async (original) => ({
   ...(await original<typeof import("../../../packages/value-ledger/src/rpc")>()),

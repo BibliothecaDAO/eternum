@@ -23,6 +23,15 @@ vi.mock("./season-tops", () => ({ processSeasonTops: calls.season }));
 vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 vi.mock("./ledger", () => ({
   ledgerMonitorReads: () => ({
+    reportedClaims: () =>
+      Effect.succeed({
+        rows: [],
+        next: null,
+        head: 0,
+        anchor: { number: 0, hash: "0x1" },
+        rewind: false,
+        fromBlock: 0,
+      }),
     paidClaims: () =>
       Effect.succeed({ rows: [], head: 1, anchor: { number: 1, hash: "0xa" }, rewind: false, next: null }),
     postedResults: () =>

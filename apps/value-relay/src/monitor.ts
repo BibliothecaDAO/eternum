@@ -3,6 +3,7 @@ import type {
   MonitorPorts,
   LedgerPage,
   PaidClaim,
+  ReportedClaim,
   BlitzCommitment,
   Withdrawal,
   BlitzResult,
@@ -26,7 +27,7 @@ interface FaultRow {
    * with none (a roster check, or one the previous version recorded) waives nothing: its reset re-observes.
    */
   fact?: string;
-  stream?: "paidClaims" | "postedResults";
+  stream?: "reportedClaims" | "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
 }
@@ -38,7 +39,7 @@ export interface MonitorProgress {
    */
   cleared?: string[];
   halted: string | null;
-  cursors?: Partial<Record<"paidClaims" | "postedResults", AuditCursor>>;
+  cursors?: Partial<Record<"reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -53,7 +54,12 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       yield* ports.ledger.pause();
       return progress;
     }
-    const checks = [checkConservation(ports, store), checkPaidClaims(ports, store), checkPostedResults(ports, store)];
+    const checks = [
+      checkReportedClaims(ports, store),
+      checkConservation(ports, store),
+      checkPaidClaims(ports, store),
+      checkPostedResults(ports, store),
+    ];
     let unavailable: RelayFailure | null = null;
     for (const check of checks) {
       const observation = yield* Effect.result(check);
@@ -94,6 +100,23 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     if (unavailable) return yield* Effect.fail(unavailable);
     return null;
   });
+
+const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
+  checkLedgerPage(
+    "reportedClaims",
+    ports.ledger.reportedClaims,
+    (row) => `reportedClaims:${row.chainId}:${row.transactionHash}`,
+    (row) =>
+      `reportedClaims:${hex(row.chainId)}:${hex(row.transactionHash)}:${row.seasonId}:${BigInt(row.amount)}:${row.prizeRank}:${row.prizeCount}`,
+    (report) =>
+      Effect.gen(function* () {
+        const receipt = yield* ports.shard.withdrawal(report.chainId, report.transactionHash);
+        return matchesPaidClaim(receipt, report)
+          ? null
+          : { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence: receiptEvidence(receipt) };
+      }),
+    store,
+  );
 
 const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
   checkLedgerPage(
@@ -145,7 +168,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
-  stream: "paidClaims" | "postedResults",
+  stream: "reportedClaims" | "paidClaims" | "postedResults",
   read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   fact: (row: A) => string,
@@ -209,7 +232,7 @@ const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) 
     return halted;
   });
 
-const matchesPaidClaim = (receipt: Withdrawal | null, paid: PaidClaim) =>
+const matchesPaidClaim = (receipt: Withdrawal | null, paid: ReportedClaim) =>
   receipt !== null &&
   BigInt(receipt.chainId) === BigInt(paid.chainId) &&
   BigInt(receipt.transactionHash) === BigInt(paid.transactionHash) &&

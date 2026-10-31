@@ -223,6 +223,15 @@ const monitorFixture = () => {
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       pause: vi.fn(() => Effect.void),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows: [],

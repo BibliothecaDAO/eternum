@@ -6,12 +6,13 @@ const rpc = vi.hoisted(() => ({
   execute: vi.fn(),
   call: vi.fn(),
   wait: vi.fn(),
+  time: 1000,
   records: new Map<string, string[]>(),
 }));
 vi.mock("@realms-world/value-ledger", async (original) => ({
   ...(await original<typeof import("@realms-world/value-ledger")>()),
   rpcAt: () => ({
-    getBlock: async () => ({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: 1000 }),
+    getBlock: async () => ({ status: "ACCEPTED_ON_L2", block_number: 10, block_hash: "0xa", timestamp: rpc.time }),
     callContract: rpc.call,
     waitForTransaction: rpc.wait,
   }),
@@ -46,14 +47,17 @@ const claims = Array.from({ length: 100 }, (_, i) => ({
 beforeEach(() => {
   vi.clearAllMocks();
   rpc.records.clear();
+  rpc.time = 1000;
   rpc.call.mockImplementation(async (q) =>
-    q.entrypoint === "get_frontier"
-      ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1", "0", "0", "0", "0"]
-      : q.entrypoint === "frontier_unlocked"
-        ? ["1000", "0"]
-        : q.entrypoint === "is_paused"
-          ? ["0"]
-          : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0"]),
+    q.entrypoint === "pay_delay"
+      ? ["600"]
+      : q.entrypoint === "get_frontier"
+        ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1", "0", "0", "0", "0"]
+        : q.entrypoint === "frontier_unlocked"
+          ? ["1000", "0"]
+          : q.entrypoint === "is_paused"
+            ? ["0"]
+            : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0", "0"]),
   );
   rpc.execute.mockImplementation(async (raw) => {
     for (const call of Array.isArray(raw) ? raw : [raw])
@@ -66,6 +70,7 @@ beforeEach(() => {
           call.calldata[4],
           call.calldata[5],
           call.calldata[6],
+          "0",
         ]);
     return { transaction_hash: "0xabc" };
   });
@@ -117,6 +122,7 @@ it("pays only the available unlocked prefix and leaves excess claims retryable",
   rpc.call.mockImplementation((q) =>
     q.entrypoint === "frontier_unlocked" ? Promise.resolve(["1", "0"]) : original(q),
   );
+  await Effect.runPromise(ledgerBatches(credentials, async () => {}).reportMany(claims.slice(0, 2)));
   const result = await Effect.runPromise(
     ledgerBatches(credentials, async () => {}).payMany(
       claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" })),
@@ -143,6 +149,8 @@ it("isolates a permanently refused report while confirming every other debt", as
 it.each(["get_frontier", "frontier_unlocked"])(
   "refuses a payment page when %s rejects absent custody",
   async (entrypoint) => {
+    await Effect.runPromise(ledgerBatches(credentials, async () => {}).reportMany(claims.slice(0, 2)));
+    rpc.execute.mockClear();
     const original = rpc.call.getMockImplementation()!;
     rpc.call.mockImplementation(async (query) => {
       if (query.entrypoint === entrypoint) throw new Error("Ledger: unknown Frontier season");
@@ -159,7 +167,7 @@ it.each(["get_frontier", "frontier_unlocked"])(
   },
 );
 
-it("pays prizes after chest closure from their own remaining budget", async () => {
+it("refuses unpaid prizes and chests once the season closes", async () => {
   const original = rpc.call.getMockImplementation()!;
   rpc.call.mockImplementation(async (q) =>
     q.entrypoint === "get_frontier"
@@ -176,10 +184,26 @@ it("pays prizes after chest closure from their own remaining budget", async () =
       { withdrawal: claims[2]!, wallet: "0x125" },
     ]),
   );
-  expect(result).toContainEqual({ claimId: "0x1", error: null });
-  expect(result).toContainEqual({ claimId: "0x2", error: "ledger_unlock_exceeded" });
-  expect(result.find((row) => row.claimId === "0x3")?.error).not.toBeNull();
-  const payment = rpc.execute.mock.calls[1]![0];
-  expect(payment.entrypoint).toBe("pay");
-  expect(payment.calldata[2]).toBe("0x1");
+  expect(result).toContainEqual({ claimId: "0x1", error: "ledger_season_closed" });
+  expect(result.every((row) => row.error !== null)).toBe(true);
+  expect(rpc.execute).toHaveBeenCalledTimes(1);
+});
+
+it("keeps immature reports out of a payment batch without blocking mature claims", async () => {
+  const batch = ledgerBatches(credentials, async () => {});
+  await Effect.runPromise(batch.reportMany(claims.slice(0, 2)));
+  rpc.records.get("0x2")![7] = "1000";
+  rpc.execute.mockClear();
+  const rows = claims.slice(0, 2).map((withdrawal) => ({ withdrawal, wallet: "0x123" }));
+  expect(await Effect.runPromise(batch.payMany(rows))).toEqual(
+    expect.arrayContaining([
+      { claimId: "0x1", error: null },
+      { claimId: "0x2", error: "ledger_payment_delay" },
+    ]),
+  );
+  expect(rpc.execute).toHaveBeenCalledWith(
+    expect.objectContaining({ entrypoint: "pay", calldata: expect.arrayContaining(["0x1"]) }),
+  );
+  rpc.time = 1600;
+  expect(await Effect.runPromise(batch.payMany([rows[1]!]))).toEqual([{ claimId: "0x2", error: null }]);
 });

@@ -24,6 +24,15 @@ const fixture = () => {
     },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows: [{ ...receipt, paymentTransactionHash: "0xdef", paidAt: 1, wallet: "0x123" }],
@@ -57,7 +66,7 @@ it("never stores a fault or pauses for repeated unavailable reads, and recovers 
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     await expect(f.tick()).rejects.toMatchObject({ operation: "shard_unavailable" });
-    expect(await f.store.load()).toEqual({
+    expect(await f.store.load()).toMatchObject({
       halted: null,
       cursors: { postedResults: { fromBlock: 1001, page: null, anchor: { number: 1000, hash: "0xa" } } },
     });

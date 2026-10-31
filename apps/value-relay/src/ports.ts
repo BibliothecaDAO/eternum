@@ -85,6 +85,7 @@ export type HeldObligation =
       };
     }
   | { kind: "payment"; reason: string; withdrawal: Withdrawal };
+export type ReportedClaim = Omit<Withdrawal, "realmsId" | "confirmedAt">;
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
   paidAt: number;
@@ -144,6 +145,7 @@ export interface RelayPorts {
   };
   ledger: {
     payment(withdrawal: Withdrawal): RelayEffect<{
+      reportedAt: number;
       paid: boolean;
       seasonId: number;
       wallet: string;
@@ -167,6 +169,11 @@ export interface MonitorPorts {
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
+    reportedClaims(
+      after: string | null,
+      fromBlock?: number,
+      anchor?: LedgerAnchor,
+    ): RelayEffect<LedgerPage<ReportedClaim>>;
     paidClaims(after: string | null, fromBlock?: number, anchor?: LedgerAnchor): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(
       after: string | null,

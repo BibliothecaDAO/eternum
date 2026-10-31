@@ -312,6 +312,8 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
         ),
+      reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
+        relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),
       paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
         relayOperation("ledger paid claims unavailable", () => Effect.runPromise(ledgerReads().paidClaims(...read))),
       postedResults: (...read: Parameters<LedgerPorts["postedResults"]>) =>

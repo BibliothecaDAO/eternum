@@ -125,10 +125,26 @@ const verifyReportedDebt = async (credentials: Credentials, rows: readonly Payab
 const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[]) => {
   if (!rows.length) return [];
   const head = await readConfirmedLedgerHead(context.provider);
+  const delay = await context.provider.callContract(
+    { contractAddress: context.credentials.contractAddress, entrypoint: "pay_delay", calldata: [] },
+    head.number,
+  );
+  if (delay.length !== 1) throw new Error("invalid_pay_delay");
   const budgets = new Map<string, bigint | null>(),
     payable: PayableClaim[] = [],
     waiting: ClaimOutcome[] = [];
   for (const row of rows) {
+    const payment = await Effect.runPromise(
+      ledgerPaymentRead(context.credentials.rpcUrl, context.credentials.contractAddress, head.number)(row.withdrawal),
+    );
+    if (payment?.paid) {
+      waiting.push(resultOf(row.withdrawal, null));
+      continue;
+    }
+    if (!payment || BigInt(head.time) < BigInt(payment.reportedAt) + BigInt(delay[0]!)) {
+      waiting.push(resultOf(row.withdrawal, "ledger_payment_delay"));
+      continue;
+    }
     const key = `${row.withdrawal.chainId}:${row.withdrawal.seasonId}:${row.withdrawal.prizeRank > 0}`;
     if (!budgets.has(key)) budgets.set(key, await availableBudget(context, row.withdrawal, head.number));
     const available = budgets.get(key);
@@ -154,7 +170,7 @@ const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, bl
   ]);
   const funded = decodeFrontierSeason(season);
   if (unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
-  if (funded.closed && withdrawal.prizeRank === 0) return null;
+  if (funded.closed) return null;
   const amount =
     withdrawal.prizeRank > 0
       ? BigInt(funded.prizePool) - BigInt(funded.prizePaid)

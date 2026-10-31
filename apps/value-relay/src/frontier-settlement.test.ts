@@ -39,7 +39,9 @@ const season = (paid = "400", prizePaid = "300", closed = "0") => [
 beforeEach(() => {
   vi.resetAllMocks();
   rpc.head.mockResolvedValue({ number: 10, time: 100 });
-  rpc.read.mockResolvedValue(season());
+  rpc.read.mockImplementation(async ({ entrypoint }) =>
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : season(),
+  );
   rpc.contract.mockResolvedValue({
     abi: [{ type: "interface", items: [{ type: "function", name: "settle_frontier" }] }],
   });
@@ -60,7 +62,9 @@ it("checks confirmed payments and sends exact totals under the operator's close 
   expect(rpc.wait).toHaveBeenCalledWith("0x123", { errorStates: [] });
 });
 it.each([[season("399")], [season("400", "299")]])("refuses a not fully paid season", async (fields) => {
-  rpc.read.mockResolvedValue(fields);
+  rpc.read.mockImplementation(async ({ entrypoint }) =>
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : fields,
+  );
   await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
   expect(rpc.execute).not.toHaveBeenCalled();
 });
@@ -85,4 +89,21 @@ it("keeps the existing dev ledger on its administrator's deadline-based close", 
   });
   await run();
   expect(rpc.execute).not.toHaveBeenCalled();
+});
+
+it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadline passes", async () => {
+  rpc.read.mockImplementation(async ({ entrypoint }) =>
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : season("300", "200"),
+  );
+  rpc.head.mockResolvedValue({ number: 10, time: 604899 });
+  await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
+  expect(rpc.execute).not.toHaveBeenCalled();
+  rpc.head.mockResolvedValue({ number: 11, time: 604900 });
+  await run();
+  expect(rpc.execute).toHaveBeenCalledWith({
+    contractAddress: "0x30",
+    entrypoint: "settle_frontier",
+    calldata: ["1", "7", "300", "0", "200", "0"],
+  });
+  expect(rpc.read).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "frontier_claim_deadline" }), 11);
 });

@@ -12,18 +12,21 @@ payments, results, season settlement and chest finishes under the operator key. 
 suppress these jobs.
 
 Frontier receipts are reported as debt before wallet lookup. Payments use identity's linked wallet at signing time and
-record that decision before broadcast. Linked wallets receive immediately. Missing wallets remain queued; permanent
-refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from retries, including
-accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
+record that decision before broadcast. Payments wait for the ledger's `pay_delay()` after the report (currently ten
+minutes), plus confirmation and relay scheduling. Missing wallets remain queued and appear as deferred in health;
+unknown accounts are retried from their confirmed receipts. Permanent refusals are recorded separately. A confirmed
+closed season with the claim unpaid removes it from retries, including accounts without wallets. A claim is keyed by its
+shard and withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
 Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
 The shard owns labor eligibility and limits. No daily cap is copied into services.
 
-The independent monitor reads confirmed ledger events through checked-through cursors, verifies receipts, recorded
-payment authority, result commitments and shard conservation, and pauses only on proven disagreement. Unavailable
-verification makes health red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the
-relay's queue as proof and never unpauses the ledger.
+The independent monitor checks `WithdrawalReported` events against L3 receipts before their payment delay expires. It
+also reads paid claims and results through independent checked-through cursors, verifies recorded payment authority,
+result commitments and shard conservation, and pauses only on proven disagreement. Unavailable verification makes health
+red. Later wallet changes cannot rewrite an earlier payment decision. It never uses the relay's queue as proof and never
+unpauses the ledger.
 
 Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
 checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
@@ -31,7 +34,7 @@ from canonical events. Old cursors without a hash also replay once. Each tick st
 head that changes during a read fails that tick without advancing its cursor. These checks recover event discovery; they
 do not make `ACCEPTED_ON_L2` irreversible or reconcile relay payments already acknowledged before an L2 rewrite.
 
-The ledger address and chain come from `contracts/common/addresses/dev.json` or `mainnet.json` through the shared
+The ledger address and chain come from `contracts/common/addresses/dev.json` or `production.json` through the shared
 environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LEDGER_OPERATOR_ADDRESS` and the
 `LEDGER_OPERATOR_PRIVATE_KEY` secret. Labor uses the fixed relay bot account enrolled through
 `POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
@@ -47,9 +50,16 @@ separate health hostname or secret is required.
 ## Restored shard recovery
 
 `POST /api/value/operator/reset` requires the operator bearer token and `{chainId,row,reason}`. It walks down to a
-retained hash still matching the restored chain, checks that anchor again, drops queued rows above the fork, records
-already-paid claims from discarded blocks, and replays from fork + 1. If no anchor survives, replay starts at genesis. A
-changed anchor refuses reset. The ledger's claim identity prevents a second payment.
+retained hash still matching the restored chain and checks that anchor again. Reset requires a confirmed paused ledger
+and refuses if any discarded queued, held or completed withdrawal was paid on L2, including payments whose response was
+lost. Failure preserves the cursor and obligations. With no paid claims discarded, it drops queued rows above the fork
+and replays from fork + 1; with no surviving anchor, replay starts at genesis.
+
+Keep payouts paused during recovery. Replay the original signed transactions so their withdrawal hashes match, then
+verify the restored balances and receipts against L2 before resetting and unpausing. If replay is impossible, recovery
+needs an explicitly reviewed reconciliation that debits the restored realm LORDS and preserves the paid receipt
+identity. The normal reset has no bypass for that repair. Withdrawing the restored balance again creates a new hash; the
+ledger's claim idempotence cannot prevent that second payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It waives the fault's exact fact,
 everything its check compared, and advances past only that row: a rewind that replays the same evidence stays cleared,
@@ -73,7 +83,8 @@ owns their draws. Each keeper tick reads one 100-event page, persists its contin
 requests. It calls `open_finish` once the later block is readable and recognizes an already-finished retry.
 
 A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
-seed.
+seed. For sweep, deadline settlement and carry rules, follow the ledger's
+[Frontier lifecycle](../../contracts/l2/ledger/README.md#frontier-settlement-and-carry).
 
-Staging selects `contracts/common/addresses/dev.json`; production selects `mainnet.json`. Both run on `SN_MAIN`, with
+Staging selects `contracts/common/addresses/dev.json`; production selects `production.json`. Both run on `SN_MAIN`, with
 separate ledger and value-token addresses. Dev uses the no-value test token, never production LORDS.

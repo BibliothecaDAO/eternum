@@ -128,6 +128,10 @@
       {
         "name": "prize_count",
         "type": "core::integer::u16"
+      },
+      {
+        "name": "reported_at",
+        "type": "core::integer::u64"
       }
     ]
   },
@@ -547,6 +551,17 @@
     "type": "interface",
     "name": "game_ledger::contract::IGameLedger",
     "items": [
+      {
+        "type": "function",
+        "name": "pay_delay",
+        "inputs": [],
+        "outputs": [
+          {
+            "type": "core::integer::u64"
+          }
+        ],
+        "state_mutability": "view"
+      },
       {
         "type": "function",
         "name": "lords",
@@ -1817,6 +1832,43 @@
   },
   {
     "type": "event",
+    "name": "game_ledger::contract::GameLedger::WithdrawalReported",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "claim_id",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "data"
+      },
+      {
+        "name": "amount",
+        "type": "core::integer::u256",
+        "kind": "data"
+      },
+      {
+        "name": "prize_rank",
+        "type": "core::integer::u16",
+        "kind": "data"
+      },
+      {
+        "name": "prize_count",
+        "type": "core::integer::u16",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
     "name": "game_ledger::contract::GameLedger::WithdrawalPaid",
     "kind": "struct",
     "members": [
@@ -2250,6 +2302,11 @@
       {
         "name": "FrontierFunded",
         "type": "game_ledger::contract::GameLedger::FrontierFunded",
+        "kind": "nested"
+      },
+      {
+        "name": "WithdrawalReported",
+        "type": "game_ledger::contract::GameLedger::WithdrawalReported",
         "kind": "nested"
       },
       {

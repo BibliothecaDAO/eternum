@@ -36,6 +36,15 @@ it("keeps checked-through block and page continuation across ticks without rerea
     shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims,
       postedResults: () =>
         Effect.succeed({
@@ -92,6 +101,15 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
     shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
     ledger: {
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows,
@@ -155,6 +173,15 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
     },
     ledger: {
       frontierPool: () => Effect.succeed("0"),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () => Effect.succeed(page),
       postedResults: () => Effect.succeed(page),
       pause,
@@ -245,6 +272,15 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
       },
       ledger: {
         frontierPool: () => Effect.succeed("0"),
+        reportedClaims: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
         postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
         pause,
@@ -302,3 +338,50 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
     );
   });
 });
+
+it.each([null, "999"])(
+  "pauses on an unpaid forged report before any payment exists (receipt amount %s)",
+  async (amount) => {
+    const report = {
+      chainId: "0x1",
+      seasonId: 7,
+      transactionHash: "0xabc",
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    };
+    let progress: MonitorProgress = { halted: null };
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    const pause = vi.fn(() => Effect.void);
+    const paidClaims = vi.fn(() => Effect.succeed({ ...page, rows: [] }));
+    const ports: MonitorPorts = {
+      identity: { matchesPayDecision: () => Effect.succeed(true) },
+      shard: {
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+        withdrawal: () =>
+          Effect.succeed(amount === null ? null : { ...report, amount, realmsId: "0x2", confirmedAt: 100 }),
+      },
+      ledger: {
+        frontierPool: () => Effect.succeed("1000"),
+        pause,
+        paidClaims,
+        reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    const store = {
+      load: async () => progress,
+      save: async (next: MonitorProgress) => {
+        progress = next;
+      },
+    };
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(progress.halted).toBe("reported_claim_mismatch:0xabc");
+    expect(progress.fault?.stream).toBe("reportedClaims");
+    expect(pause).toHaveBeenCalledOnce();
+    expect(paidClaims).not.toHaveBeenCalled();
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(pause).toHaveBeenCalledTimes(2);
+  },
+);

@@ -131,6 +131,7 @@ pub struct WithdrawalPayment {
     pub amount: u256,
     pub prize_rank: u16,
     pub prize_count: u16,
+    pub reported_at: u64,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]

@@ -54,6 +54,7 @@ async function awardGamePrizes(
     { chainId: target.chainId, gameId: gameId },
     terms,
   );
+  if (funding.closed) return;
   if (uint(String(prize.pool), 128) !== BigInt(funding.prizePool) / 10n ** 18n)
     throw new Error("frontier_prize_differs_from_ledger");
   // A posted list is fixed on the ledger with its count: resume its awards, never derive the winners again.

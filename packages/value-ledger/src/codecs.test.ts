@@ -141,8 +141,9 @@ it("bounds each u256 limb and safe integer before conversion", () => {
 });
 
 it("decodes absent, reported and paid withdrawals without losing the high amount limb", () => {
-  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0", "0", "0"])).toBeNull();
-  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1", "0", "0"])).toEqual({
+  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0", "0", "0", "0"])).toBeNull();
+  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1", "0", "0", "123"])).toEqual({
+    reportedAt: 123,
     prizeRank: 0,
     prizeCount: 0,
     paid: false,
@@ -150,7 +151,8 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     wallet: "0",
     amount: String((1n << 128n) + 1n),
   });
-  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0", "0", "0"])).toEqual({
+  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0", "0", "0", "123"])).toEqual({
+    reportedAt: 123,
     prizeRank: 0,
     prizeCount: 0,
     paid: true,
@@ -166,7 +168,7 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     ["0", "7", "0", "0", "0"],
     ["0", "7", "0", "0", String(1n << 128n)],
   ])
-    expect(() => decodeWithdrawalPayment([...fields, "0", "0"])).toThrow();
+    expect(() => decodeWithdrawalPayment([...fields, "0", "0", "123"])).toThrow();
 });
 
 it("decodes the complete chest shape and rejects absent or malformed records", () => {

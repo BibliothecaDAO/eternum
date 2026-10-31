@@ -64,6 +64,15 @@ const auditedRow = (stream: Stream) => {
     },
     ledger: {
       frontierPool: () => Effect.succeed("0"),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () => page(stream === "paidClaims" ? [paid] : []),
       postedResults: () => page(stream === "postedResults" ? [posted] : []),
       pause: () => {

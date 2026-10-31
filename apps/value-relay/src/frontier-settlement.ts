@@ -22,11 +22,23 @@ export async function settleFrontier(
     ),
   );
   if (season.closed) return;
-  if (
-    head.time < season.end ||
-    BigInt(season.paid) !== BigInt(chestWithdrawn) ||
-    BigInt(season.prizePaid) !== BigInt(prizeWithdrawn)
-  )
+  const deadline = await provider.callContract(
+    {
+      contractAddress: credentials.contractAddress,
+      entrypoint: "frontier_claim_deadline",
+      calldata: [chainId, String(gameId)],
+    },
+    head.number,
+  );
+  if (deadline.length !== 1) throw new Error("frontier_claim_deadline_invalid");
+  const expired = BigInt(head.time) >= BigInt(deadline[0]!);
+  const paidBeyondReceipts =
+    BigInt(season.paid) > BigInt(chestWithdrawn) || BigInt(season.prizePaid) > BigInt(prizeWithdrawn);
+  const fullyPaid =
+    BigInt(season.paid) === BigInt(chestWithdrawn) &&
+    BigInt(season.prizePaid) === BigInt(prizeWithdrawn) &&
+    season.prizePaid === season.prizePool;
+  if (head.time < season.end || paidBeyondReceipts || (!expired && !fullyPaid))
     throw new Error("frontier_settlement_not_paid");
   if (!(await supportsSettlement(provider, credentials.contractAddress, head.number))) return;
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
@@ -36,8 +48,8 @@ export async function settleFrontier(
     calldata: CallData.compile({
       shard: chainId,
       season_id: gameId,
-      chest_withdrawn: cairo.uint256(chestWithdrawn),
-      prize_withdrawn: cairo.uint256(prizeWithdrawn),
+      chest_withdrawn: cairo.uint256(season.paid),
+      prize_withdrawn: cairo.uint256(season.prizePaid),
     }),
   });
   const receipt = await provider.waitForTransaction(tx.transaction_hash, { errorStates: [] });
