@@ -103,8 +103,8 @@ export const useOnePanel = (
  * army's panel opens where selecting it opens it (returnTo), whether the order applied or was refused, so the card it
  * was given from never outlives its job. The card stood on what the player picked: the army acting on a tile (a fight,
  * a site, the spire, a neighbour to trade troops with), or the target's own tile (a chest tapped on a phone). Only while
- * that pick still stands, or only the map let go of it, its army lost (lostWithItsArmy): a player who let go, picked
- * another army or another tile meanwhile keeps that newer choice.
+ * that pick still stands, or only the map let go of it (letGoByTheMap: its army lost, or its site cleared under the
+ * card): a player who let go, picked another army or another tile meanwhile keeps that newer choice.
  * An order that takes the army to a tile (a move or an explore, the card's own Move beside a guard) keeps the card: its
  * next step (Attack) is there. Orders given with no card standing (a move on the map) leave the selection, and the next
  * order queued on it, as they are. An army an attack cost its life gets no panel: the panel shows the loss instead, then
@@ -133,7 +133,7 @@ export const useOrderSettledReturnsToTheArmy = (
     const stopSettled = onOutcome("army", (key) => {
       const from = givenFrom.get(key);
       givenFrom.delete(key);
-      if (!from || !(samePick(from.pick, useUIStore.getState().mapSelection) || lostWithItsArmy(key))) return;
+      if (!from || !stillStands(from.pick)) return;
       const { returnTo, showLoss } = now.current.ways;
       if (!returnTo(Number(key)) && from.order === "attack") showLoss();
     });
@@ -147,12 +147,12 @@ export const useOrderSettledReturnsToTheArmy = (
 type Pick = NonNullable<MapSelectionIntent>;
 
 /**
- * The map let go of the pick itself because this army is gone (letGoOfLostSelection), before its order settled: no
- * player chose anything since, so its outcome still shows.
+ * The pick an order was given from still stands, or only the map let go of it (worldmap-lost-selection: its army lost,
+ * its site cleared under the card) before the order settled: no player chose anything since, so its outcome shows.
  */
-const lostWithItsArmy = (armyId: string): boolean => {
-  const { mapSelection, selectionLostWith } = useUIStore.getState();
-  return mapSelection === null && selectionLostWith !== null && String(selectionLostWith) === armyId;
+const stillStands = (pick: Pick): boolean => {
+  const { mapSelection, letGoByTheMap } = useUIStore.getState();
+  return samePick(pick, mapSelection) || samePick(pick, letGoByTheMap);
 };
 
 /** A pick a card of this army's order stands on: the army itself acting on a tile, or a tile or structure picked. */
