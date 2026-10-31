@@ -42,9 +42,9 @@ pub struct SitePayout {
 }
 
 // Camps and beasts pay labor on clear; a ruin pays the chest stored with it (crate::relics::SiteChest).
-pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resources::ResourceAmount> {
+pub fn site_reward(category: u8, site: ExpeditionSite, depth: u8) -> Option<crate::resources::ResourceAmount> {
     use crate::resources::{ESSENCE, LABOR, ResourceAmount};
-    if category == crate::taxonomy::CAMP_CATEGORY {
+    let reward = if category == crate::taxonomy::CAMP_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 2 })
     } else if category == crate::taxonomy::BEASTS_CATEGORY {
         Some(ResourceAmount { resource_type: LABOR, amount: site.initial_guard_count / 4 })
@@ -52,7 +52,12 @@ pub fn site_reward(category: u8, site: ExpeditionSite) -> Option<crate::resource
         Some(ResourceAmount { resource_type: ESSENCE, amount: site.initial_guard_count * 3 })
     } else {
         None
-    }
+    };
+    reward.map(|reward| ResourceAmount { amount: depth_reward(reward.amount, depth), ..reward })
+}
+
+pub fn depth_reward(amount: u128, depth: u8) -> u128 {
+    amount * (2 + depth.into()) / 2
 }
 
 pub fn validate_game(rules: crate::registrar::LaunchRules, start: u64, duration: u64) {
@@ -145,7 +150,6 @@ pub struct DepthRules {
     pub site_guard_lower: u16,
     pub site_guard_upper: u16,
     pub reveal_site_neighbors: bool,
-    pub entry_stamina: u16,
     // Each chest tier's odds, in basis points, for a ruin found at this depth.
     pub chest: crate::relics::ChestTiers,
     pub ruin_guard_lower: u32,

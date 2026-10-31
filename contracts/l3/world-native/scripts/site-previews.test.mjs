@@ -1,12 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import ts from "typescript";
 import { compileSitePreviews, generateSitePreviews } from "./generate-site-previews.mjs";
 
 const root = new URL("../", import.meta.url);
 const source = Object.fromEntries(
   await Promise.all(
-    ["expeditions", "progression", "taxonomy", "resources", "rules"].map(async (name) => [
+    ["expeditions", "progression", "taxonomy", "resources", "rules", "troops"].map(async (name) => [
       name,
       await readFile(new URL(`src/${name}.cairo`, root), "utf8"),
     ]),
@@ -33,8 +34,8 @@ test("a new category or a changed resource, ratio or XP rule comes from Cairo", 
     taxonomy: source.taxonomy.replace("BEASTS_CATEGORY: u8 = 11", "BEASTS_CATEGORY: u8 = 12"),
   };
   const output = compileSitePreviews(changed);
-  assert.match(output, /category === 12\) return \{ resourceType: 22, amount: initialGuardCount \/ 8n/);
-  assert.match(output, /category === 10\) return \{ resourceType: 38, amount: initialGuardCount \* 7n/);
+  assert.match(output, /category === 12\) return \{ resourceType: 22, amount: depthReward\(initialGuardCount \/ 8n/);
+  assert.match(output, /category === 10\) return \{ resourceType: 38, amount: depthReward\(initialGuardCount \* 7n/);
   assert.match(output, /integerSqrt\(initialGuardCount \/ 1000000000n \* 36n\) \/ 3n/);
 });
 
@@ -56,7 +57,50 @@ test("unsupported formulas, missing constants and changed signatures refuse gene
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
     { progression: source.progression.replace("(root / 2)", "(root / 2 + 1)") },
-    { progression: source.progression.replace("clear_xp(strength: u128) -> u32", "clear_xp(strength: u128) -> u64") },
+    { troops: source.troops.replace("const RIFT_GUARD_PERCENT: u32 = 115;", "") },
+    { troops: source.troops.replace("(scaled + step * 50)", "(scaled + step * 50 + 1)") },
+    {
+      progression: source.progression.replace(
+        "clear_xp(strength: u128, depth: u8) -> u32",
+        "clear_xp(strength: u128, depth: u8) -> u64",
+      ),
+    },
   ])
     assert.throws(() => compileSitePreviews({ ...source, ...changed }), /Unsupported|Missing/);
+});
+
+test("rift guard bounds execute Cairo's percentage and grid rounding at every depth", async () => {
+  const load = async (troops) => {
+    const { outputText } = ts.transpileModule(compileSitePreviews({ ...source, troops }), {
+      compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
+    });
+    return import(`data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}`);
+  };
+  const { previewRiftGuardBound } = await load(source.troops);
+  assert.deepEqual(
+    [
+      [1200, 1400],
+      [2400, 2800],
+      [4700, 5700],
+      [9300, 11500],
+    ].map((bounds) => bounds.map((bound) => previewRiftGuardBound(bound, 100))),
+    [
+      [1400, 1600],
+      [2800, 3200],
+      [5400, 6600],
+      [10700, 13200],
+    ],
+  );
+  const stronger = await load(source.troops.replace("RIFT_GUARD_PERCENT: u32 = 115", "RIFT_GUARD_PERCENT: u32 = 120"));
+  assert.equal(stronger.previewRiftGuardBound(11500, 100), 13800);
+  const rounding = await load(source.troops.replace("step * 50", "step * 1"));
+  assert.equal(rounding.previewRiftGuardBound(1200, 100), 1300);
+});
+
+test("depth premiums come from the shared Cairo formula", () => {
+  const changed = {
+    ...source,
+    expeditions: source.expeditions.replace("amount * (2 + depth.into()) / 2", "amount * (3 + depth.into()) / 3"),
+  };
+  assert.match(compileSitePreviews(changed), /3n \+ BigInt\(depth\)/);
 });

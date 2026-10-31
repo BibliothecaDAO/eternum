@@ -2,14 +2,17 @@ pub use world_test_support::tests::frontier_guards::*;
 
 
 #[test]
-fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
+fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
+    let rifts = array![(1400_u32, 1600_u32), (2800, 3200), (5400, 6600), (10700, 13200)];
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
         for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY] {
             let ruin = category == RUIN_CATEGORY;
             let (lower, upper) = if ruin {
                 (depth.ruin_guard_lower, depth.ruin_guard_upper)
+            } else if category == RIFT_CATEGORY {
+                *rifts.at(depth_index)
             } else {
                 (depth.site_guard_lower.into(), depth.site_guard_upper.into())
             };
@@ -36,8 +39,8 @@ fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
 fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
     let expected = array![
-        (300_u128, 350_u128, 450_u128, 550_u128), (900, 1050, 1350, 1650), (2400, 2800, 3600, 4400),
-        (6000, 7000, 9000, 11000),
+        (380_u128, 420_u128, 430_u128, 470_u128), (760, 840, 860, 940), (1520, 1680, 1720, 1880),
+        (3040, 3360, 3440, 3760),
     ];
     let mut previous_stronger = 0;
     for depth_index in 0_u32..4 {
@@ -83,11 +86,9 @@ fn beasts_draw_two_depth_scaled_ranges_below_every_other_site_guard() {
 fn beast_ranges_include_both_endpoints_at_every_depth() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
     for (depth, seed, count) in array![
-        (0_u32, 18_u32, 300_u128), (0_u32, 114_u32, 550_u128), (0_u32, 142_u32, 450_u128), (0_u32, 173_u32, 350_u128),
-        (1_u32, 63_u32, 900_u128), (1_u32, 125_u32, 1050_u128), (1_u32, 542_u32, 1350_u128),
-        (1_u32, 1006_u32, 1650_u128), (2_u32, 314_u32, 2400_u128), (2_u32, 723_u32, 2800_u128),
-        (2_u32, 798_u32, 3600_u128), (2_u32, 1267_u32, 4400_u128), (3_u32, 1230_u32, 7000_u128),
-        (3_u32, 3288_u32, 11000_u128), (3_u32, 5293_u32, 9000_u128), (3_u32, 7262_u32, 6000_u128),
+        (0_u32, 8_u32, 380_u128), (0, 20, 430), (0, 25, 470), (0, 34, 420), (1, 21, 760), (1, 80, 860), (1, 102, 840),
+        (1, 1052, 940), (2, 15, 1680), (2, 191, 1720), (2, 247, 1520), (2, 477, 1880), (3, 216, 3760), (3, 218, 3040),
+        (3, 535, 3360), (3, 825, 3440),
     ] {
         let guard = frontier_guard(
             BEASTS_CATEGORY, *preset.settlement.depths.at(depth), seed.into(), preset.rules, 360,
@@ -103,8 +104,8 @@ fn ruin_beasts_are_sized_by_layer_in_one_troop_type() {
     for depth in preset.settlement.depths {
         bounds.append((*depth.ruin_guard_lower, *depth.ruin_guard_upper));
     }
-    // Land, then Ethereal I-III; Ethereal III is grown 1.3x for legendary Battle.
-    assert_eq!(bounds, array![(2000, 4000), (6000, 10500), (18000, 22500), (52500, 76000)]);
+    // Surface, then Ethereal I-III; every band stays below a 1.25x spread.
+    assert_eq!(bounds, array![(2700, 3300), (4900, 6100), (9800, 12200), (19600, 24400)]);
 }
 
 #[test]

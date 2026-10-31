@@ -3,6 +3,8 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, StructureType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 
+export const DEPLOY_SLOT_KEY = "0x9";
+
 const set = (key: string, model: string, value: Record<string, unknown>) => ({ model, key, value });
 const realm = {
   game_id: 1,
@@ -111,7 +113,7 @@ export const frontierDay = () => {
       resource_type: 35,
       balance: String(1000n * BigInt(RESOURCE_PRECISION)),
     }),
-    set("0x9", "ArmySlot", {
+    set(DEPLOY_SLOT_KEY, "ArmySlot", {
       game_id: 1,
       structure_id: 7,
       epoch: "0",

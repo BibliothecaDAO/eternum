@@ -9,13 +9,12 @@ export const SPIRE_ARMY = 201;
 export const SPIRE_ARMY_TILE_KEY = "0x904";
 export const SPIRE_DAY_NOW = 350;
 
-const depthRules = (depth: number, entry: number) => ({
+const depthRules = (depth: number) => ({
   model: "DepthRules",
   key: `0x90${depth}`,
   value: {
     game_id: 1,
     depth,
-    entry_stamina: entry,
     reveal_percent: 100,
     site_guard_lower: 1,
     site_guard_upper: 2,
@@ -32,8 +31,7 @@ const depthRules = (depth: number, entry: number) => ({
 });
 
 /**
- * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched and entry costs of
- * 30, 40 and 50 stamina, as Frontier prices them, and its army standing beside the spire, on its tile or three tiles off it,
+ * Realm 7's day 0 (its spire on the home ring around its site), with Ethereal I and II researched, free entry, and its army standing beside the spire, on its tile or three tiles off it,
  * holding the stamina given. The spire card's tests and the game lab's spire both play it.
  */
 export const spireDay = ({
@@ -62,9 +60,9 @@ export const spireDay = ({
   store.applyFacts([
     // research.cairo: the depth row's tier sits at bit 46; Ethereal I and II are researched.
     { model: "RealmKnowledge", key: "0xd", value: { game_id: 1, structure_id: 7, learned: String(2n << 48n) } },
-    depthRules(1, 30),
-    depthRules(2, 40),
-    depthRules(3, 50),
+    depthRules(1),
+    depthRules(2),
+    depthRules(3),
     { model: "TileOccupancy", key: "0x75", value: null },
     {
       model: "TileOccupancy",

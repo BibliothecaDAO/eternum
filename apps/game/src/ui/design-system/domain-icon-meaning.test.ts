@@ -56,7 +56,6 @@ describe("guard and site icon meanings", () => {
       site_guard_lower: 1000,
       site_guard_upper: 1600,
       reveal_site_neighbors: false,
-      entry_stamina: 0,
       reveal_percent: 10,
       chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
       ruin_guard_lower: 2000,

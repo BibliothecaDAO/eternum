@@ -2,8 +2,8 @@
   {
     "key": "frontierChestFindBps",
     "file": "discovery.cairo",
-    "source": "pub const FRONTIER_CHEST_FIND_BPS: u128 = 1;",
-    "value": 1
+    "source": "pub const FRONTIER_CHEST_FIND_BPS: u128 = 5;",
+    "value": 5
   },
   {
     "key": "spireFindBps",

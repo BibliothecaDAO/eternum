@@ -368,7 +368,6 @@ fn write_depths(
                 + odds.legendary.into() == 10000,
             "chest tier odds must sum to 100 percent",
         );
-        assert!(index != 0 || value.entry_stamina == 0, "surface needs no entry stamina");
         assert!(value.reveal_percent != 0 && value.reveal_percent <= 100, "invalid reveal percentage");
         assert!(
             value.site_guard_lower != 0 && value.site_guard_lower <= value.site_guard_upper, "invalid depth guards",

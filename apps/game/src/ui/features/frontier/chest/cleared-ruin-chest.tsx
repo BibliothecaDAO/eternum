@@ -53,5 +53,5 @@ const ruinChest = (store: NativeFactStore, siteId: number): { tier: Tier; lords:
 /** The XP the cleared site paid, from the guard it started with; unknown once its row has left the store. */
 const clearedSiteXp = (store: NativeFactStore, siteId: number): number | undefined => {
   const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: siteId });
-  return site && siteClearXp(site);
+  return site && siteClearXp(store, site);
 };

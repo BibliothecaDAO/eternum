@@ -61,10 +61,13 @@ pub mod ResourcesLogic {
             let site = crate::logic::expeditions::expedition_site(key).expect('missing expedition site');
             assert!(site.clear.is_none(), "site already cleared");
             let category = site.category;
+            let depth = crate::logic::expeditions::depth_at(
+                key.game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
+            );
             let reward = if category == crate::taxonomy::RUIN_CATEGORY {
                 Some(crate::logic::lords_budget::pay_ruin(key, home_id, context))
             } else {
-                crate::expeditions::site_reward(category, site)
+                crate::expeditions::site_reward(category, site, depth)
             };
             let home = ResourceKey { game_id: key.game_id, entity_id: home_id };
             let reward = if let Some(reward) = reward {
@@ -89,7 +92,7 @@ pub mod ResourcesLogic {
                     class_hash: self.release.classes(key.game_id).relics.read(),
                 },
                 explorer,
-                crate::progression::XpAward::Clear(site.initial_guard_count),
+                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
             );
             if category == crate::taxonomy::RUIN_CATEGORY {
                 crate::logic::expeditions::close_ruins(

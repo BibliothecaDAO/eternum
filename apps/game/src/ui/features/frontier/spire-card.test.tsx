@@ -96,7 +96,7 @@ afterEach(() => {
 });
 
 describe("a realm's spire, from the player's path", () => {
-  it("offers the selected army each researched depth with its stamina, enters the one picked, and shows it there", async () => {
+  it("offers the selected army each researched depth without an entry cost, enters the one picked, and shows it there", async () => {
     const { store, rules, spire, armyTile } = spireDay();
     const hud = renderHud(store);
     try {
@@ -104,8 +104,8 @@ describe("a realm's spire, from the player's path", () => {
       expect(hud.sheet()?.getAttribute("aria-label")).toBe("Spire");
       expect(hud.sheet()!.textContent).toContain("Army");
       expect(hud.depths()).toEqual([
-        { depth: "Ethereal I", line: "30 stamina", button: "Enter", enabled: true },
-        { depth: "Ethereal II", line: "40 stamina", button: "Enter", enabled: true },
+        { depth: "Ethereal I", line: undefined, button: "Enter", enabled: true },
+        { depth: "Ethereal II", line: undefined, button: "Enter", enabled: true },
         // The next depth is its research's, through Research.
         { depth: "Ethereal III", line: "Research it to open it", button: "Research", enabled: true },
       ]);
@@ -139,8 +139,8 @@ describe("a realm's spire, from the player's path", () => {
     }
   });
 
-  it("says what each depth lacks: the stamina for it, or a free landing", () => {
-    const { store, rules, spire, armyTile } = spireDay({ stamina: 35n });
+  it("allows an exhausted army to enter a free landing", () => {
+    const { store, rules, spire, armyTile } = spireDay({ stamina: 0n });
     // Something already stands where the army would land in Ethereal I.
     store.applyFacts([
       {
@@ -163,8 +163,8 @@ describe("a realm's spire, from the player's path", () => {
       const [first, second] = hud.depths();
       expect(first).toEqual({ depth: "Ethereal I", line: "Its landing is taken", button: "Enter", enabled: false });
       expect(second.depth).toBe("Ethereal II");
-      expect(second.line).toMatch(/^Needs 40 stamina, have 3\d$/);
-      expect(second.enabled).toBe(false);
+      expect(second.line).toBeUndefined();
+      expect(second.enabled).toBe(true);
     } finally {
       hud.unmount();
     }
@@ -190,12 +190,12 @@ describe("a realm's spire, from the player's path", () => {
     const away = spireDay({ standing: "away" });
     hud = renderHud(away.store);
     try {
-      // No army selected and none beside: what to do, and every depth's price still shown.
+      // No army selected and none beside: what to do, and every researched depth is listed.
       act(() => useUIStore.getState().selectOnMap({ kind: "hex", hex: away.spire }));
       expect(hud.sheet()!.textContent).toContain("Select an army beside the spire");
       expect(hud.depths().map(({ line, enabled }) => ({ line, enabled }))).toEqual([
-        { line: "30 stamina", enabled: false },
-        { line: "40 stamina", enabled: false },
+        { line: undefined, enabled: false },
+        { line: undefined, enabled: false },
         { line: "Research it to open it", enabled: true },
       ]);
       // The army selected away from the spire: it must stand beside it, and nothing commits it yet.
@@ -395,7 +395,7 @@ describe("a realm's spire, from the player's path", () => {
     vi.spyOn(configManager, "isCommandEnabled").mockImplementation((command) => command === "EnterDepth");
     const beside = plan("beside");
     expect(beside && ActionPaths.getActionType(beside)).toBe(ActionType.EnterDepth);
-    expect(beside?.at(-1)?.staminaCost).toBe(30);
+    expect(beside?.at(-1)?.staminaCost).toBe(0);
     const away = plan("away");
     expect(away && ActionPaths.getActionType(away)).not.toBe(ActionType.EnterDepth);
   });

@@ -39,7 +39,7 @@ export const siteUseFacts = (
   const snapshot = army && getExplorerStaminaSnapshot({ timestamp, liveTroops: resolveExplorerTroops(store, army) });
   return {
     kind: site.kind,
-    gain: siteGain(site.kind, shrineRewardAt(store, site.tile)),
+    gain: siteGain(site.kind, shrineRewardAt(store, site.tile), snapshot ?? undefined),
     stamina: snapshot ? { current: snapshot.current, max: snapshot.max } : undefined,
   };
 };

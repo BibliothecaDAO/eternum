@@ -252,7 +252,6 @@ function buildSettlement(config: Config, preset: ReturnType<typeof nativePresetF
       site_guard_lower: depth.siteGuardLower,
       site_guard_upper: depth.siteGuardUpper,
       reveal_site_neighbors: depth.revealSiteNeighbors,
-      entry_stamina: depth.entryStamina,
       chest: depth.chest,
       ruin_guard_lower: depth.ruinGuardLower,
       ruin_guard_upper: depth.ruinGuardUpper,

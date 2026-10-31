@@ -208,9 +208,9 @@ const drawSelectedSite = (setup: unknown) => {
 describe("a Shrine or a Well beside the selected army, on the world map", () => {
   it.each([
     { kind: "Shrine", tile: SHRINE_TILE, gives: "III skill point", gesture: "rightClick" },
-    { kind: "Well", tile: WELL_TILE, gives: "+60 stamina", gesture: "rightClick" },
+    { kind: "Well", tile: WELL_TILE, gives: "+75 stamina", gesture: "rightClick" },
     { kind: "Shrine", tile: SHRINE_TILE, gives: "III skill point", gesture: "hold" },
-    { kind: "Well", tile: WELL_TILE, gives: "+60 stamina", gesture: "hold" },
+    { kind: "Well", tile: WELL_TILE, gives: "+75 stamina", gesture: "hold" },
   ] as const)(
     "a $gesture on the $kind sends its InteractSite where the army stands",
     async ({ tile, gives, gesture }) => {

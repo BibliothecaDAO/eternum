@@ -99,7 +99,7 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
         onClose={() => {}}
       />,
     ),
-    receipt: publicText(<SiteReceipt selected={{ site: clear }} />),
+    receipt: publicText(<SiteReceipt selected={{ site: clear, xp: 123 }} />),
   };
   for (const [surface, text] of Object.entries(words)) {
     expect(text, surface).toMatch(/Troll/);

@@ -395,6 +395,11 @@ pub fn frontier_guard(
 ) -> Troops {
     let (lower, upper) = if category == crate::taxonomy::RUIN_CATEGORY {
         (depth.ruin_guard_lower, depth.ruin_guard_upper)
+    } else if category == crate::taxonomy::RIFT_CATEGORY {
+        (
+            rift_guard_bound(depth.site_guard_lower, depth.guard_step),
+            rift_guard_bound(depth.site_guard_upper, depth.guard_step),
+        )
     } else {
         (depth.site_guard_lower.into(), depth.site_guard_upper.into())
     };
@@ -413,6 +418,14 @@ pub fn frontier_guard(
         lower + step * crate::random::range(seed, 1, (upper - lower) / step + 1)
     };
     discovered_guard(TroopType::Knight, TroopTier::T1, count, rules, timestamp)
+}
+
+const RIFT_GUARD_PERCENT: u32 = 115;
+
+fn rift_guard_bound(camp: u16, step: u32) -> u32 {
+    // Round the stronger guard to the same inclusive preset grid.
+    let scaled: u32 = Into::<u16, u32>::into(camp) * RIFT_GUARD_PERCENT;
+    (scaled + step * 50) / (step * 100) * step
 }
 
 fn discovered_guard(
