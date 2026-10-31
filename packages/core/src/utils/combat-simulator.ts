@@ -272,13 +272,6 @@ export class CombatSimulator {
   }
 
   /**
-   * @deprecated Use calculateNextBattleCooldownEnd instead
-   */
-  public calculateBattleCooldownEnd(currentCooldownEnd: number, now: number, refundMultiplier: number): number {
-    return this.calculateNextBattleCooldownEnd(currentCooldownEnd, now, refundMultiplier);
-  }
-
-  /**
    * Simulates a battle between two armies in a specific biome, with support for relic effects.
    *
    * @param attacker - The attacking army with troopCount, tier, troopType, and stamina

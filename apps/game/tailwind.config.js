@@ -77,44 +77,6 @@ export default {
       flexBasis: { content: "content" },
       zIndex: { 1: "1", 100: "100", 250: "250", 1000: "1000", ...prefixed(HUD_LAYERS, "hud") },
       screens: SCREENS,
-      typography: ({ theme }) => ({
-        pink: {
-          css: {
-            "--tw-prose-body": theme("colors.gold"),
-            "--tw-prose-headings": theme("colors.gold"),
-            "--tw-prose-lead": theme("colors.pink[700]"),
-            "--tw-prose-links": theme("colors.crimson"),
-            "--tw-prose-bold": theme("colors.gold"),
-            "--tw-prose-counters": theme("colors.pink[600]"),
-            "--tw-prose-bullets": theme("colors.pink[400]"),
-            "--tw-prose-hr": theme("colors.pink[300]"),
-            "--tw-prose-quotes": theme("colors.pink[900]"),
-            "--tw-prose-quote-borders": theme("colors.pink[300]"),
-            "--tw-prose-captions": theme("colors.pink[700]"),
-            "--tw-prose-code": theme("colors.pink[900]"),
-            "--tw-prose-pre-code": theme("colors.pink[100]"),
-            "--tw-prose-pre-bg": theme("colors.pink[900]"),
-            "--tw-prose-th-borders": theme("colors.pink[300]"),
-            "--tw-prose-td-borders": theme("colors.pink[200]"),
-            "--tw-prose-invert-body": theme("colors.pink[200]"),
-            "--tw-prose-invert-headings": theme("colors.white"),
-            "--tw-prose-invert-lead": theme("colors.pink[300]"),
-            "--tw-prose-invert-links": theme("colors.white"),
-            "--tw-prose-invert-bold": theme("colors.white"),
-            "--tw-prose-invert-counters": theme("colors.pink[400]"),
-            "--tw-prose-invert-bullets": theme("colors.pink[600]"),
-            "--tw-prose-invert-hr": theme("colors.pink[700]"),
-            "--tw-prose-invert-quotes": theme("colors.pink[100]"),
-            "--tw-prose-invert-quote-borders": theme("colors.pink[700]"),
-            "--tw-prose-invert-captions": theme("colors.pink[400]"),
-            "--tw-prose-invert-code": theme("colors.white"),
-            "--tw-prose-invert-pre-code": theme("colors.pink[300]"),
-            "--tw-prose-invert-pre-bg": "rgb(0 0 0 / 50%)",
-            "--tw-prose-invert-th-borders": theme("colors.pink[600]"),
-            "--tw-prose-invert-td-borders": theme("colors.pink[700]"),
-          },
-        },
-      }),
       colors: {
         // Each kit colour reads its surface's channels, so opacity modifiers (`/10`, `theme(colors.kit.gold / 7%)`) work.
         kit: Object.fromEntries(
@@ -400,7 +362,6 @@ export default {
     "text-[10px]",
   ],
   plugins: [
-    require("@tailwindcss/typography"),
     // The token file's values as CSS variables, and its faces, for stylesheets and code that cannot take a class: the
     // HUD's palette and finish on :root, the shell's under data-surface="shell".
     plugin(function ({ addBase }) {

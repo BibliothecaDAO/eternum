@@ -262,9 +262,6 @@
     ],
     "packages/!(provider)/**": [
       "classMembers"
-    ],
-    "apps/game/src/services/amm/*.ts": [
-      "files"
     ]
   },
   "rules": {
