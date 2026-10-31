@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807";
+export const nativeFactSchemaIdentity = "bca1e51fa454d05f8276546836cb26cb94b3da2874c5c11d4fb569641df63471";
 export const nativeRuleConstants = {
   "SHRINE_COMMON_BPS": 5000,
   "SHRINE_UNCOMMON_BPS": 3000,
