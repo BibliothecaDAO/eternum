@@ -4,6 +4,311 @@ import type { PatchNote } from "../news/patch-note";
 
 export const patchNotes = [
   {
+    "date": "2026-11-02",
+    "title": "Devcon season",
+    "summary": "Armies grow by skill points, the Devcon season opens with 300,000 LORDS, and you choose the home your realm is founded on.",
+    "modes": {
+      "all": [
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Real LORDS",
+          "line": "play.realms.party pays in LORDS from the Devcon season on: Blitz entries, chests, prizes and Frontier's LORDS. The dev game keeps its free test LORDS."
+        },
+        {
+          "kind": "new",
+          "icon": "home",
+          "title": "Choose your home",
+          "line": "Entering a Frontier season, the home you found stands large with what it claims each day, your other choices beside it and every Realm a search away. Found it with a Realm your wallet holds, an event ticket or a free home; no Realm number is typed any more."
+        },
+        {
+          "kind": "new",
+          "icon": "person",
+          "title": "Holdings on You",
+          "line": "Your card on You shows the Realms your wallet holds and your Devcon ticket, each opening its sheet. With no wallet linked, it reads Link a wallet for your Realms and LORDS."
+        },
+        {
+          "kind": "new",
+          "icon": "menu",
+          "title": "Four places",
+          "line": "Play, Season, Chat and You on the bar, phone and desktop alike; What's new and Market are rows in You. A mode with nothing to play now is dimmed and says why."
+        },
+        {
+          "kind": "new",
+          "icon": "chat",
+          "title": "Chat rebuilt",
+          "line": "One Global room everywhere, in the app, Frontier and Blitz, with private conversations in their own Messages tab. Chat opens on the newest message, replies quote the line they answer, @ mentions a player, a name opens the player's card with Message and Mute, and a place on the map drops in as a chip that opens it."
+        },
+        {
+          "kind": "new",
+          "icon": "notifications",
+          "title": "Push notifications",
+          "line": "Your phone can tell you when a Frontier day opens and what you can claim, when the season is over, when a Blitz settles, and when a message or a mention reaches you. Nothing between 22:00 and 08:00 on your phone's clock."
+        },
+        {
+          "kind": "new",
+          "icon": "layers",
+          "title": "The Realms brand",
+          "line": "The lettered REALMS roundel in the top bar, new mode colours and lockups, new icons and a new favicon."
+        },
+        {
+          "kind": "new",
+          "icon": "move",
+          "title": "Army paths",
+          "line": "The selected army's route draws as chevrons to a ringed destination, a hovered army shows a slim arrow, and Move or Explore previews its path before you order it."
+        },
+        {
+          "kind": "fix",
+          "icon": "play",
+          "title": "A smooth start",
+          "line": "The loading screen holds until the opening view is ready, so the first second in a game no longer stutters."
+        },
+        {
+          "kind": "fix",
+          "icon": "map",
+          "title": "The camera stays put",
+          "line": "Fighting, exploring, moving or building no longer move the camera; picking an army from a list centres on it."
+        },
+        {
+          "kind": "fix",
+          "icon": "explore",
+          "title": "Results sooner",
+          "line": "Claims, moves and your own explores show their result on screen sooner."
+        },
+        {
+          "kind": "fix",
+          "icon": "map",
+          "title": "Red on the minimap",
+          "line": "Enemies are red on the minimap, as on the map's labels."
+        },
+        {
+          "kind": "fix",
+          "icon": "map-army",
+          "title": "Labels at every zoom",
+          "line": "Hover labels open at every zoom, a beast's label stays beside your army, and cleared sites lose their flag token."
+        },
+        {
+          "kind": "fix",
+          "icon": "realm",
+          "title": "Realm view light",
+          "line": "Every building in the realm view is lit one way in any weather, and its shadows agree with the trees'."
+        }
+      ],
+      "frontier": [
+        {
+          "kind": "new",
+          "icon": "star",
+          "title": "Skill points",
+          "line": "XP only goes up now. At 75, 200, 400, 800 and 1,500 XP an army earns a Common, Uncommon, Rare, Epic and Legendary skill point, then the same again every 1,500. A point raises one attribute one rank, up to the point's own rank, and refills 20 to 60 stamina by its rank; spent on Stamina alone it refills double."
+        },
+        {
+          "kind": "new",
+          "icon": "research",
+          "title": "Ranks I to V",
+          "line": "Every attribute and every research side starts at 0 and climbs Common I to Legendary V. Research gains a cheap first rank at half the old first price, and training buildings grant new armies rank I."
+        },
+        {
+          "kind": "new",
+          "icon": "attack",
+          "title": "Battle",
+          "line": "Each rank hits harder: 10%, 25%, 45%, 70%, then 100%."
+        },
+        {
+          "kind": "new",
+          "icon": "stamina",
+          "title": "Logistics",
+          "line": "Each rank carries more stamina: 20, 45, 75, 110, then 150."
+        },
+        {
+          "kind": "new",
+          "icon": "explore",
+          "title": "Scouting",
+          "line": "Choose Trolls, Rifts or Sanctuaries (Shrines and Wells together), and each rank adds 10%, 15%, 20%, 25%, then 30% to that kind's find rate: all five on one kind find twice as many."
+        },
+        {
+          "kind": "new",
+          "icon": "people",
+          "title": "Homecoming",
+          "line": "Each rank sends more survivors home at the day's end: 3%, 8%, 14%, 21%, then 30%."
+        },
+        {
+          "kind": "new",
+          "icon": "shrine",
+          "title": "Shrines grant a skill point",
+          "line": "A Shrine holds one skill point, rolled when it is found and shown on its card: on the surface Common 50%, Uncommon 30%, Rare 15%, Epic 4% and Legendary 1%, one rank higher for each depth below. An army beside it takes the point."
+        },
+        {
+          "kind": "new",
+          "icon": "explore",
+          "title": "Explore XP by depth",
+          "line": "A reveal gives 2, 3, 4 or 5 XP, by depth.",
+          "from": "2",
+          "to": "2–5"
+        },
+        {
+          "kind": "new",
+          "icon": "devcon-realm",
+          "title": "The Devcon season",
+          "line": "Frontier at Devcon, from Nov 3 12:00 IST to Nov 6 20:00 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
+        },
+        {
+          "kind": "new",
+          "icon": "devcon-golden-realm",
+          "title": "Devcon tickets",
+          "line": "Each flyer founds a Devcon realm that claims 1,000 Labor and 1,000 Essence a game day; 15 golden tickets claim 2,000 and 2,000. One ticket per account, and Devcon realms have their own look."
+        },
+        {
+          "kind": "new",
+          "icon": "victory",
+          "title": "300,000 LORDS at Devcon",
+          "line": "70% pays chests, and the leaderboard's top 3 take 45,000, 30,000 and 15,000."
+        },
+        {
+          "kind": "new",
+          "icon": "leaderboard",
+          "title": "The season's podium",
+          "line": "70% of every season's pool pays chests and 30% its leaderboard's top places, shown as medal tiles in the game and the app. Only realms that cleared a site take a place."
+        },
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Paid at the season's end",
+          "line": "The LORDS your realm still holds when a season ends, and your prize, are paid to your linked wallet automatically. Withdrawals during the season stay instant."
+        },
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Link a wallet for your LORDS",
+          "line": "With LORDS and no linked wallet, your purse, Withdraw, the season's end and a ruin's chest say so, with Link wallet. After the season, link one by the claim deadline, 7 days on, or those LORDS go to the next season."
+        },
+        {
+          "kind": "new",
+          "icon": "claim",
+          "title": "Realm Labor",
+          "line": "Claim your home's Labor, and a ticket's Essence, once a game day. The sheet shows the days around today, what fits in your storage, and Remind me for the next day."
+        },
+        {
+          "kind": "new",
+          "icon": "chest",
+          "title": "The ruin's chest",
+          "line": "Clearing a ruin opens a real chest in the middle of the screen, its LORDS counting up."
+        },
+        {
+          "kind": "new",
+          "icon": "deploy",
+          "title": "Deploy into a slot",
+          "line": "Choose the army slot Deploy fills, starting on your first open one. Deploy fits a phone on one screen, lights only the tiles it can use, and puts Build beside it when wheat limits it."
+        },
+        {
+          "kind": "new",
+          "icon": "lords",
+          "title": "Partial refill",
+          "line": "Refill buys as much stamina as your LORDS cover, 1 LORDS a point."
+        },
+        {
+          "kind": "new",
+          "icon": "eye",
+          "title": "Visit a realm",
+          "line": "Tap any building or the castle of a realm you visit to see what it is and makes. On a phone, a double tap on a realm opens its view, as a double-click does on a desktop."
+        },
+        {
+          "kind": "new",
+          "icon": "chronicles",
+          "title": "One row per action",
+          "line": "The Feed tells a won attack and the clear it made as one row, and shows a clear's XP beside what it paid. On a desktop the Feed is a panel like Season and Research."
+        },
+        {
+          "kind": "new",
+          "icon": "attack",
+          "title": "Forecast from afar",
+          "line": "A site's card shows the fight's forecast even when your army is too far away, with Move when it can get there."
+        },
+        {
+          "kind": "new",
+          "icon": "research",
+          "title": "Research says what it does",
+          "line": "Building cards and Research spell out what each rank gives, and why a building's price rose."
+        },
+        {
+          "kind": "balance",
+          "icon": "beast-cyclops",
+          "title": "Beasts pay labor",
+          "line": "Clearing beasts pays labor, a quarter of their starting troops, as well as XP."
+        },
+        {
+          "kind": "balance",
+          "icon": "ruin",
+          "title": "Ruins",
+          "line": "Find any number of ruins and clear one a day; the others disappear."
+        },
+        {
+          "kind": "balance",
+          "icon": "chest",
+          "title": "Chests at every depth",
+          "line": "A chest a reveal finds can turn up at any depth, with its layer's chest odds, and deeper ruins pay richer chests: Ethereal I starts at Uncommon, II at Rare, III at Epic."
+        },
+        {
+          "kind": "balance",
+          "icon": "storage",
+          "title": "Storage",
+          "line": "A realm stores 6,000, 18,000, 40,000, then 80,000 wheat and labor by castle level."
+        },
+        {
+          "kind": "balance",
+          "icon": "research",
+          "title": "Research steps",
+          "line": "Each research rank adds 20% output or 40% storage, and each hut rank 20% population.",
+          "from": "25% / 50%",
+          "to": "20% / 40%"
+        },
+        {
+          "kind": "balance",
+          "icon": "rations",
+          "title": "Rations",
+          "line": "Each Rations rank takes 0.2 wheat off a troop's deploy cost.",
+          "from": "0.25",
+          "to": "0.2"
+        },
+        {
+          "kind": "balance",
+          "icon": "depth-1",
+          "title": "The Ethereal depths",
+          "line": "Research the depths for less Essence.",
+          "from": "160,000 / 400,000 / 900,000",
+          "to": "100,000 / 250,000 / 500,000"
+        },
+        {
+          "kind": "balance",
+          "icon": "war-hall",
+          "title": "Training buildings",
+          "line": "A training building costs Essence and labor and comes with rank I.",
+          "from": "3,000 labor",
+          "to": "6,000 Essence + 1,500 labor"
+        },
+        {
+          "kind": "fix",
+          "icon": "military",
+          "title": "Back to your army",
+          "line": "After a won clear or an order from a card, the panel returns to your army."
+        },
+        {
+          "kind": "fix",
+          "icon": "menu",
+          "title": "Panels and Back",
+          "line": "Every Menu row is one tap target, every panel shares one frame, and Back never stops on a panel you cannot see."
+        },
+        {
+          "kind": "fix",
+          "icon": "attack",
+          "title": "Site cards",
+          "line": "Select an army on the map, then tap a site: no army picker, the guard shown as a token, and standing guards without stamina bars."
+        }
+      ],
+      "blitz": [],
+      "eternum": []
+    }
+  },
+  {
     "date": "2026-10-29",
     "title": "Season alpha",
     "summary": "Frontier opens, the app and the HUD are new, and Blitz changes almost everywhere it meets the map.",
