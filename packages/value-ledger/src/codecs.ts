@@ -173,6 +173,16 @@ export const decodeWithdrawalPayment = (fields: readonly string[]) => {
   return { paid, seasonId, wallet: fields[2]!, amount, prizeRank, prizeCount, reportedAt };
 };
 
+/** Pending Frontier settlement: exact chest/prize totals and its earliest execution timestamp. */
+export const decodeSettlementReport = (fields: readonly string[]) => {
+  if (fields.length !== 5) throw new Error("invalid_settlement_report");
+  return {
+    chestWithdrawn: ledgerU256(fields[0]!, fields[1]!),
+    prizeWithdrawn: ledgerU256(fields[2]!, fields[3]!),
+    ready: ledgerInteger(fields[4]!),
+  };
+};
+
 /**
  * Chest: exists, season_id, band, requested, finished, requester, request_block. A mystery chest carries only its season
  * and rank band (0 best .. 4); its holder's open request burns it and fixes a future block, and the draw is finished

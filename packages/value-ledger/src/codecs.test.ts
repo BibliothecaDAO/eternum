@@ -16,6 +16,7 @@ import {
   decodeRegistration,
   decodeSeasonWinner,
   decodeWithdrawalPayment,
+  decodeSettlementReport,
   ledgerBool,
   ledgerInteger,
   ledgerU256,
@@ -289,4 +290,19 @@ it("counts a chest's draw down to the block where open_finish may run: the reque
   expect(chestDrawBlocksLeft(100, 110)).toBe(1);
   expect(chestDrawBlocksLeft(100, 111)).toBe(0);
   expect(chestDrawBlocksLeft(100, 140)).toBe(0);
+});
+
+it("reads exact settlement totals and rejects malformed proposals", () => {
+  expect(decodeSettlementReport(["17", "1", "3", "2", "2000"])).toEqual({
+    chestWithdrawn: String(2n ** 128n + 17n),
+    prizeWithdrawn: String(2n ** 129n + 3n),
+    ready: 2000,
+  });
+  expect(decodeSettlementReport(["0", "0", "0", "0", "0"]).ready).toBe(0);
+  for (const fields of [
+    ["17", "0"],
+    ["17", "0", "3", "0", "-1"],
+    [String(2n ** 128n), "0", "3", "0", "2000"],
+  ])
+    expect(() => decodeSettlementReport(fields)).toThrow();
 });

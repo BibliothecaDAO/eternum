@@ -1,5 +1,10 @@
 import { Account, CallData, cairo, type RpcProvider } from "starknet";
-import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason, ledgerU256 } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  decodeSettlementReport,
+} from "@realms-world/value-ledger";
 import type { FrontierSettlement } from "./frontier-sweep";
 import type { ledgerReportAdapter } from "./chain";
 
@@ -71,11 +76,11 @@ async function earlySettlementAction(
     },
     head.number,
   );
-  if (report.length !== 5) throw new Error("invalid_settlement_report");
-  const ready = BigInt(report[4]!);
+  const current = decodeSettlementReport(report);
+  const ready = BigInt(current.ready);
   const matches =
-    BigInt(ledgerU256(report[0]!, report[1]!)) === BigInt(settlement.chestWithdrawn) &&
-    BigInt(ledgerU256(report[2]!, report[3]!)) === BigInt(settlement.prizeWithdrawn);
+    BigInt(current.chestWithdrawn) === BigInt(settlement.chestWithdrawn) &&
+    BigInt(current.prizeWithdrawn) === BigInt(settlement.prizeWithdrawn);
   if (ready === 0n || !matches) return "report_settlement";
   if (BigInt(head.time) < ready) return null;
   const approval = await provider.callContract(

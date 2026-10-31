@@ -350,7 +350,14 @@ it("records recipient authority before broadcasting preparation with the compile
 });
 
 it("submits the exact verified payment and settlement through the monitor account", async () => {
-  const { ledgerApprovals } = await import("./chain");
+  const { ledgerApprovals } = await import("./ledger-approvals");
+  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) => {
+    if (entrypoint === "get_frontier") return ["1", "1", "2", "100", "0", "0", "0", "0", "1", "0", "3", "0", "0", "0"];
+    if (entrypoint === "get_payment") return ["0", "7", "0x456", "17", "1", "1", "2", "1000"];
+    if (entrypoint === "get_settlement") return ["17", "0", "3", "0", "2000"];
+    if (entrypoint === "payment_approved" || entrypoint === "settlement_approved") return ["0"];
+    throw new Error(`unexpected read ${entrypoint}`);
+  });
   const approvals = ledgerApprovals(credentials);
   await Effect.runPromise(
     approvals.approvePayment({

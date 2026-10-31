@@ -29,7 +29,10 @@ The independent monitor checks `WithdrawalReported` events against raw L3 receip
 unknown account cannot hide a forged amount or block checking the next report. A prepared recipient also needs a
 matching signed identity decision. The monitor submits `approve_payment` for that exact verified report using its own
 `PAUSER_ROLE` account. Normal claims can already be paid, bounded by the allowance; slow claims require both the hour
-and approval. Changing the recipient clears approval. A monitor outage cannot release forged slow claims.
+and approval. Changing the recipient clears approval. A monitor outage cannot release forged slow claims. Before signing
+either approval, the monitor reads current terms and approval state at one confirmed L2 block. Already approved, paid,
+closed, voided or superseded reports need no transaction. Page retries and lost acknowledgments therefore reuse
+confirmed approvals; recipient changes, voids and replacement proposals still require fresh verification and approval.
 
 The monitor verifies `SettlementReported` against confirmed post-end balances, full prize issuance and exact receipt
 totals, then submits `approve_settlement`. Early closure requires this approval and the hour. Proven mismatches persist
