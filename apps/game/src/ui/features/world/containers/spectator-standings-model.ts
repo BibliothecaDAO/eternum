@@ -1,4 +1,4 @@
-import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 
 /** A player's place and points as the native store holds them, the same standings the players panel ranks by. */
 interface Standing {
@@ -15,10 +15,10 @@ export function selectSpectatorStandings(
   entries: readonly Standing[],
   { viewer, selected }: { viewer: string | null | undefined; selected: bigint | undefined },
 ) {
-  const ownKey = viewer ? normalizeLeaderboardAddress(viewer) : null;
-  const selectedKey = selected ? normalizeLeaderboardAddress(selected) : null;
+  const ownKey = viewer ? normalizeStarknetAddress(viewer) : null;
+  const selectedKey = selected ? normalizeStarknetAddress(selected) : null;
   const ranked = entries
-    .map((entry) => ({ ...entry, address: normalizeLeaderboardAddress(entry.address) }))
+    .map((entry) => ({ ...entry, address: normalizeStarknetAddress(entry.address) }))
     .toSorted((left, right) => left.rank - right.rank);
   const kept = new Set(ranked.slice(0, 10).map((entry) => entry.address));
   if (ownKey) kept.add(ownKey);

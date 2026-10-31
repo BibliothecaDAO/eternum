@@ -1,4 +1,4 @@
-import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { scaledToUnits } from "@bibliothecadao/types";
 
@@ -6,8 +6,9 @@ type Entry = HeraldFrontierLeaderboardEntry;
 
 /** The viewer's own row, matched by canonical address; none for a spectator or a player without a settled realm. */
 export const findOwnEntry = (entries: readonly Entry[], viewer: string | null): Entry | undefined => {
-  const own = normalizeLeaderboardAddress(viewer);
-  return own ? entries.find((entry) => normalizeLeaderboardAddress(entry.address) === own) : undefined;
+  if (!viewer) return undefined;
+  const own = normalizeStarknetAddress(viewer);
+  return entries.find((entry) => normalizeStarknetAddress(entry.address) === own);
 };
 
 /** The board's first rows in Herald's order, with the viewer's own row after them when it ranks below. */

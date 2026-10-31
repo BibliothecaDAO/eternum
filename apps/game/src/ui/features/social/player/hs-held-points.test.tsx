@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 // @vitest-environment jsdom
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -39,7 +40,6 @@ vi.mock("./mmr-forecast", () => ({ useMmrForecast: () => ({ status: "off" }) }))
 
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { PlayersPanel } from "./players-panel";
-import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 
 const GAME = 4;
 const PLAYER = 0x52c9ab2an;
@@ -99,7 +99,7 @@ const readStanding = async () => {
     ? S | undefined
     : never;
   const Read = () => {
-    standing = useInGameLeaderboard().standingsByAddress.get(normalizeLeaderboardAddress(PLAYER));
+    standing = useInGameLeaderboard().standingsByAddress.get(normalizeStarknetAddress(PLAYER));
     return null;
   };
   const root = createRoot(document.createElement("div"));

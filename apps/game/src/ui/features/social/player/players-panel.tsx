@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -7,7 +8,6 @@ import {
 } from "@/services/leaderboard/player-activity-breakdown-service";
 import { EndSeasonButton } from "../components/end-season-button";
 import { PlayerList, type PlayerCustom } from "./player-list";
-import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "./use-in-game-leaderboard";
 import { useMmrForecast } from "./mmr-forecast";
 import { configManager, getGuildFromPlayerAddress, isViewerOwner } from "@bibliothecadao/eternum";
@@ -18,7 +18,7 @@ import { ContractAddress, PlayerInfo, samePoints } from "@bibliothecadao/types";
 import { useMemo, useState } from "react";
 
 const buildActivityBreakdownLookup = (entries: PlayerLeaderboardActivityEntry[]) =>
-  new Map(entries.map((entry) => [normalizeLeaderboardAddress(entry.address), entry.activityBreakdown]));
+  new Map(entries.map((entry) => [normalizeStarknetAddress(entry.address), entry.activityBreakdown]));
 
 /**
  * Herald's breakdown is history, read at some confirmed head; the standing is the native store now. The row shows the
@@ -79,10 +79,10 @@ export const PlayersPanel = ({
               player: player.address,
             })?.allowed ?? false)
           : false;
-        const standing = standingsByAddress.get(normalizeLeaderboardAddress(player.address));
+        const standing = standingsByAddress.get(normalizeStarknetAddress(player.address));
         // Once Herald has answered, a player without an entry has registered nothing yet.
         const breakdown = activityBreakdownsByAddress
-          ? (activityBreakdownsByAddress.get(normalizeLeaderboardAddress(player.address)) ??
+          ? (activityBreakdownsByAddress.get(normalizeStarknetAddress(player.address)) ??
             createEmptyActivityBreakdown())
           : undefined;
 
@@ -104,9 +104,7 @@ export const PlayersPanel = ({
           activityBreakdown: breakdownOfStanding(breakdown, standing?.registeredPoints),
           accruingHoldPoints: standing?.accruingHoldPoints ?? 0,
           mmrDelta:
-            mmr.status === "ready"
-              ? (mmr.deltaByAccount.get(normalizeLeaderboardAddress(player.address)) ?? null)
-              : null,
+            mmr.status === "ready" ? (mmr.deltaByAccount.get(normalizeStarknetAddress(player.address)) ?? null) : null,
         };
       });
     return leaderboardPlayers;

@@ -1,12 +1,6 @@
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import * as Sentry from "@sentry/react";
 
-export const normalizeLeaderboardAddress = (address: bigint | string): string => {
-  const addressBigInt = typeof address === "string" ? BigInt(address) : address;
-  const canonicalHex = `0x${addressBigInt.toString(16)}`.toLowerCase().replace(/^0x/, "");
-  return `0x${canonicalHex.padStart(64, "0")}`;
-};
-
 /** A player's place in a finalized Blitz game: the account that played it and the rank the result gives it. */
 interface FinalBlitzRank {
   account: bigint;

@@ -48,8 +48,8 @@ describe("the roster ranked as if the game ended now", () => {
 });
 
 describe("the MMR forecast's reads", () => {
-  const ACCOUNT_1 = `0x${"1".padStart(64, "0")}`;
-  const ACCOUNT_2 = `0x${"2".padStart(64, "0")}`;
+  const ACCOUNT_1 = "0x1";
+  const ACCOUNT_2 = "0x2";
   const PAID = [{ chainId: "0x1", games: [{ game_id: 3, slotId: 7 }] }];
   let latest: MmrForecast;
   let points: Map<string, { points: number }>;

@@ -1,4 +1,4 @@
-import { normalizeLeaderboardAddress } from "@/services/leaderboard/landing-leaderboard-service";
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { RESOURCE_PRECISION, ResourcesIds, scaledToUnits, StructureType } from "@bibliothecadao/types";
 
 /** A story as the day's totals read it: whose it is and when. */
@@ -28,10 +28,13 @@ export const ownStoriesOfDay = <Story extends OwnStory>(
   player: string,
   day: DayBounds,
 ): Story[] => {
-  const own = normalizeLeaderboardAddress(player);
+  const own = normalizeStarknetAddress(player);
   return stories.filter(
     ({ owner, timestampMs }) =>
-      normalizeLeaderboardAddress(owner) === own && timestampMs >= day.startMs && timestampMs < day.endMs,
+      owner !== null &&
+      normalizeStarknetAddress(owner) === own &&
+      timestampMs >= day.startMs &&
+      timestampMs < day.endMs,
   );
 };
 

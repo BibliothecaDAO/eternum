@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { useNativeRow } from "@/hooks/helpers/use-native-facts";
 import { fetchDirectory } from "@/runtime/world/directory";
 import { getActiveGame } from "@/runtime/world";
@@ -5,8 +6,6 @@ import { environmentLedger, type RankedWallet, type SlotKey } from "@/shell/valu
 import { configManager } from "@bibliothecadao/eternum";
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-
-import { normalizeLeaderboardAddress } from "./finalized-blitz-leaderboard";
 
 interface RosterSeat {
   account: bigint;
@@ -68,7 +67,7 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
     () =>
       rankRosterNow(
         roster?.players ?? [],
-        (account) => pointsByAccount.get(normalizeLeaderboardAddress(account))?.points ?? 0,
+        (account) => pointsByAccount.get(normalizeStarknetAddress(account))?.points ?? 0,
       ),
     [roster, pointsByAccount],
   );
@@ -91,7 +90,7 @@ export const useMmrForecast = (pointsByAccount: ReadonlyMap<string, { points: nu
     const deltaByAccount = new Map<string, number>();
     for (const { wallet, delta } of preview.data) {
       const account = accountOf.get(BigInt(wallet));
-      if (account !== undefined) deltaByAccount.set(normalizeLeaderboardAddress(account), delta);
+      if (account !== undefined) deltaByAccount.set(normalizeStarknetAddress(account), delta);
     }
     return { status: "ready", deltaByAccount };
   }, [

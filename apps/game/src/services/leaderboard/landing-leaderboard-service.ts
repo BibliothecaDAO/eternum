@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import type { HeraldLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 
 interface LandingLeaderboardEntry {
@@ -18,26 +19,11 @@ interface LandingLeaderboardEntry {
   hyperstructuresHeldPoints?: number;
 }
 
-const toBigInt = (value: unknown): bigint | null => {
-  if (!["string", "number", "bigint"].includes(typeof value)) return null;
-  try {
-    return BigInt(value as string | number | bigint);
-  } catch {
-    return null;
-  }
-};
-
-export const normalizeLeaderboardAddress = (value: unknown): string | null => {
-  const parsed = toBigInt(value);
-  return parsed === null || parsed <= 0n ? null : `0x${parsed.toString(16)}`;
-};
-
 export const buildLandingLeaderboard = (
   activityEntries: readonly HeraldLeaderboardEntry[],
 ): LandingLeaderboardEntry[] =>
   activityEntries.map((entry) => {
-    const address = normalizeLeaderboardAddress(entry.address);
-    if (!address) throw new Error(`Invalid leaderboard address ${entry.address}`);
+    const address = normalizeStarknetAddress(entry.address);
     const activity = entry.activityBreakdown;
     return {
       rank: entry.rank,

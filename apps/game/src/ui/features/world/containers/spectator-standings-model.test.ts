@@ -20,6 +20,8 @@ it("keeps the viewer's own row outside the top ten, as Results does, and lights 
     [12, false],
   ]);
   expect(rows.filter((row) => row.own)).toHaveLength(1);
+  const padded = selectSpectatorStandings(entries, { viewer: `0x${"b".padStart(64, "0")}`, selected: 12n });
+  expect(padded.filter((row) => row.own).map((row) => [row.rank, row.address])).toEqual([[11, "0xb"]]);
   expect(selectSpectatorStandings(entries, { viewer: "0x2", selected: undefined }).map((row) => row.own)).toEqual(
     Array.from({ length: 10 }, (_, index) => index === 1),
   );

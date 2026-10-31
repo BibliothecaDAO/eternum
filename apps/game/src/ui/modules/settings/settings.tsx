@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
@@ -19,7 +20,6 @@ import {
   HudSlider,
   HudSwitch,
 } from "@/ui/design-system/kit/hud-elements";
-import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { getGuildFromPlayerAddress } from "@bibliothecadao/eternum";
@@ -76,7 +76,7 @@ function ProfileHeader() {
   const owner = address ? ContractAddress(address) : null;
   // The players slice already prefers the session username for the signed-in user.
   const name = profile.name;
-  const standing = owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null);
+  const standing = owner === null ? null : (standingsByAddress.get(normalizeStarknetAddress(owner)) ?? null);
   const guild = owner === null ? null : (getGuildFromPlayerAddress(owner, store)?.name ?? null);
   const spectating = isExplicitSpectateSession();
   const facts = [

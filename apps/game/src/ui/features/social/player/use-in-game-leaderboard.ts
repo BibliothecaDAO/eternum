@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCoarseCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -6,7 +7,7 @@ import { configManager, LeaderboardManager, type PlayerStanding } from "@bibliot
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, wholePoints } from "@bibliothecadao/types";
 import { useMemo } from "react";
-import { normalizeLeaderboardAddress, readFinalBlitzResult } from "./finalized-blitz-leaderboard";
+import { readFinalBlitzResult } from "./finalized-blitz-leaderboard";
 
 /** A standing as the manager reads it, ranked; a finalized one's points are all registered. */
 interface InGameLeaderboardStanding extends PlayerStanding {
@@ -23,7 +24,7 @@ const buildLiveLeaderboard = (store: NativeFactStore): InGameLeaderboard => {
   let rank = 0;
   LeaderboardManager.instance(store).playersByRank.forEach((standing, index, ranked) => {
     if (index === 0 || standing.points !== ranked[index - 1].points) rank = index + 1;
-    standingsByAddress.set(normalizeLeaderboardAddress(standing.address), { ...standing, rank });
+    standingsByAddress.set(normalizeStarknetAddress(standing.address), { ...standing, rank });
   });
 
   return { isFinalized: false, standingsByAddress };
@@ -37,7 +38,7 @@ const buildFinalizedBlitzLeaderboard = (store: NativeFactStore): InGameLeaderboa
     isFinalized: true,
     standingsByAddress: new Map(
       result.standings.map(({ account, rank, points }) => [
-        normalizeLeaderboardAddress(account),
+        normalizeStarknetAddress(account),
         {
           address: ContractAddress(account),
           rank,

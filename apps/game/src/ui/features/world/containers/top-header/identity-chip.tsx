@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { identityUsername, IDENTITY_POPOVER_ID, useIdentitySession } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
@@ -14,7 +15,6 @@ import { getActiveGame } from "@/runtime/world";
 import { HudButton, HudPill } from "@/ui/design-system/kit/hud-elements";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Popover } from "@/ui/design-system/molecules/popover";
-import { normalizeLeaderboardAddress } from "@/ui/features/social/player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "@/ui/features/social/player/use-in-game-leaderboard";
 import { isExplicitSpectateSession } from "@/utils/spectator-session";
 import { ContractAddress, formatPoints } from "@bibliothecadao/types";
@@ -52,7 +52,7 @@ const useIdentityChipState = (): IdentityChipState => {
       gameplayAccount: { address: gameplayAddress, provisioningError },
       playerName: owner === null ? null : (players.find((player) => player.address === owner)?.name ?? null),
       owned: owner === null ? NO_OWNED_STRUCTURES : countOwnedStructures(structures, owner),
-      standing: owner === null ? null : (standingsByAddress.get(normalizeLeaderboardAddress(owner)) ?? null),
+      standing: owner === null ? null : (standingsByAddress.get(normalizeStarknetAddress(owner)) ?? null),
     });
   }, [gameplayAddress, player, players, provisioningError, session, standingsByAddress, status, structures]);
 };

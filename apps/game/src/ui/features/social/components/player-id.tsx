@@ -1,3 +1,4 @@
+import { normalizeStarknetAddress } from "@realms-world/identity";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
@@ -29,7 +30,6 @@ import {
 } from "@bibliothecadao/types";
 import { useMemo } from "react";
 
-import { normalizeLeaderboardAddress } from "../player/finalized-blitz-leaderboard";
 import { useInGameLeaderboard } from "../player/use-in-game-leaderboard";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
 
@@ -48,11 +48,11 @@ export const PlayerId = ({
   back?: () => void;
 }) => {
   const name = usePlayerDisplayName(selectedPlayer);
-  const address = normalizeLeaderboardAddress(selectedPlayer);
+  const address = normalizeStarknetAddress(selectedPlayer);
   const standing = useInGameLeaderboard().standingsByAddress.get(address);
   const { data: activity } = useLeaderboardActivity();
   const breakdown =
-    activity?.find((entry) => normalizeLeaderboardAddress(entry.address) === address)?.activityBreakdown ?? null;
+    activity?.find((entry) => normalizeStarknetAddress(entry.address) === address)?.activityBreakdown ?? null;
   const holdings = useHyperstructuresPaying(selectedPlayer);
   const owned = ownedStructures(useFactView(gameStructuresView), BigInt(selectedPlayer));
   const ownedTotal = owned.reduce((total, { count }) => total + count, 0);
