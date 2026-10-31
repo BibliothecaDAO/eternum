@@ -62,8 +62,9 @@ operator after preparing its backup disk and tunnel token; `OPERATOR` defaults t
 prerequisite is separate from the five mainnet/shard keys.
 
 The box needs git access to this repository, Docker Buildx and Compose. Image builds install their pinned compiler.
-Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. No mainnet
-private key or Alchemy URL goes to that host.
+Contract builds run there under `~/cairo-suite/.lock`, cores 8–11. They do not run on the owner's laptop. Setup keeps
+mainnet account private keys on the operator's machine. The independent co-signer has its own box-only key and a read
+RPC URL in its protected configuration.
 
 Deployment uses the checked-out commit, exporting committed files so unrelated working-tree edits do not enter a build.
 Its HEAD is the only deployment revision: dev requires it pushed to any origin branch; production requires it on
