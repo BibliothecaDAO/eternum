@@ -15,7 +15,7 @@ import {
 import { HudPlaceMedal } from "@/ui/design-system/kit/hud-elements";
 import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import { DAY, PLAY_WORDS, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { DAY, PLAY_WORDS, PRIZE_UNHELD, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { seasonWinner } from "@/ui/features/frontier/board/season-pool";
 import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
@@ -103,16 +103,20 @@ const FrontierDay = ({ season }: { season: DirectoryGame }) => {
 
 /**
  * The Frontier season Season shows: the live one, the player's own if they have a realm in one; with none live, the
- * last to end. The seasons that ended before it are past, the last to end first. `failure` is the read the shown season
- * waits on that did not answer: the directory, or the history while no season is live.
+ * last to end; with none ended either, the next to come. The seasons that ended before it are past, the last to end
+ * first. `failure` is the read the shown season waits on that did not answer: the directory, or the history while no
+ * season is live.
  */
 const useSeason = () => {
   const directory = useDirectory();
   const settled = useSettledGames();
   const listed = directory.data?.games ?? [];
   const ended = endedSeasons(listed, settled.data ?? []);
-  const live = chooseSeason(listed, true);
-  const season = live ?? ended[0];
+  const live = chooseSeason(
+    listed.filter((game) => game.status === "Live"),
+    true,
+  );
+  const season = live ?? ended[0] ?? chooseSeason(listed, true);
   const failure = directory.isError ? directory : !live && settled.isError ? settled : undefined;
   const pending = directory.isPending || (!live && settled.isPending);
   return { season, past: ended.filter((game) => game !== season), failure, pending };
@@ -253,7 +257,11 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
         winner && (
           <span className="inline-flex min-w-0 items-center gap-2">
             <HudPlaceMedal place={1} size={20} below={null} />
-            <PlayerName account={winner} portrait />
+            {typeof winner === "string" ? (
+              <span className="text-app-muted">{PRIZE_UNHELD[winner]}</span>
+            ) : (
+              <PlayerName account={winner.address} portrait />
+            )}
           </span>
         )
       }

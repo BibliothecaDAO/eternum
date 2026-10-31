@@ -279,3 +279,74 @@ it("with a season live, lists the ended ones under Past seasons, last to end fir
     await unmount();
   }
 });
+
+it.each([390, 1440])("keeps the last season's final board while the next is only announced, at %ipx", async (width) => {
+  // Season 2 is created for a start next week; nothing runs, and Season 1 has settled.
+  const announced = {
+    ...FRONTIER,
+    game_id: 2,
+    season_number: 2,
+    status: "Registration",
+    day_index: null,
+    day_ends_at: null,
+    clock: {
+      start_settling_at: ENDED_AT + 7 * 86_400,
+      start_main_at: ENDED_AT + 7 * 86_400,
+      end_at: ENDED_AT + 37 * 86_400,
+    },
+  };
+  reads.directory = { data: { games: [announced] }, isError: false, isPending: false };
+  reads.settled = { data: [ended(1, 1, ENDED_AT)], isError: false, isPending: false };
+  reads.boards = {
+    1: SEASON_ONE_BOARD,
+    2: { data: { mode: "frontier", entries: [], prize: null }, isError: false, isPending: false },
+  };
+  const { container, unmount } = await mount(width);
+  try {
+    const frontier = frontierPanel(container);
+    expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Ended 31 Oct");
+    expect(frontier.querySelector("button.app-row .app-chip")?.textContent).toBe("166 sites cleared");
+    expect(frontier.textContent).not.toContain("No realm yet");
+  } finally {
+    await unmount();
+  }
+});
+
+it.each([390, 1440])(
+  "names a past season's winner only by the ledger's receipt once winners are fixed: Pending until it lands, at %ipx",
+  async (width) => {
+    reads.directory = {
+      data: { games: [{ ...FRONTIER, game_id: 3, season_number: 3 }] },
+      isError: false,
+      isPending: false,
+    };
+    reads.settled = { data: [ended(1, 1, ENDED_AT)], isError: false, isPending: false };
+    reads.board = { data: { mode: "frontier", entries: [], prize: null }, isError: false, isPending: false };
+    const fixed = (count: number, awards: { rank: number; address: string; lords: string }[]) => ({
+      ...SEASON_ONE_BOARD,
+      data: { ...SEASON_ONE_BOARD.data, prize: { pool: "300", top_n: 3, count, awards } },
+    });
+    const pastRow = async (board: unknown) => {
+      reads.boards = { 1: board };
+      const { container, unmount } = await mount(width);
+      if (width === 390) {
+        const tab = [...container.querySelectorAll('[role="tab"]')].find((each) => each.textContent === "Frontier");
+        expect(tab?.getAttribute("aria-selected")).toBe("true");
+      }
+      const row = pastRows(container)[0];
+      await unmount();
+      return row;
+    };
+    // Three winners fixed, none paid yet: the board ranks Volcanic first, but the ledger has not said who won.
+    expect(await pastRow(fixed(3, []))).toEqual(["Season 1", "Ended 31 Oct", "#1", "Pending"]);
+    // First place's receipt names djizus, whom the board ranks second.
+    expect(await pastRow(fixed(3, [{ rank: 1, address: "0x510f", lords: "150" }]))).toEqual([
+      "Season 1",
+      "Ended 31 Oct",
+      "#1",
+      "djizus",
+    ]);
+    // The ledger fixed no winner: no one is named.
+    expect(await pastRow(fixed(0, []))).toEqual(["Season 1", "Ended 31 Oct", undefined, undefined]);
+  },
+);

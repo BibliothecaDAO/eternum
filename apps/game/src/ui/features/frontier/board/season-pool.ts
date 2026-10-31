@@ -133,8 +133,16 @@ export const seasonPodium = (board: {
   }));
 };
 
-/** Who won a season: its first prize place's holder, else the board's first to clear a site; none while no one has. */
-export const seasonWinner = (board: Parameters<typeof seasonPodium>[0]): string | undefined => {
-  const first = seasonPodium(board)?.[0]?.holder;
-  return typeof first === "object" ? first.address : frontierPrizeHolders(board.entries, 1)[0]?.address;
+/**
+ * Who won a season, as its podium names first place: once the winners are fixed, the ledger's receipt, "awarding" until
+ * it lands; before, the board's first to clear a site. A season with no pool is its board's alone. None while no one
+ * holds first place, or when the ledger fixed no winner.
+ */
+export const seasonWinner = (
+  board: Parameters<typeof seasonPodium>[0],
+): { address: string } | "awarding" | undefined => {
+  const podium = seasonPodium(board);
+  const first = podium ? podium[0]?.holder : frontierPrizeHolders(board.entries, 1)[0];
+  if (first === undefined || first === "open") return undefined;
+  return first === "awarding" ? first : { address: first.address };
 };
