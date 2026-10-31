@@ -73,10 +73,10 @@ wallet. It takes one signature, and the wallet pays the network fee.
 
 * **Chests** pay LORDS into your realm ([Chests and LORDS](/frontier/chests)).
 * **Refill** spends your realm's LORDS on stamina ([Armies](/frontier/armies#stamina)).
-* **Withdraw** sends your realm's LORDS to your payout wallet at once, during the season.
-* **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet
-  automatically. With no wallet linked by the claim deadline, they go to the next season
-  ([Chests and LORDS](/frontier/chests#your-lords)).
+* **Withdraw** sends your realm's LORDS to your payout wallet during the season.
+* **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet. Both
+  payments are automatic and normally arrive within minutes. With no wallet linked by the claim deadline, they go to the
+  next season ([Chests and LORDS](/frontier/chests#your-lords)).
 
 <Shot frame="panel" name="account/withdraw" caption="A Frontier realm's LORDS, withdrawn to the payout wallet." />
 
@@ -816,10 +816,10 @@ The season's pool is 300,000 LORDS:
 The Season page shows the podium as the season runs, and each prize as Pending until it is paid.
 
 LORDS go to your payout wallet. Link one in **Settings**, **Payout wallet** ([Payout wallet](/account/payout-wallet)).
-You can withdraw your realm's LORDS at once during the season. When it ends, whatever your realm still holds, and your
-prize, is paid to your linked wallet automatically. Without a linked wallet, link one within
-7 days of the season's end and they are paid to it. After that, unpaid LORDS go to the next
-season.
+You can withdraw your realm's LORDS during the season. When it ends, whatever your realm still holds, and your prize, is
+paid to your linked wallet. Both payments are automatic and normally arrive within minutes. Without a linked wallet,
+link one within  7 days of the season's end and they are paid to it. After that, unpaid
+LORDS go to the next season.
 
 ## What is faster
 
@@ -1806,12 +1806,13 @@ paid.
 
 ## Your LORDS
 
-Your realm's LORDS pay for Refill. During the season, **Withdraw** sends them to your payout wallet at once.
+Your realm's LORDS pay for Refill. During the season, **Withdraw** sends them to your payout wallet.
 
-When the season ends, whatever your realm still holds, and any prize it won, is paid to your linked payout wallet
-automatically. With no wallet linked, link one within 7 days of the season's end, and they are
-paid to it. After that, unpaid LORDS go to the next season. Until a wallet is linked, the game says so wherever it shows
-your LORDS, with **Link wallet** ([Payout wallet](/account/payout-wallet)).
+When the season ends, whatever your realm still holds, and any prize it won, is paid to your linked payout wallet. Both
+payments are automatic and normally arrive within minutes. With no wallet linked, link one within
+7 days of the season's end, and they are paid to it. After that, unpaid LORDS go to the next
+season. Until a wallet is linked, the game says so wherever it shows your LORDS, with **Link wallet**
+([Payout wallet](/account/payout-wallet)).
 
 
 
@@ -2022,15 +2023,15 @@ Your realm makes the troops, wheat and labor your armies need, and grows stronge
 
 ## Buildings
 
-Tap an open plot to build there. Buildings are paid in labor:
+Tap an open plot to build there. Each building's price, in labor, and Essence for the training buildings:
 
-| Building                                     | Makes                     | Labor | Population |
-| -------------------------------------------- | ------------------------- | ----- | ---------- |
-| Farm                                         | Wheat                     | 400   | 1          |
-| Barracks                                     | Troops                    | 400   | 3          |
-| Workshop                                     | Labor                     | 2,000 | 2          |
-| Workers' hut                                 | Population                | 300   | None       |
-| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 6,000 | 2          |
+| Building                                     | Makes                     | Price                       | Population |
+| -------------------------------------------- | ------------------------- | --------------------------- | ---------- |
+| Farm                                         | Wheat                     | 400 Labor                   | 1          |
+| Barracks                                     | Troops                    | 400 Labor                   | 3          |
+| Workshop                                     | Labor                     | 2,000 Labor                 | 2          |
+| Workers' hut                                 | Population                | 300 Labor                   | None       |
+| War hall, Supply yard, Scouts' lodge, Hearth | A tier for every new army | 6,000 Essence + 1,500 Labor | 2          |
 
 Each workers' hut houses 6, and every other building takes the population shown. Each further
 copy of a building costs more than the last, and pulling one down returns 50% of its
