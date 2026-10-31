@@ -37,7 +37,6 @@ describe("Withdraw", () => {
         <WithdrawSheet
           held={1_240}
           wallet={over.wallet === undefined ? ADDRESS : over.wallet}
-          linkWalletLine="Link a wallet to receive your LORDS"
           refusal={over.refusal ?? null}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}
@@ -154,9 +153,9 @@ describe("the realm's LORDS on the season-over card", () => {
     expect(host.querySelector("button")).toBeNull();
   });
 
-  it("tells an account with no linked wallet how long it has to link one, with Link wallet, never the automatic payout", () => {
-    const onLinkWallet = show(1_240, "Link a wallet by 7 Nov 12:00 or these LORDS go to the next season");
-    expect(host.textContent).toContain("Link a wallet by 7 Nov 12:00 or these LORDS go to the next season");
+  it("tells an account with no linked wallet to link one, with Link wallet, never the automatic payout", () => {
+    const onLinkWallet = show(1_240, "Link a wallet to receive your LORDS");
+    expect(host.textContent).toContain("Link a wallet to receive your LORDS");
     expect(host.textContent).not.toContain("paid out automatically");
     act(() => button("Link wallet")!.click());
     expect(onLinkWallet).toHaveBeenCalledTimes(1);
