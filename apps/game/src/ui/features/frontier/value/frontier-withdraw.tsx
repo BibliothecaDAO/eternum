@@ -1,31 +1,22 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { L2_BLOCK_MS, l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
-import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { isDefinitelyNotApplied, type SentCommand, untilApplied } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { configManager } from "@bibliothecadao/eternum";
 import { type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
+import { useLinkWallet, useLinkWalletLine, usePayoutWindow } from "./link-wallet";
 import { useRealmLords } from "./use-realm-lords";
 import { WithdrawSheet } from "./withdraw-sheet";
-import {
-  type SentWithdrawal,
-  type WithdrawalOutcome,
-  withdrawalRefusal,
-  withdrawalsCloseAt,
-  withdrawStepOf,
-} from "./withdrawal";
+import { type SentWithdrawal, type WithdrawalOutcome, withdrawalRefusal, withdrawStepOf } from "./withdrawal";
 
 /**
  * Withdraw over the game's facts: the realm's LORDS, the account's payout wallet, and one withdrawal at a time. The
@@ -35,7 +26,8 @@ import {
  */
 export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup, account } = useGame();
-  const navigate = useNavigate();
+  const linkWallet = useLinkWallet();
+  const linkWalletLine = useLinkWalletLine();
   const { session } = useIdentitySession();
   const ledger = environmentLedger();
   const [amount, setAmount] = useState(0);
@@ -44,7 +36,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
   const paused = useLedgerPaused(ledger);
   const paidIn = usePaymentTransaction(ledger, outcome?.kind === "applied" ? outcome : null);
   const refusal = withdrawalRefusal({
-    closesAt: useWithdrawalsCloseAt(),
+    closesAt: usePayoutWindow()?.closesAt,
     now: useNowSeconds(),
     ledgerReadable: ledger !== null,
     paused,
@@ -66,12 +58,13 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
     <WithdrawSheet
       held={held}
       wallet={payoutAddressOf(session.user)}
+      linkWalletLine={linkWalletLine}
       refusal={refusal}
       step={withdrawStepOf({ sending, outcome, paidIn, paused })}
       amount={amount}
       onAmount={setAmount}
       onWithdraw={() => void withdraw()}
-      onLinkWallet={() => navigate(SETTINGS_PATH)}
+      onLinkWallet={linkWallet}
       onClose={onClose}
     />
   );
@@ -101,18 +94,6 @@ const sendWithdrawal = async (
       ? { kind: "not-applied", reason: extractReadableErrorMessage(error) }
       : { kind: "unknown", amount };
   }
-};
-
-const CLOSE_MODELS = ["GameRegistry", "ChestRules"] as const;
-
-/** When this season's withdrawals close, from the game's end and its claim window; undefined until both are known. */
-const useWithdrawalsCloseAt = (): number | undefined => {
-  const { setup } = useGame();
-  useNativeRevision(CLOSE_MODELS);
-  const gameId = configManager.getActiveGameId();
-  const game = setup.store.get("GameRegistry", { game_id: gameId });
-  const chests = setup.store.get("ChestRules", { game_id: gameId });
-  return game && chests ? withdrawalsCloseAt(Number(game.end_at), chests.claim_window_seconds) : undefined;
 };
 
 /**

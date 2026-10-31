@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { planRealmLabor, seasonStrip } from "./realm-labor";
 import { type WithdrawStep, WithdrawSheet } from "./withdraw-sheet";
+import { LordsPurse } from "./lords-purse";
 import { SeasonPayoutRow } from "./season-payout";
 import { withdrawalRefusal, withdrawalsCloseAt, withdrawStepOf } from "./withdrawal";
 
@@ -36,6 +37,7 @@ describe("Withdraw", () => {
         <WithdrawSheet
           held={1_240}
           wallet={over.wallet === undefined ? ADDRESS : over.wallet}
+          linkWalletLine="Link a wallet to receive your LORDS"
           refusal={over.refusal ?? null}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}
@@ -80,7 +82,7 @@ describe("Withdraw", () => {
   it("sends a player with no wallet to link one", () => {
     const ways = render({ wallet: null });
     expect(button("Withdraw")).toBeUndefined();
-    expect(host.textContent).toContain("No wallet linked");
+    expect(host.textContent).toContain("Link a wallet to receive your LORDS");
     act(() => button("Link wallet")!.click());
     expect(ways.onLinkWallet).toHaveBeenCalledTimes(1);
   });
@@ -138,8 +140,11 @@ describe("a withdrawal's rules", () => {
 });
 
 describe("the realm's LORDS on the season-over card", () => {
-  const show = (lords: number | undefined) => {
-    act(() => root.render(<SeasonPayoutRow lords={lords} />));
+  const show = (lords: number | undefined, linkWalletLine: string | null = null, onLinkWallet = vi.fn()) => {
+    act(() =>
+      root.render(<SeasonPayoutRow lords={lords} linkWalletLine={linkWalletLine} onLinkWallet={onLinkWallet} />),
+    );
+    return onLinkWallet;
   };
 
   it("shows the remaining LORDS and automatic payout without requiring a withdrawal", () => {
@@ -149,12 +154,31 @@ describe("the realm's LORDS on the season-over card", () => {
     expect(host.querySelector("button")).toBeNull();
   });
 
+  it("tells an account with no linked wallet how long it has to link one, with Link wallet, never the automatic payout", () => {
+    const onLinkWallet = show(1_240, "Link a wallet by 7 Nov 12:00 or these LORDS go to the next season");
+    expect(host.textContent).toContain("Link a wallet by 7 Nov 12:00 or these LORDS go to the next season");
+    expect(host.textContent).not.toContain("paid out automatically");
+    act(() => button("Link wallet")!.click());
+    expect(onLinkWallet).toHaveBeenCalledTimes(1);
+  });
+
   it("shows nothing after the sweep consumes the balance, or while the balance is unknown", () => {
     show(0);
     expect(host.textContent).toBe("");
     show(undefined);
     expect(host.textContent).toBe("");
   });
+});
+
+it("marks a phone's purse while the account has no linked wallet, its name saying why; plain with one", () => {
+  const line = "Link a wallet to receive your LORDS";
+  act(() => root.render(<LordsPurse lords={1_240} linkWalletLine={line} onOpen={() => undefined} />));
+  const purse = host.querySelector("button")!;
+  expect(purse.getAttribute("aria-label")).toBe(`LORDS 1,240. ${line}`);
+  expect(purse.querySelector('[data-icon="warning"]')).not.toBeNull();
+  act(() => root.render(<LordsPurse lords={1_240} onOpen={() => undefined} />));
+  expect(host.querySelector("button")!.getAttribute("aria-label")).toBe("LORDS 1,240");
+  expect(host.querySelector('[data-icon="warning"]')).toBeNull();
 });
 
 describe("the settled Realm's labor", () => {

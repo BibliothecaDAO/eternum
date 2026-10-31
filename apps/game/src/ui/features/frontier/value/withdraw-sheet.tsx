@@ -6,7 +6,6 @@ import { AmountInput, HudButton, HudChip, HudNotice, HudSheet } from "@/ui/desig
 import {
   CONTINUE,
   LINK_WALLET,
-  NO_WALLET,
   SENDING,
   TRANSACTION,
   WITHDRAW,
@@ -36,6 +35,7 @@ export type WithdrawStep =
 export const WithdrawSheet = ({
   held,
   wallet,
+  linkWalletLine,
   refusal,
   step,
   amount,
@@ -47,6 +47,8 @@ export const WithdrawSheet = ({
   held: number | undefined;
   /** The linked wallet's address; null when the account has none. */
   wallet: string | null;
+  /** What an account with no linked wallet is told, over Link wallet (linkWalletLine). */
+  linkWalletLine: string;
   /** Why nothing can leave now, whatever the wallet: said in place of the amount's choice. */
   refusal: string | null;
   step: WithdrawStep;
@@ -60,6 +62,7 @@ export const WithdrawSheet = ({
     <WithdrawBody
       held={held}
       wallet={wallet}
+      linkWalletLine={linkWalletLine}
       refusal={refusal}
       step={step}
       amount={amount}
@@ -74,6 +77,7 @@ export const WithdrawSheet = ({
 const WithdrawBody = ({
   held,
   wallet,
+  linkWalletLine,
   refusal,
   step,
   amount,
@@ -86,7 +90,7 @@ const WithdrawBody = ({
   if (step.kind === "paid") return <Paid step={step} wallet={wallet} onClose={onClose} />;
   if (step.kind === "waiting") return <Waiting amount={step.amount} held={held} wallet={wallet} />;
   if (step.kind === "unknown") return <Unknown amount={step.amount} held={held} wallet={wallet} onClose={onClose} />;
-  if (wallet === null) return <NoWallet held={held} onLinkWallet={onLinkWallet} />;
+  if (wallet === null) return <NoWallet held={held} line={linkWalletLine} onLinkWallet={onLinkWallet} />;
   if (refusal) return <Refused held={held} address={wallet} line={refusal} />;
   return (
     <Pick
@@ -142,10 +146,18 @@ const Pick = ({
   );
 };
 
-const NoWallet = ({ held, onLinkWallet }: { held: number | undefined; onLinkWallet: () => void }) => (
+const NoWallet = ({
+  held,
+  line,
+  onLinkWallet,
+}: {
+  held: number | undefined;
+  line: string;
+  onLinkWallet: () => void;
+}) => (
   <>
     <Hero icon="lords">{formatExact(held)}</Hero>
-    <HudNotice tone="warn" line={NO_WALLET} />
+    <HudNotice tone="warn" line={line} />
     <HudButton kind="primary" icon="share" onClick={onLinkWallet}>
       {LINK_WALLET}
     </HudButton>

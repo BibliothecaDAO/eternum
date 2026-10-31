@@ -554,7 +554,10 @@ export const REFILLING = "Refilling…";
 export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
-export const NO_WALLET = "No wallet linked";
+/** Where an account with no linked wallet sees its LORDS: the season's payout goes to a linked wallet only. */
+export const LINK_WALLET_FOR_LORDS = "Link a wallet to receive your LORDS";
+/** The same once the season is over: its LORDS wait until withdrawals close, then go to the next season. */
+export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS go to the next season`;
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;

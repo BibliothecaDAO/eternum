@@ -13,6 +13,7 @@ import { EASE, type Intensity, POP_SPRING, tickDurationMs } from "@/ui/motion/mo
 import { playHaptic } from "@/ui/motion/motion-settings";
 import { TickNumber } from "@/ui/motion/tick-number";
 import { formatExact, LORDS } from "@bibliothecadao/types";
+import { useLinkWalletPrompt } from "../value/link-wallet";
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
@@ -77,29 +78,38 @@ const ChestMoment = ({ request, opened }: { request: RewardChestRequest; opened:
 
 /**
  * What the chest gives, popped in at the lid's opening: its LORDS the hero, counted up from nothing, large, before
- * light rays in its rarity; everything else small under them.
+ * light rays in its rarity; everything else small under them. An account with no linked wallet to receive the LORDS is
+ * told so under them; the moment takes no pointer, so the purse's Withdraw is where it links one.
  */
-const ChestWinnings = ({ request }: { request: RewardChestRequest }) => (
-  <div className="ui-chest-moment__hero" data-tier={request.rarity}>
-    <motion.div
-      className="ui-chest-moment__pop"
-      initial={{ opacity: 0, scale: 0.4 }}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={POP_SPRING}
-    >
-      {request.lords > 0 && <LordsCount lords={request.lords} />}
-      {request.prizes.length > 0 && (
-        <span className="ui-chest-moment__prizes">
-          {request.prizes.map((prize) => (
-            <HudChip key={prize.name} icons={prize.icon ? [prize.icon] : undefined} label={prize.name}>
-              {prize.figure}
-            </HudChip>
-          ))}
-        </span>
-      )}
-    </motion.div>
-  </div>
-);
+const ChestWinnings = ({ request }: { request: RewardChestRequest }) => {
+  const linkWalletLine = useLinkWalletPrompt(request.lords);
+  return (
+    <div className="ui-chest-moment__hero" data-tier={request.rarity}>
+      <motion.div
+        className="ui-chest-moment__pop"
+        initial={{ opacity: 0, scale: 0.4 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={POP_SPRING}
+      >
+        {request.lords > 0 && <LordsCount lords={request.lords} />}
+        {request.prizes.length > 0 && (
+          <span className="ui-chest-moment__prizes">
+            {request.prizes.map((prize) => (
+              <HudChip key={prize.name} icons={prize.icon ? [prize.icon] : undefined} label={prize.name}>
+                {prize.figure}
+              </HudChip>
+            ))}
+          </span>
+        )}
+        {linkWalletLine && (
+          <span className="ui-chest-moment__wallet" data-link-wallet>
+            {linkWalletLine}
+          </span>
+        )}
+      </motion.div>
+    </div>
+  );
+};
 
 /** The LORDS, counted up from nothing with their weight. */
 const LordsCount = ({ lords }: { lords: number }) => {

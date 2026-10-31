@@ -48,6 +48,7 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
+import { useLinkWalletPrompt } from "./value/link-wallet";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useCampaignMark } from "./value/campaign-home";
@@ -520,6 +521,7 @@ const FrontierRealmPanel = ({
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
   const lords = useRealmLords(own ?? realm);
+  const linkWalletLine = useLinkWalletPrompt(own ? lords : undefined);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
@@ -534,6 +536,7 @@ const FrontierRealmPanel = ({
       onHome={() => goToPlace(true)}
       {...(own && {
         lords,
+        linkWalletLine,
         waiting,
         storeCards,
         onWithdraw: () => onSurface("withdraw"),
@@ -560,6 +563,12 @@ const RealmPurse = ({
 }) => (
   <PurseRow>
     {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
+    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
   </PurseRow>
 );
+
+/** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
+const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
+  const lords = useRealmLords(realm);
+  return <LordsPurse lords={lords} linkWalletLine={useLinkWalletPrompt(lords)} onOpen={onOpen} />;
+};
