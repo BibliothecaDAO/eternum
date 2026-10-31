@@ -448,9 +448,10 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
-/** The wheat that caps a deploy below the troops at home: "Wheat for 8 troops · 2 each". */
-export const wheatPaysFor = (troops: string, each: string) =>
-  `Wheat for ${troops} ${troops === "1" ? "troop" : "troops"} · ${each} each`;
+/** The wheat that caps a deploy below the troops at home: "Wheat for only 2,991 of 6,200 troops". */
+export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only ${troops} of ${of} troops`;
+/** Where wheat short for a deploy is made: the realm, where Farms are built. */
+export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 

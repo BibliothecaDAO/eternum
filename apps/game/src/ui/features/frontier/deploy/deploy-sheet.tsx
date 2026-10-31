@@ -110,13 +110,14 @@ export const DeploySheet = ({
         plan && wheatCaps
           ? {
               troops: range.max,
+              of: range.troopsMax,
               held: plan.wheat,
               perTroop: plan.wheatPerTroop,
               wait: secondsUntilHeld(plan.wheat, plan.wheatPerTroop, wheatPerHour),
             }
           : undefined
       }
-      onBuild={() => {
+      onGoToRealm={() => {
         onClose();
         goToPlace(false);
       }}
