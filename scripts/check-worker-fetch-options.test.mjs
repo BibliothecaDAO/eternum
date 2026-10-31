@@ -1,4 +1,3 @@
-import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { findEdgeRefusedFetchOptions, isWorkerSource } from "./check-worker-fetch-options.mjs";
@@ -36,14 +35,22 @@ test("quoted keys and multiline options cannot bypass the Worker guard", () => {
   assert.equal(findings[0].line, 1);
 });
 
-test("the guard rejects both historical Worker failures and names the supported replacement", () => {
-  for (const [revision, path] of [
-    ["e52b21578cd^", "apps/realms/server/realm-holdings.ts"],
-    ["9f0e9d03583", "apps/value-relay/src/cosigner-client.ts"],
-  ]) {
-    const text = execFileSync("git", ["show", `${revision}:${path}`], { encoding: "utf8" });
-    const failures = findEdgeRefusedFetchOptions([{ path, text }]);
-    assert.equal(failures.length, 1, `${revision}:${path}`);
+// Actual failing calls from the held-realms and co-signer revisions; portable to shallow CI checkouts.
+const regressions = [
+  {
+    revision: "e52b21578cd^",
+    path: "apps/realms/server/realm-holdings.ts",
+    text: 'fetch(`${env.MARKETPLACE_API_URL}/v1/chains/${chain}/${path}`, {\n      signal: AbortSignal.timeout(INDEXER_TIMEOUT_MS),\n      redirect: "error",\n    })',
+  },
+  {
+    revision: "9f0e9d03583",
+    path: "apps/value-relay/src/cosigner-client.ts",
+    text: 'network(new URL("/sign", url), {\n      method: "POST",\n      redirect: "error",\n      headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },\n      body: JSON.stringify(terms),\n      signal: AbortSignal.timeout(10_000),\n    })',
+  },
+];
+test("the guard rejects both historical Worker failures", () => {
+  for (const { revision, path, text } of regressions) {
+    assert.equal(findEdgeRefusedFetchOptions([{ path, text }]).length, 1, revision);
     assert.equal(
       findEdgeRefusedFetchOptions([{ path, text: text.replace('redirect: "error"', 'redirect: "manual"') }]).length,
       0,
