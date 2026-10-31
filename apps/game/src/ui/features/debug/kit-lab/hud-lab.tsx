@@ -947,6 +947,14 @@ const STATES = {
     armies: [],
     purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
   },
+  // A Devcon player signed in by email, LORDS in the realm and no wallet linked: the purse marked, its name saying why.
+  "purse-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+    noWallet: true,
+  },
   // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
   "realm-claim": {
     clock: CLOCK,
