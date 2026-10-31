@@ -1,5 +1,5 @@
 import type { RealmSkin } from "@/three/structures/realm-skins";
-import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 import { describeCastleLevel } from "@/ui/modules/entity-details/realm/castle-level";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
@@ -7,12 +7,7 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import {
-  ID,
-  type Structure,
-  formatExact,
-  resourceName,
-} from "@bibliothecadao/types";
+import { ID, type Structure, formatExact, resourceName } from "@bibliothecadao/types";
 import clsx from "clsx";
 
 import { type MouseEvent } from "react";
@@ -49,31 +44,6 @@ export type StructureWithMetadata = Structure & {
     workerHut: number;
   };
 };
-
-const StructureInfoStat = ({ icon: Icon, label, title }: { icon: IconMeaning; label: string; title: string }) => (
-  <span
-    className="inline-flex items-center gap-1 rounded border border-hud-divider bg-hud-well px-1.5 py-0.5 text-hud-label text-hud-muted"
-    title={title}
-  >
-    <SemanticIcon name={Icon} className="h-3 w-3 text-hud-muted" />
-    <span>{label}</span>
-  </span>
-);
-
-const StructureStatusStats = ({
-  populationLabel,
-  buildingTilesLabel,
-}: {
-  populationLabel: string;
-  buildingTilesLabel: string | null;
-}) => (
-  <div className="flex flex-wrap items-center gap-1.5">
-    <StructureInfoStat icon={"people" as const} label={populationLabel} title="Population used / capacity" />
-    {buildingTilesLabel ? (
-      <StructureInfoStat icon={"hexagon" as const} label={buildingTilesLabel} title="Used / total building tiles" />
-    ) : null}
-  </div>
-);
 
 /**
  * What a realm's next level asks for and gives: why the step cannot be taken now (when it cannot), each cost against
