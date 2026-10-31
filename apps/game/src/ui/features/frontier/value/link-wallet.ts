@@ -22,19 +22,17 @@ import { useRealmLords } from "./use-realm-lords";
 type FrontierClaims = { deadline: number; closed: boolean };
 
 /**
- * A withdrawal receipt as the ledger holds it (owner, 31 October 2026: an unpaid no-wallet claim lapses at the claim
- * deadline and its LORDS carry to the next season): paid; void once the season closed, or its claim deadline passed
- * unpaid; else pending, still owed. Undefined until the ledger answers.
+ * Whether a withdrawal receipt is still owed (owner, 31 October 2026: an unpaid no-wallet claim lapses at the claim
+ * deadline and its LORDS carry to the next season): not once the ledger says it is paid, nor once it lapsed (the season
+ * closed, or its claim deadline passed); otherwise it is, a receipt the ledger has not answered for included, so a
+ * failed read never hides what the player is owed.
  */
-const receiptState = (
-  paid: boolean | undefined,
-  claims: FrontierClaims | undefined,
-  now: number,
-): "paid" | "pending" | "void" | undefined => {
-  if (paid === undefined || claims === undefined) return undefined;
-  if (paid) return "paid";
-  return claims.closed || now >= claims.deadline ? "void" : "pending";
-};
+const isOwed = (paid: boolean | undefined, claims: FrontierClaims | undefined, now: number): boolean =>
+  paid !== true && !hasLapsed(claims, now);
+
+/** Whether this season's unpaid claims have lapsed: the season closed on the ledger, or its claim deadline passed. */
+const hasLapsed = (claims: FrontierClaims | undefined, now: number): boolean =>
+  claims !== undefined && (claims.closed || now >= claims.deadline);
 
 /**
  * What an account with no linked wallet is told where it sees LORDS it is owed: before the game's end, to link one to
@@ -72,8 +70,9 @@ export const useOwedLords = (realm: NativeRows["Structure"]): number | undefined
 const RECEIPT_MODELS = ["LordsWithdrawal"] as const;
 
 /**
- * The whole LORDS of an account's pending withdrawals (receiptState). An unpaid receipt's payment is read again each L2
- * block until the ledger pays it or it lapses, so an open panel learns of the payment.
+ * The whole LORDS of an account's withdrawals still owed (isOwed). Each one's payment is read again every L2 block, a
+ * failed read too, until the ledger pays it or it lapses, so an open panel learns of the payment and recovers from a
+ * ledger it could not read.
  */
 const usePendingLords = (account: bigint): number => {
   const { setup } = useGame();
@@ -85,24 +84,27 @@ const usePendingLords = (account: bigint): number => {
   );
   const ledger = environmentLedger();
   const shard = requireActiveGame().chainId;
-  const lapsed = receiptState(false, claims, now) === "void";
+  const lapsed = hasLapsed(claims, now);
   const paid = useQueries({
     queries: receipts.map(({ claim_id }) => ({
       queryKey: ["ledger", "payment", shard, String(claim_id)],
       queryFn: () => ledger!.paid(shard, String(claim_id)),
       enabled: ledger !== null,
       refetchInterval: (query: { state: { data?: boolean } }) =>
-        query.state.data === false && !lapsed ? L2_BLOCK_MS : false,
+        query.state.data !== true && !lapsed ? L2_BLOCK_MS : false,
     })),
   });
+  if (ledger === null) return 0;
   return receipts.reduce(
-    (sum, receipt, index) =>
-      receiptState(paid[index]!.data, claims, now) === "pending" ? sum + Number(receipt.amount) : sum,
+    (sum, receipt, index) => (isOwed(paid[index]!.data, claims, now) ? sum + Number(receipt.amount) : sum),
     0,
   );
 };
 
-/** This season's claims on the environment's ledger; undefined while unread, or where there is no ledger. */
+/**
+ * This season's claims on the environment's ledger, read again every L2 block until it answers once (its deadline is
+ * fixed; a close before it pays every claim, which the payment reads see); undefined while unread, or with no ledger.
+ */
 const useFrontierClaims = (): FrontierClaims | undefined => {
   const ledger = environmentLedger();
   const shard = requireActiveGame().chainId;
@@ -111,6 +113,7 @@ const useFrontierClaims = (): FrontierClaims | undefined => {
     queryKey: ["ledger", "frontier-claims", shard, gameId],
     queryFn: () => ledger!.frontierClaims(shard, gameId),
     enabled: ledger !== null,
+    refetchInterval: (query) => (query.state.data === undefined ? L2_BLOCK_MS : false),
   }).data;
 };
 

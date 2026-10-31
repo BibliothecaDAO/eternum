@@ -14,6 +14,10 @@ const world = vi.hoisted(() => ({
   closed: false,
   now: 0,
   paymentReads: 0,
+  /** How many of the next payment and season reads fail, as an L2 RPC that cannot be reached. */
+  failPayments: 0,
+  failClaims: 0,
+  claimReads: 0,
 }));
 const OWNER = 0x5eedn;
 /** The season ends at 100,000 s; the ledger's claim deadline is a week later. */
@@ -29,8 +33,16 @@ vi.mock("@/runtime/l2-rpc", () => ({ L2_BLOCK_MS: 10 }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0x1ab9" }) }));
 vi.mock("@/shell/value/ledger", () => ({
   environmentLedger: () => ({
-    paid: async (_shard: string, claimId: string) => (world.paymentReads++, world.paid.has(claimId)),
-    frontierClaims: async () => ({ deadline: DEADLINE, closed: world.closed }),
+    paid: async (_shard: string, claimId: string) => {
+      world.paymentReads++;
+      if (world.failPayments > 0 && world.failPayments--) throw new Error("rpc unreachable");
+      return world.paid.has(claimId);
+    },
+    frontierClaims: async () => {
+      world.claimReads++;
+      if (world.failClaims > 0 && world.failClaims--) throw new Error("rpc unreachable");
+      return { deadline: DEADLINE, closed: world.closed };
+    },
   }),
 }));
 vi.mock("./use-realm-lords", () => ({ useRealmLords: () => world.held }));
@@ -71,6 +83,9 @@ beforeEach(() => {
   world.closed = false;
   world.now = END + 3_600;
   world.paymentReads = 0;
+  world.failPayments = 0;
+  world.failClaims = 0;
+  world.claimReads = 0;
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   host = document.createElement("div");
   root = createRoot(host);
@@ -95,6 +110,49 @@ it("keeps the season's LORDS through the sweep, then the open card drops them on
   const reads = world.paymentReads;
   await settle();
   expect(world.paymentReads).toBe(reads);
+});
+
+it("shows a receipt the ledger could not answer for as owed, and recovers on the open card (review 3)", async () => {
+  world.receipts = [receipt(0xc1a, 400)];
+  world.failPayments = Infinity;
+  expect(await draw(<SeasonPayout realm={REALM} />)).toContain("400");
+  expect(linkButton()).toBeDefined();
+  // The failed read is read again each block while it fails, the amount still shown.
+  const failed = world.paymentReads;
+  await settle();
+  expect(world.paymentReads).toBeGreaterThan(failed);
+  expect(host.textContent).toContain("400");
+  // It recovers, unpaid: the amount stays.
+  world.failPayments = 0;
+  await settle();
+  expect(host.textContent).toContain("400");
+  // Paid: the same card empties, and the reads stop.
+  world.paid = new Set([String(0xc1an)]);
+  await settle();
+  expect(host.textContent).toBe("");
+  const reads = world.paymentReads;
+  await settle();
+  expect(world.paymentReads).toBe(reads);
+});
+
+it("keeps the amount while the season's claims cannot be read, then drops a lapsed receipt once they can (review 3)", async () => {
+  world.now = DEADLINE + 60;
+  world.receipts = [receipt(0xc1a, 400)];
+  world.failClaims = Infinity;
+  expect(await draw(<SeasonPayout realm={REALM} />)).toContain("400");
+  expect(linkButton()).toBeDefined();
+  // The failed season read is read again each block while it fails.
+  const failed = world.claimReads;
+  await settle();
+  expect(world.claimReads).toBeGreaterThan(failed);
+  expect(host.textContent).toContain("400");
+  // It recovers: past the deadline the unpaid receipt lapsed, the card empties, and both reads stop.
+  world.failClaims = 0;
+  await settle();
+  expect(host.textContent).toBe("");
+  const reads = [world.paymentReads, world.claimReads];
+  await settle();
+  expect([world.paymentReads, world.claimReads]).toEqual(reads);
 });
 
 it("asks only to link a wallet to receive them before the season ends", async () => {
