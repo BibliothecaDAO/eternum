@@ -163,6 +163,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
       // The check always disagrees: neither identity nor the shard matches the ledger.
       identity: { matchesPayDecision: () => Effect.succeed(false) },
       shard: {
+        withdrawalReceipt: () => Effect.succeed(null),
         settlementEvidence: () => Effect.succeed(null),
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
@@ -179,6 +180,8 @@ describe.each(["paidClaims", "postedResults"] as const)(
         result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {
+        approvePayment: () => Effect.void,
+        approveSettlement: () => Effect.void,
         frontierPool: () => Effect.succeed("0"),
         reportedSettlements: () =>
           Effect.succeed({
@@ -241,15 +244,18 @@ describe.each(["paidClaims", "postedResults"] as const)(
   },
 );
 
-it("records the missing ledger after running shard conservation", async () => {
+it("persists a stop when reports cannot be read and retries the unavailable pause", async () => {
   address.mockImplementation(() => {
     throw new ValuePlaneAddressMissingError("ledger", "production");
   });
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     const observation = await f.monitor.tick();
-    expect(observation).toMatchObject({ value: null, value_error: "ledger settlement reports unavailable" });
-    expect(f.data.get("progress")).toBeUndefined();
+    expect(observation).toMatchObject({ value: null, value_error: "ledger pause unavailable" });
+    expect(f.data.get("progress")).toMatchObject({
+      halted: "reportedSettlements_unverifiable",
+      fault: { row: "reportedSettlements:unavailable" },
+    });
     expect(f.data.get("observation")).toEqual(observation);
   }
   expect((await f.monitor.health()).success).toBe(false);

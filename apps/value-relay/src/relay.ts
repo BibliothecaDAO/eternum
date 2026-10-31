@@ -49,8 +49,18 @@ const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
     const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
     for (const row of held) {
-      if (row.kind !== "receipt" || row.reason === "decode withdrawal receipt") continue;
-      const resolved = yield* Effect.result(ports.shard.withdrawal(row.receipt.chainId, row.receipt.transactionHash));
+      const receipt =
+        row.kind === "receipt" && row.reason !== "decode withdrawal receipt"
+          ? row.receipt
+          : row.kind === "payment" && row.reason === "ledger_report_mismatch"
+            ? row.withdrawal
+            : null;
+      if (!receipt) continue;
+      if (row.kind === "payment") {
+        const payment = yield* Effect.result(ports.ledger.payment(row.withdrawal));
+        if (Result.isFailure(payment) || payment.success !== null) continue;
+      }
+      const resolved = yield* Effect.result(ports.shard.withdrawal(receipt.chainId, receipt.transactionHash));
       if (Result.isSuccess(resolved) && resolved.success)
         yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
     }

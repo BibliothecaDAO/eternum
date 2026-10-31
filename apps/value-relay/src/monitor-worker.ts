@@ -11,7 +11,7 @@ import { presentsOperatorToken } from "@realms-world/identity";
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
-import { ledgerPauserAdapter } from "./chain";
+import { ledgerPauserAdapter, ledgerApprovals } from "./chain";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -268,7 +268,26 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
     const reader = new ShardReader(shardConnection(shard));
     return { reader, shard };
   };
-  // Resolved per read: a missing ledger fails that read, never the whole tick.
+  const withdrawalPorts = async (chainId: string) => {
+    const { reader, shard } = await shardPorts(chainId);
+    return shardWithdrawalPorts(
+      reader,
+      frontierReceiptBindings(
+        reader,
+        () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
+        env.IDENTITY,
+        shard.url,
+      ),
+    );
+  };
+  const approvals = () =>
+    ledgerApprovals({
+      rpcUrl: env.L2_RPC_URL,
+      contractAddress: ledgerAddress(env.ENVIRONMENT),
+      accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
+      privateKey: env.PAUSER_PRIVATE_KEY,
+    });
+  // Resolve per read so missing configuration enters the monitor's durable stop path.
   const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
   return {
     identity: {
@@ -276,21 +295,14 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },
     shard: {
-      withdrawal: (chainId: string, hash: string) =>
-        relayOperation("audit registered shard receipt", async () => {
-          const { reader, shard } = await shardPorts(chainId);
-          return Effect.runPromise(
-            shardWithdrawalPorts(
-              reader,
-              frontierReceiptBindings(
-                reader,
-                () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
-                env.IDENTITY,
-                shard.url,
-              ),
-            ).withdrawal(chainId, hash),
-          );
-        }),
+      withdrawalReceipt: (chainId, hash) =>
+        relayOperation("audit raw registered shard receipt", async () =>
+          Effect.runPromise((await withdrawalPorts(chainId)).withdrawalReceipt(chainId, hash)),
+        ),
+      withdrawal: (chainId, hash) =>
+        relayOperation("audit registered shard recipient", async () =>
+          Effect.runPromise((await withdrawalPorts(chainId)).withdrawal(chainId, hash)),
+        ),
       result: (chainId: string, gameId: number) =>
         relayOperation("audit registered shard result", async () => {
           const { reader } = await shardPorts(chainId);
@@ -313,6 +325,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         }),
     },
     ledger: {
+      approvePayment: (report) =>
+        relayOperation("approve ledger payment", () => Effect.runPromise(approvals().approvePayment(report))),
+      approveSettlement: (report) =>
+        relayOperation("approve ledger settlement", () => Effect.runPromise(approvals().approveSettlement(report))),
       // Each read forwards its whole argument list, so the audit cursor's anchor reaches the ledger unchanged.
       frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>

@@ -7,7 +7,7 @@ import {
   decodeWithdrawalPayment,
 } from "@realms-world/value-ledger";
 import { Account } from "starknet";
-import type { RelayPorts, Withdrawal, RelayEffect } from "./ports";
+import type { RelayPorts, Withdrawal, RelayEffect, MonitorPorts } from "./ports";
 import { frontierPayment } from "./adapters";
 import { Effect } from "effect";
 import { RelayFailure, relayOperation } from "./ports";
@@ -179,6 +179,39 @@ export const ledgerPauserAdapter = (credentials: LedgerCredentials): (() => impo
     });
 };
 
+/** The separate monitor account authorizes only the exact independently verified report. */
+export const ledgerApprovals = (
+  credentials: LedgerCredentials,
+): Pick<MonitorPorts["ledger"], "approvePayment" | "approveSettlement"> => {
+  const approve = (entrypoint: string, calldata: string[]) =>
+    relayOperation("approve verified ledger report", async () => {
+      const { provider, account } = ledgerAccountOf(credentials);
+      const transaction = await account.execute({ contractAddress: credentials.contractAddress, entrypoint, calldata });
+      const receipt = await provider.waitForTransaction(transaction.transaction_hash);
+      if (receipt.isReverted()) throw new Error("ledger_approval_reverted");
+    });
+  return {
+    approvePayment: (report) =>
+      approve("approve_payment", [
+        report.chainId,
+        String(report.seasonId),
+        report.transactionHash,
+        report.wallet,
+        ...u256Fields(report.amount),
+        String(report.prizeRank),
+        String(report.prizeCount),
+      ]),
+    approveSettlement: (report) =>
+      approve("approve_settlement", [
+        report.chainId,
+        String(report.gameId),
+        ...u256Fields(report.chestWithdrawn),
+        ...u256Fields(report.prizeWithdrawn),
+      ]),
+  };
+};
+const u256Fields = (amount: string) => [String(BigInt(amount) & (2n ** 128n - 1n)), String(BigInt(amount) >> 128n)];
+
 const ledgerAccountOf = (credentials: LedgerCredentials) => {
   const provider = rpcAt(credentials.rpcUrl);
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
@@ -187,6 +220,8 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 export const paymentFailure = (reason = "") => {
+  if (reason.includes("Ledger: payment unapproved"))
+    return new RelayFailure({ operation: "ledger_payment_unapproved" });
   const operation = reason.includes("Ledger: payout allowance spent")
     ? "ledger_payout_allowance_spent"
     : reason.includes("Ledger: payment delay")

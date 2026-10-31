@@ -216,12 +216,15 @@ const monitorFixture = () => {
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
       settlementEvidence: () => Effect.succeed(null),
       conservation: shardConservationPort(connection, "https://shard.test", network(snapshot("84"))),
       withdrawal: () => Effect.fail(new RelayFailure({ operation: "binding_missing" })),
       result: () => Effect.succeed(null),
     },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       pause: vi.fn(() => Effect.void),
       reportedSettlements: () =>

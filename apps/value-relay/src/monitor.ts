@@ -3,6 +3,7 @@ import type {
   MonitorPorts,
   LedgerPage,
   PaidClaim,
+  ReportedClaim,
   BlitzCommitment,
   Withdrawal,
   BlitzResult,
@@ -101,6 +102,10 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     return null;
   });
 
+/** Missing evidence is a stop condition, not an endlessly retryable row ahead of later reports. */
+const verifyReport = (check: RelayEffect<Mismatch | null>, reason: string): RelayEffect<Mismatch | null> =>
+  check.pipe(Effect.catch((failure) => Effect.succeed({ reason, evidence: failure.operation, retry: true as const })));
+
 const checkReportedSettlements = (ports: MonitorPorts, store: MonitorStore) =>
   checkLedgerPage(
     "reportedSettlements",
@@ -109,13 +114,20 @@ const checkReportedSettlements = (ports: MonitorPorts, store: MonitorStore) =>
     (row) =>
       `reportedSettlements:${hex(row.chainId)}:${row.gameId}:${BigInt(row.chestWithdrawn)}:${BigInt(row.prizeWithdrawn)}`,
     (report) =>
-      ports.shard
-        .settlementEvidence(report)
-        .pipe(
-          Effect.map((evidence) =>
-            evidence === null ? null : { reason: `reported_settlement_mismatch:${report.gameId}`, evidence },
+      verifyReport(
+        ports.shard
+          .settlementEvidence(report)
+          .pipe(
+            Effect.map((evidence) =>
+              evidence === null ? null : { reason: `reported_settlement_mismatch:${report.gameId}`, evidence },
+            ),
           ),
+        `reported_settlement_unverifiable:${report.gameId}`,
+      ).pipe(
+        Effect.flatMap((mismatch) =>
+          mismatch ? Effect.succeed(mismatch) : ports.ledger.approveSettlement(report).pipe(Effect.as(null)),
         ),
+      ),
     store,
   );
 
@@ -127,28 +139,41 @@ const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
     (row) =>
       `reportedClaims:${hex(row.chainId)}:${hex(row.transactionHash)}:${row.seasonId}:${BigInt(row.amount)}:${row.prizeRank}:${row.prizeCount}:${hex(row.wallet)}:${hex(row.reportTransactionHash)}`,
     (report) =>
-      Effect.gen(function* () {
-        const receipt = yield* ports.shard.withdrawal(report.chainId, report.transactionHash);
-        const evidence = receiptEvidence(receipt);
-        if (!matchesPaidClaim(receipt, report))
-          return { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence };
-        if (
-          BigInt(report.wallet) !== 0n &&
-          !(yield* ports.identity.matchesPayDecision({
-            chainId: report.chainId,
-            claimId: report.transactionHash,
-            transactionHash: report.reportTransactionHash,
-            realmsId: receipt!.realmsId,
-            wallet: report.wallet,
-            seasonId: report.seasonId,
-            amount: report.amount,
-          }))
-        )
-          return { reason: `reported_wallet_mismatch:${report.transactionHash}`, evidence };
-        return null;
-      }),
+      verifyReport(verifyReportedReceipt(ports, report), `reported_claim_unverifiable:${report.transactionHash}`).pipe(
+        Effect.flatMap((mismatch) =>
+          mismatch || BigInt(report.wallet) === 0n
+            ? Effect.succeed(mismatch)
+            : ports.ledger.approvePayment(report).pipe(Effect.as(null)),
+        ),
+      ),
     store,
   );
+
+const verifyReportedReceipt = (ports: MonitorPorts, report: ReportedClaim) =>
+  Effect.gen(function* () {
+    const receipt = yield* ports.shard.withdrawalReceipt(report.chainId, report.transactionHash);
+    const evidence = receipt === null ? "receipt:none" : JSON.stringify(receipt);
+    if (!matchesPaidClaim(receipt, report))
+      return { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence };
+    if (BigInt(report.wallet) !== 0n) {
+      const resolved = yield* ports.shard.withdrawal(report.chainId, report.transactionHash);
+      if (
+        !resolved ||
+        !matchesPaidClaim(resolved, report) ||
+        !(yield* ports.identity.matchesPayDecision({
+          chainId: report.chainId,
+          claimId: report.transactionHash,
+          transactionHash: report.reportTransactionHash,
+          realmsId: resolved.realmsId,
+          wallet: report.wallet,
+          seasonId: report.seasonId,
+          amount: report.amount,
+        }))
+      )
+        return { reason: `reported_wallet_mismatch:${report.transactionHash}`, evidence };
+    }
+    return null;
+  });
 
 const checkPaidClaims = (ports: MonitorPorts, store: MonitorStore) =>
   checkLedgerPage(
@@ -210,7 +235,13 @@ const checkLedgerPage = <A>(
   Effect.gen(function* () {
     const progress = yield* relayOperation("read ledger audit cursor", () => store.load());
     const cursor: AuditCursor = progress.cursors?.[stream] ?? { page: null };
-    const page = yield* read(cursor.page, cursor.fromBlock, cursor.anchor);
+    const readPage = yield* Effect.result(read(cursor.page, cursor.fromBlock, cursor.anchor));
+    if (Result.isFailure(readPage)) {
+      if (stream !== "reportedClaims" && stream !== "reportedSettlements") return yield* Effect.fail(readPage.failure);
+      yield* recordFault(store, { row: `${stream}:unavailable` });
+      return `${stream}_unverifiable`;
+    }
+    const page = readPage.success;
     const fromBlock = page.fromBlock;
     if (
       !Number.isSafeInteger(page.head) ||
@@ -218,19 +249,28 @@ const checkLedgerPage = <A>(
       page.rows.length > 100 ||
       (page.rows.length > 0 && page.head < fromBlock) ||
       (!page.rewind && page.next !== null && page.next === cursor.page)
-    )
+    ) {
+      if (stream === "reportedClaims" || stream === "reportedSettlements") {
+        yield* recordFault(store, { row: `${stream}:unavailable` });
+        return `${stream}_unverifiable`;
+      }
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
+    }
     for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
       // The check always runs: a clearance waives the observation the operator saw, never the row whatever it shows.
       const observation = yield* Effect.result(check(row));
-      if (Result.isFailure(observation)) return yield* Effect.fail(observation.failure);
-      if (observation.success) {
-        const observed = observedFact(fact(row), observation.success);
-        if (isCleared(progress, observed)) continue;
+      if (Result.isFailure(observation) && stream !== "reportedClaims" && stream !== "reportedSettlements")
+        return yield* Effect.fail(observation.failure);
+      const mismatch: Mismatch | null = Result.isFailure(observation)
+        ? { reason: `${stream}_unverifiable`, evidence: observation.failure.operation, retry: true }
+        : observation.success;
+      if (mismatch) {
+        const observed = observedFact(fact(row), mismatch);
+        if (!mismatch.retry && isCleared(progress, observed)) continue;
         yield* recordFault(store, {
           row: key(row),
-          fact: observed,
+          ...(mismatch.retry ? {} : { fact: observed }),
           stream,
           cursor: {
             fromBlock,
@@ -242,7 +282,7 @@ const checkLedgerPage = <A>(
           },
           offset: index,
         });
-        return observation.success.reason;
+        return mismatch.reason;
       }
     }
     const next =
@@ -264,7 +304,10 @@ const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) 
     return halted;
   });
 
-const matchesPaidClaim = (receipt: Withdrawal | null, paid: Omit<Withdrawal, "realmsId" | "confirmedAt">) =>
+const matchesPaidClaim = (
+  receipt: Omit<Withdrawal, "realmsId"> | null,
+  paid: Omit<Withdrawal, "realmsId" | "confirmedAt">,
+) =>
   receipt !== null &&
   BigInt(receipt.chainId) === BigInt(paid.chainId) &&
   BigInt(receipt.transactionHash) === BigInt(paid.transactionHash) &&
@@ -289,6 +332,7 @@ const postedResultFact = (posted: BlitzCommitment) =>
 
 /** What a failed check saw: why the ledger row disagrees, and the independent evidence it was compared with. */
 interface Mismatch {
+  retry?: true;
   reason: string;
   evidence: string;
 }

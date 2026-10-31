@@ -696,6 +696,122 @@
       },
       {
         "type": "function",
+        "name": "approve_payment",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "claim_id",
+            "type": "core::felt252"
+          },
+          {
+            "name": "wallet",
+            "type": "core::starknet::contract_address::ContractAddress"
+          },
+          {
+            "name": "amount",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "prize_rank",
+            "type": "core::integer::u16"
+          },
+          {
+            "name": "prize_count",
+            "type": "core::integer::u16"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "payment_approved",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "claim_id",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::bool"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "settlement_approved",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::bool"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "approve_settlement",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "season_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "chest_withdrawn",
+            "type": "core::integer::u256"
+          },
+          {
+            "name": "prize_withdrawn",
+            "type": "core::integer::u256"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "void_report",
+        "inputs": [
+          {
+            "name": "shard",
+            "type": "core::felt252"
+          },
+          {
+            "name": "claim_id",
+            "type": "core::felt252"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
         "name": "prepare_payment",
         "inputs": [
           {
@@ -1954,6 +2070,28 @@
   },
   {
     "type": "event",
+    "name": "game_ledger::contract::GameLedger::WithdrawalReportVoided",
+    "kind": "struct",
+    "members": [
+      {
+        "name": "shard",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "claim_id",
+        "type": "core::felt252",
+        "kind": "key"
+      },
+      {
+        "name": "season_id",
+        "type": "core::integer::u32",
+        "kind": "data"
+      }
+    ]
+  },
+  {
+    "type": "event",
     "name": "game_ledger::contract::GameLedger::SettlementReported",
     "kind": "struct",
     "members": [
@@ -2436,6 +2574,11 @@
       {
         "name": "WithdrawalReported",
         "type": "game_ledger::contract::GameLedger::WithdrawalReported",
+        "kind": "nested"
+      },
+      {
+        "name": "WithdrawalReportVoided",
+        "type": "game_ledger::contract::GameLedger::WithdrawalReportVoided",
         "kind": "nested"
       },
       {

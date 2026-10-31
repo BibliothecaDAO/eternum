@@ -47,6 +47,22 @@ pub trait IGameLedger<TState> {
         seed: felt252,
         amount: u256,
     );
+    fn approve_payment(
+        ref self: TState,
+        shard: felt252,
+        season_id: u32,
+        claim_id: felt252,
+        wallet: ContractAddress,
+        amount: u256,
+        prize_rank: u16,
+        prize_count: u16,
+    );
+    fn payment_approved(self: @TState, shard: felt252, claim_id: felt252) -> bool;
+    fn settlement_approved(self: @TState, shard: felt252, season_id: u32) -> bool;
+    fn approve_settlement(
+        ref self: TState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
+    );
+    fn void_report(ref self: TState, shard: felt252, claim_id: felt252);
     fn prepare_payment(ref self: TState, shard: felt252, claim_id: felt252, wallet: ContractAddress);
     fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
     fn report_withdrawal(
@@ -158,6 +174,9 @@ pub mod GameLedger {
         frontier_carry_end: Map<felt252, u64>,
         frontier_prize_claims: Map<(felt252, u32, u16), felt252>,
         frontier_prize_count: Map<(felt252, u32), u16>,
+        frontier_prize_reports: Map<(felt252, u32), u16>,
+        approved_payments: Map<(felt252, felt252), bool>,
+        approved_settlements: Map<(felt252, u32), bool>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
         frontier_pending: Map<(felt252, u32), u64>,
         settlement_reports: Map<(felt252, u32), (u256, u256, u64)>,
@@ -212,6 +231,7 @@ pub mod GameLedger {
         UpgradeableEvent: UpgradeableComponent::Event,
         FrontierFunded: FrontierFunded,
         WithdrawalReported: WithdrawalReported,
+        WithdrawalReportVoided: WithdrawalReportVoided,
         SettlementReported: SettlementReported,
         PayoutAllowanceChanged: PayoutAllowanceChanged,
         WithdrawalPaid: WithdrawalPaid,
@@ -258,6 +278,15 @@ pub mod GameLedger {
     struct PayoutAllowanceChanged {
         capacity: u256,
         hourly_refill: u256,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct WithdrawalReportVoided {
+        #[key]
+        shard: felt252,
+        #[key]
+        claim_id: felt252,
+        season_id: u32,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -605,6 +634,8 @@ pub mod GameLedger {
                 let whole: u128 = (season.prize_pool / 1000000000000000000).try_into().unwrap();
                 let expected: u256 = crate::frontier_prizes::prize_amount(whole, prize_count, prize_rank).into();
                 assert!(amount == expected * 1000000000000000000, "Ledger: incorrect prize amount");
+                let reports = self.frontier_prize_reports.entry((shard, season_id)).read();
+                self.frontier_prize_reports.entry((shard, season_id)).write(reports + 1);
                 self.frontier_prize_count.entry((shard, season_id)).write(prize_count);
                 self.frontier_prize_claims.entry((shard, season_id, prize_rank)).write(claim_id);
             }
@@ -632,6 +663,87 @@ pub mod GameLedger {
                 );
         }
 
+        fn payment_approved(self: @ContractState, shard: felt252, claim_id: felt252) -> bool {
+            self.approved_payments.entry((shard, claim_id)).read()
+        }
+
+        fn approve_payment(
+            ref self: ContractState,
+            shard: felt252,
+            season_id: u32,
+            claim_id: felt252,
+            wallet: ContractAddress,
+            amount: u256,
+            prize_rank: u16,
+            prize_count: u16,
+        ) {
+            self.accesscontrol.assert_only_role(PAUSER_ROLE);
+            let report = self.get_payment(shard, claim_id);
+            // An old event cannot approve changed terms or a different recipient.
+            if report.paid || report.amount == 0 || self.get_frontier(shard, report.season_id).closed {
+                return;
+            }
+            if report.season_id == season_id
+                && report.wallet == wallet
+                && wallet.is_non_zero()
+                && report.amount == amount
+                && report.prize_rank == prize_rank
+                && report.prize_count == prize_count {
+                self.approved_payments.entry((shard, claim_id)).write(true);
+            }
+        }
+
+        fn settlement_approved(self: @ContractState, shard: felt252, season_id: u32) -> bool {
+            self.approved_settlements.entry((shard, season_id)).read()
+        }
+
+        fn approve_settlement(
+            ref self: ContractState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
+        ) {
+            self.accesscontrol.assert_only_role(PAUSER_ROLE);
+            let (chest, prize, ready) = self.get_settlement(shard, season_id);
+            if ready != 0 && chest == chest_withdrawn && prize == prize_withdrawn {
+                self.approved_settlements.entry((shard, season_id)).write(true);
+            }
+        }
+
+        fn void_report(ref self: ContractState, shard: felt252, claim_id: felt252) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.pausable.assert_paused();
+            let report = self.get_payment(shard, claim_id);
+            assert!(!report.paid, "Ledger: withdrawal already paid");
+            if report.amount == 0 {
+                return;
+            }
+            let key = (shard, report.season_id);
+            if report.prize_rank > 0 {
+                self.frontier_prize_claims.entry((shard, report.season_id, report.prize_rank)).write(0);
+                let remaining = self.frontier_prize_reports.entry(key).read() - 1;
+                self.frontier_prize_reports.entry(key).write(remaining);
+                if remaining == 0 {
+                    self.frontier_prize_count.entry(key).write(0);
+                }
+            }
+            let pending = self.frontier_pending.entry(key).read();
+            self.frontier_pending.entry(key).write(pending - 1);
+            self
+                .payments
+                .entry((shard, claim_id))
+                .write(
+                    WithdrawalPayment {
+                        paid: false,
+                        season_id: 0,
+                        wallet: 0.try_into().unwrap(),
+                        amount: 0,
+                        prize_rank: 0,
+                        prize_count: 0,
+                        reported_at: 0,
+                    },
+                );
+            self.approved_payments.entry((shard, claim_id)).write(false);
+            self.emit(WithdrawalReportVoided { shard, claim_id, season_id: report.season_id });
+        }
+
         fn prepare_payment(ref self: ContractState, shard: felt252, claim_id: felt252, wallet: ContractAddress) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             self.pausable.assert_not_paused();
@@ -646,6 +758,7 @@ pub mod GameLedger {
             if reported.wallet == wallet {
                 return;
             }
+            self.approved_payments.entry((shard, claim_id)).write(false);
             reported.wallet = wallet;
             reported.reported_at = starknet::get_block_timestamp();
             self.payments.entry((shard, claim_id)).write(reported);
@@ -687,6 +800,7 @@ pub mod GameLedger {
             let (capacity, _, available, delay) = self.payout_allowance();
             let slow = reported.prize_rank > 0 || amount > capacity;
             if slow {
+                assert!(self.payment_approved(shard, claim_id), "Ledger: payment unapproved");
                 assert!(reported.wallet == wallet, "Ledger: conflicting withdrawal report");
                 assert!(starknet::get_block_timestamp() >= reported.reported_at + delay, "Ledger: payment delay");
             } else {
@@ -788,6 +902,7 @@ pub mod GameLedger {
             if ready != 0 && chest == chest_withdrawn && prize == prize_withdrawn {
                 return;
             }
+            self.approved_settlements.entry((shard, season_id)).write(false);
             self
                 .settlement_reports
                 .entry((shard, season_id))
@@ -806,6 +921,7 @@ pub mod GameLedger {
                 season.paid == chest_withdrawn && season.prize_paid == prize_withdrawn, "Ledger: withdrawals not paid",
             );
             if !season.closed && starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id) {
+                assert!(self.approved_settlements.entry((shard, season_id)).read(), "Ledger: settlement unapproved");
                 let (chest, prize, ready) = self.get_settlement(shard, season_id);
                 assert!(
                     ready != 0

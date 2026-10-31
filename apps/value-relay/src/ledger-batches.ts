@@ -169,6 +169,8 @@ const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[
     }
     if (!payment || (slow && BigInt(head.time) < BigInt(payment.reportedAt) + delay))
       waiting.push(resultOf(row.withdrawal, "ledger_payment_delay"));
+    else if (slow && !(await paymentApproved(context, row, head.number)))
+      waiting.push(resultOf(row.withdrawal, "ledger_payment_unapproved"));
     else if (BigInt(row.withdrawal.amount) > available)
       waiting.push(resultOf(row.withdrawal, "ledger_unlock_exceeded"));
     else if (!slow && amount > allowance) waiting.push(resultOf(row.withdrawal, "ledger_payout_allowance_spent"));
@@ -209,3 +211,16 @@ const isPermanentFailure = (failure: RelayFailure) =>
   ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
     failure.operation,
   );
+
+const paymentApproved = async (context: BatchContext, row: PayableClaim, block: number) => {
+  const fields = await context.provider.callContract(
+    {
+      contractAddress: context.credentials.contractAddress,
+      entrypoint: "payment_approved",
+      calldata: [row.withdrawal.chainId, row.withdrawal.transactionHash],
+    },
+    block,
+  );
+  if (fields.length !== 1 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_approval");
+  return BigInt(fields[0]!) === 1n;
+};

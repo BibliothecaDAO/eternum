@@ -49,15 +49,17 @@ beforeEach(() => {
   rpc.records.clear();
   rpc.time = 1000;
   rpc.call.mockImplementation(async (q) =>
-    q.entrypoint === "payout_allowance"
-      ? ["5000", "0", "5000", "0", "5000", "0", "3600"]
-      : q.entrypoint === "get_frontier"
-        ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1", "0", "0", "0", "0"]
-        : q.entrypoint === "frontier_unlocked"
-          ? ["1000", "0"]
-          : q.entrypoint === "is_paused"
-            ? ["0"]
-            : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0", "0"]),
+    q.entrypoint === "payment_approved"
+      ? ["1"]
+      : q.entrypoint === "payout_allowance"
+        ? ["5000", "0", "5000", "0", "5000", "0", "3600"]
+        : q.entrypoint === "get_frontier"
+          ? ["1", "0", "2000", "1000", "0", "0", "0", "0", "1", "0x1", "0", "0", "0", "0"]
+          : q.entrypoint === "frontier_unlocked"
+            ? ["1000", "0"]
+            : q.entrypoint === "is_paused"
+              ? ["0"]
+              : (rpc.records.get(q.calldata[1]) ?? ["0", "0", "0", "0", "0", "0", "0", "0"]),
   );
   rpc.execute.mockImplementation(async (raw) => {
     for (const call of Array.isArray(raw) ? raw : [raw]) {
@@ -286,4 +288,17 @@ it("budgets the shared allowance across seasons and retries after refill", async
   );
   available = "2";
   expect(await Effect.runPromise(batch.payMany([rows[1]!]))).toEqual([{ claimId: "0x2", error: null }]);
+});
+
+it("leaves mature slow payments queued until the independent monitor approves", async () => {
+  const withdrawal = { ...claims[0]!, prizeRank: 1, prizeCount: 1, amount: "10" };
+  rpc.records.set(withdrawal.transactionHash, ["0", "1", "0x123", "10", "0", "1", "1", "0"]);
+  rpc.time = 86400;
+  const original = rpc.call.getMockImplementation()!;
+  rpc.call.mockImplementation((q) => (q.entrypoint === "payment_approved" ? ["0"] : original(q)));
+  const batch = ledgerBatches(credentials, async () => {});
+  expect(await Effect.runPromise(batch.payMany([{ withdrawal, wallet: "0x123" }]))).toEqual([
+    { claimId: withdrawal.transactionHash, error: "ledger_payment_unapproved" },
+  ]);
+  expect(rpc.execute).not.toHaveBeenCalled();
 });

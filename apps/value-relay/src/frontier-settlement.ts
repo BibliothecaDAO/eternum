@@ -77,7 +77,17 @@ async function earlySettlementAction(
     BigInt(ledgerU256(report[0]!, report[1]!)) === BigInt(settlement.chestWithdrawn) &&
     BigInt(ledgerU256(report[2]!, report[3]!)) === BigInt(settlement.prizeWithdrawn);
   if (ready === 0n || !matches) return "report_settlement";
-  return BigInt(head.time) < ready ? null : "settle_frontier";
+  if (BigInt(head.time) < ready) return null;
+  const approval = await provider.callContract(
+    {
+      contractAddress: address,
+      entrypoint: "settlement_approved",
+      calldata: [settlement.chainId, String(settlement.gameId)],
+    },
+    head.number,
+  );
+  if (approval.length !== 1 || ![0n, 1n].includes(BigInt(approval[0]!))) throw new Error("invalid_settlement_approval");
+  return BigInt(approval[0]!) === 1n ? "settle_frontier" : null;
 }
 
 async function submitSettlement(

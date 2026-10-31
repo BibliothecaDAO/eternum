@@ -40,11 +40,13 @@ beforeEach(() => {
   vi.resetAllMocks();
   rpc.head.mockResolvedValue({ number: 10, time: 100 });
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "frontier_claim_deadline"
-      ? ["604900"]
-      : entrypoint === "get_settlement"
-        ? ["400", "0", "300", "0", "100"]
-        : season(),
+    entrypoint === "settlement_approved"
+      ? ["1"]
+      : entrypoint === "frontier_claim_deadline"
+        ? ["604900"]
+        : entrypoint === "get_settlement"
+          ? ["400", "0", "300", "0", "100"]
+          : season(),
   );
   rpc.contract.mockResolvedValue({
     abi: [{ type: "interface", items: [{ type: "function", name: "settle_frontier" }] }],
@@ -67,7 +69,7 @@ it("checks confirmed payments and sends exact totals under the operator's close 
 });
 it.each([[season("399")], [season("400", "299")]])("refuses a not fully paid season", async (fields) => {
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "frontier_claim_deadline" ? ["604900"] : fields,
+    entrypoint === "settlement_approved" ? ["1"] : entrypoint === "frontier_claim_deadline" ? ["604900"] : fields,
   );
   await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
   expect(rpc.execute).not.toHaveBeenCalled();
@@ -89,7 +91,11 @@ it("a reverted close remains an error to retry", async () => {
 
 it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadline passes", async () => {
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "frontier_claim_deadline" ? ["604900"] : season("300", "200"),
+    entrypoint === "settlement_approved"
+      ? ["1"]
+      : entrypoint === "frontier_claim_deadline"
+        ? ["604900"]
+        : season("300", "200"),
   );
   rpc.head.mockResolvedValue({ number: 10, time: 604899 });
   await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
@@ -104,10 +110,17 @@ it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadl
   expect(rpc.read).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "frontier_claim_deadline" }), 11);
 });
 
-it("reports an early close, waits until its hour is up, then closes without restarting the clock", async () => {
+it("reports an early close and requires both the hour and monitor approval", async () => {
+  let approved = false;
   let report = ["0", "0", "0", "0", "0"];
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "frontier_claim_deadline" ? ["604900"] : entrypoint === "get_settlement" ? report : season(),
+    entrypoint === "settlement_approved"
+      ? [approved ? "1" : "0"]
+      : entrypoint === "frontier_claim_deadline"
+        ? ["604900"]
+        : entrypoint === "get_settlement"
+          ? report
+          : season(),
   );
   await run();
   expect(rpc.execute).toHaveBeenLastCalledWith({
@@ -121,6 +134,9 @@ it("reports an early close, waits until its hour is up, then closes without rest
   await run();
   expect(rpc.execute).not.toHaveBeenCalled();
   rpc.head.mockResolvedValue({ number: 12, time: 3700 });
+  await run();
+  expect(rpc.execute).not.toHaveBeenCalled();
+  approved = true;
   await run();
   expect(rpc.execute).toHaveBeenLastCalledWith(expect.objectContaining({ entrypoint: "settle_frontier" }));
 });

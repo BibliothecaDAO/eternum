@@ -1,6 +1,6 @@
 import { Effect } from "effect";
 import { expect, it, vi } from "vitest";
-import { runMonitor, type MonitorProgress } from "./monitor";
+import { resetMonitorRow, runMonitor, type MonitorProgress } from "./monitor";
 import { RelayFailure, type MonitorPorts } from "./ports";
 
 const fixture = () => {
@@ -18,12 +18,15 @@ const fixture = () => {
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
       settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: vi.fn(() => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }))),
       result: () => Effect.succeed(null),
     },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       reportedSettlements: () =>
         Effect.succeed({
@@ -104,4 +107,45 @@ it("waits for a funded carry to reach the shard and still pauses an overpublishe
   pool = "101";
   await expect(f.tick()).resolves.toMatchObject({ halted: "frontier_pool_mismatch:0x1:1" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
+});
+
+it("persists a stop and retries pause when a reported receipt cannot be verified", async () => {
+  const f = fixture();
+  f.ports.shard.withdrawalReceipt = () => Effect.fail(new RelayFailure({ operation: "receipt_unavailable" }));
+  f.ports.ledger.reportedClaims = () =>
+    Effect.succeed({
+      rows: [{ ...f.receipt, wallet: "0x0", reportTransactionHash: "0xdef" }],
+      next: null,
+      head: 10,
+      anchor: { number: 10, hash: "0xa" },
+      rewind: false,
+      fromBlock: 1,
+    });
+  await expect(f.tick()).resolves.toMatchObject({ halted: "reported_claim_unverifiable:0xabc" });
+  await f.tick();
+  expect(f.ports.ledger.pause).toHaveBeenCalledTimes(2);
+  expect((await f.store.load()).fault?.stream).toBe("reportedClaims");
+  expect((await f.store.load()).fault?.fact).toBeUndefined();
+  await f.store.save(resetMonitorRow(await f.store.load(), "reportedClaims:0x1:0xabc"));
+  const recheck = vi.fn(() => Effect.succeed({ ...f.receipt, account: "0x3" }));
+  f.ports.shard.withdrawalReceipt = recheck;
+  f.ports.shard.withdrawal = () => Effect.succeed(f.receipt);
+  await expect(f.tick()).resolves.toMatchObject({ halted: null });
+  expect(recheck).toHaveBeenCalledOnce();
+});
+
+it("pauses on an invalid report page instead of leaving reports hidden behind the cursor", async () => {
+  const f = fixture();
+  f.ports.ledger.reportedClaims = () =>
+    Effect.succeed({
+      rows: [{ ...f.receipt, wallet: "0x0", reportTransactionHash: "0xdef" }],
+      next: null,
+      head: 0,
+      anchor: { number: 0, hash: "0xa" },
+      rewind: false,
+      fromBlock: 1,
+    });
+  await expect(f.tick()).resolves.toMatchObject({ halted: "reportedClaims_unverifiable" });
+  expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
+  expect((await f.store.load()).fault).toEqual({ row: "reportedClaims:unavailable" });
 });

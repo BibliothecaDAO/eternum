@@ -14,23 +14,29 @@ suppress these jobs.
 Frontier receipts are reported as debt before wallet lookup. Normal chest claims pay immediately from the ledger's
 shared allowance; exhaustion remains retryable as `ledger_payout_allowance_spent`. The relay reads capacity, available
 allowance and slow-lane delay from a confirmed L2 head and budgets batches across seasons. Prizes and claims above
-capacity first bind identity's linked wallet and wait the ledger's one-hour slow lane, plus confirmation and scheduling.
-Preparation records the signed recipient decision before broadcast; a recipient change restarts that wait. Missing
-wallets remain queued and appear as deferred in health; unknown accounts are retried from their confirmed receipts.
-Permanent refusals are recorded separately. A confirmed closed season with the claim unpaid removes it from retries,
-including accounts without wallets. A claim is keyed by its shard and withdrawal transaction hash.
+capacity first bind identity's linked wallet, wait the ledger's one-hour slow lane and require the separate monitor's
+approval, plus confirmation and scheduling. Preparation records the signed recipient decision before broadcast; a
+recipient change restarts that wait. Missing wallets remain queued and appear as deferred in health; unknown accounts
+are retried from their confirmed receipts. Permanent refusals are recorded separately. A confirmed closed season with
+the claim unpaid removes it from retries, including accounts without wallets. A claim is keyed by its shard and
+withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
 Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
 The shard owns labor eligibility and limits. No daily cap is copied into services.
 
-The independent monitor checks `WithdrawalReported` events against L3 receipts and signed recipient decisions. Normal
-claims can already be paid, bounded by the allowance; slow-lane claims remain preventable during their hour. It also
-checks `SettlementReported` proposals against confirmed end-of-season balances, full prize issuance and exact receipt
-totals before early closure becomes possible after one hour. It also reads paid claims and results through independent
-checked-through cursors, verifies recorded payment authority, result commitments and shard conservation, and pauses only
-on proven disagreement. Unavailable verification makes health red. Later wallet changes cannot rewrite an earlier
-payment decision. It never uses the relay's queue as proof and never unpauses the ledger.
+The independent monitor checks `WithdrawalReported` events against raw L3 receipts before resolving any identity. An
+unknown account cannot hide a forged amount or block checking the next report. A prepared recipient also needs a
+matching signed identity decision. The monitor submits `approve_payment` for that exact verified report using its own
+`PAUSER_ROLE` account. Normal claims can already be paid, bounded by the allowance; slow claims require both the hour
+and approval. Changing the recipient clears approval. A monitor outage cannot release forged slow claims.
+
+The monitor verifies `SettlementReported` against confirmed post-end balances, full prize issuance and exact receipt
+totals, then submits `approve_settlement`. Early closure requires this approval and the hour. Report mismatches or
+unavailable evidence persist a halt and retry the pause; availability recovery rechecks the row without waiving it. Paid
+claims, results and conservation retain independent cursors; unavailable historical checks make health red. Later wallet
+changes cannot rewrite an earlier payment decision. The monitor never uses the relay's queue as proof and never unpauses
+the ledger. Its serialized tick also serializes approval, challenge and pause transactions.
 
 Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
 checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
@@ -71,6 +77,12 @@ and a rewritten row on the same claim or game is checked again. The answer's `wa
 a fault that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and
 the check runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries
 its checkpoint. No reset unpauses the ledger.
+
+For a forged unpaid report, keep the ledger paused, rotate the compromised operator and use the cold admin's
+`void_report(shard, claim_id)`. Paid reports are immutable. Voiding releases the claim and prize reservation; the relay
+rechecks held `ledger_report_mismatch` receipts and requeues them only once the ledger report is absent. Clear the
+monitor's exact recorded fault after the repair, verify the result, then unpause. A corrected report is checked again
+and needs fresh approval. No new secret or public approval endpoint is involved.
 
 ## Season prizes and mystery chests
 

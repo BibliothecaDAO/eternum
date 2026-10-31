@@ -18,6 +18,9 @@ export interface Withdrawal {
   amount: string;
   confirmedAt: number;
 }
+export interface WithdrawalReceipt extends Omit<Withdrawal, "realmsId"> {
+  account: string;
+}
 export interface BlitzCommitment {
   chainId: string;
   gameId: number;
@@ -168,11 +171,14 @@ export interface MonitorPorts {
     matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
   };
   shard: Pick<RelayPorts["shard"], "withdrawal"> & {
+    withdrawalReceipt(chainId: string, transactionHash: string): RelayEffect<WithdrawalReceipt | null>;
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
     settlementEvidence(report: FrontierSettlement): RelayEffect<string | null>;
   };
   ledger: {
+    approvePayment(report: ReportedClaim): RelayEffect<void>;
+    approveSettlement(report: FrontierSettlement): RelayEffect<void>;
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
     reportedSettlements(
       after: string | null,
