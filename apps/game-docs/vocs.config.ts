@@ -81,6 +81,10 @@ export default defineConfig({
   title: "Realms Docs",
   sidebar: [
     {
+      text: "Devcon",
+      items: [{ text: "Devcon season", link: "/devcon" }],
+    },
+    {
       text: "Your account",
       items: [
         { text: "Sign in", link: "/account/sign-in" },

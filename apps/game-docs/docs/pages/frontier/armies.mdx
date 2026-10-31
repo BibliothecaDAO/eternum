@@ -29,13 +29,14 @@ tile costs {FRONTIER.stamina.reveal}, a step over known ground {FRONTIER.stamina
 {FRONTIER.stamina.attack}. Every step and every reveal also costs {FRONTIER.stamina.wheatPerTroop} wheat per troop, so a
 big army needs farms behind it.
 
-**Refill** tops an army's stamina up at once for {FRONTIER.stamina.refillLords} LORDS a missing point, paid from your
-realm's LORDS. A well gives {FRONTIER.stamina.well} stamina. Skill points also restore stamina, and Logistics raises an
-army's maximum by up to {FRONTIER.stamina.logisticsMax}.
+**Refill** buys an army stamina at once for {FRONTIER.stamina.refillLords} LORDS a point, paid from your realm's LORDS:
+as much as it is missing, or as much as your LORDS cover. A well gives {FRONTIER.stamina.well} stamina. Skill points
+also restore stamina, and Logistics raises an army's maximum by up to {FRONTIER.stamina.logisticsMax}.
 
 ### Stamina stays with the slot
 
-Stamina belongs to the army slot, not to the army in it. Choose an open slot when deploying.
+Stamina belongs to the army slot, not to the army in it. Deploy picks your first open slot; choose another before
+deploying if you like.
 
 - A slot's first army of the day starts with a full bar: {FRONTIER.stamina.max} stamina, plus what your Supply yard's
   Logistics adds.
@@ -49,8 +50,9 @@ Stamina belongs to the army slot, not to the army in it. Choose an open slot whe
 
 ## Merging and disbanding
 
-Two of your armies standing side by side can merge, keeping the lower of their two staminas. An army you disband loses
-its troops; Frontier asks first.
+Two of your armies standing side by side can merge, keeping the lower of their two staminas. The army you merge into is
+the one that stays; when the other holds more XP, ranks or points, Frontier asks once more before they are lost. An army
+you disband loses its troops; Frontier asks first.
 
 ## XP and attributes
 
@@ -65,8 +67,9 @@ to the point spent. Choose Stamina instead to restore double that amount, up to 
 
 - **Battle** hits up to {FRONTIER.attributes.battleMax} harder.
 - **Logistics** carries up to {FRONTIER.stamina.logisticsMax} more stamina.
-- **Scouting** adds {FRONTIER.attributes.scouting.join(" / ")} to the chosen kind's find rate at each rank. Putting all
-  five ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
+- **Scouting** adds {FRONTIER.attributes.scouting.join(" / ")} to the chosen kind's find rate at each rank. The kinds
+  are Trolls (camps), Rifts, and Sanctuaries (Shrines and Wells together, once either is researched). Putting all five
+  ranks into one kind adds {FRONTIER.attributes.scoutingOneKind}.
 - **Homecoming** sends a share of survivors home when the day ends
   ([The expedition](/frontier/expedition#the-days-end)).
 

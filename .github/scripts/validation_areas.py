@@ -222,10 +222,12 @@ AREAS = {
         "contracts/utils/**",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
-        # The game files the docs draw on: its icon set and meanings, and the patch notes the changelog page shows.
+        # The game files the docs draw on: its icon set and meanings, the patch notes the changelog page shows, and the
+        # LaborRules a preset writes, which the Devcon page states a ticket's claim from.
         "apps/game/public/**",
         "apps/game/asset-sources/facets/**",
         "apps/game/src/ui/design-system/icon-meaning.ts",
+        "apps/game/src/services/home-claim-rules.ts",
         "apps/game/src/shell/generated/patch-notes.ts",
         "apps/game/src/shell/news/patch-note.ts"
     ],

@@ -13,6 +13,7 @@ import remarkMdx from "remark-mdx";
 import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { resourceName } from "@bibliothecadao/types";
 
 const here = fileURLToPath(new URL(".", import.meta.url));
 const configOf = (mode) =>
@@ -137,6 +138,14 @@ const blitzStaminaPhrases = (config) => {
   ];
 };
 
+/** A building's price as the realm page states it: every resource it takes, by the catalog's name. */
+const buildingPrice = (config, id) =>
+  config.buildings.simpleBuildingCost[id]
+    .map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`)
+    .join(" + ");
+const FARM = 37;
+const WAR_HALL = 41;
+
 /** One Knight's wheat, as its recipe takes it per troop made: Frontier deploys Knights only. */
 const wheatPerTroop = (config) =>
   config.resources.productionBySimpleRecipe[26].find((input) => input.resource === 35).amount /
@@ -200,6 +209,9 @@ const frontierPhrases = (config, preset) => {
         `A new realm starts with ${start(26)} troops, ${start(35)} wheat and ${start(23)} labor.`,
         `take ${n(preset.board.rationStep)} wheat off the ${n(wheatPerTroop(config))} wheat each troop costs to deploy`,
         ...armies.map((count, index) => `${index + 1} ${n(count)} ${n(caps[index])}`),
+        // An ordinary building and a training building: each price whole, by resource (a training building takes two).
+        `Farm Wheat ${buildingPrice(config, FARM)}`,
+        `War hall, Supply yard, Scouts' lodge, Hearth A tier for every new army ${buildingPrice(config, WAR_HALL)}`,
       ],
     },
   ];
