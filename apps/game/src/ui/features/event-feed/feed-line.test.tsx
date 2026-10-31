@@ -173,6 +173,8 @@ it("reads a fight as its attacker's: who attacked what, and how it went", async 
     defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: "0", roll: 0 },
   });
   expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Victory`);
+  // The playtest runner counts a Feed's rows by their story (scripts/client-playtest/steps.mjs, feed-after-the-clear).
+  expect(host.querySelector("[data-feed-line]")?.getAttribute("data-story")).toBe("BattleEvent");
 });
 
 // The fight's result card is gone (owner, 27 October 2026): the Feed is where a player reads that an army was lost.
