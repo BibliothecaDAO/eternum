@@ -441,12 +441,12 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 8");
     expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 8 troops · 2 each");
     press(host, "Max");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 wheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatDeploy"]);
 
     // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 wheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatDeploy"]);
     expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 9 troops · 2 each");
 
     // A count set below the most stays where it was set.
