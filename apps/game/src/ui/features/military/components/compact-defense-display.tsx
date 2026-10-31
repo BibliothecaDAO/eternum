@@ -93,10 +93,9 @@ const GuardSlotTile = ({ slot, guard, canOpenPicker, chosen, onOpen }: GuardSlot
     "flex min-h-9 w-full items-center gap-0 rounded-md border border-hud-line bg-hud-well px-1 py-0.5 transition-colors",
     isEmpty ? "justify-center border-dashed" : "whitespace-nowrap",
     isInteractive
-      ? "cursor-pointer hover:border-hud-line-strong hover:bg-hud-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hud-line-strong"
+      ? "cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hud-line-strong"
       : "cursor-default",
-    // The slot whose picker is open, chosen as the sheet marks a chosen thing.
-    chosen && "border-hud-line-strong bg-hud-chosen",
+    isInteractive && !chosen && "hover:border-hud-line-strong hover:bg-hud-hover",
   );
   const title =
     cooldownSeconds > 0
@@ -116,9 +115,11 @@ const GuardSlotTile = ({ slot, guard, canOpenPicker, chosen, onOpen }: GuardSlot
   return isInteractive ? (
     <button
       type="button"
-      className={className}
+      className={cn("ui-pick", className)}
       title={title}
-      data-picker-open={chosen ? "true" : undefined}
+      // The slot whose picker is open wears the kit's chosen look (ui-pick).
+      data-selected={chosen || undefined}
+      aria-expanded={chosen}
       onClick={(event) => onOpen(slot, event.currentTarget)}
     >
       {content}

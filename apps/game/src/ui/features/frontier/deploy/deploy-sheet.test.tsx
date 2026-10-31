@@ -190,8 +190,9 @@ describe("the Deploy sheet", () => {
       ]);
       // A token, its stamina in segments and in words on its hover, as in the dock.
       expect(slotButton(host, "Army 2").getAttribute("data-tip")).toBe("Army 2 starts full: 150/150 stamina.");
-      expect(slotButton(host, "Army 2").className).toContain("border-2");
-      expect(slotButton(host, "Army 3").className).not.toContain("border-2");
+      // Both wear the kit's chosen look (ui-pick), which frames the one aria-pressed names, as on a picked army.
+      expect(slotButton(host, "Army 2").classList.contains("ui-pick")).toBe(true);
+      expect(slotButton(host, "Army 3").classList.contains("ui-pick")).toBe(true);
       act(() => slotButton(host, "Army 3").click());
       expect(slotButton(host, "Army 3").getAttribute("aria-pressed")).toBe("true");
     } finally {

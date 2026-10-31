@@ -83,8 +83,8 @@ export const ArmyDetail = ({
               aria-pressed={chosen === "stamina"}
               onClick={() => setChosen("stamina")}
               className={cn(
-                "flex items-center gap-2 rounded-md border px-2 py-2 text-left",
-                chosen === "stamina" ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+                "ui-pick flex items-center gap-2 rounded-md border border-hud-line px-2 py-2 text-left",
+                chosen !== "stamina" && "hover:bg-hud-hover",
               )}
             >
               <Icon name={option.mark} size={32} />
@@ -112,10 +112,7 @@ export const ArmyDetail = ({
                 aria-label={`Spend ${tierNumeral(rank)} point`}
                 aria-pressed={stamina?.rank === rank}
                 onClick={() => setStaminaRank(rank)}
-                className={cn(
-                  "flex items-center gap-1 rounded border p-2",
-                  stamina?.rank === rank ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line",
-                )}
+                className={cn("ui-pick flex items-center gap-1 rounded border border-hud-line p-2")}
               >
                 <HudTier tier={rank} />
                 <span>×{count}</span>
@@ -278,8 +275,8 @@ const Choice = ({
     data-attribute={attribute.key}
     onClick={onChoose}
     className={cn(
-      "flex items-center gap-2 rounded-md border px-2 py-2 text-left",
-      chosen ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+      "ui-pick flex items-center gap-2 rounded-md border border-hud-line px-2 py-2 text-left",
+      !chosen && "hover:bg-hud-hover",
     )}
   >
     <Icon name={attribute.mark} size={32} />
@@ -321,10 +318,8 @@ const KindChoice = ({
           aria-pressed={kind === option.key}
           onClick={() => onKind(option.key)}
           className={cn(
-            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border py-1.5 text-hud-body",
-            kind === option.key
-              ? "border-hud-line-strong bg-hud-chosen text-hud-ink"
-              : "border-hud-line text-hud-muted",
+            "ui-pick flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border border-hud-line py-1.5 text-hud-body",
+            kind === option.key ? "text-hud-ink" : "text-hud-muted",
           )}
         >
           <IconGroup name={option.icon} size={22} />

@@ -78,13 +78,13 @@ export const DefenseSlotSelection = ({
               key={slot}
               onClick={() => isSlotSelectable && onSelect(slot)}
               disabled={!isSlotSelectable}
+              aria-pressed={isSelected}
               className={clsx(
-                "p-2 flex items-center gap-2 text-left transition-all duration-150 rounded border-2 relative",
-                isSelected
-                  ? "border-hud-line-strong bg-hud-hover"
-                  : isSlotSelectable
-                    ? "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong"
-                    : "border-hud-divider bg-hud-well opacity-40 cursor-not-allowed",
+                "ui-pick p-2 flex items-center gap-2 text-left transition-all duration-150 rounded border relative",
+                isSlotSelectable
+                  ? "border-hud-line bg-hud-well"
+                  : "border-hud-divider bg-hud-well opacity-40 cursor-not-allowed",
+                isSlotSelectable && !isSelected && "hover:bg-hud-hover hover:border-hud-line-strong",
                 hasGuard && !isSlotCompatible && "border-hud-bad hover:border-hud-bad",
               )}
             >

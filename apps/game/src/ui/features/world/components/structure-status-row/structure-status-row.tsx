@@ -162,11 +162,9 @@ export const StructureStatusRow = memo(
         onClick={handleCardClick}
         onKeyDown={handleKeyDown}
         className={cn(
-          "pointer-events-auto cursor-pointer rounded-xl border bg-hud-surface transition",
+          "ui-pick pointer-events-auto cursor-pointer rounded-xl border border-hud-line bg-hud-surface transition",
           isFull && "h-16",
-          isActive
-            ? "border-hud-line-strong ring-1 ring-hud-line-strong"
-            : "border-hud-line hover:border-hud-line-strong",
+          !isActive && "hover:border-hud-line-strong",
         )}
         aria-pressed={isActive}
         title={structure.displayName}

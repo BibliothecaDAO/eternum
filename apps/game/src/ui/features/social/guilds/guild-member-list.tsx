@@ -62,9 +62,9 @@ const GuildMemberRow = ({
 
   return (
     <div
+      data-selected={guildMember.isUser || undefined}
       className={clsx(
-        "mb-1 flex w-full items-center justify-between rounded-lg border border-transparent bg-hud-well px-3 py-2 transition-all duration-200",
-        guildMember.isUser && "border-hud-line-strong bg-hud-chosen",
+        "ui-pick mb-1 flex w-full items-center justify-between rounded-lg border border-transparent bg-hud-well px-3 py-2 transition-all duration-200",
         !guildMember.isUser && "hover:border-hud-line hover:bg-hud-well",
       )}
     >

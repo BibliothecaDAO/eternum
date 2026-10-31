@@ -2032,6 +2032,18 @@ button.ui-pill:focus-visible {
   font-weight: var(--hud-weight-strong);
 }
 
+/* ── Pick: the one look of a chosen thing (a card, a tile, a token, an option among others): the chosen fill a pressed
+   button and a chosen row wear, and a ring drawn inside its own border box (an outline pulled in by its width), so
+   choosing never changes its size or spills past its column or a scroller's clip, and the ring shows over a picture
+   that fills the box. A pickable element carries `ui-pick` and says it is chosen with aria-pressed, aria-selected or
+   data-selected. ── */
+.ui-pick:is([aria-pressed="true"], [aria-selected="true"], [data-selected]) {
+  border-color: rgb(var(--hud-accent));
+  background: var(--hud-chosen);
+  outline: 2px solid rgb(var(--hud-accent));
+  outline-offset: -2px;
+}
+
 /* ── Card: a painting to pick (a building to build), its name and words on the foot, its actions and badge over it. ── */
 .ui-card {
   position: relative;
@@ -2045,10 +2057,6 @@ button.ui-pill:focus-visible {
 }
 .ui-card:is(:hover, [data-state="hover"]):not([data-disabled]) {
   border-color: var(--hud-line-strong);
-}
-.ui-card[data-selected] {
-  border-color: rgb(var(--hud-accent));
-  box-shadow: inset 0 0 0 1px rgb(var(--hud-accent));
 }
 .ui-card__choose {
   position: absolute;
