@@ -129,18 +129,24 @@ export const ArmyToken = ({
     </>
   );
   return onPick ? (
-    <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={TOKEN_LOOK}>
+    <button
+      type="button"
+      aria-label={label}
+      aria-pressed={selected}
+      onClick={onPick}
+      className={cn("ui-pick", TOKEN_LOOK)}
+    >
       {body}
     </button>
   ) : (
-    <div role="group" aria-label={label} data-selected={selected || undefined} className={TOKEN_LOOK}>
+    <div role="group" aria-label={label} data-selected={selected || undefined} className={cn("ui-pick", TOKEN_LOOK)}>
       {body}
     </div>
   );
 };
 
-/** A token's frame, an army's and an open slot's alike; the picked one wears the kit's chosen ring (ui-pick). */
-const TOKEN_LOOK = cn(TOKEN, "ui-pick border border-hud-line bg-hud-surface");
+/** A token's frame, an army's and an open slot's alike; the picked one wears the kit's chosen look (ui-pick). */
+const TOKEN_LOOK = cn(TOKEN, "border border-hud-line bg-hud-surface");
 
 /**
  * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
@@ -172,7 +178,7 @@ export const OpenSlot = ({
     disabled={filling !== undefined}
     data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={TOKEN_LOOK}
+    className={cn("ui-pick", TOKEN_LOOK)}
   >
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}

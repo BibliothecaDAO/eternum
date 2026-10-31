@@ -107,6 +107,32 @@ const CHOSEN_IS_THE_KIT_PICK = [
   },
 ];
 
+// An element that says it is chosen (aria-pressed, aria-selected, data-selected) is drawn chosen by the kit: `ui-pick`, or
+// one of the kit's own chosen forms (`ui-row`, `ui-tab`…), written on the element itself. A border or fill of its own
+// left four pickers on their own looks after the kit's one was made (review, 31 October: a guard slot, a resource card,
+// a transfer slot's Balance, a phone's action tile).
+const KIT_CLASS = "/(^|\\s)ui-/";
+const CHOSEN_STATE_IS_THE_KIT = [
+  {
+    selector: `JSXOpeningElement[name.name=/^[a-z]/]:has(JSXAttribute[name.name=/^(aria-pressed|aria-selected|data-selected)$/]):not(:has(JSXAttribute[name.name='className'] :matches(Literal[value=${KIT_CLASS}], TemplateElement[value.raw=${KIT_CLASS}])))`,
+    message:
+      "An element that says it is chosen wears the kit's chosen look: put `ui-pick` (or the kit's ui- class) in its className, not a border or fill of its own.",
+  },
+];
+
+// The same omission when the element declares no state at all: a class chosen by a condition that sets both a border
+// colour and a fill is a chosen look of its own (a guard slot's "border-hud-line-strong bg-hud-chosen", a resource
+// card's, a transfer slot's "border-hud-line-strong bg-hud-hover"). A dashed border is a drop zone, not a choice.
+const CHOSEN_LOOK =
+  "/^(?!.*border-dashed).*((^|\\s)border-hud-(line-strong|accent|chosen)\\b.*(^|\\s)bg-hud-(chosen|hover)\\b|(^|\\s)bg-hud-(chosen|hover)\\b.*(^|\\s)border-hud-(line-strong|accent|chosen)\\b)/";
+const CHOSEN_LOOK_IS_THE_KIT = [
+  {
+    selector: `:matches(LogicalExpression[operator='&&'] > Literal.right, ConditionalExpression > Literal.consequent, ConditionalExpression > Literal.alternate)[value=${CHOSEN_LOOK}]`,
+    message:
+      "A border and a fill chosen by a condition is a chosen look of its own: give the element `ui-pick` and say it is chosen (aria-pressed or data-selected).",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -185,6 +211,8 @@ const eslint = new ESLint({
           ...SHORT_IN_CHIPS,
           ...STAMINA_IS_SEGMENTED,
           ...CHOSEN_IS_THE_KIT_PICK,
+          ...CHOSEN_STATE_IS_THE_KIT,
+          ...CHOSEN_LOOK_IS_THE_KIT,
         ],
       },
     },

@@ -88,10 +88,11 @@ export const HelpContainer = ({
         <div className="flex border-b border-hud-line bg-hud-well">
           {transfers.includes("troops") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              aria-pressed={transferType === TransferType.Troops}
+              className={`ui-pick flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border border-transparent transition-all duration-200 ${
                 transferType === TransferType.Troops
-                  ? "text-hud-accent border-hud-line-strong bg-hud-hover"
-                  : "text-hud-muted border-transparent hover:text-hud-accent hover:bg-hud-hover"
+                  ? "text-hud-accent"
+                  : "text-hud-muted hover:text-hud-accent hover:bg-hud-hover"
               }`}
               onClick={() => setTransferType(TransferType.Troops)}
             >
@@ -101,10 +102,11 @@ export const HelpContainer = ({
           )}
           {transfers.includes("relics") && (
             <button
-              className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border-b-2 transition-all duration-200 ${
+              aria-pressed={transferType === TransferType.Relics}
+              className={`ui-pick flex-1 flex items-center justify-center gap-2 px-4 py-3 text-hud-strong uppercase tracking-wide border border-transparent transition-all duration-200 ${
                 transferType === TransferType.Relics
-                  ? "text-hud-accent border-hud-line-strong bg-hud-hover"
-                  : "text-hud-muted border-transparent hover:text-hud-accent hover:bg-hud-hover"
+                  ? "text-hud-accent"
+                  : "text-hud-muted hover:text-hud-accent hover:bg-hud-hover"
               }`}
               onClick={() => setTransferType(TransferType.Relics)}
             >

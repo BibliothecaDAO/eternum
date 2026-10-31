@@ -107,12 +107,15 @@ export const TransferSlotSelection = ({
             type="button"
             onClick={() => !balanceOption.disabled && onSelect(balanceOption.key)}
             disabled={balanceOption.disabled}
+            aria-pressed={selectedSlot === balanceOption.key}
             className={clsx(
-              "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
-              selectedSlot === balanceOption.key
-                ? "border-hud-line-strong bg-hud-hover"
-                : "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
-              balanceOption.disabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
+              "ui-pick p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border relative",
+              balanceOption.disabled
+                ? "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider"
+                : "border-hud-line bg-hud-well",
+              !balanceOption.disabled &&
+                selectedSlot !== balanceOption.key &&
+                "hover:bg-hud-hover hover:border-hud-line-strong",
             )}
           >
             <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
@@ -165,7 +168,7 @@ export const TransferSlotSelection = ({
           })();
 
           const cardClasses = clsx(
-            "ui-pick p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border relative",
+            "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border relative",
             !isMismatch && !isSlotDisabled && "border-hud-line bg-hud-well",
             !isActive && !isMismatch && !isSlotDisabled && "hover:bg-hud-hover hover:border-hud-line-strong",
             isSlotDisabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
@@ -183,7 +186,7 @@ export const TransferSlotSelection = ({
               disabled={isSlotDisabled}
               aria-disabled={isSlotDisabled}
               aria-pressed={isActive}
-              className={cardClasses}
+              className={clsx("ui-pick", cardClasses)}
             >
               <div className="absolute top-0.5 right-0.5 bg-hud-chosen text-hud-accent text-hud-label px-1 rounded">
                 {displayedSlotNumber}
