@@ -173,7 +173,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "lords",
           "title": "Paid at the season's end",
-          "line": "The LORDS your realm still holds when a season ends, and your prize, are paid to your linked wallet automatically. Withdrawals during the season stay instant."
+          "line": "The LORDS your realm still holds when a season ends, and your prize, are paid to your linked wallet. Withdrawals and this payout are automatic and normally arrive within minutes."
         },
         {
           "kind": "new",
