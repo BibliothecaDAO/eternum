@@ -18,7 +18,7 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { exploresBought, MOVE, STAMINA, USE, USING } from "@/ui/design-system/kit/words";
+import { exploresBought, MOVE, STAMINA, USE, USING, wellRefillShare } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
@@ -80,7 +80,7 @@ export const MapSiteCard = ({
   const gain =
     plan.kind === "Well" ? (
       <HudChip icons={["stamina"]} label={STAMINA}>
-        {plan.gain === undefined ? `${WELL_REFILL_PERCENT}% max` : formatShort(plan.gain, { signed: true })}
+        {plan.gain === undefined ? wellRefillShare(WELL_REFILL_PERCENT) : formatShort(plan.gain, { signed: true })}
       </HudChip>
     ) : (
       <HudChip>{plan.gain === undefined ? "—" : skillPointName(plan.gain)}</HudChip>

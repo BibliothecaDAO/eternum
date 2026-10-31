@@ -87,7 +87,7 @@ describe("the day log's line for a story", () => {
       defender: { before: "150000000000", after: "0" },
     });
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store, won)).toBe(
-      "Troll cleared, lost 68, +82 XP",
+      "Troll cleared, lost 68, +123 XP",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(

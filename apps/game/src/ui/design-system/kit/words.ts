@@ -10,6 +10,7 @@ import {
   XP,
   buildingName,
   formatAmount,
+  formatPercent,
   formatExact,
   formatCount,
   formatClockTime,
@@ -327,6 +328,8 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+/** A Well's refill share when no army is selected. */
+export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */

@@ -4,7 +4,7 @@ import { WELL_REFILL_PERCENT, wellRefillStamina } from "@bibliothecadao/eternum/
 
 import { type MapSiteKind, mapSiteOf } from "@/config/map-sites";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
-import { SHRINE, STAMINA, WELL } from "@/ui/design-system/kit/words";
+import { SHRINE, STAMINA, WELL, wellRefillShare } from "@/ui/design-system/kit/words";
 
 export type { MapSiteKind } from "@/config/map-sites";
 
@@ -37,7 +37,7 @@ export const siteGainLine = (
   gain: number | undefined,
   stamina: { current: number; max: number } | undefined,
 ): string | null => {
-  if (kind === "Well" && !stamina) return `${WELL_REFILL_PERCENT}% max ${STAMINA}`;
+  if (kind === "Well" && !stamina) return `${wellRefillShare(WELL_REFILL_PERCENT)} ${STAMINA}`;
   if (gain === undefined) return null;
   if (kind === "Shrine") return skillPointName(gain);
   const lands = stamina ? Math.max(0, Math.min(gain, stamina.max - stamina.current)) : gain;
