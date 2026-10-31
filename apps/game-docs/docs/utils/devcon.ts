@@ -14,15 +14,15 @@ import { LONG_DAY_UNITS, SHORT_DAY_UNITS } from "./frontier";
  */
 const campaign = CAMPAIGNS["devcon-2026"];
 
-/** Nov 3 2026, 12:00 IST: the Devcon season's first day opens (launch input; the campaign holds only its end). */
-const STARTS_AT = Date.UTC(2026, 10, 3, 6, 30) / 1000;
+/** Nov 3 2026, 10:00 IST: the Devcon season's first day opens (launch input; the campaign holds only its end). */
+const STARTS_AT = Date.UTC(2026, 10, 3, 4, 30) / 1000;
 /** The LORDS the Devcon season is funded with at launch. */
 const POOL = 300_000;
 
 const n = (value: number) => value.toLocaleString("en-US");
 const pct = (bps: number) => `${n(bps / 100)}%`;
 
-/** A moment as the page writes it in one zone: "Mon 3 Nov, 12:00 IST". */
+/** A moment as the page writes it in one zone: "Tue 3 Nov 10:00 IST". */
 const momentIn = (seconds: number, timeZone: string, zone: string) =>
   `${new Intl.DateTimeFormat("en-GB", {
     weekday: "short",
