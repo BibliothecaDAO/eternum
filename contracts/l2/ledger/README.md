@@ -2,8 +2,8 @@
 
 The Starknet ledger holds separate liabilities for Frontier withdrawals, unallocated Blitz slots, each season's chest
 reserve and season prizes. Slots use `{ shard: felt252, slot_id: u32 }`; results use `{ shard, game_id }`. Withdrawals
-use the shard chain ID and confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token
-remains unchanged.
+use the shard chain ID and confirmed transaction hash. This revision deploys to a fresh ledger; it does not migrate
+existing obligations. The live MMR token remains unchanged.
 
 Frontier is funded once, before its end, and unlocks through the end of the current seeded game day. Funding after the
 start immediately unlocks elapsed days and the current day; it never unlocks future days.
