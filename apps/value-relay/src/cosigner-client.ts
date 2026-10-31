@@ -11,7 +11,7 @@ export function cosignerClient(url: string, token: string, network: typeof fetch
   const sign = async (terms: CosignRequest): Promise<Cosignature> => {
     const response = await network(new URL("/sign", url), {
       method: "POST",
-      redirect: "error",
+      redirect: "manual",
       headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
       body: JSON.stringify(terms),
       signal: AbortSignal.timeout(10_000),

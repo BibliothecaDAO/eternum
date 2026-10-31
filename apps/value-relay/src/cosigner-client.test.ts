@@ -34,7 +34,7 @@ it("requests only exact payment and settlement terms from the independent host",
     {
       url: "https://cosigner.test/sign",
       headers: { authorization: "Bearer token", "content-type": "application/json" },
-      redirect: "error",
+      redirect: "manual",
       body: {
         kind: "pay",
         shard: "0x1",
@@ -49,7 +49,7 @@ it("requests only exact payment and settlement terms from the independent host",
     {
       url: "https://cosigner.test/sign",
       headers: { authorization: "Bearer token", "content-type": "application/json" },
-      redirect: "error",
+      redirect: "manual",
       body: { kind: "settle", shard: "0x1", season: 7, chest: "42", prize: "9" },
     },
   ]);

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { findEdgeRefusedFetchOptions, isWorkerSource } from "./check-worker-fetch-options.mjs";
@@ -22,4 +23,30 @@ test("Worker apps and packages count as Worker source; their tests, scripts else
   assert.equal(isWorkerSource("apps/realms/server/realm-holdings.test.ts", apps), false);
   assert.equal(isWorkerSource("apps/game/scripts/ensure-pwa-cache-rule.mjs", apps), false);
   assert.equal(isWorkerSource("deploy/first/publish.ts", apps), false);
+});
+
+test("quoted keys and multiline options cannot bypass the Worker guard", () => {
+  const findings = findEdgeRefusedFetchOptions([
+    {
+      path: "packages/identity/src/request.ts",
+      text: 'const options = { "redirect":\n`error` }; // redirect: "error"\nconst safe = { redirect: "manual" }',
+    },
+  ]);
+  assert.equal(findings.length, 1);
+  assert.equal(findings[0].line, 1);
+});
+
+test("the guard rejects both historical Worker failures and names the supported replacement", () => {
+  for (const [revision, path] of [
+    ["e52b21578cd^", "apps/realms/server/realm-holdings.ts"],
+    ["9f0e9d03583", "apps/value-relay/src/cosigner-client.ts"],
+  ]) {
+    const text = execFileSync("git", ["show", `${revision}:${path}`], { encoding: "utf8" });
+    const failures = findEdgeRefusedFetchOptions([{ path, text }]);
+    assert.equal(failures.length, 1, `${revision}:${path}`);
+    assert.equal(
+      findEdgeRefusedFetchOptions([{ path, text: text.replace('redirect: "error"', 'redirect: "manual"') }]).length,
+      0,
+    );
+  }
 });

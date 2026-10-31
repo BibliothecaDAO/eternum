@@ -116,7 +116,7 @@ async function readPayoutIdentity(config: CosignerConfig, account: string, netwo
   url.searchParams.set("account", account);
   const response = await network(url, {
     headers: { authorization: `Bearer ${config.identityToken}` },
-    redirect: "error",
+    redirect: "manual",
     signal: AbortSignal.timeout(5000),
   });
   if (!response.ok) throw new Error("cosigner_identity_unavailable");

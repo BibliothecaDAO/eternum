@@ -108,7 +108,7 @@ it("serves an exact signature from independent sources in the request, without a
   );
   expect(identity.mock.calls[0]![1]).toMatchObject({
     headers: { authorization: "Bearer identity-read-token" },
-    redirect: "error",
+    redirect: "manual",
   });
   expect(calls.read.mock.calls.every(([, block]) => block === 10)).toBe(true);
 });
