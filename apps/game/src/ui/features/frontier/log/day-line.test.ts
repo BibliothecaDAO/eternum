@@ -34,14 +34,13 @@ describe("the day log's line for a story", () => {
     expect(reveal(ResourcesIds.Essence, "1250000000000")).toBe("+1,250 Essence");
   });
 
-  it("gives a building one line, by its build card's name, and drops the placement that repeats it", () => {
+  it("gives a building its build card's name, and a demolished one its title", () => {
     const { store } = campBeside();
     const farm = { category: BuildingType.ResourceWheat };
     expect(dayLogLine(story("BuildingPaymentStory", { ...farm, cost: [] }), store)).toBe("Farm built");
     expect(dayLogLine(story("BuildingPaymentStory", { category: BuildingType.WorkersHut, cost: [] }), store)).toBe(
       "Hut built",
     );
-    expect(dayLogLine(story("BuildingPlacementStory", { ...farm, change: "Created" }), store)).toBeNull();
     expect(
       dayLogLine(story("BuildingPlacementStory", { ...farm, change: "Destroyed" }, "Demolished: Farm"), store),
     ).toBe("Demolished: Farm");
@@ -81,6 +80,15 @@ describe("the day log's line for a story", () => {
     );
     expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
     expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");
+    // A clear with the attack that won it is one line: what the attack cost, then the XP the clear paid.
+    const won = story("BattleEvent", {
+      defender_id: SITE,
+      attacker: { before: "500000000000", after: "432000000000" },
+      defender: { before: "150000000000", after: "0" },
+    });
+    expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store, won)).toBe(
+      "Troll cleared, lost 68, +82 XP",
+    );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared",

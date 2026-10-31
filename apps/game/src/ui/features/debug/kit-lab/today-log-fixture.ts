@@ -66,10 +66,11 @@ export const ownerDayLog = (now: number) => {
     tier("Logistics III"),
     tier("Logistics II"),
   ];
-  return day.flatMap(({ story, storyPayload, title }, index) => {
-    const text = dayLogLine({ story, storyPayload, presentation: { title } }, store);
-    return text === null ? [] : [{ id: `owner-${index}`, at: now - index * 4 * 60, text }];
-  });
+  return day.map(({ story, storyPayload, title }, index) => ({
+    id: `owner-${index}`,
+    at: now - index * 4 * 60,
+    text: dayLogLine({ story, storyPayload, presentation: { title } }, store),
+  }));
 };
 
 /** Next season's recorded site uses, including a well limited by the army's remaining capacity. */
@@ -84,7 +85,7 @@ export const siteUseDayLog = (now: number) => {
     return {
       id: `site-use-${index}`,
       at: now - index * 60,
-      text: dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)!,
+      text: dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store),
     };
   });
 };
