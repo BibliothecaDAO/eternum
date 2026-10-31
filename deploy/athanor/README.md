@@ -70,8 +70,9 @@ its compatible-deployment rehearsal requirement and existing dev-ledger limitati
 
 Frontier custody requires the relay's operator transaction plus a Stark-curve signature from a separate box process.
 Install `deploy/athanor/cosigner/payout-cosigner.service` for a dedicated `payout-cosigner` Unix user, with this
-reviewed checkout and dependencies at `/opt/eternum`. This process has no Cloudflare deployment credentials and submits
-no L2 transactions. Keep its private key outside every Worker secret store and deployment export.
+reviewed checkout at `/opt/eternum`. Install dependencies with `pnpm install --frozen-lockfile` and build the workspace
+exports with `pnpm run build:packages` before starting the unit. This process has no Cloudflare deployment credentials
+and submits no L2 transactions. Keep its private key outside every Worker secret store and deployment export.
 
 Before ledger setup, run `bun deploy/athanor/cosigner/main.ts init-key /etc/payout-cosigner/key` as that user. It prints
 only the public key. Put that public key in setup's `cosignerPublicKey`; setup also requires `cosignerUrl` (HTTPS) and
