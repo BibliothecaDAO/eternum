@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 
 import dev from "../../../contracts/common/addresses/dev.json";
 import production from "../../../contracts/common/addresses/production.json";
+import { ChainId } from "./chains";
+import { LORDS } from "./contracts";
 import {
   environmentL2,
   isTestLords,
@@ -20,9 +22,12 @@ describe("environment address books", () => {
     }
   });
 
-  it("runs production on dev's test LORDS until the LORDS launch, and only that contract is shared", () => {
-    expect(valuePlaneAddress("lords", "production")).toBe(dev.lords);
+  it("uses canonical LORDS in production and test LORDS in staging", () => {
+    expect(BigInt(valuePlaneAddress("lords", "production"))).toBe(
+      BigInt(LORDS[ChainId.SN_MAIN]!.address),
+    );
     expect(valuePlaneAddress("lords", "staging")).toBe(dev.lords);
+    expect(isTestLords(valuePlaneAddress("lords", "staging"))).toBe(true);
   });
 
   it.each(["ledger", "mmrToken", "lootChests", "cosmetics"] as const)(
@@ -54,9 +59,25 @@ describe("environment address books", () => {
   );
 });
 
-it("names, beside every published ledger, the block it was deployed in", () => {
-  for (const environment of ["staging", "production"] as const)
-    expect(ledgerDeploymentBlock(environment)).toBeGreaterThan(0);
+it("names a deployment block only for a published ledger and refuses undeployed lookups", () => {
+  for (const [environment, book] of [
+    ["staging", dev],
+    ["production", production],
+  ] as const) {
+    if (BigInt(book.ledger) === BigInt(0)) {
+      expect(book).not.toHaveProperty("ledgerDeploymentBlock");
+      expect(() => ledgerDeploymentBlock(environment)).toThrow(
+        "not deployed yet",
+      );
+    } else {
+      expect(ledgerDeploymentBlock(environment)).toBeGreaterThan(0);
+      expect(ledgerDeploymentBlock(environment)).toBe(
+        "ledgerDeploymentBlock" in book
+          ? book.ledgerDeploymentBlock
+          : undefined,
+      );
+    }
+  }
 });
 
 describe("test LORDS", () => {
