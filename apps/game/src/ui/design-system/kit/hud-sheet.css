@@ -1768,7 +1768,7 @@ button.ui-relic:focus-visible {
 .ui-notice[data-tone="warn"] {
   border-left-color: var(--hud-warn);
 }
-.ui-notice__retry {
+.ui-notice__fix {
   margin-left: auto;
   align-self: center;
   flex-shrink: 0;

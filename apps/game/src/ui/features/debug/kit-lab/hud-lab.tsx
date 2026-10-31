@@ -1376,9 +1376,11 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       sending={false}
       onDeploy={noop}
       wheatLimit={
-        most < deploy.troopsAtHome ? { troops: most, held: deploy.wheat, perTroop: 2, wait: undefined } : undefined
+        most < deploy.troopsAtHome
+          ? { troops: most, of: deploy.troopsAtHome, held: deploy.wheat, perTroop: 2, wait: undefined }
+          : undefined
       }
-      onBuild={noop}
+      onGoToRealm={noop}
       onClose={noop}
     />
   );
