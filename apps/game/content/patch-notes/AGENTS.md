@@ -8,8 +8,9 @@ release by the patch notes' editor (the docs owner), never appended to with a ch
   before writing it.
 - **Nothing missed.** Before writing, list everything that changed since the live release:
   `node apps/game/scripts/patch-notes-checklist.mjs --since <live commit> > checklist.md` from the repository root
-  (`--base-preset <mode>=<composed JSON>` where live ran another preset). Map every item to a line of the note or a
-  reason it is left out, and put that table in the release's report.
+  (`--base-preset <mode>=<composed JSON>` where live ran another preset). Map every item to a line of the note (to each
+  line it sources, when one change moved several things the note tells apart) or a reason it is left out, and put that
+  table in the release's report.
 - **The file.** Named for its day (`2026-10-29.md`); front matter `title` and a one-line `summary`. Then the modes in
   this order, each only if it changed: `## All modes`, `## Frontier`, `## Blitz`, `## Eternum`. Under a mode, `### New`,
   `### Balance`, `### Fixes`, in that order. Each change is one list item:

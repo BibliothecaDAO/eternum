@@ -91,7 +91,7 @@ describe("the patch notes' checklist", () => {
       { name: "Blitz: Paid entry", text: "LORDS." },
     ];
     const result = checkCoverage(items, coverage, entries);
-    expect(result.rows.map((row) => [row.id, row.line ?? row.reason])).toEqual([
+    expect(result.rows.map((row) => [row.id, row.lines[0] ?? row.reason])).toEqual([
       ["commit:aaa", "Blitz: Guards"],
       ["commit:bbb", "formatting"],
       ["commit:ccc", "All modes: Market"],
@@ -100,5 +100,19 @@ describe("the patch notes' checklist", () => {
     expect(result.unmapped).toEqual(["commit:ddd"]);
     expect(result.unknownLines).toEqual(["All modes: Market"]);
     expect(result.unsourcedLines).toEqual(["Blitz: Paid entry"]);
+  });
+
+  it("sources every line one change moved, from that change's item alone", () => {
+    const items = [{ id: "commit:aaa", text: "Contracts · Apply next season's rules" }];
+    const coverage = { covered: { "commit:aaa": ["Frontier: Storage", "Frontier: Depths", "Frontier: Missing"] } };
+    const entries = [
+      { name: "Frontier: Storage", text: "6,000." },
+      { name: "Frontier: Depths", text: "100,000." },
+    ];
+    const result = checkCoverage(items, coverage, entries);
+    expect(result.rows[0]!.lines).toEqual(["Frontier: Storage", "Frontier: Depths", "Frontier: Missing"]);
+    expect(result.unmapped).toEqual([]);
+    expect(result.unsourcedLines).toEqual([]);
+    expect(result.unknownLines).toEqual(["Frontier: Missing"]);
   });
 });

@@ -10,8 +10,9 @@
 // constants and each preset's mode rules; the client's feature map; the retired change list's entries since the
 // release; and every commit since the release, one by one, with the area its files touch.
 //
-// With `--coverage`, every item must be mapped to a line of the release's note, or left out for a stated reason, and
-// every line of the note must be mapped from an item: the run prints the table and fails on any gap.
+// With `--coverage`, every item must be mapped to a line of the release's note (or to each line it sources, when one
+// change moved several things the note tells apart), or left out for a stated reason, and every line of the note must
+// be mapped from an item: the run prints the table and fails on any gap.
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
@@ -153,26 +154,27 @@ export const areaOf = (files) =>
   AREAS.find(([, pattern]) => files.some((file) => pattern.test(file)))?.[0] ?? "Repository";
 
 /**
- * Each item's verdict from the coverage file: the line it maps to, or why it is left out (by its id, else by the first
- * rule its text matches). A line may only be named by id, so no rule maps a group of items to one line. Unmapped items,
- * lines the note does not have and lines no item maps to are the gaps.
+ * Each item's verdict from the coverage file: the lines it maps to (one, or several when one change moved several
+ * things the note tells apart), or why it is left out (by its id, else by the first rule its text matches). A line may
+ * only be named by id, so no rule maps a group of items to one line. Unmapped items, lines the note does not have and
+ * lines no item maps to are the gaps.
  */
 export function checkCoverage(items, coverage, entries) {
   const names = entries.map((entry) => entry.name);
   const known = new Set(names);
   const rules = (coverage.outRules ?? []).map(({ match, reason }) => ({ pattern: new RegExp(match), reason }));
   const rows = items.map((item) => {
-    const line = coverage.covered?.[item.id];
-    if (line) return { ...item, line, known: known.has(line) };
+    const lines = [coverage.covered?.[item.id] ?? []].flat();
+    if (lines.length > 0) return { ...item, lines };
     const reason =
       coverage.out?.[item.id] ?? rules.find(({ pattern }) => pattern.test(`${item.id} ${item.text}`))?.reason;
-    return { ...item, reason };
+    return { ...item, lines, reason };
   });
-  const sourced = new Set(rows.flatMap((row) => (row.line ? [row.line] : [])));
+  const sourced = new Set(rows.flatMap((row) => row.lines));
   return {
     rows,
-    unmapped: rows.filter((row) => !row.line && !row.reason).map((row) => row.id),
-    unknownLines: [...new Set(rows.filter((row) => row.line && !row.known).map((row) => row.line))],
+    unmapped: rows.filter((row) => row.lines.length === 0 && !row.reason).map((row) => row.id),
+    unknownLines: [...sourced].filter((line) => !known.has(line)),
     unsourcedLines: names.filter((name) => !sourced.has(name)),
   };
 }
@@ -283,7 +285,7 @@ function renderChecklist(since, head, groups) {
 const cell = (text) => text.replace(/\|/g, "\\|").replace(/\s+/g, " ").slice(0, 140);
 
 function renderCoverage({ rows, unmapped, unknownLines, unsourcedLines }, entries) {
-  const covered = rows.filter((row) => row.line);
+  const covered = rows.filter((row) => row.lines.length > 0);
   const out = [
     "## Coverage",
     "",
@@ -296,7 +298,7 @@ function renderCoverage({ rows, unmapped, unknownLines, unsourcedLines }, entrie
     "## By line",
     "",
     ...entries.flatMap(({ name, text }) => {
-      const sources = covered.filter((row) => row.line === name);
+      const sources = covered.filter((row) => row.lines.includes(name));
       return [
         `### ${name} (${sources.length})`,
         "",
@@ -311,7 +313,7 @@ function renderCoverage({ rows, unmapped, unknownLines, unsourcedLines }, entrie
     "| Item | What changed | Why left out |",
     "| --- | --- | --- |",
     ...rows
-      .filter((row) => !row.line)
+      .filter((row) => row.lines.length === 0)
       .map((row) => `| \`${cell(row.id)}\` | ${cell(row.text)} | ${row.reason ?? "UNMAPPED"} |`),
   ];
   return out.join("\n");
