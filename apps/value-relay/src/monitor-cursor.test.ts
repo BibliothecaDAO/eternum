@@ -529,6 +529,19 @@ it.each([false, true])(
       seasonId: 7,
       amount: "100",
     });
+    if (!authorized) {
+      progress = resetMonitorRow(progress, "reportedClaims:0x1:0xabc");
+      decision.mockReturnValue(Effect.succeed(true));
+      await Effect.runPromise(
+        runMonitor(ports, {
+          load: async () => progress,
+          save: async (next) => {
+            progress = next;
+          },
+        }),
+      );
+      expect(approve).toHaveBeenCalledExactlyOnceWith(report);
+    }
   },
 );
 
@@ -573,9 +586,12 @@ it("pauses on a false early-settlement proposal before checking payments", async
   expect(pause).toHaveBeenCalledOnce();
   expect(paidClaims).not.toHaveBeenCalled();
   expect(approval).not.toHaveBeenCalled();
-  progress = resetMonitorRow(progress, "reportedSettlements:0x1:7");
+  const faulted = progress;
+  progress = resetMonitorRow(faulted, "reportedSettlements:0x1:7");
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(approval).not.toHaveBeenCalled();
+  progress = resetMonitorRow(faulted, "reportedSettlements:0x1:7");
   ports.shard.settlementEvidence = () => Effect.succeed(null);
-  ports.ledger.reportedSettlements = () => Effect.succeed({ ...page, rewind: true, rows: [report] });
   await Effect.runPromise(runMonitor(ports, store));
   expect(approval).toHaveBeenCalledExactlyOnceWith(report);
 });

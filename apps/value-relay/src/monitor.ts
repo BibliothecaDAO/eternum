@@ -237,7 +237,7 @@ const checkLedgerPage = <A>(
     const cursor: AuditCursor = progress.cursors?.[stream] ?? { page: null };
     const readPage = yield* Effect.result(read(cursor.page, cursor.fromBlock, cursor.anchor));
     if (Result.isFailure(readPage)) {
-      if (stream !== "reportedClaims" && stream !== "reportedSettlements") return yield* Effect.fail(readPage.failure);
+      if (!isReportStream(stream)) return yield* Effect.fail(readPage.failure);
       yield* recordFault(store, { row: `${stream}:unavailable` });
       return `${stream}_unverifiable`;
     }
@@ -250,7 +250,7 @@ const checkLedgerPage = <A>(
       (page.rows.length > 0 && page.head < fromBlock) ||
       (!page.rewind && page.next !== null && page.next === cursor.page)
     ) {
-      if (stream === "reportedClaims" || stream === "reportedSettlements") {
+      if (isReportStream(stream)) {
         yield* recordFault(store, { row: `${stream}:unavailable` });
         return `${stream}_unverifiable`;
       }
@@ -260,8 +260,7 @@ const checkLedgerPage = <A>(
       const row = page.rows[index]!;
       // The check always runs: a clearance waives the observation the operator saw, never the row whatever it shows.
       const observation = yield* Effect.result(check(row));
-      if (Result.isFailure(observation) && stream !== "reportedClaims" && stream !== "reportedSettlements")
-        return yield* Effect.fail(observation.failure);
+      if (Result.isFailure(observation) && !isReportStream(stream)) return yield* Effect.fail(observation.failure);
       const mismatch: Mismatch | null = Result.isFailure(observation)
         ? { reason: `${stream}_unverifiable`, evidence: observation.failure.operation, retry: true }
         : observation.success;
@@ -345,15 +344,17 @@ const receiptEvidence = (receipt: Withdrawal | null) =>
 const resultEvidence = (result: BlitzResult | null) =>
   result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 
+const isReportStream = (stream: FaultRow["stream"]) => stream === "reportedClaims" || stream === "reportedSettlements";
+
 const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
 
 const recordFault = (store: MonitorStore, fault: FaultRow) =>
   relayOperation("record faulting audit row", async () => store.save({ ...(await store.load()), fault }));
 
 /**
- * Clears the halt the operator names. A fault with a recorded fact waives exactly that fact and moves its stream past
- * the row. One without a fact waives nothing and keeps the cursor: its check runs again from where it stopped and halts
- * again, now recording its fact, if the evidence still disagrees. A reset never unpauses the ledger.
+ * Clears only the recorded observation. Reports are checked again so corrected evidence can earn approval; a waived
+ * mismatch itself grants none. Historical paid/result rows advance past the cleared observation. A fault without a
+ * fact waives nothing and keeps the cursor. A reset never unpauses the ledger.
  */
 export const resetMonitorRow = (previous: MonitorProgress, row: string): MonitorProgress => {
   if (!previous.halted || previous.fault?.row !== row) throw new Error("fault_row_mismatch");
@@ -361,7 +362,11 @@ export const resetMonitorRow = (previous: MonitorProgress, row: string): Monitor
   const next: MonitorProgress = { ...previous, halted: null, fault: null };
   if (!fault.fact) return next;
   next.cleared = [...(previous.cleared ?? []), fault.fact];
-  if (fault.stream && fault.cursor && fault.offset !== undefined)
-    next.cursors = { ...previous.cursors, [fault.stream]: { ...fault.cursor, offset: fault.offset + 1 } };
+  if (fault.stream && fault.cursor && fault.offset !== undefined) {
+    next.cursors = {
+      ...previous.cursors,
+      [fault.stream]: { ...fault.cursor, offset: fault.offset + (isReportStream(fault.stream) ? 0 : 1) },
+    };
+  }
   return next;
 };

@@ -72,11 +72,12 @@ identity. The normal reset has no bypass for that repair. Withdrawing the restor
 ledger's claim idempotence cannot prevent that second payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It waives the fault's exact fact,
-everything its check compared, and advances past only that row: a rewind that replays the same evidence stays cleared,
-and a rewritten row on the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for
-a fault that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and
-the check runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries
-its checkpoint. No reset unpauses the ledger.
+everything its check compared. Reports are rechecked so corrected evidence can earn approval; a waived mismatch grants
+none. Paid/result cursors advance past the cleared row. A rewind with the same evidence stays cleared, and changed
+evidence on the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for a fault
+that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and the check
+runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries its
+checkpoint. No reset unpauses the ledger.
 
 For a forged unpaid report, keep the ledger paused, rotate the compromised operator and use the cold admin's
 `void_report(shard, claim_id)`. Paid reports are immutable. Voiding releases the claim and prize reservation; the relay

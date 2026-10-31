@@ -60,7 +60,7 @@ const fixture = () => {
     firstRelease: 1,
   });
   const bindings = {
-    realmsIdForAccount: vi.fn(async (_account: string) => "0x2"),
+    realmsIdForAccount: vi.fn(async (_account: string): Promise<string | null> => "0x2"),
     frontierSeason: vi.fn(() => Effect.succeed(3)),
   };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
@@ -496,7 +496,7 @@ it.each([false, true])(
   async (leading) => {
     const { runMonitor } = await import("./monitor");
     const f = fixture();
-    f.bindings.realmsIdForAccount.mockResolvedValue(null!);
+    f.bindings.realmsIdForAccount.mockResolvedValue(null);
     rpc.receipt.mockImplementation(async (transactionHash: string) => ({
       ...receipt(),
       transaction_hash: transactionHash,
@@ -530,7 +530,7 @@ it.each([false, true])(
         approveSettlement: () => Effect.void,
         frontierPool: () => Effect.succeed("0"),
         reportedClaims: () =>
-          Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 18n)] }),
+          Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
         reportedSettlements: () => Effect.succeed({ ...page, rows: [] }),
         paidClaims: () => Effect.succeed({ ...page, rows: [] }),
         postedResults: () => Effect.succeed({ ...page, rows: [] }),
