@@ -149,7 +149,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "devcon-realm",
           "title": "The Devcon season",
-          "line": "Frontier at Devcon, from Nov 3 07:30 IST to Nov 6 15:30 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
+          "line": "Frontier at Devcon, from Tue 3 Nov 07:30 IST to Fri 6 Nov 15:30 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
         },
         {
           "kind": "new",

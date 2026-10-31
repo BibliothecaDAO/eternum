@@ -6,8 +6,8 @@
  * account founds its home in one of the campaign's games. Nothing else gives a ticket: posters and promotion link to the
  * game itself, where any account founds an ordinary home.
  *
- * What is public about a campaign lives here, read alike by the Worker, the code generator that prints its flyers and
- * the landing that opens its tickets.
+ * What is public about a campaign lives here, read alike by the Worker, the code generator that prints its flyers, the
+ * landing that opens its tickets, and the docs page, patch notes and admin lab that state its season's dates.
  */
 export const CAMPAIGNS = {
   "devcon-2026": {
@@ -15,7 +15,11 @@ export const CAMPAIGNS = {
     link: "/join/devcon",
     /** The native presets whose games found its homes: Frontier's three-times-speed Devcon season. */
     presets: [6],
-    /** Nov 6 2026, 15:30 IST: the Devcon season's end. */
+    /** The clock its event keeps, which its season's dates are written in beside UTC. */
+    clock: { timeZone: "Asia/Kolkata", zone: "IST" },
+    /** Nov 3 2026, 07:30 IST: the Devcon season's first day opens. */
+    startsAt: Date.UTC(2026, 10, 3, 2, 0) / 1000,
+    /** Nov 6 2026, 15:30 IST: the Devcon season's end, after which no new ticket is given. */
     redeemUntil: Date.UTC(2026, 10, 6, 10, 0) / 1000,
     /** How many of its printed flyers are golden; the landing's "One of N" says the same number. */
     golden: 15,
@@ -25,6 +29,8 @@ export const CAMPAIGNS = {
 interface Campaign {
   link: string;
   presets: readonly number[];
+  clock: { timeZone: string; zone: string };
+  startsAt: number;
   redeemUntil: number;
   golden: number;
 }
@@ -36,3 +42,17 @@ export type TicketTier = (typeof TICKET_TIERS)[number];
 
 export const isCampaignKey = (value: unknown): value is CampaignKey =>
   typeof value === "string" && Object.hasOwn(CAMPAIGNS, value);
+
+/** A moment of a campaign's season as players read it in one zone: "Tue 3 Nov 07:30 IST". */
+export const seasonMoment = (seconds: number, timeZone: string, zone: string) =>
+  `${new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+    timeZone,
+  })
+    .format(seconds * 1000)
+    .replace(",", "")} ${zone}`;
