@@ -1,7 +1,8 @@
 import { Miniflare } from "miniflare";
 import { beforeAll, afterAll, beforeEach, expect, it } from "vitest";
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
-import { readPayoutIdentity, handlePayoutIdentity } from "./payout-identity";
+import { readPayoutIdentity } from "./payout-identity";
+import { routeIdentityRequest } from "./routes";
 import type { IdentityEnv } from "./env";
 let mf: Miniflare, db: D1Database;
 beforeAll(async () => {
@@ -31,13 +32,17 @@ it("resolves only the receipt account's current verified wallet and follows repl
   expect(await readPayoutIdentity(db, "0x456")).toBeNull();
 });
 it("authenticates the co-signer read route and never caches the wallet", async () => {
-  const env = { DB: db, OPERATOR_TOKEN: "read-token" } as IdentityEnv;
+  const env = { DB: db, OPERATOR_TOKEN: "read-token", BASE_URL: "https://identity.test" } as IdentityEnv;
+  const route = (request: Request) =>
+    routeIdentityRequest(
+      request,
+      env,
+      {} as Parameters<typeof routeIdentityRequest>[2],
+      {} as Parameters<typeof routeIdentityRequest>[3],
+    );
   const url = "https://identity.test/api/operator/payout-identity?account=0x456";
-  expect((await handlePayoutIdentity(new Request(url), env)).status).toBe(401);
-  const response = await handlePayoutIdentity(
-    new Request(url, { headers: { authorization: "Bearer read-token" } }),
-    env,
-  );
+  expect((await route(new Request(url))).status).toBe(401);
+  const response = await route(new Request(url, { headers: { authorization: "Bearer read-token" } }));
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({ identity: { realmsId: "0x1", wallet: "0x123" } });
