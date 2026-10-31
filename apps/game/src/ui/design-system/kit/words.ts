@@ -883,6 +883,8 @@ export const SEASON_WORDS = {
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */
   pastSeasons: "Past seasons",
+  /** Prod's first season, kept after its shard was torn down: beside its number, "Season 1 · Playtest". */
+  playtest: "Playtest",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */

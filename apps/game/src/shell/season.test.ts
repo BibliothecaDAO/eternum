@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
 import { chooseSeason, directoryDay, seasonTitle } from "./season";
+import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
   ({
@@ -70,11 +71,17 @@ describe("Frontier's day from the directory", () => {
 
 describe("the season's number", () => {
   it("names the season by the number the directory serves", () => {
-    expect(seasonTitle({ season_number: 3 })).toBe("Season 3");
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
   });
 
   it("is a dash when the directory serves none, never a zero", () => {
-    expect(seasonTitle({})).toBe("Season —");
-    expect(seasonTitle({ season_number: null })).toBe("Season —");
+    expect(seasonTitle({ chainId: "0x52", game_id: 3 })).toBe("Season —");
+    expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
+  });
+
+  it("names prod's archived first season Playtest beside its number, and only that game on that chain", () => {
+    const [archived] = ARCHIVED_SEASONS;
+    expect(seasonTitle(archived!)).toBe("Season 1 · Playtest");
+    expect(seasonTitle({ ...archived!, chainId: "0x52" })).toBe("Season 1");
   });
 });

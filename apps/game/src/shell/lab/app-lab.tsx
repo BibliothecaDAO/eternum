@@ -22,8 +22,6 @@ import {
   LAB_BLITZ_BOARD,
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
-  LAB_SEASON_ONE,
-  LAB_SEASON_ONE_BOARD,
   LAB_FRONTIER_BOARD,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
@@ -145,7 +143,6 @@ const createLabClient = (screen: LabScreen) => {
     screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
   );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FRONTIER_FINAL_BOARD);
-  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 2], LAB_SEASON_ONE_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];
@@ -206,13 +203,10 @@ const answerAppReads = (screen: LabScreen) => {
           { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games },
         ],
       }),
-    // The player's own finished Blitz, and among every settled game Season 1 too.
-    "/api/directory/history": (url) =>
+    // The player's own finished Blitz.
+    "/api/directory/history": () =>
       json({
-        games: [
-          ...(LAB_NO_HISTORY_SCREENS.includes(screen) ? [] : [LAB_FINISHED_BLITZ]),
-          ...(url.searchParams.has("player") ? [] : [LAB_SEASON_ONE]),
-        ],
+        games: LAB_NO_HISTORY_SCREENS.includes(screen) ? [] : [LAB_FINISHED_BLITZ],
         next: null,
         failures: [],
       }),

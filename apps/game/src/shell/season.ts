@@ -1,10 +1,13 @@
+import { formatDate } from "@bibliothecadao/types";
+
 import { isGameOver } from "@/runtime/world/directory";
-import { SEASON } from "@/ui/design-system/kit/words";
+import { PLAY_WORDS, SEASON } from "@/ui/design-system/kit/words";
 import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
 import type { DirectoryGame } from "./herald";
 import { gameKey } from "./play/play-board";
+import { ARCHIVED_SEASONS, archivedSeason } from "./season-tab/archive/archive";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
@@ -24,11 +27,12 @@ export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean)
 };
 
 /**
- * Frontier's seasons that have ended, the last to end first: those the directory still lists until they settle, then
- * the settled ones in the history. A season both name, read either side of its settling, is the directory's.
+ * Frontier's seasons that have ended, the last to end first: those the directory still lists until they settle, the
+ * settled ones in the history, and the archived ones whose shard is gone. A season named twice is the directory's,
+ * else the history's.
  */
 export const endedSeasons = (listed: readonly DirectoryGame[], settled: readonly DirectoryGame[]): DirectoryGame[] => {
-  const byGame = new Map([...settled, ...listed].map((game) => [gameKey(game), game]));
+  const byGame = new Map([...ARCHIVED_SEASONS, ...settled, ...listed].map((game) => [gameKey(game), game]));
   return [...byGame.values()]
     .filter((game) => game.mode === "frontier" && isGameOver(game))
     .toSorted((a, b) => b.clock.end_at - a.clock.end_at || a.game_id - b.game_id);
@@ -57,6 +61,15 @@ export const directoryDay = (
   };
 };
 
-/** The season by its number, as the glossary writes it ("Season 3"); a number the directory does not serve is a dash. */
-export const seasonTitle = (season: Pick<DirectoryGame, "season_number">): string =>
-  `${SEASON} ${season.season_number ?? "—"}`;
+/**
+ * The season by its number, as the glossary writes it ("Season 3"), and an archived one's name beside it ("Season 1 ·
+ * Playtest"); a number the directory does not serve is a dash.
+ */
+export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id">): string => {
+  const label = archivedSeason({ chainId: season.chainId, gameId: season.game_id })?.label;
+  return [`${SEASON} ${season.season_number ?? "—"}`, ...(label ? [label] : [])].join(" · ");
+};
+
+/** An ended season and the day it ended, "Season 1 · Playtest · Ended 31 Oct". */
+export const seasonEnded = (season: DirectoryGame): string =>
+  `${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`;
