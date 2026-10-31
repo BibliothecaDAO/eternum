@@ -5,6 +5,6 @@
   "lootChests": "0x410e17c61e259c2a3bf56b0aa1c73c433e207105d445fd79ee7597dfaab217d",
   "cosmetics": "0x7d5659cc8ef098687dfb65cf800a9859595580775f5da19e9dda90c1acced2a",
   "realms": "0x7ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
-  "ledger": "0xbd50149a003dc69b79ef9e777b3608ef5db04fb9440088ae5ae28dd0a2bb63",
-  "ledgerDeploymentBlock": 17132095
+  "ledger": "0x42351dedc27084ede8a91b7e0ea0334bbab8f4fbec77da117d4814c541d6b58",
+  "ledgerDeploymentBlock": 17224888
 }
