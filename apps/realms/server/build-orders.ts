@@ -1,9 +1,9 @@
 import { buildOrderBookValue, readBuildOrderBook } from "@bibliothecadao/eternum/build-order";
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
 import { BuildOrderStore, type StoredBuildOrderBook } from "./build-order-store";
-import { json, readBody } from "./http";
+import { isJsonRequest, json, readJsonBody, Refusal, respond, signedIn } from "./http";
 
 /** 20 orders of 60 steps each fit well within it. */
 const BOOK_BYTES = 64 * 1024;
@@ -13,12 +13,11 @@ const BOOK_BYTES = 64 * 1024;
  * game's own build order reader, and refused with its reason when an order does not read.
  */
 export function handleBuildOrders(request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> {
-  return Effect.runPromise(
+  return respond(
     serveBuildOrders(request, auth).pipe(
       Effect.provide(BuildOrderStore.layer(db)),
-      Effect.catchTag("BuildOrderStorageError", () => Effect.succeed(json({ error: "build_orders_unavailable" }, 503))),
-      Effect.catchTag("BuildOrderRequestError", (error) =>
-        Effect.succeed(json({ error: error.code, message: error.message }, error.status)),
+      Effect.catchTag("BuildOrderStorageError", () =>
+        Effect.fail(new Refusal({ code: "build_orders_unavailable", status: 503 })),
       ),
     ),
   );
@@ -26,21 +25,12 @@ export function handleBuildOrders(request: Request, auth: IdentityAuth, db: D1Da
 
 function serveBuildOrders(request: Request, auth: IdentityAuth) {
   return Effect.gen(function* () {
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers }),
-      catch: () => new BuildOrderRequestError({ code: "authentication_unavailable", status: 503, message: "" }),
-    });
-    if (!session?.user.realmsId) return json({ error: "unauthorized" }, 401);
-    const owner = session.user.realmsId;
+    const { realmsId: owner } = yield* signedIn(auth, request);
     const store = yield* BuildOrderStore;
     if (request.method === "GET") return json(answer(yield* store.read(owner)));
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-    if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json")
-      return json({ error: "json_required" }, 415);
-    const change = yield* Effect.tryPromise({
-      try: async () => readChange(JSON.parse(await readBody(request, BOOK_BYTES))),
-      catch: () => new BuildOrderRequestError({ code: "invalid_build_orders", status: 400, message: "" }),
-    });
+    if (!isJsonRequest(request)) return json({ error: "json_required" }, 415);
+    const change = readChange(yield* readJsonBody(request, BOOK_BYTES, "invalid_build_orders"));
     if ("error" in change) return json({ error: "invalid_build_orders", message: change.error }, 400);
     // Ownership is authenticated; this field keeps an account switch from retargeting an in-flight save.
     if (change.owner !== owner) return json({ error: "owner_changed" }, 403);
@@ -60,9 +50,3 @@ const readChange = (value: unknown): { owner: string; revision: number; book: st
 };
 
 const answer = ({ owner, book, revision }: StoredBuildOrderBook) => ({ owner, revision, book: JSON.parse(book) });
-
-class BuildOrderRequestError extends Data.TaggedError("BuildOrderRequestError")<{
-  readonly code: string;
-  readonly status: 400 | 503;
-  readonly message: string;
-}> {}

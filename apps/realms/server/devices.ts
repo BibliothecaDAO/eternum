@@ -1,10 +1,10 @@
 import { normalizeStarknetAddress as canonicalFelt } from "@realms-world/identity";
-import { Data, Effect, Schema } from "effect";
+import { Effect, Schema } from "effect";
 import { botRealmsId, realmsAccountAddress, type DeviceChange } from "@realms-world/identity/account";
 import type { Guardian } from "@realms-world/guardian";
 
 import { hasVerifiedSignIn, type IdentityAuth } from "./auth";
-import { json } from "./http";
+import { json, Refusal, respond, signedIn } from "./http";
 import { recordApprovedAccount } from "./realms-accounts";
 
 const FIELD_PRIME = 2n ** 251n + 17n * 2n ** 192n + 1n;
@@ -23,8 +23,6 @@ const DeviceChangeRequest = Schema.Struct({
   counter: Schema.Int.pipe(Schema.check(Schema.isBetween({ minimum: 1, maximum: Number.MAX_SAFE_INTEGER }))),
 });
 
-class DeviceRequestError extends Data.TaggedError("DeviceRequestError")<{ code: string; status: number }> {}
-
 interface DeviceChangeDependencies {
   auth: IdentityAuth;
   db: D1Database;
@@ -38,33 +36,22 @@ interface DeviceChangeDependencies {
  * code, so no account without a verified way in obtains an approval.
  */
 export const handleDeviceChange = (request: Request, dependencies: DeviceChangeDependencies): Promise<Response> =>
-  Effect.runPromise(
-    approveDeviceChange(request, dependencies).pipe(
-      Effect.map((approval) => json(approval)),
-      Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
-    ),
-  );
+  respond(approveDeviceChange(request, dependencies).pipe(Effect.map((approval) => json(approval))));
 
 const approveDeviceChange = (request: Request, { auth, db, guardian, accountClassHash }: DeviceChangeDependencies) =>
   Effect.gen(function* () {
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers }),
-      catch: () => new DeviceRequestError({ code: "authentication_unavailable", status: 503 }),
-    });
-    if (!session) return yield* new DeviceRequestError({ code: "unauthorized", status: 401 });
-    const realmsId = session.user.realmsId;
-    if (!realmsId) return yield* Effect.die(new Error(`user ${session.user.id} has no Realms id`));
+    const { session, realmsId } = yield* signedIn(auth, request);
     const change = yield* readDeviceChange(request);
     if (!(yield* Effect.promise(() => hasVerifiedSignIn(db, session.user.id)))) {
-      return yield* new DeviceRequestError({ code: "account_not_secured", status: 403 });
+      return yield* new Refusal({ code: "account_not_secured", status: 403 });
     }
     const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
     const ownAccount = realmsAccountAddress(realmsId, accountClassHash, guardianPublicKey);
     if (BigInt(change.account) !== BigInt(ownAccount)) {
-      return yield* new DeviceRequestError({ code: "not_your_account", status: 403 });
+      return yield* new Refusal({ code: "not_your_account", status: 403 });
     }
     if (change.action === "ADD" && (yield* isRevokedDevice(db, realmsId, change.deviceKey))) {
-      return yield* new DeviceRequestError({ code: "device_revoked", status: 403 });
+      return yield* new Refusal({ code: "device_revoked", status: 403 });
     }
     const signature = yield* signListedDeviceChange(db, guardian, change, "player");
     if (change.action === "ADD") {
@@ -96,29 +83,27 @@ export const handleBotDeviceApproval = (
   request: Request,
   { db, guardian, accountClassHash }: Pick<DeviceChangeDependencies, "db" | "guardian" | "accountClassHash">,
 ): Promise<Response> =>
-  Effect.runPromise(
+  respond(
     Effect.gen(function* () {
       const { label, ...requested } = yield* Effect.tryPromise({
         try: () => request.json(),
         catch: () => undefined,
       }).pipe(
         Effect.flatMap(Schema.decodeUnknownEffect(BotDeviceRequest)),
-        Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
+        Effect.mapError(() => new Refusal({ code: "invalid_device_change", status: 400 })),
       );
       if (requested.action !== "ADD" || requested.counter !== 1) {
-        return yield* new DeviceRequestError({ code: "bot_first_device_only", status: 403 });
+        return yield* new Refusal({ code: "bot_first_device_only", status: 403 });
       }
       const guardianPublicKey = yield* Effect.promise(() => guardian.publicKey());
       const botAccount = realmsAccountAddress(botRealmsId(label), accountClassHash, guardianPublicKey);
       if (BigInt(requested.account) !== BigInt(botAccount)) {
-        return yield* new DeviceRequestError({ code: "not_a_bot_account", status: 403 });
+        return yield* new Refusal({ code: "not_a_bot_account", status: 403 });
       }
       const change: DeviceChange = requested;
       const signature = yield* signListedDeviceChange(db, guardian, change, "bot_enrolment");
       return json({ ...change, signature: [signature.r, signature.s] });
-    }).pipe(
-      Effect.catchTag("DeviceRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
-    ),
+    }),
   );
 
 /** Pending admission permits operator and Worker bot enrolment; player devices require a visible current shard. */
@@ -134,7 +119,7 @@ const signListedDeviceChange = (
         db
           .prepare(`SELECT "chainId", "status" FROM "shards" WHERE "status" IN ('pending', 'active', 'draining')`)
           .all<{ chainId: string; status: string }>(),
-      catch: () => new DeviceRequestError({ code: "shard_list_unavailable", status: 503 }),
+      catch: () => new Refusal({ code: "shard_list_unavailable", status: 503 }),
     });
     if (
       !results.some(
@@ -143,7 +128,7 @@ const signListedDeviceChange = (
           (shard.status !== "pending" || purpose === "bot_enrolment"),
       )
     ) {
-      return yield* new DeviceRequestError({ code: "chain_not_approved", status: 403 });
+      return yield* new Refusal({ code: "chain_not_approved", status: 403 });
     }
     return yield* Effect.promise(() => guardian.signDeviceChange(change));
   });
@@ -152,7 +137,7 @@ const readDeviceChange = (request: Request) =>
   Effect.tryPromise({ try: () => request.json(), catch: () => undefined }).pipe(
     Effect.flatMap(Schema.decodeUnknownEffect(DeviceChangeRequest)),
     Effect.map((change): DeviceChange => change),
-    Effect.mapError(() => new DeviceRequestError({ code: "invalid_device_change", status: 400 })),
+    Effect.mapError(() => new Refusal({ code: "invalid_device_change", status: 400 })),
   );
 
 /** Once a key is revoked from a Realms account, no shard's account gets it back, even after a fresh sign-in. */

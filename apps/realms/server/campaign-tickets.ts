@@ -1,11 +1,11 @@
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
 import { CampaignTicketStore } from "./campaign-ticket-store";
 import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
 
 import { campaignCodeHash, readCampaignCode } from "./campaigns";
-import { json, readBody } from "./http";
+import { json, readJsonBody, Refusal, respond, signedIn } from "./http";
 
 const REDEEM_BYTES = 1024;
 
@@ -21,11 +21,12 @@ export function handleCampaignRedeem(
   db: D1Database,
   hasEntered: EnteredCampaignGame,
 ): Promise<Response> {
-  return Effect.runPromise(
+  return respond(
     redeemTicket(request, auth, hasEntered).pipe(
       Effect.provide(CampaignTicketStore.layer(db)),
-      Effect.catchTag("CampaignStorageError", () => Effect.succeed(json({ error: "campaigns_unavailable" }, 503))),
-      Effect.catchTag("CampaignRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
+      Effect.catchTag("CampaignStorageError", () =>
+        Effect.fail(new Refusal({ code: "campaigns_unavailable", status: 503 })),
+      ),
     ),
   );
 }
@@ -36,28 +37,16 @@ type EnteredCampaignGame = (realmsId: string, presets: readonly number[]) => Pro
 function redeemTicket(request: Request, auth: IdentityAuth, hasEntered: EnteredCampaignGame) {
   return Effect.gen(function* () {
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers }),
-      catch: () => new CampaignRequestError({ code: "authentication_unavailable", status: 503 }),
-    });
-    if (!session?.user.realmsId) return json({ error: "unauthorized" }, 401);
-    const asked = yield* Effect.tryPromise({
-      try: async () => readRedemption(JSON.parse(await readBody(request, REDEEM_BYTES))),
-      catch: () => new CampaignRequestError({ code: "invalid_redemption", status: 400 }),
-    });
+    const { realmsId } = yield* signedIn(auth, request);
+    const asked = readRedemption(yield* readJsonBody(request, REDEEM_BYTES, "invalid_redemption"));
     if (!asked) return json({ error: "invalid_redemption" }, 400);
     const now = Math.floor(Date.now() / 1000);
     const store = yield* CampaignTicketStore;
-    const held = yield* store.read(asked.campaign, session.user.realmsId);
+    const held = yield* store.read(asked.campaign, realmsId);
     if (!held && now >= CAMPAIGNS[asked.campaign].redeemUntil) return json({ error: "campaign_closed" }, 410);
     if (held) return json({ campaign: held.campaign, tier: held.tier });
     if (asked.code === null) return json({ error: "invalid_redemption" }, 400);
-    return yield* openFlyerTicket(
-      session.user.realmsId,
-      { campaign: asked.campaign, code: asked.code },
-      now,
-      hasEntered,
-    );
+    return yield* openFlyerTicket(realmsId, { campaign: asked.campaign, code: asked.code }, now, hasEntered);
   });
 }
 
@@ -78,7 +67,7 @@ function openFlyerTicket(
     if (!tier) return json({ error: "ticket_taken" }, 410);
     const entered = yield* Effect.tryPromise({
       try: () => hasEntered(realmsId, CAMPAIGNS[campaign].presets),
-      catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
+      catch: () => new Refusal({ code: "campaigns_unavailable", status: 503 }),
     });
     if (entered === null) return json({ error: "campaigns_unavailable" }, 503);
     if (entered) return json({ error: "realm_founded" }, 409);
@@ -97,8 +86,3 @@ const readRedemption = (value: unknown): { campaign: CampaignKey; code: string |
   if (!isCampaignKey(campaign)) return null;
   return { campaign, code: readCampaignCode(code) };
 };
-
-class CampaignRequestError extends Data.TaggedError("CampaignRequestError")<{
-  readonly code: string;
-  readonly status: 400 | 503;
-}> {}

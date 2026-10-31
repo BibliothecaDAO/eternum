@@ -1,4 +1,4 @@
-import { Data, Effect } from "effect";
+import { Effect } from "effect";
 import {
   isPushDeviceId,
   isTimeZone,
@@ -10,7 +10,7 @@ import {
 
 import type { IdentityAuth } from "./auth";
 import { vapidKeysOf, type IdentityEnv } from "./env";
-import { json, readBody } from "./http";
+import { isJsonRequest, json, readJsonBody, Refusal, respond, signedIn } from "./http";
 import { PushSubscriptionStore } from "./push-subscription-store";
 import { sendPush } from "./web-push";
 
@@ -21,11 +21,12 @@ const ACTIONS = ["subscribe", "status", "foreground", "revoke", "alerts-on"];
  * signed-in account. Game alerts are sent by each shard's notifier, direct messages by the recipient's chat inbox.
  */
 export function handlePushSubscriptions(request: Request, auth: IdentityAuth, env: IdentityEnv): Promise<Response> {
-  return Effect.runPromise(
+  return respond(
     servePushRequest(request, auth, env).pipe(
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
-      Effect.catchTag("PushRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
-      Effect.catchTag("PushStorageError", () => Effect.succeed(json({ error: "push_storage_unavailable" }, 503))),
+      Effect.catchTag("PushStorageError", () =>
+        Effect.fail(new Refusal({ code: "push_storage_unavailable", status: 503 })),
+      ),
     ),
   );
 }
@@ -56,7 +57,7 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
     if (action === "subscribe") {
       const registration = yield* Effect.try({
         try: () => parsePushRegistration(input),
-        catch: () => new PushRequestError({ code: "invalid_subscription", status: 400 }),
+        catch: () => new Refusal({ code: "invalid_subscription", status: 400 }),
       });
       const result = yield* store.register(registration);
       return result === "registered" ? json({ id: registration.id }) : json({ error: `subscription_${result}` }, 409);
@@ -82,27 +83,20 @@ function servePushRequest(request: Request, auth: IdentityAuth, env: IdentityEnv
 /** The account a device registers for is the signed-in one, named by its Realms id. */
 function authenticatedOwner(request: Request, auth: IdentityAuth, expected: unknown) {
   return Effect.gen(function* () {
-    const session = yield* Effect.tryPromise({
-      try: () => auth.api.getSession({ headers: request.headers }),
-      catch: () => new PushRequestError({ code: "authentication_unavailable", status: 503 }),
-    });
-    if (!session?.user.realmsId) return yield* new PushRequestError({ code: "unauthorized", status: 401 });
-    if (!isPushOwner(expected) || session.user.realmsId !== expected)
-      return yield* new PushRequestError({ code: "owner_changed", status: 403 });
+    const { realmsId } = yield* signedIn(auth, request);
+    if (!isPushOwner(expected) || realmsId !== expected)
+      return yield* new Refusal({ code: "owner_changed", status: 403 });
     return expected;
   });
 }
 
 function parsePushRequest(request: Request) {
-  return Effect.tryPromise({
-    try: async (): Promise<Record<string, unknown>> => {
-      if (request.headers.get("content-type")?.split(";")[0]?.trim().toLowerCase() !== "application/json")
-        throw new Error();
-      const body: unknown = JSON.parse(await readBody(request, 4096));
-      if (!body || typeof body !== "object" || Array.isArray(body)) throw new Error();
-      return body as Record<string, unknown>;
-    },
-    catch: () => new PushRequestError({ code: "invalid_push_request", status: 400 }),
+  return Effect.gen(function* () {
+    const invalid = new Refusal({ code: "invalid_push_request", status: 400 });
+    if (!isJsonRequest(request)) return yield* invalid;
+    const body = yield* readJsonBody(request, 4096, invalid.code);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return yield* invalid;
+    return body as Record<string, unknown>;
   });
 }
 
@@ -111,7 +105,7 @@ function sendAlertsOn(env: IdentityEnv, owner: string, id: string) {
   return Effect.gen(function* () {
     const store = yield* PushSubscriptionStore;
     const device = yield* store.find(owner, id);
-    if (!device) return yield* new PushRequestError({ code: "subscription_not_found", status: 404 });
+    if (!device) return yield* new Refusal({ code: "subscription_not_found", status: 404 });
     const now = Date.now();
     const notification = parseNotificationPayload(
       {
@@ -129,11 +123,9 @@ function sendAlertsOn(env: IdentityEnv, owner: string, id: string) {
     const outcome = yield* Effect.tryPromise({
       try: () =>
         sendPush(vapidKeysOf(env), device, { version: 1, kind: "alerts-on", subscriptionId: id, notification }),
-      catch: () => new PushRequestError({ code: "push_provider_unavailable", status: 502 }),
+      catch: () => new Refusal({ code: "push_provider_unavailable", status: 502 }),
     });
     if (outcome === "expired") yield* store.expire(owner, id);
     return outcome;
   });
 }
-
-class PushRequestError extends Data.TaggedError("PushRequestError")<{ code: string; status: number }> {}
