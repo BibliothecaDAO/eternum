@@ -165,12 +165,9 @@ export const TransferSlotSelection = ({
           })();
 
           const cardClasses = clsx(
-            "p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border-2 relative",
-            isActive && !isMismatch && !isSlotDisabled && "border-hud-line-strong bg-hud-hover",
-            !isActive &&
-              !isMismatch &&
-              !isSlotDisabled &&
-              "border-hud-line bg-hud-well hover:bg-hud-hover hover:border-hud-line-strong",
+            "ui-pick p-2 flex flex-col gap-1 text-left transition-all duration-150 rounded border relative",
+            !isMismatch && !isSlotDisabled && "border-hud-line bg-hud-well",
+            !isActive && !isMismatch && !isSlotDisabled && "hover:bg-hud-hover hover:border-hud-line-strong",
             isSlotDisabled && "opacity-60 cursor-not-allowed bg-hud-well border-hud-divider",
             isMismatch && "border-hud-bad hover:border-hud-bad",
           );

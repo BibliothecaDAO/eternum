@@ -119,8 +119,7 @@ const FixedGrid = ({
             title={building.reason}
             onClick={() => onChoose(building.type)}
             className={cn(
-              "flex w-full flex-col items-center gap-1 rounded-hud-control border p-1.5",
-              building.type === chosen ? "border-hud-chosen bg-hud-hover" : "border-hud-line bg-hud-well",
+              "ui-pick flex w-full flex-col items-center gap-1 rounded-hud-control border border-hud-line bg-hud-well p-1.5",
             )}
           >
             <BuildingThumbnail

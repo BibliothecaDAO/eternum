@@ -1212,7 +1212,7 @@ export const HudCard = ({
   );
   return (
     <div
-      className="ui-card"
+      className="ui-card ui-pick"
       data-size={size}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}

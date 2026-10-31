@@ -64,10 +64,8 @@ export const FilterChipsRow = memo(({ availableCategories, filterValue, onFilter
             type="button"
             onClick={() => onFilterChange(option.kind)}
             className={cn(
-              "inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border transition",
-              isActive
-                ? "border-hud-line-strong bg-hud-chosen text-hud-ink"
-                : "border-hud-divider bg-hud-well text-hud-muted hover:border-hud-line-strong hover:text-hud-ink",
+              "ui-pick inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md border border-hud-divider bg-hud-well transition",
+              isActive ? "text-hud-ink" : "text-hud-muted hover:border-hud-line-strong hover:text-hud-ink",
             )}
             aria-pressed={isActive}
             aria-label={option.plural}

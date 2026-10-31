@@ -320,7 +320,7 @@ function ChoiceButton({
   return (
     <button
       type="button"
-      className="home-picker__choice"
+      className="ui-pick home-picker__choice"
       aria-pressed={picked}
       aria-label={choiceLabel(choice)}
       onClick={() => onPick(choice)}

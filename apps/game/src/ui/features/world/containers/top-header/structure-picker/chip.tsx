@@ -253,10 +253,8 @@ const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggle
       onClick={handleClick}
       onKeyDown={handleKeyDown}
       className={clsx(
-        "group flex w-full items-center gap-1.5 rounded-md border px-2 py-2 text-left text-hud-label transition cursor-pointer",
-        isSelected
-          ? "border-hud-line-strong bg-hud-hover text-hud-ink"
-          : "border-hud-line bg-hud-well text-hud-muted hover:border-hud-line-strong hover:bg-hud-well",
+        "ui-pick group flex w-full items-center gap-1.5 rounded-md border border-hud-line bg-hud-well px-2 py-2 text-left text-hud-label transition cursor-pointer",
+        isSelected ? "text-hud-ink" : "text-hud-muted hover:border-hud-line-strong",
       )}
       title={structure.displayName}
       aria-pressed={isSelected}

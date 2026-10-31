@@ -95,6 +95,18 @@ const STAMINA_IS_SEGMENTED = [
   },
 ];
 
+// A chosen card, tile, token or option wears the kit's ring (`ui-pick` in hud-sheet.css), drawn inside its own box. A
+// ring or outline of its own spilled past its column: the Research panel's chosen Well stood wider than the Shrine and
+// Ethereal I above and below it (owner, 31 October). A focus ring keeps its state prefix (`focus-visible:ring-2`).
+const CHOSEN_IS_THE_KIT_PICK = [
+  {
+    selector:
+      ":matches(Literal[value=/(^|\\s)(ring|outline|outline-offset)-[0-9]/], TemplateElement[value.raw=/(^|\\s)(ring|outline|outline-offset)-[0-9]/])",
+    message:
+      "A chosen thing wears the kit's ring: give it `ui-pick` and aria-pressed (or data-selected), not a ring or outline of its own.",
+  },
+];
+
 // A function or an object written into text prints its source or "[object Object]": each resource chip's buttons read
 // "Transfer (id) => {…}" where a words function was written in place of the word it returns. Typed, so client only.
 const TEXT_VALUES = {
@@ -159,6 +171,22 @@ const eslint = new ESLint({
       languageOptions: { parserOptions: { projectService: true, tsconfigRootDir: resolve(REPO, "apps/game") } },
       plugins: { "@typescript-eslint": tseslint.plugin },
       rules: TEXT_VALUES,
+    },
+    {
+      files: ["apps/game/src/ui/features/**/*.{ts,tsx}"],
+      ignores: ["apps/game/src/ui/features/debug/**", "**/*.test.{ts,tsx}"],
+      rules: {
+        "no-restricted-syntax": [
+          "error",
+          ...NO_BITWISE_ID,
+          ...HUD_ROLE_OPACITY,
+          ...NO_HEAD_RENDER,
+          ...HAND_WRITTEN_GAIN,
+          ...SHORT_IN_CHIPS,
+          ...STAMINA_IS_SEGMENTED,
+          ...CHOSEN_IS_THE_KIT_PICK,
+        ],
+      },
     },
     // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
