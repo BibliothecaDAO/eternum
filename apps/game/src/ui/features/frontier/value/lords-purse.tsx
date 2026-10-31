@@ -15,21 +15,32 @@ export const PurseRow = ({ children }: { children: ReactNode }) => (
   <div className="pointer-events-auto flex shrink-0 gap-1.5">{children}</div>
 );
 
-/** The realm's LORDS, and what a chest just added to them. */
+/**
+ * The realm's LORDS, and what a chest just added to them; marked, its name saying why, when the account has no linked
+ * wallet to receive them (`linkWalletLine`, useLinkWalletPrompt), Withdraw then offering to link one.
+ */
 export const LordsPurse = ({
   lords,
   gain,
+  linkWalletLine = null,
   onOpen,
 }: {
   lords: number | undefined;
   gain?: number;
+  linkWalletLine?: string | null;
   onOpen?: () => void;
 }) => (
-  <HudPill label={`${LORDS} ${formatExact(lords)}`} role={onOpen ? undefined : "img"} onPress={onOpen}>
+  <HudPill
+    label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
+    data-tip={linkWalletLine ?? undefined}
+    role={onOpen ? undefined : "img"}
+    onPress={onOpen}
+  >
     {[
       <span key="lords" className="flex items-center gap-1.5 tabular-nums">
         <SemanticIcon name="lords" size={26} />
         {formatShort(lords)}
+        {linkWalletLine && <SemanticIcon name="warning" size={16} />}
       </span>,
       ...(gain === undefined
         ? []

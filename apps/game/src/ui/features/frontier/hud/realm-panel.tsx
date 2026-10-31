@@ -37,6 +37,7 @@ export const RealmPanel = ({
   population,
   stores,
   lords,
+  linkWalletLine = null,
   waiting = null,
   onHome,
   storeCards,
@@ -53,6 +54,8 @@ export const RealmPanel = ({
   stores: StoreReading[];
   /** The realm's LORDS; absent for a realm not the player's. */
   lords?: number;
+  /** What an account with no linked wallet is told about its LORDS (useLinkWalletPrompt): their ring's mark and tip. */
+  linkWalletLine?: string | null;
   /** What the home's daily claim has waiting today, which the Realms chip wears. */
   waiting?: DailyClaimWaiting | null;
   /** The header's press: the map centred on the realm. */
@@ -113,8 +116,9 @@ export const RealmPanel = ({
         <li>
           <HudRing
             icon="lords"
-            label={`${LORDS} ${formatExact(lords)}`}
-            tip={LORDS}
+            label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
+            tip={linkWalletLine ?? LORDS}
+            corner={linkWalletLine ? <SemanticIcon name="warning" size={14} /> : undefined}
             foot={formatAmount(lords)}
             onClick={onWithdraw}
           />

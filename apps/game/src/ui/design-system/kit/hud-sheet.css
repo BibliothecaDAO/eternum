@@ -2402,6 +2402,17 @@ button.ui-card__choose:disabled {
   gap: theme(spacing.2);
   margin-top: theme(spacing.3);
 }
+/* An account with no linked wallet, told under its LORDS how to receive them. */
+.ui-chest-moment__wallet {
+  position: relative;
+  margin-top: theme(spacing.3);
+  max-width: 22rem;
+  color: rgb(var(--hud-warn));
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-strong);
+  text-align: center;
+  text-shadow: 0 2px 8px rgb(var(--hud-dark));
+}
 @media (prefers-reduced-motion: reduce) {
   .ui-chest-moment__rays {
     animation: none;

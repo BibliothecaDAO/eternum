@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
 
 import { useGame } from "@/hooks/context/game-context";
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -11,12 +10,12 @@ import { L2_BLOCK_MS, l2TransactionUrl } from "@/runtime/l2-rpc";
 import { requireActiveGame } from "@/runtime/world/store";
 import { type EnvironmentLedger, environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
-import { SETTINGS_PATH } from "@/shell/profile/settings-route";
 import { isDefinitelyNotApplied, type SentCommand, untilApplied } from "@/sync/action-outcome";
 import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
 import { type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
+import { useLinkWallet, useLinkWalletLine } from "./link-wallet";
 import { useRealmLords } from "./use-realm-lords";
 import { WithdrawSheet } from "./withdraw-sheet";
 import {
@@ -35,7 +34,8 @@ import {
  */
 export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup, account } = useGame();
-  const navigate = useNavigate();
+  const linkWallet = useLinkWallet();
+  const linkWalletLine = useLinkWalletLine();
   const { session } = useIdentitySession();
   const ledger = environmentLedger();
   const [amount, setAmount] = useState(0);
@@ -66,12 +66,13 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
     <WithdrawSheet
       held={held}
       wallet={payoutAddressOf(session.user)}
+      linkWalletLine={linkWalletLine}
       refusal={refusal}
       step={withdrawStepOf({ sending, outcome, paidIn, paused })}
       amount={amount}
       onAmount={setAmount}
       onWithdraw={() => void withdraw()}
-      onLinkWallet={() => navigate(SETTINGS_PATH)}
+      onLinkWallet={linkWallet}
       onClose={onClose}
     />
   );
