@@ -15,6 +15,8 @@ import {
 import { requireOpenShard } from "@/runtime/world/shards";
 import { fetchApi } from "@/runtime/app-api";
 
+import { archivedSeason } from "./season-tab/archive/archive";
+
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
 export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
@@ -188,17 +190,20 @@ const readHistory = async (player: string | null) => {
 
 /**
  * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
- * final standings once its result is complete.
+ * final standings once its result is complete. An archived season's board is its archive's, with no shard to ask.
  */
-export const useLeaderboard = (game: GameRef | null) =>
-  useQuery({
+export const useLeaderboard = (game: GameRef | null) => {
+  const archived = game ? archivedSeason(game)?.board : undefined;
+  return useQuery({
     queryKey: ["shell", "leaderboard", game?.chainId, game?.gameId],
     queryFn: async () =>
       fetchHeraldLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
-    enabled: game !== null,
+    initialData: archived,
+    enabled: game !== null && archived === undefined,
     refetchInterval: 30_000,
     retry: 1,
   });
+};
 
 const OPEN_STATUSES = new Set(["Created", "Registration"]);
 

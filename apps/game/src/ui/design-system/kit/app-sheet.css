@@ -425,8 +425,10 @@
   backdrop-filter: blur(12px);
   box-shadow: var(--app-shadow-panel);
 }
+/* A cue too long to stand beside the name on a narrow screen goes under it, never out of the panel. */
 .app-panel__head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: theme(spacing[2.5]);
   border-bottom: 1px solid var(--app-line);

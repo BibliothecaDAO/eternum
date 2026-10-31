@@ -32,7 +32,7 @@ import {
 } from "../herald";
 import { Loading } from "../loading";
 import { ageOf } from "../play/ages";
-import { chooseSeason, directoryDay, endedSeasons, seasonTitle } from "../season";
+import { chooseSeason, directoryDay, endedSeasons, seasonEnded, seasonTitle } from "../season";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { BlitzBoard } from "./blitz-board";
@@ -49,8 +49,9 @@ const ROWS_SHOWN = { phone: 12, desktop: 10 } as const;
  * Season (the owner's pick, A · Launcher): where the player stands this season, in figures at the top (their place on
  * Frontier's board, the LORDS their realm earned), then one board per mode under its mode's painting: Frontier's
  * season board, and Blitz's rating with the season prize each place would take. With no Frontier season running, its
- * board is the last one's as it ended; the seasons before it are under Past seasons, each opening its Results. The
- * desktop shows both side by side; a phone switches between them. The player's own finished games are on You.
+ * board is the last one's as it ended, an archived one at the least; the seasons before it are under Past seasons, each
+ * opening its Results. The desktop shows both side by side; a phone switches between them. The player's own finished
+ * games are on You.
  */
 export const SeasonPage = () => {
   const phone = useLayout() === "phone";
@@ -103,9 +104,9 @@ const FrontierDay = ({ season }: { season: DirectoryGame }) => {
 
 /**
  * The Frontier season Season shows: the live one, the player's own if they have a realm in one; with none live, the
- * last to end; with none ended either, the next to come. The seasons that ended before it are past, the last to end
- * first. `failure` is the read the shown season waits on that did not answer: the directory, or the history while no
- * season is live.
+ * last to end (an archived season at the least). The seasons that ended before it are past, the last to end first.
+ * None is shown while a read it waits on is pending. `failure` is the read the shown season waits on that did not
+ * answer: the directory, or the history while no season is live.
  */
 const useSeason = () => {
   const directory = useDirectory();
@@ -116,10 +117,10 @@ const useSeason = () => {
     listed.filter((game) => game.status === "Live"),
     true,
   );
-  const season = live ?? ended[0] ?? chooseSeason(listed, true);
   const failure = directory.isError ? directory : !live && settled.isError ? settled : undefined;
   const pending = directory.isPending || (!live && settled.isPending);
-  return { season, past: ended.filter((game) => game !== season), failure, pending };
+  const season = pending ? undefined : (live ?? ended[0]);
+  return { season, past: season ? ended.filter((game) => game !== season) : [], failure };
 };
 
 /**
@@ -153,19 +154,10 @@ const Standing = () => {
   );
 };
 
-/**
- * Frontier's board under Frontier's painting, with its season and day, or the day it ended; the seasons past under it.
- * No season at all, running or ended, is said once on the plains.
- */
+/** Frontier's board under Frontier's painting, with its season and day, or the day it ended; the seasons past under it. */
 const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
-  const { season, past, failure, pending } = useSeason();
+  const { season, past } = useSeason();
   const frontier = ageOf("frontier");
-  if (!season && !pending && !failure)
-    return (
-      <AppPanel title={frontier.name} icon="leaderboard" painting="brooding-plains">
-        <AppEmpty icon="leaderboard" line={WORDS.noSeason} />
-      </AppPanel>
-    );
   return (
     <div className="flex flex-col gap-6">
       <div data-age="frontier">
@@ -185,19 +177,16 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
 };
 
 /** An ended season and the day it ended, "Season 1 · Ended 31 Oct", on the calendar. */
-const SeasonEnded = ({ season }: { season: DirectoryGame }) => (
-  <AppChip icon="calendar">{`${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`}</AppChip>
-);
+const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
 /** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */
 const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
-  const { season, failure, pending } = useSeason();
+  const { season, failure } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
   const failed = failure ?? (board.isError ? board : undefined);
   if (failed) return <ServiceFailure service="season" error={failed.error} retry={() => void failed.refetch()} />;
-  if (!season) return pending ? <Loading /> : null;
-  if (board.isPending) return <Loading />;
+  if (!season || board.isPending) return <Loading />;
   const frontier = board.data?.mode === "frontier" ? board.data : undefined;
   const rows = frontier ? boardRows(frontier.entries, player, rowsShown) : [];
   if (rows.length === 0)
@@ -260,7 +249,7 @@ const PastSeason = ({ season }: { season: DirectoryGame }) => {
             {typeof winner === "string" ? (
               <span className="text-app-muted">{PRIZE_UNHELD[winner]}</span>
             ) : (
-              <PlayerName account={winner.address} portrait />
+              <PlayerName account={winner.address} />
             )}
           </span>
         )
