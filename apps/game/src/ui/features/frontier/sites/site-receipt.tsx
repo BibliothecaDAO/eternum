@@ -12,7 +12,7 @@ import { formatCharge, formatExact, resourceName, frontierSiteName, scaledToUnit
 
 const RECEIPT_MODELS = ["ExpeditionSite"] as const;
 
-type ClearedSite = { site: NativeRows["ExpeditionSite"] };
+type ClearedSite = { site: NativeRows["ExpeditionSite"]; xp: number };
 
 /** The site's receipt lives independently of whoever now occupies its tile. */
 export function readClearedSite(
@@ -23,7 +23,7 @@ export function readClearedSite(
   const site = [...store.inGame("ExpeditionSite", gameId)].find(
     (site) => site.clear !== null && site.col === hex.col && site.row === hex.row && site.alt === hex.alt,
   );
-  return site ? { site } : null;
+  return site ? { site, xp: siteClearXp(store, site) } : null;
 }
 
 export function useSelectedClearedSite(): ClearedSite | null {
@@ -60,7 +60,6 @@ export function SiteReceipt({ selected }: { selected: ClearedSite }) {
 
 /** What this clear credited, including zero when a store was full; never today's balance or the preview. */
 function ReceiptLines({ selected }: { selected: ClearedSite }) {
-  const { setup } = useGame();
   const receipt = selected.site.clear;
   if (!receipt) throw new Error("A site receipt requires a cleared site");
   const reward = receipt.reward;
@@ -78,7 +77,7 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
           </span>
         )}
         <span>
-          <strong>{formatExact(siteClearXp(setup.store, selected.site))}</strong> {XP}
+          <strong>{formatExact(selected.xp)}</strong> {XP}
         </span>
       </div>
     </section>

@@ -194,7 +194,7 @@ describe("Frontier's selection sheet", () => {
         expect(sheet.textContent!.split(expectedName).length - 1).toBe(1);
         expect(host.textContent).toContain("Cleared · Troll");
         expect(host.textContent).toContain("550 Labor");
-        expect(host.textContent).toContain("82 XP");
+        expect(host.textContent).toContain("123 XP");
         const close = host.querySelector<HTMLButtonElement>('button[aria-label="Close"]');
         expect(close).not.toBeNull();
         await act(async () => close!.click());
@@ -204,7 +204,7 @@ describe("Frontier's selection sheet", () => {
           foreign ? "Army" : expectedName,
         );
         expect(host.querySelector("[data-kit-sheet]")!.textContent).toContain(expectedName);
-        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor82 XP");
+        expect(host.querySelector("[data-site-rewards]")?.textContent).toBe("550 Labor123 XP");
       } finally {
         act(() => root.unmount());
         useUIStore.getState().selectOnMap(null);

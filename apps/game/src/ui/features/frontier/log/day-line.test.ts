@@ -56,8 +56,8 @@ describe("the day log's line for a story", () => {
 
   it("writes the XP each story moved: a reveal's, a clear's by the guard the site started with, a level-up's price", () => {
     const { store } = campBeside();
-    // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, so its clear pays 82 XP whatever
-    // the last attack killed (√(25 × 1,100) = 165, halved).
+    // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, at depth I pays 123 XP whatever
+    // the last attack killed (√(25 × 1,100) = 165, halved then multiplied by 1.5).
     store.applyFacts([
       {
         model: "ArmyProgressionRules",
