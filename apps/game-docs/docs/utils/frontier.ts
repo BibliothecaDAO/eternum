@@ -4,7 +4,7 @@ import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
 } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS } from "@bibliothecadao/types";
+import { BEAST_NAMES, FALLEN_REALM_DEPTHS, ROAMING_BEASTS, SITE_GUARDS, resourceName } from "@bibliothecadao/types";
 import { ETERNUM_CONFIG } from "./config";
 import { CONTRACT } from "./contract-constants";
 
@@ -48,6 +48,10 @@ const knightWheat = config.resources.productionBySimpleRecipe[KNIGHT]?.find(
 );
 if (!knightWheat) throw new Error("Frontier's Knight recipe takes no wheat");
 const wheatPerTroop = knightWheat.amount / config.resources.productionBySimpleRecipeOutputs[KNIGHT];
+
+/** A building's price as the pages write it: each resource it takes, by its catalog name ("6,000 Essence + 1,500 Labor"). */
+const priceOf = (costs: readonly { resource: number; amount: number }[]) =>
+  costs.map(({ resource, amount }) => `${n(amount)} ${resourceName(resource)}`).join(" + ");
 
 /** One research row's tiers, uncommon up, each with its Essence and labor price. */
 const researchRow = (row: number) =>
@@ -155,7 +159,7 @@ export const FRONTIER = {
   ].map(([name, id, makes]) => ({
     name: name as string,
     makes: makes as string,
-    labor: n(config.buildings.simpleBuildingCost[id as number][0].amount),
+    price: priceOf(config.buildings.simpleBuildingCost[id as number]),
     // A hut takes no population: a page says so in words rather than as a zero.
     population:
       config.buildings.buildingPopulation[id as number] === 0
