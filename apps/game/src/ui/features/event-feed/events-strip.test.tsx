@@ -17,6 +17,8 @@ const history = vi.hoisted(
       participants: string[];
       at: number;
       tx?: string;
+      /** Its place in its transaction's receipt, where it matters. */
+      index?: number;
       /** The structure the story is about; 900 unless it says. */
       entity?: number;
       payload?: Record<string, unknown>;
@@ -44,7 +46,8 @@ vi.mock("@/hooks/store/use-story-events-store", () => {
       .slice(0, limit)
       .map((event) => ({
         ...event,
-        event_id: event.id,
+        event_id:
+          event.index === undefined ? event.id : `story:v2:test:0x1:0x1:${event.tx}:0x${event.index.toString(16)}`,
         entity_id: event.entity ?? 900,
         tx_hash: event.tx ?? `0x${event.id}`,
         timestamp: String(event.at / 1_000),
@@ -296,8 +299,19 @@ it("opens the Log under All on the world's history as one list, with no second l
 
 it("tells under Important a capture and the fight that won it as one row, by its capture", () => {
   world.filter = "important";
+  // The contract writes the capture, then the battle in which the structure's last guard fell.
   history.push(
-    { ...fight("fight", 99_001, PLAYER, "0xa1"), tx: "0xc1a" },
+    {
+      ...fight("fight", 99_001, PLAYER, "0xa1"),
+      tx: "0xc1a",
+      index: 4,
+      payload: {
+        attacker_id: 41,
+        defender_id: 900,
+        attacker: { player: PLAYER, before: "2000", after: "1500" },
+        defender: { player: "0xa1", before: "1000", after: "0" },
+      },
+    },
     {
       id: "taken",
       story: "StructureCapturedStory",
@@ -305,6 +319,7 @@ it("tells under Important a capture and the fight that won it as one row, by its
       participants: [PLAYER, "0xa1"],
       at: 99_000,
       tx: "0xc1a",
+      index: 3,
       payload: { previous_owner: "0xa1", new_owner: PLAYER },
     },
   );

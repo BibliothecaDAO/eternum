@@ -88,32 +88,117 @@ it("shows a Hyperstructure taken by two other players under Important and All, a
   expect(ids([taken], "important", false)).toEqual([]);
 });
 
+/** A story's place: transaction `tx`, at `index` in its receipt. */
+const inReceipt = (tx: string, index: number) => ({
+  tx_hash: tx,
+  event_id: `story:v2:madara:0x1:0x7:${tx}:0x${index.toString(16)}`,
+});
+/** A battle between `attacker_id` and `defender_id`, each side's troops before and after, at `index` in `tx`. */
+const battle = (
+  id: string,
+  sides: { attacker_id: number; defender_id: number; attacker: [number, number]; defender: [number, number] },
+  tx: string,
+  index: number,
+  players: [string, string] = ["0x1", "0x2"],
+) =>
+  story(
+    id,
+    50,
+    "BattleEvent",
+    players[0],
+    {
+      attacker_id: sides.attacker_id,
+      defender_id: sides.defender_id,
+      attacker: { player: players[0], before: String(sides.attacker[0]), after: String(sides.attacker[1]) },
+      defender: { player: players[1], before: String(sides.defender[0]), after: String(sides.defender[1]) },
+    },
+    { participants: players, ...inReceipt(tx, index) },
+  );
+
 it("tells a capture and the fight that won it, one transaction, as one row by its capture, whichever came first", () => {
-  const tx = { tx_hash: "0xc1a" };
-  const won = fight("fight", 31, "0x1", "0x2");
-  const taken = capture("taken", 30, "0x1", "0x2", tx);
-  expect(ids([{ ...won, ...tx }, taken], "important")).toEqual(["taken"]);
-  expect(ids([taken, { ...won, ...tx }], "important")).toEqual(["taken"]);
-  expect(ids([{ ...won, ...tx }, taken], "all")).toEqual(["taken"]);
+  // The contract writes the capture, then the battle that caused it: army 41 beat structure 900's last guard.
+  const won = battle(
+    "fight",
+    { attacker_id: 41, defender_id: 900, attacker: [2_000, 1_500], defender: [1_000, 0] },
+    "0xc1a",
+    4,
+  );
+  const taken = capture("taken", 30, "0x1", "0x2", inReceipt("0xc1a", 3));
+  expect(ids([won, taken], "important")).toEqual(["taken"]);
+  expect(ids([taken, won], "important")).toEqual(["taken"]);
+  expect(ids([won, taken], "all")).toEqual(["taken"]);
+});
+
+it("tells a capture won by a guard that attacked and lost as one row, the capture's, in both Events lenses", () => {
+  // guard_attack: structure 900's guard attacks army 41 and falls; the army takes the structure.
+  const fight = battle(
+    "guard-fight",
+    { attacker_id: 900, defender_id: 41, attacker: [1_000, 0], defender: [2_000, 1_500] },
+    "0xc1b",
+    4,
+    ["0x2", "0x1"],
+  );
+  const taken = capture("capture", 30, "0x1", "0x2", inReceipt("0xc1b", 3));
+  expect(ids([fight, taken], "important")).toEqual(["capture"]);
+  expect(ids([fight, taken], "all")).toEqual(["capture"]);
+});
+
+it("keeps a won fight its own row when another fight in the batch takes the structure", () => {
+  // Two guard slots, as the contract writes them: the first battle beats one (no capture yet); then the capture and
+  // the battle that beat the last slot, the capture just before its battle, so both battles stand one step from it.
+  const first = battle(
+    "first-slot",
+    { attacker_id: 41, defender_id: 900, attacker: [2_000, 1_800], defender: [500, 0] },
+    "0xc1c",
+    4,
+  );
+  const taken = capture("taken", 50, "0x1", "0x2", inReceipt("0xc1c", 5));
+  const last = battle(
+    "last-slot",
+    { attacker_id: 42, defender_id: 900, attacker: [2_000, 1_700], defender: [500, 0] },
+    "0xc1c",
+    6,
+  );
+  expect(ids([last, taken, first], "all")).toEqual(["taken", "first-slot"]);
+  expect(ids([last, taken, first], "important")).toEqual(["taken", "first-slot"]);
+});
+
+it("keeps a guard's attack its own row when it wins: its structure did not fall", () => {
+  const held = battle(
+    "guard-won",
+    { attacker_id: 900, defender_id: 41, attacker: [1_000, 600], defender: [500, 0] },
+    "0xc1d",
+    4,
+    ["0x2", "0x1"],
+  );
+  const elsewhere = capture("elsewhere", 30, "0x1", "0x3", { ...inReceipt("0xc1d", 3), entity_id: 901 });
+  expect(ids([held, elsewhere], "all")).toEqual(["guard-won", "elsewhere"]);
 });
 
 /** The ids Frontier's Feed shows through a lens, as player 0x1. */
 const feedIds = (stories: ProcessedStoryEvent[], lens: FeedLens) =>
   selectFeedStories(stories, lens, "0x1").map(({ id }) => id);
 
-/** A site's guard attacked by 0x1's army, in transaction `tx`. */
-const attack = (id: string, site: number, tx: string) =>
-  story(
+/**
+ * 0x1's army attacking a site's guard, at `index` in transaction `tx`: the guard falls (`cleared`), holds, or beats the
+ * army.
+ */
+const attack = (id: string, site: number, tx: string, index = 2, outcome: "cleared" | "held" | "lost" = "cleared") =>
+  battle(
     id,
-    50,
-    "BattleEvent",
-    "0x1",
-    { defender_id: site, attacker: { player: "0x1" }, defender: { player: "0x0" } },
-    { tx_hash: tx },
+    {
+      attacker_id: 40,
+      defender_id: site,
+      attacker: [1_000, outcome === "lost" ? 0 : 800],
+      defender: [500, outcome === "cleared" ? 0 : 300],
+    },
+    tx,
+    index,
+    ["0x1", "0x0"],
   );
-/** 0x1's clear of a site, in transaction `tx`. */
-const payout = (id: string, site: number, tx: string) =>
-  story(id, 50, "SitePayout", "0x1", { site_id: site, category: 6, reward: null }, { tx_hash: tx });
+/** 0x1's clear of a site, at `index` in transaction `tx`: the contract writes it just before the battle that won it. */
+const payout = (id: string, site: number, tx: string, index = 1) =>
+  story(id, 50, "SitePayout", "0x1", { site_id: site, category: 6, reward: null }, inReceipt(tx, index));
 it("tells an attack that clears its site as one row, the clear, in every Feed lens, as a history read orders them", () => {
   // Newest on the chain first: the battle is written after the payout in the attack's transaction (dev, 20 of 20).
   const stories = [attack("attack", 31, "0xA1"), payout("clear", 31, "0x0a1")];
@@ -122,13 +207,26 @@ it("tells an attack that clears its site as one row, the clear, in every Feed le
 });
 
 it("keeps an attack its own row when it clears nothing: the guard holds, the army is lost, or another army clears", () => {
-  const held = attack("held", 31, "0xb1");
+  const held = attack("held", 31, "0xb1", 2, "held");
   // Another site's clear in the same transaction (a batch), and the same site's clear in a later one.
-  const elsewhere = payout("elsewhere", 32, "0xb1");
+  const elsewhere = payout("elsewhere", 32, "0xb1", 3);
   const later = payout("later", 31, "0xb2");
   expect(feedIds([held, elsewhere], "all")).toEqual(["held", "elsewhere"]);
   expect(feedIds([later, held], "all")).toEqual(["later", "held"]);
   expect(feedIds([held], "important")).toEqual(["held"]);
+});
+
+it("keeps a lost or held attack on a site its own row when another army clears that site in the same batch", () => {
+  // Newest first, as history reads them: in one receipt army A falls to site 31's guard (or the guard holds), then the
+  // clear's payout, then the battle in which army B beat the guard.
+  for (const outcome of ["lost", "held"] as const) {
+    const first = attack(outcome, 31, "0xa1", 1, outcome);
+    const clear = payout("clear", 31, "0xa1", 2);
+    const won = attack("won", 31, "0xa1", 3);
+    for (const lens of ["all", "important", "mine"] as const)
+      expect(feedIds([won, clear, first], lens)).toEqual(["clear", outcome]);
+    expect(ids([won, clear, first], "all")).toEqual(["clear", outcome]);
+  }
 });
 
 it("tells each capture of a structure on its own, however often it changes the same hands", () => {
