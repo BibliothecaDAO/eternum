@@ -166,7 +166,6 @@ describe.each(["paidClaims", "postedResults"] as const)(
       identity: { matchesPayDecision: () => Effect.succeed(false) },
       shard: {
         withdrawalReceipt: () => Effect.succeed(null),
-        settlementEvidence: () => Effect.succeed(null),
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
           Effect.succeed({
@@ -182,18 +181,7 @@ describe.each(["paidClaims", "postedResults"] as const)(
         result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {
-        approvePayment: () => Effect.void,
-        approveSettlement: () => Effect.void,
         frontierPool: () => Effect.succeed("0"),
-        reportedSettlements: () =>
-          Effect.succeed({
-            rows: [],
-            next: null,
-            head: 0,
-            anchor: { number: 0, hash: "0x1" },
-            rewind: false,
-            fromBlock: 0,
-          }),
         reportedClaims: () =>
           Effect.succeed({
             rows: [],
@@ -253,7 +241,7 @@ it("reports unreadable history without pausing when no waiting report is known",
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     const observation = await f.monitor.tick();
-    expect(observation).toMatchObject({ value: null, value_error: "ledger settlement reports unavailable" });
+    expect(observation).toMatchObject({ value: null, value_error: "ledger reports unavailable" });
     expect((await f.monitor.status()).halted).toBeNull();
     expect(f.data.get("observation")).toEqual(observation);
   }

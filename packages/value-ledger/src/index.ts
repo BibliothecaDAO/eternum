@@ -5,7 +5,6 @@ export {
   ledgerU256,
   decodeFrontierSeason,
   decodeWithdrawalPayment,
-  decodeSettlementReport,
   decodeChest,
   chestDrawBlocksLeft,
   decodeSeasonWinner,
@@ -40,3 +39,6 @@ export {
   seaterLabels,
   seaterAccountAddresses,
 } from "./shard-accounts";
+
+export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
+export type { CosigningDomain, PayoutTerms, SettlementTerms, CosignRequest, Cosignature } from "./cosigning";

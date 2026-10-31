@@ -29,6 +29,8 @@ const env = {
   IDENTITY_HTTP: { fetch: vi.fn(async () => Response.json({ accountClassHash: "0x2", publicKey: "0x9" })) },
   ENVIRONMENT: "staging",
   L2_RPC_URL: "https://ledger.test",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "test-cosigner-token",
   LEDGER_OPERATOR_ADDRESS: "0x1",
   LEDGER_OPERATOR_PRIVATE_KEY: "0x2",
   BASE_URL: "https://app.test",

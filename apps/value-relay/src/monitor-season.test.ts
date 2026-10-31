@@ -30,15 +30,6 @@ vi.mock("./monitor-balance", () => ({ readMonitorFeeBalance: calls.balance }));
 vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 vi.mock("./ledger", () => ({
   ledgerMonitorReads: () => ({
-    reportedSettlements: () =>
-      Effect.succeed({
-        rows: [],
-        next: null,
-        head: 0,
-        anchor: { number: 0, hash: "0x1" },
-        rewind: false,
-        fromBlock: 0,
-      }),
     reportedClaims: () =>
       Effect.succeed({
         rows: [],

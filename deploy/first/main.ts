@@ -232,6 +232,7 @@ export function preparationSteps(context: Deployment): Step[] {
           assets.ledger!,
           context.inputs.admin ?? accountIdentity(context.keys.deployer).address,
           accountIdentity(context.keys.relay).address,
+          context.inputs.cosignerPublicKey,
         );
         const block = recordedLedgerBlock(context.target);
         if (block === undefined || !(await isDeploymentBlock(context.provider, assets.ledger!, block)))
@@ -250,6 +251,7 @@ export function preparationSteps(context: Deployment): Step[] {
           accountIdentity(context.keys!.relay).address,
           treasury,
           assets,
+          context.inputs!.cosignerPublicKey,
         ).filter((plan) => plan.name !== "ledger")) {
           assets[plan.name] = await deployAsset(
             account,
@@ -266,6 +268,7 @@ export function preparationSteps(context: Deployment): Step[] {
           accountIdentity(context.keys!.relay).address,
           treasury,
           assets,
+          context.inputs!.cosignerPublicKey,
         ).find((plan) => plan.name === "ledger")!;
         assets.ledger = await deployAsset(
           account,

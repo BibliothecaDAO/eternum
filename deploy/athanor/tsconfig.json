@@ -15,6 +15,7 @@
   },
   "include": [
     "harness/**/*.ts",
+    "cosigner/**/*.ts",
     "scripts/**/*.ts",
     "../release/**/*.ts",
     "vrf/**/*.ts",

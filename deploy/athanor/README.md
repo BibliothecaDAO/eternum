@@ -66,6 +66,42 @@ For automatic payouts, settlement checks and the carry command, follow the ledge
 [Frontier settlement and carry](../../contracts/l2/ledger/README.md#frontier-settlement-and-carry) procedure, including
 its compatible-deployment rehearsal requirement and existing dev-ledger limitation.
 
+## Independent payout co-signer
+
+Frontier custody requires the relay's operator transaction plus a Stark-curve signature from a separate box process.
+Install `deploy/athanor/cosigner/payout-cosigner.service` for a dedicated `payout-cosigner` Unix user, with this
+reviewed checkout and dependencies at `/opt/eternum`. This process has no Cloudflare deployment credentials and submits
+no L2 transactions. Keep its private key outside every Worker secret store and deployment export.
+
+Before ledger setup, run `bun deploy/athanor/cosigner/main.ts init-key /etc/payout-cosigner/key` as that user. It prints
+only the public key. Put that public key in setup's `cosignerPublicKey`; setup also requires `cosignerUrl` (HTTPS) and
+`cosignerToken` (request bearer token). Only the URL/token go to the relay Worker. The ledger constructor takes the
+public key. A fresh ledger and matching relay/identity builds are required.
+
+Create `/etc/payout-cosigner/config.json`, owned by `payout-cosigner`, mode `0600`, containing:
+
+- `l2RpcUrl`, `l2ChainId`, `ledgerAddress`: the reviewed L2 endpoint, chain ID and fresh ledger.
+- `identityUrl`, `identityToken`: identity's HTTPS origin and existing operator read token. The service queries
+  `/api/operator/payout-identity?account=...` directly for the receipt account's current verified wallet.
+- `requestToken`: the same request token supplied as setup's `cosignerToken`.
+- `port`: the assigned loopback port; expose only `/sign` and `/health` through the host's HTTPS proxy.
+- `shards`: reviewed entries with `chainId`, `rpcUrl`, `gamesAddress`, `firstRelease` and `heraldUrl`, copied from the
+  box's deployment manifests. Requests cannot alter these sources. Add a newly funded shard before sending its claims;
+  keep retiring shards listed until their claims are settled.
+
+Both the key and configuration files must have mode `0600`. The service binds only `127.0.0.1`; startup refuses invalid
+configuration. Install/start the unit after funding bindings and identity routing are available. `/health` identifies
+the process and public key; it is not proof that a particular claim can be verified. Rehearse `/sign` through an actual
+withdrawal, then check the L2 wallet and `get_payment`; also rehearse deadline carry and signer outage/recovery. The
+service signs synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked
+in the deployment rehearsal.
+
+For rotation, pause the ledger, generate a new box key, have the cold admin call `set_cosigner(public_key)`, update the
+box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch, invalidating
+old signatures even if a public key is reused. Keep the key file out of logs and public artifacts. A signer outage
+queues payments and settlement; the operator cannot bypass it. The independent monitor retains its pause policy and
+needs STRK for pause/challenge transactions; the co-signer needs none.
+
 ## Uptime qualification
 
 Every load qualification includes an idle leg after gameplay: observe the same chain for at least nine hours, long

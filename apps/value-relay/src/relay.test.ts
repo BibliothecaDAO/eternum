@@ -1,3 +1,4 @@
+const testSignature = { r: "0x123", s: "0x456" };
 import { Effect } from "effect";
 import { describe, expect, it, vi } from "vitest";
 import { blitzCommitment } from "@realms-world/value-ledger/commitment";
@@ -95,22 +96,11 @@ const fixture = () => {
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
     ledger: RelayPorts["ledger"] &
-      Pick<
-        MonitorPorts["ledger"],
-        | "reportedSettlements"
-        | "reportedClaims"
-        | "paidClaims"
-        | "postedResults"
-        | "frontierPool"
-        | "approvePayment"
-        | "approveSettlement"
-      >;
-    shard: RelayPorts["shard"] &
-      Pick<MonitorPorts["shard"], "withdrawalReceipt" | "settlementEvidence" | "conservation" | "result">;
+      Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool">;
+    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "withdrawalReceipt" | "conservation" | "result">;
   } = {
     shard: {
       withdrawalReceipt: () => Effect.succeed({ ...withdrawal, account: "0x3" }),
-      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
       blockHash: () => Effect.succeed(block.hash),
@@ -134,8 +124,6 @@ const fixture = () => {
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
-      approvePayment: () => Effect.void,
-      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
@@ -160,15 +148,6 @@ const fixture = () => {
         ),
       ),
       postResult: vi.fn(() => Effect.void),
-      reportedSettlements: () =>
-        Effect.succeed({
-          rows: [],
-          next: null,
-          head: 0,
-          anchor: { number: 0, hash: "0x1" },
-          rewind: false,
-          fromBlock: 0,
-        }),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -288,8 +267,17 @@ describe("confirmed value relay", () => {
   it("encodes the published payment interface with exact u256 limbs", async () => {
     const submit = vi.fn(async () => {});
     const pay = frontierPayment(submit);
-    await Effect.runPromise(pay({ ...withdrawal, amount: String(2n ** 128n + 5n) }, "0x123"));
-    expect(submit).toHaveBeenCalledWith("pay", ["0x1", "4", "0xabc", "0x123", "5", "1"]);
+    await Effect.runPromise(pay({ ...withdrawal, amount: String(2n ** 128n + 5n) }, "0x123", testSignature));
+    expect(submit).toHaveBeenCalledWith("pay", [
+      "0x1",
+      "4",
+      "0xabc",
+      "0x123",
+      "5",
+      "1",
+      testSignature.r,
+      testSignature.s,
+    ]);
   });
 });
 

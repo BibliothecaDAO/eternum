@@ -11,39 +11,30 @@ hashes, parents or regressed heads halt ingestion. One environment-wide durable 
 payments, results, season settlement and chest finishes under the operator key. Another shard's failure does not
 suppress these jobs.
 
-Frontier receipts are reported as debt before wallet lookup. Normal chest claims pay immediately from the ledger's
-shared allowance; exhaustion remains retryable as `ledger_payout_allowance_spent`. The relay reads capacity, available
-allowance and slow-lane delay from a confirmed L2 head and budgets batches across seasons. Prizes and claims above
-capacity first bind identity's linked wallet, wait the ledger's one-hour slow lane and require the separate monitor's
-approval, plus confirmation and scheduling. Preparation records the signed recipient decision before broadcast; a
-recipient change restarts that wait. Missing wallets remain queued and appear as deferred in health; unknown accounts
-are retried from their confirmed receipts. Permanent refusals are recorded separately. A confirmed closed season with
-the claim unpaid removes it from retries, including accounts without wallets. A claim is keyed by its shard and
-withdrawal transaction hash.
+Frontier receipts are reported as debt before wallet lookup. Every payment then requests an independent co-signature for
+the exact receipt, recipient, amount and prize rank/count. The box service reads confirmed shard evidence, funding and
+identity itself; the relay cannot supply source URLs or a digest to sign. Payments have no added timer or rate limit.
+Batches retain the ledger's cumulative unlock and custody checks. A refused or unavailable signature leaves only that
+claim queued; verified siblings can proceed. The relay journals its own signed recipient decisions before broadcast for
+the monitor's historical audit. Missing wallets appear deferred; unknown accounts retry from receipts. A confirmed
+closed season removes unpaid claims from retries. Claims are keyed by shard and withdrawal transaction hash.
 
 `POST /api/value/labor?chainId=<official shard>` accepts only a Realm in its body. Identity supplies the signed-in
 Realms id and account. The Worker reads the UTC day from the shard and `owner_of` from identity's configured L2 chain.
 The shard owns labor eligibility and limits. No daily cap is copied into services.
 
-The independent monitor checks `WithdrawalReported` events against raw L3 receipts before resolving any identity. An
-unknown account cannot hide a forged amount or block checking the next report. A prepared recipient also needs a
-matching signed identity decision. The monitor submits `approve_payment` for that exact verified report using its own
-`PAUSER_ROLE` account. Normal claims can already be paid, bounded by the allowance; slow claims require both the hour
-and approval. Changing the recipient clears approval. A monitor outage cannot release forged slow claims. Before signing
-either approval, the monitor reads current terms and approval state at one confirmed L2 block. Already approved, paid,
-closed, voided or superseded reports need no transaction. Page retries and lost acknowledgments therefore reuse
-confirmed approvals; recipient changes, voids and replacement proposals still require fresh verification and approval.
+The independent monitor checks `WithdrawalReported` against raw L3 receipts. An unknown account cannot hide a forged
+amount or block later reports. It audits paid recipients against identity's signed decision journal, plus results and
+conservation. It neither signs payouts nor submits approval transactions. The co-signer separately verifies settlement
+against confirmed post-end state and exact L2 paid totals, requiring complete payment before the claim deadline and
+allowing unpaid/no-wallet carry after it.
 
-The monitor verifies `SettlementReported` against confirmed post-end balances, full prize issuance and exact receipt
-totals, then submits `approve_settlement`. Early closure requires this approval and the hour. Proven mismatches persist
-a halt and retry the pause immediately. Read or approval failures make health unhealthy from the first failure and
-withhold approval for that report. Each report stream retains its cursor and retries; ten continuous minutes with a
-known report awaiting verification or approval persist a halt and retry the pause. A successful page clears that
-stream’s timer. Later rows on the page still get checked for proven mismatches. Unreadable history without an observed
-waiting report makes health unhealthy without starting a pause timer. Availability recovery rechecks the row without
-waiving it. Paid claims, results and conservation retain independent cursors; unavailable historical checks make health
-unhealthy. Later wallet changes cannot rewrite an earlier payment decision. The monitor never uses the relay's queue as
-proof and never unpauses the ledger. Its serialized tick also serializes approval, challenge and pause transactions.
+Proven mismatches persist a halt and retry the pause immediately. Unavailable report evidence makes health unhealthy on
+the first failure; the report cursor retries without advancing. After ten continuous minutes with a known report
+waiting, the monitor persists a halt and retries its pause. A verified page clears the timer. Later rows still get
+checked for proven mismatches. Unreadable history with no observed waiting report reports unhealthy health without
+inventing a pause timer. Paid claims, results and conservation retain independent cursors. The monitor never uses the
+relay queue as proof and never unpauses the ledger; its signer serializes challenges and pauses.
 
 Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
 checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
@@ -57,7 +48,9 @@ environment reader. The ledger runtime settings are the secret `L2_RPC_URL`, `LE
 `POST /api/value/operator/shard/enrol` and the `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` secret. The operator route accepts
 only `{chainId,heraldUrl}` for an official shard, returns `{chainId,ledgerOperatorAccount}`, and shares the shard
 signing lock with labor grants. The monitor has its own `PAUSER_ACCOUNT_ADDRESS` and `PAUSER_PRIVATE_KEY`. All ledger
-jobs verify the identity environment's L2 chain. No signing key belongs on a shard host.
+jobs verify the identity environment's L2 chain. `COSIGNER_URL` and `COSIGNER_TOKEN` reach the separate box service; its
+private key never enters Worker settings. Deploy it using the
+[box procedure](../../deploy/athanor/README.md#independent-payout-co-signer).
 
 Both Workers validate their required settings before serving HTTP or starting a scheduled tick. The deployment script
 supplies generated account keys, account addresses and the shared operator token; the owner supplies one `L2_RPC_URL`.
@@ -66,7 +59,7 @@ separate health hostname or secret is required. Monitor health includes `fee_bal
 STRK token, confirmed block number, exact `balance_wei`, `low_balance_threshold_wei` and `warning`. Below 0.1 STRK,
 `warning` is `monitor_strk_low` and health is unhealthy; this is replenishment headroom, not a transaction-count
 guarantee. A failed balance read exposes `fee_balance_error` and clears the previous balance. Balance warnings alone do
-not pause payouts. Replenish the monitor before it cannot submit approvals or a pause.
+not pause payouts. Replenish the monitor before it cannot submit a pause.
 
 ## Restored shard recovery
 
@@ -83,18 +76,18 @@ identity. The normal reset has no bypass for that repair. Withdrawing the restor
 ledger's claim idempotence cannot prevent that second payment.
 
 `POST /api/operator/monitor/reset` requires `{row,reason}` and the operator token. It waives the fault's exact fact,
-everything its check compared. Reports are rechecked so corrected evidence can earn approval; a waived mismatch grants
-none. Paid/result cursors advance past the cleared row. A rewind with the same evidence stays cleared, and changed
-evidence on the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for a fault
-that recorded none (a roster check, or one written before facts were recorded): that reset clears the halt and the check
-runs again, halting once more, with its fact, if the evidence still disagrees. An availability reset retries its
-checkpoint. No reset unpauses the ledger.
+everything its check compared. Reports are rechecked after repair; a waived mismatch never authorizes a payment.
+Paid/result cursors advance past the cleared row. A rewind with the same evidence stays cleared, and changed evidence on
+the same claim or game is checked again. The answer's `waived` names that fact, or is `null` for a fault that recorded
+none (a roster check, or one written before facts were recorded): that reset clears the halt and the check runs again,
+halting once more, with its fact, if the evidence still disagrees. An availability reset retries its checkpoint. No
+reset unpauses the ledger.
 
 For a forged unpaid report, keep the ledger paused, rotate the compromised operator and use the cold admin's
 `void_report(shard, claim_id)`. Paid reports are immutable. Voiding releases the claim and prize reservation; the relay
 rechecks held `ledger_report_mismatch` receipts and requeues them only once the ledger report is absent. Clear the
 monitor's exact recorded fault after the repair, verify the result, then unpause. A corrected report is checked again
-and needs fresh approval. No new secret or public approval endpoint is involved.
+and needs an independently verified co-signature before payment.
 
 ## Season prizes and mystery chests
 

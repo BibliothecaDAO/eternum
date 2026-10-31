@@ -48,6 +48,11 @@ permissions. Refusals name the resource family, HTTP status and numeric Cloudfla
 Resend key needs the environment's verified email sending domain. The one Alchemy URL is also used in the browser build
 and is therefore public to players.
 
+Before setup, install the [independent payout co-signer](../athanor/README.md#independent-payout-co-signer) on the box.
+Setup asks for `cosignerPublicKey`, `cosignerUrl` and `cosignerToken`. Generate and retain its private key only on that
+host; never put it in `inputs.json`, the private deployment export or Worker secrets. The constructor uses the public
+key, and only the relay receives the request URL/token.
+
 `environments.json` is the one dev/production table for this command. Dev uses the reviewed `deploy/release/dev.json`,
 SSH alias `realms-dev`, and the existing dev tunnel. Production's book, `production.json`, names canonical mainnet LORDS
 and requires a reviewed `deploy/release/production.json`, SSH alias `realms-production` and its own working tunnel/host

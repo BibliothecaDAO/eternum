@@ -1,0 +1,21 @@
+[Unit]
+Description=Independent payout co-signer
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=payout-cosigner
+Group=payout-cosigner
+WorkingDirectory=/opt/eternum
+ExecStart=/usr/local/bin/bun deploy/athanor/cosigner/main.ts serve /etc/payout-cosigner/config.json /etc/payout-cosigner/key
+Restart=on-failure
+RestartSec=3
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

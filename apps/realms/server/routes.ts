@@ -1,3 +1,4 @@
+import { handlePayoutIdentity } from "./payout-identity";
 import { presentsOperatorToken } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
@@ -115,6 +116,8 @@ export const routeIdentityRequest = async (
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
     return handleDirectoryHistory(request, { db: env.DB, ...platform });
   }
+  if (pathname === "/api/operator/payout-identity" && request.method === "GET")
+    return handlePayoutIdentity(request, env);
   if (pathname === "/api/directory/shards" && request.method === "GET") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return json({ shards: await registeredShards(env.DB) });

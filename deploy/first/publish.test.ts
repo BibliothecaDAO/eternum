@@ -22,6 +22,9 @@ const input = {
   cloudflareToken: "test-cloudflare",
   resend: "test-resend",
   discordClientId: "test-discord-id",
+  cosignerPublicKey: "0x123",
+  cosignerUrl: "https://cosigner.test",
+  cosignerToken: "test-cosigner-token",
   discordClientSecret: "test-discord-secret",
 } as Inputs;
 const temporary: string[] = [];

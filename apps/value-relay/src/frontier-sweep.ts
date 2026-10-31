@@ -141,19 +141,42 @@ function settlementState(snapshot: ConfirmedSnapshot) {
   };
 }
 
-/** Independent confirmed shard evidence for a proposed early close; no operator assertions are accepted. */
+/** Independent settlement evidence, including the funding binding and the deadline carry rule. */
 export async function frontierSettlementEvidence(
   target: ShardConnection,
   heraldUrl: string,
   report: FrontierSettlement,
+  ledger: { rpcUrl: string; address: string },
 ) {
   const snapshot = await settlementSnapshot(target, heraldUrl, report.gameId);
   const time = (await new ShardReader(target).header(snapshot.confirmed_block)).timestamp;
-  const end = frontierTerms(snapshot).end;
-  const realms = fundedRealms(snapshot);
+  const provider = rpcAt(ledger.rpcUrl);
+  const head = await readConfirmedLedgerHead(provider);
+  const terms = frontierTerms(snapshot);
+  const funding = await readFrontierFunding(
+    provider,
+    ledger.address,
+    { chainId: target.chainId, gameId: report.gameId },
+    terms,
+    head.number,
+  );
   const state = settlementState(snapshot);
+  const budget = optionalRow(snapshot, "LordsBudget")!;
   if (
-    time >= end &&
+    funding.closed ||
+    time < terms.end ||
+    head.time < terms.end ||
+    snapshotUint(budget.pool, 128) !== BigInt(funding.pool) / 10n ** 18n ||
+    state.prizePool !== BigInt(funding.prizePool) / 10n ** 18n ||
+    BigInt(report.chestWithdrawn) !== BigInt(funding.paid) ||
+    BigInt(report.prizeWithdrawn) !== BigInt(funding.prizePaid) ||
+    BigInt(funding.paid) > BigInt(state.chestWithdrawn) ||
+    BigInt(funding.prizePaid) > BigInt(state.prizeWithdrawn)
+  )
+    return "settlement_funding_or_totals_differ";
+  if (head.time >= funding.claimDeadline) return null;
+  const realms = fundedRealms(snapshot);
+  if (
     realms.length === 0 &&
     state.issued === state.prizePool &&
     BigInt(state.chestWithdrawn) === BigInt(report.chestWithdrawn) &&
@@ -161,7 +184,6 @@ export async function frontierSettlementEvidence(
   )
     return null;
   return JSON.stringify({
-    ended: time >= end,
     realms,
     issued: String(state.issued),
     prizePool: String(state.prizePool),

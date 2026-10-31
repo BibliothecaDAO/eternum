@@ -41,6 +41,7 @@ const target = {
   accountAddress: "0x20",
   privateKey: "0x1",
 };
+const ledger = { rpcUrl: "https://ledger.test", address: "0x30" };
 const wei = (amount: number) => String(BigInt(amount) * 10n ** 18n);
 const run = () =>
   sweepFrontierLords(target, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" }, calls.settle);
@@ -309,18 +310,49 @@ it("expires unpaid receipts only at the confirmed L2 deadline after every realm 
 });
 
 it("independently audits early settlement against remaining balances and exact confirmed receipts", async () => {
+  calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
+    closed: false,
+    pool: wei(700),
+    prizePool: wei(300),
+    paid: wei(100),
+    prizePaid: wei(300),
+  });
   const report = { chainId: "0x1", gameId: 7, chestWithdrawn: wei(100), prizeWithdrawn: wei(300) };
   rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
-  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toContain('"realms":["3","9"]');
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).toContain(
+    '"realms":["3","9"]',
+  );
   rows("ResourceBalance", []);
-  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toBeNull();
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).toBeNull();
   expect(
-    await frontierSettlementEvidence(target, "https://herald.test", { ...report, chestWithdrawn: "0" }),
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, chestWithdrawn: "0" }, ledger),
   ).not.toBeNull();
   rows("FrontierPrize", [{ pool: "300", issued: "0", count: 0 }]);
   rows("LordsWithdrawal", [receipt(102, 100)]);
   expect(
-    await frontierSettlementEvidence(target, "https://herald.test", { ...report, prizeWithdrawn: "0" }),
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, prizeWithdrawn: "0" }, ledger),
   ).not.toBeNull();
   expect(calls.admin).not.toHaveBeenCalled();
+});
+
+it("co-signs only L2 paid totals after the deadline and still checks funding and post-end state", async () => {
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  const report = { chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: wei(300) };
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).not.toBeNull();
+  calls.ledgerHead.mockResolvedValue({ number: 11, time: 604900 });
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).toBeNull();
+  expect(
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, chestWithdrawn: wei(100) }, ledger),
+  ).toBe("settlement_funding_or_totals_differ");
+  calls.header.mockResolvedValue({ timestamp: 99 });
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).toBe(
+    "settlement_funding_or_totals_differ",
+  );
+  calls.header.mockResolvedValue({ timestamp: 100 });
+  rows("LordsBudget", [{ pool: "701", pool_left: "601" }]);
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger)).toBe(
+    "settlement_funding_or_totals_differ",
+  );
 });

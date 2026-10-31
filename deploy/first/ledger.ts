@@ -34,8 +34,11 @@ export function assetPlans(
   operator: string,
   treasury: string,
   assets: Partial<Assets>,
+  cosignerPublicKey: string,
 ): AssetPlan[] {
   assertProductionLords(target, assets.lords);
+  if (!cosignerPublicKey || BigInt(cosignerPublicKey) <= 0n)
+    throw new PublicError("Independent co-signer public key required");
   const ownAssets: AssetPlan[] = [
     { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
     { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
@@ -58,7 +61,16 @@ export function assetPlans(
       name: "ledger",
       package: "ledger",
       artifact: "GameLedger",
-      constructor: [admin, operator, treasury, assets.lords, assets.mmr, assets.chests, assets.cosmetics],
+      constructor: [
+        admin,
+        operator,
+        treasury,
+        assets.lords,
+        assets.mmr,
+        assets.chests,
+        assets.cosmetics,
+        cosignerPublicKey,
+      ],
     });
   return plans;
 }
@@ -131,7 +143,13 @@ export function existingAssets(target: Target): Partial<Assets> {
     }).filter(([, value]) => value && BigInt(value) > 0n),
   );
 }
-export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string, admin: string, operator: string) {
+export async function verifyLedgerAccounts(
+  provider: RpcProvider,
+  ledger: string,
+  admin: string,
+  operator: string,
+  cosignerPublicKey: string,
+) {
   for (const [role, address] of [
     ["0x0", admin],
     [hash.getSelectorFromName("OPERATOR_ROLE"), operator],
@@ -143,6 +161,9 @@ export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string
     if (result.length !== 1 || BigInt(result[0]!) !== 1n)
       throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
   }
+  const key = await provider.callContract({ contractAddress: ledger, entrypoint: "cosigner", calldata: [] }, "latest");
+  if (key.length !== 2 || BigInt(key[0]!) !== BigInt(cosignerPublicKey))
+    throw new PublicError("Existing ledger co-signer differs from the configured independent key");
 }
 /** The block the address book says the ledger was deployed in; the relay starts every ledger history scan there. */
 export function recordedLedgerBlock(target: Target): number | undefined {

@@ -1,3 +1,5 @@
+const testCosigner = { pay: async () => testSignature, settle: async () => testSignature };
+const testSignature = { r: "0x123", s: "0x456" };
 import { beforeEach, expect, it, vi } from "vitest";
 import { settleFrontier } from "./frontier-settlement";
 const rpc = vi.hoisted(() => ({ read: vi.fn(), execute: vi.fn(), wait: vi.fn(), head: vi.fn(), contract: vi.fn() }));
@@ -19,7 +21,7 @@ const credentials = {
   privateKey: "0x1",
 };
 const settlement = { chainId: "0x1", gameId: 7, chestWithdrawn: "400", prizeWithdrawn: "300" };
-const run = () => settleFrontier(credentials, settlement);
+const run = () => settleFrontier(credentials, settlement, testCosigner);
 const season = (paid = "400", prizePaid = "300", closed = "0") => [
   "1",
   "10",
@@ -40,13 +42,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   rpc.head.mockResolvedValue({ number: 10, time: 100 });
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "settlement_approved"
-      ? ["1"]
-      : entrypoint === "frontier_claim_deadline"
-        ? ["604900"]
-        : entrypoint === "get_settlement"
-          ? ["400", "0", "300", "0", "100"]
-          : season(),
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : season(),
   );
   rpc.contract.mockResolvedValue({
     abi: [{ type: "interface", items: [{ type: "function", name: "settle_frontier" }] }],
@@ -63,13 +59,13 @@ it("checks confirmed payments and sends exact totals under the operator's close 
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x30",
     entrypoint: "settle_frontier",
-    calldata: ["1", "7", "400", "0", "300", "0"],
+    calldata: ["1", "7", "400", "0", "300", "0", "291", "1110"],
   });
   expect(rpc.wait).toHaveBeenCalledWith("0x123", { errorStates: [] });
 });
 it.each([[season("399")], [season("400", "299")]])("refuses a not fully paid season", async (fields) => {
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "settlement_approved" ? ["1"] : entrypoint === "frontier_claim_deadline" ? ["604900"] : fields,
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : fields,
   );
   await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
   expect(rpc.execute).not.toHaveBeenCalled();
@@ -91,11 +87,7 @@ it("a reverted close remains an error to retry", async () => {
 
 it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadline passes", async () => {
   rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "settlement_approved"
-      ? ["1"]
-      : entrypoint === "frontier_claim_deadline"
-        ? ["604900"]
-        : season("300", "200"),
+    entrypoint === "frontier_claim_deadline" ? ["604900"] : season("300", "200"),
   );
   rpc.head.mockResolvedValue({ number: 10, time: 604899 });
   await expect(run()).rejects.toThrow("frontier_settlement_not_paid");
@@ -105,38 +97,17 @@ it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadl
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x30",
     entrypoint: "settle_frontier",
-    calldata: ["1", "7", "300", "0", "200", "0"],
+    calldata: ["1", "7", "300", "0", "200", "0", "291", "1110"],
   });
   expect(rpc.read).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "frontier_claim_deadline" }), 11);
 });
 
-it("reports an early close and requires both the hour and monitor approval", async () => {
-  let approved = false;
-  let report = ["0", "0", "0", "0", "0"];
-  rpc.read.mockImplementation(async ({ entrypoint }) =>
-    entrypoint === "settlement_approved"
-      ? [approved ? "1" : "0"]
-      : entrypoint === "frontier_claim_deadline"
-        ? ["604900"]
-        : entrypoint === "get_settlement"
-          ? report
-          : season(),
-  );
-  await run();
-  expect(rpc.execute).toHaveBeenLastCalledWith({
-    contractAddress: "0x30",
-    entrypoint: "report_settlement",
-    calldata: ["1", "7", "400", "0", "300", "0"],
-  });
-  report = ["400", "0", "300", "0", "3700"];
-  rpc.execute.mockClear();
-  rpc.head.mockResolvedValue({ number: 11, time: 3699 });
-  await run();
+it("does not close without a co-signature and retries immediately when the signer recovers", async () => {
+  const sign = vi.fn(async () => testSignature).mockRejectedValueOnce(new Error("cosigner_unavailable"));
+  const cosigner = { ...testCosigner, settle: sign };
+  await expect(settleFrontier(credentials, settlement, cosigner)).rejects.toThrow("cosigner_unavailable");
   expect(rpc.execute).not.toHaveBeenCalled();
-  rpc.head.mockResolvedValue({ number: 12, time: 3700 });
-  await run();
-  expect(rpc.execute).not.toHaveBeenCalled();
-  approved = true;
-  await run();
-  expect(rpc.execute).toHaveBeenLastCalledWith(expect.objectContaining({ entrypoint: "settle_frontier" }));
+  await settleFrontier(credentials, settlement, cosigner);
+  expect(sign).toHaveBeenLastCalledWith(settlement);
+  expect(rpc.execute).toHaveBeenCalledOnce();
 });
