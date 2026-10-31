@@ -12,8 +12,8 @@ export const SeasonPayout = ({ realm }: { realm: NativeRows["Structure"] }) => {
 };
 
 /**
- * The season-over card keeps the LORDS owed visible until the ledger pays them: the sweep pays a linked wallet; an
- * account with none is told to link one (`linkWalletLine`), with Link wallet, as the ledger holds them until it does.
+ * The season-over card keeps the LORDS owed visible until the ledger pays them, or they lapse: the sweep pays a linked
+ * wallet; an account with none is told by when to link one (`linkWalletLine`), with Link wallet.
  */
 export const SeasonPayoutRow = ({
   lords,

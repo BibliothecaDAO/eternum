@@ -37,6 +37,7 @@ describe("Withdraw", () => {
         <WithdrawSheet
           held={1_240}
           wallet={over.wallet === undefined ? ADDRESS : over.wallet}
+          linkWalletLine="Link a wallet to receive your LORDS"
           refusal={over.refusal ?? null}
           step={over.step ?? { kind: "pick" }}
           amount={over.amount ?? 500}

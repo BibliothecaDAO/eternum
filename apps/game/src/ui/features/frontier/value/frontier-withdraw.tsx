@@ -15,7 +15,7 @@ import { extractReadableErrorMessage } from "@/utils/error-message";
 import { configManager } from "@bibliothecadao/eternum";
 import { type NativeRows, safeInteger } from "@bibliothecadao/eternum/game-client";
 
-import { useLinkWallet } from "./link-wallet";
+import { useLinkWallet, useLinkWalletLine } from "./link-wallet";
 import { useRealmLords } from "./use-realm-lords";
 import { WithdrawSheet } from "./withdraw-sheet";
 import {
@@ -35,6 +35,7 @@ import {
 export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Structure"]; onClose: () => void }) => {
   const { setup, account } = useGame();
   const linkWallet = useLinkWallet();
+  const linkWalletLine = useLinkWalletLine();
   const { session } = useIdentitySession();
   const ledger = environmentLedger();
   const [amount, setAmount] = useState(0);
@@ -65,6 +66,7 @@ export const FrontierWithdraw = ({ realm, onClose }: { realm: NativeRows["Struct
     <WithdrawSheet
       held={held}
       wallet={payoutAddressOf(session.user)}
+      linkWalletLine={linkWalletLine}
       refusal={refusal}
       step={withdrawStepOf({ sending, outcome, paidIn, paused })}
       amount={amount}

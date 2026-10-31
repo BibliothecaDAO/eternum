@@ -556,6 +556,8 @@ export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 /** Where an account with no linked wallet sees LORDS it is owed: the ledger pays a linked wallet only. */
 export const LINK_WALLET_FOR_LORDS = "Link a wallet to receive your LORDS";
+/** The same once the season is over: unpaid LORDS lapse at the ledger's claim deadline and go to the next season. */
+export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS go to the next season`;
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;

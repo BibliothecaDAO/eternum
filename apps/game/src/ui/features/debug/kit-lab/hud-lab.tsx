@@ -62,6 +62,7 @@ import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
+import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
@@ -84,6 +85,9 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
+/** The lab's season, ended an hour ago, its claim window a week from its end. */
+const LAB_SEASON_END = NOW - 3_600;
+const LAB_CLAIM_DEADLINE = LAB_SEASON_END + 7 * 86_400;
 
 /** The handoff's fiction: Day 12 at 14:26, today ends at 21:40 (7h 14m left), tomorrow lasts 12h. */
 const CLOCK = {
@@ -1727,7 +1731,11 @@ const LabResults = ({
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
       withdraw={
         seasonLords && (
-          <SeasonPayoutRow lords={1_240} linkWalletLine={noWallet ? LINK_WALLET_FOR_LORDS : null} onLinkWallet={noop} />
+          <SeasonPayoutRow
+            lords={1_240}
+            linkWalletLine={noWallet ? linkWalletLine(LAB_CLAIM_DEADLINE, LAB_SEASON_END, NOW) : null}
+            onLinkWallet={noop}
+          />
         )
       }
       onSeason={noop}
@@ -1758,6 +1766,7 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
     <WithdrawSheet
       held={withdraw.held}
       wallet={withdraw.wallet}
+      linkWalletLine={LINK_WALLET_FOR_LORDS}
       refusal={withdraw.refusal ?? null}
       step={withdraw.step}
       amount={amount}

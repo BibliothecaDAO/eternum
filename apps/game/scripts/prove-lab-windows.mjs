@@ -146,8 +146,8 @@ const proveSurface = async (b, baseUrl, out, surface) => {
   if (surface === "frontier/season-over-payout-no-wallet")
     record.checks.push({
       check:
-        "An account with no linked wallet is told to link one to receive its LORDS, with Link wallet, not paid out",
-      ok: b.evaluate(`document.body.innerText.includes("Link a wallet to receive your LORDS") &&
+        "An account with no linked wallet is told the claim deadline to link one by, with Link wallet, not paid out",
+      ok: b.evaluate(`/Link a wallet by .+ or these LORDS go to the next season/.test(document.body.innerText) &&
       !document.body.innerText.includes("paid out automatically") &&
       [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Link wallet")`),
     });
