@@ -1,3 +1,4 @@
+import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
 import { frontierSettlementEvidence } from "./frontier-sweep";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
@@ -50,7 +51,15 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           if (Result.isFailure(bound)) {
             const reason = bound.failure.operation;
             const checked_at = Math.floor(Date.now() / 1000);
-            const observation = { checked_at, value: null, season_error: reason, value_error: reason, held: null };
+            const observation = {
+              checked_at,
+              value: null,
+              season_error: reason,
+              value_error: reason,
+              held: null,
+              fee_balance: null,
+              fee_balance_error: reason,
+            };
             yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
             return observation;
           }
@@ -102,8 +111,19 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
+          const feeBalance = yield* Effect.result(
+            onIdentityChain(
+              monitor.env.L2_RPC_URL,
+              monitor.env.IDENTITY,
+              relayOperation("monitor STRK balance unavailable", () =>
+                readMonitorFeeBalance(monitor.env.L2_RPC_URL, monitor.env.PAUSER_ACCOUNT_ADDRESS),
+              ),
+            ),
+          );
           const observation = {
             checked_at: Math.floor(Date.now() / 1000),
+            fee_balance: Result.isSuccess(feeBalance) ? feeBalance.success : null,
+            fee_balance_error: Result.isFailure(feeBalance) ? feeBalance.failure.operation : null,
             value: Result.isSuccess(value) ? value.success : null,
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
@@ -164,6 +184,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
   async health() {
     const observation = await this.ctx.storage.get<{
       checked_at: number;
+      fee_balance?: MonitorFeeBalance | null;
+      fee_balance_error?: string | null;
       value: MonitorProgress | null;
       value_error: string | null;
       season_error: string | null;
@@ -181,6 +203,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         observation?.value !== undefined &&
         observation.season_error === null &&
         observation.value_error === null &&
+        observation.fee_balance_error === null &&
+        observation.fee_balance?.warning === null &&
         !progress.halted,
     };
   }

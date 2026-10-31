@@ -68,9 +68,10 @@ least one hour old with `approve_settlement` from the separate monitor account. 
 chest/prize totals and earliest close timestamp. Identical proposal retries preserve that timestamp; changed totals
 restart it and clear approval. The independent monitor checks each `SettlementReported` event against a confirmed
 post-end shard snapshot, zero remaining realm LORDS, complete prize issuance and exact receipts. It approves only
-matching evidence and pauses on disagreement or unverifiable reports. The ledger cannot independently prove shard
-history; it requires both the operator and monitor accounts for early closure. A monitor outage leaves early settlement
-blocked.
+matching evidence and pauses immediately on proven disagreement. Unverifiable reports withhold approval and retry; ten
+continuous minutes with a known report waiting trigger a pause. Health is unhealthy from the first failure and reports
+the monitor’s confirmed STRK balance, warning below 0.1 STRK. The ledger cannot independently prove shard history; it
+requires both the operator and monitor accounts for early closure. A monitor outage leaves early settlement blocked.
 
 Once the claim deadline passes on the confirmed L2 head, the relay settles with the L2 paid totals even if claims remain
 unpaid. Closure voids those claims, including missing-wallet claims, for both chests and prizes. New chest or prize
@@ -257,12 +258,12 @@ test chest share and curve numbers are presets for rehearsal, not approved produ
 
 devLords has no value and cannot pay network fees. Fund these accounts with **real mainnet STRK** before use:
 
-| Account/key                                                                    | What needs STRK                                                                                                                                                                      |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Deployer/admin (generated and saved privately by the first deployment command) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                      |
-| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`)    | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                              |
-| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`)            | Approves verified slow payments/early settlement, pauses unverifiable reports or mismatches, and challenges incorrect season tops. Reads require RPC access, not transaction gas.    |
-| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                           | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above. |
+| Account/key                                                                    | What needs STRK                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployer/admin (generated and saved privately by the first deployment command) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                                          |
+| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`)    | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                                                  |
+| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`)            | Approves verified slow payments/early settlement, pauses proven mismatches or reports unverifiable for ten minutes, and challenges incorrect season tops. Reads require RPC access, not transaction gas. |
+| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                           | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above.                     |
 
 The relay's separate `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` likewise signs only on the fee-free shard; it is not its funded
 L2 signer. Players also need real mainnet STRK for test-token minting, approvals, registration, refunds and claims, even

@@ -6,7 +6,13 @@ import { Effect } from "effect";
 import { beforeEach, expect, it, vi } from "vitest";
 import { ValueMonitor } from "./monitor-worker";
 
-const calls = vi.hoisted(() => ({ pause: vi.fn(), season: vi.fn(), cohorts: vi.fn(), directory: vi.fn() }));
+const calls = vi.hoisted(() => ({
+  pause: vi.fn(),
+  balance: vi.fn(),
+  season: vi.fn(),
+  cohorts: vi.fn(),
+  directory: vi.fn(),
+}));
 vi.mock("cloudflare:workers", () => ({
   WorkerEntrypoint: class {},
   DurableObject: class {
@@ -20,6 +26,7 @@ vi.mock("./ledger-chain", () => ({
   onIdentityChain: (_url: unknown, _identity: unknown, operation: unknown) => operation,
 }));
 vi.mock("./season-tops", () => ({ processSeasonTops: calls.season }));
+vi.mock("./monitor-balance", () => ({ readMonitorFeeBalance: calls.balance }));
 vi.mock("./chain", () => ({ ledgerPauserAdapter: () => calls.pause }));
 vi.mock("./ledger", () => ({
   ledgerMonitorReads: () => ({
@@ -50,6 +57,14 @@ vi.mock("./ledger", () => ({
 beforeEach(() => {
   vi.clearAllMocks();
   calls.pause.mockReturnValue(Effect.void);
+  calls.balance.mockResolvedValue({
+    account: "0x9",
+    token: "0x10",
+    balance_wei: "1000000000000000000",
+    low_balance_threshold_wei: "100000000000000000",
+    warning: null,
+    block_number: 10,
+  });
 });
 const monitor = () => {
   const data = new Map<string, unknown>();
@@ -64,6 +79,7 @@ const monitor = () => {
     } as unknown as DurableObjectState,
     {
       L2_RPC_URL: "https://ledger.test",
+      PAUSER_ACCOUNT_ADDRESS: "0x9",
       ENVIRONMENT: "staging",
       LAUNCH: { rosterCohorts: calls.cohorts, directoryGames: calls.directory },
       IDENTITY: { shards: async () => [] },
@@ -127,5 +143,42 @@ it.each([
   calls.cohorts.mockResolvedValue([]);
   calls.directory.mockResolvedValue([{ chainId, games }]);
   await expect(monitor().verifyRoster(chainId, 9)).rejects.toThrow();
+  expect(calls.pause).not.toHaveBeenCalled();
+});
+
+it("publishes a low STRK warning from the first tick without pausing, and clears it after replenishment", async () => {
+  calls.season.mockReturnValue(Effect.succeed(null));
+  calls.balance.mockResolvedValueOnce({
+    account: "0x9",
+    token: "0x10",
+    balance_wei: "0",
+    low_balance_threshold_wei: "100000000000000000",
+    warning: "monitor_strk_low",
+    block_number: 10,
+  });
+  const worker = monitor();
+  await worker.tick();
+  expect(await worker.health()).toMatchObject({
+    success: false,
+    fee_balance: { account: "0x9", balance_wei: "0", warning: "monitor_strk_low" },
+    fee_balance_error: null,
+  });
+  expect(calls.balance).toHaveBeenCalledWith("https://ledger.test", "0x9");
+  expect(calls.pause).not.toHaveBeenCalled();
+  await worker.tick();
+  expect(await worker.health()).toMatchObject({ success: true, fee_balance: { warning: null } });
+});
+
+it("reports an unavailable balance as unknown instead of serving a stale healthy balance", async () => {
+  calls.season.mockReturnValue(Effect.succeed(null));
+  const worker = monitor();
+  await worker.tick();
+  calls.balance.mockRejectedValueOnce(new Error("RPC unavailable"));
+  await worker.tick();
+  expect(await worker.health()).toMatchObject({
+    success: false,
+    fee_balance: null,
+    fee_balance_error: "monitor STRK balance unavailable",
+  });
   expect(calls.pause).not.toHaveBeenCalled();
 });

@@ -32,11 +32,15 @@ matching signed identity decision. The monitor submits `approve_payment` for tha
 and approval. Changing the recipient clears approval. A monitor outage cannot release forged slow claims.
 
 The monitor verifies `SettlementReported` against confirmed post-end balances, full prize issuance and exact receipt
-totals, then submits `approve_settlement`. Early closure requires this approval and the hour. Report mismatches or
-unavailable evidence persist a halt and retry the pause; availability recovery rechecks the row without waiving it. Paid
-claims, results and conservation retain independent cursors; unavailable historical checks make health red. Later wallet
-changes cannot rewrite an earlier payment decision. The monitor never uses the relay's queue as proof and never unpauses
-the ledger. Its serialized tick also serializes approval, challenge and pause transactions.
+totals, then submits `approve_settlement`. Early closure requires this approval and the hour. Proven mismatches persist
+a halt and retry the pause immediately. Read or approval failures make health unhealthy from the first failure and
+withhold approval for that report. Each report stream retains its cursor and retries; ten continuous minutes with a
+known report awaiting verification or approval persist a halt and retry the pause. A successful page clears that
+stream’s timer. Later rows on the page still get checked for proven mismatches. Unreadable history without an observed
+waiting report makes health unhealthy without starting a pause timer. Availability recovery rechecks the row without
+waiving it. Paid claims, results and conservation retain independent cursors; unavailable historical checks make health
+unhealthy. Later wallet changes cannot rewrite an earlier payment decision. The monitor never uses the relay's queue as
+proof and never unpauses the ledger. Its serialized tick also serializes approval, challenge and pause transactions.
 
 Chest discovery and the monitor retain a ledger block hash through pagination and between ticks. A replaced or regressed
 checkpoint restarts enumeration from block zero; chest discovery discards orphaned pending requests and rebuilds them
@@ -55,7 +59,11 @@ jobs verify the identity environment's L2 chain. No signing key belongs on a sha
 Both Workers validate their required settings before serving HTTP or starting a scheduled tick. The deployment script
 supplies generated account keys, account addresses and the shared operator token; the owner supplies one `L2_RPC_URL`.
 Health is available on the existing app routes: `GET /api/value/health` and `GET /api/operator/monitor/health`. No
-separate health hostname or secret is required.
+separate health hostname or secret is required. Monitor health includes `fee_balance`: the pauser account, canonical
+STRK token, confirmed block number, exact `balance_wei`, `low_balance_threshold_wei` and `warning`. Below 0.1 STRK,
+`warning` is `monitor_strk_low` and health is unhealthy; this is replenishment headroom, not a transaction-count
+guarantee. A failed balance read exposes `fee_balance_error` and clears the previous balance. Balance warnings alone do
+not pause payouts. Replenish the monitor before it cannot submit approvals or a pause.
 
 ## Restored shard recovery
 

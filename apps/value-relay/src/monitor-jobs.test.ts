@@ -73,6 +73,8 @@ it("reports a fresh completed audit as healthy, and refuses stale or paused prog
     value: { halted: null },
     value_error: null,
     season_error: null,
+    fee_balance: { warning: null, balance_wei: "1000000000000000000" },
+    fee_balance_error: null,
   };
   f.data.set("observation", observation);
   expect((await f.monitor.health()).success).toBe(true);
@@ -244,18 +246,15 @@ describe.each(["paidClaims", "postedResults"] as const)(
   },
 );
 
-it("persists a stop when reports cannot be read and retries the unavailable pause", async () => {
+it("reports unreadable history without pausing when no waiting report is known", async () => {
   address.mockImplementation(() => {
     throw new ValuePlaneAddressMissingError("ledger", "production");
   });
   const f = fixture();
   for (let tick = 0; tick < 5; tick++) {
     const observation = await f.monitor.tick();
-    expect(observation).toMatchObject({ value: null, value_error: "ledger pause unavailable" });
-    expect(f.data.get("progress")).toMatchObject({
-      halted: "reportedSettlements_unverifiable",
-      fault: { row: "reportedSettlements:unavailable" },
-    });
+    expect(observation).toMatchObject({ value: null, value_error: "ledger settlement reports unavailable" });
+    expect((await f.monitor.status()).halted).toBeNull();
     expect(f.data.get("observation")).toEqual(observation);
   }
   expect((await f.monitor.health()).success).toBe(false);

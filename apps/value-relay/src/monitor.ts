@@ -31,7 +31,15 @@ interface FaultRow {
   cursor?: AuditCursor;
   offset?: number;
 }
+type ReportStream = "reportedSettlements" | "reportedClaims";
+interface UnverifiableReport {
+  since: number;
+  reason: string;
+  fault: FaultRow;
+}
+const UNVERIFIABLE_REPORT_SECONDS = 10 * 60;
 export interface MonitorProgress {
+  unverifiable?: Partial<Record<ReportStream, UnverifiableReport>>;
   fault?: FaultRow | null;
   /**
    * Every fact an operator reset. A clearance holds while a row still says exactly what the operator saw: it survives a
@@ -102,7 +110,7 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     return null;
   });
 
-/** Missing evidence is a stop condition, not an endlessly retryable row ahead of later reports. */
+/** Missing evidence withholds approval; only sustained unavailability becomes a stop condition. */
 const verifyReport = (check: RelayEffect<Mismatch | null>, reason: string): RelayEffect<Mismatch | null> =>
   check.pipe(Effect.catch((failure) => Effect.succeed({ reason, evidence: failure.operation, retry: true as const })));
 
@@ -238,8 +246,7 @@ const checkLedgerPage = <A>(
     const readPage = yield* Effect.result(read(cursor.page, cursor.fromBlock, cursor.anchor));
     if (Result.isFailure(readPage)) {
       if (!isReportStream(stream)) return yield* Effect.fail(readPage.failure);
-      yield* recordFault(store, { row: `${stream}:unavailable` });
-      return `${stream}_unverifiable`;
+      return yield* deferReport(stream, store, readPage.failure.operation);
     }
     const page = readPage.success;
     const fromBlock = page.fromBlock;
@@ -251,11 +258,16 @@ const checkLedgerPage = <A>(
       (!page.rewind && page.next !== null && page.next === cursor.page)
     ) {
       if (isReportStream(stream)) {
-        yield* recordFault(store, { row: `${stream}:unavailable` });
-        return `${stream}_unverifiable`;
+        return yield* deferReport(
+          stream,
+          store,
+          "invalid_ledger_audit_page",
+          page.rows.length ? { row: `${stream}:unavailable`, stream } : undefined,
+        );
       }
       return yield* Effect.fail(new RelayFailure({ operation: "invalid_ledger_audit_page" }));
     }
+    let retry: { reason: string; fault: FaultRow; at: number } | null = null;
     for (let index = page.rewind ? 0 : (cursor.offset ?? 0); index < page.rows.length; index++) {
       const row = page.rows[index]!;
       // The check always runs: a clearance waives the observation the operator saw, never the row whatever it shows.
@@ -265,11 +277,8 @@ const checkLedgerPage = <A>(
         ? { reason: `${stream}_unverifiable`, evidence: observation.failure.operation, retry: true }
         : observation.success;
       if (mismatch) {
-        const observed = observedFact(fact(row), mismatch);
-        if (!mismatch.retry && isCleared(progress, observed)) continue;
-        yield* recordFault(store, {
+        const fault: FaultRow = {
           row: key(row),
-          ...(mismatch.retry ? {} : { fact: observed }),
           stream,
           cursor: {
             fromBlock,
@@ -280,19 +289,54 @@ const checkLedgerPage = <A>(
                 : JSON.stringify({ head: page.head, hash: page.anchor.hash, token: "" }),
           },
           offset: index,
-        });
+        };
+        if (mismatch.retry) {
+          retry ??= { reason: mismatch.reason, fault, at: Math.floor(Date.now() / 1000) };
+          continue;
+        }
+        const observed = observedFact(fact(row), mismatch);
+        if (isCleared(progress, observed)) continue;
+        yield* recordFault(store, { ...fault, fact: observed });
         return mismatch.reason;
       }
     }
+    if (retry && isReportStream(stream)) return yield* deferReport(stream, store, retry.reason, retry.fault, retry.at);
     const next =
       page.next === null
         ? { fromBlock: page.head + 1, page: null, anchor: page.anchor }
         : { fromBlock, page: page.next, anchor: page.anchor };
     yield* relayOperation("persist checked ledger page", async () => {
       const latest = await store.load();
-      await store.save({ ...latest, cursors: { ...latest.cursors, [stream]: next } });
+      const unverifiable = { ...latest.unverifiable };
+      if (isReportStream(stream)) delete unverifiable[stream];
+      await store.save({ ...latest, unverifiable, cursors: { ...latest.cursors, [stream]: next } });
     });
     return null;
+  });
+
+/** Only a known waiting report starts the clock; a healthy sibling stream cannot erase it. */
+const deferReport = (
+  stream: ReportStream,
+  store: MonitorStore,
+  reason: string,
+  fault?: FaultRow,
+  now = Math.floor(Date.now() / 1000),
+): RelayEffect<string> =>
+  Effect.gen(function* () {
+    const progress = yield* relayOperation("read report availability", () => store.load());
+    const previous = progress.unverifiable?.[stream];
+    if (!fault && !previous) return yield* Effect.fail(new RelayFailure({ operation: reason }));
+    const waiting: UnverifiableReport = { since: previous?.since ?? now, reason, fault: fault ?? previous!.fault };
+    yield* relayOperation("persist report availability", () =>
+      store.save({
+        ...progress,
+        unverifiable: { ...progress.unverifiable, [stream]: waiting },
+      }),
+    );
+    if (now - waiting.since < UNVERIFIABLE_REPORT_SECONDS)
+      return yield* Effect.fail(new RelayFailure({ operation: reason }));
+    yield* recordFault(store, waiting.fault);
+    return `report_unverifiable_timeout:${stream}`;
   });
 
 const pausePayouts = (ports: MonitorPorts, store: MonitorStore, reason: string) =>
@@ -344,7 +388,8 @@ const receiptEvidence = (receipt: Withdrawal | null) =>
 const resultEvidence = (result: BlitzResult | null) =>
   result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 
-const isReportStream = (stream: FaultRow["stream"]) => stream === "reportedClaims" || stream === "reportedSettlements";
+const isReportStream = (stream: FaultRow["stream"]): stream is ReportStream =>
+  stream === "reportedClaims" || stream === "reportedSettlements";
 
 const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
 
