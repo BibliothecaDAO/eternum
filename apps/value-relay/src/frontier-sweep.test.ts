@@ -213,7 +213,7 @@ it("never closes with unposted or unfinished prizes", async () => {
   await run();
   expect(calls.settle).not.toHaveBeenCalled();
 });
-it("carries an empty season prize reserve only after the confirmed L2 deadline", async () => {
+it("returns an unclaimed prize reserve to treasury only after the confirmed L2 deadline", async () => {
   rows("ResourceBalance", []);
   rows("LordsWithdrawal", []);
   rows("LordsBudget", [{ pool: "700", pool_left: "700" }]);
