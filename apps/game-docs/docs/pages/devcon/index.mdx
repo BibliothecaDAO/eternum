@@ -29,12 +29,12 @@ Realm your payout wallet holds, or take a free home.
 Your home claims Labor and Essence once every game day: press **Realm Labor** beside your LORDS (on a phone, in
 **Menu**), then **Claim**. A day you miss is lost, and Labor that does not fit in your storage is lost with the claim.
 
-| Your home                        | Labor each game day         | Essence each game day         |
-| -------------------------------- | --------------------------- | ----------------------------- |
-| Devcon ticket                    | {DEVCON.claim.ticket.labor} | {DEVCON.claim.ticket.essence} |
-| Golden ticket                    | {DEVCON.claim.golden.labor} | {DEVCON.claim.golden.essence} |
-| A Realm your payout wallet holds | {DEVCON.claim.realm}        | None                          |
-| A free home                      | None                        | None                          |
+| Home             | Labor                       | Essence                       |
+| ---------------- | --------------------------- | ----------------------------- |
+| Devcon ticket    | {DEVCON.claim.ticket.labor} | {DEVCON.claim.ticket.essence} |
+| Golden ticket    | {DEVCON.claim.golden.labor} | {DEVCON.claim.golden.essence} |
+| A Realm you hold | {DEVCON.claim.realm}        | None                          |
+| A free home      | None                        | None                          |
 
 Every flyer looks the same. {DEVCON.goldenFlyers} of them hold a golden ticket, revealed only when the ticket is opened.
 Devcon and golden realms have their own look on the map and on the Season board.
@@ -59,12 +59,13 @@ season.
 
 ## What is faster
 
-|                                 | Devcon season                                                 | A regular season                                                                                                    |
-| ------------------------------- | ------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| A game day lasts                | {DEVCON.day.shortestHours} to {DEVCON.day.longestHours} hours | {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours                                                   |
-| Stamina recovery and production | {DEVCON.speed} times as fast                                  | As on the other pages                                                                                               |
-| The Ethereal depths, in Essence | {DEVCON.depths[0]}, {DEVCON.depths[1]}, {DEVCON.depths[2]}    | {FRONTIER.research.depths[0].essence}, {FRONTIER.research.depths[1].essence}, {FRONTIER.research.depths[2].essence} |
-| Leaderboard places paid         | {DEVCON.places}                                               | {FRONTIER.prizes.places}                                                                                            |
+- A game day lasts {DEVCON.day.shortestHours} to {DEVCON.day.longestHours} hours ({FRONTIER.day.shortestHours} to{" "}
+  {FRONTIER.day.longestHours} in a regular season).
+- Stamina recovers, and your buildings produce, {DEVCON.speed} times as fast.
+- The Ethereal depths cost {DEVCON.depths[0]}, {DEVCON.depths[1]} and {DEVCON.depths[2]} Essence
+  ({FRONTIER.research.depths[0].essence}, {FRONTIER.research.depths[1].essence} and{" "}
+  {FRONTIER.research.depths[2].essence} in a regular season).
+- The leaderboard pays its top {DEVCON.places} ({FRONTIER.prizes.places} in a regular season).
 
 Everything else is as the Frontier pages describe it.
 
