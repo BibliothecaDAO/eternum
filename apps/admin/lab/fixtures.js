@@ -61,7 +61,7 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 91),
       probe("value", "Value relay", "up", 230),
     ],
-    phases: [{ phase: "frontier", presetId: 6, startsAt: "2026-11-03T04:30:00Z", endsAt: "2026-11-06T12:30:00Z" }],
+    phases: [{ phase: "frontier", presetId: 6, startsAt: "2026-11-03T02:00:00Z", endsAt: "2026-11-06T10:00:00Z" }],
     slots: [],
     runs: [run("frontier-1761933600", "madara.frontier", "queued", undefined)],
     workers: { version: "a90e…", revision: "b015a52b6c9" },

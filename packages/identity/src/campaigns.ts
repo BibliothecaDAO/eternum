@@ -15,8 +15,8 @@ export const CAMPAIGNS = {
     link: "/join/devcon",
     /** The native presets whose games found its homes: Frontier's three-times-speed Devcon season. */
     presets: [6],
-    /** Nov 6 2026, 18:00 IST: the Devcon season's end. */
-    redeemUntil: Date.UTC(2026, 10, 6, 12, 30) / 1000,
+    /** Nov 6 2026, 15:30 IST: the Devcon season's end. */
+    redeemUntil: Date.UTC(2026, 10, 6, 10, 0) / 1000,
     /** How many of its printed flyers are golden; the landing's "One of N" says the same number. */
     golden: 15,
   },
