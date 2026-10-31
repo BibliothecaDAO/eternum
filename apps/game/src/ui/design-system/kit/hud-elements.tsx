@@ -321,12 +321,14 @@ export const HudNumberField = ({
 const QUICK_ADD = 500;
 
 /**
- * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press (where more
- * than 500 can go; else it would only be Max) and Max right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
- * across the same range, to drag the count by hand (the owner, playing dev: "I kinda wish I still had the slider").
+ * How many troops go, for a quick deploy (the owner's rounds 3 and 4): on one line, the troop's painting where it is
+ * known, the count typed with +500 per press (where more than 500 can go; else it would only be Max), Max, then out of
+ * how many can ("that fit" when the army's room runs out first); under it, a slider across the same range, to drag the
+ * count by hand (the owner, playing dev: "I kinda wish I still had the slider").
  */
 export const HudTroopAmount = ({
   name,
+  art,
   value,
   most,
   held,
@@ -334,6 +336,8 @@ export const HudTroopAmount = ({
   onChange,
 }: {
   name: string;
+  /** The troop's painting, leading the line. */
+  art?: IconMeaning;
   value: number;
   /** The most that can go: the troops on hand within the army's room. */
   most: number;
@@ -345,19 +349,22 @@ export const HudTroopAmount = ({
   const full = disabled || value >= most;
   return (
     <div className="ui-amount">
-      <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
-      {most > QUICK_ADD && (
-        <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
-          +{QUICK_ADD}
+      <div className="ui-amount__line">
+        {art && <HudPortrait icon={art} label={name} />}
+        <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
+        {most > QUICK_ADD && (
+          <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
+            +{QUICK_ADD}
+          </HudButton>
+        )}
+        <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
+          Max
         </HudButton>
-      )}
-      <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
-        Max
-      </HudButton>
-      <span className="ui-amount__of">
-        of {formatExact(most)}
-        {held > most && " that fit"}
-      </span>
+        <span className="ui-amount__of">
+          of {formatExact(most)}
+          {held > most && " that fit"}
+        </span>
+      </div>
       <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
