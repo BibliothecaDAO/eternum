@@ -90,9 +90,9 @@ describe("verified preset configuration facts", () => {
     for (const model of ["DepthRules", "FrontierDiscoveryRules"] as const) {
       store.applyFacts(world.fold.gameRows(model, "1").map(({ key, value }) => ({ model, key, value })));
     }
-    expect(store.require("FrontierDiscoveryRules", { game_id: 1 }).beasts_bps).toBe(
-      preset.definition.economy.discovery.unwrap().beasts_bps,
-    );
+    const { game_id, ...discovery } = store.require("FrontierDiscoveryRules", { game_id: 1 });
+    expect(game_id).toBe(1);
+    expect(discovery).toEqual(preset.definition.economy.discovery.unwrap());
     for (const [depth, expected] of preset.definition.settlement.depths.entries()) {
       expect(store.require("DepthRules", { game_id: 1, depth })).toMatchObject({
         beast_weak_lower: expected.beast_weak_lower,
@@ -188,10 +188,11 @@ describe("verified preset configuration facts", () => {
     expect(depths.map((row) => Number(row.guard_step))).toEqual(expectedDepths.map((row) => row.guard_step));
     expect(depths.map((row) => Number(row.reveal_percent))).toEqual(expectedDepths.map((row) => row.reveal_percent));
     expect(depths.every((row) => !Object.hasOwn(row, "supply_multiplier"))).toBe(true);
-    const discovery = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
-    for (const [key, expected] of Object.entries(preset.definition.economy.discovery.unwrap())) {
-      expect(Number(discovery[key])).toBe(expected);
-    }
+    const { game_id, ...discovery } = world.fold.gameRows("FrontierDiscoveryRules", "1")[0]!.value;
+    expect(Number(game_id)).toBe(1);
+    expect(Object.fromEntries(Object.entries(discovery).map(([key, value]) => [key, Number(value)]))).toEqual(
+      preset.definition.economy.discovery.unwrap(),
+    );
     expect(depths.map((row) => [Number(row.ruin_guard_lower), Number(row.ruin_guard_upper)])).toEqual(
       expectedDepths.map((row) => [row.ruin_guard_lower, row.ruin_guard_upper]),
     );

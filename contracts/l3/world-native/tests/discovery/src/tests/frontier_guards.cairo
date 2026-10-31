@@ -2,14 +2,17 @@ pub use world_test_support::tests::frontier_guards::*;
 
 
 #[test]
-fn seeded_beasts_are_knights_on_the_inclusive_preset_grid() {
+fn seeded_site_guards_are_knights_on_the_inclusive_preset_grid() {
     let (_, preset) = super::preset_projection::current_definition("frontier");
+    let rifts = array![(1400_u32, 1600_u32), (2800, 3200), (5400, 6600), (10700, 13200)];
     for depth_index in 0_u32..4 {
         let depth = *preset.settlement.depths.at(depth_index);
         for category in array![crate::taxonomy::CAMP_CATEGORY, RIFT_CATEGORY, RUIN_CATEGORY] {
             let ruin = category == RUIN_CATEGORY;
             let (lower, upper) = if ruin {
                 (depth.ruin_guard_lower, depth.ruin_guard_upper)
+            } else if category == RIFT_CATEGORY {
+                *rifts.at(depth_index)
             } else {
                 (depth.site_guard_lower.into(), depth.site_guard_upper.into())
             };
