@@ -158,15 +158,24 @@ export const useRecentResults = (limit: number, player: string | null = null, en
 export const usePlayerHistory = (player: string | null) =>
   useQuery({
     queryKey: ["shell", "history", "player", player],
-    queryFn: () => readPlayerHistory(player as string),
+    queryFn: () => readHistory(player as string),
     enabled: player !== null,
     staleTime: 30_000,
     retry: 1,
   });
 
+/** Every settled game on the shards we list, newest first, followed to its last page: where a season that ended lives. */
+export const useSettledGames = () =>
+  useQuery({
+    queryKey: ["shell", "history", "all"],
+    queryFn: () => readHistory(null),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
 const HISTORY_PAGE = 100;
 
-const readPlayerHistory = async (player: string) => {
+const readHistory = async (player: string | null) => {
   const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
   let cursor: string | null = null;
   do {

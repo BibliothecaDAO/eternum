@@ -4,6 +4,7 @@ import { type DayClock, dayTone } from "@/ui/features/frontier/hud/day-clock";
 import { isRealmCategory } from "@bibliothecadao/eternum/expeditions";
 
 import type { DirectoryGame } from "./herald";
+import { gameKey } from "./play/play-board";
 
 /** The player's realm in the season: the structure the directory lists for them, if they have founded one. */
 export const seasonRealm = (season: Pick<DirectoryGame, "player_state">) =>
@@ -20,6 +21,17 @@ export const chooseSeason = (games: readonly DirectoryGame[], signedIn: boolean)
   const live = seasons.filter((game) => game.status === "Live");
   const available = live.length > 0 ? live : seasons;
   return (signedIn ? available.find((game) => seasonRealm(game)) : undefined) ?? available[0];
+};
+
+/**
+ * Frontier's seasons that have ended, the last to end first: those the directory still lists until they settle, then
+ * the settled ones in the history. A season both name, read either side of its settling, is the directory's.
+ */
+export const endedSeasons = (listed: readonly DirectoryGame[], settled: readonly DirectoryGame[]): DirectoryGame[] => {
+  const byGame = new Map([...settled, ...listed].map((game) => [gameKey(game), game]));
+  return [...byGame.values()]
+    .filter((game) => game.mode === "frontier" && isGameOver(game))
+    .toSorted((a, b) => b.clock.end_at - a.clock.end_at || a.game_id - b.game_id);
 };
 
 /**
