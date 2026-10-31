@@ -7,7 +7,7 @@
   "dependencies": {
     "@bibliothecadao/notifications": "workspace:*",
     "@realms-world/chain": "workspace:*",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "5.20260922.1",

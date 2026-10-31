@@ -9,7 +9,7 @@
   "dependencies": {
     "@bibliothecadao/types": "workspace:*",
     "@realms-world/identity": "workspace:*",
-    "effect": "4.0.4",
+    "effect": "catalog:",
     "starknet": "catalog:web",
     "@realms-world/value-ledger": "workspace:*",
     "@realms-world/chain": "workspace:*",

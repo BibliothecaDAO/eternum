@@ -155,10 +155,10 @@ export const startWorker = async (options: {
 
 /** Every migration in order, as `wrangler d1 migrations apply` would run them. */
 export const migrationStatements = (): string[] => {
-  const migrations = new URL("../migrations/", import.meta.url);
+  const migrations = join(import.meta.dirname, "../migrations");
   return readdirSync(migrations)
     .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
+    .map((file) => readFileSync(join(migrations, file), "utf8"))
     .join(";\n")
     .replace(/^--.*$/gm, "")
     .split(";")

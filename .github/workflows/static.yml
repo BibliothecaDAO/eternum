@@ -60,6 +60,11 @@ jobs:
           node --test scripts/check-test-scripts-run-once.test.mjs
           node scripts/check-test-scripts-run-once.mjs
 
+      - name: Check every package takes a default-catalog dependency from the catalog
+        run: |
+          node --test scripts/check-catalog-versions.test.mjs
+          node scripts/check-catalog-versions.mjs
+
       - name: Check Worker code asks fetch for no option the Workers runtime refuses
         run: pnpm check:worker-fetch
 

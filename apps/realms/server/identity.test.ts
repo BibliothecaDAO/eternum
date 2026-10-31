@@ -26,7 +26,7 @@ import { routeIdentityRequest } from "./routes";
 import { campaignCodeHash } from "./campaigns";
 import { CAMPAIGNS } from "@realms-world/identity";
 import { campaignTicketFor } from "./campaign-ticket-store";
-import { ORIGIN } from "./workerd-harness";
+import { migrationStatements, ORIGIN } from "./workerd-harness";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
@@ -96,16 +96,7 @@ beforeAll(async () => {
     }),
   );
   proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
-  const migrations = new URL("../migrations/", import.meta.url);
-  const statements = readdirSync(migrations)
-    .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
-    .join(";\n")
-    .replace(/^--.*$/gm, "")
-    .split(";")
-    .map((statement) => statement.trim())
-    .filter(Boolean);
-  await proxy.env.DB.batch(statements.map((statement) => proxy.env.DB.prepare(statement)));
+  await proxy.env.DB.batch(migrationStatements().map((statement) => proxy.env.DB.prepare(statement)));
   env = {
     ENVIRONMENT: "staging",
     BASE_URL: ORIGIN,
@@ -1065,7 +1056,7 @@ describe("identity Worker", () => {
     const out = mkdtempSync(join(tmpdir(), "campaign-codes-"));
     const generate = () =>
       execFileSync("pnpm", ["campaign-codes", "devcon-2026", "24", "https://play.dev-realms.party", out], {
-        cwd: new URL("..", import.meta.url),
+        cwd: join(import.meta.dirname, ".."),
         env: { ...process.env, CAMPAIGN_CODE_SEED: "campaign-test-seed-campaign-test-seed" },
       });
     generate();

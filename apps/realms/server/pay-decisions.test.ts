@@ -2,6 +2,7 @@ import { disposeWorker } from "../../../packages/value-ledger/test-support/worke
 import { Miniflare } from "miniflare";
 import { beforeAll, afterAll, beforeEach, expect, it } from "vitest";
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { recordPayDecision, matchesPayDecision } from "./pay-decisions";
 import { normalizeStarknetAddress } from "@realms-world/identity";
 let mf: Miniflare, db: D1Database;
@@ -20,7 +21,7 @@ beforeAll(async () => {
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
   await db.exec('CREATE TABLE "user" (id TEXT PRIMARY KEY, "realmsId" TEXT, address TEXT, "emailVerified" INTEGER)');
   for (const file of ["0012_wallet_link_history.sql", "0014_pay_decisions.sql", "0018_drop_wallet_readiness.sql"]) {
-    let sql = readFileSync(new URL("../migrations/" + file, import.meta.url), "utf8");
+    let sql = readFileSync(join(import.meta.dirname, "../migrations", file), "utf8");
     if (file.startsWith("0012")) sql = sql.slice(0, sql.indexOf("INSERT INTO"));
     await db.batch(
       sql

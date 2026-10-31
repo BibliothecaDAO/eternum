@@ -18,6 +18,10 @@ packageExtensions:
     dependencies:
       crossws: ~0.3.5
 
+# One version for every package that uses it.
+catalog:
+  effect: 4.1.1
+
 catalogs:
   game:
     "@cartridge/connector": ^0.13.12

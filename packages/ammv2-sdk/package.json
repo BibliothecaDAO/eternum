@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "starknet": "catalog:game",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "tsup": "^8.0.2",

@@ -32,7 +32,7 @@
     "@bibliothecadao/types": "workspace:*",
     "eventemitter3": "^5.0.1",
     "starknet": "catalog:game",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",

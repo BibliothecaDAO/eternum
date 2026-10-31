@@ -10,7 +10,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "effect": "4.0.4",
+    "effect": "catalog:",
     "starknet": "catalog:web",
     "@realms-world/identity": "workspace:*"
   },

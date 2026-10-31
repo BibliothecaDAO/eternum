@@ -20,7 +20,7 @@
     "starknet": "catalog:web",
     "@bibliothecadao/eternum": "workspace:*",
     "@bibliothecadao/provider": "workspace:*",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "typescript": "catalog:web",

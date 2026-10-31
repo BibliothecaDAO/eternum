@@ -5,6 +5,10 @@ settings:
   excludeLinksFromLockfile: false
 
 catalogs:
+  default:
+    effect:
+      specifier: 4.1.1
+      version: 4.1.1
   game:
     '@cartridge/connector':
       specifier: ^0.13.12
@@ -384,8 +388,8 @@ importers:
         specifier: ^1.2.1
         version: 1.2.1
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       framer-motion:
         specifier: ^11.0.24
         version: 11.18.2(@emotion/is-prop-valid@1.4.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -602,8 +606,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/identity
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -758,8 +762,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/value-ledger
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       hono:
         specifier: ^4.9.12
         version: 4.11.10
@@ -810,8 +814,8 @@ importers:
         specifier: 1.5.3
         version: 1.5.3(4a6a2f08d0bbd0f67d27fc8a60b12631)
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -862,8 +866,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/chain
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
     devDependencies:
       '@cloudflare/workers-types':
         specifier: 5.20260922.1
@@ -902,8 +906,8 @@ importers:
         specifier: workspace:*
         version: link:../../packages/value-ledger
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -1281,8 +1285,8 @@ importers:
   packages/ammv2-sdk:
     dependencies:
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:game
         version: 8.9.2
@@ -1413,8 +1417,8 @@ importers:
         specifier: ^1.1.0
         version: 1.1.2
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -1429,8 +1433,8 @@ importers:
   packages/notifications:
     dependencies:
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
     devDependencies:
       tsup:
         specifier: ^8.0.2
@@ -1448,8 +1452,8 @@ importers:
         specifier: workspace:*
         version: link:../types
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       eventemitter3:
         specifier: ^5.0.1
         version: 5.0.4
@@ -1479,8 +1483,8 @@ importers:
   packages/types:
     dependencies:
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:game
         version: 8.9.2
@@ -1513,8 +1517,8 @@ importers:
         specifier: workspace:*
         version: link:../provider
       effect:
-        specifier: 4.0.4
-        version: 4.0.4
+        specifier: 'catalog:'
+        version: 4.1.1
       starknet:
         specifier: catalog:web
         version: 9.4.2(typescript@5.9.3)(zod@4.3.6)
@@ -10476,8 +10480,8 @@ packages:
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
 
-  effect@4.0.4:
-    resolution: {integrity: sha512-Sr50OeVSC3M5UkoUYUhFf3EULryhGaZZUf6OzDHTvaznOw7HRlxOKdF3/4nvQXHL22StOyMG3Cvo8Bt7xUp+Ng==}
+  effect@4.1.1:
+    resolution: {integrity: sha512-XYu65BrcmNqu5i7PPvP4dqL+R5ma37zIsfuSPjcn78mog+6e5PkilNg7Xo+pBpjXJYlWEIpH4j91tMrfW05CMw==}
 
   ejs@3.1.10:
     resolution: {integrity: sha512-UeJmFfOrAQS8OJWPZ4qtgHyWExa088/MtK5UEyoJGFH67cDEXkZSviOiKRCZ4Xij0zxI3JECgYs3oKx+AizQBA==}
@@ -14889,6 +14893,7 @@ packages:
   starknet@8.9.2:
     resolution: {integrity: sha512-+dp+o2w67fV6JyVOVkYeM1Ec71aORHc/JrF4VHLlfeGee0nLilooCQLE2u6hUcSGQG2x2/fvzkxYpIN+k1JBvA==}
     engines: {node: '>=22'}
+    deprecated: starknet <10 is end-of-life and no longer receives security fixes. Upgrade to starknet@10 (10.8.0 or later).
 
   starknet@9.4.2:
     resolution: {integrity: sha512-NFtg077DjddHUSh8sLZ5uB149LEF4NR90FuJ0oF7+zhce7l0oG9Ubqr3H4+jHm/ghHtV+yjlv1UhEoo4SBfILA==}
@@ -28759,7 +28764,7 @@ snapshots:
 
   ee-first@1.1.1: {}
 
-  effect@4.0.4: {}
+  effect@4.1.1: {}
 
   ejs@3.1.10:
     dependencies:

@@ -329,10 +329,10 @@ beforeAll(async () => {
     ],
   });
   db = (await mf.getD1Database("DB")) as unknown as D1Database;
-  const migrations = new URL("../migrations/", import.meta.url);
+  const migrations = join(import.meta.dirname, "../migrations");
   const statements = readdirSync(migrations)
     .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8").replace(/^--.*$/gm, ""))
+    .map((file) => readFileSync(join(migrations, file), "utf8").replace(/^--.*$/gm, ""))
     .join(";")
     .split(";")
     .map((statement) => statement.trim())

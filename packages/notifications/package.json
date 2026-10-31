@@ -22,6 +22,6 @@
     "vitest": "^3.2.4"
   },
   "dependencies": {
-    "effect": "4.0.4"
+    "effect": "catalog:"
   }
 }

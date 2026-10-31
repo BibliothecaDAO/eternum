@@ -1,5 +1,6 @@
 import { disposeWorker } from "../../../packages/value-ledger/test-support/workerd";
 import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Miniflare } from "miniflare";
 
 /** A D1 database in workerd with the launch migrations applied, as `wrangler d1 migrations apply` would. */
@@ -11,10 +12,10 @@ export async function createLaunchTestDatabase() {
 }
 
 const migrationStatements = (): string[] => {
-  const migrations = new URL("../migrations/", import.meta.url);
+  const migrations = join(import.meta.dirname, "../migrations");
   return readdirSync(migrations)
     .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
+    .map((file) => readFileSync(join(migrations, file), "utf8"))
     .join(";\n")
     .replace(/^--.*$/gm, "")
     .split(";")

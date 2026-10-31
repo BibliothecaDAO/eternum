@@ -127,7 +127,7 @@
     "vite-plugin-pwa": "^0.20.5",
     "zustand": "^5.0.5",
     "@bibliothecadao/notifications": "workspace:*",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",

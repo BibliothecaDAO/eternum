@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { D1CalendarStore } from "./calendar-store";
@@ -165,7 +166,7 @@ test("migration preserves legacy dates and makes their preset explicit without a
   const db = database.db;
   await db.prepare("DROP TABLE season_phases").run();
   const statements = (file: string) =>
-    readFileSync(new URL(`../migrations/${file}`, import.meta.url), "utf8")
+    readFileSync(join(import.meta.dirname, "../migrations", file), "utf8")
       .replace(/^--.*$/gm, "")
       .split(";")
       .map((sql) => sql.trim())

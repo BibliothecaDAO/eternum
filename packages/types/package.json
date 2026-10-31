@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "starknet": "catalog:game",
-    "effect": "4.0.4"
+    "effect": "catalog:"
   },
   "devDependencies": {
     "@types/node": "^20.11.10",
