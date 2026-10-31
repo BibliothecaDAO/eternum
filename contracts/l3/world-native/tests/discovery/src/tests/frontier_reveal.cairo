@@ -52,7 +52,7 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
         category: camp_category, initial_guard_count: initial, alt: false, col: 1, row: 1, clear: None,
     };
     assert_eq!(
-        site_reward(camp_category, site).unwrap(),
+        site_reward(camp_category, site, 0).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 2 },
     );
     assert_eq!(
@@ -61,18 +61,19 @@ fn site_payout_keeps_initial_scaled_guard_count_and_has_no_clock_factor() {
             ExpeditionSite {
                 clear: Some(crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None }), ..site,
             },
+            0,
         ),
-        site_reward(camp_category, site),
+        site_reward(camp_category, site, 0),
     );
     assert_eq!(
-        site_reward(RIFT_CATEGORY, site).unwrap(),
+        site_reward(RIFT_CATEGORY, site, 0).unwrap(),
         crate::resources::ResourceAmount { resource_type: ESSENCE, amount: initial * 3 },
     );
     assert_eq!(
-        site_reward(BEASTS_CATEGORY, site).unwrap(),
+        site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
         crate::resources::ResourceAmount { resource_type: LABOR, amount: initial / 4 },
     );
-    assert!(site_reward(RUIN_CATEGORY, site).is_none());
+    assert!(site_reward(RUIN_CATEGORY, site, 0).is_none());
 }
 
 #[test]
@@ -95,7 +96,7 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::expeditions::create_site(key, guards.span());
         let site = crate::logic::expeditions::expedition_site(key).unwrap();
         assert_eq!(site.initial_guard_count, 1100 * RESOURCE_PRECISION);
-        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site).unwrap().amount, 550 * RESOURCE_PRECISION);
+        assert_eq!(site_reward(crate::taxonomy::CAMP_CATEGORY, site, 0).unwrap().amount, 550 * RESOURCE_PRECISION);
         let receipt = crate::expeditions::SiteClear { explorer_id: 7, home_id: 1, reward: None };
         crate::logic::expeditions::clear_site(key, receipt);
         let cleared = crate::logic::expeditions::expedition_site(key).unwrap();
@@ -106,7 +107,7 @@ fn site_payout_counts_all_initial_guard_troops_without_tier_weighting() {
         crate::logic::map::MapState::vacate(tile, 100);
         assert_eq!(crate::logic::expeditions::expedition_site(key), Some(cleared));
         assert_eq!(cleared.initial_guard_count, site.initial_guard_count);
-        assert_eq!(site_reward(RIFT_CATEGORY, cleared).unwrap().amount, 3300 * RESOURCE_PRECISION);
+        assert_eq!(site_reward(RIFT_CATEGORY, cleared, 0).unwrap().amount, 3300 * RESOURCE_PRECISION);
     }
 }
 
@@ -181,7 +182,7 @@ fn a_site_cannot_clear_again_after_an_army_enters_its_tile() {
 }
 
 #[test]
-fn beast_labor_matches_recorded_guards_and_each_depth_without_an_extra_multiplier() {
+fn beast_labor_matches_recorded_surface_guards() {
     for (guards, labor) in array![
         (309_u128, 77250000000_u128), (537, 134250000000), (300, 75000000000), (350, 87500000000), (900, 225000000000),
         (1050, 262500000000), (2400, 600000000000), (2800, 700000000000), (6000, 1500000000000), (7000, 1750000000000),
@@ -195,8 +196,20 @@ fn beast_labor_matches_recorded_guards_and_each_depth_without_an_extra_multiplie
             clear: None,
         };
         assert_eq!(
-            site_reward(BEASTS_CATEGORY, site).unwrap(),
+            site_reward(BEASTS_CATEGORY, site, 0).unwrap(),
             crate::resources::ResourceAmount { resource_type: LABOR, amount: labor },
         );
+    }
+}
+
+#[test]
+fn site_resources_scale_by_depth_after_the_base_integer_payout() {
+    let site = ExpeditionSite {
+        category: BEASTS_CATEGORY, alt: false, col: 0, row: 0, initial_guard_count: 1001, clear: None,
+    };
+    for (depth, labor, essence) in array![(0_u8, 250_u128, 3003_u128), (1, 375, 4504), (2, 500, 6006), (3, 625, 7507)] {
+        assert_eq!(site_reward(BEASTS_CATEGORY, site, depth).unwrap().amount, labor);
+        assert_eq!(site_reward(RIFT_CATEGORY, site, depth).unwrap().amount, essence);
+        assert!(site_reward(RUIN_CATEGORY, site, depth).is_none());
     }
 }

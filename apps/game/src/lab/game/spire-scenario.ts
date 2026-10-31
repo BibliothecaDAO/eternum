@@ -49,7 +49,7 @@ const frontierRules = (rules: NativeRows["SliceRules"]) => {
 /**
  * The spire card's day (spire-fixture.ts) as a game to play: realm 7's lit spire with Ethereal I and II researched,
  * its 1,498-knight army beside it holding 100 stamina, the land around the realm revealed, on Frontier's rules. The chain answers EnterDepth as movement.cairo's enter_depth applies it: the army leaves
- * its tile for the one straight below it, one region down per depth, revealed, and pays the depth's entry stamina.
+ * its tile for the one straight below it, one region down per depth, revealed, keeping its stamina.
  */
 export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
   // The HUD's whole game (its buildings, rules and recipes) on the spire's day.
@@ -85,7 +85,7 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
     startsAt: SPIRE_DAY_NOW,
     player: "0x111",
     opensOn: site,
-    answer: (command, chain, now) => {
+    answer: (command, chain) => {
       if (command.kind !== "EnterDepth") return [];
       const explorerId = BigInt(command.fields.explorer_id);
       const depth = Number(command.fields.depth);
@@ -93,7 +93,6 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
         ([, row]) => row.entity_id === explorerId,
       )!;
       const landing = { col: occupancy.col, row: occupancy.row + depth * rules.spacing };
-      const cost = chain.require("DepthRules", { game_id: 1, depth }).entry_stamina;
       return [
         { model: "TileOccupancy", key: occupancyKey, value: null },
         {
@@ -102,7 +101,6 @@ export const spireScenario = (ground: LabGround = GRASSLAND): LabScenario => {
           value: wire({ ...occupancy, ...landing }),
         },
         tile(`0x1abe${depth}`, landing.col, landing.row),
-        armySpent(chain, explorerId, cost, now),
       ];
     },
   };

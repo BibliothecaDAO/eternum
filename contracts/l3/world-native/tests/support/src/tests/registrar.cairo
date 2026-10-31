@@ -475,7 +475,6 @@ fn assert_capture_at(
                     site_guard_lower: index + 3,
                     site_guard_upper: index + 3,
                     reveal_site_neighbors: false,
-                    entry_stamina: 0,
                     chest: ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
                 },
             );
@@ -621,7 +620,8 @@ fn assert_capture_at(
     assert!(site_before.clear.is_none());
     assert_eq!(site_before.category, crate::taxonomy::CAMP_CATEGORY);
     assert_eq!((site_before.col, site_before.row, site_before.alt), (coord.x, coord.y, coord.alt));
-    let camp_credit = labor_room.unwrap_or(site_before.initial_guard_count / 2);
+    let camp_credit = labor_room
+        .unwrap_or(site_before.initial_guard_count / 2 * (2 + Into::<u8, u128>::into(depth)) / 2);
     let camp_reward = Some(
         crate::resources::ResourceAmount { resource_type: crate::resources::LABOR, amount: camp_credit },
     );
@@ -708,7 +708,10 @@ fn assert_capture_at(
         total_relics += resources.resource_balance(ResourceSlot { game_id, entity_id: explorer_id, resource_type: id });
     }
     assert_eq!(total_relics, 0);
-    assert_eq!(resources.resource_balance(essence) - before_rift, rift.initial_guard_count * 3);
+    assert_eq!(
+        resources.resource_balance(essence) - before_rift,
+        rift.initial_guard_count * 3 * (2 + Into::<u8, u128>::into(depth)) / 2,
+    );
     let baseline = resources.resource_balance(essence);
     for time in array![capture_at + 4, capture_at + 29, capture_at + 89, capture_at + 139] {
         start_cheat_block_timestamp_global(time);
@@ -757,7 +760,7 @@ fn assert_capture_at(
                     if payout.site_id == camp_id {
                         camp_reward
                     } else {
-                        crate::expeditions::site_reward(category, expected)
+                        crate::expeditions::site_reward(category, expected, depth)
                     },
                 );
             }
@@ -889,7 +892,6 @@ pub fn setup_frontier_chests_with_preset(
                     site_guard_lower: 3,
                     site_guard_upper: 3,
                     reveal_site_neighbors: false,
-                    entry_stamina: 0,
                     chest: *frontier.settlement.depths.at(depth).chest,
                 },
             );

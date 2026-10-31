@@ -10,7 +10,7 @@ import { useQuery } from "@tanstack/react-query";
 const SITES = ["ExpeditionSite"] as const;
 
 /** What a site always is: its kind, its place and its starting guard. */
-type SiteFacts = Pick<NativeRows["ExpeditionSite"], "category" | "row" | "initial_guard_count">;
+type SiteFacts = Pick<NativeRows["ExpeditionSite"], "category" | "row" | "initial_guard_count" | "game_id">;
 
 /**
  * A site's lasting facts: from its row when the player's map holds it, else from Herald's row for that site, for a
@@ -34,6 +34,7 @@ const useSiteFacts = (siteId: number): SiteFacts | undefined => {
   if (held) return held;
   return far.data
     ? {
+        game_id: gameId,
         category: Number(far.data.category),
         row: Number(far.data.row),
         initial_guard_count: BigInt(String(far.data.initial_guard_count)),
@@ -53,6 +54,9 @@ export const useSiteBeastMeaning = (siteId: number): IconMeaning | undefined => 
 
 /** The XP a site's clear paid, as its receipt on the map says it (siteClearXp). */
 export const useSiteClearXp = (siteId: number): number | undefined => {
+  const {
+    setup: { store },
+  } = useGame();
   const site = useSiteFacts(siteId);
-  return site && siteClearXp(site);
+  return site && siteClearXp(store, site);
 };

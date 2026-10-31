@@ -21,12 +21,12 @@ Every tile an army reveals sends Essence or labor home to the realm, as likely a
 troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.reveal.join(" / ")} XP at
 {FRONTIER.depths.map((depth) => depth.name).join(" / ")}.
 
-| Ground                    | Reveal pays, of the army's troops  | Entering costs                            |
-| ------------------------- | ---------------------------------- | ----------------------------------------- |
-| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} | —                                         |
-| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} | {FRONTIER.depths[1].entryStamina} stamina |
-| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} | {FRONTIER.depths[2].entryStamina} stamina |
-| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].revealPercent} | {FRONTIER.depths[3].entryStamina} stamina |
+| Ground                    | Reveal pays, of the army's troops  |
+| ------------------------- | ---------------------------------- |
+| {FRONTIER.depths[0].name} | {FRONTIER.depths[0].revealPercent} |
+| {FRONTIER.depths[1].name} | {FRONTIER.depths[1].revealPercent} |
+| {FRONTIER.depths[2].name} | {FRONTIER.depths[2].revealPercent} |
+| {FRONTIER.depths[3].name} | {FRONTIER.depths[3].revealPercent} |
 
 ## What a reveal can find
 
@@ -37,7 +37,7 @@ troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.re
 | Rift   | {FRONTIER.discovery.rift}                   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.                                                                                 |
 | Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
 | Shrine | {FRONTIER.discovery.shrine}                 | Once researched: discovery rolls and shows one skill point. Its rank rises one step per depth, capped at Legendary. An army beside it takes that point and consumes the Shrine.                   |
-| Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it uses it for {FRONTIER.stamina.well} stamina, then it is gone.                                                                                                  |
+| Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it adds {FRONTIER.stamina.well} stamina, rounded down and capped at full, then it is gone.                                                                        |
 | Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | At every depth, using that layer’s chest odds, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                   |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws only among the sites, shrines
@@ -63,7 +63,8 @@ A band of beasts is a {FRONTIER.guards.weakBeast} or a stronger {FRONTIER.guards
 A camp is always guarded by a {FRONTIER.guards.camp} and a rift by a {FRONTIER.guards.rift}. A ruin's guard grows with
 depth: {FRONTIER.depths[0].ruinGuardName} on the surface, then {FRONTIER.depths[1].ruinGuardName},{" "}
 {FRONTIER.depths[2].ruinGuardName} and {FRONTIER.depths[3].ruinGuardName}. A clear gives the army XP by the guard's
-starting strength, beasts included.
+starting strength, beasts included. Resource rewards and clear XP have a depth premium; the site’s card shows the full
+payout before combat.
 
 <Shot
   frame="panel"
@@ -83,10 +84,10 @@ A site pays once. A cleared site leaves a standard that shows what the clear pai
 
 Research opens the Ethereal depths, one at a time ([Your realm](/frontier/realm#research)). Your spire stands on one of
 the six tiles around your realm, a different one each day. Select an army beside it and tap the spire: it lists each
-depth you have researched with its entry stamina. **Enter** takes the army down, and it stays in that depth for the rest
+depth you have researched. **Enter** costs no stamina and takes the army down, and it stays in that depth for the rest
 of the day.
 
-<Shot name="frontier/spire" caption="The spire's card: each researched depth and the stamina to enter it." />
+<Shot name="frontier/spire" caption="The spire's card: each researched depth and its Enter button." />
 
 ## The day's end
 

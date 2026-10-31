@@ -60,6 +60,7 @@ export function SiteReceipt({ selected }: { selected: ClearedSite }) {
 
 /** What this clear credited, including zero when a store was full; never today's balance or the preview. */
 function ReceiptLines({ selected }: { selected: ClearedSite }) {
+  const { setup } = useGame();
   const receipt = selected.site.clear;
   if (!receipt) throw new Error("A site receipt requires a cleared site");
   const reward = receipt.reward;
@@ -77,7 +78,7 @@ function ReceiptLines({ selected }: { selected: ClearedSite }) {
           </span>
         )}
         <span>
-          <strong>{formatExact(siteClearXp(selected.site))}</strong> {XP}
+          <strong>{formatExact(siteClearXp(setup.store, selected.site))}</strong> {XP}
         </span>
       </div>
     </section>

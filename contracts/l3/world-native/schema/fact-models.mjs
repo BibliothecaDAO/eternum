@@ -1243,7 +1243,6 @@ const behaviouralFacts = {
       beastStrongUpper: "beast_strong_upper",
       chestOdds: "chest",
       revealSiteNeighbors: "reveal_site_neighbors",
-      entryStamina: "entry_stamina",
     },
   },
   SettlementProgress: { domain: "realm/blitz", fields: { players: "registered", realms: "realm_count" } },

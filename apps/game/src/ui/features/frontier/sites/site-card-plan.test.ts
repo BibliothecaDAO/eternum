@@ -14,8 +14,8 @@ describe("Frontier's tile card", () => {
     expect(plan.name).toBe("Troll");
     expect(plan.beast?.beast).toBe("troll");
     expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_100 });
-    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 550 });
-    expect(plan.xp).toBe(82);
+    expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
+    expect(plan.xp).toBe(123);
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
     // The fight takes two attacks. The figures are the one Attack sends now, as its result will show them: this
     // attack's losses and the guard it leaves standing, never the whole fight's total.
@@ -77,12 +77,12 @@ describe("Frontier's tile card", () => {
     expect(plan.name).toBe("Basilisk");
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Lords, amount: 500, fits: 500 });
     expect(plan.chest).toMatchObject({ tier: 3, amount: 500, depth: "Ethereal I", funded: true });
-    expect(plan.xp).toBe(82);
+    expect(plan.xp).toBe(123);
     const rift = campBeside("Rift");
     expect(readSiteCard(rift.store, rift.site, rift.structure, SITE_TILE, null).payout).toEqual({
       resourceId: ResourcesIds.Essence,
-      amount: 3_300,
-      fits: 3_300,
+      amount: 4_950,
+      fits: 4_950,
     });
   });
 });
@@ -104,7 +104,7 @@ it("shows only the camp reward that fits in the home labor store", () => {
     },
   ] as never);
   const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 10 });
+  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 10 });
 });
 
 it("reads another player's army as a target: its troops, the same exact fight near or far, and nothing it pays", () => {
@@ -152,6 +152,6 @@ it("shows beast labor from initial guards and clips it at the home store, alongs
     },
   ]);
   const plan = readSiteCard(store, site, structure, SITE_TILE, own);
-  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 250, fits: 10 });
-  expect(plan.xp).toBe(79);
+  expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 375, fits: 10 });
+  expect(plan.xp).toBe(118);
 });

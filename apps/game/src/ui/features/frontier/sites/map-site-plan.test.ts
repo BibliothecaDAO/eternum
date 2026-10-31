@@ -14,8 +14,10 @@ describe("a Shrine or Well", () => {
   it("reads the stored Shrine rank and the rule’s stamina at a Well", () => {
     expect(siteGain("Shrine", { game_id: 1, entity_id: 901n, rank: 3 })).toBe(3);
     expect(siteGain("Shrine", undefined)).toBeUndefined();
-    expect(siteGain("Well", { game_id: 1, entity_id: 901n, rank: 3 })).toBe(60);
-    expect(siteGain("Well", undefined)).toBe(60);
+    expect(siteGain("Well", undefined, { max: 120 })).toBe(60);
+    expect(siteGain("Well", undefined, { max: 195 })).toBe(97);
+    expect(siteGain("Well", undefined)).toBeUndefined();
+    expect(siteGainLine("Well", undefined, undefined)).toBe("50% max stamina");
   });
 });
 

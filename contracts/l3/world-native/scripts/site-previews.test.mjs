@@ -33,8 +33,8 @@ test("a new category or a changed resource, ratio or XP rule comes from Cairo", 
     taxonomy: source.taxonomy.replace("BEASTS_CATEGORY: u8 = 11", "BEASTS_CATEGORY: u8 = 12"),
   };
   const output = compileSitePreviews(changed);
-  assert.match(output, /category === 12\) return \{ resourceType: 22, amount: initialGuardCount \/ 8n/);
-  assert.match(output, /category === 10\) return \{ resourceType: 38, amount: initialGuardCount \* 7n/);
+  assert.match(output, /category === 12\) return \{ resourceType: 22, amount: depthReward\(initialGuardCount \/ 8n/);
+  assert.match(output, /category === 10\) return \{ resourceType: 38, amount: depthReward\(initialGuardCount \* 7n/);
   assert.match(output, /integerSqrt\(initialGuardCount \/ 1000000000n \* 36n\) \/ 3n/);
 });
 
@@ -56,7 +56,20 @@ test("unsupported formulas, missing constants and changed signatures refuse gene
     { expeditions: source.expeditions.replace("else {\n        None\n    }", 'else { panic!("missing") }') },
     { resources: source.resources.replace("pub const LABOR: u8 = 23;", "") },
     { progression: source.progression.replace("(root / 2)", "(root / 2 + 1)") },
-    { progression: source.progression.replace("clear_xp(strength: u128) -> u32", "clear_xp(strength: u128) -> u64") },
+    {
+      progression: source.progression.replace(
+        "clear_xp(strength: u128, depth: u8) -> u32",
+        "clear_xp(strength: u128, depth: u8) -> u64",
+      ),
+    },
   ])
     assert.throws(() => compileSitePreviews({ ...source, ...changed }), /Unsupported|Missing/);
+});
+
+test("depth premiums come from the shared Cairo formula", () => {
+  const changed = {
+    ...source,
+    expeditions: source.expeditions.replace("amount * (2 + depth.into()) / 2", "amount * (3 + depth.into()) / 3"),
+  };
+  assert.match(compileSitePreviews(changed), /3n \+ BigInt\(depth\)/);
 });

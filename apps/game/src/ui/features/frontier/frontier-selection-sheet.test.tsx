@@ -325,7 +325,6 @@ const armyAtSpire = () => {
       value: {
         game_id: 1,
         depth: 1,
-        entry_stamina: 20,
         reveal_percent: 100,
         site_guard_lower: 1,
         site_guard_upper: 2,

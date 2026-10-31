@@ -36,7 +36,6 @@ function encounter(kind: SiteKind) {
           site_guard_lower: 1,
           site_guard_upper: 2,
           reveal_site_neighbors: false,
-          entry_stamina: 0,
           chest: { common: 1, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
           reveal_percent: 1,
           ruin_guard_lower: 1,

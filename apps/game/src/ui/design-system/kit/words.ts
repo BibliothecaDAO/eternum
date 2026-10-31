@@ -391,7 +391,6 @@ export const SPIRE_WORDS = {
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  cost: (stamina: string) => `${stamina} ${STAMINA}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,

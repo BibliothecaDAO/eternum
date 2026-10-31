@@ -305,7 +305,7 @@ fn a_clear_records_only_the_labor_that_fits_and_clears_even_when_full() {
 }
 
 #[test]
-fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
+fn depth_entry_requires_research_and_keeps_stamina_at_every_depth() {
     let d = setup();
     let mut preset = definition(true);
     open_entry(ref preset);
@@ -326,7 +326,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
     preset.settlement.spacing = 1024;
     preset.rules.troop_limit_config.starting_guard = 0;
     preset.rules.troop_limit_config.settlement_armies = 3;
-    preset.rules.troop_stamina_config.stamina_initial = 150;
+    preset.rules.troop_stamina_config.stamina_initial = 0;
     preset.rules.troop_stamina_config.stamina_knight_max = 150;
     preset.rules.troop_stamina_config.stamina_gain_per_tick = 0;
     let mut depths = array![];
@@ -345,11 +345,6 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
                     site_guard_lower: depth + 3,
                     site_guard_upper: depth + 3,
                     reveal_site_neighbors: false,
-                    entry_stamina: if depth == 0 {
-                        0
-                    } else {
-                        20 + 10 * depth
-                    },
                     chest: ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
                 },
             );
@@ -465,7 +460,7 @@ fn depth_entry_requires_research_and_spends_only_the_selected_depth_stamina() {
         assert!(!map.occupancy(crate::geometry::tile_key(game_id, inside.coord)).unwrap().is_structure);
         assert_eq!(inside.coord.x, before.coord.x);
         assert_eq!(inside.coord.y, before.coord.y + Into::<u8, u32>::into(depth) * preset.settlement.spacing);
-        assert_eq!(inside.troops.stamina.inline().amount, 150 - (20 + Into::<u8, u64>::into(depth) * 10));
+        assert_eq!(inside.troops.stamina.inline().amount, 0);
         assert_eq!(resources.resource_balance(essence), after_purchase);
         assert!(!execute_in_game(d, game_id, enter, 351));
         assert_eq!(troops.resolved_explorer(key).unwrap(), inside);
@@ -708,7 +703,7 @@ fn beast_clear_payout(full: bool) {
     assert_eq!(resources.resource_balance(labor) - before, amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + crate::progression::clear_xp(site.initial_guard_count),
+        xp + crate::progression::clear_xp(site.initial_guard_count, 0),
     );
     assert_site_removed(d, site_key);
     assert!(
@@ -721,7 +716,7 @@ fn beast_clear_payout(full: bool) {
     assert_eq!(resources.resource_balance(labor), before + amount);
     assert_eq!(
         snforge_std::interact_with_state(d.games, || crate::logic::progression::require(key).xp),
-        xp + crate::progression::clear_xp(site.initial_guard_count),
+        xp + crate::progression::clear_xp(site.initial_guard_count, 0),
     );
 }
 
@@ -990,7 +985,7 @@ fn a_full_refill_costs_one_lords_a_point_returns_to_the_pool_and_is_allowed_besi
     let partial = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: 30 });
     assert!(execute_in_game(d, game_id, partial, 362));
     let partly_filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    assert_eq!(partly_filled.troops.stamina.inline().amount, 70);
+    assert_eq!(partly_filled.troops.stamina.inline().amount, 122);
     assert_eq!(relics.lords_budget(game_id).unwrap().pool_left, pool_before + 30);
     let remainder = Command::RefillStamina(crate::relics::RefillStamina { explorer_id: key.explorer_id, amount: 80 });
     assert!(execute_in_game(d, game_id, remainder, 362));
@@ -1603,7 +1598,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     // A well's stamina persists into the same occupied slot.
     assert!(execute_in_game(d, game_id, command, 360));
     let filled = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
-    assert_eq!(filled.troops.stamina.inline().amount, 70);
+    assert_eq!(filled.troops.stamina.inline().amount, 122);
     assert!(snforge_std::interact_with_state(d.games, || crate::logic::map::occupancy(tile)).is_none());
     assert!(!execute_in_game(d, game_id, command, 360));
     snforge_std::interact_with_state(
@@ -1637,7 +1632,7 @@ fn frontier_shrine_and_well_persist_once_and_use_the_public_progress_and_slot() 
     assert!(!execute_in_game(d, game_id, command, 360));
     let expected = array![
         crate::relics::SiteBenefit::ShrinePoint(first_reward.rank),
-        crate::relics::SiteBenefit::ShrinePoint(second_rank), crate::relics::SiteBenefit::Well(60),
+        crate::relics::SiteBenefit::ShrinePoint(second_rank), crate::relics::SiteBenefit::Well(112),
         crate::relics::SiteBenefit::Well(5), crate::relics::SiteBenefit::Well(0),
     ];
     let mut used = 0;

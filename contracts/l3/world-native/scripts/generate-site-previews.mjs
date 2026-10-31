@@ -9,17 +9,22 @@ const sources = ["expeditions", "progression", "taxonomy", "resources", "rules"]
 export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
   const xp = clearXpRule(source.progression);
+  const premium = depthRewardRule(source.expeditions);
   const precision = constant(source.rules, "RESOURCE_PRECISION");
   return `// From expeditions.cairo::site_reward and progression.cairo::clear_xp. Run scripts/generate-site-previews.mjs.
-export function previewSiteReward(category: number, initialGuardCount: bigint): { resourceType: number; amount: bigint } | null {
-${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: initialGuardCount ${operator} ${operand}n };`).join("\n")}
+export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint): number {
-  const xp = integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n;
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
+  const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
   return Number(xp);
+}
+
+function depthReward(amount: bigint, depth: number): bigint {
+  return amount * (${premium.base}n + BigInt(depth)) / ${premium.divisor}n;
 }
 
 /** Cairo's integer square root, without converting a scaled troop count to floating point. */
@@ -40,12 +45,14 @@ function resourceRewards(source) {
   let body = functionBody(
     source.expeditions,
     "site_reward",
-    "category:u8,site:ExpeditionSite",
+    "category:u8,site:ExpeditionSite,depth:u8",
     "Option<crate::resources::ResourceAmount>",
   );
   const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
   if (!imports) throw new Error("Unsupported site_reward imports");
   body = body.slice(imports[0].length);
+  if (!body.startsWith("letreward=")) throw new Error("Unsupported site_reward premium");
+  body = body.slice("letreward=".length);
   const names = imports[1].split(",");
   const rules = [];
   while (body.startsWith(rules.length === 0 ? "if" : "elseif")) {
@@ -64,19 +71,30 @@ function resourceRewards(source) {
     });
     body = body.slice(branch[0].length);
   }
-  if (rules.length === 0 || body !== "else{None}") throw new Error("Unsupported site_reward fallback");
+  if (
+    rules.length === 0 ||
+    body !== "else{None};reward.map(|reward|ResourceAmount{amount:depth_reward(reward.amount,depth),..reward})"
+  )
+    throw new Error("Unsupported site_reward fallback or premium");
   if (new Set(rules.map(({ category }) => category)).size !== rules.length)
     throw new Error("Duplicate site reward category");
   return rules;
 }
 
 function clearXpRule(source) {
-  const body = functionBody(source, "clear_xp", "strength:u128", "u32");
+  const body = functionBody(source, "clear_xp", "strength:u128,depth:u8", "u32");
   const rule = body.match(
-    /^letroot:u64=core::num::traits::Sqrt::sqrt\(strength\/crate::rules::RESOURCE_PRECISION\*([0-9_]+)\);\(root\/([0-9_]+)\).try_into\(\).unwrap\(\)$/,
+    /^letroot:u64=core::num::traits::Sqrt::sqrt\(strength\/crate::rules::RESOURCE_PRECISION\*([0-9_]+)\);crate::expeditions::depth_reward\(\(root\/([0-9_]+)\).into\(\),depth\).try_into\(\).unwrap\(\)$/,
   );
   if (!rule) throw new Error("Unsupported clear_xp formula; update the preview compiler");
   return { multiplier: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
+}
+
+function depthRewardRule(source) {
+  const body = functionBody(source, "depth_reward", "amount:u128,depth:u8", "u128");
+  const rule = body.match(/^amount\*\(([0-9_]+)\+depth.into\(\)\)\/([0-9_]+)$/);
+  if (!rule) throw new Error("Unsupported depth_reward formula");
+  return { base: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
 }
 
 function functionBody(source, name, parameters, returns) {

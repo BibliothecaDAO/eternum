@@ -55,7 +55,7 @@ describe("a Well's tile card", () => {
       ),
     );
     const use = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Use");
-    expect(host.querySelector('[aria-label="stamina +60"]')).not.toBeNull();
+    expect(host.textContent).toContain("50% max");
     expect(use()).toBeUndefined();
     // No army selected: what it gives alone, no army to pick (owner, 28 October 2026: "agree with no picker").
     expect(host.querySelectorAll(".ui-row")).toHaveLength(0);

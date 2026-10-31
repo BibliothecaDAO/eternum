@@ -52,7 +52,7 @@
     "OWNER_ONLY_SHARES": 16384,
     "HYPERSTRUCTURE_MULTIPLIERS": 32768,
     "PRODUCTION_START": 131072,
-    "WELL_STAMINA": 60,
+    "WELL_STAMINA_DIVISOR": 2,
     "FRONTIER_REPORT_GRACE_SECONDS": 3600
   },
   "researchConstants": {
@@ -6277,12 +6277,6 @@
           "feltLength": 1
         },
         {
-          "name": "entry_stamina",
-          "type": "core::integer::u16",
-          "id": "0x656e7472795f7374616d696e61",
-          "feltLength": 1
-        },
-        {
           "name": "chest",
           "type": "world_native::relics::ChestTiers",
           "id": "0x6368657374",
@@ -6332,7 +6326,7 @@
         }
       ],
       "keyLength": 2,
-      "valueLength": 17,
+      "valueLength": 16,
       "observation": {
         "domain": "expedition",
         "fields": {
@@ -6347,8 +6341,7 @@
           "beastStrongLower": "beast_strong_lower",
           "beastStrongUpper": "beast_strong_upper",
           "chestOdds": "chest",
-          "revealSiteNeighbors": "reveal_site_neighbors",
-          "entryStamina": "entry_stamina"
+          "revealSiteNeighbors": "reveal_site_neighbors"
         }
       },
       "derivedFrom": "preset"
@@ -9161,10 +9154,6 @@
           "type": "core::bool"
         },
         {
-          "name": "entry_stamina",
-          "type": "core::integer::u16"
-        },
-        {
           "name": "chest",
           "type": "world_native::relics::ChestTiers"
         },
@@ -11294,7 +11283,7 @@
         },
         {
           "name": "Clear",
-          "type": "core::integer::u128"
+          "type": "core::integer::u32"
         }
       ]
     },
@@ -13681,5 +13670,5 @@
       ]
     }
   },
-  "identity": "4317547784ffddbca80a46d0c62f413fefca588da2618a52053e56d60c12e807"
+  "identity": "248e46b419249267c825582b5c2e48377ee3f19abd16ccd19d763bfe9d13cd01"
 }

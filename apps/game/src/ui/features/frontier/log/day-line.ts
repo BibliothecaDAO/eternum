@@ -68,7 +68,7 @@ const withRevealXp = (line: string, coord: unknown, store: NativeFactStore): str
 const withClearXp = (line: string, siteId: unknown, store: NativeFactStore): string => {
   if (siteId === undefined) return line;
   const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: Number(siteId) });
-  return site ? xpGainedLine(line, formatExact(siteClearXp(site))) : line;
+  return site ? xpGainedLine(line, formatExact(siteClearXp(store, site))) : line;
 };
 
 /** "Farm built": the building by the name on its build card. */

@@ -77,7 +77,7 @@ describe("the day log's line for a story", () => {
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
-      "Troll cleared, +82 XP",
+      "Troll cleared, +123 XP",
     );
     expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
     expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");

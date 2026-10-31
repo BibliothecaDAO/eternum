@@ -2,17 +2,22 @@
 export function previewSiteReward(
   category: number,
   initialGuardCount: bigint,
+  depth: number,
 ): { resourceType: number; amount: bigint } | null {
-  if (category === 7) return { resourceType: 23, amount: initialGuardCount / 2n };
-  if (category === 11) return { resourceType: 23, amount: initialGuardCount / 4n };
-  if (category === 9) return { resourceType: 38, amount: initialGuardCount * 3n };
+  if (category === 7) return { resourceType: 23, amount: depthReward(initialGuardCount / 2n, depth) };
+  if (category === 11) return { resourceType: 23, amount: depthReward(initialGuardCount / 4n, depth) };
+  if (category === 9) return { resourceType: 38, amount: depthReward(initialGuardCount * 3n, depth) };
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint): number {
-  const xp = integerSqrt((initialGuardCount / 1000000000n) * 25n) / 2n;
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
+  const xp = depthReward(integerSqrt((initialGuardCount / 1000000000n) * 25n) / 2n, depth);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
   return Number(xp);
+}
+
+function depthReward(amount: bigint, depth: number): bigint {
+  return (amount * (2n + BigInt(depth))) / 2n;
 }
 
 /** Cairo's integer square root, without converting a scaled troop count to floating point. */

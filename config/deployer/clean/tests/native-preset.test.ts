@@ -424,7 +424,7 @@ describe("native presets", () => {
       beasts_bps: 600,
       camp_bps: 400,
       rift_bps: 400,
-      ruin_bps: 100,
+      ruin_bps: 300,
       shrine_bps: 300,
       well_bps: 300,
       empty_reveal_limit: 7,
@@ -440,10 +440,10 @@ describe("native presets", () => {
         depth.guard_step,
       ]),
     ).toEqual([
-      [1000, 1600, 2000, 4000, 100],
-      [3000, 5000, 6000, 10500, 100],
-      [8000, 12000, 18000, 22500, 100],
-      [20000, 30000, 52500, 76000, 100],
+      [1200, 1400, 2700, 3300, 100],
+      [2400, 2800, 4900, 6100, 100],
+      [4700, 5700, 9800, 12200, 100],
+      [9300, 11500, 19600, 24400, 100],
     ]);
     for (const depth of preset.settlement.depths) {
       expect(depth.site_guard_lower).toBeLessThanOrEqual(depth.site_guard_upper);
@@ -483,10 +483,10 @@ describe("native presets", () => {
         depth.beast_strong_upper,
       ]),
     ).toEqual([
-      [300, 350, 450, 550],
-      [900, 1050, 1350, 1650],
-      [2400, 2800, 3600, 4400],
-      [6000, 7000, 9000, 11000],
+      [380, 420, 430, 470],
+      [760, 840, 860, 940],
+      [1520, 1680, 1720, 1880],
+      [3040, 3360, 3440, 3760],
     ]);
     expect(preset.economy.discovery.unwrap()).toMatchObject({ beasts_bps: 600 });
   });
@@ -890,14 +890,15 @@ describe("Devcon's fast Frontier preset", () => {
     const normal = definition(FRONTIER_PRESET_ID).economy.chests.unwrap();
     const devcon = definition(FRONTIER_DEVCON_PRESET_ID).economy.chests.unwrap();
     const ledger = buildLedgerEconomicPreset("frontier", { presetId: FRONTIER_DEVCON_PRESET_ID });
-    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10 });
-    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3 });
+    expect(normal).toMatchObject({ pool_bps: 7000, top_n: 10, price_ceiling: 50n });
+    expect(devcon).toMatchObject({ pool_bps: 7000, top_n: 3, price_ceiling: 25n });
     expect(ledger).toMatchObject({ frontier_chest_bps: 7000, frontier_top_n: 3 });
     const normalChests = nativePresets[FRONTIER_PRESET_ID]!.chests;
     if (!normalChests) throw new Error("Frontier must define chest rules");
     expect(nativePresets[FRONTIER_DEVCON_PRESET_ID]!.chests).toEqual({
       ...normalChests,
       topN: 3,
+      priceCeiling: 25,
     });
     expect(definition(FRONTIER_PRESET_ID).economy.chests.unwrap()).toEqual(normal);
   });
@@ -1003,4 +1004,36 @@ describe("the Frontier playground preset", () => {
     for (const resource of [ResourcesIds.Labor, ResourcesIds.Wheat, ResourcesIds.Knight])
       expect(start.get(resource)).toBe(settlementStore);
   });
+});
+
+test("Frontier discoveries use the approved narrow guard ranges at every depth", () => {
+  const preset = buildNativePreset(
+    loadNativePresetConfiguration("madara.frontier", FRONTIER_DEVCON_PRESET_ID),
+    FRONTIER_DEVCON_PRESET_ID,
+  );
+  expect(preset.economy.discovery.unwrap()).toMatchObject({ ruin_bps: 300 });
+  expect(
+    preset.settlement.depths.map((row) => [
+      row.site_guard_lower,
+      row.site_guard_upper,
+      row.ruin_guard_lower,
+      row.ruin_guard_upper,
+    ]),
+  ).toEqual([
+    [1200, 1400, 2700, 3300],
+    [2400, 2800, 4900, 6100],
+    [4700, 5700, 9800, 12200],
+    [9300, 11500, 19600, 24400],
+  ]);
+  for (const row of preset.settlement.depths) {
+    expect(row).not.toHaveProperty("entry_stamina");
+    for (const [lower, upper] of [
+      [row.site_guard_lower, row.site_guard_upper],
+      [row.ruin_guard_lower, row.ruin_guard_upper],
+      [row.beast_weak_lower, row.beast_weak_upper],
+      [row.beast_strong_lower, row.beast_strong_upper],
+    ]) {
+      expect(upper / lower).toBeLessThanOrEqual(1.25);
+    }
+  }
 });
