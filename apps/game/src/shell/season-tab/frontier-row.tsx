@@ -11,8 +11,9 @@ import { wholeLords } from "@/ui/features/frontier/board/standings";
 import { openedFrom } from "../frame/opened-from";
 
 /**
- * One realm on a Frontier board, as Season and a season's Results draw it: its rank and Order, its player, the sites
- * it cleared (what ranks) and its LORDS, each with its icon. The player's own row is lit; a row opens its player.
+ * One realm on a Frontier board, as Season and a season's Results draw it: its rank (the first three's medals) and Order,
+ * its player, the sites it cleared (what ranks) and its LORDS, each with its icon, on one line at any width. The
+ * player's own row is lit; a row opens its player.
  */
 export const FrontierRow = ({ entry, own }: { entry: HeraldFrontierLeaderboardEntry; own: boolean }) => {
   const navigate = useNavigate();
@@ -20,9 +21,10 @@ export const FrontierRow = ({ entry, own }: { entry: HeraldFrontierLeaderboardEn
   return (
     <AppRow
       own={own}
+      line
       lead={
         <>
-          <AppRank rank={entry.rank} />
+          <AppRank rank={entry.rank} medal />
           <OrderEmblem order={entry.order} />
         </>
       }

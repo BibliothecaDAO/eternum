@@ -151,7 +151,8 @@ const press = (text: string) =>
     target.click();
   });
 const tabs = () => [...host.querySelectorAll('[role="tab"]')].map((tab) => tab.textContent);
-const rows = () => [...host.querySelectorAll(".ui-row")];
+/** The conversations listed, each one button: pressed anywhere, it opens. */
+const rows = () => [...host.querySelectorAll<HTMLButtonElement>("button.ui-row")];
 const roomPaths = () =>
   FakeSocket.made.map((socket) => new URL(socket.url).pathname).filter((path) => path.includes("rooms"));
 
@@ -167,7 +168,7 @@ const recounted = (inbox: FakeSocket, unread: number, last?: ReturnType<typeof m
   act(async () => inbox.receive({ type: "direct:thread", thread: threadOf(unread, last) }));
 const openConversation = async () => {
   await press("Messages");
-  await act(async () => rows()[0]!.querySelector("button")!.click());
+  await act(async () => rows()[0]!.click());
 };
 const back = () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
 const lineIds = () =>
@@ -183,7 +184,7 @@ describe("Messages from the server, on a client that starts empty", () => {
     expect(rows()[0]!.textContent).toContain("are you there");
     expect(rows()[0]!.textContent).toContain("1");
 
-    await act(async () => rows()[0]!.querySelector("button")!.click());
+    await act(async () => rows()[0]!.click());
     // Its history, read from the server on opening, under the line the list showed.
     expect(lineIds()).toEqual(["d1", "d2"]);
     expect(tabs()).toEqual(["Global", "Messages"]);
@@ -214,7 +215,7 @@ describe("Messages from the server, on a client that starts empty", () => {
     expect(rows()).toHaveLength(1);
     expect(rows()[0]!.textContent).toContain("are you there");
     expect(rows()[0]!.querySelector(".ui-chip")).toBeNull();
-    await act(async () => rows()[0]!.querySelector("button")!.click());
+    await act(async () => rows()[0]!.click());
     expect(receipts(inbox)).toEqual([]);
   });
 
@@ -341,7 +342,7 @@ describe("the read reaches the server", () => {
     // Still open: the handshake still counts it, so the read goes again, once, on the new connection.
     expect(receipts(reopened)).toEqual(["d2"]);
     await back();
-    await act(async () => rows()[0]!.querySelector("button")!.click());
+    await act(async () => rows()[0]!.click());
     expect(receipts(reopened)).toEqual(["d2"]);
     await recounted(reopened, 0);
     await back();

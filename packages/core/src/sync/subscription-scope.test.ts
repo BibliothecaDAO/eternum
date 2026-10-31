@@ -82,12 +82,15 @@ it("retains the cleared site's facts by its own coordinate, then drops yesterday
   expect(rowInGameSyncScope("ExpeditionSite", site.value, tomorrow)).toBe(false);
 });
 
-it("includes a visible loose chest's native reward metadata, without giving tile-only chests a fake entity position", () => {
+it.each([
+  [TileOccupier.Chest, "SiteChest"],
+  [TileOccupier.Shrine, "ShrineReward"],
+] as const)("includes visible site %s and its %s reward through the tile occupancy", (category, rewardModel) => {
   const chest = {
     model: "TileOccupancy",
     value: {
       entity_id: "900",
-      category: String(TileOccupier.Chest),
+      category: String(category),
       is_structure: false,
       alt: false,
       col: 513,
@@ -102,13 +105,17 @@ it("includes a visible loose chest's native reward metadata, without giving tile
   ];
   const visible = deriveGameSyncScope("0xa", 350, expedition, withChest);
   expect(visible.expedition?.entities.has("900")).toBe(true);
-  expect(rowInGameSyncScope("SiteChest", { entity_id: "900" }, visible)).toBe(true);
-  expect(scopeInputKeys("TileOccupancy", chest.value, 1024)).toEqual(["TileOccupancy.region:0:1"]);
+  expect(rowInGameSyncScope(rewardModel, { entity_id: "900" }, visible)).toBe(true);
+  expect(scopeInputKeys("TileOccupancy", chest.value, 1024)).toEqual(
+    category === TileOccupier.Chest
+      ? ["TileOccupancy.region:0:1"]
+      : ["TileOccupancy.entity:900", "TileOccupancy.region:0:1"],
+  );
   const gone = deriveGameSyncScope("0xa", 350, expedition, read);
-  expect(rowInGameSyncScope("SiteChest", { entity_id: "900" }, gone)).toBe(false);
+  expect(rowInGameSyncScope(rewardModel, { entity_id: "900" }, gone)).toBe(false);
   expect(
     rowInGameSyncScope(
-      "SiteChest",
+      rewardModel,
       { entity_id: "900" },
       deriveGameSyncScope(undefined, 350, expedition, withChest, "0xbbb"),
     ),

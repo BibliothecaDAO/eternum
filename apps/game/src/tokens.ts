@@ -74,6 +74,13 @@ export const HUD_COLORS = {
 
 type Palette = { readonly [name in keyof typeof HUD_COLORS]: string };
 
+/** Prize medals share their gold, silver and bronze faces and rims across the app and in-game boards. */
+export const MEDAL_COLORS = {
+  ink: "#1b1622",
+  faces: ["#e8bf5e", "#c9ced8", "#c8875a"],
+  rims: ["#fff0b8", "#f2f4f8", "#efb88e"],
+} as const;
+
 /** The shell's palette: every page outside a game. Same roles as the HUD's; today the same values. */
 export const SHELL_COLORS: Palette = {
   ground: BRAND.hearth,
@@ -722,15 +729,29 @@ export const SEAT_COLOURS = [
 export type Side = "own" | "ally" | "enemy" | "neutral";
 
 /**
- * The colour each side is drawn in, the one rule the map's labels and the minimap both read (HUD_SHEET own, ally,
- * enemy): nobody's is drawn as an enemy's, as everything not the viewer's or an ally's is red.
+ * The colour each side is drawn in, the one rule the map's labels, the minimap and the armies' paths read (HUD_SHEET
+ * own, ally, enemy): nobody's is drawn as an enemy's, as everything not the viewer's or an ally's is red.
  */
-export const SIDE_COLOURS: Record<Side, string> = {
-  own: "var(--hud-own)",
-  ally: "var(--hud-ally)",
-  enemy: "var(--hud-enemy)",
-  neutral: "var(--hud-enemy)",
-};
+const SIDE_SHEET = {
+  own: "own",
+  ally: "ally",
+  enemy: "enemy",
+  neutral: "enemy",
+} as const satisfies Record<Side, keyof typeof HUD_SHEET>;
+
+/** Each side's colour, as `colourOf` writes its sheet colour's name. */
+const bySide = (colourOf: (sheet: (typeof SIDE_SHEET)[Side]) => string): Record<Side, string> => ({
+  own: colourOf(SIDE_SHEET.own),
+  ally: colourOf(SIDE_SHEET.ally),
+  enemy: colourOf(SIDE_SHEET.enemy),
+  neutral: colourOf(SIDE_SHEET.neutral),
+});
+
+/** A side's colour for CSS: its sheet variable. */
+export const SIDE_COLOURS = bySide((sheet) => `var(--hud-${sheet})`);
+
+/** The same colour as its value, for what draws outside CSS (the map's 3D army paths). */
+export const SIDE_HEX = bySide((sheet) => HUD_SHEET[sheet]);
 
 /** A side told by seat: the seat's colour and the ink its initial is written in; nobody's (no seat) in neutral grey. */
 export type SeatSide = { seat: number; colour: string; ink: "dark" | "light" } | { seat: null; colour: string };

@@ -54,10 +54,10 @@ const MEASURE = `(() => {
 })()`;
 
 /** Marks the first visible control named `label` (a place by its word, a bubble or the × by its label) to press. */
-const mark = (label) => `(() => {
+const mark = (label, within) => `(() => {
   document.querySelectorAll("[data-proof-press]").forEach((el) => el.removeAttribute("data-proof-press"));
   const named = (el) => el.getAttribute("aria-label") === "${label}" || el.textContent.trim().startsWith("${label}");
-  const control = [...document.querySelectorAll("button")].find((el) => named(el) && el.getClientRects().length > 0);
+  const control = [...(${within})?.querySelectorAll("button") ?? []].find((el) => named(el) && el.getClientRects().length > 0);
   control?.setAttribute("data-proof-press", "");
   return Boolean(control);
 })()`;
@@ -66,8 +66,8 @@ const mark = (label) => `(() => {
  * Presses the control named `label` as a player does, through the browser's own click, so a control that is missing or
  * covered is not pressed: "led", "missing", or what the browser said.
  */
-export const press = (b, label) => {
-  if (!b.evaluate(mark(label))) return "missing";
+export const press = (b, label, within = "document") => {
+  if (!b.evaluate(mark(label, within))) return "missing";
   return clickAsPlayer(b, "[data-proof-press]") ?? "led";
 };
 
@@ -77,7 +77,7 @@ export const press = (b, label) => {
  * screenshot goes to `shot`.
  */
 export const closeAndReopen = async (b, shot, record, settleMs = 1_000) => {
-  const closed = press(b, "Close the feed");
+  const closed = press(b, "Close", FEED);
   record.presses.push({ press: "the Feed's ×", status: closed });
   if (closed !== "led") return;
   await sleep(settleMs);

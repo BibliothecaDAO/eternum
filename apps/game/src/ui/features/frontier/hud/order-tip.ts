@@ -38,7 +38,7 @@ export type OrderTip = {
   line: string;
   /**
    * What the order costs, exactly as it is charged ("30 stamina · 100 wheat"), or for a site's Use, which costs
-   * nothing, what it gives ("+200 XP"); none for a refusal or a crate.
+   * nothing, what it gives ("III skill point"); none for a refusal or a crate.
    */
   cost: string | null;
 };
@@ -51,9 +51,11 @@ export type OrderTip = {
  */
 export const orderTip = (order: TileOrder): OrderTip | null => {
   const ordered = orderOf(order);
+  const reward = order.site ? siteGainLine(order.site.kind, order.site.gain, order.site.stamina) : null;
   if (ordered) return ordered;
+
   const refused = refusalLine(order);
-  return refused === null ? null : { line: refused, cost: null };
+  return refused === null ? (reward ? { line: reward, cost: null } : null) : { line: refused, cost: reward };
 };
 
 const OPEN_CRATE = "Open crate";
@@ -79,6 +81,7 @@ const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | nu
     return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
   const pieces = [
+    ...(site ? [siteGainLine(site.kind, site.gain, site.stamina)].filter(Boolean) : []),
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
     ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),

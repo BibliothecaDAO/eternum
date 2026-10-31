@@ -3,7 +3,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
+import { comesHomeAtDayEnd, type Rank, tierNumeral, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
@@ -52,7 +52,9 @@ export const GuardToken = ({
 export type XpGoal = { at: number; rank: number };
 
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), TIER_WORDS[goal.rank - 1]) : `${XP} ${formatAmount(xp)}`;
+  goal
+    ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), tierNumeral(goal.rank as Rank))
+    : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
@@ -126,7 +128,7 @@ export const ArmyToken = ({
       {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
     </>
   );
-  const look = cn(TOKEN, "border bg-hud-surface", selected ? "border-2 border-hud-line-strong" : "border-hud-line");
+  const look = tokenLook(selected);
   return onPick ? (
     <button type="button" aria-label={label} aria-pressed={selected} onClick={onPick} className={look}>
       {body}
@@ -138,6 +140,10 @@ export const ArmyToken = ({
   );
 };
 
+/** A token's frame, the picked one in the strong border: an army's and an open slot's alike. */
+const tokenLook = (selected: boolean) =>
+  cn(TOKEN, "border bg-hud-surface", selected ? "border-2 border-hud-line-strong" : "border-hud-line");
+
 /**
  * An open army slot: a plus in a dashed ring that opens Deploy, and under it the stamina the slot starts its army on,
  * in the same segments an army's token carries, said in words when asked. The first one pulses while no army is out.
@@ -147,10 +153,13 @@ export const OpenSlot = ({
   pulse,
   filling,
   start,
+  selected,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
+  /** Where the slot is one to pick (Deploy's), whether it is the one Deploy fills, picked as an army's token is. */
+  selected?: boolean;
   /** An army is on its way into this slot, by the word that says so: the slot cannot be pressed until it is known. */
   filling?: string;
   /** The bar the slot starts its army on, and that in words ("Army 2 starts on 7/150 stamina…"); none while unknown. */
@@ -161,10 +170,11 @@ export const OpenSlot = ({
     type="button"
     aria-label={filling ?? label}
     aria-busy={filling !== undefined}
+    aria-pressed={selected}
     disabled={filling !== undefined}
     data-tip={filling === undefined ? start?.words : undefined}
     onClick={onDeploy}
-    className={cn(TOKEN, "border border-hud-line bg-hud-surface")}
+    className={tokenLook(selected ?? false)}
   >
     <SlotRing pulse={pulse} filling={filling} />
     {start && filling === undefined && <TokenStamina stamina={start.bar} />}
@@ -185,18 +195,19 @@ export const SlotRing = ({ pulse, filling }: { pulse: boolean; filling?: string 
 );
 
 /**
- * In the day's last hour, what an army's Homecoming sends home when the day ends, on its own token (under its troops)
- * or row (beside its XP): by the army it is about, not a bubble repeating the troops (player, 25 October).
+ * In the day's last hour, what an army's Homecoming sends home when the day ends, by the army it is about, not a bubble
+ * repeating the troops (player, 25 October): on a phone's token, under its troops, its mark and figure; on a desktop's
+ * row, where there is room, in words ("450 come home at day end").
  */
-export const HomecomingReturn = ({ troops }: { troops: number }) => (
+export const HomecomingReturn = ({ troops, words = false }: { troops: number; words?: boolean }) => (
   <span
     role="img"
     aria-label={comesHomeAtDayEnd(formatExact(troops))}
-    data-tip={comesHomeAtDayEnd(formatExact(troops))}
-    className="flex h-5 shrink-0 items-center rounded-full border border-hud-line bg-hud-dark pr-1 text-hud-label leading-none text-hud-good tabular-nums"
+    data-tip={words ? undefined : comesHomeAtDayEnd(formatExact(troops))}
+    className="flex h-5 shrink-0 items-center self-start rounded-full border border-hud-line bg-hud-dark pr-1.5 text-hud-label leading-none text-hud-good tabular-nums"
   >
     <SemanticIcon name="order-enlightenment" size={16} />
-    {formatGain(troops)}
+    {words ? comesHomeAtDayEnd(formatExact(troops)) : formatGain(troops)}
   </span>
 );
 

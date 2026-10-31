@@ -41,12 +41,17 @@ describe("Frontier's tile card", () => {
     });
   });
 
-  it("has no fight for an army out of reach or none selected", () => {
+  it("forecasts an army out of reach as it would attack from beside the site, and none with no army selected", () => {
     const { store, site, structure, attack } = campBeside();
-    expect(
-      readSiteCard(store, site, structure, SITE_TILE, attack({ col: 44, row: 12, alt: false })).fight,
-    ).toBeUndefined();
-    expect(readSiteCard(store, site, structure, SITE_TILE, null).fight).toBeUndefined();
+    const beside = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+    const far = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 44, row: 12, alt: false }));
+    expect(beside.inReach).toBe(true);
+    expect(far.inReach).toBe(false);
+    // The same army, stamina and biome: the attack its Move leads to is the one beside the site.
+    expect(far.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
+    const armyless = readSiteCard(store, site, structure, SITE_TILE, null);
+    expect(armyless.fight).toBeUndefined();
+    expect(armyless.inReach).toBe(false);
   });
 
   it("distinguishes an unknown guard from an empty slot after the snapshot completes", () => {
@@ -102,7 +107,7 @@ it("shows only the camp reward that fits in the home labor store", () => {
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 550, fits: 10 });
 });
 
-it("reads another player's army as a target: its troops, the same exact fight in reach, and nothing it pays", () => {
+it("reads another player's army as a target: its troops, the same exact fight near or far, and nothing it pays", () => {
   const { store, attack } = campBeside();
   const other = otherArmyAt(store, 42, 12);
   const plan = readArmyCard(store, other, { col: 42, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
@@ -111,9 +116,10 @@ it("reads another player's army as a target: its troops, the same exact fight in
   expect(plan.payout).toBeNull();
   expect(plan.xp).toBeUndefined();
   expect(plan.fight).toMatchObject({ outcome: "wins", guardLeft: 0 });
-  expect(
-    readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false })).fight,
-  ).toBeUndefined();
+  expect(plan.inReach).toBe(true);
+  const far = readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
+  expect(far.inReach).toBe(false);
+  expect(far.fight).toEqual(plan.fight);
 });
 
 it("shows a ruin's fixed quote but refuses funding when the shared budget is spent", () => {

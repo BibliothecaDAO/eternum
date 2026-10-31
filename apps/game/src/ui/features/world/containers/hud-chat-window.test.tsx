@@ -86,10 +86,13 @@ it("keeps chat's message, unread count, open action, input focus and Escape on t
 it("leaves Escape to the message field while its list of players is open, so chat stays open", () => {
   draw(true);
   const field = host.querySelector<HTMLInputElement>('[aria-label="Message"]')!;
+  // The field names the list it opened, as the composer's does while it suggests.
   field.setAttribute("aria-expanded", "true");
+  field.setAttribute("aria-controls", "mentions");
   act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
   expect(onOpenChange).not.toHaveBeenCalled();
   field.setAttribute("aria-expanded", "false");
+  field.removeAttribute("aria-controls");
   act(() => field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
   expect(onOpenChange).toHaveBeenLastCalledWith(false);
 });

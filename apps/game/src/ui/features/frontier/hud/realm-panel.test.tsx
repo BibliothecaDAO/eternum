@@ -3,6 +3,12 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
+// The Feed's unread count, as the game's important stories make it; two arrived since it was last read.
+vi.mock("@/ui/features/event-feed/quick-feed", async (original) => ({
+  ...(await original<typeof import("@/ui/features/event-feed/quick-feed")>()),
+  useUnreadImportantCount: (open: boolean) => (open ? 0 : 2),
+}));
+
 import { dayClock } from "./day-clock";
 import { DayPill } from "./day-pill";
 import { FrontierPlaces } from "./frontier-desktop";
@@ -53,7 +59,7 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
         level={1}
         stores={STORES}
         lords={1_240}
-        labor={2_000}
+        waiting={{ labor: 2_000, essence: 0 }}
         onWithdraw={onWithdraw}
         onRealms={onRealms}
       />,
@@ -65,9 +71,9 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   expect(named()).toEqual(
     expect.arrayContaining([
       "Essence 18,250",
-      "labor 9,640 of 18,000 · +10/min · Full in 2h",
-      "wheat 4,410 of 6,000 · +10/min · Full in 2h",
-      "troops 1,200 of 6,000 · +10/min · Full in 2h",
+      "Labor 9,640 of 18,000 · +10/min · Full in 2h",
+      "Wheat 4,410 of 6,000 · +10/min · Full in 2h",
+      "Troops 1,200 of 6,000 · +10/min · Full in 2h",
       "LORDS 1,240",
     ]),
   );
@@ -107,7 +113,9 @@ it("opens a store's card under the rings from the ring of a store that has one",
   expect(host.textContent).not.toContain("wheat card");
   // Essence has no card: its ring is not a button.
   expect(host.querySelector('button[aria-label="Essence 18,250"]')).toBeNull();
-  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="wheat 4,410"]')!.click());
+  // Pressed by the store it stands for, as the playtest's wheat-store step finds it (steps.mjs).
+  expect(host.querySelector('[data-store="wheat"] button')?.getAttribute("aria-label")).toMatch(/^Wheat 4,410/);
+  act(() => host.querySelector<HTMLButtonElement>('[data-store="wheat"] button')!.click());
   expect(onToggle).toHaveBeenCalledWith("wheat");
   render("wheat");
   expect(host.textContent).toContain("wheat card");
@@ -137,52 +145,51 @@ it("reads a 24-hour day in hours on the top bar and its hover, as Play does (liv
   expect(pill.getAttribute("data-tip")).toMatch(/ · Tomorrow lasts 24h$/);
 });
 
-it("offers a desktop's places, Research, the Feed and the Season; the lit Feed closes, an unlit one goes home", () => {
-  const onHome = vi.fn();
-  const onCloseFeed = vi.fn();
-  const places = (home: boolean, feedOpen: boolean) => {
+it("offers a desktop's places, Research, the Feed and the Season, each a panel its press opens and a second press closes", () => {
+  const onSurface = vi.fn();
+  const places = (surface: "research" | "feed" | "season" | null) => {
+    act(() => root.render(<FrontierPlaces surface={surface} onSurface={onSurface} research={false} />));
+    return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
+  };
+  const closed = places(null);
+  expect(closed.map((button) => [button.getAttribute("aria-label"), button.getAttribute("aria-pressed")])).toEqual([
+    ["Research", "false"],
+    ["Feed", "false"],
+    ["Season", "false"],
+  ]);
+  // Closed, the Feed counts what is unread, as a phone's place bar does.
+  expect(closed[1].textContent).toContain("2");
+  act(() => closed[1].click());
+  expect(onSurface).toHaveBeenLastCalledWith("feed");
+  const feed = places("feed");
+  expect(feed[1].getAttribute("aria-pressed")).toBe("true");
+  expect(feed[1].textContent).not.toContain("2");
+  act(() => feed[1].click());
+  expect(onSurface).toHaveBeenLastCalledWith(null);
+  act(() => feed[2].click());
+  expect(onSurface).toHaveBeenLastCalledWith("season");
+});
+
+it.each(REALM_SKIN_MODELS)(
+  "shows the $skin painting on the HUD at level $level, its name as a tip",
+  ({ skin, level }) => {
+    const icon = realmSkinIcon(skin);
     act(() =>
       root.render(
-        <FrontierPlaces
-          surface={home ? null : "research"}
-          home={home}
-          feedOpen={feedOpen}
-          onCloseFeed={onCloseFeed}
-          onSurface={vi.fn()}
-          onHome={onHome}
-          research={false}
+        <RealmPanel
+          name="Duskbite"
+          level={level}
+          highest={3}
+          stores={STORES}
+          mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
         />,
       ),
     );
-    return [...host.querySelectorAll("nav button")] as HTMLButtonElement[];
-  };
-  const open = places(true, true);
-  expect(open.map((button) => button.getAttribute("aria-label"))).toEqual(["Research", "Feed", "Season"]);
-  expect(open[1].getAttribute("aria-pressed")).toBe("true");
-  act(() => open[1].click());
-  expect(onCloseFeed).toHaveBeenCalledTimes(1);
-  const closed = places(true, false);
-  expect(closed[1].getAttribute("aria-pressed")).toBe("false");
-  act(() => closed[1].click());
-  const research = places(false, true);
-  act(() => research[1].click());
-  expect(onHome).toHaveBeenCalledTimes(2);
-  expect(onCloseFeed).toHaveBeenCalledTimes(1);
-});
-
-it.each(REALM_SKIN_MODELS)("shows the $skin painting on the HUD at level $level", ({ skin, level }) => {
-  const icon = realmSkinIcon(skin);
-  act(() =>
-    root.render(
-      <RealmPanel
-        name="Devcon home"
-        level={level}
-        highest={3}
-        stores={STORES}
-        mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
-      />,
-    ),
-  );
-  const panel = host.querySelector('section[aria-label="Realm"]')!;
-  expect(panel.querySelectorAll(`img[src$="/${icon}.webp"]`).length).toBe(2);
-});
+    const panel = host.querySelector('section[aria-label="Realm"]')!;
+    // The painting alone carries the campaign: no tag spells its name beside the rank, the tip names it.
+    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"]`)];
+    expect(paintings.map((painting) => painting.getAttribute("data-tip"))).toEqual([REALM_SKINS[skin].label]);
+    expect(paintings[0].getAttribute("alt")).toBe(REALM_SKINS[skin].label);
+    expect(panel.textContent).not.toContain(REALM_SKINS[skin].label);
+  },
+);

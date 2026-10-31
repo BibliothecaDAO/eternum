@@ -29,7 +29,7 @@
   border-radius: var(--hud-radius-panel);
   background: var(--hud-chosen);
 }
-.home-picker__featured .home-picker__art {
+.home-picker__featured .home-art {
   height: 10rem;
 }
 .home-picker__about {
@@ -80,40 +80,6 @@
   align-items: center;
   gap: 0.5rem;
 }
-/* A picture: a Realm's map in the parchment's tones, a ticket's realm on its colour, lit from the middle. */
-.home-picker__art {
-  display: grid;
-  overflow: hidden;
-  place-items: center;
-  border-radius: calc(var(--hud-radius-panel) - 2px);
-  background: rgb(var(--hud-ink));
-}
-.home-picker__map {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  filter: sepia(0.75) contrast(1.05) brightness(0.92);
-}
-.home-picker__art[data-ticket="golden"] {
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 55%, rgb(var(--hud-ink))),
-    rgb(var(--hud-gold)) 60%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 50%, rgb(var(--hud-dark)))
-  );
-}
-.home-picker__art[data-ticket="regular"] {
-  background: radial-gradient(
-    circle at 50% 40%,
-    color-mix(in srgb, rgb(var(--hud-ink)) 85%, rgb(var(--hud-gold))),
-    color-mix(in srgb, rgb(var(--hud-gold)) 45%, rgb(var(--hud-dark))) 60%,
-    color-mix(in srgb, rgb(var(--hud-gold)) 20%, rgb(var(--hud-dark)))
-  );
-}
-.home-picker__art[data-ticket="free"],
-.home-picker__art[data-map="none"] {
-  background: rgb(var(--hud-dark) / 0.6);
-}
 .home-picker__strip {
   display: flex;
   gap: 0.6rem;
@@ -133,13 +99,30 @@
   text-align: left;
   transition: border-color var(--hud-fast) var(--hud-ease);
 }
-.home-picker__choice .home-picker__art {
+.home-picker__choice .home-art {
   height: 4.6rem;
   border-radius: 0;
 }
+/* The chosen tile reads at a glance on any art (a golden ticket, a pale map): a solid gold ring outside it, and a check
+   on a dark disc. */
+.home-picker__choice {
+  position: relative;
+}
 .home-picker__choice[aria-pressed="true"] {
   border-color: rgb(var(--hud-gold));
-  box-shadow: 0 0 0 3px var(--hud-chosen);
+  box-shadow: 0 0 0 3px rgb(var(--hud-gold));
+}
+.home-picker__check {
+  position: absolute;
+  top: 0.3rem;
+  right: 0.3rem;
+  display: grid;
+  width: 1.5rem;
+  height: 1.5rem;
+  place-items: center;
+  border: 2px solid rgb(var(--hud-gold));
+  border-radius: var(--hud-radius-round);
+  background: rgb(var(--hud-dark));
 }
 .home-picker__choice:focus-visible,
 .home-picker__all:focus-visible {
@@ -199,7 +182,7 @@
 .home-picker__grid .home-picker__choice {
   flex: none;
 }
-.home-picker__grid .home-picker__art {
+.home-picker__grid .home-art {
   height: 5.5rem;
 }
 .home-picker__traits {
@@ -222,7 +205,9 @@
   color: var(--hud-muted);
 }
 .home-picker__waiting {
+  display: grid;
   height: 12rem;
+  place-items: center;
   border-radius: var(--hud-radius-panel);
   background: var(--hud-hover);
 }

@@ -89,14 +89,13 @@ it("holds a locked node's verb, says why, and offers the step that opens it", ()
   expect(onFix).toHaveBeenCalledOnce();
 });
 
-it("names the Scouts' lodge's camp kind Trolls, never Camp", () => {
+it("names the Scouts' lodge's camp kind Trolls, never Camp, and says on each kind what it does", () => {
   draw("row-6");
   const choice = host.querySelector("[data-lab='node-choice']")!;
-  expect([...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.getAttribute("title"))).toEqual([
-    "Trolls found by new armies",
-    "Rifts found by new armies",
-    "Beasts found by new armies",
-  ]);
+  // In sight on the side itself, never only on a hover a phone has not got.
+  expect(
+    [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.children[1]!.children[1]!.textContent),
+  ).toEqual(["Found more", "Found more", "Found more"]);
   expect(host.textContent).not.toMatch(/Camp/);
 });
 
@@ -105,7 +104,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
 
   it("keeps what a finished node gives: the Shrine researched, a Hut at Legendary", () => {
     draw("shrine");
-    expect(choice()!.textContent).toContain("Armies find Shrines · +200 XP each");
+    expect(choice()!.textContent).toContain("Armies find Shrines · 1 skill point each");
     const legendaryHut = readResearchTree({
       ...MID_REALM,
       learned: { ...MID_REALM.learned, 3: { tier: 5, sides: [] } },
@@ -123,7 +122,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
         />,
       ),
     );
-    expect(choice()!.textContent).toContain("Population from every Hut · +100%");
+    expect(choice()!.textContent).toContain("Hut population · +100%");
   });
 
   it("stands after the whole tree, outside its scroll, with the price held against and Research", () => {
@@ -133,7 +132,7 @@ describe("the picked building's choice, at the panel's foot (the owner's pick C)
     expect(tree.contains(choice())).toBe(false);
     expect(tree.compareDocumentPosition(choice()!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(choice()!.textContent).toContain("Farm");
-    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("Common → Uncommon");
+    expect(choice()!.querySelector(".ui-tier-step")?.getAttribute("aria-label")).toBe("I → II");
     expect([...choice()!.querySelectorAll(".ui-tier")].map((gem) => gem.textContent)).toEqual(["I", "II"]);
     expect(button(/^Research Fields$/)).toBeDefined();
     const price = nodes
@@ -171,7 +170,8 @@ it("shows the chosen research shares without a production formula", () => {
       />,
     ),
   );
-  expect(button(/^Fields/)!.textContent).toBe("Fields+20% → +40%");
+  expect(button(/^Fields/)!.textContent).toBe("FieldsFarm wheat+20% → +40%");
+  expect(button(/^Fields/)!.hasAttribute("title")).toBe(false);
   expect(button(/^Granary/)!.textContent).not.toContain("Each Farm");
   // The choice reads from its cards: no line explaining the sides or that they are kept.
   const lines = [...host.querySelectorAll("[data-lab='node-choice'] > span")].map((line) => line.textContent);
@@ -235,6 +235,81 @@ it.each([
   expect(effect?.textContent).toBe(`New armies start with Battle · ${label}`);
 });
 
+it.each([null, research.ROW_SHRINE, research.ROW_WELL])(
+  "gates the Sanctuary research choice on either site (%s)",
+  (unlock) => {
+    const learned = { ...MID_REALM.learned };
+    delete learned[research.ROW_SHRINE];
+    delete learned[research.ROW_WELL];
+    if (unlock !== null) learned[unlock] = { tier: 1, sides: [] };
+    const available = readResearchTree({ ...MID_REALM, learned });
+    const lodge = available.find(({ row }) => row === research.ROW_SCOUTS_LODGE)!;
+    const onResearch = vi.fn();
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={available}
+          fixFor={() => undefined}
+          picked={lodge.key}
+          onPick={vi.fn()}
+          sending={new Set()}
+          onResearch={onResearch}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+    const options = [...host.querySelectorAll<HTMLButtonElement>("[data-lab='node-choice'] button[aria-pressed]")];
+    expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual(
+      unlock === null ? ["Rifts", "Trolls"] : ["Rifts", "Trolls", "Sanctuaries"],
+    );
+    const chosen = options.at(-1)!;
+    act(() => chosen.click());
+    act(() => button(/^Research /)!.click());
+    expect(onResearch).toHaveBeenCalledWith(lodge, unlock === null ? research.KIND_CAMPS : research.KIND_SANCTUARIES);
+    if (unlock !== null)
+      expect([...chosen.querySelectorAll("img")].map((icon) => icon.dataset.icon)).toEqual(["shrine", "well"]);
+  },
+);
+
+it("cannot buy a different kind when a provisional Sanctuary unlock disappears", () => {
+  const onResearch = vi.fn();
+  const show = (unlocked: boolean) => {
+    const learned = { ...MID_REALM.learned };
+    if (!unlocked) {
+      delete learned[research.ROW_SHRINE];
+      delete learned[research.ROW_WELL];
+    }
+    const nodes = readResearchTree({ ...MID_REALM, learned });
+    const lodge = nodes.find(({ row }) => row === research.ROW_SCOUTS_LODGE)!;
+    act(() =>
+      root.render(
+        <ResearchPanel
+          nodes={nodes}
+          picked={lodge.key}
+          fixFor={() => undefined}
+          onPick={vi.fn()}
+          sending={new Set()}
+          onResearch={onResearch}
+          onClose={vi.fn()}
+        />,
+      ),
+    );
+  };
+  show(true);
+  act(() => button(/^Sanctuaries/)!.click());
+  show(false);
+  expect(button(/^Sanctuaries/)).toBeUndefined();
+  expect(button(/^Research /)!.disabled).toBe(true);
+  act(() => button(/^Research /)!.click());
+  expect(onResearch).not.toHaveBeenCalled();
+  act(() => button(/^Rifts/)!.click());
+  act(() => button(/^Research /)!.click());
+  expect(onResearch).toHaveBeenCalledWith(
+    expect.objectContaining({ row: research.ROW_SCOUTS_LODGE }),
+    research.KIND_RIFTS,
+  );
+});
+
 it("renders every generated research row and submits every permitted lodge kind", () => {
   const onPick = vi.fn();
   draw(null, vi.fn(), onPick);
@@ -253,9 +328,14 @@ it("renders every generated research row and submits every permitted lodge kind"
   draw(lodge.key, onResearch);
   const kinds = bindings.commandAbi.find((item) => item.name === "world_native::progression::ScoutingKind")!.variants!;
   const options = [...host.querySelectorAll<HTMLButtonElement>("[data-lab='node-choice'] button[aria-pressed]")];
-  expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual(
-    kinds.map(({ name }) => RESEARCH_TREE.kinds[name.toLowerCase() as keyof typeof RESEARCH_TREE.kinds]),
+  expect(new Set(options.map((option) => option.querySelector(".truncate")!.textContent))).toEqual(
+    new Set(kinds.map(({ name }) => RESEARCH_TREE.kinds[name.toLowerCase() as keyof typeof RESEARCH_TREE.kinds])),
   );
+  expect(options.map((option) => option.querySelector(".truncate")!.textContent)).toEqual([
+    "Rifts",
+    "Trolls",
+    "Sanctuaries",
+  ]);
   const sideCodes = Object.entries(research)
     .filter(([key]) => key.startsWith("KIND_"))
     .map(([, code]) => code)
@@ -264,7 +344,28 @@ it("renders every generated research row and submits every permitted lodge kind"
   for (const [index, option] of options.entries()) {
     act(() => option.click());
     act(() => button(/^Research /)!.click());
-    expect(onResearch).toHaveBeenLastCalledWith(lodge, sideCodes[index]);
+    expect(onResearch).toHaveBeenLastCalledWith(
+      lodge,
+      [research.KIND_RIFTS, research.KIND_CAMPS, research.KIND_SANCTUARIES][index],
+    );
   }
   expect(onResearch).toHaveBeenCalledTimes(kinds.length);
+});
+
+it("says on every side of every row what it does, in sight on the side, never only on a hover", () => {
+  const sided = nodes.filter((node) => node.sides);
+  expect(sided.map(({ key }) => key)).toEqual(expect.arrayContaining(["row-0", "row-1", "row-2", "row-6"]));
+  for (const node of sided) {
+    draw(node.key);
+    const choice = host.querySelector("[data-lab='node-choice']")!;
+    const shown = [...choice.querySelectorAll("button[aria-pressed]")].map((side) => side.textContent);
+    expect(shown).toHaveLength(node.sides!.length);
+    node.sides!.forEach((side, index) => expect(shown[index]).toContain(`${side.name}${side.line}`));
+    expect(choice.querySelector("[title]")).toBeNull();
+  }
+  // The Barracks' gate to the training buildings, said under its two sides.
+  draw("row-2");
+  expect(host.querySelector("[data-lab='node-choice']")!.textContent).toContain(
+    nodes.find((n) => n.key === "row-2")!.gate!.line,
+  );
 });

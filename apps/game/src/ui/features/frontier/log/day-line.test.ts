@@ -28,7 +28,7 @@ describe("the day log's line for a story", () => {
     const { store } = campBeside();
     const reveal = (resource: ResourcesIds, amount: string) =>
       dayLogLine(story("ExplorationReward", { resource_type: resource, amount }, "+98.4 Labor"), store);
-    expect(reveal(ResourcesIds.Labor, "98400000000")).toBe("+98 labor");
+    expect(reveal(ResourcesIds.Labor, "98400000000")).toBe("+98 Labor");
     // A one-troop army's find, 0.4 labor, says no amount (owner, 26 October): what was done, by the feed's rule.
     expect(reveal(ResourcesIds.Labor, "400000000")).toBe("Explored");
     expect(reveal(ResourcesIds.Essence, "1250000000000")).toBe("+1,250 Essence");
@@ -67,7 +67,6 @@ describe("the day log's line for a story", () => {
           game_id: 1,
           reveal_xp: 2,
           reveal_xp_per_depth: 1,
-          fixed_xp: 200,
           uncommon_xp: 250,
           rare_xp: 500,
           epic_xp: 1000,
@@ -76,14 +75,12 @@ describe("the day log's line for a story", () => {
       },
     ] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
-    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 labor, +2 XP");
+    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
     );
-    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle Uncommon"), store)).toBe("Battle Uncommon");
-    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle Legendary"), store)).toBe(
-      "Battle Legendary",
-    );
+    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
+    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared",
@@ -101,6 +98,7 @@ describe("the day log's line for a story", () => {
 
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
+  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
   [{ Well: 60 }, "Well used, +60 stamina"],
   [{ Well: 5 }, "Well used, +5 stamina"],
   [{ Well: 0 }, "Well used, +0 stamina"],
@@ -131,5 +129,5 @@ it.each([
     resource_type: ResourcesIds.Labor,
     amount: "1000000000",
   };
-  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 labor, +${xp} XP`);
+  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 Labor, +${xp} XP`);
 });

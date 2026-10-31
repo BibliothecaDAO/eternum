@@ -48,7 +48,7 @@ export const ownerDayLog = (now: number) => {
   });
   const day = [
     cleared(SITE, "Rift cleared"),
-    tier("Scouting Uncommon"),
+    tier("Scouting II"),
     {
       story: "BattleEvent",
       storyPayload: {
@@ -58,13 +58,13 @@ export const ownerDayLog = (now: number) => {
       },
       title: "Guard holds",
     },
-    tier("Battle Uncommon"),
+    tier("Battle II"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[1].id, "Beasts cleared"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[0].id, "Beasts cleared"),
-    tier("Logistics Rare"),
-    tier("Logistics Uncommon"),
+    tier("Logistics III"),
+    tier("Logistics II"),
   ];
   return day.flatMap(({ story, storyPayload, title }, index) => {
     const text = dayLogLine({ story, storyPayload, presentation: { title } }, store);
@@ -75,7 +75,7 @@ export const ownerDayLog = (now: number) => {
 /** Next season's recorded site uses, including a well limited by the army's remaining capacity. */
 export const siteUseDayLog = (now: number) => {
   const { store } = campBeside();
-  return [{ Shrine: 200 }, { Well: 60 }, { Well: 5 }, { Well: 0 }].map((benefit, index) => {
+  return [{ ShrinePoint: 3 }, { Well: 60 }, { Well: 5 }, { Well: 0 }].map((benefit, index) => {
     const storyPayload = { explorer_id: 201, coord: { x: 41, y: 12 }, benefit };
     const presentation = buildStoryEventPresentation(
       { storyType: "SiteUsed", storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,

@@ -7,6 +7,7 @@ pub mod RelicState {
     use crate::game::{IPointsDispatcherTrait, IPointsLibraryDispatcher, assert_playing};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternalTrait;
+    use crate::progression::{ScoutingKind, SkillPointUse};
     use crate::relics::{
         ApplyRelic, IRelicMapDispatcherTrait, IRelicMapLibraryDispatcher, IRelicProductionDispatcherTrait,
         IRelicProductionLibraryDispatcher, IRelicTroopsDispatcherTrait, IRelicTroopsLibraryDispatcher, OpenChest,
@@ -152,11 +153,18 @@ pub mod RelicState {
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
             let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
-            if let crate::progression::SkillPointUse::Stamina(_) = command.choice {
+            if let SkillPointUse::Stamina(_) = command.choice {
                 let maximum = crate::progression::stamina_max(
                     progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
                 );
                 assert!(explorer.troops.stamina.inline().amount < maximum, "stamina is full");
+            }
+            if let SkillPointUse::Scouting(ScoutingKind::Sanctuaries) = command.choice {
+                let learned = crate::logic::research::learned(ResourceKey { game_id, entity_id: explorer.owner });
+                assert!(
+                    crate::research::scouting_available(learned, crate::research::KIND_SANCTUARIES),
+                    "research Shrine or Well first",
+                );
             }
             let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);
@@ -200,16 +208,18 @@ pub mod RelicState {
                 explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
             );
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to site");
-            let category = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
+            let point = crate::expeditions::IFrontierDiscoveryDispatcherTrait::consume_frontier_site(
                 crate::expeditions::IFrontierDiscoveryLibraryDispatcher {
                     class_hash: self.logic_classes(game_id).map.read(),
                 },
                 crate::geometry::tile_key(game_id, command.coord),
+                command.explorer_id,
             );
-            let benefit = if category == crate::taxonomy::SHRINE_OCCUPIER {
-                crate::relics::SiteBenefit::Shrine(crate::logic::progression::grant_fixed_xp(key))
-            } else {
-                crate::relics::SiteBenefit::Well(self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context))
+            let benefit = match point {
+                Some(rank) => crate::relics::SiteBenefit::ShrinePoint(rank),
+                None => crate::relics::SiteBenefit::Well(
+                    self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context),
+                ),
             };
             self
                 .emit(
@@ -281,6 +291,25 @@ pub mod RelicState {
             ()
         }
 
+        fn sweep_lords(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            structure_id: u64,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::entry::assert_ledger_operator();
+            let context = crate::commands::execution_context(game_id, context);
+            let realm = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(realm);
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
+            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
+            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
+            if balance == 0 {
+                return;
+            }
+            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
+        }
+
         // Whole LORDS leave the realm and are recorded for fulfilment on L2.
         fn withdraw_lords(
             ref self: ComponentState<TContractState>,
@@ -298,19 +327,7 @@ pub mod RelicState {
             let record = crate::logic::structures::record(realm);
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
             assert!(record.owner == actor, "actor does not own structure");
-            self
-                .resources(game_id)
-                .spend_resource(
-                    realm,
-                    crate::resources::LORDS,
-                    command.amount * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            let withdrawal = crate::relics::LordsWithdrawal {
-                account: actor, amount: command.amount, prize_rank: 0, prize_count: 0,
-            };
-            self.record_lords_withdrawal(realm, withdrawal, context.timestamp);
+            self.withdraw_realm_lords(realm, actor, command.amount, context);
             ()
         }
     }
@@ -576,6 +593,31 @@ pub mod RelicState {
             IPointsLibraryDispatcher { class_hash: get_dep_component!(@self, Life).classes(game_id).season.read() }
                 .register_relic_points(game_id, actor, crate::commands::action_context(context));
             self.record_chest_opened(game_id, actor, command, chest, relics, points, context.timestamp);
+        }
+
+        fn withdraw_realm_lords(
+            ref self: ComponentState<TContractState>,
+            realm: ResourceKey,
+            account: ContractAddress,
+            amount: u128,
+            context: ExecutionContext,
+        ) {
+            assert!(account != 0.try_into().unwrap(), "withdrawal owner missing");
+            self
+                .resources(realm.game_id)
+                .spend_resource(
+                    realm,
+                    crate::resources::LORDS,
+                    amount * crate::rules::RESOURCE_PRECISION,
+                    context.timestamp,
+                    crate::commands::resource_context(context),
+                );
+            self
+                .record_lords_withdrawal(
+                    realm,
+                    crate::relics::LordsWithdrawal { account, amount, prize_rank: 0, prize_count: 0 },
+                    context.timestamp,
+                );
         }
 
         fn record_lords_withdrawal(

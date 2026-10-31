@@ -15,19 +15,19 @@ fn a_recorded_roll_of_zero_hits_and_one_is_already_a_miss() {
 }
 
 #[test]
-fn explore_reserves_one_common_share_and_open_pays_home_once_without_relics_or_terrain_loss() {
+fn explore_reserves_the_rolled_share_and_open_pays_home_once_without_relics_or_terrain_loss() {
     let (d, game_id, key) = super::registrar::setup_frontier_chests();
     assert_eq!(game_id, 1);
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let coord = destination(d, key);
     let before = lords(d, game_id, army.owner);
+    let rolled = expected(d, game_id, coord, HIT_ROOT);
     explore(d, key, HIT_ROOT, 360);
     assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap().coord, army.coord);
     let (chest_key, chest) = found(d, key, coord);
     let relics = IRelicsDispatcher { contract_address: d.games };
     let budget = relics.lords_budget(game_id).unwrap();
-    assert_eq!(chest.amount, 50);
-    assert_eq!(chest.amount, budget.price * relics.chest_rules(game_id).unwrap().shares.common.into());
+    assert_eq!(chest, rolled);
     assert_eq!((budget.open, budget.pool_left), (chest.amount, budget.pool));
     assert!(
         snforge_std::interact_with_state(
@@ -156,24 +156,11 @@ fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_t
     );
     explore(d, key, HIT_ROOT, 360);
     let (_, chest) = found(d, key, coord);
-    assert_eq!(chest.amount, 7);
-    let common = snforge_std::interact_with_state(
-        d.games,
-        || {
-            let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
-            crate::logic::lords_budget::candidate(
-                game_id,
-                crate::relics::ChestTiers { common: 10000, uncommon: 0, rare: 0, epic: 0, legendary: 0 },
-                123,
-                context,
-            )
-        },
-    );
-    assert_eq!(chest, common);
+    assert_eq!(chest, expected(d, game_id, coord, HIT_ROOT));
     let army = GameState { contract_address: d.games }.resolved_explorer(key).unwrap();
     let before = lords(d, game_id, army.owner);
     assert!(open(d, key, coord, 361));
-    assert_eq!(lords(d, game_id, army.owner) - before, 7 * RESOURCE_PRECISION);
+    assert_eq!(lords(d, game_id, army.owner) - before, chest.amount * RESOURCE_PRECISION);
 }
 
 #[test]
@@ -212,7 +199,9 @@ fn a_nonadjacent_army_cannot_consume_the_reservation_and_rollover_cannot_pay_an_
             let context = crate::commands::ExecutionContext { timestamp: 360, ..super::context(d.games, game_id) };
             let next = crate::days::day_of(context.game.unbox(), context.rules.unbox().day_unit_seconds, 360).end;
             let context = crate::commands::ExecutionContext { timestamp: next, ..context };
-            let fresh = crate::logic::lords_budget::common_candidate(game_id, context);
+            let fresh = crate::logic::lords_budget::candidate(
+                game_id, crate::logic::expeditions::depth_rules_at(game_id, coord).chest, 123, context,
+            );
             assert!(crate::logic::lords_budget::try_reserve(game_id, fresh, context));
             let reserved = crate::logic::lords_budget::budget(game_id);
             let reward = crate::logic::lords_budget::pay(chest_key, context);
@@ -222,4 +211,20 @@ fn a_nonadjacent_army_cannot_consume_the_reservation_and_rollover_cannot_pay_an_
     );
     assert_eq!(lords(d, game_id, army.owner), before);
     assert_eq!(IRelicsDispatcher { contract_address: d.games }.site_chest(chest_key), Some(chest));
+}
+
+#[test]
+fn explored_chests_use_each_layers_odds_and_reserve_the_rolled_amount() {
+    for depth in 0_u8..4 {
+        let (d, game_id, key) = super::registrar::setup_frontier_chests();
+        world_test_support::tests::progression::place_army_at_depth(d, key, depth);
+        let coord = destination(d, key);
+        let rolled = expected(d, game_id, coord, HIT_ROOT);
+        explore(d, key, HIT_ROOT, 360);
+        let (_, chest) = found(d, key, coord);
+        assert_eq!(chest, rolled);
+        assert!(chest.tier >= depth);
+        let budget = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
+        assert_eq!(budget.open, chest.amount);
+    }
 }

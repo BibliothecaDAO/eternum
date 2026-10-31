@@ -144,6 +144,15 @@ const tierOf = (tier: number | string): PlateTroops["tier"] => {
   return value === 3 ? 3 : value === 2 ? 2 : 1;
 };
 
+/**
+ * Whether a structure's plate tells its guards' stamina. A standing Frontier site's guards (a ruin, a Troll camp, beasts,
+ * a rift: `siteKind`) never move or explore, so their stamina tells nothing (owner, 30 October 2026: "we can drop the
+ * stamina bar for enemies in frontier"); every other structure's guards keep it (owner, 19 October: "we do need to see
+ * army stamina on structure hover"), as every army's plate does.
+ */
+export const tellsGuardStamina = (structure: Pick<StructureInfo, "siteKind">): boolean =>
+  structure.siteKind === undefined;
+
 /** A named structure's kinds: a realm and a hyperstructure carry their own names; the rest are named by their kind. */
 const NAMED: ReadonlySet<StructureType> = new Set([StructureType.Realm, StructureType.Hyperstructure]);
 

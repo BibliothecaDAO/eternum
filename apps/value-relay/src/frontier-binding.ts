@@ -34,11 +34,7 @@ export const frontierReceiptBindings = (
         frontierTerms(snapshot),
       );
       if (pool !== BigInt(funding.pool) / 10n ** 18n) throw new Error("frontier_pool_differs_from_ledger");
-      if (
-        !Number.isSafeInteger(confirmedAt) ||
-        confirmedAt < 0 ||
-        (prizeRank === 0 ? confirmedAt >= funding.claimDeadline : confirmedAt < funding.end)
-      )
+      if (!Number.isSafeInteger(confirmedAt) || confirmedAt < 0 || (prizeRank > 0 && confirmedAt < funding.end))
         throw new Error("withdrawal_created_outside_claim_window");
       return gameId;
     }),

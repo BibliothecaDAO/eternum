@@ -8,6 +8,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 const game = vi.hoisted(() => ({
   spendPoint: vi.fn(() => Promise.resolve({ transaction_hash: "0x7" })),
   select: vi.fn(),
+  learned: 0n,
   signer: { address: "0x111" },
   progress: {
     common_points: 0,
@@ -29,7 +30,6 @@ const game = vi.hoisted(() => ({
     game_id: 1,
     reveal_xp: 2,
     reveal_xp_per_depth: 1,
-    fixed_xp: 200,
     uncommon_xp: 200,
     rare_xp: 400,
     epic_xp: 800,
@@ -51,7 +51,14 @@ const army = {
 vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
-      store: { get: (model: string) => (model === "ArmyProgress" ? game.progress : game.rules) },
+      store: {
+        get: (model: string) =>
+          model === "ArmyProgress"
+            ? game.progress
+            : model === "RealmKnowledge"
+              ? { learned: game.learned }
+              : game.rules,
+      },
       systemCalls: { spend_skill_point: game.spendPoint },
     },
     account: { account: game.signer },
@@ -85,6 +92,7 @@ beforeEach(() => {
   document.body.append(host);
   root = createRoot(host);
   vi.clearAllMocks();
+  game.learned = 0n;
   game.progress.xp = 12;
   game.progress.common_points = 0;
 });
@@ -112,6 +120,8 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   game.progress.common_points = 1;
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  // The army's sheet stands in the kit's one frame, as every surface the HUD opens does (frontier-hud.test).
+  expect(host.querySelector("section[data-kit-sheet]")?.hasAttribute("data-kit-frame")).toBe(true);
   // Each attribute is a tile named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
   expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
   expect(host.textContent).toMatch(/\d+ max stamina/);

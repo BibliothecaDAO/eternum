@@ -34,6 +34,11 @@ export function researchTier(learned: bigint, row: number): number {
     : field(learned, ...slot);
 }
 
+/** Both Scouting entrypoints require at least one discoverable Sanctuary. */
+function sanctuariesAvailable(learned: bigint): boolean {
+  return researchTier(learned, research.ROW_SHRINE) > 0 || researchTier(learned, research.ROW_WELL) > 0;
+}
+
 export function researchHasIndependentSides(row: number): boolean {
   return row === research.ROW_FARM || row === research.ROW_WORKSHOP || row === research.ROW_BARRACKS;
 }
@@ -75,6 +80,8 @@ export function researchChoice(learned: bigint, row: number, tier: number): numb
 export function learnResearch(learned: bigint, row: number, side: number): bigint {
   const offset = tierFields[row]?.[0];
   if (offset === undefined) throw new Error(`Unknown research row ${row}`);
+  if (row === research.ROW_SCOUTS_LODGE && side === research.KIND_SANCTUARIES && !sanctuariesAvailable(learned))
+    throw new Error("Research Shrine or Well first");
   const picks = researchPicks(learned, row, side);
   const next = (researchHasIndependentSides(row) ? picks : researchTier(learned, row)) + 1;
   const maximum = row === research.ROW_SHRINE || row === research.ROW_WELL ? 1 : row === research.ROW_DEPTH ? 3 : 5;

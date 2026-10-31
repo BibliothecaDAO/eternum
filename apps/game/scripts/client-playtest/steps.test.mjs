@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
-import { CHAT, CLOSE, EVENTS_WORDS, MENU, SEASON } from "../../src/ui/design-system/kit/words";
+import { CHAT, CLOSE, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
@@ -23,7 +23,14 @@ const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).ve
 // pressed words the HUD no longer had.
 describe("the HUD's words the steps press and read", () => {
   it("are the ones the app writes", () => {
-    expect(HUD_WORDS).toEqual({ menu: MENU, season: SEASON, feed: EVENTS_WORDS.feed, close: CLOSE, chat: CHAT });
+    expect(HUD_WORDS).toEqual({
+      menu: MENU,
+      season: SEASON,
+      feed: EVENTS_WORDS.feed,
+      close: CLOSE,
+      chat: CHAT,
+      realmLabor: REALM_LABOR,
+    });
   });
 });
 

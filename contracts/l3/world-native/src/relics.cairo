@@ -208,6 +208,7 @@ pub struct LordsWithdrawal {
 
 #[starknet::interface]
 pub trait ILords<T> {
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
     fn refill_stamina(
         ref self: T,
         game_id: u32,
@@ -424,6 +425,12 @@ pub fn assert_claim_window(game: crate::game::GameRegistry, rules: ChestRules, t
 pub enum SiteBenefit {
     Shrine: u32,
     Well: u64,
+    ShrinePoint: u8,
+}
+
+#[derive(Copy, Drop, Serde, Debug, PartialEq)]
+pub struct ShrineReward {
+    pub rank: u8,
 }
 
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]

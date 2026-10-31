@@ -84,7 +84,7 @@ describe("the castle", () => {
       ["Storage", "18K", "→", "50K"],
       ["Max army size", "9,000", "→", "25K"],
     ]);
-    expect(host.querySelector(".ui-cost")?.textContent).toBe("15K labor");
+    expect(host.querySelector(".ui-cost")?.textContent).toBe("15K Labor");
     expect(
       buttons()
         .find((button) => button.textContent === "Upgrade")!
@@ -120,7 +120,7 @@ describe("the castle", () => {
     expect(upgrade.disabled).toBe(true);
     // The foot is the line and the verb: no price line repeating the need, no Explore (owner, 27 October).
     const foot = upgrade.closest(".ui-window__foot")!;
-    expect(foot.textContent).toBe("Needs 4,000 labor, have 2,011 · in 19h 44mUpgrade");
+    expect(foot.textContent).toBe("Needs 4,000 Labor, have 2,011 · in 19h 44mUpgrade");
     expect(foot.querySelectorAll("button")).toHaveLength(1);
     act(() => upgrade.click());
     expect(onUpgrade).not.toHaveBeenCalled();

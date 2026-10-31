@@ -155,7 +155,7 @@ describe("Blitz's Build on this plot panel", () => {
   it("lists the economy a row a building, with what one more gives and its cost", () => {
     const panel = openPicker(true);
     panel.tab("Economic");
-    const rows = [...panel.host.querySelectorAll('[role="listbox"] .ui-row')];
+    const rows = [...panel.host.querySelectorAll('[role="group"] .ui-row')];
     expect(rows.length).toBeGreaterThan(0);
     expect(rows[0].textContent).toMatch(/^Farm/);
     expect(rows[0].textContent).toMatch(/Wheat \+[\d,.]+\/(?:s|min)/);

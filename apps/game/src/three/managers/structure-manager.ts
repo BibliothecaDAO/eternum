@@ -100,7 +100,7 @@ import {
   shouldRunManagerChunkUpdate,
 } from "./manager-update-convergence";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
-import { buildStructurePlate, guardsToTell } from "../map-plates/map-plate-model";
+import { buildStructurePlate, guardsToTell, tellsGuardStamina } from "../map-plates/map-plate-model";
 import { holdsGrowingReward, readPlateReward } from "../map-plates/plate-reward";
 import { cleanupVisibleStructurePass } from "./structure-visible-pass-cleanup";
 import {
@@ -709,10 +709,10 @@ export class StructureManager {
    * is said and never cached, as a holding is (owner, map labels 2026-10-19: "we do need to see army stamina on structure
    * hover"). The guards are read through `getGuardsByStructure`, the one rule that resolves a guard's inline bar and its
    * game's cap (Frontier's, with no tier bonus). The plates are said again each second (`refreshLivePlates`), so it
-   * follows regeneration.
+   * follows regeneration. A Frontier site's guards tell none (tellsGuardStamina), so theirs is never read.
    */
   private withGuardStamina(structure: StructureInfo): StructureInfo {
-    if (!this.store || !structure.guardArmies?.length) return structure;
+    if (!this.store || !structure.guardArmies?.length || !tellsGuardStamina(structure)) return structure;
     const row = this.store.get("Structure", {
       game_id: configManager.getActiveGameId(),
       entity_id: structure.entityId,

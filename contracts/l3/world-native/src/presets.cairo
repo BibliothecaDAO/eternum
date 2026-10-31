@@ -85,7 +85,6 @@ pub fn validate(preset: PresetDefinition) {
         let _ = progression.reveal_xp + 3 * progression.reveal_xp_per_depth;
         assert!(
             progression.reveal_xp != 0
-                && progression.fixed_xp != 0
                 && progression.common_xp > 0
                 && progression.uncommon_xp > progression.common_xp
                 && progression.rare_xp > progression.uncommon_xp

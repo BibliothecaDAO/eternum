@@ -21,6 +21,7 @@ import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board"
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
+import { ArmyLostSheet } from "./army/army-lost";
 import { useArmyPanelOpens, usePickArmy } from "./army/army-opens";
 import { FrontierArmy } from "./army/frontier-army";
 import { useSelectionCard } from "./frontier-selection-sheet";
@@ -37,7 +38,7 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
-import { useOnePanel } from "./hud/one-panel";
+import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
 import { useNextUpBuilding } from "./next-up/next-up-steps";
@@ -47,9 +48,10 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
-import { SeasonWithdraw } from "./value/season-withdraw";
+import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useCampaignMark } from "./value/campaign-home";
+import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
 import { useRealmLords } from "./value/use-realm-lords";
 import { OfflineNotice } from "./hud/offline-notice";
@@ -104,19 +106,11 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       setResearchPick(node);
       setSurface("research");
     },
-    onArmyBack: (armyId) => armyPanel.returnTo(armyId),
   });
   const desktop = useLayout() === "desktop";
-  const {
-    surface,
-    openSurface: setSurface,
-    showsCard,
-    home,
-    goHome,
-    feedOpen,
-    closeFeed,
-  } = useOnePanel(card?.key ?? null, !desktop);
+  const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
+  const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
   const research = useResearchTree(realm);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
@@ -131,12 +125,15 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     },
     desktop,
   );
+  useOrderSettledReturnsToTheArmy(card?.key ?? null, {
+    returnTo: armyPanel.returnTo,
+    showLoss: () => setSurface("army-lost"),
+  });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
-  const goToPlace = useGoToFrontierPlace(realm);
   if (showBlankOverlay) return null;
   const close = () => setSurface(null);
   const own = realm && !visit ? realm : null;
@@ -167,7 +164,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
     !visit && (
       <RealmPurse
         realm={realm}
-        laborWaiting={realmLabor?.plan.total ?? 0}
+        waiting={claimWaiting}
         onWithdraw={() => setSurface("withdraw")}
         onRealms={() => setSurface("realms")}
       />
@@ -178,8 +175,10 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierResearch key={researchPick} realm={realm} pick={researchPick} onClose={close} />
     ) : surface === "season" ? (
       <FrontierSeason rules={rules} onVisited={close} onClose={close} />
+    ) : surface === "feed" ? (
+      <FrontierFeed onClose={close} />
     ) : surface === "menu" ? (
-      <HudMenu realm={realm} laborWaiting={(realmLabor?.plan.total ?? 0) > 0} onOpen={setSurface} onClose={close} />
+      <HudMenu realm={realm} claimWaiting={claimWaiting !== null} onOpen={setSurface} onClose={close} />
     ) : undefined;
   const notices = (
     <>
@@ -202,17 +201,9 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       <FrontierSurfaces realm={realm} rules={rules} />
       {showsCard && card?.sheet}
       {surface === "withdraw" && realm && !visit && <FrontierWithdraw realm={realm} onClose={close} />}
-      {surface === "realms" && realm && !visit && (
-        <FrontierRealms
-          labor={realmLabor}
-          onRealm={() => {
-            close();
-            goToPlace(false);
-          }}
-          onClose={close}
-        />
-      )}
+      {surface === "realms" && realm && !visit && <FrontierRealms labor={realmLabor} onClose={close} />}
       {surface === "army" && realm && !visit && <FrontierArmy realm={realm} choosing={armyChoosing} onClose={close} />}
+      {surface === "army-lost" && <ArmyLostSheet onClose={close} />}
       {surface === "settings" && (
         <HudSheet label={SETTINGS} onClose={close}>
           <SettingsPanel />
@@ -229,7 +220,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
       {surface !== "season" && surface !== "withdraw" && (
         <SeasonOver
-          withdraw={realm && !visit && <SeasonWithdraw realm={realm} onOpen={() => setSurface("withdraw")} />}
+          withdraw={realm && !visit && <SeasonPayout realm={realm} />}
           onSeason={() => setSurface("season")}
         />
       )}
@@ -253,7 +244,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
             rules={rules}
             realm={shown}
             own={own}
-            labor={realmLabor?.plan.total ?? 0}
+            waiting={claimWaiting}
             storeCards={storeCards}
             onSurface={setSurface}
           />
@@ -262,7 +253,6 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
       armies={dock}
       nextUp={nextUp}
       page={page}
-      feed={feedOpen && <FrontierFeed onClose={closeFeed} />}
       foot={
         <>
           {notices}
@@ -273,11 +263,7 @@ export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
         !(visit && realm) && (
           <FrontierPlaces
             surface={surface}
-            home={home}
-            feedOpen={feedOpen}
-            onCloseFeed={closeFeed}
             onSurface={setSurface}
-            onHome={goHome}
             research={realm ? canResearchNow(research?.nodes) : undefined}
           />
         )
@@ -356,9 +342,8 @@ const FrontierPhoneHud = ({
             signedIn={chat.initializer !== null}
             onSignIn={chat.requestSignIn}
             pane={chatPane}
+            onClose={() => onSurface(null)}
           />
-        ) : surface === "feed" ? (
-          <FrontierFeed onClose={() => onSurface(null)} />
         ) : (
           page
         )
@@ -486,13 +471,13 @@ const PendingOrder = ({
 /** The Menu page over the game: each row opens its way and closes the menu; Exit leaves for the app. */
 const HudMenu = ({
   realm,
-  laborWaiting,
+  claimWaiting,
   onOpen,
   onClose,
 }: {
   realm: NativeRows["Structure"] | null;
-  /** Whether the player's Realms have labor to give today: the Realms row wears a dot. */
-  laborWaiting: boolean;
+  /** Whether the home's daily claim has Labor or Essence waiting today: the Realms row wears a dot. */
+  claimWaiting: boolean;
   onOpen: (surface: HudSurface | null) => void;
   onClose: () => void;
 }) => {
@@ -503,7 +488,7 @@ const HudMenu = ({
       rank={rank}
       onToday={() => onOpen("today")}
       onSeason={() => onOpen("season")}
-      realms={realm ? { waiting: laborWaiting, onOpen: () => onOpen("realms") } : undefined}
+      realms={realm ? { waiting: claimWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
       onExit={() => navigate("/")}
       onClose={onClose}
@@ -520,7 +505,7 @@ const FrontierRealmPanel = ({
   rules,
   realm,
   own,
-  labor,
+  waiting,
   storeCards,
   onSurface,
 }: {
@@ -528,7 +513,7 @@ const FrontierRealmPanel = ({
   realm: NativeRows["Structure"];
   /** The player's own realm, the one read; null while watching or visiting. */
   own: NativeRows["Structure"] | null;
-  labor: number;
+  waiting: DailyClaimWaiting | null;
   storeCards: ComponentProps<typeof RealmPanel>["storeCards"];
   onSurface: (surface: HudSurface) => void;
 }) => {
@@ -549,7 +534,7 @@ const FrontierRealmPanel = ({
       onHome={() => goToPlace(true)}
       {...(own && {
         lords,
-        labor,
+        waiting,
         storeCards,
         onWithdraw: () => onSurface("withdraw"),
         onRealms: () => onSurface("realms"),
@@ -559,22 +544,22 @@ const FrontierRealmPanel = ({
 };
 
 /**
- * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the player's Realms
- * have labor to give today.
+ * Under the strip: the realm's LORDS, which open Withdraw, and beside them the Realms chip while the home's daily claim
+ * has Labor or Essence waiting today.
  */
 const RealmPurse = ({
   realm,
-  laborWaiting,
+  waiting,
   onWithdraw,
   onRealms,
 }: {
   realm: NativeRows["Structure"];
-  laborWaiting: number;
+  waiting: DailyClaimWaiting | null;
   onWithdraw: () => void;
   onRealms: () => void;
 }) => (
   <PurseRow>
-    {laborWaiting > 0 && <RealmsChip labor={laborWaiting} onOpen={onRealms} />}
+    {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
     <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
   </PurseRow>
 );

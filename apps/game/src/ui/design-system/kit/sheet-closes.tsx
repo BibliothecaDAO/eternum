@@ -78,14 +78,19 @@ export const isInLayerOpenedFrom = (target: EventTarget | null, from: ParentNode
   return false;
 };
 
+/** Whether `target` is a control whose layer is open now (a field suggesting from its list: chat's mentions). */
+const hasLayerOpen = (target: EventTarget | null) =>
+  target instanceof Element && target.getAttribute("aria-expanded") === "true" && target.hasAttribute("aria-controls");
+
 /**
  * Escape closes the sheet and stops there: taken before the map's shortcuts, which leave a key a surface took. An Escape
- * in a layer a control opened (a select's list) is that layer's: it closes the list, not the sheet.
+ * in a layer a control opened (a select's list), or on the control while its layer is open, is that layer's: it closes
+ * the list, not the sheet.
  */
 const useEscapeCloses = (close: () => void) => {
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || isInLayerOpenedFrom(event.target, document)) return;
+      if (event.key !== "Escape" || isInLayerOpenedFrom(event.target, document) || hasLayerOpen(event.target)) return;
       event.preventDefault();
       close();
     };
@@ -116,23 +121,41 @@ const stepBackOffEntry = (id: string) => {
 };
 
 /**
+ * Whether the newest entry belongs to a sheet that has just closed and not stepped back yet: one the press that opens
+ * the next replaced (Menu's row opening the Season, a place bar slot opening another page).
+ */
+const topSheetLeft = () => {
+  const top = openSheets().at(-1);
+  return top !== undefined && !mounted.has(top) && !steppingBack.has(top);
+};
+
+/**
  * The system back closes the sheet, not the page under it. Opening pushes a history entry naming the sheet (on top of
  * the router's own state, so its index is unchanged); a back that lands on an entry without that name closes it. A sheet
- * closed any other way steps back off its own entry, so the back button never has to be pressed twice.
+ * that replaces one closing in the same press takes over its entry, and one opened while a closed sheet still steps back
+ * takes its entry once that step lands, so every entry names a sheet on screen. A sheet closed any other way steps back
+ * off its own entry, so the back button never has to be pressed twice.
  */
 const useSystemBackCloses = (close: () => void) => {
   const id = useId();
   const closeRef = useLatest(close);
   useEffect(() => {
     mounted.add(id);
-    if (!openSheets().includes(id)) {
+    let entered = false;
+    const enter = () => {
+      if (!mounted.has(id)) return;
+      entered = true;
+      if (openSheets().includes(id)) return;
       const state = (window.history.state ?? {}) as Record<string, unknown>;
-      window.history.pushState({ ...state, kitSheets: [...openSheets(), id] }, "");
-    }
+      if (topSheetLeft()) window.history.replaceState({ ...state, kitSheets: [...openSheets().slice(0, -1), id] }, "");
+      else window.history.pushState({ ...state, kitSheets: [...openSheets(), id] }, "");
+    };
     const onPop = () => {
-      if (!openSheets().includes(id)) closeRef.current();
+      if (entered && !openSheets().includes(id)) closeRef.current();
     };
     window.addEventListener("popstate", onPop);
+    if (steppingBack.size > 0) window.addEventListener("popstate", () => setTimeout(enter), { once: true });
+    else enter();
     return () => {
       mounted.delete(id);
       window.removeEventListener("popstate", onPop);

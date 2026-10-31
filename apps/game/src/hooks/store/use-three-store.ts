@@ -26,6 +26,14 @@ export interface ThreeStore {
   setTileAsideForSurface: () => void;
   /** Deselects the selected army or structure; a plain tile stays selected. */
   deselectEntity: () => void;
+  /**
+   * The pick the map itself let go of (an army lost, a site cleared under its card: the map's own cleanup, never a
+   * player's choice), until the selection is touched again: an order given from it still tells its outcome
+   * (useOrderSettledReturnsToTheArmy).
+   */
+  letGoByTheMap: MapSelectionIntent;
+  /** Records the pick the map's own cleanup just let go of (worldmap-lost-selection, after its clearing). */
+  markLetGoByTheMap: (pick: MapSelectionIntent) => void;
   /** Derives the selection again from where its entity stands now (the map calls it as its projection changes). */
   refreshMapSelection: () => void;
   /** Derived from `mapSelection`: the contract hex the tile panel, the selection ring and the cards name. */
@@ -125,7 +133,9 @@ export const createThreeStoreSlice = (
   // Nothing is selected until the player selects something: no stand-in hex at the origin.
   mapSelection: null,
   selectOnMap: (intent: MapSelectionIntent) => {
-    set({ mapSelection: intent, setAsidePick: null });
+    // Any touch of the selection after the map let go of a pick is a newer choice (a pick, a surface setting the tile
+    // aside, a let-go): the map's record goes with it.
+    set({ mapSelection: intent, setAsidePick: null, letGoByTheMap: null });
     get().refreshMapSelection();
   },
   closeSelectedTile: () => get().selectOnMap(withoutSelectedTile(get().mapSelection)),
@@ -138,6 +148,8 @@ export const createThreeStoreSlice = (
   deselectEntity: () => {
     if (get().mapSelection?.kind !== "hex") get().selectOnMap(null);
   },
+  letGoByTheMap: null,
+  markLetGoByTheMap: (pick: MapSelectionIntent) => set({ letGoByTheMap: pick }),
   refreshMapSelection: () => {
     const state = get();
     // The layer lives in the UI slice of the same store.

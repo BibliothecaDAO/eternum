@@ -1,0 +1,157 @@
+/* The Realm Labor sheet: the home's banner, the days around today, the next day's row. */
+.realm-labor {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  color: rgb(var(--hud-ink));
+}
+
+/* The home's picture fills the banner, its painting on the right; its name and amounts read over a shade on the left. */
+.realm-labor__banner {
+  position: relative;
+  overflow: hidden;
+  height: 8rem;
+  border: 2px solid rgb(var(--hud-gold) / 0.7);
+  border-radius: var(--hud-radius-panel);
+}
+.realm-labor__banner > .home-art {
+  position: absolute;
+  inset: 0;
+  justify-items: end;
+  padding-inline-end: 1rem;
+  border-radius: 0;
+}
+.realm-labor__banner > .home-art[data-map="drawn"] {
+  padding: 0;
+}
+.realm-labor__banner > .home-art[data-map="none"] > img {
+  width: auto;
+  height: 100%;
+}
+.realm-labor__about {
+  position: absolute;
+  inset: 0 auto 0 0;
+  display: flex;
+  width: 72%;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.75rem 0.9rem;
+  background: linear-gradient(90deg, rgb(var(--hud-dark) / 0.92) 55%, transparent);
+}
+.realm-labor__name {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+.realm-labor__name strong {
+  font-family: var(--font-display, "Cinzel", serif);
+  font-size: var(--hud-text-title);
+  line-height: var(--hud-leading-title);
+  font-weight: var(--hud-weight-display);
+}
+.realm-labor__name span {
+  color: var(--hud-muted);
+  font-size: var(--hud-text-label);
+}
+.realm-labor__amounts {
+  display: flex;
+  align-items: center;
+  column-gap: 0.75rem;
+  white-space: nowrap;
+  font-weight: 700;
+}
+.realm-labor__amount {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.realm-labor__each {
+  color: var(--hud-muted);
+  font-weight: 500;
+}
+@media (max-width: 1023px) {
+  .realm-labor__amounts {
+    flex-wrap: wrap;
+  }
+  .realm-labor__each {
+    flex-basis: 100%;
+  }
+}
+
+/* The days around today: today framed in gold, each claimed day ticked, a missed one struck through. */
+.realm-labor__days {
+  display: flex;
+  gap: 0.35rem;
+}
+.realm-labor__days li {
+  position: relative;
+  display: grid;
+  flex: 1;
+  height: 2.25rem;
+  place-items: center;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  color: var(--hud-muted);
+  font-weight: 700;
+}
+.realm-labor__days li > img {
+  position: absolute;
+  top: -0.35rem;
+  right: -0.35rem;
+}
+.realm-labor__days li[data-state="claimed"] {
+  border-color: rgb(var(--hud-gold) / 0.6);
+  color: rgb(var(--hud-gold));
+}
+.realm-labor__days li[aria-current="date"] {
+  border: 2px solid rgb(var(--hud-gold));
+}
+.realm-labor__days li[data-state="open"] {
+  background: var(--hud-chosen);
+  color: rgb(var(--hud-ink));
+}
+.realm-labor__days li[data-state="missed"] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
+.realm-labor__days li:is([data-state="ahead"], [data-state="before"]) {
+  opacity: 0.6;
+}
+
+.realm-labor__next {
+  display: flex;
+  min-height: var(--hud-control);
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.5rem 0.35rem 0.75rem;
+  border: 1px solid var(--hud-line);
+  border-radius: var(--hud-radius-control);
+  background: var(--hud-well);
+  flex-wrap: wrap;
+  font-weight: 600;
+}
+/* The countdown keeps one line; a reminder that no longer fits beside it goes under it. */
+.realm-labor__next > span:first-of-type {
+  flex: 1;
+  white-space: nowrap;
+}
+.realm-labor__reminder-on {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: rgb(var(--hud-gold));
+  font-size: var(--hud-text-label);
+  font-weight: var(--hud-weight-label);
+}
+
+.realm-labor__none {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: var(--hud-muted);
+}
+.realm-labor__none > .home-art {
+  width: 3.5rem;
+  height: 3.5rem;
+}

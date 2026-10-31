@@ -113,6 +113,7 @@ import {
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
 import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
+import { letGoOfClearedSite, letGoOfLostSelection } from "./worldmap-lost-selection";
 import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
@@ -1336,7 +1337,13 @@ export default class WorldmapScene extends WarpTravel {
       this.createRuleSpires(),
       this.compilePipelines,
     );
-    this.mapSiteManager = new MapSiteManager(this.scene, this.worldSpatialProjection, this.getTerrainSurface());
+    this.mapSiteManager = new MapSiteManager(
+      this.scene,
+      this.worldSpatialProjection,
+      this.game.store,
+      this.mapPlates.createScope("shrine"),
+      this.getTerrainSurface(),
+    );
     this.chestManager = new ChestManager(
       this.scene,
       this.renderChunkSize,
@@ -1841,10 +1848,7 @@ export default class WorldmapScene extends WarpTravel {
         const tile = Position.fromContract(payout.coord).getNormalized();
         const hex = { col: tile.x, row: tile.y };
         // The fallen site's tile card goes with it; the card of what it paid takes its place.
-        const selectedHex = useUIStore.getState().selectedHex;
-        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) {
-          useUIStore.getState().closeSelectedTile();
-        }
+        letGoOfClearedSite(payout.coord);
         playSiteClear({
           clear: payout,
           troopsLost: payout.troopsLost,
@@ -2401,6 +2405,7 @@ export default class WorldmapScene extends WarpTravel {
         });
       }
       this.previouslyHoveredHex = null;
+      this.armyManager.setHoveredArmy(null);
       this.showOrderUnderPointer(null);
       this.state.setHoveredHex(null);
       publishMapSelection({ hovered: null });
@@ -2413,6 +2418,7 @@ export default class WorldmapScene extends WarpTravel {
       this.currentHoverLabelHex = null;
       this.clearPendingHoverLabelRecovery("hex_leave");
       this.hoverLabelManager.onHexLeave();
+      this.hoverMapSite(null);
       this.refreshSelectedPlate();
       return;
     }
@@ -2425,7 +2431,8 @@ export default class WorldmapScene extends WarpTravel {
       });
     }
     this.previouslyHoveredHex = hexCoords;
-    const { structure: hoveredStructure } = this.getHexagonEntity(hexCoords);
+    const { structure: hoveredStructure, army: hoveredArmy } = this.getHexagonEntity(hexCoords);
+    this.armyManager.setHoveredArmy(hoveredArmy?.id ?? null);
     publishMapSelection({
       hovered: hoveredStructure
         ? {
@@ -2439,6 +2446,7 @@ export default class WorldmapScene extends WarpTravel {
     // Handle label expansion on hover
     this.currentHoverLabelHex = hexCoords;
     this.reconcileHoverLabels("hover");
+    this.hoverMapSite(hexCoords);
     this.refreshSelectedPlate();
 
     const { selectedEntityId, actionPaths } = getLiveWorldmapEntityActions();
@@ -2502,6 +2510,11 @@ export default class WorldmapScene extends WarpTravel {
     return this.worldSpatialProjection.getArmy(selectedEntityId) !== undefined ? selectedEntityId : null;
   }
 
+  private hoverMapSite(hex: HexPosition | null): void {
+    const tile = hex && Position.fromNormalized({ x: hex.col, y: hex.row }).getContract();
+    this.mapSiteManager?.hover(tile ? { col: tile.x, row: tile.y } : null);
+  }
+
   private nameOrderAt(
     hexCoords: HexPosition,
     refusal = this.orderRefusals.get(ActionPaths.posKey(hexCoords, true)),
@@ -2509,7 +2522,7 @@ export default class WorldmapScene extends WarpTravel {
     const key = ActionPaths.posKey(hexCoords, true);
     const path = getLiveWorldmapEntityActions().actionPaths.get(key);
     const armyTroops = this.selectedArmyRow()?.troops;
-    const site = path && ActionPaths.getActionType(path) === ActionType.UseSite ? this.usableSiteAt(hexCoords) : null;
+    const site = this.usableSiteAt(hexCoords);
     const short = refusal?.reason === "stamina" ? this.selectedArmyShortOf(refusal.need) : undefined;
     return orderTip({
       path,
@@ -4430,6 +4443,7 @@ export default class WorldmapScene extends WarpTravel {
   private detachWorldmapManagerLabels(): void {
     this.clearPendingHoverLabelRecovery("detach");
     this.hoverLabelManager.onHexLeave();
+    this.hoverMapSite(null);
     this.armyManager.removeLabelsFromScene();
     this.structureManager.removeLabelsFromScene();
     this.chestManager.removeLabelsFromScene();
@@ -8948,17 +8962,26 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   /**
-   * A selected army that is gone (lost in a fight) lets go of the map at once: its highlights are orders nobody can
-   * give. Read from the facts themselves, since the armies' list is only as fresh as its last change.
+   * The selected army's walk drawn in full, and its route to the tile under the pointer before the order, as HoMM and
+   * Humankind preview a move (owner, 30 October 2026, "ok for A yes", reports/army-path-3.md): only a route the army
+   * would walk, a Move or an Explore.
    */
+  private showSelectedArmyRoutes(): void {
+    const army = this.selectedArmyId();
+    this.armyManager.setSelectedArmy(army);
+    const { hoveredHex, actionPaths } = getLiveWorldmapEntityActions();
+    const path = army !== null && hoveredHex ? actionPaths.get(ActionPaths.posKey(hoveredHex, true)) : undefined;
+    const actionType = path && ActionPaths.getActionType(path);
+    const walks = actionType === ActionType.Move || actionType === ActionType.Explore;
+    this.armyManager.previewRoute(
+      army,
+      path && walks ? path.map(({ hex }) => Position.fromContract({ x: hex.col, y: hex.row })) : null,
+    );
+  }
+
+  /** A selected army that is gone lets go of the map, what the map drew for it with it (letGoOfLostSelection). */
   private letGoOfLostSelection(): void {
-    const { selectedEntityId } = getLiveWorldmapEntityActions();
-    if (selectedEntityId === null || selectedEntityId === undefined) return;
-    const gameId = configManager.getActiveGameId();
-    const stands =
-      this.game.store.get("ExplorerTroops", { game_id: gameId, explorer_id: selectedEntityId }) !== undefined ||
-      this.game.store.get("Structure", { game_id: gameId, entity_id: selectedEntityId }) !== undefined;
-    if (!stands) this.clearEntitySelection();
+    letGoOfLostSelection(this.game.store, () => this.clearEntitySelection());
   }
 
   private handleEntityActionsStoreUpdate(
@@ -9000,6 +9023,12 @@ export default class WorldmapScene extends WarpTravel {
       nextEntityActions.selectedEntityId !== previousEntityActions?.selectedEntityId
     )
       this.markOrderTarget();
+    if (
+      nextEntityActions.hoveredHex !== previousEntityActions?.hoveredHex ||
+      nextEntityActions.selectedEntityId !== previousEntityActions?.selectedEntityId ||
+      nextEntityActions.actionPaths !== previousEntityActions?.actionPaths
+    )
+      this.showSelectedArmyRoutes();
 
     if (this.isMissingActionPathOwnershipState()) {
       this.logInteractionDebug("clearing_entity_selection_for_missing_ownership", {
@@ -9053,6 +9082,7 @@ export default class WorldmapScene extends WarpTravel {
     this.updateEntityActionPaths(new Map());
     this.highlightHexManager.highlightHexes([]);
     this.hoverLabelManager.onHexLeave();
+    this.hoverMapSite(null);
     this.clearTileEntityCache();
     this.interactiveHexWindowKey = null;
     if (!this.isSwitchedOff) {

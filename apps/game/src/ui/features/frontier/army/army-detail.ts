@@ -3,6 +3,7 @@ import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, RESEARCH_TREE, type Tier, type Rank } from "@/ui/design-system/kit/words";
 import {
+  researchTier,
   battleBonusBps,
   homecomingBps,
   logisticsStamina,
@@ -13,11 +14,12 @@ import {
 } from "@bibliothecadao/eternum";
 import { formatExact, formatPercent } from "@bibliothecadao/types";
 
-import { pointChoices, type AttributeKey, type ScoutKind } from "../progression-choices";
+import { availableScoutingChoices, pointChoices, type AttributeKey, type ScoutKind } from "../progression-choices";
 export type { AttributeKey, ScoutKind } from "../progression-choices";
 
 /** What the detail reads of an army and its game. */
 export interface ArmyDetailFacts {
+  learned: bigint;
   name: string;
   art: IconMeaning;
   troops: number;
@@ -44,6 +46,7 @@ export interface AttributeView {
 }
 
 export interface ArmyView {
+  scoutingKinds: readonly ScoutKind[];
   name: string;
   art: IconMeaning;
   troops: number;
@@ -105,6 +108,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     };
   });
   return {
+    scoutingKinds: availableScoutingChoices((row) => researchTier(army.learned, row)).map((choice) => choice.key),
     name: army.name,
     art: army.art,
     troops: army.troops,

@@ -46,10 +46,10 @@ export const StoreCard = ({
   } = FRONTIER_STORES[line.kind];
   return (
     <HudPanel label={word} collapsible={false} className="pointer-events-auto" bodyClassName="flex flex-col gap-1.5">
-      <span className="flex items-center gap-2">
+      <span data-store-card={line.kind} className="flex items-center gap-2">
         <Icon name={icon} size={28} />
         <span className="flex min-w-0 flex-1 flex-col">
-          <span className="text-hud-label capitalize text-hud-muted">{word}</span>
+          <span className="text-hud-label text-hud-muted">{word}</span>
           <span className={`flex items-center gap-1 tabular-nums ${full ? "text-hud-bad" : ""}`}>
             {full ? formatRate(0) : formatRate(line.perHour === undefined ? undefined : line.perHour / 3600)}
             {line.sides?.map((side, index) => (

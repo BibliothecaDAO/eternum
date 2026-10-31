@@ -7,6 +7,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@bibliothecadao/types": "workspace:*",
     "@realms-world/identity": "workspace:*",
     "effect": "4.0.4",
     "starknet": "catalog:web",

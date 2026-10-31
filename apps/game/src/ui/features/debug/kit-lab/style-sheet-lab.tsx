@@ -822,7 +822,7 @@ const ORDER_LINES = [
   { path: [orderStep(ActionType.Move), orderStep(ActionType.Chest)] },
   {
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
-    site: { kind: "Shrine", gain: 200, stamina: undefined } as const,
+    site: { kind: "Shrine", gain: 3, stamina: undefined } as const,
   },
   {
     path: [orderStep(ActionType.Move), orderStep(ActionType.UseSite)],
@@ -1141,7 +1141,7 @@ const TABLE_COLS = "40px 1fr 48px 56px";
 const LabPickRows = () => {
   const [picked, setPicked] = useState("Hetokamohuti");
   return (
-    <div className="mt-3 flex flex-col gap-1" role="listbox" aria-label="Send to">
+    <div className="mt-3 flex flex-col gap-1" role="group" aria-label="Send to">
       {["Hetokamohuti", "Ilgzhijajilg"].map((name) => (
         <HudRow
           key={name}
@@ -1252,7 +1252,7 @@ const RowsSection = () => (
           detail="Settlement"
           selected
           onClick={() => undefined}
-          trail={
+          controls={
             <HudButton kind="secondary" size="sm">
               Level up
             </HudButton>

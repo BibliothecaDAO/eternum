@@ -1,4 +1,5 @@
 import { frontierArmyRules } from "../army/progression-rules-fixture";
+import { learnResearch } from "@bibliothecadao/eternum";
 import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
 
 import type { ArmyDetailFacts } from "../army/army-detail";
@@ -70,7 +71,6 @@ const realmOn = (
     // A Knight deploys for 2 wheat; each Rations pick cuts 0.2.
     wheatPerTroop: (rations) => 2 - rations * 0.2,
     laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 4000)) / 10_000,
-    shrineXp: frontierArmyRules().fixed_xp,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
 };
@@ -117,6 +117,7 @@ const ARMY_RULES = {
 
 /** The owner's Army 1: 1,500 troops, 12 XP, 4 of 120 stamina, every attribute common. */
 export const EARLY_ARMY: ArmyDetailFacts = {
+  learned: 0n,
   name: "Army 1",
   art: "knight-t1",
   troops: 1_500,
@@ -129,8 +130,9 @@ export const EARLY_ARMY: ArmyDetailFacts = {
   ...ARMY_RULES,
 };
 
-/** A veteran: 260 XP after a few clears, Battle uncommon, Logistics rare (170 stamina), Scouting uncommon on rifts. */
+/** A veteran: 260 XP after a few clears, Battle II, Logistics III (170 stamina), Scouting II on rifts. */
 export const VETERAN_ARMY: ArmyDetailFacts = {
+  learned: learnResearch(0n, research.ROW_SHRINE, 0),
   name: "Army 2",
   art: "knight-t1",
   troops: 1_240,

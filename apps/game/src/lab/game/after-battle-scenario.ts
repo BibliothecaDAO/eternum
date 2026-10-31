@@ -1,5 +1,6 @@
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
+import { siteKindOf } from "@bibliothecadao/eternum";
 import type { HeraldHistoryEvent } from "@bibliothecadao/eternum/game-sync";
 import { ResourcesIds, StructureType, TileOccupier } from "@bibliothecadao/types";
 
@@ -36,7 +37,7 @@ export const afterBattleScenario = (): LabScenario => {
   });
   store.applyFacts([
     { model: "ExplorerTroops", key: "0x74", value: wire({ ...army, troops: afterTheFight(4_015n) }) },
-    ...ruinAt(store, ruinTile, afterTheFight(999n)),
+    ...siteAt(store, ruinTile, afterTheFight(999n), StructureType.Ruin),
     clearedCampAt(armyTile),
   ] as never);
   return {
@@ -69,6 +70,40 @@ export const afterBattleScenario = (): LabScenario => {
         [4_716n, 4_015n],
         [3_000n, 999n],
       ]),
+    ],
+  };
+};
+
+/**
+ * The same army after its fight with a point spent on Battle at rank IV (/lab/game?scenario=point-spent): its Feed row,
+ * as dev-playtest-2 (10-31) found it, said "spent a point Battle epic" where the army panel says ranks I–V.
+ */
+export const pointSpentScenario = (): LabScenario => {
+  const battle = afterBattleScenario();
+  const at = battle.startsAt - 30;
+  const hash = "0x5b1";
+  return {
+    ...battle,
+    history: [
+      {
+        block_number: 900_003,
+        transaction_index: 0,
+        event_index: 0,
+        game_id: "1",
+        model: "StoryEvent",
+        transaction_hash: hash,
+        value: {
+          game_id: "0x1",
+          owner: battle.player,
+          entity_id: String(SPIRE_ARMY),
+          tx_hash: hash,
+          story: {
+            SkillPointSpent: { explorer_id: String(SPIRE_ARMY), choice: "Battle", tier: 4, point_rank: 4, stamina: 0 },
+          },
+          timestamp: `0x${at.toString(16)}`,
+        },
+      },
+      ...(battle.history ?? []),
     ],
   };
 };
@@ -129,10 +164,12 @@ export const lowStaminaScenario = (): LabScenario => {
   };
   store.applyFacts([
     { model: "ExplorerTroops", key: "0x74", value: wire({ ...army, troops: spent }) },
-    ...ruinAt(store, besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!), {
-      ...army.troops,
-      count: 999n * PRECISION,
-    }),
+    ...siteAt(
+      store,
+      besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!),
+      { ...army.troops, count: 999n * PRECISION },
+      StructureType.Ruin,
+    ),
   ] as never);
   return spire;
 };
@@ -152,16 +189,42 @@ export const fightScenario = (): LabScenario => {
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
   store.applyFacts([
-    ...ruinAt(store, besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!), {
-      ...army.troops,
-      count: 999n * PRECISION,
-    }),
+    ...siteAt(
+      store,
+      besideOnOpenLand(store, store.entityOccupancy(1, SPIRE_ARMY)!),
+      { ...army.troops, count: 999n * PRECISION },
+      StructureType.Ruin,
+    ),
   ] as never);
   return {
     ...spire,
     answer: (command, chain, now) =>
       command.kind === "BattleGuard" ? answerFight(command, chain, now) : spire.answer(command, chain, now),
   };
+};
+
+/**
+ * The same ruin and army (/lab/game?scenario=fight-lost), but the fight costs the army its life: the chain answers its
+ * BattleGuard with the army gone and the guard standing, as the contract leaves a lost attacker, so the HUD's loss can
+ * be played (the playtest's lab-actions-fight-lost).
+ */
+export const fightLostScenario = (): LabScenario => {
+  const fight = fightScenario();
+  return {
+    ...fight,
+    answer: (command, chain, now) =>
+      command.kind === "BattleGuard" ? answerLostFight(command, chain) : fight.answer(command, chain, now),
+  };
+};
+
+const answerLostFight = (command: LabCommand, chain: NativeFactStore): LabFact[] => {
+  const [attackerId] = command.calldata.slice(5).map((felt) => BigInt(felt));
+  const [armyKey] = [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === attackerId)!;
+  const [tileKey] = [...chain.entries("TileOccupancy")].find(([, row]) => row.entity_id === attackerId)!;
+  return [
+    { model: "TileOccupancy", key: tileKey, value: null },
+    { model: "ExplorerTroops", key: armyKey, value: null },
+  ];
 };
 
 const answerFight = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {
@@ -224,11 +287,15 @@ export const clearedCampAt = (
   }),
 });
 
-/** A ruin on the tile, guarded by the troops given: its structure, its site, its guard and its tile's blocker. */
-export const ruinAt = (
+/**
+ * A standing site of this kind (a ruin, a camp) on the tile, guarded by the troops given: its structure, its site, its
+ * guard and its tile's blocker.
+ */
+export const siteAt = (
   store: ReturnType<typeof spireScenario>["store"],
   tile: { col: number; row: number },
   guard: object,
+  category: StructureType.Ruin | StructureType.Camp,
 ): LabFact[] => [
   {
     model: "Structure",
@@ -238,7 +305,7 @@ export const ruinAt = (
       entity_id: SITE,
       owner: 0,
       base: {
-        category: StructureType.Ruin,
+        category,
         level: 0,
         created_at: 1,
         troop_max_guard_count: 1,
@@ -253,7 +320,7 @@ export const ruinAt = (
     value: wire({
       game_id: 1,
       entity_id: SITE,
-      category: StructureType.Ruin,
+      category,
       initial_guard_count: 3_000n * PRECISION,
       alt: false,
       ...tile,
@@ -268,6 +335,13 @@ export const ruinAt = (
   {
     model: "TileOccupancy",
     key: "0x1ab95",
-    value: { game_id: 1, alt: false, ...tile, entity_id: SITE, category: TileOccupier.Ruin, is_structure: true },
+    value: {
+      game_id: 1,
+      alt: false,
+      ...tile,
+      entity_id: SITE,
+      category: TileOccupier[siteKindOf(category)],
+      is_structure: true,
+    },
   },
 ];

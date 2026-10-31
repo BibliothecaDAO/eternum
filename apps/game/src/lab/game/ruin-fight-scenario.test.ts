@@ -1,13 +1,15 @@
 import { configManager, WorldUpdateListener } from "@bibliothecadao/eternum";
 import { NativeFactStore, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
-import { ResourcesIds } from "@bibliothecadao/types";
+import { BiomeType, ResourcesIds } from "@bibliothecadao/types";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { SITE } from "@/ui/features/frontier/sites/site-fixture";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 
 import { rowsOf } from "./lab-chain";
-import { ruinFightScenario } from "./ruin-fight-scenario";
+import { readSiteCard } from "@/ui/features/frontier/sites/site-card-plan";
+
+import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -59,4 +61,24 @@ it("answers the attack on the ruin as the chain clears it, and its payout story 
       }),
     ],
   ]);
+});
+
+it("stands the far ruin's army out of an attack's reach, and the card forecasts its attack all the same", () => {
+  vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
+  const { store } = ruinFarScenario();
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
+  const stands = store.entityOccupancy(1, SPIRE_ARMY)!;
+  const site = store.require("ExpeditionSite", { game_id: 1, entity_id: BigInt(SITE) });
+  const plan = readSiteCard(
+    store,
+    site,
+    store.require("Structure", { game_id: 1, entity_id: BigInt(SITE) }),
+    { col: site.col, row: site.row, alt: false },
+    { army, armyTile: { col: stands.col, row: stands.row, alt: false }, biome: BiomeType.Grassland, timestamp: 0 },
+  );
+  expect(army.troops.count).toBe(1_626n * 1_000_000_000n);
+  expect(plan.guard?.count).toBe(3_000);
+  expect(plan.inReach).toBe(false);
+  // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,412; the next loses the army.
+  expect(plan.fight).toEqual({ outcome: "loses", exchanges: 2, troopsLost: 1_109, guardLeft: 2_412 });
 });

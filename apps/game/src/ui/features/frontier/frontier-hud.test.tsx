@@ -7,6 +7,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { HudSurface } from "./hud/frontier-nav";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
 // HUD, its hooks and the stores are the real ones.
@@ -47,7 +48,7 @@ const { LabGame } = await import("@/ui/features/debug/kit-lab/lab-game");
 const { useUIStore } = await import("@/hooks/store/use-ui-store");
 const { overrideSpectateIntent } = await import("@/utils/spectator-session");
 const { FrontierHud } = await import("./frontier-hud");
-const { BuildingType } = await import("@bibliothecadao/types");
+const { BuildingType, BUILDINGS_CENTER } = await import("@bibliothecadao/types");
 const { buildingName } = await import("./build/building-names");
 
 /** The frame's width, as the layout reads it: a desktop from 1024 px, told to the layout when it changes. */
@@ -87,9 +88,11 @@ beforeEach(() => {
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
   host.remove();
+  // A frame closed steps back off its history entry a moment later: that step lands here, not in the next test's route.
+  await new Promise((settled) => setTimeout(settled, 20));
 });
 
 /** What the page shows of chat: whether the client is connected, and the unread count where the layout shows it. */
@@ -181,7 +184,7 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(feed()!.getAttribute("aria-current")).toBe("page");
   // Owner, 22 October 2026 (mobile direction A): the page stands on the place bar and leaves the map above it; its ×
   // or the place bar's Feed takes it away again.
-  await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
+  await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
   expect(page()).toBeNull();
   expect(feed()!.getAttribute("aria-current")).toBeNull();
   await act(async () => feed()!.click());
@@ -189,23 +192,49 @@ it("gives a phone the Feed on its place bar, the desktop's own Feed as a page un
   expect(page()).toBeNull();
 });
 
-it("closes the desktop's Feed with its ×, leaving the rail empty under Next up, and opens it again from its place", async () => {
+it("treats the desktop's Feed as any other panel: closed at start, opened from its place, replaced and closed as the others", async () => {
+  // Owner, 30 October 2026: "the feed is opened by default … whereas it should be replaced by season, it works like that
+  // for season and research already", "no special rules for feed please".
   viewport.set(1920);
+  const route = window.location.pathname + window.location.search;
+  const { selectedBuildingHex } = useUIStore.getState();
   await renderHud();
-  const rail = () => host.querySelector("[data-frontier-rail]")!;
-  const feedPlace = () => host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
-  const feed = () => rail().querySelector('[data-rail-home] section[aria-label="Feed"]');
-  expect(feed()).not.toBeNull();
-  expect(feedPlace().getAttribute("aria-pressed")).toBe("true");
-  await act(async () => feed()!.querySelector<HTMLButtonElement>('button[aria-label="Close the feed"]')!.click());
-  expect(feed()).toBeNull();
-  expect(rail().querySelector("[data-rail-home]")!.childElementCount).toBe(0);
-  expect(feedPlace().getAttribute("aria-pressed")).toBe("false");
-  await act(async () => feedPlace().click());
-  expect(feed()).not.toBeNull();
-  // Lit, its place closes it too, as Research's and the Season's close theirs.
-  await act(async () => feedPlace().click());
-  expect(feed()).toBeNull();
+  const panel = () => host.querySelector("[data-frontier-rail] [data-rail-panel]")!;
+  const open = (name: string) => panel().querySelector(`section[aria-label="${name}"]`) !== null;
+  const place = (name: string) =>
+    host.querySelector<HTMLButtonElement>(`nav[aria-label="Places"] button[aria-label="${name}"]`)!;
+  const press = (name: string) => act(async () => place(name).click());
+  try {
+    // Nothing stands in the rail until the player opens it.
+    expect(panel().childElementCount).toBe(0);
+    expect(place("Feed").getAttribute("aria-pressed")).toBe("false");
+    await press("Feed");
+    expect([open("Feed"), place("Feed").getAttribute("aria-pressed")]).toEqual([true, "true"]);
+    // The Season replaces it, and closing the Season leaves nothing: the Feed does not come back.
+    await press("Season");
+    expect([open("Feed"), open("Season"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+    await press("Season");
+    expect(panel().childElementCount).toBe(0);
+    // Its place closes it, as Research's and the Season's close theirs; so does its ×.
+    await press("Feed");
+    await press("Feed");
+    expect(open("Feed")).toBe(false);
+    await press("Feed");
+    await act(async () => panel().querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(panel().childElementCount).toBe(0);
+    // A card the map opens replaces it: an open plot tapped on the realm's board, its Build sheet.
+    await press("Feed");
+    window.history.replaceState(null, "", "/g/0x1ab9/1/hex?col=1&row=1");
+    await act(async () =>
+      useUIStore.setState({
+        selectedBuildingHex: { structureId: 7, innerCol: BUILDINGS_CENTER[0] + 1, innerRow: BUILDINGS_CENTER[1] },
+      }),
+    );
+    expect([open("Feed"), open("Build"), place("Feed").getAttribute("aria-pressed")]).toEqual([false, true, "false"]);
+  } finally {
+    window.history.replaceState(null, "", route);
+    await act(async () => useUIStore.setState({ selectedBuildingHex }));
+  }
 });
 
 it("keeps a refused order in sight on a desktop, over the feed and over a panel the rail holds", async () => {
@@ -216,6 +245,8 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
   const rail = () => host.querySelector("[data-frontier-rail]")!;
   try {
     await act(async () => toast.error("Not enough stamina"));
+    const feed = host.querySelector<HTMLButtonElement>('nav[aria-label="Places"] button[aria-label="Feed"]')!;
+    await act(async () => feed.click());
     expect(rail().querySelector('section[aria-label="Feed"]')).not.toBeNull();
     expect(rail().querySelector('[aria-label="Notices"]')?.textContent).toContain("Not enough stamina");
     // The Season stands in the rail's panel, the feed steps aside; the notice stays.
@@ -277,6 +308,77 @@ it.each([false, true])(
   },
 );
 
+/** The real HUD with Herald's Frontier board answering `prize`, its Season opened; returns the podium's tiles and words. */
+const openSeasonWith = async (prize: unknown) => {
+  const entry = (address: string, rank: number, sites: number) => ({
+    address,
+    structure_id: String(900 + rank),
+    rank,
+    sites_cleared: { total: sites, camps: sites, rifts: 0, ruins: 0, beasts: 0 },
+    chests_earned: 0,
+    rewards: { lords: "0", essence: "0", labor: "0" },
+    deepest_depth: 1,
+    level: 1,
+    order: rank,
+    campaign: null,
+  });
+  const board = { game_id: "1", mode: "frontier", entries: [entry("0xa01", 1, 9), entry("0xa02", 2, 0)], prize };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (url: string | URL) =>
+      String(url).includes("/leaderboard")
+        ? new Response(JSON.stringify(board), { status: 200 })
+        : new Response(JSON.stringify({ blocked: [], version: 0 }), { status: 200 }),
+    ),
+  );
+  await renderHud();
+  // A desktop's place bar opens the Season; a phone's opens it from the Menu.
+  const places = [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')];
+  const desktopSeason = places.find((button) => button.getAttribute("aria-label") === "Season");
+  if (desktopSeason) await act(async () => desktopSeason.click());
+  else {
+    await act(async () => places.find((button) => button.textContent === "Menu")!.click());
+    const row = [...document.querySelectorAll<HTMLButtonElement>('section[aria-label="Menu"] button')].find((button) =>
+      button.textContent?.startsWith("Season"),
+    )!;
+    await act(async () => row.click());
+  }
+  await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+  const podium = document.querySelector('section[aria-label="Season"] [aria-label="Season prizes"]');
+  return {
+    tiles: [...(podium?.querySelectorAll("li[data-place]") ?? [])].map((tile) => tile.textContent),
+    words: podium?.textContent ?? null,
+  };
+};
+
+it.each([390, 1440])(
+  "says the season's prize pool is not published yet at %i px, from Herald's board",
+  async (width) => {
+    viewport.set(width);
+    const { tiles, words } = await openSeasonWith(null);
+    expect(tiles).toEqual(["2—", "1—", "3—"]);
+    expect(words).toContain("Pool not published yet");
+  },
+);
+
+it.each([390, 1440])(
+  "names the season's fixed winners by their receipts at %i px, a place still being awarded",
+  async (width) => {
+    viewport.set(width);
+    // Two places fixed; first paid to 0xa02, who cleared no site and ranks second today, second not yet paid.
+    const { tiles } = await openSeasonWith({
+      pool: "300",
+      top_n: 3,
+      count: 2,
+      awards: [{ rank: 1, address: "0xa02", lords: "200" }],
+    });
+    expect(tiles).toHaveLength(2);
+    expect(tiles[0]).toBe("2100Pending");
+    expect(tiles[1]).toMatch(/^1200/);
+    expect(tiles[1]).not.toContain("Open");
+  },
+);
+
 it.each([390, 1440])(
   "opens Today from the day control at %i px, docking only on desktop and leaving the map uncovered",
   async (width) => {
@@ -330,20 +432,178 @@ it("gives a phone a Realm / World switch: it names where it goes, the board then
   expect(feed().getAttribute("aria-current")).toBeNull();
 });
 
-it("opens a phone's Menu as a page on the place bar, its title with no close of its own, and closes it with Menu", async () => {
+/** A phone's place bar slot whose word ends `word`, pressed. */
+const pressPlace = (word: string) =>
+  act(async () =>
+    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')]
+      .find((button) => button.textContent?.endsWith(word))!
+      .click(),
+  );
+/** The open surface named `label`, wherever the HUD stands it. */
+const surfaceNamed = (label: string) => document.querySelector<HTMLElement>(`section[aria-label="${label}"]`);
+/** The Menu's row named `word`: its icon, its words and its chevron. */
+const menuRow = (word: string) =>
+  [...surfaceNamed("Menu")!.querySelectorAll<HTMLElement>(".ui-row")].find((row) => row.textContent?.startsWith(word))!;
+
+it("opens a phone's Menu as a page on the place bar in the one frame, which its ×, Escape and Menu close", async () => {
   viewport.set(390);
   await renderHud();
-  const menu = () =>
-    [...host.querySelectorAll<HTMLButtonElement>('nav[aria-label="Places"] button')].find(
-      (button) => button.textContent === "Menu",
-    )!;
-  const page = () => document.querySelector('[data-page] section[aria-label="Menu"]');
-  await act(async () => menu().click());
+  const page = () => document.querySelector('[data-page] section[data-kit-frame][aria-label="Menu"]');
+  await pressPlace("Menu");
   expect(page()).not.toBeNull();
-  expect(page()!.querySelector('[aria-label="Close"]')).toBeNull();
   expect(document.querySelector(".ui-sheet")).toBeNull();
-  await act(async () => menu().click());
+  await act(async () => page()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
   expect(page()).toBeNull();
+  await pressPlace("Menu");
+  await act(async () => window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })));
+  expect(page()).toBeNull();
+  await pressPlace("Menu");
+  await pressPlace("Menu");
+  expect(page()).toBeNull();
+});
+
+// Owner, 30 October 2026, on a phone: "when I click on the arrow it doesnt work, I need to click season etc - the whole
+// row should work".
+it.each([
+  ["Today", "Today"],
+  ["Season", "Season"],
+  ["Realm Labor", "Realm Labor"],
+  ["Settings", "Settings"],
+])(
+  "opens %s from a phone's Menu whichever part of its row is tapped: its icon, its words or its chevron",
+  async (row, opens) => {
+    viewport.set(390);
+    await renderHud();
+    const parts = {
+      icon: (row: HTMLElement) => row.querySelector("[data-icon]")!,
+      words: (row: HTMLElement) => row.querySelector(".ui-row__title")!,
+      chevron: (row: HTMLElement) => [...row.querySelectorAll("[data-icon]")].at(-1)!,
+    };
+    const opened: Record<string, boolean> = {};
+    for (const [part, of] of Object.entries(parts)) {
+      if (!surfaceNamed("Menu")) await pressPlace("Menu");
+      const target = of(menuRow(row));
+      await act(async () => target.dispatchEvent(new MouseEvent("click", { bubbles: true })));
+      opened[part] = surfaceNamed(opens) !== null && surfaceNamed("Menu") === null;
+      await act(async () =>
+        surfaceNamed(opens)?.querySelector<HTMLButtonElement>('button[aria-label="Close"]')?.click(),
+      );
+    }
+    expect(opened).toEqual({ icon: true, words: true, chevron: true });
+  },
+);
+
+/** The control `selector` finds, pressed. */
+const press = (selector: string) => act(async () => host.querySelector<HTMLButtonElement>(selector)!.click());
+/** The Menu opened, then its row named `word` pressed. */
+const fromMenu = async (word: string) => {
+  await pressPlace("Menu");
+  await act(async () => menuRow(word).click());
+};
+
+/** How a player on a phone opens each surface the HUD stands, and the name it then bears. */
+const PHONE_SURFACES = {
+  research: { label: "Research", open: () => pressPlace("Research") },
+  feed: { label: "Feed", open: () => pressPlace("Feed") },
+  chat: { label: "Chat", open: () => pressPlace("Chat") },
+  menu: { label: "Menu", open: () => pressPlace("Menu") },
+  today: { label: "Today", open: () => fromMenu("Today") },
+  season: { label: "Season", open: () => fromMenu("Season") },
+  realms: { label: "Realm Labor", open: () => fromMenu("Realm Labor") },
+  settings: { label: "Settings", open: () => fromMenu("Settings") },
+  withdraw: { label: "Withdraw", open: () => press('button[aria-label^="LORDS"]') },
+} satisfies Record<
+  // An army's sheet and a lost army's open from an army, which this lab game has none of: frontier-army.test and
+  // tile-card.test stand those two in the frame.
+  Exclude<HudSurface, "army" | "army-lost">,
+  { label: string; open: () => Promise<unknown> }
+>;
+
+// Owner, 30 October 2026: "the panel is not the same panel as chat for example the bottom border is different ? why is
+// that ? one rule should fit". Each surface stands in the kit's one frame (HudPage, HudSheet), never a frame of its own.
+it.each(Object.entries(PHONE_SURFACES))("stands a phone's %s in the kit's one frame", async (_, { label, open }) => {
+  viewport.set(390);
+  await renderHud();
+  await open();
+  const surface = surfaceNamed(label);
+  expect(surface?.hasAttribute("data-kit-frame")).toBe(true);
+  // The frame is the surface's outermost: no panel stands round it, and a page's band holds no panel but frames.
+  expect(surface!.parentElement!.closest(".ui-panel")).toBeNull();
+  const outermost = [...document.querySelectorAll("[data-page] .ui-panel")].filter(
+    (panel) => !panel.parentElement!.closest(".ui-panel"),
+  );
+  expect(outermost.every((panel) => panel.hasAttribute("data-kit-frame"))).toBe(true);
+  await act(async () => surface!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+  expect(surfaceNamed(label)).toBeNull();
+});
+
+/** History moves a moment after it is asked to: a closed frame's step back, or the system back, lands by then. */
+const historySettles = () => act(async () => new Promise((settled) => setTimeout(settled, 50)));
+/** The system back, as a phone's back gesture sends it. */
+const systemBack = async () => {
+  window.history.back();
+  await historySettles();
+};
+/** A phone's HUD in a game reached from another page, so a back that leaves the game lands there. */
+const enterFromAnotherPage = async () => {
+  viewport.set(390);
+  await renderHud();
+  window.history.replaceState({}, "", "/before-the-game");
+  window.history.pushState({}, "", "/g/0x1ab9/1/map?col=1&row=1");
+};
+/** The open frame named `label`'s ×, pressed. */
+const closeFrame = (label: string) =>
+  act(async () => surfaceNamed(label)!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+
+// Review, 30 October 2026: every page now keeps a history entry, so a page that replaces another in one press (Menu's
+// Season) must take over its entry, or the next back lands on an entry no surface owns and does nothing.
+it("leaves one back to the page before the game once the Menu's Season is opened and closed", async () => {
+  await enterFromAnotherPage();
+  await fromMenu("Season");
+  expect([surfaceNamed("Season") !== null, surfaceNamed("Menu")]).toEqual([true, null]);
+  await closeFrame("Season");
+  await historySettles();
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("closes the Menu's Season with the system back, and the next back leaves the game", async () => {
+  await enterFromAnotherPage();
+  await fromMenu("Season");
+  await historySettles();
+  await systemBack();
+  expect([surfaceNamed("Season"), surfaceNamed("Menu")]).toEqual([null, null]);
+  expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("keeps one entry while the place bar swaps pages, and one back closes the last", async () => {
+  await enterFromAnotherPage();
+  for (const place of ["Feed", "Chat", "Research", "Menu"]) await pressPlace(place);
+  await historySettles();
+  expect(surfaceNamed("Menu")).not.toBeNull();
+  await systemBack();
+  expect(["Feed", "Chat", "Research", "Menu"].map(surfaceNamed)).toEqual([null, null, null, null]);
+  expect(window.location.pathname).toBe("/g/0x1ab9/1/map");
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
+});
+
+it("leaves no entry behind however often pages open and close", async () => {
+  await enterFromAnotherPage();
+  for (let round = 0; round < 3; round++) {
+    await pressPlace("Menu");
+    await pressPlace("Menu");
+    await fromMenu("Today");
+    await closeFrame("Today");
+    await fromMenu("Season");
+    await pressPlace("Feed");
+    await closeFrame("Feed");
+    await historySettles();
+  }
+  await systemBack();
+  expect(window.location.pathname).toBe("/before-the-game");
 });
 
 it("keeps the extended season live past its old end and reloads its final day from fresh facts", async () => {

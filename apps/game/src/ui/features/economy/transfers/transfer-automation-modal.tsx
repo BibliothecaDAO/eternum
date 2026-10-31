@@ -205,7 +205,7 @@ export const TransferAutomationAdvancedModal = () => {
                   {typeof e.lastRunAt === "number" && ` • last run ${formatAgo(e.lastRunAt / 1000)}`}
                 </>
               }
-              trail={
+              controls={
                 <>
                   <HudButton kind="secondary" size="sm" onClick={() => runNow(e)}>
                     Run now

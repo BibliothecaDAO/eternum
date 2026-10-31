@@ -82,8 +82,7 @@ const readResearchFacts = (
   const labor = knownAmount(getBalance(entity, ResourcesIds.Labor, tick, store).balance);
   // The tree stays unknown until the realm's knowledge, its balances and the game's board and XP rules are all in.
   const board = store.get("BoardRules", { game_id: realm.game_id });
-  const xpRules = store.get("ArmyProgressionRules", { game_id: realm.game_id });
-  if (learned === undefined || essence === undefined || labor === undefined || !board || !xpRules) return undefined;
+  if (learned === undefined || essence === undefined || labor === undefined || !board) return undefined;
   const rows = decodeLearned(learned);
   const storeroomPicks = (rows[research.ROW_WORKSHOP]?.sides ?? []).filter((side) => side === 1).length;
   return {
@@ -109,7 +108,6 @@ const readResearchFacts = (
       return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
     },
     wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),
-    shrineXp: xpRules.fixed_xp,
     wellStamina: nativeRuleConstants.WELL_STAMINA,
   };
 };

@@ -11,8 +11,8 @@ import { inFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { toast } from "@/ui/features/event-feed/notify";
 import { disposeGameSyncSession, installActiveGameClient } from "@/sync/active-game-client";
-import { configManager, type GameClient, setBlockTimestampSource } from "@bibliothecadao/eternum";
-import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { configManager, type GameClient, setBlockTimestampSource, learnResearch } from "@bibliothecadao/eternum";
+import { nativeResearchConstants as research, type GameClientSetup } from "@bibliothecadao/eternum/game-client";
 import { BuildingType, RESOURCE_PRECISION, ResourcesIds } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { buildingCounts, realmBoard } from "./build-fixture";
@@ -349,10 +349,10 @@ describe("the build sheet", () => {
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
     expect(sheet.button("Build")!.textContent).toBe("Build");
-    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 labor");
+    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 Labor");
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
     expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
-    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 labor");
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 Labor");
     sheet.close();
   });
 
@@ -383,7 +383,7 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
     expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      new RegExp(`^Farm: wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
+      new RegExp(`^Farm: Wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
@@ -391,6 +391,7 @@ describe("the build sheet", () => {
     );
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
+    expect(document.querySelector("[data-price-raised]")).toBeNull();
     const base = sheet.card("Farm").querySelector(".ui-chip")!.textContent;
     sheet.close();
 
@@ -406,6 +407,8 @@ describe("the build sheet", () => {
     const arrow = risen.card("Farm").querySelector('[aria-label="price raised"]')!;
     // One line of why, never the sum behind it (owner, 26 October: "its a game not a math demo").
     expect(arrow.getAttribute("data-tip")).toBe("Costs more with each one standing: 2");
+    // The Farm chosen, its foot says it in sight, for a phone that has no hover (owner, 30 October).
+    expect(document.querySelector("[data-price-raised]")?.textContent).toBe("Costs more with each one standing: 2");
     expect(risen.card("Farm").querySelector(".ui-chip")!.textContent).not.toBe(base);
     risen.close();
   });
@@ -582,7 +585,7 @@ describe("the build sheet", () => {
     // Even in a game whose reveals pay labor, the line is the whole answer: no Explore button (owner, 27 October).
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
     const short = open(store, realm);
-    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ labor, have 0$/);
+    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
     expect(short.button("Build")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");
     short.close();
@@ -590,98 +593,135 @@ describe("the build sheet", () => {
   });
 });
 
-it("chooses the free Scouts kind on the build sheet and submits it with construction", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const { store, realm } = realmBoard();
-  store.applyFacts([
-    {
-      model: "RealmKnowledge",
-      key: "0x77",
-      value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
-    },
-    {
-      model: "ResourceBalance",
-      key: "0x75",
-      value: {
-        game_id: 1,
-        entity_id: 7,
-        resource_type: ResourcesIds.Labor,
-        balance: 100000n * BigInt(RESOURCE_PRECISION),
+it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
+  "submits only an available Scouts kind when its unlock is %s",
+  async (unlock) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, realm } = realmBoard();
+    store.applyFacts([
+      {
+        model: "RealmKnowledge",
+        key: "0x77",
+        value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
       },
-    },
-  ] as never);
-  const game = store.require("GameRegistry", { game_id: 1 });
-  store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
-  configManager.setActiveGame(1, 5);
-  configManager.setStore(store);
-  const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
-  store.applyFacts([
-    {
-      model: "BuildingRule",
-      key: `0x6${BuildingType.ScoutsLodge}`,
-      value: {
-        ...lodge,
-        population_cost: 2,
-        simple_cost: [
-          { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
-          { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },
-        ],
+      {
+        model: "ResourceBalance",
+        key: "0x75",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Labor,
+          balance: 100000n * BigInt(RESOURCE_PRECISION),
+        },
       },
-    },
-  ]);
-  store.applyFacts([
-    {
-      model: "ResourceBalance",
-      key: "0x7638",
-      value: {
-        game_id: 1,
-        entity_id: 7,
-        resource_type: ResourcesIds.Essence,
-        balance: 12000n * BigInt(RESOURCE_PRECISION),
+    ] as never);
+    const game = store.require("GameRegistry", { game_id: 1 });
+    store.applyFacts([{ model: "GameRegistry", key: "0x3", value: { ...game, preset_id: 5 } }]);
+    configManager.setActiveGame(1, 5);
+    configManager.setStore(store);
+    const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
+    store.applyFacts([
+      {
+        model: "BuildingRule",
+        key: `0x6${BuildingType.ScoutsLodge}`,
+        value: {
+          ...lodge,
+          population_cost: 2,
+          simple_cost: [
+            { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
+            { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },
+          ],
+        },
       },
-    },
-  ]);
-  const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x2" }));
-  installActiveGameClient({
-    connect() {},
-    disconnect() {},
-    dispose() {},
-    actions: { placeBuilding },
-    waitForAction: () => Promise.resolve({ hash: "0x2", block: 10, status: "SUCCEEDED" }),
-  } as unknown as GameClient);
-  const host = document.createElement("div");
-  document.body.append(host);
-  const root = createRoot(host);
-  try {
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => {}} />
-        </GameProvider>,
-      ),
-    );
-    const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
-      button.textContent?.includes("Scouts"),
-    )!;
-    act(() => card.click());
-    expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
-    expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
-    expect(card.querySelector('[aria-label="1,500 labor"]')).not.toBeNull();
-    const beasts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Beasts",
-    )!;
-    act(() => beasts.click());
-    expect(beasts.getAttribute("aria-pressed")).toBe("true");
-    const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
-      (button) => button.textContent === "Build",
-    )!;
-    expect(build, host.textContent ?? "").toBeDefined();
-    await act(async () => build.click());
-    expect(placeBuilding).toHaveBeenCalledWith(
-      expect.objectContaining({ buildingType: BuildingType.ScoutsLodge, scoutingKind: 2 }),
-    );
-  } finally {
-    act(() => root.unmount());
-    host.remove();
-  }
-});
+    ]);
+    store.applyFacts([
+      {
+        model: "ResourceBalance",
+        key: "0x7638",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: ResourcesIds.Essence,
+          balance: 12000n * BigInt(RESOURCE_PRECISION),
+        },
+      },
+    ]);
+    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x2" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { placeBuilding },
+      waitForAction: () => Promise.resolve({ hash: "0x2", block: 10, status: "SUCCEEDED" }),
+    } as unknown as GameClient);
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    try {
+      act(() =>
+        root.render(
+          <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+            <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => {}} />
+          </GameProvider>,
+        ),
+      );
+      const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
+        button.textContent?.includes("Scouts"),
+      )!;
+      act(() => card.click());
+      expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
+      expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
+      expect(card.querySelector('[aria-label="1,500 Labor"]')).not.toBeNull();
+      expect(host.textContent).not.toContain("Beasts");
+      expect(host.textContent).not.toContain("Sanctuaries");
+      const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });
+      act(() =>
+        store.applyFacts([
+          {
+            model: "RealmKnowledge",
+            key: "0x77",
+            value: { ...knowledge, learned: learnResearch(knowledge.learned, research.ROW_SHRINE, 0) },
+          },
+        ]),
+      );
+      const sanctuaries = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Sanctuaries",
+      )!;
+      expect(sanctuaries.querySelectorAll("img[data-icon]").length).toBe(2);
+      act(() => sanctuaries.click());
+      expect(sanctuaries.getAttribute("aria-pressed")).toBe("true");
+      const build = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+        (button) => button.textContent === "Build",
+      )!;
+      expect(build, host.textContent ?? "").toBeDefined();
+      if (unlock !== "retained") {
+        await act(async () => {
+          store.applyFacts([{ model: "RealmKnowledge", key: "0x77", value: knowledge }]);
+          if (unlock === "withdrawn before render") build.click();
+        });
+        expect(host.textContent).not.toContain("Sanctuaries");
+        expect(build.disabled).toBe(true);
+        await act(async () => build.click());
+        expect(placeBuilding).not.toHaveBeenCalled();
+        const rifts = [...host.querySelectorAll<HTMLButtonElement>("button")].find(
+          (button) => button.textContent === "Rifts",
+        )!;
+        expect(rifts.getAttribute("aria-pressed")).toBe("false");
+        act(() => rifts.click());
+        expect(rifts.getAttribute("aria-pressed")).toBe("true");
+      }
+      expect(build.disabled).toBe(false);
+      await act(async () => build.click());
+      expect(placeBuilding).toHaveBeenCalledOnce();
+      expect(placeBuilding).toHaveBeenCalledWith(
+        expect.objectContaining({
+          buildingType: BuildingType.ScoutsLodge,
+          scoutingKind: unlock === "retained" ? 2 : 1,
+        }),
+      );
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);

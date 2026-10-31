@@ -404,6 +404,8 @@ it.each([{ providers: [] }, { providers: ["discord"] }])(
         [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
       ).toBe(providers.includes("discord"));
       expect(view.query('input[type="email"]')).not.toBeNull();
+      // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
+      expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
     } finally {
       await view.unmount();
     }

@@ -104,19 +104,30 @@ export const paintedBuildingsScenario = (ground?: LabGround): LabScenario => {
         labor_paid: "0",
       },
     })),
-    ...MAP_SITES.map(({ occupier: category }, index) => ({
-      model: "TileOccupancy",
-      key: `0x1ab6${index}`,
-      value: {
-        game_id: 1,
-        alt: false,
-        col: neighbors[index + 2].col,
-        row: neighbors[index + 2].row,
-        entity_id: 901 + index,
-        category,
-        is_structure: false,
+    ...MAP_SITES.flatMap(({ occupier: category }, index) => [
+      {
+        model: "TileOccupancy",
+        key: `0x1ab6${index}`,
+        value: {
+          game_id: 1,
+          alt: false,
+          col: neighbors[index + 2].col,
+          row: neighbors[index + 2].row,
+          entity_id: 901 + index,
+          category,
+          is_structure: false,
+        },
       },
-    })),
+      ...(category === TileOccupier.Shrine
+        ? [
+            {
+              model: "ShrineReward",
+              key: `0x1ad6${index}`,
+              value: { game_id: 1, entity_id: 901 + index, rank: 3 },
+            },
+          ]
+        : []),
+    ]),
   ];
   const occupied = new Set([...game.store.rows("TileOccupancy")].map((tile) => `${tile.col},${tile.row}`));
   const sitePlots = getHexesWithinRadius(game.opensOn.col, game.opensOn.row, 2).filter(

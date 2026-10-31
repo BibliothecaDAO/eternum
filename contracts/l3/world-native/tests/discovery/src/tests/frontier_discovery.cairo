@@ -118,14 +118,55 @@ fn shrine_and_well_appear_only_once_researched() {
 }
 
 #[test]
-fn every_scouting_tier_on_beasts_doubles_only_their_rate() {
-    let rules = rules();
-    let mut found = 0_u32;
+fn sanctuaries_double_both_unlocked_sites_and_leave_beasts_unchanged() {
+    let rules = super::preset_projection::frontier_discovery_rules();
+    let mut shrines = 0_u32;
+    let mut wells = 0_u32;
     for sample in 0_u64..100000 {
         let seed = 0x5354524147474c455253 + Into::<u64, u256>::into(sample);
-        if frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed) == Discovery::Beasts {
-            found += 1;
+        let base = frontier(rules, 0, 0, 0, 0, Some(CHEST), seed);
+        let boosted = frontier(rules, 0, 0, 10000, 0, Some(CHEST), seed);
+        assert_eq!(base == Discovery::Beasts, boosted == Discovery::Beasts);
+        if boosted == Discovery::Shrine {
+            shrines += 1;
+        }
+        if boosted == Discovery::Well {
+            wells += 1;
         }
     }
-    assert!(found >= 11800 && found <= 12200);
+    assert!(within(shrines, 6000, 200));
+    assert!(within(wells, 6000, 200));
+}
+
+#[test]
+fn sanctuaries_cannot_find_a_site_that_is_still_locked_even_at_the_floor() {
+    let preset = super::preset_projection::frontier_discovery_rules();
+    for sample in 0_u64..1000 {
+        let seed = sample.into();
+        for empty in array![0_u8, 7] {
+            let shrine_only = FrontierDiscoveryRules { well_bps: 0, ..preset };
+            let well_only = FrontierDiscoveryRules { shrine_bps: 0, ..preset };
+            assert!(frontier(shrine_only, 0, 0, 10000, empty, None, seed) != Discovery::Well);
+            assert!(frontier(well_only, 0, 0, 10000, empty, None, seed) != Discovery::Shrine);
+            assert_eq!(
+                frontier(rules(), 0, 0, 10000, empty, None, seed), frontier(rules(), 0, 0, 0, empty, None, seed),
+            );
+        }
+    }
+}
+
+#[test]
+#[should_panic(expected: "discovery odds exceed 100 percent")]
+fn discovery_reserves_the_combined_sanctuary_increase() {
+    crate::discovery::validate_frontier(
+        FrontierDiscoveryRules {
+            beasts_bps: 1000,
+            camp_bps: 1000,
+            rift_bps: 1000,
+            shrine_bps: 2000,
+            well_bps: 2000,
+            ruin_bps: 0,
+            empty_reveal_limit: 7,
+        },
+    );
 }

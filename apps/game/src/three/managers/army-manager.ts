@@ -89,6 +89,7 @@ import { removeArmyAttachmentsIfTracked, syncArmyAttachmentState } from "./army-
 import { syncArmyAttachmentTransformState } from "./army-attachment-transforms";
 import { destroyArmyManagerOwnedResources } from "./army-manager-ownership-lifecycle";
 import { FXManager } from "./fx-manager";
+import { armyPathColour } from "./army-path-colour";
 import { PathRenderer } from "./path-renderer";
 import { resolveArmyCosmeticPresentation, resolveArmyPresentationPosition } from "./army-instance-presentation";
 import type { MapPlateScope } from "../map-plates/map-plate-layer";
@@ -251,7 +252,7 @@ export class ArmyManager {
 
   // Path visualization
   private pathRenderer: PathRenderer;
-  private selectedArmyForPath: ID | null = null;
+  private selectedArmyId: ID | null = null;
   private guiFolders: TrackableGuiFolder[] = [];
 
   // Reusable objects for memory optimization
@@ -1943,9 +1944,7 @@ export class ArmyManager {
     });
     this.runMovementStartListeners(numericEntityId);
 
-    const colorProfile = this.getArmyColorProfile(armyData);
-    const displayState = this.selectedArmyForPath === entityId ? "selected" : "moving";
-    this.pathRenderer.createPath(numericEntityId, worldPath, colorProfile.primary, displayState);
+    this.pathRenderer.createPath(numericEntityId, worldPath, this.pathColourOf(armyData));
 
     return true;
   }
@@ -1982,8 +1981,8 @@ export class ArmyManager {
 
     // Remove path visualization
     this.pathRenderer.removePath(numericEntityId);
-    if (this.selectedArmyForPath === entityId) {
-      this.selectedArmyForPath = null;
+    if (this.selectedArmyId === entityId) {
+      this.selectedArmyId = null;
     }
 
     // Clean up movement source bucket tracking if army was mid-movement
@@ -2100,37 +2099,29 @@ export class ArmyManager {
     return this.pathRenderer.getStats().activePaths;
   }
 
-  /**
-   * Set the selected army for path visualization
-   * Shows the full path for the selected army, hides others or shows them as "moving"
-   */
-  public setSelectedArmyPath(entityId: ID | null): void {
-    const previousSelected = this.selectedArmyForPath;
-    this.selectedArmyForPath = entityId;
+  /** The selected army: its walk draws in full on the map, and its character goes first in the layer's budget. */
+  public setSelectedArmy(entityId: ID | null): void {
+    this.selectedArmyId = entityId;
+    this.pathRenderer.setSelectedPath(entityId === null ? null : this.toNumericId(entityId));
+  }
 
-    // Update display states for paths
-    if (previousSelected !== null && previousSelected !== entityId) {
-      const numericId = this.toNumericId(previousSelected);
-      if (this.pathRenderer.hasPath(numericId)) {
-        this.pathRenderer.setPathDisplayState(numericId, "moving");
-      }
-    }
-
-    if (entityId !== null) {
-      const numericId = this.toNumericId(entityId);
-      if (this.pathRenderer.hasPath(numericId)) {
-        this.pathRenderer.setSelectedPath(numericId);
-      }
-    } else {
-      this.pathRenderer.setSelectedPath(null);
-    }
+  /** The army under the pointer: its walk draws as a slim arrow to its end. */
+  public setHoveredArmy(entityId: ID | null): void {
+    this.pathRenderer.setHoveredPath(entityId === null ? null : this.toNumericId(entityId));
   }
 
   /**
-   * Get the selected army for path visualization
+   * The selected army's route to the tile under the pointer, before the order: its tiles from where it stands, as the
+   * map's order would walk them. Null, or an army the map does not draw, takes the preview away.
    */
-  public getSelectedArmyForPath(): ID | null {
-    return this.selectedArmyForPath;
+  public previewRoute(entityId: ID | null, route: Position[] | null): void {
+    const army = entityId === null ? undefined : this.armyPresentations.get(entityId);
+    if (!army || !route || route.length < 2) {
+      this.pathRenderer.showPreview(null, new Color());
+      return;
+    }
+    const worldRoute = route.map((tile) => this.getArmyWorldPositionInto(new Vector3(), tile));
+    this.pathRenderer.showPreview(worldRoute, this.pathColourOf(army));
   }
 
   /** Select one production procedural actor for the graphics-dev ragdoll controls. */
@@ -2381,17 +2372,7 @@ export class ArmyManager {
     // Update FX
     this.fxManager.update(deltaTime);
 
-    // Update path visualization animation
     this.pathRenderer.update(deltaTime);
-
-    // Update path progress for selected army
-    if (this.selectedArmyForPath !== null) {
-      const numericId = this.toNumericId(this.selectedArmyForPath);
-      const progress = this.armyModel.getMovementProgress(numericId);
-      if (progress !== undefined) {
-        this.pathRenderer.updateProgress(numericId, progress);
-      }
-    }
   }
 
   private updateProceduralArmyCharacters(
@@ -2433,7 +2414,7 @@ export class ArmyManager {
         entityId,
         isNaval: isShipModel(modelType),
         isMoving: false,
-        isSelected: this.selectedArmyForPath === army.entityId,
+        isSelected: this.selectedArmyId === army.entityId,
         position: instance.position,
         primaryColor: army.color,
         tier: army.tier,
@@ -2446,7 +2427,7 @@ export class ArmyManager {
     presentation.distanceToCameraSquared = this.hexagonScene?.getCamera().position.distanceToSquared(instance.position);
     presentation.isNaval = isShipModel(modelType);
     presentation.isMoving = this.armyModel.isEntityMoving(entityId);
-    presentation.isSelected = this.selectedArmyForPath === army.entityId;
+    presentation.isSelected = this.selectedArmyId === army.entityId;
     presentation.position = instance.position;
     presentation.primaryColor = army.color;
     presentation.rotation = instance.rotation;
@@ -2739,6 +2720,15 @@ export class ArmyManager {
    * Get the color profile for an army based on ownership
    * Uses the centralized PlayerColorManager for consistent colors across the game
    */
+  /** The army's path colour, as its plate tells its side: its side's, or its owner's seat colour to a watcher. */
+  private pathColourOf(army: ArmyData): Color {
+    const owner = army.owner.address;
+    return armyPathColour(
+      { isMine: army.isMine, isAlly: arePlayersAllied(this.store, accountAddress(), owner), owner: army.owner },
+      watchedSide(this.store, owner),
+    );
+  }
+
   private getArmyColorProfile(army: {
     isMine: boolean;
     isAlly?: boolean;
@@ -3151,7 +3141,7 @@ ${
       pathRenderer: this.pathRenderer,
       guiFolders: this.guiFolders,
     });
-    this.selectedArmyForPath = null;
+    this.selectedArmyId = null;
 
     this.proceduralArmyPresentationBuffer.length = 0;
     this.syncProceduralArmyRepresentationVisibility();

@@ -236,12 +236,12 @@ export class MapSheetPresentation {
     if (column === "today") {
       const paths = new PathRenderer();
       paths.initialize(this.scene);
-      paths.createPath(
-        index + 1,
-        points,
-        playerColorManager.getSelfProfile().primary,
-        ["selected", "hover", "moving", "preview"][index] as "selected" | "hover" | "moving" | "preview",
-      );
+      // The row's state, as the map sets it: the selected army, the army under the pointer, another army, a preview.
+      const colour = playerColorManager.getSelfProfile().primary;
+      if (index === 3) paths.showPreview(points, colour);
+      else paths.createPath(index + 1, points, colour);
+      if (index === 0) paths.setSelectedPath(index + 1);
+      if (index === 1) paths.setHoveredPath(index + 1);
       paths.update(0);
       this.releases.push(() => paths.dispose());
     } else {

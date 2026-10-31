@@ -21,7 +21,14 @@ import { buildingsMake, standingBuildings } from "../production/store-makers";
 import { RefusedVerb } from "../refused-verb";
 import { useResearchActions } from "../research/research-actions";
 import { useResearchTree } from "../research/research-facts";
-import { researchSideNode, firstMissing, type Need, needLine, type TreeNode } from "../research/research-tree";
+import {
+  researchSideNode,
+  researchSideChoice,
+  firstMissing,
+  type Need,
+  needLine,
+  type TreeNode,
+} from "../research/research-tree";
 import type { TappedBuilding } from "../research/selected-building";
 import { CompareRows } from "./compare-rows";
 
@@ -135,7 +142,8 @@ export const BuildingCardView = ({
 }) => {
   const [side, setSide] = useState(0);
   const chosen = node && researchSideNode(node, side);
-  const next = orders && chosen && chosen.state !== "done" ? chosen : undefined;
+  const choice = node && researchSideChoice(node, side);
+  const next = orders && chosen && choice !== undefined && chosen.state !== "done" ? chosen : undefined;
   return (
     <HudSheet label={name} onClose={onClose}>
       <div data-building-card className="flex flex-col gap-3">
@@ -166,6 +174,7 @@ export const BuildingCardView = ({
             rows={node.figures.map((figure, index) => ({
               icon: figure.icon,
               word: figure.name,
+              line: figure.line,
               now: figure.now,
               next: orders && figure.next,
               grows: orders !== undefined && (!node.sides || index === side),
@@ -173,13 +182,14 @@ export const BuildingCardView = ({
             }))}
           />
         )}
+        {node?.gate && <span className="px-2 text-hud-label text-hud-muted">{node.gate.line}</span>}
         {next && orders && (
           <ResearchFoot
             node={next}
             verb={next.sides?.[side] ? RESEARCH_TREE.research(next.sides[side].name) : RESEARCH}
             sending={orders.sending}
             fix={orders.fix}
-            onResearch={() => orders.onResearch(next.sides ? side : 0)}
+            onResearch={() => choice !== undefined && orders.onResearch(choice)}
           />
         )}
       </div>

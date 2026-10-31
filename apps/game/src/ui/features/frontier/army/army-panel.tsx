@@ -1,7 +1,7 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon } from "@/ui/design-system/icon";
+import { Icon, IconGroup } from "@/ui/design-system/icon";
 import {
   HudButton,
   HudChip,
@@ -56,7 +56,10 @@ export const ArmyDetail = ({
   const stamina = army.staminaPoints.find(({ rank }) => rank === staminaRank) ?? army.staminaPoints[0];
   const point = chosen === "stamina" ? stamina?.rank : pick?.next?.point;
   const gained = chosen === "stamina" ? (stamina?.refill ?? 0) : (pick?.next?.refill ?? 0);
-  const canSpend = point !== undefined && (chosen !== "stamina" || gained > 0);
+  const canSpend =
+    point !== undefined &&
+    (chosen !== "stamina" || gained > 0) &&
+    (chosen !== "scouting" || army.scoutingKinds.includes(kind));
   const submit = () => {
     if (!canSpend || point === undefined) return;
     const option = pointChoices.find(({ key }) => key === chosen)!;
@@ -97,7 +100,9 @@ export const ArmyDetail = ({
             />
           ),
         )}
-        {chosen === "scouting" && pick?.next && <KindChoice kind={kind} onKind={setKind} />}
+        {chosen === "scouting" && pick?.next && (
+          <KindChoice kind={kind} available={army.scoutingKinds} onKind={setKind} />
+        )}
         {chosen === "stamina" && (
           <div className="flex gap-2" role="group" aria-label="Point to spend">
             {army.staminaPoints.map(({ rank, count }) => (
@@ -296,23 +301,35 @@ const Choice = ({
 );
 
 /** Scouting's kind: the sites its new level finds more of. */
-const KindChoice = ({ kind, onKind }: { kind: ScoutKind; onKind: (kind: ScoutKind) => void }) => (
-  <div className="grid grid-cols-3 gap-2">
-    {scoutingChoices.map((option) => (
-      <button
-        key={option.key}
-        type="button"
-        data-scout-kind={option.key}
-        aria-pressed={kind === option.key}
-        onClick={() => onKind(option.key)}
-        className={cn(
-          "flex items-center justify-center gap-1 rounded-md border py-1.5 text-hud-body",
-          kind === option.key ? "border-hud-line-strong bg-hud-chosen text-hud-ink" : "border-hud-line text-hud-muted",
-        )}
-      >
-        <Icon name={option.icon} size={22} />
-        {option.name}
-      </button>
-    ))}
+const KindChoice = ({
+  kind,
+  available,
+  onKind,
+}: {
+  kind: ScoutKind;
+  available: readonly ScoutKind[];
+  onKind: (kind: ScoutKind) => void;
+}) => (
+  <div className="flex gap-2">
+    {scoutingChoices
+      .filter((option) => available.includes(option.key))
+      .map((option) => (
+        <button
+          key={option.key}
+          type="button"
+          data-scout-kind={option.key}
+          aria-pressed={kind === option.key}
+          onClick={() => onKind(option.key)}
+          className={cn(
+            "flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-md border py-1.5 text-hud-body",
+            kind === option.key
+              ? "border-hud-line-strong bg-hud-chosen text-hud-ink"
+              : "border-hud-line text-hud-muted",
+          )}
+        >
+          <IconGroup name={option.icon} size={22} />
+          {option.name}
+        </button>
+      ))}
   </div>
 );

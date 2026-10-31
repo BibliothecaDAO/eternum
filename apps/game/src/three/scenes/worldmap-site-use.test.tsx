@@ -107,6 +107,7 @@ const theMap = (stamina: bigint, phone = false) => {
     surface,
     camera: new THREE.PerspectiveCamera(),
     mapPlates: { placeOrderLine: () => null, thingHitBy: () => null },
+    sites: { hover: () => {} },
     army: ARMY,
     player: 0x111n,
     tileUnder: () => pointed.hex,
@@ -206,9 +207,9 @@ const drawSelectedSite = (setup: unknown) => {
 
 describe("a Shrine or a Well beside the selected army, on the world map", () => {
   it.each([
-    { kind: "Shrine", tile: SHRINE_TILE, gives: "+200 XP", gesture: "rightClick" },
+    { kind: "Shrine", tile: SHRINE_TILE, gives: "III skill point", gesture: "rightClick" },
     { kind: "Well", tile: WELL_TILE, gives: "+60 stamina", gesture: "rightClick" },
-    { kind: "Shrine", tile: SHRINE_TILE, gives: "+200 XP", gesture: "hold" },
+    { kind: "Shrine", tile: SHRINE_TILE, gives: "III skill point", gesture: "hold" },
     { kind: "Well", tile: WELL_TILE, gives: "+60 stamina", gesture: "hold" },
   ] as const)(
     "a $gesture on the $kind sends its InteractSite where the army stands",
@@ -258,7 +259,7 @@ describe("a Shrine or a Well beside the selected army, on the world map", () => 
 
   it("says to move next to a site beyond the army's step; a right-click there sends nothing", async () => {
     const map = theMap(30n);
-    expect(map.hover(FAR_SHRINE_TILE)).toEqual({ line: "Too far: move closer", cost: null });
+    expect(map.hover(FAR_SHRINE_TILE)).toEqual({ line: "Too far: move closer", cost: "V skill point" });
     await map.rightClick(FAR_SHRINE_TILE);
     expect(map.submitted).toEqual([]);
     expect(standing(map.store, FAR_SHRINE_TILE)).toBe(true);

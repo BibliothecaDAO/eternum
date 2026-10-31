@@ -524,7 +524,7 @@ export const GAME_TASKS = {
     done: `document.querySelector('[aria-label="Season"]') !== null`,
   },
   research: {
-    goal: "Open Research, where the depths (Ethereal I to III) are unlocked",
+    goal: "Open Research for depth unlocks and the Scouts' lodge's Scouting choices",
     layouts: PHONE_AND_DESKTOP,
     view: "map",
     presses: [{ name: "Research", text: "^Research$" }],
@@ -551,7 +551,7 @@ export const GAME_TASKS = {
       { name: "the army", within: '[aria-label="Armies"]', text: "^Army" },
       { name: "a tile it can attack, right-clicked", tile: ATTACK_TILE, button: "right" },
     ],
-    done: verbAloneAtRight("[data-kit-sheet] .ui-sheet__body", "^Attack$"),
+    done: verbAloneAtRight("[data-kit-sheet] .ui-frame__body", "^Attack$"),
   },
   explore: {
     goal: "Explore a tile with an army",

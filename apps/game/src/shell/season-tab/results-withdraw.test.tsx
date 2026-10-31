@@ -4,6 +4,14 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, expect, it, vi } from "vitest";
 
 const player = vi.hoisted(() => ({ current: "0xb7" as string | null }));
+const prize = vi.hoisted(() => ({
+  current: null as {
+    pool: string;
+    top_n: number;
+    count: number | null;
+    awards: { rank: number; address: string; lords: string }[];
+  } | null,
+}));
 const entry = (address: string, rank: number) => ({
   address,
   rank,
@@ -17,7 +25,7 @@ vi.mock("../herald", () => ({
   useLeaderboard: () => ({
     isError: false,
     isPending: false,
-    data: { mode: "frontier", entries: [entry("0xa1", 1), entry("0xb7", 2)] },
+    data: { mode: "frontier", entries: [entry("0xa1", 1), entry("0xb7", 2)], prize: prize.current },
   }),
   useRealmsPlayer: () => ({ data: player.current }),
   useDirectory: () => ({ data: { games: [] } }),
@@ -39,6 +47,7 @@ let unmount: (() => Promise<void>) | null = null;
 afterEach(async () => {
   await unmount?.();
   player.current = "0xb7";
+  prize.current = null;
 });
 
 const Where = () => {
@@ -96,4 +105,22 @@ it("leads Back to the list that opened it, with no Continue; opened from Play, C
   const fromPlay = await open("/results/0x52-3");
   expect(fromPlay.container.querySelector('[data-role="back"]')).toBeNull();
   expect(fromPlay.button("Continue")!.dataset.kind).toBe("primary");
+});
+
+it("names a finished season's winners by the ledger's receipts, split over the places fixed, one still being awarded", async () => {
+  // Two winners fixed, the ledger splitting 300 LORDS 2/3 and 1/3. First place went to 0xb7, though today's board
+  // ranks 0xa1 first; second is fixed but not yet paid, so no receipt names it.
+  prize.current = { pool: "300", top_n: 3, count: 2, awards: [{ rank: 1, address: "0xb7", lords: "200" }] };
+  const { container } = await open();
+  const podium = container.querySelector('[aria-label="Season prizes"]')!;
+  expect(
+    [...podium.querySelectorAll("li[data-place]")].map((tile) => [tile.getAttribute("data-place"), tile.textContent]),
+  ).toEqual([
+    ["2", "2100" + "Pending"],
+    ["1", "1200" + "0xb7"],
+  ]);
+  // The board's top rows wear the same medals, on one line.
+  const rows = [...container.querySelectorAll("button.app-row")];
+  expect(rows.map((row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null)).toEqual(["1", "2"]);
+  expect(rows.every((row) => row.hasAttribute("data-line"))).toBe(true);
 });

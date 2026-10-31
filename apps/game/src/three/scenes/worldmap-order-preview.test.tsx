@@ -64,6 +64,8 @@ const worldMap = (frontier: boolean) => {
   const pinned: unknown[] = [];
   /** The tiles whose facts (their order's line) a tap or a hold put up. */
   const facts: unknown[] = [];
+  /** The army the map draws as selected, and the route it previews (its tiles, or null), after each change. */
+  const routes: unknown[] = [];
   const scene = Object.assign(Object.create(WorldmapScene.prototype), {
     camera,
     orderRefusals: new Map(),
@@ -82,13 +84,22 @@ const worldMap = (frontier: boolean) => {
     isFrontierHud: () => frontier,
     queuesNextOrder: () => false,
     getHexagonEntity: () => ({}),
+    armyManager: {
+      setSelectedArmy: () => {},
+      previewRoute: (army: unknown, route: { getContract: () => { x: number; y: number } }[] | null) =>
+        routes.push({
+          army,
+          route:
+            route?.map((tile) => ({ col: Number(tile.getContract().x), row: Number(tile.getContract().y) })) ?? null,
+        }),
+    },
     actAtHex: (hex: unknown) => sent.push(hex),
     showTileFacts: (hex: unknown) => facts.push(hex),
   }) as {
     answerTapWithSelectedOrder: (hex: { col: number; row: number }) => boolean;
     updateEntityActionPaths: (actionPaths: Map<string, ActionPath[]>) => void;
   };
-  return { scene, sent, pinned, facts };
+  return { scene, sent, pinned, facts, routes };
 };
 
 beforeEach(() => {
@@ -187,36 +198,44 @@ it("on a Frontier phone, a pin puts away the card of the tile the army acted on 
 it.each([
   ["a Frontier phone", false, ["ringed", "none"]],
   ["a desktop", true, ["none", "none"]],
-])("on %s, the pinned order's tile wears the order's ring until the pin goes", (_, desktop, ringed) => {
-  screen(desktop);
-  const { scene } = worldMap(true);
-  const rings: string[] = [];
-  Object.assign(scene, {
-    isInteractionOwner: () => true,
-    isSceneExitInteractionResetInProgress: false,
-    isMissingActionPathOwnershipState: () => false,
-    syncEntityActionPathsTransitionToken: () => {},
-    logInteractionDebug: () => {},
-    getInteractionDebugSnapshot: () => ({}),
-    deployTileOf: () => null,
-    orderTargetRing: {
-      setHoverColor: () => {},
-      showHover: () => rings.push("ringed"),
-      hideHover: () => rings.push("none"),
-    },
-  });
-  const storeUpdate = scene as unknown as {
-    handleEntityActionsStoreUpdate: (next: object, previous: object) => void;
-  };
-  const actions = useUIStore.getState().entityActions;
+])(
+  "on %s, the pinned order's tile wears the order's ring, and the army's route there its trail, until the pin goes",
+  (_, desktop, ringed) => {
+    screen(desktop);
+    const { scene, routes } = worldMap(true);
+    const rings: string[] = [];
+    Object.assign(scene, {
+      isInteractionOwner: () => true,
+      isSceneExitInteractionResetInProgress: false,
+      isMissingActionPathOwnershipState: () => false,
+      syncEntityActionPathsTransitionToken: () => {},
+      logInteractionDebug: () => {},
+      getInteractionDebugSnapshot: () => ({}),
+      deployTileOf: () => null,
+      orderTargetRing: {
+        setHoverColor: () => {},
+        showHover: () => rings.push("ringed"),
+        hideHover: () => rings.push("none"),
+      },
+    });
+    const storeUpdate = scene as unknown as {
+      handleEntityActionsStoreUpdate: (next: object, previous: object) => void;
+    };
+    const actions = useUIStore.getState().entityActions;
 
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: BESIDE } }));
-  storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: BESIDE }, { ...actions, hoveredHex: null });
-  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: null } }));
-  storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: null }, { ...actions, hoveredHex: BESIDE });
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: BESIDE } }));
+    storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: BESIDE }, { ...actions, hoveredHex: null });
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, hoveredHex: null } }));
+    storeUpdate.handleEntityActionsStoreUpdate({ ...actions, hoveredHex: null }, { ...actions, hoveredHex: BESIDE });
 
-  expect(rings).toEqual(ringed);
-});
+    expect(rings).toEqual(ringed);
+    // The explore beside the army previews its walk there (from where it stands), and the pin's going takes it away.
+    expect(routes).toEqual([
+      { army: ARMY, route: [ARMY_HEX, BESIDE] },
+      { army: ARMY, route: null },
+    ]);
+  },
+);
 
 it("on a Frontier phone, a tap on a tile the rules refused says why there, and keeps the army", () => {
   screen(false);

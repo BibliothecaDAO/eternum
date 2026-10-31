@@ -153,7 +153,7 @@ const GroupRows = ({
   chosen: BuildingType | undefined;
   onChoose: (building: BuildingType) => void;
 }) => (
-  <div role="listbox" aria-label={label} className="flex flex-col gap-1">
+  <div role="group" aria-label={label} className="flex flex-col gap-1">
     {buildings.map((building) => (
       <HudRow
         key={building.type}

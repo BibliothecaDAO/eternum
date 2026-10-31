@@ -40,6 +40,43 @@ const clear = (kind: keyof typeof CATEGORY, index: number, owner = 10) =>
   story("SitePayout", { category: CATEGORY[kind], reward: REWARD[kind] }, index, owner);
 
 describe("Frontier season standings", () => {
+  it("carries the season's top prizes: the pool, the places paid at most, the count posted and who each award paid", () => {
+    const { read, rows } = facts();
+    // No pool published: no prize, whether or not its row exists.
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    rows.ChestRules = [{ key: "rules", value: { game_id: "1", top_n: 3 } }];
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "300", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({ pool: "300", top_n: 3, count: null, awards: [] });
+    // The winners posted: two players, so two places, each named by its award receipt once paid; a realm's own
+    // withdrawal and another game's award are not this season's prizes.
+    rows.FrontierPrize = [{ key: "prize", value: { game_id: "1", pool: "0x12c", issued: "0", count: "0x2" } }];
+    const receipt = (game: string, account: string, amount: string, rank: number) => ({
+      key: `${game}:${account}:${rank}`,
+      value: { game_id: game, claim_id: "0x9", account, amount, prize_rank: rank, prize_count: rank && 2 },
+    });
+    rows.LordsWithdrawal = [
+      receipt("1", "0x51", "100", 2),
+      receipt("1", "0x77", "40", 0),
+      receipt("2", "0x99", "200", 1),
+    ];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toEqual({
+      pool: "300",
+      top_n: 3,
+      count: 2,
+      awards: [{ rank: 2, address: "0x51", lords: "100" }],
+    });
+    rows.LordsWithdrawal.push(receipt("1", "0x00ab", "0xc8", 1));
+    expect(buildFrontierLeaderboard(read, "1", []).prize?.awards).toEqual([
+      { rank: 1, address: "0xab", lords: "200" },
+      { rank: 2, address: "0x51", lords: "100" },
+    ]);
+    // Another game's prize is not this one's.
+    rows.FrontierPrize = [{ key: "other", value: { game_id: "2", pool: "300", issued: "0", count: null } }];
+    expect(buildFrontierLeaderboard(read, "1", []).prize).toBeNull();
+  });
+
   it("includes each home's campaign identity from the complete game, including ordinary homes", () => {
     const { read, rows } = facts([0, 0, 0]);
     rows.CampaignHome = [

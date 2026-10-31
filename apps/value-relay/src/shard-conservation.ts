@@ -1,6 +1,13 @@
 import { relayOperation, type MonitorPorts, type ConservationBalance } from "./ports";
-import { felt, uint, type ShardConnection } from "./shard-rpc";
-import { readConfirmedSnapshot, singleRow, optionalRow, type ConfirmedSnapshot } from "./shard-snapshot";
+import type { ShardConnection } from "./shard-rpc";
+import {
+  readConfirmedSnapshot,
+  singleRow,
+  optionalRow,
+  withdrawalTotals,
+  snapshotUint,
+  type ConfirmedSnapshot,
+} from "./shard-snapshot";
 import { readFrontierGames } from "./frontier-games";
 
 /** One confirmed snapshot per Frontier game supplies both immutable receipts and the current net issue budget. */
@@ -55,38 +62,24 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<Conservati
       "yesterday_ticks",
     ]);
   if (prize) requireFields(prize, ["game_id", "pool", "issued", "count"]);
-  const prizePool = prize ? rowUint(prize.pool, 128) : 0n;
-  const prizeIssued = prize ? rowUint(prize.issued, 128) : 0n;
+  const prizePool = prize ? snapshotUint(prize.pool, 128) : 0n;
+  const prizeIssued = prize ? snapshotUint(prize.issued, 128) : 0n;
   if (prizeIssued > prizePool) throw new Error("invalid_prize_conservation");
-  const pool = budget ? rowUint(budget.pool, 128) : 0n;
-  const poolLeft = budget ? rowUint(budget.pool_left, 128) : 0n;
+  const pool = budget ? snapshotUint(budget.pool, 128) : 0n;
+  const poolLeft = budget ? snapshotUint(budget.pool_left, 128) : 0n;
   if (pool > 0n && !prize) throw new Error("frontier_prize_missing");
-  rowUint(rules.price_ceiling, 128);
+  snapshotUint(rules.price_ceiling, 128);
   if (budget) {
-    rowUint(budget.open, 128);
-    rowUint(budget.day, 64);
-    rowUint(budget.price, 128);
-    rowUint(budget.rolled_shares, 128);
-    rowUint(budget.yesterday_shares, 128);
-    rowUint(budget.yesterday_ticks, 64);
+    snapshotUint(budget.open, 128);
+    snapshotUint(budget.day, 64);
+    snapshotUint(budget.price, 128);
+    snapshotUint(budget.rolled_shares, 128);
+    snapshotUint(budget.yesterday_shares, 128);
+    snapshotUint(budget.yesterday_ticks, 64);
   }
-  const receipts = snapshot.models.find((model) => model.model === "LordsWithdrawal")!;
-  const claims = new Set<string>();
-  let withdrawn = 0n;
-  let prizeWithdrawn = 0n;
-  for (const { value } of receipts.rows) {
-    requireFields(value, ["game_id", "claim_id", "account", "amount", "prize_rank", "prize_count"]);
-    const claim = felt(String(value.claim_id));
-    const amount = rowUint(value.amount, 128);
-    if (BigInt(claim) === 0n || BigInt(felt(String(value.account))) === 0n || claims.has(claim) || amount === 0n)
-      throw new Error("invalid_conservation_receipt");
-    claims.add(claim);
-    withdrawn += amount;
-    const rank = rowUint(value.prize_rank, 16),
-      count = rowUint(value.prize_count, 16);
-    if ((rank === 0n) !== (count === 0n) || rank > count || count > 100n) throw new Error("invalid_prize_rank");
-    if (rank > 0n) prizeWithdrawn += amount;
-  }
+  const totals = withdrawalTotals(snapshot);
+  const withdrawn = totals.chest + totals.prize;
+  const prizeWithdrawn = totals.prize;
   if (prizeWithdrawn !== prizeIssued) throw new Error("invalid_prize_conservation");
   return {
     gameId,
@@ -100,10 +93,4 @@ const balanceOf = (snapshot: ConfirmedSnapshot, gameId: number): Omit<Conservati
 const requireFields = (value: Record<string, unknown>, fields: string[]) => {
   if (Object.keys(value).sort().join() !== [...fields].sort().join())
     throw new Error("conservation_row_schema_differs");
-};
-
-const rowUint = (value: unknown, bits: number) => {
-  if (typeof value !== "string" && (typeof value !== "number" || !Number.isSafeInteger(value)))
-    throw new Error("unsafe_conservation_integer");
-  return uint(String(value), bits);
 };

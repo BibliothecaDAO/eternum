@@ -176,7 +176,7 @@ describe("the chat: rooms, then Messages", () => {
   it("writes to a player who is offline: the field stands, with no notice in its place", () => {
     open();
     press("Messages");
-    act(() => [...host.querySelectorAll<HTMLButtonElement>(".ui-row button")].at(-1)?.click());
+    act(() => [...host.querySelectorAll<HTMLButtonElement>("button.ui-row")].at(-1)?.click());
     expect(host.textContent).toContain("deal, I take the camp");
     expect(field()?.disabled).toBe(false);
     expect(host.textContent).not.toContain("offline");

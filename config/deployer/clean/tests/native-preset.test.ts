@@ -392,6 +392,29 @@ describe("native presets", () => {
     }
   });
 
+  test("discovery reserves room for Shrine and Well bonuses together", () => {
+    const preset = nativePresets[FRONTIER_PRESET_ID]!;
+    const previous = preset.discovery;
+    try {
+      preset.discovery = {
+        beastsBps: 1000,
+        campBps: 1000,
+        riftBps: 1000,
+        shrineBps: 2000,
+        wellBps: 2000,
+        ruinBps: 0,
+        emptyRevealLimit: 7,
+      };
+      const build = () =>
+        buildNativePreset(loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID), FRONTIER_PRESET_ID);
+      expect(build).toThrow("Invalid categorical discovery rules");
+      preset.discovery.beastsBps = 0;
+      expect(build().economy.discovery.unwrap()).toMatchObject({ shrine_bps: 2000, well_bps: 2000, beasts_bps: 0 });
+    } finally {
+      preset.discovery = previous;
+    }
+  });
+
   test("Frontier owns discovery odds in its categorical row and ruin beasts in each depth", () => {
     const preset = buildNativePreset(
       loadNativePresetConfiguration("madara.frontier", FRONTIER_PRESET_ID),
@@ -547,7 +570,6 @@ describe("native presets", () => {
       common_xp: 75,
       reveal_xp: 2,
       reveal_xp_per_depth: 1,
-      fixed_xp: 200,
       uncommon_xp: 200,
       rare_xp: 400,
       epic_xp: 800,

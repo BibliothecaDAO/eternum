@@ -15,6 +15,7 @@ import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { BlitzBoard } from "./blitz-board";
 import { FrontierRow } from "./frontier-row";
+import { SeasonPodium } from "./season-podium";
 
 type SeasonView = "frontier" | "blitz";
 
@@ -152,7 +153,8 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
     );
   if (!season) return directory.isPending ? <Loading /> : null;
   if (board.isPending) return <Loading />;
-  const rows = board.data?.mode === "frontier" ? boardRows(board.data.entries, player, rowsShown) : [];
+  const frontier = board.data?.mode === "frontier" ? board.data : undefined;
+  const rows = frontier ? boardRows(frontier.entries, player, rowsShown) : [];
   if (rows.length === 0)
     return (
       <AppEmpty
@@ -167,6 +169,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
     );
   return (
     <div>
+      {frontier && <SeasonPodium board={frontier} own={findOwnEntry(frontier.entries, player)?.address} />}
       {rows.map(({ entry, own }) => (
         <FrontierRow key={entry.address} entry={entry} own={own} />
       ))}

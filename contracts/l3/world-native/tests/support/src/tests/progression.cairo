@@ -9,7 +9,6 @@ pub fn rules() -> ArmyProgressionRules {
     ArmyProgressionRules {
         reveal_xp: 2,
         reveal_xp_per_depth: 1,
-        fixed_xp: 200,
         common_xp: 75,
         uncommon_xp: 200,
         rare_xp: 400,

@@ -189,7 +189,7 @@ export const ResourceChip = ({
             </span>
           )
         }
-        trail={
+        controls={
           <>
             {canShowProductionShortcut && (
               <HudIconButton

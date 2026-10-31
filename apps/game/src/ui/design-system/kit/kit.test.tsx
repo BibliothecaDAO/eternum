@@ -28,9 +28,11 @@ beforeEach(() => {
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
   host.remove();
+  // A sheet closed steps back off its history entry a moment later: that step lands here, not in the next test.
+  await new Promise((settled) => setTimeout(settled, 20));
 });
 
 describe("the clock", () => {
@@ -68,7 +70,7 @@ describe("stores and prices", () => {
 describe("a shortfall's line", () => {
   it("names what is counted, with the exact wait", () => {
     expect(shortfallLine({ kind: "short", of: "labor", held: 9_640, need: 15_000, wait: 10 * 3600 + 44 * 60 })).toBe(
-      "Needs 15K labor, have 9,640 · in 10h 44m",
+      "Needs 15K Labor, have 9,640 · in 10h 44m",
     );
   });
 
@@ -83,7 +85,7 @@ describe("a shortfall's line", () => {
       "Needs 3 population, 2 free",
     );
     expect(shortfallLine({ kind: "short", of: "labor", counted: "limit", held: 18_000, need: 24_000 })).toBe(
-      "Needs 24K labor, storage holds 18K",
+      "Needs 24K Labor, storage holds 18K",
     );
     expect(shortfallLine({ kind: "short", of: "essence", held: undefined, need: 48_000 })).toBe(
       "Needs 48K Essence, have —",
@@ -92,9 +94,9 @@ describe("a shortfall's line", () => {
 
   it("never reads a shortfall as met where both sides round alike", () => {
     const line = (held: number, need: number) => shortfallLine({ kind: "short", of: "labor", held, need });
-    expect(line(28.1, 28.15)).toBe("Needs 28.2 labor, have 28.1");
-    expect(line(12_440, 12_449)).toBe("Needs 12,449 labor, have 12,440");
-    expect(line(0.555, 0.556)).toBe("Needs 0.556 labor, have 0.555");
+    expect(line(28.1, 28.15)).toBe("Needs 28.2 Labor, have 28.1");
+    expect(line(12_440, 12_449)).toBe("Needs 12,449 Labor, have 12,440");
+    expect(line(0.555, 0.556)).toBe("Needs 0.556 Labor, have 0.555");
   });
 });
 
@@ -239,9 +241,9 @@ describe("Sheet", () => {
 
   it("closes on the system back, which leaves the page under it where it was", () => {
     const onClose = vi.fn();
-    const before = window.history.length;
     renderSheet(onClose);
-    expect(window.history.length).toBe(before + 1);
+    // Its own entry, on top of the page's: the system back leaves that one where it was.
+    expect((window.history.state as { kitSheets?: string[] }).kitSheets).toHaveLength(1);
     act(() => {
       window.history.replaceState(null, "");
       window.dispatchEvent(new PopStateEvent("popstate", { state: null }));

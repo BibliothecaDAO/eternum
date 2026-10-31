@@ -224,8 +224,9 @@ it("shows a ticket just opened on the landing on You and on a game's Realm step 
   expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
   await you.follow("Test step");
   expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
-  // The landing's one redeem told every screen: no screen read the ticket again.
-  expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, "TEST0000"]);
+  // You's read, the landing's check for a ticket already held, then its one redeem, which told every screen: no
+  // screen read the ticket again.
+  expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, null, "TEST0000"]);
 });
 
 it.each([1440, 390])(
@@ -235,7 +236,9 @@ it.each([1440, 390])(
     let answerFirstRead: (reason: unknown) => void = () => undefined;
     const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, code) => {
       if (code) return { campaign: DEVCON.campaign, tier: "golden" };
-      return new Promise((_resolve, reject) => (answerFirstRead = reject)) as never;
+      // You's read stays out; the landing's own check for a held ticket answers none, as it did before the opening.
+      if (reads.mock.calls.length === 1) return new Promise((_resolve, reject) => (answerFirstRead = reject)) as never;
+      throw new IdentityRequestError(400, "invalid_redemption");
     });
     const you = await openYou(width);
     await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(1));
@@ -252,7 +255,7 @@ it.each([1440, 390])(
     expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
     await you.follow("Test step");
     expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
-    expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, "TEST0000"]);
+    expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, null, "TEST0000"]);
   },
 );
 

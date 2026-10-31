@@ -16,23 +16,23 @@ import {
   formatDuration,
   getRelicInfo,
   relicEffect,
-  type ResourcesIds,
+  ResourcesIds,
   formatCharge,
   resourceName,
   formatHeldAgainst,
   structurePlural,
   structureName,
   StructureType,
+  tierNumeral as rankNumeral,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
-export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
+export { TIER_WORDS } from "@bibliothecadao/types";
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
-/** A tier by its numeral, Common I to Legendary V. */
-const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUMERALS[tier - 1]!);
+/** A tier by its numeral, Common I to Legendary V; untrained is 0. */
+export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -102,10 +102,12 @@ export const CLOSE = "Close";
 export const KEEP = "Keep";
 
 export { XP, xpGainedLine } from "@bibliothecadao/types";
-export const ESSENCE = "Essence";
-export const LABOR = "labor";
-export const WHEAT = "wheat";
-export const TROOPS = "troops";
+/** The resources Frontier's stores hold, by the catalog's names: one casing, at a line's start or inside it. */
+export const ESSENCE = resourceName(ResourcesIds.Essence);
+export const LABOR = resourceName(ResourcesIds.Labor);
+export const WHEAT = resourceName(ResourcesIds.Wheat);
+/** The realm's troops, as a store and an army's figure are named. */
+export const TROOPS = "Troops";
 export const STAMINA = "stamina";
 /** The explores a Well's stamina buys the army it refills: "+3 explores". */
 export const exploresBought = (count: number) => `+${count} ${count === 1 ? "explore" : "explores"}`;
@@ -136,7 +138,8 @@ export const FULL = "Full";
  */
 export const STORAGE = "Storage";
 /** On a payout's Full mark: the storage took what it had room for. */
-export const REST_DID_NOT_FIT = "Storage full: the rest did not fit";
+/** A clear's payout over the store's room, on its chip: what goes past the limit is lost. */
+export const REST_DID_NOT_FIT = "Full: the rest did not fit";
 /** The most troops one army takes, as a castle level sets it (owner, 26 October: "max army size you mean"). */
 export const MAX_ARMY_SIZE = "Max army size";
 /** What a castle level gives, on its card: the one wording for each (owner, 26 October). */
@@ -207,8 +210,6 @@ export const EVENTS_WORDS = {
   nothingYet: "Nothing here yet.",
   /** Frontier's one feed in its rail: the world's history, and lenses on it. */
   feed: "Feed",
-  /** Its ×: the Feed goes and leaves its place empty; its place opens it again. */
-  closeFeed: "Close the feed",
   /** The lenses' group, for assistive technology: Events, the Log and the Feed alike. */
   lens: "Show",
   lenses: { important: "Important", all: "All" },
@@ -234,7 +235,6 @@ export const SETTINGS_WORDS = {
   show: "Show",
 } as const;
 export const EXIT = "Exit";
-export const RESUME = "Resume";
 export const SIGN_IN = "Sign in";
 
 /** An army's two ways across the map, and backing out of an order. */
@@ -299,8 +299,8 @@ export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION
 export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
 
 /**
- * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
- * tier". XP is a balance an army spends on its attributes; it has no level.
+ * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next II point". XP is a balance
+ * an army spends on its attributes; it has no level.
  */
 export const xpTowardTip = (held: string, milestone: string, tier: string) =>
   `${XP} ${held} of ${milestone} · next ${tier} point`;
@@ -308,6 +308,11 @@ export const xpTowardTip = (held: string, milestone: string, tier: string) =>
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
 export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
+/**
+ * A ruin's rule, on its card, as the contract keeps it (expeditions.cairo, close_ruins): a realm clears one ruin a day,
+ * and that clear removes its other ruins on every depth (owner, 30 October: one short line).
+ */
+export const RUIN_RULE = `One ${RUIN.toLowerCase()} a day · the rest vanish`;
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 /**
@@ -342,6 +347,8 @@ export const ARMY_WILL_BE_LOST = "Army will be lost";
  */
 export const FIGHT_WORDS = {
   armyLost: "Your army is lost",
+  /** Under the loss, in the panel's place, before it closes: what to do next. */
+  armyLostNext: "Its troops fell in the fight. Deploy a new army from your realm.",
   /** An attack that clears the site, over the reward it earns; a site that pays nothing is only cleared. */
   earns: "This attack earns",
   clears: "This attack clears it",
@@ -439,6 +446,9 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
+/** The wheat that caps a deploy below the troops at home: "Wheat for 8 troops · 2 each". */
+export const wheatPaysFor = (troops: string, each: string) =>
+  `Wheat for ${troops} ${troops === "1" ? "troop" : "troops"} · ${each} each`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
@@ -475,7 +485,7 @@ export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
 export const ARMIES_ENDED = "Armies ended with the day";
 /** How many troops an army holds: "1 troop", "5,000 troops". */
-export const troopCount = (count: number) => formatCount(count, "troop", TROOPS);
+export const troopCount = (count: number) => formatCount(count, "troop");
 /** The sources of a store's production, each with its combined rate. */
 export const MADE_BY = "Made by";
 export const STORE_MAKERS = {
@@ -483,7 +493,7 @@ export const STORE_MAKERS = {
   castle: (rate: string) => `${CASTLE} · ${rate}`,
 };
 /** What an army's Homecoming sends home when the day ends, on its row or token in the day's last hour. */
-export const comesHomeAtDayEnd = (troops: string) => `${troops} come home when the day ends`;
+export const comesHomeAtDayEnd = (troops: string) => `${troops} come home at day end`;
 
 /** The day log's lines for what the player did, in the names the build cards and the dock use. */
 export const revealLine = (gain: string, resource: string) => `${gain} ${resource}`;
@@ -550,16 +560,15 @@ export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
 /** The season's last hour of withdrawals is kept for paying the ones already made. */
 export const WITHDRAWALS_CLOSED = "Withdrawals have closed";
-/** After the season, on its last card: the moment its withdrawals close. */
-export const withdrawUntil = (moment: string) => `Withdraw until ${moment}`;
+export const AUTOMATIC_LORDS_PAYOUT = "LORDS are paid out automatically at season end";
 export const PAYOUTS_UNREADABLE = "Payouts cannot be read right now";
 /** A withdrawal with no answer from the game: it may still apply, so it is never sent again on its own. */
 export const withdrawalUnknown = (amount: string) => `No answer yet for these ${amount}`;
 
 export const REALM_LABOR = "Realm Labor";
 export const NO_REALM_LABOR = "No daily Labor claim";
-export const DAILY_REALM_LABOR = "Labor per game day";
-export const DAILY_REALM_ESSENCE = "Essence per game day";
+/** What a home's claim gives each game day, after its amounts. */
+export const EACH_DAY = "each day";
 /** The claim's step: what it gives, its Labor that fits and a golden ticket's Essence, each only when there is some. */
 export const claimRealmLaborLabel = (amount: number, essence = 0) =>
   `Claim ${[
@@ -569,15 +578,31 @@ export const claimRealmLaborLabel = (amount: number, essence = 0) =>
 /** A campaign home's mark beside its realm's rank: the event that founded it, golden for a golden ticket's. */
 export const DEVCON = "Devcon";
 export const CLAIMING_LABOR = "Claiming";
-export const partialRealmLabor = (fits: number, total: number) =>
-  `${formatExact(fits)} of ${formatExact(total)} fit · remainder lost`;
-export const claimedRealmLabor = (secondsLeft: number | undefined) => `Claimed today · ${dayLeft(secondsLeft).reading}`;
+/** Today's Labor against a full store: what of it lands, the rest is lost with the claim. */
+export const laborFits = (fits: number, total: number) =>
+  `${formatExact(fits)} of ${formatExact(total)} Labor fit · storage full`;
+/** Once claimed: when the next game day, and its claim, opens. */
+export const dayOpensIn = (day: number, secondsLeft: number | undefined) =>
+  `Day ${day} opens in ${dayLength(secondsLeft)}`;
+/** Once claimed on the season's last day: no day follows, only the season's end. */
+export const seasonEndsIn = (secondsLeft: number | undefined) => `Season ends in ${dayLength(secondsLeft)}`;
+/** Each state of a season day on the Realm Labor sheet's strip, as assistive technology names it after the day. */
+export const SEASON_DAY_STATES = {
+  claimed: "claimed",
+  missed: "missed",
+  open: "to claim",
+  ahead: "ahead",
+  before: "before your home",
+} as const;
+export const seasonDayLabel = (day: number, state: keyof typeof SEASON_DAY_STATES) =>
+  `Day ${day} ${SEASON_DAY_STATES[state]}`;
 /** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
-/** The claimed sheet's ask: a push when the next game day opens, on this device. */
-export const remindWhenDayOpens = (day: number) => `Remind me when Day ${day} opens`;
+/** The claimed sheet's ask for a push when the next game day opens, on this device, and its state once on. */
+export const REMIND_ME = "Remind me";
+export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
-export const INSTALL_FOR_REMINDERS = "Add to Home Screen for reminders";
+export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
 export const REALM_NUMBER = "Realm number";
 export const YOUR_REALMS = "Your Realms";
@@ -595,6 +620,11 @@ export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
 /** The Realm step: its one job, the home the player founds, and what it offers to found it with. */
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
+  /** The step's one verb, and what it says while the home is founded. */
+  found: "Found your realm",
+  founding: "Founding your realm…",
+  /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
+  loading: "Reading what you hold…",
   freeHome: "A free home",
   freeHomeLine: "No daily Labor. Hold a Realm or a Devcon ticket to found with it.",
   linkWallet: "Link the wallet that holds your Realms",
@@ -617,6 +647,10 @@ export const commonChestPays = (lords: string) => `A Common chest pays ${lords} 
 export const seasonPool = (lords: string, today: string | undefined) =>
   `Season pool ${lords} LORDS${today === undefined ? "" : `, ${today} released today`}`;
 export const POOL_NOT_PUBLISHED = "Pool not published yet";
+/** The season's top prizes, as a podium names itself to assistive technology. */
+export const SEASON_PRIZES = "Season prizes";
+/** A prize place no one holds: no player who cleared a site yet, or a winner the ledger fixed and has not paid yet. */
+export const PRIZE_UNHELD = { open: "Open", awarding: "Pending" } as const;
 // The app's words outside a match (the shell's pages).
 
 /**
@@ -638,7 +672,7 @@ export const WORDS = {
   dev: "Dev",
   /** Start Frontier on a first visit; entry is free. */
   playFree: "Play free",
-  resume: RESUME,
+  resume: "Resume",
   /** Go into a Blitz game the player is on. */
   enter: "Enter",
   /** Look at a Blitz game the player is not on. */
@@ -690,6 +724,8 @@ export const SIGN_IN_WORDS = {
   claimName: "Claim name",
   saving: "Saving…",
   portrait: "Portrait",
+  /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
+  firstSignIn: "New here? Your first sign-in creates your Realms account.",
   /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
   handoff: "Discord finished elsewhere? Enter its code.",
   handoffCode: "Discord code",
@@ -699,8 +735,9 @@ export const SIGN_IN_WORDS = {
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
 export const JOIN_WORDS = {
   realm: "A Devcon realm is yours",
-  claim: "Claim your realm",
   yourTicket: "Your ticket",
+  /** A second flyer on an account that already holds its ticket: the held one, never the flyer's. */
+  alreadyHeld: "You already hold your Devcon ticket",
   open: "Open your ticket",
   opening: "Opening…",
   sealed: "A realm waits for you",
@@ -708,8 +745,8 @@ export const JOIN_WORDS = {
   golden: "Golden ticket",
   goldenLine: "A golden realm waits",
   goldenStub: (count: number) => `One of ${count} at Devcon`,
-  laborEachDay: (amount: number) => `${formatExact(amount)} Labor each day`,
-  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence each day`,
+  laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
+  essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
@@ -1315,27 +1352,30 @@ export const RESEARCH_TREE = {
   branches: { economy: "Economy", army: ARMY, castle: CASTLE },
   states: { ready: "Can research", short: "Saving up", done: "Researched", locked: "Locked" },
   sides: {
-    fields: ["Fields", "Wheat from every Farm"],
-    granary: ["Granary", "The castle's wheat storage"],
-    tools: ["Tools", "Labor from every Workshop"],
-    storeroom: ["Storeroom", "The castle's labor storage"],
-    drill: ["Drill", "Troops from every Barracks"],
-    rations: ["Rations", "Wheat a deployed troop costs"],
+    fields: ["Fields", "Farm wheat"],
+    granary: ["Granary", "Wheat storage"],
+    tools: ["Tools", "Workshop labor"],
+    storeroom: ["Storeroom", "Labor storage"],
+    drill: ["Drill", "Barracks troops"],
+    rations: ["Rations", "Wheat per troop"],
   },
   /** The kinds a Scouting level finds more of; Frontier's camp is its Troll (the shared structure naming rule). */
   kinds: {
     camp: structurePlural(StructureType.Camp, undefined, "frontier"),
     rift: structurePlural(StructureType.Rift, undefined, "frontier"),
-    beasts: structurePlural(StructureType.Beasts, undefined, "frontier"),
+    sanctuaries: "Sanctuaries",
   },
-  foundByNewArmies: (kind: string) => `${kind} found by new armies`,
+  /** A Scouts' lodge kind's side: new armies find more of it. */
+  foundMore: "Found more",
   sidesLine: (made: string) => `Improve ${made} output and storage separately`,
-  hutLine: "Population from every Hut",
+  hutLine: "Hut population",
   population: "Population",
-  gateLine: (barracks: string) => `${barracks} opens the four training buildings`,
-  gateOpen: "The four training buildings are open",
+  gateLine: "Opens the 4 training buildings",
+  gateOpen: "Training buildings open",
   gate: (barracks: string) => `${barracks} opens`,
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
+  /** A training building's figure, under the attribute's name on its card: what that level is given to. */
+  everyNewArmy: "Every new army",
   /** A level and what it gives: "Uncommon · +10% damage". */
   at: (tier: string, effect: string) => `${tier} · ${effect}`,
   /**
@@ -1348,7 +1388,7 @@ export const RESEARCH_TREE = {
     scouting: (value: string) => `${value} discovery`,
     homecoming: (value: string) => `${value} come home`,
   },
-  nouns: { essence: ESSENCE, labor: "Labor" },
+  nouns: { essence: ESSENCE, labor: LABOR },
   armiesFind: (site: string) => `Armies find ${site}s`,
   each: (gain: string) => `${gain} each`,
   enters: (depth: string) => `Armies enter ${depth} at the spire`,

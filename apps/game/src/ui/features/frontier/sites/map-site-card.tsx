@@ -11,7 +11,6 @@ import {
   HudCost,
   HudSheet,
   HudStamina,
-  HudTier,
   HudWindowFoot,
   type StaminaBar,
 } from "@/ui/design-system/kit/hud-elements";
@@ -19,23 +18,22 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { exploresBought, MOVE, STAMINA, type Tier, USE, USING, XP } from "@/ui/design-system/kit/words";
+import { exploresBought, MOVE, STAMINA, USE, USING } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
-import { formatShort, formatShortChange } from "@bibliothecadao/types";
+import { formatShort, formatShortChange, skillPointName } from "@bibliothecadao/types";
 import { type ReactNode, useMemo } from "react";
 
 import { useOrderAt } from "../hud/army-order";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import type { XpGoal } from "../hud/army-token";
 import { useApproachTile } from "./approach";
 import { type MapSiteKind, mapSite, mapSiteKind, siteGain } from "./map-site-plan";
 import { useSelectedOwnArmy } from "./selected-army";
 import { inFlightWord } from "./site-card-view";
-import { sendSiteUse } from "./use-site";
+import { sendSiteUse, shrineRewardAt } from "./use-site";
 
-const MAP_SITE_MODELS = ["ArmyProgressionRules", "ExplorerTroops", "TileOccupancy"] as const;
+const MAP_SITE_MODELS = ["ShrineReward", "ExplorerTroops", "TileOccupancy"] as const;
 
 /** The map tile the player tapped, when a Shrine or Well stands on it. */
 export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRenderable } | null => {
@@ -47,14 +45,7 @@ export const useSelectedMapSite = (): { kind: MapSiteKind; tile: TileSpatialRend
   return isMapView && tile && kind ? { kind, tile } : null;
 };
 
-/**
- * A Shrine's or Well's card (the owner's pick B, 28 October 2026: "ok for B"): a row for the selected army as one use
- * will leave it (a Well's refill on its stamina bar, never past its maximum, with the explores it buys; a Shrine's XP
- * with the rank of the next skill point it earns), and a foot saying what the site gives, as its hover does, beside Use where the
- * army's orders offer it (the action planner's Use, the right-click's order), or Move and its cost until the army
- * stands beside it. With no army selected, what it gives alone: select an army, then the site (owner, 28 October 2026:
- * "agree with no picker"). The site is spent by that use, so the card closes as its tile empties.
- */
+/** The discovered reward and the selected army's Use or approach order. */
 export const MapSiteCard = ({
   selected,
   onClose,
@@ -66,8 +57,8 @@ export const MapSiteCard = ({
   const user = useSelectedOwnArmy();
   useNativeRevision(MAP_SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
-  const rules = setup.store.get("ArmyProgressionRules", { game_id: configManager.getActiveGameId() });
-  const plan = { kind: selected.kind, gain: siteGain(selected.kind, rules) };
+  const reward = shrineRewardAt(setup.store, siteTile);
+  const plan = { kind: selected.kind, gain: siteGain(selected.kind, reward) };
   const usable = useArmyOffersUse(siteTile) && user !== null;
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !usable));
   const userId = user ? safeInteger(user.army.explorer_id) : null;
@@ -91,9 +82,7 @@ export const MapSiteCard = ({
         {formatShort(plan.gain, { signed: true })}
       </HudChip>
     ) : (
-      <HudChip>
-        {formatShort(plan.gain, { signed: true })} {XP}
-      </HudChip>
+      <HudChip>{plan.gain === undefined ? "—" : skillPointName(plan.gain)}</HudChip>
     );
   return (
     <HudSheet label={word} onClose={onClose}>
@@ -158,19 +147,12 @@ const useUserArmy = (explorerId: number | undefined): DockArmy | undefined => {
   return armies.find((candidate) => candidate.explorerId === explorerId);
 };
 
-/**
- * The army a use acts on, as it will stand after it: a Well's refill on its stamina bar, or a Shrine's XP with the
- * rank of the next skill point it earns.
- */
+/** The selected army, with a Well's resulting stamina. */
 const SiteUser = ({ army, kind, gain }: { army: DockArmy; kind: MapSiteKind; gain: number | undefined }) => (
   <div data-site-user className="flex items-center gap-3">
     <SemanticIcon name={army.art} size={40} />
     <span className="text-hud-strong text-hud-ink">{army.label}</span>
-    {kind === "Well" ? (
-      <WellAfter stamina={army.stamina} gain={gain} />
-    ) : (
-      <ShrineAfter xp={army.xp} goal={army.xpGoal} gain={gain} />
-    )}
+    {kind === "Well" && <WellAfter stamina={army.stamina} gain={gain} />}
   </div>
 );
 
@@ -185,27 +167,6 @@ const WellAfter = ({ stamina, gain }: { stamina: StaminaBar | undefined; gain: n
       </span>
       {formatShortChange(stamina?.current, after)}
       {bought && <HudChip icons={["explore"]}>{exploresBought(bought)}</HudChip>}
-    </span>
-  );
-};
-
-/** The army's XP before and after the Shrine, and the rank of its next skill point, when the gain reaches it. */
-const ShrineAfter = ({
-  xp,
-  goal,
-  gain,
-}: {
-  xp: number | undefined;
-  goal: XpGoal | undefined;
-  gain: number | undefined;
-}) => {
-  const after = xp !== undefined && gain !== undefined ? xp + gain : undefined;
-  return (
-    <span className="ml-auto flex items-center gap-2 tabular-nums text-hud-ink">
-      <HudChip>
-        {formatShortChange(xp, after)} {XP}
-      </HudChip>
-      {goal && after !== undefined && after >= goal.at && <HudTier tier={goal.rank as Tier} />}
     </span>
   );
 };

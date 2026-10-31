@@ -1,3 +1,5 @@
+const sweep = vi.hoisted(() => vi.fn(async () => {}));
+vi.mock("./frontier-sweep", () => ({ sweepFrontierLords: sweep }));
 vi.mock("./frontier-prizes", () => ({ awardFrontierPrizes: vi.fn(async () => {}) }));
 const pools = vi.hoisted(() => vi.fn(async () => {}));
 vi.mock("./frontier-pools", () => ({ publishFrontierPools: pools }));
@@ -176,6 +178,12 @@ it("continues a full confirmed page through its alarm and stops when caught up",
   expect(await relay.tick("0x1")).toMatchObject({ value: { status: "ready", more: true } });
   expect(storage.setAlarm).toHaveBeenCalledOnce();
   expect(pools).toHaveBeenCalledOnce();
+  expect(sweep).toHaveBeenCalledWith(
+    expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
+    undefined,
+    expect.objectContaining({ address: "0x10" }),
+    expect.any(Function),
+  );
   expect(pools).toHaveBeenCalledWith(
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
     undefined,

@@ -43,7 +43,6 @@ const XP_RULES = {
     game_id: 1,
     reveal_xp: 2,
     reveal_xp_per_depth: 1,
-    fixed_xp: 200,
     uncommon_xp: 250,
     rare_xp: 500,
     epic_xp: 1000,
@@ -100,7 +99,9 @@ it("says the tree is on its way while a fact it reads is missing, and draws the 
       </GameProvider>,
     ),
   );
-  expect(host.textContent).toBe("The research tree is on its way");
+  // The page says so in its own frame, as it stands once the tree is drawn.
+  const page = host.querySelector('section[data-kit-frame][aria-label="Research"]');
+  expect(page?.querySelector('[role="status"]')?.textContent).toBe("The research tree is on its way");
 
   act(() => store.applyFacts(ALL_PRICES.filter(({ value }) => value.row === research.ROW_SHRINE) as never));
   expect(host.textContent).not.toContain("on its way");

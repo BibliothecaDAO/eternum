@@ -17,6 +17,7 @@ import { createPortal } from "react-dom";
 import { BACK } from "./words";
 
 import { paintingSources, type Painting } from "./paintings";
+import { HudPlaceMedal } from "./hud-elements";
 import { useSheetCloses } from "./sheet-closes";
 
 /**
@@ -98,7 +99,12 @@ const AppButtonFace = ({
     data-size={size}
     data-tone={tone}
   >
-    {icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />}
+    {/* Busy, the sheet's one spinner stands in its icon's place: the press is under way, not refused. */}
+    {busy !== undefined ? (
+      <span className="ui-spinner" aria-hidden="true" />
+    ) : (
+      icon && <Icon name={icon} size={size === "lg" ? 26 : 20} />
+    )}
     <span>{busy ?? children}</span>
   </button>
 );
@@ -491,7 +497,9 @@ export const AppGameCard = ({
  * One thing of a list: what leads it (a rank, a portrait, an icon), what it is and what it says, then what follows
  * (figures, its own button). The player's own row is lit. With `onClick` the whole row is the button that opens it;
  * with `href`, the link to another site, in a new tab. A row that opens is one target, its value and arrow included,
- * so what follows it holds no button of its own.
+ * so what follows it holds no button of its own. A board's row is `line`: one line at any width, its title giving way
+ * and its figures in fixed columns at the right, so a phone's board reads as a desktop's (the owner, 30 October 2026:
+ * "fix the alignment btw on mobile").
  */
 export const AppRow = ({
   lead,
@@ -499,6 +507,7 @@ export const AppRow = ({
   detail,
   trail,
   own = false,
+  line = false,
   onClick,
   href,
 }: {
@@ -507,9 +516,11 @@ export const AppRow = ({
   detail?: ReactNode;
   trail?: ReactNode;
   own?: boolean;
+  line?: boolean;
   onClick?: () => void;
   href?: string;
 }) => {
+  const shape = { "data-own": own || undefined, "data-line": line || undefined };
   const parts = (
     <>
       {lead !== undefined && <span className="app-row__lead">{lead}</span>}
@@ -520,30 +531,29 @@ export const AppRow = ({
       {trail !== undefined && <span className="app-row__trail">{trail}</span>}
     </>
   );
-  const lit = own || undefined;
   if (href)
     return (
-      <a className="app-row" data-own={lit} href={href} target="_blank" rel="noopener noreferrer">
+      <a className="app-row" {...shape} href={href} target="_blank" rel="noopener noreferrer">
         {parts}
       </a>
     );
   if (onClick)
     return (
-      <button type="button" className="app-row" data-own={lit} onClick={onClick}>
+      <button type="button" className="app-row" {...shape} onClick={onClick}>
         {parts}
       </button>
     );
   return (
-    <div className="app-row" data-own={lit}>
+    <div className="app-row" {...shape}>
       {parts}
     </div>
   );
 };
 
-/** A rank at the head of a board's row; the top three in gold. */
-export const AppRank = ({ rank }: { rank: number }) => (
+/** A rank at the head of a board's row; the top three in gold, or with `medal` as their place's medal. */
+export const AppRank = ({ rank, medal = false }: { rank: number; medal?: boolean }) => (
   <span className="app-rank" data-top={rank <= 3 || undefined}>
-    {rank}
+    {medal ? <HudPlaceMedal place={rank} size={26} below={rank} /> : rank}
   </span>
 );
 

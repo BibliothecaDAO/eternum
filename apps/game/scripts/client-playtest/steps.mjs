@@ -83,7 +83,14 @@ const NEIGHBOUR_RING = [
  * words.ts: MENU, SEASON, EVENTS_WORDS.feed, CLOSE, CHAT); steps.test.mjs fails when they differ (playtest 30 October 2026,
  * B6: the phone's Log became its Feed, and the Season board's Back its ×).
  */
-export const HUD_WORDS = { menu: "Menu", season: "Season", feed: "Feed", close: "Close", chat: "Chat" };
+export const HUD_WORDS = {
+  menu: "Menu",
+  season: "Season",
+  feed: "Feed",
+  close: "Close",
+  chat: "Chat",
+  realmLabor: "Realm Labor",
+};
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
 const FRONTIER = { mode: "frontier", card: { verbs: ["resume", "play"] } };
@@ -338,6 +345,55 @@ const FIGHT_ACTION_STEPS = [
   ),
 ];
 
+/**
+ * An attack that costs the army its life (the lab's fight-lost game), from the site's card as lab-actions-fight attacks:
+ * the loss stands in the panel's place, then the panel closes by itself, nothing left standing for the gone army.
+ */
+const FIGHT_LOST_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
+  { name: "attack-lost", play: attackAndReadTheLoss, settleMs: 500, verify: lossShown },
+  { name: "loss-closes", play: readTheLossClose, settleMs: 500, verify: lossClosed },
+];
+const ARMY_LOST = "Your army is lost";
+/** Past the loss's moment in the panel (ArmyLostSheet's ARMY_LOST_MS, 3 s), with room for a slow frame. */
+const LOSS_CLOSES_WAIT_MS = 6_000;
+
+async function attackAndReadTheLoss(context) {
+  const attacked = await attackFromTheSiteCard(context);
+  const shown = await readUntil(
+    () => context.browser.read(MERGE_STATE),
+    (state) => state.sheet === ARMY_LOST,
+    SHEET_WAIT_MS,
+  );
+  return { ...attacked, sheet: shown.sheet, sent: shown.sent, destroyed: shown.destroyed };
+}
+
+function lossShown({ played }) {
+  if (!played.sent?.includes("BattleGuard"))
+    return failed(`no attack was sent (offered ${played.offered?.join(", ")})`);
+  if (!played.destroyed?.includes(played.army)) return failed(`the chain did not answer ${played.army} lost`);
+  return played.sheet === ARMY_LOST
+    ? completed({ army: played.army, sheet: played.sheet })
+    : failed(`expected "${ARMY_LOST}" in the panel, saw ${played.sheet ?? "no sheet"}`);
+}
+
+async function readTheLossClose({ browser }) {
+  const shown = await readUntil(
+    () => browser.read(MERGE_STATE),
+    (state) => state.sheet === null,
+    LOSS_CLOSES_WAIT_MS,
+  );
+  return { sheet: shown.sheet, selected: browser.observe().selection?.army ?? null };
+}
+
+function lossClosed({ played }) {
+  if (played.sheet !== null) return failed(`expected the panel closed after the loss, saw ${played.sheet}`);
+  return played.selected === null
+    ? completed({ closed: true })
+    : failed(`expected no army selected after its loss, saw ${JSON.stringify(played.selected)}`);
+}
+
 async function attackFromTheSiteCard({ browser }) {
   const army = browser.observe().selection?.army?.id;
   const armyAt = armyOnScreen(browser, army);
@@ -407,7 +463,12 @@ const tokensShowTheChainsCounts = (kind) => `(() => {
 const SITE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "select-army", play: selectTheReadiestArmy, settleMs: 1_500, verify: armySelected },
-  clickToResultStep("shrine", "InteractSite", (context) => useTheSite(context, "Shrine", "XP"), siteUsedUp),
+  clickToResultStep(
+    "shrine",
+    "InteractSite",
+    (context) => useTheSite(context, "Shrine", "III skill point"),
+    shrinePointGranted,
+  ),
   clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
 ];
 
@@ -448,8 +509,26 @@ async function useTheSite({ browser }, site, gives) {
   return { site, offered };
 }
 
-// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "+200 XP").
+// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "III skill point").
 const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
+
+/** The discovery fixture promises one III point; using it leaves the army's XP alone. */
+function shrinePointGranted(context) {
+  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
+  const progress = answer?.answered.find(({ model }) => model === "ArmyProgress")?.value;
+  const consumed = answer?.answered.some(({ model, value }) => model === "ShrineReward" && value === null);
+  if (
+    !consumed ||
+    progress?.xp !== 40 ||
+    progress?.rare_points !== 1 ||
+    progress.common_points !== 0 ||
+    progress.uncommon_points !== 0 ||
+    progress.epic_points !== 0 ||
+    progress.legendary_points !== 0
+  )
+    return false;
+  return siteUsedUp(context);
+}
 
 /** The site the lab's chain consumed for the step's InteractSite: its tile, vacated. */
 function siteUsedUp({ actionLatency }) {
@@ -693,21 +772,29 @@ const CLAIM_ACTION_STEPS = [
   clickToResultStep("claim", "GrantLabor", claimARealmsLabor, ({ played }) => played.watching && { watch: "claimed" }),
 ];
 
-const REALMS_SHEET = '[data-kit-sheet][aria-label="Realms"]';
+const REALMS_SHEET = `[data-kit-sheet][aria-label="${HUD_WORDS.realmLabor}"]`;
 
 async function claimARealmsLabor({ browser }) {
-  // A desktop's purse opens Realms; a phone's Menu holds it.
-  if (!onADesktop()) {
+  // A desktop's purse chip opens Realm Labor (its name goes on with what waits); a phone's Menu holds it.
+  if (onADesktop()) {
+    const chip = await readUntil(
+      () => browser.read(buttonLabelled(`^${HUD_WORDS.realmLabor}`)),
+      Boolean,
+      SHEET_WAIT_MS,
+    );
+    if (!chip) return { chip };
+    browser.tap(chip.offset);
+  } else {
     browser.click(HUD_WORDS.menu);
-    await readUntil(() => browser.read(buttonNamed("Realms")), Boolean, SHEET_WAIT_MS);
+    await readUntil(() => browser.read(buttonNamed(HUD_WORDS.realmLabor)), Boolean, SHEET_WAIT_MS);
+    browser.click(HUD_WORDS.realmLabor);
   }
-  browser.click("Realms");
   const sheet = await readUntil(
     () => browser.read(SHEET_NAME),
-    (name) => name === "Realms",
+    (name) => name === HUD_WORDS.realmLabor,
     SHEET_WAIT_MS,
   );
-  if (sheet !== "Realms") return { sheet };
+  if (sheet !== HUD_WORDS.realmLabor) return { sheet };
   const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
   if (!claim) return { sheet, claim };
   const region = browser.read(sheetRegion(REALMS_SHEET));
@@ -716,12 +803,12 @@ async function claimARealmsLabor({ browser }) {
   return { sheet, watching: true, region };
 }
 
-/** The lab chain granted the Realm's labor, and the Realms sheet lists that Realm as claimed today. */
+/** The lab chain granted the Realm's labor, and the Realm Labor sheet's strip shows today claimed. */
 const realmClaimed = `(() => {
   const grant = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "GrantLabor").at(-1)
     ?.answered.find(({ model }) => model === "LaborGrant");
-  const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.textContent ?? "";
-  return String(grant?.value.home) === "7" && sheet.includes("Claimed today");
+  const today = document.querySelector(${JSON.stringify(REALMS_SHEET)})?.querySelector('[aria-current="date"]');
+  return String(grant?.value.home) === "7" && today?.getAttribute("data-state") === "claimed";
 })()`;
 
 /**
@@ -1539,12 +1626,17 @@ async function readTheSeasonInTheMenu({ browser }) {
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
+/**
+ * The Wheat store's card opened from its ring (a desktop's realm panel) or its plate (a phone's strip), then closed by
+ * the same press: both found by the store they stand for (`data-store`, `data-store-card`), not by words a label may
+ * change.
+ */
 async function openAndCloseWheatStore({ browser }) {
-  const card = () => browser.read(`Boolean(document.querySelector('section[aria-label="Wheat"]'))`);
-  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
+  const card = () => browser.read(`Boolean(document.querySelector('[data-store-card="wheat"]'))`);
+  browser.run(["click", '[data-store="wheat"]']);
   await sleep(1_500);
   const opened = card();
-  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
+  browser.run(["click", '[data-store="wheat"]']);
   await sleep(1_000);
   return { opened, closed: card() };
 }
@@ -2656,8 +2748,23 @@ const LAB_AFTER_BATTLE_STEPS = [
 const LAB_RUIN_FIGHT_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
   { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
-  { name: "open-the-fight", play: openTheRuinsCard, settleMs: 0, verify: fightCardOpenedCameraStill },
+  {
+    name: "open-the-fight",
+    play: openTheRuinsCardUntil(offersAttack),
+    settleMs: 0,
+    verify: fightCardOpenedCameraStill,
+  },
   { name: "attack", play: attackTheRuin, settleMs: 0, verify: ruinClearedCameraStill },
+];
+/**
+ * The owner's card of 31 October ("I should still have the projection even if I'm too far I think"): the army two tiles
+ * from the ruin (`scenario=ruin-far`), its card opened from the map. Each side reads what this attack leaves it, and
+ * Attack waits for the army to get there.
+ */
+const LAB_RUIN_FAR_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheArmyAndReadTheCamera, settleMs: 0, verify: cameraWentToTheArmy },
+  { name: "open-the-far-card", play: openTheRuinsCardUntil(showsBothSides), settleMs: 0, verify: farCardForecasts },
 ];
 /** The ruin beside the army (site-fixture.ts) and how near a framed army stands to the camera's target, in hexes. */
 const LAB_RUIN = 710;
@@ -2668,6 +2775,8 @@ const FIGHT_STATE = `JSON.stringify({
   army: window.__eternumMapSelection?.army ?? null,
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
+  sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   ruinToken: (() => {
@@ -2708,38 +2817,66 @@ function cameraWentToTheArmy({ played }) {
  * show here as a move. Its tile's offset below the screen's middle, in pixels: under the card, still clear of the row.
  */
 const UNDER_THE_CARD_PX = [70, 160];
+/** How far from the middle a ruin may stand across a phone and still be tapped whole: a far ruin is panned within. */
+const ACROSS_THE_PHONE_PX = [-120, 120];
 const PAN_BURSTS = 16;
 const underTheCard = (token) => token && token[1] >= UNDER_THE_CARD_PX[0] && token[1] <= UNDER_THE_CARD_PX[1];
 async function panTheRuinUnderTheCard(browser) {
-  let key = "KeyW";
+  await panTheRuinInto(browser, 0, ACROSS_THE_PHONE_PX, ["KeyA", "KeyD"]);
+  await panTheRuinInto(browser, 1, UNDER_THE_CARD_PX, ["KeyW", "KeyS"]);
+}
+
+/**
+ * Pans the map in bursts along one axis until the ruin's token stands within `band` on it. `keys` are first taken as
+ * the one that moves the token forward on the axis and the one that moves it back; a key that moved it the other way
+ * is turned round.
+ */
+async function panTheRuinInto(browser, axis, band, keys) {
+  let [forward, back] = keys;
   let last = browser.read(FIGHT_STATE).ruinToken;
-  for (let burst = 0; burst < PAN_BURSTS && last && !underTheCard(last); burst += 1) {
-    // Lower while above the band, higher once past it.
-    const lower = last[1] < UNDER_THE_CARD_PX[0];
-    browser.run(["eval", `void window.__playtest.pan(["${lower ? key : key === "KeyW" ? "KeyS" : "KeyW"}"], 30)`]);
+  for (let burst = 0; burst < PAN_BURSTS && last && (last[axis] < band[0] || last[axis] > band[1]); burst += 1) {
+    const ahead = last[axis] < band[0];
+    browser.run(["eval", `void window.__playtest.pan(["${ahead ? forward : back}"], 30)`]);
     await sleep(CAMERA_REPORT_MS);
     const now = browser.read(FIGHT_STATE).ruinToken;
-    // The way that lowers the ruin on screen is learnt from the first moves: one that raised it is turned round.
-    if (lower && now && now[1] < last[1]) key = key === "KeyW" ? "KeyS" : "KeyW";
+    if (now && (ahead ? now[axis] < last[axis] : now[axis] > last[axis])) [forward, back] = [back, forward];
     last = now;
   }
 }
 
-/** Opens the ruin's card from the map with the army selected: a desktop's right-click, a phone's tap. */
-async function openTheRuinsCard({ browser, extraScreenshot }) {
-  if (!onADesktop()) await panTheRuinUnderTheCard(browser);
-  const before = browser.read(FIGHT_STATE);
-  if (!before.ruinToken) return { before, after: before };
-  extraScreenshot("before-fight");
-  if (onADesktop()) browser.rightClick(before.ruinToken);
-  else browser.tap(before.ruinToken);
-  const after = await readUntil(
-    () => browser.read(FIGHT_STATE),
-    (shown) => shown.buttons.some((text) => text.startsWith("Attack")),
-    MERGE_WAIT_MS,
-  );
-  extraScreenshot("fight-card");
-  return { before, after };
+function offersAttack(shown) {
+  return shown.buttons.some((text) => text.startsWith("Attack"));
+}
+function showsBothSides(shown) {
+  return shown.sides.length === 2;
+}
+
+/**
+ * Opens the ruin's card from the map with the army selected, a desktop's right-click, a phone's tap, and reads it
+ * once it shows what `ready` waits for.
+ */
+function openTheRuinsCardUntil(ready) {
+  return async ({ browser, extraScreenshot }) => {
+    if (!onADesktop()) await panTheRuinUnderTheCard(browser);
+    const before = browser.read(FIGHT_STATE);
+    if (!before.ruinToken) return { before, after: before };
+    extraScreenshot("before-fight");
+    if (onADesktop()) browser.rightClick(before.ruinToken);
+    else browser.tap(before.ruinToken);
+    const after = await readUntil(() => browser.read(FIGHT_STATE), ready, MERGE_WAIT_MS);
+    extraScreenshot("fight-card");
+    return { before, after };
+  };
+}
+
+/** The far card forecasts both sides, each with what this attack leaves it, and holds Attack back. */
+function farCardForecasts({ played }) {
+  const { before, after } = played;
+  if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
+  if (!showsBothSides(after)) return failed("the ruin's card shows no fight", played);
+  if (after.sides.some((side) => side.endsWith("—"))) return failed(`no forecast: ${after.sides.join(" · ")}`, played);
+  if (!after.attackHeld) return failed("Attack can be pressed from out of reach", played);
+  return completed({ sheet: after.sheet, sides: after.sides, buttons: after.buttons });
 }
 
 function fightCardOpenedCameraStill({ played }) {
@@ -3524,7 +3661,7 @@ const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, i
             if (!onADesktop()) {
               context.browser.click(HUD_WORDS.menu);
               await sleep(500);
-              context.browser.click("Realm Labor");
+              context.browser.click(HUD_WORDS.realmLabor);
               await sleep(1_000);
             }
             return { ...readDevconArt(context.browser, expected), castle };
@@ -3696,10 +3833,12 @@ export const STEP_SETS = {
   "lab-actions-settle": { game: LAB_SETTLE, steps: SETTLE_ACTION_STEPS },
   "lab-actions-withdraw": { game: labSpireGame("upkeep"), steps: WITHDRAW_ACTION_STEPS },
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
+  "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
+  "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-hover-zoom-pair": { game: labSpireGame("merge-loses-xp"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },
   "lab-high-ground": { game: labSpireGame("high-ground"), steps: LAB_HIGH_GROUND_STEPS, devOverlays: true },

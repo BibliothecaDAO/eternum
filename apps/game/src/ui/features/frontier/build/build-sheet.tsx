@@ -1,3 +1,4 @@
+import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import { AudioManager } from "@/audio/core/AudioManager";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
@@ -128,7 +129,7 @@ export const BuildSheet = ({
     [realm, facts, tick, useSimpleCost],
   );
   const [picked, setPicked] = useState<BuildingType | null>(null);
-  const [scoutingKind, setScoutingKind] = useState<0 | 1 | 2>(0);
+  const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
   const chosen = [indexOf(picked), indexOf(asked)].find((index) => index >= 0) ?? 0;
@@ -151,6 +152,13 @@ export const BuildSheet = ({
    * build's own outcome.
    */
   const build = async () => {
+    if (option.category === BuildingType.ScoutsLodge) {
+      const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
+      if (learned === undefined) return;
+      const needsChoice = researchTier(learned, nativeResearchConstants.ROW_SCOUTS_LODGE) === 0;
+      const choices = availableScoutingChoices((row) => researchTier(learned, row));
+      if (needsChoice && !choices.some(({ side }) => side === scoutingKind)) return;
+    }
     AudioManager.getInstance().play("ui.build_place");
     try {
       await sendBuilding({
@@ -251,7 +259,11 @@ export const BuildSheet = ({
           realmLearned(facts.store, realm.game_id, realm.entity_id)!,
           nativeResearchConstants.ROW_SCOUTS_LODGE,
         ) === 0
-          ? { kind: scoutingKind, onChoose: setScoutingKind }
+          ? {
+              learned: realmLearned(facts.store, realm.game_id, realm.entity_id)!,
+              kind: scoutingKind,
+              onChoose: setScoutingKind,
+            }
           : undefined
       }
       chosen={chosen}

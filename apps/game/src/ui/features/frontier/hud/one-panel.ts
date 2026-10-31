@@ -1,3 +1,5 @@
+import type { MapSelectionIntent } from "@/hooks/store/map-selection";
+import { onOutcome, onSent, type OrderInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { LeftView } from "@/types";
 import { useEffect, useRef, useState } from "react";
@@ -6,9 +8,10 @@ import type { HudSurface } from "./frontier-nav";
 
 /**
  * The one place that decides what Frontier has open (owner, 20 October 2026: "it opens panel over panel this is bad
- * UI/UX"): a HUD surface (a page, the Menu, a sheet one of them opens), the card of what the map has selected
- * (useSelectionCard), or the deploy order. The one opened last stands alone, and opening one puts the others away, so
- * no panel ever opens over another:
+ * UI/UX"): a HUD surface (a page such as the Feed, Research or the Season, the Menu, a sheet one of them opens), the card
+ * of what the map has selected (useSelectionCard), or the deploy order. The one opened last stands alone, and opening one
+ * puts the others away, so no panel ever opens over another; nothing is open until the player opens it, and closing what
+ * is open leaves nothing (owner, 30 October 2026: "no special rules for feed please"):
  *
  * - a surface lets go of the tapped tile and its card, and closes the deploy order;
  * - a new card (a new tap) closes the surface and the deploy order;
@@ -19,6 +22,12 @@ import type { HudSurface } from "./frontier-nav";
  * - the deploy order is its realm's: a pick of anything else, or letting the realm go, closes it (owner, 27 October
  *   2026: "when i click this but then click another army without deploying we should close the deploy and bring up the
  *   selected army").
+ *
+ * - an order an army was given from a card, on that card's target (an attack, a site used, a chest opened, the spire
+ *   entered, troops traded), gives the panel back to the army once it settles, applied or refused (owner,
+ *   30 October 2026: "when I fight, since the army stays selected, I'd like the army panel to be opened after the fight
+ *   ends"): useOrderSettledReturnsToTheArmy, which the HUD calls beside this, once the
+ *   army's opener exists.
  *
  * A card a later panel stands over stays hidden until the selection opens another (`card` is the card's key, null while
  * the selection opens none). A surface stands over any card showing when it opens, whether the press let go of its
@@ -36,9 +45,6 @@ export const useOnePanel = (
 ) => {
   const [surface, setSurface] = useState<HudSurface | null>(null);
   const [hidden, setHidden] = useState<string | null>(null);
-  // The desktop rail's Feed, which its × closes (owner, 26 October 2026: "I should also be able to close the feed so I
-  // see nothing on the right panel sometimes").
-  const [feedOpen, setFeedOpen] = useState(true);
   const deploying = useUIStore((state) => state.leftNavigationView === LeftView.MilitaryView);
   const pick = useUIStore((state) => mapPick(state.entityActions, state.selectedHex));
   const selected = useUIStore((state) => state.entityActions.selectedEntityId ?? null);
@@ -89,18 +95,88 @@ export const useOnePanel = (
     if (deploying && showsCard) closeDeployOrder();
   }, [deploying, showsCard]);
 
-  /** Back to the rail's home, its Feed open: the surface, the tapped tile with its card, and the deploy order all go. */
-  const goHome = () => {
-    letGoOfTheTile();
-    closeDeployOrder();
-    setSurface(null);
-    setFeedOpen(true);
-  };
-  // Nothing stands in the rail's panel: its Feed shows, unless it was closed.
-  const home = surface === null && !showsCard && !deploying;
-
-  return { surface, openSurface, showsCard, home, goHome, feedOpen, closeFeed: () => setFeedOpen(false) };
+  return { surface, openSurface, showsCard };
 };
+
+/**
+ * An order an army was given from a card, on that card's target, gives the panel back to the army when it settles: the
+ * army's panel opens where selecting it opens it (returnTo), whether the order applied or was refused, so the card it
+ * was given from never outlives its job. The card stood on what the player picked: the army acting on a tile (a fight,
+ * a site, the spire, a neighbour to trade troops with), or the target's own tile (a chest tapped on a phone). Only while
+ * that pick still stands, or only the map let go of it (letGoByTheMap: its army lost, or its site cleared under the
+ * card): a player who let go, picked another army or another tile meanwhile keeps that newer choice.
+ * An order that takes the army to a tile (a move or an explore, the card's own Move beside a guard) keeps the card: its
+ * next step (Attack) is there. Orders given with no card standing (a move on the map) leave the selection, and the next
+ * order queued on it, as they are. An army an attack cost its life gets no panel: the panel shows the loss instead, then
+ * closes (showLoss); an army merged away by its trade has nothing to tell, and its sheet closes itself.
+ */
+export const useOrderSettledReturnsToTheArmy = (
+  /** The card standing now (useSelectionCard's key), null while none. */
+  card: string | null,
+  ways: {
+    /** Gives the panel back to the army (useArmyPanelOpens' returnTo); false when the army is no longer on the map. */
+    returnTo: (armyId: number) => boolean;
+    /** Shows, in the panel's place, that the attack cost the army its life (ArmyLostSheet). */
+    showLoss: () => void;
+  },
+) => {
+  const now = useRef({ card, ways });
+  useEffect(() => {
+    now.current = { card, ways };
+  });
+  useEffect(() => {
+    const givenFrom = new Map<string, { pick: Pick; order: OrderInFlight }>();
+    const stopSent = onSent("army", (key, { order, to }) => {
+      const pick = useUIStore.getState().mapSelection;
+      if (now.current.card !== null && to === undefined && isCardOf(pick, key)) givenFrom.set(key, { pick, order });
+    });
+    const stopSettled = onOutcome("army", (key) => {
+      const from = givenFrom.get(key);
+      givenFrom.delete(key);
+      if (!from || !stillStands(from.pick)) return;
+      const { returnTo, showLoss } = now.current.ways;
+      if (!returnTo(Number(key)) && from.order === "attack") showLoss();
+    });
+    return () => {
+      stopSent();
+      stopSettled();
+    };
+  }, []);
+};
+
+type Pick = NonNullable<MapSelectionIntent>;
+
+/**
+ * The pick an order was given from still stands, or only the map let go of it (worldmap-lost-selection: its army lost,
+ * its site cleared under the card) before the order settled: no player chose anything since, so its outcome shows.
+ */
+const stillStands = (pick: Pick): boolean => {
+  const { mapSelection, letGoByTheMap } = useUIStore.getState();
+  return samePick(pick, mapSelection) || samePick(pick, letGoByTheMap);
+};
+
+/** A pick a card of this army's order stands on: the army itself acting on a tile, or a tile or structure picked. */
+const isCardOf = (selection: MapSelectionIntent, armyId: string): selection is Pick =>
+  selection !== null && (selection.kind !== "army" || String(selection.entityId) === armyId);
+
+/** The same pick, whichever object the store holds it in. */
+const samePick = (before: Pick, after: MapSelectionIntent): boolean => {
+  if (after === null || after.kind !== before.kind) return false;
+  if (before.kind === "army" && after.kind === "army")
+    return before.entityId === after.entityId && sameTile(before.tile, after.tile);
+  if (before.kind === "structure" && after.kind === "structure") return before.entityId === after.entityId;
+  return before.kind === "hex" && after.kind === "hex" && sameHex(before.hex, after.hex);
+};
+
+const sameTile = (before: ArmyTile, after: ArmyTile): boolean =>
+  typeof before === "object" && before !== null && typeof after === "object" && after !== null
+    ? sameHex(before, after)
+    : before === after;
+
+type ArmyTile = Extract<Pick, { kind: "army" }>["tile"];
+
+const sameHex = (before: { col: number; row: number }, after: { col: number; row: number }): boolean =>
+  before.col === after.col && before.row === after.row;
 
 /**
  * What the map has picked: the army or structure selected and the tile its order is pinned on, or with none, the tile

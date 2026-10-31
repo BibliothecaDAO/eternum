@@ -113,8 +113,9 @@ export function MessageComposer({
     [draft, maxLength, minLength, onSend, place, resetDraft],
   );
 
+  // The field stands at its frame's foot, kept off it as every frame keeps its last row (HudPage, HudSheet).
   return (
-    <form onSubmit={handleSubmit} className="flex flex-shrink-0 flex-col gap-1 p-1.5">
+    <form onSubmit={handleSubmit} className="flex flex-shrink-0 flex-col gap-1 px-1.5 pb-3 pt-1.5">
       {replying && (
         <div className="flex min-w-0 items-center gap-1.5 px-1 text-hud-label text-hud-muted">
           <span className="shrink-0 text-hud-accent">{replying.name}</span>

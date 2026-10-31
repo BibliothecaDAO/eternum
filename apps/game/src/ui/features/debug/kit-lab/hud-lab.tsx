@@ -1,4 +1,8 @@
+import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
+import type { AlertsAsk } from "@/shell/profile/alerts-ask";
+import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
+import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -10,7 +14,6 @@ import {
   ARMY,
   OFFLINE,
   PAYOUTS_PAUSED,
-  startsOn,
   type Rank,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
@@ -21,7 +24,6 @@ import { ArmyToken, OpenSlot } from "@/ui/features/frontier/hud/army-token";
 import type { DayClock } from "@/ui/features/frontier/hud/day-clock";
 import { HudBands } from "@/ui/features/frontier/hud/hud-bands";
 import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/frontier-desktop";
-import { FrontierFeed } from "@/ui/features/frontier/hud/frontier-feed";
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
@@ -50,12 +52,15 @@ import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
+import type { SlotStart } from "@/ui/features/frontier/deploy/deploy-plan";
+import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
-import { SeasonList, type SeasonListRow } from "@/ui/features/frontier/board/season-list";
+import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
+import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
 import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
-import { SeasonWithdrawRow } from "@/ui/features/frontier/value/season-withdraw";
+import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
@@ -67,9 +72,11 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
 import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
+import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
 import { RealmPanel } from "@/ui/features/frontier/hud/realm-panel";
-import { planRealmLabor } from "@/ui/features/frontier/value/realm-labor";
+import { planRealmLabor, seasonStrip } from "@/ui/features/frontier/value/realm-labor";
+import type { RealmLaborFacts } from "@/ui/features/frontier/value/use-realm-labor";
 import { RealmsSheet } from "@/ui/features/frontier/value/realms-sheet";
 import { type WithdrawStep, WithdrawSheet } from "@/ui/features/frontier/value/withdraw-sheet";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
@@ -78,14 +85,14 @@ const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
 
 /** The handoff's fiction: Day 12 at 14:26, today ends at 21:40 (7h 14m left), tomorrow lasts 12h. */
-const CLOCK: DayClock = {
+const CLOCK = {
   day: 12,
   endsAt: NOW + 7 * HOUR + 14 * 60,
   secondsLeft: 7 * HOUR + 14 * 60,
   tomorrowSeconds: 12 * HOUR,
   shareLeft: (7 * HOUR + 14 * 60) / (16 * HOUR),
   tone: "calm",
-};
+} satisfies DayClock;
 
 /** The season the fiction's Day 12 stands in: its last day the 14th, ending two days after today at 21:40. */
 const SEASON_LAST_DAY = 14;
@@ -221,16 +228,18 @@ const RUIN_CARD: LabSite = {
   verb: ATTACK_30,
 };
 
-const LAB_PRESET = { realmLabor: 1_000 };
 const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f99f3c";
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
+/**
+ * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
+ * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
+ */
 type LabRealms = {
-  eligible: boolean;
-  claimed: boolean;
-  labor: number;
-  limit: number;
-  /** Once claimed, the ask for the next day's push: on a phone that can take it, or an iPhone's browser. */
-  ask?: "remind" | "install";
+  home: "golden" | "devcon" | "held" | "none";
+  claimed?: boolean;
+  room?: number;
+  ask?: "remind" | "install" | "on";
+  lastDay?: boolean;
 };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
 /** Day 13 at 22:30: an 8-hour day from 21:40 that ends in the night, at 05:40; tomorrow lasts 20h. */
@@ -434,7 +443,39 @@ const SEASON_ROWS: SeasonListRow[] = SEASON_NAMES.map((name, index) => ({
  * A million LORDS deposited for a 100-unit season: Day 12 spans five units and releases a twentieth of it. Today's
  * share is 12 LORDS and a common chest holds two shares.
  */
-const SEASON_POOL_FIGURES = { lords: 700_000, prize: { lords: 300_000, topN: 10 }, today: 35_000 };
+const SEASON_POOL_FIGURES = { lords: 700_000, today: 35_000 };
+
+/**
+ * The lab season's podium, read by the game's own rule (seasonPodium) from a board of the lab's rows: 300 LORDS among
+ * the top 3. `final`, the season over and its three winners fixed, the first two paid and the third being awarded;
+ * `open`, only the first player has cleared a site, so the other two places stand open.
+ */
+const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[] | null => {
+  if (season === "unpublished") return null;
+  const entries = SEASON_NAMES.map((name, index) => ({
+    address: name,
+    sites_cleared: {
+      total: season === "open" && index > 0 ? 0 : SEASON_SITES[index],
+      camps: 0,
+      rifts: 0,
+      ruins: 0,
+      beasts: 0,
+    },
+  }));
+  const awards = [
+    { rank: 1, address: SEASON_NAMES[0], lords: "150" },
+    { rank: 2, address: SEASON_NAMES[1], lords: "100" },
+  ];
+  const prize =
+    season === "final"
+      ? { pool: "300", top_n: 3, count: 3, awards }
+      : { pool: "300", top_n: 3, count: null, awards: [] };
+  return seasonPodium({ prize, entries })!.map(({ place, lords, holder }) => ({
+    place,
+    lords,
+    holder: typeof holder === "string" ? holder : { name: holder.address },
+  }));
+};
 const SEASON_COMMON_CHEST = { lords: 24 };
 const OWN_ROW: SeasonListRow = {
   key: "you",
@@ -515,6 +556,9 @@ const STATES = {
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
+  // Deploy's slots as the Armies card draws them: no army out of three, or one, the first open one chosen.
+  "deploy-slots": { clock: CLOCK, stores: STORES, armies: [], slots: 3, deploy: DEPLOY },
+  "deploy-slots-mix": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 1), slots: 3, deploy: DEPLOY },
   // An army picked opens its panel, as the game opens it on a selection.
   selected: { clock: CLOCK, stores: STORES, armies: ARMIES, selected: 0, army: {} },
   // A phone's picked army, its card not opened: the row in the dock's place.
@@ -638,7 +682,8 @@ const STATES = {
     },
   },
   // The owner's desktop card on prod (10-27, "this panel doesnt match at all our new battle panels"): Shadeglow's troll
-  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP.
+  // camp, 7.1K knights out of reach of its guard of 1.3K, paying 650 labor and 90 XP. Far as it is, the card forecasts
+  // the attack (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
   "site-shadeglow": {
     clock: CLOCK,
     stores: STORES,
@@ -649,7 +694,7 @@ const STATES = {
       beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
       army: { ...ARMY_CHIP, troops: 7_100 },
       guard: 1_300,
-      fight: undefined,
+      fight: WIN(1, 140),
       pay: { icon: "labor", amount: 650 },
       xp: 90,
       verb: { kind: "far" },
@@ -734,6 +779,7 @@ const STATES = {
   },
   "building-barracks": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "barracks" },
   "building-war-hall": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "war-hall" },
+  "building-hut": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "hut" },
   "building-scouts-lodge": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "scouts-lodge" },
   "realm-full": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "full" },
   // In the realm with its labor store full (audit 10-27): Next up says so, with no "Open the realm" that goes nowhere.
@@ -807,11 +853,13 @@ const STATES = {
   "today-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-failed" },
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
-  "season-over-withdraw": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "open" },
-  "season-over-closed": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: "closed" },
+  "season-over-payout": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: true },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
+  // The season over, its prize's three winners posted; and one where only the leader has cleared a site.
+  "season-final": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "final" },
+  "season-open": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "open" },
   "season-loading": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "loading" },
   "season-failed": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "failed" },
   visiting: { clock: CLOCK, stores: STORES, armies: ARMIES, visiting: true },
@@ -875,15 +923,33 @@ const STATES = {
       fight: WIN(3, 1, 98_765_432_099),
     },
   },
-  "value-hud": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240, realms: 2_000 } },
+  "value-hud": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+  },
   // The purse and Next up at once, as a signed-in player meets them: the layout check holds them apart.
-  "purse-next-up": { clock: CLOCK, stores: STORES, armies: [], purse: { lords: 1_240, realms: 2_000 } },
+  "purse-next-up": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+  },
   // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
   "realm-claim": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 1_000 },
+    purse: { lords: 1_240, realms: { labor: 1_000, essence: 0 } },
+    realm: { level: 2, population: { used: 27, total: 42 } },
+  },
+  // A golden Devcon home's day: its Labor and its Essence, both on the chip.
+  "realm-claim-essence": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 2_000 } },
     realm: { level: 2, population: { used: 27, total: 42 } },
   },
   "value-hud-claimed": { clock: CLOCK, stores: STORES, armies: ARMIES, purse: { lords: 1_240 } },
@@ -891,7 +957,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    purse: { lords: 1_240, realms: 2_000 },
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
     menu: true,
     menuRealms: true,
   },
@@ -947,42 +1013,63 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: false, labor: 9640, limit: 18000 },
+    realms: { home: "golden" },
   },
-  "realms-claimed": {
+  "realms-devcon": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000 },
+    realms: { home: "devcon" },
   },
-  "realms-remind": {
+  "realms-held": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "remind" },
-  },
-  "realms-install": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { eligible: true, claimed: true, labor: 9640, limit: 18000, ask: "install" },
-  },
-  "realms-full": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { eligible: true, claimed: false, labor: 17600, limit: 18000 },
+    realms: { home: "held" },
   },
   "realms-none": {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
     purse: { lords: 1240 },
-    realms: { eligible: false, claimed: false, labor: 9640, limit: 18000 },
+    realms: { home: "none" },
+  },
+  "realms-full": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", room: 1_400 },
+  },
+  "realms-remind": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "remind" },
+  },
+  "realms-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "install" },
+  },
+  "realms-on": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "on" },
+  },
+  "realms-last-day": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
   },
 } as const;
 
@@ -993,9 +1080,9 @@ type LabState = {
   /** What Next up reads beyond the state's armies, selection, hour and stores. */
   nextUp?: Partial<NextUpFacts>;
   results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
-  /** The realm's LORDS on the season-over card: still to withdraw, or past the season's close. */
-  seasonLords?: "open" | "closed";
-  season?: "list" | "detail" | "unpublished" | "loading" | "failed";
+  /** The realm's LORDS waiting for automatic payout. */
+  seasonLords?: boolean;
+  season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
@@ -1017,6 +1104,8 @@ type LabState = {
   order?: LabOrder;
   site?: LabSite;
   deploy?: LabDeploy;
+  /** The realm's army slots, where a state draws other than the lab's four. */
+  slots?: number;
   clock: DayClock;
   stores: readonly StoreReading[];
   armies: readonly LabArmy[];
@@ -1027,7 +1116,7 @@ type LabState = {
   /** Chat open: a page on a phone, docked on desktop. Its controls are there to be measured for touch. */
   chat?: boolean;
   /** The LORDS count under the strip, what a chest just added, and the labor the player's Realms have waiting. */
-  purse?: { lords: number; gain?: number; realms?: number };
+  purse?: { lords: number; gain?: number; realms?: DailyClaimWaiting };
   /** The realm's rank and population, in place of the lab's City at 9/18. */
   realm?: { level: number; population: { used: number; total: number } };
   menuRealms?: boolean;
@@ -1057,7 +1146,7 @@ export const HudLab = () => {
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
     <LabGame preset={FRONTIER_PRESET}>
-      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} />}
+      {() => <ChatPage rooms={[GLOBAL_ROOM]} signedIn onSignIn={noop} pane={chatPane} onClose={noop} />}
     </LabGame>
   );
   if (lab.merge)
@@ -1087,7 +1176,7 @@ export const HudLab = () => {
         purse={
           lab.purse && (
             <PurseRow>
-              {lab.purse.realms !== undefined && <RealmsChip labor={lab.purse.realms} onOpen={noop} />}
+              {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
               <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
             </PurseRow>
           )
@@ -1131,6 +1220,7 @@ export const HudLab = () => {
                 rank={12}
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
+                podium={labPodium(lab.season)}
                 rows={SEASON_ROWS}
                 pinned={OWN_ROW}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
@@ -1175,7 +1265,7 @@ export const HudLab = () => {
           )
         }
       >
-        {lab.deploy && <LabDeploySheet deploy={lab.deploy} />}
+        {lab.deploy && <LabDeploySheet deploy={lab.deploy} open={labOpenSlots(lab)} />}
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
@@ -1235,13 +1325,10 @@ const useLabNotice = (notice: string | undefined) => {
   }, [notice]);
 };
 
-/** Deploy on the fiction, live: 2 wheat a troop. */
-const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
+/** Deploy on the fiction, live: 2 wheat a troop, the realm's open slots, the first chosen until another is pressed. */
+const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[] }) => {
   const [slot, setSlot] = useState<number | null>(null);
-  const open = [
-    { slot: 1, number: 2, inherited: true, start: { current: 40, max: 150, perExplore: LAB_EXPLORE } },
-    { slot: 2, number: 3, inherited: false, start: { current: 150, max: 150, perExplore: LAB_EXPLORE } },
-  ];
+  const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
   const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
   return (
@@ -1251,15 +1338,17 @@ const LabDeploySheet = ({ deploy }: { deploy: LabDeploy }) => {
       count={count}
       amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
       onCount={setCount}
-      start={open.find((entry) => entry.slot === slot)}
-      slots={{ allowed: 3, open, onPick: setSlot }}
+      start={start}
+      slots={{ open, onPick: setSlot }}
       troopsWait={deploy.troopsWait}
       wheatCost={count * 2}
       tile="open"
-      canDeploy={count > 0 && slot !== null}
+      canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatShort={undefined}
+      wheatLimit={
+        most < deploy.troopsAtHome ? { troops: most, held: deploy.wheat, perTroop: 2, wait: undefined } : undefined
+      }
       onBuild={noop}
       onClose={noop}
     />
@@ -1361,6 +1450,7 @@ const LAB_BUILDINGS = {
     essence: SHORT_ESSENCE,
   },
   "war-hall": { category: BuildingType.WarHall, row: research.ROW_WAR_HALL, standing: 1, makes: undefined },
+  hut: { category: BuildingType.WorkersHut, row: research.ROW_HUT, standing: 2, makes: undefined },
   "scouts-lodge": { category: BuildingType.ScoutsLodge, row: research.ROW_SCOUTS_LODGE, standing: 1, makes: undefined },
 } satisfies Record<string, LabBuilding>;
 
@@ -1421,7 +1511,8 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       armies: lab.armies.length,
       armySelected: lab.selected !== undefined,
       lastHour: lab.lastHour === true,
-      storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
+      storeFull:
+        MADE_STORES.find((kind) => lab.stores.some((store) => store.kind === kind && store.tone === "ember")) ?? null,
       ...lab.nextUp,
     },
     { pointer: desktop ? "mouse" : "touch", where: inTheRealm(lab) ? "realm" : "map", tips: true },
@@ -1455,7 +1546,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               onHome={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
-                labor: lab.purse?.realms,
+                waiting: lab.purse?.realms,
                 storeCards: lab.storeCard && {
                   kinds: MADE_STORES,
                   open: lab.storeCard.kind,
@@ -1470,7 +1561,6 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
           armies={slots.dock}
           nextUp={slots.nextUp}
           page={slots.page}
-          feed={<FrontierFeed onClose={noop} />}
           foot={
             <>
               {slots.notices}
@@ -1478,17 +1568,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
             </>
           }
           places={
-            !lab.visiting && (
-              <FrontierPlaces
-                surface={labSurface(lab)}
-                home={labSurface(lab) === null}
-                feedOpen
-                onCloseFeed={noop}
-                onSurface={noop}
-                onHome={noop}
-                research={!lab.offline}
-              />
-            )
+            !lab.visiting && <FrontierPlaces surface={labSurface(lab)} onSurface={noop} research={!lab.offline} />
           }
         >
           {slots.children}
@@ -1523,7 +1603,7 @@ const labSurface = (lab: LabState): HudSurface | null =>
  * deploy, or a desktop's list of rows with one Deploy (the header counts the slots).
  */
 const LabDock = ({ lab }: { lab: LabState }) => {
-  const open = lab.visiting ? 0 : SLOTS - lab.armies.length;
+  const open = lab.visiting ? 0 : (lab.slots ?? SLOTS) - lab.armies.length;
   const armyArt = (army: LabArmy) => (army.troops === undefined ? undefined : ("knight-t1" as const));
   const stamina = (army: LabArmy) =>
     army.stamina === undefined ? undefined : { current: army.stamina, max: 150, perExplore: LAB_EXPLORE };
@@ -1548,7 +1628,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             onPick={lab.visiting ? undefined : noop}
           />
         ))}
-        {labSlots(lab, open).map((slot) => (
+        {labSlots(lab).map((slot) => (
           <OpenSlotRow key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
         ))}
       </ArmyList>
@@ -1569,7 +1649,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           onPick={noop}
         />
       ))}
-      {labSlots(lab, open).map((slot) => (
+      {labSlots(lab).map((slot) => (
         <OpenSlot key={slot.number} label="Deploy" onDeploy={noop} {...slot} />
       ))}
     </nav>
@@ -1577,20 +1657,27 @@ const LabDock = ({ lab }: { lab: LabState }) => {
 };
 
 /**
- * The lab realm's open slots as the dock reads them: each starts its army on 60 of 150 stamina and can be chosen.
+ * The lab realm's open slots, as the deploy plan reads them: the first after an army starts on the 60 of 150 stamina it
+ * left, a fresh one full. The dock and Deploy read the same.
  */
-const labSlots = (lab: LabState, open: number) =>
-  Array.from({ length: open }, (_, index) => {
-    const number = lab.armies.length + index + 1;
+const labOpenSlots = (lab: LabState): SlotStart[] =>
+  Array.from({ length: lab.visiting ? 0 : (lab.slots ?? SLOTS) - lab.armies.length }, (_, index) => {
+    const inherited = index === 0 && lab.armies.length > 0;
     return {
-      number,
-      pulse: index === 0 && lab.armies.length === 0,
-      start: {
-        bar: { current: 60, max: 150, perExplore: LAB_EXPLORE },
-        words: `${startsOn(`${ARMY} ${number}`, "60/150", true)}.`,
-      },
+      slot: lab.armies.length + index,
+      number: lab.armies.length + index + 1,
+      inherited,
+      start: { current: inherited ? 60 : 150, max: 150, perExplore: LAB_EXPLORE },
     };
   });
+
+/** The open slots as the dock draws them, the first pulsing while no army is out. */
+const labSlots = (lab: LabState) =>
+  labOpenSlots(lab).map((slot, index) => ({
+    number: slot.number,
+    pulse: index === 0 && lab.armies.length === 0,
+    start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
+  }));
 
 const LabResults = ({
   results,
@@ -1610,16 +1697,7 @@ const LabResults = ({
         { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
       ]}
       totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
-      withdraw={
-        seasonLords && (
-          <SeasonWithdrawRow
-            lords={1_240}
-            closesAt={NOW + (seasonLords === "open" ? 6 * 24 * HOUR + 23 * HOUR : -HOUR)}
-            now={NOW}
-            onOpen={noop}
-          />
-        )
-      }
+      withdraw={seasonLords && <SeasonPayoutRow lords={1_240} />}
       onSeason={noop}
       onExit={noop}
     />
@@ -1659,29 +1737,79 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
   );
 };
 
-/** Realms on the fiction, planned with the lab's presets against the labor store. */
+/** The Realm Labor sheet on the fiction: the Devcon preset's amounts, the lab's Day 12, a held Realm's real map. */
 const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
   <RealmsSheet
-    plan={planRealmLabor({
-      eligible: realms.eligible,
-      claimed: realms.claimed,
-      amount: LAB_PRESET.realmLabor,
-      essence: 0,
-      held: realms.labor,
-      limit: realms.limit,
-    })}
-    dailyAmount={LAB_PRESET.realmLabor}
-    dailyEssence={0}
-    mark={null}
-    secondsLeft={CLOCK.secondsLeft}
-    nextDay={(CLOCK.day ?? 0) + 1}
-    ask={realms.ask ? { kind: realms.ask, busy: false, act: noop } : null}
+    labor={labRealmLabor(realms)}
+    map={realms.home === "held" ? LAB_REALM_MAP : null}
+    ask={labAlertsAsk(realms.ask)}
     sending={false}
     onClaim={noop}
-    onRealm={noop}
     onClose={noop}
   />
 );
+
+/** Realm 3's map, as the Realm index serves it. */
+const LAB_REALM_MAP =
+  "https://web-production-2a4cb.up.railway.app/api/marketplace/v1/chains/SN_MAIN/assets/ecbc308f79704c8c36cb0c9eba19545ded12c2409b406f4dcc1bc3f802625cc9.svg";
+const LAB_SEASON_LAST_DAY = 104;
+const LAB_CLAIMED_DAYS = [6, 7, 9, 10];
+const LAB_LABOR_LIMIT = 18_000;
+
+const labRealmLabor = ({
+  home,
+  claimed = false,
+  room = LAB_LABOR_LIMIT,
+  lastDay = false,
+}: LabRealms): RealmLaborFacts => {
+  const daily = labDailyClaim(home);
+  const today = CLOCK.day - 1;
+  return {
+    plan: planRealmLabor({
+      eligible: daily !== null,
+      claimed,
+      amount: daily?.labor ?? 0,
+      essence: daily?.essence ?? 0,
+      held: LAB_LABOR_LIMIT - room,
+      limit: LAB_LABOR_LIMIT,
+    }),
+    dailyAmount: daily?.labor ?? 0,
+    dailyEssence: daily?.essence ?? 0,
+    home: labLaborHome(home),
+    days: seasonStrip({
+      today,
+      last: lastDay ? today : LAB_SEASON_LAST_DAY,
+      founded: 0,
+      claimed: (index) => LAB_CLAIMED_DAYS.includes(index),
+      claimedToday: claimed,
+    }),
+    secondsLeft: CLOCK.secondsLeft,
+    nextDay: lastDay ? null : today + 2,
+  };
+};
+
+const labDailyClaim = (home: LabRealms["home"]) =>
+  homeSourceClaim(
+    DEVCON_LABOR_RULES,
+    home === "none"
+      ? { kind: "free" }
+      : home === "held"
+        ? { kind: "realm" }
+        : { kind: "campaign", golden: home === "golden" },
+  );
+
+const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
+  if (home === "none") return null;
+  if (home === "held") return { kind: "realm", realmId: 3, name: canonicalRealm(3).name };
+  const skin = home === "golden" ? "devcon-golden" : "devcon";
+  return {
+    kind: "campaign",
+    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: realmSkinIcon(skin) },
+  };
+};
+
+const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
+  ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

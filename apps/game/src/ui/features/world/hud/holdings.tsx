@@ -187,7 +187,7 @@ const HoldingRow = memo(
               <span className="min-w-0 truncate text-hud-strong">{structure.displayName}</span>
             </span>
           }
-          trail={
+          controls={
             structure.category === StructureType.Realm ? (
               <StructureRealmActions structureEntityId={structure.entityId} />
             ) : null

@@ -110,6 +110,12 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     ]);
   });
 
+  it("shows a Shrine's discovered point without a guard or leading divider", () => {
+    expect(
+      read({ ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: "III skill point" }),
+    ).toEqual(["Shrine", "III skill point"]);
+  });
+
   it("says Undefended in words where nothing guards it", () => {
     expect(read({ ...realm, guards: [] })).toEqual(["Moonhand | Xeswet", "Undefended"]);
   });

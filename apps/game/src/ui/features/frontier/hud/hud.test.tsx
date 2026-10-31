@@ -72,14 +72,14 @@ describe("the status strip", () => {
   it("says a store in one line: what it holds of its limit, its rate and when it is full", () => {
     const wheat: StoreReading = { kind: "wheat", amount: 1_771, limit: 6_000, tone: "calm", flyTarget: "wheat" };
     expect(storeLine({ ...wheat, perHour: 302, fullIn: 14 * 3_600 })).toBe(
-      "wheat 1,771 of 6,000 · +5/min · Full in 14h",
+      "Wheat 1,771 of 6,000 · +5/min · Full in 14h",
     );
-    expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("wheat 6,000 of 6,000 · Full");
+    expect(storeLine({ ...wheat, amount: 6_000, perHour: 302, fullIn: 0 })).toBe("Wheat 6,000 of 6,000 · Full");
     // No building makes it: no rate to say, and no moment it fills.
-    expect(storeLine(wheat)).toBe("wheat 1,771 of 6,000");
+    expect(storeLine(wheat)).toBe("Wheat 1,771 of 6,000");
     // Essence has no limit.
     expect(storeLine({ ...wheat, kind: "essence", amount: 18_250, limit: undefined })).toBe("Essence 18,250");
-    expect(storeLine({ ...wheat, amount: undefined })).toBe("wheat — of 6,000");
+    expect(storeLine({ ...wheat, amount: undefined })).toBe("Wheat — of 6,000");
   });
 
   const store = (kind: StoreReading["kind"], amount: number | undefined, limit?: number): StoreReading => ({
@@ -130,8 +130,8 @@ describe("the status strip", () => {
     expect(markup).toContain("width:50%");
     // Each plate is one image named by its line, so the tooltip and a screen reader say the same words.
     expect(markup).toContain('role="img" aria-label="Essence 18,250"');
-    expect(markup).toContain('role="img" aria-label="labor 9,000 of 18,000"');
-    expect(markup).toContain('role="img" aria-label="wheat — of 18,000"');
+    expect(markup).toContain('role="img" aria-label="Labor 9,000 of 18,000"');
+    expect(markup).toContain('role="img" aria-label="Wheat — of 18,000"');
     expect(text(markup)).toContain("—");
   });
 });
@@ -188,8 +188,8 @@ describe("the army token", () => {
   });
 
   it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
-    expect(xpLine(8, { at: 100, rank: 1 })).toBe("XP 8 of 100 · next Common point");
-    expect(xpLine(260, { at: 900, rank: 4 })).toBe("XP 260 of 900 · next Epic point");
+    expect(xpLine(8, { at: 100, rank: 1 })).toBe("XP 8 of 100 · next I point");
+    expect(xpLine(260, { at: 900, rank: 4 })).toBe("XP 260 of 900 · next IV point");
     expect(xpLine(2_000, undefined)).toBe("XP 2,000");
     const markup = renderToStaticMarkup(
       <ArmyToken
@@ -203,7 +203,7 @@ describe("the army token", () => {
         selected={false}
       />,
     );
-    expect(markup).toContain('data-tip="XP 8 of 100 · next Common point"');
+    expect(markup).toContain('data-tip="XP 8 of 100 · next I point"');
   });
 
   it("reads an army on a desktop's list in words: its troops, its stamina exact, its XP with what it buys next", () => {
@@ -228,7 +228,7 @@ describe("the army token", () => {
     // The meter reads the stamina itself, as the phone's token does, never a rounded share of it.
     const meter = host.querySelector('[role="meter"]')!;
     expect([meter.getAttribute("aria-valuenow"), meter.getAttribute("aria-valuemax")]).toEqual(["90", "150"]);
-    expect(host.querySelector('[data-tip="XP 25 of 100 · next Common point"]')).not.toBeNull();
+    expect(host.querySelector('[data-tip="XP 25 of 100 · next I point"]')).not.toBeNull();
     // The button is named for the army alone, as a phone's token is, so a click by name finds it.
     const row = host.querySelector<HTMLButtonElement>('button[aria-label="Army 2"]')!;
     expect(row.getAttribute("aria-pressed")).toBe("true");
@@ -329,7 +329,7 @@ describe("the place bar", () => {
 });
 
 describe("the Menu", () => {
-  it("opens Today, Season with the rank and Settings, and closes on Resume", () => {
+  it("opens Today, Season with the rank and Settings, leaves for the app on Exit, and closes on its ×, with no Resume", () => {
     const handlers = {
       onToday: vi.fn(),
       onSeason: vi.fn(),
@@ -349,11 +349,16 @@ describe("the Menu", () => {
       ["Season", handlers.onSeason],
       ["Settings", handlers.onSettings],
       ["Exit", handlers.onExit],
-      ["Resume", handlers.onClose],
     ] as const) {
       act(() => button(word).click());
       expect(handler).toHaveBeenCalled();
     }
+    // Owner, 30 October 2026: "Ok to cut resume": the frame's × closes the Menu, and nothing else says the same.
+    expect(button("Resume")).toBeUndefined();
+    act(() =>
+      document.querySelector<HTMLButtonElement>("section[aria-label='Menu'] button[aria-label='Close']")!.click(),
+    );
+    expect(handlers.onClose).toHaveBeenCalled();
   });
 
   it("has no Production: each store's card opens from its own plate", () => {
@@ -403,7 +408,7 @@ describe("the order bar", () => {
       ),
     );
     expect(host.querySelector('[aria-label="Essence +500"]')).not.toBeNull();
-    expect(host.querySelector('[aria-label="labor +0"]')?.getAttribute("data-tone")).toBe("bad");
+    expect(host.querySelector('[aria-label="Labor +0"]')?.getAttribute("data-tone")).toBe("bad");
   });
 
   // Owner, 27 October 2026: "Yes double tapping to explore on mobile, the confirm bar can be compacted into one single
@@ -429,8 +434,8 @@ describe("the order bar", () => {
     expect(host.querySelector('section[aria-label="Explore"]')).not.toBeNull();
     expect([...host.querySelectorAll('[role="img"]')].map((chip) => chip.getAttribute("aria-label"))).toEqual([
       "stamina 90 → 60",
-      "wheat −100",
-      "Essence, labor +500",
+      "Wheat −100",
+      "Essence, Labor +500",
     ]);
     expect(host.textContent).toBe("90 → 60−100+500+2 XP");
     expect(barButtons()).toEqual(["Cancel"]);
@@ -476,14 +481,14 @@ describe("the order bar", () => {
     const wheatChip = () =>
       [...host.querySelectorAll('[role="img"]')]
         .map((chip) => chip.getAttribute("aria-label"))
-        .find((label) => label?.startsWith("wheat"));
+        .find((label) => label?.startsWith("Wheat"));
 
     // 30 troops' step at 0.02 wheat each.
     act(() => bar({ cost: 0.6, held: 10 }));
-    expect(wheatChip()).toBe("wheat −<1");
+    expect(wheatChip()).toBe("Wheat −<1");
     // Short under a unit: what is held reads as held, below what is needed.
     act(() => bar({ cost: 0.6, held: 0.5 }));
-    expect(wheatChip()).toBe("wheat 0.5 / 0.6");
+    expect(wheatChip()).toBe("Wheat 0.5 / 0.6");
   });
 
   describe("a cost on either side of its rounding", () => {
@@ -509,9 +514,9 @@ describe("the order bar", () => {
 
     // QA's 28.15 wheat (563 troops at 0.05 a step) rounds to 28; held just under it must not read as 28 of 28.
     it.each([
-      [28, "wheat 28 / 28.2"],
-      [28.1, "wheat 28.1 / 28.2"],
-      [28.149, "wheat 28.1 / 28.2"],
+      [28, "Wheat 28 / 28.2"],
+      [28.1, "Wheat 28.1 / 28.2"],
+      [28.149, "Wheat 28.1 / 28.2"],
     ])("never reads a short %s of 28.15 as met, and offers only Cancel", (held, chip) => {
       const onGo = explore({ cost: 28.15, held });
       expect(wheatChip()).toBe(chip);
@@ -522,14 +527,14 @@ describe("the order bar", () => {
 
     it.each([28.15, 28.2, 28.99])("takes a covered %s of 28.15 at its rounded charge, once", (held) => {
       const onGo = explore({ cost: 28.15, held });
-      expect(wheatChip()).toBe("wheat −28");
+      expect(wheatChip()).toBe("Wheat −28");
       act(() => document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
       expect(onGo).toHaveBeenCalledOnce();
     });
 
     it("tells a short compact cost from what is held", () => {
       explore({ cost: 12_449, held: 12_440 });
-      expect(wheatChip()).toBe("wheat 12,440 / 12,449");
+      expect(wheatChip()).toBe("Wheat 12,440 / 12,449");
     });
   });
 
@@ -576,7 +581,7 @@ describe("the order bar", () => {
         />,
       ),
     );
-    const wheat = host.querySelector('[aria-label="wheat 40 / 300"]');
+    const wheat = host.querySelector('[aria-label="Wheat 40 / 300"]');
     expect(wheat?.getAttribute("data-tone")).toBe("bad");
     expect(host.querySelector('[aria-label="left 4m"]')).not.toBeNull();
     expect(barButtons()).toEqual(["Cancel"]);

@@ -58,18 +58,14 @@ export const ArmyRow = ({
     title={
       <RowLine
         words={label}
-        figure={
-          <>
-            {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} />}
-            <span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>
-          </>
-        }
+        figure={<span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>}
       />
     }
     // The troops line is figures throughout, set as the HUD sets figures.
     detail={
-      <span className="block tabular-nums">
+      <span className="flex flex-col gap-1 tabular-nums">
         <RowLine words={troops === undefined ? "—" : troopCount(troops)} figure={<RowStamina stamina={stamina} />} />
+        {returnsHome !== undefined && <HomecomingReturn troops={returnsHome} words />}
       </span>
     }
     // The trail is the card fan while a level is affordable now: the row itself opens the panel that buys it.
@@ -87,12 +83,15 @@ export const OpenSlotRow = ({
   pulse,
   filling,
   start,
+  selected,
   onDeploy,
 }: {
   label: string;
   pulse: boolean;
   filling?: string;
   start?: { bar: StaminaBar; words: string };
+  /** The slot Deploy fills, chosen as an army's row is. */
+  selected?: boolean;
   onDeploy: () => void;
 }) => (
   <HudRow
@@ -102,6 +101,7 @@ export const OpenSlotRow = ({
       <RowLine words={filling ?? label} figure={start && filling === undefined && <RowStamina stamina={start.bar} />} />
     }
     trail={<RowTrail />}
+    selected={selected}
     disabled={filling !== undefined}
     busy={filling !== undefined}
     tip={filling === undefined ? start?.words : undefined}

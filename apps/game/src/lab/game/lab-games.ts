@@ -1,7 +1,14 @@
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
-import { campaignScenario, devconSeasonScenario } from "./campaign-scenario";
+import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
-import { afterBattleScenario, fightScenario, lowStaminaScenario } from "./after-battle-scenario";
+import {
+  afterBattleScenario,
+  fightLostScenario,
+  fightScenario,
+  lowStaminaScenario,
+  pointSpentScenario,
+} from "./after-battle-scenario";
+import { campScenario } from "./camp-scenario";
 import { clearedCampScenario } from "./cleared-camp-scenario";
 import { actionsScenario } from "./actions-scenario";
 import { claimScenario } from "./claim-scenario";
@@ -11,7 +18,7 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
-import { ruinFightScenario } from "./ruin-fight-scenario";
+import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
 import { highGroundScenario, SANDS, spireScenario } from "./spire-scenario";
@@ -31,10 +38,14 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
+  "point-spent": pointSpentScenario,
   "low-stamina": lowStaminaScenario,
   "ruin-fight": ruinFightScenario,
+  "ruin-far": ruinFarScenario,
+  camp: campScenario,
   "cleared-camp": clearedCampScenario,
   fight: fightScenario,
+  "fight-lost": fightLostScenario,
   research: researchScenario,
   claim: claimScenario,
   upkeep: upkeepScenario,
@@ -61,6 +72,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   ),
   devcon: campaignScenario("regular"),
   "devcon-golden": campaignScenario("golden"),
+  "devcon-golden-full": fullLaborCampaignScenario,
   "devcon-season": devconSeasonScenario,
 };
 

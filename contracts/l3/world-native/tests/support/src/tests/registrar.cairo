@@ -820,7 +820,6 @@ pub fn setup_frontier_chests_with_preset(
     board: Option<crate::buildings::BoardRules>,
 ) -> (super::Deployment, u32, ExplorerKey) {
     let chests = frontier.economy.chests.unwrap();
-    let ground = *frontier.settlement.depths.at(0).chest;
     let d = setup();
     let mut preset = definition(true);
     preset.structures.board = board;
@@ -875,7 +874,7 @@ pub fn setup_frontier_chests_with_preset(
     preset.rules.battle_config.cooldown_seconds = 0;
     preset.rules.battle_config.regular_immunity_ticks = 0;
     let mut depths = array![];
-    for _depth in 0_u16..4 {
+    for depth in 0_u32..4 {
         depths
             .append(
                 crate::expeditions::DepthRules {
@@ -891,7 +890,7 @@ pub fn setup_frontier_chests_with_preset(
                     site_guard_upper: 3,
                     reveal_site_neighbors: false,
                     entry_stamina: 0,
-                    chest: ground,
+                    chest: *frontier.settlement.depths.at(depth).chest,
                 },
             );
     }

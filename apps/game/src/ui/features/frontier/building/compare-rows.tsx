@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { IconGroup, type IconMark } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 
 /**
@@ -7,8 +7,10 @@ import type { ReactNode } from "react";
  * the row is the side the next step takes, framed when picked; the figure that grows is lit.
  */
 type CompareRow = {
-  icon: IconMeaning;
+  icon: IconMark;
   word: string;
+  /** What the figure is of, under its word, wrapped at any width (a research side's "Wheat from every Farm"). */
+  line?: string;
   now: string;
   next?: string;
   grows: boolean;
@@ -54,8 +56,15 @@ export const CompareRows = ({
         const face = (
           <>
             <span className={cn(WORD, "text-hud-ink")}>
-              <Icon name={row.icon} size={24} />
-              <span className="truncate">{row.word}</span>
+              <IconGroup name={row.icon} size={24} />
+              <span className="flex min-w-0 flex-col">
+                <span className="truncate">{row.word}</span>
+                {row.line && (
+                  <span data-line className="text-hud-label leading-tight text-hud-muted">
+                    {row.line}
+                  </span>
+                )}
+              </span>
             </span>
             <span className={cn(FIGURE, "text-hud-ink")}>{row.now}</span>
             {next !== undefined && (

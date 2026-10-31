@@ -113,7 +113,7 @@ it("reads funding by shard game id without history scans or Herald calendar read
   );
   expect(rpc.events).not.toHaveBeenCalled();
 });
-it("refuses different funding and the exclusive receipt deadline", async () => {
+it("refuses different funding and accepts a late automatic sweep", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "11", "110", "0", "0x99"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toMatchObject({
     operation: "frontier_funding_differs_from_game",
@@ -121,7 +121,7 @@ it("refuses different funding and the exclusive receipt deadline", async () => {
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x98"]);
   await expect(Effect.runPromise(bind().frontierSeason(7, 50, 0))).rejects.toThrow();
   rpc.shardCall.mockResolvedValue(["0x5", "5", "0", "1", "0", "0", "10", "110", "0", "0x99"]);
-  await expect(Effect.runPromise(bind().frontierSeason(7, 604910, 0))).rejects.toThrow();
+  expect(await Effect.runPromise(bind().frontierSeason(7, 604910, 0))).toBe(7);
 });
 it("rereads restored game funding instead of reusing a previous match", async () => {
   expect(await Effect.runPromise(bind().frontierSeason(7, 50, 0))).toBe(7);

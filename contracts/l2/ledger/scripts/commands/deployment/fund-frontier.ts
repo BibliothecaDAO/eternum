@@ -119,7 +119,7 @@ export async function fundFrontier(
   return { chainId: shard.chainId, gameId, transactionHash: submitted.transaction_hash, frontier };
 }
 
-/** Close expired chest claims and move their remainder into the next funded season, atomically. */
+/** Move an already settled season's remainder into the next funded season. */
 export async function carryFrontier(
   account: Account,
   provider: RpcProvider,
@@ -144,17 +144,14 @@ export async function carryFrontier(
   const read = (entrypoint: string, calldata: string[]) =>
     account.callContract({ contractAddress: ledger, entrypoint, calldata }, head.number);
   const previous = decodeFrontierSeason(await read("get_frontier", [shard.chainId, String(previousGameId)]));
-  const preset = decodeLedgerPreset(await read("get_preset", [String(previous.presetId)]));
-  if (head.time < previous.end + preset.claimWindow) throw new Error("Previous chest claim window is open");
+  if (!previous.closed) throw new Error("Previous season payouts are not settled");
   if (target.closed || head.time >= target.end || target.start < previous.end)
     throw new Error("Invalid carry destination");
   const carry = await read("frontier_carry", [shard.chainId]);
   if (carry.length !== 2) throw new Error("Invalid carry balance");
-  const amount =
-    BigInt(ledgerU256(carry[0]!, carry[1]!)) + (previous.closed ? 0n : BigInt(previous.pool) - BigInt(previous.paid));
-  if (previous.closed && amount === 0n) return { chainId: shard.chainId, gameId, frontier: target };
+  const amount = BigInt(ledgerU256(carry[0]!, carry[1]!));
+  if (amount === 0n) return { chainId: shard.chainId, gameId, frontier: target };
   const submitted = await account.execute([
-    { contractAddress: ledger, entrypoint: "close_frontier", calldata: [shard.chainId, String(previousGameId)] },
     { contractAddress: ledger, entrypoint: "apply_frontier_carry", calldata: [shard.chainId, String(gameId)] },
   ]);
   const receipt = await account.waitForTransaction(submitted.transaction_hash);

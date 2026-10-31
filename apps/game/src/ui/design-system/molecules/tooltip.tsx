@@ -19,6 +19,34 @@ type Coordinates = {
 const PLACEMENTS: TooltipPlacement[] = ["top", "bottom", "left", "right"];
 const VIEWPORT_PADDING = 8;
 const TOOLTIP_GAP = 12;
+/** The HUD's cards: its panels and the frames of what it opens. */
+const CARD = ".ui-panel";
+
+/**
+ * The card a thing belongs to: the outermost HUD card it sits in (a store card opened inside the realm's panel belongs
+ * to the realm's panel), or none.
+ */
+const cardOf = (anchor: HTMLElement): HTMLElement | null => {
+  let card: HTMLElement | null = null;
+  for (let at = anchor.closest<HTMLElement>(CARD); at; at = at.parentElement?.closest<HTMLElement>(CARD) ?? null)
+    card = at;
+  return card;
+};
+
+/** A card's side that faces the middle of the screen, where the map has room: a left column's right. */
+const sideFacingTheMiddle = (card: DOMRect): TooltipPlacement =>
+  card.left + card.width / 2 < window.innerWidth / 2 ? "right" : "left";
+
+/** Each side's room on the screen around a box, the roomiest first after the preferred one. */
+const placementsAround = (box: DOMRect, preferred: TooltipPlacement): TooltipPlacement[] => {
+  const room: Record<TooltipPlacement, number> = {
+    top: box.top,
+    bottom: window.innerHeight - box.bottom,
+    left: box.left,
+    right: window.innerWidth - box.right,
+  };
+  return [preferred, ...PLACEMENTS.filter((side) => side !== preferred).toSorted((a, b) => room[b] - room[a])];
+};
 
 const getHiddenTransform = (placement: TooltipPlacement) => {
   switch (placement) {
@@ -56,28 +84,6 @@ const HoverTooltip = ({ className }: TooltipProps) => {
   const anchorElement = tooltip?.anchorElement ?? undefined;
 
   const preferredPlacement = tooltip?.position ?? "top";
-
-  const orderedPlacements = useMemo(() => {
-    const available: Record<TooltipPlacement, number> = {
-      top: 0,
-      bottom: 0,
-      left: 0,
-      right: 0,
-    };
-
-    if (anchorElement) {
-      const rect = anchorElement.getBoundingClientRect();
-      available.top = rect.top;
-      available.bottom = window.innerHeight - rect.bottom;
-      available.left = rect.left;
-      available.right = window.innerWidth - rect.right;
-    }
-
-    const others = PLACEMENTS.filter((value) => value !== preferredPlacement);
-    const sortedOthers = others.toSorted((a, b) => available[b] - available[a]);
-
-    return [preferredPlacement, ...sortedOthers];
-  }, [anchorElement, preferredPlacement]);
 
   useEffect(() => {
     const updatePointerPosition = (event: PointerEvent | MouseEvent) => {
@@ -134,6 +140,12 @@ const HoverTooltip = ({ className }: TooltipProps) => {
       return;
     }
 
+    /**
+     * A tip stands clear of the card its thing belongs to (playtest 10-31: the realm's wheat ring named itself over the
+     * card's header): beside the card at the thing's height, on the side facing the map, or above or below it where a
+     * card spans the screen's width (a phone's sheet). Only a card that leaves no room on any side has its tip at the
+     * thing itself, as a thing on no card has.
+     */
     const calculateAndSetPosition = () => {
       const rect = anchor.getBoundingClientRect();
       const tooltipWidth = element.offsetWidth;
@@ -142,26 +154,27 @@ const HoverTooltip = ({ className }: TooltipProps) => {
       const viewportWidth = window.innerWidth;
       const viewportHeight = window.innerHeight;
 
-      const calculate = (targetPlacement: TooltipPlacement) => {
+      /** The tip on a side of `around` (the card, or the thing), centred on the thing along that side. */
+      const calculate = (targetPlacement: TooltipPlacement, around: DOMRect) => {
         let top = rect.top;
         let left = rect.left;
 
         switch (targetPlacement) {
           case "top":
-            top = rect.top - tooltipHeight - TOOLTIP_GAP;
+            top = around.top - tooltipHeight - TOOLTIP_GAP;
             left = rect.left + rect.width / 2 - tooltipWidth / 2;
             break;
           case "bottom":
-            top = rect.bottom + TOOLTIP_GAP;
+            top = around.bottom + TOOLTIP_GAP;
             left = rect.left + rect.width / 2 - tooltipWidth / 2;
             break;
           case "left":
             top = rect.top + rect.height / 2 - tooltipHeight / 2;
-            left = rect.left - tooltipWidth - TOOLTIP_GAP;
+            left = around.left - tooltipWidth - TOOLTIP_GAP;
             break;
           case "right":
             top = rect.top + rect.height / 2 - tooltipHeight / 2;
-            left = rect.right + TOOLTIP_GAP;
+            left = around.right + TOOLTIP_GAP;
             break;
           default:
             break;
@@ -182,17 +195,17 @@ const HoverTooltip = ({ className }: TooltipProps) => {
         };
       };
 
-      let resolvedPlacement: TooltipPlacement = preferredPlacement;
-      let resolvedPosition = calculate(preferredPlacement);
+      /** The first side of `around` the tip fits on, in `order`; the last one tried when none fits. */
+      const resolve = (around: DOMRect, order: TooltipPlacement[]) => {
+        const sides = order.map((placement) => ({ placement, ...calculate(placement, around) }));
+        return sides.find((side) => side.fits) ?? sides[sides.length - 1];
+      };
 
-      if (!resolvedPosition.fits) {
-        for (const option of orderedPlacements) {
-          const position = calculate(option);
-          resolvedPlacement = option;
-          resolvedPosition = position;
-          if (position.fits) break;
-        }
-      }
+      const card = cardOf(anchor)?.getBoundingClientRect();
+      const clearOfCard = card && resolve(card, placementsAround(card, sideFacingTheMiddle(card)));
+      const { placement: resolvedPlacement, ...resolvedPosition } = clearOfCard?.fits
+        ? clearOfCard
+        : resolve(rect, placementsAround(rect, preferredPlacement));
 
       setPlacement(resolvedPlacement);
       setCoordinates({ left: resolvedPosition.left, top: resolvedPosition.top });
@@ -208,7 +221,7 @@ const HoverTooltip = ({ className }: TooltipProps) => {
       window.removeEventListener("resize", calculateAndSetPosition);
       window.removeEventListener("scroll", calculateAndSetPosition, true);
     };
-  }, [tooltip, anchorElement, orderedPlacements, preferredPlacement]);
+  }, [tooltip, anchorElement, preferredPlacement]);
 
   useEffect(() => {
     if (!tooltip) {

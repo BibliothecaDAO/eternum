@@ -7,8 +7,8 @@ import { useRequestSignIn } from "@/shell/sign-in/connect";
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
-import { HudChip, HudPanel, HudPill } from "@/ui/design-system/kit/hud-elements";
-import { CHAT_WORDS } from "@/ui/design-system/kit/words";
+import { HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
+import { CHAT, CHAT_WORDS } from "@/ui/design-system/kit/words";
 import {
   GameChatMap,
   RealtimeChatShell,
@@ -177,14 +177,8 @@ export function HudChatWindow({
   }, [open]);
   useEffect(() => {
     if (!initializer) return;
+    // Escape and system back close the open pane as they close every frame (HudPage).
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && open) {
-        // A field with its list open (chat's mentions) puts the list away first.
-        if (event.target instanceof Element && event.target.closest('[aria-expanded="true"]')) return;
-        event.stopImmediatePropagation();
-        onOpenChange(false);
-        return;
-      }
       if (event.key !== CHAT_SHORTCUT.key || open || event.repeat || event.defaultPrevented) return;
       if (isKeyForSurface(event)) return;
       event.preventDefault();
@@ -225,17 +219,12 @@ export function HudChatWindow({
     <div className={cn("mt-auto flex flex-col gap-2", open ? "min-h-hud-chat-least" : "shrink-0")}>
       {open && (
         <div ref={pane} className="pointer-events-auto flex h-hud-chat-pane min-h-0 flex-col">
-          <HudPanel
-            label="Chat"
-            collapsible={false}
-            className="min-h-0 flex-1"
-            // The chat shell pads its own tabs, history and composer.
-            bodyClassName="flex min-h-0 flex-1 flex-col p-0"
-          >
+          {/* The chat shell pads its own tabs, history and composer. */}
+          <HudPage label={CHAT} icon="chat" onClose={() => onOpenChange(false)} bodyClassName="gap-0 p-0">
             <GameChatMap>
               <RealtimeChatShell rooms={rooms} className="min-h-0 flex-1" />
             </GameChatMap>
-          </HudPanel>
+          </HudPage>
         </div>
       )}
       <div className={cn("pointer-events-auto shrink-0", foldToIcon && "portrait:w-auto portrait:self-start")}>

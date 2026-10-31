@@ -1,15 +1,18 @@
+import { researchHasIndependentSides } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudIconButton, HudPanel, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
-import { useSheetCloses } from "@/ui/design-system/kit/sheet-closes";
+import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
+import { HudButton, HudPage, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
 import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
+import { useLayout } from "@/shell/frame/layout";
+
 import {
   type Branch,
   researchSideNode,
+  researchSideChoice,
   firstMissing,
   type Need,
   needLine,
@@ -47,7 +50,6 @@ export const ResearchPanel = ({
   /** Puts the page away, as every panel closes: its X, Escape or back. */
   onClose: () => void;
 }) => {
-  useSheetCloses(onClose);
   const node = picked === null ? undefined : nodes.find(({ key }) => key === picked);
   const tile = (item: TreeNode) => (
     <NodeTile key={item.key} node={item} picked={item.key === node?.key} onPick={() => onPick(item.key)} />
@@ -55,15 +57,8 @@ export const ResearchPanel = ({
   const branch = (key: Branch) => nodes.filter((item) => item.branch === key);
   const [barracks, ...training] = branch("army");
   return (
-    <HudPanel
-      title={RESEARCH}
-      icon="research"
-      cue={<HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />}
-      collapsible={false}
-      className="pointer-events-auto flex min-h-0 flex-1 flex-col"
-      bodyClassName="flex min-h-0 flex-1 flex-col"
-    >
-      <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto px-3 pb-2">
+    <HudPage label={RESEARCH} icon="research" onClose={onClose}>
+      <div className="grid min-h-0 flex-1 grid-cols-3 content-start gap-2 overflow-y-auto">
         {(Object.keys(RESEARCH_TREE.branches) as Branch[]).map((key) => (
           <BranchHead key={key} branch={key} />
         ))}
@@ -92,7 +87,7 @@ export const ResearchPanel = ({
           onClose={() => onPick(null)}
         />
       )}
-    </HudPanel>
+    </HudPage>
   );
 };
 
@@ -145,7 +140,7 @@ export const NodeTile = ({
   const look = STATE_LOOK[node.state];
   const reading =
     node.maxTier === 5 ? (
-      node.sides?.length === 2 ? (
+      researchHasIndependentSides(node.row) && node.sides ? (
         <span className="flex gap-2">
           {node.sides.map((side) => (
             <span
@@ -153,7 +148,7 @@ export const NodeTile = ({
               className="flex items-center gap-0.5"
               aria-label={`${side.name} ${tierNumeral(side.tier as Rank)}`}
             >
-              <Icon name={side.icon} size={14} />
+              <IconGroup name={side.icon} size={14} />
               <HudTier tier={side.tier as Rank} />
             </span>
           ))}
@@ -215,6 +210,8 @@ const NodeChoice = ({
     Math.max(0, rowNode.sides?.findIndex((option) => option.state !== "done") ?? 0),
   );
   const node = researchSideNode(rowNode, side);
+  const desktop = useLayout() === "desktop";
+  const choice = researchSideChoice(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
   const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
@@ -222,7 +219,7 @@ const NodeChoice = ({
   return (
     <div
       data-lab="node-choice"
-      className="mx-2 mb-2 flex shrink-0 flex-col gap-2 rounded-lg border border-hud-line-strong bg-hud-surface p-3 shadow-2xl"
+      className="flex shrink-0 flex-col gap-2 rounded-lg border border-hud-line-strong bg-hud-surface p-3 shadow-2xl"
     >
       <div className="flex items-center gap-2">
         <Icon name={node.icon} size={36} />
@@ -235,22 +232,28 @@ const NodeChoice = ({
         </button>
       </div>
       {node.sides ? (
-        <div className={cn("grid gap-2", node.sides.length === 3 ? "grid-cols-3" : "grid-cols-2")}>
+        // Three sides stand in a column on a phone: three across leave no room for a side's name, line or figure.
+        <div
+          className={cn(
+            "grid gap-2",
+            node.sides.length === 3 ? (desktop ? "grid-cols-3" : "grid-cols-1") : "grid-cols-2",
+          )}
+        >
           {node.sides.map((option, index) => (
             <button
               key={option.name}
               type="button"
               onClick={() => setSide(index)}
               aria-pressed={side === index}
-              title={option.line}
               className={cn(
-                "flex items-center gap-2 rounded-md border px-2 py-1.5 text-left",
+                "flex flex-col items-center gap-1 rounded-md border px-2 py-1.5 text-center",
                 side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
               )}
             >
-              <Icon name={option.icon} size={28} />
+              <IconGroup name={option.icon} size={28} />
               <span className="flex min-w-0 flex-col">
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
+                <span className="text-hud-label leading-tight text-hud-muted">{option.line}</span>
                 <span className="truncate text-hud-label tabular-nums text-hud-good">
                   {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
                 </span>
@@ -267,6 +270,7 @@ const NodeChoice = ({
           </span>
         </span>
       )}
+      {node.gate && <span className="text-hud-label text-hud-muted">{node.gate.line}</span>}
       {missing && !isPrice(missing) && (
         <span className="flex items-center gap-2 text-hud-label text-hud-bad">
           <Icon name={needIcon(missing)} size={16} />
@@ -298,9 +302,9 @@ const NodeChoice = ({
           )}
           <HudButton
             kind="primary"
-            disabled={node.state !== "ready"}
+            disabled={node.state !== "ready" || choice === undefined}
             busy={sending ? RESEARCHING : undefined}
-            onClick={() => onResearch(side)}
+            onClick={() => choice !== undefined && onResearch(choice)}
           >
             {RESEARCH_TREE.research(verb)}
           </HudButton>

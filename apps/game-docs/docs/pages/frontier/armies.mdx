@@ -55,9 +55,9 @@ its troops; Frontier asks first.
 ## XP and attributes
 
 An army earns {FRONTIER.xp.reveal.join(" / ")} XP per revealed tile at {FRONTIER.depths.map((depth) =>
-depth.name).join(" / ")}. It also earns XP for cleared guards and {FRONTIER.xp.shrine} XP from a shrine. XP only
-increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common, Uncommon, Rare, Epic and Legendary skill
-points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
+depth.name).join(" / ")}. It also earns XP for cleared guards. Shrines grant one skill point of the rank shown when
+discovered. XP only increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common, Uncommon, Rare, Epic and
+Legendary skill points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
 
 Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
 uses the lowest fitting point you hold. Raising restores {FRONTIER.stamina.pointRefills.join(" / ")} stamina according

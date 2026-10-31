@@ -225,47 +225,49 @@ twice, and picks the army again from its dock when a tap selects something else)
 Castle sheet, Upgrade) and build (the outermost open plot above the castle, Build); `--steps lab-actions-merge`, two
 armies merged from the transfer card (pressed, then confirmed), `--steps lab-actions-transfer`, 500 troops sent from the
 same card to the other army, `--steps lab-actions-spire`, Enter on Ethereal II from the spire's card;
-`--steps lab-actions-fight`, the ruin beside the army attacked from its card; `--steps lab-actions-sites`, a Shrine and
-a Well beside the army used; `--steps lab-actions-deploy`, a new army from the dock's Deploy (Max, then Deploy);
-`--steps lab-actions-research`, the Shrine researched from Research (`scenario=research`); and
-`--steps lab-actions-claim`, a Realm's labor claimed from Realms (a desktop's purse, a phone's Menu: Claim;
-`scenario=claim`, whose value relay the tab answers as the relay does: the grant's facts first, then the reply naming
-their transaction); on `scenario=upkeep` (LORDS held, the army short of stamina with XP to spend, a chest beside it, a
-payout wallet linked), `--steps lab-actions-army`, the army's panel's Refill (and its confirm) then Level up on Battle,
-`--steps lab-actions-demolish`, a first-ring building's Delete then Confirm delete, `--steps lab-actions-chest`, the
-chest beside the army opened (a desktop's right-click on the tile offering Open crate; a phone's tap, then Open), and
-`--steps lab-actions-withdraw`, the purse's LORDS withdrawn (Maximum, then Withdraw; the tab answers the L2 ledger's
-pause and payment reads); and `--steps lab-actions-settle`, a season entered by a player not yet settled
-(`scenario=settle`, which opens on the home page: the run's first step is the Frontier card's Play, timed through the
-doorway's SettleSeason to the game on the founded realm, and the boot is waited for after it). Each step declares the
-game command it sends (`sends`) and fails in the lab when its press sent another; `src/lab/game/action-coverage.test.ts`
-fails a command of the catalog Frontier enables that no step sends and `UNMEASURED_COMMANDS` does not name with its
-reason. Each names its exact result: the renderer's mark once the frame drawing it was rendered (`presented:<result>`,
-`src/three/presented-results.ts`: the explored tile's ground, once half its fog has swept away, the army's walk, the
-deployed army drawn, the merged army leaving the map, that building on that plot or leaving it, that Shrine or Well
-leaving its tile, that chest's opening started; or, for a scene drawn under a cover, once the paint without the cover:
-the game uncovered as its doorway leaves), or a page condition: the Castle sheet naming exactly the next level, each
-army a fight or transfer changed showing exactly the count the chain answered, the Shrine's node researched, the Realms
-sheet listing the home claimed today, the army's panel reading the stamina refilled to or naming the tier bought, the
-purse reading the LORDS left; another target's result is not the action's. Each is cut where the client records its way:
-handled (the press to the command), sent (signed and answered by the RPC), confirmed (the chain and Herald, to the
-pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the result); a claim, which the relay signs,
-has no sent segment, and its confirmed runs from the request. A step completes only with every mark reached and every
-frame from the press to the result observed. `--capture-results` also records the page's frames and fails a step unless,
-in its result's region of the screen, the pixels that show it appear at its mark (not a frame before, not absent three
-frames after, counting the page's own frames, so a slow frame is one frame; the screen at a moment is the last frame
-sent by then); an explore names its tile's ground as its target instead, which must read explored (its mean grey past
-half the way from its fog to its last look) within that window, whatever changed round it; a chest names its body where
-the map drew it (a phone's from the selected hex the page reports, `window.__eternumMapSelection.hexOnScreen`), which
-must start to change (its grey 16 levels from before) in the window, as the chest sinks away seconds later; a season's
-entry names the screen's lower third, below the doorway's steps, which turns from the doorway's painting to the map; a
-demolished building's proof is open (the Build sheet's ghost fills its plot next, and the proof reads the plot's last
-look), so a capture run fails it. A result's place past the screen's edge fails the step. The frames around it are kept.
-Each run writes `click-to-result.md`, each action's segments and total as median (min–max) over its quiet runs),
-`--compare <summary.json>` (fails when boot regresses, when an action the baseline timed has no timed run or a renderer
-mode it timed is missing, or when an action's press-to-result median is past the slowest run of that baseline by more
-than a frame; actions the baseline never timed are listed as new; `scripts/client-playtest/baselines/` keeps the lab's,
-one per step list and device, measured on the lanes' machine), `--headed`.
+`--steps lab-actions-fight`, the ruin beside the army attacked from its card; `--steps lab-actions-fight-lost`, the same
+attack costing the army its life (`scenario=fight-lost`): the panel must show "Your army is lost", then close by itself
+with no army left selected; `--steps lab-actions-sites`, a Shrine and a Well beside the army used;
+`--steps lab-actions-deploy`, a new army from the dock's Deploy (Max, then Deploy); `--steps lab-actions-research`, the
+Shrine researched from Research (`scenario=research`); and `--steps lab-actions-claim`, a Realm's labor claimed from
+Realms (a desktop's purse, a phone's Menu: Claim; `scenario=claim`, whose value relay the tab answers as the relay does:
+the grant's facts first, then the reply naming their transaction); on `scenario=upkeep` (LORDS held, the army short of
+stamina with XP to spend, a chest beside it, a payout wallet linked), `--steps lab-actions-army`, the army's panel's
+Refill (and its confirm) then Level up on Battle, `--steps lab-actions-demolish`, a first-ring building's Delete then
+Confirm delete, `--steps lab-actions-chest`, the chest beside the army opened (a desktop's right-click on the tile
+offering Open crate; a phone's tap, then Open), and `--steps lab-actions-withdraw`, the purse's LORDS withdrawn
+(Maximum, then Withdraw; the tab answers the L2 ledger's pause and payment reads); and `--steps lab-actions-settle`, a
+season entered by a player not yet settled (`scenario=settle`, which opens on the home page: the run's first step is the
+Frontier card's Play, timed through the doorway's SettleSeason to the game on the founded realm, and the boot is waited
+for after it). Each step declares the game command it sends (`sends`) and fails in the lab when its press sent another;
+`src/lab/game/action-coverage.test.ts` fails a command of the catalog Frontier enables that no step sends and
+`UNMEASURED_COMMANDS` does not name with its reason. Each names its exact result: the renderer's mark once the frame
+drawing it was rendered (`presented:<result>`, `src/three/presented-results.ts`: the explored tile's ground, once half
+its fog has swept away, the army's walk, the deployed army drawn, the merged army leaving the map, that building on that
+plot or leaving it, that Shrine or Well leaving its tile, that chest's opening started; or, for a scene drawn under a
+cover, once the paint without the cover: the game uncovered as its doorway leaves), or a page condition: the Castle
+sheet naming exactly the next level, each army a fight or transfer changed showing exactly the count the chain answered,
+the Shrine's node researched, the Realms sheet listing the home claimed today, the army's panel reading the stamina
+refilled to or naming the tier bought, the purse reading the LORDS left; another target's result is not the action's.
+Each is cut where the client records its way: handled (the press to the command), sent (signed and answered by the RPC),
+confirmed (the chain and Herald, to the pre-confirmed diff), applied (the diff's facts in the store) and drawn (to the
+result); a claim, which the relay signs, has no sent segment, and its confirmed runs from the request. A step completes
+only with every mark reached and every frame from the press to the result observed. `--capture-results` also records the
+page's frames and fails a step unless, in its result's region of the screen, the pixels that show it appear at its mark
+(not a frame before, not absent three frames after, counting the page's own frames, so a slow frame is one frame; the
+screen at a moment is the last frame sent by then); an explore names its tile's ground as its target instead, which must
+read explored (its mean grey past half the way from its fog to its last look) within that window, whatever changed round
+it; a chest names its body where the map drew it (a phone's from the selected hex the page reports,
+`window.__eternumMapSelection.hexOnScreen`), which must start to change (its grey 16 levels from before) in the window,
+as the chest sinks away seconds later; a season's entry names the screen's lower third, below the doorway's steps, which
+turns from the doorway's painting to the map; a demolished building's proof is open (the Build sheet's ghost fills its
+plot next, and the proof reads the plot's last look), so a capture run fails it. A result's place past the screen's edge
+fails the step. The frames around it are kept. Each run writes `click-to-result.md`, each action's segments and total as
+median (min–max) over its quiet runs), `--compare <summary.json>` (fails when boot regresses, when an action the
+baseline timed has no timed run or a renderer mode it timed is missing, or when an action's press-to-result median is
+past the slowest run of that baseline by more than a frame; actions the baseline never timed are listed as new;
+`scripts/client-playtest/baselines/` keeps the lab's, one per step list and device, measured on the lanes' machine),
+`--headed`.
 
 Each invocation writes to a new directory, `<root>/<time>-<role>`, and never into an existing one:
 

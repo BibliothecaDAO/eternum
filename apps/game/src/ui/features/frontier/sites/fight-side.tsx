@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 
 /**
  * What a side keeps after the fight: one number when it is known, a range when the dice decide it (low to high), and
- * undefined when no forecast is known (the army is out of reach, or the fight cannot be fought yet).
+ * undefined when no forecast is known (the fight cannot be fought yet).
  */
 export type Kept = number | { low: number; high: number } | undefined;
 

@@ -20,11 +20,11 @@ import {
   ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
-  FULL,
   MOVE,
   ON_ITS_WAY,
   REALM,
   REST_DID_NOT_FIT,
+  RUIN_RULE,
   siteTitle,
   STORAGE,
   tooFarFrom,
@@ -151,12 +151,10 @@ export const SiteCardView = ({
         </span>
       </header>
       {ruinChoice && (
-        <dl className="flex flex-wrap justify-between gap-x-3 gap-y-1 text-hud-label">
-          <dt className="text-hud-muted">{ruinChoice.depth} · Disappears</dt>
-          <dd className="text-hud-ink" data-tip="Your first ruin clear removes every other ruin, across all depths.">
-            First ruin clear or day end
-          </dd>
-        </dl>
+        <p data-ruin-rule className="text-hud-label">
+          <span className="text-hud-muted">{ruinChoice.depth} · </span>
+          <span className="text-hud-ink">{RUIN_RULE}</span>
+        </p>
       )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}
       {receipt}
@@ -213,8 +211,8 @@ const SiteMark = ({ icon, children }: { icon: IconMeaning; children?: ReactNode 
 
 /**
  * The fight's two sides, in every state of the card (owner, 10-27: "this panel doesnt match at all our new battle
- * panels"): in reach, each side's troops now and what this attack leaves it; out of reach, short of stamina or refused,
- * the same sides with a dash where no forecast is known. The state itself is the line under them and the held step.
+ * panels"): each side's troops now and what this attack leaves it, near or far; refused, the same sides with a dash
+ * where no forecast is known. The state itself is the line under them and the held step.
  */
 const FightPanel = ({
   army,
@@ -263,8 +261,8 @@ const Pay = ({ pay }: { pay: { icon: IconMeaning; amount: number; fits?: number 
         +{formatExact(short ? pay.fits : pay.amount)}
       </span>
       {short && (
-        <HudChip label={STORAGE} tone="bad" tip={REST_DID_NOT_FIT}>
-          {FULL}
+        <HudChip label={STORAGE} tone="bad">
+          {REST_DID_NOT_FIT}
         </HudChip>
       )}
     </span>

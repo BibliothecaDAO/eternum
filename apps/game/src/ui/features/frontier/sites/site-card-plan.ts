@@ -41,8 +41,8 @@ export interface SiteAttack {
 /**
  * What Frontier's tile card shows of a site (wireframe 06), read from facts with no UI of its own: its kind and name
  * (a ruin by its beast), its guard as troops and tier (never strength), what clearing it pays, the attack's stamina, and the whole
- * fight from the army in reach as exact exchanges. The guard's count is unknown until its slots arrive; a fight only
- * exists for an army in reach.
+ * fight from the selected army as exact exchanges, wherever it stands. The guard's count is unknown until its slots
+ * arrive.
  */
 export interface SiteCardPlan {
   name: string;
@@ -59,6 +59,8 @@ export interface SiteCardPlan {
    */
   payout: { resourceId: ResourcesIds; amount: number; fits: number } | null | undefined;
   attackStamina: number;
+  /** Whether the selected army's troops reach the target from where they stand: Attack now, or Move first. */
+  inReach: boolean;
   fight: SiteFight | undefined;
 }
 
@@ -111,6 +113,7 @@ export const readSiteCard = (
     },
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
+    inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
     fight: guard && attack ? forecastFightAt(store, guard.troops, siteTile, attack, true) : undefined,
   };
 };
@@ -134,6 +137,7 @@ export const readArmyCard = (
     chest: null,
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
+    inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
     fight: troops && troops.count > 0n && attack ? forecastFightAt(store, troops, armyTile, attack, false) : undefined,
   };
 };
@@ -174,9 +178,26 @@ const troopsOf = (troops: Pick<Troops, "category" | "tier" | "count">) => ({
   count: Number(troops.count / PRECISION),
 });
 
+/** The distance the army's troops strike the target from where they stand; undefined out of their reach. */
+const reachOf = (
+  store: NativeFactStore,
+  attack: SiteAttack,
+  target: { col: number; row: number; alt: boolean },
+): number | undefined => {
+  const troops = resolveExplorerTroops(store, attack.army);
+  if (!troops) return undefined;
+  const distance = getLayeredAttackDistance(attack.armyTile, target);
+  return distance <= getTroopAttackRange(troops.category) ? distance : undefined;
+};
+
+/** Where an army out of reach attacks from: the tile beside the target, where its Move leads. */
+const BESIDE = 1;
+
 /**
  * The fight as the contract resolves it, attack after attack from the moment the army can attack, with no dice:
- * Frontier's combat is exact. An army out of its troops' reach has no fight to forecast.
+ * Frontier's combat is exact. An army out of reach is forecast from beside the target, with the stamina it holds now:
+ * how far it stands decides only whether Attack can be sent yet (owner, 31 October 2026: "I should still have the
+ * projection even if I'm too far I think").
  */
 const forecastFightAt = (
   store: NativeFactStore,
@@ -189,8 +210,7 @@ const forecastFightAt = (
     throw new Error("Frontier's site forecast is exact; this game rolls dice");
   const troops = resolveExplorerTroops(store, attack.army);
   if (!troops) return undefined;
-  const distance = getLayeredAttackDistance(attack.armyTile, siteTile);
-  if (distance > getTroopAttackRange(troops.category)) return undefined;
+  const distance = reachOf(store, attack, siteTile) ?? BESIDE;
   const forecast = forecastFight(
     troops,
     guard,
