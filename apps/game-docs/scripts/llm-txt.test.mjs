@@ -2,11 +2,15 @@ import assert from "node:assert/strict";
 import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { createServer } from "vite";
 import { after, before, test } from "node:test";
 
 /** The export generator and the post-build check, as the build runs them. */
 const { renderLlmTxt } = await import(new URL("../vite-plugin-llm-txt.mjs", import.meta.url).href);
-const { exportProblems, forbiddenValues } = await import(new URL("./check-rendered-balance.mjs", import.meta.url).href);
+const { exportProblems, forbiddenValues, frontierGuardPhrases } = await import(
+  new URL("./check-rendered-balance.mjs", import.meta.url).href
+);
 
 let root;
 
@@ -55,4 +59,36 @@ test("an expression left in the export is reported whatever its name", () => {
 test("NaN and a u64 maximum in the export are forbidden values", () => {
   const llm = "file: docs/pages/a.mdx\nmeta: {}\n\nUp to +NaN armies, and 18,446,744,073,709,550 kg.\n";
   assert.equal(forbiddenValues(root, llm).length, 2);
+});
+
+test("the expedition page gives camps and rifts their own correct guard column at every depth", async () => {
+  const server = await createServer({ configFile: false, logLevel: "silent", appType: "custom" });
+  try {
+    const { frontierPreset } = await server.ssrLoadModule(
+      fileURLToPath(new URL("../../../config/source/frontier/native.ts", import.meta.url)),
+    );
+    const { previewRiftGuardBound } = await server.ssrLoadModule(
+      fileURLToPath(new URL("../../../contracts/l3/world-native/schema/site-previews.gen.ts", import.meta.url)),
+    );
+    const pages = [
+      { page: "frontier/expedition", phrases: frontierGuardPhrases(frontierPreset, previewRiftGuardBound) },
+    ];
+    const docs = fileURLToPath(new URL("../docs", import.meta.url));
+    const llm = await renderLlmTxt([join(docs, "pages/frontier/expedition.mdx")], docs);
+    assert.deepEqual(exportProblems(llm, pages), []);
+    const combined = llm
+      .split("\n")
+      .map((line) => {
+        if (!line.startsWith("|")) return line;
+        const cells = line.split("|").map((cell) => cell.trim());
+        if (cells.length !== 8) return line;
+        if (cells[2] === "Camps") cells[2] = "Camps and rifts";
+        cells.splice(3, 1);
+        return cells.join(" | ");
+      })
+      .join("\n");
+    assert.equal(exportProblems(combined, pages).length, 5);
+  } finally {
+    await server.close();
+  }
 });

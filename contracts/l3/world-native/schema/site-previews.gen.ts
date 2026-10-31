@@ -1,4 +1,8 @@
-// From expeditions.cairo::site_reward and progression.cairo::clear_xp. Run scripts/generate-site-previews.mjs.
+// From the site reward, clear XP and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export function previewRiftGuardBound(camp: number, step: number): number {
+  return Math.floor((camp * 115 + step * 50) / (step * 100)) * step;
+}
+
 export function previewSiteReward(
   category: number,
   initialGuardCount: bigint,

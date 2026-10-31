@@ -147,7 +147,27 @@ const wheatPerTroop = (config) =>
  * guards, chests), as its four rules pages state them.
  */
 
-const frontierPhrases = (config, preset) => {
+export const frontierGuardPhrases = (preset, riftGuardBound) => {
+  const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
+  return [
+    "Ground Camps Rifts Ruins Weaker beasts Stronger beasts",
+    ...preset.depths.map((depth, index) =>
+      [
+        DEPTH_NAMES[index],
+        range(depth.siteGuardLower, depth.siteGuardUpper),
+        range(
+          riftGuardBound(depth.siteGuardLower, depth.guardStep),
+          riftGuardBound(depth.siteGuardUpper, depth.guardStep),
+        ),
+        range(depth.ruinGuardLower, depth.ruinGuardUpper),
+        range(depth.beastWeakLower, depth.beastWeakUpper),
+        range(depth.beastStrongLower, depth.beastStrongUpper),
+      ].join(" "),
+    ),
+  ];
+};
+
+const frontierPhrases = (config, preset, riftGuardBound) => {
   const stamina = config.troop.stamina;
   const tick = config.tick.armiesTickIntervalInSeconds;
   const start = (id) => n(config.startingResources.find((r) => r.resource === id).amount);
@@ -159,7 +179,6 @@ const frontierPhrases = (config, preset) => {
     limit.kingdomDeploymentCap,
     limit.empireDeploymentCap,
   ];
-  const range = (lower, upper) => `${n(lower)}–${n(upper)}`;
   const revealXp = preset.depths
     .map((_, depth) => n(preset.progression.revealXp + depth * preset.progression.revealXpPerDepth))
     .join(" / ");
@@ -178,10 +197,8 @@ const frontierPhrases = (config, preset) => {
       page: "frontier/expedition",
       phrases: [
         `Each reveal also gives the army ${revealXp} XP at ${DEPTH_NAMES.join(" / ")}.`,
-        ...preset.depths.flatMap((depth, index) => [
-          `${DEPTH_NAMES[index]} ${range(depth.siteGuardLower, depth.siteGuardUpper)} ${range(depth.ruinGuardLower, depth.ruinGuardUpper)} ${range(depth.beastWeakLower, depth.beastWeakUpper)} ${range(depth.beastStrongLower, depth.beastStrongUpper)}`,
-          `${DEPTH_NAMES[index]} ${depth.revealPercent}%`,
-        ]),
+        ...frontierGuardPhrases(preset, riftGuardBound),
+        ...preset.depths.map((depth, index) => `${DEPTH_NAMES[index]} ${depth.revealPercent}%`),
       ],
     },
     {
@@ -275,7 +292,7 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
 };
 
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
-export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests) => [
+export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
   ...blitzStaminaPhrases(blitz),
   ...staminaPhrases("eternum", eternum),
   {
@@ -284,7 +301,7 @@ export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger
       `Opening a crate scores ${n(Number(blitz.victoryPoints.pointsForRelicDiscovery) / POINTS_PRECISION)} points`,
     ],
   },
-  ...frontierPhrases(frontier, frontierPreset),
+  ...frontierPhrases(frontier, frontierPreset, riftGuardBound),
   ...blitzLedgerPhrases(blitz, ledger, chests),
 ];
 
@@ -302,6 +319,9 @@ const loadBalanceSources = async () => {
     );
     const { blitzPreset } = await server.ssrLoadModule(join(here, "../../../config/source/blitz/native.ts"));
     const { frontierPreset } = await server.ssrLoadModule(join(here, "../../../config/source/frontier/native.ts"));
+    const { previewRiftGuardBound } = await server.ssrLoadModule(
+      join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
+    );
     const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
     const { buildLedgerEconomicPreset, chestPresetFor } = await server.ssrLoadModule(
       join(here, "../../../config/deployer/clean/ledger/economics.ts"),
@@ -314,6 +334,7 @@ const loadBalanceSources = async () => {
       rules: blitzPreset.relics,
       firstRelicId: ResourcesIds.StaminaRelic1,
       frontierPreset,
+      previewRiftGuardBound,
       llmTxtFile,
       ledger,
       chests,
@@ -448,7 +469,8 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile, ledger, chests } = await loadBalanceSources();
+  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile, ledger, chests, previewRiftGuardBound } =
+    await loadBalanceSources();
   const llm = readFileSync(llmTxtFile, "utf8");
   const phrases = expectedPhrases(
     configOf("blitz"),
@@ -457,6 +479,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     frontierPreset,
     ledger,
     chests,
+    previewRiftGuardBound,
   );
   const missing = [
     ...missingRuns(dist, [

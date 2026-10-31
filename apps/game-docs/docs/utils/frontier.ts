@@ -1,5 +1,6 @@
 import { frontierPreset } from "../../../../config/source/frontier/native";
 import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
+import { previewRiftGuardBound } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
@@ -107,7 +108,11 @@ export const FRONTIER = {
     name: DEPTH_NAMES[index],
     ruinGuardName: BEAST_NAMES[FALLEN_REALM_DEPTHS[index]!.beast],
     revealPercent: `${depth.revealPercent}%`,
-    siteGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
+    campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
+    riftGuard: range(
+      previewRiftGuardBound(depth.siteGuardLower, depth.guardStep),
+      previewRiftGuardBound(depth.siteGuardUpper, depth.guardStep),
+    ),
     ruinGuard: range(depth.ruinGuardLower, depth.ruinGuardUpper),
     beastWeak: range(depth.beastWeakLower, depth.beastWeakUpper),
     beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),
