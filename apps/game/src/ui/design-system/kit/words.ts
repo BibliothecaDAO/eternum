@@ -338,6 +338,8 @@ export const AFTER_THIS_ONE = "After this one";
 /** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
   `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
+/** A clear's line with what the attack that won it cost: "Rift cleared, lost 68". */
+export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
@@ -554,7 +556,10 @@ export const REFILLING = "Refilling…";
 export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
-export const NO_WALLET = "No wallet linked";
+/** Where an account with no linked wallet sees LORDS it is owed: the ledger pays a linked wallet only. */
+export const LINK_WALLET_FOR_LORDS = "Link a wallet to receive your LORDS";
+/** The same once the season is over: unpaid LORDS lapse at the ledger's claim deadline and go to the next season. */
+export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS go to the next season`;
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
@@ -913,6 +918,8 @@ export const PROFILE_WORDS = {
   discord: "Discord",
   email: "email",
   linkWallet: "Link wallet",
+  /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */
+  linkWalletHoldings: "Link a wallet for your Realms and LORDS",
   signOut: "Sign out",
   signOutAsk: "Sign out?",
   signOutCost: "This device forgets your account",

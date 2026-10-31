@@ -60,7 +60,7 @@ const fixture = () => {
     firstRelease: 1,
   });
   const bindings = {
-    realmsIdForAccount: vi.fn(async (_account: string) => "0x2"),
+    realmsIdForAccount: vi.fn(async (_account: string): Promise<string | null> => "0x2"),
     frontierSeason: vi.fn(() => Effect.succeed(3)),
   };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
@@ -490,3 +490,64 @@ it("reads a full page's headers in batches the shard RPC accepts, checking each 
   expect(batches.reduce((total, [, size]) => total + (size as number), 0)).toBe(SHARD_PAGE_BLOCKS - 2);
   expect(batches).toHaveLength(Math.ceil((SHARD_PAGE_BLOCKS - 2) / 32));
 });
+
+it.each([false, true])(
+  "pauses a forged report through the real reader even with an unknown account (leading honest report=%s)",
+  async (leading) => {
+    const { runMonitor } = await import("./monitor");
+    const f = fixture();
+    f.bindings.realmsIdForAccount.mockResolvedValue(null);
+    rpc.receipt.mockImplementation(async (transactionHash: string) => ({
+      ...receipt(),
+      transaction_hash: transactionHash,
+      events: [{ from_address: address, ...withdrawalEvent(7, transactionHash, "0x123", 17) }],
+    }));
+    const report = (transactionHash: string, amount: bigint) => ({
+      chainId: "0x1",
+      seasonId: 3,
+      transactionHash,
+      amount: String(amount * 10n ** 18n),
+      prizeRank: 0,
+      prizeCount: 0,
+      wallet: "0x0",
+      reportTransactionHash: "0x999",
+    });
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    let progress: import("./monitor").MonitorProgress = { halted: null };
+    const pause = vi.fn(() => Effect.void),
+      approvePayment = vi.fn(() => Effect.void);
+    const ports: import("./ports").MonitorPorts = {
+      identity: { matchesPayDecision: () => Effect.succeed(false) },
+      shard: {
+        ...f.ports,
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+        settlementEvidence: () => Effect.succeed(null),
+      },
+      ledger: {
+        pause,
+        approvePayment,
+        approveSettlement: () => Effect.void,
+        frontierPool: () => Effect.succeed("0"),
+        reportedClaims: () =>
+          Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
+        reportedSettlements: () => Effect.succeed({ ...page, rows: [] }),
+        paidClaims: () => Effect.succeed({ ...page, rows: [] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    const store = {
+      load: async () => progress,
+      save: async (next: typeof progress) => {
+        progress = next;
+      },
+    };
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(progress.halted).toBe("reported_claim_mismatch:0xdef");
+    expect(pause).toHaveBeenCalledOnce();
+    expect(f.bindings.realmsIdForAccount).not.toHaveBeenCalled();
+    expect(approvePayment).not.toHaveBeenCalled();
+    for (let tick = 0; tick < 61; tick++) await Effect.runPromise(runMonitor(ports, store));
+    expect(pause).toHaveBeenCalledTimes(62);
+  },
+);

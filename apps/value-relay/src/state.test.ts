@@ -127,7 +127,7 @@ it("persists confirmed obligations, cursor and halt across actual Worker restart
     const restored = (await (await worker.dispatchFetch("https://state.test/read")).json()) as {
       progress: { halted: string | null; nextBlock: number; lastHash: string };
     };
-    expect(restored.progress).toMatchObject({ halted: null, nextBlock: 0, lastHash: null });
+    expect(restored.progress).toMatchObject({ halted: "confirmed_block_changed:0", nextBlock: 1, lastHash: "0xa" });
   } finally {
     await disposeWorker(worker);
   }

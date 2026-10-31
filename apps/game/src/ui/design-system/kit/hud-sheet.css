@@ -1279,18 +1279,24 @@ button.ui-relic:focus-visible {
 }
 
 /* ── Troop amount: the count typed, +500 and Max beside it, then out of how many can, for a quick deploy. ── */
-/* The count typed, +500, Max and out of how many on one line; the slider across the whole control under them. */
+/* The painting, the count typed, +500, Max and out of how many on one line, centred on one axis; the field gives up
+   width before anything wraps, so a phone keeps the line whole. The slider across the whole control under it. */
 .ui-amount {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: theme(spacing.2);
+}
+.ui-amount__line {
+  display: flex;
   align-items: center;
   gap: theme(spacing.2);
 }
-.ui-amount > .ui-slider {
-  flex-basis: 100%;
+.ui-amount__line > .ui-field {
+  min-width: 3.5rem;
+  flex: 0 1 6rem;
 }
-.ui-amount .ui-field input {
-  width: 6rem;
+.ui-amount__line > .ui-field input {
+  width: 100%;
 }
 /* Deploying an army: a column per troop, its tiers under its name, then the amount. */
 .ui-deploy {
@@ -1333,6 +1339,7 @@ button.ui-relic:focus-visible {
   text-align: center;
 }
 .ui-amount__of {
+  white-space: nowrap;
   color: var(--hud-muted);
   font-size: var(--hud-text-label);
   line-height: var(--hud-leading-label);
@@ -2394,6 +2401,17 @@ button.ui-card__choose:disabled {
   display: flex;
   gap: theme(spacing.2);
   margin-top: theme(spacing.3);
+}
+/* An account with no linked wallet, told under its LORDS how to receive them. */
+.ui-chest-moment__wallet {
+  position: relative;
+  margin-top: theme(spacing.3);
+  max-width: 22rem;
+  color: rgb(var(--hud-warn));
+  font-size: var(--hud-text-body);
+  font-weight: var(--hud-weight-strong);
+  text-align: center;
+  text-shadow: 0 2px 8px rgb(var(--hud-dark));
 }
 @media (prefers-reduced-motion: reduce) {
   .ui-chest-moment__rays {

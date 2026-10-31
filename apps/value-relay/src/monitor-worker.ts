@@ -1,3 +1,5 @@
+import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
+import { frontierSettlementEvidence } from "./frontier-sweep";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
@@ -11,6 +13,7 @@ import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
+import { ledgerApprovals } from "./ledger-approvals";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -49,7 +52,15 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           if (Result.isFailure(bound)) {
             const reason = bound.failure.operation;
             const checked_at = Math.floor(Date.now() / 1000);
-            const observation = { checked_at, value: null, season_error: reason, value_error: reason, held: null };
+            const observation = {
+              checked_at,
+              value: null,
+              season_error: reason,
+              value_error: reason,
+              held: null,
+              fee_balance: null,
+              fee_balance_error: reason,
+            };
             yield* relayOperation("publish value monitor", () => monitor.ctx.storage.put("observation", observation));
             return observation;
           }
@@ -101,8 +112,19 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
           const held = yield* Effect.result(
             relayOperation("read relay held obligations", () => monitor.env.RELAY_REPORT.held()),
           );
+          const feeBalance = yield* Effect.result(
+            onIdentityChain(
+              monitor.env.L2_RPC_URL,
+              monitor.env.IDENTITY,
+              relayOperation("monitor STRK balance unavailable", () =>
+                readMonitorFeeBalance(monitor.env.L2_RPC_URL, monitor.env.PAUSER_ACCOUNT_ADDRESS),
+              ),
+            ),
+          );
           const observation = {
             checked_at: Math.floor(Date.now() / 1000),
+            fee_balance: Result.isSuccess(feeBalance) ? feeBalance.success : null,
+            fee_balance_error: Result.isFailure(feeBalance) ? feeBalance.failure.operation : null,
             value: Result.isSuccess(value) ? value.success : null,
             season_error: Result.isSuccess(seasonAudit) ? seasonAudit.success : seasonAudit.failure.operation,
             value_error: Result.isFailure(value) ? value.failure.operation : null,
@@ -163,6 +185,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
   async health() {
     const observation = await this.ctx.storage.get<{
       checked_at: number;
+      fee_balance?: MonitorFeeBalance | null;
+      fee_balance_error?: string | null;
       value: MonitorProgress | null;
       value_error: string | null;
       season_error: string | null;
@@ -180,6 +204,8 @@ export class ValueMonitor extends DurableObject<MonitorEnv> {
         observation?.value !== undefined &&
         observation.season_error === null &&
         observation.value_error === null &&
+        observation.fee_balance_error === null &&
+        observation.fee_balance?.warning === null &&
         !progress.halted,
     };
   }
@@ -267,7 +293,26 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
     const reader = new ShardReader(shardConnection(shard));
     return { reader, shard };
   };
-  // Resolved per read: a missing ledger fails that read, never the whole tick.
+  const withdrawalPorts = async (chainId: string) => {
+    const { reader, shard } = await shardPorts(chainId);
+    return shardWithdrawalPorts(
+      reader,
+      frontierReceiptBindings(
+        reader,
+        () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
+        env.IDENTITY,
+        shard.url,
+      ),
+    );
+  };
+  const approvals = () =>
+    ledgerApprovals({
+      rpcUrl: env.L2_RPC_URL,
+      contractAddress: ledgerAddress(env.ENVIRONMENT),
+      accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
+      privateKey: env.PAUSER_PRIVATE_KEY,
+    });
+  // Resolve per read so missing configuration enters the monitor's durable stop path.
   const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
   return {
     identity: {
@@ -275,25 +320,23 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         relayOperation("verify signed pay decision", () => env.IDENTITY.matchesPayDecision(decision)),
     },
     shard: {
-      withdrawal: (chainId: string, hash: string) =>
-        relayOperation("audit registered shard receipt", async () => {
-          const { reader, shard } = await shardPorts(chainId);
-          return Effect.runPromise(
-            shardWithdrawalPorts(
-              reader,
-              frontierReceiptBindings(
-                reader,
-                () => ({ rpcUrl: env.L2_RPC_URL, address: ledgerAddress(env.ENVIRONMENT) }),
-                env.IDENTITY,
-                shard.url,
-              ),
-            ).withdrawal(chainId, hash),
-          );
-        }),
+      withdrawalReceipt: (chainId, hash) =>
+        relayOperation("audit raw registered shard receipt", async () =>
+          Effect.runPromise((await withdrawalPorts(chainId)).withdrawalReceipt(chainId, hash)),
+        ),
+      withdrawal: (chainId, hash) =>
+        relayOperation("audit registered shard recipient", async () =>
+          Effect.runPromise((await withdrawalPorts(chainId)).withdrawal(chainId, hash)),
+        ),
       result: (chainId: string, gameId: number) =>
         relayOperation("audit registered shard result", async () => {
           const { reader } = await shardPorts(chainId);
           return Effect.runPromise(shardResultPort(reader)(chainId, gameId));
+        }),
+      settlementEvidence: (report) =>
+        relayOperation("audit proposed shard settlement", async () => {
+          const { reader, shard } = await shardPorts(report.chainId);
+          return frontierSettlementEvidence(reader.connection, shard.url, report);
         }),
       conservation: () =>
         relayOperation("audit official shard conservation", async () => {
@@ -307,11 +350,21 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         }),
     },
     ledger: {
+      approvePayment: (report) =>
+        relayOperation("approve ledger payment", () => Effect.runPromise(approvals().approvePayment(report))),
+      approveSettlement: (report) =>
+        relayOperation("approve ledger settlement", () => Effect.runPromise(approvals().approveSettlement(report))),
       // Each read forwards its whole argument list, so the audit cursor's anchor reaches the ledger unchanged.
       frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
         ),
+      reportedSettlements: (...read: Parameters<LedgerPorts["reportedSettlements"]>) =>
+        relayOperation("ledger settlement reports unavailable", () =>
+          Effect.runPromise(ledgerReads().reportedSettlements(...read)),
+        ),
+      reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
+        relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),
       paidClaims: (...read: Parameters<LedgerPorts["paidClaims"]>) =>
         relayOperation("ledger paid claims unavailable", () => Effect.runPromise(ledgerReads().paidClaims(...read))),
       postedResults: (...read: Parameters<LedgerPorts["postedResults"]>) =>

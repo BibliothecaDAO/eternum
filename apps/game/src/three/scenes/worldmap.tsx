@@ -87,6 +87,7 @@ import {
   isViewerOwner,
   isExpeditionRealm,
   readExpeditionRules,
+  spawnRing,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
 import {
@@ -127,7 +128,7 @@ import {
   recordClientActionRendered,
   recordClientActionSubmitted,
 } from "@/observability/client-action-latency";
-import { safeInteger, type GameClientSetup as SetupResult } from "@bibliothecadao/eternum/game-client";
+import { safeInteger, type GameClientSetup as SetupResult, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   ActionPath,
   ActionPaths,
@@ -274,7 +275,13 @@ import {
   takeArmySelectRequest,
   type ArmySelectRequest,
 } from "./worldmap-army-select-request";
-import { DEPLOY_ON_MAP_EVENT, type DeployOnMap, deployShownOnMap, readDeployOnMap } from "./worldmap-deploy-request";
+import {
+  DEPLOY_ON_MAP_EVENT,
+  type DeployOnMap,
+  deployOrderPaths,
+  deployShownOnMap,
+  readDeployOnMap,
+} from "./worldmap-deploy-request";
 import { cameraHexOf, type CameraNavigation } from "./worldmap-camera-target";
 import { offerSelectedArmyOrdersAtOutcome, sendSelectedArmyTravel } from "./worldmap-army-order-selection";
 import { dropNextOrder, queueNextOrder, takeNextOrder } from "./worldmap-next-order";
@@ -3690,21 +3697,10 @@ export default class WorldmapScene extends WarpTravel {
       return;
     }
 
-    const actionPaths = requireActiveGameClient().actions.structurePaths({
-      structureId: selectedEntityId,
-      armyHexes: this.buildProjectedArmyActionIndex(),
-      exploredHexes: this.buildProjectedExploredTileIndex(),
-      playerAddress: viewer,
-    });
-
-    for (const [key, path] of actionPaths.getPaths()) {
-      const destination = path[path.length - 1].hex;
-      const tile = this.worldSpatialProjection.getTileAtHex({ ...destination, alt: activeMapLayer() });
-      const occupierId = tile ? safeInteger(tile.occupierId) : undefined;
-      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(occupierId)) {
-        actionPaths.getPaths().delete(key);
-      }
-    }
+    const actionPaths =
+      this.deployShown?.order.structureId === Number(selectedEntityId) && structureData
+        ? this.deployTilesOf(structureData)
+        : this.ordersBesideStructure(selectedEntityId, viewer);
     this.updateEntityActionPaths(actionPaths.getPaths());
     this.highlightHexManager.highlightHexes(actionPaths.getHighlightDescriptors());
     this.markOrderTarget();
@@ -3722,8 +3718,12 @@ export default class WorldmapScene extends WarpTravel {
     const shown = this.deployShown;
     if (!order) {
       this.deployShown = null;
-      if (shown?.selectedForIt && getLiveWorldmapEntityActions().selectedEntityId === shown.order.structureId)
-        this.clearEntitySelection();
+      if (shown && getLiveWorldmapEntityActions().selectedEntityId === shown.order.structureId) {
+        const realm = shown.selectedForIt ? undefined : this.getStructureHexPosition(shown.order.structureId);
+        // A holding the player had selected keeps its own orders back; one the map selected for the sheet goes.
+        if (realm) this.onStructureSelection(shown.order.structureId, realm);
+        else this.clearEntitySelection();
+      }
       this.markOrderTarget();
       return;
     }
@@ -3736,6 +3736,39 @@ export default class WorldmapScene extends WarpTravel {
     this.deployShown = { order, selectedForIt };
     this.onStructureSelection(order.structureId, realm);
     this.markOrderTarget();
+  }
+
+  /** A selected holding's orders on the tiles beside it: a deploy only onto a tile the ring holds open. */
+  private ordersBesideStructure(structureId: ID, viewer: ContractAddress): ActionPaths {
+    const actionPaths = requireActiveGameClient().actions.structurePaths({
+      structureId,
+      armyHexes: this.buildProjectedArmyActionIndex(),
+      exploredHexes: this.buildProjectedExploredTileIndex(),
+      playerAddress: viewer,
+    });
+    for (const [key, path] of actionPaths.getPaths()) {
+      const destination = path[path.length - 1].hex;
+      if (ActionPaths.getActionType(path) === ActionType.CreateArmy && !isOpenSpawnHex(this.occupierAt(destination))) {
+        actionPaths.getPaths().delete(key);
+      }
+    }
+    return actionPaths;
+  }
+
+  /** The tiles a shown deploy order can step out on, read as its sheet reads them (spawnRing over the same tiles). */
+  private deployTilesOf(structure: NativeRows["Structure"]): ActionPaths {
+    const home = structureMapPosition(this.game.store, structure);
+    if (!home) return new ActionPaths();
+    return deployOrderPaths(
+      { col: home.x, row: home.y },
+      spawnRing(this.game.store, structure, (hex) => this.occupierAt(hex)),
+    );
+  }
+
+  /** Who stands on a contract hex, as the map's tiles hold it; undefined while it is unexplored. */
+  private occupierAt(hex: HexPosition): number | undefined {
+    const tile = this.worldSpatialProjection.getTileAtHex({ ...hex, alt: activeMapLayer() });
+    return tile ? safeInteger(tile.occupierId) : undefined;
   }
 
   /** The tile the shown deploy order steps out on, as the lit tiles name it; none for another structure or no order. */

@@ -7,12 +7,14 @@ import {
   decodeChestContent,
   decodeCredits,
   decodeBlitzSeason,
+  decodeFrontierSeason,
   decodeLedgerPreset,
   decodeLedgerSlot,
   decodeMmrPreviews,
   decodePlayerResult,
   decodeRegistration,
   decodeSeasonWinner,
+  decodeWithdrawalPayment,
 } from "@realms-world/value-ledger/codecs";
 
 import { L2_LEDGER, l2Provider } from "@/runtime/l2-rpc";
@@ -257,6 +259,20 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     },
     /** Whether payouts are paused: the ledger then pays no withdrawal until it resumes. */
     paused: async () => BigInt((await view("is_paused", []))[0]) !== 0n,
+    /**
+     * A Frontier season's claims on the ledger: the moment its unpaid withdrawals lapse (the game's end and its claim
+     * window), and whether it has closed, its unpaid withdrawals then void and carried to the next season.
+     */
+    frontierClaims: async (shard: string, seasonId: number) => {
+      const [deadline, season] = await Promise.all([
+        view("frontier_claim_deadline", [shard, String(seasonId)]),
+        view("get_frontier", [shard, String(seasonId)]),
+      ]);
+      return { deadline: Number(BigInt(deadline[0]!)), closed: decodeFrontierSeason(season).closed };
+    },
+    /** Whether the ledger has paid a withdrawal's claim; one it has no report of yet is unpaid. */
+    paid: async (shard: string, claimId: string) =>
+      decodeWithdrawalPayment(await view("get_payment", [shard, claimId]))?.paid ?? false,
     /** The Starknet transaction that paid a claim: its WithdrawalPaid event, searched from the block the claim was made at. */
     paymentTransaction: async (shard: string, claimId: string, fromBlock: number): Promise<string | null> => {
       const { events } = await provider.getEvents({

@@ -21,7 +21,8 @@ vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { stor
 vi.mock("../hud/dock-armies", () => ({
   useDockArmies: (realm: unknown) => (realm ? [{ explorerId: 9, canSpendSkillPoint: true }] : []),
 }));
-// History answers for the owner it is asked about: the watched player cleared a camp today.
+// History answers for the owner it is asked about: the watched player lost an army to a camp and cleared it with another
+// in one transaction today, then a guard held.
 vi.mock("@/hooks/store/use-story-events-store", () => ({
   useStoryEvents: (_limit: number, _story: string | undefined, owner: string | undefined) => {
     asked.owners.push(owner);
@@ -42,6 +43,7 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
               const storyPayload = { explorer_id: 9, coord: { x: 3, y: 4 }, benefit };
               return {
                 id: `site-use-${index}`,
+                event_id: `site-use-${index}`,
                 story: "SiteUsed",
                 owner: `0x${OWNER.toString(16)}`,
                 timestampMs: 30_000,
@@ -56,14 +58,21 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
               };
             })
           : [
+              // Newest first, as history reads them. In 0xb1 one army fell to the camp's guard, then a second
+              // cleared it: the receipt holds the lost attack, the clear's payout, then the battle that won it.
+              fightOn(41, "held", "0xb2", 1, [500, 432], [400, 400]),
+              fightOn(40, "won", "0xb1", 3, [500, 432], [380, 0]),
               {
                 id: "clear",
+                event_id: "story:v2:dev:0x1:0x1:0xb1:0x2",
+                tx_hash: "0xb1",
                 story: "SitePayout",
                 owner: `0x${OWNER.toString(16)}`,
                 timestampMs: 30_000,
-                storyPayload: { category: StructureType.Camp, reward: null },
+                storyPayload: { site_id: 40, category: StructureType.Camp, reward: null },
                 presentation: { title: "Embergrasp cleared" },
               },
+              fightOn(40, "lost", "0xb1", 1, [300, 0], [400, 380]),
             ]
         : [],
       isPending: false,
@@ -75,6 +84,29 @@ vi.mock("@/hooks/store/use-story-events-store", () => ({
     };
   },
 }));
+
+/**
+ * The owner's army attacking site `site`, at `index` in transaction `tx`'s receipt: its troops and the guard's, before
+ * and after, in whole troops.
+ */
+function fightOn(site: number, id: string, tx: string, index: number, army: [number, number], guard: [number, number]) {
+  const troops = (whole: number) => String(BigInt(whole) * 1_000_000_000n);
+  return {
+    id,
+    event_id: `story:v2:dev:0x1:0x1:${tx}:0x${index.toString(16)}`,
+    tx_hash: tx,
+    story: "BattleEvent",
+    owner: `0x${OWNER.toString(16)}`,
+    timestampMs: 30_000,
+    storyPayload: {
+      attacker_id: 9,
+      defender_id: site,
+      attacker: { before: troops(army[0]), after: troops(army[1]) },
+      defender: { before: troops(guard[0]), after: troops(guard[1]) },
+    },
+    presentation: { title: `The ${id} attack on site ${site}` },
+  };
+}
 
 const { FrontierToday } = await import("./frontier-today");
 
@@ -90,7 +122,12 @@ it("shows a spectator the watched realm's day, its owner's clears counted, with 
     expect(asked.owners.at(-1)).toBeDefined();
     expect(BigInt(asked.owners.at(-1)!)).toBe(OWNER);
     expect(host.querySelector('[role="img"][aria-label="Sites cleared 1"]')).not.toBeNull();
-    expect(host.textContent).toContain("Embergrasp cleared");
+    // The attack that cleared the camp is the clear's line, with what it cost (68, not the fallen army's 300); the
+    // army lost to the same camp in the same transaction, and the one another guard held, keep their own lines.
+    expect(host.textContent).toContain("Embergrasp cleared, lost 68");
+    expect(host.textContent).not.toContain("The won attack");
+    expect(host.textContent).toContain("The lost attack on site 40");
+    expect(host.textContent).toContain("The held attack on site 41");
     // Upgrading armies is the owner's to do: a spectator's Today offers no row for it.
     expect(host.querySelector('[data-icon="picks"]')).toBeNull();
   } finally {

@@ -194,7 +194,7 @@ afterEach(() => vi.unstubAllGlobals());
 
 it("still issues a reserved prize when the winner returns after the chest claim window", async () => {
   calls.header.mockResolvedValue({ timestamp: 700000 });
-  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
+  calls.funding.mockResolvedValue({ closed: false, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
   await run();
   expect(calls.admin).toHaveBeenCalledWith("award_frontier_prize", { game_id: 7, rank: 3 });
 });
@@ -222,4 +222,10 @@ it.each([0, "0x0"])("does not repost an empty final board encoded as %s", async 
   expect(calls.admin).not.toHaveBeenCalled();
   expect(calls.funding).not.toHaveBeenCalled();
   expect(fetch).not.toHaveBeenCalled();
+});
+
+it("does not award new prizes after the ledger has carried the expired reserve", async () => {
+  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
+  await run();
+  expect(calls.admin).not.toHaveBeenCalled();
 });

@@ -1,17 +1,22 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { sweepFrontierLords } from "./frontier-sweep";
+import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { ConfirmedSnapshot } from "./shard-snapshot";
 
 const calls = vi.hoisted(() => ({
   admin: vi.fn(),
   funding: vi.fn(),
+  ledgerHead: vi.fn(),
   header: vi.fn(),
   snapshot: vi.fn(),
   games: vi.fn(),
   settle: vi.fn(),
 }));
-vi.mock("@realms-world/value-ledger", () => ({ rpcAt: vi.fn(), readFrontierFunding: calls.funding }));
+vi.mock("@realms-world/value-ledger", () => ({
+  rpcAt: vi.fn(),
+  readFrontierFunding: calls.funding,
+  readConfirmedLedgerHead: calls.ledgerHead,
+}));
 vi.mock("@realms-world/value-ledger/shard", () => ({
   ShardOperator: class {
     admin = calls.admin;
@@ -60,6 +65,7 @@ const rows = (model: string, values: Record<string, unknown>[]) => {
 };
 beforeEach(() => {
   vi.resetAllMocks();
+  calls.ledgerHead.mockResolvedValue({ number: 10, time: 100 });
   state = {
     confirmed_block: 10,
     game_id: "7",
@@ -76,6 +82,7 @@ beforeEach(() => {
   calls.header.mockResolvedValue({ timestamp: 100 });
   calls.snapshot.mockImplementation(async () => structuredClone(state));
   calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
     closed: false,
     pool: wei(700),
     prizePool: wei(300),
@@ -108,6 +115,7 @@ it("recovers a crash after the first debit from confirmed balances and closes on
   await run();
   expect(calls.settle).not.toHaveBeenCalled();
   calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
     closed: false,
     pool: wei(700),
     prizePool: wei(300),
@@ -130,7 +138,7 @@ it("never sweeps a live season or a closed ledger", async () => {
   expect(calls.admin).not.toHaveBeenCalled();
   expect(calls.settle).not.toHaveBeenCalled();
 });
-it("keeps unswept and held LORDS open past the old deadline, then settles after payment", async () => {
+it("does not use the shard clock to expire held claims before the L2 deadline", async () => {
   calls.header.mockResolvedValue({ timestamp: 100 + 7 * 24 * 60 * 60 });
   rows("LordsBudget", [{ pool: "700", pool_left: "300" }]);
   rows("ResourceBalance", [balance(3, 400)]);
@@ -142,6 +150,7 @@ it("keeps unswept and held LORDS open past the old deadline, then settles after 
   await run();
   expect(calls.settle).not.toHaveBeenCalled();
   calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
     closed: false,
     pool: wei(700),
     prizePool: wei(300),
@@ -195,17 +204,29 @@ it("does not let an unavailable old season prevent another sweep", async () => {
 it("never closes with unposted or unfinished prizes", async () => {
   rows("ResourceBalance", []);
   rows("FrontierPrize", [{ pool: "300", issued: "0", count: null }]);
+  rows("LordsWithdrawal", [receipt(102, 100)]);
   await run();
+  rows("LordsWithdrawal", [receipt(102, 100), receipt(101, 150, 1)]);
   rows("FrontierPrize", [{ pool: "300", issued: "150", count: 2 }]);
   await run();
   expect(calls.settle).not.toHaveBeenCalled();
 });
-it("closes an empty season after an empty winners list is confirmed", async () => {
+it("carries an empty season prize reserve only after the confirmed L2 deadline", async () => {
   rows("ResourceBalance", []);
   rows("LordsWithdrawal", []);
   rows("LordsBudget", [{ pool: "700", pool_left: "700" }]);
   rows("FrontierPrize", [{ pool: "300", issued: "0", count: 0 }]);
-  calls.funding.mockResolvedValue({ closed: false, pool: wei(700), prizePool: wei(300), paid: "0", prizePaid: "0" });
+  calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
+    closed: false,
+    pool: wei(700),
+    prizePool: wei(300),
+    paid: "0",
+    prizePaid: "0",
+  });
+  await run();
+  expect(calls.settle).not.toHaveBeenCalled();
+  calls.ledgerHead.mockResolvedValue({ number: 11, time: 604900 });
   await run();
   expect(calls.settle).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: "0" });
 });
@@ -250,6 +271,7 @@ it("leaves fractional custody dust in the carry pool, matching whole-LORDS publi
   rows("ResourceBalance", []);
   rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
   calls.funding.mockResolvedValue({
+    claimDeadline: 604900,
     closed: false,
     pool: String(BigInt(wei(700)) + 1n),
     prizePool: String(BigInt(wei(300)) + 1n),
@@ -263,4 +285,42 @@ it("leaves fractional custody dust in the carry pool, matching whole-LORDS publi
     chestWithdrawn: wei(100),
     prizeWithdrawn: wei(300),
   });
+});
+
+it("expires unpaid receipts only at the confirmed L2 deadline after every realm is swept", async () => {
+  calls.ledgerHead.mockResolvedValue({ number: 10, time: 604900 });
+  await run();
+  expect(calls.admin).toHaveBeenCalledTimes(2);
+  expect(calls.settle).not.toHaveBeenCalled();
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  calls.ledgerHead.mockResolvedValue({ number: 11, time: 604899 });
+  await run();
+  expect(calls.settle).not.toHaveBeenCalled();
+  calls.ledgerHead.mockResolvedValue({ number: 12, time: 604900 });
+  await run();
+  expect(calls.settle).toHaveBeenCalledWith({
+    chainId: "0x1",
+    gameId: 7,
+    chestWithdrawn: wei(100),
+    prizeWithdrawn: wei(300),
+  });
+  expect(calls.funding).toHaveBeenLastCalledWith(undefined, "0x30", { chainId: "0x1", gameId: 7 }, { end: 100 }, 12);
+});
+
+it("independently audits early settlement against remaining balances and exact confirmed receipts", async () => {
+  const report = { chainId: "0x1", gameId: 7, chestWithdrawn: wei(100), prizeWithdrawn: wei(300) };
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toContain('"realms":["3","9"]');
+  rows("ResourceBalance", []);
+  expect(await frontierSettlementEvidence(target, "https://herald.test", report)).toBeNull();
+  expect(
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, chestWithdrawn: "0" }),
+  ).not.toBeNull();
+  rows("FrontierPrize", [{ pool: "300", issued: "0", count: 0 }]);
+  rows("LordsWithdrawal", [receipt(102, 100)]);
+  expect(
+    await frontierSettlementEvidence(target, "https://herald.test", { ...report, prizeWithdrawn: "0" }),
+  ).not.toBeNull();
+  expect(calls.admin).not.toHaveBeenCalled();
 });

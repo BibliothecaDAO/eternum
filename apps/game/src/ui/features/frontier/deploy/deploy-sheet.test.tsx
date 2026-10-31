@@ -406,7 +406,7 @@ describe("the Deploy sheet", () => {
     expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 50 troops · 2 each");
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
-    expect(foot(host)).toBe("100 WheatDeploy");
+    expect(foot(host)).toBe("100 WheatBuildDeploy");
     act(() => root.unmount());
     host.remove();
   });
@@ -441,12 +441,12 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 8");
     expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 8 troops · 2 each");
     press(host, "Max");
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatBuildDeploy"]);
 
     // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
     draw();
-    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatDeploy"]);
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatBuildDeploy"]);
     expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 9 troops · 2 each");
 
     // A count set below the most stays where it was set.
@@ -455,7 +455,7 @@ describe("the Deploy sheet", () => {
     draw();
     expect([countField(host).value, outOf(host)]).toEqual(["5", "of 10"]);
 
-    // Build, with the Farm's mark, takes the player to the realm, where farms are built.
+    // Build, with the Farm's mark, beside Deploy in the foot, takes the player to the realm, where farms are built.
     const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
     expect(build.querySelector("[data-icon]")!.getAttribute("data-icon")).toBe("farm");
     act(() => build.click());

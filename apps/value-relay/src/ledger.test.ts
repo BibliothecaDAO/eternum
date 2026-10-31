@@ -327,3 +327,57 @@ it("continues an anchored scan from its saved block, even one saved below the de
   expect(rpc.events.mock.calls[0]![0].from_block).toEqual({ block_number: 100 });
   expect(rpc.classAt).not.toHaveBeenCalled();
 });
+
+it("enumerates confirmed withdrawal reports before payments using the compiled report event", async () => {
+  const event = ledgerEvent("WithdrawalReported", {
+    wallet: "0x0",
+    shard: "0x1",
+    claim_id: "0xabc",
+    season_id: 7,
+    amount: { low: 100, high: 0 },
+    prize_rank: 0,
+    prize_count: 0,
+  });
+  rpc.events.mockResolvedValue({
+    events: [{ ...event, from_address: "0x10", transaction_hash: "0xdef", block_number: 900, block_hash: "0xa" }],
+    continuation_token: "",
+  });
+  const page = await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).reportedClaims(null));
+  expect(page.rows).toEqual([
+    {
+      wallet: event.data[1],
+      reportTransactionHash: "0xdef",
+      chainId: event.keys[1],
+      transactionHash: event.keys[2],
+      seasonId: 7,
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    },
+  ]);
+  expect(rpc.events).toHaveBeenCalledWith(
+    expect.objectContaining({
+      keys: [[hash.getSelectorFromName("WithdrawalReported")]],
+      from_block: { block_number: 500 },
+      to_block: { block_number: 1000 },
+    }),
+  );
+});
+
+it("enumerates compiled settlement reports on a confirmed cursor", async () => {
+  const event = ledgerEvent("SettlementReported", {
+    shard: "0x1",
+    season_id: 7,
+    chest_withdrawn: { low: 400, high: 0 },
+    prize_withdrawn: { low: 300, high: 0 },
+  });
+  rpc.events.mockResolvedValue({
+    events: [{ ...event, from_address: "0x10", transaction_hash: "0xdef", block_number: 900, block_hash: "0xa" }],
+    continuation_token: "",
+  });
+  const page = await Effect.runPromise(ledgerMonitorReads(credentials.rpcUrl, ledger).reportedSettlements(null));
+  expect(page.rows).toEqual([{ chainId: event.keys[1], gameId: 7, chestWithdrawn: "400", prizeWithdrawn: "300" }]);
+  expect(rpc.events).toHaveBeenCalledWith(
+    expect.objectContaining({ keys: [[hash.getSelectorFromName("SettlementReported")]] }),
+  );
+});

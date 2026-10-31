@@ -63,7 +63,8 @@ chest payouts are not being relayed.
 1. `curl -s https://play.dev-realms.party/api/value/health`: each shard's `halted` row and `funding_error`.
 2. `pnpm --dir apps/value-relay exec wrangler tail realms-value-relay-staging`: why it halted.
 3. After fixing the cause, `POST /api/value/operator/reset` with the operator token and `{chainId,row,reason}`
-   (`apps/value-relay/README.md`); the ledger's claim identity prevents a second payment.
+   (`apps/value-relay/README.md`). Reset requires a confirmed paused ledger and refuses if any discarded claim was paid
+   on L2. Replay the original signed transactions before recovery; a new withdrawal hash could pay twice.
 
 ## monitor — value monitor
 

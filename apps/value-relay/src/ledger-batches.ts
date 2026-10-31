@@ -3,11 +3,11 @@ import { Account, type Call, type RpcProvider } from "starknet";
 import { rpcAt, decodeFrontierSeason, ledgerU256, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import type { LedgerPayDecision } from "@realms-world/identity";
 import { RecordedSigner } from "./recorded-signer";
-import { ledgerPaymentRead, ledgerPaymentAdapter, ledgerReportAdapter, paymentFailure } from "./chain";
+import { ledgerPaymentRead, ledgerClaimAdapter, ledgerReportAdapter, paymentFailure } from "./chain";
 import { RelayFailure, relayOperation, type Withdrawal, type ClaimOutcome, type PayableClaim } from "./ports";
 
 type Credentials = Parameters<typeof ledgerReportAdapter>[0];
-type Phase = "report" | "pay";
+type Phase = "report" | "prepare" | "pay";
 interface BatchContext {
   credentials: Credentials;
   provider: RpcProvider;
@@ -61,7 +61,7 @@ const submitSingle = async (context: BatchContext, row: PayableClaim, phase: Pha
     const operation =
       phase === "report"
         ? ledgerReportAdapter(context.credentials)(row.withdrawal)
-        : ledgerPaymentAdapter(context.credentials, (decision) => context.record([decision]))(
+        : ledgerClaimAdapter(phase, context.credentials, (decision) => context.record([decision]))(
             row.withdrawal,
             row.wallet,
           );
@@ -73,7 +73,7 @@ const submitSingle = async (context: BatchContext, row: PayableClaim, phase: Pha
 };
 const submitConfirmed = async (context: BatchContext, rows: readonly PayableClaim[], phase: Phase) => {
   const signer =
-    phase === "pay"
+    phase !== "report"
       ? new RecordedSigner(context.credentials.privateKey, (transactionHash) =>
           context.record(rows.map(({ withdrawal, wallet }) => payDecision(withdrawal, wallet, transactionHash))),
         )
@@ -93,18 +93,26 @@ const payDecision = (withdrawal: Withdrawal, wallet: string, transactionHash: st
   wallet,
   amount: withdrawal.amount,
 });
-const claimCall = (contractAddress: string, { withdrawal, wallet }: PayableClaim, phase: Phase): Call => ({
-  contractAddress,
-  entrypoint: phase === "report" ? "report_withdrawal" : "pay",
-  calldata: [
-    withdrawal.chainId,
-    String(withdrawal.seasonId),
-    withdrawal.transactionHash,
-    ...(phase === "pay" ? [wallet] : []),
-    ...amountOf(withdrawal.amount),
-    ...(phase === "report" ? [String(withdrawal.prizeRank), String(withdrawal.prizeCount)] : []),
-  ],
-});
+const claimCall = (contractAddress: string, { withdrawal, wallet }: PayableClaim, phase: Phase): Call => {
+  if (phase === "prepare")
+    return {
+      contractAddress,
+      entrypoint: "prepare_payment",
+      calldata: [withdrawal.chainId, withdrawal.transactionHash, wallet],
+    };
+  return {
+    contractAddress,
+    entrypoint: phase === "report" ? "report_withdrawal" : "pay",
+    calldata: [
+      withdrawal.chainId,
+      String(withdrawal.seasonId),
+      withdrawal.transactionHash,
+      ...(phase === "pay" ? [wallet] : []),
+      ...amountOf(withdrawal.amount),
+      ...(phase === "report" ? [String(withdrawal.prizeRank), String(withdrawal.prizeCount)] : []),
+    ],
+  };
+};
 const verifyReportedDebt = async (credentials: Credentials, rows: readonly PayableClaim[]) => {
   await Promise.all(
     rows.map(async ({ withdrawal }) => {
@@ -125,23 +133,58 @@ const verifyReportedDebt = async (credentials: Credentials, rows: readonly Payab
 const payAffordable = async (context: BatchContext, rows: readonly PayableClaim[]) => {
   if (!rows.length) return [];
   const head = await readConfirmedLedgerHead(context.provider);
+  const limits = await context.provider.callContract(
+    { contractAddress: context.credentials.contractAddress, entrypoint: "payout_allowance", calldata: [] },
+    head.number,
+  );
+  if (limits.length !== 7) throw new Error("invalid_payout_allowance");
+  const capacity = BigInt(ledgerU256(limits[0]!, limits[1]!));
+  let allowance = BigInt(ledgerU256(limits[4]!, limits[5]!));
+  const delay = BigInt(limits[6]!);
   const budgets = new Map<string, bigint | null>(),
     payable: PayableClaim[] = [],
+    preparing: PayableClaim[] = [],
     waiting: ClaimOutcome[] = [];
   for (const row of rows) {
+    const payment = await Effect.runPromise(
+      ledgerPaymentRead(context.credentials.rpcUrl, context.credentials.contractAddress, head.number)(row.withdrawal),
+    );
+    if (payment?.paid) {
+      waiting.push(resultOf(row.withdrawal, null));
+      continue;
+    }
     const key = `${row.withdrawal.chainId}:${row.withdrawal.seasonId}:${row.withdrawal.prizeRank > 0}`;
     if (!budgets.has(key)) budgets.set(key, await availableBudget(context, row.withdrawal, head.number));
     const available = budgets.get(key);
     if (available === undefined) throw new Error("batch_budget_missing");
-    if (available === null) waiting.push(resultOf(row.withdrawal, "ledger_season_closed"));
+    if (available === null) {
+      waiting.push(resultOf(row.withdrawal, "ledger_season_closed"));
+      continue;
+    }
+    const amount = BigInt(row.withdrawal.amount);
+    const slow = row.withdrawal.prizeRank > 0 || amount > capacity;
+    if (slow && payment && BigInt(payment.wallet) !== BigInt(row.wallet)) {
+      preparing.push(row);
+      continue;
+    }
+    if (!payment || (slow && BigInt(head.time) < BigInt(payment.reportedAt) + delay))
+      waiting.push(resultOf(row.withdrawal, "ledger_payment_delay"));
+    else if (slow && !(await paymentApproved(context, row, head.number)))
+      waiting.push(resultOf(row.withdrawal, "ledger_payment_unapproved"));
     else if (BigInt(row.withdrawal.amount) > available)
       waiting.push(resultOf(row.withdrawal, "ledger_unlock_exceeded"));
+    else if (!slow && amount > allowance) waiting.push(resultOf(row.withdrawal, "ledger_payout_allowance_spent"));
     else {
       payable.push(row);
-      budgets.set(key, available - BigInt(row.withdrawal.amount));
+      if (!slow) allowance -= amount;
+      budgets.set(key, available - amount);
     }
   }
-  return [...waiting, ...(await submitBatch(context, payable, "pay"))];
+  const prepared = (await submitBatch(context, preparing, "prepare")).map((row) => ({
+    ...row,
+    error: row.error ?? "ledger_payment_delay",
+  }));
+  return [...waiting, ...prepared, ...(await submitBatch(context, payable, "pay"))];
 };
 const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, block: number) => {
   const query = {
@@ -154,7 +197,7 @@ const availableBudget = async (context: BatchContext, withdrawal: Withdrawal, bl
   ]);
   const funded = decodeFrontierSeason(season);
   if (unlocked.length !== 2) throw new Error("batch_frontier_abi_differs");
-  if (funded.closed && withdrawal.prizeRank === 0) return null;
+  if (funded.closed) return null;
   const amount =
     withdrawal.prizeRank > 0
       ? BigInt(funded.prizePool) - BigInt(funded.prizePaid)
@@ -168,3 +211,16 @@ const isPermanentFailure = (failure: RelayFailure) =>
   ["ledger_season_closed", "ledger_invalid_withdrawal", "ledger_report_mismatch", "ledger_claim_window_ended"].includes(
     failure.operation,
   );
+
+const paymentApproved = async (context: BatchContext, row: PayableClaim, block: number) => {
+  const fields = await context.provider.callContract(
+    {
+      contractAddress: context.credentials.contractAddress,
+      entrypoint: "payment_approved",
+      calldata: [row.withdrawal.chainId, row.withdrawal.transactionHash],
+    },
+    block,
+  );
+  if (fields.length !== 1 || ![0n, 1n].includes(BigInt(fields[0]!))) throw new Error("invalid_payment_approval");
+  return BigInt(fields[0]!) === 1n;
+};

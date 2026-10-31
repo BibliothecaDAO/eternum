@@ -2,8 +2,8 @@
 
 The Starknet ledger holds separate liabilities for Frontier withdrawals, unallocated Blitz slots, each season's chest
 reserve and season prizes. Slots use `{ shard: felt252, slot_id: u32 }`; results use `{ shard, game_id }`. Withdrawals
-use the shard chain ID and confirmed transaction hash. The ledger has no deployed state to migrate. The live MMR token
-remains unchanged.
+use the shard chain ID and confirmed transaction hash. This revision deploys to a fresh ledger; it does not migrate
+existing obligations. The live MMR token remains unchanged.
 
 Frontier is funded once, before its end, and unlocks through the end of the current seeded game day. Funding after the
 start immediately unlocks elapsed days and the current day; it never unlocks future days.
@@ -15,35 +15,72 @@ independent of Blitz/MMR season windows. Ledger time is its Starknet block times
 timestamp. Numeric day boundaries match exactly for equal launch inputs and timestamps. There is no documented hard
 bound on cross-chain clock lag: the relay must retain a confirmed claim while L2's unlocked amount is insufficient and
 submit once the independent L2 gate fits. Do not trust a relay-supplied future timestamp or unlock future days to
-conceal clock lag. Operator payments are immediate, retry-safe and bounded by the cumulative unlock. They carry no
-treasury cut. Only the admin unpauses; the pauser can pause payouts.
+conceal clock lag. Operator payments are retry-safe and bounded by the cumulative unlock. Normal chest withdrawals pay
+immediately from a ledger-wide token bucket, initialized in the constructor with 5,000 LORDS capacity and 5,000
+LORDS/hour refill. `payout_allowance()` returns capacity, hourly refill, available balance and slow-lane delay. The cold
+admin can change capacity and refill through `set_payout_allowance`, each between 1 and 5,000 LORDS; changing settings
+never replenishes the bucket. A depleted allowance defers a claim until refill. These limits apply across all Frontier
+seasons and shards using this ledger. Payments carry no treasury cut.
+
+Prizes and single claims above the current capacity use a one-hour slow lane instead of the bucket. The separate monitor
+checks receipts and recipient authority, then submits `approve_payment` using its separate `PAUSER_ROLE` account. `pay`
+requires that approval as well as the hour. A monitor outage cannot authorize a forged slow claim. Instant withdrawals
+remain bounded by the available bucket plus refill (at most 5,000 + 5,000 × elapsed hours LORDS), and by unlocked chest
+custody. Previously approved, authentic slow claims can still pay. Only the cold admin unpauses.
 
 ## Frontier settlement and carry
 
 Players can withdraw LORDS manually during the season. The immutable `claim_window_seconds` preset defaults to seven
 days; the shard's manual withdrawal cutoff remains one hour before `season.end + claim_window_seconds`. That window does
-not limit automatic sweeps or ledger reporting and does not determine when the season closes.
+not limit automatic sweeps or ledger reporting while open. Its deadline bounds how long unpaid claims can hold
+settlement.
 
 After the game ends, the relay sweeps each realm's remaining LORDS to its owner through `sweep_lords`, producing the
 same withdrawal receipt as a manual withdrawal. An empty realm is a no-op. The relay reports and pays these receipts
 alongside the season prizes through the existing ledger path. Chest reports remain accepted while the season is open,
-including after the manual claim window. Reports move no money and have no aggregate cap or counter; payment remains
-bounded by the pool's unlocked amount. There is no administrative report correction entry.
+including after the manual claim window. Reports move no money; an unpaid-report counter prevents early closure while
+any recorded claim remains unpaid; payment remains bounded by the pool's unlocked amount.
 
-Before settlement, the relay requires a confirmed post-end snapshot with no remaining realm LORDS, chest receipts equal
-to the consumed world budget, all prize receipts issued, and confirmed ledger paid totals matching both receipt totals.
-A held receipt, missing payout wallet, paused payment or service outage keeps settlement pending; retries resume the
-same sweep, report and payment paths.
+For a monitor-proven forgery, the cold admin can call `void_report(shard, claim_id)` only while paused. It clears an
+unpaid report, its approval and pending count, and frees its prize rank. The fixed prize count resets only when no
+reported ranks remain, including paid ranks. Absent-report retries are harmless; paid reports cannot be voided. Rotate
+the compromised operator, void the forged report, clear the monitor's exact recorded fault, then unpause after checking
+the repair. The relay rereads held conflicting receipts and reports them again once their ledger entry is absent.
 
-`settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn)` is the only closure entrypoint. It requires the
-operator role, the season's end, and exact equality between the supplied totals and the ledger's `paid` and `prize_paid`
-counters. The operator is trusted to attest that those totals include every world obligation: equality alone does not
-prove that Herald's snapshot or the supplied totals are complete. There is no administrator deadline-close path or
-scheduled forfeiture of unpaid claims.
+For slow-lane claims only, `prepare_payment(shard, claim_id, wallet)` binds the linked recipient and emits its reported
+claim again. `pay` requires that recipient and waits one hour from preparation. Changing the recipient restarts the
+delay and clears approval; an identical preparation is a no-op. Approval binds the season, claim, recipient, amount and
+prize rank/count. A stale approval transaction cannot approve a changed report. The relay records the signed recipient
+decision through identity before broadcast, and the separate monitor checks it before payment. Binding prevents
+redirection of an already mature large claim or prize, which would bypass the instant allowance. Normal claims need no
+preparation transaction. Missing-wallet claims remain reported without a recipient; their slow-lane wait starts once a
+wallet is prepared.
 
-Settlement marks the season closed and credits chest `pool - paid` to the shard's carry balance once. It transfers
-nothing to the treasury and does not add the prize reserve to carry. Repeating settlement with the same totals is
-harmless. Funding an eligible later season consumes available carry; for an already funded season, use:
+The relay checks a confirmed post-end snapshot with no remaining realm LORDS and chest receipts equal to the consumed
+world budget. Before the claim deadline, it settles only when the prize pool is fully issued and all chest and prize
+receipts match confirmed L2 paid totals. A missing wallet or unknown account stays deferred and retries. If no prize
+winners qualify, the unallocated prize reserve waits for the deadline too.
+
+`settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn)` is the only closure entrypoint. It requires an
+unpaused ledger, the operator role, the season's end and supplied totals equal to `paid` and `prize_paid`. Before the
+deadline it also requires no unpaid reports, the entire prize pool paid and a matching `report_settlement` proposal at
+least one hour old with `approve_settlement` from the separate monitor account. `get_settlement` exposes the proposed
+chest/prize totals and earliest close timestamp. Identical proposal retries preserve that timestamp; changed totals
+restart it and clear approval. The independent monitor checks each `SettlementReported` event against a confirmed
+post-end shard snapshot, zero remaining realm LORDS, complete prize issuance and exact receipts. It approves only
+matching evidence and pauses immediately on proven disagreement. Unverifiable reports withhold approval and retry; ten
+continuous minutes with a known report waiting trigger a pause. Health is unhealthy from the first failure and reports
+the monitor’s confirmed STRK balance, warning below 0.1 STRK. The ledger cannot independently prove shard history; it
+requires both the operator and monitor accounts for early closure. A monitor outage leaves early settlement blocked.
+
+Once the claim deadline passes on the confirmed L2 head, the relay settles with the L2 paid totals even if claims remain
+unpaid. Closure voids those claims, including missing-wallet claims, for both chests and prizes. New chest or prize
+reports and unpaid payments then refuse; already paid retries remain harmless. A pause blocks settlement at either time.
+
+Settlement credits chest `pool - paid` to carry once. At or after the deadline it also credits
+`prize_pool - prize_paid`, so an unpaid or unallocated prize reserve reaches the next season. It transfers nothing to
+the treasury. Repeating settlement with the same totals is harmless. Funding an eligible later season consumes available
+carry; for an already funded season, use:
 
 ```sh
 pnpm --dir contracts/l2/ledger/scripts carry:frontier <dev|production> <previous-game-id> <next-game-id>
@@ -68,7 +105,7 @@ second cut. Frontier's configuration preset keeps its cut at zero.
 Registration custody is keyed by `{ shard, slot_id }`. Slots have no player cap. Each wallet registers once and pays its
 entry and optional flags. The launcher resolves identity at slot close and creates groups of at most 24 on the shard.
 The ledger stores only paying wallets, in registration order. The operator marks unseated wallets refundable; refunds
-return their exact payment and credits, even while paused. Cancelling or aborting a slot opens refunds for all remaining
+return their exact payment and credits when unpaused. Cancelling or aborting a slot opens refunds for all remaining
 unconsumed entries.
 
 `apply_results(slot, game_id, ranked)` settles one actual game. Its pot includes only those players' payments, which are
@@ -141,8 +178,8 @@ there is no new token collection, oracle, cancellation path, expiry timer or per
 Season ratings freeze at the end. The operator posts the top list; anyone may challenge a missing better participant for
 one hour. Posting writes the complete list and its allocations in one transaction. A short or challenged list cannot
 pay. Winners call `claim_season(season_id, position)` with their zero-based list position; the ledger checks the caller
-at that position and pays its geometric preset share once. Pause blocks withdrawals, chest finishes and season claims;
-refunds and fully paid Frontier settlement remain available; registrations, Frontier funding, result settlement, chest
+at that position and pays its geometric preset share once. Pause blocks withdrawal reports/payments, Frontier
+settlement, registrations, refunds, result settlement, chest finishes and season claims. Frontier funding, chest
 requests and challenges remain available. Settlement's input treasury transfer continues to its fixed address.
 
 ## Package checks
@@ -175,7 +212,7 @@ the box under its shared lock. The ledger tests declare the production collectib
 Set the Frontier calendar first. When the shard confirms creation, take the actual game ID from the launch result or
 Herald directory and fund it at once. The deployment check may have consumed earlier IDs. The funding command takes
 `dev` or `production`, never a network name. Both run on `SN_MAIN`; `dev` selects `dev.json` through the shared staging
-reader and `production` selects `mainnet.json`. It reads the ledger and token from that environment's book, then
+reader and `production` selects `production.json`. It reads the ledger and token from that environment's book, then
 verifies `ledger.lords()` matches the token before approving anything. An undeployed address fails; it never falls back
 to the other environment.
 
@@ -221,12 +258,12 @@ test chest share and curve numbers are presets for rehearsal, not approved produ
 
 devLords has no value and cannot pay network fees. Fund these accounts with **real mainnet STRK** before use:
 
-| Account/key                                                                    | What needs STRK                                                                                                                                                                      |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Deployer/admin (generated and saved privately by the first deployment command) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                      |
-| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`)    | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                              |
-| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`)            | Sends a pause for a proven mismatch and challenges an incorrect season top. Reads require RPC access, not transaction gas.                                                           |
-| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                           | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above. |
+| Account/key                                                                    | What needs STRK                                                                                                                                                                                          |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Deployer/admin (generated and saved privately by the first deployment command) | Declares and deploys five contracts, sets roles/metadata/presets, opens the Blitz season, mints the dev pool and submits approval plus funding.                                                          |
+| Relay L2 signer (`LEDGER_OPERATOR_ADDRESS` / `LEDGER_OPERATOR_PRIVATE_KEY`)    | Opens/refunds Blitz slots, reports/pays withdrawals, settles results, posts season tops and finishes chests on mainnet.                                                                                  |
+| Monitor L2 signer (`PAUSER_ACCOUNT_ADDRESS` / `PAUSER_PRIVATE_KEY`)            | Approves verified slow payments/early settlement, pauses proven mismatches or reports unverifiable for ten minutes, and challenges incorrect season tops. Reads require RPC access, not transaction gas. |
+| Launch Worker signer (`LAUNCH_DEPLOYER_PRIVATE_KEY`)                           | No mainnet STRK for its current work: it creates/settles games on the fee-free Madara shard and asks the relay to write L2 slots. Those L2 fees are paid by the relay account above.                     |
 
 The relay's separate `SHARD_LEDGER_OPERATOR_PRIVATE_KEY` likewise signs only on the fee-free shard; it is not its funded
 L2 signer. Players also need real mainnet STRK for test-token minting, approvals, registration, refunds and claims, even

@@ -1,4 +1,5 @@
-import type { Direction } from "@bibliothecadao/types";
+import { ActionPaths, ActionType } from "@bibliothecadao/eternum";
+import type { Direction, HexPosition } from "@bibliothecadao/types";
 
 /**
  * Frontier's deploy sheet shows its order on the world map, which is where its tile is picked (owner, 26 October 2026:
@@ -24,4 +25,25 @@ export const deployShownOnMap = (): DeployOnMap => shown;
 export const readDeployOnMap = (event: Event): DeployOnMap => {
   const detail = (event as CustomEvent<DeployOnMap>).detail;
   return detail && typeof detail.structureId === "number" ? detail : null;
+};
+
+/**
+ * The orders a realm lights while its deploy order is shown: one on each tile the sheet can send the army to (the
+ * ring's open tiles, the sheet's own read of it), and nothing else, so every lit tile means "deploy here" and the
+ * order's ring alone says which (owner, 31 October 2026: "a blue tile that doesnt mean anything since the selected tile
+ * as the ring on it"). `home` and the ring are contract hexes.
+ */
+export const deployOrderPaths = (
+  home: HexPosition,
+  ring: readonly { col: number; row: number; open: boolean }[],
+): ActionPaths => {
+  const paths = new ActionPaths();
+  for (const tile of ring) {
+    if (!tile.open) continue;
+    paths.set(ActionPaths.posKey(tile), [
+      { hex: home, actionType: ActionType.Move },
+      { hex: { col: tile.col, row: tile.row }, actionType: ActionType.CreateArmy },
+    ]);
+  }
+  return paths;
 };

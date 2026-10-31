@@ -1,5 +1,5 @@
 import { ResourcesIds } from "@bibliothecadao/types";
-import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
+import { rpcAt, readFrontierFunding, readConfirmedLedgerHead } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import {
@@ -51,28 +51,24 @@ async function sweepGame(
   operator: ShardOperator,
   settle: (settlement: FrontierSettlement) => Promise<void>,
 ) {
-  const snapshot = await readConfirmedSnapshot(target, heraldUrl, gameId, [
-    "GameRegistry",
-    "ChestRules",
-    "SliceRules",
-    "LordsBudget",
-    "FrontierPrize",
-    "ResourceBalance",
-    "LordsWithdrawal",
-  ]);
+  const snapshot = await settlementSnapshot(target, heraldUrl, gameId);
   const terms = frontierTerms(snapshot);
   if (
     snapshot.confirmed_block < directoryBlock ||
     (await reader.header(snapshot.confirmed_block)).timestamp < terms.end
   )
     throw new Error("frontier_sweep_snapshot_before_end");
+  const provider = rpcAt(ledger.rpcUrl);
+  const head = await readConfirmedLedgerHead(provider);
   const funding = await readFrontierFunding(
-    rpcAt(ledger.rpcUrl),
+    provider,
     ledger.address,
     { chainId: target.chainId, gameId },
     terms,
+    head.number,
   );
   if (funding.closed) return;
+  const expired = head.time >= funding.claimDeadline;
   const budget = optionalRow(snapshot, "LordsBudget");
   const prize = optionalRow(snapshot, "FrontierPrize");
   if (!budget || !prize) throw new Error("frontier_pool_unpublished");
@@ -89,17 +85,16 @@ async function sweepGame(
       await operator.admin("sweep_lords", { game_id: gameId, structure_id });
     return;
   }
-  const issued = snapshotUint(prize.issued, 128);
-  const prizePool = snapshotUint(prize.pool, 128);
-  if (issued > prizePool || (prize.count !== null && snapshotUint(prize.count, 16) === 0n && issued !== 0n))
-    throw new Error("frontier_sweep_prize_differs");
-  if (prizePool > 0n && (prize.count === null || (snapshotUint(prize.count, 16) > 0n && issued !== prizePool))) return;
-  const totals = withdrawalTotals(snapshot);
-  const netChest = snapshotUint(budget.pool, 128) - snapshotUint(budget.pool_left, 128);
-  if (totals.chest !== netChest || totals.prize !== issued) throw new Error("frontier_sweep_receipts_differ");
-  const chestWithdrawn = String(totals.chest * 10n ** 18n);
-  const prizeWithdrawn = String(totals.prize * 10n ** 18n);
-  if (BigInt(funding.paid) !== BigInt(chestWithdrawn) || BigInt(funding.prizePaid) !== BigInt(prizeWithdrawn)) return;
+  const state = settlementState(snapshot);
+  if (!expired && state.issued !== state.prizePool) return;
+  const { chestWithdrawn, prizeWithdrawn } = state;
+  if (BigInt(funding.paid) > BigInt(chestWithdrawn) || BigInt(funding.prizePaid) > BigInt(prizeWithdrawn))
+    throw new Error("frontier_paid_exceeds_receipts");
+  if (
+    !expired &&
+    (BigInt(funding.paid) !== BigInt(chestWithdrawn) || BigInt(funding.prizePaid) !== BigInt(prizeWithdrawn))
+  )
+    return;
   await settle({ chainId: target.chainId, gameId, chestWithdrawn, prizeWithdrawn });
 }
 
@@ -114,4 +109,63 @@ function fundedRealms(snapshot: ConfirmedSnapshot): string[] {
     if (snapshotUint(value.balance, 128) > 0n) ids.push(id);
   }
   return ids.sort((a, b) => (BigInt(a) < BigInt(b) ? -1 : 1));
+}
+
+const settlementSnapshot = (target: ShardConnection, heraldUrl: string, gameId: number) =>
+  readConfirmedSnapshot(target, heraldUrl, gameId, [
+    "GameRegistry",
+    "ChestRules",
+    "SliceRules",
+    "LordsBudget",
+    "FrontierPrize",
+    "ResourceBalance",
+    "LordsWithdrawal",
+  ]);
+
+function settlementState(snapshot: ConfirmedSnapshot) {
+  const budget = optionalRow(snapshot, "LordsBudget");
+  const prize = optionalRow(snapshot, "FrontierPrize");
+  if (!budget || !prize) throw new Error("frontier_pool_unpublished");
+  const issued = snapshotUint(prize.issued, 128);
+  const prizePool = snapshotUint(prize.pool, 128);
+  if (issued > prizePool || (prize.count !== null && snapshotUint(prize.count, 16) === 0n && issued !== 0n))
+    throw new Error("frontier_sweep_prize_differs");
+  const totals = withdrawalTotals(snapshot);
+  const netChest = snapshotUint(budget.pool, 128) - snapshotUint(budget.pool_left, 128);
+  if (totals.chest !== netChest || totals.prize !== issued) throw new Error("frontier_sweep_receipts_differ");
+  return {
+    issued,
+    prizePool,
+    chestWithdrawn: String(totals.chest * 10n ** 18n),
+    prizeWithdrawn: String(totals.prize * 10n ** 18n),
+  };
+}
+
+/** Independent confirmed shard evidence for a proposed early close; no operator assertions are accepted. */
+export async function frontierSettlementEvidence(
+  target: ShardConnection,
+  heraldUrl: string,
+  report: FrontierSettlement,
+) {
+  const snapshot = await settlementSnapshot(target, heraldUrl, report.gameId);
+  const time = (await new ShardReader(target).header(snapshot.confirmed_block)).timestamp;
+  const end = frontierTerms(snapshot).end;
+  const realms = fundedRealms(snapshot);
+  const state = settlementState(snapshot);
+  if (
+    time >= end &&
+    realms.length === 0 &&
+    state.issued === state.prizePool &&
+    BigInt(state.chestWithdrawn) === BigInt(report.chestWithdrawn) &&
+    BigInt(state.prizeWithdrawn) === BigInt(report.prizeWithdrawn)
+  )
+    return null;
+  return JSON.stringify({
+    ended: time >= end,
+    realms,
+    issued: String(state.issued),
+    prizePool: String(state.prizePool),
+    chestWithdrawn: state.chestWithdrawn,
+    prizeWithdrawn: state.prizeWithdrawn,
+  });
 }

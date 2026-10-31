@@ -5,7 +5,7 @@ edition = "2024_07"
 
 [cairo]
 sierra-replace-ids = true
-inlining-strategy = 40
+inlining-strategy = 20
 
 [dependencies]
 collectibles = { path = "../collectibles" }

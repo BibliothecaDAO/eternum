@@ -16,6 +16,7 @@ import {
   decodeRegistration,
   decodeSeasonWinner,
   decodeWithdrawalPayment,
+  decodeSettlementReport,
   ledgerBool,
   ledgerInteger,
   ledgerU256,
@@ -141,8 +142,9 @@ it("bounds each u256 limb and safe integer before conversion", () => {
 });
 
 it("decodes absent, reported and paid withdrawals without losing the high amount limb", () => {
-  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0", "0", "0"])).toBeNull();
-  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1", "0", "0"])).toEqual({
+  expect(decodeWithdrawalPayment(["0", "0", "0", "0", "0", "0", "0", "0"])).toBeNull();
+  expect(decodeWithdrawalPayment(["0", "7", "0", "1", "1", "0", "0", "123"])).toEqual({
+    reportedAt: 123,
     prizeRank: 0,
     prizeCount: 0,
     paid: false,
@@ -150,7 +152,8 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     wallet: "0",
     amount: String((1n << 128n) + 1n),
   });
-  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0", "0", "0"])).toEqual({
+  expect(decodeWithdrawalPayment(["1", "7", "0xabc", "5", "0", "0", "0", "123"])).toEqual({
+    reportedAt: 123,
     prizeRank: 0,
     prizeCount: 0,
     paid: true,
@@ -158,15 +161,19 @@ it("decodes absent, reported and paid withdrawals without losing the high amount
     wallet: "0xabc",
     amount: "5",
   });
+  expect(decodeWithdrawalPayment(["0", "7", "0xabc", "5", "0", "0", "0", "123"])).toMatchObject({
+    paid: false,
+    wallet: "0xabc",
+    reportedAt: 123,
+  });
   for (const fields of [
     ["0", "7", "0", "0"],
     ["2", "7", "0", "5", "0"],
     ["1", "7", "0", "5", "0"],
-    ["0", "7", "0xabc", "5", "0"],
     ["0", "7", "0", "0", "0"],
     ["0", "7", "0", "0", String(1n << 128n)],
   ])
-    expect(() => decodeWithdrawalPayment([...fields, "0", "0"])).toThrow();
+    expect(() => decodeWithdrawalPayment([...fields, "0", "0", "123"])).toThrow();
 });
 
 it("decodes the complete chest shape and rejects absent or malformed records", () => {
@@ -283,4 +290,19 @@ it("counts a chest's draw down to the block where open_finish may run: the reque
   expect(chestDrawBlocksLeft(100, 110)).toBe(1);
   expect(chestDrawBlocksLeft(100, 111)).toBe(0);
   expect(chestDrawBlocksLeft(100, 140)).toBe(0);
+});
+
+it("reads exact settlement totals and rejects malformed proposals", () => {
+  expect(decodeSettlementReport(["17", "1", "3", "2", "2000"])).toEqual({
+    chestWithdrawn: String(2n ** 128n + 17n),
+    prizeWithdrawn: String(2n ** 129n + 3n),
+    ready: 2000,
+  });
+  expect(decodeSettlementReport(["0", "0", "0", "0", "0"]).ready).toBe(0);
+  for (const fields of [
+    ["17", "0"],
+    ["17", "0", "3", "0", "-1"],
+    [String(2n ** 128n), "0", "3", "0", "2000"],
+  ])
+    expect(() => decodeSettlementReport(fields)).toThrow();
 });
