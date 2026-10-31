@@ -1,6 +1,6 @@
 ---
 title: Chests
-description: What a Frontier chest pays, and how its LORDS reach you
+description: What a Frontier chest pays, the season's prizes, and how its LORDS reach you
 ---
 
 import { FRONTIER } from "@/utils/frontier";
@@ -9,8 +9,8 @@ import { Shot, Video } from "@/components/Media";
 # Chests
 
 Every Frontier chest pays LORDS, from the season's pool, into your realm. There are two: the chest a ruin guards, and
-the rare chest a reveal turns up. A chest pays LORDS and nothing else: no item, relic or cosmetic. Until the LORDS
-launch, these are test LORDS ([LORDS](/account/lords)).
+the rare chest a reveal turns up. A chest pays LORDS and nothing else: no item, relic or cosmetic
+([LORDS](/account/lords)).
 
 ## A ruin's chest
 
@@ -50,7 +50,19 @@ aside as it is found. Open it with one of your armies beside it before the day e
 
 <Video frame="wide" name="frontier/open-chest" caption="A chest found in the wild, opened by the army beside it." />
 
+## The season's prizes
+
+Chests are paid from {FRONTIER.prizes.chestShare} of the season's pool. The other {FRONTIER.prizes.leaderboardShare}
+goes to the top {FRONTIER.prizes.places} realms on the Season board when the season ends, first place taking the most
+and each place below it a little less. Only realms that have cleared at least one site take a place. The Season page
+shows the podium as the season runs, with each place's LORDS and who holds it, and each prize as Pending until it is
+paid.
+
 ## Your LORDS
 
-Your realm's LORDS pay for Refill, and you can withdraw them to your payout wallet until the season's claim window
-closes, {FRONTIER.claimWindow.graceHours} hour short of {FRONTIER.claimWindow.days} days after the season ends.
+Your realm's LORDS pay for Refill. During the season, **Withdraw** sends them to your payout wallet at once.
+
+When the season ends, whatever your realm still holds, and any prize it won, is paid to your linked payout wallet
+automatically. With no wallet linked, link one within {FRONTIER.claimWindow.days} days of the season's end, and they are
+paid to it. After that, unpaid LORDS go to the next season. Until a wallet is linked, the game says so wherever it shows
+your LORDS, with **Link wallet** ([Payout wallet](/account/payout-wallet)).

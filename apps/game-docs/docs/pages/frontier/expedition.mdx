@@ -36,13 +36,19 @@ troops, larger the deeper it is. Each reveal also gives the army {FRONTIER.xp.re
 | Camp   | {FRONTIER.discovery.camp}                   | A camp guarded by a {FRONTIER.guards.camp}. Clearing it pays labor: half its guard's starting troops.                                                                                             |
 | Rift   | {FRONTIER.discovery.rift}                   | A fissure guarded by a {FRONTIER.guards.rift}. Clearing it pays Essence: three times its guard's starting troops.                                                                                 |
 | Ruin   | {FRONTIER.discovery.ruin}                   | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
-| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: discovery rolls and shows one skill point. Its rank rises one step per depth, capped at Legendary. An army beside it takes that point and consumes the Shrine.                   |
+| Shrine | {FRONTIER.discovery.shrine}                 | Once researched: holds one skill point, its rank rolled when found (below) and shown on its card. An army beside it takes that point and consumes the Shrine.                                     |
 | Well   | {FRONTIER.discovery.well}                   | Once researched: an army beside it uses it for {FRONTIER.stamina.well} stamina, then it is gone.                                                                                                  |
 | Chest  | 1 in {FRONTIER.discovery.exploreChestOneIn} | At every depth, using that layer’s chest odds, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                   |
 
 After {FRONTIER.discovery.emptyRevealLimit} empty reveals in a row, the next reveal draws only among the sites, shrines
 and wells above, so it finds one. After a ruin clear, no further ruins appear that day. Scouting makes the kinds you
-pick for it more likely ([Armies](/frontier/armies#xp-and-attributes)).
+pick for it more likely: Trolls, Rifts, or Sanctuaries (Shrines and Wells)
+([Armies](/frontier/armies#xp-and-attributes)).
+
+A Shrine's skill point is rolled when the Shrine is found. On the surface it is Common
+{FRONTIER.discovery.shrineRanks[0]} of the time, Uncommon {FRONTIER.discovery.shrineRanks[1]}, Rare
+{FRONTIER.discovery.shrineRanks[2]}, Epic{" "} {FRONTIER.discovery.shrineRanks[3]} and Legendary
+{FRONTIER.discovery.shrineRanks[4]}. Each depth below lifts the rolled rank one step, up to Legendary.
 
 To use a shrine or a well, select an army beside it and right-click it (on a phone, press and hold), or tap it and press
 **Use**.
@@ -91,6 +97,6 @@ of the day.
 ## The day's end
 
 When the day ends, the map and its fog, every site and every army you sent out are gone. An army with Homecoming first
-sends a share of its survivors home: {FRONTIER.homecoming[0]} at uncommon, {FRONTIER.homecoming[1]} at rare,
-{FRONTIER.homecoming[2]} at epic and {FRONTIER.homecoming[3]} at legendary. Your realm is raised on the next map with
-its buildings, research, troops and stores, and the game takes you to it.
+sends a share of its survivors home: {FRONTIER.homecoming[0]} at Common, {FRONTIER.homecoming[1]} at Uncommon,
+{FRONTIER.homecoming[2]} at Rare, {FRONTIER.homecoming[3]} at Epic and {FRONTIER.homecoming[4]} at Legendary. Your realm
+is raised on the next map with its buildings, research, troops and stores, and the game takes you to it.

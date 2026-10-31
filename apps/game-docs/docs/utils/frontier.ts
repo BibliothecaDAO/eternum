@@ -28,8 +28,8 @@ const TIERS = ["common", "uncommon", "rare", "epic", "legendary"] as const;
 const hoursOf = (units: number) => (units * FRONTIER_DAY_UNIT_SECONDS) / 3600;
 
 // A bag of days holds one day of each length, 2 to 6 units (contracts/l3/world-native/src/days.cairo).
-const SHORT_DAY_UNITS = 2;
-const LONG_DAY_UNITS = 6;
+export const SHORT_DAY_UNITS = 2;
+export const LONG_DAY_UNITS = 6;
 const DAYS_PER_BAG = CONTRACT.daysPerBag;
 const UNITS_PER_BAG = CONTRACT.unitsPerBag;
 
@@ -78,6 +78,8 @@ export const FRONTIER = {
     demolitionRefund: pct(frontierPreset.board.demolitionRefundBps),
     hutHouses: n(config.buildings.buildingCapacity[1]),
     deployWheat: n(config.resources.productionBySimpleRecipe[26][0].amount),
+    /** The wheat and labor a realm stores at each castle level, before Granary and Storeroom research. */
+    storage: frontierPreset.board.resourceStoreCaps.map(n),
   },
   stamina: {
     max: n(stamina.staminaKnightMax),
@@ -102,6 +104,14 @@ export const FRONTIER = {
     well: pct(frontierPreset.discovery.wellBps),
     emptyRevealLimit: n(frontierPreset.discovery.emptyRevealLimit),
     exploreChestOneIn: n(EXPLORE_CHEST_ONE_IN),
+    /** A Shrine's skill point on the surface, Common to Legendary; each depth below lifts it one rank. */
+    shrineRanks: [
+      rule.SHRINE_COMMON_BPS,
+      rule.SHRINE_UNCOMMON_BPS,
+      rule.SHRINE_RARE_BPS,
+      rule.SHRINE_EPIC_BPS,
+      rule.SHRINE_LEGENDARY_BPS,
+    ].map(pct),
   },
   depths: frontierPreset.depths.map((depth, index) => ({
     name: DEPTH_NAMES[index],
@@ -163,6 +173,7 @@ export const FRONTIER = {
     depths: researchRow(research.ROW_DEPTH),
     trainingGate: frontierPreset.board.trainingGateTier,
     outputStep: pct(frontierPreset.board.outputStepBps),
+    storageStep: pct(frontierPreset.board.storageStepBps),
     rationWheat: n(frontierPreset.board.rationStep),
     troopWheat: n(wheatPerTroop),
     populationStep: pct(frontierPreset.board.populationStepBps),
@@ -184,12 +195,18 @@ export const FRONTIER = {
         rule.SCOUTING_LEGENDARY_BPS,
     ),
   },
+  /** The season's pool: the chests' share, and the rest to the board's top places among realms with a site cleared. */
+  prizes: {
+    chestShare: pct(frontierPreset.chests.poolBps),
+    leaderboardShare: pct(10_000 - frontierPreset.chests.poolBps),
+    places: n(frontierPreset.chests.topN),
+  },
   claimWindow: {
     days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
-    graceHours: n(rule.FRONTIER_REPORT_GRACE_SECONDS / 3600),
   },
   labor: { perRealm: n(frontierPreset.labor.amount) },
   homecoming: [
+    rule.HOMECOMING_COMMON_BPS,
     rule.HOMECOMING_UNCOMMON_BPS,
     rule.HOMECOMING_RARE_BPS,
     rule.HOMECOMING_EPIC_BPS,
