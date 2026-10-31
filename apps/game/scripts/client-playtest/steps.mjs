@@ -1626,12 +1626,17 @@ async function readTheSeasonInTheMenu({ browser }) {
 }
 
 /** A Wheat ring or phone plate opens its store card; pressing it again closes the same card. */
+/**
+ * The Wheat store's card opened from its ring (a desktop's realm panel) or its plate (a phone's strip), then closed by
+ * the same press: both found by the store they stand for (`data-store`, `data-store-card`), not by words a label may
+ * change.
+ */
 async function openAndCloseWheatStore({ browser }) {
-  const card = () => browser.read(`Boolean(document.querySelector('section[aria-label="Wheat"]'))`);
-  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
+  const card = () => browser.read(`Boolean(document.querySelector('[data-store-card="wheat"]'))`);
+  browser.run(["click", '[data-store="wheat"]']);
   await sleep(1_500);
   const opened = card();
-  browser.run(["find", "role", "button", "click", "--name", "Wheat"]);
+  browser.run(["click", '[data-store="wheat"]']);
   await sleep(1_000);
   return { opened, closed: card() };
 }

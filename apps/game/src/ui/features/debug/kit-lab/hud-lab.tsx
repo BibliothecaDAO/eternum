@@ -1509,7 +1509,8 @@ const labNextUpSteps = (lab: LabState, desktop: boolean): NextStep[] =>
       armies: lab.armies.length,
       armySelected: lab.selected !== undefined,
       lastHour: lab.lastHour === true,
-      storeFull: lab.stores.find((store) => store.tone === "ember")?.kind ?? null,
+      storeFull:
+        MADE_STORES.find((kind) => lab.stores.some((store) => store.kind === kind && store.tone === "ember")) ?? null,
       ...lab.nextUp,
     },
     { pointer: desktop ? "mouse" : "touch", where: inTheRealm(lab) ? "realm" : "map", tips: true },

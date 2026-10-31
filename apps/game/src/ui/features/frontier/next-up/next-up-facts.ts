@@ -26,7 +26,7 @@ import { availableRankUps } from "../attributes/attributes";
 import { troopsAtHome, type useExpeditionRules } from "../frontier-home";
 import { dayClock } from "../hud/day-clock";
 import { readRealmStore } from "../realm-stores";
-import { FRONTIER_STORES, MADE_STORES } from "../stores";
+import { MADE_STORES, type MadeStore } from "../stores";
 
 type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
@@ -56,8 +56,8 @@ export interface NextUpFacts {
   typeTierAffordable: string | null;
   /** Today is in its last hour with an army still out. */
   lastHour: boolean;
-  /** The store at its limit, where a payout or reveal no longer fits, by its word; null for none. */
-  storeFull: string | null;
+  /** The store at its limit, where a payout or reveal no longer fits; null for none. */
+  storeFull: MadeStore | null;
   /** No population is free: the next building that takes any is refused until a Hut stands. */
   populationFull: boolean;
 }
@@ -210,16 +210,14 @@ const FIRST_TIERS = [
 
 const whole = (amount: bigint): number => Number(amount / BigInt(RESOURCE_PRECISION));
 
-/** The first of wheat, labor and troops whose store is at its limit, by its word; none while every one has room. */
+/** The first of wheat, labor and troops whose store is at its limit; none while every one has room. */
 const fullStore = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   rules: ExpeditionRules,
   clock: { now: number; tick: number },
-): string | null => {
-  const full = MADE_STORES.find((kind) => readRealmStore(store, realm, rules, kind, clock).tone === "ember");
-  return full === undefined ? null : FRONTIER_STORES[full].word.toLowerCase();
-};
+): MadeStore | null =>
+  MADE_STORES.find((kind) => readRealmStore(store, realm, rules, kind, clock).tone === "ember") ?? null;
 
 const guardedCampToday = (
   store: NativeFactStore,

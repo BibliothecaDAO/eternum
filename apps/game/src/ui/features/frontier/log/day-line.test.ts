@@ -28,7 +28,7 @@ describe("the day log's line for a story", () => {
     const { store } = campBeside();
     const reveal = (resource: ResourcesIds, amount: string) =>
       dayLogLine(story("ExplorationReward", { resource_type: resource, amount }, "+98.4 Labor"), store);
-    expect(reveal(ResourcesIds.Labor, "98400000000")).toBe("+98 labor");
+    expect(reveal(ResourcesIds.Labor, "98400000000")).toBe("+98 Labor");
     // A one-troop army's find, 0.4 labor, says no amount (owner, 26 October): what was done, by the feed's rule.
     expect(reveal(ResourcesIds.Labor, "400000000")).toBe("Explored");
     expect(reveal(ResourcesIds.Essence, "1250000000000")).toBe("+1,250 Essence");
@@ -75,7 +75,7 @@ describe("the day log's line for a story", () => {
       },
     ] as never);
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
-    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 labor, +2 XP");
+    expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
     );
@@ -131,5 +131,5 @@ it.each([
     resource_type: ResourcesIds.Labor,
     amount: "1000000000",
   };
-  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 labor, +${xp} XP`);
+  expect(dayLogLine(story("ExplorationReward", payload), store)).toBe(`+1 Labor, +${xp} XP`);
 });

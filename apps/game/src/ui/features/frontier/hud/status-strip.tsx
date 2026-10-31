@@ -94,6 +94,7 @@ const Stores = ({
         <button
           key={store.kind}
           type="button"
+          data-store={store.kind}
           onClick={() => cards.onToggle(store.kind)}
           className="flex min-w-0 flex-1"
         >

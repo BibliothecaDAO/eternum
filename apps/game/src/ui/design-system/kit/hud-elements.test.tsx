@@ -92,7 +92,7 @@ describe("a verb and what it costs (owner, sheet 2026-10-18: a button carries it
       ),
     );
     expect(host.querySelector(".ui-button")!.textContent).toBe("Move");
-    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 wheat · 100 XP");
+    expect(host.querySelector(".ui-cost")!.textContent).toBe("20 stamina · 3 Wheat · 100 XP");
   });
 
   it("writes an unknown amount as a dash, and draws nothing for a verb that costs nothing", () => {

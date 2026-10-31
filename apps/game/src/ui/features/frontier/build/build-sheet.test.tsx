@@ -349,10 +349,10 @@ describe("the build sheet", () => {
     act(() => sheet.card("Workshop").click());
     expect(sheet.host.querySelector('[role="status"]')).toBeNull();
     expect(sheet.button("Build")!.textContent).toBe("Build");
-    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 labor");
+    expect(sheet.host.querySelector(".ui-cost")?.textContent).toBe("2,000 Labor");
     // Build and its price stand in the sheet's foot, outside the body that scrolls: the verb never scrolls away.
     expect(sheet.button("Build")!.closest(".ui-window__foot")).not.toBeNull();
-    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 labor");
+    expect(sheet.host.querySelector(".ui-window__foot .ui-cost")?.textContent).toBe("2,000 Labor");
     sheet.close();
   });
 
@@ -383,7 +383,7 @@ describe("the build sheet", () => {
     const sheet = open(store, realm);
     const farm = configManager.getBuildingCategoryConfig(BuildingType.ResourceWheat).population_cost;
     expect(sheet.card("Farm").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
-      new RegExp(`^Farm: wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
+      new RegExp(`^Farm: Wheat \\+[\\d,.]+/(?:s|min), takes ${farm} population$`),
     );
     expect(sheet.card("Hut").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(/^Hut: \+\d+ population$/);
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
@@ -585,7 +585,7 @@ describe("the build sheet", () => {
     // Even in a game whose reveals pay labor, the line is the whole answer: no Explore button (owner, 27 October).
     vi.spyOn(configManager, "paysRevealSupplies").mockReturnValue(true);
     const short = open(store, realm);
-    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ labor, have 0$/);
+    expect(short.host.querySelector('[role="status"]')!.textContent).toMatch(/^Needs [\d,]+ Labor, have 0$/);
     expect(short.button("Build")).toBeUndefined();
     expect(short.host.textContent).not.toContain("Explore");
     short.close();
@@ -671,7 +671,7 @@ it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
       act(() => card.click());
       expect(card.querySelector(".ui-tier")?.textContent).toBe("I");
       expect(card.querySelector('[aria-label="6,000 Essence"]')).not.toBeNull();
-      expect(card.querySelector('[aria-label="1,500 labor"]')).not.toBeNull();
+      expect(card.querySelector('[aria-label="1,500 Labor"]')).not.toBeNull();
       expect(host.textContent).not.toContain("Beasts");
       expect(host.textContent).not.toContain("Sanctuaries");
       const knowledge = store.require("RealmKnowledge", { game_id: 1, structure_id: 7 });

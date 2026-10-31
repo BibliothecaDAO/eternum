@@ -102,7 +102,7 @@ export const RealmPanel = ({
     </div>
     <ul aria-label="Stores" className="grid grid-cols-5 justify-items-center gap-y-5 pb-2 pt-2">
       {stores.map((store) => (
-        <li key={store.kind} className="relative">
+        <li key={store.kind} data-store={store.kind} className="relative">
           <StoreRing
             store={store}
             onOpen={storeCards?.kinds.includes(store.kind) ? () => storeCards.onToggle(store.kind) : undefined}

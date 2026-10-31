@@ -113,7 +113,7 @@ import {
 import { FELT_CENTER } from "@/ui/config";
 import { HelpModal } from "@/ui/features/military";
 import { openRelicCrate } from "@/ui/features/military/chest/open-relic-crate";
-import { letGoOfLostSelection } from "./worldmap-lost-selection";
+import { letGoOfClearedSite, letGoOfLostSelection } from "./worldmap-lost-selection";
 import { traceFlightPlanner } from "../flight-trace";
 import { QuickAttackPreview } from "@/ui/features/military/battle/quick-attack-preview";
 import { SpireTravelModal } from "@/ui/features/world/components/actions/spire-travel-modal";
@@ -1848,10 +1848,7 @@ export default class WorldmapScene extends WarpTravel {
         const tile = Position.fromContract(payout.coord).getNormalized();
         const hex = { col: tile.x, row: tile.y };
         // The fallen site's tile card goes with it; the card of what it paid takes its place.
-        const selectedHex = useUIStore.getState().selectedHex;
-        if (selectedHex?.col === payout.coord.x && selectedHex.row === payout.coord.y) {
-          useUIStore.getState().closeSelectedTile();
-        }
+        letGoOfClearedSite(payout.coord);
         playSiteClear({
           clear: payout,
           troopsLost: payout.troopsLost,

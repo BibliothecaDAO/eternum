@@ -28,7 +28,7 @@ import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { siteName } from "@bibliothecadao/types";
 import type { ComponentProps } from "react";
 import { MemoryRouter } from "react-router-dom";
-import { letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
+import { letGoOfClearedSite, letGoOfLostSelection } from "@/three/scenes/worldmap-lost-selection";
 import { ARMY_LOST_MS, ArmyLostSheet } from "../army/army-lost";
 import { useArmyPanelOpens } from "../army/army-opens";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "../hud/one-panel";
@@ -442,6 +442,45 @@ describe("after the player's attack (owner, 30 October 2026: 'I'd like the army 
     expect(armyPanel(host)).toBeNull();
     expect(siteCard(host)).toBeNull();
     noResult(host);
+    unmount();
+  });
+
+  /**
+   * A won clear as a live game delivers it (playtest 10-31, Runetear beasts): the site's guard and structure gone, and
+   * its payout's story, applied with the facts before the outcome settles, taking the site's card away
+   * (worldmap's onSitePayout).
+   */
+  const clearsAndTheSiteGoes = (store: ReturnType<typeof renderCard>["store"]) => {
+    clears();
+    store.applyFacts([gone("Guard", "0x73"), gone("Structure", "0x71")] as never);
+    expect(letGoOfClearedSite({ x: SITE_TILE.col, y: SITE_TILE.row })).toBe(true);
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: null });
+  };
+
+  it("opens the army's panel on a desktop after a clear whose site the map took away with its card", async () => {
+    const { host, unmount } = await attackThatLands(clearsAndTheSiteGoes);
+    expect(selectedArmy()).toBe(201);
+    expect(armyPanel(host)).not.toBeNull();
+    expect(siteCard(host)).toBeNull();
+    unmount();
+  });
+
+  it("gives a phone back its army after a clear whose site the map took away: its own tile for the action row", async () => {
+    const { host, unmount } = await attackThatLands(clearsAndTheSiteGoes, { hud: "phone" });
+    expect(selection()).toEqual({ kind: "army", entityId: 201, tile: "own" });
+    expect(armyPanel(host)).toBeNull();
+    expect(siteCard(host)).toBeNull();
+    unmount();
+  });
+
+  it("keeps the player's newer choice when they pick another army after the map took the cleared site away", async () => {
+    const other = { kind: "army", entityId: 202, tile: "own" } as const;
+    const { host, unmount } = await attackThatLands((store) => {
+      clearsAndTheSiteGoes(store);
+      useUIStore.getState().selectOnMap(other);
+    });
+    expect(selection()).toEqual(other);
+    expect(armyPanel(host)).toBeNull();
     unmount();
   });
 

@@ -322,12 +322,12 @@ describe("the Deploy sheet", () => {
     typeCount(host, 120);
     // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
-    expect(foot(host)).toBe("240 wheatDeploy");
+    expect(foot(host)).toBe("240 WheatDeploy");
     // The window shows the decision only: the count's slider over the same range, no stamina, attribute marks or day
     // clock.
     const slider = host.querySelector<HTMLInputElement>("input[type=range]");
     expect([slider?.getAttribute("aria-label"), slider?.max, slider?.value]).toEqual([
-      "troops: how many go",
+      "Troops: how many go",
       "420",
       "120",
     ]);
@@ -405,7 +405,7 @@ describe("the Deploy sheet", () => {
     expect(outOf(host)).toBe("of 50");
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
-    expect(foot(host)).toBe("100 wheatDeploy");
+    expect(foot(host)).toBe("100 WheatDeploy");
     act(() => root.unmount());
     host.remove();
   });

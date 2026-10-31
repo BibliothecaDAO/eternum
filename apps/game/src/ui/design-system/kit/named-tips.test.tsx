@@ -165,3 +165,53 @@ describe("a name on the one tooltip", () => {
     expect(tip()).toBe("Ruin");
   });
 });
+
+// Playtest 10-31: the realm panel's wheat ring named itself over the panel's own header.
+describe("a tip never covers the card its thing belongs to", () => {
+  type Box = { left: number; top: number; width: number; height: number };
+  const at = (element: Element, { left, top, width, height }: Box) =>
+    (element.getBoundingClientRect = () =>
+      ({ left, top, width, height, right: left + width, bottom: top + height, x: left, y: top }) as DOMRect);
+  /** A card holding a store ring, both laid out where `card` and `ring` say, on a screen `screen` wide and tall. */
+  const hoverRingIn = (card: Box, ring: Box, screen: { width: number; height: number }) => {
+    vi.spyOn(window, "innerWidth", "get").mockReturnValue(screen.width);
+    vi.spyOn(window, "innerHeight", "get").mockReturnValue(screen.height);
+    act(() =>
+      root.render(
+        <>
+          <Tooltip />
+          <section className="ui ui-panel" aria-label="Realm">
+            <span data-testid="ring" data-tip="Wheat 229 of 6,000 · +36/min · Full in 2h 40m">
+              230
+            </span>
+          </section>
+        </>,
+      ),
+    );
+    at(host.querySelector(".ui-panel")!, card);
+    at(host.querySelector('[data-testid="ring"]')!, ring);
+    pointer("pointerover", host.querySelector('[data-testid="ring"]')!, "mouse");
+    act(() => void vi.advanceTimersByTime(20));
+    const placed = document.querySelector<HTMLElement>('[role="tooltip"]')!;
+    return {
+      left: parseFloat(placed.style.left),
+      top: parseFloat(placed.style.top),
+      placement: placed.dataset.placement,
+    };
+  };
+  afterEach(() => vi.restoreAllMocks());
+
+  it("stands beside a desktop's column card, at its thing's height, on the side facing the map", () => {
+    const card = { left: 10, top: 52, width: 270, height: 230 };
+    const tip = hoverRingIn(card, { left: 125, top: 135, width: 40, height: 40 }, { width: 1440, height: 900 });
+    expect(tip.placement).toBe("right");
+    expect(tip.left).toBeGreaterThanOrEqual(card.left + card.width);
+  });
+
+  it("stands above a phone's sheet that spans the screen's width, where the map has room", () => {
+    const card = { left: 0, top: 500, width: 390, height: 344 };
+    const tip = hoverRingIn(card, { left: 175, top: 540, width: 40, height: 40 }, { width: 390, height: 844 });
+    expect(tip.placement).toBe("top");
+    expect(tip.top).toBeLessThan(card.top);
+  });
+});

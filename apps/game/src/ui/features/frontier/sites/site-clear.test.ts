@@ -225,7 +225,7 @@ describe("the site-cleared moment", () => {
             rarity: 4,
             // The LORDS are the moment's hero, counted up under the chest; the rest rises small from its lid.
             lords: amount,
-            prizes: [expect.objectContaining({ name: "XP" }), { icon: "skull", name: "troops", figure: "−90" }],
+            prizes: [expect.objectContaining({ name: "XP" }), { icon: "skull", name: "Troops", figure: "−90" }],
           },
         ]);
         // Nothing of it is on the page: no panel, nothing to press, every click reaches the map.
