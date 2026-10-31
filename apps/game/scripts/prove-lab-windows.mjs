@@ -147,7 +147,7 @@ const proveSurface = async (b, baseUrl, out, surface) => {
     record.checks.push({
       check:
         "An account with no linked wallet is told the claim deadline to link one by, with Link wallet, not paid out",
-      ok: b.evaluate(`/Link a wallet by .+ or these LORDS go to the next season/.test(document.body.innerText) &&
+      ok: b.evaluate(`/Link a wallet by .+ or these LORDS return to the treasury/.test(document.body.innerText) &&
       !document.body.innerText.includes("paid out automatically") &&
       [...document.querySelectorAll("button")].some((button) => button.textContent.trim() === "Link wallet")`),
     });

@@ -780,38 +780,6 @@
       },
       {
         "type": "function",
-        "name": "apply_frontier_carry",
-        "inputs": [
-          {
-            "name": "shard",
-            "type": "core::felt252"
-          },
-          {
-            "name": "season_id",
-            "type": "core::integer::u32"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
-        "name": "frontier_carry",
-        "inputs": [
-          {
-            "name": "shard",
-            "type": "core::felt252"
-          }
-        ],
-        "outputs": [
-          {
-            "type": "core::integer::u256"
-          }
-        ],
-        "state_mutability": "view"
-      },
-      {
-        "type": "function",
         "name": "get_frontier",
         "inputs": [
           {
@@ -2000,7 +1968,17 @@
         "kind": "key"
       },
       {
-        "name": "returned",
+        "name": "treasury",
+        "type": "core::starknet::contract_address::ContractAddress",
+        "kind": "data"
+      },
+      {
+        "name": "chest_returned",
+        "type": "core::integer::u256",
+        "kind": "data"
+      },
+      {
+        "name": "prize_returned",
         "type": "core::integer::u256",
         "kind": "data"
       }

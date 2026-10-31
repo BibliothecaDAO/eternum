@@ -31,7 +31,7 @@ Cloudflare account. See
 [the co-signer deployment procedure](../../../deploy/athanor/README.md#independent-payout-co-signer). Only the cold
 admin can unpause.
 
-## Frontier settlement and carry
+## Frontier settlement and treasury returns
 
 Players can withdraw LORDS manually during the season. The immutable `claim_window_seconds` preset defaults to seven
 days; the shard's manual withdrawal cutoff remains one hour before `season.end + claim_window_seconds`. That window does
@@ -53,7 +53,7 @@ relay rereads held conflicting receipts and reports them again once their ledger
 The relay records its signed recipient decision through identity before broadcast for the monitor's payment audit. The
 co-signer independently reads the receipt account's current linked wallet from identity; it accepts no recipient
 assertion from the relay. Missing-wallet claims remain deferred until the player links a wallet or deadline closure
-carries their funds forward.
+returns their funds to the treasury.
 
 The relay checks a confirmed post-end snapshot with no remaining realm LORDS and chest receipts equal to the consumed
 world budget. Before the claim deadline, it settles only when the prize pool is fully issued and all chest and prize
@@ -62,10 +62,11 @@ winners qualify, the unallocated prize reserve waits for the deadline too.
 
 `settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn, signature_r, signature_s)` is the only closure
 entrypoint. It requires an unpaused ledger, the operator role, the season's end, supplied totals equal to `paid` and
-`prize_paid`, and an independent co-signature over the exact totals and domain. Before the deadline it also requires no
-unpaid reports and the entire prize pool paid. The co-signer checks confirmed post-end state and funding. Before the
-deadline it also checks fully swept realm balances and exact receipt totals; after it, the signature binds the L2 paid
-totals and permits unpaid funds to carry. Closure needs no proposal or waiting period. A closed season refuses replay.
+`prize_paid`, and an independent co-signature over the exact paid totals, treasury remainder and domain. Before the
+deadline it also requires no unpaid reports and the entire prize pool paid. The co-signer checks confirmed post-end
+state and funding. Before the deadline it also checks fully swept realm balances and exact receipt totals; after it, the
+signature binds the L2 paid totals and permits unpaid funds to return to treasury. Closure needs no proposal or waiting
+period. A closed-season retry returns without a second transfer or event.
 
 The independent monitor still checks raw reports, payments, results and conservation. Proven mismatches pause at once;
 unavailable report evidence retries and makes health unhealthy immediately, pausing after ten continuous minutes with a
@@ -76,23 +77,16 @@ Once the claim deadline passes on the confirmed L2 head, the relay settles with 
 unpaid. Closure voids those claims, including missing-wallet claims, for both chests and prizes. New chest or prize
 reports and unpaid payments then refuse; already paid retries remain harmless. A pause blocks settlement at either time.
 
-Settlement credits chest `pool - paid` to carry once. At or after the deadline it also credits
-`prize_pool - prize_paid`, so an unpaid or unallocated prize reserve reaches the next season. It transfers nothing to
-the treasury. Repeating settlement with the same totals is harmless. Funding an eligible later season consumes available
-carry; for an already funded season, use:
+Settlement transfers `pool - paid` plus `prize_pool - prize_paid` to the ledger's fixed treasury address in the same
+transaction, including voided no-wallet claims and unclaimed prize shares. The ledger computes that exact amount from
+custody and includes it in the `ETERNUM_SETTLE_V2` co-signing message. The co-signer independently verifies it from
+confirmed funding. `FrontierClosed` records the treasury address and separate chest/prize amounts. Closure is written
+before the token transfer, and a failed transfer reverts the whole call. Repeating settlement transfers nothing and
+emits nothing. Each new season is funded solely by its new deposit; there is no carry balance or top-up command.
 
-```sh
-pnpm --dir contracts/l2/ledger/scripts carry:frontier <dev|production> <previous-game-id> <next-game-id>
-```
-
-The command requires the previous season to be closed, then calls only `apply_frontier_carry`. The destination must be
-open, not yet ended, and start at or after the carried season's end. Applying carry consumes its balance once; zero
-carry is a no-op. Settled carry does not wait for the manual claim deadline.
-
-This lifecycle requires the new Games root, matching libraries and release, fresh ledger, relay and client together. The
-existing dev ledger retains its deployed behavior; the updated carry command still refuses an open previous season there
-and never initiates its legacy close. Rehearse sweep, payment, settlement and carry against compatible contracts before
-enabling production value.
+This lifecycle requires the matching Games root, libraries/release, fresh ledger, relay and co-signer together. Rehearse
+sweep, payment, deadline settlement, treasury receipt and retries against these contracts before enabling production
+value. Old settlement signatures do not authorize the new treasury-return message.
 
 ## Blitz custody and rewards
 

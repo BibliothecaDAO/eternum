@@ -185,7 +185,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "lords",
           "title": "Link a wallet for your LORDS",
-          "line": "With LORDS and no linked wallet, your purse, Withdraw, the season's end and a ruin's chest say so, with Link wallet. After the season, link one by the claim deadline, 7 days on, or those LORDS go to the next season."
+          "line": "With LORDS and no linked wallet, your purse, Withdraw, the season's end and a ruin's chest say so, with Link wallet. After the season, link one by the claim deadline, 7 days on, or those LORDS return to the treasury."
         },
         {
           "kind": "new",

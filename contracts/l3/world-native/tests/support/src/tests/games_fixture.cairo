@@ -2163,13 +2163,6 @@ pub mod GamesFixture {
                 prize_pool,
             )
         }
-        fn top_up_frontier_pool(ref self: TContractState, game_id: u32, amount: u128) {
-            crate::entry::ILedgerOperatorDispatcherTrait::top_up_frontier_pool(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },
-                game_id,
-                amount,
-            )
-        }
         fn frontier_prize(self: @TContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: fixture_classes(game_id).bridge.read() },

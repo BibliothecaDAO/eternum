@@ -95,10 +95,6 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
         unavailable ??= deposit.failure;
         continue;
       }
-      if (BigInt(balance.pool) < BigInt(deposit.success) / 10n ** 18n) {
-        unavailable ??= new RelayFailure({ operation: "frontier_pool_publication_pending" });
-        continue;
-      }
       const poolRow = `conservation:pool:${balance.chainId}:${balance.gameId}:${balance.pool}:${deposit.success}`;
       if (BigInt(balance.pool) !== BigInt(deposit.success) / 10n ** 18n && !isCleared(progress, poolRow)) {
         yield* recordFault(store, { row: poolRow, fact: poolRow });

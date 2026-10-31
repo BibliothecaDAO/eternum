@@ -53,7 +53,7 @@ import { useLinkWalletPrompt } from "./link-wallet";
 import { SeasonPayout } from "./season-payout";
 
 const REALM = { entity_id: 7, owner: OWNER } as never;
-const DATED = () => `Link a wallet by ${formatMoment(DEADLINE, world.now)} or these LORDS go to the next season`;
+const DATED = () => `Link a wallet by ${formatMoment(DEADLINE, world.now)} or these LORDS return to the treasury`;
 
 let host: HTMLDivElement;
 let root: Root;
@@ -166,7 +166,7 @@ it("owes an unpaid chest and prize until the ledger's claim deadline, by that da
   world.receipts = [receipt(0xc1a, 400), receipt(0xa1, 300, 1)];
   expect(await draw(<SeasonPayout realm={REALM} />)).toContain("700");
   expect(host.textContent).toContain(DATED());
-  // Past the deadline, unpaid: void, carried to the next season; nothing owed, nothing to link for.
+  // Past the deadline, unpaid: void, returned to the treasury; nothing owed, nothing to link for.
   world.now = DEADLINE;
   expect(await draw(<SeasonPayout realm={REALM} />)).toBe("");
 });

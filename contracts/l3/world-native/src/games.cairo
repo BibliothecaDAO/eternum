@@ -90,13 +90,6 @@ pub mod Games {
                 prize_pool,
             );
         }
-        fn top_up_frontier_pool(ref self: ContractState, game_id: u32, amount: u128) {
-            crate::entry::ILedgerOperatorDispatcherTrait::top_up_frontier_pool(
-                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
-                game_id,
-                amount,
-            )
-        }
         fn frontier_prize(self: @ContractState, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::ILedgerOperatorDispatcherTrait::frontier_prize(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },

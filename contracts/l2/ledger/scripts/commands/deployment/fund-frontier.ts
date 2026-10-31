@@ -5,8 +5,6 @@ import { readShardManifest } from "../../../../../../packages/chain/shard-manife
 import { assertProviderChain } from "../../../../../../packages/chain/chain-guard.js";
 import {
   decodeLedgerPreset,
-  decodeFrontierSeason,
-  ledgerU256,
   ledgerInteger,
   readConfirmedLedgerHead,
 } from "../../../../../../packages/value-ledger/src/codecs";
@@ -114,52 +112,8 @@ export async function fundFrontier(
   const frontier = await readFrontierFunding(account, ledger, { chainId: shard.chainId, gameId }, native);
   const prize = ((pool * BigInt(10_000 - native.chestPoolBps)) / 10_000n / 10n ** 18n) * 10n ** 18n;
   const chest = pool - prize;
-  if (BigInt(frontier.pool) < chest || BigInt(frontier.prizePool) !== pool - chest)
+  if (BigInt(frontier.pool) !== chest || BigInt(frontier.prizePool) !== pool - chest)
     throw new Error("Frontier deposit differs from requested amount");
-  return { chainId: shard.chainId, gameId, transactionHash: submitted.transaction_hash, frontier };
-}
-
-/** Move an already settled season's remainder into the next funded season. */
-export async function carryFrontier(
-  account: Account,
-  provider: RpcProvider,
-  shard: ShardConnection,
-  heraldUrl: string,
-  previousGameId: number,
-  gameId: number,
-  environment: "dev" | "production",
-) {
-  if (
-    !Number.isInteger(previousGameId) ||
-    previousGameId <= 0 ||
-    previousGameId > 0xffffffff ||
-    previousGameId === gameId
-  )
-    throw new Error("Invalid previous game id");
-  const { ledger, network } = fundingTarget(environment);
-  await assertProviderChain(account, network, "STARKNET_RPC");
-  const native = await readFrontierGame(provider, shard, heraldUrl, gameId);
-  const head = await readConfirmedLedgerHead(account);
-  const target = await readFrontierFunding(account, ledger, { chainId: shard.chainId, gameId }, native, head.number);
-  const read = (entrypoint: string, calldata: string[]) =>
-    account.callContract({ contractAddress: ledger, entrypoint, calldata }, head.number);
-  const previous = decodeFrontierSeason(await read("get_frontier", [shard.chainId, String(previousGameId)]));
-  if (!previous.closed) throw new Error("Previous season payouts are not settled");
-  if (target.closed || head.time >= target.end || target.start < previous.end)
-    throw new Error("Invalid carry destination");
-  const carry = await read("frontier_carry", [shard.chainId]);
-  if (carry.length !== 2) throw new Error("Invalid carry balance");
-  const amount = BigInt(ledgerU256(carry[0]!, carry[1]!));
-  if (amount === 0n) return { chainId: shard.chainId, gameId, frontier: target };
-  const submitted = await account.execute([
-    { contractAddress: ledger, entrypoint: "apply_frontier_carry", calldata: [shard.chainId, String(gameId)] },
-  ]);
-  const receipt = await account.waitForTransaction(submitted.transaction_hash);
-  if (!("execution_status" in receipt) || receipt.execution_status !== "SUCCEEDED")
-    throw new Error("Carry not confirmed");
-  const frontier = await readFrontierFunding(account, ledger, { chainId: shard.chainId, gameId }, native);
-  if (BigInt(frontier.pool) !== BigInt(target.pool) + amount || frontier.prizePool !== target.prizePool)
-    throw new Error("Frontier carry readback differs");
   return { chainId: shard.chainId, gameId, transactionHash: submitted.transaction_hash, frontier };
 }
 
@@ -184,13 +138,9 @@ function fundingTarget(environment: "dev" | "production") {
 async function main() {
   const { getAccount } = await import("../../../../../scripts-runtime/js/starknet.js");
   const args = process.argv.slice(2);
-  const carry = args[0] === "carry";
-  if (carry) args.shift();
   const [environment, gameId, amount] = args;
   if ((environment !== "dev" && environment !== "production") || !gameId || !amount || args.length !== 3)
-    throw new Error(
-      "Usage: fund:frontier <dev|production> <game-id> <whole-lords> or carry:frontier <dev|production> <previous-game-id> <next-game-id>",
-    );
+    throw new Error("Usage: fund:frontier <dev|production> <game-id> <whole-lords>");
   process.env.STARKNET_NETWORK = fundingTarget(environment).network;
   const manifest = readShardManifest<{ shard: { chainId: string }; world: { address: string } }>(
     process.env.NATIVE_WORLD_MANIFEST,
@@ -207,9 +157,7 @@ async function main() {
   };
   const account = await getAccount();
   const provider = new RpcProvider({ nodeUrl: rpcUrl });
-  const result = carry
-    ? await carryFrontier(account, provider, shard, heraldUrl, Number(gameId), Number(amount), environment)
-    : await fundFrontier(account, provider, shard, heraldUrl, Number(gameId), environment, amount);
+  const result = await fundFrontier(account, provider, shard, heraldUrl, Number(gameId), environment, amount);
   console.log(JSON.stringify(result));
 }
 

@@ -83,18 +83,11 @@ it("never stores a fault or pauses for repeated unavailable reads, and recovers 
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
 });
 
-it("waits for a funded carry to reach the shard and still pauses an overpublished pool", async () => {
+it.each(["70", "101"])("pauses when an immutable published pool differs from custody: %s", async (pool) => {
   const f = fixture();
   f.ports.shard.withdrawal = () => Effect.succeed(f.receipt);
-  let pool = "70";
   f.ports.shard.conservation = () =>
     Effect.succeed([{ chainId: "0x1", gameId: 1, confirmedBlock: 10, receipts: "0", netIssued: "0", pool }]);
-  await expect(f.tick()).rejects.toMatchObject({ operation: "frontier_pool_publication_pending" });
-  expect(f.ports.ledger.pause).not.toHaveBeenCalled();
-  expect((await f.store.load()).halted).toBeNull();
-  pool = "100";
-  await expect(f.tick()).resolves.toMatchObject({ halted: null });
-  pool = "101";
   await expect(f.tick()).resolves.toMatchObject({ halted: "frontier_pool_mismatch:0x1:1" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
 });

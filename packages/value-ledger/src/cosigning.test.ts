@@ -21,17 +21,21 @@ it("matches the Cairo signing vectors including the high u256 limb", () => {
       season: payment.season,
       chest: payment.amount,
       prize: "99",
+      treasuryAmount: "123",
     }),
-  ).toBe("0x49770c155f4521d41e84b852275a5edd45e5be0178e4f7b42780f3ae59c09e4");
+  ).toBe("0x4645bff34db39e67bf68b8f0186c8589521f1892f4ecc7105ab18540e94901b");
 });
 it("decodes exact terms and normalizes felt values", () => {
   expect(decodeCosignRequest({ ...payment, wallet: "1929" })).toEqual(payment);
-  expect(decodeCosignRequest({ kind: "settle", shard: "1110", season: 7, chest: "0", prize: "99" })).toEqual({
+  expect(
+    decodeCosignRequest({ kind: "settle", shard: "1110", season: 7, chest: "0", prize: "99", treasuryAmount: "123" }),
+  ).toEqual({
     kind: "settle",
     shard: "0x456",
     season: 7,
     chest: "0",
     prize: "99",
+    treasuryAmount: "123",
   });
   expect(decodeCosigner(["0x123", "2"])).toEqual({ publicKey: "0x123", epoch: 2 });
 });
@@ -52,4 +56,12 @@ it.each([
   { hash: "0x123" },
 ])("rejects invalid terms or source injection %j", (change) => {
   expect(() => decodeCosignRequest({ ...payment, ...change })).toThrow();
+});
+
+it("binds the treasury remainder and rejects requests missing it", () => {
+  const terms = { kind: "settle" as const, shard: "0x456", season: 7, chest: "17", prize: "99", treasuryAmount: "123" };
+  expect(cosigningHash(domain, terms)).not.toBe(cosigningHash(domain, { ...terms, treasuryAmount: "124" }));
+  const { treasuryAmount, ...oldTerms } = terms;
+  expect(() => decodeCosignRequest(oldTerms)).toThrow("invalid_cosigning_request");
+  expect(() => decodeCosignRequest({ ...terms, treasuryAmount: "-1" })).toThrow();
 });
