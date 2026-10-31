@@ -16,9 +16,9 @@ use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDisp
 use snforge_std::signature::KeyPairTrait;
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, get_class_hash, spy_events, start_cheat_block_hash,
-    start_cheat_block_number, start_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_block_number,
-    stop_cheat_block_timestamp, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, get_class_hash, spy_events,
+    start_cheat_block_hash, start_cheat_block_number, start_cheat_block_timestamp, start_cheat_caller_address,
+    stop_cheat_block_number, stop_cheat_block_timestamp, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 
