@@ -87,6 +87,7 @@ pub mod EntryAdministration {
             for i in 0..count {
                 let winner = *winners.at(i.into());
                 assert!(winner != 0.try_into().unwrap(), "invalid prize winner");
+                assert!(self.data.settlements.entries.read((game_id, winner)).is_some(), "prize winner has no realm");
                 for j in 0..i {
                     assert!(winner != *winners.at(j.into()), "duplicate prize winner");
                 }

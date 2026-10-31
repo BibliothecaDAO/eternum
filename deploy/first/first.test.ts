@@ -1,3 +1,4 @@
+import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { setupQuestions, validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -286,7 +287,7 @@ test("a lost invoke response retries the same nonce while it remains current", a
   expect(nonces).toEqual(["7", "7", "7"]);
 });
 
-test("each environment deploys what its book does not name: production reuses dev's test LORDS", () => {
+test("production requires real LORDS and dev alone can deploy a test token", () => {
   // Dev, from an empty book: its test LORDS, rating token and two collections, then its ledger once they exist.
   expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}).map((plan) => plan.name)).toEqual([
     "lords",
@@ -294,9 +295,14 @@ test("each environment deploys what its book does not name: production reuses de
     "chests",
     "cosmetics",
   ]);
-  // Production's book names dev's test LORDS, so it deploys only its own rating token and collections.
-  expect(addressBook(environments.production).lords).toBe(addressBook(environments.dev).lords);
-  const testLords = addressBook(environments.dev).lords!;
+  // Production deploys only its own rating token and collections around the canonical token.
+  expect(addressBook(environments.production).lords).toBe(mainnetAddresses.lords);
+  for (const lords of [undefined, "0x0", addressBook(environments.dev).lords]) {
+    expect(() => assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords })).toThrow(
+      "canonical mainnet LORDS",
+    );
+  }
+  const testLords = mainnetAddresses.lords;
   const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords });
   expect(production.map((plan) => [plan.name, plan.artifact])).toEqual([
     ["mmr", "MMRToken"],
@@ -310,7 +316,7 @@ test("each environment deploys what its book does not name: production reuses de
     assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }).find((plan) => plan.name === "chests")!
       .constructor,
   );
-  // Once they exist, its own ledger is built on dev's test LORDS with production's admin, operator and treasury.
+  // Once they exist, its own ledger is built on real LORDS with production's admin, operator and treasury.
   const deployed = { lords: testLords, mmr: "0x31", chests: "0x32", cosmetics: "0x33" };
   const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed);
   expect(ledger).toHaveLength(1);
@@ -362,7 +368,13 @@ test("setup keeps only missing role calls and preserves the selected Frontier pr
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["1", "5"]);
-  const production = setupCalls(environments.production, assets, "0x33", 5, BLITZ_WINDOW);
+  const production = setupCalls(
+    environments.production,
+    { ...assets, lords: mainnetAddresses.lords },
+    "0x33",
+    5,
+    BLITZ_WINDOW,
+  );
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["5"]);
@@ -374,7 +386,13 @@ test("setup keeps only missing role calls and preserves the selected Frontier pr
 });
 
 const setupOf = (target: Target, entrypoint: string) =>
-  setupCalls(target, assets, "0x33", 5, BLITZ_WINDOW).filter((call) => call.entrypoint === entrypoint);
+  setupCalls(
+    target,
+    { ...assets, lords: target.environment === "production" ? mainnetAddresses.lords : assets.lords },
+    "0x33",
+    5,
+    BLITZ_WINDOW,
+  ).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
 test("dev setup registers 100 LORDS for entry, Sword and Shield", () => {
@@ -858,7 +876,7 @@ test("publishes the ledger's deployment block beside its address, the same on a 
   writeFileSync(path, JSON.stringify({ l2Chain: "SN_MAIN" }));
   try {
     const target = { ...environments.dev, book } as unknown as Target;
-    const assets = { ledger: "0x1", lords: "0x2", mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
+    const assets = { ledger: "0x1", lords: mainnetAddresses.lords, mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
     expect(recordedLedgerBlock(target)).toBeUndefined();
     publishAssets(target, assets, 1234);
     expect(addressBook(target)).toMatchObject({ ledger: "0x1", ledgerDeploymentBlock: 1234 });
@@ -888,7 +906,13 @@ test.each(["dev", "production"] as const)(
   "%s registers Devcon's ID, clock and chest terms from the preset source",
   (environment) => {
     const preset = frontierDevconPreset;
-    const calls = setupCalls(environments[environment], assets, "0x33", preset.id, BLITZ_WINDOW);
+    const calls = setupCalls(
+      environments[environment],
+      { ...assets, lords: mainnetAddresses.lords },
+      "0x33",
+      preset.id,
+      BLITZ_WINDOW,
+    );
     const frontier = calls.find(
       (call) => call.entrypoint === "register_preset" && registered(call)[0] === String(preset.id),
     )!;

@@ -1,3 +1,4 @@
+import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
@@ -34,8 +35,7 @@ export function assetPlans(
   treasury: string,
   assets: Partial<Assets>,
 ): AssetPlan[] {
-  // Each environment deploys the assets its book does not name (a test token only when it names no LORDS), so it owns
-  // its rating token, collections, ledger, roles and pause.
+  assertProductionLords(target, assets.lords);
   const ownAssets: AssetPlan[] = [
     { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
     { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
@@ -61,6 +61,10 @@ export function assetPlans(
       constructor: [admin, operator, treasury, assets.lords, assets.mmr, assets.chests, assets.cosmetics],
     });
   return plans;
+}
+function assertProductionLords(target: Target, lords: string | undefined) {
+  if (target.environment === "production" && (!lords || BigInt(lords) !== BigInt(mainnetAddresses.lords)))
+    throw new PublicError("Production requires the canonical mainnet LORDS token; test or missing LORDS refused");
 }
 export function fixedSalt(environment: Environment, owner: string, name: string) {
   return hash.starknetKeccak(`realms:${environment}:${BigInt(owner)}:${name}`).toString();
@@ -116,6 +120,7 @@ export async function deployAsset(
 }
 export function existingAssets(target: Target): Partial<Assets> {
   const book = addressBook(target);
+  assertProductionLords(target, book.lords);
   return Object.fromEntries(
     Object.entries({
       ledger: book.ledger,
@@ -184,6 +189,7 @@ export function setupCalls(
   frontierPresetId: number,
   blitz: BlitzWindow | null,
 ) {
+  assertProductionLords(target, assets.lords);
   const chests = chestPresetFor(target.environment as Environment);
   // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
   const blitzPreset = blitz ? blitzPresetOf(target) : null;

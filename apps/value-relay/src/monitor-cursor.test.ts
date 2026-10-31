@@ -33,9 +33,35 @@ it("keeps checked-through block and page continuation across ticks without rerea
   );
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
-    shard: { conservation: () => Effect.succeed([]), withdrawal, result: () => Effect.succeed(null) },
+    shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      settlementEvidence: () => Effect.succeed(null),
+      conservation: () => Effect.succeed([]),
+      withdrawal,
+      result: () => Effect.succeed(null),
+    },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims,
       postedResults: () =>
         Effect.succeed({
@@ -89,9 +115,35 @@ it("an exact row reset skips only that claim, still faults on the next unchecked
   );
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(false) },
-    shard: { conservation: () => Effect.succeed([]), withdrawal: checked, result: () => Effect.succeed(null) },
+    shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      settlementEvidence: () => Effect.succeed(null),
+      conservation: () => Effect.succeed([]),
+      withdrawal: checked,
+      result: () => Effect.succeed(null),
+    },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows,
@@ -149,12 +201,34 @@ it("keeps every cleared conservation row cleared, not only the last one", async 
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed(games),
       withdrawal: () => Effect.succeed(null),
       result: () => Effect.succeed(null),
     },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed("0"),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () => Effect.succeed(page),
       postedResults: () => Effect.succeed(page),
       pause,
@@ -229,6 +303,8 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
       // Every check fails: the shard and identity never agree with the ledger.
       identity: { matchesPayDecision: () => Effect.succeed(false) },
       shard: {
+        withdrawalReceipt: () => Effect.succeed(null),
+        settlementEvidence: () => Effect.succeed(null),
         conservation: () => Effect.succeed([]),
         withdrawal: (chainId, transactionHash) =>
           Effect.succeed({
@@ -244,7 +320,27 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
         result: (chainId, gameId) => Effect.succeed({ chainId, gameId, commitment: "0x1", rows: [] }),
       },
       ledger: {
+        approvePayment: () => Effect.void,
+        approveSettlement: () => Effect.void,
         frontierPool: () => Effect.succeed("0"),
+        reportedSettlements: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
+        reportedClaims: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
         paidClaims: () => page(stream === "paidClaims" ? ledger.paid : []),
         postedResults: () => page(stream === "postedResults" ? ledger.posted : []),
         pause,
@@ -301,4 +397,201 @@ describe.each(["paidClaims", "postedResults"] as const)("a cleared %s fault", (s
       stream === "paidClaims" ? "paidClaims:0x1:0xbbb" : "postedResults:0x1:2",
     );
   });
+});
+
+it.each([null, "999"])(
+  "pauses on an unpaid forged report before any payment exists (receipt amount %s)",
+  async (amount) => {
+    const report = {
+      wallet: "0x0",
+      reportTransactionHash: "0xdef",
+      chainId: "0x1",
+      seasonId: 7,
+      transactionHash: "0xabc",
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    };
+    let progress: MonitorProgress = { halted: null };
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    const pause = vi.fn(() => Effect.void);
+    const paidClaims = vi.fn(() => Effect.succeed({ ...page, rows: [] }));
+    const ports: MonitorPorts = {
+      identity: { matchesPayDecision: () => Effect.succeed(true) },
+      shard: {
+        withdrawalReceipt: () =>
+          Effect.succeed(amount === null ? null : { ...report, amount, account: "0x3", confirmedAt: 100 }),
+        settlementEvidence: () => Effect.succeed(null),
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+        withdrawal: () =>
+          Effect.succeed(amount === null ? null : { ...report, amount, realmsId: "0x2", confirmedAt: 100 }),
+      },
+      ledger: {
+        approvePayment: () => Effect.void,
+        approveSettlement: () => Effect.void,
+        frontierPool: () => Effect.succeed("1000"),
+        pause,
+        paidClaims,
+        reportedSettlements: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
+        reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    const store = {
+      load: async () => progress,
+      save: async (next: MonitorProgress) => {
+        progress = next;
+      },
+    };
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(progress.halted).toBe("reported_claim_mismatch:0xabc");
+    expect(progress.fault?.stream).toBe("reportedClaims");
+    expect(pause).toHaveBeenCalledOnce();
+    expect(paidClaims).not.toHaveBeenCalled();
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(pause).toHaveBeenCalledTimes(2);
+  },
+);
+
+it.each([false, true])(
+  "checks the identity decision before paying a prepared recipient (authorized=%s)",
+  async (authorized) => {
+    let progress: MonitorProgress = { halted: null };
+    const report = {
+      chainId: "0x1",
+      transactionHash: "0xabc",
+      reportTransactionHash: "0xdef",
+      wallet: "0x999",
+      seasonId: 7,
+      amount: "100",
+      prizeRank: 0,
+      prizeCount: 0,
+    };
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    const pause = vi.fn(() => Effect.void);
+    const approve = vi.fn(() => Effect.void);
+    const decision = vi.fn(() => Effect.succeed(authorized));
+    const ports: MonitorPorts = {
+      identity: { matchesPayDecision: decision },
+      shard: {
+        withdrawalReceipt: () => Effect.succeed({ ...report, account: "0x3", confirmedAt: 1 }),
+        settlementEvidence: () => Effect.succeed(null),
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+        withdrawal: () => Effect.succeed({ ...report, realmsId: "0x2", confirmedAt: 1 }),
+      },
+      ledger: {
+        approvePayment: approve,
+        approveSettlement: () => Effect.void,
+        frontierPool: () => Effect.succeed("1000"),
+        pause,
+        reportedSettlements: () =>
+          Effect.succeed({
+            rows: [],
+            next: null,
+            head: 0,
+            anchor: { number: 0, hash: "0x1" },
+            rewind: false,
+            fromBlock: 0,
+          }),
+        reportedClaims: () => Effect.succeed({ ...page, rows: [report] }),
+        paidClaims: () => Effect.succeed({ ...page, rows: [] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    await Effect.runPromise(
+      runMonitor(ports, {
+        load: async () => progress,
+        save: async (next) => {
+          progress = next;
+        },
+      }),
+    );
+    expect(approve).toHaveBeenCalledTimes(authorized ? 1 : 0);
+    if (authorized) expect(approve).toHaveBeenCalledWith(report);
+    expect(progress.halted).toBe(authorized ? null : "reported_wallet_mismatch:0xabc");
+    expect(pause).toHaveBeenCalledTimes(authorized ? 0 : 1);
+    expect(decision).toHaveBeenCalledWith({
+      chainId: "0x1",
+      claimId: "0xabc",
+      transactionHash: "0xdef",
+      realmsId: "0x2",
+      wallet: "0x999",
+      seasonId: 7,
+      amount: "100",
+    });
+    if (!authorized) {
+      progress = resetMonitorRow(progress, "reportedClaims:0x1:0xabc");
+      decision.mockReturnValue(Effect.succeed(true));
+      await Effect.runPromise(
+        runMonitor(ports, {
+          load: async () => progress,
+          save: async (next) => {
+            progress = next;
+          },
+        }),
+      );
+      expect(approve).toHaveBeenCalledExactlyOnceWith(report);
+    }
+  },
+);
+
+it("pauses on a false early-settlement proposal before checking payments", async () => {
+  let progress: MonitorProgress = { halted: null };
+  const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+  const report = { chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: "0" };
+  const pause = vi.fn(() => Effect.void);
+  const paidClaims = vi.fn(() => Effect.succeed({ ...page, rows: [] }));
+  const approval = vi.fn(() => Effect.void);
+  const evidence = vi.fn(() => Effect.succeed("unswept realms:3,9"));
+  const ports: MonitorPorts = {
+    identity: { matchesPayDecision: () => Effect.succeed(true) },
+    shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      settlementEvidence: evidence,
+      conservation: () => Effect.succeed([]),
+      withdrawal: () => Effect.succeed(null),
+      result: () => Effect.succeed(null),
+    },
+    ledger: {
+      pause,
+      approvePayment: () => Effect.void,
+      approveSettlement: approval,
+      frontierPool: () => Effect.succeed("0"),
+      paidClaims,
+      reportedSettlements: () => Effect.succeed({ ...page, rows: [report] }),
+      reportedClaims: () => Effect.succeed({ ...page, rows: [] }),
+      postedResults: () => Effect.succeed({ ...page, rows: [] }),
+    },
+  };
+  const store = {
+    load: async () => progress,
+    save: async (next: MonitorProgress) => {
+      progress = next;
+    },
+  };
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(evidence).toHaveBeenCalledWith(report);
+  expect(progress.halted).toBe("reported_settlement_mismatch:7");
+  expect(progress.fault?.stream).toBe("reportedSettlements");
+  expect(pause).toHaveBeenCalledOnce();
+  expect(paidClaims).not.toHaveBeenCalled();
+  expect(approval).not.toHaveBeenCalled();
+  const faulted = progress;
+  progress = resetMonitorRow(faulted, "reportedSettlements:0x1:7");
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(approval).not.toHaveBeenCalled();
+  progress = resetMonitorRow(faulted, "reportedSettlements:0x1:7");
+  ports.shard.settlementEvidence = () => Effect.succeed(null);
+  await Effect.runPromise(runMonitor(ports, store));
+  expect(approval).toHaveBeenCalledExactlyOnceWith(report);
 });

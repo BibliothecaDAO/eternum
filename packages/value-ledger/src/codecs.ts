@@ -156,9 +156,10 @@ export const decodeRegistration = (fields: readonly string[]): Registration => {
   };
 };
 
-/** WithdrawalPayment: paid, season_id, wallet, amount (low, high); an all-zero row has no report. */
+/** WithdrawalPayment includes the report timestamp; only an all-zero row has no report. */
 export const decodeWithdrawalPayment = (fields: readonly string[]) => {
-  if (fields.length !== 7) throw new Error("invalid_payment_record");
+  if (fields.length !== 8) throw new Error("invalid_payment_record");
+  const reportedAt = ledgerInteger(fields[7]!);
   const prizeRank = ledgerInteger(fields[5]!);
   const prizeCount = ledgerInteger(fields[6]!);
   if ((prizeRank === 0) !== (prizeCount === 0) || prizeRank > prizeCount || prizeCount > 100)
@@ -167,9 +168,19 @@ export const decodeWithdrawalPayment = (fields: readonly string[]) => {
   const seasonId = ledgerInteger(fields[1]!);
   const wallet = unsigned(fields[2]!);
   const amount = ledgerU256(fields[3]!, fields[4]!);
-  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n && prizeRank === 0) return null;
-  if (amount === "0" || (paid && wallet === 0n) || (!paid && wallet !== 0n)) throw new Error("invalid_payment_report");
-  return { paid, seasonId, wallet: fields[2]!, amount, prizeRank, prizeCount };
+  if (amount === "0" && !paid && seasonId === 0 && wallet === 0n && prizeRank === 0 && reportedAt === 0) return null;
+  if (amount === "0" || (paid && wallet === 0n)) throw new Error("invalid_payment_report");
+  return { paid, seasonId, wallet: fields[2]!, amount, prizeRank, prizeCount, reportedAt };
+};
+
+/** Pending Frontier settlement: exact chest/prize totals and its earliest execution timestamp. */
+export const decodeSettlementReport = (fields: readonly string[]) => {
+  if (fields.length !== 5) throw new Error("invalid_settlement_report");
+  return {
+    chestWithdrawn: ledgerU256(fields[0]!, fields[1]!),
+    prizeWithdrawn: ledgerU256(fields[2]!, fields[3]!),
+    ready: ledgerInteger(fields[4]!),
+  };
 };
 
 /**

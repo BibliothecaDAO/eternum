@@ -78,7 +78,9 @@ const fixture = () => {
     restoreWithdrawal: async (withdrawal) => {
       withdrawals.set(withdrawal.transactionHash, withdrawal);
       const index = held.findIndex(
-        (row) => row.kind === "receipt" && row.receipt.transactionHash === withdrawal.transactionHash,
+        (row) =>
+          (row.kind === "receipt" && row.receipt.transactionHash === withdrawal.transactionHash) ||
+          (row.kind === "payment" && row.withdrawal.transactionHash === withdrawal.transactionHash),
       );
       if (index >= 0) held.splice(index, 1);
     },
@@ -92,10 +94,23 @@ const fixture = () => {
   };
   const ports: RelayPorts & {
     identity: MonitorPorts["identity"] & RelayPorts["identity"];
-    ledger: RelayPorts["ledger"] & Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "frontierPool">;
-    shard: RelayPorts["shard"] & Pick<MonitorPorts["shard"], "conservation" | "result">;
+    ledger: RelayPorts["ledger"] &
+      Pick<
+        MonitorPorts["ledger"],
+        | "reportedSettlements"
+        | "reportedClaims"
+        | "paidClaims"
+        | "postedResults"
+        | "frontierPool"
+        | "approvePayment"
+        | "approveSettlement"
+      >;
+    shard: RelayPorts["shard"] &
+      Pick<MonitorPorts["shard"], "withdrawalReceipt" | "settlementEvidence" | "conservation" | "result">;
   } = {
     shard: {
+      withdrawalReceipt: () => Effect.succeed({ ...withdrawal, account: "0x3" }),
+      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       confirmedHead: () => Effect.succeed(0),
       blockHash: () => Effect.succeed(block.hash),
@@ -119,6 +134,8 @@ const fixture = () => {
       linkedWallet: () => Effect.succeed("0x123"),
     },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
       voided: () => Effect.succeed(false),
       payment: () => Effect.succeed(null),
@@ -143,6 +160,24 @@ const fixture = () => {
         ),
       ),
       postResult: vi.fn(() => Effect.void),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () =>
         Effect.succeed({
           rows: [{ ...withdrawal, paymentTransactionHash: "0xdef", paidAt: 1000, wallet: "0x123" }],
@@ -339,7 +374,9 @@ it("detects a parent mismatch before recording or paying the new block", async (
 it("stops on a regressed confirmed head before paying pending withdrawals", async () => {
   const f = fixture();
   f.ports.identity.linkedWallet = () => Effect.succeed(null);
-  await f.run();
+  expect(await f.run()).toMatchObject({
+    deferred: [{ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" }],
+  });
   f.ports.shard.confirmedHead = () => Effect.succeed(-1);
   await expect(f.run()).rejects.toThrow();
   expect(f.single.pay).not.toHaveBeenCalled();
@@ -478,7 +515,7 @@ it("reports without a wallet and pays reported debt to the linked wallet at paym
   expect(f.single.report).toHaveBeenCalledWith(withdrawal);
   expect(f.single.pay).not.toHaveBeenCalled();
   f.ports.ledger.payment = () =>
-    Effect.succeed({ prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
+    Effect.succeed({ reportedAt: 0, prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0", amount: "17" });
   f.ports.identity.linkedWallet = () => Effect.succeed("0x999");
   await f.run();
   expect(f.single.pay).toHaveBeenCalledWith(withdrawal, "0x999");
@@ -596,7 +633,15 @@ it("voids closed unpaid reports even when the account has no payout wallet and n
   const f = fixture();
   f.ports.identity.linkedWallet = vi.fn(() => Effect.succeed(null));
   f.ports.ledger.payment = () =>
-    Effect.succeed({ prizeRank: 0, prizeCount: 0, paid: false, seasonId: 4, wallet: "0x0", amount: "17" });
+    Effect.succeed({
+      reportedAt: 0,
+      prizeRank: 0,
+      prizeCount: 0,
+      paid: false,
+      seasonId: 4,
+      wallet: "0x0",
+      amount: "17",
+    });
   Object.assign(f.ports.ledger, { voided: () => Effect.succeed(true) });
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(await f.store.withdrawals()).toHaveLength(0);
@@ -604,4 +649,22 @@ it("voids closed unpaid reports even when the account has no payout wallet and n
   expect(f.ports.identity.linkedWallet).not.toHaveBeenCalled();
   await Effect.runPromise(runRelay("0x1", f.ports, f.store));
   expect(f.single.pay).not.toHaveBeenCalled();
+});
+
+it("requeues the honest held receipt after the paused admin voids its forged report", async () => {
+  const f = fixture();
+  f.ports.ledger.payment = () =>
+    Effect.succeed({ ...withdrawal, amount: "18", wallet: "0x0", paid: false, reportedAt: 1 });
+  await f.run();
+  expect(await f.store.withdrawals()).toEqual([]);
+  expect(await f.store.held()).toMatchObject([{ kind: "payment", reason: "ledger_report_mismatch" }]);
+  await f.run();
+  expect(f.single.pay).not.toHaveBeenCalled();
+  f.ports.ledger.payment = () => Effect.succeed(null);
+  await f.run();
+  expect(await f.store.held()).toEqual([]);
+  expect(await f.store.withdrawals()).toEqual([withdrawal]);
+  await f.run();
+  expect(f.single.report).toHaveBeenCalledExactlyOnceWith(withdrawal);
+  expect(f.single.pay).toHaveBeenCalledExactlyOnceWith(withdrawal, "0x123");
 });

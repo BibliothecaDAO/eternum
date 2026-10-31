@@ -42,7 +42,7 @@ import { DurableChestStore, finishChestNow, finishRequestedChests } from "./ches
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
-import { ledgerPaymentRead, ledgerWithdrawalVoided } from "./chain";
+import { ledgerPaymentRead, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -320,15 +320,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           const ports = await this.portsFor(chainId);
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
+          const payment = await ledgerResetPayments(this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT));
           return this.store.resetFromChain(row, reason, {
             head: () => Effect.runPromise(ports.shard.confirmedHead()),
             hash: (number) => Effect.runPromise(ports.shard.blockHash(number)),
             paid: async (withdrawal) =>
-              (
-                await Effect.runPromise(
-                  onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, ports.ledger.payment(withdrawal)),
-                )
-              )?.paid ?? false,
+              (await Effect.runPromise(onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, payment(withdrawal))))
+                ?.paid ?? false,
           });
         }),
       ),

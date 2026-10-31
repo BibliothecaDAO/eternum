@@ -652,6 +652,8 @@ fn season_prizes_issue_once_after_the_end_without_spending_chest_funds() {
     snforge_std::start_cheat_caller_address(d.games, d.actor);
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_err());
     snforge_std::start_cheat_caller_address(d.games, super::authority());
+    assert!(operator.post_frontier_top(game_id, array![0x987654.try_into().unwrap()]).is_err());
+    assert!(operator.frontier_prize(game_id).unwrap().count.is_none());
     assert!(operator.post_frontier_top(game_id, array![d.actor, d.actor]).is_err());
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());

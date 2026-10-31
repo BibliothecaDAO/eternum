@@ -52,6 +52,8 @@ const auditedRow = (stream: Stream) => {
   const ports: MonitorPorts = {
     identity: { matchesPayDecision: () => Effect.succeed(shard.decision) },
     shard: {
+      withdrawalReceipt: () => Effect.succeed(null),
+      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: () => {
         reads++;
@@ -63,7 +65,27 @@ const auditedRow = (stream: Stream) => {
       },
     },
     ledger: {
+      approvePayment: () => Effect.void,
+      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed("0"),
+      reportedSettlements: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
+      reportedClaims: () =>
+        Effect.succeed({
+          rows: [],
+          next: null,
+          head: 0,
+          anchor: { number: 0, hash: "0x1" },
+          rewind: false,
+          fromBlock: 0,
+        }),
       paidClaims: () => page(stream === "paidClaims" ? [paid] : []),
       postedResults: () => page(stream === "postedResults" ? [posted] : []),
       pause: () => {
