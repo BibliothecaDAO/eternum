@@ -685,16 +685,13 @@ pub mod GameLedger {
                 reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
             );
             let (capacity, _, available, delay) = self.payout_allowance();
-            if reported.prize_rank > 0 || amount > capacity {
+            let slow = reported.prize_rank > 0 || amount > capacity;
+            if slow {
                 assert!(reported.wallet == wallet, "Ledger: conflicting withdrawal report");
                 assert!(starknet::get_block_timestamp() >= reported.reported_at + delay, "Ledger: payment delay");
             } else {
                 assert!(amount <= available, "Ledger: payout allowance spent");
-                self.payout_available.write(available - amount);
-                self.payout_updated_at.write(starknet::get_block_timestamp());
             }
-            let pending = self.frontier_pending.entry((shard, season_id)).read();
-            self.frontier_pending.entry((shard, season_id)).write(pending - 1);
             if reported.prize_rank == 0 {
                 assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
                 season.paid += amount;
@@ -705,6 +702,13 @@ pub mod GameLedger {
                 );
                 season.prize_paid += amount;
             }
+            let pending = self.frontier_pending.entry((shard, season_id)).read();
+            let remaining = pending - 1;
+            if !slow {
+                self.payout_available.write(available - amount);
+                self.payout_updated_at.write(starknet::get_block_timestamp());
+            }
+            self.frontier_pending.entry((shard, season_id)).write(remaining);
             self.frontier_days.entry((shard, season_id)).write(season);
             self
                 .payments

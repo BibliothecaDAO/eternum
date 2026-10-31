@@ -2307,7 +2307,10 @@ fn funding_after_start_preserves_the_original_unlock_and_payment_limit() {
     fixture.ledger.report_withdrawal('shard', 1, 'future', 1, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, START + 4001);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    let before = fixture.ledger.payout_allowance();
     assert!(safe.pay('shard', 1, 'future', player(0), 1).is_err());
+    assert!(fixture.ledger.payout_allowance() == before);
+    assert!(!fixture.ledger.get_payment('shard', 'future').paid);
     assert!(fixture.lords.balance_of(player(0)) == 100);
     assert!(fixture.ledger.get_frontier('shard', 1).paid == 100);
     start_cheat_block_timestamp(fixture.ledger_address, START + 10000);
