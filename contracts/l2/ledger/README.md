@@ -63,8 +63,9 @@ winners qualify, the unallocated prize reserve waits for the deadline too.
 `settle_frontier(shard, season_id, chest_withdrawn, prize_withdrawn, signature_r, signature_s)` is the only closure
 entrypoint. It requires an unpaused ledger, the operator role, the season's end, supplied totals equal to `paid` and
 `prize_paid`, and an independent co-signature over the exact totals and domain. Before the deadline it also requires no
-unpaid reports and the entire prize pool paid. The co-signer checks confirmed post-end state, funding, fully swept realm
-balances and exact receipt totals. Closure needs no proposal or waiting period. A closed season refuses replay.
+unpaid reports and the entire prize pool paid. The co-signer checks confirmed post-end state and funding. Before the
+deadline it also checks fully swept realm balances and exact receipt totals; after it, the signature binds the L2 paid
+totals and permits unpaid funds to carry. Closure needs no proposal or waiting period. A closed season refuses replay.
 
 The independent monitor still checks raw reports, payments, results and conservation. Proven mismatches pause at once;
 unavailable report evidence retries and makes health unhealthy immediately, pausing after ten continuous minutes with a
