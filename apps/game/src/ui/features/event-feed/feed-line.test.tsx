@@ -347,16 +347,16 @@ it("draws no guard, never an old or guessed one, for a site neither the map nor 
   expect(paintings()).toEqual(["attack"]);
 });
 
-it("says what an army trained in the story's own words", async () => {
+it("says what an army spent its point on, the rank by its numeral as the army panel shows it", async () => {
   const row = story(KRUMP, "SkillPointSpent", {
     explorer_id: 71,
-    choice: "Logistics",
-    tier: 2,
-    point_rank: 2,
+    choice: "Battle",
+    tier: 4,
+    point_rank: 4,
     stamina: 30,
   });
-  expect((await draw(row)).words).toBe("Krump spent a point Logistics uncommon");
-  expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-skill");
+  expect((await draw(row)).words).toBe("Krump spent a point on Battle IV");
+  expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-rage");
 });
 
 it("names who moved troops once, with how many moved (prod's day: 'Maelis Maelis moved 1,095 troops')", async () => {

@@ -1346,7 +1346,9 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatShort={undefined}
+      wheatLimit={
+        most < deploy.troopsAtHome ? { troops: most, held: deploy.wheat, perTroop: 2, wait: undefined } : undefined
+      }
       onBuild={noop}
       onClose={noop}
     />

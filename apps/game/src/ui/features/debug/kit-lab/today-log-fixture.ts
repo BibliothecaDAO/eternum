@@ -48,7 +48,7 @@ export const ownerDayLog = (now: number) => {
   });
   const day = [
     cleared(SITE, "Rift cleared"),
-    tier("Scouting Uncommon"),
+    tier("Scouting II"),
     {
       story: "BattleEvent",
       storyPayload: {
@@ -58,13 +58,13 @@ export const ownerDayLog = (now: number) => {
       },
       title: "Guard holds",
     },
-    tier("Battle Uncommon"),
+    tier("Battle II"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[1].id, "Beasts cleared"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[0].id, "Beasts cleared"),
-    tier("Logistics Rare"),
-    tier("Logistics Uncommon"),
+    tier("Logistics III"),
+    tier("Logistics II"),
   ];
   return day.flatMap(({ story, storyPayload, title }, index) => {
     const text = dayLogLine({ story, storyPayload, presentation: { title } }, store);

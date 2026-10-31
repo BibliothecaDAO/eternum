@@ -38,7 +38,7 @@ export type OrderTip = {
   line: string;
   /**
    * What the order costs, exactly as it is charged ("30 stamina · 100 wheat"), or for a site's Use, which costs
-   * nothing, what it gives ("Rare skill point"); none for a refusal or a crate.
+   * nothing, what it gives ("III skill point"); none for a refusal or a crate.
    */
   cost: string | null;
 };

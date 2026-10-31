@@ -79,10 +79,8 @@ describe("the day log's line for a story", () => {
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared, +82 XP",
     );
-    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle Uncommon"), store)).toBe("Battle Uncommon");
-    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle Legendary"), store)).toBe(
-      "Battle Legendary",
-    );
+    expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
+    expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(
       "Troll cleared",
@@ -100,7 +98,7 @@ describe("the day log's line for a story", () => {
 
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ ShrinePoint: 3 }, "Shrine used, +1 Rare skill point"],
+  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
   [{ Well: 60 }, "Well used, +60 stamina"],
   [{ Well: 5 }, "Well used, +5 stamina"],
   [{ Well: 0 }, "Well used, +0 stamina"],

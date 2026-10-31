@@ -1,4 +1,4 @@
-import { skillPointName, TIER_WORDS } from "@bibliothecadao/types";
+import { skillPointName, tierNumeral } from "@bibliothecadao/types";
 import {
   siteUsedLine,
   buildingName,
@@ -73,7 +73,9 @@ type StoryFormatter = (
   resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
-const ATTRIBUTE_TIER_LABELS = ["", ...TIER_WORDS.map((name) => name.toLowerCase())];
+/** A rank by its numeral, as the army panel shows it; undefined for none or one out of range. */
+const rankOf = (rank: number | null): string | undefined =>
+  rank === null || rank < 1 || rank > 5 ? undefined : tierNumeral(rank);
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
@@ -272,29 +274,22 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     const choice = formatEnum(payload.choice);
     const point = toNumber(payload.point_rank);
     const stamina = toNumber(payload.stamina);
-    const tierIndex = toNumber(payload.tier);
-    const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
-    if (
-      !choice ||
-      point === null ||
-      !ATTRIBUTE_TIER_LABELS[point] ||
-      stamina === null ||
-      (choice !== "Stamina" && !tier)
-    )
+    const tier = rankOf(toNumber(payload.tier));
+    const pointRank = rankOf(point);
+    if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
       throw new Error("Incomplete skill point story");
     return {
       title: choice === "Stamina" ? `Stamina +${stamina}` : `${choice} ${tier}`,
       description: joinPieces([
         describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
-        `${ATTRIBUTE_TIER_LABELS[point]} point · +${stamina} stamina`,
+        `${pointRank} point · +${stamina} stamina`,
       ]),
       icon: "scroll",
     };
   },
   TierBought: (event, payload, components, resolvePlayerName) => {
     const attribute = formatEnum(payload.attribute);
-    const tierIndex = toNumber(payload.tier);
-    const tier = tierIndex === null ? undefined : ATTRIBUTE_TIER_LABELS[tierIndex];
+    const tier = rankOf(toNumber(payload.tier));
     const price = toNumber(payload.price);
     if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
     return {

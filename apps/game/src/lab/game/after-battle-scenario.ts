@@ -74,6 +74,40 @@ export const afterBattleScenario = (): LabScenario => {
   };
 };
 
+/**
+ * The same army after its fight with a point spent on Battle at rank IV (/lab/game?scenario=point-spent): its Feed row,
+ * as dev-playtest-2 (10-31) found it, said "spent a point Battle epic" where the army panel says ranks I–V.
+ */
+export const pointSpentScenario = (): LabScenario => {
+  const battle = afterBattleScenario();
+  const at = battle.startsAt - 30;
+  const hash = "0x5b1";
+  return {
+    ...battle,
+    history: [
+      {
+        block_number: 900_003,
+        transaction_index: 0,
+        event_index: 0,
+        game_id: "1",
+        model: "StoryEvent",
+        transaction_hash: hash,
+        value: {
+          game_id: "0x1",
+          owner: battle.player,
+          entity_id: String(SPIRE_ARMY),
+          tx_hash: hash,
+          story: {
+            SkillPointSpent: { explorer_id: String(SPIRE_ARMY), choice: "Battle", tier: 4, point_rank: 4, stamina: 0 },
+          },
+          timestamp: `0x${at.toString(16)}`,
+        },
+      },
+      ...(battle.history ?? []),
+    ],
+  };
+};
+
 /** Another player, and a site of theirs far from the player's army, which the player's map never loads. */
 const OTHER_PLAYER = "0x10af";
 const FAR_SITE = 4_242;

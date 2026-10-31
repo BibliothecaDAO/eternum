@@ -466,7 +466,7 @@ const SITE_ACTION_STEPS = [
   clickToResultStep(
     "shrine",
     "InteractSite",
-    (context) => useTheSite(context, "Shrine", "Rare skill point"),
+    (context) => useTheSite(context, "Shrine", "III skill point"),
     shrinePointGranted,
   ),
   clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
@@ -509,10 +509,10 @@ async function useTheSite({ browser }, site, gives) {
   return { site, offered };
 }
 
-// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "Rare skill point").
+// The pointer's tooltip whole: its order, then what it costs or gives ("Use", "III skill point").
 const TOOLTIP_TEXT = `JSON.stringify(document.querySelector('[role="tooltip"][aria-hidden="false"]')?.innerText.replace(/\\s+/g, " ").trim() ?? null)`;
 
-/** The discovery fixture promises one Rare point; using it leaves the army's XP alone. */
+/** The discovery fixture promises one III point; using it leaves the army's XP alone. */
 function shrinePointGranted(context) {
   const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
   const progress = answer?.answered.find(({ model }) => model === "ArmyProgress")?.value;

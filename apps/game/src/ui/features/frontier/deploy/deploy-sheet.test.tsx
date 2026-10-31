@@ -403,9 +403,63 @@ describe("the Deploy sheet", () => {
     // 100 wheat deploys 50 of the 420 troops: Max takes what the wheat allows, and the count reads out of 50, not
     // "that fit", since the castle has room.
     expect(outOf(host)).toBe("of 50");
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 50 troops · 2 each");
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
     expect(foot(host)).toBe("100 WheatDeploy");
+    act(() => root.unmount());
+    host.remove();
+  });
+
+  it("says the wheat caps the count, offers Build with the Farm's mark, and keeps Max at the most as the farms fill", () => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    const { store, row } = frontierDay();
+    // dev-playtest-2 (10-31): 16 wheat at 2 a troop holds 420 knights at home to 8; farms make 720 wheat an hour.
+    store.applyFacts([
+      {
+        model: "ResourceBalance",
+        key: "0xc",
+        value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(16n * BigInt(RESOURCE_PRECISION)) },
+      },
+      {
+        model: "ResourceProduction",
+        key: "0x835",
+        value: {
+          game_id: 1,
+          entity_id: 7,
+          resource_type: 35,
+          building_count: 1,
+          production_rate: String((720n * BigInt(RESOURCE_PRECISION)) / 3_600n),
+          output_amount_left: String((1n << 128n) - 1n),
+          last_settled_at: 3,
+        },
+      },
+    ] as never);
+    const onClose = vi.fn();
+    const { host, root, draw } = render(store, row, onClose);
+    click(host.querySelector('button[aria-label="Army 2"]')!);
+    expect(outOf(host)).toBe("of 8");
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 8 troops · 2 each");
+    press(host, "Max");
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 wheatDeploy"]);
+
+    // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
+    clock.tick = 13;
+    draw();
+    expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 wheatDeploy"]);
+    expect(host.querySelector(".ui-notice")!.textContent).toBe("Wheat for 9 troops · 2 each");
+
+    // A count set below the most stays where it was set.
+    typeCount(host, 5);
+    clock.tick = 23;
+    draw();
+    expect([countField(host).value, outOf(host)]).toEqual(["5", "of 10"]);
+
+    // Build, with the Farm's mark, takes the player to the realm, where farms are built.
+    const build = [...host.querySelectorAll("button")].find((button) => button.textContent === "Build")!;
+    expect(build.querySelector("[data-icon]")!.getAttribute("data-icon")).toBe("farm");
+    act(() => build.click());
+    expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
     act(() => root.unmount());
     host.remove();
   });

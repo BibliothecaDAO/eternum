@@ -1,5 +1,5 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { formatWait } from "@bibliothecadao/types";
+import { formatExact, formatWait } from "@bibliothecadao/types";
 import {
   HudButton,
   HudCost,
@@ -20,6 +20,7 @@ import {
   NO_TROOPS_AT_HOME,
   noTroopsUntil,
   TROOPS,
+  wheatPaysFor,
 } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "@/shell/frame/layout";
@@ -35,8 +36,9 @@ import { slotStartLine } from "./slot-start";
  * open slots as the Armies card draws them (a row on a desktop, a token on a phone), each with the bar it starts its army
  * on and the one it fills chosen (the owner's pick A, 30 October: "A is what I want for the deploy picker"), and Deploy
  * with its wheat price. The tile is picked on the map itself, where the
- * order's tile is marked among the realm's open ones. A notice shows only where Deploy cannot: no troops at home (when
- * the next is home, or Build with the Barracks' mark while nothing makes them), no open tile, or not one troop's wheat.
+ * order's tile is marked among the realm's open ones. A notice shows only where Deploy cannot (no troops at home: when
+ * the next is home, or Build with the Barracks' mark while nothing makes them; no open tile) and where the wheat holds
+ * the count under the troops at home: how many troops the wheat pays for, or not one, with Build and the Farm's mark.
  */
 export const DeployView = ({
   art,
@@ -52,7 +54,7 @@ export const DeployView = ({
   canDeploy,
   sending,
   onDeploy,
-  wheatShort,
+  wheatLimit,
   onBuild,
   onClose,
 }: {
@@ -74,8 +76,11 @@ export const DeployView = ({
   canDeploy: boolean;
   sending: boolean;
   onDeploy: () => void;
-  /** Not even one troop's wheat: held against one troop's price, and the farms' wait. */
-  wheatShort: { held: number; need: number; wait: number | undefined } | undefined;
+  /**
+   * The wheat caps the count below the troops at home: the troops it pays for, the wheat held against one troop's price,
+   * and the farms' wait for the next troop's.
+   */
+  wheatLimit: { troops: number; held: number; perTroop: number; wait: number | undefined } | undefined;
   onBuild: () => void;
   onClose: () => void;
 }) => (
@@ -108,7 +113,27 @@ export const DeployView = ({
     ) : (
       tile === "none" && <HudNotice tone="warn" line={NO_OPEN_TILE} />
     )}
-    {wheatShort && <HudNotice tone="warn" line={shortfallLine({ kind: "short", of: "wheat", ...wheatShort })} />}
+    {wheatLimit && (
+      <>
+        <HudNotice
+          tone="warn"
+          line={
+            wheatLimit.troops === 0
+              ? shortfallLine({
+                  kind: "short",
+                  of: "wheat",
+                  held: wheatLimit.held,
+                  need: wheatLimit.perTroop,
+                  wait: wheatLimit.wait,
+                })
+              : wheatPaysFor(formatExact(wheatLimit.troops), formatExact(wheatLimit.perTroop))
+          }
+        />
+        <HudButton kind="secondary" icon="farm" onClick={onBuild}>
+          {BUILD}
+        </HudButton>
+      </>
+    )}
     {canDeploy && wheatCost !== undefined && (
       <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: wheatCost }])} />}>
         <HudButton
