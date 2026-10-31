@@ -40,10 +40,12 @@ export const DeploySheet = ({
   const defaultTick = useCurrentDefaultTick();
   const plan = useDeployPlan(realm);
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
-  const [count, setCount] = useState<number | null>(null);
+  const [count, setCount] = useState<number | "max" | null>(null);
   // The sheet opens at no troops, so +500 gives exactly 500 (owner, 26 October 2026: "it should be 0 so I can press 500
-  // and get 500"); Max is one tap away. A count being set survives fact revisions.
-  const shown = Math.min(count ?? 0, range.max);
+  // and get 500"); Max is one tap away. A count being set survives fact revisions, and a count at the most stays at the
+  // most as the farms raise it: the label and the count read the one figure.
+  const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
+  const wheatCaps = plan?.troops ? range.wheatMax < range.troopsMax : false;
   const preview = plan ? previewDeploy(plan, shown) : null;
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
@@ -95,7 +97,7 @@ export const DeploySheet = ({
       troopsAtHome={plan ? (plan.troops?.atHome ?? 0) : undefined}
       count={preview?.count}
       amount={{ most: range.max, held: range.wheatMax < range.troopsMax ? range.max : (plan?.troops?.atHome ?? 0) }}
-      onCount={setCount}
+      onCount={(next) => setCount(range.max > 0 && next >= range.max ? "max" : next)}
       start={start}
       slots={{ open: plan?.open, onPick: pickSlot }}
       troopsWait={nextTroopIn}
@@ -104,11 +106,12 @@ export const DeploySheet = ({
       canDeploy={Boolean(plan?.troops && preview && direction !== null && start)}
       sending={deploying}
       onDeploy={() => void deploy()}
-      wheatShort={
-        plan?.troops && range.max === 0
+      wheatLimit={
+        plan && wheatCaps
           ? {
+              troops: range.max,
               held: plan.wheat,
-              need: plan.wheatPerTroop,
+              perTroop: plan.wheatPerTroop,
               wait: secondsUntilHeld(plan.wheat, plan.wheatPerTroop, wheatPerHour),
             }
           : undefined

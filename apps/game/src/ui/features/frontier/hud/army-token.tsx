@@ -3,7 +3,7 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { comesHomeAtDayEnd, TIER_WORDS, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
+import { comesHomeAtDayEnd, type Rank, tierNumeral, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
@@ -52,7 +52,9 @@ export const GuardToken = ({
 export type XpGoal = { at: number; rank: number };
 
 export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), TIER_WORDS[goal.rank - 1]) : `${XP} ${formatAmount(xp)}`;
+  goal
+    ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), tierNumeral(goal.rank as Rank))
+    : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,

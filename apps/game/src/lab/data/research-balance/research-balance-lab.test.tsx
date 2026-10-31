@@ -98,6 +98,6 @@ it("shows paid training, the retained ladder and Common I", () => {
   expect(host.textContent).toContain("grants Common training immediately");
   expect(host.textContent).toContain("48,000 Essence + 9,000 labor");
   expect(host.textContent).toContain("Choose camps, rifts or beasts when building");
-  const common = host.querySelector('.ui-tier[aria-label="Common"]')!;
+  const common = host.querySelector('.ui-tier[aria-label="I"]')!;
   expect(common.textContent).toBe("I");
 });

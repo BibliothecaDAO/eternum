@@ -317,7 +317,7 @@ it("draws each story in Events and the Log by its act, as Frontier's Feed does, 
 
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ ShrinePoint: 3 }, "Shrine used, +1 Rare skill point"],
+  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
   [{ Well: 5 }, "Well used, +5 stamina"],
 ])("the Log renders site use and opens its historical tile after the army is gone (%j)", async (benefit, expected) => {
   game.armies.clear();

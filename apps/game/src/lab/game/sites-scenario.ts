@@ -7,7 +7,7 @@ import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-cha
 import { armySpent, armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /**
- * The army reaches the sites with room for a Well refill and a discovered Rare point.
+ * The army reaches the sites with room for a Well refill and a discovered III point.
  */
 const STAMINA = 40n;
 const XP = 40;

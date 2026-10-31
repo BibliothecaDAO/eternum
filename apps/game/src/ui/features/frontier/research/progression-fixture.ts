@@ -130,7 +130,7 @@ export const EARLY_ARMY: ArmyDetailFacts = {
   ...ARMY_RULES,
 };
 
-/** A veteran: 260 XP after a few clears, Battle uncommon, Logistics rare (170 stamina), Scouting uncommon on rifts. */
+/** A veteran: 260 XP after a few clears, Battle II, Logistics III (170 stamina), Scouting II on rifts. */
 export const VETERAN_ARMY: ArmyDetailFacts = {
   learned: learnResearch(0n, research.ROW_SHRINE, 0),
   name: "Army 2",

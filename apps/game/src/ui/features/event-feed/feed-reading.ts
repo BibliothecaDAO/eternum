@@ -113,8 +113,8 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
     case "SkillPointSpent":
       return {
         actor,
-        verb: "spent a point",
-        // The attribute and its tier as the story says them: "Logistics uncommon".
+        verb: "spent a point on",
+        // The attribute and its rank as the story says them: "Logistics II".
         object: {
           name: story.presentation.title,
           icon: skillPointIcon(payload.choice),

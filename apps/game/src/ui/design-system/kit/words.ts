@@ -23,6 +23,7 @@ import {
   structurePlural,
   structureName,
   StructureType,
+  tierNumeral as rankNumeral,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -30,9 +31,8 @@ export { TIER_WORDS } from "@bibliothecadao/types";
 /** A step on that scale, common (1) to legendary (5). */
 export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
-/** A tier by its numeral, Common I to Legendary V. */
-const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
-export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : TIER_NUMERALS[tier - 1]!);
+/** A tier by its numeral, Common I to Legendary V; untrained is 0. */
+export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -297,8 +297,8 @@ export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION
 export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
 
 /**
- * An army's XP on its tooltip, against the attribute tier it buys next: "XP 8 of 100 · buys an Uncommon attribute
- * tier". XP is a balance an army spends on its attributes; it has no level.
+ * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next II point". XP is a balance
+ * an army spends on its attributes; it has no level.
  */
 export const xpTowardTip = (held: string, milestone: string, tier: string) =>
   `${XP} ${held} of ${milestone} · next ${tier} point`;
@@ -444,6 +444,9 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
+/** The wheat that caps a deploy below the troops at home: "Wheat for 8 troops · 2 each". */
+export const wheatPaysFor = (troops: string, each: string) =>
+  `Wheat for ${troops} ${troops === "1" ? "troop" : "troops"} · ${each} each`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 

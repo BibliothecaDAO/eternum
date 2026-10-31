@@ -82,9 +82,9 @@ describe("Frontier's map sites", () => {
       expect(load).toHaveBeenCalledWith(`/models/${directory}/shrine.glb`);
       expect(load).not.toHaveBeenCalledWith(`/models/${directory}/well.glb`);
       expect(models[0].count).toBe(2);
-      expect(labels.get(1).plate.reward).toBe("Rare skill point");
+      expect(labels.get(1).plate.reward).toBe("III skill point");
       expect(Number.isFinite(labels.get(1).position.y)).toBe(true);
-      expect(labels.get(2).plate.reward).toBe("Legendary skill point");
+      expect(labels.get(2).plate.reward).toBe("V skill point");
       manager.hover({ col: 1, row: 0 });
       expect(plates.setHover).toHaveBeenCalledWith(1);
 

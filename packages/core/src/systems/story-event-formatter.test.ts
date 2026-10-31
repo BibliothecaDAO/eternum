@@ -276,7 +276,7 @@ it("shows the tier an Upgrade reached and the XP it cost from history", () => {
     buildStoryEventPresentation(
       story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
     ),
-  ).toMatchObject({ title: "Logistics rare", description: "Lord 0123's army · rare point · +30 stamina" });
+  ).toMatchObject({ title: "Logistics III", description: "Lord 0123's army · III point · +30 stamina" });
 });
 
 it.each(["Beasts", "Sanctuaries"])("reads a recorded %s Scouting point", (kind) => {
@@ -290,7 +290,7 @@ it.each(["Beasts", "Sanctuaries"])("reads a recorded %s Scouting point", (kind) 
         stamina: 20,
       }),
     ),
-  ).toMatchObject({ title: "Scouting common", description: "Lord 0123's army · common point · +20 stamina" });
+  ).toMatchObject({ title: "Scouting I", description: "Lord 0123's army · I point · +20 stamina" });
 });
 
 /** A story the viewer's own account told. */

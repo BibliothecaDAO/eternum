@@ -44,7 +44,7 @@ describe("what a right-click on a tile does, said before the click", () => {
   it("says under a site's Use what it gives, which costs nothing: a Shrine's point, the stamina a Well lands", () => {
     const use = [step(ActionType.Move), step(ActionType.UseSite, 0)];
     const at = (site: NonNullable<Parameters<typeof tip>[1]>["site"]) => cost(use, { site });
-    expect(at({ kind: "Shrine", gain: 3, stamina: undefined })).toBe("Rare skill point");
+    expect(at({ kind: "Shrine", gain: 3, stamina: undefined })).toBe("III skill point");
     expect(at({ kind: "Well", gain: 60, stamina: { current: 30, max: 120 } })).toBe("+60 stamina");
     // A Well never fills past the bar: what lands, and nothing at a full bar, which the line warns of.
     expect(at({ kind: "Well", gain: 60, stamina: { current: 100, max: 120 } })).toBe("+20 stamina, to full");

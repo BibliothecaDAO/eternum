@@ -20,12 +20,19 @@ const UNKNOWN = "—";
 
 export const LORDS = "LORDS";
 export const XP = "XP";
+/** A chest's rarity, common to legendary. */
 export const TIER_WORDS = ["Common", "Uncommon", "Rare", "Epic", "Legendary"] as const;
-export const skillPointName = (rank: number): string => {
-  const name = Number.isInteger(rank) && TIER_WORDS[rank - 1];
-  if (!name) throw new Error(`Invalid skill point rank ${rank}`);
-  return `${name} skill point`;
+/**
+ * A rank a player levels, by its numeral, I to V: an attribute's tier, a skill point's rank, a research tier. Every
+ * surface names ranks this way: the army panel, its level-ups, research, the Feed and the day log.
+ */
+const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
+export const tierNumeral = (rank: number): string => {
+  const numeral = Number.isInteger(rank) && TIER_NUMERALS[rank - 1];
+  if (!numeral) throw new Error(`Invalid rank ${rank}`);
+  return numeral;
 };
+export const skillPointName = (rank: number): string => `${tierNumeral(rank)} skill point`;
 /** Gains and purchases in both the history Log and Frontier's Today sheet. */
 export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
 export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>

@@ -844,7 +844,7 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
  * colour with its numeral, Common I to Legendary V.
  */
 export const HudTier = ({ tier }: { tier: Rank }) => (
-  <span className="ui-tier" data-tier={tier} role="img" aria-label={tier === 0 ? "Untrained" : TIER_WORDS[tier - 1]}>
+  <span className="ui-tier" data-tier={tier} role="img" aria-label={tier === 0 ? "Untrained" : tierNumeral(tier)}>
     {tier === 0 ? null : tierNumeral(tier)}
   </span>
 );
@@ -854,7 +854,7 @@ export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
   <span
     className="ui-tier-step"
     role="img"
-    aria-label={`${from === 0 ? "Untrained" : TIER_WORDS[from - 1]} → ${TIER_WORDS[to - 1]}`}
+    aria-label={`${from === 0 ? "Untrained" : tierNumeral(from)} → ${tierNumeral(to)}`}
   >
     <HudTier tier={from} />
     <span aria-hidden>→</span>
