@@ -1,10 +1,6 @@
+import type { PayoutCosigner } from "./cosigner-client";
 import { Account, CallData, cairo, type RpcProvider } from "starknet";
-import {
-  rpcAt,
-  readConfirmedLedgerHead,
-  decodeFrontierSeason,
-  decodeSettlementReport,
-} from "@realms-world/value-ledger";
+import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason } from "@realms-world/value-ledger";
 import type { FrontierSettlement } from "./frontier-sweep";
 import type { ledgerReportAdapter } from "./chain";
 
@@ -12,6 +8,7 @@ import type { ledgerReportAdapter } from "./chain";
 export async function settleFrontier(
   credentials: Parameters<typeof ledgerReportAdapter>[0],
   settlement: FrontierSettlement,
+  cosigner: PayoutCosigner,
 ) {
   const provider = rpcAt(credentials.rpcUrl);
   const { chainId, gameId, chestWithdrawn, prizeWithdrawn } = settlement;
@@ -45,71 +42,28 @@ export async function settleFrontier(
     season.prizePaid === season.prizePool;
   if (head.time < season.end || paidBeyondReceipts || (!expired && !fullyPaid))
     throw new Error("frontier_settlement_not_paid");
-  const entrypoint = expired
-    ? "settle_frontier"
-    : await earlySettlementAction(provider, credentials.contractAddress, head, {
-        chainId,
-        gameId,
-        chestWithdrawn: season.paid,
-        prizeWithdrawn: season.prizePaid,
-      });
-  if (entrypoint === null) return;
-  await submitSettlement(credentials, provider, entrypoint, {
-    chainId,
-    gameId,
-    chestWithdrawn: season.paid,
-    prizeWithdrawn: season.prizePaid,
-  });
-}
-
-async function earlySettlementAction(
-  provider: RpcProvider,
-  address: string,
-  head: { number: number; time: number },
-  settlement: FrontierSettlement,
-) {
-  const report = await provider.callContract(
-    {
-      contractAddress: address,
-      entrypoint: "get_settlement",
-      calldata: [settlement.chainId, String(settlement.gameId)],
-    },
-    head.number,
-  );
-  const current = decodeSettlementReport(report);
-  const ready = BigInt(current.ready);
-  const matches =
-    BigInt(current.chestWithdrawn) === BigInt(settlement.chestWithdrawn) &&
-    BigInt(current.prizeWithdrawn) === BigInt(settlement.prizeWithdrawn);
-  if (ready === 0n || !matches) return "report_settlement";
-  if (BigInt(head.time) < ready) return null;
-  const approval = await provider.callContract(
-    {
-      contractAddress: address,
-      entrypoint: "settlement_approved",
-      calldata: [settlement.chainId, String(settlement.gameId)],
-    },
-    head.number,
-  );
-  if (approval.length !== 1 || ![0n, 1n].includes(BigInt(approval[0]!))) throw new Error("invalid_settlement_approval");
-  return BigInt(approval[0]!) === 1n ? "settle_frontier" : null;
+  const terms = { chainId, gameId, chestWithdrawn: season.paid, prizeWithdrawn: season.prizePaid };
+  const signature = await cosigner.settle(terms);
+  await submitSettlement(credentials, provider, terms, signature);
 }
 
 async function submitSettlement(
   credentials: Parameters<typeof ledgerReportAdapter>[0],
   provider: RpcProvider,
-  entrypoint: "report_settlement" | "settle_frontier",
   settlement: FrontierSettlement,
+  signature: import("@realms-world/value-ledger").Cosignature,
 ) {
   const account = new Account({ provider, address: credentials.accountAddress, signer: credentials.privateKey });
   const tx = await account.execute({
     contractAddress: credentials.contractAddress,
-    entrypoint,
+    entrypoint: "settle_frontier",
     calldata: CallData.compile({
       shard: settlement.chainId,
       season_id: settlement.gameId,
       chest_withdrawn: cairo.uint256(settlement.chestWithdrawn),
       prize_withdrawn: cairo.uint256(settlement.prizeWithdrawn),
+      signature_r: signature.r,
+      signature_s: signature.s,
     }),
   });
   const receipt = await provider.waitForTransaction(tx.transaction_hash, { errorStates: [] });

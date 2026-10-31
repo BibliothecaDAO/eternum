@@ -1,3 +1,4 @@
+const testSignature = { r: "0x123", s: "0x456" };
 import { hash, shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
@@ -94,8 +95,17 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
     },
   ]);
   const submit = vi.fn(async (_entrypoint: string, _calldata: readonly string[]) => {});
-  await Effect.runPromise(frontierPayment(submit)(block.withdrawals[0]!, "0x456"));
-  expect(submit).toHaveBeenCalledWith("pay", ["0x1", "3", "0xabc", "0x456", "17000000000000000000", "0"]);
+  await Effect.runPromise(frontierPayment(submit)(block.withdrawals[0]!, "0x456", testSignature));
+  expect(submit).toHaveBeenCalledWith("pay", [
+    "0x1",
+    "3",
+    "0xabc",
+    "0x456",
+    "17000000000000000000",
+    "0",
+    testSignature.r,
+    testSignature.s,
+  ]);
   expect(submit.mock.calls[0]![1].map(BigInt)).toEqual(
     ledgerCall("pay", {
       shard: 1,
@@ -103,6 +113,8 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
       claim_id: "0xabc",
       wallet: "0x456",
       amount: { low: "17000000000000000000", high: 0 },
+      signature_r: testSignature.r,
+      signature_s: testSignature.s,
     }).map(BigInt),
   );
   expect(rpc.classHash).toHaveBeenCalledWith(address, 10);
@@ -522,16 +534,12 @@ it.each([false, true])(
         ...f.ports,
         conservation: () => Effect.succeed([]),
         result: () => Effect.succeed(null),
-        settlementEvidence: () => Effect.succeed(null),
       },
       ledger: {
         pause,
-        approvePayment,
-        approveSettlement: () => Effect.void,
         frontierPool: () => Effect.succeed("0"),
         reportedClaims: () =>
           Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
-        reportedSettlements: () => Effect.succeed({ ...page, rows: [] }),
         paidClaims: () => Effect.succeed({ ...page, rows: [] }),
         postedResults: () => Effect.succeed({ ...page, rows: [] }),
       },
@@ -546,7 +554,6 @@ it.each([false, true])(
     expect(progress.halted).toBe("reported_claim_mismatch:0xdef");
     expect(pause).toHaveBeenCalledOnce();
     expect(f.bindings.realmsIdForAccount).not.toHaveBeenCalled();
-    expect(approvePayment).not.toHaveBeenCalled();
     for (let tick = 0; tick < 61; tick++) await Effect.runPromise(runMonitor(ports, store));
     expect(pause).toHaveBeenCalledTimes(62);
   },

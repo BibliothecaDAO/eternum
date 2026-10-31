@@ -141,6 +141,8 @@ it("records unavailable ledger work while shard ingestion and owned Realm labor 
       L2_RPC_URL: "https://ledger.test",
       OPERATOR_TOKEN: "test",
       SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-cosigner-token",
       LEDGER_OPERATOR_ADDRESS: "0x2",
       LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
       RELAY: { idFromName: (id: string) => id, get: () => ({ ledgerTick: () => relay.ledgerTick(), tick }) },
@@ -272,6 +274,8 @@ it("preserves player-facing registration errors across the shard object's RPC bo
       L2_RPC_URL: "https://ledger.test",
       OPERATOR_TOKEN: "test",
       SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+      COSIGNER_URL: "https://cosigner.test",
+      COSIGNER_TOKEN: "test-cosigner-token",
       LEDGER_OPERATOR_ADDRESS: "0x2",
       LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
       RELAY: {

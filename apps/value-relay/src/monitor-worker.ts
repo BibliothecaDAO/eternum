@@ -1,5 +1,4 @@
 import { readMonitorFeeBalance, type MonitorFeeBalance } from "./monitor-balance";
-import { frontierSettlementEvidence } from "./frontier-sweep";
 import { decodeMonitorSettings, type MonitorSettings } from "./monitor-env";
 import { checkSlotRoster, slotRosterReads } from "./roster-monitor";
 import { ledgerAddress, ledgerContractOf } from "./environment";
@@ -13,7 +12,6 @@ import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerMonitorReads } from "./ledger";
 import { ledgerPauserAdapter } from "./chain";
-import { ledgerApprovals } from "./ledger-approvals";
 import { ShardReader, shardConnection } from "./shard-rpc";
 import { shardConservationPort } from "./shard-conservation";
 import { frontierReceiptBindings } from "./frontier-binding";
@@ -305,13 +303,6 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
       ),
     );
   };
-  const approvals = () =>
-    ledgerApprovals({
-      rpcUrl: env.L2_RPC_URL,
-      contractAddress: ledgerAddress(env.ENVIRONMENT),
-      accountAddress: env.PAUSER_ACCOUNT_ADDRESS,
-      privateKey: env.PAUSER_PRIVATE_KEY,
-    });
   // Resolve per read so missing configuration enters the monitor's durable stop path.
   const ledgerReads = () => ledgerMonitorReads(env.L2_RPC_URL, ledgerContractOf(env.ENVIRONMENT));
   return {
@@ -333,11 +324,6 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
           const { reader } = await shardPorts(chainId);
           return Effect.runPromise(shardResultPort(reader)(chainId, gameId));
         }),
-      settlementEvidence: (report) =>
-        relayOperation("audit proposed shard settlement", async () => {
-          const { reader, shard } = await shardPorts(report.chainId);
-          return frontierSettlementEvidence(reader.connection, shard.url, report);
-        }),
       conservation: () =>
         relayOperation("audit official shard conservation", async () => {
           const balances = [];
@@ -350,18 +336,10 @@ const monitorPortsOf = (env: MonitorEnv, storage: DurableObjectStorage): Monitor
         }),
     },
     ledger: {
-      approvePayment: (report) =>
-        relayOperation("approve ledger payment", () => Effect.runPromise(approvals().approvePayment(report))),
-      approveSettlement: (report) =>
-        relayOperation("approve ledger settlement", () => Effect.runPromise(approvals().approveSettlement(report))),
       // Each read forwards its whole argument list, so the audit cursor's anchor reaches the ledger unchanged.
       frontierPool: (...read: Parameters<LedgerPorts["frontierPool"]>) =>
         relayOperation("ledger Frontier funding unavailable", () =>
           Effect.runPromise(ledgerReads().frontierPool(...read)),
-        ),
-      reportedSettlements: (...read: Parameters<LedgerPorts["reportedSettlements"]>) =>
-        relayOperation("ledger settlement reports unavailable", () =>
-          Effect.runPromise(ledgerReads().reportedSettlements(...read)),
         ),
       reportedClaims: (...read: Parameters<LedgerPorts["reportedClaims"]>) =>
         relayOperation("ledger reports unavailable", () => Effect.runPromise(ledgerReads().reportedClaims(...read))),

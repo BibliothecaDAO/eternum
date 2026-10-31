@@ -1,3 +1,4 @@
+import { cosignerClient } from "./cosigner-client";
 import type { HeldRealm } from "@realms-world/identity";
 import {
   handleHeldRealmsRequest,
@@ -243,7 +244,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   settleFrontier(settlement: FrontierSettlement) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("settle Frontier season", () => settleFrontier(ledgerCredentialsOf(this.env), settlement)),
+        relayOperation("settle Frontier season", () =>
+          settleFrontier(
+            ledgerCredentialsOf(this.env),
+            settlement,
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+          ),
+        ),
         [settlement.chainId],
       ),
     );
@@ -262,8 +269,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("reportMany ledger claims", () =>
-          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-            this.env.IDENTITY.recordPayDecisions(decisions),
+          ledgerBatches(
+            ledgerCredentialsOf(this.env),
+            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
           ).reportMany(rows),
         ),
         rows.map((row) => row.chainId),
@@ -274,8 +283,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("payMany ledger claims", () =>
-          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-            this.env.IDENTITY.recordPayDecisions(decisions),
+          ledgerBatches(
+            ledgerCredentialsOf(this.env),
+            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
           ).payMany(rows),
         ),
         rows.map((row) => row.withdrawal.chainId),

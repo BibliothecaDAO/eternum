@@ -1,3 +1,4 @@
+import type { Cosignature } from "@realms-world/value-ledger";
 import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
 import {
@@ -124,11 +125,10 @@ export const ledgerReportAdapter =
 /** Identity journals each signed pay decision; eligibility is never reconstructed from an inclusion clock. */
 export const ledgerClaimAdapter =
   (
-    phase: "prepare" | "pay",
     credentials: LedgerCredentials,
     record: (decision: LedgerPayDecision) => Promise<void>,
-  ): ((withdrawal: Withdrawal, wallet: string) => RelayEffect<void>) =>
-  (withdrawal, wallet) =>
+  ): ((withdrawal: Withdrawal, wallet: string, signature: Cosignature) => RelayEffect<void>) =>
+  (withdrawal, wallet, signature) =>
     frontierPayment(async (entrypoint, calldata) => {
       const provider = rpcAt(credentials.rpcUrl);
       const signer = new RecordedSigner(credentials.privateKey, (transactionHash) =>
@@ -146,8 +146,8 @@ export const ledgerClaimAdapter =
       try {
         const transaction = await account.execute({
           contractAddress: credentials.contractAddress,
-          entrypoint: phase === "prepare" ? "prepare_payment" : entrypoint,
-          calldata: phase === "prepare" ? [withdrawal.chainId, withdrawal.transactionHash, wallet] : [...calldata],
+          entrypoint,
+          calldata: [...calldata],
         });
         const receipt = await provider.waitForTransaction(transaction.transaction_hash, { errorStates: [] });
         if (receipt.isReverted()) throw paymentFailure(receipt.revert_reason);
@@ -155,7 +155,7 @@ export const ledgerClaimAdapter =
         if (error instanceof RelayFailure) throw error;
         throw paymentFailure(error instanceof Error ? error.message : "");
       }
-    })(withdrawal, wallet);
+    })(withdrawal, wallet, signature);
 
 /** Pausing is idempotent at the port, including a retry after the pause transaction landed. */
 export const ledgerPauserAdapter = (credentials: LedgerCredentials): (() => import("./ports").RelayEffect<void>) => {
@@ -187,12 +187,10 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 export const paymentFailure = (reason = "") => {
-  if (reason.includes("Ledger: payment unapproved"))
-    return new RelayFailure({ operation: "ledger_payment_unapproved" });
-  const operation = reason.includes("Ledger: payout allowance spent")
-    ? "ledger_payout_allowance_spent"
-    : reason.includes("Ledger: payment delay")
-      ? "ledger_payment_delay"
+  const operation = reason.includes("Ledger: invalid cosignature")
+    ? "ledger_invalid_cosignature"
+    : reason.includes("Ledger: claim already paid")
+      ? "ledger_claim_already_paid"
       : reason.includes("Ledger: claim window ended")
         ? "ledger_claim_window_ended"
         : reason.includes("Ledger: season closed")

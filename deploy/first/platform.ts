@@ -79,6 +79,8 @@ export function workerSecrets(
         SHARD_LEDGER_OPERATOR_PRIVATE_KEY: keys.shardRelay,
         LEDGER_OPERATOR_PRIVATE_KEY: keys.relay,
         LEDGER_OPERATOR_ADDRESS: accountIdentity(keys.relay).address,
+        COSIGNER_URL: inputs.cosignerUrl,
+        COSIGNER_TOKEN: inputs.cosignerToken,
       };
     case "monitor":
       return {

@@ -43,7 +43,10 @@ it("serializes ledger reports for different official shards and rechecks retirem
       { chainId: "0x2", url: "https://two.test", status: secondStatus },
     ],
   };
-  const relay = new ValueRelay({ storage: {} } as DurableObjectState, { IDENTITY: identity } as never);
+  const relay = new ValueRelay(
+    { storage: {} } as DurableObjectState,
+    { IDENTITY: identity, COSIGNER_URL: "https://cosigner.test", COSIGNER_TOKEN: "test-token" } as never,
+  );
   let running = 0,
     maximum = 0;
   const executed: string[] = [];

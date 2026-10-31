@@ -59,6 +59,9 @@ const input: Inputs = {
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   resend: "fake-resend",
   discordClientId: "fake-discord-id",
+  cosignerPublicKey: "0x123",
+  cosignerUrl: "https://cosigner.test",
+  cosignerToken: "test-cosigner-token",
   discordClientSecret: "fake-discord-secret",
   amount: "1000000",
   frontierPresetId: "5",
@@ -289,7 +292,7 @@ test("a lost invoke response retries the same nonce while it remains current", a
 
 test("production requires real LORDS and dev alone can deploy a test token", () => {
   // Dev, from an empty book: its test LORDS, rating token and two collections, then its ledger once they exist.
-  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}).map((plan) => plan.name)).toEqual([
+  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}, "0x123").map((plan) => plan.name)).toEqual([
     "lords",
     "mmr",
     "chests",
@@ -298,12 +301,12 @@ test("production requires real LORDS and dev alone can deploy a test token", () 
   // Production deploys only its own rating token and collections around the canonical token.
   expect(addressBook(environments.production).lords).toBe(mainnetAddresses.lords);
   for (const lords of [undefined, "0x0", addressBook(environments.dev).lords]) {
-    expect(() => assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords })).toThrow(
+    expect(() => assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords }, "0x123")).toThrow(
       "canonical mainnet LORDS",
     );
   }
   const testLords = mainnetAddresses.lords;
-  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords });
+  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords }, "0x123");
   expect(production.map((plan) => [plan.name, plan.artifact])).toEqual([
     ["mmr", "MMRToken"],
     ["chests", "RealmsCollectible"],
@@ -313,14 +316,15 @@ test("production requires real LORDS and dev alone can deploy a test token", () 
   const chest = production.find((plan) => plan.name === "chests")!;
   expect(chest.constructor).toContain(BigInt("0xc01d").toString());
   expect(chest.constructor).not.toEqual(
-    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }).find((plan) => plan.name === "chests")!
-      .constructor,
+    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }, "0x123").find(
+      (plan) => plan.name === "chests",
+    )!.constructor,
   );
   // Once they exist, its own ledger is built on real LORDS with production's admin, operator and treasury.
   const deployed = { lords: testLords, mmr: "0x31", chests: "0x32", cosmetics: "0x33" };
-  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed);
+  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed, "0x123");
   expect(ledger).toHaveLength(1);
-  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33"]);
+  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33", "0x123"]);
   expect(fixedSalt("dev", "0x123", "ledger")).not.toBe(fixedSalt("production", "0x123", "ledger"));
 });
 
@@ -518,6 +522,13 @@ test("every service uses one RPC; deployer and cold admin keys never enter Worke
   for (const name of ["identity", "relay", "monitor", "status"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
   expect(map.guardian).toEqual({});
   expect(map.relay!.LEDGER_OPERATOR_PRIVATE_KEY).toBe(keys.relay);
+  expect(map.relay!.COSIGNER_URL).toBe(input.cosignerUrl);
+  expect(map.relay!.COSIGNER_TOKEN).toBe(input.cosignerToken);
+  expect(
+    Object.values(map)
+      .flatMap(Object.keys)
+      .filter((name) => name.includes("COSIGNER")),
+  ).toEqual(["COSIGNER_URL", "COSIGNER_TOKEN"]);
   expect(map.monitor!.PAUSER_PRIVATE_KEY).toBe(keys.monitor);
   expect(Object.values(map).flatMap(Object.values)).not.toContain(keys.deployer);
   expect(map.launch!.LAUNCH_DEPLOYER_PRIVATE_KEY).toBe(keys.launcher);
@@ -537,6 +548,9 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "cloudflareToken",
     "rpc",
     "resend",
+    "cosignerPublicKey",
+    "cosignerUrl",
+    "cosignerToken",
     "discordClientId",
     "discordClientSecret",
     "amount",
@@ -859,15 +873,20 @@ test("resuming an existing ledger refuses different saved accounts", async () =>
   const calls: unknown[] = [];
   let allowed = true;
   const provider = {
-    callContract: async (call: unknown) => {
+    callContract: async (call: { entrypoint: string }) => {
       calls.push(call);
-      return [allowed ? "1" : "0"];
+      return call.entrypoint === "cosigner" ? ["0x123", "0"] : [allowed ? "1" : "0"];
     },
   } as unknown as RpcProvider;
-  await verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21");
-  expect(calls).toHaveLength(2);
+  await verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21", "0x123");
+  expect(calls).toHaveLength(3);
+  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21", "0x456")).rejects.toThrow(
+    "co-signer differs",
+  );
   allowed = false;
-  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31")).rejects.toThrow("different accounts");
+  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31", "0x123")).rejects.toThrow(
+    "different accounts",
+  );
 });
 
 test("publishes the ledger's deployment block beside its address, the same on a rerun, and refuses a different one", () => {

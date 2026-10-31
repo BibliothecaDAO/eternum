@@ -21,24 +21,12 @@ const fixture = () => {
     identity: { matchesPayDecision: () => Effect.succeed(true) },
     shard: {
       withdrawalReceipt: () => Effect.succeed(null),
-      settlementEvidence: () => Effect.succeed(null),
       conservation: () => Effect.succeed([]),
       withdrawal: vi.fn(() => Effect.fail(new RelayFailure({ operation: "shard_unavailable" }))),
       result: () => Effect.succeed(null),
     },
     ledger: {
-      approvePayment: () => Effect.void,
-      approveSettlement: () => Effect.void,
       frontierPool: () => Effect.succeed(String(100n * 10n ** 18n)),
-      reportedSettlements: () =>
-        Effect.succeed({
-          rows: [],
-          next: null,
-          head: 0,
-          anchor: { number: 0, hash: "0x1" },
-          rewind: false,
-          fromBlock: 0,
-        }),
       reportedClaims: () =>
         Effect.succeed({
           rows: [],
@@ -118,8 +106,6 @@ const pendingReport = () => {
   const receipt = { ...f.receipt, amount: "6000000000000000000000", account: "0x3" };
   const report = { ...receipt, wallet: "0x123", reportTransactionHash: "0xdef" };
   const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
-  const approve = vi.fn(() => Effect.void);
-  f.ports.ledger.approvePayment = approve;
   f.ports.shard.withdrawal = () => Effect.succeed(receipt);
   f.ports.shard.withdrawalReceipt = () => Effect.fail(new RelayFailure({ operation: "receipt_unavailable" }));
   f.ports.ledger.reportedClaims = () => Effect.succeed({ ...page, rows: [report] });
@@ -129,25 +115,22 @@ const pendingReport = () => {
     receipt,
     report,
     page,
-    approve,
     at: (time: number) => {
       now = time;
     },
   };
 };
 
-it("warns on the first read failure, withholds approval, and recovers from a blip without pause or reset", async () => {
+it("warns on the first read failure, retries verification, and recovers from a blip without pause or reset", async () => {
   const f = pendingReport();
   await expect(f.tick()).rejects.toMatchObject({ operation: "reported_claim_unverifiable:0xabc" });
   expect(await f.store.load()).toMatchObject({ halted: null, unverifiable: { reportedClaims: { since: 1000 } } });
   expect((await f.store.load()).fault).toBeUndefined();
   f.at(1599);
   await expect(f.tick()).rejects.toMatchObject({ operation: "reported_claim_unverifiable:0xabc" });
-  expect(f.approve).not.toHaveBeenCalled();
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
   f.ports.shard.withdrawalReceipt = () => Effect.succeed(f.receipt);
   await expect(f.tick()).resolves.toMatchObject({ halted: null, unverifiable: {} });
-  expect(f.approve).toHaveBeenCalledExactlyOnceWith(f.report);
   expect(f.ports.ledger.pause).not.toHaveBeenCalled();
   f.at(1600);
   f.ports.shard.withdrawalReceipt = () => Effect.fail(new RelayFailure({ operation: "new_blip" }));
@@ -155,7 +138,7 @@ it("warns on the first read failure, withholds approval, and recovers from a bli
   expect((await f.store.load()).unverifiable?.reportedClaims?.since).toBe(1600);
 });
 
-it("persists the ten-minute window across ticks and healthy sibling streams, then retries pause until recovery", async () => {
+it("persists the ten-minute window across ticks, then retries pause until recovery", async () => {
   const f = pendingReport();
   await expect(f.tick()).rejects.toBeInstanceOf(RelayFailure);
   f.at(1599);
@@ -165,12 +148,10 @@ it("persists the ten-minute window across ticks and healthy sibling streams, the
   await expect(f.tick()).resolves.toMatchObject({ halted: "report_unverifiable_timeout:reportedClaims" });
   await f.tick();
   expect(f.ports.ledger.pause).toHaveBeenCalledTimes(2);
-  expect(f.approve).not.toHaveBeenCalled();
   expect((await f.store.load()).fault?.fact).toBeUndefined();
   await f.store.save(resetMonitorRow(await f.store.load(), "reportedClaims:0x1:0xabc"));
   f.ports.shard.withdrawalReceipt = () => Effect.succeed(f.receipt);
   await expect(f.tick()).resolves.toMatchObject({ halted: null, unverifiable: {} });
-  expect(f.approve).toHaveBeenCalledExactlyOnceWith(f.report);
 });
 
 it("pauses a proven forgery immediately even behind an unreadable report in the same page", async () => {
@@ -183,18 +164,6 @@ it("pauses a proven forgery immediately even behind an unreadable report in the 
       : Effect.succeed({ ...f.receipt, transactionHash: hash, amount: "1" });
   await expect(f.tick()).resolves.toMatchObject({ halted: "reported_claim_mismatch:0xbbb" });
   expect(f.ports.ledger.pause).toHaveBeenCalledOnce();
-  expect(f.approve).not.toHaveBeenCalled();
-});
-
-it("treats approval submission failures as unavailable and never advances the waiting report", async () => {
-  const f = pendingReport();
-  f.ports.shard.withdrawalReceipt = () => Effect.succeed(f.receipt);
-  f.ports.ledger.approvePayment = () => Effect.fail(new RelayFailure({ operation: "insufficient_strk" }));
-  await expect(f.tick()).rejects.toMatchObject({ operation: "reportedClaims_unverifiable" });
-  expect(f.ports.ledger.pause).not.toHaveBeenCalled();
-  expect((await f.store.load()).cursors?.reportedClaims).toBeUndefined();
-  f.at(1600);
-  await expect(f.tick()).resolves.toMatchObject({ halted: "report_unverifiable_timeout:reportedClaims" });
 });
 
 it("retains a waiting report's window when its whole ledger page becomes unreadable", async () => {
@@ -225,21 +194,4 @@ it("retries an invalid page with waiting reports and pauses only after sustained
   f.at(1600);
   await expect(f.tick()).resolves.toMatchObject({ halted: "report_unverifiable_timeout:reportedClaims" });
   expect((await f.store.load()).fault?.row).toBe("reportedClaims:unavailable");
-});
-
-it("withholds early-settlement approval during a read outage and pauses after ten minutes", async () => {
-  const f = pendingReport();
-  f.ports.ledger.reportedClaims = () => Effect.succeed({ ...f.page, rows: [] });
-  f.ports.ledger.reportedSettlements = () =>
-    Effect.succeed({ ...f.page, rows: [{ chainId: "0x1", gameId: 1, chestWithdrawn: "0", prizeWithdrawn: "0" }] });
-  const approve = vi.fn(() => Effect.void);
-  f.ports.ledger.approveSettlement = approve;
-  f.ports.shard.settlementEvidence = () => Effect.fail(new RelayFailure({ operation: "herald_unavailable" }));
-  await expect(f.tick()).rejects.toBeInstanceOf(RelayFailure);
-  f.at(1599);
-  await expect(f.tick()).rejects.toBeInstanceOf(RelayFailure);
-  expect(f.ports.ledger.pause).not.toHaveBeenCalled();
-  f.at(1600);
-  await expect(f.tick()).resolves.toMatchObject({ halted: "report_unverifiable_timeout:reportedSettlements" });
-  expect(approve).not.toHaveBeenCalled();
 });

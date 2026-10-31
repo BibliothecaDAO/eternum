@@ -1,3 +1,4 @@
+const testSignature = { r: "0x123", s: "0x456" };
 import { ledgerResetPayments } from "./chain";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { Effect } from "effect";
@@ -39,7 +40,7 @@ beforeEach(() => {
 });
 it("waits for the Frontier payment to confirm before completing", async () => {
   await Effect.runPromise(
-    ledgerClaimAdapter("pay", credentials, async () => {})(
+    ledgerClaimAdapter(credentials, async () => {})(
       {
         prizeRank: 0,
         prizeCount: 0,
@@ -51,22 +52,29 @@ it("waits for the Frontier payment to confirm before completing", async () => {
         confirmedAt: 1000,
       },
       "0x456",
+      testSignature,
     ),
   );
   expect(rpc.execute).toHaveBeenCalledWith({
     contractAddress: "0x10",
     entrypoint: "pay",
-    calldata: ["0x1", "7", "0xdef", "0x456", "17", "0"],
+    calldata: ["0x1", "7", "0xdef", "0x456", "17", "0", testSignature.r, testSignature.s],
   });
   expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("pay", { shard: 1, season_id: 7, claim_id: "0xdef", wallet: "0x456", amount: { low: 17, high: 0 } }).map(
-      BigInt,
-    ),
+    ledgerCall("pay", {
+      shard: 1,
+      season_id: 7,
+      claim_id: "0xdef",
+      wallet: "0x456",
+      amount: { low: 17, high: 0 },
+      signature_r: testSignature.r,
+      signature_s: testSignature.s,
+    }).map(BigInt),
   );
   expect(rpc.wait).toHaveBeenCalledWith("0xabc", { errorStates: [] });
 });
 it("does not mark a reverted payment successful or expose a transport's error", async () => {
-  const pay = ledgerClaimAdapter("pay", credentials, async () => {});
+  const pay = ledgerClaimAdapter(credentials, async () => {});
   const withdrawal = {
     prizeRank: 0,
     prizeCount: 0,
@@ -78,9 +86,13 @@ it("does not mark a reverted payment successful or expose a transport's error", 
     confirmedAt: 1000,
   };
   rpc.wait.mockResolvedValue({ isReverted: () => true });
-  await expect(Effect.runPromise(pay(withdrawal, "0x456"))).rejects.toMatchObject({ operation: "pay Frontier claim" });
+  await expect(Effect.runPromise(pay(withdrawal, "0x456", testSignature))).rejects.toMatchObject({
+    operation: "pay Frontier claim",
+  });
   rpc.wait.mockRejectedValue(new Error("sensitive transport detail"));
-  await expect(Effect.runPromise(pay(withdrawal, "0x456"))).rejects.toMatchObject({ operation: "pay Frontier claim" });
+  await expect(Effect.runPromise(pay(withdrawal, "0x456", testSignature))).rejects.toMatchObject({
+    operation: "pay Frontier claim",
+  });
 });
 it("makes a monitor pause retry harmless once the pause already landed", async () => {
   rpc.call.mockResolvedValue(["0x1"]);
@@ -104,11 +116,15 @@ it("distinguishes a permanent close from the retryable whole-day unlock gate wit
     amount: "17",
     confirmedAt: 1000,
   };
-  const pay = ledgerClaimAdapter("pay", credentials, async () => {});
+  const pay = ledgerClaimAdapter(credentials, async () => {});
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: season closed" });
-  await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_season_closed" });
+  await expect(Effect.runPromise(pay(claim, "0x456", testSignature))).rejects.toMatchObject({
+    operation: "ledger_season_closed",
+  });
   rpc.wait.mockResolvedValue({ isReverted: () => true, revert_reason: "Ledger: unlock exceeded" });
-  await expect(Effect.runPromise(pay(claim, "0x456"))).rejects.toMatchObject({ operation: "ledger_unlock_exceeded" });
+  await expect(Effect.runPromise(pay(claim, "0x456", testSignature))).rejects.toMatchObject({
+    operation: "ledger_unlock_exceeded",
+  });
 });
 
 it("confirms an immutable withdrawal report separately from payment and recognizes reported-unpaid versus unseen", async () => {
@@ -162,7 +178,7 @@ it("refuses a pay before broadcast when identity cannot record ready authority",
   const record = vi.fn(async () => {
     throw new Error("not_ready");
   });
-  const pay = ledgerClaimAdapter("pay", credentials, record);
+  const pay = ledgerClaimAdapter(credentials, record);
   await expect(
     Effect.runPromise(
       pay(
@@ -177,6 +193,7 @@ it("refuses a pay before broadcast when identity cannot record ready authority",
           confirmedAt: 1,
         },
         "0x123",
+        testSignature,
       ),
     ),
   ).rejects.toMatchObject({ operation: "pay Frontier claim" });
@@ -185,11 +202,7 @@ it("refuses a pay before broadcast when identity cannot record ready authority",
 it("journals the exact signed claim decision before broadcast without an inclusion clock", async () => {
   const record = vi.fn(async () => {});
   await Effect.runPromise(
-    ledgerClaimAdapter(
-      "pay",
-      credentials,
-      record,
-    )(
+    ledgerClaimAdapter(credentials, record)(
       {
         prizeRank: 0,
         prizeCount: 0,
@@ -201,6 +214,7 @@ it("journals the exact signed claim decision before broadcast without an inclusi
         confirmedAt: 999999,
       },
       "0x123",
+      testSignature,
     ),
   );
   expect(record).toHaveBeenCalledWith({
@@ -314,101 +328,4 @@ it("requires a confirmed pause and pins every recovery payment read to that head
   };
   expect(await Effect.runPromise(payment(claim))).toMatchObject({ paid: true });
   expect(rpc.call).toHaveBeenLastCalledWith(expect.objectContaining({ entrypoint: "get_payment" }), 10);
-});
-
-it("records recipient authority before broadcasting preparation with the compiled ABI", async () => {
-  const journal = vi.fn(async () => {});
-  const claim = {
-    chainId: "0x1",
-    seasonId: 7,
-    transactionHash: "0xdef",
-    realmsId: "0x2",
-    amount: "17",
-    confirmedAt: 1,
-    prizeRank: 0,
-    prizeCount: 0,
-  };
-  await Effect.runPromise(ledgerClaimAdapter("prepare", credentials, journal)(claim, "0x123"));
-  expect(rpc.execute).toHaveBeenCalledWith({
-    contractAddress: "0x10",
-    entrypoint: "prepare_payment",
-    calldata: ["0x1", "0xdef", "0x123"],
-  });
-  expect(rpc.execute.mock.calls[0]![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("prepare_payment", { shard: "0x1", claim_id: "0xdef", wallet: "0x123" }).map(BigInt),
-  );
-  expect(journal).toHaveBeenCalledWith({
-    chainId: "0x1",
-    claimId: "0xdef",
-    transactionHash: "0xabc",
-    realmsId: "0x2",
-    seasonId: 7,
-    wallet: "0x123",
-    amount: "17",
-  });
-  expect(journal.mock.invocationCallOrder[0]).toBeLessThan(rpc.execute.mock.invocationCallOrder[0]!);
-});
-
-it("submits the exact verified payment and settlement through the monitor account", async () => {
-  const { ledgerApprovals } = await import("./ledger-approvals");
-  rpc.call.mockImplementation(async ({ entrypoint }: { entrypoint: string }) => {
-    if (entrypoint === "get_frontier") return ["1", "1", "2", "100", "0", "0", "0", "0", "1", "0", "3", "0", "0", "0"];
-    if (entrypoint === "get_payment") return ["0", "7", "0x456", "17", "1", "1", "2", "1000"];
-    if (entrypoint === "get_settlement") return ["17", "0", "3", "0", "2000"];
-    if (entrypoint === "payment_approved" || entrypoint === "settlement_approved") return ["0"];
-    throw new Error(`unexpected read ${entrypoint}`);
-  });
-  const approvals = ledgerApprovals(credentials);
-  await Effect.runPromise(
-    approvals.approvePayment({
-      chainId: "0x1",
-      seasonId: 7,
-      transactionHash: "0xdef",
-      reportTransactionHash: "0x999",
-      wallet: "0x456",
-      amount: String(2n ** 128n + 17n),
-      prizeRank: 1,
-      prizeCount: 2,
-    }),
-  );
-  expect(rpc.execute).toHaveBeenLastCalledWith(
-    expect.objectContaining({
-      contractAddress: credentials.contractAddress,
-      entrypoint: "approve_payment",
-    }),
-  );
-  expect(rpc.execute.mock.lastCall![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("approve_payment", {
-      shard: 1,
-      season_id: 7,
-      claim_id: "0xdef",
-      wallet: "0x456",
-      amount: { low: 17, high: 1 },
-      prize_rank: 1,
-      prize_count: 2,
-    }).map(BigInt),
-  );
-  await Effect.runPromise(
-    approvals.approveSettlement({ chainId: "0x1", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" }),
-  );
-  expect(rpc.execute).toHaveBeenLastCalledWith(
-    expect.objectContaining({
-      contractAddress: credentials.contractAddress,
-      entrypoint: "approve_settlement",
-    }),
-  );
-  expect(rpc.execute.mock.lastCall![0].calldata.map(BigInt)).toEqual(
-    ledgerCall("approve_settlement", {
-      shard: 1,
-      season_id: 7,
-      chest_withdrawn: { low: 17, high: 0 },
-      prize_withdrawn: { low: 3, high: 0 },
-    }).map(BigInt),
-  );
-  rpc.wait.mockResolvedValue({ isReverted: () => true });
-  await expect(
-    Effect.runPromise(
-      approvals.approveSettlement({ chainId: "0x1", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" }),
-    ),
-  ).rejects.toMatchObject({ operation: "approve verified ledger report" });
 });

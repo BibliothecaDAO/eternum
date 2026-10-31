@@ -49,6 +49,9 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
     ["cloudflareToken", "Cloudflare token"],
     ["rpc", "Alchemy mainnet URL"],
     ["resend", "Resend key"],
+    ["cosignerPublicKey", "Independent box co-signer public key (never its private key)"],
+    ["cosignerUrl", "Independent box co-signer HTTPS URL"],
+    ["cosignerToken", "Co-signer request bearer token"],
     ["discordClientId", "Discord client ID"],
     ["discordClientSecret", "Discord client secret"],
     ...(sendsAlerts(target)
@@ -72,6 +75,14 @@ export function setupQuestions(target: Target): [keyof Inputs, string][] {
 }
 
 export function validateInputs(input: Inputs, target: Target) {
+  if (
+    !input.cosignerPublicKey ||
+    !/^0x[0-9a-fA-F]{1,63}$/.test(input.cosignerPublicKey) ||
+    BigInt(input.cosignerPublicKey) <= 0n
+  )
+    throw new PublicError("Setup needs the independent box co-signer public key");
+  if (!input.cosignerToken || !input.cosignerUrl || new URL(input.cosignerUrl).protocol !== "https:")
+    throw new PublicError("Setup needs the independent box co-signer HTTPS URL and request token");
   const rpc = new URL(input.rpc);
   if (
     rpc.protocol !== "https:" ||

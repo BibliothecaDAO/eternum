@@ -8,6 +8,8 @@ const settings = {
   L2_RPC_URL: "https://ledger.test",
   OPERATOR_TOKEN: "test-token",
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+  COSIGNER_URL: "https://cosigner.test",
+  COSIGNER_TOKEN: "test-cosigner-token",
   LEDGER_OPERATOR_ADDRESS: "0x2",
   LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
 };

@@ -27,11 +27,11 @@ interface FaultRow {
    * with none (a roster check, or one the previous version recorded) waives nothing: its reset re-observes.
    */
   fact?: string;
-  stream?: "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults";
+  stream?: "reportedClaims" | "paidClaims" | "postedResults";
   cursor?: AuditCursor;
   offset?: number;
 }
-type ReportStream = "reportedSettlements" | "reportedClaims";
+type ReportStream = "reportedClaims";
 interface UnverifiableReport {
   since: number;
   reason: string;
@@ -47,7 +47,7 @@ export interface MonitorProgress {
    */
   cleared?: string[];
   halted: string | null;
-  cursors?: Partial<Record<"reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
+  cursors?: Partial<Record<"reportedClaims" | "paidClaims" | "postedResults", AuditCursor>>;
 }
 interface MonitorStore {
   load(): Promise<MonitorProgress>;
@@ -63,7 +63,6 @@ export const runMonitor = (ports: MonitorPorts, store: MonitorStore) =>
       return progress;
     }
     const checks = [
-      checkReportedSettlements(ports, store),
       checkReportedClaims(ports, store),
       checkConservation(ports, store),
       checkPaidClaims(ports, store),
@@ -110,34 +109,9 @@ const checkConservation = (ports: MonitorPorts, store: MonitorStore) =>
     return null;
   });
 
-/** Missing evidence withholds approval; only sustained unavailability becomes a stop condition. */
+/** Missing evidence is retried; only sustained unavailability becomes a stop condition. */
 const verifyReport = (check: RelayEffect<Mismatch | null>, reason: string): RelayEffect<Mismatch | null> =>
   check.pipe(Effect.catch((failure) => Effect.succeed({ reason, evidence: failure.operation, retry: true as const })));
-
-const checkReportedSettlements = (ports: MonitorPorts, store: MonitorStore) =>
-  checkLedgerPage(
-    "reportedSettlements",
-    ports.ledger.reportedSettlements,
-    (row) => `reportedSettlements:${hex(row.chainId)}:${row.gameId}`,
-    (row) =>
-      `reportedSettlements:${hex(row.chainId)}:${row.gameId}:${BigInt(row.chestWithdrawn)}:${BigInt(row.prizeWithdrawn)}`,
-    (report) =>
-      verifyReport(
-        ports.shard
-          .settlementEvidence(report)
-          .pipe(
-            Effect.map((evidence) =>
-              evidence === null ? null : { reason: `reported_settlement_mismatch:${report.gameId}`, evidence },
-            ),
-          ),
-        `reported_settlement_unverifiable:${report.gameId}`,
-      ).pipe(
-        Effect.flatMap((mismatch) =>
-          mismatch ? Effect.succeed(mismatch) : ports.ledger.approveSettlement(report).pipe(Effect.as(null)),
-        ),
-      ),
-    store,
-  );
 
 const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
   checkLedgerPage(
@@ -147,13 +121,7 @@ const checkReportedClaims = (ports: MonitorPorts, store: MonitorStore) =>
     (row) =>
       `reportedClaims:${hex(row.chainId)}:${hex(row.transactionHash)}:${row.seasonId}:${BigInt(row.amount)}:${row.prizeRank}:${row.prizeCount}:${hex(row.wallet)}:${hex(row.reportTransactionHash)}`,
     (report) =>
-      verifyReport(verifyReportedReceipt(ports, report), `reported_claim_unverifiable:${report.transactionHash}`).pipe(
-        Effect.flatMap((mismatch) =>
-          mismatch || BigInt(report.wallet) === 0n
-            ? Effect.succeed(mismatch)
-            : ports.ledger.approvePayment(report).pipe(Effect.as(null)),
-        ),
-      ),
+      verifyReport(verifyReportedReceipt(ports, report), `reported_claim_unverifiable:${report.transactionHash}`),
     store,
   );
 
@@ -163,23 +131,6 @@ const verifyReportedReceipt = (ports: MonitorPorts, report: ReportedClaim) =>
     const evidence = receipt === null ? "receipt:none" : JSON.stringify(receipt);
     if (!matchesPaidClaim(receipt, report))
       return { reason: `reported_claim_mismatch:${report.transactionHash}`, evidence };
-    if (BigInt(report.wallet) !== 0n) {
-      const resolved = yield* ports.shard.withdrawal(report.chainId, report.transactionHash);
-      if (
-        !resolved ||
-        !matchesPaidClaim(resolved, report) ||
-        !(yield* ports.identity.matchesPayDecision({
-          chainId: report.chainId,
-          claimId: report.transactionHash,
-          transactionHash: report.reportTransactionHash,
-          realmsId: resolved.realmsId,
-          wallet: report.wallet,
-          seasonId: report.seasonId,
-          amount: report.amount,
-        }))
-      )
-        return { reason: `reported_wallet_mismatch:${report.transactionHash}`, evidence };
-    }
     return null;
   });
 
@@ -233,7 +184,7 @@ const checkPostedResults = (ports: MonitorPorts, store: MonitorStore) =>
 
 /** A tick checks at most one 100-event page per stream; only verified pages advance the durable cursor. */
 const checkLedgerPage = <A>(
-  stream: "reportedSettlements" | "reportedClaims" | "paidClaims" | "postedResults",
+  stream: "reportedClaims" | "paidClaims" | "postedResults",
   read: (cursor: string | null, fromBlock?: number, anchor?: LedgerAnchor) => RelayEffect<LedgerPage<A>>,
   key: (row: A) => string,
   fact: (row: A) => string,
@@ -388,8 +339,7 @@ const receiptEvidence = (receipt: Withdrawal | null) =>
 const resultEvidence = (result: BlitzResult | null) =>
   result === null ? "result:none" : `result:${hex(result.chainId)}:${result.gameId}:${hex(result.commitment)}`;
 
-const isReportStream = (stream: FaultRow["stream"]): stream is ReportStream =>
-  stream === "reportedClaims" || stream === "reportedSettlements";
+const isReportStream = (stream: FaultRow["stream"]): stream is ReportStream => stream === "reportedClaims";
 
 const isCleared = (progress: MonitorProgress, fact: string) => progress.cleared?.includes(fact) ?? false;
 
@@ -397,8 +347,8 @@ const recordFault = (store: MonitorStore, fault: FaultRow) =>
   relayOperation("record faulting audit row", async () => store.save({ ...(await store.load()), fault }));
 
 /**
- * Clears only the recorded observation. Reports are checked again so corrected evidence can earn approval; a waived
- * mismatch itself grants none. Historical paid/result rows advance past the cleared observation. A fault without a
+ * Clears only the recorded observation. Reports are checked again against corrected evidence.
+ * Historical paid/result rows advance past the cleared observation. A fault without a
  * fact waives nothing and keeps the cursor. A reset never unpauses the ledger.
  */
 export const resetMonitorRow = (previous: MonitorProgress, row: string): MonitorProgress => {
