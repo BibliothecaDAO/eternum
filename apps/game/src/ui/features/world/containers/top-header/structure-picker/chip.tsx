@@ -7,21 +7,15 @@ import { ResourceIcon } from "@/ui/design-system/molecules/resource-icon";
 import { HudButton, HudIconButton } from "@/ui/design-system/kit/hud-elements";
 import { type RealmLevelUp, useRealmLevelUp } from "@/ui/modules/entity-details/hooks/use-realm-level-up";
 import { formatIncomingEta } from "@/ui/modules/entity-details/hooks/use-structure-upgrade";
-import { formatUsedBuildingTilesLabel } from "@/ui/features/world/containers/structure-status";
-import { resolveStructureUiCapabilities } from "@/ui/lib/structure-capabilities";
 import {
   ID,
-  RealmLevels,
   type Structure,
-  StructureType,
   formatExact,
-  formatPopulation,
   resourceName,
-  rankName,
 } from "@bibliothecadao/types";
 import clsx from "clsx";
 
-import { memo, useCallback, type KeyboardEvent, type MouseEvent } from "react";
+import { type MouseEvent } from "react";
 
 export type StructureWithMetadata = Structure & {
   displayName: string;
@@ -210,84 +204,3 @@ export const StructureRealmActions = ({ structureEntityId, className }: Structur
     </div>
   );
 };
-
-type StructureChipProps = {
-  structure: StructureWithMetadata;
-  isSelected: boolean;
-  onSelectStructure: (entityId: ID) => void;
-  onToggleFavorite: (entityId: ID) => void;
-};
-
-const StructureChip = memo(({ structure, isSelected, onSelectStructure, onToggleFavorite }: StructureChipProps) => {
-  const structureCapabilities = resolveStructureUiCapabilities(structure.structure);
-  const hasPopulationDetails = structureCapabilities.hasPopulationDetails;
-  const levelAbbrev = hasPopulationDetails
-    ? rankName(Math.min(Math.max(structure.realmLevel, RealmLevels.Settlement), RealmLevels.Empire)).charAt(0)
-    : null;
-
-  const populationStatusLabel = hasPopulationDetails
-    ? formatPopulation(structure.population, structure.populationCapacity)
-    : null;
-  const buildingTilesStatusLabel =
-    hasPopulationDetails && structure.buildingTilesOccupied !== null && structure.buildingTilesTotal !== null
-      ? formatUsedBuildingTilesLabel(structure.buildingTilesOccupied, structure.buildingTilesTotal)
-      : null;
-
-  const handleClick = useCallback(() => onSelectStructure(structure.entityId), [onSelectStructure, structure.entityId]);
-
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent<HTMLDivElement>) => {
-      if (event.target !== event.currentTarget) return;
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        handleClick();
-      }
-    },
-    [handleClick],
-  );
-
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      className={clsx(
-        "ui-pick group flex w-full items-center gap-1.5 rounded-md border border-hud-line bg-hud-well px-2 py-2 text-left text-hud-label transition cursor-pointer",
-        isSelected ? "text-hud-ink" : "text-hud-muted hover:border-hud-line-strong",
-      )}
-      title={structure.displayName}
-      aria-pressed={isSelected}
-    >
-      <button
-        type="button"
-        onClick={(event) => {
-          event.stopPropagation();
-          onToggleFavorite(structure.entityId);
-        }}
-        className="shrink-0 rounded p-0.5 text-hud-muted hover:text-hud-ink"
-        title={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-        aria-label={structure.isFavorite ? "Remove from favorites" : "Favorite structure"}
-      >
-        <SemanticIcon
-          name="star"
-          className={clsx("h-3.5 w-3.5", structure.isFavorite ? "opacity-100" : "opacity-40 grayscale")}
-        />
-      </button>
-      <span className="min-w-0 flex-1 truncate text-hud-strong">{structure.displayName}</span>
-      {levelAbbrev && (
-        <span className="shrink-0 rounded-sm bg-hud-well px-1 text-hud-label uppercase tracking-wide text-hud-muted">
-          {levelAbbrev}
-        </span>
-      )}
-      {populationStatusLabel && (
-        <StructureStatusStats populationLabel={populationStatusLabel} buildingTilesLabel={buildingTilesStatusLabel} />
-      )}
-      {structure.category === StructureType.Realm && (
-        <StructureRealmActions structureEntityId={structure.entityId} className="shrink-0" />
-      )}
-    </div>
-  );
-});
-
-StructureChip.displayName = "StructureChip";
