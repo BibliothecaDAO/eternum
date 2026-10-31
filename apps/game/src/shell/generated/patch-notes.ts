@@ -171,6 +171,12 @@ export const patchNotes = [
         },
         {
           "kind": "new",
+          "icon": "chronicles",
+          "title": "Past seasons",
+          "line": "Between Frontier seasons, Season shows the last one's final board and the day it ended, with the seasons before it under Past seasons, each winner opening that season's Results."
+        },
+        {
+          "kind": "new",
           "icon": "lords",
           "title": "Paid at the season's end",
           "line": "The LORDS your realm still holds when a season ends, and your prize, are paid to your linked wallet. Withdrawals are automatic and usually arrive within minutes. Prizes are paid within about an hour of the season's end."
