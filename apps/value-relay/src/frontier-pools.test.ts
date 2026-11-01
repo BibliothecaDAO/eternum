@@ -208,7 +208,7 @@ it.each([null, "0"])(
     expect(rpc.execute).toHaveBeenCalledOnce();
   },
 );
-it("checks custody for a possible carry but does not invoke when the total is unchanged", async () => {
+it("checks published custody without invoking when its immutable total matches", async () => {
   snapshotPool = "123";
   await publish();
   expect(rpc.ledger).toHaveBeenCalledTimes(2);
@@ -296,4 +296,10 @@ it("keeps sub-LORDS custody on the ledger while publishing spendable whole LORDS
   deposit++;
   await publish();
   expect(snapshotPool).toBe("123");
+});
+
+it.each(["122", "124"])("refuses to change an already published pool: %s", async (pool) => {
+  snapshotPool = pool;
+  await expect(publish()).rejects.toThrow("frontier_pool_differs_from_ledger");
+  expect(rpc.execute).not.toHaveBeenCalled();
 });

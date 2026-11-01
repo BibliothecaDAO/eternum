@@ -62,9 +62,9 @@ using the [environment's funding command](../../contracts/l2/ledger/README.md#fu
 that deposit and publishes the pool to the shard. No ruin chest exists before publication; confirm the positive pool in
 Herald's `LordsBudget` row. The preset carries no pool.
 
-For automatic payouts, settlement checks and the carry command, follow the ledger's
-[Frontier settlement and carry](../../contracts/l2/ledger/README.md#frontier-settlement-and-carry) procedure, including
-its compatible-deployment rehearsal requirement and existing dev-ledger limitation.
+For automatic payouts, settlement and treasury returns, follow the ledger's
+[Frontier settlement and treasury returns](../../contracts/l2/ledger/README.md#frontier-settlement-and-treasury-returns)
+procedure, including its compatible-deployment rehearsal requirement and existing dev-ledger limitation.
 
 ## Independent payout co-signer
 
@@ -97,8 +97,8 @@ configuration. Install/start the unit after funding bindings and identity routin
 the process and public key, plus `pendingWalletChanges` (`count` and `oldestSince`, a Unix timestamp or null). It is not
 proof that a particular claim can be verified. Read it directly on the box to inspect holds independently of Cloudflare;
 the journal remains the source of account/identity-change details. Rehearse `/sign` through an actual withdrawal, then
-check the L2 wallet and `get_payment`; also rehearse deadline carry and signer outage/recovery. The service signs
-synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked in the
+check the L2 wallet and `get_payment`; also rehearse deadline treasury returns and signer outage/recovery. The service
+signs synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked in the
 deployment rehearsal.
 
 The systemd unit owns `/var/lib/payout-cosigner` (mode `0700`); its `wallets.sqlite` database is mode `0600`. Preserve

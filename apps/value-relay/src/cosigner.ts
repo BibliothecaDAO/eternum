@@ -112,6 +112,7 @@ async function verifySettlement(
       prizeWithdrawn: request.prize,
     },
     { rpcUrl: config.l2RpcUrl, address: config.ledgerAddress },
+    request.treasuryAmount,
   );
   if (evidence !== null) throw new Error("cosigner_settlement_differs");
 }

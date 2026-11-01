@@ -156,13 +156,14 @@ it("refuses paid or conflicting ledger reports", async () => {
   }
 });
 it("independently verifies settlement and signs only its exact totals", async () => {
-  const terms = { kind: "settle" as const, shard: "0x2", season: 7, chest: "17", prize: "3" };
+  const terms = { kind: "settle" as const, shard: "0x2", season: 7, chest: "17", prize: "3", treasuryAmount: "980" };
   const signature = await run(terms);
   expect(calls.settlement).toHaveBeenCalledExactlyOnceWith(
     config.shards[0],
     "http://127.0.0.1:8081",
     { chainId: "0x2", gameId: 7, chestWithdrawn: "17", prizeWithdrawn: "3" },
     { rpcUrl: config.l2RpcUrl, address: config.ledgerAddress },
+    "980",
   );
   expect(
     ec.starkCurve.verify(

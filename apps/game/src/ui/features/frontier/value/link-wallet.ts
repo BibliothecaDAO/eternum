@@ -23,7 +23,7 @@ type FrontierClaims = { deadline: number; closed: boolean };
 
 /**
  * Whether a withdrawal receipt is still owed (owner, 31 October 2026: an unpaid no-wallet claim lapses at the claim
- * deadline and its LORDS carry to the next season): not once the ledger says it is paid, nor once it lapsed (the season
+ * deadline and its LORDS return to the treasury): not once the ledger says it is paid, nor once it lapsed (the season
  * closed, or its claim deadline passed); otherwise it is, a receipt the ledger has not answered for included, so a
  * failed read never hides what the player is owed.
  */
@@ -36,7 +36,7 @@ const hasLapsed = (claims: FrontierClaims | undefined, now: number): boolean =>
 
 /**
  * What an account with no linked wallet is told where it sees LORDS it is owed: before the game's end, to link one to
- * receive them; after it, by the ledger's claim deadline, or they go to the next season. Unknown times leave the first.
+ * receive them; after it, by the ledger's claim deadline, or they return to the treasury. Unknown times leave the first.
  */
 export const linkWalletLine = (deadline: number | undefined, endsAt: number | undefined, now: number): string =>
   deadline !== undefined && endsAt !== undefined && now >= endsAt

@@ -17,7 +17,7 @@ const payment = {
   prizeRank: 1,
   prizeCount: 3,
 };
-const settlement = { chainId: "0x1", gameId: 7, chestWithdrawn: "42", prizeWithdrawn: "99" };
+const settlement = { chainId: "0x1", gameId: 7, chestWithdrawn: "42", prizeWithdrawn: "99", treasuryAmount: "123" };
 
 it.each(["pay", "settle"] as const)(
   "delivers exact %s terms through workerd and never follows a redirect",
@@ -68,7 +68,7 @@ it.each(["pay", "settle"] as const)(
               rank: 1,
               count: 3,
             }
-          : { kind, shard: "0x1", season: 7, chest: "42", prize: "99" };
+          : { kind, shard: "0x1", season: 7, chest: "42", prize: "99", treasuryAmount: "123" };
       expect(requests).toEqual([{ url: "https://signer.test/sign", auth: "Bearer request-token", body }]);
       for (status of [301, 302, 303, 307, 308]) {
         const refused = await send();

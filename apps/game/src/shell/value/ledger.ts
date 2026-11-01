@@ -261,7 +261,7 @@ export const ledgerReader = (provider: ProviderInterface, ledger: string) => {
     paused: async () => BigInt((await view("is_paused", []))[0]) !== 0n,
     /**
      * A Frontier season's claims on the ledger: the moment its unpaid withdrawals lapse (the game's end and its claim
-     * window), and whether it has closed, its unpaid withdrawals then void and carried to the next season.
+     * window), and whether it has closed, its unpaid withdrawals then void and returned to the treasury.
      */
     frontierClaims: async (shard: string, seasonId: number) => {
       const [deadline, season] = await Promise.all([

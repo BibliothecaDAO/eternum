@@ -67,3 +67,10 @@ export function assertFrontierPreset(preset: ReturnType<typeof decodeLedgerPrese
   )
     throw new Error("frontier_funding_differs_from_game");
 }
+
+/** Unpaid chest custody and prize reserves leave the season together at settlement. */
+export function frontierTreasuryAmount(
+  season: Pick<ReturnType<typeof decodeFrontierSeason>, "pool" | "paid" | "prizePool" | "prizePaid">,
+): string {
+  return String(BigInt(season.pool) - BigInt(season.paid) + BigInt(season.prizePool) - BigInt(season.prizePaid));
+}

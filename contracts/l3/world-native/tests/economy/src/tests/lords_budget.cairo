@@ -693,22 +693,6 @@ fn descending_prize_shares_conserve_every_whole_lords() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_late_carry_grows_only_the_chest_pool_and_is_safe_to_retry() {
-    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
-    super::entry::set_operator(d, super::authority());
-    snforge_std::start_cheat_caller_address(d.games, super::authority());
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert!(operator.publish_frontier_pool(game_id, 700, 300).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 899).is_err());
-    let chest = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((chest.pool, chest.pool_left), (900, 900));
-    assert_eq!(operator.frontier_prize(game_id).unwrap().pool, 300);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
 fn automatic_lords_sweep_pays_the_owner_once_and_keeps_live_withdrawals() {
     let (d, game_id, _) = super::registrar::setup_frontier_chests();
     let realm = ResourceKey { game_id, entity_id: 1 };

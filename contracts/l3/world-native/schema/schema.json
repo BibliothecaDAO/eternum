@@ -1905,22 +1905,6 @@
       },
       {
         "type": "function",
-        "name": "top_up_frontier_pool",
-        "inputs": [
-          {
-            "name": "game_id",
-            "type": "core::integer::u32"
-          },
-          {
-            "name": "amount",
-            "type": "core::integer::u128"
-          }
-        ],
-        "outputs": [],
-        "state_mutability": "external"
-      },
-      {
-        "type": "function",
         "name": "post_frontier_top",
         "inputs": [
           {
@@ -13670,5 +13654,5 @@
       ]
     }
   },
-  "identity": "248e46b419249267c825582b5c2e48377ee3f19abd16ccd19d763bfe9d13cd01"
+  "identity": "857284f417bc948de383c42f7641277017c5c43ec61eebbb718ea7085ebeae2b"
 }

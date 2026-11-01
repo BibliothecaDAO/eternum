@@ -1,6 +1,11 @@
 import type { PayoutCosigner } from "./cosigner-client";
 import { Account, CallData, cairo, type RpcProvider } from "starknet";
-import { rpcAt, readConfirmedLedgerHead, decodeFrontierSeason } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readConfirmedLedgerHead,
+  decodeFrontierSeason,
+  frontierTreasuryAmount,
+} from "@realms-world/value-ledger";
 import type { FrontierSettlement } from "./frontier-sweep";
 import type { ledgerReportAdapter } from "./chain";
 
@@ -42,7 +47,13 @@ export async function settleFrontier(
     season.prizePaid === season.prizePool;
   if (head.time < season.end || paidBeyondReceipts || (!expired && !fullyPaid))
     throw new Error("frontier_settlement_not_paid");
-  const terms = { chainId, gameId, chestWithdrawn: season.paid, prizeWithdrawn: season.prizePaid };
+  const terms = {
+    chainId,
+    gameId,
+    chestWithdrawn: season.paid,
+    prizeWithdrawn: season.prizePaid,
+    treasuryAmount: frontierTreasuryAmount(season),
+  };
   const signature = await cosigner.settle(terms);
   await submitSettlement(credentials, provider, terms, signature);
 }

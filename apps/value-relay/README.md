@@ -27,7 +27,7 @@ The independent monitor checks `WithdrawalReported` against raw L3 receipts. An 
 amount or block later reports. It audits paid recipients against identity's signed decision journal, plus results and
 conservation. It neither signs payouts nor submits approval transactions. The co-signer separately verifies settlement
 against confirmed post-end state and exact L2 paid totals, requiring complete payment before the claim deadline and
-allowing unpaid/no-wallet carry after it.
+allowing unpaid/no-wallet treasury returns after it.
 
 Proven mismatches persist a halt and retry the pause immediately. Unavailable report evidence makes health unhealthy on
 the first failure; the report cursor retries without advancing. After ten continuous minutes with a known report
@@ -104,8 +104,8 @@ owns their draws. Each keeper tick reads one 100-event page, persists its contin
 requests. It calls `open_finish` once the later block is readable and recognizes an already-finished retry.
 
 A Frontier pool is funded with `season_id = shard game id`; the relay verifies that binding against the game start and
-seed. For sweep, deadline settlement and carry rules, follow the ledger's
-[Frontier lifecycle](../../contracts/l2/ledger/README.md#frontier-settlement-and-carry).
+seed. For sweep, deadline settlement and treasury-return rules, follow the ledger's
+[Frontier lifecycle](../../contracts/l2/ledger/README.md#frontier-settlement-and-treasury-returns).
 
 Staging selects `contracts/common/addresses/dev.json`; production selects `production.json`. Both run on `SN_MAIN`, with
 separate ledger and value-token addresses. Dev uses the no-value test token, never production LORDS.

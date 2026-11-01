@@ -4,7 +4,7 @@ import type { FrontierSettlement } from "./frontier-sweep";
 
 export interface PayoutCosigner {
   pay(withdrawal: Withdrawal, wallet: string): Promise<Cosignature>;
-  settle(settlement: FrontierSettlement): Promise<Cosignature>;
+  settle(settlement: FrontierSettlement & { treasuryAmount: string }): Promise<Cosignature>;
 }
 export function cosignerClient(url: string, token: string, network: typeof fetch = fetch): PayoutCosigner {
   if (new URL(url).protocol !== "https:" || !token) throw new Error("cosigner_configuration_invalid");
@@ -47,6 +47,7 @@ export function cosignerClient(url: string, token: string, network: typeof fetch
         season: settlement.gameId,
         chest: settlement.chestWithdrawn,
         prize: settlement.prizeWithdrawn,
+        treasuryAmount: settlement.treasuryAmount,
       }),
   };
 }

@@ -19,7 +19,15 @@ it("requests only exact payment and settlement terms from the independent host",
       "0xb",
     ),
   ).toEqual({ r: "0x12", s: "0x34" });
-  expect(await client.settle({ chainId: "0x1", gameId: 7, chestWithdrawn: "42", prizeWithdrawn: "9" })).toEqual({
+  expect(
+    await client.settle({
+      chainId: "0x1",
+      gameId: 7,
+      chestWithdrawn: "42",
+      prizeWithdrawn: "9",
+      treasuryAmount: "100",
+    }),
+  ).toEqual({
     r: "0x12",
     s: "0x34",
   });
@@ -50,7 +58,7 @@ it("requests only exact payment and settlement terms from the independent host",
       url: "https://cosigner.test/sign",
       headers: { authorization: "Bearer token", "content-type": "application/json" },
       redirect: "manual",
-      body: { kind: "settle", shard: "0x1", season: 7, chest: "42", prize: "9" },
+      body: { kind: "settle", shard: "0x1", season: 7, chest: "42", prize: "9", treasuryAmount: "100" },
     },
   ]);
 });
@@ -62,6 +70,6 @@ it.each([
 ])("refuses unavailable or malformed signatures", async (response) => {
   const client = cosignerClient("https://cosigner.test", "token", async () => response);
   await expect(
-    client.settle({ chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: "0" }),
+    client.settle({ chainId: "0x1", gameId: 7, chestWithdrawn: "0", prizeWithdrawn: "0", treasuryAmount: "100" }),
   ).rejects.toThrow();
 });

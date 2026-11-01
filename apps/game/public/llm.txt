@@ -75,7 +75,7 @@ wallet. It takes one signature, and the wallet pays the network fee.
 * **Refill** spends your realm's LORDS on stamina ([Armies](/frontier/armies#stamina)).
 * **Withdraw** sends your realm's LORDS to your payout wallet during the season.
 * **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet. Payments are
-  automatic once the payout checks complete. With no wallet linked by the claim deadline, they go to the next season
+  automatic once the payout checks complete. With no wallet linked by the claim deadline, they return to the treasury
   ([Chests and LORDS](/frontier/chests#your-lords)).
 
 <Shot frame="panel" name="account/withdraw" caption="A Frontier realm's LORDS, withdrawn to the payout wallet." />
@@ -818,8 +818,8 @@ The Season page shows the podium as the season runs, and each prize as Pending u
 LORDS go to your payout wallet. Link one in **Settings**, **Payout wallet** ([Payout wallet](/account/payout-wallet)).
 You can withdraw your realm's LORDS during the season. When it ends, whatever your realm still holds, and your prize, is
 paid to your linked wallet. Payments are automatic once the payout checks complete. Without a linked wallet, link one
-within  7 days of the season's end and they are paid to it. After that, unpaid LORDS go to
-the next season.
+within  7 days of the season's end and they are paid to it. After that, unpaid LORDS
+return to the treasury.
 
 ## What is faster
 
