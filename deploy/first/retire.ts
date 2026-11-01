@@ -30,16 +30,17 @@ export function retirementPlan(target: Target, store: PrivateStore, names: reado
   const moves: [string, string][] = [];
   const keys: string[] = [];
   for (const name of names) {
+    keys.push(...BOOK_KEYS[name].filter((key) => key in book));
     const pin = store.read<{ address: string }>(`asset-${name}.json`);
     const address = BigInt(book[BOOK_KEYS[name][0]] || 0) ? book[BOOK_KEYS[name][0]] : pin?.address;
     if (!address) continue;
     if (pin && BigInt(pin.address) !== BigInt(address))
       throw new PublicError(`The saved ${name} pin names another contract than the book; nothing was retired`);
-    if (pin) moves.push([`asset-${name}.json`, retiredPin(name as keyof Assets, address)]);
     if (name === "ledger")
       for (const file of LEDGER_CALL_FILES)
         if (store.read(`${file}.json`)) moves.push([`${file}.json`, `retired-${file}-${num.toHex(address)}.json`]);
-    keys.push(...BOOK_KEYS[name].filter((key) => key in book));
+    // The pin moves last: when the book names no address, it is the only record of the one the moves are filed under.
+    if (pin) moves.push([`asset-${name}.json`, retiredPin(name as keyof Assets, address)]);
   }
   return { moves, keys };
 }
