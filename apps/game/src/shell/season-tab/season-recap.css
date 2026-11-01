@@ -169,6 +169,9 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.season-deck__foot > span {
+  white-space: nowrap;
+}
 .season-deck__foot .app-game-name__lockup {
   height: calc(var(--deck-foot) - 8px);
 }
@@ -178,14 +181,16 @@
 
 /*
  * A card: its number and name at the top, what it holds spread over its height, so none stands half empty. Each has
- * its own ground, the four in the season's colours.
+ * its own ground, the four in the season's colours. Its text spans the card's width, centred, never a box the size of
+ * its words: the image fixes each box's width as the screen measured it, and a box no wider than its words would wrap
+ * there.
  */
 .season-card {
   position: relative;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-evenly;
   gap: 10px;
   padding: 44px 16px 18px;
@@ -239,6 +244,10 @@
   font-size: 24px;
   line-height: 1.15;
 }
+/* The name in a title flows as its words do. */
+.season-card__title > span {
+  display: inline;
+}
 /* A name is never cut: it wraps between its words, and only a word too long for its line is broken. */
 .season-card .truncate,
 .season-card__name,
@@ -252,6 +261,7 @@
 /* Your place. */
 .season-card__who {
   position: relative;
+  align-self: center;
   width: 150px;
 }
 .season-card__who .app-portrait {
@@ -287,6 +297,7 @@
 .season-card__prize {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 17px;
   font-weight: 700;
@@ -322,6 +333,14 @@
   font-family: var(--font-game);
   font-size: 28px;
   color: rgb(var(--app-gold));
+}
+/* A holder's portrait and name fill the row, the name taking what the portrait leaves. */
+.season-card__holder > span {
+  display: flex;
+  width: 100%;
+}
+.season-card__holder > span > :last-child {
+  flex: 1 1 auto;
 }
 .season-card__holder {
   min-width: 0;
@@ -380,6 +399,7 @@
 .season-card__depth {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   font-size: 16px;
   font-weight: 600;
