@@ -3,6 +3,8 @@ import { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION, ResourcesIds, StructureType } from "@bibliothecadao/types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { frontierDay } from "@/ui/features/frontier/deploy/deploy-fixture";
+
 import { buildStructurePlate } from "./map-plate-model";
 import { readPlateReward } from "./plate-reward";
 
@@ -56,7 +58,7 @@ describe("what a plate says taking a camp or a rift gives", () => {
     [StructureType.Beasts, "25 Labor"],
   ])("says a Frontier site's payout until its cleared fact arrives, then nothing (category %s)", (category, payout) => {
     vi.spyOn(configManager, "getActiveGameId").mockReturnValue(GAME);
-    const store = new NativeFactStore();
+    const { store } = frontierDay();
     site(store, false, category);
     expect(said(store, structureOf(category))).toBe(payout);
 

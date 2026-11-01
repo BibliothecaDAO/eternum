@@ -137,7 +137,7 @@ const clearTheRuin = (chain: NativeFactStore, explorerId: bigint, player: string
     {
       model: "ArmyProgress",
       key: keyOf(chain.entries("ArmyProgress"), (row) => row.explorer_id === explorerId),
-      value: wire({ ...progress, xp: progress.xp + siteClearXp(site) }),
+      value: wire({ ...progress, xp: progress.xp + siteClearXp(chain, site) }),
     },
     {
       model: "StoryEvent",

@@ -1,3 +1,4 @@
+import { cosignerClient } from "./cosigner-client";
 import type { HeldRealm } from "@realms-world/identity";
 import {
   handleHeldRealmsRequest,
@@ -42,7 +43,7 @@ import { DurableChestStore, finishChestNow, finishRequestedChests } from "./ches
 import { DurableObject, WorkerEntrypoint } from "cloudflare:workers";
 import { Effect, Result, Semaphore } from "effect";
 import { ledgerResultAdapter, postVerifiedResult } from "./ledger";
-import { ledgerPaymentRead, ledgerWithdrawalVoided } from "./chain";
+import { ledgerPaymentRead, ledgerWithdrawalVoided, ledgerResetPayments } from "./chain";
 import { presentsOperatorToken } from "@realms-world/identity";
 import { identityAdapter } from "./adapters";
 import { runRelay, grantDailyLabor } from "./relay";
@@ -243,7 +244,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
   settleFrontier(settlement: FrontierSettlement) {
     return Effect.runPromise(
       this.ledgerPermit(
-        relayOperation("settle Frontier season", () => settleFrontier(ledgerCredentialsOf(this.env), settlement)),
+        relayOperation("settle Frontier season", () =>
+          settleFrontier(
+            ledgerCredentialsOf(this.env),
+            settlement,
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
+          ),
+        ),
         [settlement.chainId],
       ),
     );
@@ -262,8 +269,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("reportMany ledger claims", () =>
-          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-            this.env.IDENTITY.recordPayDecisions(decisions),
+          ledgerBatches(
+            ledgerCredentialsOf(this.env),
+            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
           ).reportMany(rows),
         ),
         rows.map((row) => row.chainId),
@@ -274,8 +283,10 @@ export class ValueRelay extends DurableObject<RelayEnv> {
     return Effect.runPromise(
       this.ledgerPermit(
         relayEffect("payMany ledger claims", () =>
-          ledgerBatches(ledgerCredentialsOf(this.env), (decisions) =>
-            this.env.IDENTITY.recordPayDecisions(decisions),
+          ledgerBatches(
+            ledgerCredentialsOf(this.env),
+            (decisions) => this.env.IDENTITY.recordPayDecisions(decisions),
+            cosignerClient(this.env.COSIGNER_URL, this.env.COSIGNER_TOKEN),
           ).payMany(rows),
         ),
         rows.map((row) => row.withdrawal.chainId),
@@ -320,15 +331,13 @@ export class ValueRelay extends DurableObject<RelayEnv> {
           const ports = await this.portsFor(chainId);
           const progress = await this.store.progress();
           if (progress.halted !== row) throw new Error("fault_row_mismatch");
+          const payment = await ledgerResetPayments(this.env.L2_RPC_URL, ledgerAddress(this.env.ENVIRONMENT));
           return this.store.resetFromChain(row, reason, {
             head: () => Effect.runPromise(ports.shard.confirmedHead()),
             hash: (number) => Effect.runPromise(ports.shard.blockHash(number)),
             paid: async (withdrawal) =>
-              (
-                await Effect.runPromise(
-                  onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, ports.ledger.payment(withdrawal)),
-                )
-              )?.paid ?? false,
+              (await Effect.runPromise(onIdentityChain(this.env.L2_RPC_URL, this.env.IDENTITY, payment(withdrawal))))
+                ?.paid ?? false,
           });
         }),
       ),

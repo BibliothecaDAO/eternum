@@ -22,7 +22,7 @@ type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unkno
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { dayUnitSeconds: number; spacing: number; startMainAt: number; seed: bigint } | null => {
+): { dayUnitSeconds: number; spacing: number; startMainAt: number; endAt: number; seed: bigint } | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
@@ -36,6 +36,7 @@ export const readExpeditionRules = (
     dayUnitSeconds: Number(rules.day_unit_seconds),
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
+    endAt: Number(game.end_at),
     seed: BigInt(game.seed as bigint | string),
   };
 };
@@ -62,13 +63,25 @@ export const siteKindOf = (category: number): SiteKind => {
 
 /** A standing site's reward from the generated Cairo formula; a clear's actual credit lives in its receipt. */
 export const siteReward = (
-  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear">,
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "category" | "initial_guard_count" | "clear" | "game_id" | "row">,
 ): { resourceType: ResourcesIds; amount: bigint } | null =>
-  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count);
+  site.clear ? null : previewSiteReward(site.category, site.initial_guard_count, siteDepth(store, site));
 
 /** The contract's integer XP formula, shared by the preview, receipt and local replay. */
-export const siteClearXp = (site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count">): number =>
-  previewSiteClearXp(site.initial_guard_count);
+export const siteClearXp = (
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "initial_guard_count" | "game_id" | "row">,
+): number => previewSiteClearXp(site.initial_guard_count, siteDepth(store, site));
+
+const siteDepth = (
+  store: Pick<NativeFactStore, "require">,
+  site: Pick<NativeRows["ExpeditionSite"], "game_id" | "row">,
+): number => {
+  const { spacing } = store.require("SettlementRules", { game_id: site.game_id });
+  if (spacing <= 0) throw new Error("Site rewards require positive expedition spacing");
+  return Math.floor(site.row / spacing) % 4;
+};
 
 /** The expedition map is laid out in bands of `spacing` rows, four per day: surface, then Ethereal I to III. */
 const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number => Math.floor(coord.y / rules.spacing);
@@ -81,7 +94,7 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
  * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
  */
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
-  dayOf(rules, nowSeconds)?.end ?? rules.startMainAt;
+  dayOf(rules, nowSeconds)?.end ?? (nowSeconds < rules.startMainAt ? rules.startMainAt : Infinity);
 
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;

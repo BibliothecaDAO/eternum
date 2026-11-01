@@ -98,6 +98,12 @@ const HUD_INSIDE = {
     "kit/area-d",
     load(() => import("../ui/features/debug/kit-lab/area-d-lab"), "AreaDLab"),
   ),
+  chosen: view(
+    "Chosen",
+    "/lab/kit/chosen",
+    "kit/chosen",
+    load(() => import("../ui/features/debug/kit-lab/chosen-lab"), "ChosenLab"),
+  ),
   deploy: view(
     "Deploy",
     "/lab/kit/deploy",

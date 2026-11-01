@@ -12,6 +12,7 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
+  LINK_WALLET_FOR_LORDS,
   OFFLINE,
   PAYOUTS_PAUSED,
   type Rank,
@@ -52,15 +53,17 @@ import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
-import type { SlotStart } from "@/ui/features/frontier/deploy/deploy-plan";
+import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
 import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
-import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
+import { SeasonOverRecap } from "@/shell/season-tab/season-over";
+import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/archive";
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
+import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
 import { useLayout } from "@/shell/frame/layout";
 import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coach";
@@ -83,6 +86,9 @@ import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 
 const HOUR = 3_600;
 const NOW = new Date(2026, 9, 7, 14, 26).getTime() / 1000;
+/** The lab's season, ended an hour ago, its claim window a week from its end. */
+const LAB_SEASON_END = NOW - 3_600;
+const LAB_CLAIM_DEADLINE = LAB_SEASON_END + 7 * 86_400;
 
 /** The handoff's fiction: Day 12 at 14:26, today ends at 21:40 (7h 14m left), tomorrow lasts 12h. */
 const CLOCK = {
@@ -174,16 +180,18 @@ type LabOrder = {
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
 
-/** A city's deploy: 6,200 troops at home, 2 wheat a troop. */
+/** A deploy order on the state's realm: the troops it asks for, 2 wheat a troop, against the troops and wheat its stores hold. */
 type LabDeploy = {
   count: number;
-  troopsAtHome: number;
-  wheat: number;
   /** Seconds until the next troop is home; none while nothing makes them. */
   troopsWait?: number;
 };
 
-const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
+const DEPLOY: LabDeploy = { count: 1_000 };
+
+/** The stores with one of them holding another amount, its limit kept. */
+const holding = (stores: readonly StoreReading[], kind: StoreReading["kind"], amount: number) =>
+  stores.map((each) => (each.kind === kind ? { ...each, amount } : each));
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 
@@ -496,7 +504,7 @@ const OWN_ROW: SeasonListRow = {
 const LAB_NEXT_UP_FACTS: NextUpFacts = {
   realm: true,
   barracks: true,
-  troopsAtHome: 1_500,
+  troopsAtHome: STORES.find((each) => each.kind === "troops")!.amount!,
   armies: 0,
   armySelected: false,
   armiesTired: false,
@@ -603,21 +611,27 @@ const STATES = {
   "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1 } },
   "deploy-wheat": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "wheat", 2_000),
     armies: ARMIES,
-    deploy: { ...DEPLOY, count: 1_000, wheat: 2_000 },
+    deploy: DEPLOY,
+  },
+  "deploy-no-wheat": {
+    clock: CLOCK,
+    stores: holding(STORES, "wheat", 1),
+    armies: ARMIES,
+    deploy: { count: 0 },
   },
   "deploy-empty": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "troops", 0),
     armies: [],
-    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0 },
+    deploy: { count: 0 },
   },
   "deploy-empty-making": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "troops", 0),
     armies: [],
-    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsWait: 6 * 60 },
+    deploy: { count: 0, troopsWait: 6 * 60 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
   "site-full": {
@@ -854,6 +868,14 @@ const STATES = {
   "season-over": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over" },
   "season-over-strong": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over-strong" },
   "season-over-payout": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "over", seasonLords: true },
+  "season-over-payout-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    results: "over",
+    seasonLords: true,
+    noWallet: true,
+  },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
@@ -936,6 +958,14 @@ const STATES = {
     armies: [],
     purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
   },
+  // A Devcon player signed in by email, LORDS in the realm and no wallet linked: the purse marked, its name saying why.
+  "purse-no-wallet": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: [],
+    purse: { lords: 1_240, realms: { labor: 2_000, essence: 0 } },
+    noWallet: true,
+  },
   // The owner's realm on 26 October 2026: a Kingdom at 27/42 with 1,000 labor to claim, its row the realm card's widest.
   "realm-claim": {
     clock: CLOCK,
@@ -968,6 +998,7 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1_240 },
     withdraw: { ...WITHDRAW_500, wallet: null },
+    noWallet: true,
   },
   "withdraw-sending": {
     clock: CLOCK,
@@ -1082,6 +1113,8 @@ type LabState = {
   results?: "today" | "today-sites" | "today-earlier" | "today-failed" | "over" | "over-strong";
   /** The realm's LORDS waiting for automatic payout. */
   seasonLords?: boolean;
+  /** The account has no linked wallet to receive its LORDS: the purse marked, Withdraw and the season's card say so. */
+  noWallet?: boolean;
   season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
@@ -1177,7 +1210,12 @@ export const HudLab = () => {
           lab.purse && (
             <PurseRow>
               {lab.purse.realms && <RealmsChip waiting={lab.purse.realms} narrow onOpen={noop} />}
-              <LordsPurse lords={lab.purse.lords} gain={lab.purse.gain} onOpen={noop} />
+              <LordsPurse
+                lords={lab.purse.lords}
+                gain={lab.purse.gain}
+                linkWalletLine={lab.noWallet ? LINK_WALLET_FOR_LORDS : null}
+                onOpen={noop}
+              />
             </PurseRow>
           )
         }
@@ -1265,8 +1303,8 @@ export const HudLab = () => {
           )
         }
       >
-        {lab.deploy && <LabDeploySheet deploy={lab.deploy} open={labOpenSlots(lab)} />}
-        {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} />}
+        {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
+        {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
         {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
@@ -1326,17 +1364,29 @@ const useLabNotice = (notice: string | undefined) => {
 };
 
 /** Deploy on the fiction, live: 2 wheat a troop, the realm's open slots, the first chosen until another is pressed. */
-const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[] }) => {
+const LabDeploySheet = ({
+  deploy,
+  stores,
+  open,
+}: {
+  deploy: LabDeploy;
+  stores: readonly StoreReading[];
+  open: SlotStart[];
+}) => {
   const [slot, setSlot] = useState<number | null>(null);
   const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
-  const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
+  const troopsAtHome = stores.find((each) => each.kind === "troops")?.amount ?? 0;
+  const wheat = stores.find((each) => each.kind === "wheat")?.amount ?? 0;
+  const wheatMax = Math.floor(wheat / 2);
+  const most = Math.min(troopsAtHome, wheatMax);
+  const wheatStop = wheatStopsAt({ troopsMax: troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
-      art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
-      troopsAtHome={deploy.troopsAtHome}
+      art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
+      troopsAtHome={troopsAtHome}
       count={count}
-      amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
+      amount={{ most, held: most < troopsAtHome ? most : troopsAtHome }}
       onCount={setCount}
       start={start}
       slots={{ open, onPick: setSlot }}
@@ -1346,10 +1396,8 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatLimit={
-        most < deploy.troopsAtHome ? { troops: most, held: deploy.wheat, perTroop: 2, wait: undefined } : undefined
-      }
-      onBuild={noop}
+      wheatLimit={wheatStop && { ...wheatStop, held: wheat, perTroop: 2, wait: undefined }}
+      onGoToRealm={noop}
       onClose={noop}
     />
   );
@@ -1546,6 +1594,7 @@ const LabBands = ({ desktop, lab, ...slots }: ComponentProps<typeof HudBands> & 
               onHome={noop}
               {...(!lab.visiting && {
                 lords: lab.purse?.lords ?? LAB_LORDS,
+                linkWalletLine: lab.noWallet ? LINK_WALLET_FOR_LORDS : null,
                 waiting: lab.purse?.realms,
                 storeCards: lab.storeCard && {
                   kinds: MADE_STORES,
@@ -1679,25 +1728,35 @@ const labSlots = (lab: LabState) =>
     start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
   }));
 
+/** The season the lab's season-over shows: prod's Season 1 as its archive holds it, read by its third place. */
+const LAB_SEASON = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
+const LAB_SEASON_PLAYER = "0x648174392d94df37bc7d59c3abf22116d20df16ddf0e380c5ff79aff86738c4";
+
 const LabResults = ({
   results,
   seasonLords,
+  noWallet,
 }: {
   results: NonNullable<LabState["results"]>;
   seasonLords: LabState["seasonLords"];
+  noWallet: LabState["noWallet"];
 }) =>
   results === "over" || results === "over-strong" ? (
-    <SeasonOverCard
+    <SeasonOverRecap
+      gameRef={LAB_SEASON}
+      game={ARCHIVED_SEASONS[0]}
+      board={archivedSeason(LAB_SEASON)!.board}
+      viewer={LAB_SEASON_PLAYER}
       ending={results === "over" ? "lifted" : "strong"}
-      place={12}
-      field={1_000}
-      podium={[
-        { key: "1", rank: 1, name: "Ysabeau", sitesCleared: 448 },
-        { key: "2", rank: 2, name: "Aldric", sitesCleared: 412 },
-        { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
-      ]}
-      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
-      withdraw={seasonLords && <SeasonPayoutRow lords={1_240} />}
+      withdraw={
+        seasonLords && (
+          <SeasonPayoutRow
+            lords={1_240}
+            linkWalletLine={noWallet ? linkWalletLine(LAB_CLAIM_DEADLINE, LAB_SEASON_END, NOW) : null}
+            onLinkWallet={noop}
+          />
+        )
+      }
       onSeason={noop}
       onExit={noop}
     />
@@ -1726,6 +1785,7 @@ const LabWithdrawSheet = ({ withdraw }: { withdraw: LabWithdraw }) => {
     <WithdrawSheet
       held={withdraw.held}
       wallet={withdraw.wallet}
+      linkWalletLine={LINK_WALLET_FOR_LORDS}
       refusal={withdraw.refusal ?? null}
       step={withdraw.step}
       amount={amount}

@@ -24,17 +24,12 @@ export const ActionTile = ({ action }: { action: StructureAction }) => {
       title={refusal ?? undefined}
       onClick={onClick}
       className={cn(
-        "relative flex min-w-0 flex-col items-center transition disabled:cursor-not-allowed disabled:opacity-50",
+        "ui-pick relative flex min-w-0 flex-col items-center transition disabled:cursor-not-allowed disabled:opacity-50",
         "min-h-11 flex-1 justify-center gap-1 rounded-lg px-1 py-1.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-gold active:bg-gold/15",
-        active && "bg-gold/15 shadow-[inset_0_-2px_0_rgb(var(--kit-gold)/0.9)]",
       )}
     >
       <SemanticIcon name={action.id} alt="" className="h-6 w-6 object-contain" />
-      <span
-        className={cn(HUD_LABEL, "max-w-full truncate text-[11px] normal-case tracking-normal", active && "text-gold")}
-      >
-        {label}
-      </span>
+      <span className={cn(HUD_LABEL, "max-w-full truncate text-[11px] normal-case tracking-normal")}>{label}</span>
       {badges
         .filter((badge) => badge.count > 0)
         .map((badge, index) => (

@@ -181,11 +181,11 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
   };
   const calendar =
     mode === "frontier" && dayUnitSeconds !== 0
-      ? { seed: integer(game.seed), startMainAt: clock.start_main_at, dayUnitSeconds }
+      ? { seed: integer(game.seed), endAt: clock.end_at, startMainAt: clock.start_main_at, dayUnitSeconds }
       : null;
-  const day =
-    calendar && input.timestamp < clock.end_at && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
+  const day = calendar && game.settled !== true ? dayOf(calendar, input.timestamp) : null;
 
+  const nextDay = day ? dayOf(calendar!, day.end) : null;
   return {
     game_id: number(game.game_id),
     name: shortString(game.name),
@@ -193,7 +193,7 @@ function directoryEntry(game: Row, facts: DirectoryRows, input: DirectoryInput):
     mode,
     day_index: day?.index ?? null,
     day_ends_at: day?.end ?? null,
-    next_day_length: day ? dayOf(calendar!, day.end)!.end - day.end : null,
+    next_day_length: nextDay ? nextDay.end - nextDay.start : null,
     expedition: dayUnitSeconds === 0 ? null : { day_unit_seconds: dayUnitSeconds, seed: integer(game.seed).toString() },
     dev_mode_on: game.dev_mode_on === true,
     ready: game.ready === true,
@@ -262,6 +262,7 @@ function structurePosition(
       {
         dayUnitSeconds,
         spacing: number(settlement.spacing),
+        endAt: number(game.end_at),
         startMainAt: number(game.start_main_at),
         seed: integer(game.seed),
       },

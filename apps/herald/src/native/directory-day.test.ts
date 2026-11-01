@@ -5,7 +5,7 @@ import type { DirectoryInput } from "../game-directory";
 import type { FoldRow } from "../types";
 
 const start = 1_800_000_000;
-const calendar = { seed: 42n, startMainAt: start, dayUnitSeconds: 14_400 };
+const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 14_400, dayUnitSeconds: 14_400 };
 const input = (timestamp: number): DirectoryInput => {
   const games = [
     { game_id: 1, preset_id: 5, settled: true },
@@ -136,4 +136,24 @@ it("folds the extension row and preserves the added days through a checkpoint re
   expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));
   expect(directory(cold, approved.end - 1)).toMatchObject({ day_index: 14, day_ends_at: approved.end });
   expect(directory(cold, approved.end).day_index).toBeNull();
+});
+
+it.each([81, 84, 85])("publishes the final %ih day without a tomorrow", (hours) => {
+  const end = start + hours * 3600;
+  const state = input(end - 1);
+  const read = state.fold.modelRows;
+  state.fold.modelRows = (model) =>
+    read(model).map((row) => ({
+      ...row,
+      value: {
+        ...row.value,
+        ...(model === "GameRegistry" ? { seed: 0x5eedn, end_at: end } : {}),
+        ...(model === "SliceRules" && row.value.game_id === 3 ? { day_unit_seconds: 7200 } : {}),
+      },
+    }));
+  expect(buildNativeDirectory(state).games.find((game) => game.game_id === 3)).toMatchObject({
+    day_index: hours === 81 ? 9 : 10,
+    day_ends_at: end,
+    next_day_length: null,
+  });
 });

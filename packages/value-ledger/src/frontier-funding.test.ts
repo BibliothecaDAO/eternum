@@ -83,9 +83,9 @@ it.each([1, 2, 21, 30])("binds %i whole bags from the game without a preset dura
   end = terms.start + bags * 20 * terms.dayUnit;
   expect(await read({ ...terms, end })).toMatchObject({ end, claimDeadline: end + terms.claimWindow });
 });
-it("refuses partial bags even if the ledger and game agree", async () => {
+it("binds a partial bag when the ledger and game agree", async () => {
   end = 111;
-  await expect(read({ ...terms, end })).rejects.toThrow("frontier_funding_differs_from_game");
+  expect(await read({ ...terms, end })).toMatchObject({ end, claimDeadline: end + terms.claimWindow });
 });
 
 it("returns the ledger deposit independently of any preset funding amount", async () => {

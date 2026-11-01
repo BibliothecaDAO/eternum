@@ -34,20 +34,17 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
         </p>
       )}
       {suggestions.map((suggestion) => (
-        <div
-          key={suggestion.id}
-          ref={suggestion.id === selectedId ? selected : undefined}
-          className={suggestion.id === selectedId ? "rounded-lg ring-1 ring-gold/30" : undefined}
-        >
+        <div key={suggestion.id} ref={suggestion.id === selectedId ? selected : undefined}>
           {isOrderSuggestion(suggestion) ? (
             <SuggestionChip
               suggestion={suggestion}
               onClick={() => void handleSuggestionClick(suggestion)}
               isPending={pendingSuggestionIds.includes(suggestion.id)}
               refusal={refusal}
+              selected={suggestion.id === selectedId}
             />
           ) : (
-            <LevelUpSuggestion suggestion={suggestion} />
+            <LevelUpSuggestion suggestion={suggestion} selected={suggestion.id === selectedId} />
           )}
         </div>
       ))}
@@ -57,7 +54,7 @@ export function SuggestionsPanel({ selectedId }: { selectedId: string }) {
 }
 
 /** A realm's level-up, read and sent by the realm's own step, as every surface that offers it does. */
-const LevelUpSuggestion = ({ suggestion }: { suggestion: EmpireSuggestion }) => {
+const LevelUpSuggestion = ({ suggestion, selected }: { suggestion: EmpireSuggestion; selected: boolean }) => {
   const step = useRealmLevelUp(suggestion.realmId);
   return (
     <SuggestionChip
@@ -65,6 +62,7 @@ const LevelUpSuggestion = ({ suggestion }: { suggestion: EmpireSuggestion }) => 
       onClick={() => step?.run()}
       isPending={step?.loading ?? false}
       refusal={step?.ready === false ? (step.refusal ?? null) : null}
+      selected={selected}
     />
   );
 };

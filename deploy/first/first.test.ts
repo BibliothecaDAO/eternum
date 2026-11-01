@@ -1,3 +1,4 @@
+import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { setupQuestions, validateInputs } from "./dates";
 import { afterEach, expect, mock, test } from "bun:test";
 import { chmodSync, existsSync, lstatSync, mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
@@ -58,6 +59,9 @@ const input: Inputs = {
   rpc: "https://starknet-mainnet.g.alchemy.com/v2/throwaway",
   resend: "fake-resend",
   discordClientId: "fake-discord-id",
+  cosignerPublicKey: "0x123",
+  cosignerUrl: "https://cosigner.test",
+  cosignerToken: "test-cosigner-token",
   discordClientSecret: "fake-discord-secret",
   amount: "1000000",
   frontierPresetId: "5",
@@ -286,18 +290,23 @@ test("a lost invoke response retries the same nonce while it remains current", a
   expect(nonces).toEqual(["7", "7", "7"]);
 });
 
-test("each environment deploys what its book does not name: production reuses dev's test LORDS", () => {
+test("production requires real LORDS and dev alone can deploy a test token", () => {
   // Dev, from an empty book: its test LORDS, rating token and two collections, then its ledger once they exist.
-  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}).map((plan) => plan.name)).toEqual([
+  expect(assetPlans(environments.dev, "0x20", "0x21", "0x22", {}, "0x123").map((plan) => plan.name)).toEqual([
     "lords",
     "mmr",
     "chests",
     "cosmetics",
   ]);
-  // Production's book names dev's test LORDS, so it deploys only its own rating token and collections.
-  expect(addressBook(environments.production).lords).toBe(addressBook(environments.dev).lords);
-  const testLords = addressBook(environments.dev).lords!;
-  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords });
+  // Production deploys only its own rating token and collections around the canonical token.
+  expect(addressBook(environments.production).lords).toBe(mainnetAddresses.lords);
+  for (const lords of [undefined, "0x0", addressBook(environments.dev).lords]) {
+    expect(() => assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords }, "0x123")).toThrow(
+      "canonical mainnet LORDS",
+    );
+  }
+  const testLords = mainnetAddresses.lords;
+  const production = assetPlans(environments.production, "0xc01d", "0x21", "0x22", { lords: testLords }, "0x123");
   expect(production.map((plan) => [plan.name, plan.artifact])).toEqual([
     ["mmr", "MMRToken"],
     ["chests", "RealmsCollectible"],
@@ -307,14 +316,15 @@ test("each environment deploys what its book does not name: production reuses de
   const chest = production.find((plan) => plan.name === "chests")!;
   expect(chest.constructor).toContain(BigInt("0xc01d").toString());
   expect(chest.constructor).not.toEqual(
-    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }).find((plan) => plan.name === "chests")!
-      .constructor,
+    assetPlans(environments.dev, "0xc01d", "0x21", "0x22", { lords: testLords }, "0x123").find(
+      (plan) => plan.name === "chests",
+    )!.constructor,
   );
-  // Once they exist, its own ledger is built on dev's test LORDS with production's admin, operator and treasury.
+  // Once they exist, its own ledger is built on real LORDS with production's admin, operator and treasury.
   const deployed = { lords: testLords, mmr: "0x31", chests: "0x32", cosmetics: "0x33" };
-  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed);
+  const ledger = assetPlans(environments.production, "0xc01d", "0x21", "0x22", deployed, "0x123");
   expect(ledger).toHaveLength(1);
-  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33"]);
+  expect(ledger[0]!.constructor).toEqual(["0xc01d", "0x21", "0x22", testLords, "0x31", "0x32", "0x33", "0x123"]);
   expect(fixedSalt("dev", "0x123", "ledger")).not.toBe(fixedSalt("production", "0x123", "ledger"));
 });
 
@@ -362,7 +372,13 @@ test("setup keeps only missing role calls and preserves the selected Frontier pr
   expect(
     dev.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["1", "5"]);
-  const production = setupCalls(environments.production, assets, "0x33", 5, BLITZ_WINDOW);
+  const production = setupCalls(
+    environments.production,
+    { ...assets, lords: mainnetAddresses.lords },
+    "0x33",
+    5,
+    BLITZ_WINDOW,
+  );
   expect(
     production.filter((call) => call.entrypoint === "register_preset").map((call) => (call.calldata as string[])[0]),
   ).toEqual(["5"]);
@@ -374,7 +390,13 @@ test("setup keeps only missing role calls and preserves the selected Frontier pr
 });
 
 const setupOf = (target: Target, entrypoint: string) =>
-  setupCalls(target, assets, "0x33", 5, BLITZ_WINDOW).filter((call) => call.entrypoint === entrypoint);
+  setupCalls(
+    target,
+    { ...assets, lords: target.environment === "production" ? mainnetAddresses.lords : assets.lords },
+    "0x33",
+    5,
+    BLITZ_WINDOW,
+  ).filter((call) => call.entrypoint === entrypoint);
 const registered = (call: { calldata: unknown }) => call.calldata as string[];
 
 test("dev setup registers 100 LORDS for entry, Sword and Shield", () => {
@@ -500,6 +522,13 @@ test("every service uses one RPC; deployer and cold admin keys never enter Worke
   for (const name of ["identity", "relay", "monitor", "status"]) expect(map[name]!.L2_RPC_URL).toBe(input.rpc);
   expect(map.guardian).toEqual({});
   expect(map.relay!.LEDGER_OPERATOR_PRIVATE_KEY).toBe(keys.relay);
+  expect(map.relay!.COSIGNER_URL).toBe(input.cosignerUrl);
+  expect(map.relay!.COSIGNER_TOKEN).toBe(input.cosignerToken);
+  expect(
+    Object.values(map)
+      .flatMap(Object.keys)
+      .filter((name) => name.includes("COSIGNER")),
+  ).toEqual(["COSIGNER_URL", "COSIGNER_TOKEN"]);
   expect(map.monitor!.PAUSER_PRIVATE_KEY).toBe(keys.monitor);
   expect(Object.values(map).flatMap(Object.values)).not.toContain(keys.deployer);
   expect(map.launch!.LAUNCH_DEPLOYER_PRIVATE_KEY).toBe(keys.launcher);
@@ -519,6 +548,9 @@ test("setup asks for an alert email on production only, and dev's inputs can nev
     "cloudflareToken",
     "rpc",
     "resend",
+    "cosignerPublicKey",
+    "cosignerUrl",
+    "cosignerToken",
     "discordClientId",
     "discordClientSecret",
     "amount",
@@ -725,11 +757,11 @@ test.each(["none", "relay", "monitor"])(
   },
 );
 
-test("all four dates are required without defaults and invalid Frontier end gives two exact alternatives", () => {
+test("all four dates are required without defaults and both Frontier boundaries align to ticks", () => {
   expect(() => validateDates(input, true)).not.toThrow();
   for (const field of ["frontierStart", "frontierEnd", "blitzStart", "blitzEnd"])
     expect(() => validateDates({ ...input, [field]: "" }, true)).toThrow("without a default");
-  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:00Z" }, true)).toThrow("nearest valid ends:");
+  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:01Z" }, true)).toThrow("s tick");
   expect(() => validateDates({ ...input, frontierStart: "2027-01-01T00:00:01Z" }, true)).toThrow("s tick");
 });
 
@@ -841,15 +873,20 @@ test("resuming an existing ledger refuses different saved accounts", async () =>
   const calls: unknown[] = [];
   let allowed = true;
   const provider = {
-    callContract: async (call: unknown) => {
+    callContract: async (call: { entrypoint: string }) => {
       calls.push(call);
-      return [allowed ? "1" : "0"];
+      return call.entrypoint === "cosigner" ? ["0x123", "0"] : [allowed ? "1" : "0"];
     },
   } as unknown as RpcProvider;
-  await verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21");
-  expect(calls).toHaveLength(2);
+  await verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21", "0x123");
+  expect(calls).toHaveLength(3);
+  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x20", "0x21", "0x456")).rejects.toThrow(
+    "co-signer differs",
+  );
   allowed = false;
-  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31")).rejects.toThrow("different accounts");
+  await expect(verifyLedgerAccounts(provider, assets.ledger, "0x30", "0x31", "0x123")).rejects.toThrow(
+    "different accounts",
+  );
 });
 
 test("publishes the ledger's deployment block beside its address, the same on a rerun, and refuses a different one", () => {
@@ -858,7 +895,7 @@ test("publishes the ledger's deployment block beside its address, the same on a 
   writeFileSync(path, JSON.stringify({ l2Chain: "SN_MAIN" }));
   try {
     const target = { ...environments.dev, book } as unknown as Target;
-    const assets = { ledger: "0x1", lords: "0x2", mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
+    const assets = { ledger: "0x1", lords: mainnetAddresses.lords, mmr: "0x3", chests: "0x4", cosmetics: "0x5" };
     expect(recordedLedgerBlock(target)).toBeUndefined();
     publishAssets(target, assets, 1234);
     expect(addressBook(target)).toMatchObject({ ledger: "0x1", ledgerDeploymentBlock: 1234 });
@@ -875,11 +912,11 @@ test("date validation requires a native Frontier preset and uses its season cloc
   const dates = {
     ...input,
     frontierPresetId: "6",
-    frontierStart: "2026-11-03T06:30:00Z",
-    frontierEnd: "2026-11-06T14:30:00Z",
+    frontierStart: "2026-11-03T05:00:00Z",
+    frontierEnd: "2026-11-06T18:00:00Z",
   };
   expect(() => validateDates(dates, true)).not.toThrow();
-  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:30:00Z" }, true)).toThrow("whole bags");
+  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:00:01Z" }, true)).toThrow("40 s tick");
   expect(() => validateDates({ ...dates, frontierPresetId: "" }, true)).toThrow("registered Frontier preset");
   expect(() => validateDates({ ...dates, frontierPresetId: "1" }, true)).toThrow("registered Frontier preset");
 });
@@ -888,7 +925,13 @@ test.each(["dev", "production"] as const)(
   "%s registers Devcon's ID, clock and chest terms from the preset source",
   (environment) => {
     const preset = frontierDevconPreset;
-    const calls = setupCalls(environments[environment], assets, "0x33", preset.id, BLITZ_WINDOW);
+    const calls = setupCalls(
+      environments[environment],
+      { ...assets, lords: mainnetAddresses.lords },
+      "0x33",
+      preset.id,
+      BLITZ_WINDOW,
+    );
     const frontier = calls.find(
       (call) => call.entrypoint === "register_preset" && registered(call)[0] === String(preset.id),
     )!;

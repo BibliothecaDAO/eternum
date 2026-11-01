@@ -131,6 +131,7 @@ pub struct WithdrawalPayment {
     pub amount: u256,
     pub prize_rank: u16,
     pub prize_count: u16,
+    pub reported_at: u64,
 }
 
 #[derive(Copy, Default, Drop, Serde, starknet::Store)]
@@ -160,6 +161,7 @@ pub struct GameKey {
 #[derive(Copy, Drop)]
 pub struct FrontierClock {
     pub start_main_at: u64,
+    pub end_at: u64,
     pub seed: felt252,
 }
 

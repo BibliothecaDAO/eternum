@@ -18,18 +18,8 @@ import {
   AppRow,
 } from "@/ui/design-system/kit/app-elements";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
-import {
-  CONTINUE,
-  RESULT_WORDS,
-  SEASON_ENDINGS,
-  SEASON_OVER,
-  WITHDRAW,
-  YOU_PLACED,
-  REWARD_WORDS,
-  SEASON_WORDS,
-  WORDS,
-} from "@/ui/design-system/kit/words";
-import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
+import { CONTINUE, RESULT_WORDS, WITHDRAW, REWARD_WORDS, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { findOwnEntry } from "@/ui/features/frontier/board/standings";
 
 import { rosterWalletOf } from "@/runtime/world/directory";
 
@@ -40,39 +30,26 @@ import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
 import { backFrom, isOpenedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
-import { type DirectoryGame, useDirectory, useLeaderboard, useRealmsPlayer, useRecentResults } from "../herald";
+import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
 import { NothingHere } from "../not-found";
 import type { Painting } from "@/ui/design-system/kit/paintings";
-import { ageOf } from "../play/ages";
 import { gameKey } from "../play/play-board";
 import { markResultsSeen } from "../play/seen-results";
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { environmentLedger } from "../value/ledger";
 import { FailureLine } from "../sign-in/failure-line";
-import { FrontierRow } from "./frontier-row";
-import { SeasonPodium } from "./season-podium";
 import { gameTitle } from "./history-row";
 import { gameOfResults, resultsHref } from "./results-link";
+import { archivedSeason } from "./archive/archive";
 import { type RewardSeat, useSealedChest } from "./reward";
 import { RewardPanel } from "./reward-panel";
+import { useFinishedGame } from "./finished-game";
+import { SeasonRecap } from "./season-recap";
 
 /** How many of the board's rows a result shows: the top three on a phone, the final top five on desktop. */
 const ROWS = { phone: 3, desktop: 5 } as const;
-
-/**
- * A finished game's record: from the directory (ended), the player's history (settled), or every player's recent
- * history, which holds a game the reader had no seat in (a shared Results; qa-app-2 P3-13).
- */
-const useFinishedGame = (ref: GameRef | null) => {
-  const { data: player } = useRealmsPlayer();
-  const directory = useDirectory();
-  const history = useRecentResults(50, player);
-  const everyone = useRecentResults(50);
-  const matches = (game: DirectoryGame) => ref !== null && game.chainId === ref.chainId && game.game_id === ref.gameId;
-  return directory.data?.games.find(matches) ?? history.data?.games.find(matches) ?? everyone.data?.games.find(matches);
-};
 
 /**
  * A finished game's Results (spec 08; the owner's pick, C · Ledger): the outcome first (a Blitz player's place and
@@ -146,7 +123,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
       </ResultsFrame>
     );
   return board.data.mode === "frontier" ? (
-    <FrontierResult gameRef={gameRef} board={board.data} player={player} fromList={fromList} />
+    <FrontierResult gameRef={gameRef} game={game} board={board.data} player={player} fromList={fromList} />
   ) : (
     <BlitzResult gameRef={gameRef} game={game} entries={board.data.entries} player={player} fromList={fromList} />
   );
@@ -213,10 +190,10 @@ const ShareButton = ({ gameRef, line }: { gameRef: GameRef; line: string }) => {
   );
 };
 
-/** Continue to Play after a match: the step, unless a sealed chest's Open is the page's. */
-const ContinueButton = ({ fromList, chestToOpen = false }: { fromList: boolean; chestToOpen?: boolean }) =>
+/** Continue to Play after a match: the page's step, unless another verb leads (a sealed chest's Open, Share my season). */
+const ContinueButton = ({ fromList, leads = true }: { fromList: boolean; leads?: boolean }) =>
   fromList ? null : (
-    <AppButton kind={chestToOpen ? "secondary" : "primary"} icon="play" step={!chestToOpen} to="/">
+    <AppButton kind={leads ? "primary" : "secondary"} icon="play" step={leads} to="/">
       {CONTINUE}
     </AppButton>
   );
@@ -249,7 +226,7 @@ const BlitzResult = ({
     <span className="flex flex-wrap gap-2">
       <ShareButton gameRef={gameRef} line={shareLine(game, own, entries.length)} />
       <EndMapButton gameRef={gameRef} />
-      <ContinueButton fromList={fromList} chestToOpen={chestToOpen} />
+      <ContinueButton fromList={fromList} leads={!chestToOpen} />
     </span>
   );
   const reward = game && <GameReward game={game} />;
@@ -372,33 +349,33 @@ const GameLine = ({ game, gameRef }: { game: DirectoryGame | undefined; gameRef:
 };
 
 /**
- * A season's Results, on the mist lifted: the season's ending and the player's place of the field with what their
- * realm made, then the board's first rows with their own. Season and Withdraw (the realm's LORDS still to take, from the
- * season's last card) stand at the head's end.
+ * A season's Results: the season's recap (SeasonRecap), the one drawing of a season's end the game shows too, with
+ * Season, the end map and Withdraw (the realm's LORDS still to take, from the season's last card) before its Share; an
+ * archived season has no shard to open, so neither of the last two.
  */
 const FrontierResult = ({
   gameRef,
+  game,
   board,
   player,
   fromList,
 }: {
   gameRef: GameRef;
+  game: DirectoryGame | undefined;
   board: HeraldFrontierLeaderboard;
   player: string | null;
   fromList: boolean;
 }) => {
-  const { entries } = board;
-  const own = findOwnEntry(entries, player);
-  const rows = boardRows(entries, player, ROWS[useLayout()]);
-  const frontier = ageOf("frontier");
-  const buttons = (
-    <span className="flex flex-wrap gap-2">
+  const own = findOwnEntry(board.entries, player);
+  const onShard = archivedSeason(gameRef) === undefined;
+  const actions = (
+    <>
       <AppButton kind="secondary" icon="leaderboard" to="/season">
         {WORDS.season}
       </AppButton>
-      <EndMapButton gameRef={gameRef} />
+      {onShard && <EndMapButton gameRef={gameRef} />}
       {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
-      {own && (
+      {onShard && own && (
         <AppButton
           kind="secondary"
           icon="lords"
@@ -407,46 +384,13 @@ const FrontierResult = ({
           {WITHDRAW}
         </AppButton>
       )}
-      <ContinueButton fromList={fromList} />
-    </span>
+      <ContinueButton fromList={fromList} leads={own === undefined} />
+    </>
   );
   return (
     // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
-    <ResultsFrame fromList={fromList} painting={ageOf("eternum").painting} buttons={buttons}>
-      <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
-        <AppPanel className="lg:col-span-8">
-          <div className="flex flex-col gap-4">
-            <span className="text-app-display text-app-ink">{SEASON_OVER}</span>
-            <p className="text-app-strong text-app-gold">{SEASON_ENDINGS.lifted}</p>
-            {own && (
-              <div className="flex flex-wrap items-center gap-x-10 gap-y-4">
-                <AppFigure
-                  icon="leaderboard"
-                  tone="gold"
-                  value={`#${formatAmount(own.rank)}`}
-                  label={`${YOU_PLACED} · ${SEASON_WORDS.of} ${formatAmount(entries.length)}`}
-                />
-                <AppFigure icon="lords" tone="gold" value={formatAmount(wholeLords(own.rewards.lords))} label="LORDS" />
-              </div>
-            )}
-            {own && (
-              <div className="flex flex-wrap gap-2">
-                <AppChip icon="explore">{`${formatAmount(own.sites_cleared.total)} · ${RESULT_WORDS.sitesCleared}`}</AppChip>
-                <AppChip icon="reward-chest">{`${formatAmount(own.chests_earned)} · ${RESULT_WORDS.chests}`}</AppChip>
-                <AppChip icon="portal">{`${formatAmount(own.deepest_depth)} · ${RESULT_WORDS.deepest}`}</AppChip>
-              </div>
-            )}
-          </div>
-        </AppPanel>
-        <div data-age="frontier" className="lg:col-span-4">
-          <AppPanel title={frontier.name} icon="leaderboard" painting={frontier.painting} flush>
-            <SeasonPodium board={board} own={own?.address} />
-            {rows.map(({ entry, own: isOwn }) => (
-              <FrontierRow key={entry.address} entry={entry} own={isOwn} />
-            ))}
-          </AppPanel>
-        </div>
-      </div>
+    <ResultsFrame fromList={fromList} painting="season-citadel">
+      <SeasonRecap gameRef={gameRef} game={game} board={board} viewer={player} ending="lifted" actions={actions} />
     </ResultsFrame>
   );
 };

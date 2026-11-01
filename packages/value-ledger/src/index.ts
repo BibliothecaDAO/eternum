@@ -28,7 +28,7 @@ export { computeSeasonTop } from "./season-top";
 
 export { readBlitzRoster } from "./shard-roster";
 
-export { readFrontierFunding, type FrontierFundingTerms } from "./frontier-funding";
+export { readFrontierFunding, frontierTreasuryAmount, type FrontierFundingTerms } from "./frontier-funding";
 
 export { ServiceResponseFailure, serviceError, serviceFailure, serviceResponseFailure } from "./service-error";
 export {
@@ -39,3 +39,6 @@ export {
   seaterLabels,
   seaterAccountAddresses,
 } from "./shard-accounts";
+
+export { cosigningHash, decodeCosignRequest, decodeCosigner } from "./cosigning";
+export type { CosigningDomain, PayoutTerms, SettlementTerms, CosignRequest, Cosignature } from "./cosigning";

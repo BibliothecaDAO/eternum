@@ -103,7 +103,7 @@ jobs:
           pnpm exec tsc -p config/tsconfig.json --noEmit
       # The directory form: a bare "config" would match every test path containing the word.
       - name: Test resumable first deployment without live services
-        run: bun test deploy/first/*.test.ts
+        run: bun test deploy/first/*.test.ts deploy/athanor/cosigner/*.test.ts
       - name: Test the release tools (Frontier reconciliation, game fact diff)
         run: bun test ./deploy/release
 

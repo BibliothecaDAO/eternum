@@ -170,10 +170,9 @@ export const NodeTile = ({
       data-node={node.key}
       data-state={node.state}
       className={cn(
-        "relative flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center",
+        "ui-pick relative flex flex-col items-center gap-0.5 rounded-md border px-1 py-1.5 text-center",
         // A row locked above the tiers it holds keeps its look: only what it waits on is locked.
         node.state === "locked" && node.tier > 0 ? "border-hud-divider" : look.frame,
-        picked && "outline outline-2 outline-offset-1 outline-hud-accent",
       )}
     >
       <Icon name={node.icon} size={compact ? 32 : 36} />
@@ -246,8 +245,8 @@ const NodeChoice = ({
               onClick={() => setSide(index)}
               aria-pressed={side === index}
               className={cn(
-                "flex flex-col items-center gap-1 rounded-md border px-2 py-1.5 text-center",
-                side === index ? "border-hud-line-strong bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+                "ui-pick flex flex-col items-center gap-1 rounded-md border border-hud-line px-2 py-1.5 text-center",
+                side !== index && "hover:bg-hud-hover",
               )}
             >
               <IconGroup name={option.icon} size={28} />

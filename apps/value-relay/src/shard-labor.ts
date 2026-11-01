@@ -21,12 +21,13 @@ export const currentLaborDay = (connection: ShardConnection, heraldUrl: string, 
     const day = dayOf(
       {
         seed: BigInt(String(game.seed)),
+        endAt: Number(game.end_at),
         startMainAt: Number(game.start_main_at),
         dayUnitSeconds: Number(rules.day_unit_seconds),
       },
       timestamp,
     );
-    if (!day || timestamp >= Number(game.end_at)) throw new Error("labor_outside_season");
+    if (!day) throw new Error("labor_outside_season");
     return day.index;
   });
 

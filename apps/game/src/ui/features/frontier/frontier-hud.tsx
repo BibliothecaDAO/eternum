@@ -14,10 +14,10 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
+import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
-import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
+import { FrontierSeason, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
@@ -48,6 +48,7 @@ import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
+import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
 import { useCampaignMark } from "./value/campaign-home";
@@ -78,7 +79,14 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  * its stores, a nav page or the map, Next up, the action bar while an army is selected, the armies and the places.
  * Everything else opens from these as a sheet.
  */
-export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
+export const FrontierHud = ({
+  rules,
+  seasonOver: SeasonOver,
+}: {
+  rules: ExpeditionRules;
+  /** The host owns the shell recap; the HUD supplies its board action and pending payout. */
+  seasonOver: ComponentType<{ withdraw?: ReactNode; onSeason: () => void }>;
+}) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
@@ -520,6 +528,8 @@ const FrontierRealmPanel = ({
   const name = useGameModeConfig().structure.getName(realm).name;
   const stores = useStoreReadings(realm, rules);
   const lords = useRealmLords(own ?? realm);
+  const owed = useOwedLords(own ?? realm);
+  const linkWalletLine = useLinkWalletPrompt(own ? owed : undefined);
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
@@ -534,6 +544,7 @@ const FrontierRealmPanel = ({
       onHome={() => goToPlace(true)}
       {...(own && {
         lords,
+        linkWalletLine,
         waiting,
         storeCards,
         onWithdraw: () => onSurface("withdraw"),
@@ -560,6 +571,12 @@ const RealmPurse = ({
 }) => (
   <PurseRow>
     {waiting && <RealmsChip waiting={waiting} narrow onOpen={onRealms} />}
-    <LordsPurse lords={useRealmLords(realm)} onOpen={onWithdraw} />
+    <OwnLordsPurse realm={realm} onOpen={onWithdraw} />
   </PurseRow>
 );
+
+/** The player's own realm's LORDS, marked while the account has no linked wallet to receive them. */
+const OwnLordsPurse = ({ realm, onOpen }: { realm: NativeRows["Structure"]; onOpen: () => void }) => {
+  const lords = useRealmLords(realm);
+  return <LordsPurse lords={lords} linkWalletLine={useLinkWalletPrompt(useOwedLords(realm))} onOpen={onOpen} />;
+};

@@ -43,7 +43,7 @@ pub mod ReleaseMigration {
                 "Frontier extension claims differ",
             );
             assert!(approved::END > game.end_at, "Frontier extension must grow");
-            crate::days::season_days(approved::END - game.start_main_at, rules.day_unit_seconds);
+            assert!(approved::END % rules.tick_config.armies_tick_in_seconds == 0, "season does not end on a tick");
             let budget = crate::logic::lords_budget::budget(game_id).expect('Frontier pool missing');
             assert!(
                 budget.pool == approved::POOL_LORDS && budget.pool_left <= budget.pool,

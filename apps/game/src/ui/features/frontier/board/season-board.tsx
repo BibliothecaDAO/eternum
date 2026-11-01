@@ -12,14 +12,11 @@ import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eter
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 import { seasonDay } from "../hud/day-clock";
-import { useSeasonEndsAt } from "../hud/season-end";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
-import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
@@ -35,7 +32,7 @@ const LIST_LENGTH = 50;
 export const useSeasonBoard = () => useFrontierBoard((board) => board.entries);
 
 /** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
-const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
+export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
@@ -72,11 +69,11 @@ const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | 
   );
 };
 
-const useViewer = () => useAccountStore((state) => state.account?.address ?? null);
+export const useSeasonViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
 export const useSeasonRank = (): string => {
-  const rank = ownRank(useSeasonBoard().data, useViewer());
+  const rank = ownRank(useSeasonBoard().data, useSeasonViewer());
   return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
 };
 
@@ -94,10 +91,9 @@ export const FrontierSeason = ({
   onClose: () => void;
 }) => {
   const board = useSeasonBoard();
-  const viewer = useViewer();
+  const viewer = useSeasonViewer();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
-  const endsAt = useSeasonEndsAt();
   const now = useNowSeconds();
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -129,7 +125,7 @@ export const FrontierSeason = ({
       onRetry={() => void board.refetch()}
       onOpen={setOpened}
       onClose={onClose}
-      ends={endsAt === undefined ? undefined : { at: endsAt, ...seasonDay(rules, endsAt, now) }}
+      ends={{ at: rules.endAt, ...seasonDay(rules, now) }}
     />
   );
 };
@@ -164,7 +160,7 @@ const useSeasonListRows = (
   entries: readonly Entry[] | undefined,
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
-  const own = findOwnEntry(entries ?? [], useViewer());
+  const own = findOwnEntry(entries ?? [], useSeasonViewer());
   // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
   const names = usePlayerNames();
   const top = (entries ?? []).slice(0, length);
@@ -210,48 +206,6 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
     ruins: entry.sites_cleared.ruins,
     beasts: entry.sites_cleared.beasts,
   },
-  chests: entry.chests_earned,
-  lords: wholeLords(entry.rewards.lords),
-  depth: entry.deepest_depth,
-  essence: earnedResource(entry.rewards.essence),
-  labor: earnedResource(entry.rewards.labor),
-});
-
-/**
- * The season-over card once the game has ended. The ending is not yet a recorded fact: the mist lifted stands until
- * Herald names it, as on the app's Results.
- */
-export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
-  useNowSeconds();
-  const navigate = useNavigate();
-  const board = useSeasonBoard();
-  const viewer = useViewer();
-  if (!configManager.isGameOver()) return null;
-  const entries = board.data;
-  const own = entries && findOwnEntry(entries, viewer);
-  return (
-    <SeasonOverCard
-      ending="lifted"
-      place={own?.rank}
-      field={entries?.length}
-      podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
-      totals={own && seasonTotals(own)}
-      withdraw={withdraw}
-      onSeason={onSeason}
-      onExit={() => navigate("/")}
-    />
-  );
-};
-
-const podiumPlace = (entry: Entry, own: boolean): PodiumPlace => ({
-  key: entry.address,
-  rank: entry.rank,
-  name: <LordName account={entry.address} you={own} portrait />,
-  sitesCleared: entry.sites_cleared.total,
-});
-
-const seasonTotals = (entry: Entry): SeasonTotals => ({
-  sitesCleared: entry.sites_cleared.total,
   chests: entry.chests_earned,
   lords: wholeLords(entry.rewards.lords),
   depth: entry.deepest_depth,

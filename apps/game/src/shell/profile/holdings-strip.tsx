@@ -32,7 +32,8 @@ type Sheet = "realms" | "ticket";
 /**
  * What the player holds, counted at the foot of their own card, each count opening its sheet (owner's pick, holdings
  * layout C). The account's Realms (its linked wallet's, as a game's Realm step reads them) and its Devcon ticket; with no
- * linked wallet, the way to link one. LORDS, chests and cosmetics join later.
+ * linked wallet, the way to link one, for the Realms it holds and the LORDS a season pays to it. LORDS counted, chests
+ * and cosmetics join later.
  */
 export const HoldingsStrip = () => {
   const { wallet, held } = useHeldRealms();
@@ -47,7 +48,7 @@ export const HoldingsStrip = () => {
         {wallet === null ? (
           <Holding
             icon="backpack"
-            label={PROFILE_WORDS.linkWallet}
+            label={PROFILE_WORDS.linkWalletHoldings}
             onPress={() => navigate(linkWalletHref(returnPathOf(location)))}
           />
         ) : (

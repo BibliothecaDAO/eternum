@@ -17,6 +17,9 @@ export interface Withdrawal {
   amount: string;
   confirmedAt: number;
 }
+export interface WithdrawalReceipt extends Omit<Withdrawal, "realmsId"> {
+  account: string;
+}
 export interface BlitzCommitment {
   chainId: string;
   gameId: number;
@@ -85,6 +88,10 @@ export type HeldObligation =
       };
     }
   | { kind: "payment"; reason: string; withdrawal: Withdrawal };
+export interface ReportedClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
+  wallet: string;
+  reportTransactionHash: string;
+}
 export interface PaidClaim extends Omit<Withdrawal, "realmsId" | "confirmedAt"> {
   wallet: string;
   paidAt: number;
@@ -144,6 +151,7 @@ export interface RelayPorts {
   };
   ledger: {
     payment(withdrawal: Withdrawal): RelayEffect<{
+      reportedAt: number;
       paid: boolean;
       seasonId: number;
       wallet: string;
@@ -162,11 +170,17 @@ export interface MonitorPorts {
     matchesPayDecision(decision: LedgerPayDecision): RelayEffect<boolean>;
   };
   shard: Pick<RelayPorts["shard"], "withdrawal"> & {
+    withdrawalReceipt(chainId: string, transactionHash: string): RelayEffect<WithdrawalReceipt | null>;
     result(chainId: string, gameId: number): RelayEffect<BlitzResult | null>;
     conservation(): RelayEffect<readonly ConservationBalance[]>;
   };
   ledger: {
     frontierPool(chainId: string, gameId: number): RelayEffect<string>;
+    reportedClaims(
+      after: string | null,
+      fromBlock?: number,
+      anchor?: LedgerAnchor,
+    ): RelayEffect<LedgerPage<ReportedClaim>>;
     paidClaims(after: string | null, fromBlock?: number, anchor?: LedgerAnchor): RelayEffect<LedgerPage<PaidClaim>>;
     postedResults(
       after: string | null,

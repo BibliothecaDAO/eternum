@@ -19,13 +19,13 @@ export type SeasonDetail = {
 };
 
 /** Herald's count for each kind of site: every kind has one, or this does not compile. */
-const SITE_COUNTS = {
+export const SITE_COUNTS = {
   Camp: "camps",
   Rift: "rifts",
   Ruin: "ruins",
   Beasts: "beasts",
 } as const satisfies Record<SiteKind, keyof SeasonDetail["sites"]>;
-const SITE_KINDS = Object.keys(SITE_COUNTS) as SiteKind[];
+export const SITE_KINDS = Object.keys(SITE_COUNTS) as SiteKind[];
 
 /**
  * A row tapped (wireframe 13): the realm's Order, name and rank, its sites cleared by kind (camp, rift, ruin,

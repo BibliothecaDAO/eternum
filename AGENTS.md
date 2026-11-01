@@ -206,6 +206,13 @@ If a change touches both non-Cairo and Cairo code, run all relevant commands.
 
 If a required command fails or is unavailable, say so explicitly in the final handoff.
 
+### Enforced runtime rules
+
+| Rule                                                                                                     | Enforcement                                                                                                                                |
+| -------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| Worker fetches use `redirect: "manual"` and reject non-success responses when redirects must be refused. | `pnpm check:worker-fetch` in static CI; workerd co-signer and relay regressions. The guard scans Wrangler apps and shared package sources. |
+| Co-signer loopback configuration must work through its real RPC, receipt, funding and Herald readers.    | `bun test deploy/athanor/cosigner/loopback.test.ts` in native CI; IPv4/IPv6 signing, funding mismatch and redirect refusal.                |
+
 ### Running Tests
 
 - Never run bare `npx vitest` from the repo root: duplicate workspace names under `contracts/*/ext` break it.

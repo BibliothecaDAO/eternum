@@ -6,7 +6,7 @@ const PRECISION = BigInt(RESOURCE_PRECISION);
 type TroopsChange = { before: number; after: number };
 
 /** What a battle did to both sides, as the battle's own story records it: the attacker's army and whoever it fought. */
-interface FightRecord {
+export interface FightRecord {
   army: TroopsChange;
   guard: TroopsChange;
 }

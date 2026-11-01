@@ -1,12 +1,12 @@
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { fightConcludedBy, oneStoryPerAction } from "@/ui/features/event-feed/event-stories";
 import type { readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
-import { useSeasonEndsAt } from "../hud/season-end";
 import { useDockArmies } from "../hud/dock-armies";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
@@ -36,7 +36,7 @@ export const FrontierToday = ({
   const now = useNowSeconds();
   const player = realm ? `0x${BigInt(realm.owner).toString(16)}` : null;
   const clock = dayClock(rules, now);
-  const season = seasonDay(rules, useSeasonEndsAt(), now);
+  const season = seasonDay(rules, now);
   const today = clock.day;
   const [chosen, setChosen] = useState<number | null>(null);
   const day = chosen ?? today;
@@ -63,9 +63,10 @@ export const FrontierToday = ({
   );
 };
 
-/** The day's stories as its log: each in Frontier's own line, less the ones that only repeat another. */
+/** The day's stories as its log: each action once, in Frontier's own line, a clear with the attack that won it. */
 const logLines = (stories: readonly ProcessedStoryEvent[], store: NativeFactStore): LogLine[] =>
-  stories.flatMap((story) => {
-    const text = dayLogLine(story, store);
-    return text === null ? [] : [{ id: story.id, at: Math.floor(story.timestampMs / 1_000), text }];
-  });
+  oneStoryPerAction(stories).map((story) => ({
+    id: story.id,
+    at: Math.floor(story.timestampMs / 1_000),
+    text: dayLogLine(story, store, fightConcludedBy(story, stories)),
+  }));

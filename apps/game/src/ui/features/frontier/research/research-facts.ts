@@ -1,3 +1,4 @@
+import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { knownAmount } from "@/ui/utils/utils";
@@ -14,7 +15,6 @@ import {
 } from "@bibliothecadao/eternum";
 import {
   nativeResearchConstants as research,
-  nativeRuleConstants,
   safeInteger,
   type NativeFactStore,
   type NativeRows,
@@ -108,7 +108,7 @@ const readResearchFacts = (
       return (whole(base) * (10_000 + storeroomPicks * board.storage_step_bps)) / 10_000;
     },
     wheatPerTroop: (rations) => rationedWheatPerTroop(store, realm.game_id, ResourcesIds.Knight, rations),
-    wellStamina: nativeRuleConstants.WELL_STAMINA,
+    wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
 

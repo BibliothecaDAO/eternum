@@ -15,6 +15,8 @@ import {
 import { requireOpenShard } from "@/runtime/world/shards";
 import { fetchApi } from "@/runtime/app-api";
 
+import { archivedSeason } from "./season-tab/archive/archive";
+
 /** A directory entry with the shard it came from, so the shell can address the game as (chain id, game id). */
 export interface DirectoryGame extends DirectoryEntry {
   chainId: string;
@@ -158,15 +160,24 @@ export const useRecentResults = (limit: number, player: string | null = null, en
 export const usePlayerHistory = (player: string | null) =>
   useQuery({
     queryKey: ["shell", "history", "player", player],
-    queryFn: () => readPlayerHistory(player as string),
+    queryFn: () => readHistory(player as string),
     enabled: player !== null,
     staleTime: 30_000,
     retry: 1,
   });
 
+/** Every settled game on the shards we list, newest first, followed to its last page: where a season that ended lives. */
+export const useSettledGames = () =>
+  useQuery({
+    queryKey: ["shell", "history", "all"],
+    queryFn: () => readHistory(null),
+    staleTime: 60_000,
+    retry: 1,
+  });
+
 const HISTORY_PAGE = 100;
 
-const readPlayerHistory = async (player: string) => {
+const readHistory = async (player: string | null) => {
   const games: Awaited<ReturnType<typeof fetchDirectoryHistory>>["games"] = [];
   let cursor: string | null = null;
   do {
@@ -179,17 +190,20 @@ const readPlayerHistory = async (player: string) => {
 
 /**
  * A game's standings in its mode's shape: Frontier's season board, or live points while a game runs and the recorded
- * final standings once its result is complete.
+ * final standings once its result is complete. An archived season's board is its archive's, with no shard to ask.
  */
-export const useLeaderboard = (game: GameRef | null) =>
-  useQuery({
+export const useLeaderboard = (game: GameRef | null) => {
+  const archived = game ? archivedSeason(game)?.board : undefined;
+  return useQuery({
     queryKey: ["shell", "leaderboard", game?.chainId, game?.gameId],
     queryFn: async () =>
       fetchHeraldLeaderboard(await requireOpenShard((game as GameRef).chainId), (game as GameRef).gameId),
-    enabled: game !== null,
+    initialData: archived,
+    enabled: game !== null && archived === undefined,
     refetchInterval: 30_000,
     retry: 1,
   });
+};
 
 const OPEN_STATUSES = new Set(["Created", "Registration"]);
 

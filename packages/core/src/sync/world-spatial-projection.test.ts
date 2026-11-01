@@ -162,7 +162,12 @@ const createHarness = () => {
   const writeExpeditionRules = (dayUnitSeconds: number, spacing: number, startMainAt: number) => {
     rules.set("SliceRules", { game_id: 13, day_unit_seconds: dayUnitSeconds });
     rules.set("SettlementRules", { game_id: 13, spacing });
-    rules.set("GameRegistry", { game_id: 13, start_main_at: BigInt(startMainAt), seed: 1n });
+    rules.set("GameRegistry", {
+      game_id: 13,
+      start_main_at: BigInt(startMainAt),
+      end_at: BigInt(startMainAt + 21 * 20 * dayUnitSeconds),
+      seed: 1n,
+    });
   };
   const writeRealm = (entityId: number, realmId: number, level: number) =>
     write(

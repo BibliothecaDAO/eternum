@@ -1,3 +1,4 @@
+import type { Cosignature } from "@realms-world/value-ledger";
 import { RecordedSigner } from "./recorded-signer";
 import type { LedgerPayDecision } from "@realms-world/identity";
 import {
@@ -34,6 +35,18 @@ export const ledgerPaymentRead =
       return decodeWithdrawalPayment(fields);
     });
 
+/** Recovery only reads payment state after a confirmed pause has stopped further transfers. */
+export async function ledgerResetPayments(rpcUrl: string, address: string): Promise<RelayPorts["ledger"]["payment"]> {
+  const provider = rpcAt(rpcUrl);
+  const head = await readConfirmedLedgerHead(provider);
+  const paused = await provider.callContract(
+    { contractAddress: address, entrypoint: "is_paused", calldata: [] },
+    head.number,
+  );
+  if (paused.length !== 1 || BigInt(paused[0]!) !== 1n) throw new Error("reset_requires_paused_ledger");
+  return ledgerPaymentRead(rpcUrl, address, head.number);
+}
+
 /** Closing voids unpaid debt even when identity has no wallet; recover from the confirmed view, not event delivery. */
 export const ledgerWithdrawalVoided =
   (rpcUrl: string, address: string): RelayPorts["ledger"]["voided"] =>
@@ -42,7 +55,7 @@ export const ledgerWithdrawalVoided =
       const provider = rpcAt(rpcUrl);
       const head = await readConfirmedLedgerHead(provider);
       const payment = await Effect.runPromise(ledgerPaymentRead(rpcUrl, address, head.number)(withdrawal));
-      if (payment?.paid || withdrawal.prizeRank > 0) return false;
+      if (payment?.paid) return false;
       if (payment && payment.seasonId !== withdrawal.seasonId) throw new Error("ledger_report_mismatch");
       const fields = await provider.callContract(
         {
@@ -110,12 +123,12 @@ export const ledgerReportAdapter =
     });
 
 /** Identity journals each signed pay decision; eligibility is never reconstructed from an inclusion clock. */
-export const ledgerPaymentAdapter =
+export const ledgerClaimAdapter =
   (
     credentials: LedgerCredentials,
     record: (decision: LedgerPayDecision) => Promise<void>,
-  ): ((withdrawal: Withdrawal, wallet: string) => RelayEffect<void>) =>
-  (withdrawal, wallet) =>
+  ): ((withdrawal: Withdrawal, wallet: string, signature: Cosignature) => RelayEffect<void>) =>
+  (withdrawal, wallet, signature) =>
     frontierPayment(async (entrypoint, calldata) => {
       const provider = rpcAt(credentials.rpcUrl);
       const signer = new RecordedSigner(credentials.privateKey, (transactionHash) =>
@@ -142,7 +155,7 @@ export const ledgerPaymentAdapter =
         if (error instanceof RelayFailure) throw error;
         throw paymentFailure(error instanceof Error ? error.message : "");
       }
-    })(withdrawal, wallet);
+    })(withdrawal, wallet, signature);
 
 /** Pausing is idempotent at the port, including a retry after the pause transaction landed. */
 export const ledgerPauserAdapter = (credentials: LedgerCredentials): (() => import("./ports").RelayEffect<void>) => {
@@ -174,16 +187,20 @@ const ledgerAccountOf = (credentials: LedgerCredentials) => {
 
 /** Only ruled terminal failures leave the retry queue; a day-boundary unlock refusal stays retryable. */
 export const paymentFailure = (reason = "") => {
-  const operation = reason.includes("Ledger: claim window ended")
-    ? "ledger_claim_window_ended"
-    : reason.includes("Ledger: season closed")
-      ? "ledger_season_closed"
-      : reason.includes("Ledger: conflicting withdrawal report")
-        ? "ledger_report_mismatch"
-        : reason.includes("Ledger: invalid withdrawal")
-          ? "ledger_invalid_withdrawal"
-          : reason.includes("Ledger: unlock exceeded")
-            ? "ledger_unlock_exceeded"
-            : "pay Frontier claim";
+  const operation = reason.includes("Ledger: invalid cosignature")
+    ? "ledger_invalid_cosignature"
+    : reason.includes("Ledger: claim already paid")
+      ? "ledger_claim_already_paid"
+      : reason.includes("Ledger: claim window ended")
+        ? "ledger_claim_window_ended"
+        : reason.includes("Ledger: season closed")
+          ? "ledger_season_closed"
+          : reason.includes("Ledger: conflicting withdrawal report")
+            ? "ledger_report_mismatch"
+            : reason.includes("Ledger: invalid withdrawal")
+              ? "ledger_invalid_withdrawal"
+              : reason.includes("Ledger: unlock exceeded")
+                ? "ledger_unlock_exceeded"
+                : "pay Frontier claim";
   return new RelayFailure({ operation });
 };

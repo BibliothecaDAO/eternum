@@ -1,5 +1,5 @@
 pub use core::num::traits::Pow;
-pub use crate::days::{Day, bag_lengths, day_of, order_lengths, season_days};
+pub use crate::days::{Day, bag_lengths, day_of, order_lengths};
 pub use crate::game::GameRegistry;
 pub const UNIT: u32 = 14400;
 pub const START: u64 = 1_800_000_000;

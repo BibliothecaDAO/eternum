@@ -29,7 +29,7 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => 1 }
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 1 }));
 vi.mock("@/shell/value/use-ledger-paused", () => ({ useLedgerPaused: () => false }));
 vi.mock("./use-realm-lords", () => ({ useRealmLords: () => 200 }));
-vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn() }));
+vi.mock("react-router-dom", () => ({ useNavigate: () => vi.fn(), useLocation: () => ({ pathname: "/", search: "" }) }));
 vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0xabc" }) }));
 vi.mock("@/runtime/l2-rpc", () => ({
   L2_BLOCK_MS: 2_000,

@@ -57,10 +57,6 @@ pub mod EntryAdministration {
             self.data.entry.prize_pool.write(game_id, prize_pool);
             self.record_frontier_prize(game_id);
         }
-        fn top_up_frontier_pool(ref self: ComponentState<TContractState>, game_id: u32, amount: u128) {
-            super::assert_ledger_operator();
-            crate::logic::lords_budget::top_up_pool(game_id, amount);
-        }
         fn frontier_prize(self: @ComponentState<TContractState>, game_id: u32) -> crate::entry::FrontierPrize {
             crate::entry::FrontierPrize {
                 pool: self.data.entry.prize_pool.read(game_id),
@@ -87,6 +83,7 @@ pub mod EntryAdministration {
             for i in 0..count {
                 let winner = *winners.at(i.into());
                 assert!(winner != 0.try_into().unwrap(), "invalid prize winner");
+                assert!(self.data.settlements.entries.read((game_id, winner)).is_some(), "prize winner has no realm");
                 for j in 0..i {
                     assert!(winner != *winners.at(j.into()), "duplicate prize winner");
                 }

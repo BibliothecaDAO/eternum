@@ -1,3 +1,4 @@
+import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { expect, mock, test } from "bun:test";
 import type { Account, RpcProvider } from "starknet";
 import { resolveBlitzSeason } from "./blitz-season";
@@ -84,7 +85,7 @@ test("a successful first setup cannot suppress opening season two", async () => 
   await configureLedger(
     rpc as unknown as Account,
     environments.dev,
-    { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
+    { ledger: "0x10", lords: mainnetAddresses.lords, mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
     "0x33",
     { blitzStart: iso(desired.start), blitzEnd: iso(desired.end), frontierPresetId: "6" } as Inputs,
     files as unknown as PrivateStore,
@@ -108,7 +109,7 @@ test("Frontier-only production's cold setup holds its Frontier preset and no Bli
   const ready = await configureLedger(
     rpc as unknown as Account,
     environments.production,
-    { ledger: "0x10", lords: "0x11", mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
+    { ledger: "0x10", lords: mainnetAddresses.lords, mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
     "0x33",
     { frontierPresetId: "6", admin: "0xad" } as Inputs,
     files as unknown as PrivateStore,

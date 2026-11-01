@@ -35,17 +35,32 @@ export const runRelay = (chainId: string, ports: RelayPorts, store: RelayStore) 
     const payments = yield* payWithdrawals(ports, store);
     const results = yield* postResults(ports, store);
     yield* restoreResolvableReceipts(ports, store);
-    return { status: "ready" as const, more, deferred: [...payments, ...results] };
+    const held = yield* relayOperation("read deferred identity receipts", () => store.held());
+    const unknown = held.flatMap((row) =>
+      row.kind === "receipt" && row.reason === "withdrawal_account_unknown"
+        ? [{ key: row.receipt.transactionHash, reason: row.reason }]
+        : [],
+    );
+    return { status: "ready" as const, more, deferred: [...payments, ...results, ...unknown] };
   });
 
-/** An interface/funding outage is temporary. Bot identities and invalid receipt layouts remain set aside. */
+/** Identity and funding outages are retried from the original confirmed receipt. */
 const restoreResolvableReceipts = (ports: RelayPorts, store: RelayStore) =>
   Effect.gen(function* () {
     const held = yield* relayOperation("read held receipt recovery", () => store.heldRecovery());
     for (const row of held) {
-      if (row.kind !== "receipt" || ["withdrawal_account_unknown", "decode withdrawal receipt"].includes(row.reason))
-        continue;
-      const resolved = yield* Effect.result(ports.shard.withdrawal(row.receipt.chainId, row.receipt.transactionHash));
+      const receipt =
+        row.kind === "receipt" && row.reason !== "decode withdrawal receipt"
+          ? row.receipt
+          : row.kind === "payment" && row.reason === "ledger_report_mismatch"
+            ? row.withdrawal
+            : null;
+      if (!receipt) continue;
+      if (row.kind === "payment") {
+        const payment = yield* Effect.result(ports.ledger.payment(row.withdrawal));
+        if (Result.isFailure(payment) || payment.success !== null) continue;
+      }
+      const resolved = yield* Effect.result(ports.shard.withdrawal(receipt.chainId, receipt.transactionHash));
       if (Result.isSuccess(resolved) && resolved.success)
         yield* relayOperation("restore verified withdrawal", () => store.restoreWithdrawal(resolved.success!));
     }
@@ -162,6 +177,7 @@ const payWithdrawals = (ports: RelayPorts, store: RelayStore) =>
       if (Result.isFailure(wallet))
         deferred.push({ key: withdrawal.transactionHash, reason: wallet.failure.operation });
       else if (wallet.success) ready.push({ withdrawal, wallet: wallet.success });
+      else deferred.push({ key: withdrawal.transactionHash, reason: "withdrawal_wallet_unlinked" });
     }
     if (ready.length) {
       const pay = yield* Effect.result(ports.ledger.payMany(ready));

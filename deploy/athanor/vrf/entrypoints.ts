@@ -10,7 +10,6 @@ export const GAME_ENTRYPOINTS = [
   { name: "set_ledger_operator", stamp: false },
   { name: "grant_labor", stamp: false },
   { name: "publish_frontier_pool", stamp: false },
-  { name: "top_up_frontier_pool", stamp: false },
   { name: "post_frontier_top", stamp: false },
   { name: "award_frontier_prize", stamp: false },
   { name: "register_entitlement", stamp: false },

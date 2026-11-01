@@ -67,8 +67,8 @@ test("Eternum setup confirms each entry entitlement before returning players to 
   }
 });
 
-test("A harness game outlasts its run by an hour, in whole day bags when its season has days", () => {
-  expect(harnessSeasonSeconds(0, 30)).toBe(5400);
-  expect(harnessSeasonSeconds(14400, 30)).toBe(288000);
-  expect(harnessSeasonSeconds(120, 30)).toBe(7200);
+test("A harness game outlasts its run by an hour and ends on an army tick", () => {
+  expect(harnessSeasonSeconds(1, 30)).toBe(5400);
+  expect(harnessSeasonSeconds(40, 31)).toBe(5480);
+  expect(harnessSeasonSeconds(120, 30)).toBe(5400);
 });

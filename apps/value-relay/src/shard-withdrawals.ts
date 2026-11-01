@@ -8,6 +8,7 @@ import {
   type RelayPorts,
   type Withdrawal,
   type HeldObligation,
+  type MonitorPorts,
 } from "./ports";
 
 interface ReceiptBindings {
@@ -19,7 +20,8 @@ interface ReceiptBindings {
 export const shardWithdrawalPorts = (
   reader: ShardReader,
   bindings: ReceiptBindings,
-): Pick<RelayPorts["shard"], "confirmedHead" | "blockHash" | "eventsPage" | "withdrawal"> => ({
+): Pick<RelayPorts["shard"], "confirmedHead" | "blockHash" | "eventsPage" | "withdrawal"> &
+  Pick<MonitorPorts["shard"], "withdrawalReceipt"> => ({
   confirmedHead: () => relayOperation("read confirmed shard head", () => reader.head()),
   blockHash: (number) =>
     relayOperation("read confirmed shard anchor", async () => (await reader.header(number)).block_hash),
@@ -80,18 +82,42 @@ export const shardWithdrawalPorts = (
         held,
       };
     }),
+  withdrawalReceipt: (chainId, transactionHash) => readWithdrawalReceipt(reader, bindings, chainId, transactionHash),
   withdrawal: (chainId, transactionHash) =>
     Effect.gen(function* () {
-      if (!sameFelt(chainId, reader.connection.chainId))
-        return yield* Effect.fail(new RelayFailure({ operation: "receipt_chain_differs" }));
-      const receipt = yield* relayOperation("read withdrawal transaction", () => reader.receipt(transactionHash));
-      if (!receipt) return null;
-      const rows = receipt.rows.filter((row) => row.model === "LordsWithdrawal");
-      if (rows.length > 1) return yield* Effect.fail(new RelayFailure({ operation: "duplicate_withdrawal_receipt" }));
-      return rows[0] ? yield* resolveWithdrawal(reader, bindings, rows[0], receipt.timestamp) : null;
+      const receipt = yield* readWithdrawalReceipt(reader, bindings, chainId, transactionHash);
+      return receipt ? yield* resolveAccount(bindings, receipt) : null;
     }),
 });
+const readWithdrawalReceipt = (
+  reader: ShardReader,
+  bindings: ReceiptBindings,
+  chainId: string,
+  transactionHash: string,
+) =>
+  Effect.gen(function* () {
+    if (!sameFelt(chainId, reader.connection.chainId))
+      return yield* Effect.fail(new RelayFailure({ operation: "receipt_chain_differs" }));
+    const receipt = yield* relayOperation("read withdrawal transaction", () => reader.receipt(transactionHash));
+    if (!receipt) return null;
+    const rows = receipt.rows.filter((row) => row.model === "LordsWithdrawal");
+    if (rows.length > 1) return yield* Effect.fail(new RelayFailure({ operation: "duplicate_withdrawal_receipt" }));
+    return rows[0] ? yield* decodeWithdrawal(reader, bindings, rows[0], receipt.timestamp) : null;
+  });
 const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: ValueRow, confirmedAt: number) =>
+  Effect.gen(function* () {
+    return yield* resolveAccount(bindings, yield* decodeWithdrawal(reader, bindings, row, confirmedAt));
+  });
+const resolveAccount = (bindings: ReceiptBindings, receipt: import("./ports").WithdrawalReceipt) =>
+  Effect.gen(function* () {
+    const realmsId = yield* relayOperation("resolve withdrawal account", () =>
+      bindings.realmsIdForAccount(receipt.account),
+    );
+    if (!realmsId) return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_account_unknown" }));
+    const { account: _account, ...withdrawal } = receipt;
+    return { ...withdrawal, realmsId };
+  });
+const decodeWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: ValueRow, confirmedAt: number) =>
   Effect.gen(function* () {
     const receipt = yield* relayOperation("decode withdrawal receipt", async () => {
       if (row.keys.length !== 2 || row.values.length !== 4 || !sameFelt(row.keys[1]!, row.transactionHash))
@@ -106,17 +132,13 @@ const resolveWithdrawal = (reader: ShardReader, bindings: ReceiptBindings, row: 
         throw new Error("invalid_prize_rank");
       return { gameId, account, amount: String(amount * 10n ** 18n), prizeRank, prizeCount };
     });
-    const realmsId = yield* relayOperation("resolve withdrawal account", () =>
-      bindings.realmsIdForAccount(receipt.account),
-    );
-    if (!realmsId) return yield* Effect.fail(new RelayFailure({ operation: "withdrawal_account_unknown" }));
     const seasonId = yield* bindings.frontierSeason(receipt.gameId, confirmedAt, receipt.prizeRank);
     return {
       ...(row.blockNumber === undefined ? {} : { blockNumber: row.blockNumber }),
       chainId: felt(reader.connection.chainId),
       seasonId,
       transactionHash: row.transactionHash,
-      realmsId,
+      account: receipt.account,
       amount: receipt.amount,
       prizeRank: receipt.prizeRank,
       prizeCount: receipt.prizeCount,

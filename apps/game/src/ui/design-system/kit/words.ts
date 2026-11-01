@@ -10,6 +10,7 @@ import {
   XP,
   buildingName,
   formatAmount,
+  formatPercent,
   formatExact,
   formatCount,
   formatClockTime,
@@ -327,6 +328,8 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+/** A Well's refill share when no army is selected. */
+export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
@@ -338,6 +341,8 @@ export const AFTER_THIS_ONE = "After this one";
 /** The day log's line for a fight: "Rift: Army lost, lost 154, guard 1,100 to 1,028". */
 export const fightLine = (site: string, verdict: string, lost: string, guardBefore: string, guardAfter: string) =>
   `${site}: ${verdict}, lost ${lost}, guard ${guardAfter} left`;
+/** A clear's line with what the attack that won it cost: "Rift cleared, lost 68". */
+export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
 export const ARMY_WILL_BE_LOST = "Army will be lost";
@@ -391,7 +396,6 @@ export const SPIRE_WORDS = {
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  cost: (stamina: string) => `${stamina} ${STAMINA}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
@@ -446,9 +450,10 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
-/** The wheat that caps a deploy below the troops at home: "Wheat for 8 troops · 2 each". */
-export const wheatPaysFor = (troops: string, each: string) =>
-  `Wheat for ${troops} ${troops === "1" ? "troop" : "troops"} · ${each} each`;
+/** The wheat that caps a deploy below the troops at home: "Wheat for only 2,991 of 6,200 troops". */
+export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only ${troops} of ${of} troops`;
+/** Where wheat short for a deploy is made: the realm, where Farms are built. */
+export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
@@ -508,9 +513,6 @@ export const DEPTH = "Depth";
 /** The player on any list. */
 export const YOU = "You";
 
-/** The season list and its end, told one of two ways (story): the mist lifted, or it grew too strong. */
-export const SEASON_OVER = "Season over";
-
 /** A finished game's Results: its panels and how its points were made, each kind on its row. */
 export const RESULT_WORDS = {
   theGame: "The game",
@@ -534,7 +536,32 @@ export const RESULT_WORDS = {
   /** Share, once the result's line and address are on the clipboard. */
   copied: "Link copied",
 } as const;
-export const YOU_PLACED = "You placed";
+/** A Frontier season's recap (in the game when it ends, and on its Results) and its share card. */
+export const RECAP_WORDS = {
+  /** After the place on the card: "#3 of 45 realms". */
+  ofRealms: (field: string) => `of ${field} realms`,
+  /** The LORDS the player's podium place pays, on the card. */
+  prize: "Prize",
+  podium: "The podium",
+  /** The deck's four cards, each named at its top. */
+  cardNames: { place: "Your place", podium: "The podium", sites: "Your sites", haul: "Your haul" },
+  /** The podium card's title, after the name of who took first place. */
+  tookTheSeason: "took the season",
+  /** A phone's story through the cards: its strip, and the halves that step it. */
+  cards: "Your season's cards",
+  next: "Next card",
+  previous: "Previous card",
+  share: "Share my season",
+  /** While the card is made into an image. */
+  making: "Making the image",
+  /** Share, once the image is saved on a device with no share sheet for images. */
+  saved: "Image saved",
+  /** Beside Share on a desktop whose clipboard takes images: the same image, to paste. */
+  copy: "Copy image",
+  copied: "Image copied",
+  failed: "The image could not be made.",
+} as const;
+/** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
@@ -554,7 +581,10 @@ export const REFILLING = "Refilling…";
 export const WITHDRAW = "Withdraw";
 export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
-export const NO_WALLET = "No wallet linked";
+/** Where an account with no linked wallet sees LORDS it is owed: the ledger pays a linked wallet only. */
+export const LINK_WALLET_FOR_LORDS = "Link a wallet to receive your LORDS";
+/** The same once the season is over: unpaid LORDS lapse at the ledger's claim deadline and return to the treasury. */
+export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS return to the treasury`;
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
@@ -875,6 +905,10 @@ export const SEASON_WORDS = {
   boardEmpty: "No realm yet. Found one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
+  /** Frontier's seasons that have ended, under its board. */
+  pastSeasons: "Past seasons",
+  /** Prod's first season, kept after its shard was torn down: beside its number, "Season 1 · Playtest". */
+  playtest: "Playtest",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */
@@ -913,6 +947,8 @@ export const PROFILE_WORDS = {
   discord: "Discord",
   email: "email",
   linkWallet: "Link wallet",
+  /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */
+  linkWalletHoldings: "Link a wallet for your Realms and LORDS",
   signOut: "Sign out",
   signOutAsk: "Sign out?",
   signOutCost: "This device forgets your account",

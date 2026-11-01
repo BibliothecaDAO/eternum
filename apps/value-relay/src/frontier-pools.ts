@@ -55,12 +55,11 @@ async function publishGamePool(
   const prize = optionalRow(snapshot, "FrontierPrize");
   if (existing > 0n && (!prize || uint(String(prize.pool), 128) !== prize_pool))
     throw new Error("frontier_prize_differs_from_ledger");
-  if (existing > amount) throw new Error("frontier_pool_differs_from_ledger");
+  if (existing > 0n && existing !== amount) throw new Error("frontier_pool_differs_from_ledger");
   if (existing === amount) return;
   const operator = new ShardOperator(target);
   try {
-    if (existing > 0n) await operator.admin("top_up_frontier_pool", { game_id: gameId, amount });
-    else await operator.admin("publish_frontier_pool", { game_id: gameId, amount, prize_pool });
+    await operator.admin("publish_frontier_pool", { game_id: gameId, amount, prize_pool });
   } catch (error) {
     if (!isAlreadyPublished(error)) throw error;
   }

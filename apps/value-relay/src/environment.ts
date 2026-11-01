@@ -12,6 +12,8 @@ export const ledgerContractOf = (environment: ValueEnvironment) => ({
 const RelayVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
   BASE_URL: Schema.NonEmptyString,
+  COSIGNER_URL: Schema.NonEmptyString,
+  COSIGNER_TOKEN: Schema.NonEmptyString,
   L2_RPC_URL: Schema.NonEmptyString,
   OPERATOR_TOKEN: Schema.NonEmptyString,
   SHARD_LEDGER_OPERATOR_PRIVATE_KEY: Schema.NonEmptyString,
@@ -24,7 +26,11 @@ export function decodeRelaySettings(raw: unknown): RelaySettings {
   try {
     const vars = decodeRelayVars(raw);
     environmentL2(vars.ENVIRONMENT);
-    if (new URL(vars.L2_RPC_URL).protocol !== "https:" || new URL(vars.BASE_URL).protocol !== "https:")
+    if (
+      new URL(vars.COSIGNER_URL).protocol !== "https:" ||
+      new URL(vars.L2_RPC_URL).protocol !== "https:" ||
+      new URL(vars.BASE_URL).protocol !== "https:"
+    )
       throw new Error();
     return vars;
   } catch {

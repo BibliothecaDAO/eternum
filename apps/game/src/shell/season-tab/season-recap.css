@@ -1,0 +1,492 @@
+/*
+ * A season's end (season-recap.tsx): the recap's layout, and the deck of four cards it draws at its exported size, an
+ * image on a fixed canvas (1200 × 675 wide, 1080 × 1350 tall) in the app's palette and faces. The deck's margin, gaps
+ * and foot come from the component (--deck-pad, --deck-gap, --deck-foot), which a phone's story steps over.
+ */
+
+/*
+ * The recap: the season and its ending across the top, the deck, the steps last. Over the HUD it is a scrolling cover,
+ * its layout as tall as its content inside it, so no row is squeezed to fit the screen.
+ */
+.season-recap {
+  position: relative;
+  color: var(--app-ink);
+}
+.season-recap__layout {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.season-recap[data-cover] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: max(34px, env(safe-area-inset-top)) 40px max(28px, env(safe-area-inset-bottom));
+  background: var(--app-ground);
+  pointer-events: auto;
+}
+.season-recap__painting {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(14px) brightness(0.45);
+  transform: scale(1.08);
+}
+.season-recap__head {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.season-recap__frame {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+}
+.season-recap__scaler {
+  width: max-content;
+  transform-origin: 0 0;
+}
+/* A reader with no realm: the podium card alone. */
+.season-recap__alone {
+  display: grid;
+  width: min(100%, 420px);
+}
+.season-recap__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.season-recap__steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* A phone: the season, the story of four cards with its strip, the steps last. */
+.season-recap[data-cut="tall"] .season-recap__layout {
+  gap: 14px;
+}
+.season-recap[data-cut="tall"][data-cover] {
+  padding: max(16px, env(safe-area-inset-top)) 16px 0;
+}
+.season-recap__story {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.season-recap__ticks {
+  display: flex;
+  gap: 6px;
+}
+.season-recap__ticks li {
+  flex: 1;
+  height: 4px;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--app-ink) 25%, transparent);
+}
+.season-recap__ticks li[data-on] {
+  background: var(--app-ink);
+}
+.season-recap__story .season-recap__frame {
+  touch-action: pan-y;
+}
+.season-recap__story .season-recap__scaler {
+  transition: transform 300ms ease;
+}
+/* The halves that step the story: invisible, over the card. */
+.season-recap__back,
+.season-recap__next {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+}
+.season-recap__back {
+  left: 0;
+  width: 35%;
+}
+.season-recap__next {
+  right: 0;
+  width: 65%;
+}
+.season-recap[data-cut="tall"] .season-recap__foot {
+  justify-content: stretch;
+}
+/* Over the HUD the steps stay at the screen's foot, across the column's gutters, fading what scrolls under them. */
+.season-recap[data-cut="tall"][data-cover] .season-recap__foot {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -16px;
+  padding: 24px 16px max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, var(--app-ground) 30%);
+}
+.season-recap[data-cut="tall"] .season-recap__steps {
+  flex: 1;
+}
+.season-recap[data-cut="tall"] .season-recap__steps > :last-child {
+  flex: 1;
+}
+
+/* The deck: the cards over its foot, on the season's ground. */
+.season-deck {
+  display: flex;
+  flex-direction: column;
+  gap: var(--deck-gap);
+  padding: var(--deck-pad);
+  overflow: hidden;
+  background: var(--app-ground);
+  color: var(--app-ink);
+  font-family: var(--font-body);
+  font-variant-numeric: tabular-nums;
+}
+.season-deck__cards {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--deck-gap);
+}
+.season-deck[data-cut="tall"] .season-deck__cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.season-deck__foot {
+  flex: none;
+  height: var(--deck-foot);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.season-deck__foot > span {
+  white-space: nowrap;
+}
+.season-deck__foot .app-game-name__lockup {
+  height: calc(var(--deck-foot) - 8px);
+}
+.season-deck[data-cut="tall"] .season-deck__foot {
+  font-size: 26px;
+}
+
+/*
+ * A card: its number and name at the top, what it holds spread over its height, so none stands half empty. Each has
+ * its own ground, the four in the season's colours. Its text spans the card's width, centred, never a box the size of
+ * its words: the image fixes each box's width as the screen measured it, and a box no wider than its words would wrap
+ * there.
+ */
+.season-card {
+  position: relative;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-evenly;
+  gap: 10px;
+  padding: 44px 16px 18px;
+  overflow: hidden;
+  border: 1px solid var(--app-line-strong);
+  border-radius: 18px;
+  text-align: center;
+  box-shadow: 0 20px 60px rgb(0 0 0 / 0.55);
+}
+.season-card[data-card="place"] {
+  background: radial-gradient(
+    circle at 50% 35%,
+    color-mix(in srgb, rgb(var(--app-gold)) 35%, var(--app-surface)),
+    var(--app-surface) 70%
+  );
+}
+.season-card[data-card="podium"] {
+  background: radial-gradient(
+    circle at 50% 20%,
+    color-mix(in srgb, var(--app-age-to) 60%, var(--app-surface)),
+    var(--app-surface) 70%
+  );
+}
+.season-card[data-card="sites"] {
+  background: radial-gradient(
+    circle at 50% 30%,
+    color-mix(in srgb, var(--app-good) 30%, var(--app-surface)),
+    var(--app-surface) 72%
+  );
+}
+.season-card[data-card="haul"] {
+  background: radial-gradient(
+    circle at 50% 30%,
+    color-mix(in srgb, rgb(var(--app-accent)) 25%, var(--app-surface)),
+    var(--app-surface) 72%
+  );
+}
+.season-card__step {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  font-family: var(--font-ui);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+.season-card__title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  line-height: 1.15;
+}
+/* The name in a title flows as its words do. */
+.season-card__title > span {
+  display: inline;
+}
+/* A name is never cut: it wraps between its words, and only a word too long for its line is broken. */
+.season-card .truncate,
+.season-card__name,
+.season-card__holder {
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: break-word;
+}
+
+/* Your place. */
+.season-card__who {
+  position: relative;
+  align-self: center;
+  width: 150px;
+}
+.season-card__who .app-portrait {
+  border-width: 4px;
+  box-shadow:
+    0 0 0 4px rgb(var(--app-gold) / 0.18),
+    0 0 36px rgb(var(--app-gold) / 0.35);
+}
+.season-card__order {
+  position: absolute;
+  right: -6px;
+  bottom: 0;
+  filter: drop-shadow(0 4px 10px rgb(0 0 0));
+}
+.season-card__rank {
+  font-family: var(--font-game);
+  font-size: 104px;
+  line-height: 0.9;
+  color: rgb(var(--app-gold));
+  text-shadow: 0 0 40px rgb(var(--app-gold) / 0.5);
+}
+.season-card__of {
+  font-size: 19px;
+  white-space: nowrap;
+}
+.season-card__name {
+  /* Centred in the card, it would take its whole length: held to the card's width, it wraps. */
+  max-width: 100%;
+  font-family: var(--font-display);
+  font-size: 26px;
+  line-height: 1.1;
+}
+.season-card__prize {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 17px;
+  font-weight: 700;
+  color: rgb(var(--app-gold));
+}
+
+/* The podium. */
+.season-card__podium {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+/* A place: its number beside the name, which has the row's width, its counts on the line under the name. */
+.season-card__podium li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 2px 10px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, var(--app-ink) 8%, transparent);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-ink) 5%, transparent);
+  text-align: left;
+}
+.season-card__podium li[data-own] {
+  border-color: rgb(var(--app-gold));
+  background: rgb(var(--app-gold) / 0.1);
+}
+.season-card__podium b {
+  grid-row: span 2;
+  width: 20px;
+  font-family: var(--font-game);
+  font-size: 28px;
+  color: rgb(var(--app-gold));
+}
+/* A holder's portrait and name fill the row, the name taking what the portrait leaves. */
+.season-card__holder > span {
+  display: flex;
+  width: 100%;
+}
+.season-card__holder > span > :last-child {
+  flex: 1 1 auto;
+}
+.season-card__holder {
+  min-width: 0;
+  font-family: var(--font-display);
+  font-size: 18px;
+  line-height: 1.15;
+}
+.season-card__counts {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.season-card__count {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 15px;
+}
+.season-card__count[data-tone="gold"] {
+  color: rgb(var(--app-gold));
+}
+
+/* Your sites and your haul. */
+.season-card__big {
+  font-family: var(--font-game);
+  font-size: 88px;
+  line-height: 0.95;
+}
+.season-card__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.season-card[data-card="haul"] .season-card__tiles {
+  flex: 1;
+  grid-auto-rows: 1fr;
+}
+.season-card__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--app-ink) 5%, transparent);
+}
+.season-card__tile b {
+  font-size: 24px;
+}
+.season-card__tile small {
+  font-size: 13px;
+  color: var(--app-muted);
+}
+.season-card__depth {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* The tall cut: the same cards, two by two, a phone's story reading one at a time. */
+.season-deck[data-cut="tall"] .season-card {
+  gap: 16px;
+  padding: 64px 28px 28px;
+}
+.season-deck[data-cut="tall"] .season-card__step {
+  top: 26px;
+  font-size: 18px;
+}
+.season-deck[data-cut="tall"] .season-card__title {
+  font-size: 36px;
+}
+.season-deck[data-cut="tall"] .season-card__who {
+  width: 200px;
+}
+.season-deck[data-cut="tall"] .season-card__rank {
+  font-size: 140px;
+}
+.season-deck[data-cut="tall"] .season-card__of {
+  font-size: 28px;
+}
+.season-deck[data-cut="tall"] .season-card__name {
+  font-size: 38px;
+}
+.season-deck[data-cut="tall"] .season-card__prize,
+.season-deck[data-cut="tall"] .season-card__depth {
+  font-size: 24px;
+}
+.season-deck[data-cut="tall"] .season-card__holder {
+  font-size: 26px;
+}
+.season-deck[data-cut="tall"] .season-card__count {
+  font-size: 22px;
+}
+.season-deck[data-cut="tall"] .season-card__podium b {
+  width: 30px;
+  font-size: 40px;
+}
+.season-deck[data-cut="tall"] .season-card__big {
+  font-size: 110px;
+}
+/* A tall card is wider than it is tall for its tiles: the four kinds stand in one row. */
+.season-deck[data-cut="tall"] .season-card[data-card="sites"] .season-card__tiles {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.season-deck[data-cut="tall"] .season-card__tile b {
+  font-size: 34px;
+}
+.season-deck[data-cut="tall"] .season-card__tile small {
+  font-size: 19px;
+}
+
+/* A desktop: the cards flip in one after another as the deck first shows; not under reduced motion, nor in the image. */
+@media (prefers-reduced-motion: no-preference) {
+  .season-deck[data-cut="wide"] .season-card {
+    animation: season-card-in 520ms cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  .season-deck[data-cut="wide"] .season-card:nth-child(2) {
+    animation-delay: 160ms;
+  }
+  .season-deck[data-cut="wide"] .season-card:nth-child(3) {
+    animation-delay: 320ms;
+  }
+  .season-deck[data-cut="wide"] .season-card:nth-child(4) {
+    animation-delay: 480ms;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .season-recap__story .season-recap__scaler {
+    transition: none;
+  }
+}
+.season-deck[data-still] .season-card {
+  animation: none;
+}
+@keyframes season-card-in {
+  from {
+    opacity: 0;
+    transform: perspective(900px) rotateY(-80deg);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

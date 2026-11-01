@@ -1,7 +1,13 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { bagLengths, dayOf, orderLengths, seasonSeconds } from "./days";
 
-const calendar = { seed: 0x5eedn, startMainAt: 1_800_000_000, dayUnitSeconds: 14_400 };
+const calendar = {
+  seed: 0x5eedn,
+  startMainAt: 1_800_000_000,
+  endAt: 1_800_000_000 + seasonSeconds(21, 14_400),
+  dayUnitSeconds: 14_400,
+};
 
 describe("dayOf", () => {
   it("builds 96 distinct bags that hold each length once and never open with the short day", () => {
@@ -38,4 +44,43 @@ describe("dayOf", () => {
   it("has no day before the season starts", () => {
     expect(dayOf(calendar, calendar.startMainAt - 1)).toBeNull();
   });
+});
+
+it("matches Cairo on clipped, merged, exact-minimum, very short and whole-bag seasons", () => {
+  const values = readFileSync(
+    new URL("../../../../contracts/l3/world-native/tests/fixtures/season-tail-v1.txt", import.meta.url),
+    "utf8",
+  )
+    .trim()
+    .split(/\s+/)
+    .map(Number);
+  for (let offset = 0; offset < values.length; offset += 5) {
+    const [duration, timestamp, index, start, end] = values.slice(offset, offset + 5);
+    const clock = { seed: 0x5eedn, startMainAt: 0, endAt: duration, dayUnitSeconds: 7200 };
+    expect(dayOf(clock, timestamp)).toEqual({ index, start, end });
+    expect(dayOf(clock, duration)).toBeNull();
+  }
+});
+
+it("covers any end without gaps, extra days or an unmerged short stub", () => {
+  for (const seed of [1n, 7n, 42n, 0x5eedn]) {
+    const lengths = [0, 1, 2].flatMap((bag) => bagLengths(seed, bag));
+    for (let duration = 1; duration <= 60 * 40; duration += 17) {
+      const clock = { seed, startMainAt: 0, endAt: duration, dayUnitSeconds: 40 };
+      const expected: { index: number; start: number; end: number }[] = [];
+      let start = 0;
+      for (const length of lengths) {
+        if (start >= duration) break;
+        const end = Math.min(start + length * 40, duration);
+        if (end - start < 80 && expected.length) expected.at(-1)!.end = end;
+        else expected.push({ index: expected.length, start, end });
+        start = end;
+      }
+      for (const day of expected) {
+        expect(dayOf(clock, day.start)).toEqual(day);
+        expect(dayOf(clock, day.end - 1)).toEqual(day);
+      }
+      expect(expected.at(-1)!.end).toBe(duration);
+    }
+  }
 });

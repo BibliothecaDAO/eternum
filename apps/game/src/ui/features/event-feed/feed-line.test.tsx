@@ -173,6 +173,8 @@ it("reads a fight as its attacker's: who attacked what, and how it went", async 
     defender: { player: "0x0", category: "Knight", tier: "T1", before: "1400000000000", after: "0", roll: 0 },
   });
   expect((await draw(row, true)).words).toBe(`djizus attacked ${siteDisplayName(CAMP)} · Victory`);
+  // The playtest runner counts a Feed's rows by their story (scripts/client-playtest/steps.mjs, feed-after-the-clear).
+  expect(host.querySelector("[data-feed-line]")?.getAttribute("data-story")).toBe("BattleEvent");
 });
 
 // The fight's result card is gone (owner, 27 October 2026): the Feed is where a player reads that an army was lost.
@@ -230,7 +232,6 @@ const depthWithBounds = () => {
         site_guard_lower: 1000,
         site_guard_upper: 1600,
         reveal_site_neighbors: false,
-        entry_stamina: 0,
         reveal_percent: 10,
         chest: { common: 5000, uncommon: 2700, rare: 1400, epic: 600, legendary: 300 },
         ruin_guard_lower: 2000,
@@ -317,12 +318,12 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     });
   const xps = () =>
     [...host.querySelectorAll("[data-feed-line] .ui-feed-line__reward")].map((each) => each.textContent);
-  // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 XP.
+  // The camp the map holds: 1,400 guards at the start pay floor(sqrt(25 × 1,400) / 2) = 93 base XP, scaled by Ethereal I to 139.
   const near = game.store.require("ExpeditionSite", { game_id: 1, entity_id: CAMP });
-  expect(siteClearXp(near)).toBe(93);
+  expect(siteClearXp(game.store, near)).toBe(139);
   const read = await draw(clear(CAMP), true);
   expect(read.words).toBe(`djizus cleared ${siteDisplayName(CAMP)}`);
-  expect(xps()).toEqual(["+700", "+93 XP"]);
+  expect(xps()).toEqual(["+700", "+139 XP"]);
   // One the map does not hold, from Herald's row of that site.
   const far = 4_400;
   herald.set(far, {
@@ -336,7 +337,7 @@ it("says a clear's XP at the row's end beside what it paid, as the site's receip
     clear: null,
   });
   await draw(clear(far));
-  expect(xps()).toEqual(["+700", "+86 XP"]);
+  expect(xps()).toEqual(["+700", "+129 XP"]);
   // Neither holds it: what it paid alone, never a guessed XP.
   await draw(clear(4_401));
   expect(xps()).toEqual(["+700"]);

@@ -94,7 +94,7 @@ it("refuses another account's receipt and a different chain", async () => {
   expect(rpc.admin).not.toHaveBeenCalled();
 });
 it("uses all ten seeded Devcon game days and refuses outside the season", async () => {
-  const calendar = { seed: 711n, startMainAt: 360, dayUnitSeconds: 7200 };
+  const calendar = { seed: 711n, startMainAt: 360, endAt: 360 + 21 * 20 * 7200, dayUnitSeconds: 7200 };
   let timestamp = calendar.startMainAt;
   for (let index = 0; index < 10; index++) {
     const day = dayOf(calendar, timestamp)!;
@@ -166,4 +166,23 @@ it("refuses cross-origin and anonymous writes", async () => {
     (await handleLaborRequest(request({ gameId: 7, home: "9" }), { ...deps, authenticate: async () => null })).status,
   ).toBe(401);
   expect(deps.grant).not.toHaveBeenCalled();
+});
+
+it.each([81, 84, 85])("claims only the actual final day of an %ih season", async (hours) => {
+  const start = 360;
+  const end = start + hours * 3600;
+  rpc.snapshot.mockResolvedValue({
+    models: [
+      { model: "GameRegistry", rows: [{ value: { seed: String(0x5eed), start_main_at: start, end_at: end } }] },
+      { model: "SliceRules", rows: [{ value: { day_unit_seconds: 7200 } }] },
+    ],
+  });
+  rpc.header.mockResolvedValue({ timestamp: end - 1 });
+  expect(await Effect.runPromise(currentLaborDay(target.connection, "https://herald.test", 7))).toBe(
+    hours === 81 ? 9 : 10,
+  );
+  rpc.header.mockResolvedValue({ timestamp: end });
+  await expect(Effect.runPromise(currentLaborDay(target.connection, "https://herald.test", 7))).rejects.toMatchObject({
+    operation: "read Frontier labor day",
+  });
 });

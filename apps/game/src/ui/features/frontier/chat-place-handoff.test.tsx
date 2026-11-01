@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { SeasonOver } from "@/shell/season-tab/season-over";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
@@ -102,7 +103,7 @@ const renderHud = async (width: number) => {
           <LabGame preset={5} facts={() => [LABOR_RULES]}>
             {(store) => {
               realmName = getEntityName(REALM, store)!;
-              return <FrontierHud rules={readExpeditionRules(store, 1)!} />;
+              return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
             }}
           </LabGame>
         </QueryClientProvider>

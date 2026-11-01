@@ -5,7 +5,7 @@ import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { Session } from "@realms-world/identity";
+import type { CampaignTicket, Session } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -13,6 +13,7 @@ import { type DoorwayView, doorwayView } from "@/ui/features/game-entry/doorway/
 import { DEVICE_LIMIT_REACHED } from "@/hooks/context/gameplay-account-sync";
 
 import type { DirectoryGame } from "../herald";
+import { ARCHIVED_SEASONS, archivedSeason } from "../season-tab/archive/archive";
 
 import type { EntryTerms } from "../blitz/entry";
 import type { SlotKey } from "../value/ledger";
@@ -107,13 +108,17 @@ const frontier = (withRealm: boolean) =>
     player_state: withRealm ? owned : null,
   });
 
+/** Frontier's second season, over an hour ago and not settled yet: the directory still lists it. */
 const endedFrontier = game({
   game_id: 3,
   name: "frontier-0",
   status: "Ended",
+  season_number: 2,
+  clock: { start_settling_at: NOW - 21 * DAY, start_main_at: NOW - 21 * DAY, end_at: NOW - 3600, end_grace_seconds: 0 },
   player_count: 1240,
   player_state: owned,
 });
+
 const liveBlitz = (member: boolean) =>
   game({
     game_id: 7,
@@ -189,6 +194,8 @@ export const LAB_SCREENS = {
   // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
   "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  // No Frontier season listed, the last one settled into the history: production after its first season (10-31).
+  "no-season": { signedIn: true, games: [liveBlitz(false), eternum] },
   // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
   "blitz-preparing": { signedIn: true, games: [frontier(false), preparingBlitz, liveBlitz(false), eternum] },
   "wallet-none": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
@@ -219,7 +226,26 @@ export const LAB_SCREENS = {
   "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  // Devcon's flyer landing (/join/devcon): an account holding no ticket, whose flyer opens a regular or a golden one, and
+  // one holding its golden ticket at the Devcon game's Realm step (doorway/home).
+  "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "devcon-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "devcon-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
+
+/** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
+export const LAB_DEVCON_TICKETS: Partial<
+  Record<keyof typeof LAB_SCREENS, { tier: CampaignTicket["tier"]; held: boolean }>
+> = {
+  "devcon-flyer": { tier: "regular", held: false },
+  "devcon-golden": { tier: "golden", held: false },
+  "devcon-held": { tier: "golden", held: true },
+};
+
+/** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
+export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
+  "devcon-held": [{ realmId: 4786, map: null }],
+};
 
 /** The player's name on each screen whose player is not Maelis. */
 export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
@@ -252,6 +278,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "season-held": LAB_WALLET,
   "season-claimed": LAB_WALLET,
   "season-out": LAB_WALLET,
+  "devcon-held": LAB_WALLET,
 };
 
 const WEI = 10n ** 18n;
@@ -454,6 +481,24 @@ export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
   },
 };
 
+/** Production's first season's top twelve, by their public names, in its archived board's order. */
+const SEASON_ONE_NAMES = [
+  "Volcanic",
+  "djizus",
+  "Canzi",
+  "Nexonik",
+  "Krump",
+  "bal7hazar",
+  "FOCGIE",
+  "yang",
+  "dudendy",
+  "Astavn",
+  "TsuAurym",
+  "Loaf",
+];
+const [SEASON_ONE] = ARCHIVED_SEASONS;
+const SEASON_ONE_ENTRIES = archivedSeason({ chainId: SEASON_ONE!.chainId, gameId: SEASON_ONE!.game_id })!.board.entries;
+
 /** The board before any prize pool is published (the Season tab's podium says so). */
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
@@ -495,9 +540,13 @@ export const LAB_BLITZ_BOARD: HeraldLeaderboard = {
 };
 
 /** Names for the rivals the identity Worker would serve; the unnamed one reads "Lord" and its last four. */
-export const LAB_PROFILES = Object.fromEntries(
-  NAMES.map((name, index) => [rival(index), { name, portrait: `0${(index % 9) + 1}` }]),
-);
+export const LAB_PROFILES = Object.fromEntries([
+  ...NAMES.map((name, index) => [rival(index), { name, portrait: `0${(index % 9) + 1}` }]),
+  ...SEASON_ONE_NAMES.map((name, index) => [
+    SEASON_ONE_ENTRIES[index]!.address,
+    { name, portrait: `0${(index % 9) + 1}` },
+  ]),
+]);
 
 export const LAB_FINISHED_BLITZ = {
   ...liveBlitz(true),
@@ -747,6 +796,11 @@ export const LAB_DOORWAYS = {
   },
   ended: {
     view: doorwayView({ source: "boot", phase: "ready", audience: "player", ended: true }),
+    realm: null,
+  },
+  // The Realm step: choose your home, then Found your realm.
+  home: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;

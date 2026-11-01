@@ -151,9 +151,9 @@ describe.each([1440, 390])("Holdings on the player's own card, at %i px", (width
     const asked = relay(() => held());
     ticket(null);
     const you = await openYou(width);
-    await vi.waitFor(() => expect(you.strip()).toEqual(["Link wallet"]));
+    await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]));
     expect(asked).not.toContain(HELD_REALMS);
-    await you.press("Link wallet");
+    await you.press("Link a wallet for your Realms and LORDS");
     expect(you.container.textContent).toContain("Settings page");
   });
 
@@ -215,13 +215,13 @@ it("shows a ticket just opened on the landing on You and on a game's Realm step 
   });
   const you = await openYou(390);
   await vi.waitFor(() => expect(reads).toHaveBeenCalledTimes(1));
-  expect(you.strip()).toEqual(["Link wallet"]);
+  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
 
   await you.follow("Test flyer");
   await you.press("Open your ticket");
   await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
   await you.follow("Test you");
-  expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
+  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
   await you.follow("Test step");
   expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
   // You's read, the landing's check for a ticket already held, then its one redeem, which told every screen: no
@@ -247,12 +247,12 @@ it.each([1440, 390])(
     await you.press("Open your ticket");
     await vi.waitFor(() => expect(you.container.querySelector('.app-ticket[data-face="golden"]')).not.toBeNull());
     await you.follow("Test you");
-    expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
+    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
 
     // The read You sent before the opening answers now, for that earlier moment: no ticket.
     await act(async () => answerFirstRead(new IdentityRequestError(400, "invalid_redemption")));
     await act(async () => new Promise((resolve) => setTimeout(resolve, 20)));
-    expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]);
+    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
     await you.follow("Test step");
     expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
     expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, null, "TEST0000"]);
@@ -266,11 +266,11 @@ it("says an unreadable ticket cannot be read, and shows it once Try again answer
     .mockRejectedValueOnce(new IdentityRequestError(503, "campaigns_unavailable"))
     .mockResolvedValue({ campaign: DEVCON.campaign, tier: "regular" });
   const you = await openYou(1440);
-  await vi.waitFor(() => expect(you.strip()).toEqual(["Link wallet", "—Ticket"]));
+  await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "—Ticket"]));
   await you.press("—Ticket");
   expect(you.sheet()!.textContent).toContain("Your ticket cannot be read right now");
   await you.press("Try again");
-  await vi.waitFor(() => expect(you.strip()).toEqual(["Link wallet", "DevconTicket"]));
+  await vi.waitFor(() => expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconTicket"]));
   expect(you.sheet()!.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(reads).toHaveBeenCalledTimes(2);
 });
@@ -284,10 +284,12 @@ it("never shows another account's ticket: a new account's own answer decides", a
     return new Promise((resolve) => (answerSecond = resolve)) as never;
   });
   const you = await openYou(390);
-  await vi.waitFor(() => expect(you.strip()).toEqual(["Link wallet", "DevconGolden ticket"]));
+  await vi.waitFor(() =>
+    expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]),
+  );
   signedIn.realmsId = "0x8";
   await act(async () => useIdentitySessionStore.setState({ session: session() }));
-  expect(you.strip()).toEqual(["Link wallet"]);
+  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
   await act(async () => answerSecond(Promise.reject(new IdentityRequestError(400, "invalid_redemption"))));
-  expect(you.strip()).toEqual(["Link wallet"]);
+  expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS"]);
 });

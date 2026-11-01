@@ -1,6 +1,7 @@
+import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { learnResearch } from "@bibliothecadao/eternum";
-import { nativeResearchConstants as research, nativeRuleConstants } from "@bibliothecadao/eternum/game-client";
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 
 import type { ArmyDetailFacts } from "../army/army-detail";
 import type { LearnedRow, RealmResearchFacts } from "./research-tree";
@@ -71,7 +72,7 @@ const realmOn = (
     // A Knight deploys for 2 wheat; each Rations pick cuts 0.2.
     wheatPerTroop: (rations) => 2 - rations * 0.2,
     laborStore: (level) => (RESOURCE_CAPS[level]! * (10_000 + storeroomPicks * 4000)) / 10_000,
-    wellStamina: nativeRuleConstants.WELL_STAMINA,
+    wellRefillPercent: WELL_REFILL_PERCENT,
   };
 };
 

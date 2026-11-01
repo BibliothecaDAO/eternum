@@ -3,20 +3,36 @@
 // Node pass; the Workers runtime throws before anything is sent ("error" won't be implemented ... use "manual"), and a
 // caller that turns failures into a fallback hides it. The marketplace index read did exactly that on 10-29: every
 // held-Realms answer was a 503. Use `redirect: "manual"` and treat a 3xx as the failure it is.
+import ts from "typescript";
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
-const REFUSED = /redirect\s*:\s*["'`]error["'`]/;
-
-/** Every line of Worker source that asks fetch for a redirect option the Workers runtime refuses. */
+/** Parse source rather than lines: quoting or a newline cannot hide the unsupported request option. */
 export function findEdgeRefusedFetchOptions(files) {
-  return files.flatMap(({ path, text }) =>
-    text
-      .split("\n")
-      .flatMap((line, index) => (REFUSED.test(line) ? [{ path, line: index + 1, text: line.trim() }] : [])),
-  );
+  return files.flatMap(({ path, text }) => {
+    const source = ts.createSourceFile(path, text, ts.ScriptTarget.Latest, true);
+    const findings = [];
+    const visit = (node) => {
+      if (
+        ts.isPropertyAssignment(node) &&
+        (ts.isIdentifier(node.name) || ts.isStringLiteralLike(node.name)) &&
+        node.name.text === "redirect" &&
+        ts.isStringLiteralLike(node.initializer) &&
+        node.initializer.text === "error"
+      ) {
+        findings.push({
+          path,
+          line: source.getLineAndCharacterOfPosition(node.getStart(source)).line + 1,
+          text: node.getText(source).replace(/\s+/g, " "),
+        });
+      }
+      ts.forEachChild(node, visit);
+    };
+    visit(source);
+    return findings;
+  });
 }
 
 /** The source a Worker runs: each app with a wrangler config, and the packages Workers import, tests aside. */

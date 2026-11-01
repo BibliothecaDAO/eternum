@@ -1,3 +1,4 @@
+const testSignature = { r: "0x123", s: "0x456" };
 import { hash, shortString } from "starknet";
 import { ledgerCall } from "../../../packages/value-ledger/test-support/ledger-abi";
 import { gamesAbi, gamesEventAbi as abi, withdrawalEvent } from "../../../packages/value-ledger/test-support/abi";
@@ -60,7 +61,7 @@ const fixture = () => {
     firstRelease: 1,
   });
   const bindings = {
-    realmsIdForAccount: vi.fn(async (_account: string) => "0x2"),
+    realmsIdForAccount: vi.fn(async (_account: string): Promise<string | null> => "0x2"),
     frontierSeason: vi.fn(() => Effect.succeed(3)),
   };
   return { reader, bindings, ports: shardWithdrawalPorts(reader, bindings) };
@@ -94,8 +95,17 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
     },
   ]);
   const submit = vi.fn(async (_entrypoint: string, _calldata: readonly string[]) => {});
-  await Effect.runPromise(frontierPayment(submit)(block.withdrawals[0]!, "0x456"));
-  expect(submit).toHaveBeenCalledWith("pay", ["0x1", "3", "0xabc", "0x456", "17000000000000000000", "0"]);
+  await Effect.runPromise(frontierPayment(submit)(block.withdrawals[0]!, "0x456", testSignature));
+  expect(submit).toHaveBeenCalledWith("pay", [
+    "0x1",
+    "3",
+    "0xabc",
+    "0x456",
+    "17000000000000000000",
+    "0",
+    testSignature.r,
+    testSignature.s,
+  ]);
   expect(submit.mock.calls[0]![1].map(BigInt)).toEqual(
     ledgerCall("pay", {
       shard: 1,
@@ -103,6 +113,8 @@ it("reads a confirmed debit receipt and pays exact wei to the resolved account's
       claim_id: "0xabc",
       wallet: "0x456",
       amount: { low: "17000000000000000000", high: 0 },
+      signature_r: testSignature.r,
+      signature_s: testSignature.s,
     }).map(BigInt),
   );
   expect(rpc.classHash).toHaveBeenCalledWith(address, 10);
@@ -490,3 +502,59 @@ it("reads a full page's headers in batches the shard RPC accepts, checking each 
   expect(batches.reduce((total, [, size]) => total + (size as number), 0)).toBe(SHARD_PAGE_BLOCKS - 2);
   expect(batches).toHaveLength(Math.ceil((SHARD_PAGE_BLOCKS - 2) / 32));
 });
+
+it.each([false, true])(
+  "pauses a forged report through the real reader even with an unknown account (leading honest report=%s)",
+  async (leading) => {
+    const { runMonitor } = await import("./monitor");
+    const f = fixture();
+    f.bindings.realmsIdForAccount.mockResolvedValue(null);
+    rpc.receipt.mockImplementation(async (transactionHash: string) => ({
+      ...receipt(),
+      transaction_hash: transactionHash,
+      events: [{ from_address: address, ...withdrawalEvent(7, transactionHash, "0x123", 17) }],
+    }));
+    const report = (transactionHash: string, amount: bigint) => ({
+      chainId: "0x1",
+      seasonId: 3,
+      transactionHash,
+      amount: String(amount * 10n ** 18n),
+      prizeRank: 0,
+      prizeCount: 0,
+      wallet: "0x0",
+      reportTransactionHash: "0x999",
+    });
+    const page = { next: null, head: 10, anchor: { number: 10, hash: "0xa" }, rewind: false, fromBlock: 1 };
+    let progress: import("./monitor").MonitorProgress = { halted: null };
+    const pause = vi.fn(() => Effect.void),
+      approvePayment = vi.fn(() => Effect.void);
+    const ports: import("./ports").MonitorPorts = {
+      identity: { matchesPayDecision: () => Effect.succeed(false) },
+      shard: {
+        ...f.ports,
+        conservation: () => Effect.succeed([]),
+        result: () => Effect.succeed(null),
+      },
+      ledger: {
+        pause,
+        frontierPool: () => Effect.succeed("0"),
+        reportedClaims: () =>
+          Effect.succeed({ ...page, rows: [...(leading ? [report("0xabc", 17n)] : []), report("0xdef", 6000n)] }),
+        paidClaims: () => Effect.succeed({ ...page, rows: [] }),
+        postedResults: () => Effect.succeed({ ...page, rows: [] }),
+      },
+    };
+    const store = {
+      load: async () => progress,
+      save: async (next: typeof progress) => {
+        progress = next;
+      },
+    };
+    await Effect.runPromise(runMonitor(ports, store));
+    expect(progress.halted).toBe("reported_claim_mismatch:0xdef");
+    expect(pause).toHaveBeenCalledOnce();
+    expect(f.bindings.realmsIdForAccount).not.toHaveBeenCalled();
+    for (let tick = 0; tick < 61; tick++) await Effect.runPromise(runMonitor(ports, store));
+    expect(pause).toHaveBeenCalledTimes(62);
+  },
+);

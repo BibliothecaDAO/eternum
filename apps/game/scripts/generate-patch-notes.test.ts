@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, expect, it } from "vitest";
+import { CAMPAIGNS, seasonMoment } from "../../../packages/identity/src/campaigns";
 
 const generator = fileURLToPath(new URL("./generate-patch-notes.mjs", import.meta.url));
 const FRONT = '---\ntitle: "Season alpha"\nsummary: "Frontier opens: a new land."\n---\n';
@@ -99,6 +100,17 @@ it("reads each release into its sections, newest first, and writes the same file
   expect(output()).toBe(first);
 });
 
+it("writes a campaign's season dates from the campaign, in its event's clock", () => {
+  const dated = RELEASE.replace("Your army stays selected.", "From {devcon-2026.starts} to {devcon-2026.ends}.");
+  expect(generate({ "2026-10-29.md": dated }).status).toBe(0);
+  const devcon = CAMPAIGNS["devcon-2026"];
+  const at = (seconds: number) => seasonMoment(seconds, devcon.clock.timeZone, devcon.clock.zone);
+  expect(notesOf(output())[0].modes.blitz.at(-1).line).toBe(
+    `From ${at(devcon.startsAt)} to ${at(devcon.redeemUntil)}.`,
+  );
+  expect(at(devcon.startsAt)).toMatch(/^[A-Z][a-z]{2} \d{1,2} [A-Z][a-z]{2} \d{2}:\d{2} IST$/);
+});
+
 it.each([
   ["a file not named for a real day", "2026-02-30.md", RELEASE, "named for its day"],
   ["a missing summary", "2026-10-29.md", '---\ntitle: "T"\n---\n', "summary"],
@@ -119,6 +131,18 @@ it.each([
   ["a release with no change", "2026-10-29.md", FRONT, "at least one change"],
   ["an unknown icon", "2026-10-29.md", RELEASE.replace("{wheat}", "{barley}"), 'unknown icon "barley"'],
   ["a change without its name", "2026-10-29.md", RELEASE.replace("**Selection holds**: ", ""), "a change reads"],
+  [
+    "a date of an unknown campaign",
+    "2026-10-29.md",
+    RELEASE.replace("Your army stays selected.", "Until {devcon-1999.ends}."),
+    'unknown campaign "devcon-1999"',
+  ],
+  [
+    "an unknown campaign date",
+    "2026-10-29.md",
+    RELEASE.replace("Your army stays selected.", "Until {devcon-2026.middle}."),
+    'unknown date "middle"',
+  ],
   [
     "prose between the changes",
     "2026-10-29.md",

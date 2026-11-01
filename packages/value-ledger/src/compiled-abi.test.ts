@@ -52,6 +52,7 @@ describe("committed contract readbacks", () => {
     expect(
       decodeWithdrawalPayment(
         response(ledgerAbi, "get_payment", {
+          reported_at: 0,
           prize_rank: 0,
           prize_count: 0,
           paid: false,
@@ -215,6 +216,7 @@ describe("committed contract readbacks", () => {
     expect(
       decodeWithdrawalPayment(
         response(ledgerAbi, "get_payment", {
+          reported_at: 123,
           prize_rank: 0,
           prize_count: 0,
           paid: true,
@@ -224,6 +226,7 @@ describe("committed contract readbacks", () => {
         }),
       ),
     ).toEqual({
+      reportedAt: 123,
       prizeRank: 0,
       prizeCount: 0,
       paid: true,

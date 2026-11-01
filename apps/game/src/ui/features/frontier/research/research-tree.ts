@@ -58,7 +58,7 @@ export interface RealmResearchFacts {
   wheatPerTroop: (rations: number) => number;
   /** The castle's labor store at a level, with the realm's Storeroom picks. */
   laborStore: (level: number) => number;
-  wellStamina: number;
+  wellRefillPercent: number;
 }
 
 export type Branch = keyof typeof RESEARCH_TREE.branches;
@@ -412,7 +412,7 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
       castleNode("well", ROWS.well, WELL, "well", {
         line: RESEARCH_TREE.armiesFind(WELL),
         now: "—",
-        next: RESEARCH_TREE.each(`+${formatExact(realm.wellStamina)} ${STAMINA}`),
+        next: RESEARCH_TREE.each(`${formatExact(realm.wellRefillPercent)}% max ${STAMINA}`),
       }),
     ],
     ROW_DEPTH: ([1, 2, 3] as const).map((depth) => {

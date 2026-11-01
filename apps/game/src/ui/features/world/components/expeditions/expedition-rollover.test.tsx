@@ -13,8 +13,8 @@ const world = vi.hoisted(() => ({
   player: "0x1" as string | null,
   navigate: vi.fn(),
   rebuild: vi.fn(),
-  /** The game's store is one object for the game's life, as `setup.store` is. */
-  store: { structuresOwnedBy: () => [{ entity_id: 12 }] },
+  /** The game's store is one object for the game's life, as `setup.store` is; its registry sets no season end. */
+  store: { structuresOwnedBy: () => [{ entity_id: 12 }], get: () => undefined },
 }));
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: world.store } }) }));

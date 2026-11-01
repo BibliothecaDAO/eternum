@@ -87,8 +87,10 @@ const home = {
   base: { created_at: 360 },
   metadata: { realm_id: 711 },
 } as unknown as NativeRows["Structure"];
-const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, spacing: 50 };
-const Sheet = () => <FrontierRealms labor={useRealmLabor(rules, home)} onClose={() => {}} />;
+const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, endAt: 360 + 21 * 20 * 7200, spacing: 50 };
+const Sheet = () => (
+  <FrontierRealms labor={useRealmLabor({ ...rules, endAt: Number(facts.seasonEnd) }, home)} onClose={() => {}} />
+);
 /** What a player reads on the sheet's strip: each day's number, today starred, and its state. */
 const strip = (host: HTMLElement) =>
   [...host.querySelectorAll(".realm-labor__days li")].map(
@@ -287,7 +289,11 @@ it("at full Labor storage, says what fits and lets both campaign tiers claim the
 
 /** The Realms chip as the HUD wires it: the home's plan, its one reading of what waits, the chip. */
 const Chip = ({ narrow }: { narrow?: boolean }) => (
-  <RealmsChip waiting={dailyClaimWaiting(useRealmLabor(rules, home)?.plan)} narrow={narrow} onOpen={() => {}} />
+  <RealmsChip
+    waiting={dailyClaimWaiting(useRealmLabor({ ...rules, endAt: Number(facts.seasonEnd) }, home)?.plan)}
+    narrow={narrow}
+    onOpen={() => {}}
+  />
 );
 
 it.each([

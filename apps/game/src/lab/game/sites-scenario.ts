@@ -1,10 +1,12 @@
+import { DEPLOY_SLOT_KEY } from "@/ui/features/frontier/deploy/deploy-fixture";
 import { SKILL_POINT_FIELDS } from "@bibliothecadao/eternum";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 import { TileOccupier } from "@bibliothecadao/types";
 
-import { nativeRuleConstants, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { resolveExplorerTroops, wellRefillStamina } from "@bibliothecadao/eternum/troop-stamina";
 import { type LabCommand, type LabFact, type LabScenario, wire } from "./lab-chain";
-import { armySpent, armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
+import { armyProgress, besideOnOpenLand, PROGRESS_KEYS, spireScenario } from "./spire-scenario";
 
 /**
  * The army reaches the sites with room for a Well refill and a discovered III point.
@@ -20,16 +22,30 @@ export const sitesScenario = (): LabScenario => {
   const spire = spireScenario();
   const { store } = spire;
   const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
+  const [, slot] = [...store.entries("ArmySlot")].find(([, row]) => row.structure_id === army.owner && row.slot === 0)!;
   store.applyFacts([
     {
       model: "ExplorerTroops",
       key: "0x74",
       value: wire({
         ...army,
-        troops: { ...army.troops, stamina: { Inline: { amount: STAMINA, settled_at: spire.startsAt, remainder: 0 } } },
+        troops: { ...army.troops, stamina: { Slot: 0 } },
       }),
     },
     armyProgress(PROGRESS_KEYS.spireArmy, SPIRE_ARMY, XP),
+    {
+      model: "ArmySlot",
+      key: DEPLOY_SLOT_KEY,
+      value: wire({
+        ...slot,
+        explorer_id: SPIRE_ARMY,
+        stamina: { amount: STAMINA, settled_at: spire.startsAt, remainder: 0 },
+      }),
+    },
+  ] as never);
+  const progress = store.require("ArmyProgress", { game_id: 1, explorer_id: BigInt(SPIRE_ARMY) });
+  store.applyFacts([
+    { model: "ArmyProgress", key: PROGRESS_KEYS.spireArmy, value: wire({ ...progress, logistics: 3 }) },
   ] as never);
   const stands = store.entityOccupancy(1, SPIRE_ARMY)!;
   for (const [index, category] of [TileOccupier.Well, TileOccupier.Shrine].entries()) {
@@ -89,7 +105,9 @@ const shrinePoint = (chain: NativeFactStore, explorerId: bigint, siteId: bigint)
 /** A Well's stamina, held to the army's bar as grant_stamina clamps it. */
 const wellStamina = (chain: NativeFactStore, explorerId: bigint, now: number): LabFact => {
   const army = chain.require("ExplorerTroops", { game_id: 1, explorer_id: explorerId });
-  const maximum = chain.require("SliceRules", { game_id: 1 }).troop_stamina_config.stamina_knight_max;
-  const held = Number((army.troops.stamina as { Inline: { amount: bigint } }).Inline.amount);
-  return armySpent(chain, explorerId, -Math.min(nativeRuleConstants.WELL_STAMINA, maximum - held), now);
+  const maximum = resolveExplorerTroops(chain, army)?.staminaMax;
+  if (maximum === undefined) throw new Error("A Well refill needs its army's maximum stamina");
+  const [key, slot] = [...chain.entries("ArmySlot")].find(([, row]) => row.explorer_id === explorerId)!;
+  const amount = Math.min(maximum, Number(slot.stamina.amount) + wellRefillStamina(maximum));
+  return { model: "ArmySlot", key, value: wire({ ...slot, stamina: { amount, settled_at: now, remainder: 0 } }) };
 };

@@ -44,7 +44,7 @@ export const FeedLine = ({ story, own = false }: { story: ProcessedStoryEvent; o
     </>
   );
   return (
-    <div className="ui-event ui-feed-line" data-feed-line data-own={own || undefined}>
+    <div className="ui-event ui-feed-line" data-feed-line data-story={story.story} data-own={own || undefined}>
       {open ? (
         <button type="button" className="ui-event__open" onClick={open}>
           {words}

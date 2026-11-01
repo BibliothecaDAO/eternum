@@ -83,6 +83,33 @@ it("reads the player's realm as Blitz's card reads a holding: name, rank, a ring
   expect(onRealms).toHaveBeenCalledTimes(1);
 });
 
+it("marks the LORDS of an account with no linked wallet, its name and hover saying why, still opening Withdraw", () => {
+  const onWithdraw = vi.fn();
+  const line = "Link a wallet to receive your LORDS";
+  act(() =>
+    root.render(
+      <RealmPanel
+        name="Duskbite"
+        level={1}
+        stores={STORES}
+        lords={1_240}
+        linkWalletLine={line}
+        onWithdraw={onWithdraw}
+      />,
+    ),
+  );
+  const ring = host.querySelector<HTMLButtonElement>(`[aria-label="LORDS 1,240. ${line}"]`)!;
+  expect(ring.getAttribute("data-tip")).toBe(line);
+  expect(ring.querySelector('[data-icon="warning"]')).not.toBeNull();
+  act(() => ring.click());
+  expect(onWithdraw).toHaveBeenCalledTimes(1);
+  // With a linked wallet (no line) the ring is the plain balance.
+  act(() =>
+    root.render(<RealmPanel name="Duskbite" level={1} stores={STORES} lords={1_240} onWithdraw={onWithdraw} />),
+  );
+  expect(host.querySelector('[aria-label="LORDS 1,240"] [data-icon="warning"]')).toBeNull();
+});
+
 it("takes the map home from its whole header, which never folds, with the rank's steps beside the name", () => {
   const onHome = vi.fn();
   act(() => root.render(<RealmPanel name="Duskbite" level={1} highest={3} stores={STORES} onHome={onHome} />));
@@ -129,7 +156,7 @@ it("shows a realm watched or visited by its stores alone: no LORDS and no Realms
 });
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
-  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${clock.day}`);
@@ -138,7 +165,7 @@ it("says the day and the time left in the top bar, and when the day ends and how
 });
 
 it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
-  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain("24h left");

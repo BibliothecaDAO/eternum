@@ -18,9 +18,10 @@ import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { costLine } from "@/ui/design-system/kit/price-faces";
 
-import { exploresBought, MOVE, STAMINA, USE, USING } from "@/ui/design-system/kit/words";
+import { exploresBought, MOVE, STAMINA, USE, USING, wellRefillShare } from "@/ui/design-system/kit/words";
 import { ActionPaths, ActionType, configManager } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
+import { WELL_REFILL_PERCENT } from "@bibliothecadao/eternum/troop-stamina";
 import type { TileSpatialRenderable } from "@bibliothecadao/eternum/game-sync";
 import { formatShort, formatShortChange, skillPointName } from "@bibliothecadao/types";
 import { type ReactNode, useMemo } from "react";
@@ -58,11 +59,11 @@ export const MapSiteCard = ({
   useNativeRevision(MAP_SITE_MODELS);
   const siteTile = selected.tile.hexCoords;
   const reward = shrineRewardAt(setup.store, siteTile);
-  const plan = { kind: selected.kind, gain: siteGain(selected.kind, reward) };
   const usable = useArmyOffersUse(siteTile) && user !== null;
   const approach = useOrderAt(useApproachTile(siteTile, user !== null && !usable));
   const userId = user ? safeInteger(user.army.explorer_id) : null;
   const army = useUserArmy(userId ?? undefined);
+  const plan = { kind: selected.kind, gain: siteGain(selected.kind, reward, army?.stamina) };
   const inFlight = useInFlight("army", userId)?.order;
 
   const use = async () => {
@@ -79,7 +80,7 @@ export const MapSiteCard = ({
   const gain =
     plan.kind === "Well" ? (
       <HudChip icons={["stamina"]} label={STAMINA}>
-        {formatShort(plan.gain, { signed: true })}
+        {plan.gain === undefined ? wellRefillShare(WELL_REFILL_PERCENT) : formatShort(plan.gain, { signed: true })}
       </HudChip>
     ) : (
       <HudChip>{plan.gain === undefined ? "—" : skillPointName(plan.gain)}</HudChip>

@@ -12,13 +12,17 @@ const identity = vi.hoisted(() => {
       state.session = value;
     },
   };
-  return { originalSession, state, client: { sendSignInCode: vi.fn() } };
+  return { originalSession, state, client: { sendSignInCode: vi.fn() }, signedIn: { on: false } };
 });
 vi.mock("@/hooks/context/identity-session", () => ({
   identityClient: identity.client,
   useIdentitySessionStore: { getState: () => identity.state },
-  // The frame's notice reads the session; the fixture pages here draw a signed-out visitor.
-  useIdentitySession: () => ({ status: "signed-out", session: null }),
+  // The frame's notice reads the session; the fixture pages here draw a signed-out visitor, unless a test signs the
+  // screen's player in.
+  useIdentitySession: () =>
+    identity.signedIn.on
+      ? { status: "signed-in", session: identity.state.session }
+      : { status: "signed-out", session: null },
   notificationOwnerOf: () => null,
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
@@ -36,6 +40,7 @@ Object.assign(globalThis, { IS_REACT_ACT_ENVIRONMENT: true });
 let root: Root | undefined;
 let container: HTMLDivElement;
 afterEach(async () => {
+  identity.signedIn.on = false;
   await act(async () => root?.unmount());
   container?.remove();
   vi.unstubAllGlobals();
@@ -138,4 +143,37 @@ it.each([
   expect(places).toHaveLength(4);
   const current = places.filter((place) => place.getAttribute("aria-current") === "page");
   expect(current.map((place) => place.textContent)).toEqual(lit);
+});
+
+it("opens a Devcon flyer's sealed ticket as the golden ticket the account's first redemption gets", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response("{}")),
+  );
+  identity.signedIn.on = true;
+  const lab = await renderLab("/lab/app/devcon-golden/join/devcon/LABCODE1");
+  const open = await vi.waitFor(() => {
+    const button = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Open your ticket");
+    expect(button).toBeDefined();
+    return button!;
+  });
+  expect(lab.textContent).toContain("A realm waits for you");
+  await act(async () => open.click());
+  await vi.waitFor(() => expect(lab.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden"));
+  expect(lab.textContent).toContain("Golden Devcon ticket");
+  expect(lab.textContent).toContain("2,000 Labor each day");
+});
+
+it("draws the Devcon game's Realm step with the held golden ticket chosen and Found ready", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async () => new Response("{}")),
+  );
+  identity.signedIn.on = true;
+  const lab = await renderLab("/lab/app/devcon-held/doorway/home");
+  await vi.waitFor(() => expect(lab.textContent).toContain("1 ticket · 1 Realm"));
+  expect(lab.textContent).toContain("Golden Devcon ticket");
+  expect(lab.textContent).toContain("4786");
+  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Found your realm");
+  await vi.waitFor(() => expect(found?.disabled).toBe(false));
 });

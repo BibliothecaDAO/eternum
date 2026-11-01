@@ -24,6 +24,9 @@ export const WEI = 10n ** 18n;
 export interface Inputs extends SeasonDates {
   cloudflareToken: string;
   rpc: string;
+  cosignerPublicKey: string;
+  cosignerUrl: string;
+  cosignerToken: string;
   resend: string;
   /** The Discord application players sign in with: every environment offers Discord sign-in. */
   discordClientId: string;

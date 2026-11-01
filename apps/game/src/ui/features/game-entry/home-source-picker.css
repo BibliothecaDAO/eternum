@@ -103,14 +103,9 @@
   height: 4.6rem;
   border-radius: 0;
 }
-/* The chosen tile reads at a glance on any art (a golden ticket, a pale map): a solid gold ring outside it, and a check
-   on a dark disc. */
+/* The chosen tile wears the kit's chosen ring (ui-pick) and a check on a dark disc, which reads on any art. */
 .home-picker__choice {
   position: relative;
-}
-.home-picker__choice[aria-pressed="true"] {
-  border-color: rgb(var(--hud-gold));
-  box-shadow: 0 0 0 3px rgb(var(--hud-gold));
 }
 .home-picker__check {
   position: absolute;

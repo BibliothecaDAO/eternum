@@ -1,4 +1,5 @@
 // Count the current seeded game day as unlocked in full, as ruled for both shard and ledger.
+use core::num::traits::WideMul;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::relics::{ChestRules, ChestTiers, LordsBudget, SiteChest, roll_tier, tier_value};
@@ -37,20 +38,6 @@ pub fn publish_pool(game_id: u32, amount: u128) {
     assert!(timestamp < game.end_at, "Frontier season ended");
     let day = crate::days::day_of(game, rules.day_unit_seconds, core::cmp::max(timestamp, game.start_main_at)).index;
     write(game_id, first_day(chest_rules(game_id), amount, day));
-}
-
-/// Confirmed carry-over only grows the chest pool; retrying the same total changes nothing.
-pub fn top_up_pool(game_id: u32, amount: u128) {
-    let game = crate::logic::game::game(game_id);
-    assert!(starknet::get_block_timestamp() < game.end_at, "Frontier season ended");
-    let mut value = budget(game_id).expect('Frontier pool not published');
-    assert!(amount >= value.pool, "Frontier pool cannot shrink");
-    if amount == value.pool {
-        return;
-    }
-    value.pool_left += amount - value.pool;
-    value.pool = amount;
-    write(game_id, value);
 }
 
 /// Draw a tier at the frozen daily price; reservation counts an actual reward roll towards tomorrow.
@@ -146,10 +133,10 @@ fn issued(today: LordsBudget) -> u128 {
 
 /// The current day counts as unlocked from its start; the last partial day stops exactly at the season end.
 pub fn unlocked(pool: u128, clock: SeasonClock, day: u64) -> u128 {
-    let end = core::cmp::min(budget_day(clock, day).end, clock.game.end_at);
+    let end = budget_day(clock, day).end;
     let duration = clock.game.end_at - clock.game.start_main_at;
-    assert!(duration != 0, "empty LORDS season");
-    (Into::<u128, u256>::into(pool) * (end - clock.game.start_main_at).into() / duration.into()).try_into().unwrap()
+    let elapsed: u128 = (end - clock.game.start_main_at).into();
+    (pool.wide_mul(elapsed) / duration.into()).try_into().unwrap()
 }
 
 fn season_clock(context: ExecutionContext) -> SeasonClock {
@@ -214,12 +201,7 @@ pub fn first_day(rules: ChestRules, pool: u128, day: u64) -> LordsBudget {
 
 fn day_ticks(clock: SeasonClock, index: u64) -> u64 {
     let day = budget_day(clock, index);
-    let end = core::cmp::min(day.end, clock.game.end_at);
-    if end <= day.start {
-        0
-    } else {
-        (end - day.start) / clock.tick
-    }
+    (day.end - day.start) / clock.tick
 }
 
 /// Release expired holds and price the new day using only its immediate predecessor.
@@ -238,11 +220,11 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
 
 // Keeping the rate as a ratio preserves sparse observations without a precision setting.
 fn daily_price(rules: ChestRules, today: LordsBudget, clock: SeasonClock) -> u128 {
-    let expected = Into::<u128, u256>::into(today.yesterday_shares) * day_ticks(clock, today.day).into();
+    let expected = today.yesterday_shares.wide_mul(day_ticks(clock, today.day).into());
     if expected == 0 || today.yesterday_ticks == 0 {
         rules.price_ceiling
     } else {
-        let price = Into::<u128, u256>::into(available(today, clock)) * today.yesterday_ticks.into() / expected;
+        let price = available(today, clock).wide_mul(today.yesterday_ticks.into()) / expected;
         core::cmp::max(1, core::cmp::min(rules.price_ceiling.into(), price)).try_into().unwrap()
     }
 }

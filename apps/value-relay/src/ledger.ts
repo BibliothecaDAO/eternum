@@ -18,6 +18,7 @@ import {
   type LedgerPage,
   type LedgerAnchor,
   type PaidClaim,
+  type ReportedClaim,
   type RelayPorts,
   type MonitorPorts,
 } from "./ports";
@@ -110,7 +111,7 @@ const resultCommitment = async (provider: RpcProvider, address: string, result: 
 export const ledgerMonitorReads = (
   rpcUrl: string,
   ledger: LedgerContract,
-): Pick<MonitorPorts["ledger"], "paidClaims" | "postedResults" | "frontierPool"> => {
+): Pick<MonitorPorts["ledger"], "reportedClaims" | "paidClaims" | "postedResults" | "frontierPool"> => {
   const address = ledger.contractAddress;
   return {
     frontierPool: (chainId, gameId) =>
@@ -128,6 +129,10 @@ export const ledgerMonitorReads = (
           ),
         ).pool;
       }),
+    reportedClaims: (cursor, fromBlock, anchor) =>
+      relayOperation("read ledger reported claims", () =>
+        ledgerEventPage(rpcAt(rpcUrl), ledger, ["WithdrawalReported"], cursor, fromBlock, decodeReport, anchor),
+      ),
     paidClaims: (cursor, fromBlock, anchor) =>
       relayOperation("read ledger paid claims", async () => {
         const provider = rpcAt(rpcUrl);
@@ -236,6 +241,10 @@ const readCursor = (value: string): { head: number; token: string; hash?: string
     token: cursor.token,
     ...(typeof cursor.hash === "string" ? { hash: cursor.hash } : {}),
   };
+};
+const decodeReport = (event: EmittedEvent): ReportedClaim => {
+  const { paymentTransactionHash, ...report } = decodePayment(event);
+  return { ...report, reportTransactionHash: paymentTransactionHash };
 };
 const decodePayment = (event: EmittedEvent): Omit<PaidClaim, "paidAt"> => {
   if (

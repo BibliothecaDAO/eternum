@@ -31,7 +31,8 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
  * device or another (owner, 2026-10-25: the recap shows "until you act"): their own history says so on every device, so
  * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
  * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
- * answers after the moment went on without the summary, this does.
+ * answers after the moment went on without the summary, this does. The season's end is no day's end (endedDay): the
+ * season-over card tells it.
  */
 export const DayDone = ({
   rules,

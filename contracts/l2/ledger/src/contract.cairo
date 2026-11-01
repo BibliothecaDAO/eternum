@@ -23,8 +23,51 @@ pub fn result_commitment(key: GameKey, ranked: Span<RankedPlayer>) -> felt252 {
     poseidon_hash_span(payload.span())
 }
 
+pub fn payment_hash(
+    chain: felt252,
+    ledger: ContractAddress,
+    epoch: u64,
+    shard: felt252,
+    season: u32,
+    claim: felt252,
+    wallet: ContractAddress,
+    amount: u256,
+    rank: u16,
+    count: u16,
+) -> felt252 {
+    poseidon_hash_span(
+        array![
+            'ETERNUM_PAY_V1', chain, ledger.into(), epoch.into(), shard, season.into(), claim, wallet.into(),
+            amount.low.into(), amount.high.into(), rank.into(), count.into(),
+        ]
+            .span(),
+    )
+}
+
+pub fn settlement_hash(
+    chain: felt252,
+    ledger: ContractAddress,
+    epoch: u64,
+    shard: felt252,
+    season: u32,
+    chest: u256,
+    prize: u256,
+    treasury_amount: u256,
+) -> felt252 {
+    poseidon_hash_span(
+        array![
+            'ETERNUM_SETTLE_V2', chain, ledger.into(), epoch.into(), shard, season.into(), chest.low.into(),
+            chest.high.into(), prize.low.into(), prize.high.into(), treasury_amount.low.into(),
+            treasury_amount.high.into(),
+        ]
+            .span(),
+    )
+}
+
 #[starknet::interface]
 pub trait IGameLedger<TState> {
+    fn cosigner(self: @TState) -> (felt252, u64);
+    fn set_cosigner(ref self: TState, public_key: felt252);
     fn lords(self: @TState) -> ContractAddress;
     fn chest_collection(self: @TState) -> ContractAddress;
     fn pause(ref self: TState);
@@ -39,7 +82,19 @@ pub trait IGameLedger<TState> {
         seed: felt252,
         amount: u256,
     );
-    fn pay(ref self: TState, shard: felt252, season_id: u32, claim_id: felt252, wallet: ContractAddress, amount: u256);
+
+    fn void_report(ref self: TState, shard: felt252, claim_id: felt252);
+
+    fn pay(
+        ref self: TState,
+        shard: felt252,
+        season_id: u32,
+        claim_id: felt252,
+        wallet: ContractAddress,
+        amount: u256,
+        signature_r: felt252,
+        signature_s: felt252,
+    );
     fn report_withdrawal(
         ref self: TState,
         shard: felt252,
@@ -49,10 +104,16 @@ pub trait IGameLedger<TState> {
         prize_rank: u16,
         prize_count: u16,
     );
-    fn settle_frontier(ref self: TState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256);
+    fn settle_frontier(
+        ref self: TState,
+        shard: felt252,
+        season_id: u32,
+        chest_withdrawn: u256,
+        prize_withdrawn: u256,
+        signature_r: felt252,
+        signature_s: felt252,
+    );
     fn extend_frontier(ref self: TState, shard: felt252, season_id: u32);
-    fn apply_frontier_carry(ref self: TState, shard: felt252, season_id: u32);
-    fn frontier_carry(self: @TState, shard: felt252) -> u256;
     fn get_frontier(self: @TState, shard: felt252, season_id: u32) -> FrontierSeason;
     fn frontier_unlocked(self: @TState, shard: felt252, season_id: u32) -> u256;
     fn frontier_claim_deadline(self: @TState, shard: felt252, season_id: u32) -> u64;
@@ -145,11 +206,13 @@ pub mod GameLedger {
     #[storage]
     struct Storage {
         frontier_days: Map<(felt252, u32), FrontierSeason>,
-        frontier_carry_pool: Map<felt252, u256>,
-        frontier_carry_end: Map<felt252, u64>,
         frontier_prize_claims: Map<(felt252, u32, u16), felt252>,
         frontier_prize_count: Map<(felt252, u32), u16>,
+        frontier_prize_reports: Map<(felt252, u32), u16>,
         payments: Map<(felt252, felt252), WithdrawalPayment>,
+        frontier_pending: Map<(felt252, u32), u64>,
+        cosigner_public_key: felt252,
+        cosigner_epoch: u64,
         treasury: ContractAddress,
         lords: ContractAddress,
         mmr_token: ContractAddress,
@@ -196,6 +259,8 @@ pub mod GameLedger {
         #[flat]
         UpgradeableEvent: UpgradeableComponent::Event,
         FrontierFunded: FrontierFunded,
+        WithdrawalReported: WithdrawalReported,
+        WithdrawalReportVoided: WithdrawalReportVoided,
         WithdrawalPaid: WithdrawalPaid,
         FrontierClosed: FrontierClosed,
         PresetRegistered: PresetRegistered,
@@ -227,6 +292,28 @@ pub mod GameLedger {
     }
 
     #[derive(Drop, starknet::Event)]
+    struct WithdrawalReportVoided {
+        #[key]
+        shard: felt252,
+        #[key]
+        claim_id: felt252,
+        season_id: u32,
+    }
+
+    #[derive(Drop, starknet::Event)]
+    struct WithdrawalReported {
+        #[key]
+        shard: felt252,
+        #[key]
+        claim_id: felt252,
+        season_id: u32,
+        wallet: ContractAddress,
+        amount: u256,
+        prize_rank: u16,
+        prize_count: u16,
+    }
+
+    #[derive(Drop, starknet::Event)]
     struct WithdrawalPaid {
         #[key]
         shard: felt252,
@@ -245,7 +332,9 @@ pub mod GameLedger {
         shard: felt252,
         #[key]
         season_id: u32,
-        returned: u256,
+        treasury: ContractAddress,
+        chest_returned: u256,
+        prize_returned: u256,
     }
 
     #[derive(Drop, starknet::Event)]
@@ -264,7 +353,6 @@ pub mod GameLedger {
         end: u64,
     }
 
-
     #[derive(Drop, starknet::Event)]
     struct Registered {
         #[key]
@@ -272,7 +360,6 @@ pub mod GameLedger {
         #[key]
         owner: ContractAddress,
     }
-
 
     #[derive(Drop, starknet::Event)]
     struct SlotCancelled {
@@ -387,7 +474,10 @@ pub mod GameLedger {
         mmr_token: ContractAddress,
         loot_chest: ContractAddress,
         cosmetics: ContractAddress,
+        cosigner_public_key: felt252,
     ) {
+        assert!(cosigner_public_key != 0, "Ledger: zero cosigner");
+        self.cosigner_public_key.write(cosigner_public_key);
         self.assert_constructor_addresses(admin, operator, treasury, lords, mmr_token, loot_chest, cosmetics);
         self.accesscontrol.initializer();
         self.accesscontrol._grant_role(DEFAULT_ADMIN_ROLE, admin);
@@ -410,6 +500,16 @@ pub mod GameLedger {
 
     #[abi(embed_v0)]
     impl GameLedgerImpl of IGameLedger<ContractState> {
+        fn cosigner(self: @ContractState) -> (felt252, u64) {
+            (self.cosigner_public_key.read(), self.cosigner_epoch.read())
+        }
+        fn set_cosigner(ref self: ContractState, public_key: felt252) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert!(public_key != 0, "Ledger: zero cosigner");
+            self.cosigner_public_key.write(public_key);
+            self.cosigner_epoch.write(self.cosigner_epoch.read() + 1);
+        }
+
         fn lords(self: @ContractState) -> ContractAddress {
             self.lords.read()
         }
@@ -449,7 +549,6 @@ pub mod GameLedger {
             let preset = self.get_preset(preset_id);
             assert!(preset.day_unit_seconds != 0, "Ledger: Frontier days disabled");
             assert!(end > start, "Ledger: invalid season window");
-            crate::days::season_days(end - start, preset.day_unit_seconds);
             assert!(
                 Into::<u64, u128>::into(end) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
@@ -462,13 +561,6 @@ pub mod GameLedger {
                 / 1000000000000000000
                 * 1000000000000000000;
             let chest = amount - prize;
-            let carry = self.frontier_carry_pool.entry(shard).read();
-            assert!(chest + carry <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
-            assert!(
-                carry == 0 || start >= self.frontier_carry_end.entry(shard).read(),
-                "Ledger: carry belongs to later season",
-            );
-            self.frontier_carry_pool.entry(shard).write(0);
             self
                 .frontier_days
                 .entry((shard, season_id))
@@ -479,7 +571,7 @@ pub mod GameLedger {
                         start,
                         end,
                         seed,
-                        pool: chest + carry,
+                        pool: chest,
                         prize_pool: amount - chest,
                         ..Default::default(),
                     },
@@ -498,6 +590,7 @@ pub mod GameLedger {
             prize_count: u16,
         ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             let previous = self.get_payment(shard, claim_id);
             if previous.amount != 0 {
                 assert!(
@@ -511,8 +604,8 @@ pub mod GameLedger {
             }
             assert!(claim_id != 0 && amount > 0, "Ledger: invalid withdrawal");
             let season = self.get_frontier(shard, season_id);
+            assert!(!season.closed, "Ledger: season closed");
             if prize_rank == 0 {
-                assert!(!season.closed, "Ledger: season closed");
                 assert!(prize_count == 0, "Ledger: invalid prize rank");
             } else {
                 assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
@@ -529,6 +622,8 @@ pub mod GameLedger {
                 let whole: u128 = (season.prize_pool / 1000000000000000000).try_into().unwrap();
                 let expected: u256 = crate::frontier_prizes::prize_amount(whole, prize_count, prize_rank).into();
                 assert!(amount == expected * 1000000000000000000, "Ledger: incorrect prize amount");
+                let reports = self.frontier_prize_reports.entry((shard, season_id)).read();
+                self.frontier_prize_reports.entry((shard, season_id)).write(reports + 1);
                 self.frontier_prize_count.entry((shard, season_id)).write(prize_count);
                 self.frontier_prize_claims.entry((shard, season_id, prize_rank)).write(claim_id);
             }
@@ -537,9 +632,59 @@ pub mod GameLedger {
                 .entry((shard, claim_id))
                 .write(
                     WithdrawalPayment {
-                        paid: false, season_id, wallet: 0.try_into().unwrap(), amount, prize_rank, prize_count,
+                        paid: false,
+                        season_id,
+                        wallet: 0.try_into().unwrap(),
+                        amount,
+                        prize_rank,
+                        prize_count,
+                        reported_at: starknet::get_block_timestamp(),
                     },
                 );
+            let pending = self.frontier_pending.entry((shard, season_id)).read();
+            self.frontier_pending.entry((shard, season_id)).write(pending + 1);
+            self
+                .emit(
+                    WithdrawalReported {
+                        shard, claim_id, season_id, wallet: 0.try_into().unwrap(), amount, prize_rank, prize_count,
+                    },
+                );
+        }
+
+        fn void_report(ref self: ContractState, shard: felt252, claim_id: felt252) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            self.pausable.assert_paused();
+            let report = self.get_payment(shard, claim_id);
+            assert!(!report.paid, "Ledger: withdrawal already paid");
+            if report.amount == 0 {
+                return;
+            }
+            let key = (shard, report.season_id);
+            if report.prize_rank > 0 {
+                self.frontier_prize_claims.entry((shard, report.season_id, report.prize_rank)).write(0);
+                let remaining = self.frontier_prize_reports.entry(key).read() - 1;
+                self.frontier_prize_reports.entry(key).write(remaining);
+                if remaining == 0 {
+                    self.frontier_prize_count.entry(key).write(0);
+                }
+            }
+            let pending = self.frontier_pending.entry(key).read();
+            self.frontier_pending.entry(key).write(pending - 1);
+            self
+                .payments
+                .entry((shard, claim_id))
+                .write(
+                    WithdrawalPayment {
+                        paid: false,
+                        season_id: 0,
+                        wallet: 0.try_into().unwrap(),
+                        amount: 0,
+                        prize_rank: 0,
+                        prize_count: 0,
+                        reported_at: 0,
+                    },
+                );
+            self.emit(WithdrawalReportVoided { shard, claim_id, season_id: report.season_id });
         }
 
         fn pay(
@@ -549,19 +694,35 @@ pub mod GameLedger {
             claim_id: felt252,
             wallet: ContractAddress,
             amount: u256,
+            signature_r: felt252,
+            signature_s: felt252,
         ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
-            if self.payments.entry((shard, claim_id)).read().paid {
-                return;
-            }
+            assert!(!self.payments.entry((shard, claim_id)).read().paid, "Ledger: claim already paid");
             self.pausable.assert_not_paused();
             assert!(claim_id != 0 && wallet.is_non_zero() && amount > 0, "Ledger: invalid withdrawal");
             let mut season = self.get_frontier(shard, season_id);
             let reported = self.get_payment(shard, claim_id);
-            assert!(reported.prize_rank > 0 || !season.closed, "Ledger: season closed");
+            assert!(!season.closed, "Ledger: season closed");
             assert!(reported.amount != 0, "Ledger: withdrawal unreported");
             assert!(
                 reported.season_id == season_id && reported.amount == amount, "Ledger: conflicting withdrawal report",
+            );
+            let message = super::payment_hash(
+                starknet::get_tx_info().unbox().chain_id,
+                starknet::get_contract_address(),
+                self.cosigner_epoch.read(),
+                shard,
+                season_id,
+                claim_id,
+                wallet,
+                amount,
+                reported.prize_rank,
+                reported.prize_count,
+            );
+            assert!(
+                core::ecdsa::check_ecdsa_signature(message, self.cosigner_public_key.read(), signature_r, signature_s),
+                "Ledger: invalid cosignature",
             );
             if reported.prize_rank == 0 {
                 assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
@@ -573,6 +734,9 @@ pub mod GameLedger {
                 );
                 season.prize_paid += amount;
             }
+            let pending = self.frontier_pending.entry((shard, season_id)).read();
+            let remaining = pending - 1;
+            self.frontier_pending.entry((shard, season_id)).write(remaining);
             self.frontier_days.entry((shard, season_id)).write(season);
             self
                 .payments
@@ -618,7 +782,6 @@ pub mod GameLedger {
             let now = starknet::get_block_timestamp();
             assert!(!season.closed && now >= season.start && now < season.end, "Ledger: extension not live");
             assert!(approved::END > season.end, "Ledger: extension must grow");
-            crate::days::season_days(approved::END - season.start, preset.day_unit_seconds);
             assert!(
                 Into::<u64, u128>::into(approved::END) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
@@ -629,37 +792,47 @@ pub mod GameLedger {
         }
 
         fn settle_frontier(
-            ref self: ContractState, shard: felt252, season_id: u32, chest_withdrawn: u256, prize_withdrawn: u256,
+            ref self: ContractState,
+            shard: felt252,
+            season_id: u32,
+            chest_withdrawn: u256,
+            prize_withdrawn: u256,
+            signature_r: felt252,
+            signature_s: felt252,
         ) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
             let season = self.get_frontier(shard, season_id);
+            if season.closed {
+                return;
+            }
+            let message = super::settlement_hash(
+                starknet::get_tx_info().unbox().chain_id,
+                starknet::get_contract_address(),
+                self.cosigner_epoch.read(),
+                shard,
+                season_id,
+                chest_withdrawn,
+                prize_withdrawn,
+                season.pool - season.paid + season.prize_pool - season.prize_paid,
+            );
+            assert!(
+                core::ecdsa::check_ecdsa_signature(message, self.cosigner_public_key.read(), signature_r, signature_s),
+                "Ledger: invalid cosignature",
+            );
+
             assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
             assert!(
                 season.paid == chest_withdrawn && season.prize_paid == prize_withdrawn, "Ledger: withdrawals not paid",
             );
-            if !season.closed {
-                self.close_frontier_pool(shard, season_id, season);
+            if starknet::get_block_timestamp() < self.frontier_claim_deadline(shard, season_id) {
+                assert!(
+                    self.frontier_pending.entry((shard, season_id)).read() == 0
+                        && season.prize_paid == season.prize_pool,
+                    "Ledger: withdrawals not paid",
+                );
             }
-        }
-
-        fn frontier_carry(self: @ContractState, shard: felt252) -> u256 {
-            self.frontier_carry_pool.entry(shard).read()
-        }
-        fn apply_frontier_carry(ref self: ContractState, shard: felt252, season_id: u32) {
-            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
-            let amount = self.frontier_carry_pool.entry(shard).read();
-            if amount == 0 {
-                return;
-            }
-            let mut season = self.get_frontier(shard, season_id);
-            assert!(!season.closed && starknet::get_block_timestamp() < season.end, "Ledger: season ended");
-            assert!(
-                season.start >= self.frontier_carry_end.entry(shard).read(), "Ledger: carry belongs to later season",
-            );
-            assert!(season.pool + amount <= 0xffffffffffffffffffffffffffffffff, "Ledger: season pool exceeds u128");
-            season.pool += amount;
-            self.frontier_carry_pool.entry(shard).write(0);
-            self.frontier_days.entry((shard, season_id)).write(season);
+            self.close_frontier_pool(shard, season_id, season);
         }
 
         fn get_frontier(self: @ContractState, shard: felt252, season_id: u32) -> FrontierSeason {
@@ -823,6 +996,7 @@ pub mod GameLedger {
         }
 
         fn register(ref self: ContractState, key: SlotKey, sword: bool, shield: bool) {
+            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let slot = self.assert_registration_open(key, owner);
             let preset = self.presets.entry(slot.preset_id).read();
@@ -830,7 +1004,6 @@ pub mod GameLedger {
             self.pull_lords(owner, payment);
             self.emit(Registered { key, owner });
         }
-
 
         fn cancel_slot(ref self: ContractState, key: SlotKey) {
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
@@ -851,6 +1024,7 @@ pub mod GameLedger {
         }
 
         fn refund(ref self: ContractState, key: SlotKey) {
+            self.pausable.assert_not_paused();
             let owner = starknet::get_caller_address();
             let mut slot = self.slots.entry(key).read();
             let mut registration = self.registrations.entry((key, owner)).read();
@@ -872,6 +1046,7 @@ pub mod GameLedger {
         }
 
         fn apply_results(ref self: ContractState, key: SlotKey, game_id: u32, ranked: Array<RankedPlayer>) {
+            self.pausable.assert_not_paused();
             self.accesscontrol.assert_only_role(OPERATOR_ROLE);
             let slot = self.get_slot(key);
             self.assert_results_open(slot);
@@ -1081,7 +1256,6 @@ pub mod GameLedger {
             assert!(starknet::get_block_timestamp() < slot.close, "Ledger: slot already closed");
             slot
         }
-
 
         fn assert_registration_open(self: @ContractState, key: SlotKey, owner: ContractAddress) -> Slot {
             let slot = self.assert_slot_open_before_close(key);
@@ -1369,15 +1543,13 @@ pub mod GameLedger {
     #[generate_trait]
     impl SeasonWriterImpl of SeasonWriterTrait {
         fn close_frontier_pool(ref self: ContractState, shard: felt252, season_id: u32, mut season: FrontierSeason) {
-            let returned = season.pool - season.paid;
+            let chest_returned = season.pool - season.paid;
+            let prize_returned = season.prize_pool - season.prize_paid;
+            let treasury = self.treasury.read();
             season.closed = true;
             self.frontier_days.entry((shard, season_id)).write(season);
-            self.frontier_carry_pool.entry(shard).write(self.frontier_carry_pool.entry(shard).read() + returned);
-            self
-                .frontier_carry_end
-                .entry(shard)
-                .write(core::cmp::max(season.end, self.frontier_carry_end.entry(shard).read()));
-            self.emit(FrontierClosed { shard, season_id, returned });
+            self.send_lords(treasury, chest_returned + prize_returned);
+            self.emit(FrontierClosed { shard, season_id, treasury, chest_returned, prize_returned });
         }
 
         fn record_season_players(ref self: ContractState, season_id: u32, key: GameKey, ranked: Span<RankedPlayer>) {
@@ -1635,9 +1807,8 @@ fn frontier_unlock(season: FrontierSeason, preset: Preset, now: u64) -> u256 {
     } else if now >= season.end {
         season.pool
     } else {
-        let clock = crate::types::FrontierClock { start_main_at: season.start, seed: season.seed };
+        let clock = crate::types::FrontierClock { start_main_at: season.start, end_at: season.end, seed: season.seed };
         let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
-        let end = core::cmp::min(day.end, season.end);
-        season.pool * (end - season.start).into() / (season.end - season.start).into()
+        season.pool * (day.end - season.start).into() / (season.end - season.start).into()
     }
 }

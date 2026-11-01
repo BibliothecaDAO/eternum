@@ -1,5 +1,6 @@
 // The lab's stand-in for the admin Worker: the page's own files, answered from fixtures in its API's shapes, so the
-// owner reviews the real page without a deploy, Access or a token. Every value below is invented.
+// owner reviews the real page without a deploy, Access or a token. Every value below is invented, except the Devcon
+// season's dates: DEVCON_SEASON is written above this file by scripts/lab.mjs from the Devcon campaign.
 const now = Date.parse("2026-10-16T14:30:00Z");
 const probe = (id, name, status, latency_ms) => ({ id, name, status, latency_ms });
 const run = (gameName, environment, status, gameId, kind = "game") => ({
@@ -61,7 +62,7 @@ const ENVIRONMENTS = {
       probe("launch", "Launch service", "up", 91),
       probe("value", "Value relay", "up", 230),
     ],
-    phases: [{ phase: "frontier", presetId: 6, startsAt: "2026-11-03T06:30:00Z", endsAt: "2026-11-06T14:30:00Z" }],
+    phases: [{ phase: "frontier", presetId: 6, ...DEVCON_SEASON }],
     slots: [],
     runs: [run("frontier-1761933600", "madara.frontier", "queued", undefined)],
     workers: { version: "a90e…", revision: "b015a52b6c9" },

@@ -50,7 +50,7 @@ const render = (props: Partial<Parameters<typeof TodaySheet>[0]>) => {
 
 describe("Today", () => {
   it("bounds any day of the season back from today, and none before the first or after today", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0 };
+    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 12) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const now = days[11].start + 60;
@@ -61,15 +61,14 @@ describe("Today", () => {
   });
 
   it("counts today against the season's last day, and none outside the season (audit 10-27)", () => {
-    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0 };
+    const calendar = { dayUnitSeconds: DAY / 4, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
     const days = [dayOf(calendar, 0)!];
     while (days.length < 14) days.push(dayOf(calendar, days.at(-1)!.end)!);
     const endsAt = days[13].end;
-    expect(seasonDay(calendar, endsAt, days[9].start + 60)).toEqual({ day: 10, lastDay: 14 });
-    expect(seasonDay(calendar, endsAt, days[13].end - 1)).toEqual({ day: 14, lastDay: 14 });
-    expect(seasonDay(calendar, endsAt, endsAt)).toBeUndefined();
-    expect(seasonDay(calendar, undefined, days[9].start)).toBeUndefined();
-    expect(seasonDay(calendar, endsAt, -1)).toBeUndefined();
+    expect(seasonDay({ ...calendar, endAt: endsAt }, days[9].start + 60)).toEqual({ day: 10, lastDay: 14 });
+    expect(seasonDay({ ...calendar, endAt: endsAt }, days[13].end - 1)).toEqual({ day: 14, lastDay: 14 });
+    expect(seasonDay({ ...calendar, endAt: endsAt }, endsAt)).toBeUndefined();
+    expect(seasonDay({ ...calendar, endAt: endsAt }, -1)).toBeUndefined();
   });
 
   it("titles the day against the season's last day when it is known", () => {

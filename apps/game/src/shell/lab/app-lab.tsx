@@ -13,6 +13,7 @@ import { rewardKey } from "../season-tab/reward";
 import { PageAddress } from "../frame/page-address";
 import { CreditsPage, PrivacyPage, TermsPage } from "../legal";
 import { WhatsNewPage } from "../news/news";
+import { JoinDevconPage } from "../join/join-devcon-page";
 import { NotFoundPage } from "../not-found";
 import { PlayPage } from "../play/play-page";
 import { PlayerPage, ProfilePage, SettingsPage } from "../profile/profile-pages";
@@ -25,7 +26,9 @@ import {
   LAB_FRONTIER_BOARD,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
+  LAB_DEVCON_TICKETS,
   LAB_GUARDIAN,
+  LAB_HELD_REALMS,
   LAB_PLAYER,
   LAB_PROFILES,
   LAB_RATING_TOP,
@@ -113,6 +116,8 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="credits" element={<CreditsPage />} />
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
+        <Route path="join/devcon" element={<JoinDevconPage />} />
+        <Route path="join/devcon/:code" element={<JoinDevconPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -127,7 +132,7 @@ const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
     const user = {
       ...LAB_SESSION.user,
-      name: LAB_NAMES[screen] ?? LAB_SESSION.user.name,
+      name: labPlayerName(screen),
       address: LAB_PAYOUT_WALLETS[screen] ?? null,
     };
     const session = { ...LAB_SESSION, user };
@@ -172,13 +177,14 @@ function installLabFixtures(screen: LabScreen): () => void {
     "linkWallet",
     "getBuildOrders",
     "saveBuildOrders",
+    "redeemCampaignTicket",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
   );
   answerAppReads(screen);
   answerChat(screen);
-  answerIdentity();
+  answerIdentity(screen);
   return () => {
     window.fetch = previousFetch;
     window.WebSocket = previousWebSocket;
@@ -203,6 +209,7 @@ const answerAppReads = (screen: LabScreen) => {
           { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games },
         ],
       }),
+    // The player's own finished Blitz.
     "/api/directory/history": () =>
       json({
         games: LAB_NO_HISTORY_SCREENS.includes(screen) ? [] : [LAB_FINISHED_BLITZ],
@@ -212,9 +219,14 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/guardian": () => json(LAB_GUARDIAN),
     "/api/slots": () => json(labSlots(screen)),
     "/api/factory/calendar": () => json(labCalendar(screen)),
-    "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
+    "/api/profiles": (url) =>
+      json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
+    "/api/value/held-realms": () => {
+      const held = LAB_HELD_REALMS[screen] ?? [];
+      return json({ realms: held.map(({ realmId }) => realmId), held });
+    },
   };
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
@@ -225,15 +237,23 @@ const answerAppReads = (screen: LabScreen) => {
 
 /**
  * The identity service's answers for the account page: a code is always sent, and a wallet change spends the lab's
- * one code and refuses any other, as the service refuses it. The client holds its own fetch, so its calls are answered
- * on the client itself.
+ * one code and refuses any other, as the service refuses it. A Devcon screen's account holds its ticket, or opens it
+ * with any flyer's code, as the service answers a first redemption. The client holds its own fetch, so its calls are
+ * answered on the client itself.
  */
-const answerIdentity = () => {
+const answerIdentity = (screen: LabScreen) => {
   identityClient.listSignInProviders = async () => ["discord"];
   identityClient.availableSignInProviders = async () => ["discord"];
   identityClient.sendSignInCode = async () => ({ success: true, expires_at: Date.now() + 300_000 });
   const spend = async (code: unknown) => {
     if (code !== LAB_EMAIL_CODE) throw new IdentityRequestError(400, "INVALID_OTP");
+  };
+  const ticket = LAB_DEVCON_TICKETS[screen];
+  let held = ticket?.held === true;
+  identityClient.redeemCampaignTicket = async (campaign, code) => {
+    if (!ticket || (code === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
+    held = true;
+    return { campaign, tier: ticket.tier };
   };
   // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
   let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
@@ -308,12 +328,15 @@ const LAB_BUILD_ORDERS = {
   ],
 };
 
-const profilesOf = (accounts: readonly string[]) =>
+/** The screen's player by name: the one their session carries and the one identity answers for them. */
+const labPlayerName = (screen: LabScreen) => LAB_NAMES[screen] ?? LAB_SESSION.user.name;
+
+const profilesOf = (screen: LabScreen, accounts: readonly string[]) =>
   Object.fromEntries(
     accounts.flatMap((account) => {
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
-          ? { name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image }
+          ? { name: labPlayerName(screen), portrait: LAB_SESSION.user.image }
           : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account]);
       return profile ? [[account, profile]] : [];
     }),

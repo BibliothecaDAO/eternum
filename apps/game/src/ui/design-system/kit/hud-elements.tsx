@@ -321,12 +321,14 @@ export const HudNumberField = ({
 const QUICK_ADD = 500;
 
 /**
- * How many troops go, for a quick deploy (the owner's rounds 3 and 4): the count typed with +500 per press (where more
- * than 500 can go; else it would only be Max) and Max right beside it, then out of how many can ("that fit" when the army's room runs out first); under them, a slider
- * across the same range, to drag the count by hand (the owner, playing dev: "I kinda wish I still had the slider").
+ * How many troops go, for a quick deploy (the owner's rounds 3 and 4): on one line, the troop's painting where it is
+ * known, the count typed with +500 per press (where more than 500 can go; else it would only be Max), Max, then out of
+ * how many can ("that fit" when the army's room runs out first); under it, a slider across the same range, to drag the
+ * count by hand (the owner, playing dev: "I kinda wish I still had the slider").
  */
 export const HudTroopAmount = ({
   name,
+  art,
   value,
   most,
   held,
@@ -334,6 +336,8 @@ export const HudTroopAmount = ({
   onChange,
 }: {
   name: string;
+  /** The troop's painting, leading the line. */
+  art?: IconMeaning;
   value: number;
   /** The most that can go: the troops on hand within the army's room. */
   most: number;
@@ -345,19 +349,22 @@ export const HudTroopAmount = ({
   const full = disabled || value >= most;
   return (
     <div className="ui-amount">
-      <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
-      {most > QUICK_ADD && (
-        <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
-          +{QUICK_ADD}
+      <div className="ui-amount__line">
+        {art && <HudPortrait icon={art} label={name} />}
+        <AmountInput label={name} value={value} max={most} disabled={disabled} onChange={onChange} />
+        {most > QUICK_ADD && (
+          <HudButton kind="secondary" disabled={full} onClick={() => onChange(Math.min(value + QUICK_ADD, most))}>
+            +{QUICK_ADD}
+          </HudButton>
+        )}
+        <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
+          Max
         </HudButton>
-      )}
-      <HudButton kind="secondary" disabled={full} onClick={() => onChange(most)}>
-        Max
-      </HudButton>
-      <span className="ui-amount__of">
-        of {formatExact(most)}
-        {held > most && " that fit"}
-      </span>
+        <span className="ui-amount__of">
+          of {formatExact(most)}
+          {held > most && " that fit"}
+        </span>
+      </div>
       <HudSlider label={`${name}: how many go`} value={value} max={most} disabled={disabled} onChange={onChange} />
     </div>
   );
@@ -1212,7 +1219,7 @@ export const HudCard = ({
   );
   return (
     <div
-      className="ui-card"
+      className="ui-card ui-pick"
       data-size={size}
       data-selected={selected || undefined}
       data-disabled={disabled || undefined}
@@ -1289,16 +1296,37 @@ export const HudEventRow = ({
 };
 
 /**
- * A line the game says about the screen it sits in: a refusal, a warning, a success, and why. A failure the player can
- * recover from carries Try again (`retry`), so the recovery sits on the line that names what failed.
+ * A line the game says about the screen it sits in: a refusal, a warning, a success, and why, led by the painting of
+ * what it is about. A failure the player can recover from carries Try again (`retry`), and a shortfall the player can
+ * fill elsewhere a small press to go there (`fix`), so the way out sits on the line that names what is wrong.
  */
-export const HudNotice = ({ tone, line, retry }: { tone?: Tone; line: string; retry?: () => unknown }) => (
+export const HudNotice = ({
+  tone,
+  icon,
+  line,
+  retry,
+  fix,
+}: {
+  tone?: Tone;
+  icon?: IconMeaning;
+  line: string;
+  retry?: () => unknown;
+  fix?: { label: string; onClick: () => void };
+}) => (
   <div className="ui-notice" data-tone={tone} role={tone === "bad" ? "alert" : "status"}>
+    {icon && <Icon name={icon} size={20} />}
     <span>{line}</span>
     {retry && (
-      <span className="ui-notice__retry">
+      <span className="ui-notice__fix">
         <HudButton kind="secondary" size="sm" onClick={retry}>
           {TRY_AGAIN}
+        </HudButton>
+      </span>
+    )}
+    {fix && (
+      <span className="ui-notice__fix">
+        <HudButton kind="quiet" size="sm" onClick={fix.onClick}>
+          {fix.label}
         </HudButton>
       </span>
     )}

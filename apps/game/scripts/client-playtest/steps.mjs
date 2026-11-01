@@ -469,7 +469,7 @@ const SITE_ACTION_STEPS = [
     (context) => useTheSite(context, "Shrine", "III skill point"),
     shrinePointGranted,
   ),
-  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "stamina"), siteUsedUp),
+  clickToResultStep("well", "InteractSite", (context) => useTheSite(context, "Well", "+97 stamina"), wellRefilled),
 ];
 
 async function useTheSite({ browser }, site, gives) {
@@ -527,6 +527,14 @@ function shrinePointGranted(context) {
     progress.legendary_points !== 0
   )
     return false;
+  return siteUsedUp(context);
+}
+
+/** Logistics III raises the bar to 195; the Well adds floor(195 / 2) to its 40 stamina. */
+function wellRefilled(context) {
+  const answer = (context.actionLatency.chainAnswers ?? []).filter(({ kind }) => kind === "InteractSite").at(-1);
+  const slot = answer?.answered.find(({ model }) => model === "ArmySlot")?.value;
+  if (BigInt(slot?.stamina.amount ?? 0) !== 137n) return false;
   return siteUsedUp(context);
 }
 
@@ -2440,8 +2448,8 @@ function spireCardOffersDepths({ played, seen }) {
   if (!shown.army) return failed("Spire dropped the army", shown);
   const offered = shown.depths.map(({ depth, line, button, enabled }) => `${depth}|${line}|${button}|${enabled}`);
   const expected = [
-    "Ethereal I|30 stamina|Enter|true",
-    "Ethereal II|40 stamina|Enter|true",
+    "Ethereal I|null|Enter|true",
+    "Ethereal II|null|Enter|true",
     "Ethereal III|Research it to open it|Research|true",
   ];
   if (JSON.stringify(offered) !== JSON.stringify(expected))
@@ -2755,6 +2763,7 @@ const LAB_RUIN_FIGHT_STEPS = [
     verify: fightCardOpenedCameraStill,
   },
   { name: "attack", play: attackTheRuin, settleMs: 0, verify: ruinClearedCameraStill },
+  { name: "feed-after-the-clear", play: readTheFeedAfterTheClear, settleMs: 0, verify: theClearIsOneRow },
 ];
 /**
  * The owner's card of 31 October ("I should still have the projection even if I'm too far I think"): the army two tiles
@@ -2905,6 +2914,40 @@ async function attackTheRuin({ browser, extraScreenshot }) {
   extraScreenshot("chest");
   await sleep(CAMERA_REPORT_MS);
   return { attack, before, after, settled: browser.read(FIGHT_STATE) };
+}
+
+/**
+ * The Feed after the ruin's clear (owner, 31 October: "in the feed can this be a single line ?"): the attack that
+ * cleared the ruin is told by the clear's one row, with no row of its own. A desktop opens the Feed from its place, a
+ * phone from its place bar. Rows are read by their story (`data-story`, src/ui/features/event-feed/feed-line.tsx).
+ */
+async function readTheFeedAfterTheClear({ browser }) {
+  const opened = browser.observe().panels.includes(HUD_WORDS.feed) || (await openTheFeed(browser));
+  const rows = await readUntil(
+    () => browser.read(FEED_ROW_STORIES),
+    (stories) => stories.includes("SitePayout"),
+    MERGE_WAIT_MS,
+  );
+  return { opened, rows };
+}
+
+/** The Feed opened as a player opens it: a desktop's Feed place, a phone's place bar. */
+async function openTheFeed(browser) {
+  if (!onADesktop()) return tapTheFeed(browser);
+  browser.click(HUD_WORDS.feed);
+  await sleep(1_500);
+  return browser.observe().panels.includes(HUD_WORDS.feed);
+}
+
+const FEED_ROW_STORIES = `JSON.stringify([...document.querySelectorAll("[data-feed-line]")].map((row) => row.dataset.story))`;
+
+function theClearIsOneRow({ played }) {
+  if (!played.opened) return failed(`the ${HUD_WORDS.feed} did not open`, played);
+  const clears = played.rows.filter((story) => story === "SitePayout").length;
+  if (clears !== 1) return failed(`the Feed shows ${clears} rows for the ruin's clear`, played);
+  if (played.rows.includes("BattleEvent"))
+    return failed("the attack that cleared the ruin has a row of its own", played);
+  return completed(played);
 }
 
 function ruinClearedCameraStill({ played }) {

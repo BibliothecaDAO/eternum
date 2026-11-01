@@ -11,6 +11,8 @@ fn current_seeded_day_is_unlocked_in_full_and_season_end_is_exact() {
     assert_eq!(unlocked(TEST_POOL, clock, 0), TEST_POOL * first.end.into() / clock.game.end_at.into());
     assert!(unlocked(TEST_POOL, clock, 0) > 0);
     assert_eq!(unlocked(TEST_POOL, clock, SEASON_DAYS - 1), TEST_POOL);
+    let largest_pool: u128 = 0xffffffffffffffffffffffffffffffff;
+    assert_eq!(unlocked(largest_pool, clock, SEASON_DAYS - 1), largest_pool);
     let partial = SeasonClock { game: crate::game::GameRegistry { end_at: first.end - 1, ..clock.game }, ..clock };
     assert_eq!(unlocked(TEST_POOL, partial, 0), TEST_POOL);
 }
@@ -593,17 +595,18 @@ fn sparse_rates_keep_fractional_shares_and_prices_stay_between_one_and_the_ceili
     assert!(!fits(minimum, clock(), minimum.price));
 }
 
-#[test]
-fn partial_final_days_use_only_their_remaining_ticks() {
-    let original = clock();
-    let first = crate::days::day_of(original.game, DAY_UNIT, 0);
+#[test_case(name: "merged_stub", 81, 9, 360, 3)]
+#[test_case(name: "clipped_day", 85, 10, 1080, 24)]
+fn final_day_prices_use_clipped_or_merged_ticks(hours: u64, day: u64, yesterday_ticks: u64, price: u128) {
     let clock = SeasonClock {
-        game: crate::game::GameRegistry { end_at: first.end + 2 * original.tick, ..original.game }, ..original,
+        game: crate::game::GameRegistry { seed: 0x5eed, end_at: hours * 3600, ..clock().game },
+        day_unit_seconds: 7200,
+        tick: 40,
     };
-    let yesterday_ticks = (first.end - first.start) / clock.tick;
-    let previous = LordsBudget { rolled_shares: 100000000, ..empty_day(TEST_POOL, 0) };
-    let today = roll(rules(), previous, clock, 1);
-    assert_eq!(today.price, TEST_POOL * yesterday_ticks.into() / (100000000 * 2));
+    let previous = LordsBudget { rolled_shares: 100000, ..empty_day(TEST_POOL, day - 1) };
+    let today = roll(rules(), previous, clock, day);
+    assert_eq!(today.yesterday_ticks, yesterday_ticks);
+    assert_eq!(today.price, price);
 }
 
 #[test]
@@ -652,6 +655,8 @@ fn season_prizes_issue_once_after_the_end_without_spending_chest_funds() {
     snforge_std::start_cheat_caller_address(d.games, d.actor);
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_err());
     snforge_std::start_cheat_caller_address(d.games, super::authority());
+    assert!(operator.post_frontier_top(game_id, array![0x987654.try_into().unwrap()]).is_err());
+    assert!(operator.frontier_prize(game_id).unwrap().count.is_none());
     assert!(operator.post_frontier_top(game_id, array![d.actor, d.actor]).is_err());
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());
     assert!(operator.post_frontier_top(game_id, array![d.actor]).is_ok());
@@ -687,22 +692,6 @@ fn descending_prize_shares_conserve_every_whole_lords() {
     }
     assert_eq!(crate::frontier_prizes::prize_amount(550, 10, 1), 100);
     assert_eq!(crate::frontier_prizes::prize_amount(550, 10, 10), 10);
-}
-
-#[test]
-#[feature("safe_dispatcher")]
-fn a_late_carry_grows_only_the_chest_pool_and_is_safe_to_retry() {
-    let (d, game_id, _) = super::registrar::setup_unfunded_frontier_chests();
-    super::entry::set_operator(d, super::authority());
-    snforge_std::start_cheat_caller_address(d.games, super::authority());
-    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert!(operator.publish_frontier_pool(game_id, 700, 300).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 900).is_ok());
-    assert!(operator.top_up_frontier_pool(game_id, 899).is_err());
-    let chest = IRelicsDispatcher { contract_address: d.games }.lords_budget(game_id).unwrap();
-    assert_eq!((chest.pool, chest.pool_left), (900, 900));
-    assert_eq!(operator.frontier_prize(game_id).unwrap().pool, 300);
 }
 
 #[test]
@@ -755,4 +744,30 @@ fn automatic_lords_sweep_pays_the_owner_once_and_keeps_live_withdrawals() {
         ),
     );
     assert!(operator.sweep_lords(game_id, 99999).is_err());
+}
+
+
+#[test]
+fn clipped_and_merged_final_days_unlock_the_remaining_pool_at_their_start() {
+    for hours in array![81_u64, 84, 85] {
+        let clock = SeasonClock {
+            game: crate::game::GameRegistry { seed: 0x5eed, end_at: hours * 3600, ..clock().game },
+            day_unit_seconds: 7200,
+            tick: 40,
+        };
+        let last = crate::days::day_of(clock.game, 7200, clock.game.end_at - 1);
+        assert_eq!(last.index, if hours == 81 {
+            9
+        } else {
+            10
+        });
+        assert_eq!(unlocked(TEST_POOL, clock, last.index), TEST_POOL);
+        assert_eq!(
+            unlocked(TEST_POOL, clock, last.index - 1),
+            TEST_POOL * Into::<u64, u128>::into(last.start) / Into::<u64, u128>::into(clock.game.end_at),
+        );
+        let previous = empty_day(TEST_POOL, last.index - 1);
+        let final_budget = roll(rules(), previous, clock, last.index);
+        assert_eq!(available(final_budget, clock), TEST_POOL);
+    }
 }

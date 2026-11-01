@@ -1,3 +1,4 @@
+import { SeasonOver } from "@/shell/season-tab/season-over";
 import { frontierArmyRules } from "../../frontier/army/progression-rules-fixture";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { LAB_SESSION } from "@/shell/lab/app-lab-fixtures";
@@ -123,7 +124,7 @@ const ViewLab = ({ view }: { view: View }) => {
           return (
             <>
               {frontier ? (
-                rules && <FrontierHud rules={rules} />
+                rules && <FrontierHud seasonOver={SeasonOver} rules={rules} />
               ) : (
                 <>
                   <ArenaHud />

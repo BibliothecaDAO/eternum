@@ -21,7 +21,7 @@ pub enum Discovery {
 // One reveal in two hundred, in basis points, when spire discovery is on.
 pub const SPIRE_FIND_BPS: u128 = 50;
 
-pub const FRONTIER_CHEST_FIND_BPS: u128 = 1;
+pub const FRONTIER_CHEST_FIND_BPS: u128 = 5;
 
 pub fn frontier_chest(seed: u256) -> bool {
     crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000) < FRONTIER_CHEST_FIND_BPS

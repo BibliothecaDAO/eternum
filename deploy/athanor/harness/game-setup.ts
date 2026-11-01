@@ -10,7 +10,6 @@ import {
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { nativePresetForId } from "../../../config/source/native";
 import { GAME_ENVIRONMENTS } from "../../../config/shared/game-environments";
-import { seasonSeconds } from "../../../packages/core/src/utils/days";
 import { readShardManifest } from "../../../packages/chain/shard-manifest.js";
 import type { NativeWorldManifest } from "../../../config/deployer/clean/world/native/types";
 import { assertProviderChain } from "../../../packages/chain/chain-guard.js";
@@ -46,7 +45,7 @@ export async function launchHarnessGame(input: {
       presetId: input.presetId,
       startMainAt: startAt,
       chainTimestamp: startAt - 60,
-      durationSeconds: harnessSeasonSeconds(preset.rules.day_unit_seconds, input.minutes),
+      durationSeconds: harnessSeasonSeconds(preset.rules.tick_config.armies_tick_in_seconds, input.minutes),
       devModeOn: false,
       singleRealmMode: config.settlement.single_realm_mode,
       twoPlayerMode: nativePresetForId(input.presetId).settlementMode === "Duel",
@@ -95,12 +94,10 @@ export function createHarnessAdminProvider(): HarnessProvider {
   return new HarnessProvider(required("HARNESS_ADMIN_RPC_URL"));
 }
 
-/** A harness game outlasts its run by an hour; a season with days lasts whole bags of them, or the contract refuses it. */
-export function harnessSeasonSeconds(dayUnitSeconds: number, minutes: number): number {
+/** A harness game outlasts its run by an hour and ends on its army tick. */
+export function harnessSeasonSeconds(armyTickSeconds: number, minutes: number): number {
   const seconds = Math.ceil(minutes * 60) + 3600;
-  if (dayUnitSeconds === 0) return seconds;
-  const bag = seasonSeconds(1, dayUnitSeconds);
-  return Math.ceil(seconds / bag) * bag;
+  return Math.ceil(seconds / armyTickSeconds) * armyTickSeconds;
 }
 
 /** The deployment environment whose preset definitions hold this preset (Frontier presets live in madara.frontier). */

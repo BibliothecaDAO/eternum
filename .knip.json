@@ -23,6 +23,7 @@
     ".": {
       "entry": [
         "deploy/athanor/scripts/host-accounts.ts",
+        "deploy/athanor/cosigner/main.ts",
         "deploy/release/facts.ts",
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/warm-native-classes.ts",
@@ -262,9 +263,6 @@
     ],
     "packages/!(provider)/**": [
       "classMembers"
-    ],
-    "apps/game/src/services/amm/*.ts": [
-      "files"
     ]
   },
   "rules": {

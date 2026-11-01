@@ -9,7 +9,6 @@ import { requestOrderAt } from "@/three/scenes/worldmap-order-request";
 import { Icon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudCost, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { ARMY, dayLeft, MOVE, RESEARCH, depthName, SPIRE_WORDS, STAMINA } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
@@ -24,7 +23,7 @@ import {
   readExpeditionRules,
 } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import { formatCharge, formatHeldAgainst } from "@bibliothecadao/types";
+import { formatHeldAgainst } from "@bibliothecadao/types";
 import type { Account } from "starknet";
 
 import { reachMark } from "./depth-art";
@@ -88,7 +87,7 @@ export const SpireButton = ({ explorerId, spire }: { explorerId: number; spire: 
 /**
  * A spire's card, whatever the player brought to it. Another realm's says so. The player's own names the army it acts
  * for (the selected one, else one standing beside it) and offers that army each depth its realm has researched: the
- * entry's stamina, or why it cannot go (short of stamina, its landing taken), then Enter, the one step to go. It says
+ * landing's availability, then Enter, the one step to go. It says
  * that entering keeps the army there for the rest of the day, since no command brings it back up; the next depth
  * points at its research; an army away from the spire gets the move beside it.
  */
@@ -137,15 +136,11 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
   const depths = ([1, 2, 3] as const).filter((depth) => depth <= spire.deepest);
   const next = ([1, 2, 3] as const).find((depth) => depth === spire.deepest + 1);
   const choice = (depth: 1 | 2 | 3) => {
-    const cost = store.require("DepthRules", { game_id: gameId, depth }).entry_stamina;
-    if (!actor || !position || !beside) return { cost, why: null, open: false };
+    if (!actor || !position || !beside) return { why: null, open: false };
     // enter_depth lands the army straight below where it stands, one region down per depth.
     const landing = { game_id: gameId, alt: false, col: position.x, row: position.y + depth * rules.spacing };
-    const stamina = actor.stamina?.current;
-    if (stamina === undefined) return { cost, why: null, open: false };
-    if (stamina < cost) return { cost, why: staminaShortfall(stamina, cost), open: false };
-    if (store.get("TileOccupancy", landing)) return { cost, why: SPIRE_WORDS.landingTaken, open: false };
-    return { cost, why: null, open: true };
+    if (store.get("TileOccupancy", landing)) return { why: SPIRE_WORDS.landingTaken, open: false };
+    return { why: null, open: true };
   };
 
   const enter = (army: DockArmy, depth: number) =>
@@ -200,13 +195,13 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       {depthNow === 0 && (
         <div className="flex flex-col gap-1" data-spire-depths>
           {depths.map((depth) => {
-            const { cost, why, open } = choice(depth);
+            const { why, open } = choice(depth);
             return (
               <HudRow
                 key={depth}
                 lead={<Icon name={reachMark(depth)} size={22} />}
                 title={depthName(depth)}
-                detail={why ?? SPIRE_WORDS.cost(formatCharge(cost))}
+                detail={why ?? undefined}
                 disabled={!open}
                 controls={
                   <HudButton

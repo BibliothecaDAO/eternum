@@ -1,4 +1,4 @@
-import { SiteReceipt } from "../frontier/sites/site-receipt";
+import { readClearedSite, SiteReceipt } from "../frontier/sites/site-receipt";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { siteClearXp, siteReward } from "@bibliothecadao/eternum";
@@ -21,7 +21,7 @@ export function ClearedSiteLab() {
   const [error, setError] = useState<string | null>(null);
   const signature = `${kind}:${distance}`;
   const fixture = useMemo(() => campBeside(kind === "camp" ? "Camp" : "Beasts"), [kind]);
-  const reward = useMemo(() => siteReward(fixture.site), [fixture]);
+  const reward = useMemo(() => siteReward(fixture.store, fixture.site), [fixture]);
   const cleared = useMemo(() => {
     const source = campBeside(kind === "camp" ? "Camp" : "Beasts");
     source.store.applyFacts([
@@ -40,7 +40,9 @@ export function ClearedSiteLab() {
       { model: "Structure", key: "0x71", value: null },
       { model: "Guard", key: "0x73", value: null },
     ]);
-    return { site: source.store.require("ExpeditionSite", source.site) };
+    const receipt = readClearedSite(source.store, source.site.game_id, source.site);
+    if (!receipt) throw new Error("Cleared site study requires a receipt");
+    return receipt;
   }, [kind, reward]);
   const name = frontierSiteName(fixture.structure.base.category);
 
@@ -129,7 +131,7 @@ export function ClearedSiteLab() {
                     </span>
                   )}
                   <span>
-                    <strong>{formatAmount(siteClearXp(fixture.site))}</strong> {XP}
+                    <strong>{formatAmount(siteClearXp(fixture.store, fixture.site))}</strong> {XP}
                   </span>
                 </div>
               </>

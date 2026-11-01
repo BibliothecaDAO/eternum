@@ -46,23 +46,25 @@ function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
   const calendar = {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
+    endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
   const seasonEnd = game.clock.end_at;
   if (!Number.isSafeInteger(calendar.startMainAt) || !Number.isSafeInteger(seasonEnd))
     throw new Error(`Game ${game.game_id} has an invalid Frontier calendar`);
   const seconds = now / 1000;
+  if (seconds >= seasonEnd) return null;
   const day =
     seconds < calendar.startMainAt
-      ? dayOf(calendar, calendar.startMainAt)!
-      : dayOf(calendar, dayOf(calendar, seconds)!.end)!;
-  if (day.start >= seasonEnd) return null;
+      ? dayOf(calendar, calendar.startMainAt)
+      : dayOf(calendar, dayOf(calendar, seconds)!.end);
+  if (!day) return null;
   return {
     gameId: game.game_id,
     gameName: game.name,
     day: day.index,
     opensAt: day.start * 1000,
-    endsAt: Math.min(day.end, seasonEnd) * 1000,
+    endsAt: day.end * 1000,
     last: day.end >= seasonEnd,
   };
 }

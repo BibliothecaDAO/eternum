@@ -3,7 +3,13 @@ import { act, createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { plays, stops } = vi.hoisted(() => ({ plays: [] as string[], stops: [] as unknown[] }));
+const { plays, stops, wallet } = vi.hoisted(() => ({
+  plays: [] as string[],
+  stops: [] as unknown[],
+  wallet: { line: null as string | null },
+}));
+// Whether the account has a linked wallet stands in: the prompt's own rule is link-wallet.test.tsx's.
+vi.mock("../value/link-wallet", () => ({ useLinkWalletPrompt: () => wallet.line }));
 vi.mock("@/audio/core/AudioManager", () => ({
   AudioManager: {
     getInstance: () => ({
@@ -42,6 +48,7 @@ beforeEach(() => {
   MotionGlobalConfig.skipAnimations = true;
   plays.length = 0;
   stops.length = 0;
+  wallet.line = null;
   clock = 4;
   pool = createChestPool();
   host = document.createElement("div");
@@ -102,6 +109,19 @@ describe("a chest and its moment, on one clock", () => {
 
     await frame(3);
     expect(scene()).toEqual({ chest: false, veil: false, lords: null, labelsHidden: false });
+  });
+
+  it("tells an account with no linked wallet, under the LORDS, how to receive them; nothing with a wallet", async () => {
+    await present(RUIN);
+    await frame(1.1);
+    expect(document.querySelector("[data-link-wallet]")).toBeNull();
+    await frame(3);
+    wallet.line = "Link a wallet to receive your LORDS";
+    await present(RUIN);
+    await frame(1.1);
+    expect(document.querySelector("[data-link-wallet]")?.textContent).toBe("Link a wallet to receive your LORDS");
+    // The moment still takes no pointer: the purse's Withdraw is where the wallet is linked.
+    expect(document.querySelector("[data-chest-moment] button")).toBeNull();
   });
 
   it("holds the veil through a long gap between frames, and shows the LORDS only when the lid actually opens", async () => {

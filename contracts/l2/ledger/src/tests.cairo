@@ -13,10 +13,12 @@ use openzeppelin::security::interface::{IPausableDispatcher, IPausableDispatcher
 use openzeppelin::token::erc20::interface::{IERC20Dispatcher, IERC20DispatcherTrait};
 use openzeppelin::token::erc721::interface::{IERC721Dispatcher, IERC721DispatcherTrait};
 use openzeppelin::upgrades::interface::{IUpgradeableDispatcher, IUpgradeableDispatcherTrait};
+use snforge_std::signature::KeyPairTrait;
+use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{
-    ContractClassTrait, DeclareResultTrait, EventSpyTrait, declare, get_class_hash, spy_events, start_cheat_block_hash,
-    start_cheat_block_number, start_cheat_block_timestamp, start_cheat_caller_address, stop_cheat_block_number,
-    stop_cheat_block_timestamp, stop_cheat_caller_address,
+    ContractClassTrait, DeclareResultTrait, EventSpyTrait, EventsFilterTrait, declare, get_class_hash, spy_events,
+    start_cheat_block_hash, start_cheat_block_number, start_cheat_block_timestamp, start_cheat_caller_address,
+    stop_cheat_block_number, stop_cheat_block_timestamp, stop_cheat_caller_address,
 };
 use starknet::ContractAddress;
 
@@ -56,8 +58,8 @@ mod TestMMR {
 const GAME_KEY: GameKey = GameKey { shard: 'shard', game_id: 7 };
 const SLOT_KEY: SlotKey = SlotKey { shard: 'shard', slot_id: 42 };
 const PRESET_ID: u32 = 3;
-const START: u64 = 100;
-const END: u64 = 200;
+const START: u64 = 1000;
+const END: u64 = 1100;
 const SEASON_END: u64 = END + 1000;
 
 fn ADMIN() -> ContractAddress {
@@ -121,7 +123,9 @@ fn deploy_ledger() -> Fixture {
     let cosmetics = deploy_collection("devCosmetics");
     loot_chest.serialize(ref constructor);
     cosmetics.serialize(ref constructor);
+    cosigner_key().public_key.serialize(ref constructor);
     let (ledger_address, _) = ledger_class.deploy(@constructor).unwrap();
+    snforge_std::start_cheat_chain_id(ledger_address, COSIGN_CHAIN);
     let ledger = IGameLedgerDispatcher { contract_address: ledger_address };
     grant_collection_minter(loot_chest, ledger_address);
     grant_collection_minter(cosmetics, ledger_address);
@@ -146,7 +150,6 @@ fn deploy_ledger() -> Fixture {
     }
 }
 
-
 fn configure_game(fixture: Fixture, preset: Preset) -> Fixture {
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.register_preset(PRESET_ID, preset, test_bands(), test_items());
@@ -169,7 +172,6 @@ fn fund_and_approve_player(fixture: @Fixture, owner: ContractAddress, amount: u2
     IERC20Dispatcher { contract_address: fixture.ledger.lords() }.approve(*fixture.ledger_address, amount);
     stop_cheat_caller_address(*fixture.lords_address);
 }
-
 
 fn register_players(fixture: @Fixture, count: u16) {
     for index in 0..count {
@@ -293,16 +295,24 @@ fn admin_cannot_rescue_managed_lords() {
 }
 
 #[test]
-fn payout_pause_keeps_registration_open() {
+#[feature("safe_dispatcher")]
+fn pause_stops_registration_until_unpaused() {
     let fixture = deploy_fixture(default_preset());
     fund_and_approve_player(@fixture, player(0), 500);
 
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, player(0));
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.register(SLOT_KEY, false, false).is_err());
+    assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 0);
+    assert!(fixture.lords.balance_of(player(0)) == 500);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.unpause();
+    start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.register(SLOT_KEY, false, false);
-
     assert!(fixture.ledger.get_slot(SLOT_KEY).pool == 500);
+    assert!(fixture.lords.balance_of(player(0)) == 0);
 }
 
 #[test]
@@ -422,7 +432,8 @@ fn cancellation_refunds_exact_registration_payment() {
 }
 
 #[test]
-fn paused_ledger_allows_refunds() {
+#[should_panic(expected: 'Pausable: paused')]
+fn paused_ledger_refuses_refunds() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 1);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
@@ -602,6 +613,23 @@ fn two_player_slot_results_update_both_season_ratings() {
     assert!(fixture.ledger.get_season_mmr(1, player(1)) == loser.mmr_after);
 }
 
+fn pay_at_timestamp(
+    fixture: @Fixture,
+    not_before: u64,
+    shard: felt252,
+    season_id: u32,
+    claim_id: felt252,
+    wallet: ContractAddress,
+    amount: u256,
+) {
+    start_cheat_block_timestamp(*fixture.ledger_address, not_before);
+    signed_pay(*fixture.ledger, shard, season_id, claim_id, wallet, amount);
+}
+
+fn settle_with_signature(fixture: @Fixture, shard: felt252, season_id: u32, chest: u256, prize: u256) {
+    signed_settle(*fixture.ledger, shard, season_id, chest, prize);
+}
+
 fn funded_frontier() -> Fixture {
     let fixture = deploy_ledger();
     fund_and_approve_player(@fixture, ADMIN(), 1000);
@@ -678,29 +706,29 @@ fn frontier_funding_requires_an_enabled_preset_calendar() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn frontier_funding_requires_a_positive_whole_bag_window() {
+fn frontier_funding_requires_a_positive_window() {
     let fixture = deploy_fixture(default_preset());
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    for end in array![START - 1, START, START + 1, START + 19, START + 21, END - 1] {
+    for end in array![START - 1, START] {
         assert!(safe.fund_frontier('shard', 1, PRESET_ID, START, end, 0x5eed, 1000).is_err());
         assert!(fixture.lords.balance_of(ADMIN()) == 1000);
     }
-    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, START + 20, 0x5eed, 1000);
-    assert!(fixture.ledger.get_frontier('shard', 1).end == START + 20);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, START + 21, 0x5eed, 1000);
+    assert!(fixture.ledger.get_frontier('shard', 1).end == START + 21);
 }
 
 #[test]
 fn different_season_lengths_share_one_preset_and_keep_their_own_unlock_and_settlement() {
     let fixture = funded_frontier();
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    for (season_id, end) in array![(2_u32, START + 20), (3, START + 60)] {
+    for (season_id, end) in array![(2_u32, START + 20), (3, START + 61)] {
         fund_and_approve_player(@fixture, ADMIN(), 1000);
         fixture.ledger.fund_frontier('shard', season_id, PRESET_ID, START, end, 0x5eed, 1000);
     }
     let claim_window: u64 = default_preset().claim_window_seconds.into();
-    for (season_id, end) in array![(2_u32, START + 20), (3, START + 60), (1, END)] {
+    for (season_id, end) in array![(2_u32, START + 20), (3, START + 61), (1, END)] {
         let season = fixture.ledger.get_frontier('shard', season_id);
         assert!(season.start == START && season.end == end && season.preset_id == PRESET_ID);
         start_cheat_block_timestamp(fixture.ledger_address, START - 1);
@@ -717,13 +745,12 @@ fn different_season_lengths_share_one_preset_and_keep_their_own_unlock_and_settl
         start_cheat_block_timestamp(fixture.ledger_address, deadline);
         let late_claim = (season_id + 100).into();
         fixture.ledger.report_withdrawal('shard', season_id, late_claim, 1, 0, 0);
-        fixture.ledger.pay('shard', season_id, late_claim, player(0), 1);
-        fixture.ledger.settle_frontier('shard', season_id, 1, 0);
+        pay_at_timestamp(@fixture, deadline, 'shard', season_id, late_claim, player(0), 1);
+        signed_settle(fixture.ledger, 'shard', season_id, 1, 0);
         assert!(fixture.ledger.get_frontier('shard', season_id).closed);
     }
-    assert!(fixture.ledger.frontier_carry('shard') == 2997);
+    assert!(fixture.lords.balance_of(TREASURY()) == 2997);
     assert!(fixture.lords.balance_of(player(0)) == 3);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
 }
 
 #[test]
@@ -732,14 +759,14 @@ fn frontier_unlock_rolls_over_and_retries_pay_once() {
     start_cheat_block_timestamp(fixture.ledger_address, START);
     assert!(fixture.ledger.frontier_unlocked('shard', 1) == 40);
     fixture.ledger.report_withdrawal('shard', 1, 'withdrawal', 40, 0, 0);
-    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 40);
-    fixture.ledger.pay('shard', 1, 'withdrawal', player(1), 999);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'withdrawal', player(0), 40);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'withdrawal', player(1), 999);
     assert!(fixture.lords.balance_of(player(0)) == 40);
     assert!(fixture.lords.balance_of(player(1)) == 0);
     assert!(fixture.ledger.get_payment('shard', 'withdrawal').amount == 40);
     start_cheat_block_timestamp(fixture.ledger_address, END + 1);
     fixture.ledger.report_withdrawal('shard', 1, 'next', 960, 0, 0);
-    fixture.ledger.pay('shard', 1, 'next', player(0), 960);
+    pay_at_timestamp(@fixture, END + 1, 'shard', 1, 'next', player(0), 960);
     assert!(fixture.ledger.get_frontier('shard', 1).paid == 1000);
 }
 
@@ -747,11 +774,11 @@ fn frontier_unlock_rolls_over_and_retries_pay_once() {
 #[should_panic(expected: "Ledger: unlock exceeded")]
 fn frontier_refuses_borrowing_future_unlock() {
     let fixture = funded_frontier();
-    start_cheat_block_timestamp(fixture.ledger_address, START);
     fixture.ledger.report_withdrawal('shard', 1, 'first', 30, 0, 0);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 30);
     fixture.ledger.report_withdrawal('shard', 1, 'second', 11, 0, 0);
-    fixture.ledger.pay('shard', 1, 'second', player(0), 11);
+    start_cheat_block_timestamp(fixture.ledger_address, START);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'first', player(0), 30);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'second', player(0), 11);
 }
 
 #[test]
@@ -759,7 +786,7 @@ fn frontier_refuses_borrowing_future_unlock() {
 fn frontier_refuses_before_start() {
     let fixture = funded_frontier();
     fixture.ledger.report_withdrawal('shard', 1, 'first', 1, 0, 0);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 1);
+    pay_at_timestamp(@fixture, 0, 'shard', 1, 'first', player(0), 1);
 }
 
 #[test]
@@ -785,7 +812,7 @@ fn pauser_stops_frontier_payments() {
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     start_cheat_block_timestamp(fixture.ledger_address, END);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 1000);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'first', player(0), 1000);
 }
 
 #[test]
@@ -803,22 +830,22 @@ fn pauser_cannot_pay() {
     let fixture = funded_frontier();
     grant_pauser(@fixture);
     start_cheat_block_timestamp(fixture.ledger_address, END);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 1000);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'first', player(0), 1000);
 }
 
 #[test]
-fn frontier_close_returns_only_unspent_custody_even_when_paused() {
+#[should_panic(expected: 'Pausable: paused')]
+fn frontier_close_refuses_even_fully_paid_settlement_while_paused() {
     let fixture = funded_frontier();
-    start_cheat_block_timestamp(fixture.ledger_address, 150);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 50);
     fixture.ledger.report_withdrawal('shard', 1, 'first', 300, 0, 0);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 300);
+    pay_at_timestamp(@fixture, START + 50, 'shard', 1, 'first', player(0), 300);
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 300, 0);
-    assert!(fixture.ledger.frontier_carry('shard') == 700);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
+    signed_settle(fixture.ledger, 'shard', 1, 300, 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 700);
     assert!(fixture.ledger.get_frontier('shard', 1).closed);
 }
 
@@ -828,8 +855,8 @@ fn frontier_close_refuses_later_claims() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 0, 0);
-    fixture.ledger.pay('shard', 1, 'first', player(0), 1);
+    signed_settle(fixture.ledger, 'shard', 1, 0, 0);
+    pay_at_timestamp(@fixture, END + default_preset().claim_window_seconds.into(), 'shard', 1, 'first', player(0), 1);
 }
 
 #[test]
@@ -843,14 +870,14 @@ fn frontier_claim_namespace_binds_shard_and_survives_season_close() {
     fixture.ledger.report_withdrawal('other', 1, 'tx', 1000, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay('shard', 1, 'tx', player(0), 1000);
-    fixture.ledger.pay('other', 1, 'tx', player(1), 1000);
+    pay_at_timestamp(@fixture, END + default_preset().claim_window_seconds.into(), 'shard', 1, 'tx', player(0), 1000);
+    pay_at_timestamp(@fixture, END + default_preset().claim_window_seconds.into(), 'other', 1, 'tx', player(1), 1000);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 1000, 0);
+    signed_settle(fixture.ledger, 'shard', 1, 1000, 0);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay('shard', 2, 'tx', player(0), 1000);
+    pay_at_timestamp(@fixture, END + default_preset().claim_window_seconds.into(), 'shard', 2, 'tx', player(0), 1000);
     assert!(fixture.lords.balance_of(player(0)) == 1000);
     assert!(fixture.lords.balance_of(player(1)) == 1000);
 }
@@ -870,11 +897,20 @@ fn sword_and_shield_payments_feed_the_same_season() {
 }
 
 #[test]
-fn payout_pause_still_allows_results_and_mmr() {
+#[feature("safe_dispatcher")]
+fn pause_stops_results_and_mmr_until_unpaused() {
     let fixture = deploy_fixture(default_preset());
     register_players(@fixture, 6);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe.apply_results(SLOT_KEY, GAME_KEY.game_id, ranked_players(6)).is_err());
+    assert!(fixture.ledger.get_result_commitment(GAME_KEY) == 0);
+    assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).rank == 0);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.unpause();
     apply_results(@fixture, ranked_players(6));
     assert!(fixture.ledger.get_result_commitment(GAME_KEY) != 0);
     assert!(fixture.ledger.get_player_result(GAME_KEY, player(0)).mmr_after > 1000);
@@ -1496,7 +1532,6 @@ fn multiple_games_count_a_participant_once_and_accumulate_one_pool() {
     assert!(fixture.ledger.get_season(1).pool == 6000);
 }
 
-
 #[test]
 #[should_panic(expected: "Ledger: slot outside season")]
 fn a_game_cannot_end_at_the_instant_its_result_ratings_freeze() {
@@ -1524,7 +1559,7 @@ fn frontier_season_chests_and_unfinished_game_custody_are_conserved_together() {
     start_cheat_block_timestamp(fixture.ledger_address, END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.report_withdrawal('shard', 1, 'withdrawal', 1000, 0, 0);
-    fixture.ledger.pay('shard', 1, 'withdrawal', player(0), 1000);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'withdrawal', player(0), 1000);
     open_reward(@fixture, player(0), 1);
     assert!(fixture.ledger.get_season(1).pool == 800);
     assert!(fixture.ledger.get_slot(unfinished).pool == 500);
@@ -1686,7 +1721,6 @@ fn a_season_cannot_mix_chest_presets() {
     fixture.ledger.open_slot(SlotKey { shard: 'shard', slot_id: 8 }, 1, 2, START, END);
 }
 
-
 #[test]
 #[should_panic(expected: "Ledger: invalid chest odds")]
 fn odds_must_fill_the_whole_draw_space() {
@@ -1782,14 +1816,13 @@ fn claim_window_preserves_payments_through_its_last_second() {
     assert!(fixture.ledger.frontier_claim_deadline('shard', 1) == deadline);
     start_cheat_block_timestamp(fixture.ledger_address, deadline - 1);
     fixture.ledger.report_withdrawal('shard', 1, 'last', 400, 0, 0);
-    fixture.ledger.pay('shard', 1, 'last', player(0), 400);
+    pay_at_timestamp(@fixture, deadline - 1, 'shard', 1, 'last', player(0), 400);
     start_cheat_block_timestamp(fixture.ledger_address, deadline);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
-    assert!(fixture.ledger.frontier_carry('shard') == 600);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
+    signed_settle(fixture.ledger, 'shard', 1, 400, 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay('shard', 1, 'last', player(0), 400);
+    pay_at_timestamp(@fixture, deadline, 'shard', 1, 'last', player(0), 400);
     assert!(fixture.lords.balance_of(player(0)) == 400);
 }
 
@@ -1798,7 +1831,9 @@ fn a_reported_receipt_can_be_paid_after_the_window_until_settled() {
     let fixture = funded_frontier();
     fixture.ledger.report_withdrawal('shard', 1, 'delayed', 400, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into() + 1);
-    fixture.ledger.pay('shard', 1, 'delayed', player(0), 400);
+    pay_at_timestamp(
+        @fixture, END + default_preset().claim_window_seconds.into() + 1, 'shard', 1, 'delayed', player(0), 400,
+    );
     assert!(fixture.lords.balance_of(player(0)) == 400);
 }
 
@@ -1855,61 +1890,34 @@ fn reported_withdrawals_keep_the_same_receipt_on_exact_retries() {
     let report = fixture.ledger.get_payment('shard', 'pending');
     assert!(!report.paid && report.amount == 400 && report.wallet.is_zero());
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
-    fixture.ledger.pay('shard', 1, 'pending', player(0), 400);
+    pay_at_timestamp(
+        @fixture, END + default_preset().claim_window_seconds.into(), 'shard', 1, 'pending', player(0), 400,
+    );
     fixture.ledger.report_withdrawal('shard', 1, 'pending', 400, 0, 0);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
-    assert!(fixture.ledger.frontier_carry('shard') == 600);
-    assert!(fixture.lords.balance_of(TREASURY()) == 0);
+    signed_settle(fixture.ledger, 'shard', 1, 400, 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
 }
 
 #[test]
 #[feature("safe_dispatcher")]
-fn deadline_cannot_forfeit_reported_or_unreported_lords() {
+fn unpaid_reports_block_early_settlement_and_expire_only_at_the_deadline() {
     let fixture = funded_frontier();
-    let deadline = END + default_preset().claim_window_seconds.into();
-    start_cheat_block_timestamp(fixture.ledger_address, deadline);
-    fund_and_approve_player(@fixture, ADMIN(), 1000);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 2, PRESET_ID, END, deadline + 100, 0x5eed, 1000);
+    let deadline = fixture.ledger.frontier_claim_deadline('shard', 1);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    for reported in array![false, true] {
-        start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-        if reported {
-            fixture.ledger.report_withdrawal('shard', 1, 'pending', 400, 0, 0);
-        }
-        assert!(safe.settle_frontier('shard', 1, 400, 0).is_err());
-        start_cheat_caller_address(fixture.ledger_address, ADMIN());
-        assert!(
-            starknet::syscalls::call_contract_syscall(
-                fixture.ledger_address, selector!("close_frontier"), array!['shard', 1].span(),
-            )
-                .is_err(),
-        );
-        fixture.ledger.apply_frontier_carry('shard', 2);
-        assert!(!fixture.ledger.get_frontier('shard', 1).closed);
-        assert!(fixture.ledger.frontier_carry('shard') == 0);
-        assert!(fixture.ledger.get_frontier('shard', 2).pool == 1000);
-    }
-    fixture.ledger.pause();
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    assert!(safe.pay('shard', 1, 'pending', player(0), 400).is_err());
-    assert!(safe.settle_frontier('shard', 1, 400, 0).is_err());
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.unpause();
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay('shard', 1, 'pending', player(0), 400);
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
-    assert!(fixture.ledger.frontier_carry('shard') == 600);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.apply_frontier_carry('shard', 2);
-    fixture.ledger.apply_frontier_carry('shard', 2);
-    assert!(fixture.ledger.get_frontier('shard', 1).closed);
-    assert!(fixture.ledger.get_frontier('shard', 2).pool == 1600);
-    assert!(fixture.ledger.frontier_carry('shard') == 0);
-    assert!(fixture.lords.balance_of(player(0)) == 400);
-    assert!(fixture.lords.balance_of(fixture.ledger_address) == 1600);
+    fixture.ledger.report_withdrawal('shard', 1, 'pending', 400, 0, 0);
+    start_cheat_block_timestamp(fixture.ledger_address, deadline - 1);
+    assert!(safe_settle(safe, 'shard', 1, 0, 0).is_err());
+    assert!(safe_settle(safe, 'shard', 1, 400, 0).is_err());
+    assert!(!fixture.ledger.get_frontier('shard', 1).closed);
+    start_cheat_block_timestamp(fixture.ledger_address, deadline);
+    signed_settle(fixture.ledger, 'shard', 1, 0, 0);
+    signed_settle(fixture.ledger, 'shard', 1, 0, 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 1000);
+    assert!(safe_pay(safe, 'shard', 1, 'pending', player(0), 400).is_err());
+    assert!(safe.report_withdrawal('shard', 1, 'new', 1, 0, 0).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
 }
 
 #[test]
@@ -1918,7 +1926,7 @@ fn a_pending_debt_has_no_recipient_until_payment() {
     fixture.ledger.report_withdrawal('shard', 1, 'pending', 400, 0, 0);
     assert!(fixture.ledger.get_payment('shard', 'pending').wallet.is_zero());
     start_cheat_block_timestamp(fixture.ledger_address, END);
-    fixture.ledger.pay('shard', 1, 'pending', player(1), 400);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'pending', player(1), 400);
     let paid = fixture.ledger.get_payment('shard', 'pending');
     assert!(paid.paid && paid.wallet == player(1) && paid.amount == 400);
     assert!(fixture.lords.balance_of(player(0)) == 0);
@@ -1932,7 +1940,7 @@ fn a_failed_payment_preserves_the_reported_receipt() {
     fixture.ledger.report_withdrawal('shard', 1, 'pending', 1000, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, START - 1);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.pay('shard', 1, 'pending', player(0), 1000).is_err());
+    assert!(safe_pay(safe, 'shard', 1, 'pending', player(0), 1000).is_err());
     assert!(!fixture.ledger.get_payment('shard', 'pending').paid);
 }
 
@@ -1941,8 +1949,8 @@ fn a_delayed_sweep_can_report_and_pay_after_the_old_deadline() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, END + default_preset().claim_window_seconds.into());
     fixture.ledger.report_withdrawal('shard', 1, 'late', 1, 0, 0);
-    fixture.ledger.pay('shard', 1, 'late', player(0), 1);
-    fixture.ledger.settle_frontier('shard', 1, 1, 0);
+    pay_at_timestamp(@fixture, END + default_preset().claim_window_seconds.into(), 'shard', 1, 'late', player(0), 1);
+    signed_settle(fixture.ledger, 'shard', 1, 1, 0);
     assert!(fixture.ledger.get_frontier('shard', 1).closed);
     assert!(fixture.lords.balance_of(player(0)) == 1);
 }
@@ -1952,7 +1960,7 @@ fn a_delayed_sweep_can_report_and_pay_after_the_old_deadline() {
 fn payment_cannot_bypass_reporting_the_debt() {
     let fixture = funded_frontier();
     start_cheat_block_timestamp(fixture.ledger_address, START);
-    fixture.ledger.pay('shard', 1, 'missing', player(0), 1);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'missing', player(0), 1);
 }
 
 #[test]
@@ -1962,11 +1970,11 @@ fn reported_amount_and_paid_recipient_are_immutable() {
     fixture.ledger.report_withdrawal('shard', 1, 'claim', 40, 0, 0);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     assert!(safe.report_withdrawal('shard', 1, 'claim', 41, 0, 0).is_err());
-    assert!(safe.pay('shard', 1, 'claim', player(1), 41).is_err());
+    assert!(safe_pay(safe, 'shard', 1, 'claim', player(1), 41).is_err());
     start_cheat_block_timestamp(fixture.ledger_address, START);
-    fixture.ledger.pay('shard', 1, 'claim', player(1), 40);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'claim', player(1), 40);
     assert!(safe.report_withdrawal('shard', 999, 'claim', 40, 0, 0).is_err());
-    fixture.ledger.pay('shard', 1, 'claim', player(0), 999);
+    pay_at_timestamp(@fixture, START, 'shard', 1, 'claim', player(0), 999);
     let paid = fixture.ledger.get_payment('shard', 'claim');
     assert!(paid.paid && paid.season_id == 1 && paid.wallet == player(1) && paid.amount == 40);
     assert!(fixture.lords.balance_of(player(1)) == 40 && fixture.lords.balance_of(player(0)) == 0);
@@ -1981,25 +1989,26 @@ fn reports_do_not_reserve_money_or_authorize_payment_over_custody() {
     fixture.ledger.report_withdrawal('shard', 1, 'first', 600, 0, 0);
     fixture.ledger.report_withdrawal('shard', 1, 'second', 400, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, END);
-    assert!(safe.pay('shard', 1, 'oversized', player(0), 1001).is_err());
-    fixture.ledger.pay('shard', 1, 'first', player(0), 600);
+    assert!(safe_pay(safe, 'shard', 1, 'oversized', player(0), 1001).is_err());
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'first', player(0), 600);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.report_withdrawal('shard', 1, 'paused_report', 1001, 0, 0);
+    assert!(safe.report_withdrawal('shard', 1, 'paused_report', 1001, 0, 0).is_err());
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.unpause();
     start_cheat_block_timestamp(fixture.ledger_address, fixture.ledger.frontier_claim_deadline('shard', 1));
     assert!(!fixture.ledger.get_frontier('shard', 1).closed);
-    assert!(fixture.ledger.frontier_carry('shard') == 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 0);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay('shard', 1, 'second', player(1), 400);
-    assert!(safe.pay('shard', 1, 'oversized', player(0), 1001).is_err());
-    fixture.ledger.pay('shard', 1, 'first', player(1), 600);
+    pay_at_timestamp(
+        @fixture, fixture.ledger.frontier_claim_deadline('shard', 1), 'shard', 1, 'second', player(1), 400,
+    );
+    assert!(safe_pay(safe, 'shard', 1, 'oversized', player(0), 1001).is_err());
+    pay_at_timestamp(@fixture, fixture.ledger.frontier_claim_deadline('shard', 1), 'shard', 1, 'first', player(1), 600);
     assert!(fixture.lords.balance_of(player(0)) == 600);
     assert!(fixture.lords.balance_of(player(1)) == 400);
 }
-
 
 #[test]
 fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff() {
@@ -2012,7 +2021,6 @@ fn reporting_grace_accepts_confirmed_receipts_after_the_shards_withdrawal_cutoff
     fixture.ledger.report_withdrawal('shard', 1, 'grace_last', 100, 0, 0);
     assert!(fixture.ledger.get_payment('shard', 'grace_last').amount == 100);
 }
-
 
 #[test]
 #[should_panic(expected: "Ledger: duplicate result owner")]
@@ -2029,7 +2037,6 @@ fn results_reject_duplicate_wallets() {
             array![RankedPlayer { wallet: player(0), rank: 1 }, RankedPlayer { wallet: player(0), rank: 2 }],
         );
 }
-
 
 #[test]
 #[feature("safe_dispatcher")]
@@ -2123,7 +2130,7 @@ fn one_slot_accepts_more_than_one_game_and_preserves_payment_ownership() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn unseated_refund_is_exact_once_and_remains_available_while_paused() {
+fn unseated_refund_waits_for_unpause_then_returns_exactly_once() {
     let fixture = deploy_fixture(default_preset());
     fund_and_approve_player(@fixture, player(0), 1500);
     start_cheat_caller_address(fixture.ledger_address, player(0));
@@ -2133,6 +2140,12 @@ fn unseated_refund_is_exact_once_and_remains_available_while_paused() {
     fixture.ledger.mark_refundable(SLOT_KEY, array![player(0)]);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, player(0));
+    let paused = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(paused.refund(SLOT_KEY).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.unpause();
     start_cheat_caller_address(fixture.ledger_address, player(0));
     fixture.ledger.refund(SLOT_KEY);
     assert!(fixture.lords.balance_of(player(0)) == 1500);
@@ -2261,22 +2274,26 @@ fn funding_after_start_preserves_the_original_unlock_and_payment_limit() {
     let fixture = deploy_ledger();
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.register_preset(PRESET_ID, default_preset(), test_bands(), test_items());
-    start_cheat_block_timestamp(fixture.ledger_address, START + 4);
-    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1000);
+    fixture
+        .ledger
+        .register_preset(PRESET_ID, Preset { day_unit_seconds: 1000, ..default_preset() }, test_bands(), test_items());
+    start_cheat_block_timestamp(fixture.ledger_address, START + 4000);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, START + 100000, 0x5eed, 1000);
     let season = fixture.ledger.get_frontier('shard', 1);
-    assert!(season.start == START && season.end == END && season.seed == 0x5eed);
+    assert!(season.start == START && season.end == START + 100000 && season.seed == 0x5eed);
     assert!(fixture.ledger.frontier_unlocked('shard', 1) == 100);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.report_withdrawal('shard', 1, 'elapsed', 100, 0, 0);
-    fixture.ledger.pay('shard', 1, 'elapsed', player(0), 100);
+    pay_at_timestamp(@fixture, START + 4000, 'shard', 1, 'elapsed', player(0), 100);
     fixture.ledger.report_withdrawal('shard', 1, 'future', 1, 0, 0);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 4001);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.pay('shard', 1, 'future', player(0), 1).is_err());
+    assert!(safe_pay(safe, 'shard', 1, 'future', player(0), 1).is_err());
+    assert!(!fixture.ledger.get_payment('shard', 'future').paid);
     assert!(fixture.lords.balance_of(player(0)) == 100);
     assert!(fixture.ledger.get_frontier('shard', 1).paid == 100);
-    start_cheat_block_timestamp(fixture.ledger_address, START + 10);
-    fixture.ledger.pay('shard', 1, 'future', player(0), 1);
+    start_cheat_block_timestamp(fixture.ledger_address, START + 10000);
+    pay_at_timestamp(@fixture, START + 10000, 'shard', 1, 'future', player(0), 1);
     assert!(fixture.lords.balance_of(player(0)) == 101);
 }
 
@@ -2599,7 +2616,9 @@ fn frontier_extension_preserves_custody_blitz_reports_and_retry_after_upgrade() 
     fixture.ledger.extend_frontier(approved::CHAIN_ID, 1);
     start_cheat_block_timestamp(fixture.ledger_address, approved::OLD_END);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.pay(approved::CHAIN_ID, 1, 'pending', player(0), 91 * 1000000000000000000);
+    pay_at_timestamp(
+        @fixture, approved::OLD_END, approved::CHAIN_ID, 1, 'pending', player(0), 91 * 1000000000000000000,
+    );
     assert!(fixture.lords.balance_of(player(0)) == 91 * 1000000000000000000);
     assert!(fixture.ledger.frontier_unlocked(approved::CHAIN_ID, 1) < before.pool);
     start_cheat_block_timestamp(fixture.ledger_address, approved::END);
@@ -2639,7 +2658,7 @@ fn frontier_extension_refuses_to_lower_unlock_below_paid_custody() {
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     let pool = fixture.ledger.get_frontier(approved::CHAIN_ID, 1).pool;
     fixture.ledger.report_withdrawal(approved::CHAIN_ID, 1, 'paid', pool, 0, 0);
-    fixture.ledger.pay(approved::CHAIN_ID, 1, 'paid', player(0), pool);
+    pay_at_timestamp(@fixture, approved::OLD_END - 1, approved::CHAIN_ID, 1, 'paid', player(0), pool);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     assert!(
         IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address }
@@ -2690,7 +2709,6 @@ fn frontier_extension_refuses_changed_funded_identity() {
     }
 }
 
-
 #[test]
 #[feature("safe_dispatcher")]
 fn frontier_extension_refuses_missing_closed_or_changed_preset() {
@@ -2740,7 +2758,7 @@ fn frontier_extension_refuses_missing_closed_or_changed_preset() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn frontier_split_prizes_and_chest_carry_have_separate_custody() {
+fn frontier_split_prizes_and_treasury_return_have_separate_custody() {
     let fixture = deploy_ledger();
     let unit: u256 = 1000000000000000000;
     let preset = Preset { frontier_chest_bps: 7000, frontier_top_n: 10, ..default_preset() };
@@ -2760,34 +2778,32 @@ fn frontier_split_prizes_and_chest_carry_have_separate_custody() {
     fixture.ledger.report_withdrawal('shard', 1, 'prize', 60 * unit, 1, 10);
     assert!(safe.report_withdrawal('shard', 1, 'duplicate', 60 * unit, 1, 10).is_err());
     assert!(safe.report_withdrawal('shard', 1, 'wrong_count', 60 * unit, 2, 9).is_err());
-    fixture.ledger.pay('shard', 1, 'prize', player(0), 60 * unit);
-    fixture.ledger.pay('shard', 1, 'prize', player(0), 60 * unit);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'prize', player(0), 60 * unit);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'prize', player(0), 60 * unit);
     fixture.ledger.report_withdrawal('shard', 1, 'chest', 70 * unit, 0, 0);
-    fixture.ledger.pay('shard', 1, 'chest', player(1), 70 * unit);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'chest', player(1), 70 * unit);
     let settled = fixture.ledger.get_frontier('shard', 1);
     assert!((settled.paid, settled.prize_paid) == (70 * unit, 60 * unit), "separate paid totals");
     let next_start = END + preset.claim_window_seconds.into();
     start_cheat_block_timestamp(fixture.ledger_address, next_start);
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
     fixture.ledger.report_withdrawal('shard', 1, 'late_prize', 54 * unit, 2, 10);
-    fixture.ledger.pay('shard', 1, 'late_prize', player(2), 54 * unit);
+    pay_at_timestamp(@fixture, next_start, 'shard', 1, 'late_prize', player(2), 54 * unit);
     let settled = fixture.ledger.get_frontier('shard', 1);
     assert!(settled.prize_paid == 114 * unit, "late prize paid");
     for rank in 3_u16..11 {
         let amount: u256 = crate::frontier_prizes::prize_amount(330, 10, rank).into();
         let claim = (100 + rank).into();
         fixture.ledger.report_withdrawal('shard', 1, claim, amount * unit, rank, 10);
-        fixture.ledger.pay('shard', 1, claim, player(rank), amount * unit);
+        pay_at_timestamp(@fixture, next_start, 'shard', 1, claim, player(rank), amount * unit);
     }
-    fixture.ledger.settle_frontier('shard', 1, 70 * unit, 330 * unit);
+    signed_settle(fixture.ledger, 'shard', 1, 70 * unit, 330 * unit);
     let settled = fixture.ledger.get_frontier('shard', 1);
-    assert!(fixture.ledger.frontier_carry('shard') == 700 * unit, "unspent carry");
-    assert!(fixture.lords.balance_of(TREASURY()) == 0, "no treasury sweep");
+    assert!(fixture.lords.balance_of(TREASURY()) == 700 * unit, "unspent returned");
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 2, PRESET_ID, next_start, next_start + 100, 0x5eed, 1000 * unit);
+    fixture.ledger.fund_frontier('shard', 2, PRESET_ID, next_start, next_start + 100000, 0x5eed, 1000 * unit);
     let next = fixture.ledger.get_frontier('shard', 2);
-    assert!((next.pool, next.prize_pool) == (1400 * unit, 300 * unit), "carry is all chests");
-    assert!(fixture.ledger.frontier_carry('shard') == 0, "carry consumed");
+    assert!((next.pool, next.prize_pool) == (700 * unit, 300 * unit), "new funding stands alone");
     assert!(
         fixture.lords.balance_of(fixture.ledger_address) == next.pool
             + next.prize_pool
@@ -2798,43 +2814,24 @@ fn frontier_split_prizes_and_chest_carry_have_separate_custody() {
 }
 
 #[test]
-fn carry_can_arrive_after_the_next_season_starts_without_being_split_again() {
-    let fixture = funded_frontier();
-    let next_end = END + default_preset().claim_window_seconds.into() + 100;
-    start_cheat_block_timestamp(fixture.ledger_address, END);
-    fund_and_approve_player(@fixture, ADMIN(), 1000);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.fund_frontier('shard', 2, PRESET_ID, END, next_end, 0x5eed, 1000);
-    start_cheat_block_timestamp(fixture.ledger_address, next_end - 100);
-    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 0, 0);
-    start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    fixture.ledger.apply_frontier_carry('shard', 2);
-    fixture.ledger.apply_frontier_carry('shard', 2);
-    assert!(fixture.ledger.get_frontier('shard', 2).pool == 2000, "late carry added");
-    assert!(fixture.ledger.get_frontier('shard', 2).prize_pool == 0, "carry does not add prizes");
-    assert!(fixture.ledger.frontier_carry('shard') == 0, "carry consumed");
-}
-
-#[test]
 #[feature("safe_dispatcher")]
-fn automatic_settlement_waits_for_every_payment_then_carries_once_at_the_end() {
+fn automatic_settlement_waits_for_every_payment_then_returns_leftovers_once_at_the_end() {
     let fixture = funded_frontier();
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
     fixture.ledger.report_withdrawal('shard', 1, 'swept', 400, 0, 0);
     start_cheat_block_timestamp(fixture.ledger_address, END - 1);
-    assert!(safe.settle_frontier('shard', 1, 400, 0).is_err());
+    assert!(safe_settle(safe, 'shard', 1, 400, 0).is_err());
     start_cheat_block_timestamp(fixture.ledger_address, END);
-    assert!(safe.settle_frontier('shard', 1, 400, 0).is_err());
+    assert!(safe_settle(safe, 'shard', 1, 400, 0).is_err());
     assert!(!fixture.ledger.get_frontier('shard', 1).closed);
-    fixture.ledger.pay('shard', 1, 'swept', player(0), 400);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'swept', player(0), 400);
     start_cheat_caller_address(fixture.ledger_address, player(0));
-    assert!(safe.settle_frontier('shard', 1, 400, 0).is_err());
+    assert!(safe_settle(safe, 'shard', 1, 400, 0).is_err());
     start_cheat_caller_address(fixture.ledger_address, OPERATOR());
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
-    fixture.ledger.settle_frontier('shard', 1, 400, 0);
+    settle_with_signature(@fixture, 'shard', 1, 400, 0);
+    signed_settle(fixture.ledger, 'shard', 1, 400, 0);
     assert!(fixture.ledger.get_frontier('shard', 1).closed);
-    assert!(fixture.ledger.frontier_carry('shard') == 600);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
     assert!(fixture.lords.balance_of(player(0)) == 400);
     assert!(safe.report_withdrawal('shard', 1, 'after_close', 1, 0, 0).is_err());
 }
@@ -2853,9 +2850,473 @@ fn automatic_settlement_waits_for_prize_payments_too() {
     start_cheat_block_timestamp(fixture.ledger_address, END);
     fixture.ledger.report_withdrawal('shard', 1, 'prize', 300 * unit, 1, 1);
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    assert!(safe.settle_frontier('shard', 1, 0, 300 * unit).is_err());
-    fixture.ledger.pay('shard', 1, 'prize', player(0), 300 * unit);
-    fixture.ledger.settle_frontier('shard', 1, 0, 300 * unit);
-    assert!(fixture.ledger.frontier_carry('shard') == 700 * unit);
+    assert!(safe_settle(safe, 'shard', 1, 0, 300 * unit).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    pay_at_timestamp(@fixture, END, 'shard', 1, 'prize', player(0), 300 * unit);
+    settle_with_signature(@fixture, 'shard', 1, 0, 300 * unit);
+    assert!(fixture.lords.balance_of(TREASURY()) == 700 * unit);
     assert!(fixture.lords.balance_of(player(0)) == 300 * unit);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn expiry_returns_unpaid_chests_and_prizes_once_and_closes_both_claim_kinds() {
+    let fixture = deploy_ledger();
+    let unit: u256 = 1000000000000000000;
+    let preset = Preset { frontier_chest_bps: 7000, frontier_top_n: 3, ..default_preset() };
+    fund_and_approve_player(@fixture, ADMIN(), 2000 * unit);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(PRESET_ID, preset, test_bands(), test_items());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1000 * unit);
+    let deadline = fixture.ledger.frontier_claim_deadline('shard', 1);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.report_withdrawal('shard', 1, 'prize', 200 * unit, 1, 2);
+    fixture.ledger.report_withdrawal('shard', 1, 'unpaid_prize', 100 * unit, 2, 2);
+    fixture.ledger.report_withdrawal('shard', 1, 'chest', 100 * unit, 0, 0);
+    fixture.ledger.report_withdrawal('shard', 1, 'unpaid_chest', 400 * unit, 0, 0);
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    signed_pay(fixture.ledger, 'shard', 1, 'prize', player(0), 200 * unit);
+    signed_pay(fixture.ledger, 'shard', 1, 'chest', player(0), 100 * unit);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_block_timestamp(fixture.ledger_address, deadline - 1);
+    assert!(safe_settle(safe, 'shard', 1, 100 * unit, 200 * unit).is_err());
+    start_cheat_block_timestamp(fixture.ledger_address, deadline);
+    let mut spy = spy_events();
+    signed_settle(fixture.ledger, 'shard', 1, 100 * unit, 200 * unit);
+    signed_settle(fixture.ledger, 'shard', 1, 100 * unit, 200 * unit);
+    assert!(fixture.lords.balance_of(TREASURY()) == 700 * unit);
+    assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
+    let events = spy.get_events().emitted_by(fixture.ledger_address);
+    assert!(events.events.len() == 1, "one settlement event");
+    let (_, event) = events.events.at(0);
+    assert!(event.keys.span() == array![selector!("FrontierClosed"), 'shard', 1].span());
+    let chest_returned: u256 = 600 * unit;
+    let prize_returned: u256 = 100 * unit;
+    assert!(
+        event
+            .data
+            .span() == array![
+                TREASURY().into(), chest_returned.low.into(), chest_returned.high.into(), prize_returned.low.into(),
+                prize_returned.high.into(),
+            ]
+            .span(),
+    );
+    assert!(safe_pay(safe, 'shard', 1, 'unpaid_prize', player(1), 100 * unit).is_err());
+    assert!(safe_pay(safe, 'shard', 1, 'unpaid_chest', player(1), 400 * unit).is_err());
+    assert!(safe.report_withdrawal('shard', 1, 'late_prize', 300 * unit, 1, 1).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 300 * unit);
+    assert!(fixture.lords.balance_of(player(1)) == 0);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.fund_frontier('shard', 2, PRESET_ID, deadline, deadline + 100, 0x5eed, 1000 * unit);
+    assert!(fixture.ledger.get_frontier('shard', 2).pool == 700 * unit);
+    assert!(fixture.ledger.get_frontier('shard', 2).prize_pool == 300 * unit);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_season_without_prize_winners_returns_the_whole_reserve_at_expiry() {
+    let fixture = deploy_ledger();
+    let unit: u256 = 1000000000000000000;
+    fund_and_approve_player(@fixture, ADMIN(), 1000 * unit);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture
+        .ledger
+        .register_preset(
+            PRESET_ID, Preset { frontier_chest_bps: 7000, ..default_preset() }, test_bands(), test_items(),
+        );
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1000 * unit);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    assert!(safe_settle(safe, 'shard', 1, 0, 0).is_err());
+    start_cheat_block_timestamp(fixture.ledger_address, fixture.ledger.frontier_claim_deadline('shard', 1));
+    signed_settle(fixture.ledger, 'shard', 1, 0, 0);
+    assert!(fixture.lords.balance_of(TREASURY()) == 1000 * unit);
+    assert!(safe.report_withdrawal('shard', 1, 'late_prize', 300 * unit, 1, 1).is_err());
+}
+
+fn funded_large_frontier() -> Fixture {
+    let fixture = deploy_ledger();
+    let pool = 6000 * 1000000000000000000;
+    fund_and_approve_player(@fixture, ADMIN(), pool);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(PRESET_ID, default_preset(), test_bands(), test_items());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, pool);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn void_report_requires_paused_admin_and_releases_a_squatted_claim_once() {
+    let fixture = funded_frontier();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.report_withdrawal('shard', 1, 'real', 999, 0, 0);
+    assert!(safe.report_withdrawal('shard', 1, 'real', 400, 0, 0).is_err());
+    assert!(safe.void_report('shard', 'real').is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    assert!(safe.void_report('shard', 'real').is_err());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.void_report('shard', 'real').is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.void_report('shard', 'real');
+    fixture.ledger.void_report('shard', 'real');
+    assert!(fixture.ledger.get_payment('shard', 'real').amount == 0);
+    fixture.ledger.unpause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.report_withdrawal('shard', 1, 'real', 400, 0, 0);
+    signed_pay(fixture.ledger, 'shard', 1, 'real', player(0), 400);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    assert!(safe.void_report('shard', 'real').is_err());
+    fixture.ledger.unpause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    settle_with_signature(@fixture, 'shard', 1, 400, 0);
+    assert!(fixture.lords.balance_of(player(0)) == 400);
+    assert!(fixture.lords.balance_of(TREASURY()) == 600);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn void_report_frees_fake_prize_count_but_preserves_paid_rank_reservations() {
+    let fixture = deploy_ledger();
+    let unit: u256 = 1000000000000000000;
+    let preset = Preset { frontier_chest_bps: 7000, frontier_top_n: 3, ..default_preset() };
+    fund_and_approve_player(@fixture, ADMIN(), 1000 * unit);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.register_preset(PRESET_ID, preset, test_bands(), test_items());
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, END, 0x5eed, 1000 * unit);
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    fixture.ledger.report_withdrawal('shard', 1, 'fake', 300 * unit, 1, 1);
+    start_cheat_block_timestamp(fixture.ledger_address, END + 86400);
+    assert!(safe.pay('shard', 1, 'fake', player(0), 300 * unit, 0, 0).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    assert!(safe.report_withdrawal('shard', 1, 'winner', 200 * unit, 1, 2).is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.void_report('shard', 'fake');
+    fixture.ledger.unpause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    fixture.ledger.report_withdrawal('shard', 1, 'winner', 200 * unit, 1, 2);
+    fixture.ledger.report_withdrawal('shard', 1, 'runner', 100 * unit, 2, 2);
+    pay_at_timestamp(@fixture, END + 86400, 'shard', 1, 'winner', player(0), 200 * unit);
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    fixture.ledger.pause();
+    assert!(safe.void_report('shard', 'winner').is_err());
+    fixture.ledger.void_report('shard', 'runner');
+    fixture.ledger.void_report('shard', 'runner');
+    fixture.ledger.unpause();
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.report_withdrawal('shard', 1, 'another', 300 * unit, 1, 1).is_err());
+    assert!(safe.report_withdrawal('shard', 1, 'another', 200 * unit, 1, 2).is_err());
+    fixture.ledger.report_withdrawal('shard', 1, 'runner', 100 * unit, 2, 2);
+    pay_at_timestamp(@fixture, END + 86400, 'shard', 1, 'runner', player(1), 100 * unit);
+    settle_with_signature(@fixture, 'shard', 1, 0, 300 * unit);
+    assert!(fixture.lords.balance_of(player(0)) == 200 * unit);
+    assert!(fixture.lords.balance_of(player(1)) == 100 * unit);
+    assert!(fixture.lords.balance_of(TREASURY()) == 700 * unit);
+}
+
+const COSIGN_CHAIN: felt252 = 'SN_TEST';
+fn cosigner_key() -> StarkCurveKeyPair {
+    KeyPairTrait::from_secret_key(0xc0519)
+}
+fn pay_signature(
+    ledger: IGameLedgerDispatcher, shard: felt252, season: u32, claim: felt252, wallet: ContractAddress, amount: u256,
+) -> (felt252, felt252) {
+    let report = ledger.get_payment(shard, claim);
+    let (_, epoch) = ledger.cosigner();
+    cosigner_key()
+        .sign(
+            game_ledger::contract::payment_hash(
+                COSIGN_CHAIN,
+                ledger.contract_address,
+                epoch,
+                shard,
+                season,
+                claim,
+                wallet,
+                amount,
+                report.prize_rank,
+                report.prize_count,
+            ),
+        )
+        .unwrap()
+}
+#[feature("safe_dispatcher")]
+fn safe_pay(
+    ledger: IGameLedgerSafeDispatcher,
+    shard: felt252,
+    season: u32,
+    claim: felt252,
+    wallet: ContractAddress,
+    amount: u256,
+) -> Result<(), Array<felt252>> {
+    let (r, s) = pay_signature(
+        IGameLedgerDispatcher { contract_address: ledger.contract_address }, shard, season, claim, wallet, amount,
+    );
+    ledger.pay(shard, season, claim, wallet, amount, r, s)
+}
+#[feature("safe_dispatcher")]
+fn signed_pay(
+    ledger: IGameLedgerDispatcher, shard: felt252, season: u32, claim: felt252, wallet: ContractAddress, amount: u256,
+) {
+    let (r, s) = pay_signature(ledger, shard, season, claim, wallet, amount);
+    if ledger.get_payment(shard, claim).paid {
+        assert!(
+            IGameLedgerSafeDispatcher { contract_address: ledger.contract_address }
+                .pay(shard, season, claim, wallet, amount, r, s)
+                .is_err(),
+            "replay refused",
+        );
+    } else {
+        ledger.pay(shard, season, claim, wallet, amount, r, s);
+    }
+}
+fn settle_signature(
+    ledger: IGameLedgerDispatcher, shard: felt252, season: u32, chest: u256, prize: u256,
+) -> (felt252, felt252) {
+    let (_, epoch) = ledger.cosigner();
+    let funding = ledger.get_frontier(shard, season);
+    cosigner_key()
+        .sign(
+            game_ledger::contract::settlement_hash(
+                COSIGN_CHAIN,
+                ledger.contract_address,
+                epoch,
+                shard,
+                season,
+                chest,
+                prize,
+                funding.pool - funding.paid + funding.prize_pool - funding.prize_paid,
+            ),
+        )
+        .unwrap()
+}
+#[feature("safe_dispatcher")]
+fn safe_settle(
+    ledger: IGameLedgerSafeDispatcher, shard: felt252, season: u32, chest: u256, prize: u256,
+) -> Result<(), Array<felt252>> {
+    let (r, s) = settle_signature(
+        IGameLedgerDispatcher { contract_address: ledger.contract_address }, shard, season, chest, prize,
+    );
+    ledger.settle_frontier(shard, season, chest, prize, r, s)
+}
+#[feature("safe_dispatcher")]
+fn signed_settle(ledger: IGameLedgerDispatcher, shard: felt252, season: u32, chest: u256, prize: u256) {
+    let (r, s) = settle_signature(ledger, shard, season, chest, prize);
+    ledger.settle_frontier(shard, season, chest, prize, r, s);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn every_payment_needs_the_exact_cosignature_and_replay_cannot_pay_twice() {
+    let fixture = funded_frontier();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.report_withdrawal('shard', 1, 'claim', 400, 0, 0);
+    assert!(safe.pay('shard', 1, 'claim', player(0), 400, 0, 0).is_err());
+    for case in 0_u8..9 {
+        let message = game_ledger::contract::payment_hash(
+            if case == 0 {
+                'OTHER_CHAIN'
+            } else {
+                COSIGN_CHAIN
+            },
+            if case == 1 {
+                player(9)
+            } else {
+                fixture.ledger_address
+            },
+            if case == 2 {
+                1
+            } else {
+                0
+            },
+            if case == 3 {
+                'other'
+            } else {
+                'shard'
+            },
+            if case == 4 {
+                2
+            } else {
+                1
+            },
+            if case == 5 {
+                'other_claim'
+            } else {
+                'claim'
+            },
+            if case == 6 {
+                player(1)
+            } else {
+                player(0)
+            },
+            if case == 7 {
+                401
+            } else {
+                400
+            },
+            if case == 8 {
+                1
+            } else {
+                0
+            },
+            if case == 8 {
+                1
+            } else {
+                0
+            },
+        );
+        let (r, s) = cosigner_key().sign(message).unwrap();
+        assert!(safe.pay('shard', 1, 'claim', player(0), 400, r, s).is_err());
+    }
+    let (r, s) = pay_signature(fixture.ledger, 'shard', 1, 'claim', player(0), 400);
+    fixture.ledger.pay('shard', 1, 'claim', player(0), 400, r, s);
+    assert!(safe.pay('shard', 1, 'claim', player(0), 400, r, s).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 400);
+    assert!(fixture.ledger.get_frontier('shard', 1).paid == 400);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_cosigner_key_without_the_operator_role_cannot_pay_or_close() {
+    let fixture = funded_frontier();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.report_withdrawal('shard', 1, 'claim', 400, 0, 0);
+    let (r, s) = pay_signature(fixture.ledger, 'shard', 1, 'claim', player(0), 400);
+    start_cheat_caller_address(fixture.ledger_address, player(1));
+    assert!(safe.pay('shard', 1, 'claim', player(0), 400, r, s).is_err());
+    let (r, s) = settle_signature(fixture.ledger, 'shard', 1, 0, 0);
+    assert!(safe.settle_frontier('shard', 1, 0, 0, r, s).is_err());
+    assert!(fixture.lords.balance_of(player(0)) == 0);
+    assert!(!fixture.ledger.get_frontier('shard', 1).closed);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn cold_admin_rotation_revokes_outstanding_signatures_even_when_the_key_returns() {
+    let fixture = funded_frontier();
+    let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.report_withdrawal('shard', 1, 'claim', 400, 0, 0);
+    let (r, s) = pay_signature(fixture.ledger, 'shard', 1, 'claim', player(0), 400);
+    assert!(safe.set_cosigner(cosigner_key().public_key).is_err());
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    assert!(safe.set_cosigner(0).is_err());
+    let other: StarkCurveKeyPair = KeyPairTrait::from_secret_key(0xbeef);
+    fixture.ledger.set_cosigner(other.public_key);
+    fixture.ledger.set_cosigner(cosigner_key().public_key);
+    assert!(fixture.ledger.cosigner() == (cosigner_key().public_key, 2));
+    start_cheat_caller_address(fixture.ledger_address, OPERATOR());
+    assert!(safe.pay('shard', 1, 'claim', player(0), 400, r, s).is_err());
+    signed_pay(fixture.ledger, 'shard', 1, 'claim', player(0), 400);
+    assert!(fixture.lords.balance_of(player(0)) == 400);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn settlement_requires_exact_cosigning_before_and_after_the_deadline() {
+    for expired in array![false, true] {
+        let fixture = funded_frontier();
+        let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
+        start_cheat_block_timestamp(
+            fixture.ledger_address, if expired {
+                fixture.ledger.frontier_claim_deadline('shard', 1)
+            } else {
+                END
+            },
+        );
+        assert!(safe.settle_frontier('shard', 1, 0, 0, 0, 0).is_err());
+        let (r, s) = settle_signature(fixture.ledger, 'shard', 1, 1, 0);
+        assert!(safe.settle_frontier('shard', 1, 0, 0, r, s).is_err());
+        let (_, epoch) = fixture.ledger.cosigner();
+        let wrong_amount = game_ledger::contract::settlement_hash(
+            COSIGN_CHAIN, fixture.ledger_address, epoch, 'shard', 1, 0, 0, 999,
+        );
+        let (wrong_r, wrong_s) = cosigner_key().sign(wrong_amount).unwrap();
+        assert!(safe.settle_frontier('shard', 1, 0, 0, wrong_r, wrong_s).is_err());
+        let (r, s) = settle_signature(fixture.ledger, 'shard', 1, 0, 0);
+        fixture.ledger.settle_frontier('shard', 1, 0, 0, r, s);
+        assert!(safe.settle_frontier('shard', 1, 0, 0, r, s).is_ok());
+        assert!(fixture.lords.balance_of(TREASURY()) == 1000);
+        assert!(fixture.lords.balance_of(fixture.ledger_address) == 0);
+    }
+}
+
+#[test]
+fn honest_large_claims_have_no_added_delay_or_rate_limit() {
+    let fixture = funded_large_frontier();
+    let amount: u256 = 6000 * 1000000000000000000;
+    start_cheat_block_timestamp(fixture.ledger_address, END);
+    fixture.ledger.report_withdrawal('shard', 1, 'large', amount, 0, 0);
+    signed_pay(fixture.ledger, 'shard', 1, 'large', player(0), amount);
+    assert!(fixture.lords.balance_of(player(0)) == amount);
+}
+
+#[test]
+fn cosigning_matches_the_typescript_vectors_and_signatures() {
+    let payment = game_ledger::contract::payment_hash(
+        COSIGN_CHAIN,
+        0x123.try_into().unwrap(),
+        2,
+        0x456,
+        7,
+        0xabc,
+        0x789.try_into().unwrap(),
+        u256 { low: 17, high: 1 },
+        2,
+        3,
+    );
+    let settlement = game_ledger::contract::settlement_hash(
+        COSIGN_CHAIN, 0x123.try_into().unwrap(), 2, 0x456, 7, u256 { low: 17, high: 1 }, 99, 123,
+    );
+    assert!(payment == 0x3d23de542662c1a6a825f074cbe43a026c4f9551dc7bda002adb479e21c5cd8);
+    assert!(settlement == 0x4645bff34db39e67bf68b8f0186c8589521f1892f4ecc7105ab18540e94901b);
+    assert!(
+        core::ecdsa::check_ecdsa_signature(
+            payment,
+            cosigner_key().public_key,
+            0x61fa8b45a8a793bf8d7535e35c3552dbd1b123b0abdafe9ca716d66c96bc741,
+            0x49ddfeb20e7dfa716e414c92fdb017bbd2635ed13350d5ef6bfa385e8c0cf91,
+        ),
+    );
+    assert!(
+        core::ecdsa::check_ecdsa_signature(
+            settlement,
+            cosigner_key().public_key,
+            0x73e065d3fe4c9e0821aa88ec1bd1a7dc33a588aee11fdfcf708a37772c60a53,
+            0x6bfb9f679c5fbd28bc94d76fbc397b4b27ec6dfeacf83d68c00bdfe8a6c0cea,
+        ),
+    );
+}
+
+
+#[test]
+fn partial_seasons_unlock_the_last_day_and_keep_the_exact_claim_deadline() {
+    let fixture = deploy_fixture(Preset { day_unit_seconds: 7200, ..default_preset() });
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    for (id, hours, last_start) in array![(11_u32, 81_u64, 68_u64), (12, 84, 80), (13, 85, 80)] {
+        fund_and_approve_player(@fixture, ADMIN(), 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, START - 1);
+        let end = START + hours * 3600;
+        fixture.ledger.fund_frontier('shard', id, PRESET_ID, START, end, 0x5eed, 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, START + last_start * 3600 - 1);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000_u256 * last_start.into() / hours.into());
+        start_cheat_block_timestamp(fixture.ledger_address, START + last_start * 3600);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, end);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000);
+        assert!(
+            fixture.ledger.frontier_claim_deadline('shard', id) == end + default_preset().claim_window_seconds.into(),
+        );
+    }
 }

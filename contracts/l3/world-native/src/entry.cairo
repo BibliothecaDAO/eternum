@@ -5,7 +5,6 @@ pub trait ILedgerOperator<T> {
     fn ledger_operator(self: @T) -> ContractAddress;
     fn set_ledger_operator(ref self: T, operator: ContractAddress);
     fn publish_frontier_pool(ref self: T, game_id: u32, amount: u128, prize_pool: u128);
-    fn top_up_frontier_pool(ref self: T, game_id: u32, amount: u128);
     fn post_frontier_top(ref self: T, game_id: u32, winners: Array<ContractAddress>);
     fn sweep_lords(ref self: T, game_id: u32, structure_id: u64);
     fn award_frontier_prize(ref self: T, game_id: u32, rank: u16);

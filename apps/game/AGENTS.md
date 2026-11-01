@@ -170,8 +170,9 @@ offers more than its close, an open plot's card, or any command signed, and home
 plot opening Build), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`, the owner's army beside the ruin before
 its fight: the army picked from the HUD must bring the camera onto it; then, on a phone with the ruin first panned under
 where its card opens, the ruin's card opened from the map (a right-click, a tap) and **Attack** pressed must leave the
-camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011 and the ruin's chest shown; play
-it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
+camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011 and the ruin's chest shown; then
+the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's; play it at
+`--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
 overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own model,
 and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the same
 with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`

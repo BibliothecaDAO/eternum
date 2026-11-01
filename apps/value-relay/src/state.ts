@@ -138,13 +138,14 @@ export class DurableRelayStore implements RelayStore {
     const start = fork ? fork.number + 1 : 0;
     const candidates = [
       ...withdrawals,
+      ...(await listStoredValues<Withdrawal>(this.storage, "paid:")),
       ...held.flatMap((row) => (row.kind === "payment" ? [row.withdrawal] : [])),
     ].filter((row) => row.blockNumber === undefined || row.blockNumber >= start);
-    const paid = await discoverPaidClaims(candidates, chain.paid);
+    if (await hasPaidClaim(candidates, chain.paid)) throw new Error("reset_discards_paid_claims");
     if (fork && BigInt(await chain.hash(fork.number)) !== BigInt(fork.hash)) throw new Error("reset_anchor_changed");
-    return this.reset(row, reason, fork, paid);
+    return this.reset(row, reason, fork);
   }
-  async reset(row: string, reason: string, fork: BlockAnchor | null, paid: readonly Withdrawal[] = []) {
+  async reset(row: string, reason: string, fork: BlockAnchor | null) {
     if (!reason.trim() || reason.length > 500) throw new Error("reset_reason_required");
     return this.storage.transaction(async (tx) => {
       const previous = await tx.get<RelayProgress>("progress");
@@ -161,10 +162,10 @@ export class DurableRelayStore implements RelayStore {
         page: null,
         halted: null,
       };
-      for (const withdrawal of paid) await tx.put(`paid:${withdrawal.transactionHash}`, withdrawal);
       const discardedPaidClaims = (await listStoredValues<Withdrawal>(tx, "paid:")).filter(
         (row) => row.blockNumber === undefined || row.blockNumber >= start,
       );
+      if (discardedPaidClaims.length) throw new Error("reset_discards_paid_claims");
       for (const prefix of ["withdrawal:", "result:", "held:"]) {
         await tx.delete(`queue:${prefix}`);
         await deleteStoredRows(
@@ -176,7 +177,6 @@ export class DurableRelayStore implements RelayStore {
       await deleteStoredRows(tx, "queue-block:", (value) => Number(value) >= start);
       await deleteStoredRows(tx, "block:", (_value, key) => Number(key.slice(6)) >= start);
       const sequence = ((await tx.get<number>("reset:sequence")) ?? 0) + 1;
-      const paidAudit = await writePaidClaimAudit(tx, sequence, discardedPaidClaims);
       await tx.put(`reset:${sequence}`, {
         row,
         reason: reason.trim(),
@@ -184,7 +184,6 @@ export class DurableRelayStore implements RelayStore {
         previous,
         progress,
         fork,
-        ...paidAudit,
       });
       await tx.put("reset:sequence", sequence);
       await tx.put("progress", progress);
@@ -296,24 +295,11 @@ const indexObligation = (storage: DurableObjectTransaction, key: string, number:
 
 const blockKey = (number: number) => `block:${String(number).padStart(16, "0")}`;
 
-async function discoverPaidClaims(rows: readonly Withdrawal[], paid: (withdrawal: Withdrawal) => Promise<boolean>) {
+async function hasPaidClaim(rows: readonly Withdrawal[], paid: (withdrawal: Withdrawal) => Promise<boolean>) {
   const unique = [...new Map(rows.map((row) => [row.transactionHash, row])).values()];
-  const confirmed: Withdrawal[] = [];
   for (let offset = 0; offset < unique.length; offset += 25) {
-    const page = unique.slice(offset, offset + 25);
-    const states = await Promise.all(page.map((row) => paid(row)));
-    confirmed.push(...page.filter((_row, index) => states[index]));
+    const states = await Promise.all(unique.slice(offset, offset + 25).map((row) => paid(row)));
+    if (states.some(Boolean)) return true;
   }
-  return confirmed;
-}
-async function writePaidClaimAudit(storage: DurableObjectTransaction, sequence: number, claims: readonly Withdrawal[]) {
-  const prefix = `reset:${sequence}:paid:`;
-  for (let offset = 100; offset < claims.length; offset += 100)
-    await storage.put(`${prefix}${offset / 100}`, claims.slice(offset, offset + 100));
-  return {
-    discardedPaidClaims: claims.slice(0, 100),
-    discardedPaidClaimCount: claims.length,
-    discardedPaidClaimPages: Math.ceil(claims.length / 100),
-    discardedPaidClaimPrefix: prefix,
-  };
+  return false;
 }

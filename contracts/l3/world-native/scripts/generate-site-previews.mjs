@@ -3,23 +3,33 @@ import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 const root = new URL("../", import.meta.url);
-const sources = ["expeditions", "progression", "taxonomy", "resources", "rules"];
+const sources = ["expeditions", "progression", "taxonomy", "resources", "rules", "troops"];
 
-/** Compile the two pure payout formulas. Unrecognized Cairo must fail, never leave a partial preview. */
+/** Compile the pure site formulas. Unrecognized Cairo must fail, never leave a partial preview. */
 export function compileSitePreviews(source) {
   const rewards = resourceRewards(source);
   const xp = clearXpRule(source.progression);
+  const premium = depthRewardRule(source.expeditions);
   const precision = constant(source.rules, "RESOURCE_PRECISION");
-  return `// From expeditions.cairo::site_reward and progression.cairo::clear_xp. Run scripts/generate-site-previews.mjs.
-export function previewSiteReward(category: number, initialGuardCount: bigint): { resourceType: number; amount: bigint } | null {
-${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: initialGuardCount ${operator} ${operand}n };`).join("\n")}
+  const rift = riftGuardRule(source.troops);
+  return `// From the site reward, clear XP and rift guard formulas in Cairo. Run scripts/generate-site-previews.mjs.
+export function previewRiftGuardBound(camp: number, step: number): number {
+  return Math.floor((camp * ${rift.percent} + step * ${rift.rounding}) / (step * ${rift.divisor})) * step;
+}
+
+export function previewSiteReward(category: number, initialGuardCount: bigint, depth: number): { resourceType: number; amount: bigint } | null {
+${rewards.map(({ category, resource, operator, operand }) => `  if (category === ${category}) return { resourceType: ${resource}, amount: depthReward(initialGuardCount ${operator} ${operand}n, depth) };`).join("\n")}
   return null;
 }
 
-export function previewSiteClearXp(initialGuardCount: bigint): number {
-  const xp = integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n;
+export function previewSiteClearXp(initialGuardCount: bigint, depth: number): number {
+  const xp = depthReward(integerSqrt(initialGuardCount / ${precision}n * ${xp.multiplier}n) / ${xp.divisor}n, depth);
   if (xp > 0xffff_ffffn) throw new Error("Site clear XP exceeds u32");
   return Number(xp);
+}
+
+function depthReward(amount: bigint, depth: number): bigint {
+  return amount * (${premium.base}n + BigInt(depth)) / ${premium.divisor}n;
 }
 
 /** Cairo's integer square root, without converting a scaled troop count to floating point. */
@@ -40,12 +50,14 @@ function resourceRewards(source) {
   let body = functionBody(
     source.expeditions,
     "site_reward",
-    "category:u8,site:ExpeditionSite",
+    "category:u8,site:ExpeditionSite,depth:u8",
     "Option<crate::resources::ResourceAmount>",
   );
   const imports = body.match(/^usecrate::resources::\{([A-Z_a-z,]+)\};/);
   if (!imports) throw new Error("Unsupported site_reward imports");
   body = body.slice(imports[0].length);
+  if (!body.startsWith("letreward=")) throw new Error("Unsupported site_reward premium");
+  body = body.slice("letreward=".length);
   const names = imports[1].split(",");
   const rules = [];
   while (body.startsWith(rules.length === 0 ? "if" : "elseif")) {
@@ -64,26 +76,47 @@ function resourceRewards(source) {
     });
     body = body.slice(branch[0].length);
   }
-  if (rules.length === 0 || body !== "else{None}") throw new Error("Unsupported site_reward fallback");
+  if (
+    rules.length === 0 ||
+    body !== "else{None};reward.map(|reward|ResourceAmount{amount:depth_reward(reward.amount,depth),..reward})"
+  )
+    throw new Error("Unsupported site_reward fallback or premium");
   if (new Set(rules.map(({ category }) => category)).size !== rules.length)
     throw new Error("Duplicate site reward category");
   return rules;
 }
 
 function clearXpRule(source) {
-  const body = functionBody(source, "clear_xp", "strength:u128", "u32");
+  const body = functionBody(source, "clear_xp", "strength:u128,depth:u8", "u32");
   const rule = body.match(
-    /^letroot:u64=core::num::traits::Sqrt::sqrt\(strength\/crate::rules::RESOURCE_PRECISION\*([0-9_]+)\);\(root\/([0-9_]+)\).try_into\(\).unwrap\(\)$/,
+    /^letroot:u64=core::num::traits::Sqrt::sqrt\(strength\/crate::rules::RESOURCE_PRECISION\*([0-9_]+)\);crate::expeditions::depth_reward\(\(root\/([0-9_]+)\).into\(\),depth\).try_into\(\).unwrap\(\)$/,
   );
   if (!rule) throw new Error("Unsupported clear_xp formula; update the preview compiler");
   return { multiplier: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
 }
 
+function depthRewardRule(source) {
+  const body = functionBody(source, "depth_reward", "amount:u128,depth:u8", "u128");
+  const rule = body.match(/^amount\*\(([0-9_]+)\+depth.into\(\)\)\/([0-9_]+)$/);
+  if (!rule) throw new Error("Unsupported depth_reward formula");
+  return { base: positiveInteger(rule[1]), divisor: positiveInteger(rule[2]) };
+}
+
+function riftGuardRule(source) {
+  const body = functionBody(source, "rift_guard_bound", "camp:u16,step:u32", "u32");
+  const rule = body.match(
+    /^letscaled:u32=Into::<u16,u32>::into\(camp\)\*([A-Z_]+);\(scaled\+step\*([0-9_]+)\)\/\(step\*([0-9_]+)\)\*step$/,
+  );
+  if (!rule) throw new Error("Unsupported rift_guard_bound formula");
+  return { percent: constant(source, rule[1]), rounding: positiveInteger(rule[2]), divisor: positiveInteger(rule[3]) };
+}
+
 function functionBody(source, name, parameters, returns) {
-  const declaration = source.match(new RegExp(`^pub fn ${name}\\([^]*?^}`, "m"))?.[0];
+  const declaration = source.match(new RegExp(`^(?:pub )?fn ${name}\\([^]*?^}`, "m"))?.[0];
   if (!declaration) throw new Error(`Missing Cairo function ${name}`);
   const header = declaration.slice(0, declaration.indexOf("{")).replace(/\s+/g, "");
-  if (header !== `pubfn${name}(${parameters})->${returns}`) throw new Error(`Unsupported ${name} signature`);
+  if (header.replace(/^pub/, "") !== `fn${name}(${parameters})->${returns}`)
+    throw new Error(`Unsupported ${name} signature`);
   return declaration
     .slice(declaration.indexOf("{") + 1, -1)
     .replace(/\/\/[^\n]*/g, "")
@@ -91,7 +124,7 @@ function functionBody(source, name, parameters, returns) {
 }
 
 function constant(source, name) {
-  const value = source.match(new RegExp(`^pub const ${name}: u(?:8|128) = ([0-9_]+);$`, "m"))?.[1];
+  const value = source.match(new RegExp(`^(?:pub )?const ${name}: u(?:8|32|128) = ([0-9_]+);$`, "m"))?.[1];
   if (!value) throw new Error(`Missing Cairo payout constant ${name}`);
   return positiveInteger(value);
 }

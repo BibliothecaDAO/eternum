@@ -33,7 +33,7 @@ export const holdsGrowingReward = (structure: Pick<StructureInfo, "structureType
 export const readPlateReward = (store: NativeFactStore, structure: RewardSource): PlateReward | undefined => {
   const site = store.get("ExpeditionSite", { game_id: configManager.getActiveGameId(), entity_id: structure.entityId });
   if (site) {
-    const payout = siteReward(site);
+    const payout = siteReward(store, site);
     return payout
       ? { amount: divideByPrecision(Number(payout.amount)), unit: resourceName(payout.resourceType) }
       : undefined;

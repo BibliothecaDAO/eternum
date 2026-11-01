@@ -16,9 +16,9 @@ const entry = (address: string, rank: number) => ({
   address,
   rank,
   order: 1,
-  sites_cleared: { total: 40 - rank },
+  sites_cleared: { total: 40 - rank, camps: 10, rifts: 10, ruins: 10, beasts: 10 - rank },
   chests_earned: 3,
-  rewards: { lords: "0" },
+  rewards: { lords: "0", essence: "0", labor: "0" },
   deepest_depth: 1,
 });
 vi.mock("../herald", () => ({
@@ -96,7 +96,7 @@ it("offers no way in to a reader who held no realm in that season", async () => 
   expect(button("Withdraw")).toBeUndefined();
 });
 
-it("leads Back to the list that opened it, with no Continue; opened from Play, Continue is the gold step and no Back", async () => {
+it("leads Back to the list that opened it, with no Continue; opened from Play, Continue and no Back, Share leading for a player with a card", async () => {
   const fromList = await open();
   expect(fromList.container.querySelector('[data-role="back"]')!.getAttribute("href")).toBe("/p/0xa1");
   expect(fromList.button("Continue")).toBeUndefined();
@@ -104,7 +104,16 @@ it("leads Back to the list that opened it, with no Continue; opened from Play, C
 
   const fromPlay = await open("/results/0x52-3");
   expect(fromPlay.container.querySelector('[data-role="back"]')).toBeNull();
-  expect(fromPlay.button("Continue")!.dataset.kind).toBe("primary");
+  expect([fromPlay.button("Continue")!.dataset.kind, fromPlay.button("Share my season")!.dataset.kind]).toEqual([
+    "secondary",
+    "primary",
+  ]);
+  await unmount?.();
+
+  // A reader with no realm that season has no card to share: Continue is the gold step.
+  player.current = "0xc0ffee";
+  const reader = await open("/results/0x52-3");
+  expect([reader.button("Continue")!.dataset.kind, reader.button("Share my season")]).toEqual(["primary", undefined]);
 });
 
 it("names a finished season's winners by the ledger's receipts, split over the places fixed, one still being awarded", async () => {
@@ -112,15 +121,27 @@ it("names a finished season's winners by the ledger's receipts, split over the p
   // ranks 0xa1 first; second is fixed but not yet paid, so no receipt names it.
   prize.current = { pool: "300", top_n: 3, count: 2, awards: [{ rank: 1, address: "0xb7", lords: "200" }] };
   const { container } = await open();
-  const podium = container.querySelector('[aria-label="Season prizes"]')!;
+  // Each place, its holder or why no one holds it yet, the holder's sites and the place's LORDS.
   expect(
-    [...podium.querySelectorAll("li[data-place]")].map((tile) => [tile.getAttribute("data-place"), tile.textContent]),
+    [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
+      [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
+    ),
   ).toEqual([
-    ["2", "2100" + "Pending"],
-    ["1", "1200" + "0xb7"],
+    ["1", "0xb7", "38", "200"],
+    ["2", "Pending", "100"],
   ]);
-  // The board's top rows wear the same medals, on one line.
-  const rows = [...container.querySelectorAll("button.app-row")];
-  expect(rows.map((row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null)).toEqual(["1", "2"]);
-  expect(rows.every((row) => row.hasAttribute("data-line"))).toBe(true);
+});
+
+it("shows no podium for a season that ended with no prize pool, never one still to be published", async () => {
+  const { container } = await open();
+  expect(container.textContent).not.toContain("Pool not published");
+  // The board's first realms, with no LORDS beside them.
+  expect(
+    [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
+      [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
+    ),
+  ).toEqual([
+    ["1", "0xa1", "39"],
+    ["2", "0xb7", "38"],
+  ]);
 });

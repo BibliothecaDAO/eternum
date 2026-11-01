@@ -1,6 +1,7 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import {
   frontierPrizeHolders,
+  prizeShares,
   type HeraldFrontierLeaderboardEntry,
   type HeraldFrontierPrize,
 } from "@bibliothecadao/eternum/game-sync";
@@ -82,19 +83,6 @@ export const seasonLordsOf = (
 };
 
 /**
- * What each prize place takes of the season's prize pool, first to last, as the ledger pays it
- * (frontier_prizes.cairo, prize_amount): rank r of `count` takes `count + 1 - r` shares of `count (count + 1) / 2`,
- * each place below the first rounded down, and the first takes what the others leave, so the rounding stays with it.
- */
-export const prizeShares = (pool: bigint, count: number): bigint[] => {
-  if (!Number.isInteger(count) || count <= 0 || count > 100) throw new Error(`invalid prize count ${count}`);
-  const n = BigInt(count);
-  const shares = (n * (n + 1n)) / 2n;
-  const below = Array.from({ length: count - 1 }, (_, index) => (pool * (n - BigInt(index + 1))) / shares);
-  return [pool - below.reduce((sum, share) => sum + share, 0n), ...below];
-};
-
-/**
  * Who holds a prize place: a player; "open" while no player who cleared a site does; "awarding" once the ledger fixed the
  * place's winner but has not paid it yet, so no receipt names them.
  */
@@ -131,4 +119,18 @@ export const seasonPodium = (board: {
     lords: Number(lords),
     holder: holders[index] ? { address: holders[index].address } : "open",
   }));
+};
+
+/**
+ * Who won a season, as its podium names first place: once the winners are fixed, the ledger's receipt, "awarding" until
+ * it lands; before, the board's first to clear a site. A season with no pool is its board's alone. None while no one
+ * holds first place, or when the ledger fixed no winner.
+ */
+export const seasonWinner = (
+  board: Parameters<typeof seasonPodium>[0],
+): { address: string } | "awarding" | undefined => {
+  const podium = seasonPodium(board);
+  const first = podium ? podium[0]?.holder : frontierPrizeHolders(board.entries, 1)[0];
+  if (first === undefined || first === "open") return undefined;
+  return first === "awarding" ? first : { address: first.address };
 };

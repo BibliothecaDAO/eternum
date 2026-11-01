@@ -26,6 +26,8 @@ export function presetRegistration(presetId: 2 | 5) {
   };
 }
 
+export const PRESET_FIXTURE_DURATION_SECONDS = 864000;
+
 export function presetLaunch(
   preset: ReturnType<typeof presetRegistration>,
   gameId: number,
@@ -51,7 +53,7 @@ export function presetLaunch(
       dev_mode_on: false,
       start_settling_at: timestamp,
       start_main_at: timestamp,
-      end_at: timestamp + 864000,
+      end_at: timestamp + PRESET_FIXTURE_DURATION_SECONDS,
       end_grace_seconds: 0,
       seed: 1,
     }),

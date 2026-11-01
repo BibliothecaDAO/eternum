@@ -678,7 +678,7 @@ describe.concurrent("shard notifications", () => {
   /** Open a day of the shared calendar a few seconds from now (Day 2 by default); no player needs to have acted. */
   const openSoon = (herald: ReturnType<typeof createHerald>, seconds = 8, dayIndex = 1) => {
     const opensAt = (Math.floor(Date.now() / 1000) + seconds) * 1000;
-    const calendar = { seed: 1n, startMainAt: 0, dayUnitSeconds: DAY_UNIT_SECONDS };
+    const calendar = { seed: 1n, startMainAt: 0, endAt: 21 * 20 * DAY_UNIT_SECONDS, dayUnitSeconds: DAY_UNIT_SECONDS };
     let start = 0;
     for (let index = 0; index < dayIndex; index++) start = dayOf(calendar, start)!.end;
     herald.state.seasonStart = opensAt / 1000 - start;
@@ -1099,7 +1099,12 @@ describe.concurrent("shard notifications", () => {
         const [prepared, sent] = twoDayZones();
         await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(prepared).run();
         const opensAt = openSoon(herald, 8);
-        const calendar = { seed: 1n, startMainAt: herald.state.seasonStart, dayUnitSeconds: DAY_UNIT_SECONDS };
+        const calendar = {
+          seed: 1n,
+          startMainAt: herald.state.seasonStart,
+          endAt: herald.state.seasonStart + 21 * 20 * DAY_UNIT_SECONDS,
+          dayUnitSeconds: DAY_UNIT_SECONDS,
+        };
         const dayEnd = dayOf(calendar, opensAt / 1000)!.end;
         if (last) herald.state.seasonEnd = dayEnd;
         await worker.runCron();

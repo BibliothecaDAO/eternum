@@ -87,8 +87,8 @@ export const CompareRows = ({
             onClick={row.onPick}
             className={cn(
               ROW,
-              "rounded-md border px-2 py-1 text-left",
-              row.grows ? "border-hud-accent bg-hud-chosen" : "border-hud-line hover:bg-hud-hover",
+              "ui-pick rounded-md border border-hud-line px-2 py-1 text-left",
+              !row.grows && "hover:bg-hud-hover",
             )}
           >
             {face}

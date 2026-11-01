@@ -1,3 +1,4 @@
+import mainnetAddresses from "../../contracts/common/addresses/mainnet.json";
 import { LEDGER_PRESET_FIELD_COUNT } from "../../packages/value-ledger/src/codecs";
 import { readFileSync, writeFileSync, renameSync } from "node:fs";
 import { join } from "node:path";
@@ -33,9 +34,11 @@ export function assetPlans(
   operator: string,
   treasury: string,
   assets: Partial<Assets>,
+  cosignerPublicKey: string,
 ): AssetPlan[] {
-  // Each environment deploys the assets its book does not name (a test token only when it names no LORDS), so it owns
-  // its rating token, collections, ledger, roles and pause.
+  assertProductionLords(target, assets.lords);
+  if (!cosignerPublicKey || BigInt(cosignerPublicKey) <= 0n)
+    throw new PublicError("Independent co-signer public key required");
   const ownAssets: AssetPlan[] = [
     { name: "lords", package: "ledger", artifact: "TestLords", constructor: [] },
     { name: "mmr", package: "mmr", artifact: "MMRToken", constructor: [admin, admin] },
@@ -58,9 +61,22 @@ export function assetPlans(
       name: "ledger",
       package: "ledger",
       artifact: "GameLedger",
-      constructor: [admin, operator, treasury, assets.lords, assets.mmr, assets.chests, assets.cosmetics],
+      constructor: [
+        admin,
+        operator,
+        treasury,
+        assets.lords,
+        assets.mmr,
+        assets.chests,
+        assets.cosmetics,
+        cosignerPublicKey,
+      ],
     });
   return plans;
+}
+function assertProductionLords(target: Target, lords: string | undefined) {
+  if (target.environment === "production" && (!lords || BigInt(lords) !== BigInt(mainnetAddresses.lords)))
+    throw new PublicError("Production requires the canonical mainnet LORDS token; test or missing LORDS refused");
 }
 export function fixedSalt(environment: Environment, owner: string, name: string) {
   return hash.starknetKeccak(`realms:${environment}:${BigInt(owner)}:${name}`).toString();
@@ -116,6 +132,7 @@ export async function deployAsset(
 }
 export function existingAssets(target: Target): Partial<Assets> {
   const book = addressBook(target);
+  assertProductionLords(target, book.lords);
   return Object.fromEntries(
     Object.entries({
       ledger: book.ledger,
@@ -126,7 +143,13 @@ export function existingAssets(target: Target): Partial<Assets> {
     }).filter(([, value]) => value && BigInt(value) > 0n),
   );
 }
-export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string, admin: string, operator: string) {
+export async function verifyLedgerAccounts(
+  provider: RpcProvider,
+  ledger: string,
+  admin: string,
+  operator: string,
+  cosignerPublicKey: string,
+) {
   for (const [role, address] of [
     ["0x0", admin],
     [hash.getSelectorFromName("OPERATOR_ROLE"), operator],
@@ -138,6 +161,9 @@ export async function verifyLedgerAccounts(provider: RpcProvider, ledger: string
     if (result.length !== 1 || BigInt(result[0]!) !== 1n)
       throw new PublicError("Existing ledger belongs to different accounts; restore its original private directory");
   }
+  const key = await provider.callContract({ contractAddress: ledger, entrypoint: "cosigner", calldata: [] }, "latest");
+  if (key.length !== 2 || BigInt(key[0]!) !== BigInt(cosignerPublicKey))
+    throw new PublicError("Existing ledger co-signer differs from the configured independent key");
 }
 /** The block the address book says the ledger was deployed in; the relay starts every ledger history scan there. */
 export function recordedLedgerBlock(target: Target): number | undefined {
@@ -184,6 +210,7 @@ export function setupCalls(
   frontierPresetId: number,
   blitz: BlitzWindow | null,
 ) {
+  assertProductionLords(target, assets.lords);
   const chests = chestPresetFor(target.environment as Environment);
   // A Frontier-only environment registers no Blitz preset and opens no Blitz season.
   const blitzPreset = blitz ? blitzPresetOf(target) : null;

@@ -19,14 +19,81 @@ export const involvesPlayer = (event: ProcessedStoryEvent, address: string | nul
 export const storyActionIdentity = (event: ProcessedStoryEvent): string =>
   logicalStoryIdentity(event.event_id, event.story, event, event.storyPayload);
 
-/** Each action once, at its first (newest) story: a list of stories never tells one action twice. */
-export const oneStoryPerAction = (stories: ProcessedStoryEvent[]): ProcessedStoryEvent[] => {
+/**
+ * Each action once, at its first (newest) story: a list of stories never tells one action twice. A fight its outcome
+ * concludes (a site's payout, a capture) is that outcome's action, told by the outcome alone; every other fight, a lost
+ * or held one in the same batch included, keeps its own row.
+ */
+export const oneStoryPerAction = (stories: readonly ProcessedStoryEvent[]): ProcessedStoryEvent[] => {
+  const concluded = new Set(stories.map((outcome) => fightConcludedBy(outcome, stories)));
   const seen = new Set<string>();
   return stories.filter((event) => {
+    if (concluded.has(event)) return false;
     const identity = storyActionIdentity(event);
     return !seen.has(identity) && seen.add(identity) !== undefined;
   });
 };
+
+/** A story as the action rule reads it: its kind, what it carries, its structure, its transaction and its place there. */
+type ToldStory = Pick<ProcessedStoryEvent, "story" | "storyPayload" | "entity_id" | "tx_hash" | "event_id">;
+
+/**
+ * The fight an outcome concludes, when the stories hold it: in the outcome's transaction, a battle in which the
+ * outcome's structure fought, as attacker or defender, and its troops fell to none; of several (a batch beating one
+ * guard slot after another), the one written nearest the outcome, the one after it on a tie, as the contract writes a
+ * site's payout or a structure's capture just before the battle that caused it. Its site's clear names the attack's
+ * cost.
+ */
+export const fightConcludedBy = <Story extends ToldStory>(
+  outcome: Story,
+  stories: readonly Story[],
+): Story | undefined => {
+  const target = concludedTarget(outcome);
+  if (target === null) return undefined;
+  const fallen = stories.filter(
+    (fight) => transactionKey(fight.tx_hash) === transactionKey(outcome.tx_hash) && fellIn(fight, target),
+  );
+  if (fallen.length < 2) return fallen[0];
+  const at = receiptIndex(outcome);
+  // Twice the distance, one less for a battle written after the outcome: nearest first, the later one on a tie.
+  const distance = (fight: Story) => {
+    const index = receiptIndex(fight);
+    return index > at ? 2n * (index - at) - 1n : 2n * (at - index);
+  };
+  return fallen.reduce((nearest, fight) => (distance(fight) < distance(nearest) ? fight : nearest));
+};
+
+/** Whether `structure` fought in a battle and its troops fell to none there: a guard beaten, or a guard that attacked and lost. */
+const fellIn = (fight: ToldStory, structure: number): boolean => {
+  if (fight.story !== "BattleEvent") return false;
+  const { attacker_id, defender_id, attacker, defender } = fight.storyPayload as {
+    attacker_id?: unknown;
+    defender_id?: unknown;
+    attacker?: { after?: unknown };
+    defender?: { after?: unknown };
+  };
+  return (
+    (Number(attacker_id) === structure && isNone(attacker?.after)) ||
+    (Number(defender_id) === structure && isNone(defender?.after))
+  );
+};
+
+/** A side's troops after a battle, as the story wrote them, are none. */
+const isNone = (count: unknown): boolean =>
+  (typeof count === "string" || typeof count === "number" || typeof count === "bigint") && BigInt(count) === 0n;
+
+/** A story's place in its transaction's receipt: the event index its identity ends with. */
+const receiptIndex = (event: ToldStory): bigint => BigInt(event.event_id.slice(event.event_id.lastIndexOf(":") + 1));
+
+/** The structure a story ends a fight for: a payout's site, a capture's structure; null for any other story. */
+const concludedTarget = (event: ToldStory): number | null => {
+  if (event.story === "SitePayout") return Number(event.storyPayload.site_id);
+  if (event.story === "StructureCapturedStory") return event.entity_id;
+  return null;
+};
+
+/** A transaction's key, the same however its hash is written (case, leading zeros). */
+const transactionKey = (hash: string): string => hash.toLowerCase().replace(/^0x0*/, "");
 
 /** The stories that are important when they name the player: a fight, a raid, a capture, a crate opened, a relic used. */
 const IMPORTANT_STORIES = [
@@ -48,28 +115,9 @@ const isImportantStory = (event: ProcessedStoryEvent, address: string | null, is
   (event.story === "StructureCapturedStory" && event.entity_id !== null && isHyperstructure(event.entity_id));
 
 /**
- * One row per transaction: a capture tells it, being the outcome of the fight that won it, wherever the chain wrote it
- * among the transaction's stories; any other transaction is told by its newest story.
- */
-const onePerTransaction = (stories: ProcessedStoryEvent[]): ProcessedStoryEvent[] => {
-  const told = new Map<string, ProcessedStoryEvent>();
-  for (const event of stories) {
-    const key = transactionKey(event.tx_hash);
-    const held = told.get(key);
-    if (!held || (event.story === "StructureCapturedStory" && held.story !== "StructureCapturedStory")) {
-      told.set(key, event);
-    }
-  }
-  return [...told.values()];
-};
-
-/** A transaction's key, the same however its hash is written (case, leading zeros). */
-const transactionKey = (hash: string): string => hash.toLowerCase().replace(/^0x0*/, "");
-
-/**
- * What a lens shows, newest first, each action once: under All the world's history as Herald holds it, every story;
- * under Important the player's must-not-miss, a fight and the capture it won told once, by the capture. The strip shows
- * the first three; what the player's own click is doing stays on the control they clicked.
+ * What a lens shows, newest first, each action once (a fight and the capture it won told by the capture): under All the
+ * world's history as Herald holds it, every story; under Important the player's must-not-miss. The strip shows the
+ * first three; what the player's own click is doing stays on the control they clicked.
  */
 export const selectEventStories = (
   stories: ProcessedStoryEvent[],
@@ -79,12 +127,10 @@ export const selectEventStories = (
 ): ProcessedStoryEvent[] =>
   filter === "all"
     ? oneStoryPerAction(stories)
-    : onePerTransaction(
-        oneStoryPerAction(
-          stories
-            .filter((event) => isImportantStory(event, address, isHyperstructure))
-            .toSorted((left, right) => right.timestampMs - left.timestampMs),
-        ),
+    : oneStoryPerAction(
+        stories
+          .filter((event) => isImportantStory(event, address, isHyperstructure))
+          .toSorted((left, right) => right.timestampMs - left.timestampMs),
       );
 
 /** How many stories each Important read holds, newest first. */
@@ -142,8 +188,8 @@ export const feedReads = (lens: FeedLens, address: string | null): StoryRead[] =
 };
 
 /**
- * What a Feed lens shows, newest first, each action once: All every story; Important the notable ones, a fight and the
- * capture it won told once, by the capture; Mine the stories that name the player.
+ * What a Feed lens shows, newest first, each action once (a won attack told by the site it cleared or the structure it
+ * took): All every story; Important the notable ones; Mine the stories that name the player.
  */
 export const selectFeedStories = (
   stories: ProcessedStoryEvent[],
@@ -153,6 +199,6 @@ export const selectFeedStories = (
   const newestFirst = (kept: ProcessedStoryEvent[]) =>
     kept.toSorted((left, right) => right.timestampMs - left.timestampMs);
   if (lens === "all") return oneStoryPerAction(stories);
-  if (lens === "important") return onePerTransaction(oneStoryPerAction(newestFirst(stories.filter(isNotable))));
+  if (lens === "important") return oneStoryPerAction(newestFirst(stories.filter(isNotable)));
   return oneStoryPerAction(newestFirst(stories.filter((event) => involvesPlayer(event, address))));
 };

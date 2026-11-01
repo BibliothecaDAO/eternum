@@ -27,11 +27,11 @@ const structure = (overrides: { realm_id?: number; category?: StructureType } = 
   }) as never;
 
 // Four-hour units from t=86400, days drawn from seed 1; spacing 10, so day d's regions are rows 40d..40d+39.
-const rules = { dayUnitSeconds: 14_400, spacing: 10, startMainAt: 86_400, seed: 1n };
+const rules = { dayUnitSeconds: 14_400, spacing: 10, startMainAt: 86_400, endAt: 86_400 + 21 * 20 * 14_400, seed: 1n };
 const expeditionRules = {
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
-  GameRegistry: { start_main_at: BigInt(rules.startMainAt), seed: rules.seed },
+  GameRegistry: { start_main_at: BigInt(rules.startMainAt), end_at: BigInt(rules.endAt), seed: rules.seed },
 };
 /** The first second of season day `index`. */
 const dayStart = (index: number) => {
@@ -199,39 +199,89 @@ describe("siteReward", () => {
     [320n, 80n],
   ])("previews the Beasts Labor for %s starting troops", (troops, labor) => {
     expect(
-      siteReward({ category: StructureType.Beasts, initial_guard_count: troops * 1_000_000_000n, clear: null }),
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Beasts,
+        initial_guard_count: troops * 1_000_000_000n,
+        clear: null,
+      }),
     ).toEqual({ resourceType: ResourcesIds.Labor, amount: labor * 1_000_000_000n });
   });
   it("pays as the contract does: a camp half its first guard in labor, a rift three times it in Essence", () => {
     const guard = 1_100n * 1_000_000_000n;
-    expect(siteReward({ category: StructureType.Camp, initial_guard_count: guard, clear: null })).toEqual({
+    expect(
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Camp,
+        initial_guard_count: guard,
+        clear: null,
+      }),
+    ).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: 550n * 1_000_000_000n,
     });
-    expect(siteReward({ category: StructureType.Rift, initial_guard_count: guard, clear: null })).toEqual({
+    expect(
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Rift,
+        initial_guard_count: guard,
+        clear: null,
+      }),
+    ).toEqual({
       resourceType: ResourcesIds.Essence,
       amount: 3_300n * 1_000_000_000n,
     });
     // An odd scaled count halves as the contract's integer division does.
-    expect(siteReward({ category: StructureType.Camp, initial_guard_count: 3n, clear: null })?.amount).toBe(1n);
-    expect(siteReward({ category: StructureType.Beasts, initial_guard_count: guard, clear: null })).toEqual({
+    expect(
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Camp,
+        initial_guard_count: 3n,
+        clear: null,
+      })?.amount,
+    ).toBe(1n);
+    expect(
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Beasts,
+        initial_guard_count: guard,
+        clear: null,
+      }),
+    ).toEqual({
       resourceType: ResourcesIds.Labor,
       amount: guard / 4n,
     });
-    expect(siteReward({ category: StructureType.Ruin, initial_guard_count: guard, clear: null })).toBeNull();
+    expect(
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        category: StructureType.Ruin,
+        initial_guard_count: guard,
+        clear: null,
+      }),
+    ).toBeNull();
   });
 
   it("pays nothing more once the site is cleared: the contract pays a site once", () => {
     const guard = 1_100n * 1_000_000_000n;
     expect(
-      siteReward({
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
         category: StructureType.Camp,
         initial_guard_count: guard,
         clear: { explorer_id: 1n, home_id: 7n, reward: null },
       }),
     ).toBeNull();
     expect(
-      siteReward({
+      siteReward(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
         category: StructureType.Rift,
         initial_guard_count: guard,
         clear: { explorer_id: 1n, home_id: 7n, reward: null },
@@ -248,15 +298,37 @@ describe("siteClearXp", () => {
     [25000n, 395],
     [49500n, 556],
   ])("matches the contract's clear vector for %s troops", (troops, xp) => {
-    expect(siteClearXp({ initial_guard_count: troops * 1_000_000_000n })).toBe(xp);
+    expect(
+      siteClearXp(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        initial_guard_count: troops * 1_000_000_000n,
+      }),
+    ).toBe(xp);
   });
 
   it("floors fractional troops and keeps integer square-root boundaries exact", () => {
-    expect(siteClearXp({ initial_guard_count: 999_999_999n })).toBe(0);
-    expect(siteClearXp({ initial_guard_count: 1_999_999_999n })).toBe(2);
+    expect(
+      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 999_999_999n }),
+    ).toBe(0);
+    expect(
+      siteClearXp(storeWith(expeditionRules) as never, { game_id: 7, row: 0, initial_guard_count: 1_999_999_999n }),
+    ).toBe(2);
     const square = (2n * 30_000_000n) ** 2n;
-    expect(siteClearXp({ initial_guard_count: (square - 1n) * 1_000_000_000n })).toBe(149_999_999);
-    expect(siteClearXp({ initial_guard_count: square * 1_000_000_000n })).toBe(150_000_000);
+    expect(
+      siteClearXp(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        initial_guard_count: (square - 1n) * 1_000_000_000n,
+      }),
+    ).toBe(149_999_999);
+    expect(
+      siteClearXp(storeWith(expeditionRules) as never, {
+        game_id: 7,
+        row: 0,
+        initial_guard_count: square * 1_000_000_000n,
+      }),
+    ).toBe(150_000_000);
   });
 });
 
@@ -269,7 +341,10 @@ it("has no season day or map site before the exact start", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: now } as never);
     expect(
       structureMapPosition(
-        storeWith({ ...expeditionRules, GameRegistry: { start_main_at: BigInt(late.startMainAt), seed: late.seed } }),
+        storeWith({
+          ...expeditionRules,
+          GameRegistry: { start_main_at: BigInt(late.startMainAt), end_at: BigInt(late.endAt), seed: late.seed },
+        }),
         structure(),
       ),
     ).toBeNull();
@@ -291,4 +366,25 @@ it("keeps a full-width home namespace distinct from its trait template", () => {
     alt: false,
   });
   vi.restoreAllMocks();
+});
+
+it.each([
+  [0, 1, 51],
+  [1, 1.5, 76],
+  [2, 2, 102],
+  [3, 2.5, 127],
+])("previews depth %s resources and XP from the site's day band", (depth, multiplier, xp) => {
+  const store = storeWith(expeditionRules) as never;
+  const site = {
+    game_id: 7,
+    row: 80 + depth * 10 + 5,
+    category: StructureType.Rift,
+    initial_guard_count: 430n * 1_000_000_000n,
+    clear: null,
+  };
+  expect(siteReward(store, site)).toEqual({
+    resourceType: ResourcesIds.Essence,
+    amount: BigInt(1290 * multiplier) * 1_000_000_000n,
+  });
+  expect(siteClearXp(store, site)).toBe(xp);
 });

@@ -1,3 +1,4 @@
+import { CAMPAIGNS } from "../../../packages/identity/src/campaigns";
 import { readFileSync } from "node:fs";
 import { Effect } from "effect";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
@@ -22,8 +23,8 @@ afterEach(async () => {
 const devcon: FrontierSeasonPhase = {
   phase: "frontier",
   presetId: 6,
-  startsAt: "2026-11-03T06:30:00.000Z",
-  endsAt: "2026-11-06T14:30:00.000Z",
+  startsAt: new Date(CAMPAIGNS["devcon-2026"].startsAt * 1000).toISOString(),
+  endsAt: new Date(CAMPAIGNS["devcon-2026"].redeemUntil * 1000).toISOString(),
 };
 const normal: FrontierSeasonPhase = {
   phase: "frontier",
@@ -40,7 +41,7 @@ const put = (body: unknown, phase = "frontier", now = before) =>
   });
 
 test.each([
-  [devcon, 288000],
+  [devcon, 306000],
   [normal, 4320000],
 ] as const)("API to cron preserves preset $0.presetId and its complete season", async (phase, duration) => {
   expect((await put(phase)).status).toBe(200);
@@ -73,16 +74,16 @@ test.each([undefined, "6", null, 0, -1, 6.5, 999, 1])(
   },
 );
 
-test("uses the selected clock for alignment and complete bags, with no partial 84-hour season", async () => {
-  expect((await put({ ...devcon, endsAt: "2026-11-06T18:30:00.000Z" })).status).toBe(409);
-  expect((await put({ ...devcon, endsAt: "2026-11-04T09:10:00.000Z" })).status).toBe(409);
-  const oneBag = { ...devcon, endsAt: "2026-11-04T22:30:00.000Z" };
-  expect((await put(oneBag)).status).toBe(200);
-  expect((await put({ ...oneBag, presetId: 5 })).status).toBe(409);
-  const shifted = { ...devcon, startsAt: "2026-11-03T06:30:40.000Z", endsAt: "2026-11-06T14:30:40.000Z" };
+test("accepts the 85-hour Devcon season and aligns both boundaries to the selected army tick", async () => {
+  const arbitrary = { ...devcon, startsAt: "2026-11-03T05:00:00.000Z", endsAt: "2026-11-06T18:00:00.000Z" };
+  expect((await put(arbitrary)).status).toBe(200);
+  expect((await put({ ...arbitrary, presetId: 5 })).status).toBe(200);
+  const shifted = { ...arbitrary, startsAt: "2026-11-03T05:00:40.000Z", endsAt: "2026-11-06T18:00:40.000Z" };
   expect((await put(shifted)).status).toBe(200);
   expect((await put({ ...shifted, presetId: 5 })).status).toBe(409);
-  expect((await put({ ...devcon, startsAt: "2026-11-03T06:30:01.000Z" })).status).toBe(409);
+  expect((await put({ ...arbitrary, startsAt: "2026-11-03T05:00:01.000Z" })).status).toBe(409);
+  expect((await put({ ...arbitrary, endsAt: "2026-11-06T18:00:01.000Z" })).status).toBe(409);
+  expect((await put({ ...arbitrary, endsAt: arbitrary.startsAt })).status).toBe(409);
 });
 
 test("Blitz keeps dates without a preset and rejects an accidental Frontier preset", async () => {

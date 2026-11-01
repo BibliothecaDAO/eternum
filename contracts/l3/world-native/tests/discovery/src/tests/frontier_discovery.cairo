@@ -6,7 +6,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
     let preset = super::preset_projection::frontier_discovery_rules();
     assert_eq!(
         (preset.beasts_bps, preset.camp_bps, preset.rift_bps, preset.ruin_bps, preset.shrine_bps, preset.well_bps),
-        (600, 400, 400, 100, 300, 300),
+        (600, 400, 400, 300, 300, 300),
     );
     let mut counts: Felt252Dict<u32> = Default::default();
     for sample in 0_u64..100000 {
@@ -16,7 +16,7 @@ fn frontier_draws_the_ruled_odds_over_100k_reveals() {
         counts.insert(key, count + 1);
     }
     // 100,000 reveals hold each rate within 0.2 percentage points.
-    for (index, expected) in array![(0_u8, 6000_u32), (1, 4000), (2, 4000), (3, 1000), (4, 3000), (5, 3000)] {
+    for (index, expected) in array![(0_u8, 6000_u32), (1, 4000), (2, 4000), (3, 3000), (4, 3000), (5, 3000)] {
         let value = counts.get(index.into());
         println!("kind {} of 100000: {}", index, value);
         assert!(within(value, expected, 200), "discovery odds drift");

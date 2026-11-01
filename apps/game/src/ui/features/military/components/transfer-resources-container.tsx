@@ -455,7 +455,8 @@ export const TransferResourcesContainer = ({
     return (
       <div
         key={resource.resourceId}
-        className={`p-3 rounded-md border ${isSelected ? "bg-hud-chosen border-hud-line-strong" : "bg-hud-well border-hud-line"}`}
+        data-selected={isSelected || undefined}
+        className="ui-pick p-3 rounded-md border border-hud-line bg-hud-well"
       >
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center">

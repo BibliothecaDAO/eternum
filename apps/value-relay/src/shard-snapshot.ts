@@ -1,3 +1,4 @@
+import { isLoopbackHttp } from "./source-url";
 import { ShardReader, felt, uint, type ShardConnection } from "./shard-rpc";
 
 export interface ConfirmedSnapshot {
@@ -41,7 +42,8 @@ export const readConfirmedSnapshot = async (
 
 export const readHeraldJson = async <A>(heraldUrl: string, path: string, network: typeof fetch): Promise<A> => {
   const url = new URL(path, heraldUrl);
-  if (url.protocol !== "https:" || url.username || url.password) throw new Error("invalid_herald_url");
+  if ((url.protocol !== "https:" && !isLoopbackHttp(url)) || url.username || url.password)
+    throw new Error("invalid_herald_url");
   const response = await network(url, { redirect: "manual", cache: "no-store", signal: AbortSignal.timeout(5000) });
   if (!response.ok) throw new Error("confirmed_herald_read_unavailable");
   return response.json() as Promise<A>;
