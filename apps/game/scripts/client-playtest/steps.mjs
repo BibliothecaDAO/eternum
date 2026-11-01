@@ -1,6 +1,7 @@
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
+import { readFileSync } from "node:fs";
 
 import {
   blocked,
@@ -2380,6 +2381,104 @@ const LAB_SPIRE_STEPS = [
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
+const ARMY_SELECTION_AUDIO_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  ...["dock", "tab", "map"].map((input) => ({
+    name: `selection-audio-${input}`,
+    play: (context) => selectArmyWithAudio(context, input),
+    settleMs: 0,
+    verify: selectionPlayedFoley,
+  })),
+];
+
+/** Observe real buffer starts; neither select through page state nor play the reference sound. */
+async function selectArmyWithAudio({ browser }, input) {
+  const armyId = browser.observe().selection?.army?.id;
+  await clearTheSelection({ browser });
+  observeSelectionAudio(browser);
+  let audio;
+  let picked;
+  try {
+    if (input === "dock") picked = await focusTheArmyFromItsDock(browser);
+    if (input === "tab") browser.press("Tab");
+    if (input === "map") {
+      const tile = armyOnScreen(browser, armyId);
+      if (tile) browser.tap(tile);
+    }
+    await waitFor(browser, (seen) => Boolean(seen.selection?.army), BURST_SELECT_WAIT_MS);
+    await sleep(500);
+  } finally {
+    audio = browser.read("window.__selectionAudioProbe().finally(() => delete window.__selectionAudioProbe)");
+  }
+  return { input, picked, army: browser.observe().selection?.army ?? null, audio };
+}
+
+function observeSelectionAudio(browser) {
+  const reference = readFileSync(new URL("../../public/sound/units/army-selection.wav", import.meta.url)).toString(
+    "base64",
+  );
+  browser.eval(`(() => {
+    const originalStart = AudioBufferSourceNode.prototype.start;
+    const originalConnect = AudioNode.prototype.connect;
+    const gains = new WeakMap();
+    const starts = [];
+    const samplesOf = (buffer) => {
+      const samples = new Float32Array(buffer.length);
+      buffer.copyFromChannel(samples, 0);
+      return samples;
+    };
+    AudioNode.prototype.connect = function(destination, ...args) {
+      const result = originalConnect.call(this, destination, ...args);
+      if (destination instanceof GainNode) gains.set(this, destination);
+      return result;
+    };
+    AudioBufferSourceNode.prototype.start = function(...args) {
+      const result = originalStart.apply(this, args);
+      if (this.buffer) {
+        const buffer = this.buffer;
+        const record = { duration: buffer.duration, sampleRate: buffer.sampleRate,
+          channels: buffer.numberOfChannels, state: this.context.state,
+          at: performance.now() };
+        starts.push({ record, gainNode: gains.get(this), samples: samplesOf(buffer) });
+      }
+      return result;
+    };
+    window.__selectionAudioProbe = async () => {
+      AudioBufferSourceNode.prototype.start = originalStart;
+      AudioNode.prototype.connect = originalConnect;
+      const references = new Map();
+      for (const { record: { sampleRate } } of starts) {
+        if (references.has(sampleRate)) continue;
+        const decoder = new OfflineAudioContext(1, 1, sampleRate);
+        const bytes = Uint8Array.from(atob(${JSON.stringify(reference)}), (c) => c.charCodeAt(0));
+        references.set(sampleRate, samplesOf(await decoder.decodeAudioData(bytes.buffer)));
+      }
+      return starts.map(({ record, gainNode, samples }) => {
+        const expected = references.get(record.sampleRate);
+        let maxSampleError = null;
+        if (samples.length === expected.length) {
+          maxSampleError = 0;
+          for (let i = 0; i < samples.length; i++) {
+            maxSampleError = Math.max(maxSampleError, Math.abs(samples[i] - expected[i]));
+          }
+        }
+        return { ...record, gain: gainNode?.gain.value ?? null, maxSampleError,
+          matchesFoley: maxSampleError !== null && maxSampleError <= 1 / 32768 };
+      });
+    };
+  })()`);
+}
+
+function selectionPlayedFoley({ played }) {
+  if (!played.army) return failed("selection did not select an army", played);
+  const foley = played.audio.filter(({ matchesFoley }) => matchesFoley);
+  if (foley.length !== 1) return failed("selection did not start exactly one foley buffer", played);
+  if (foley[0].state !== "running" || foley[0].gain !== 0.5 || foley[0].channels !== 1) {
+    return failed("selection foley was not running at its quiet mono gain", played);
+  }
+  return completed(played);
+}
+
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -3857,6 +3956,7 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-army-selection-audio": { game: LAB_SPIRE, steps: ARMY_SELECTION_AUDIO_STEPS },
   "lab-merge-loses-xp": {
     game: labSpireGame("merge-loses-xp"),
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),

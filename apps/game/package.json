@@ -63,6 +63,7 @@
     "prove:app": "node ./scripts/prove-app-sheet.mjs",
     "render:building-thumbnails": "node ./scripts/render-building-thumbnails.mjs",
     "test": "node ./scripts/run-vitest.mjs",
+    "build:army-selection": "node asset-sources/army-selection/build.mjs",
     "verify:assets": "vitest run --config vitest.assets.config.ts",
     "test:three:changed-guard": "node ./scripts/check-three-changed-tests.mjs",
     "test:three:types": "tsc --noEmit --pretty false -p tsconfig.three-types.json",

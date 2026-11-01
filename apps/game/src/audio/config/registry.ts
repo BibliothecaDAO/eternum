@@ -886,18 +886,13 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
   },
   "unit.command.select": {
     id: "unit.command.select",
-    url: "/sound/units/army_selected1.mp3",
+    url: "/sound/units/army-selection.wav",
     category: AudioCategory.COMBAT,
     priority: 8,
     poolSize: 4,
     spatial: true,
     loop: false,
-    volume: 0.7,
-    variations: [
-      "/sound/units/army_selected1.mp3",
-      "/sound/units/army_selected2.mp3",
-      "/sound/units/army_selected3.mp3",
-    ],
+    volume: 0.5,
   },
   "unit.command.move": {
     id: "unit.command.move",
@@ -951,21 +946,6 @@ const AUDIO_REGISTRY: Record<string, AudioAsset> = {
     loop: false,
     volume: 0.6,
     variations: ["/sound/units/running.mp3", "/sound/units/running_2.mp3"],
-  },
-  "unit.selected": {
-    id: "unit.selected",
-    url: "/sound/units/army_selected1.mp3",
-    category: AudioCategory.COMBAT,
-    priority: 8,
-    poolSize: 4,
-    spatial: true,
-    loop: false,
-    volume: 0.7,
-    variations: [
-      "/sound/units/army_selected1.mp3",
-      "/sound/units/army_selected2.mp3",
-      "/sound/units/army_selected3.mp3",
-    ],
   },
   "unit.snap": {
     id: "unit.snap",

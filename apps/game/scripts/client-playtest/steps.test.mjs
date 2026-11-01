@@ -19,6 +19,34 @@ import {
 const onTheMap = { scene: "map", rendered: "map", place: "Map", dialogs: [], pressed: [] };
 const verifyOf = (name) => SPECTATOR_STEPS.find((step) => step.name === name).verify;
 
+describe("army selection audio proof", () => {
+  const steps = STEP_SETS["lab-army-selection-audio"].steps.slice(1);
+  const cue = { matchesFoley: true, state: "running", gain: 0.5, channels: 1 };
+  const played = { army: { id: 201 }, audio: [cue] };
+
+  it("checks dock, Tab and map selection with one audible foley start each", () => {
+    expect(steps.map(({ name }) => name)).toEqual([
+      "selection-audio-dock",
+      "selection-audio-tab",
+      "selection-audio-map",
+    ]);
+    for (const step of steps) expect(step.verify({ played }).status).toBe("completed");
+  });
+
+  it("fails on absent selection, silent playback, a different clip, duplicates or the wrong mix", () => {
+    for (const bad of [
+      { ...played, army: null },
+      { ...played, audio: [] },
+      { ...played, audio: [{ ...cue, matchesFoley: false }] },
+      { ...played, audio: [cue, cue] },
+      { ...played, audio: [{ ...cue, state: "suspended" }] },
+      { ...played, audio: [{ ...cue, gain: 0.7 }] },
+    ]) {
+      expect(steps[0].verify({ played: bad }).status).toBe("failed");
+    }
+  });
+});
+
 // Playtest 30 October 2026 (B6): the phone's Log became its Feed and the Season board's Back its ×, and the steps
 // pressed words the HUD no longer had.
 describe("the HUD's words the steps press and read", () => {

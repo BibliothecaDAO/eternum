@@ -1,5 +1,13 @@
 # Feature map — game client
 
+Army selection plays a short, quiet cloth-and-buckle cue with no voice. Select an owned army from the HUD, with Tab, or
+by clicking its map tile. The existing combat volume and mute settings apply. Run
+`pnpm --dir apps/game playtest --port 4193 --steps lab-army-selection-audio --iterations 1` to exercise all three
+controls in `/lab/game?scenario=spire`; each must select an army and start exactly one matching foley buffer in a
+running audio context. Screenshots and the transcript retain the selected army and the played buffer's PCM comparison
+and gain (at most one 16-bit sample step of error). This fixture proof uses the real client controls and audio pipeline;
+it sends no live orders.
+
 Relic crates on the Blitz map: select the chest's tile to focus its labelled crate and opening action. A sealed crate
 says "Three relics. Open to reveal them."; its actual relics appear on opening and stay in the tile's receipt. Open
 needs an adjacent own army (the panel otherwise says, in a plain line where Open would stand, "Move one of your armies
