@@ -86,7 +86,10 @@ export const SeasonRecap = ({
       {cover && <img className="season-recap__painting" alt="" {...paintingSources("season-citadel")} sizes="100vw" />}
       <header className="season-recap__head">
         {game && <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>}
-        <h1 className="text-app-display text-app-ink">{SEASON_ENDINGS[ending]}</h1>
+        {/* A phone's column is too narrow for the ending at display size: it reads at a title's. */}
+        <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
+          {SEASON_ENDINGS[ending]}
+        </h1>
       </header>
       {board && own && (
         <CardFrame cut={cut}>

@@ -133,8 +133,10 @@
   color: var(--app-ink);
   font-family: var(--font-body);
 }
+/* Its layers, bottom up: the painting, the veil that keeps the facts readable, the facts, the frame. */
 .season-card__painting {
   position: absolute;
+  z-index: 0;
   inset: 0;
   width: 100%;
   height: 100%;
@@ -144,6 +146,7 @@
 .season-card::before {
   content: "";
   position: absolute;
+  z-index: 1;
   inset: 0;
   background: linear-gradient(
     90deg,
@@ -155,6 +158,7 @@
 .season-card::after {
   content: "";
   position: absolute;
+  z-index: 3;
   inset: 14px;
   border: 2px solid rgb(var(--app-gold) / 0.55);
   border-radius: 18px;
@@ -162,6 +166,7 @@
 }
 .season-card__body {
   position: relative;
+  z-index: 2;
   height: 100%;
   display: grid;
   grid-template-columns: 400px 1fr;
@@ -222,6 +227,7 @@
 }
 .season-card__place span {
   font-size: 32px;
+  white-space: nowrap;
 }
 .season-card__prize {
   display: flex;
@@ -266,6 +272,7 @@
 }
 .season-card__foot {
   position: absolute;
+  z-index: 2;
   left: 44px;
   right: 56px;
   bottom: 26px;
