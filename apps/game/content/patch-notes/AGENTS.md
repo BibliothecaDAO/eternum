@@ -15,7 +15,9 @@ release by the patch notes' editor (the docs owner), never appended to with a ch
   this order, each only if it changed: `## All modes`, `## Frontier`, `## Blitz`, `## Eternum`. Under a mode, `### New`,
   `### Balance`, `### Fixes`, in that order. Each change is one list item:
   `- {icon} **Name**: The line that says it whole.`, and a number that moved ends with `` `old → new` ``. The icon is an
-  `IconMeaning` (`asset-sources/facets/semantic-map.json`).
+  `IconMeaning` (`asset-sources/facets/semantic-map.json`). A campaign's season date is never typed: write
+  `{<campaign>.starts}` or `{<campaign>.ends}` (`{devcon-2026.starts}`), and the generator writes it from
+  `packages/identity/src/campaigns.ts` in the event's clock ("Tue 3 Nov 07:30 IST").
 - **After editing,** run `node scripts/generate-patch-notes.mjs` from `apps/game`. It refuses an unknown mode, kind or
   icon, a mode or kind out of order, and anything but list items under a kind; CI refuses a generated copy its files no
   longer render to.

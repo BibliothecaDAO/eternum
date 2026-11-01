@@ -11,6 +11,7 @@ import { marked } from "marked";
 import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import * as SchemaIssue from "effect/SchemaIssue";
+import { CAMPAIGNS, seasonMoment } from "../../../packages/identity/src/campaigns.ts";
 
 const rootDir = process.cwd();
 const contentDir = path.join(rootDir, "content", "patch-notes");
@@ -25,6 +26,10 @@ const MODES = { "All modes": "all", Frontier: "frontier", Blitz: "blitz", Eternu
 const KINDS = { New: "new", Balance: "balance", Fixes: "fix" };
 /** `{icon} **Name**: the line`, ending with `` `old → new` `` where a number moved. */
 const CHANGE = /^\{([a-z0-9-]+)\} \*\*([^*]+)\*\*: (.+?)(?: `([^`→]+) → ([^`→]+)`)?$/;
+/** `{devcon-2026.starts}` in a line: a campaign's season date, read from the campaign, never typed. */
+const CAMPAIGN_DATE = /\{([a-z0-9-]+)\.([a-z]+)\}/g;
+/** Each date a line may name, by the campaign's field that holds it. */
+const CAMPAIGN_MOMENTS = { starts: "startsAt", ends: "redeemUntil" };
 
 const frontmatterSchema = Schema.Struct({
   title: Schema.Trim.check(Schema.isMinLength(1)),
@@ -111,7 +116,27 @@ function readChange(where, text, kind, icons) {
   if (!match) throw new Error(`${where}: a change reads "{icon} **Name**: the line", not "${line}"`);
   const [, icon, title, said, from, to] = match;
   if (!icons.has(icon)) throw new Error(`${where}: unknown icon "${icon}" in "${title}"`);
-  return { kind, icon, title, line: said, ...(from !== undefined && { from: from.trim(), to: to.trim() }) };
+  return {
+    kind,
+    icon,
+    title,
+    line: withCampaignDates(where, title, said),
+    ...(from !== undefined && { from: from.trim(), to: to.trim() }),
+  };
+}
+
+/** The line with each campaign date written in the campaign's own clock: "Tue 3 Nov 07:30 IST". */
+function withCampaignDates(where, title, line) {
+  return line.replace(CAMPAIGN_DATE, (_, key, moment) => {
+    const campaign = Object.hasOwn(CAMPAIGNS, key) ? CAMPAIGNS[key] : undefined;
+    if (campaign === undefined) throw new Error(`${where}: unknown campaign "${key}" in "${title}"`);
+    const field = Object.hasOwn(CAMPAIGN_MOMENTS, moment) ? CAMPAIGN_MOMENTS[moment] : undefined;
+    if (field === undefined)
+      throw new Error(
+        `${where}: unknown date "${moment}" in "${title}"; one of ${Object.keys(CAMPAIGN_MOMENTS).join(", ")}`,
+      );
+    return seasonMoment(campaign[field], campaign.clock.timeZone, campaign.clock.zone);
+  });
 }
 
 function renderModule(notes) {

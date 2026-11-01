@@ -1051,7 +1051,7 @@ describe("identity Worker", () => {
       await printed("M3XKP7HQ", "regular");
       await printed("Z9X2M4NH", "golden");
       expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));
-      const now = vi.spyOn(Date, "now").mockReturnValue(Date.UTC(2026, 10, 6, 14, 30));
+      const now = vi.spyOn(Date, "now").mockReturnValue(CAMPAIGNS["devcon-2026"].redeemUntil * 1000);
       try {
         expect(await other.redeem("M3XKP7HQ")).toEqual([410, { error: "campaign_closed" }]);
         expect(await late.redeem("Z9X2M4NH")).toEqual(ticket("golden"));

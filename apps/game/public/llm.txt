@@ -772,8 +772,8 @@ import { FRONTIER } from "@/utils/frontier";
 
 # Devcon season
 
-A Frontier season at Devcon speed, with 300,000 LORDS to win. It runs from **Tue 3 Nov 12:00 IST**
-(Tue 3 Nov 06:30 UTC) to **Fri 6 Nov 20:00 IST** (Fri 6 Nov 14:30 UTC). It plays like any Frontier season
+A Frontier season at Devcon speed, with 300,000 LORDS to win. It runs from **Tue 3 Nov 07:30 IST**
+(Tue 3 Nov 02:00 UTC) to **Fri 6 Nov 15:30 IST** (Fri 6 Nov 10:00 UTC). It plays like any Frontier season
 ([Frontier](/frontier)), only faster.
 
 ## Join with your ticket
