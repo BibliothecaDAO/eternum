@@ -74,6 +74,11 @@ reviewed checkout at `/opt/eternum`. Install dependencies with `pnpm install --f
 exports with `pnpm run build:packages` before starting the unit. This process has no Cloudflare deployment credentials
 and submits no L2 transactions. Keep its private key outside every Worker secret store and deployment export.
 
+`deploy/athanor/cosigner/install.sh` does these steps on the box and is safe to rerun: `prepare REVISION` (piped over SSH
+before the checkout exists) makes the user, puts Bun at `/usr/local/bin`, checks out and builds `/opt/eternum` at that
+commit and initializes the key, printing only the public key; `start` takes `config.json` on standard input, installs
+it mode 0600 with the unit, starts it and prints `/health`.
+
 Before ledger setup, run `bun deploy/athanor/cosigner/main.ts init-key /etc/payout-cosigner/key` as that user. It prints
 only the public key. Put that public key in setup's `cosignerPublicKey`; setup also requires `cosignerUrl` (HTTPS) and
 `cosignerToken` (request bearer token). Only the URL/token go to the relay Worker. The ledger constructor takes the
