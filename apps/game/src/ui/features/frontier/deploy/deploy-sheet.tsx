@@ -1,5 +1,3 @@
-import { useGame } from "@/hooks/context/game-context";
-import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -8,16 +6,15 @@ import { showDeployOnMap } from "@/three/scenes/worldmap-deploy-request";
 import { toast } from "@/ui/features/event-feed/notify";
 import { openArmyDeployment } from "@/ui/features/military/utils/open-army-deployment";
 import { useDeployRing } from "@/ui/features/military/components/unified-army-creation-modal/use-deploy-ring";
-import { type ExpeditionRules, ResourceManager } from "@bibliothecadao/eternum";
+import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import type { Direction } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
-import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import { deployArmy, deployDirection, deployRange, previewDeploy } from "./deploy-plan";
+import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
 import { DeployView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -36,8 +33,6 @@ export const DeploySheet = ({
   rules: ExpeditionRules;
   onClose: () => void;
 }) => {
-  const { setup } = useGame();
-  const defaultTick = useCurrentDefaultTick();
   const plan = useDeployPlan(realm);
   const range = plan ? deployRange(plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
   const [count, setCount] = useState<number | "max" | null>(null);
@@ -45,7 +40,6 @@ export const DeploySheet = ({
   // and get 500"); Max is one tap away. A count being set survives fact revisions, and a count at the most stays at the
   // most as the farms raise it: the label and the count read the one figure.
   const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
-  const wheatCaps = plan?.troops ? range.wheatMax < range.troopsMax : false;
   const preview = plan ? previewDeploy(plan, shown) : null;
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
@@ -66,7 +60,6 @@ export const DeploySheet = ({
   useMapUnderDeploy(goToPlace);
   useDeployOnMap(realmId, direction);
   const deploying = useInFlight("deploy", realmId) !== undefined;
-  const wheatPerHour = new ResourceManager(setup.store, realmId).wheatPerHour(defaultTick);
   const nextTroopIn = useRealmStores(realm, rules)?.troops.nextIn;
 
   /** The sheet closes as the army leaves; its slot on the dock carries the wait, and a refusal says why there. */
@@ -106,17 +99,7 @@ export const DeploySheet = ({
       canDeploy={Boolean(plan?.troops && preview && direction !== null && start)}
       sending={deploying}
       onDeploy={() => void deploy()}
-      wheatLimit={
-        plan && wheatCaps
-          ? {
-              troops: range.max,
-              of: range.troopsMax,
-              held: plan.wheat,
-              perTroop: plan.wheatPerTroop,
-              wait: secondsUntilHeld(plan.wheat, plan.wheatPerTroop, wheatPerHour),
-            }
-          : undefined
-      }
+      wheatLimit={wheatStopsAt(range, shown)}
       onGoToRealm={() => {
         onClose();
         goToPlace(false);

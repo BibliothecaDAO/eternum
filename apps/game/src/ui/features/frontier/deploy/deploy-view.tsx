@@ -9,7 +9,6 @@ import {
   HudWindowFoot,
 } from "@/ui/design-system/kit/hud-elements";
 import { costLine } from "@/ui/design-system/kit/price-faces";
-import { shortfallLine } from "@/ui/design-system/kit/reasons";
 import {
   ARMY,
   BUILD,
@@ -39,9 +38,10 @@ import { slotStartLine } from "./slot-start";
  * owner's pick A, 30 October: "A is what I want for the deploy picker"), and Deploy with its wheat price. The tile is
  * picked on the map itself, where the order's tile is marked among the realm's open ones. A notice shows only where
  * Deploy cannot (no troops at home: when the next is home, or Build with the Barracks' mark while nothing makes them; no
- * open tile) and where the wheat holds the count under the troops at home: one red line with the Wheat's mark, how many
- * of them the wheat pays for, or what one troop needs against what is held, and Get Wheat on it (the owner's pick A, 31
- * October: "One red line that names Wheat"). With enough wheat, its price in the foot is all that names it.
+ * open tile) and where the count is at the most and the wheat is what stops it below the troops at home: one red line
+ * with the Wheat's mark, how many of them the wheat pays for, and Get Wheat on it (the owner's pick A, 31 October: "One
+ * red line that names Wheat"; shown only at the most, 1 November). Below the most, its price in the foot is all that
+ * names the wheat.
  */
 export const DeployView = ({
   art,
@@ -79,11 +79,8 @@ export const DeployView = ({
   canDeploy: boolean;
   sending: boolean;
   onDeploy: () => void;
-  /**
-   * The wheat caps the count below the troops at home: the troops it pays for, of how many would go without it, the
-   * wheat held against one troop's price, and the farms' wait for the next troop's.
-   */
-  wheatLimit: { troops: number; of: number; held: number; perTroop: number; wait: number | undefined } | undefined;
+  /** The count is at the most and the wheat stops it: the troops it pays for, of how many would go without it. */
+  wheatLimit: { troops: number; of: number } | undefined;
   /** To the realm, where Barracks make troops and Farms make wheat. */
   onGoToRealm: () => void;
   onClose: () => void;
@@ -119,17 +116,7 @@ export const DeployView = ({
       <HudNotice
         tone="bad"
         icon="wheat"
-        line={
-          wheatLimit.troops === 0
-            ? shortfallLine({
-                kind: "short",
-                of: "wheat",
-                held: wheatLimit.held,
-                need: wheatLimit.perTroop,
-                wait: wheatLimit.wait,
-              })
-            : wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))
-        }
+        line={wheatForOnly(formatExact(wheatLimit.troops), formatExact(wheatLimit.of))}
         fix={{ label: GET_WHEAT, onClick: onGoToRealm }}
       />
     )}
