@@ -11,7 +11,8 @@ import wasm from "vite-plugin-wasm";
 import { resolveRendererViteAliases } from "./src/three/renderer-vite-config";
 import { PWA_PRECACHE_BUDGET_BYTES, PWA_PRECACHE_FILES } from "./build/pwa-assets.mjs";
 import { createPwaReleasePlugin } from "./build/pwa-release";
-import { APP_ADDRESS } from "./src/config/app-address";
+import { APP_ADDRESS, STAGING_ORIGIN } from "./src/config/app-address";
+import { linkPreviewUrl } from "./src/brand/link-preview";
 import { hashedModels } from "./build/hashed-models";
 import { labArtwork } from "./build/lab-artwork";
 import { isDevEnvironment } from "./src/shell/frame/environment";
@@ -41,21 +42,23 @@ const appIdentity = (devEnvironment: boolean) => {
   return {
     name: devEnvironment ? "Realms dev" : "Realms",
     icon: (file: string) => `/images/${icons}${file}`,
+    linkPreview: linkPreviewUrl(devEnvironment),
   };
 };
 
-/** The page as the environment serves it: its title and icons, and a share card that sends a reader to the live app. */
+/**
+ * The page as the environment serves it: its title and icons, and a share card that sends a reader to the live app,
+ * unfurling with the environment's own copy of the link preview image.
+ */
 const appIdentityHtml = (identity: ReturnType<typeof appIdentity>): Plugin => ({
   name: "app-identity-html",
   transformIndexHtml: (html) =>
     html
       .replace("<title>Realms</title>", `<title>${identity.name}</title>`)
       .replaceAll("/images/game-", identity.icon(""))
+      .replaceAll("%LINK_PREVIEW%", identity.linkPreview)
       .replaceAll("%APP_ADDRESS%", APP_ADDRESS),
 });
-
-/** The dev environment's app and its identity Worker, which every development build signs in against. */
-const STAGING_ORIGIN = "https://play.dev-realms.party";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {

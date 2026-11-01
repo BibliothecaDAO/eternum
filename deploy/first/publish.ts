@@ -151,11 +151,17 @@ for (const file of await readdir('apps/game/dist', {recursive:true}))
   await publishSite(platform, clientSite(platform.target), "apps/game/dist", revision);
   await verifyPublishedClient(platform);
 }
-/** The docs site, built as validation builds it and published from the same commit as the client. */
+/**
+ * The docs site, built as validation builds it and published from the same commit as the client. Its build reads the
+ * client's environment constant, so its pages unfurl with the environment's own link preview image.
+ */
 export async function deployDocs(platform: Platform, revision: string) {
   if (!platform.apply) throw new PublicError("Dry run cannot deploy the docs");
   deploymentStage("publish docs");
-  await command({ argv: ["pnpm", "run", "build:docs"] });
+  await command({
+    argv: ["pnpm", "run", "build:docs"],
+    env: { VITE_PUBLIC_ENVIRONMENT: platform.target.worker },
+  });
   await publishSite(platform, platform.target.docs, "apps/game-docs/dist", revision);
   deploymentStage("verify docs");
   await command({

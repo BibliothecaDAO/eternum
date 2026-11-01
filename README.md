@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="apps/game/public/images/covers/og-image.png" alt="Realms: Conquer everything" width="720" />
+  <img src="apps/game/public/images/covers/link-preview-54d58004.png" alt="Realms" width="720" />
 </p>
 
 <p align="center">

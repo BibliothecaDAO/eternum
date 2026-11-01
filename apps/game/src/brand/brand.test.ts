@@ -1,9 +1,10 @@
 // @vitest-environment node
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { FONT_FACES, HUD_COLORS, SHELL_COLORS } from "@/tokens";
-import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
+import { AGE_LOCKUP, LINK_PREVIEW, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import { EMAIL_ART_INPUTS } from "../../../../packages/notifications/src/email-art.gen";
 import { inputsDigest } from "../../../../packages/notifications/scripts/email-art-inputs.mjs";
 import KIT from "./palette.json";
@@ -21,6 +22,8 @@ const RETIRED = [
   "realms-mark.svg",
   "eternum-loader.png",
   "Eternum-Mark-Black.png",
+  // v2's link preview, "Realms · Conquer everything".
+  "og-image.png",
   // v2's muted text, now the kit's #B7A78A.
   "#a2926f",
 ];
@@ -154,6 +157,40 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
       ].map((hit) => `${shortPath(file)}: ${hit}`);
     });
     expect(own).toEqual([]);
+  });
+
+  it("names the link preview by its content, so a new image is a new address", () => {
+    const bytes = readFileSync(publicFile(LINK_PREVIEW));
+    const digest = createHash("sha256").update(bytes).digest("hex");
+    expect(LINK_PREVIEW).toBe(`/images/covers/link-preview-${digest.slice(0, 8)}.png`);
+  });
+
+  it("unfurls the game and the docs with the one link preview, LINK_PREVIEW", () => {
+    const html = readFileSync(path("../../index.html"), "utf8");
+    const unfurls = [...html.matchAll(/<meta (?:property|name)="(og:image|twitter:image)" content="([^"]*)"/g)];
+    expect(unfurls.map(([, tag, content]) => `${tag} ${content}`)).toEqual([
+      "og:image %LINK_PREVIEW%",
+      "twitter:image %LINK_PREVIEW%",
+    ]);
+    const readme = readFileSync(`${REPO}README.md`, "utf8");
+    expect(readme.match(/link-preview-[\w-]*\.png/g)).toEqual([LINK_PREVIEW.split("/").pop()]);
+    const docs = readFileSync(path("../../../game-docs/vocs.config.ts"), "utf8");
+    expect(docs).toMatch(/ogImageUrl: linkPreviewUrl\(/);
+    // No surface names a preview image of its own, and the app serves no second copy of it.
+    const named = SURFACES.filter((file) => !file.endsWith("/icon-meaning.ts")).flatMap((file) =>
+      (readFileSync(file, "utf8").match(/(?:og-image|link-preview)[\w-]*\.(?:png|jpe?g|webp)/g) ?? []).map(
+        (hit) => `${shortPath(file)}: ${hit}`,
+      ),
+    );
+    expect(named).toEqual([]);
+    const preview = readFileSync(publicFile(LINK_PREVIEW));
+    const copies = readdirSync(PUBLIC, { recursive: true, encoding: "utf8" }).filter(
+      (file) =>
+        `/${file}` !== LINK_PREVIEW &&
+        statSync(`${PUBLIC}${file}`).size === preview.length &&
+        readFileSync(`${PUBLIC}${file}`).equals(preview),
+    );
+    expect(copies).toEqual([]);
   });
 
   it("sends the email headers drawn from today's brand (pnpm --dir packages/notifications build:email-art)", async () => {
