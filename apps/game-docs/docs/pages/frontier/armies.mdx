@@ -18,7 +18,7 @@ deployed costs {FRONTIER.realm.deployWheat} wheat, and each castle level deploys
 <Shot
   name="frontier/deploy"
   frame="phone"
-  caption="Deploying on a phone: how many troops, the stamina the slot gives them, and the wheat it costs."
+  caption="Deploying on a phone: how many troops, the slot and the stamina it gives them, and the wheat it costs."
 />
 
 ## Stamina
@@ -59,8 +59,8 @@ you disband loses its troops; Frontier asks first.
 
 An army earns {FRONTIER.xp.reveal.join(" / ")} XP per revealed tile at {FRONTIER.depths.map((depth) =>
 depth.name).join(" / ")}. It also earns XP for cleared guards. Shrines grant one skill point of the rank shown when
-discovered. XP only increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common, Uncommon, Rare, Epic and
-Legendary skill points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
+discovered. XP only increases. At {FRONTIER.xp.pointThresholds.join(" / ")} XP it earns Common I, Uncommon II, Rare III,
+Epic IV and Legendary V skill points. The same milestones repeat every {FRONTIER.xp.pointThresholds[4]} XP.
 
 Each attribute starts at 0, an empty socket. A point raises one attribute one rank, up to the point's own rank. Level up
 uses the lowest fitting point you hold. Raising restores {FRONTIER.stamina.pointRefills.join(" / ")} stamina according
@@ -81,7 +81,7 @@ source's. Training buildings grant new armies rank I, and research raises their 
 <Shot
   frame="panel"
   name="frontier/level-up"
-  caption="An army's panel: its troops, stamina and XP, then the next tier of each attribute."
+  caption="An army's panel: its troops and stamina, each attribute's rank, the skill points it holds by rank, and its XP to the next point."
 />
 
 ## Fights

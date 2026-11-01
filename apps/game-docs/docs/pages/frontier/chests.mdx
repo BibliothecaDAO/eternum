@@ -31,16 +31,10 @@ A chest is worth its tier's shares at the day's price:
 | Shares | {FRONTIER.chests.shares[0]} | {FRONTIER.chests.shares[1]} | {FRONTIER.chests.shares[2]} | {FRONTIER.chests.shares[3]} | {FRONTIER.chests.shares[4]} |
 
 The price of a share is set each day from the season's pool, and never exceeds{" "} {FRONTIER.chests.priceCeiling}
-LORDS. The Season page shows the pool, today's price and its ceiling. A ruin shows its tier and LORDS before you fight.
-Its LORDS are reserved and paid only when you clear it. If today's available budget cannot cover it, the clear refuses
-without spending the attack. You can reveal any number of ruins, then choose one to clear: your other ruins disappear,
-across every depth, and your realm finds no more ruins until the next day.
-
-<Shot
-  frame="panel"
-  name="frontier/season-pool"
-  caption="The Season board: the pool, what today releases, a share's price and its ceiling."
-/>
+LORDS. The Season board's chip shows the season's pool, what today releases and what a Common chest pays today. A ruin
+shows its tier and LORDS before you fight. Its LORDS are reserved and paid only when you clear it. If today's available
+budget cannot cover it, the clear refuses without spending the attack. You can reveal any number of ruins, then choose
+one to clear: your other ruins disappear, across every depth, and your realm finds no more ruins until the next day.
 
 ## A chest in the wild
 
@@ -56,6 +50,12 @@ Part of the season's pool pays chests. The rest, the leaderboard part, is shared
 season ends; each season announces its amounts. Only realms that have cleared at least one site take a place. The Season
 page shows the podium as the season runs, with each place's LORDS and who holds it, and each prize as Pending until it
 is paid.
+
+<Shot
+  frame="panel"
+  name="frontier/season-pool"
+  caption="The Season board: the podium and its prizes, then every realm's sites and LORDS."
+/>
 
 ## Your LORDS
 
