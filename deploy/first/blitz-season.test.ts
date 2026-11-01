@@ -3,7 +3,7 @@ import { expect, mock, test } from "bun:test";
 import type { Account, RpcProvider } from "starknet";
 import { resolveBlitzSeason } from "./blitz-season";
 import { configureLedger } from "./ledger";
-import { environments, type Inputs } from "./settings";
+import { environments, type Inputs, type Target } from "./settings";
 import type { PrivateStore } from "./private-store";
 import { response } from "../../packages/value-ledger/test-support/abi";
 import { ledgerAbi } from "../../packages/value-ledger/test-support/ledger-abi";
@@ -99,7 +99,7 @@ test("a successful first setup cannot suppress opening season two", async () => 
   expect(await resolve(rpc)).toMatchObject({ id: 2, present: true });
 });
 
-test("Frontier-only production's cold setup holds its Frontier preset and no Blitz call, and reads no Blitz season", async () => {
+test("a Frontier-only cold-admin setup holds its Frontier preset and no Blitz call, and reads no Blitz season", async () => {
   const rpc = { ...provider([]), address: "0x30" };
   const saved = new Map<string, unknown>();
   const files = {
@@ -108,7 +108,7 @@ test("Frontier-only production's cold setup holds its Frontier preset and no Bli
   };
   const ready = await configureLedger(
     rpc as unknown as Account,
-    environments.production,
+    { ...environments.production, coldAdmin: true } as Target,
     { ledger: "0x10", lords: mainnetAddresses.lords, mmr: "0x12", chests: "0x13", cosmetics: "0x14" },
     "0x33",
     { frontierPresetId: "6", admin: "0xad" } as Inputs,

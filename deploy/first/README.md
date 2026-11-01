@@ -17,8 +17,10 @@ The first apply asks for the Cloudflare token, one Alchemy mainnet URL, the Rese
 ID and secret (every environment offers Discord sign-in), the whole-token Frontier deposit, and four UTC dates: Frontier
 start/end and Blitz start/end. Dates use `YYYY-MM-DDTHH:MM:SSZ`; none has a default. The Frontier start must be on its
 army tick, with a positive duration. Invalid dates are rejected without changing it. All four dates and the deposit are
-shown before transactions. Production additionally asks for the **public** cold-admin and treasury addresses. It never
-asks for their keys.
+shown before transactions. Production additionally asks for its **public** treasury address, never its key: the treasury
+is fixed in the ledger's constructor. The deployer is the ledger's admin and funding payer on dev and production; an
+environment marked `coldAdmin` in `environments.json` instead asks for its public cold-admin address, and setup refuses
+a saved `admin` anywhere else.
 
 The first account step prints one deployer address to fund with about **250 STRK**, then stops. Run the same apply
 command after funding it. The command deploys that account, transfers 30 STRK to the relay and 1 STRK to the monitor,
@@ -90,8 +92,9 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 6. Read roles, metadata events, presets and season state, and prepare only missing setup calls. Metadata scans begin at
    each collection’s deployment block, found from historical class reads once per collection per run. Presence reads run
    in parallel during both inspection and apply. Opening a new Blitz ledger season requires its start to be in the
-   future; an existing matching season is preserved after its start. Production writes public unsigned calls to
-   `cold-setup.json` and waits for the cold wallet to execute them. Its cold key never enters the command.
+   future; an existing matching season is preserved after its start. An environment with a cold admin writes public
+   unsigned calls to `cold-setup.json` and waits for the cold wallet to execute them; its cold key never enters the
+   command.
 7. Reuse the saved service credentials, or generate them once for a new environment. An existing box token requires the
    original private directory; comparison runs on the box and returns only a match result. If the guardian Worker
    already holds `GUARDIAN_PRIVATE_KEY`, keep it even if this directory has no copy. Never rotate it.
@@ -208,12 +211,14 @@ the fourth says the earliest time email can resume, and the status page shows ev
 
 ```sh
 pnpm run teardown dev
+pnpm run teardown production /opt/athanor/backups/NAME
 ```
 
-Only dev is accepted. The box retires its directory row, stops its Compose project, removes its volumes and run
-directory, and preserves deployment logs in `/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone.
-Teardown output has its own mode-0600 log there. The next deployment creates a fresh shard with a new chain identity so
-service cursors cannot follow the former chain. A restart reads the existing chain identity from the run directory.
+Production always names the backup the box verifies first; dev may name one to rehearse that path. The box retires its
+directory row, stops its Compose project, removes its volumes and run directory, and preserves deployment logs in
+`/opt/athanor/logs`. It leaves Cloudflare and the mainnet ledger alone. Teardown output has its own mode-0600 log there.
+The next deployment creates a fresh shard with a new chain identity so service cursors cannot follow the former chain. A
+restart reads the existing chain identity from the run directory.
 
 ## Private state and recovery
 

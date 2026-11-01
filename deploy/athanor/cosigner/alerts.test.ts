@@ -74,7 +74,7 @@ test("a paused ledger posts once and its unpause once; an unreadable minute chan
   box.ledgerPaused = false;
   await check();
   expect(posts).toEqual([
-    `${header}The ledger is paused. No payout goes out until the cold admin unpauses it.`,
+    `${header}The ledger is paused. No payout goes out until the ledger admin unpauses it.`,
     `${header}The ledger is unpaused. Payouts resume.`,
   ]);
 });
@@ -110,7 +110,7 @@ test("a failed post records nothing, so the next minute posts the same news", as
   };
   await expect(checkPayoutAlerts(read, statePath, failing, now)).rejects.toThrow("discord_webhook_refused_429");
   await check();
-  expect(posts).toEqual([`${header}The ledger is paused. No payout goes out until the cold admin unpauses it.`]);
+  expect(posts).toEqual([`${header}The ledger is paused. No payout goes out until the ledger admin unpauses it.`]);
 });
 
 const webhook = "https://discord.com/api/webhooks/1/secret-token";

@@ -14,7 +14,7 @@ import { send, balance } from "./chain";
 import { nativeDocument } from "./box";
 import { seconds } from "./dates";
 import { PublicError } from "./errors";
-import { blitzPresetOf, root, WEI } from "./settings";
+import { blitzPresetOf, ledgerAdmin, root, WEI } from "./settings";
 import { signer, type Deployment } from "./main";
 import type { Step } from "./run";
 
@@ -237,7 +237,7 @@ export function seasonSteps(context: Season): Step[] {
         const account = signer(context);
         const pool = BigInt(context.inputs!.amount) * WEI;
         const lords = context.assets!.lords;
-        const payer = context.target.coldAdmin ? context.inputs!.admin! : account.address;
+        const payer = ledgerAdmin(context.target, context.inputs!, account.address);
         const mint = await shortfallMint(account, lords, payer, pool, state.block);
         const calls = buildFrontierFundingCalls(context.assets!.ledger, lords, {
           shard: state.shard.chainId,

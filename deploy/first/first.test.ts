@@ -7,7 +7,7 @@ import { join } from "node:path";
 import { Account, CallData, hash, num, type RpcProvider } from "starknet";
 import { PrivateStore } from "./private-store";
 import { runSteps, type Step } from "./run";
-import { addressBook, environments, ACCOUNT_CLASS, WEI, root, type Inputs, type Target } from "./settings";
+import { addressBook, environments, ledgerAdmin, ACCOUNT_CLASS, WEI, root, type Inputs, type Target } from "./settings";
 import { accountIdentity, classAt, prepareAccounts, send, type Keys } from "./chain";
 import {
   assetPlans,
@@ -126,30 +126,35 @@ test.each([
   expect(() => validateInputs({ ...input, rpc }, environments.dev)).toThrow();
 });
 
-test("positive integral deposit and duration required; production asks for public cold accounts only", () => {
+test("positive integral deposit and duration required; a cold environment asks for its public cold accounts only", () => {
   for (const amount of ["0", "-1", "1.1", "1e6", (2n ** 128n).toString()])
     expect(() => validateInputs({ ...input, amount }, environments.dev)).toThrow();
   expect(() => validateInputs({ ...input, blitzEnd: input.blitzStart }, environments.dev)).toThrow();
-  expect(() =>
-    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" }, environments.production),
-  ).toThrow("public cold");
-  const production = { ...frontierInput, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" };
-  expect(() => validateInputs(production, environments.production)).not.toThrow();
-  expect(() => validateInputs({ ...production, blitzStart: input.blitzStart }, environments.production)).toThrow(
+  const cold = { ...environments.production, coldAdmin: true } as Target;
+  expect(() => validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" }, cold)).toThrow("public cold");
+  const coldInputs = { ...frontierInput, admin: "0x9", treasury: "0xa", alertEmail: "oncall@example.test" };
+  expect(() => validateInputs(coldInputs, cold)).not.toThrow();
+  expect(() => validateInputs({ ...coldInputs, blitzStart: input.blitzStart }, cold)).toThrow(
     "This environment runs no Blitz; remove blitzStart and blitzEnd from inputs.json",
   );
+  expect(setupQuestions(cold).map(([name]) => name)).toContain("admin");
   expect(() => validateInputs(frontierInput as Inputs, environments.dev)).toThrow("without a default");
-  // With the deployer as its admin, production still names its treasury: it is never the deployer by default.
-  const deployerAdmin = { ...environments.production, coldAdmin: false } as Target;
-  expect(() =>
-    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test" } as Inputs, deployerAdmin),
-  ).toThrow("treasury");
-  expect(() =>
-    validateInputs({ ...frontierInput, alertEmail: "oncall@example.test", treasury: "0xa" } as Inputs, deployerAdmin),
-  ).not.toThrow();
-  expect(setupQuestions(deployerAdmin).map(([name]) => name)).toContain("treasury");
-  expect(setupQuestions(deployerAdmin).map(([name]) => name)).not.toContain("admin");
+});
+
+test("production's ledger admin and funding payer is its deployer, and it still names its treasury", () => {
+  const production = { ...frontierInput, alertEmail: "oncall@example.test" } as Inputs;
+  expect(() => validateInputs(production, environments.production)).toThrow("treasury");
+  expect(() => validateInputs({ ...production, treasury: "0xa" }, environments.production)).not.toThrow();
+  // A cold admin saved before the switch can never stand in for the deployer.
+  expect(() => validateInputs({ ...production, treasury: "0xa", admin: "0x9" }, environments.production)).toThrow(
+    "This environment's ledger admin is its deployer; remove admin from inputs.json",
+  );
+  expect(setupQuestions(environments.production).map(([name]) => name)).toContain("treasury");
+  expect(setupQuestions(environments.production).map(([name]) => name)).not.toContain("admin");
   expect(setupQuestions(environments.dev).map(([name]) => name)).not.toContain("treasury");
+  expect(ledgerAdmin(environments.production, {}, "0xdeployer")).toBe("0xdeployer");
+  const cold = { ...environments.production, coldAdmin: true } as Target;
+  expect(ledgerAdmin(cold, { admin: "0xc01d" }, "0xdeployer")).toBe("0xc01d");
 });
 
 test("dry run inspects every step, including unavailable ones, and never calls a write", async () => {

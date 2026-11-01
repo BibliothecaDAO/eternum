@@ -126,11 +126,11 @@ bindings still trust identity, and an attacker controlling identity for 24 hours
 Changes between observations are not independently witnessed. Player-signed bindings are still needed to close those
 gaps. The box process must read the game node and Herald directly on loopback; Cloudflare cannot choose those facts.
 
-For rotation, pause the ledger, generate a new box key, have the cold admin call `set_cosigner(public_key)`, update the
-box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch, invalidating
-old signatures even if a public key is reused. Keep the key file out of logs and public artifacts. A signer outage
-queues payments and settlement; the operator cannot bypass it. The independent monitor retains its pause policy and
-needs STRK for pause/challenge transactions; the co-signer needs none.
+For rotation, pause the ledger, generate a new box key, have the ledger admin call `set_cosigner(public_key)`, update
+the box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch,
+invalidating old signatures even if a public key is reused. Keep the key file out of logs and public artifacts. A signer
+outage queues payments and settlement; the operator cannot bypass it. The independent monitor retains its pause policy
+and needs STRK for pause/challenge transactions; the co-signer needs none.
 
 ## Uptime qualification
 

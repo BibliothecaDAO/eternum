@@ -114,7 +114,7 @@ function ledgerPause(previous: boolean, paused: boolean | null) {
     paused,
     lines: [
       paused
-        ? "The ledger is paused. No payout goes out until the cold admin unpauses it."
+        ? "The ledger is paused. No payout goes out until the ledger admin unpauses it."
         : "The ledger is unpaused. Payouts resume.",
     ],
   };

@@ -103,10 +103,10 @@ every minute). Each change posts once, and again when it clears. On the box: `cu
 co-signer's port in `/etc/payout-cosigner/config.json`), `journalctl -u payout-cosigner -u payout-alerts`.
 
 - **Wallet change held:** a player's Realms ID asked to be paid at a new wallet, and the co-signer refuses it for 24 h.
-  If the player didn't ask for it (an identity or Cloudflare compromise), pause the ledger with the monitor or the cold
-  admin before the time in the message. Never delete `wallets.sqlite` to clear a hold. "Accepted after 24 h" means the
-  new wallet is now paid; "dropped" means the known wallet came back.
-- **The ledger is paused:** the monitor or the cold admin paused payouts; read the monitor's log (below) for why.
+  If the player didn't ask for it (an identity or Cloudflare compromise), pause the ledger with the monitor or the
+  ledger admin before the time in the message. Never delete `wallets.sqlite` to clear a hold. "Accepted after 24 h"
+  means the new wallet is now paid; "dropped" means the known wallet came back.
+- **The ledger is paused:** the monitor or the ledger admin paused payouts; read the monitor's log (below) for why.
   "Unpaused" means payouts resume.
 - **The co-signer has not answered:** `systemctl status payout-cosigner`, then its journal. Withdrawals and prizes queue
   until it answers; nothing is paid without it. "Answers again" closes it.
