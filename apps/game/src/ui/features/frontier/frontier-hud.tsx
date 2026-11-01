@@ -14,10 +14,10 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { StructureType } from "@bibliothecadao/types";
 import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { type ComponentProps, type ReactNode, useEffect, useState } from "react";
+import { type ComponentProps, type ComponentType, type ReactNode, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { RealmVisitFoot, useRealmVisitNavigation, useVisitedRealm } from "./board/realm-visit";
-import { FrontierSeason, SeasonOver, useSeasonRank } from "./board/season-board";
+import { FrontierSeason, useSeasonRank } from "./board/season-board";
 import { useSpectatorWatch } from "./board/spectator-watch";
 import { useExpeditionRules, useFrontierRealm, useGoToFrontierPlace } from "./frontier-home";
 import { ArmyRefill } from "./army/army-refill";
@@ -79,7 +79,14 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
  * its stores, a nav page or the map, Next up, the action bar while an army is selected, the armies and the places.
  * Everything else opens from these as a sheet.
  */
-export const FrontierHud = ({ rules }: { rules: ExpeditionRules }) => {
+export const FrontierHud = ({
+  rules,
+  seasonOver: SeasonOver,
+}: {
+  rules: ExpeditionRules;
+  /** The host owns the shell recap; the HUD supplies its board action and pending payout. */
+  seasonOver: ComponentType<{ withdraw?: ReactNode; onSeason: () => void }>;
+}) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);

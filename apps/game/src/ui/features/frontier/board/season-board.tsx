@@ -8,16 +8,11 @@ import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
-import { useFinishedGame } from "@/shell/season-tab/finished-game";
-import { SeasonRecap } from "@/shell/season-tab/season-recap";
-import { AppButton } from "@/ui/design-system/kit/app-elements";
-import { EXIT, SEASON } from "@/ui/design-system/kit/words";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
-import { type ComponentProps, type ReactNode, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 import { seasonDay } from "../hud/day-clock";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
@@ -37,7 +32,7 @@ const LIST_LENGTH = 50;
 export const useSeasonBoard = () => useFrontierBoard((board) => board.entries);
 
 /** Herald's Frontier board for the active game, its entries and prizes, read through `select`. */
-const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
+export const useFrontierBoard = <T,>(select: (board: HeraldFrontierLeaderboard) => T) => {
   const shard = requireShard(getActiveGame()?.chainId);
   const gameId = configManager.getActiveGameId();
   return useQuery({
@@ -74,11 +69,11 @@ const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | 
   );
 };
 
-const useViewer = () => useAccountStore((state) => state.account?.address ?? null);
+export const useSeasonViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
 export const useSeasonRank = (): string => {
-  const rank = ownRank(useSeasonBoard().data, useViewer());
+  const rank = ownRank(useSeasonBoard().data, useSeasonViewer());
   return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
 };
 
@@ -96,7 +91,7 @@ export const FrontierSeason = ({
   onClose: () => void;
 }) => {
   const board = useSeasonBoard();
-  const viewer = useViewer();
+  const viewer = useSeasonViewer();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const now = useNowSeconds();
@@ -165,7 +160,7 @@ const useSeasonListRows = (
   entries: readonly Entry[] | undefined,
   length: number,
 ): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
-  const own = findOwnEntry(entries ?? [], useViewer());
+  const own = findOwnEntry(entries ?? [], useSeasonViewer());
   // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
   const names = usePlayerNames();
   const top = (entries ?? []).slice(0, length);
@@ -217,54 +212,3 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
   essence: earnedResource(entry.rewards.essence),
   labor: earnedResource(entry.rewards.labor),
 });
-
-/**
- * The season's recap once the game has ended, over the HUD: the same drawing of the season's end as the app's Results
- * (SeasonRecap), with Season and Exit before its Share. The ending is not yet a recorded fact: the mist lifted stands
- * until Herald names it.
- */
-export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
-  useNowSeconds();
-  return configManager.isGameOver() ? <EndedSeasonRecap withdraw={withdraw} onSeason={onSeason} /> : null;
-};
-
-/** The ended season's board, its directory entry and the viewer, read only once the season is over. */
-const EndedSeasonRecap = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
-  const navigate = useNavigate();
-  const board = useFrontierBoard((board) => board);
-  const gameRef = { chainId: getActiveGame()!.chainId, gameId: configManager.getActiveGameId() };
-  return (
-    <SeasonOverRecap
-      gameRef={gameRef}
-      game={useFinishedGame(gameRef)}
-      board={board.data}
-      viewer={useViewer()}
-      ending="lifted"
-      withdraw={withdraw}
-      onSeason={onSeason}
-      onExit={() => navigate("/")}
-    />
-  );
-};
-
-/** The recap over the HUD, from its facts: Season and Exit before its Share. */
-export const SeasonOverRecap = ({
-  onSeason,
-  onExit,
-  ...recap
-}: Omit<ComponentProps<typeof SeasonRecap>, "actions" | "cover"> & { onSeason: () => void; onExit: () => void }) => (
-  <SeasonRecap
-    cover
-    {...recap}
-    actions={
-      <>
-        <AppButton kind="secondary" icon="victory" onClick={onSeason}>
-          {SEASON}
-        </AppButton>
-        <AppButton kind="secondary" icon="exit" onClick={onExit}>
-          {EXIT}
-        </AppButton>
-      </>
-    }
-  />
-);

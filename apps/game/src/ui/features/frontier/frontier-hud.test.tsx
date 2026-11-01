@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { SeasonOver } from "@/shell/season-tab/season-over";
 import approvedExtension from "../../../../../../config/source/frontier/extension.json";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, type ReactNode } from "react";
@@ -115,7 +116,7 @@ const renderHud = () =>
           <LabGame preset={5} facts={() => [LABOR_RULES]}>
             {(store) => {
               shownStore = store;
-              return <FrontierHud rules={readExpeditionRules(store, 1)!} />;
+              return <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />;
             }}
           </LabGame>
         </QueryClientProvider>
@@ -661,7 +662,7 @@ it("keeps the extended season live past its old end and reloads its final day fr
                 ];
               }}
             >
-              {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+              {(store) => <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />}
             </LabGame>
           </QueryClientProvider>
         </MemoryRouter>,
@@ -746,7 +747,7 @@ const renderVisit = async (facts: unknown[] = []) => {
               ] as never;
             }}
           >
-            {(store) => <FrontierHud rules={readExpeditionRules(store, 1)!} />}
+            {(store) => <FrontierHud seasonOver={SeasonOver} rules={readExpeditionRules(store, 1)!} />}
           </LabGame>
         </QueryClientProvider>
       </MemoryRouter>,

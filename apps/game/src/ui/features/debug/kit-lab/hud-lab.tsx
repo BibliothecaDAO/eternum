@@ -60,7 +60,7 @@ import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
-import { SeasonOverRecap } from "@/ui/features/frontier/board/season-board";
+import { SeasonOverRecap } from "@/shell/season-tab/season-over";
 import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/archive";
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";

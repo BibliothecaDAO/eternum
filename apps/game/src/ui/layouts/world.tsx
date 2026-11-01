@@ -1,3 +1,4 @@
+import { SeasonOver } from "@/shell/season-tab/season-over";
 import { DEV_MODE_ENABLED } from "@/utils/dev-mode";
 import { useOpenGameSeats } from "@/hooks/use-watched-side";
 import { SentryUserSync } from "@/observability/sentry-user-sync";
@@ -126,7 +127,7 @@ const HUD = () => {
       <GameChatConnection />
       {/* A Frontier game opens its own surfaces (deploy, build) from its HUD; the other modes share these. */}
       {hud === "frontier" && expeditionRules ? (
-        <FrontierHud rules={expeditionRules} />
+        <FrontierHud seasonOver={SeasonOver} rules={expeditionRules} />
       ) : hud === "shared" ? (
         <>
           <ArenaHud />

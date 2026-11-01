@@ -46,7 +46,7 @@ vi.mock("modern-screenshot", () => ({
 
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
-import { SeasonOverRecap } from "@/ui/features/frontier/board/season-board";
+import { SeasonOverRecap } from "@/shell/season-tab/season-over";
 import { SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { setViewportWidth } from "../frame/test-viewport";
