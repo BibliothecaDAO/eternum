@@ -1,5 +1,6 @@
 import { frontierPreset } from "../../../../config/source/frontier/native";
 import { FRONTIER_DAY_UNIT_SECONDS } from "../../../../config/source/frontier/clock";
+import { previewRiftGuardBound } from "../../../../contracts/l3/world-native/schema/site-previews.gen";
 import {
   nativeResearchConstants as research,
   nativeRuleConstants as rule,
@@ -94,7 +95,7 @@ export const FRONTIER = {
     step: n(stamina.staminaTravelStaminaCost),
     attack: n(stamina.staminaAttackReq),
     wheatPerTroop: n(stamina.staminaExploreWheatCost),
-    well: n(rule.WELL_STAMINA),
+    well: `${n(100 / rule.WELL_STAMINA_DIVISOR)}% of its maximum`,
     pointRefills: [1, 2, 3, 4, 5].map((rank) => n(rule.SKILL_POINT_REFILL_BASE + rank * rule.SKILL_POINT_REFILL_STEP)),
     refillLords: n(REFILL_LORDS_PER_POINT),
     logisticsMax: n(rule.LOGISTICS_LEGENDARY_STAMINA),
@@ -121,8 +122,11 @@ export const FRONTIER = {
     name: DEPTH_NAMES[index],
     ruinGuardName: BEAST_NAMES[FALLEN_REALM_DEPTHS[index]!.beast],
     revealPercent: `${depth.revealPercent}%`,
-    entryStamina: n(depth.entryStamina),
-    siteGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
+    campGuard: range(depth.siteGuardLower, depth.siteGuardUpper),
+    riftGuard: range(
+      previewRiftGuardBound(depth.siteGuardLower, depth.guardStep),
+      previewRiftGuardBound(depth.siteGuardUpper, depth.guardStep),
+    ),
     ruinGuard: range(depth.ruinGuardLower, depth.ruinGuardUpper),
     beastWeak: range(depth.beastWeakLower, depth.beastWeakUpper),
     beastStrong: range(depth.beastStrongLower, depth.beastStrongUpper),

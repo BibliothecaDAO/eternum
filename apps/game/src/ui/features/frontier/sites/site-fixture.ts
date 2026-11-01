@@ -60,7 +60,6 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
       site_guard_lower: 3000,
       site_guard_upper: 5000,
       reveal_site_neighbors: false,
-      entry_stamina: 30,
       chest: { common: 0, uncommon: 5000, rare: 2833, epic: 1500, legendary: 667 },
       ruin_guard_lower: 6000,
       ruin_guard_upper: 10500,

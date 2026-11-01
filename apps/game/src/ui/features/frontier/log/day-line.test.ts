@@ -55,8 +55,8 @@ describe("the day log's line for a story", () => {
 
   it("writes the XP each story moved: a reveal's, a clear's by the guard the site started with, a level-up's price", () => {
     const { store } = campBeside();
-    // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, so its clear pays 82 XP whatever
-    // the last attack killed (√(25 × 1,100) = 165, halved).
+    // Prod's rules: 2 XP a reveal. The fixture's site started with 1,100 guards, at depth I pays 123 XP whatever
+    // the last attack killed (√(25 × 1,100) = 165, halved then multiplied by 1.5).
     store.applyFacts([
       {
         model: "ArmyProgressionRules",
@@ -76,7 +76,7 @@ describe("the day log's line for a story", () => {
     const reveal = { resource_type: ResourcesIds.Labor, amount: "98400000000", coord: { x: 1, y: 1 } };
     expect(dayLogLine(story("ExplorationReward", reveal), store)).toBe("+98 Labor, +2 XP");
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store)).toBe(
-      "Troll cleared, +82 XP",
+      "Troll cleared, +123 XP",
     );
     expect(dayLogLine(story("SkillPointSpent", { price: "0x64" }, "Battle II"), store)).toBe("Battle II");
     expect(dayLogLine(story("SkillPointSpent", { price: "12500" }, "Battle V"), store)).toBe("Battle V");
@@ -87,7 +87,7 @@ describe("the day log's line for a story", () => {
       defender: { before: "150000000000", after: "0" },
     });
     expect(dayLogLine(story("SitePayout", { site_id: SITE, reward: null }, "Troll cleared"), store, won)).toBe(
-      "Troll cleared, lost 68, +82 XP",
+      "Troll cleared, lost 68, +123 XP",
     );
     // A clear of a site this client no longer holds keeps its title: no figure is guessed.
     expect(dayLogLine(story("SitePayout", { site_id: 999, reward: null }, "Troll cleared"), store)).toBe(

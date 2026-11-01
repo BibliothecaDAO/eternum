@@ -55,6 +55,8 @@ import { FrontierRow } from "./frontier-row";
 import { SeasonPodium } from "./season-podium";
 import { gameTitle } from "./history-row";
 import { gameOfResults, resultsHref } from "./results-link";
+import { ARCHIVED_SEASONS, archivedSeason } from "./archive/archive";
+import { seasonEnded } from "../season";
 import { type RewardSeat, useSealedChest } from "./reward";
 import { RewardPanel } from "./reward-panel";
 
@@ -62,8 +64,8 @@ import { RewardPanel } from "./reward-panel";
 const ROWS = { phone: 3, desktop: 5 } as const;
 
 /**
- * A finished game's record: from the directory (ended), the player's history (settled), or every player's recent
- * history, which holds a game the reader had no seat in (a shared Results; qa-app-2 P3-13).
+ * A finished game's record: from the directory (ended), the player's history (settled), every player's recent
+ * history, which holds a game the reader had no seat in (a shared Results; qa-app-2 P3-13), or the archived seasons.
  */
 const useFinishedGame = (ref: GameRef | null) => {
   const { data: player } = useRealmsPlayer();
@@ -71,7 +73,12 @@ const useFinishedGame = (ref: GameRef | null) => {
   const history = useRecentResults(50, player);
   const everyone = useRecentResults(50);
   const matches = (game: DirectoryGame) => ref !== null && game.chainId === ref.chainId && game.game_id === ref.gameId;
-  return directory.data?.games.find(matches) ?? history.data?.games.find(matches) ?? everyone.data?.games.find(matches);
+  return (
+    directory.data?.games.find(matches) ??
+    history.data?.games.find(matches) ??
+    everyone.data?.games.find(matches) ??
+    ARCHIVED_SEASONS.find(matches)
+  );
 };
 
 /**
@@ -146,7 +153,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
       </ResultsFrame>
     );
   return board.data.mode === "frontier" ? (
-    <FrontierResult gameRef={gameRef} board={board.data} player={player} fromList={fromList} />
+    <FrontierResult gameRef={gameRef} game={game} board={board.data} player={player} fromList={fromList} />
   ) : (
     <BlitzResult gameRef={gameRef} game={game} entries={board.data.entries} player={player} fromList={fromList} />
   );
@@ -372,17 +379,20 @@ const GameLine = ({ game, gameRef }: { game: DirectoryGame | undefined; gameRef:
 };
 
 /**
- * A season's Results, on the mist lifted: the season's ending and the player's place of the field with what their
- * realm made, then the board's first rows with their own. Season and Withdraw (the realm's LORDS still to take, from the
- * season's last card) stand at the head's end.
+ * A season's Results, on the mist lifted: which season and when it ended, the season's ending and the player's place
+ * of the field with what their realm made, then the board's first rows with their own. Season, the end map and
+ * Withdraw (the realm's LORDS still to take, from the season's last card) stand at the head's end; an archived season
+ * has no shard to open, so neither of the last two.
  */
 const FrontierResult = ({
   gameRef,
+  game,
   board,
   player,
   fromList,
 }: {
   gameRef: GameRef;
+  game: DirectoryGame | undefined;
   board: HeraldFrontierLeaderboard;
   player: string | null;
   fromList: boolean;
@@ -391,14 +401,15 @@ const FrontierResult = ({
   const own = findOwnEntry(entries, player);
   const rows = boardRows(entries, player, ROWS[useLayout()]);
   const frontier = ageOf("frontier");
+  const onShard = archivedSeason(gameRef) === undefined;
   const buttons = (
     <span className="flex flex-wrap gap-2">
       <AppButton kind="secondary" icon="leaderboard" to="/season">
         {WORDS.season}
       </AppButton>
-      <EndMapButton gameRef={gameRef} />
+      {onShard && <EndMapButton gameRef={gameRef} />}
       {/* The player's own ended season stays in reach: its last card holds the realm's LORDS still to withdraw. */}
-      {own && (
+      {onShard && own && (
         <AppButton
           kind="secondary"
           icon="lords"
@@ -416,6 +427,7 @@ const FrontierResult = ({
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <AppPanel className="lg:col-span-8">
           <div className="flex flex-col gap-4">
+            {game && <p className="text-app-label text-app-age">{seasonEnded(game)}</p>}
             <span className="text-app-display text-app-ink">{SEASON_OVER}</span>
             <p className="text-app-strong text-app-gold">{SEASON_ENDINGS.lifted}</p>
             {own && (

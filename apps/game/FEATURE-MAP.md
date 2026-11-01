@@ -105,18 +105,19 @@ leading on `/lab/app/eternum-lead`, then open on `/lab/app/eternum-open`; Blitz 
 (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the
 account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the
 entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards, Frontier's
-the last season's final board while none runs (`/lab/app/no-season/season`) and **Past seasons** under it, each row
-opening that season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) the
-player's place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a
-release's patch notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm
-panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's
-width draws the compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up,
-read from the lab realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game
-begins: its news over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack
-forecast on an enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill
-points; its panel's Level up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum`
-(Eternum's player on the same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and
-`blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held, playing then watching);
+the last season's final board while none runs (`/lab/app/no-season/season`: prod's Season 1 · Playtest, kept in
+`src/shell/season-tab/archive/` after its shard was torn down) and **Past seasons** under it, each row opening that
+season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) the player's
+place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch
+notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
+sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the
+compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab
+realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news
+over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an
+enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill points; its
+panel's Level up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's
+player on the same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching`
+(the lab player's last realm lost, a Hyperstructure still held, playing then watching);
 `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
 reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to

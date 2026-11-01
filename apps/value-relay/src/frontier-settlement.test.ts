@@ -86,6 +86,8 @@ it("a reverted close remains an error to retry", async () => {
 });
 
 it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadline passes", async () => {
+  const sign = vi.fn(async () => testSignature);
+  const run = () => settleFrontier(credentials, settlement, { ...testCosigner, settle: sign });
   rpc.read.mockImplementation(async ({ entrypoint }) =>
     entrypoint === "frontier_claim_deadline" ? ["604900"] : season("300", "200"),
   );
@@ -100,6 +102,12 @@ it("settles unpaid receipts with confirmed L2 paid totals only once the L2 deadl
     calldata: ["1", "7", "300", "0", "200", "0", "291", "1110"],
   });
   expect(rpc.read).toHaveBeenCalledWith(expect.objectContaining({ entrypoint: "frontier_claim_deadline" }), 11);
+  expect(sign).toHaveBeenLastCalledWith({
+    ...settlement,
+    chestWithdrawn: "300",
+    prizeWithdrawn: "200",
+    treasuryAmount: "500",
+  });
 });
 
 it("does not close without a co-signature and retries immediately when the signer recovers", async () => {
@@ -108,6 +116,6 @@ it("does not close without a co-signature and retries immediately when the signe
   await expect(settleFrontier(credentials, settlement, cosigner)).rejects.toThrow("cosigner_unavailable");
   expect(rpc.execute).not.toHaveBeenCalled();
   await settleFrontier(credentials, settlement, cosigner);
-  expect(sign).toHaveBeenLastCalledWith(settlement);
+  expect(sign).toHaveBeenLastCalledWith({ ...settlement, treasuryAmount: "300" });
   expect(rpc.execute).toHaveBeenCalledOnce();
 });

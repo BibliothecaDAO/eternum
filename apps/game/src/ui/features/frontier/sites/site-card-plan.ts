@@ -92,14 +92,14 @@ export const readSiteCard = (
   const reward =
     kind === "Ruin"
       ? chest && { resourceType: ResourcesIds.Lords, amount: chest.amount * PRECISION }
-      : siteReward(site);
+      : siteReward(store, site);
   const beast = readStandingFrontierBeast(store, site.game_id, safeInteger(site.entity_id));
   return {
     name: beast?.name ?? attackTargetName(kind),
     beast,
     guard: guards === undefined ? undefined : guard ? troopsOf(guard.troops) : null,
     kind,
-    xp: siteClearXp(site),
+    xp: siteClearXp(store, site),
     chest: chest && {
       tier: chest.tier,
       amount: Number(chest.amount),

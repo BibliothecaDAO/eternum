@@ -20,7 +20,14 @@ const payment: PayoutTerms = {
   rank: 0,
   count: 0,
 };
-const settlement: SettlementTerms = { kind: "settle", shard: "0x2", season: 7, chest: amount, prize: "0" };
+const settlement: SettlementTerms = {
+  kind: "settle",
+  shard: "0x2",
+  season: 7,
+  chest: amount,
+  prize: "0",
+  treasuryAmount: String(83n * 10n ** 18n),
+};
 const header = {
   block_number: 10,
   block_hash: "0xa",
@@ -177,6 +184,9 @@ for (const hostname of ["127.0.0.1", "::1"]) {
         pool = 100;
       }
       expect(targetReads).toBe(0);
+      const wrongRemainder = await send({ ...settlement, treasuryAmount: "1" });
+      expect(wrongRemainder.status).toBe(503);
+      expect(await wrongRemainder.json()).toEqual({ error: "cosigning_refused" });
       const health = async () => {
         const response = await fetch(`${origin}/health`);
         expect(response.headers.get("cache-control")).toBe("no-store");

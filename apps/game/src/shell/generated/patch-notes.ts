@@ -149,7 +149,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "devcon-realm",
           "title": "The Devcon season",
-          "line": "Frontier at Devcon, from Nov 3 12:00 IST to Nov 6 20:00 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
+          "line": "Frontier at Devcon, from Tue 3 Nov 07:30 IST to Fri 6 Nov 15:30 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
         },
         {
           "kind": "new",
@@ -185,7 +185,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "lords",
           "title": "Link a wallet for your LORDS",
-          "line": "With LORDS and no linked wallet, your purse, Withdraw, the season's end and a ruin's chest say so, with Link wallet. After the season, link one by the claim deadline, 7 days on, or those LORDS go to the next season."
+          "line": "With LORDS and no linked wallet, your purse, Withdraw, the season's end and a ruin's chest say so, with Link wallet. After the season, link one by the claim deadline, 7 days on, or those LORDS return to the treasury."
         },
         {
           "kind": "new",

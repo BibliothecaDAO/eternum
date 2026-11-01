@@ -533,8 +533,8 @@ export class ArmyActionManager {
 
   /**
    * Beside its realm's lit spire, a living army's order there is to enter a depth, which the spire's card picks: the
-   * spire holds no tile, so the plan would otherwise offer a plain move onto it. Its stamina is the shallowest depth's
-   * entry. An army standing on the spire has no order at its own tile; its card opens as it is selected.
+   * spire holds no tile, so the plan would otherwise offer a plain move onto it. Entry is free. An army standing on
+   * the spire has no order at its own tile; its card opens as it is selected.
    */
   private addDepthEntry(actionPaths: ActionPaths, startPos: HexPosition, nowSeconds: number) {
     const gameId = configManager.getActiveGameId();
@@ -547,7 +547,7 @@ export class ArmyActionManager {
       {
         hex: { col: spire.col, row: spire.row },
         actionType: ActionType.EnterDepth,
-        staminaCost: this.store.require("DepthRules", { game_id: gameId, depth: 1 }).entry_stamina,
+        staminaCost: 0,
       },
     ]);
   }

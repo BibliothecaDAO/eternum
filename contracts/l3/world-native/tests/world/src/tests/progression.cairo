@@ -170,7 +170,11 @@ fn stamina_requires_the_selected_rank_to_be_held() {
 fn a_clear_pays_two_and_a_half_times_the_root_of_the_guard_strength() {
     let troops = crate::rules::RESOURCE_PRECISION;
     for (strength, xp) in array![(430_u128, 51_u32), (1300, 90), (3000, 136), (25000, 395), (49500, 556)] {
-        assert_eq!(crate::progression::clear_xp(strength * troops), xp);
+        for depth in 0_u8..4 {
+            assert_eq!(
+                crate::progression::clear_xp(strength * troops, depth), xp * (2 + Into::<u8, u32>::into(depth)) / 2,
+            );
+        }
     }
 }
 
@@ -204,9 +208,7 @@ fn reveals_and_clears_pay_their_xp() {
             crate::logic::progression::award_xp(
                 key, crate::progression::XpAward::Reveal(crate::troops::Coord { alt: false, x: 1, y: 1 }),
             );
-            crate::logic::progression::award_xp(
-                key, crate::progression::XpAward::Clear(1300 * crate::rules::RESOURCE_PRECISION),
-            );
+            crate::logic::progression::award_xp(key, crate::progression::XpAward::Clear(90));
         },
     );
     assert_eq!(read_progress(d, key).xp, 2 + 90);

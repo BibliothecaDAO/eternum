@@ -10,6 +10,7 @@ import {
   XP,
   buildingName,
   formatAmount,
+  formatPercent,
   formatExact,
   formatCount,
   formatClockTime,
@@ -327,6 +328,8 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+/** A Well's refill share when no army is selected. */
+export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const ATTACK = "Attack";
 export const ATTACKING = "Attacking…";
 /** On an army's step while the order it was given before is still in flight. */
@@ -393,7 +396,6 @@ export const SPIRE_WORDS = {
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
   inDepth: (army: string, depth: string) => `${army} is in ${depth} today`,
-  cost: (stamina: string) => `${stamina} ${STAMINA}`,
   landingTaken: "Its landing is taken",
   locked: "Research it to open it",
   commits: (army: string, left: string) => `${army} stays until the day ends (${left})`,
@@ -448,9 +450,10 @@ export const NO_TROOPS_AT_HOME = "No troops at home";
 export const noTroopsUntil = (wait: string) => `${NO_TROOPS_AT_HOME} · ${inTime(wait)}`;
 /** Every tile beside the realm holds something: a deploy has nowhere to step out. */
 export const NO_OPEN_TILE = "No open tile beside the realm";
-/** The wheat that caps a deploy below the troops at home: "Wheat for 8 troops · 2 each". */
-export const wheatPaysFor = (troops: string, each: string) =>
-  `Wheat for ${troops} ${troops === "1" ? "troop" : "troops"} · ${each} each`;
+/** The wheat that caps a deploy below the troops at home: "Wheat for only 2,991 of 6,200 troops". */
+export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only ${troops} of ${of} troops`;
+/** Where wheat short for a deploy is made: the realm, where Farms are built. */
+export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
 
@@ -558,8 +561,8 @@ export const SENDING = "Sending…";
 export const LINK_WALLET = "Link wallet";
 /** Where an account with no linked wallet sees LORDS it is owed: the ledger pays a linked wallet only. */
 export const LINK_WALLET_FOR_LORDS = "Link a wallet to receive your LORDS";
-/** The same once the season is over: unpaid LORDS lapse at the ledger's claim deadline and go to the next season. */
-export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS go to the next season`;
+/** The same once the season is over: unpaid LORDS lapse at the ledger's claim deadline and return to the treasury. */
+export const linkWalletBy = (deadline: string) => `Link a wallet by ${deadline} or these LORDS return to the treasury`;
 export const TRANSACTION = "Transaction";
 export const PAYOUTS_PAUSED = "Payouts paused";
 export const paidWhenResumed = (amount: string) => `Payouts paused: ${amount} waiting`;
@@ -882,6 +885,8 @@ export const SEASON_WORDS = {
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */
   pastSeasons: "Past seasons",
+  /** Prod's first season, kept after its shard was torn down: beside its number, "Season 1 · Playtest". */
+  playtest: "Playtest",
 } as const;
 
 /** The Blitz rating (MMR): its panel's words. The rating is automatic at settlement; nothing here asks for it. */

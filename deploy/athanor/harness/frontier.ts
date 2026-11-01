@@ -939,18 +939,12 @@ function planExpedition(client: GameClient, game: HarnessGame, player: Player): 
           spot.row === day.epoch * 4 * spacing + spacing / 2,
       );
     if (depth > 0 && atEntrance) {
-      const cost = client.setup.store.require("DepthRules", { game_id: client.gameId, depth }).entry_stamina;
-      if (amount < cost) continue;
-      const enter = command(
+      return command(
         client,
         player,
         { kind: "EnterDepth", value: { explorer_id: army.explorer_id, depth } },
         TransactionType.ENTER_DEPTH,
       );
-      enter.after = () => {
-        day.otherStamina += cost;
-      };
-      return enter;
     }
     const target = neighbors
       .map((spot) => getTileAt(client.setup.store, false, spot.col, spot.row, client.gameId)?.occupier_id)

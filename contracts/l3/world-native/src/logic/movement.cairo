@@ -9,7 +9,6 @@ pub mod MovementLogic {
     use crate::logic::troops::TroopState;
     use crate::map::{BIOME_SCALE, BYTE_RANGE, IMapLogicDispatcherTrait};
     use crate::resources::{IResourceOperationsDispatcherTrait, ResourceKey};
-    use crate::stamina::StaminaSourceTrait;
     use crate::structures::IStructureOperationsDispatcherTrait;
     use crate::troops::{Coord, ExplorerKey};
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
@@ -237,20 +236,6 @@ pub mod MovementLogic {
                 explorer.coord == spire || crate::geometry::adjacent(explorer.coord, spire),
                 "army must be at its realm's spire",
             );
-            let depth = crate::logic::expeditions::depth_rules(game_id, command.depth);
-            explorer
-                .troops
-                .stamina
-                .spend(
-                    ref explorer.troops.boosts,
-                    explorer.troops.category,
-                    explorer.troops.tier,
-                    rules.troop_stamina_config,
-                    depth.entry_stamina.into(),
-                    rules.tick_config.armies_tick_in_seconds,
-                    context.timestamp,
-                    true,
-                );
             let destination = Coord {
                 y: explorer.coord.y + Into::<u8, u32>::into(command.depth) * spacing, ..explorer.coord,
             };

@@ -27,6 +27,7 @@ AREAS = {
         "contracts/l3/world-native/src/taxonomy.cairo",
         "contracts/l3/world-native/src/resources.cairo",
         "contracts/l3/world-native/src/rules.cairo",
+        "contracts/l3/world-native/src/troops.cairo",
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-client.yml",
         "apps/game/**",

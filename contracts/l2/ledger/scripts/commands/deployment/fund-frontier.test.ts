@@ -5,7 +5,7 @@ import { ledgerAbi, ledgerCall } from "../../../../../../packages/value-ledger/t
 import { ShardReader } from "../../../../../../apps/value-relay/src/shard-rpc";
 import devBook from "../../../../../common/addresses/dev.json";
 import productionBook from "../../../../../common/addresses/production.json";
-import { fundFrontier, carryFrontier } from "./fund-frontier";
+import { fundFrontier } from "./fund-frontier";
 import { frontierDevconPreset } from "../../../../../../config/source/frontier/devcon";
 import { seasonDayUnitSeconds } from "../../../../../../config/source/common/season-clock";
 
@@ -302,58 +302,6 @@ test("funding refuses a network name instead of an environment", async () => {
   ).rejects.toThrow("environment");
   expect(execute).not.toHaveBeenCalled();
 });
-
-test("carries an already settled remainder once before the old deadline, preserving both prize pots", async () => {
-  const previous = [...season];
-  previous[1] = "0";
-  previous[2] = "100";
-  previous[5] = String(200000n * 10n ** 18n);
-  previous[7] = "1";
-  let moved = false;
-  ledgerRead.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata?: string[] }) => {
-    if (entrypoint === "get_frontier") {
-      if (calldata?.[1] === "41") return previous;
-      return season.map((x, i) => (i === 3 && moved ? String(1200000n * 10n ** 18n) : x));
-    }
-    if (entrypoint === "get_preset") return preset;
-    if (entrypoint === "frontier_carry") return [!moved ? String(500000n * 10n ** 18n) : "0", "0"];
-    throw new Error("Unexpected carry read");
-  });
-  execute.mockImplementationOnce(async () => {
-    moved = true;
-    return { transaction_hash: "0xabc" };
-  });
-  const runCarry = () => carryFrontier(account, provider, shard, "https://herald.test", 41, 42, "dev");
-  const result = await runCarry();
-  expect(result.frontier.pool).toBe(String(1200000n * 10n ** 18n));
-  expect(result.frontier.prizePool).toBe(String(300000n * 10n ** 18n));
-  expect(execute.mock.calls[0]![0]).toEqual([
-    { contractAddress: "0x123", entrypoint: "apply_frontier_carry", calldata: ["0x7", "42"] },
-  ]);
-  await runCarry();
-  expect(execute).toHaveBeenCalledTimes(1);
-});
-
-test.each(["dev", "production"] as const)(
-  "%s carry refuses an unsettled season even after its old claim deadline",
-  async (environment) => {
-    const previous = [...season];
-    previous[1] = "0";
-    previous[2] = "100";
-    const shortPreset = [...preset];
-    shortPreset[17] = "50";
-    models[1]!.rows[0]!.value.claim_window_seconds = 50;
-    ledgerRead.mockImplementation(async ({ entrypoint, calldata }: { entrypoint: string; calldata?: string[] }) => {
-      if (entrypoint === "get_frontier") return calldata?.[1] === "41" ? previous : season;
-      if (entrypoint === "get_preset") return shortPreset;
-      throw new Error("Unsettled custody must not be read as carry");
-    });
-    await expect(carryFrontier(account, provider, shard, "https://herald.test", 41, 42, environment)).rejects.toThrow(
-      "Previous season payouts are not settled",
-    );
-    expect(execute).not.toHaveBeenCalled();
-  },
-);
 
 test.each(["dev", "production"] as const)(
   "%s funds the 80-hour Devcon game with 300k split into 210k chests and 90k top-three prizes",

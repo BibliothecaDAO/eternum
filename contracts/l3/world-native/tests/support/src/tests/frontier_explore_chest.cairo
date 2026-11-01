@@ -11,7 +11,7 @@ pub use crate::tests::state::{GameState, MapObservationTrait, ResourceObservatio
 pub use crate::troops::{Coord, ExplorerKey};
 pub use super::Deployment;
 pub const HIT_ROOT: u256 = 19635;
-pub const MISS_ROOT: u256 = 1126;
+pub const MISS_ROOT: u256 = 6372;
 pub const EMPTY_ROOT: u256 = 1;
 pub fn explore(d: Deployment, key: ExplorerKey, root: u256, at: u64) {
     let mut spy = snforge_std::spy_events();

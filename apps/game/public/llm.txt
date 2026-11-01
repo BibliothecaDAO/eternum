@@ -75,7 +75,7 @@ wallet. It takes one signature, and the wallet pays the network fee.
 * **Refill** spends your realm's LORDS on stamina ([Armies](/frontier/armies#stamina)).
 * **Withdraw** sends your realm's LORDS to your payout wallet during the season.
 * **The season's end** pays what your realm still holds, and the top places' prizes, to your payout wallet. Payments are
-  automatic once the payout checks complete. With no wallet linked by the claim deadline, they go to the next season
+  automatic once the payout checks complete. With no wallet linked by the claim deadline, they return to the treasury
   ([Chests and LORDS](/frontier/chests#your-lords)).
 
 <Shot frame="panel" name="account/withdraw" caption="A Frontier realm's LORDS, withdrawn to the payout wallet." />
@@ -772,8 +772,8 @@ import { FRONTIER } from "@/utils/frontier";
 
 # Devcon season
 
-A Frontier season at Devcon speed, with 300,000 LORDS to win. It runs from **Tue 3 Nov 12:00 IST**
-(Tue 3 Nov 06:30 UTC) to **Fri 6 Nov 20:00 IST** (Fri 6 Nov 14:30 UTC). It plays like any Frontier season
+A Frontier season at Devcon speed, with 300,000 LORDS to win. It runs from **Tue 3 Nov 07:30 IST**
+(Tue 3 Nov 02:00 UTC) to **Fri 6 Nov 15:30 IST** (Fri 6 Nov 10:00 UTC). It plays like any Frontier season
 ([Frontier](/frontier)), only faster.
 
 ## Join with your ticket
@@ -818,8 +818,8 @@ The Season page shows the podium as the season runs, and each prize as Pending u
 LORDS go to your payout wallet. Link one in **Settings**, **Payout wallet** ([Payout wallet](/account/payout-wallet)).
 You can withdraw your realm's LORDS during the season. When it ends, whatever your realm still holds, and your prize, is
 paid to your linked wallet. Payments are automatic once the payout checks complete. Without a linked wallet, link one
-within  7 days of the season's end and they are paid to it. After that, unpaid LORDS go to
-the next season.
+within  7 days of the season's end and they are paid to it. After that, unpaid LORDS
+return to the treasury.
 
 ## What is faster
 
@@ -1690,8 +1690,9 @@ tile costs 20, a step over known ground 10, and an attack needs
 big army needs farms behind it.
 
 **Refill** buys an army stamina at once for 1 LORDS a point, paid from your realm's LORDS:
-as much as it is missing, or as much as your LORDS cover. A well gives 60 stamina. Skill points
-also restore stamina, and Logistics raises an army's maximum by up to 150.
+as much as it is missing, or as much as your LORDS cover. A well adds 50% of its maximum stamina, rounded down and
+capped at full. Skill points also restore stamina, and Logistics raises an army's maximum by up to
+150\.
 
 ### Stamina stays with the slot
 
@@ -1790,7 +1791,7 @@ across every depth, and your realm finds no more ruins until the next day.
 
 ## A chest in the wild
 
-Each newly revealed tile at any depth has a 1 in 10,000 chance of a chest, found only
+Each newly revealed tile at any depth has a 1 in 2,000 chance of a chest, found only
 while the day's budget can fund it. Its tier uses the layer's regular chest odds, with its shares at today's price set
 aside as it is found. Open it with one of your armies beside it before the day ends; its LORDS go to that army's realm.
 
@@ -1842,24 +1843,24 @@ Every tile an army reveals sends Essence or labor home to the realm, as likely a
 troops, larger the deeper it is. Each reveal also gives the army 2 / 3 / 4 / 5 XP at
 Surface / Ethereal I / Ethereal II / Ethereal III.
 
-| Ground       | Reveal pays, of the army's troops | Entering costs |
-| ------------ | --------------------------------- | -------------- |
-| Surface      | 10%                               | —              |
-| Ethereal I   | 15%                               | 30 stamina     |
-| Ethereal II  | 20%                               | 40 stamina     |
-| Ethereal III | 25%                               | 50 stamina     |
+| Ground       | Reveal pays, of the army's troops |
+| ------------ | --------------------------------- |
+| Surface      | 10%                               |
+| Ethereal I   | 15%                               |
+| Ethereal II  | 20%                               |
+| Ethereal III | 25%                               |
 
 ## What a reveal can find
 
-| Find   | Chance      | What it is                                                                                                                                                                                        |
-| ------ | ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Beasts | 6%          | A roaming band, the weakest guard. Clearing it pays XP and labor: one quarter of its starting troops.                                                                                             |
-| Camp   | 4%          | A camp guarded by a Troll. Clearing it pays labor: half its guard's starting troops.                                                                                                              |
-| Rift   | 4%          | A fissure guarded by a Dark fey. Clearing it pays Essence: three times its guard's starting troops.                                                                                               |
-| Ruin   | 1%          | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
-| Shrine | 3%          | Once researched: holds one skill point, its rank rolled when found (below) and shown on its card. An army beside it takes that point and consumes the Shrine.                                     |
-| Well   | 3%          | Once researched: an army beside it uses it for 60 stamina, then it is gone.                                                                                                                       |
-| Chest  | 1 in 10,000 | At every depth, using that layer’s chest odds, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                   |
+| Find   | Chance     | What it is                                                                                                                                                                                        |
+| ------ | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Beasts | 6%         | A roaming band, the weakest guard. Clearing it pays XP and labor: one quarter of its starting troops.                                                                                             |
+| Camp   | 4%         | A camp guarded by a Troll. Clearing it pays labor: half its guard's starting troops.                                                                                                              |
+| Rift   | 4%         | A fissure guarded by a Dark fey. Clearing it pays Essence: three times its guard's starting troops.                                                                                               |
+| Ruin   | 3%         | A fallen realm, the strongest guard. Clearing it pays its chest in LORDS. Find any number; clear one per realm per day. The other ruins disappear across all depths ([Chests](/frontier/chests)). |
+| Shrine | 3%         | Once researched: holds one skill point, its rank rolled when found (below) and shown on its card. An army beside it takes that point and consumes the Shrine.                                     |
+| Well   | 3%         | Once researched: an army beside it adds 50% of its maximum stamina, rounded down and capped at full, then it is gone.                                                                             |
+| Chest  | 1 in 2,000 | At every depth, using that layer’s chest odds, while the day's budget can fund it ([Chests](/frontier/chests)).                                                                                   |
 
 After 7 empty reveals in a row, the next reveal draws only among the sites, shrines
 and wells above, so it finds one. After a ruin clear, no further ruins appear that day. Scouting makes the kinds you
@@ -1879,18 +1880,19 @@ To use a shrine or a well, select an army beside it and right-click it (on a pho
 Every guard is shown before you attack. Guards grow with depth, so what counts as a safe fight moves as your realm
 grows.
 
-| Ground       | Camps and rifts | Ruins         | Weaker beasts | Stronger beasts |
-| ------------ | --------------- | ------------- | ------------- | --------------- |
-| Surface      | 1,000–1,600     | 2,000–4,000   | 300–350       | 450–550         |
-| Ethereal I   | 3,000–5,000     | 6,000–10,500  | 900–1,050     | 1,350–1,650     |
-| Ethereal II  | 8,000–12,000    | 18,000–22,500 | 2,400–2,800   | 3,600–4,400     |
-| Ethereal III | 20,000–30,000   | 52,500–76,000 | 6,000–7,000   | 9,000–11,000    |
+| Ground       | Camps        | Rifts         | Ruins         | Weaker beasts | Stronger beasts |
+| ------------ | ------------ | ------------- | ------------- | ------------- | --------------- |
+| Surface      | 1,200–1,400  | 1,400–1,600   | 2,700–3,300   | 380–420       | 430–470         |
+| Ethereal I   | 2,400–2,800  | 2,800–3,200   | 4,900–6,100   | 760–840       | 860–940         |
+| Ethereal II  | 4,700–5,700  | 5,400–6,600   | 9,800–12,200  | 1,520–1,680   | 1,720–1,880     |
+| Ethereal III | 9,300–11,500 | 10,700–13,200 | 19,600–24,400 | 3,040–3,360   | 3,440–3,760     |
 
 A band of beasts is a Cyclops or a stronger Wraith, as likely as each other.
 A camp is always guarded by a Troll and a rift by a Dark fey. A ruin's guard grows with
 depth: Ammit on the surface, then Basilisk,
 Wyvern and Hydra. A clear gives the army XP by the guard's
-starting strength, beasts included.
+starting strength, beasts included. Resource rewards and clear XP have a depth premium; the site’s card shows the full
+payout before combat.
 
 <Shot frame="panel" name="frontier/fight-card" caption="A site's card before an attack: both sides before and after, and what clearing it pays." />
 
@@ -1902,10 +1904,10 @@ A site pays once. A cleared site leaves a standard that shows what the clear pai
 
 Research opens the Ethereal depths, one at a time ([Your realm](/frontier/realm#research)). Your spire stands on one of
 the six tiles around your realm, a different one each day. Select an army beside it and tap the spire: it lists each
-depth you have researched with its entry stamina. **Enter** takes the army down, and it stays in that depth for the rest
+depth you have researched. **Enter** costs no stamina and takes the army down, and it stays in that depth for the rest
 of the day.
 
-<Shot name="frontier/spire" caption="The spire's card: each researched depth and the stamina to enter it." />
+<Shot name="frontier/spire" caption="The spire's card: each researched depth and its Enter button." />
 
 ## The day's end
 

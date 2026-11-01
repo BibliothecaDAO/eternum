@@ -22,6 +22,7 @@ export interface SettlementTerms {
   season: number;
   chest: string;
   prize: string;
+  treasuryAmount: string;
 }
 export type CosignRequest = PayoutTerms | SettlementTerms;
 export interface Cosignature {
@@ -32,7 +33,7 @@ export interface Cosignature {
 /** Same domain-separated Poseidon message as GameLedger; a rotation invalidates every old signature. */
 export function cosigningHash(domain: CosigningDomain, request: CosignRequest): string {
   return hash.computePoseidonHashOnElements([
-    shortString.encodeShortString(request.kind === "pay" ? "ETERNUM_PAY_V1" : "ETERNUM_SETTLE_V1"),
+    shortString.encodeShortString(request.kind === "pay" ? "ETERNUM_PAY_V1" : "ETERNUM_SETTLE_V2"),
     domain.chainId,
     domain.ledger,
     domain.epoch,
@@ -40,7 +41,7 @@ export function cosigningHash(domain: CosigningDomain, request: CosignRequest): 
     request.season,
     ...(request.kind === "pay"
       ? [request.claim, request.wallet, ...u256Parts(request.amount), request.rank, request.count]
-      : [...u256Parts(request.chest), ...u256Parts(request.prize)]),
+      : [...u256Parts(request.chest), ...u256Parts(request.prize), ...u256Parts(request.treasuryAmount)]),
   ]);
 }
 const u256Parts = (value: string) => {
@@ -81,8 +82,15 @@ export function decodeCosignRequest(input: unknown): CosignRequest {
       throw new Error("invalid_cosigning_payment");
     return { kind: "pay", shard, season, claim: felt("claim"), wallet: felt("wallet"), amount: value, rank, count };
   }
-  if (row.kind === "settle" && Object.keys(row).length === 5)
-    return { kind: "settle", shard, season, chest: amount("chest"), prize: amount("prize") };
+  if (row.kind === "settle" && Object.keys(row).length === 6)
+    return {
+      kind: "settle",
+      shard,
+      season,
+      chest: amount("chest"),
+      prize: amount("prize"),
+      treasuryAmount: amount("treasuryAmount"),
+    };
   throw new Error("invalid_cosigning_request");
 }
 export function decodeCosigner(fields: readonly string[]) {

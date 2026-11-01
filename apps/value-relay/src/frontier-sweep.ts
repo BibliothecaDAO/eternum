@@ -1,5 +1,10 @@
 import { ResourcesIds } from "@bibliothecadao/types";
-import { rpcAt, readFrontierFunding, readConfirmedLedgerHead } from "@realms-world/value-ledger";
+import {
+  rpcAt,
+  readFrontierFunding,
+  readConfirmedLedgerHead,
+  frontierTreasuryAmount,
+} from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
 import {
@@ -141,12 +146,13 @@ function settlementState(snapshot: ConfirmedSnapshot) {
   };
 }
 
-/** Independent settlement evidence, including the funding binding and the deadline carry rule. */
+/** Independent settlement evidence, including the funding binding and the deadline treasury return. */
 export async function frontierSettlementEvidence(
   target: ShardConnection,
   heraldUrl: string,
   report: FrontierSettlement,
   ledger: { rpcUrl: string; address: string },
+  treasuryAmount: string,
 ) {
   const snapshot = await settlementSnapshot(target, heraldUrl, report.gameId);
   const time = (await new ShardReader(target).header(snapshot.confirmed_block)).timestamp;
@@ -163,6 +169,7 @@ export async function frontierSettlementEvidence(
   const state = settlementState(snapshot);
   const budget = optionalRow(snapshot, "LordsBudget")!;
   if (
+    BigInt(treasuryAmount) !== BigInt(frontierTreasuryAmount(funding)) ||
     funding.closed ||
     time < terms.end ||
     head.time < terms.end ||

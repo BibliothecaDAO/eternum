@@ -29,11 +29,11 @@ const army = { art: "knight-t1" as const, troops: 5_000 };
 const buttons = () => [...document.querySelectorAll<HTMLButtonElement>("section[role=dialog] button")];
 
 describe("a guarded site's card", () => {
-  it("renders the generated Beasts reward and XP in This attack earns", () => {
+  it("renders the depth-I Beasts reward and XP in This attack earns", () => {
     const { store, site, structure, attack } = campBeside("Beasts");
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    expect(plan.payout).toEqual({ resourceId: 23, amount: 250, fits: 250 });
-    expect(plan.xp).toBe(79);
+    expect(plan.payout).toEqual({ resourceId: 23, amount: 375, fits: 375 });
+    expect(plan.xp).toBe(118);
     const payout = plan.payout!;
     act(() =>
       root.render(
@@ -50,7 +50,7 @@ describe("a guarded site's card", () => {
         />,
       ),
     );
-    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+250+79 XP");
+    expect(document.querySelector(".ui-frame__body header")?.textContent).toBe("This attack earns+375+118 XP");
   });
 
   it("heads the attack with what it earns, and reads each side before and after as numbers alone", () => {

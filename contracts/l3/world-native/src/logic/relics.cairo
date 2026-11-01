@@ -168,7 +168,10 @@ pub mod RelicState {
             }
             let mut bought = crate::progression::spend_skill_point(ref progress, command);
             crate::logic::progression::write(key, progress);
-            bought.stamina = self.grant_stamina(key, explorer, bought.stamina.try_into().unwrap(), context);
+            let maximum = crate::progression::stamina_max(
+                progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
+            );
+            bought.stamina = self.grant_stamina(key, explorer, bought.stamina, maximum);
             self
                 .emit(
                     crate::ownership::StoryEvent {
@@ -217,9 +220,16 @@ pub mod RelicState {
             );
             let benefit = match point {
                 Some(rank) => crate::relics::SiteBenefit::ShrinePoint(rank),
-                None => crate::relics::SiteBenefit::Well(
-                    self.grant_stamina(key, explorer, crate::rules::WELL_STAMINA, context),
-                ),
+                None => {
+                    let maximum = crate::progression::stamina_max(
+                        crate::logic::progression::require(key),
+                        explorer.troops.category,
+                        context.rules.unbox().troop_stamina_config,
+                    );
+                    crate::relics::SiteBenefit::Well(
+                        self.grant_stamina(key, explorer, maximum / crate::rules::WELL_STAMINA_DIVISOR.into(), maximum),
+                    )
+                },
             };
             self
                 .emit(
@@ -479,16 +489,12 @@ pub mod RelicState {
             self: @ComponentState<TContractState>,
             key: ExplorerKey,
             explorer: crate::troops::ExplorerTroops,
-            amount: u8,
-            context: ExecutionContext,
+            amount: u64,
+            maximum: u64,
         ) -> u64 {
-            let progress = crate::logic::progression::require(key);
-            let maximum = crate::progression::stamina_max(
-                progress, explorer.troops.category, context.rules.unbox().troop_stamina_config,
-            );
             let mut stamina = explorer.troops.stamina.inline();
             let before = stamina.amount;
-            stamina.amount += amount.into();
+            stamina.amount += amount;
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
                 crate::troops::IArmySlotStaminaLibraryDispatcher {

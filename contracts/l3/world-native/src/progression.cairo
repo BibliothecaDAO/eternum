@@ -143,7 +143,7 @@ pub struct SkillPointSpent {
 #[derive(Copy, Drop, Serde)]
 pub enum XpAward {
     Reveal: crate::troops::Coord,
-    Clear: u128,
+    Clear: u32,
 }
 
 #[starknet::interface]
@@ -338,11 +338,10 @@ pub fn scouting_bonus(progress: ArmyProgress) -> (u32, u32, u32) {
     (camp, rift, sanctuaries)
 }
 
-/// A clear pays 2.5 x the square root of the guard's starting strength in whole troops, rounded down: exactly
-/// floor(sqrt(25 x strength)) / 2.
-pub fn clear_xp(strength: u128) -> u32 {
+/// The base clear XP is floor(sqrt(25 x starting whole troops)) / 2, then the depth premium applies.
+pub fn clear_xp(strength: u128, depth: u8) -> u32 {
     let root: u64 = core::num::traits::Sqrt::sqrt(strength / crate::rules::RESOURCE_PRECISION * 25);
-    (root / 2).try_into().unwrap()
+    crate::expeditions::depth_reward((root / 2).into(), depth).try_into().unwrap()
 }
 
 pub fn stamina_max(

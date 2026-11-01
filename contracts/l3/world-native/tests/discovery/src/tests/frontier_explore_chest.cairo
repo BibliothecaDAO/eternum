@@ -2,16 +2,14 @@ pub use world_test_support::tests::frontier_explore_chest::*;
 
 
 #[test]
-fn a_recorded_roll_of_zero_hits_and_one_is_already_a_miss() {
-    assert_eq!(crate::discovery::FRONTIER_CHEST_FIND_BPS, 1);
-    let mut hit = HIT_ROOT;
-    let seed = crate::random::game_root(ref hit, 1);
-    assert_eq!(crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000), 0);
-    assert!(crate::discovery::frontier_chest(seed));
-    let mut miss = MISS_ROOT;
-    let seed = crate::random::game_root(ref miss, 1);
-    assert_eq!(crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000), 1);
-    assert!(!crate::discovery::frontier_chest(seed));
+fn five_of_ten_thousand_recorded_rolls_hit_and_the_sixth_misses() {
+    assert_eq!(crate::discovery::FRONTIER_CHEST_FIND_BPS, 5);
+    for (root, roll) in array![(HIT_ROOT, 0_u128), (1126, 1), (10205, 2), (43164, 3), (2237, 4), (MISS_ROOT, 5)] {
+        let mut root = root;
+        let seed = crate::random::game_root(ref root, 1);
+        assert_eq!(crate::random::range(seed, 0x46524f4e544945525f4348455354, 10000), roll);
+        assert_eq!(crate::discovery::frontier_chest(seed), roll < 5);
+    }
 }
 
 #[test]

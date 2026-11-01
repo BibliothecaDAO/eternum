@@ -99,7 +99,6 @@ export interface NativePreset {
     beastStrongLower: number;
     beastStrongUpper: number;
     revealSiteNeighbors: boolean;
-    entryStamina: number;
     chest: ChestTiers;
   }>;
 }
