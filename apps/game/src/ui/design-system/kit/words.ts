@@ -548,6 +548,9 @@ export const RECAP_WORDS = {
   making: "Making the image",
   /** Share, once the image is saved on a device with no share sheet for images. */
   saved: "Image saved",
+  /** Beside Share on a desktop whose clipboard takes images: the same image, to paste. */
+  copy: "Copy image",
+  copied: "Image copied",
   failed: "The image could not be made.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */

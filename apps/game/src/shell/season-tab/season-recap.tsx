@@ -33,7 +33,7 @@ import { ageOf } from "../play/ages";
 import { seasonEnded, seasonTitle } from "../season";
 import { FailureLine } from "../sign-in/failure-line";
 import { resultsHref } from "./results-link";
-import { shareSeasonCard, type SharedCard } from "./share-card";
+import { canCopyCard, copySeasonCard, shareSeasonCard, type SharedCard } from "./share-card";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -291,8 +291,9 @@ const podiumPlaces = (board: HeraldFrontierLeaderboard): { place: number; holder
 
 /**
  * Share my season: the card made into an image at its own size, on the press that asks for it, then handed to the
- * device's share sheet with the season's line and its Results (a phone), else saved (a desktop). A sheet the player
- * closes is no failure; an image that cannot be made says so.
+ * device's share sheet with the season's line and its Results (a phone), else saved (a desktop). Beside it on a desktop
+ * whose clipboard takes a PNG, Copy image puts the same image there to paste (the owner, 1 November 2026). A sheet the
+ * player closes is no failure; an image that cannot be made says so, under either.
  */
 const ShareSeason = ({
   card,
@@ -305,20 +306,30 @@ const ShareSeason = ({
   line: string;
   gameRef: GameRef;
 }) => {
-  const [state, setState] = useState<"idle" | "making" | SharedCard | "failed">("idle");
-  const share = async () => {
+  const [state, setState] = useState<"idle" | "making" | "copying" | SharedCard | "copied" | "failed">("idle");
+  const send = async (making: "making" | "copying", sent: (node: HTMLElement) => Promise<typeof state>) => {
     if (!card.current) return;
-    setState("making");
-    const url = new URL(resultsHref(gameRef), window.location.origin).href;
-    setState(await shareSeasonCard(card.current, { ...CUTS[cut], line, url }).catch(() => "failed" as const));
+    setState(making);
+    setState(await sent(card.current).catch(() => "failed" as const));
   };
+  const url = new URL(resultsHref(gameRef), window.location.origin).href;
   return (
     <>
+      {cut === "wide" && canCopyCard() && (
+        <AppButton
+          kind="quiet"
+          icon="copy"
+          busy={state === "copying" ? RECAP_WORDS.making : undefined}
+          onClick={() => void send("copying", (node) => copySeasonCard(node, CUTS[cut]).then(() => "copied" as const))}
+        >
+          {state === "copied" ? RECAP_WORDS.copied : RECAP_WORDS.copy}
+        </AppButton>
+      )}
       <AppButton
         kind="primary"
         icon="share"
         busy={state === "making" ? RECAP_WORDS.making : undefined}
-        onClick={() => void share()}
+        onClick={() => void send("making", (node) => shareSeasonCard(node, { ...CUTS[cut], line, url }))}
       >
         {state === "saved" ? RECAP_WORDS.saved : RECAP_WORDS.share}
       </AppButton>

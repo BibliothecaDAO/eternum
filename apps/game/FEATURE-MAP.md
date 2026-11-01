@@ -279,6 +279,9 @@ its icon and verbs; a words-only notice keeps its text.
     share sheet with the image, the line ("Season 1 · Playtest · #3 of 45 realms") and the Results address. Otherwise it
     saves `my-season.png` and the button reads "Image saved". An image that cannot be made says "The image could not be
     made.", and Share stays.
+  - **Copy image** is a quiet button beside Share, on a desktop whose clipboard takes a PNG (`ClipboardItem` supporting
+    `image/png`). It puts the same card image on the clipboard to paste, and then reads "Image copied". It fails as
+    Share does, with Copy image kept. A phone, or a browser whose clipboard takes no PNG, has no Copy image.
   - **Lab:**
     - `/lab/kit/hud/season-over`: the game's cover over prod's Season 1, read by its third place;
       `/lab/kit/hud/season-over-strong` shows the other ending.

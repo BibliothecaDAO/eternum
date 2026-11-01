@@ -228,3 +228,71 @@ it("says so when the image cannot be made, and keeps Share my season to try agai
   expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
   expect(steps(host).at(-1)).toEqual(["Share my season", "primary"]);
 });
+
+/**
+ * A clipboard that takes PNGs, at its edge: each write keeps the image it was handed once that image is made, and a
+ * write fails when its image does.
+ */
+const pngClipboard = () => {
+  const copied: Blob[] = [];
+  class PngClipboardItem {
+    static supports = (type: string) => type === "image/png";
+    constructor(readonly items: Record<string, Promise<Blob>>) {}
+  }
+  vi.stubGlobal("ClipboardItem", PngClipboardItem);
+  vi.stubGlobal("navigator", {
+    ...navigator,
+    canShare: undefined,
+    clipboard: {
+      write: async (items: PngClipboardItem[]) => {
+        for (const item of items) copied.push(await item.items["image/png"]!);
+      },
+    },
+  });
+  return copied;
+};
+
+it("on a desktop whose clipboard takes images, copies the same card image from a quiet Copy image beside Share", async () => {
+  const copied = pngClipboard();
+  const host = await open({ width: 1440 });
+  expect(steps(host).slice(-2)).toEqual([
+    ["Copy image", "quiet"],
+    ["Share my season", "primary"],
+  ]);
+  await press(host, "Copy image");
+  // The one image: the card's own node at its wide size, the PNG the library made.
+  expect(snapshot.calls).toEqual([{ node: card(host), width: 1200, height: 675 }]);
+  expect(copied.map((image) => image.type)).toEqual(["image/png"]);
+  expect(steps(host).slice(-2)).toEqual([
+    ["Image copied", "quiet"],
+    ["Share my season", "primary"],
+  ]);
+});
+
+it("offers no Copy image where the clipboard takes no PNG, nor on a phone, which shares", async () => {
+  vi.stubGlobal(
+    "ClipboardItem",
+    class {
+      static supports = (type: string) => type === "text/plain";
+    },
+  );
+  vi.stubGlobal("navigator", { ...navigator, clipboard: { write: async () => {} } });
+  const noPng = await open({ width: 1440 });
+  expect(steps(noPng).map(([word]) => word)).toEqual(["Season", "Exit", "Share my season"]);
+  await unmount!();
+  pngClipboard();
+  const phone = await open({ width: 390 });
+  expect(steps(phone).map(([word]) => word)).toEqual(["Season", "Exit", "Share my season"]);
+});
+
+it("says the image could not be made when the copy fails, and keeps Copy image to try again", async () => {
+  pngClipboard();
+  snapshot.fails = true;
+  const host = await open({ width: 1440 });
+  await press(host, "Copy image");
+  expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
+  expect(steps(host).slice(-2)).toEqual([
+    ["Copy image", "quiet"],
+    ["Share my season", "primary"],
+  ]);
+});
