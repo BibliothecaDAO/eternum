@@ -549,7 +549,6 @@ pub mod GameLedger {
             let preset = self.get_preset(preset_id);
             assert!(preset.day_unit_seconds != 0, "Ledger: Frontier days disabled");
             assert!(end > start, "Ledger: invalid season window");
-            crate::days::season_days(end - start, preset.day_unit_seconds);
             assert!(
                 Into::<u64, u128>::into(end) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
@@ -783,7 +782,6 @@ pub mod GameLedger {
             let now = starknet::get_block_timestamp();
             assert!(!season.closed && now >= season.start && now < season.end, "Ledger: extension not live");
             assert!(approved::END > season.end, "Ledger: extension must grow");
-            crate::days::season_days(approved::END - season.start, preset.day_unit_seconds);
             assert!(
                 Into::<u64, u128>::into(approved::END) + preset.claim_window_seconds.into() <= 0xffffffffffffffff,
                 "Ledger: claim deadline exceeds u64",
@@ -1809,9 +1807,8 @@ fn frontier_unlock(season: FrontierSeason, preset: Preset, now: u64) -> u256 {
     } else if now >= season.end {
         season.pool
     } else {
-        let clock = crate::types::FrontierClock { start_main_at: season.start, seed: season.seed };
+        let clock = crate::types::FrontierClock { start_main_at: season.start, end_at: season.end, seed: season.seed };
         let day = crate::days::day_of(clock, preset.day_unit_seconds, now);
-        let end = core::cmp::min(day.end, season.end);
-        season.pool * (end - season.start).into() / (season.end - season.start).into()
+        season.pool * (day.end - season.start).into() / (season.end - season.start).into()
     }
 }

@@ -40,7 +40,7 @@ function openedChest(owner: number, amount: number) {
 }
 
 const start = 1800000000;
-const calendar = { seed: 42n, startMainAt: start, dayUnitSeconds: 3600 };
+const calendar = { seed: 42n, startMainAt: start, endAt: start + 21 * 20 * 3600, dayUnitSeconds: 3600 };
 const game = {
   name: "0x46526f6e74696572",
   game_id: 1,
@@ -229,4 +229,29 @@ it("never records closing ranks for a hidden check game, even without its rules"
   const check = { ...game, name: "0x" + Buffer.from("check-frontier-abc").toString("hex") };
   const readCheck = (model: string): FoldRow[] => (model === "GameRegistry" ? [{ key: "1", value: check }] : []);
   expect(closingFrontierDays(readCheck, start, start + 1000000, 20, [])).toEqual([]);
+});
+
+it.each([81, 84, 85])("records an %ih season's final ranks once, with no snapshot for an absorbed stub", (hours) => {
+  const end = start + hours * 3600;
+  const readPartial = (model: string): FoldRow[] => {
+    if (model === "GameRegistry") return [{ key: "1", value: { ...game, seed: 0x5eedn, end_at: end } }];
+    if (model === "SliceRules") return [{ key: "1", value: { game_id: 1, day_unit_seconds: 7200 } }];
+    return read(model);
+  };
+  const day = hours === 81 ? 9 : 10;
+  const lastStart = start + (hours === 81 ? 68 : 80) * 3600;
+  expect(closingFrontierDays(readPartial, lastStart, end - 1, 20, [])).toEqual([]);
+  expect(closingFrontierDays(readPartial, lastStart, end + 100, 21, [])).toEqual([
+    {
+      game_id: "1",
+      day_index: day,
+      ends_at: end,
+      confirmed_block: 21,
+      entries: [
+        { address: "0x2", structure_id: "2", rank: 1 },
+        { address: "0x1", structure_id: "1", rank: 2 },
+      ],
+    },
+  ]);
+  expect(closingFrontierDays(readPartial, end, end + 200, 22, [])).toEqual([]);
 });

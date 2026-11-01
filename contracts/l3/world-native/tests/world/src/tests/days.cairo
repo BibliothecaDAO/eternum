@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::days::*;
 
 
@@ -56,20 +57,13 @@ fn twenty_one_bags_end_exactly_ten_weeks_after_the_start() {
     let game = season('ten weeks');
     let ten_weeks: u64 = 10 * 7 * 86400;
     assert_eq!(game.end_at - START, ten_weeks);
-    assert_eq!(season_days(game.end_at - START, UNIT), 105);
     let last = day_of(game, UNIT, game.end_at - 1);
     assert_eq!(last.index, 104);
     assert_eq!(last.end, START + ten_weeks);
 }
 
 #[test]
-#[should_panic(expected: "season is not whole day bags")]
-fn a_season_of_partial_bags_is_refused() {
-    season_days(21 * 20 * UNIT.into() + 120, UNIT);
-}
-
-#[test]
-#[should_panic(expected: "season has not started")]
+#[should_panic(expected: "timestamp outside season")]
 fn no_day_before_the_season() {
     day_of(season('early'), UNIT, START - 1);
 }
@@ -84,4 +78,27 @@ fn drawn_bags_match_the_client_vector() {
         }
     }
     assert_eq!(drawn.span(), array![4_u64, 6, 3, 2, 5, 4, 3, 5, 2, 6, 3, 6, 4, 2, 5].span());
+}
+
+
+#[test]
+fn cut_and_merged_days_match_the_shared_client_vectors() {
+    let values = read_txt(@FileTrait::new("../fixtures/season-tail-v1.txt"));
+    let mut values = values.span();
+    while !values.is_empty() {
+        let duration: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
+        let timestamp: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
+        let index: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
+        let start: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
+        let end: u64 = (*values.pop_front().unwrap()).try_into().unwrap();
+        let game = GameRegistry { end_at: START + duration, ..season(0x5eed) };
+        assert_eq!(day_of(game, 7200, START + timestamp), Day { index, start: START + start, end: START + end });
+    }
+}
+
+#[test]
+#[should_panic(expected: "timestamp outside season")]
+fn no_day_after_the_season() {
+    let game = season('ended');
+    day_of(game, UNIT, game.end_at);
 }

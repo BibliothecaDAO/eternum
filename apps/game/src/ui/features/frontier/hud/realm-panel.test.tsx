@@ -156,7 +156,7 @@ it("shows a realm watched or visited by its stores alone: no LORDS and no Realms
 });
 
 it("says the day and the time left in the top bar, and when the day ends and how long tomorrow lasts on hover", () => {
-  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+  const clock = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
   act(() => root.render(<DayPill clock={clock} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain(`Day ${clock.day}`);
@@ -165,7 +165,7 @@ it("says the day and the time left in the top bar, and when the day ends and how
 });
 
 it("reads a 24-hour day in hours on the top bar and its hover, as Play does (live-qa-night-1 P3-8)", () => {
-  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 }, 3_600);
+  const day = dayClock({ dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 }, 3_600);
   act(() => root.render(<DayPill clock={{ ...day, secondsLeft: 24 * 3_600, tomorrowSeconds: 24 * 3_600 }} />));
   const pill = host.querySelector('[aria-label="Day clock"]')!;
   expect(pill.textContent).toContain("24h left");

@@ -34,7 +34,6 @@ function fixtureLaunchParams(presetId: number, definition: ReturnType<typeof bui
     preset_id: presetId,
     start_settling_at: 1800,
     start_main_at: 1800,
-    // A season with days lasts whole bags of them.
     duration_seconds:
       nativePresetForId(presetId).gameType === "frontier" ? seasonSeconds(1, definition.rules.day_unit_seconds) : 86400,
     end_grace_seconds: 0,

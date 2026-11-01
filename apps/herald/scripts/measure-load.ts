@@ -10,7 +10,7 @@ import { expeditionRealmSite, expeditionDayEndsAt, seasonDay } from "@bibliothec
 //                     after the run the day rolls over, and every subscriber's scope with it
 // Run: pnpm --dir apps/herald measure:load --shape frontier --players 2000 --minutes 3 --sample-every 1
 import { parseArgs } from "node:util";
-import { presetRegistration, presetLaunch } from "../src/native/preset-fixtures";
+import { presetRegistration, presetLaunch, PRESET_FIXTURE_DURATION_SECONDS } from "../src/native/preset-fixtures";
 import { LiveWorld } from "../src/live-world";
 import { receipt, rowEvent, schema, setup, manifest, pointsAward } from "../src/native/fixtures";
 import { decodeMembers } from "../src/native/serde";
@@ -40,6 +40,7 @@ const expedition = () => ({
   seed: 1n,
   spacing: SPACING,
   startMainAt,
+  endAt: startMainAt + PRESET_FIXTURE_DURATION_SECONDS,
 });
 const MAP_STRUCTURES_PER_GAME = 150;
 const BUILDINGS_PER_REALM = 20;

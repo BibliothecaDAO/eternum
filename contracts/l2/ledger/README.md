@@ -9,13 +9,14 @@ Frontier is funded once, before its end, and unlocks through the end of the curr
 start immediately unlocks elapsed days and the current day; it never unlocks future days.
 `fund_frontier(shard, season_id, preset_id, start, end, seed, amount)` takes the start, end and seed from the confirmed
 shard game. The preset supplies `day_unit_seconds` and the claim window; it carries no season length. The supplied
-window must be positive and contain a whole number of five-day bags, each lasting `20 * day_unit_seconds`; each bag
-holds the lengths 2..6 once. Unlock and the claim deadline use the stored end. Frontier keeps its own window,
-independent of Blitz/MMR season windows. Ledger time is its Starknet block timestamp; shard time is Madara's block
-timestamp. Numeric day boundaries match exactly for equal launch inputs and timestamps. There is no documented hard
-bound on cross-chain clock lag: the relay must retain a confirmed claim while L2's unlocked amount is insufficient and
-submit once the independent L2 gate fits. Do not trust a relay-supplied future timestamp or unlock future days to
-conceal clock lag. Payments carry no treasury cut and remain bounded by cumulative unlock and custody.
+window must be positive. Seeded five-day bags keep their lengths 2..6 once each, with the final day clipped at the
+stored end. A final stub under two units joins the preceding day; a season shorter than its first day has one clipped
+day. Unlock and the claim deadline use the stored end. Frontier keeps its own window, independent of Blitz/MMR season
+windows. Ledger time is its Starknet block timestamp; shard time is Madara's block timestamp. Numeric day boundaries
+match exactly for equal launch inputs and timestamps. There is no documented hard bound on cross-chain clock lag: the
+relay must retain a confirmed claim while L2's unlocked amount is insufficient and submit once the independent L2 gate
+fits. Do not trust a relay-supplied future timestamp or unlock future days to conceal clock lag. Payments carry no
+treasury cut and remain bounded by cumulative unlock and custody.
 
 Every Frontier payment, including prizes and swept balances, requires both the operator account and an independent
 co-signature. The co-signer checks the confirmed shard receipt, funding binding and identity's currently linked wallet

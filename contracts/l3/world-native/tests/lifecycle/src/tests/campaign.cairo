@@ -90,7 +90,7 @@ fn claims_each_game_day(tier: u8, expected_amount: u128, expected_essence: u128)
     let (_, preset) = super::preset_projection::current_definition("devcon");
     let unit = preset.rules.day_unit_seconds;
     assert_eq!(unit, 7200);
-    assert_eq!(crate::days::season_days(game.end_at - game.start_main_at, unit), 10);
+    assert_eq!(crate::days::day_of(game, unit, game.end_at - 1).index + 1, 10);
     let old_first_day = crate::days::day_of(game, 4800, 360);
     start_cheat_block_timestamp(d.games, old_first_day.end);
     assert!(operator.grant_labor(home, 1, d.actor).is_err());
@@ -316,4 +316,43 @@ fn campaign_entries_refuse_games_without_open_frontier_homes() {
     set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());
     assert!(ledger(d).register_entitlement(EntryKey { game_id: 1, owner: d.actor }, ticket(1)).is_err());
+}
+
+
+#[test]
+#[feature("safe_dispatcher")]
+fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
+    for hours in array![81_u64, 84, 85] {
+        let (d, game_id) = super::registrar::setup_open_frontier_duration("devcon", hours * 3600);
+        set_operator(d, authority());
+        register(d, game_id, ticket(crate::settlement::CAMPAIGN_NORMAL));
+        let home = found(d, game_id);
+        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let game = crate::game::IGameDispatcherTrait::game(
+            crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+        );
+        let last = crate::days::day_of(game, 7200, game.end_at - 1);
+        assert_eq!(last.index, if hours == 81 {
+            9
+        } else {
+            10
+        });
+        start_cheat_caller_address(d.games, authority());
+        start_cheat_block_timestamp(d.games, last.start);
+        let grant = operator.grant_labor(home, last.index, d.actor).unwrap();
+        assert_eq!(grant.essence, 1000 * RESOURCE_PRECISION);
+        let essence = balance(d, home, ESSENCE);
+        start_cheat_block_timestamp(d.games, game.end_at - 1);
+        assert_eq!(operator.grant_labor(home, last.index, d.actor).unwrap(), grant);
+        assert!(operator.grant_labor(home, last.index + 1, d.actor).is_err());
+        assert_eq!(balance(d, home, ESSENCE), essence);
+        start_cheat_block_timestamp(d.games, game.end_at);
+        assert!(operator.grant_labor(home, last.index + 1, d.actor).is_err());
+    }
+}
+
+#[test]
+#[should_panic(expected: "season does not end on a tick")]
+fn a_partial_season_still_requires_an_aligned_end() {
+    super::registrar::setup_open_frontier_duration("devcon", 85 * 3600 + 1);
 }

@@ -22,7 +22,7 @@ type ExpeditionRuleReader = (model: ExpeditionRuleModel) => Record<string, unkno
 export const readExpeditionRules = (
   source: Pick<NativeFactStore, "get"> | ExpeditionRuleReader,
   gameId: number,
-): { dayUnitSeconds: number; spacing: number; startMainAt: number; seed: bigint } | null => {
+): { dayUnitSeconds: number; spacing: number; startMainAt: number; endAt: number; seed: bigint } | null => {
   const read: ExpeditionRuleReader =
     typeof source === "function" ? source : (model) => source.get(model, { game_id: gameId });
   const rules = read("SliceRules");
@@ -36,6 +36,7 @@ export const readExpeditionRules = (
     dayUnitSeconds: Number(rules.day_unit_seconds),
     spacing: Number(settlement.spacing),
     startMainAt: Number(game.start_main_at),
+    endAt: Number(game.end_at),
     seed: BigInt(game.seed as bigint | string),
   };
 };
@@ -93,7 +94,7 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
  * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
  */
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>
-  dayOf(rules, nowSeconds)?.end ?? rules.startMainAt;
+  dayOf(rules, nowSeconds)?.end ?? (nowSeconds < rules.startMainAt ? rules.startMainAt : Infinity);
 
 /**
  * An army belongs to today's expedition only while it stands in today's region, as the contract's `is_current` decides;

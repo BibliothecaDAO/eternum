@@ -122,7 +122,7 @@ class SeasonCommandTest(unittest.TestCase):
         for preset, start, end, error in (
             (2, START, END, "Frontier preset"),
             (6, "2026-10-30T06:30:01Z", END, "40 s tick"),
-            (6, START, "2026-10-31T06:30:00Z", "whole bags"),
+            (6, START, "2026-10-31T06:30:01Z", "40 s tick"),
             (6, "2026-10-30T06:30:00", END, "timezone"),
             (6, START, None, "both season dates"),
         ):

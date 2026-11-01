@@ -9,7 +9,12 @@ vi.mock("@bibliothecadao/eternum/game-client", async (importOriginal) => ({
   fetchHeraldGameSnapshot: vi.fn(),
 }));
 
-const calendar = { seed: 0x5eedn, startMainAt: 1_800_000_000, dayUnitSeconds: 7_200 };
+const calendar = {
+  seed: 0x5eedn,
+  startMainAt: 1_800_000_000,
+  endAt: 1_800_000_000 + 2 * 20 * 7_200,
+  dayUnitSeconds: 7_200,
+};
 const game: DayOpenGame = {
   game_id: 1,
   name: "Devcon",
@@ -143,4 +148,22 @@ it("reads confirmed enrollment for all owners, rather than activity or the entry
     ],
   } as never);
   expect(await readEnrolledAccounts("https://shard.test", 1)).toEqual(["0x1", "0x2"]);
+});
+
+it.each([81, 84, 85])("opens the actual final day of an %ih season and never prepares another", (hours) => {
+  const end = calendar.startMainAt + hours * 3600;
+  const lastStart = calendar.startMainAt + (hours === 81 ? 68 : 80) * 3600;
+  const partial = { ...game, clock: { ...game.clock, end_at: end } };
+  expect(planDayOpenings([partial], lastStart * 1000 - 10_000, 60_000).prepare).toEqual([
+    {
+      gameId: 1,
+      gameName: "Devcon",
+      day: hours === 81 ? 9 : 10,
+      opensAt: lastStart * 1000,
+      endsAt: end * 1000,
+      last: true,
+    },
+  ]);
+  for (const at of [lastStart, end - 1, end, end + 1])
+    expect(planDayOpenings([partial], at * 1000, 60_000)).toEqual({ prepare: [], nextAlarmAt: null });
 });

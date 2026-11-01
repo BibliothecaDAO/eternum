@@ -45,14 +45,18 @@ function closedDayBounds(
     if (isCheckGame(game)) continue;
     const unit = number(required(modelRows("SliceRules"), game.game_id, "SliceRules").day_unit_seconds);
     if (unit === 0 || game.settled === true) continue;
-    const calendar = { seed: integer(game.seed), startMainAt: number(game.start_main_at), dayUnitSeconds: unit };
-    let day = dayOf(calendar, Math.max(previousTimestamp, calendar.startMainAt))!;
+    const calendar = {
+      seed: integer(game.seed),
+      endAt: number(game.end_at),
+      startMainAt: number(game.start_main_at),
+      dayUnitSeconds: unit,
+    };
+    let day = dayOf(calendar, Math.max(previousTimestamp, calendar.startMainAt));
     const end = Math.min(timestamp, number(game.end_at));
-    if (day.end > end) continue;
     const gameId = integer(game.game_id).toString();
-    while (day.end <= end) {
+    while (day && day.end <= end) {
       closed.push({ game_id: gameId, day_index: day.index, ends_at: day.end, confirmed_block: confirmedBlock });
-      day = dayOf(calendar, day.end)!;
+      day = dayOf(calendar, day.end);
     }
   }
   return closed;

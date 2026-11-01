@@ -390,7 +390,12 @@ function directoryClock(state: Pick<HeraldHttpState, "chainTimestamp"> & { fold:
 }
 
 function seasonDayOf(game: Record<string, unknown>, dayUnitSeconds: number, now: number): number | null {
-  const calendar = { dayUnitSeconds, seed: BigInt(game.seed as string), startMainAt: Number(game.start_main_at) };
+  const calendar = {
+    dayUnitSeconds,
+    seed: BigInt(game.seed as string),
+    endAt: Number(game.end_at),
+    startMainAt: Number(game.start_main_at),
+  };
   return dayOf(calendar, now)?.index ?? null;
 }
 
