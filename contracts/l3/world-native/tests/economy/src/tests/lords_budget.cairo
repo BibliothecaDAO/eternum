@@ -595,17 +595,18 @@ fn sparse_rates_keep_fractional_shares_and_prices_stay_between_one_and_the_ceili
     assert!(!fits(minimum, clock(), minimum.price));
 }
 
-#[test]
-fn partial_final_days_use_only_their_remaining_ticks() {
-    let original = clock();
-    let first = crate::days::day_of(original.game, DAY_UNIT, 0);
+#[test_case(name: "merged_stub", 81, 9, 360, 3)]
+#[test_case(name: "clipped_day", 85, 10, 1080, 24)]
+fn final_day_prices_use_clipped_or_merged_ticks(hours: u64, day: u64, yesterday_ticks: u64, price: u128) {
     let clock = SeasonClock {
-        game: crate::game::GameRegistry { end_at: first.end + 2 * original.tick, ..original.game }, ..original,
+        game: crate::game::GameRegistry { seed: 0x5eed, end_at: hours * 3600, ..clock().game },
+        day_unit_seconds: 7200,
+        tick: 40,
     };
-    let yesterday_ticks = (first.end - first.start) / clock.tick;
-    let previous = LordsBudget { rolled_shares: 100000000, ..empty_day(TEST_POOL, 0) };
-    let today = roll(rules(), previous, clock, 1);
-    assert_eq!(today.price, TEST_POOL * yesterday_ticks.into() / (100000000 * 2));
+    let previous = LordsBudget { rolled_shares: 100000, ..empty_day(TEST_POOL, day - 1) };
+    let today = roll(rules(), previous, clock, day);
+    assert_eq!(today.yesterday_ticks, yesterday_ticks);
+    assert_eq!(today.price, price);
 }
 
 #[test]
