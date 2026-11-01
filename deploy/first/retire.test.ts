@@ -156,6 +156,27 @@ test("a retirement cut short finishes on the next run, and a pin naming another 
   expect(readdirSync(other.store.directory)).toContain("asset-ledger.json");
 });
 
+test("a book naming its ledger 0x0, not deployed, retires the saved ledger with its call files", () => {
+  const { target, store } = environment({ l2Chain: "SN_MAIN", lords: "0x5", ledger: "0x0" });
+  store.write("asset-ledger.json", { classHash: "0x1", address: "0x46", constructor: [] });
+  store.write("cold-setup.json", { account: "0x7", calls: [] });
+  store.write("cold-funding.json", { account: "0x7", calls: [] });
+  expect(retirementPlan(target, store, ["ledger"])).toEqual({
+    moves: [
+      ["asset-ledger.json", retiredPin("ledger", "0x46")],
+      ["cold-setup.json", "retired-cold-setup-0x46.json"],
+      ["cold-funding.json", "retired-cold-funding-0x46.json"],
+    ],
+    keys: ["ledger"],
+  });
+  retire(target, store, retirementPlan(target, store, ["ledger"]));
+  expect(addressBook(target)).toEqual({ l2Chain: "SN_MAIN", lords: "0x5" });
+  expect(readdirSync(store.directory).sort()).toEqual(
+    [retiredPin("ledger", "0x46"), "retired-cold-funding-0x46.json", "retired-cold-setup-0x46.json"].sort(),
+  );
+  expect(retirementPlan(target, store, ["ledger"])).toEqual({ moves: [], keys: [] });
+});
+
 test("teardown takes dev alone, or either environment with one backup under /opt/athanor/backups", () => {
   expect(teardownArguments(["dev"])).toEqual({ environment: "dev", invocation: "teardown dev" });
   expect(teardownArguments(["dev", "/opt/athanor/backups/rehearsal"]).invocation).toBe(

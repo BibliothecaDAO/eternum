@@ -31,7 +31,7 @@ export function retirementPlan(target: Target, store: PrivateStore, names: reado
   const keys: string[] = [];
   for (const name of names) {
     const pin = store.read<{ address: string }>(`asset-${name}.json`);
-    const address = book[BOOK_KEYS[name][0]] || pin?.address;
+    const address = BigInt(book[BOOK_KEYS[name][0]] || 0) ? book[BOOK_KEYS[name][0]] : pin?.address;
     if (!address) continue;
     if (pin && BigInt(pin.address) !== BigInt(address))
       throw new PublicError(`The saved ${name} pin names another contract than the book; nothing was retired`);
