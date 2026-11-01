@@ -287,3 +287,27 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 
 `--base-url https://127.0.0.1:<port>` drives a client already served by you; `--size 1080x1920` films vertical;
 `--game frontier` uses Frontier's light; `--takes battle,explore` rolls only those.
+
+### Finish recorded footage
+
+`scripts/studio/cinematic-maker.py` is the offline finishing path for the approved 481-frame, 24 fps trailer. It takes
+the recorded 1280×704 picture, two stereo music edits, the supplied brand kit and an edit JSON. It preserves the shot,
+retimes music with pitch-preserving tempo changes and 40 ms crossfades, fades in the complete kit lockup and one line
+with the address, and exports H.264/AAC landscape and portrait films. Landscape adds eight pixels above and below;
+portrait follows the edit's smooth crop centres. No extra rendered scene or game runtime is needed.
+
+Run with Python, Pillow, NumPy, SoundFile, FFmpeg and ffprobe installed:
+
+```sh
+python apps/game/scripts/studio/cinematic-maker.py \
+  --source <approved-video.mp4> --music-dir <folder-with-teaser20-take1-and-take2.wav> \
+  --kit <extracted-brand-kit> --edit <edit.json> --out <final-folder> --evidence <proof-folder>
+```
+
+The edit supplies `musicAnchors` (source and target seconds plus cue names), source-derived `accents` (time and gain),
+`portraitCentres` (time and source-pixel centre pairs), `cardFade`, `line`, `cta`, and named `reviewFrames`. The final
+anchor is 481/24 seconds. The command renders and decodes all four outputs, checks duration, dimensions, codecs, frame
+count, −14 LUFS within 0.25 LU and true peaks below −1 dBTP, and leaves final-frame stills, timing records, mastering
+passes and source/brand/output hashes. It replaces a finished file only after that file passes. Rerunning uses the same
+inputs and edit; no server, watcher or browser starts. This script adds the recorded-footage finishing step without
+replacing the studio's camera recorder.
