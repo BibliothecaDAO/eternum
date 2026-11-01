@@ -104,6 +104,8 @@ export function validateInputs(input: Inputs, target: Target) {
   validateDates(input, blitzPresetOf(target) !== null);
   if (target.coldAdmin && (!input.admin || BigInt(input.admin) <= 0n))
     throw new PublicError("Production needs the public cold admin and treasury addresses, never their keys");
+  if (!target.coldAdmin && input.admin !== undefined)
+    throw new PublicError("This environment's ledger admin is its deployer; remove admin from inputs.json");
   if (namesTreasury(target) && (!input.treasury || BigInt(input.treasury) <= 0n))
     throw new PublicError("Production needs its public treasury address, never its key");
 }
