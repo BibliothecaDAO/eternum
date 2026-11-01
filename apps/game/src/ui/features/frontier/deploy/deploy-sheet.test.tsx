@@ -488,7 +488,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("with wheat short of one troop, counts out of 0, names no wheat at that 0, and Deploy stays off", () => {
+  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, and Deploy stays off", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -500,7 +500,9 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect([outOf(host), wheatLine(host)]).toEqual(["of 0", null]);
+    // The most is 0 and the wheat is why: this 0 is the cap, so the line says so (owner, 1 November).
+    expect(outOf(host)).toBe("of 0");
+    expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);
     act(() => root.unmount());
     host.remove();

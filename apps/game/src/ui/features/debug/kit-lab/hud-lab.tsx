@@ -612,6 +612,12 @@ const STATES = {
     armies: ARMIES,
     deploy: { ...DEPLOY, count: 1_000, wheat: 2_000 },
   },
+  "deploy-no-wheat": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    deploy: { ...DEPLOY, count: 0, wheat: 1 },
+  },
   "deploy-empty": {
     clock: CLOCK,
     stores: STORES,
@@ -1361,6 +1367,7 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
   const [count, setCount] = useState(deploy.count);
   const wheatMax = Math.floor(deploy.wheat / 2);
   const most = Math.min(deploy.troopsAtHome, wheatMax);
+  const wheatStop = wheatStopsAt({ troopsMax: deploy.troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
       art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
@@ -1376,7 +1383,7 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatLimit={wheatStopsAt({ troopsMax: deploy.troopsAtHome, wheatMax, max: most }, count)}
+      wheatLimit={wheatStop && { ...wheatStop, held: deploy.wheat, perTroop: 2, wait: undefined }}
       onGoToRealm={noop}
       onClose={noop}
     />

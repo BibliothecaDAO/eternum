@@ -177,14 +177,13 @@ export const deployRange = (plan: DeployPlan): DeployRange => {
 };
 
 /**
- * Where the wheat is what stops the count: the count is at the most, above none, and the wheat pays for fewer troops
- * than would go without it. Then the troops it pays for, of how many; else none, and the sheet names no wheat (owner, 1
- * November: "I should only see the wheat warning when I deploy the max, not at 0").
+ * Where the wheat is what stops the count: the count is at the most and the wheat pays for fewer troops than would go
+ * without it. Then the troops it pays for, of how many; else none, and the sheet names no wheat (owner, 1 November: "I
+ * should only see the wheat warning when I deploy the max, not at 0"). A count of 0 is at the most only where the wheat
+ * pays for no troop, the one 0 the wheat explains (owner, the same day).
  */
 export const wheatStopsAt = (range: DeployRange, count: number): { troops: number; of: number } | undefined =>
-  count > 0 && count === range.max && range.wheatMax < range.troopsMax
-    ? { troops: range.max, of: range.troopsMax }
-    : undefined;
+  count === range.max && range.wheatMax < range.troopsMax ? { troops: range.max, of: range.troopsMax } : undefined;
 
 /** The army a count makes: the whole troops that go and what they cost in wheat. */
 export const previewDeploy = (plan: DeployPlan, count: number): { count: number; wheatCost: number } => {
