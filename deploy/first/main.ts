@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { existsSync } from "node:fs";
 import { Account, RpcProvider, logger } from "starknet";
 import { PrivateStore } from "./private-store";
-import { environments, root, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
+import { environments, ledgerAdmin, root, ACCOUNT_CLASS, type Environment, type Inputs } from "./settings";
 import { accountIdentity, classAt, isDeploymentBlock, newKey, prepareAccounts, type Keys } from "./chain";
 import {
   artifactsReady,
@@ -41,6 +41,7 @@ import {
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
+import { payoutAlertSteps } from "./payout-alerts";
 import { setupSeason } from "./blitz-season";
 import { PublicError, reportFailure } from "./errors";
 
@@ -230,7 +231,7 @@ export function preparationSteps(context: Deployment): Step[] {
         await verifyLedgerAccounts(
           context.provider,
           assets.ledger!,
-          context.inputs.admin ?? accountIdentity(context.keys.deployer).address,
+          ledgerAdmin(context.target, context.inputs, accountIdentity(context.keys.deployer).address),
           accountIdentity(context.keys.relay).address,
           context.inputs.cosignerPublicKey,
         );
@@ -242,7 +243,7 @@ export function preparationSteps(context: Deployment): Step[] {
       },
       apply: async () => {
         const account = signer(context);
-        const admin = context.inputs!.admin ?? account.address;
+        const admin = ledgerAdmin(context.target, context.inputs!, account.address);
         const treasury = context.inputs!.treasury ?? account.address;
         const assets = existingAssets(context.target);
         for (const plan of assetPlans(
@@ -466,7 +467,11 @@ export async function main(args = process.argv.slice(2)) {
         ? "Applying missing first-deployment steps."
         : "DRY RUN: no keys generated, no writes or transactions. Use --apply to act.",
     );
-    await runSteps([...preparationSteps(context), addressBookStep(context)], apply, context.output);
+    await runSteps(
+      [...preparationSteps(context), addressBookStep(context), ...payoutAlertSteps(context)],
+      apply,
+      context.output,
+    );
   } finally {
     unlock();
   }

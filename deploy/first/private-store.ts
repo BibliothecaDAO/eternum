@@ -48,12 +48,17 @@ export class PrivateStore {
     return join(this.directory, name);
   }
   read<T>(name: string): T | undefined {
+    const text = this.readText(name);
+    return text === undefined ? undefined : JSON.parse(text);
+  }
+  /** A credential the owner saved as one line of text, such as a webhook address. */
+  readText(name: string): string | undefined {
     const path = this.path(name);
     if (!existsSync(path)) return undefined;
     this.check(path, 0o600);
     const fd = openSync(path, constants.O_RDONLY | constants.O_NOFOLLOW);
     try {
-      return JSON.parse(readFileSync(fd, "utf8"));
+      return readFileSync(fd, "utf8");
     } finally {
       closeSync(fd);
     }

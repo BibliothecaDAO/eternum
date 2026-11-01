@@ -179,6 +179,8 @@ test.each(["dev", "production"] as const)(
         check,
       ],
     ]);
+    // The build names the environment, so its pages unfurl with that environment's own link preview image.
+    expect(calls[0]!.env).toEqual({ VITE_PUBLIC_ENVIRONMENT: environment === "dev" ? "staging" : "production" });
     expect(calls[1]!.env!.CLOUDFLARE_API_TOKEN).toBe(input.cloudflareToken);
     expect(value.target.docs.origin).toBe(
       environment === "dev" ? "https://docs.dev-realms.party" : "https://docs.realms.party",

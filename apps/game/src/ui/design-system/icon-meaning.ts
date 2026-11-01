@@ -23,6 +23,13 @@ export const AGE_LOCKUP = {
   eternum: "/images/logos/eternum-lockup.webp",
 } as const;
 
+/**
+ * The one image a link to the game or the docs unfurls with (og:image, twitter:image; src/brand/link-preview.ts gives
+ * each environment's address), written by scripts/build-brand.sh. Its name carries the first 8 hex digits of its
+ * SHA-256 (src/brand/brand.test.ts), so a new image is a new address and an unfurl a service has cached refreshes.
+ */
+export const LINK_PREVIEW = "/images/covers/link-preview-54d58004.png";
+
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;
 export const iconMeanings = Object.keys(meanings) as IconMeaning[];

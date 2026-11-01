@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, expect, test } from "bun:test";
-import { chmodSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { chmodSync, existsSync, mkdtempSync, rmSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { openCosignerWallets, type WalletObservation } from "./wallets";
+import { openCosignerWallets, readWalletRecords, type WalletObservation } from "./wallets";
 
 let directory: string, path: string, now: number;
 let wallets: ReturnType<typeof openCosignerWallets>;
@@ -91,4 +91,17 @@ test("unsafe file permissions and invalid identities cannot authorize a payment"
   ]) {
     expect(() => wallets.assertWallet(values[0]!, values[1]!, values[2]!)).toThrow("cosigner_wallet_identity_invalid");
   }
+});
+test("a reader beside the co-signer sees each hold with its accounts and the watched records, and creates nothing", () => {
+  const missing = join(directory, "absent.sqlite");
+  expect(readWalletRecords(missing)).toEqual([]);
+  expect(existsSync(missing)).toBe(false);
+  wallets.assertWallet("0xa", "0x1", "0x100");
+  wallets.assertWallet("0xb", "0x1", "0x100");
+  wallets.assertWallet("0xc", "0x2", "0x300");
+  expect(() => wallets.assertWallet("0xa", "0x1", "0x200")).toThrow("cosigner_wallet_change_waiting");
+  expect(readWalletRecords(path)).toEqual([
+    { realmsId: "0x1", wallet: "0x100", pending: "0x200", since: 1000, accounts: ["0xa", "0xb"] },
+  ]);
+  expect(readWalletRecords(path, ["0x2"]).map((record) => record.realmsId)).toEqual(["0x1", "0x2"]);
 });

@@ -201,16 +201,20 @@ clear), a phone's home-screen and launcher icons and the status page, the contou
 home-screen icons; `AGE_LOCKUP`, each age's complete lockup naming it on Play's cards and columns, Eternum's on the
 kit's parchment grade), exported from the kit by `scripts/build-brand.sh <kit folder>`; the surfaces that cannot import
 the token file (the boot, 404 and offline pages, the status page, the docs site's styles and config, the player emails)
-hold a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). `src/brand/brand.test.ts` fails
-on a surface left on a v2 face, mark or colour, on a copy that differs from what the token file writes, on a colour,
-face or mark a standalone surface writes on its own, and on email headers drawn from older brand inputs
-(`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top, under the bar; a painting
-is its ground, never space above it. `Enter` presses the page's step button (the one marked as its step) when it is
-enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the four places (Play, Season,
-Chat, You; owner: "yeah B is great.") are a tab bar at the foot, 32 px icons over their words. The app's notice
-(offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar before You, and on a phone
-just above the foot, one row: Install is its icon, Later and Install; under 1280 wide a notice with action buttons shows
-its icon and verbs; a words-only notice keeps its text.
+hold a copy written by `pnpm --dir apps/game brand:surfaces` (`src/brand/surfaces.ts`). A link to the game or the docs
+unfurls with one image, the lettered mark on the first visit's painting (`LINK_PREVIEW` in
+`ui/design-system/icon-meaning.ts`, named by its content's hash), each environment's pages naming their own app's copy
+(`play.dev-realms.party` on dev, `play.realms.party` on production; the docs' build reads the client's
+`VITE_PUBLIC_ENVIRONMENT`). `src/brand/brand.test.ts` fails on a surface left on a v2 face, mark or colour, on a copy
+that differs from what the token file writes, on a colour, face or mark a standalone surface writes on its own, on a
+link preview not named by its content's hash, named by a surface of its own or served twice, and on email headers drawn
+from older brand inputs (`pnpm --dir packages/notifications build:email-art`). Every page's content starts at the top,
+under the bar; a painting is its ground, never space above it. `Enter` presses the page's step button (the one marked as
+its step) when it is enabled, nothing has focus that answers Enter itself, and no dialog is open. On a phone the four
+places (Play, Season, Chat, You; owner: "yeah B is great.") are a tab bar at the foot, 32 px icons over their words. The
+app's notice (offline, an update ready, or Install, which only Play offers) sits in the desktop's top bar before You,
+and on a phone just above the foot, one row: Install is its icon, Later and Install; under 1280 wide a notice with
+action buttons shows its icon and verbs; a words-only notice keeps its text.
 
 | Feature                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      | Route                                                          | How to reach it                                                                                                                                                                                                                                                                |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
@@ -663,6 +667,15 @@ above the highest ground under it.
 
 `/lab/game?scenario=painted-buildings-sands` is the painted-buildings Kingdom on beach sand, palms around its board: the
 realm view's light and shadows on palms and buildings together (`&scene=hex` opens the realm).
+
+`/lab/game?scenario=realm-height` lays out every building kind rendered by Frontier, plus the keep, on a snowy Empire
+board: press **Realm** to inspect ground contact. The fixture derives its coverage from the building and mode model
+catalogs; Fish and Research have no Frontier models.
+`pnpm --dir apps/game playtest --port <port> --steps lab-realm-height` enters the realm, zooms out to show every
+building and checks each model's geometry base against the presented floor, failing on missing, off-screen, buried or
+floating buildings. `src/lab/game/realm-height-scenario.test.ts` checks fixture coverage;
+`src/three/scenes/hexception-building-assets.test.ts` covers every non-None building kind across modes, including Fish
+and Research, tier variants, keeps, outposts and cosmetic skins at growth and resting scales.
 
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots

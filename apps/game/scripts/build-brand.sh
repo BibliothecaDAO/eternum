@@ -2,7 +2,7 @@
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
 # each age's transparent lockup, the install icons (each surface's mark by the size it shows it, gold on Hearth) and the
-# favicon (the small globe's master, resampled; the dev sets add a hatched corner), and the share card (the lettered
+# favicon (the small globe's master, resampled; the dev sets add a hatched corner), and the link preview (the lettered
 # mark on a painting under Hearth at 80%, the deck's page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
@@ -92,7 +92,14 @@ for file in "$OUT"/game-dev-pwa-*.png "$OUT"/game-dev-apple-touch-icon-*.png "$W
 hatch "$OUT/game-dev-maskable-icon-512x512.png" 15 22
 ico "$OUT/game-dev-favicon.ico"
 
-# The share card, 1200 x 630: the first visit's painting under Hearth at 80%, the lettered mark at its middle.
+# The link preview, 1200 x 630: the first visit's painting under Hearth at 80%, the lettered mark at its middle. Named
+# by its content's hash, which LINK_PREVIEW in src/ui/design-system/icon-meaning.ts and the README's picture carry, so a
+# new image is a new address for every unfurl.
 magick "$OUT/landscapes/dark-plains-1600.webp" -resize "1200x630^" -gravity center -extent 1200x630 \
   \( -size 1200x630 "xc:$HEARTH" -alpha set -channel A -evaluate set 80% +channel \) -composite \
-  \( "$LETTERED" -trim +repage -resize x380 \) -gravity center -composite -strip "$OUT/covers/og-image.png"
+  \( "$LETTERED" -trim +repage -resize x380 \) -gravity center -composite -strip "$WORK/link-preview.png"
+PREVIEW="covers/link-preview-$(sha256sum "$WORK/link-preview.png" | cut -c1-8).png"
+rm -f "$OUT"/covers/link-preview-*.png
+cp "$WORK/link-preview.png" "$OUT/$PREVIEW"
+sed -i "s|/images/covers/link-preview-[0-9a-f]*\\.png|/images/$PREVIEW|" \
+  src/ui/design-system/icon-meaning.ts ../../README.md

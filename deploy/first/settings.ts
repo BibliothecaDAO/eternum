@@ -21,6 +21,13 @@ export const pagesSites = (target: Target): PagesSite[] => [clientSite(target), 
 export const ACCOUNT_CLASS = "0x540d7f5ec7ecf317e68d48564934cb99259781b1ee3cedbbc37ec5337f8e688";
 export const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
 export const WEI = 10n ** 18n;
+/**
+ * Who administers the ledger and pays its funding: the cold admin where the environment keeps one, else the deployer.
+ * Every setup and funding step reads it here, so a saved address can never stand in for the deployer by default.
+ */
+export const ledgerAdmin = (target: Target, inputs: Pick<Inputs, "admin">, deployer: string) =>
+  target.coldAdmin ? inputs.admin! : deployer;
+
 export interface Inputs extends SeasonDates {
   cloudflareToken: string;
   rpc: string;

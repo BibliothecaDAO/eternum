@@ -31,7 +31,7 @@
     "statusBucket": "realms-status",
     "statusEnvironment": false,
     "book": "production.json",
-    "coldAdmin": true,
+    "coldAdmin": false,
     "origin": "https://play.realms.party",
     "admin": "https://admin.realms.party",
     "zone": "realms.party",

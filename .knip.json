@@ -24,6 +24,7 @@
       "entry": [
         "deploy/athanor/scripts/host-accounts.ts",
         "deploy/athanor/cosigner/main.ts",
+        "deploy/athanor/cosigner/alerts.ts",
         "deploy/release/facts.ts",
         "deploy/athanor/scripts/inspect-shard-roles.ts",
         "deploy/athanor/scripts/warm-native-classes.ts",

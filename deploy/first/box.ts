@@ -17,26 +17,24 @@ export const remoteCheckout = (revision: string) => `/home/ubuntu/cairo-suite/fi
 export function releaseDirectory(target: Target) {
   return target.runDirectory;
 }
+/** One non-interactive SSH command on the target's box: a pinned host key, no shared connection. */
+export const boxSsh = (target: Target, ...remote: string[]) => [
+  "ssh",
+  "-o",
+  "BatchMode=yes",
+  "-o",
+  "StrictHostKeyChecking=yes",
+  "-o",
+  "UpdateHostKeys=no",
+  "-o",
+  "ControlMaster=no",
+  "-o",
+  "ControlPath=none",
+  target.box,
+  ...remote,
+];
 export async function boxRead(target: Target, script: string) {
-  return command({
-    argv: [
-      "ssh",
-      "-o",
-      "BatchMode=yes",
-      "-o",
-      "StrictHostKeyChecking=yes",
-      "-o",
-      "UpdateHostKeys=no",
-      "-o",
-      "ControlMaster=no",
-      "-o",
-      "ControlPath=none",
-      target.box,
-      "bash",
-      "-s",
-    ],
-    input: `set -euo pipefail\n${script}\n`,
-  });
+  return command({ argv: boxSsh(target, "bash", "-s"), input: `set -euo pipefail\n${script}\n` });
 }
 export async function boxCommand(target: Target, revision: string, invocation: string) {
   if (!/^[0-9a-f]{40}$/.test(revision)) throw new PublicError("Invalid deployment revision");
@@ -167,21 +165,7 @@ print('match' if matches else 'different')`;
   return (
     (
       await command({
-        argv: [
-          "ssh",
-          "-o",
-          "BatchMode=yes",
-          "-o",
-          "StrictHostKeyChecking=yes",
-          "-o",
-          "UpdateHostKeys=no",
-          "-o",
-          "ControlMaster=no",
-          "-o",
-          "ControlPath=none",
-          target.box,
-          `python3 -c ${shell(program)}`,
-        ],
+        argv: boxSsh(target, `python3 -c ${shell(program)}`),
         input: token,
       })
     ).trim() === "match"
@@ -191,21 +175,7 @@ export async function installOperatorToken(target: Target, token: string) {
   // The remote command is fixed; the credential travels only on encrypted standard input.
   const program = `import os,sys,stat; p='/opt/athanor/operator-token'; v=sys.stdin.read(); os.umask(0o077); fd=os.open(p,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600); os.write(fd,v.encode()); os.close(fd)`;
   await command({
-    argv: [
-      "ssh",
-      "-o",
-      "BatchMode=yes",
-      "-o",
-      "StrictHostKeyChecking=yes",
-      "-o",
-      "UpdateHostKeys=no",
-      "-o",
-      "ControlMaster=no",
-      "-o",
-      "ControlPath=none",
-      target.box,
-      `python3 -c ${shell(program)}`,
-    ],
+    argv: boxSsh(target, `python3 -c ${shell(program)}`),
     input: token,
   });
 }

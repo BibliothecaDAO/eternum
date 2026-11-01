@@ -74,6 +74,11 @@ reviewed checkout at `/opt/eternum`. Install dependencies with `pnpm install --f
 exports with `pnpm run build:packages` before starting the unit. This process has no Cloudflare deployment credentials
 and submits no L2 transactions. Keep its private key outside every Worker secret store and deployment export.
 
+`deploy/athanor/cosigner/install.sh` does these steps on the box and is safe to rerun: `prepare REVISION` (piped over
+SSH before the checkout exists) makes the user, puts Bun at `/usr/local/bin`, checks out and builds `/opt/eternum` at
+that commit and initializes the key, printing only the public key; `start` takes `config.json` on standard input,
+installs it mode 0600 with the unit, starts it and prints `/health`.
+
 Before ledger setup, run `bun deploy/athanor/cosigner/main.ts init-key /etc/payout-cosigner/key` as that user. It prints
 only the public key. Put that public key in setup's `cosignerPublicKey`; setup also requires `cosignerUrl` (HTTPS) and
 `cosignerToken` (request bearer token). Only the URL/token go to the relay Worker. The ledger constructor takes the
@@ -96,10 +101,18 @@ Both the key and configuration files must have mode `0600`. The service binds on
 configuration. Install/start the unit after funding bindings and identity routing are available. `/health` identifies
 the process and public key, plus `pendingWalletChanges` (`count` and `oldestSince`, a Unix timestamp or null). It is not
 proof that a particular claim can be verified. Read it directly on the box to inspect holds independently of Cloudflare;
-the journal remains the source of account/identity-change details. Rehearse `/sign` through an actual withdrawal, then
-check the L2 wallet and `get_payment`; also rehearse deadline treasury returns and signer outage/recovery. The service
-signs synchronously on request, with no timer or cron queue; network-dependent subsecond latency must be checked in the
-deployment rehearsal.
+the journal remains the source of account/identity-change details. On production, `payout-alerts.timer` (installed by
+setup step 13, `deploy/first/README.md`) runs `cosigner/alerts.ts check` every minute as the co-signer's user and posts
+to the owner's Discord channel, off Cloudflare: each held wallet change (the Realms ID, its accounts, the candidate
+wallet and when the hold ends), its acceptance or cancellation, a paused and an unpaused ledger, and a co-signer silent
+for three minutes and back. It reads the wallet database read-only and keeps `alerts.json` in the state directory.
+Delivery is at least once: each change enters that file's outbox before it is sent, in as many messages as Discord's
+limit needs, and leaves it only when Discord accepts its message. No alert is dropped, even through a Discord outage; a
+crash or a lost answer can repeat one. What each message means:
+[ON-CALL.md](../first/ON-CALL.md#payout-alerts--the-owners-discord-channel). Rehearse `/sign` through an actual
+withdrawal, then check the L2 wallet and `get_payment`; also rehearse deadline treasury returns and signer
+outage/recovery. The service signs synchronously on request, with no timer or cron queue; network-dependent subsecond
+latency must be checked in the deployment rehearsal.
 
 The systemd unit owns `/var/lib/payout-cosigner` (mode `0700`); its `wallets.sqlite` database is mode `0600`. Preserve
 this database across updates, restarts and key rotations, and back it up with the box state. Deleting it or restoring an
@@ -115,11 +128,11 @@ bindings still trust identity, and an attacker controlling identity for 24 hours
 Changes between observations are not independently witnessed. Player-signed bindings are still needed to close those
 gaps. The box process must read the game node and Herald directly on loopback; Cloudflare cannot choose those facts.
 
-For rotation, pause the ledger, generate a new box key, have the cold admin call `set_cosigner(public_key)`, update the
-box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch, invalidating
-old signatures even if a public key is reused. Keep the key file out of logs and public artifacts. A signer outage
-queues payments and settlement; the operator cannot bypass it. The independent monitor retains its pause policy and
-needs STRK for pause/challenge transactions; the co-signer needs none.
+For rotation, pause the ledger, generate a new box key, have the ledger admin call `set_cosigner(public_key)`, update
+the box key and restart the unit, then rehearse before unpausing. Every rotation increments the ledger epoch,
+invalidating old signatures even if a public key is reused. Keep the key file out of logs and public artifacts. A signer
+outage queues payments and settlement; the operator cannot bypass it. The independent monitor retains its pause policy
+and needs STRK for pause/challenge transactions; the co-signer needs none.
 
 ## Uptime qualification
 

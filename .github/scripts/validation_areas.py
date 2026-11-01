@@ -32,6 +32,7 @@ AREAS = {
         ".github/workflows/test-client.yml",
         "apps/game/**",
         # The other surfaces the brand check (apps/game/src/brand/brand.test.ts) reads, and what the docs config reads.
+        "README.md",
         "apps/game-docs/docs/styles.css",
         "apps/game-docs/docs/pages/index.mdx",
         "apps/game-docs/docs/brand.gen.json",
@@ -223,9 +224,12 @@ AREAS = {
         "contracts/utils/**",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
-        # The game files the docs draw on: its icon set and meanings, the patch notes the changelog page shows, and the
-        # LaborRules a preset writes, which the Devcon page states a ticket's claim from.
+        # The game files the docs draw on: its icon set and meanings, the patch notes the changelog page shows, the
+        # LaborRules a preset writes, which the Devcon page states a ticket's claim from, and the link preview's address.
         "apps/game/public/**",
+        "apps/game/src/brand/link-preview.ts",
+        "apps/game/src/config/app-address.ts",
+        "apps/game/src/shell/frame/environment.ts",
         "apps/game/asset-sources/facets/**",
         "apps/game/src/ui/design-system/icon-meaning.ts",
         "apps/game/src/services/home-claim-rules.ts",
