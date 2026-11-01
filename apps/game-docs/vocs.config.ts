@@ -81,10 +81,6 @@ export default defineConfig({
   title: "Realms Docs",
   sidebar: [
     {
-      text: "Devcon",
-      items: [{ text: "Devcon season", link: "/devcon" }],
-    },
-    {
       text: "Your account",
       items: [
         { text: "Sign in", link: "/account/sign-in" },
@@ -96,6 +92,7 @@ export default defineConfig({
       text: "Frontier",
       items: [
         { text: "Frontier", link: "/frontier" },
+        { text: "Devcon season", link: "/frontier/devcon" },
         { text: "Your realm", link: "/frontier/realm" },
         { text: "Armies", link: "/frontier/armies" },
         { text: "The expedition", link: "/frontier/expedition" },
