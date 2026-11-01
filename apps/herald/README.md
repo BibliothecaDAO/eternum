@@ -54,7 +54,8 @@ those armies. With no army, the current surface region is available for muster. 
 armies, sites, tiles and rewards, while home production remains. Incoming rift producers belong to the receiving home
 until Cairo settles their final output, including after the expedition ends; their old map sites and tiles are excluded.
 HTTP snapshots apply the same `actor` scope. Scope membership retains keys only; current facts remain in the confirmed
-fold and its provisional overlay.
+fold and its provisional overlay. Scope is for relevance, not access control: the actor is not authenticated, and every
+fact is public on the shard's RPC.
 
 ## Fold and recovery
 

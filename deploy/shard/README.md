@@ -28,10 +28,11 @@ HOST_GID=1000
 ```
 
 Use image digests from the same release. The pinned node image and chain template are shared by package and runner. The
-host must have the athanor slice and enough memory for node, Herald, database, metrics and the stamping runtime. The
-node defaults to 24 GiB and Herald to 6 GiB. The RPC container has a 2 GiB RAM limit, with no additional swap, for its
-one process, which stamps each play inline with the native prover. Measure its high-water RSS in the 2,000-player run;
-this is capacity provisioning, not a claim that RSS was measured on the node.
+host must have enough memory for node, Herald, database, metrics and the stamping runtime. Compose sets no memory limit:
+the node runs alone in its own systemd slice (`node-<shard>.slice`), outside every resource limit, so the metrics
+collector can read its memory, and the other services run unconfined on a package shard. A measurement runner places
+every service but the node and the harness in `athanor.slice` with the run's cpuset, and caps preparation and
+initialization at 8 GiB. The RPC is one process that stamps each play inline with the native prover.
 
 Deployment runs `docker compose run --rm --no-deps prepare` before creating the stack, so the RPC file bind exists and
 Docker cannot replace a missing key with a directory. Manual starts must use that order too.
@@ -125,10 +126,11 @@ release/migration procedure; do not edit a published release's contents or reuse
 
 ## Shipped node settings
 
-The next fresh dev chain closes blocks every second, selected by `block_time: "1s"` in `deploy/release/dev.json`. The
-shared initializer renders `BLOCK_TIME` into the chain configuration; environments without an override retain 2 seconds,
-including production. Existing chain configuration is never rewritten by this change. Measurement runner inputs use the
-same `block_time` value. This is an environment value, not a gameplay mode.
+Blocks close every second on dev and production: `block_time: "1s"` in `deploy/release/dev.json` and
+`deploy/release/production.json`. The shared initializer renders `BLOCK_TIME` into the chain configuration; an input
+without the key gets 2 seconds. Existing chain configuration is never rewritten, so a chain keeps the block time it was
+initialized with. Measurement runner inputs use the same `block_time` value. This is an environment value, not a
+gameplay mode.
 
 Block capacity limits stay unchanged: they bound work per block, not a duration or a throughput target. There is no
 pending-update interval in the shipped configuration; pre-confirmation keeps the pinned node’s default. Measure its
@@ -140,10 +142,11 @@ and receipt L2 gas. Database, Merkle and executor settings use the pinned node�
 The node keeps its own response-size default. The response size of a full 2,000-action block remains unmeasured; ops
 must measure it before adding an override. Compose supplies no execution-batch override.
 
-Qualify 1-second blocks on a fresh dev chain before changing production: repeat the 2-second idle baseline for at least
-120 minutes, then the nine-hour soak that covers database maintenance. Record run count, p50/p95/max total-close time,
-node RSS, Herald lag and CPU, actual block lifetime and addInvoke latency; compare like-for-like idle and burst loads.
-The reference is idle total-close p95 2–3 ms and RSS 3.9 GiB at 120 minutes. The close alarm is 6 ms (twice the
-reference p95 upper bound), sustained across three fresh exports. Record stalls and missing measurements explicitly;
-block lifetime must come from observed close timestamps if the pinned node does not export it. No qualification has been
-run by changing these inputs.
+1-second blocks carried the 2,000-player founding bursts of 15–16 October (67 and 133 actions per second offered, every
+action included). No sustained load of several minutes has been qualified. Any change to these inputs repeats the uptime
+qualification in [deploy/athanor](../athanor/README.md#uptime-qualification) on a fresh dev chain and records run count,
+p50/p95/max total-close time, node RSS, Herald lag and CPU, actual block lifetime and addInvoke latency, comparing
+like-for-like idle and burst loads. The reference is idle total-close p95 2–3 ms and RSS 3.9 GiB at 120 minutes. The
+close alarm is 6 ms (twice the reference p95 upper bound), sustained across three fresh exports. Record stalls and
+missing measurements explicitly; block lifetime must come from observed close timestamps if the pinned node does not
+export it.
