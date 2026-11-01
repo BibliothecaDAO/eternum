@@ -2558,6 +2558,58 @@ const BOARD_MODELS = `JSON.stringify((() => {
   });
   return { realm: board.shownRealmId, laidOut: keys.length, missing };
 })())`;
+
+/** Resting world-space geometry against the surface actually presented under each building. */
+const BOARD_GROUND_CONTACT = `JSON.stringify((() => {
+  const board = window.__gameRenderer?.hexceptionScene;
+  if (!board) return [];
+  return board.buildings.map((building) => {
+    const model = board.buildingInstances.get(building.col + "," + building.row);
+    if (!model) return { category: building.category, missing: true };
+    model.updateWorldMatrix(true, true);
+    let base = Infinity;
+    model.traverse((part) => {
+      if (!part.isMesh) return;
+      const positions = part.geometry.attributes.position;
+      const matrix = part.matrixWorld.elements;
+      for (let i = 0; i < positions.count; i++) {
+        base = Math.min(base, matrix[1] * positions.getX(i) + matrix[5] * positions.getY(i) +
+          matrix[9] * positions.getZ(i) + matrix[13]);
+      }
+    });
+    const floor = board.proceduralTerrain.sampleSurface(model.position.x, model.position.z).height;
+    const onScreen = model.position.clone().project(board.controls.object);
+    return { category: building.category, base, floor, gap: base - floor,
+      visible: model.visible && model.parent === board.scene && Math.abs(onScreen.x) < 1 && Math.abs(onScreen.y) < 1,
+      path: board.modelPath(board.selectBuildingModel(building, board.tileManager.structureType())) };
+  });
+})())`;
+
+const realmHeightStep = {
+  name: "realm-ground-contact",
+  play: async (context) => {
+    await goTo("Realm", "hex")(context);
+    await readUntil(
+      () => context.browser.read(BOARD_MODELS),
+      (board) => board && !board.missing.length,
+      BOARD_DRAW_MS,
+    );
+    context.browser.run(["eval", "void window.__playtest.wheel(100, 8)"]);
+    await sleep(SCENE_HOLD_MS);
+    return context.browser.read(BOARD_GROUND_CONTACT);
+  },
+  settleMs: 0,
+  verify: ({ seen, played }) => {
+    const scene = inScene("hex")({ seen });
+    if (scene.status !== "completed") return scene;
+    const wrong = played.filter(
+      (building) => !building.visible || !Number.isFinite(building.gap) || Math.abs(building.gap) > 0.001,
+    );
+    return played.length < 2 || wrong.length
+      ? failed("every building kind must stand on the drawn floor", { wrong, buildings: played })
+      : completed({ buildings: played });
+  },
+};
 /** Each HUD panel and band shown that reaches past the screen's edge, by its name and its box. */
 const HUD_OFF_SCREEN = `JSON.stringify([...document.querySelectorAll("section.ui-panel[aria-label], nav[aria-label]")]
   .filter((part) => part.checkVisibility({ visibilityProperty: true }))
@@ -3896,6 +3948,11 @@ export const STEP_SETS = {
       { name: "painted-board", play: goTo("Realm", "hex"), settleMs: 10_000, verify: inScene("hex") },
       { name: "return-to-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
     ],
+  },
+  "lab-realm-height": {
+    game: { ...LAB_SPIRE, lab: "realm-height" },
+    steps: [realmHeightStep],
+    devOverlays: true,
   },
   "lab-day-turn-asleep": { game: labDayTurn("day-turn-asleep"), steps: labDayTurnAsleepSteps() },
   "lab-day-later-quiet": { game: labDayTurn("day-later-quiet"), steps: labDayLaterNoSummarySteps },

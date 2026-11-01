@@ -1,8 +1,21 @@
-import { Mesh, type AnimationClip, type Group } from "three";
+import { Box3, Group, Mesh, type AnimationClip } from "three";
 
 interface BuildingModel {
   model: Group;
   animations: AnimationClip[];
+}
+
+/** A building grows and turns about its standing base, independent of the source file's origin. */
+export function prepareBuildingModel(source: Group): Group {
+  const model = new Group();
+  source.position.set(0, 0, 0);
+  source.rotation.y = 0;
+  const base = new Box3().setFromObject(source, true).min.y;
+  if (!Number.isFinite(base)) throw new Error("Cannot place a building without finite geometry");
+  source.position.y = -base;
+  model.add(source);
+  model.rotation.y = Math.PI;
+  return model;
 }
 
 /**
