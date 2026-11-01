@@ -115,6 +115,8 @@ describe("the page a run opens", () => {
       "frontier-plates-player",
       "lab-hover-zoom",
       "lab-high-ground",
+      // Ground contact reads the rendered building geometry and terrain through window.__gameRenderer.
+      "lab-realm-height",
       "lab-visit",
       // Its Leave is judged as the visit's is: the player's own realm board, read off the drawn world.
       "lab-far-place",
