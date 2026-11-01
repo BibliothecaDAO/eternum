@@ -84,35 +84,37 @@ export const SeasonRecap = ({
       data-cut={cut}
     >
       {cover && <img className="season-recap__painting" alt="" {...paintingSources("season-citadel")} sizes="100vw" />}
-      <header className="season-recap__head">
-        {game && <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>}
-        {/* A phone's column is too narrow for the ending at display size: it reads at a title's. */}
-        <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
-          {SEASON_ENDINGS[ending]}
-        </h1>
-      </header>
-      {board && own && (
-        <CardFrame cut={cut}>
-          <SeasonCard
-            cardRef={card}
-            cut={cut}
-            title={title}
-            own={own}
-            field={board.entries.length}
-            prize={prizeOf(board, own)}
-          />
-        </CardFrame>
-      )}
-      {board && <RecapPodium board={board} viewer={viewer} />}
-      <footer className="season-recap__foot">
-        {withdraw}
-        <span className="season-recap__steps">
-          {actions}
-          {board && own && (
-            <ShareSeason card={card} cut={cut} line={shareLine(title, own, board.entries.length)} gameRef={gameRef} />
-          )}
-        </span>
-      </footer>
+      <div className="season-recap__layout">
+        <header className="season-recap__head">
+          {game && <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>}
+          {/* A phone's column is too narrow for the ending at display size: it reads at a title's. */}
+          <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
+            {SEASON_ENDINGS[ending]}
+          </h1>
+        </header>
+        {board && own && (
+          <CardFrame cut={cut}>
+            <SeasonCard
+              cardRef={card}
+              cut={cut}
+              title={title}
+              own={own}
+              field={board.entries.length}
+              prize={prizeOf(board, own)}
+            />
+          </CardFrame>
+        )}
+        {board && <RecapPodium board={board} viewer={viewer} />}
+        <footer className="season-recap__foot">
+          {withdraw}
+          <span className="season-recap__steps">
+            {actions}
+            {board && own && (
+              <ShareSeason card={card} cut={cut} line={shareLine(title, own, board.entries.length)} gameRef={gameRef} />
+            )}
+          </span>
+        </footer>
+      </div>
     </section>
   );
 };

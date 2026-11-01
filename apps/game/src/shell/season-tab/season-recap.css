@@ -3,8 +3,15 @@
  * a fixed canvas (1200 × 675 wide, 1080 × 1350 tall) in the app's palette and faces.
  */
 
-/* The recap: the season and its ending across the top, the card and the podium, the steps last. */
+/*
+ * The recap: the season and its ending across the top, the card and the podium, the steps last. Over the HUD it is a
+ * scrolling cover, its layout as tall as its content inside it, so no row is squeezed to fit the screen.
+ */
 .season-recap {
+  position: relative;
+  color: var(--app-ink);
+}
+.season-recap__layout {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
@@ -14,7 +21,6 @@
     "foot foot";
   align-items: center;
   gap: 22px 28px;
-  color: var(--app-ink);
 }
 .season-recap[data-cover] {
   position: fixed;
@@ -33,9 +39,6 @@
   object-fit: cover;
   filter: blur(14px) brightness(0.45);
   transform: scale(1.08);
-}
-.season-recap > :not(.season-recap__painting) {
-  position: relative;
 }
 .season-recap__head {
   grid-area: head;
@@ -96,8 +99,8 @@
   gap: 12px;
 }
 
-/* A phone: one column, the card first, the steps held at the foot. */
-.season-recap[data-cut="tall"] {
+/* A phone: one column, the card first, the steps last. */
+.season-recap[data-cut="tall"] .season-recap__layout {
   grid-template-columns: minmax(0, 1fr);
   grid-template-areas:
     "head"
@@ -113,10 +116,15 @@
   border-radius: 12px;
 }
 .season-recap[data-cut="tall"] .season-recap__foot {
+  justify-content: stretch;
+}
+/* Over the HUD the steps stay at the screen's foot, across the column's gutters, fading what scrolls under them. */
+.season-recap[data-cut="tall"][data-cover] .season-recap__foot {
   position: sticky;
   bottom: 0;
-  justify-content: stretch;
-  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+  margin: 0 -16px;
+  padding: 24px 16px max(12px, env(safe-area-inset-bottom));
+  background: linear-gradient(180deg, transparent, var(--app-ground) 30%);
 }
 .season-recap[data-cut="tall"] .season-recap__steps {
   flex: 1;
