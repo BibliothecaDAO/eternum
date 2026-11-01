@@ -169,7 +169,7 @@
     "frame": "panel",
     "setup": [
       {
-        "open": "/lab/kit/hud/season?capture=1"
+        "open": "/lab/kit/hud/season-pool-unpublished?capture=1"
       },
       {
         "until": "document.documentElement.dataset.bootState === 'app-ready'",
@@ -605,6 +605,47 @@
       }
     ],
     "seconds": 10
+  },
+  {
+    "name": "frontier/ruin-chest",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=ruin-fight"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "readiestArmy": true
+      },
+      {
+        "findTile": "Attack"
+      },
+      {
+        "waitText": "stamina",
+        "ms": 15000
+      },
+      {
+        "wait": 1500
+      }
+    ],
+    "record": [
+      {
+        "wait": 1200
+      },
+      {
+        "clickText": "Attack"
+      },
+      {
+        "wait": 9500
+      }
+    ],
+    "seconds": 12
   },
   {
     "name": "blitz/build",

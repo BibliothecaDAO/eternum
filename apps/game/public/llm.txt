@@ -1695,6 +1695,8 @@ rolled when the ruin is found, from the odds of the depth it stands on:
 | Ethereal II  | 0%     | 0%       | 55%    | 30%  | 15%       |
 | Ethereal III | 0%     | 0%       | 0%     | 64%  | 36%       |
 
+<Video name="frontier/ruin-chest" caption="A ruin cleared: its card forecasts the attack, the guard falls, and its chest pays its LORDS." />
+
 A chest is worth its tier's shares at the day's price:
 
 | Tier   | Common | Uncommon | Rare | Epic | Legendary |
@@ -1722,7 +1724,7 @@ season ends; each season announces its amounts. Only realms that have cleared at
 page shows the podium as the season runs, with each place's LORDS and who holds it, and each prize as Pending until it
 is paid.
 
-<Shot frame="panel" name="frontier/season-pool" caption="The Season board: the podium and its prizes, then every realm's sites and LORDS." />
+<Shot frame="panel" name="frontier/season-pool" caption="The Season board: the podium's three places, its prizes not yet published, then every realm's sites and LORDS." />
 
 ## Your LORDS
 
