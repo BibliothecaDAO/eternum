@@ -4,7 +4,7 @@ import { configManager } from "@bibliothecadao/eternum";
 import { shortString } from "starknet";
 import { DEVCON } from "@/shell/join/devcon";
 import { BUILDINGS_CENTER, BuildingType, StructureType } from "@bibliothecadao/types";
-import { Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
+import { Box3, Group, Mesh, MeshStandardMaterial, BoxGeometry } from "three";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { FRONTIER_PRESET_ID } from "../../../../../config/source/common/native-preset-modes";
@@ -92,21 +92,31 @@ it.each([
 });
 
 it("compiles a loaded model's pipelines against the realm scene before it hands the model to the board", async () => {
-  const model = new Group().add(new Mesh(new BoxGeometry(), new MeshStandardMaterial()));
-  loaded.scene = model;
-  const events: string[] = [];
+  const mesh = new Mesh(new BoxGeometry(), new MeshStandardMaterial());
+  loaded.scene = new Group().add(mesh);
+  let finishCompile!: () => void;
+  const compilation = new Promise<void>((resolve) => {
+    finishCompile = resolve;
+  });
+  const compilePipelines = vi.fn(() => compilation);
   const scene = Object.assign(Object.create(HexceptionScene.prototype), {
     destroyed: false,
     scene: { name: "realm scene" },
     settlementPresentations: new Map(),
-    compilePipelines: async (object: unknown, target: unknown) => {
-      events.push(object === model && target === scene.scene ? "compiled against the realm" : "compiled elsewhere");
-    },
+    compilePipelines,
   });
 
-  const building = await scene.loadBuildingModel("/models/frontier/painted/farm-1.glb");
-  events.push("handed to the board");
+  let handedToBoard = false;
+  const loading = scene.loadBuildingModel("/models/frontier/painted/farm-1.glb").then((building: { model: Group }) => {
+    handedToBoard = true;
+    return building;
+  });
+  await vi.waitFor(() => expect(compilePipelines).toHaveBeenCalledTimes(1));
+  expect(handedToBoard).toBe(false);
+  finishCompile();
+  const building = await loading;
 
-  expect(building.model).toBe(model);
-  expect(events).toEqual(["compiled against the realm", "handed to the board"]);
+  expect(compilePipelines).toHaveBeenCalledWith(building.model, scene.scene);
+  expect(building.model.getObjectById(mesh.id)).toBe(mesh);
+  expect(new Box3().setFromObject(building.model, true).min.y).toBeCloseTo(0, 6);
 });
