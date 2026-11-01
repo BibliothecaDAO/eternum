@@ -1,3 +1,4 @@
+use snforge_std::fs::{FileTrait, read_txt};
 pub use world_test_support::tests::days::*;
 
 
@@ -82,7 +83,6 @@ fn drawn_bags_match_the_client_vector() {
 
 #[test]
 fn cut_and_merged_days_match_the_shared_client_vectors() {
-    use snforge_std::fs::{FileTrait, read_txt};
     let values = read_txt(@FileTrait::new("../fixtures/season-tail-v1.txt"));
     let mut values = values.span();
     while !values.is_empty() {
