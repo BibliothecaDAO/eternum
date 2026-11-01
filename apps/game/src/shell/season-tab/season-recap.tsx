@@ -5,7 +5,15 @@ import { formatAmount, formatExact, formatShort, LORDS } from "@bibliothecadao/t
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import type { GameRef } from "@bibliothecadao/eternum/shard";
 import { isSameStarknetAddress } from "@realms-world/identity";
-import { useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode, type RefObject } from "react";
+import {
+  useLayoutEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type MouseEvent,
+  type ReactNode,
+  type RefObject,
+} from "react";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
@@ -167,12 +175,17 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
   const [frame, width] = useRoomWidth();
   const [shown, setShown] = useState(0);
   const swipeFrom = useRef(0);
-  /** A press that travelled far enough was a swipe: the click it ends in steps no further. */
+  /** A press that travelled far enough was a swipe: the pointer's click it ends in steps no further. */
   const swiped = useRef(false);
   const step = (by: number) => setShown((at) => Math.min(CARDS.length - 1, Math.max(0, at + by)));
-  const tap = (by: number) => {
-    if (!swiped.current) step(by);
-    swiped.current = false;
+  /**
+   * A half pressed: a key's press (a click no pointer made, `detail` 0) always steps; a pointer's steps unless it ends
+   * the swipe just made. A touch swipe ends in no click, so its mark waits for the next pointer's, never a key's.
+   */
+  const tap = (by: number, click: MouseEvent) => {
+    const endsSwipe = click.detail > 0 && swiped.current;
+    if (click.detail > 0) swiped.current = false;
+    if (!endsSwipe) step(by);
   };
   if (cut === "wide")
     return (
@@ -221,9 +234,14 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
           type="button"
           className="season-recap__back"
           aria-label={RECAP_WORDS.previous}
-          onClick={() => tap(-1)}
+          onClick={(event) => tap(-1, event)}
         />
-        <button type="button" className="season-recap__next" aria-label={RECAP_WORDS.next} onClick={() => tap(1)} />
+        <button
+          type="button"
+          className="season-recap__next"
+          aria-label={RECAP_WORDS.next}
+          onClick={(event) => tap(1, event)}
+        />
       </div>
     </div>
   );

@@ -399,12 +399,13 @@ it("in the story, a mouse drag across Next steps once, a drag back across it onc
   const host = await open({ width: 390 });
   const next = host.querySelector<HTMLButtonElement>('button[aria-label="Next card"]')!;
   const shown = () => host.querySelector<HTMLElement>(".season-recap__frame")!.dataset.card;
-  // A mouse press as the browser reports it over the overlaid control: down, up, then the click it ends in.
+  // A mouse press as the browser reports it over the overlaid control: down, up, then the click it ends in (a pointer's
+  // click counts one, `detail` 1).
   const press = (from: number, to: number) =>
     act(async () => {
       next.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: from }));
       next.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: to }));
-      next.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: to }));
+      next.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: to, detail: 1 }));
     });
   await press(320, 220);
   expect(shown()).toBe("podium");
@@ -415,5 +416,20 @@ it("in the story, a mouse drag across Next steps once, a drag back across it onc
   expect(shown()).toBe("podium");
   // A key presses Next with no pointer at all.
   await act(async () => next.click());
+  expect(shown()).toBe("sites");
+});
+
+it("in the story, a key presses Next after a touch swipe, which ends in no click, and steps once", async () => {
+  const host = await open({ width: 390 });
+  const next = host.querySelector<HTMLButtonElement>('button[aria-label="Next card"]')!;
+  const shown = () => host.querySelector<HTMLElement>(".season-recap__frame")!.dataset.card;
+  // A touch swipe left over Next: down and up, and no click after it.
+  await act(async () => {
+    next.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: 320 }));
+    next.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: 220 }));
+  });
+  expect(shown()).toBe("podium");
+  // Then Enter on Next: a click no pointer made.
+  await act(async () => next.dispatchEvent(new MouseEvent("click", { bubbles: true, detail: 0 })));
   expect(shown()).toBe("sites");
 });
