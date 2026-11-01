@@ -96,6 +96,23 @@ any listed world is down.
    the guardian.
 3. Cloudflare's status page, if several components fail together.
 
+## Payout alerts — the owner's Discord channel
+
+Production's box posts these from beside the co-signer, never through Cloudflare (`deploy/athanor/cosigner/alerts.ts`,
+every minute). Each change posts once, and again when it clears. On the box: `curl -s 127.0.0.1:<port>/health` (the
+co-signer's port in `/etc/payout-cosigner/config.json`), `journalctl -u payout-cosigner -u payout-alerts`.
+
+- **Wallet change held:** a player's Realms ID asked to be paid at a new wallet, and the co-signer refuses it for 24 h.
+  If the player didn't ask for it (an identity or Cloudflare compromise), pause the ledger with the monitor or the cold
+  admin before the time in the message. Never delete `wallets.sqlite` to clear a hold. "Accepted after 24 h" means the
+  new wallet is now paid; "dropped" means the known wallet came back.
+- **The ledger is paused:** the monitor or the cold admin paused payouts; read the monitor's log (below) for why.
+  "Unpaused" means payouts resume.
+- **The co-signer has not answered:** `systemctl status payout-cosigner`, then its journal. Withdrawals and prizes queue
+  until it answers; nothing is paid without it. "Answers again" closes it.
+- **No message at all for a day of payouts** is not proof of health: `systemctl list-timers payout-alerts.timer` shows
+  the last run, and a failed run (an unreachable Discord) is in `journalctl -u payout-alerts`.
+
 ## Refused plays
 
 A player's report that an action failed: every play the stamping RPC refuses is logged with its reason and sender.

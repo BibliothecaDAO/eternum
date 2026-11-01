@@ -41,6 +41,7 @@ import {
 import { command } from "./process";
 import { runSteps, type Step } from "./run";
 import { addressBookStep } from "./address-book";
+import { payoutAlertSteps } from "./payout-alerts";
 import { setupSeason } from "./blitz-season";
 import { PublicError, reportFailure } from "./errors";
 
@@ -466,7 +467,11 @@ export async function main(args = process.argv.slice(2)) {
         ? "Applying missing first-deployment steps."
         : "DRY RUN: no keys generated, no writes or transactions. Use --apply to act.",
     );
-    await runSteps([...preparationSteps(context), addressBookStep(context)], apply, context.output);
+    await runSteps(
+      [...preparationSteps(context), addressBookStep(context), ...payoutAlertSteps(context)],
+      apply,
+      context.output,
+    );
   } finally {
     unlock();
   }

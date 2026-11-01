@@ -1,0 +1,18 @@
+[Unit]
+Description=Payout alerts to the owner's Discord channel
+After=network-online.target payout-cosigner.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=payout-cosigner
+Group=payout-cosigner
+WorkingDirectory=/opt/eternum
+ExecStart=/usr/local/bin/bun deploy/athanor/cosigner/alerts.ts check /etc/payout-cosigner/config.json /etc/payout-cosigner/discord-webhook
+UMask=0077
+StateDirectory=payout-cosigner
+StateDirectoryMode=0700
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true

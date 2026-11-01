@@ -1,8 +1,12 @@
 import { Database } from "bun:sqlite";
-import { closeSync, openSync, statSync } from "node:fs";
+import { closeSync, existsSync, openSync, statSync } from "node:fs";
 import type { CosignerWallets } from "../../../apps/value-relay/src/cosigner";
 
-const WALLET_CHANGE_SECONDS = 24 * 60 * 60;
+/** The co-signer's wallet history on the box, owned by its systemd state directory. */
+export const COSIGNER_WALLETS = "/var/lib/payout-cosigner/wallets.sqlite";
+export const WALLET_CHANGE_SECONDS = 24 * 60 * 60;
+const SCHEMA = `CREATE TABLE IF NOT EXISTS accounts (account TEXT PRIMARY KEY, realms_id TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS wallets (realms_id TEXT PRIMARY KEY, wallet TEXT NOT NULL, pending TEXT, since INTEGER)`;
 interface Wallet {
   wallet: string;
   pending: string | null;
@@ -25,8 +29,7 @@ export function openCosignerWallets(
   closeSync(openSync(path, "a", 0o600));
   if ((statSync(path).mode & 0o777) !== 0o600) throw new Error("cosigner_wallet_file_requires_0600");
   const db = new Database(path, { strict: true });
-  db.exec(`CREATE TABLE IF NOT EXISTS accounts (account TEXT PRIMARY KEY, realms_id TEXT NOT NULL);
-    CREATE TABLE IF NOT EXISTS wallets (realms_id TEXT PRIMARY KEY, wallet TEXT NOT NULL, pending TEXT, since INTEGER)`);
+  db.exec(SCHEMA);
   const observe = db.transaction((account: string, realmsId: string, wallet: string): WalletObservation | null => {
     const known = db
       .query<{ realms_id: string }, [string]>("SELECT realms_id FROM accounts WHERE account=?")
@@ -77,6 +80,38 @@ export function openCosignerWallets(
         .get()!,
     close: () => db.close(),
   };
+}
+/** One Realms ID's wallet record: its known wallet, and the candidate held for 24 h since `since`, if any. */
+export interface WalletRecord {
+  realmsId: string;
+  wallet: string;
+  pending: string | null;
+  since: number | null;
+  accounts: string[];
+}
+
+/**
+ * Reads, without writing, every held wallet change and the records of the Realms IDs asked for, so a reader beside the
+ * running co-signer can tell a hold that began from one that ended. A database the co-signer never created holds none.
+ */
+export function readWalletRecords(path: string, realmsIds: string[] = []): WalletRecord[] {
+  if (!existsSync(path)) return [];
+  const db = new Database(path, { readonly: true, strict: true });
+  try {
+    db.exec("PRAGMA busy_timeout = 5000");
+    const rows = db
+      .query<Omit<WalletRecord, "accounts">, [string]>(
+        `SELECT realms_id AS realmsId, wallet, pending, since FROM wallets
+         WHERE pending IS NOT NULL OR realms_id IN (SELECT value FROM json_each(?)) ORDER BY realms_id`,
+      )
+      .all(JSON.stringify(realmsIds));
+    const accounts = db.query<{ account: string }, [string]>(
+      "SELECT account FROM accounts WHERE realms_id=? ORDER BY account",
+    );
+    return rows.map((row) => ({ ...row, accounts: accounts.all(row.realmsId).map(({ account }) => account) }));
+  } finally {
+    db.close();
+  }
 }
 function felt(value: string) {
   const number = BigInt(value);

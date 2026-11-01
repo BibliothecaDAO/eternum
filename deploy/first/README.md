@@ -114,6 +114,12 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
 12. If the address book changed, commit and push **only** that file on the owner's current branch, then stop. Create a
     branch first if the checkout is detached or on `next`. Rerun from the new pushed commit; production requires merging
     it to `next` and successful push validation first. Unrelated staged changes stop publication.
+13. Production only: install the payout alerts beside the co-signer (audit N8). Save the owner's private Discord channel
+    webhook as `discord-alert-webhook` (one line, mode 0600) in the private directory; it is never printed. The step
+    waits until the co-signer runs from a checkout of this commit. It then writes the webhook to the box over standard
+    input as `/etc/payout-cosigner/discord-webhook` (mode 0600, the co-signer's user), installs and starts
+    `payout-alerts.timer`, and posts one test message, "Payout alerts are wired", to the channel. A rerun compares the
+    saved webhook on the box without reading it back and repeats nothing. Dev sends no alerts.
 
 ## Deploy
 
