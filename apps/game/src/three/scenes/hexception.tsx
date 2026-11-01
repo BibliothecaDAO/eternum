@@ -11,7 +11,7 @@ import { frontierPaintedBuildingPath } from "../structures/frontier-painted-buil
 import { buildingTypeTier } from "@bibliothecadao/eternum";
 import { isWonderModelPath } from "../structures/realm-design";
 import { RealmLivingAura } from "../structures/realm-living-aura";
-import { HexceptionModels, disposeBuildingModel } from "./hexception-models";
+import { HexceptionModels, disposeBuildingModel, prepareBuildingModel } from "./hexception-models";
 import { SettlementAnimation } from "../structures/settlement-animation";
 import { HyperstructureModel } from "../structures/hyperstructure-model";
 import { readHyperstructureConstruction } from "../structures/hyperstructure-state";
@@ -589,13 +589,11 @@ export default class HexceptionScene extends HexagonScene {
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
     const gltf = await loader.loadAsync(path);
-    const model = gltf.scene as Group;
+    const model = prepareBuildingModel(gltf.scene as Group);
     if (this.destroyed) {
       disposeBuildingModel(model);
       throw new Error(`Realm view was destroyed while loading ${path}`);
     }
-    model.position.set(0, 0, 0);
-    model.rotation.y = Math.PI;
     const meshes: Mesh[] = [];
     model.traverse((child) => {
       if (!(child instanceof Mesh)) return;
@@ -1281,7 +1279,7 @@ export default class HexceptionScene extends HexagonScene {
   private createBuildingMatrix(position: HexPosition): Matrix4 {
     const building = new Object3D();
     const worldPosition = localHexPosition(position);
-    building.position.set(worldPosition.x, 0.05, worldPosition.z);
+    building.position.copy(worldPosition);
     building.scale.set(HEX_SIZE, HEX_SIZE, HEX_SIZE);
     building.rotation.y = (Math.floor(this.hashCoordinates(position.col, position.row) * 6) * Math.PI) / 3;
     building.updateMatrix();
@@ -1399,12 +1397,6 @@ export default class HexceptionScene extends HexagonScene {
   /** The prepared page, the buildings standing on its surface, the buildable hexes, then the realm is ready. */
   private presentGrid(page: PreparedTerrainPage, mainStructureType: StructureType | undefined): void {
     this.proceduralTerrain.present([page]);
-    const worldPosition = new Vector3();
-    this.buildings.forEach((building) => {
-      worldPosition.setFromMatrixPosition(building.matrix);
-      worldPosition.y = this.proceduralTerrain.sampleSurface(worldPosition.x, worldPosition.z).height;
-      building.matrix.setPosition(worldPosition);
-    });
     this.reconcileAllBuildingInstances(mainStructureType);
     this.interactiveHexManager.renderAllHexes();
     if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingOrNewRing();
@@ -1435,6 +1427,10 @@ export default class HexceptionScene extends HexagonScene {
     mainStructureType: StructureType | undefined,
   ): BuildingInstanceAction {
     const key = buildingKey(position);
+    if (building) {
+      const matrix = building.matrix.elements;
+      matrix[13] = this.proceduralTerrain.sampleSurface(matrix[12], matrix[14]).height;
+    }
     const selection = building ? this.selectBuildingModel(building, mainStructureType) : undefined;
     // A model loads the first time a building needs it; until then the building keeps what it shows.
     const path = selection && this.modelPath(selection);
@@ -1457,6 +1453,15 @@ export default class HexceptionScene extends HexagonScene {
     if (action === "remove") presentResult(`building-gone:${key}`);
     if (building && selection && signature !== undefined && (action === "create" || action === "replace")) {
       this.addBuildingInstance(building, selection, signature, buildingEntrance(building, this.pinnedPlot));
+    }
+
+    if (building && currentInstance && action === "keep") {
+      if (selection?.group === BUILDINGS_GROUPS.HYPERSTRUCTURE) {
+        this.hyperstructureModel?.setMatrixAt(0, building.matrix);
+      } else if (currentInstance.position.y !== building.matrix.elements[13]) {
+        currentInstance.position.y = building.matrix.elements[13];
+        markShadowCastersChanged();
+      }
     }
 
     if (building) {

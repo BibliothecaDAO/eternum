@@ -18,6 +18,7 @@ import { dayTurnScenario } from "./day-turn-scenario";
 import type { LabScenario } from "./lab-chain";
 import { paintedBuildingsScenario } from "./painted-buildings-scenario";
 import { realmScenario } from "./realm-scenario";
+import { realmHeightScenario } from "./realm-height-scenario";
 import { ruinFarScenario, ruinFightScenario } from "./ruin-fight-scenario";
 import { seasonOpensScenario } from "./season-opens-scenario";
 import { sitesScenario } from "./sites-scenario";
@@ -35,6 +36,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,
   realm: realmScenario,
+  "realm-height": realmHeightScenario,
   "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
   "after-battle": afterBattleScenario,
