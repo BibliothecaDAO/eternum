@@ -1,4 +1,5 @@
 // Count the current seeded game day as unlocked in full, as ruled for both shard and ledger.
+use core::num::traits::WideMul;
 use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
 use crate::commands::ExecutionContext;
 use crate::relics::{ChestRules, ChestTiers, LordsBudget, SiteChest, roll_tier, tier_value};
@@ -134,8 +135,8 @@ fn issued(today: LordsBudget) -> u128 {
 pub fn unlocked(pool: u128, clock: SeasonClock, day: u64) -> u128 {
     let end = budget_day(clock, day).end;
     let duration = clock.game.end_at - clock.game.start_main_at;
-    assert!(duration != 0, "empty LORDS season");
-    (Into::<u128, u256>::into(pool) * (end - clock.game.start_main_at).into() / duration.into()).try_into().unwrap()
+    let elapsed: u128 = (end - clock.game.start_main_at).into();
+    (pool.wide_mul(elapsed) / duration.into()).try_into().unwrap()
 }
 
 fn season_clock(context: ExecutionContext) -> SeasonClock {
@@ -219,11 +220,11 @@ pub fn roll(rules: ChestRules, previous: LordsBudget, clock: SeasonClock, day: u
 
 // Keeping the rate as a ratio preserves sparse observations without a precision setting.
 fn daily_price(rules: ChestRules, today: LordsBudget, clock: SeasonClock) -> u128 {
-    let expected = Into::<u128, u256>::into(today.yesterday_shares) * day_ticks(clock, today.day).into();
+    let expected = today.yesterday_shares.wide_mul(day_ticks(clock, today.day).into());
     if expected == 0 || today.yesterday_ticks == 0 {
         rules.price_ceiling
     } else {
-        let price = Into::<u128, u256>::into(available(today, clock)) * today.yesterday_ticks.into() / expected;
+        let price = available(today, clock).wide_mul(today.yesterday_ticks.into()) / expected;
         core::cmp::max(1, core::cmp::min(rules.price_ceiling.into(), price)).try_into().unwrap()
     }
 }

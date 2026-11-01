@@ -60,14 +60,20 @@ export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | 
     throw new Error("A season must have a positive, finite window");
   if (timestamp < startMainAt || timestamp >= calendar.endAt) return null;
   // The last two units belong to the day already running at their start, absorbing a shorter final stub.
-  const finalDayProbe = calendar.endAt - Math.min(calendar.endAt - startMainAt, 2 * unit);
-  timestamp = Math.min(timestamp, finalDayProbe);
-  const bag = Math.floor((timestamp - startMainAt) / (DAY_UNITS_PER_BAG * unit));
-  let start = startMainAt + bag * DAY_UNITS_PER_BAG * unit;
+  const seasonUnits = Math.floor((calendar.endAt - startMainAt) / unit);
+  const finalDayProbe = seasonUnits - Math.min(seasonUnits, 2);
+  const at = Math.min(Math.floor((timestamp - startMainAt) / unit), finalDayProbe);
+  const bag = Math.floor(at / DAY_UNITS_PER_BAG);
+  let start = bag * DAY_UNITS_PER_BAG;
   let index = bag * DAYS_PER_BAG;
   for (const length of bagLengths(calendar.seed, bag)) {
-    const end = start + length * unit;
-    if (timestamp < end) return { index, start, end: end > finalDayProbe ? calendar.endAt : end };
+    const end = start + length;
+    if (at < end)
+      return {
+        index,
+        start: startMainAt + start * unit,
+        end: end > finalDayProbe ? calendar.endAt : startMainAt + end * unit,
+      };
     start = end;
     index += 1;
   }

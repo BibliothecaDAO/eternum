@@ -24,32 +24,43 @@ pub struct Day {
     pub end: u64,
 }
 
-/// The day `timestamp` falls in. Kept out of line so each class carries one copy, however many commands ask.
-#[inline(never)]
+/// The day `timestamp` falls in, using only the game's calendar fields.
+#[inline(always)]
 pub fn day_of(game: GameRegistry, unit_seconds: u32, timestamp: u64) -> Day {
-    assert!(timestamp >= game.start_main_at, "season has not started");
-    assert!(timestamp < game.end_at, "season has ended");
+    calendar_day(game.seed, game.start_main_at, game.end_at, unit_seconds, timestamp)
+}
+
+// Keep one calendar calculation per class without passing the game's unrelated launch fields to every call.
+#[inline(never)]
+fn calendar_day(seed: felt252, season_start: u64, season_end: u64, unit_seconds: u32, timestamp: u64) -> Day {
+    assert!(timestamp >= season_start && timestamp < season_end, "timestamp outside season");
     let unit: u64 = unit_seconds.into();
-    // The last two units belong to the day already running at their start. This absorbs a shorter final stub.
-    let final_day_probe = game.end_at - core::cmp::min(game.end_at - game.start_main_at, 2 * unit);
-    let timestamp = core::cmp::min(timestamp, final_day_probe);
-    let bag = (timestamp - game.start_main_at) / (UNITS_PER_BAG * unit);
-    let mut lengths = bag_lengths(game.seed, bag);
+    let season_units = (season_end - season_start) / unit;
+    // The last two units belong to the day already running at their start, absorbing a shorter final stub.
+    let final_day_probe = season_units - core::cmp::min(season_units, 2);
+    let at = core::cmp::min((timestamp - season_start) / unit, final_day_probe);
+    let bag = at / UNITS_PER_BAG;
+    let mut lengths = bag_lengths(seed, bag);
     let mut index = bag * DAYS_PER_BAG;
-    let mut start = game.start_main_at + bag * UNITS_PER_BAG * unit;
-    let mut end = start + lengths % DIGIT * unit;
-    while timestamp >= end {
+    let mut start = bag * UNITS_PER_BAG;
+    let mut end = start + lengths % DIGIT;
+    while at >= end {
         lengths /= DIGIT;
         index += 1;
         start = end;
-        end = start + lengths % DIGIT * unit;
+        end = start + lengths % DIGIT;
     }
-    Day { index, start, end: if end > final_day_probe {
-        game.end_at
-    } else {
-        end
-    } }
+    Day {
+        index,
+        start: season_start + start * unit,
+        end: if end > final_day_probe {
+            season_end
+        } else {
+            season_start + end * unit
+        },
+    }
 }
+
 
 /// A bag's five day lengths, in units, packed in base 8 from its first day: one of the 96 bag orders, drawn from the
 /// game's seed.

@@ -11,6 +11,8 @@ fn current_seeded_day_is_unlocked_in_full_and_season_end_is_exact() {
     assert_eq!(unlocked(TEST_POOL, clock, 0), TEST_POOL * first.end.into() / clock.game.end_at.into());
     assert!(unlocked(TEST_POOL, clock, 0) > 0);
     assert_eq!(unlocked(TEST_POOL, clock, SEASON_DAYS - 1), TEST_POOL);
+    let largest_pool: u128 = 0xffffffffffffffffffffffffffffffff;
+    assert_eq!(unlocked(largest_pool, clock, SEASON_DAYS - 1), largest_pool);
     let partial = SeasonClock { game: crate::game::GameRegistry { end_at: first.end - 1, ..clock.game }, ..clock };
     assert_eq!(unlocked(TEST_POOL, partial, 0), TEST_POOL);
 }

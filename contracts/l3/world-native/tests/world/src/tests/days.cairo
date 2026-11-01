@@ -62,7 +62,7 @@ fn twenty_one_bags_end_exactly_ten_weeks_after_the_start() {
 }
 
 #[test]
-#[should_panic(expected: "season has not started")]
+#[should_panic(expected: "timestamp outside season")]
 fn no_day_before_the_season() {
     day_of(season('early'), UNIT, START - 1);
 }
@@ -97,7 +97,7 @@ fn cut_and_merged_days_match_the_shared_client_vectors() {
 }
 
 #[test]
-#[should_panic(expected: "season has ended")]
+#[should_panic(expected: "timestamp outside season")]
 fn no_day_after_the_season() {
     let game = season('ended');
     day_of(game, UNIT, game.end_at);
