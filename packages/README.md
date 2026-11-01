@@ -12,7 +12,8 @@ React hooks live with the [game client](../apps/game/src/hooks).
 
 A game client starts from `createGameClient` (`packages/core/src/client/game-client.ts`): a Herald session, the native
 fact store, views and actions for one game on one shard. The web app and the headless
-[agent runner](../apps/agent-runner/README.md) both use it. These packages are not published to npm.
+[agent runner](../apps/agent-runner/README.md) both use it. The current workspace packages are not published: build them
+from source as below. The `@bibliothecadao/eternum@0.1.0` release on npm (2023) is an old package, not this client.
 
 ### Development
 
