@@ -1,20 +1,23 @@
 import { expect, it, spyOn, afterEach } from "bun:test";
 import { deriveGameSyncScope, scopeInputKeys, rowInGameSyncScope } from "@bibliothecadao/eternum/game-sync-models";
-import { expeditionRealmSite, readExpeditionRules } from "@bibliothecadao/eternum/expeditions";
+import { DAY_UNITS_PER_BAG, expeditionRealmSite, type ExpeditionRules } from "@bibliothecadao/eternum/expeditions";
 import type { GameClient } from "@bibliothecadao/eternum";
 import { buildNativePreset } from "../../../config/deployer/clean/config/native-preset";
 import { loadNativePresetConfiguration } from "../../../config/deployer/clean/registrar/native-preset";
 import { resolveFrontierSiteCapture } from "./frontier";
 
 const definition = buildNativePreset(loadNativePresetConfiguration("madara.frontier", 101), 101);
-const inputs: Record<string, Record<string, unknown>> = {
-  SliceRules: { ...definition.rules, game_id: 1 },
-  GameRegistry: { start_main_at: 7200, seed: 1n },
-  SettlementRules: { spacing: 100 },
+const startMainAt = 7200;
+const dayUnitSeconds = Number(definition.rules.day_unit_seconds);
+const calendar: ExpeditionRules = {
+  startMainAt,
+  endAt: startMainAt + 2 * DAY_UNITS_PER_BAG * dayUnitSeconds,
+  dayUnitSeconds,
+  seed: 1n,
+  spacing: 100,
 };
-const calendar = readExpeditionRules((model) => inputs[model], 1)!;
-const first = expeditionRealmSite(calendar, 1, 7200)!;
-let timestamp = 7200;
+const first = expeditionRealmSite(calendar, 1, calendar.startMainAt)!;
+let timestamp = calendar.startMainAt;
 while (expeditionRealmSite(calendar, 1, timestamp)!.row === first.row) timestamp += 60;
 const home = expeditionRealmSite(calendar, 1, timestamp)!;
 const site = { game_id: 1, entity_id: 3, owner: 0n, base: { category: 7 }, metadata: { realm_id: 0 } };
