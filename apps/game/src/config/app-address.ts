@@ -4,6 +4,9 @@
  */
 export const APP_ADDRESS = "https://play.realms.party";
 
+/** The dev environment's app and its identity Worker, which every development build signs in against. */
+export const STAGING_ORIGIN = "https://play.dev-realms.party";
+
 /** The address as a card or a post prints it. */
 export const APP_HOST = new URL(APP_ADDRESS).host;
 

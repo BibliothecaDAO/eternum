@@ -2,6 +2,8 @@ import { defineConfig } from "vocs";
 import { docsAliases, publicDir } from "./docs/utils/paths";
 import llmTxtPlugin from "./vite-plugin-llm-txt.mjs";
 import BRAND from "./docs/brand.gen.json";
+import { linkPreviewUrl } from "../game/src/brand/link-preview";
+import { isDevEnvironment } from "../game/src/shell/frame/environment";
 
 /** The brand's colours and marks, written from the game's token file (apps/game/src/brand/surfaces.ts). */
 const color = BRAND.colors;
@@ -36,8 +38,9 @@ export default defineConfig({
   description: "How to play Realms: Frontier and Blitz, your account, and LORDS",
   iconUrl: BRAND.marks.small,
   logoUrl: BRAND.marks.small,
-  // The game serves the image; the docs build ships only files a page links by a relative path.
-  ogImageUrl: "https://play.realms.party/images/covers/og-image.png",
+  // The game's link preview, served by the environment's own app: the deployment sets the build constant the client's
+  // build reads (VITE_PUBLIC_ENVIRONMENT), and a build without it is a dev build, as the client's is.
+  ogImageUrl: linkPreviewUrl(isDevEnvironment(process.env.VITE_PUBLIC_ENVIRONMENT)),
   theme: {
     colorScheme: "dark",
     variables: {

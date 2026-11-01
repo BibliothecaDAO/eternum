@@ -5,6 +5,7 @@
  * serialize it with Vocs' own serializer, and require that the shipped config carries none of those fields.
  */
 import assert from "node:assert/strict";
+import { existsSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { test } from "node:test";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -66,3 +67,31 @@ test("the same settings given through a plugin hook ship as the hook's source, n
   const config = { vite: { plugins: [{ name: "docs-paths", config: () => ({ publicDir: "/data/build/public" }) }] } };
   assert.deepEqual(hookFieldsIn(serializeConfig(config)), []);
 });
+
+/** The docs' shipped config, loaded with the client's environment constant set as the deployment sets it. */
+async function shippedFor(environment) {
+  const before = process.env.VITE_PUBLIC_ENVIRONMENT;
+  if (environment === undefined) delete process.env.VITE_PUBLIC_ENVIRONMENT;
+  else process.env.VITE_PUBLIC_ENVIRONMENT = environment;
+  try {
+    return JSON.parse(await shippedConfig("build"));
+  } finally {
+    if (before === undefined) delete process.env.VITE_PUBLIC_ENVIRONMENT;
+    else process.env.VITE_PUBLIC_ENVIRONMENT = before;
+  }
+}
+
+for (const [environment, origin] of [
+  ["production", "https://play.realms.party"],
+  ["staging", "https://play.dev-realms.party"],
+  [undefined, "https://play.dev-realms.party"],
+])
+  test(`pages built for ${environment ?? "no environment"} unfurl with ${origin}'s own link preview`, async () => {
+    const image = new URL((await shippedFor(environment)).ogImageUrl);
+    assert.equal(image.origin, origin);
+    assert.match(image.pathname, /^\/images\/covers\/link-preview-[0-9a-f]{8}\.png$/);
+    assert.ok(
+      existsSync(join(docsRoot, "../game/public", image.pathname)),
+      `${image.pathname} is a file the app serves`,
+    );
+  });
