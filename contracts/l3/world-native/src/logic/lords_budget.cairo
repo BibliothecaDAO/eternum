@@ -132,7 +132,7 @@ fn issued(today: LordsBudget) -> u128 {
 
 /// The current day counts as unlocked from its start; the last partial day stops exactly at the season end.
 pub fn unlocked(pool: u128, clock: SeasonClock, day: u64) -> u128 {
-    let end = core::cmp::min(budget_day(clock, day).end, clock.game.end_at);
+    let end = budget_day(clock, day).end;
     let duration = clock.game.end_at - clock.game.start_main_at;
     assert!(duration != 0, "empty LORDS season");
     (Into::<u128, u256>::into(pool) * (end - clock.game.start_main_at).into() / duration.into()).try_into().unwrap()
@@ -200,12 +200,7 @@ pub fn first_day(rules: ChestRules, pool: u128, day: u64) -> LordsBudget {
 
 fn day_ticks(clock: SeasonClock, index: u64) -> u64 {
     let day = budget_day(clock, index);
-    let end = core::cmp::min(day.end, clock.game.end_at);
-    if end <= day.start {
-        0
-    } else {
-        (end - day.start) / clock.tick
-    }
+    (day.end - day.start) / clock.tick
 }
 
 /// Release expired holds and price the new day using only its immediate predecessor.

@@ -16,7 +16,6 @@ import { type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { seasonDay } from "../hud/day-clock";
-import { useSeasonEndsAt } from "../hud/season-end";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
 import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
@@ -97,7 +96,6 @@ export const FrontierSeason = ({
   const viewer = useViewer();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
-  const endsAt = useSeasonEndsAt();
   const now = useNowSeconds();
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
@@ -129,7 +127,7 @@ export const FrontierSeason = ({
       onRetry={() => void board.refetch()}
       onOpen={setOpened}
       onClose={onClose}
-      ends={endsAt === undefined ? undefined : { at: endsAt, ...seasonDay(rules, endsAt, now) }}
+      ends={{ at: rules.endAt, ...seasonDay(rules, now) }}
     />
   );
 };

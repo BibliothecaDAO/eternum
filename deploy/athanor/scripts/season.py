@@ -17,7 +17,7 @@ def parse_arguments(arguments):
     parser.add_argument("environment", choices=["dev"])
     parser.add_argument("--preset-id", type=int, required=True)
     parser.add_argument("--starts-at", help="ISO instant with timezone; omit both dates to open one bag now")
-    parser.add_argument("--ends-at", help="ISO instant with timezone; must end on a whole bag")
+    parser.add_argument("--ends-at", help="ISO instant with timezone; must end on an army tick")
     args = parser.parse_args(arguments)
     if bool(args.starts_at) != bool(args.ends_at):
         parser.error("Supply both --starts-at and --ends-at, or neither")

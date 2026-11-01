@@ -190,15 +190,22 @@ test("a phase moves until it starts; a started Frontier season keeps its start a
   expect(await calendar.set(next, Date.parse("2027-03-22T00:00:00Z"))).toEqual(next);
 });
 
-test.each([0, 0.5, 1.5, 9.3])("refuses %s bags and names the two nearest valid ends without writing", async (bags) => {
+test.each([0.5, 1.5, 9.3])("accepts %s bags without rounding the operator's end", async (bags) => {
   const { calendar } = stores();
   const startsAt = day(0).toISOString();
-  const lower = Math.max(1, Math.floor(bags));
   const bagMs = Date.parse(frontierSeasonEnd(startsAt, 1)) - Date.parse(startsAt);
   const endsAt = new Date(Date.parse(startsAt) + bags * bagMs).toISOString();
-  await expect(calendar.set({ phase: "frontier", presetId: 5, startsAt, endsAt }, Date.now())).rejects.toThrow(
-    `nearest valid ends: ${frontierSeasonEnd(startsAt, lower)}, ${frontierSeasonEnd(startsAt, lower + 1)}`,
-  );
+  const phase = { phase: "frontier" as const, presetId: 5, startsAt, endsAt };
+  expect(await calendar.set(phase, Date.now())).toEqual(phase);
+  expect(await calendar.list()).toEqual([phase]);
+});
+
+test("refuses a zero-length season without writing", async () => {
+  const { calendar } = stores();
+  const startsAt = day(0).toISOString();
+  await expect(
+    calendar.set({ phase: "frontier", presetId: 5, startsAt, endsAt: startsAt }, Date.now()),
+  ).rejects.toThrow("end after");
   expect(await calendar.list()).toEqual([]);
 });
 

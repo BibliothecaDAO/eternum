@@ -273,7 +273,12 @@ function createWorld(options: { expedition?: { dayUnitSeconds: number; spacing: 
   if (options.expedition) {
     rules.set("SliceRules", { game_id: GAME, day_unit_seconds: options.expedition.dayUnitSeconds });
     rules.set("SettlementRules", { game_id: GAME, spacing: options.expedition.spacing });
-    rules.set("GameRegistry", { game_id: GAME, start_main_at: BigInt(options.expedition.startMainAt), seed: 1n });
+    rules.set("GameRegistry", {
+      game_id: GAME,
+      start_main_at: BigInt(options.expedition.startMainAt),
+      end_at: BigInt(options.expedition.startMainAt + 21 * 20 * options.expedition.dayUnitSeconds),
+      seed: 1n,
+    });
   }
   const store = {
     entries: facts.entries.bind(facts),

@@ -7,7 +7,6 @@ import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-c
 import { useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
-import { useSeasonEndsAt } from "../hud/season-end";
 import { useDockArmies } from "../hud/dock-armies";
 import { dayLogLine } from "./day-line";
 import { usePlayerDay } from "./player-day";
@@ -37,7 +36,7 @@ export const FrontierToday = ({
   const now = useNowSeconds();
   const player = realm ? `0x${BigInt(realm.owner).toString(16)}` : null;
   const clock = dayClock(rules, now);
-  const season = seasonDay(rules, useSeasonEndsAt(), now);
+  const season = seasonDay(rules, now);
   const today = clock.day;
   const [chosen, setChosen] = useState<number | null>(null);
   const day = chosen ?? today;

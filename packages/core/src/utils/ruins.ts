@@ -38,9 +38,12 @@ export function availableRuinLords(store: Pick<NativeFactStore, "get">, gameId: 
   if (!game || !rules) throw new Error("A ruin budget requires its game and calendar");
   const start = Number(game.start_main_at);
   const end = Number(game.end_at);
-  const day = dayOf({ startMainAt: start, dayUnitSeconds: rules.day_unit_seconds, seed: game.seed }, timestamp);
-  if (!day || timestamp >= end) return 0n;
-  const unlocked = (budget.pool * BigInt(Math.min(day.end, end) - start)) / BigInt(end - start);
+  const day = dayOf(
+    { startMainAt: start, endAt: end, dayUnitSeconds: rules.day_unit_seconds, seed: game.seed },
+    timestamp,
+  );
+  if (!day) return 0n;
+  const unlocked = (budget.pool * BigInt(day.end - start)) / BigInt(end - start);
   const held = budget.day === BigInt(day.index) ? budget.open : 0n;
   const available = unlocked - (budget.pool - budget.pool_left) - held;
   return available > 0n ? available : 0n;

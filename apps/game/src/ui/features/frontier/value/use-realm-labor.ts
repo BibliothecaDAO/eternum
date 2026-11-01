@@ -29,7 +29,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   const claimedOn = (index: number) =>
     !!setup.store.get("LaborGrant", { game_id, home: entity_id, day: BigInt(index) });
   const mark = campaignMarkOf(readCampaignHome(setup.store, realm));
-  const endAt = Number(setup.store.get("GameRegistry", { game_id })?.end_at ?? 0);
+  const endAt = rules.endAt;
   const claimed = claimedOn(day.index);
   return {
     plan: planRealmLabor({
@@ -45,7 +45,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
     home: laborHomeOf(daily !== null, mark, realm.metadata.realm_id),
     days: seasonStrip({
       today: day.index,
-      last: lastDayOf(rules, day, endAt),
+      last: dayOf(rules, endAt - 1)!.index,
       founded: dayOf(rules, Number(realm.base.created_at))?.index ?? 0,
       claimed: claimedOn,
       claimedToday: claimed,
@@ -65,10 +65,6 @@ const laborHomeOf = (claims: boolean, mark: CampaignMark | null, realmId: number
   if (mark) return { kind: "campaign", mark };
   return { kind: "realm", realmId, name: canonicalRealm(realmId).name };
 };
-
-/** The season's last day by index: the day its end falls in, or today when it ends with today (or has no end set). */
-const lastDayOf = (rules: ExpeditionRules, today: { index: number; end: number }, endAt: number) =>
-  endAt > today.end ? (dayOf(rules, endAt - 1)?.index ?? today.index) : today.index;
 
 export const claimRealmLabor = async (home: NativeRows["Structure"]): Promise<void> => {
   const game = requireActiveGame();

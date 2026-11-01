@@ -610,6 +610,7 @@ const restedAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, watch: Re
       if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return null;
       const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([watch.owner]);
       const game = (yield* Effect.promise(() => gameDirectory(shard.url))).get(watch.gameId);
+      if (game && (now >= game.clock.end_at * 1000 || watch.fullAt >= game.clock.end_at * 1000)) return null;
       const day = restedDay(game, watch.fullAt);
       const notification = buildArmyRestedNotification({
         chainId: shard.chainId,
@@ -637,6 +638,7 @@ const restedDay = (game: Game | undefined, fullAt: number): number => {
   const calendar = {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
+    endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
   return dayOf(calendar, fullAt / 1000)!.index;

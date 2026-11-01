@@ -108,7 +108,7 @@ describe("a realm's daily ruin choice", () => {
   });
 
   it("computes available LORDS using today's unlock, paid amounts and only today's reservations", () => {
-    const calendar = { startMainAt: 100, dayUnitSeconds: 100, seed: 1n };
+    const calendar = { startMainAt: 100, endAt: 1000, dayUnitSeconds: 100, seed: 1n };
     const day = dayOf(calendar, 350)!;
     const budget = { pool: 9000n, pool_left: 8000n, open: 500n, day: BigInt(day.index) };
     const rows: Record<string, object> = {
@@ -125,4 +125,15 @@ describe("a realm's daily ruin choice", () => {
     expect(availableRuinLords(store, 1, 350)).toBe(0n);
     expect(availableRuinLords(store, 1, 1000)).toBe(0n);
   });
+});
+
+it("keeps the final day's ruin reservation held through an absorbed bag boundary", () => {
+  const rows: Record<string, object> = {
+    LordsBudget: { pool: 9000n, pool_left: 8000n, open: 500n, day: 9n },
+    GameRegistry: { start_main_at: 0n, end_at: 81n * 3600n, seed: 0x5eedn },
+    SliceRules: { day_unit_seconds: 7200 },
+  };
+  const store = { get: (model: string) => rows[model] } as unknown as Pick<NativeFactStore, "get">;
+  for (const at of [68 * 3600, 80 * 3600, 81 * 3600 - 1]) expect(availableRuinLords(store, 1, at)).toBe(7500n);
+  expect(availableRuinLords(store, 1, 81 * 3600)).toBe(0n);
 });

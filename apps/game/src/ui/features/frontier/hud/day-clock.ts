@@ -4,7 +4,7 @@ import { dayOf, type SeasonCalendar } from "@bibliothecadao/eternum";
 /** The last hour turns the dial and the clock line ember. */
 const LAST_HOUR_SECONDS = 3_600;
 
-/** What the dial and the clock line show; every field is undefined before the season's first day. */
+/** What the dial and the clock line show; every field is undefined outside the season. */
 export type DayClock = {
   /** One-based, as the player counts days. */
   day: number | undefined;
@@ -18,7 +18,7 @@ export type DayClock = {
 /** The dial and the clock line turn ember in today's last hour. */
 export const dayTone = (secondsLeft: number): Tone => (secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm");
 
-const BEFORE_THE_SEASON: DayClock = {
+const OUTSIDE_THE_SEASON: DayClock = {
   day: undefined,
   endsAt: undefined,
   secondsLeft: undefined,
@@ -33,7 +33,7 @@ const BEFORE_THE_SEASON: DayClock = {
  */
 export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
   const today = dayOf(calendar, now);
-  if (!today) return BEFORE_THE_SEASON;
+  if (!today) return OUTSIDE_THE_SEASON;
   const tomorrow = dayOf(calendar, today.end);
   const secondsLeft = today.end - now;
   return {
@@ -48,16 +48,11 @@ export const dayClock = (calendar: SeasonCalendar, now: number): DayClock => {
 
 /**
  * Where today stands in the season (audit 10-27: its end and the days left were shown nowhere): today's number and the
- * season's last day, both one-based as the player counts them; undefined outside the season or before its end is known.
+ * season's last day, both one-based as the player counts them; undefined outside the season.
  */
-export const seasonDay = (
-  calendar: SeasonCalendar,
-  endsAt: number | undefined,
-  now: number,
-): { day: number; lastDay: number } | undefined => {
-  if (endsAt === undefined || now >= endsAt) return undefined;
+export const seasonDay = (calendar: SeasonCalendar, now: number): { day: number; lastDay: number } | undefined => {
   const today = dayOf(calendar, now);
-  const last = dayOf(calendar, endsAt - 1);
+  const last = dayOf(calendar, calendar.endAt - 1);
   return today && last ? { day: today.index + 1, lastDay: last.index + 1 } : undefined;
 };
 
@@ -70,7 +65,7 @@ export const dayBounds = (
   now: number,
   day: number,
 ): { start: number; end: number } | null => {
-  let found = dayOf(calendar, now);
+  let found = dayOf(calendar, Math.min(now, calendar.endAt - 1));
   if (!found || day < 1 || day > found.index + 1) return null;
   while (found.index + 1 > day) {
     const before: { index: number; start: number; end: number } | null = dayOf(calendar, found.start - 1);
@@ -82,7 +77,7 @@ export const dayBounds = (
 
 /**
  * The day that ended last: its number and its bounds in unix seconds, for the day-done card's totals. Null on the
- * season's first day, which follows no day.
+ * season's first day, which follows no day, and after the season, when no new day opens.
  */
 export const endedDay = (calendar: SeasonCalendar, now: number): { day: number; start: number; end: number } | null => {
   const today = dayOf(calendar, now);

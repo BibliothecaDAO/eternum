@@ -27,10 +27,12 @@ send home what they find. No other player can attack you. During Devcon, a faste
 4. **Bring it home.** Everything a reveal or a clear pays goes straight to your realm. An army never carries anything
    worth losing.
 
-A day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the whole
-season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag. No bag opens
-with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how long
-tomorrow lasts.
+A normal day lasts {FRONTIER.day.shortestHours} to {FRONTIER.day.longestHours} hours. The lengths are drawn for the
+whole season in bags of {FRONTIER.day.daysPerBag} days, one of each length, {FRONTIER.day.bagHours} hours a bag. No bag
+opens with the shortest day, and two shortest days never follow each other. The top bar shows when today ends and how
+long tomorrow lasts. The final day stops at the season’s end. A remaining stub shorter than {FRONTIER.day.shortestHours}
+hours joins the preceding day instead, extending that day through the season’s end. A season shorter than its first day
+has just that one clipped day.
 
 When the day ends, the map and every army on it are gone. Your realm is raised again on the next map with everything it
 holds.

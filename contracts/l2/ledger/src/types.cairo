@@ -161,6 +161,7 @@ pub struct GameKey {
 #[derive(Copy, Drop)]
 pub struct FrontierClock {
     pub start_main_at: u64,
+    pub end_at: u64,
     pub seed: felt252,
 }
 

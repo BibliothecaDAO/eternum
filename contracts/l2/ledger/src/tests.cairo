@@ -706,29 +706,29 @@ fn frontier_funding_requires_an_enabled_preset_calendar() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn frontier_funding_requires_a_positive_whole_bag_window() {
+fn frontier_funding_requires_a_positive_window() {
     let fixture = deploy_fixture(default_preset());
     fund_and_approve_player(@fixture, ADMIN(), 1000);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     let safe = IGameLedgerSafeDispatcher { contract_address: fixture.ledger_address };
-    for end in array![START - 1, START, START + 1, START + 19, START + 21, END - 1] {
+    for end in array![START - 1, START] {
         assert!(safe.fund_frontier('shard', 1, PRESET_ID, START, end, 0x5eed, 1000).is_err());
         assert!(fixture.lords.balance_of(ADMIN()) == 1000);
     }
-    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, START + 20, 0x5eed, 1000);
-    assert!(fixture.ledger.get_frontier('shard', 1).end == START + 20);
+    fixture.ledger.fund_frontier('shard', 1, PRESET_ID, START, START + 21, 0x5eed, 1000);
+    assert!(fixture.ledger.get_frontier('shard', 1).end == START + 21);
 }
 
 #[test]
 fn different_season_lengths_share_one_preset_and_keep_their_own_unlock_and_settlement() {
     let fixture = funded_frontier();
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
-    for (season_id, end) in array![(2_u32, START + 20), (3, START + 60)] {
+    for (season_id, end) in array![(2_u32, START + 20), (3, START + 61)] {
         fund_and_approve_player(@fixture, ADMIN(), 1000);
         fixture.ledger.fund_frontier('shard', season_id, PRESET_ID, START, end, 0x5eed, 1000);
     }
     let claim_window: u64 = default_preset().claim_window_seconds.into();
-    for (season_id, end) in array![(2_u32, START + 20), (3, START + 60), (1, END)] {
+    for (season_id, end) in array![(2_u32, START + 20), (3, START + 61), (1, END)] {
         let season = fixture.ledger.get_frontier('shard', season_id);
         assert!(season.start == START && season.end == end && season.preset_id == PRESET_ID);
         start_cheat_block_timestamp(fixture.ledger_address, START - 1);
@@ -3297,4 +3297,26 @@ fn cosigning_matches_the_typescript_vectors_and_signatures() {
             0x6bfb9f679c5fbd28bc94d76fbc397b4b27ec6dfeacf83d68c00bdfe8a6c0cea,
         ),
     );
+}
+
+
+#[test]
+fn partial_seasons_unlock_the_last_day_and_keep_the_exact_claim_deadline() {
+    let fixture = deploy_fixture(Preset { day_unit_seconds: 7200, ..default_preset() });
+    start_cheat_caller_address(fixture.ledger_address, ADMIN());
+    for (id, hours, last_start) in array![(11_u32, 81_u64, 68_u64), (12, 84, 80), (13, 85, 80)] {
+        fund_and_approve_player(@fixture, ADMIN(), 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, START - 1);
+        let end = START + hours * 3600;
+        fixture.ledger.fund_frontier('shard', id, PRESET_ID, START, end, 0x5eed, 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, START + last_start * 3600 - 1);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000_u256 * last_start.into() / hours.into());
+        start_cheat_block_timestamp(fixture.ledger_address, START + last_start * 3600);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000);
+        start_cheat_block_timestamp(fixture.ledger_address, end);
+        assert!(fixture.ledger.frontier_unlocked('shard', id) == 1000);
+        assert!(
+            fixture.ledger.frontier_claim_deadline('shard', id) == end + default_preset().claim_window_seconds.into(),
+        );
+    }
 }

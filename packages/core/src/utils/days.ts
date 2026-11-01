@@ -1,7 +1,7 @@
 import { hash, shortString } from "starknet";
 
 /**
- * The season's days, as contracts/l3/world-native/src/days.cairo finds them. A day lasts 2 to 6 units of the preset's
+ * The season's days, as contracts/l3/world-native/src/days.cairo finds them. A normal day lasts 2 to 6 units of the preset's
  * day unit; days come in bags of five holding each length once, so a bag lasts 20 units. Bag b's order is drawn from
  * the game's seed, so every player shares one schedule.
  */
@@ -13,6 +13,7 @@ const DAY_BAG = BigInt(shortString.encodeShortString("day bag"));
 export interface SeasonCalendar {
   seed: bigint;
   startMainAt: number;
+  endAt: number;
   dayUnitSeconds: number;
 }
 
@@ -51,17 +52,22 @@ export const bagLengths = (seed: bigint, bag: number): number[] => {
   return lengths;
 };
 
-/** The day `timestamp` falls in, or null before the season starts. */
+/** The day `timestamp` falls in, or null outside the season. A final stub under two units joins the preceding day. */
 export const dayOf = (calendar: SeasonCalendar, timestamp: number): SeasonDay | null => {
   const { startMainAt, dayUnitSeconds: unit } = calendar;
   if (!Number.isSafeInteger(unit) || unit <= 0) throw new Error("A season's day unit must be positive");
-  if (timestamp < startMainAt) return null;
+  if (!Number.isSafeInteger(startMainAt) || !Number.isSafeInteger(calendar.endAt) || calendar.endAt <= startMainAt)
+    throw new Error("A season must have a positive, finite window");
+  if (timestamp < startMainAt || timestamp >= calendar.endAt) return null;
+  // The last two units belong to the day already running at their start, absorbing a shorter final stub.
+  const finalDayProbe = calendar.endAt - Math.min(calendar.endAt - startMainAt, 2 * unit);
+  timestamp = Math.min(timestamp, finalDayProbe);
   const bag = Math.floor((timestamp - startMainAt) / (DAY_UNITS_PER_BAG * unit));
   let start = startMainAt + bag * DAY_UNITS_PER_BAG * unit;
   let index = bag * DAYS_PER_BAG;
   for (const length of bagLengths(calendar.seed, bag)) {
     const end = start + length * unit;
-    if (timestamp < end) return { index, start, end };
+    if (timestamp < end) return { index, start, end: end > finalDayProbe ? calendar.endAt : end };
     start = end;
     index += 1;
   }

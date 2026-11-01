@@ -742,3 +742,29 @@ fn automatic_lords_sweep_pays_the_owner_once_and_keeps_live_withdrawals() {
     );
     assert!(operator.sweep_lords(game_id, 99999).is_err());
 }
+
+
+#[test]
+fn clipped_and_merged_final_days_unlock_the_remaining_pool_at_their_start() {
+    for hours in array![81_u64, 84, 85] {
+        let clock = SeasonClock {
+            game: crate::game::GameRegistry { seed: 0x5eed, end_at: hours * 3600, ..clock().game },
+            day_unit_seconds: 7200,
+            tick: 40,
+        };
+        let last = crate::days::day_of(clock.game, 7200, clock.game.end_at - 1);
+        assert_eq!(last.index, if hours == 81 {
+            9
+        } else {
+            10
+        });
+        assert_eq!(unlocked(TEST_POOL, clock, last.index), TEST_POOL);
+        assert_eq!(
+            unlocked(TEST_POOL, clock, last.index - 1),
+            TEST_POOL * Into::<u64, u128>::into(last.start) / Into::<u64, u128>::into(clock.game.end_at),
+        );
+        let previous = empty_day(TEST_POOL, last.index - 1);
+        let final_budget = roll(rules(), previous, clock, last.index);
+        assert_eq!(available(final_budget, clock), TEST_POOL);
+    }
+}

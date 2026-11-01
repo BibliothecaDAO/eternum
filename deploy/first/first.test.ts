@@ -757,11 +757,11 @@ test.each(["none", "relay", "monitor"])(
   },
 );
 
-test("all four dates are required without defaults and invalid Frontier end gives two exact alternatives", () => {
+test("all four dates are required without defaults and both Frontier boundaries align to ticks", () => {
   expect(() => validateDates(input, true)).not.toThrow();
   for (const field of ["frontierStart", "frontierEnd", "blitzStart", "blitzEnd"])
     expect(() => validateDates({ ...input, [field]: "" }, true)).toThrow("without a default");
-  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:00Z" }, true)).toThrow("nearest valid ends:");
+  expect(() => validateDates({ ...input, frontierEnd: "2027-01-02T00:00:01Z" }, true)).toThrow("s tick");
   expect(() => validateDates({ ...input, frontierStart: "2027-01-01T00:00:01Z" }, true)).toThrow("s tick");
 });
 
@@ -912,11 +912,11 @@ test("date validation requires a native Frontier preset and uses its season cloc
   const dates = {
     ...input,
     frontierPresetId: "6",
-    frontierStart: "2026-11-03T06:30:00Z",
-    frontierEnd: "2026-11-06T14:30:00Z",
+    frontierStart: "2026-11-03T05:00:00Z",
+    frontierEnd: "2026-11-06T18:00:00Z",
   };
   expect(() => validateDates(dates, true)).not.toThrow();
-  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:30:00Z" }, true)).toThrow("whole bags");
+  expect(() => validateDates({ ...dates, frontierEnd: "2026-11-06T18:00:01Z" }, true)).toThrow("40 s tick");
   expect(() => validateDates({ ...dates, frontierPresetId: "" }, true)).toThrow("registered Frontier preset");
   expect(() => validateDates({ ...dates, frontierPresetId: "1" }, true)).toThrow("registered Frontier preset");
 });

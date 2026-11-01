@@ -1067,17 +1067,21 @@ pub fn setup_open_frontier() -> (super::Deployment, u32) {
 }
 
 pub fn setup_open_frontier_preset(name: ByteArray, bags: u64) -> (super::Deployment, u32) {
-    let d = setup();
     let (_, preset) = super::preset_projection::current_definition(name);
+    create_open_frontier(preset, Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags)
+}
+
+pub fn setup_open_frontier_duration(name: ByteArray, duration: u64) -> (super::Deployment, u32) {
+    let (_, preset) = super::preset_projection::current_definition(name);
+    create_open_frontier(preset, duration)
+}
+
+fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Deployment, u32) {
+    let d = setup();
     registry(d).register_preset(1, preset);
     let game_id = registry(d)
         .create_game(
-            CreateGameParams {
-                start_main_at: 360,
-                end_grace_seconds: 0,
-                duration_seconds: Into::<u32, u64>::into(preset.rules.day_unit_seconds) * 20 * bags,
-                ..params(false),
-            },
+            CreateGameParams { start_main_at: 360, end_grace_seconds: 0, duration_seconds: duration, ..params(false) },
         );
     snforge_std::interact_with_state(
         d.games,

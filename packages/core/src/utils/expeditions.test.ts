@@ -27,11 +27,11 @@ const structure = (overrides: { realm_id?: number; category?: StructureType } = 
   }) as never;
 
 // Four-hour units from t=86400, days drawn from seed 1; spacing 10, so day d's regions are rows 40d..40d+39.
-const rules = { dayUnitSeconds: 14_400, spacing: 10, startMainAt: 86_400, seed: 1n };
+const rules = { dayUnitSeconds: 14_400, spacing: 10, startMainAt: 86_400, endAt: 86_400 + 21 * 20 * 14_400, seed: 1n };
 const expeditionRules = {
   SliceRules: { day_unit_seconds: rules.dayUnitSeconds },
   SettlementRules: { spacing: rules.spacing },
-  GameRegistry: { start_main_at: BigInt(rules.startMainAt), seed: rules.seed },
+  GameRegistry: { start_main_at: BigInt(rules.startMainAt), end_at: BigInt(rules.endAt), seed: rules.seed },
 };
 /** The first second of season day `index`. */
 const dayStart = (index: number) => {
@@ -341,7 +341,10 @@ it("has no season day or map site before the exact start", () => {
     vi.spyOn(timestamp, "getBlockTimestamp").mockReturnValue({ currentBlockTimestamp: now } as never);
     expect(
       structureMapPosition(
-        storeWith({ ...expeditionRules, GameRegistry: { start_main_at: BigInt(late.startMainAt), seed: late.seed } }),
+        storeWith({
+          ...expeditionRules,
+          GameRegistry: { start_main_at: BigInt(late.startMainAt), end_at: BigInt(late.endAt), seed: late.seed },
+        }),
         structure(),
       ),
     ).toBeNull();

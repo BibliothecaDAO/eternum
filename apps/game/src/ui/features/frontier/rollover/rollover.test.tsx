@@ -11,7 +11,7 @@ import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
 
 describe("the day's end", () => {
-  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0 };
+  const rules = { dayUnitSeconds: 4 * 3_600, seed: 1n, startMainAt: 0, endAt: 21 * 20 * 14_400 };
 
   it("finds the day that ended last and its bounds, and none on the season's first day", () => {
     const first = dayOf(rules, 0)!;
