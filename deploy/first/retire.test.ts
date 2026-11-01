@@ -93,8 +93,8 @@ test("an existing ledger is retired, a new one deploys and publishes, and every 
   const changes = retirementPlan(target, store, ["ledger"]);
   expect(changes).toEqual({
     moves: [
-      ["asset-ledger.json", retiredPin("ledger", old)],
       ["cold-setup.json", `retired-cold-setup-${num.toHex(old)}.json`],
+      ["asset-ledger.json", retiredPin("ledger", old)],
     ],
     keys: ["ledger", "ledgerDeploymentBlock"],
   });
@@ -154,6 +154,44 @@ test("a retirement cut short finishes on the next run, and a pin naming another 
   other.store.write("asset-ledger.json", { address: "0x99" });
   expect(() => retirementPlan(other.target, other.store, ["ledger"])).toThrow("another contract than the book");
   expect(readdirSync(other.store.directory)).toContain("asset-ledger.json");
+});
+
+test("a book naming its ledger 0x0, not deployed, retires the saved ledger and its call files, even cut short", () => {
+  /** Production's book since LORDS moved to the canonical token, with S0's ledger pinned and its call files saved. */
+  const zeroBook = () => {
+    const scratch = environment({ l2Chain: "SN_MAIN", lords: "0x5", ledger: "0x0" });
+    scratch.store.write("asset-ledger.json", { classHash: "0x1", address: "0x46", constructor: [] });
+    scratch.store.write("cold-setup.json", { account: "0x7", calls: [] });
+    scratch.store.write("cold-funding.json", { account: "0x7", calls: [] });
+    return scratch;
+  };
+  const retired = [retiredPin("ledger", "0x46"), "retired-cold-funding-0x46.json", "retired-cold-setup-0x46.json"];
+  const expectRetired = ({ target, store }: ReturnType<typeof zeroBook>) => {
+    expect(addressBook(target)).toEqual({ l2Chain: "SN_MAIN", lords: "0x5" });
+    expect(readdirSync(store.directory).sort()).toEqual(retired.sort());
+    expect(retirementPlan(target, store, ["ledger"])).toEqual({ moves: [], keys: [] });
+  };
+
+  const whole = zeroBook();
+  const plan = retirementPlan(whole.target, whole.store, ["ledger"]);
+  expect(plan).toEqual({
+    moves: [
+      ["cold-setup.json", "retired-cold-setup-0x46.json"],
+      ["cold-funding.json", "retired-cold-funding-0x46.json"],
+      ["asset-ledger.json", retiredPin("ledger", "0x46")],
+    ],
+    keys: ["ledger"],
+  });
+  retire(whole.target, whole.store, plan);
+  expectRetired(whole);
+
+  // A run stopped after each move, the last one included (before the book is written), finishes on the next run.
+  for (let done = 1; done <= plan.moves.length; done++) {
+    const cut = zeroBook();
+    for (const [from, to] of plan.moves.slice(0, done)) cut.store.rename(from, to);
+    retire(cut.target, cut.store, retirementPlan(cut.target, cut.store, ["ledger"]));
+    expectRetired(cut);
+  }
 });
 
 test("teardown takes dev alone, or either environment with one backup under /opt/athanor/backups", () => {
