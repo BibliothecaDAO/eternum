@@ -91,11 +91,15 @@ const promptsOf = async (wallet: ReturnType<typeof installWallet>) => {
 };
 
 /** Waits for what the wallet chunk does on its own once a button is pressed. */
-const settled = (check: () => void) =>
-  vi.waitFor(async () => {
+const settled = async (check: () => void) => {
+  await act(async () => {
+    await import("../value/wallet-actions");
+  });
+  await vi.waitFor(async () => {
     await act(async () => {});
     check();
   });
+};
 
 const wordsOf = (panel: HTMLElement) => [...panel.querySelectorAll("button")].map((button) => button.textContent);
 
