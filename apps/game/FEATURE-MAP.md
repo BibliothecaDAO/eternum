@@ -664,6 +664,15 @@ above the highest ground under it.
 `/lab/game?scenario=painted-buildings-sands` is the painted-buildings Kingdom on beach sand, palms around its board: the
 realm view's light and shadows on palms and buildings together (`&scene=hex` opens the realm).
 
+`/lab/game?scenario=realm-height` lays out every building kind rendered by Frontier, plus the keep, on a snowy Empire
+board: press **Realm** to inspect ground contact. The fixture derives its coverage from the building and mode model
+catalogs; Fish and Research have no Frontier models.
+`pnpm --dir apps/game playtest --port <port> --steps lab-realm-height` enters the realm, zooms out to show every
+building and checks each model's geometry base against the presented floor, failing on missing, off-screen, buried or
+floating buildings. `src/lab/game/realm-height-scenario.test.ts` checks fixture coverage;
+`src/three/scenes/hexception-building-assets.test.ts` covers every non-None building kind across modes, including Fish
+and Research, tier variants, keeps, outposts and cosmetic skins at growth and resting scales.
+
 `/lab/game?scenario=realm` is the same game with the realm a full Settlement (six plots built) and the labor for a City:
 **Realm**, tap the castle, **Upgrade**. The LevelUp command is recorded and applied, the second ring's twelve plots
 light, and the realm view stands at City (18 plots), as it does after going to the World and back.
