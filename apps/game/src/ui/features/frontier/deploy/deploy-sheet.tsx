@@ -17,7 +17,7 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { useRealmStores } from "../realm-stores";
 import { secondsUntilHeld } from "../hud/army-order";
 import { armyArt } from "../hud/dock-armies";
-import { deployArmy, deployDirection, deployRange, previewDeploy } from "./deploy-plan";
+import { deployArmy, deployDirection, deployRange, previewDeploy, wheatStopsAt } from "./deploy-plan";
 import { DeployView } from "./deploy-view";
 import { useDeployPlan } from "./use-deploy-plan";
 
@@ -45,8 +45,8 @@ export const DeploySheet = ({
   // and get 500"); Max is one tap away. A count being set survives fact revisions, and a count at the most stays at the
   // most as the farms raise it: the label and the count read the one figure.
   const shown = count === "max" ? range.max : Math.min(count ?? 0, range.max);
-  const wheatCaps = plan?.troops ? range.wheatMax < range.troopsMax : false;
   const preview = plan ? previewDeploy(plan, shown) : null;
+  const wheatStop = wheatStopsAt(range, shown);
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
@@ -107,10 +107,9 @@ export const DeploySheet = ({
       sending={deploying}
       onDeploy={() => void deploy()}
       wheatLimit={
-        plan && wheatCaps
+        plan && wheatStop
           ? {
-              troops: range.max,
-              of: range.troopsMax,
+              ...wheatStop,
               held: plan.wheat,
               perTroop: plan.wheatPerTroop,
               wait: secondsUntilHeld(plan.wheat, plan.wheatPerTroop, wheatPerHour),

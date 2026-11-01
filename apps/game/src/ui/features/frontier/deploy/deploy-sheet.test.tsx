@@ -330,7 +330,8 @@ describe("the Deploy sheet", () => {
     expect(countField(host).value).toBe("0");
     expect(deployButton(host)?.disabled).toBe(true);
     press(host, "Max");
-    expect(countField(host).value).toBe("420");
+    // At the most the troops at home stop it, not the wheat: still no line.
+    expect([countField(host).value, host.querySelector(".ui-notice")]).toEqual(["420", null]);
     typeCount(host, 120);
     // Deploy in the foot beside its price, and nothing else.
     expect(deployButton(host)?.textContent).toBe("Deploy");
@@ -401,7 +402,7 @@ describe("the Deploy sheet", () => {
     host.remove();
   });
 
-  it("caps the count where the wheat runs out", () => {
+  it("caps the count where the wheat runs out and names the wheat only at that cap, never at 0 or below it", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -413,19 +414,28 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    // 100 wheat deploys 50 of the 420 troops: Max takes what the wheat allows, and the count reads out of 50, not
-    // "that fit", since the castle has room; one red line says the wheat is why.
-    expect(outOf(host)).toBe("of 50");
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
+    // 100 wheat deploys 50 of the 420 troops: the count reads out of 50, not "that fit", since the castle has room.
+    // At no troops nothing names the wheat (owner, 1 November: "not at 0 its confusing").
+    expect([outOf(host), countField(host).value, wheatLine(host)]).toEqual(["of 50", "0", null]);
+    // Below the cap the price is all: 30 troops for 60 wheat.
+    typeCount(host, 30);
+    expect([wheatLine(host), foot(host)]).toEqual([null, "60 WheatDeploy"]);
+    // Past it, the count stops at 50 and one red line says the wheat is why.
     typeCount(host, 300);
     expect(countField(host).value).toBe("50");
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 50 of 420 troops", press: "Get Wheat" });
     expect(foot(host)).toBe("100 WheatDeploy");
     expect(deployButton(host)?.disabled).toBe(false);
+    // One under the cap, the line goes; Max brings it back.
+    typeCount(host, 49);
+    expect(wheatLine(host)).toBeNull();
+    press(host, "Max");
+    expect([countField(host).value, wheatLine(host)?.line]).toEqual(["50", "Wheat for only 50 of 420 troops"]);
     act(() => root.unmount());
     host.remove();
   });
 
-  it("says the wheat caps the count in one red line, offers Get Wheat on it, and keeps Max at the most as the farms fill", () => {
+  it("says at Max that the wheat caps the count, offers Get Wheat on the line, and keeps Max at the most as the farms fill", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     // dev-playtest-2 (10-31): 16 wheat at 2 a troop holds 420 knights at home to 8; farms make 720 wheat an hour.
@@ -452,10 +462,10 @@ describe("the Deploy sheet", () => {
     const onClose = vi.fn();
     const { host, root, draw } = render(store, row, onClose);
     click(host.querySelector('button[aria-label="Army 2"]')!);
-    expect(outOf(host)).toBe("of 8");
-    expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
+    expect([outOf(host), wheatLine(host)]).toEqual(["of 8", null]);
     press(host, "Max");
     expect([countField(host).value, outOf(host), foot(host)]).toEqual(["8", "of 8", "16 WheatDeploy"]);
+    expect(wheatLine(host)).toEqual({ line: "Wheat for only 8 of 420 troops", press: "Get Wheat" });
 
     // Ten seconds of farming: 2 more wheat, one more troop. Max meant the most, so the count moves with the label.
     clock.tick = 13;
@@ -463,21 +473,22 @@ describe("the Deploy sheet", () => {
     expect([countField(host).value, outOf(host), foot(host)]).toEqual(["9", "of 9", "18 WheatDeploy"]);
     expect(wheatLine(host)?.line).toBe("Wheat for only 9 of 420 troops");
 
-    // A count set below the most stays where it was set.
+    // A count set below the most stays where it was set, and names no wheat.
     typeCount(host, 5);
     clock.tick = 23;
     draw();
-    expect([countField(host).value, outOf(host)]).toEqual(["5", "of 10"]);
+    expect([countField(host).value, outOf(host), wheatLine(host)]).toEqual(["5", "of 10", null]);
 
-    // No Build anywhere: Get Wheat on the line takes the player to the realm, where farms are built.
+    // No Build anywhere: Get Wheat on the line, back at Max, takes the player to the realm, where farms are built.
     expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Build")).toBe(false);
+    press(host, "Max");
     act(() => host.querySelector<HTMLButtonElement>(".ui-notice__fix button")!.click());
     expect([place.goTo, onClose.mock.calls.length]).toEqual([[false], 1]);
     act(() => root.unmount());
     host.remove();
   });
 
-  it("with wheat short of one troop, says what one needs against what is held, at no troops, and Deploy stays off", () => {
+  it("with wheat short of one troop, is at its cap at 0: says what one needs against what is held, and Deploy stays off", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const { store, row } = frontierDay();
     store.applyFacts([
@@ -489,6 +500,7 @@ describe("the Deploy sheet", () => {
     ] as never);
     const { host, root } = render(store, row);
     click(host.querySelector('button[aria-label="Army 2"]')!);
+    // The most is 0 and the wheat is why: this 0 is the cap, so the line says so (owner, 1 November).
     expect(outOf(host)).toBe("of 0");
     expect(wheatLine(host)).toEqual({ line: "Needs 2 Wheat, have 1", press: "Get Wheat" });
     expect(deployButton(host)?.disabled).toBe(true);

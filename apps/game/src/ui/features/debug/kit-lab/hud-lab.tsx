@@ -53,7 +53,7 @@ import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
 import { useParams } from "react-router-dom";
-import type { SlotStart } from "@/ui/features/frontier/deploy/deploy-plan";
+import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
 import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
 import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
@@ -611,6 +611,12 @@ const STATES = {
     stores: STORES,
     armies: ARMIES,
     deploy: { ...DEPLOY, count: 1_000, wheat: 2_000 },
+  },
+  "deploy-no-wheat": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    deploy: { ...DEPLOY, count: 0, wheat: 1 },
   },
   "deploy-empty": {
     clock: CLOCK,
@@ -1359,7 +1365,9 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
   const [slot, setSlot] = useState<number | null>(null);
   const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
-  const most = Math.min(deploy.troopsAtHome, Math.floor(deploy.wheat / 2));
+  const wheatMax = Math.floor(deploy.wheat / 2);
+  const most = Math.min(deploy.troopsAtHome, wheatMax);
+  const wheatStop = wheatStopsAt({ troopsMax: deploy.troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
       art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
@@ -1375,11 +1383,7 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatLimit={
-        most < deploy.troopsAtHome
-          ? { troops: most, of: deploy.troopsAtHome, held: deploy.wheat, perTroop: 2, wait: undefined }
-          : undefined
-      }
+      wheatLimit={wheatStop && { ...wheatStop, held: deploy.wheat, perTroop: 2, wait: undefined }}
       onGoToRealm={noop}
       onClose={noop}
     />
