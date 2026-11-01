@@ -1,18 +1,22 @@
 import { BLITZ_WORDS, SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { IdentityRequestError } from "@realms-world/identity";
-import type { ReactNode } from "react";
+import { CAMPAIGNS } from "@realms-world/identity";
+import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
 import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
+import { FoundButton } from "@/ui/features/game-entry/game-entry-modal";
+import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
 
 import { PlayPage } from "../play/play-page";
 import { PageAddress } from "../frame/page-address";
 import { ShellWindow } from "../frame/shell-window";
+import { DEVCON } from "../join/devcon";
 import { HandoffStep } from "../sign-in/handoff-step";
 import { NotFoundPage } from "../not-found";
 import { CodeStep } from "../sign-in/code-step";
@@ -122,6 +126,26 @@ export const LabDoorway = () => {
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
       {state === "preparing" && <Pill icon="hourglass">{`${BLITZ_WORDS.preparing} 17/24`}</Pill>}
+      {state === "home" && <LabHomeStep />}
     </DoorwayScreen>
+  );
+};
+
+/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, then Found. */
+const LabHomeStep = () => {
+  const [value, setValue] = useState("");
+  const [settled, setSettled] = useState(false);
+  return (
+    <>
+      <HomeSourcePicker
+        presetId={CAMPAIGNS[DEVCON.campaign].presets[0]}
+        registered={null}
+        value={value}
+        onChange={setValue}
+        onSettled={setSettled}
+        disabled={false}
+      />
+      <FoundButton founding={false} ready={settled} onFound={noop} />
+    </>
   );
 };

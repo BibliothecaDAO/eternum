@@ -652,7 +652,15 @@ export const GameEntryModal = ({
  * The Realm step's verb. Its two waits look different: while the home is founded it spins and says so, at full
  * strength; while the step has not settled on a home it is faint, and the step itself says what it waits for.
  */
-const FoundButton = ({ founding, ready, onFound }: { founding: boolean; ready: boolean; onFound: () => void }) => (
+export const FoundButton = ({
+  founding,
+  ready,
+  onFound,
+}: {
+  founding: boolean;
+  ready: boolean;
+  onFound: () => void;
+}) => (
   <button
     type="button"
     disabled={founding || !ready}
