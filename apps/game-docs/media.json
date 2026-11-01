@@ -169,7 +169,7 @@
     "frame": "panel",
     "setup": [
       {
-        "open": "/lab/kit/hud/season?capture=1"
+        "open": "/lab/kit/hud/season-pool-unpublished?capture=1"
       },
       {
         "until": "document.documentElement.dataset.bootState === 'app-ready'",
@@ -457,7 +457,7 @@
     "frame": "game",
     "setup": [
       {
-        "open": "/lab/relic-chest?gameMode=frontier&capture=1"
+        "open": "/lab/relic-chest?mode=frontier&capture=1"
       },
       {
         "until": "document.querySelector('[data-relic-chest-lab]')?.dataset.ready === 'true'",
@@ -485,7 +485,12 @@
       }
     ],
     "seconds": 8,
-    "cropRect": [0, 66, 1920, 664]
+    "cropRect": [
+      0,
+      66,
+      1920,
+      664
+    ]
   },
   {
     "name": "blitz/open-crate",
@@ -520,7 +525,12 @@
       }
     ],
     "seconds": 8,
-    "cropRect": [0, 66, 1920, 664]
+    "cropRect": [
+      0,
+      66,
+      1920,
+      664
+    ]
   },
   {
     "name": "frontier/build",
@@ -556,21 +566,86 @@
     ]
   },
   {
-    "name": "frontier/site-cleared",
-    "frame": "panel",
+    "name": "frontier/fight",
+    "frame": "game",
     "setup": [
       {
-        "open": "/lab/kit/hud/fight-won?capture=1"
+        "open": "/lab/game?scenario=fight"
       },
       {
-        "until": "document.documentElement.dataset.bootState === 'app-ready'",
-        "ms": 120000
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
       },
       {
         "wait": 4000
+      },
+      {
+        "readiestArmy": true
+      },
+      {
+        "findTile": "Attack"
+      },
+      {
+        "waitText": "50 stamina",
+        "ms": 15000
+      },
+      {
+        "wait": 1500
       }
     ],
-    "crop": "[...document.querySelectorAll('aside[data-hud-rail=\"true\"] section')].filter((s) => s.getBoundingClientRect().height > 40).at(-1)"
+    "record": [
+      {
+        "wait": 1500
+      },
+      {
+        "clickText": "Attack"
+      },
+      {
+        "wait": 7000
+      }
+    ],
+    "seconds": 10
+  },
+  {
+    "name": "frontier/ruin-chest",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=ruin-fight"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "readiestArmy": true
+      },
+      {
+        "findTile": "Attack"
+      },
+      {
+        "waitText": "stamina",
+        "ms": 15000
+      },
+      {
+        "wait": 1500
+      }
+    ],
+    "record": [
+      {
+        "wait": 1200
+      },
+      {
+        "clickText": "Attack"
+      },
+      {
+        "wait": 9500
+      }
+    ],
+    "seconds": 12
   },
   {
     "name": "blitz/build",
@@ -659,5 +734,156 @@
       }
     ],
     "seconds": 7
+  },
+  {
+    "name": "frontier/shrine",
+    "frame": "game",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=sites"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "readiestArmy": true
+      },
+      {
+        "findTile": "skill point"
+      },
+      {
+        "wait": 2000
+      }
+    ]
+  },
+  {
+    "name": "frontier/hud-phone",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/game?scenario=spire"
+      },
+      {
+        "until": "document.querySelector('nav[aria-label=\"Armies\"] button[aria-pressed]')",
+        "ms": 180000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "wait": 10000
+      }
+    ]
+  },
+  {
+    "name": "devcon/ticket",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/app/devcon-flyer/join/devcon/LABCODE1?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ]
+  },
+  {
+    "name": "devcon/regular",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/app/devcon-flyer/join/devcon/LABCODE1?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "clickText": "Open your ticket"
+      },
+      {
+        "waitFor": ".app-ticket[data-face='opened']",
+        "ms": 15000
+      },
+      {
+        "wait": 2500
+      }
+    ]
+  },
+  {
+    "name": "devcon/golden",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/app/devcon-golden/join/devcon/LABCODE1?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "clickText": "Open your ticket"
+      },
+      {
+        "waitFor": ".app-ticket[data-face='golden']",
+        "ms": 15000
+      },
+      {
+        "wait": 2500
+      }
+    ]
+  },
+  {
+    "name": "devcon/home",
+    "frame": "phone",
+    "setup": [
+      {
+        "open": "/lab/app/devcon-held/doorway/home?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      },
+      {
+        "eval": "document.querySelector('button.frontier-primary').scrollIntoView({ block: 'end' }) || true"
+      },
+      {
+        "wait": 800
+      }
+    ]
+  },
+  {
+    "name": "devcon/claim",
+    "frame": "panel",
+    "setup": [
+      {
+        "open": "/lab/kit/hud/realms-devcon?capture=1"
+      },
+      {
+        "until": "document.documentElement.dataset.bootState === 'app-ready'",
+        "ms": 120000
+      },
+      {
+        "wait": 4000
+      }
+    ],
+    "crop": "document.querySelector('[data-kit-sheet][aria-label=\"Realm Labor\"]')"
   }
 ]

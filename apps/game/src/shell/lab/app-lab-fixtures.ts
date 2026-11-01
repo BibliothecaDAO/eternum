@@ -5,7 +5,7 @@ import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { Session } from "@realms-world/identity";
+import type { CampaignTicket, Session } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -226,7 +226,26 @@ export const LAB_SCREENS = {
   "season-held": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-claimed": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-out": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
+  // Devcon's flyer landing (/join/devcon): an account holding no ticket, whose flyer opens a regular or a golden one, and
+  // one holding its golden ticket at the Devcon game's Realm step (doorway/home).
+  "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "devcon-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "devcon-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
+
+/** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
+export const LAB_DEVCON_TICKETS: Partial<
+  Record<keyof typeof LAB_SCREENS, { tier: CampaignTicket["tier"]; held: boolean }>
+> = {
+  "devcon-flyer": { tier: "regular", held: false },
+  "devcon-golden": { tier: "golden", held: false },
+  "devcon-held": { tier: "golden", held: true },
+};
+
+/** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */
+export const LAB_HELD_REALMS: Partial<Record<keyof typeof LAB_SCREENS, { realmId: number; map: null }[]>> = {
+  "devcon-held": [{ realmId: 4786, map: null }],
+};
 
 /** The player's name on each screen whose player is not Maelis. */
 export const LAB_NAMES: Partial<Record<keyof typeof LAB_SCREENS, string>> = {
@@ -259,6 +278,7 @@ export const LAB_PAYOUT_WALLETS: Partial<Record<keyof typeof LAB_SCREENS, string
   "season-held": LAB_WALLET,
   "season-claimed": LAB_WALLET,
   "season-out": LAB_WALLET,
+  "devcon-held": LAB_WALLET,
 };
 
 const WEI = 10n ** 18n;
@@ -776,6 +796,11 @@ export const LAB_DOORWAYS = {
   },
   ended: {
     view: doorwayView({ source: "boot", phase: "ready", audience: "player", ended: true }),
+    realm: null,
+  },
+  // The Realm step: choose your home, then Found your realm.
+  home: {
+    view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,
   },
 } satisfies Record<string, { view: DoorwayView; realm: DoorwayRealm | null }>;

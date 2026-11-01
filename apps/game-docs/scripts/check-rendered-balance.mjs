@@ -198,7 +198,7 @@ const frontierPhrases = (config, preset, riftGuardBound) => {
         `An army holds ${n(stamina.staminaKnightMax)} stamina and recovers ${stamina.staminaGainPerTick} every ${tick / 60} minutes, so an empty bar fills in ${((stamina.staminaKnightMax / stamina.staminaGainPerTick) * tick) / 3600} hours.`,
         `Revealing a tile costs ${stamina.staminaExploreStaminaCost}, a step over known ground ${stamina.staminaTravelStaminaCost}, and an attack needs ${stamina.staminaAttackReq}.`,
         `An army earns ${revealXp} XP per revealed tile at ${DEPTH_NAMES.join(" / ")}.`,
-        `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common, Uncommon, Rare, Epic and Legendary skill points.`,
+        `At ${TIERS.map((tier) => n(preset.progression[`${tier}Xp`])).join(" / ")} XP it earns Common I, Uncommon II, Rare III, Epic IV and Legendary V skill points.`,
         `The same milestones repeat every ${n(preset.progression.legendaryXp)} XP.`,
       ],
     },

@@ -204,11 +204,6 @@ export const FRONTIER = {
     ),
   },
   /** The season's pool: the chests' share, and the rest to the board's top places among realms with a site cleared. */
-  prizes: {
-    chestShare: pct(frontierPreset.chests.poolBps),
-    leaderboardShare: pct(10_000 - frontierPreset.chests.poolBps),
-    places: n(frontierPreset.chests.topN),
-  },
   claimWindow: {
     days: n(Math.floor(frontierPreset.chests.claimWindowSeconds / 86400)),
   },

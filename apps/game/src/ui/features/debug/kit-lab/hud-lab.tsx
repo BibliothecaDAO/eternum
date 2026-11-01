@@ -179,16 +179,18 @@ type LabOrder = {
   wheat: { cost: number; held: number | undefined; wait: number | undefined };
 };
 
-/** A city's deploy: 6,200 troops at home, 2 wheat a troop. */
+/** A deploy order on the state's realm: the troops it asks for, 2 wheat a troop, against the troops and wheat its stores hold. */
 type LabDeploy = {
   count: number;
-  troopsAtHome: number;
-  wheat: number;
   /** Seconds until the next troop is home; none while nothing makes them. */
   troopsWait?: number;
 };
 
-const DEPLOY: LabDeploy = { count: 5_000, troopsAtHome: 6_200, wheat: 14_410 };
+const DEPLOY: LabDeploy = { count: 1_000 };
+
+/** The stores with one of them holding another amount, its limit kept. */
+const holding = (stores: readonly StoreReading[], kind: StoreReading["kind"], amount: number) =>
+  stores.map((each) => (each.kind === kind ? { ...each, amount } : each));
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 
@@ -501,7 +503,7 @@ const OWN_ROW: SeasonListRow = {
 const LAB_NEXT_UP_FACTS: NextUpFacts = {
   realm: true,
   barracks: true,
-  troopsAtHome: 1_500,
+  troopsAtHome: STORES.find((each) => each.kind === "troops")!.amount!,
   armies: 0,
   armySelected: false,
   armiesTired: false,
@@ -608,27 +610,27 @@ const STATES = {
   "deploy-scout": { clock: CLOCK, stores: STORES, armies: ARMIES, deploy: { ...DEPLOY, count: 1 } },
   "deploy-wheat": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "wheat", 2_000),
     armies: ARMIES,
-    deploy: { ...DEPLOY, count: 1_000, wheat: 2_000 },
+    deploy: DEPLOY,
   },
   "deploy-no-wheat": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "wheat", 1),
     armies: ARMIES,
-    deploy: { ...DEPLOY, count: 0, wheat: 1 },
+    deploy: { count: 0 },
   },
   "deploy-empty": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "troops", 0),
     armies: [],
-    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0 },
+    deploy: { count: 0 },
   },
   "deploy-empty-making": {
     clock: CLOCK,
-    stores: STORES,
+    stores: holding(STORES, "troops", 0),
     armies: [],
-    deploy: { ...DEPLOY, count: 0, troopsAtHome: 0, troopsWait: 6 * 60 },
+    deploy: { count: 0, troopsWait: 6 * 60 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
   "site-full": {
@@ -1300,7 +1302,7 @@ export const HudLab = () => {
           )
         }
       >
-        {lab.deploy && <LabDeploySheet deploy={lab.deploy} open={labOpenSlots(lab)} />}
+        {lab.deploy && <LabDeploySheet deploy={lab.deploy} stores={lab.stores} open={labOpenSlots(lab)} />}
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
@@ -1361,19 +1363,29 @@ const useLabNotice = (notice: string | undefined) => {
 };
 
 /** Deploy on the fiction, live: 2 wheat a troop, the realm's open slots, the first chosen until another is pressed. */
-const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[] }) => {
+const LabDeploySheet = ({
+  deploy,
+  stores,
+  open,
+}: {
+  deploy: LabDeploy;
+  stores: readonly StoreReading[];
+  open: SlotStart[];
+}) => {
   const [slot, setSlot] = useState<number | null>(null);
   const start = slot === null ? open[0] : open.find((entry) => entry.slot === slot);
   const [count, setCount] = useState(deploy.count);
-  const wheatMax = Math.floor(deploy.wheat / 2);
-  const most = Math.min(deploy.troopsAtHome, wheatMax);
-  const wheatStop = wheatStopsAt({ troopsMax: deploy.troopsAtHome, wheatMax, max: most }, count);
+  const troopsAtHome = stores.find((each) => each.kind === "troops")?.amount ?? 0;
+  const wheat = stores.find((each) => each.kind === "wheat")?.amount ?? 0;
+  const wheatMax = Math.floor(wheat / 2);
+  const most = Math.min(troopsAtHome, wheatMax);
+  const wheatStop = wheatStopsAt({ troopsMax: troopsAtHome, wheatMax, max: most }, count);
   return (
     <DeployView
-      art={deploy.troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
-      troopsAtHome={deploy.troopsAtHome}
+      art={troopsAtHome === 0 ? undefined : ("knight-t1" as const)}
+      troopsAtHome={troopsAtHome}
       count={count}
-      amount={{ most, held: most < deploy.troopsAtHome ? most : deploy.troopsAtHome }}
+      amount={{ most, held: most < troopsAtHome ? most : troopsAtHome }}
       onCount={setCount}
       start={start}
       slots={{ open, onPick: setSlot }}
@@ -1383,7 +1395,7 @@ const LabDeploySheet = ({ deploy, open }: { deploy: LabDeploy; open: SlotStart[]
       canDeploy={count > 0 && start !== undefined}
       sending={false}
       onDeploy={noop}
-      wheatLimit={wheatStop && { ...wheatStop, held: deploy.wheat, perTroop: 2, wait: undefined }}
+      wheatLimit={wheatStop && { ...wheatStop, held: wheat, perTroop: 2, wait: undefined }}
       onGoToRealm={noop}
       onClose={noop}
     />
