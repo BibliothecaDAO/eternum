@@ -353,3 +353,67 @@ it("says the image could not be made when the copy fails, and keeps Copy image t
     ["Share my season", "primary"],
   ]);
 });
+
+/**
+ * jsdom has no ResizeObserver: each one records the node it watches, and a room's width is delivered, as a browser
+ * does, only to the watched nodes still on the page.
+ */
+const watched = new Map<Element, ResizeObserverCallback>();
+class RoomObserver {
+  constructor(private readonly told: ResizeObserverCallback) {}
+  observe(node: Element) {
+    watched.set(node, this.told);
+  }
+  unobserve(node: Element) {
+    watched.delete(node);
+  }
+  disconnect() {
+    for (const [node, told] of watched) if (told === this.told) watched.delete(node);
+  }
+}
+const roomIs = (width: number) =>
+  act(async () => {
+    for (const [node, told] of watched)
+      if (node.isConnected) told([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver);
+  });
+
+it("fits the deck to its room as the window widens past the phone's breakpoint and narrows back, measuring each room", async () => {
+  watched.clear();
+  vi.stubGlobal("ResizeObserver", RoomObserver);
+  const host = await open({ width: 390 });
+  const fit = () => host.querySelector<HTMLElement>(".season-recap__scaler")!.style.transform;
+  // A phone: the story's frame is 358 px, one tall card (485 px) at a time, the first at the deck's margin.
+  await roomIs(358);
+  expect(fit()).toBe(`scale(${358 / 485}) translate(-40px, -40px)`);
+  // Widened to a desktop: the whole wide deck (1200 px) fills the 1,360 px room, not the phone's old measure.
+  await act(async () => setViewportWidth(1440));
+  await roomIs(1360);
+  expect(fit()).toBe(`scale(${1360 / 1200})`);
+  // And back.
+  await act(async () => setViewportWidth(390));
+  await roomIs(358);
+  expect(fit()).toBe(`scale(${358 / 485}) translate(-40px, -40px)`);
+});
+
+it("in the story, a mouse drag across Next steps once, a drag back across it once back, and a tap or a key one", async () => {
+  const host = await open({ width: 390 });
+  const next = host.querySelector<HTMLButtonElement>('button[aria-label="Next card"]')!;
+  const shown = () => host.querySelector<HTMLElement>(".season-recap__frame")!.dataset.card;
+  // A mouse press as the browser reports it over the overlaid control: down, up, then the click it ends in.
+  const press = (from: number, to: number) =>
+    act(async () => {
+      next.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: from }));
+      next.dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: to }));
+      next.dispatchEvent(new MouseEvent("click", { bubbles: true, clientX: to }));
+    });
+  await press(320, 220);
+  expect(shown()).toBe("podium");
+  await press(220, 320);
+  expect(shown()).toBe("place");
+  // A tap barely moves: Next steps on.
+  await press(300, 302);
+  expect(shown()).toBe("podium");
+  // A key presses Next with no pointer at all.
+  await act(async () => next.click());
+  expect(shown()).toBe("sites");
+});

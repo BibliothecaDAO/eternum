@@ -141,17 +141,21 @@ const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undef
 const shareLine = (title: string, own: Entry, field: number) =>
   `${title} · #${formatAmount(own.rank)} ${RECAP_WORDS.ofRealms(formatAmount(field))}`;
 
-/** How wide the deck's room is, for the scale that fits the deck to it. */
-const useRoomWidth = (room: RefObject<HTMLElement>) => {
+/**
+ * How wide the deck's room is, for the scale that fits the deck to it: the room is whichever element the ref callback is
+ * given, and a room replaced (the story's frame and the desktop's, across the layout's breakpoint) is let go and the new
+ * one measured.
+ */
+const useRoomWidth = () => {
+  const [room, setRoom] = useState<HTMLElement | null>(null);
   const [width, setWidth] = useState<number | null>(null);
   useLayoutEffect(() => {
-    const node = room.current;
-    if (!node || typeof ResizeObserver === "undefined") return;
+    if (!room || typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(([entry]) => setWidth(entry!.contentRect.width));
-    observer.observe(node);
+    observer.observe(room);
     return () => observer.disconnect();
   }, [room]);
-  return width;
+  return [setRoom, width] as const;
 };
 
 /**
@@ -160,11 +164,16 @@ const useRoomWidth = (room: RefObject<HTMLElement>) => {
  * on top, the next card on a tap at the right or a swipe left, the one before on a tap at the left or a swipe right.
  */
 const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
-  const frame = useRef<HTMLDivElement>(null);
-  const width = useRoomWidth(frame);
+  const [frame, width] = useRoomWidth();
   const [shown, setShown] = useState(0);
   const swipeFrom = useRef(0);
+  /** A press that travelled far enough was a swipe: the click it ends in steps no further. */
+  const swiped = useRef(false);
   const step = (by: number) => setShown((at) => Math.min(CARDS.length - 1, Math.max(0, at + by)));
+  const tap = (by: number) => {
+    if (!swiped.current) step(by);
+    swiped.current = false;
+  };
   if (cut === "wide")
     return (
       <div
@@ -195,10 +204,14 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
         className="season-recap__frame"
         data-card={CARDS[shown]}
         style={{ aspectRatio: `${card.width} / ${card.height}` }}
-        onPointerDown={(event) => (swipeFrom.current = event.clientX)}
+        onPointerDown={(event) => {
+          swipeFrom.current = event.clientX;
+          swiped.current = false;
+        }}
         onPointerUp={(event) => {
           const moved = event.clientX - swipeFrom.current;
-          if (Math.abs(moved) > SWIPE) step(moved < 0 ? 1 : -1);
+          swiped.current = Math.abs(moved) > SWIPE;
+          if (swiped.current) step(moved < 0 ? 1 : -1);
         }}
       >
         <div className="season-recap__scaler" style={{ transform: `scale(${scale}) translate(${-left}px, ${-top}px)` }}>
@@ -208,9 +221,9 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
           type="button"
           className="season-recap__back"
           aria-label={RECAP_WORDS.previous}
-          onClick={() => step(-1)}
+          onClick={() => tap(-1)}
         />
-        <button type="button" className="season-recap__next" aria-label={RECAP_WORDS.next} onClick={() => step(1)} />
+        <button type="button" className="season-recap__next" aria-label={RECAP_WORDS.next} onClick={() => tap(1)} />
       </div>
     </div>
   );
