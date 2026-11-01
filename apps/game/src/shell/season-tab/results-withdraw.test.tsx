@@ -123,8 +123,8 @@ it("names a finished season's winners by the ledger's receipts, split over the p
   const { container } = await open();
   // Each place, its holder or why no one holds it yet, the holder's sites and the place's LORDS.
   expect(
-    [...container.querySelectorAll(".season-recap__podium li")].map((place) =>
-      [...place.children].map((cell) => cell.textContent),
+    [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
+      [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
     ),
   ).toEqual([
     ["1", "0xb7", "38", "200"],
@@ -137,8 +137,8 @@ it("shows no podium for a season that ended with no prize pool, never one still 
   expect(container.textContent).not.toContain("Pool not published");
   // The board's first realms, with no LORDS beside them.
   expect(
-    [...container.querySelectorAll(".season-recap__podium li")].map((place) =>
-      [...place.children].map((cell) => cell.textContent),
+    [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
+      [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
     ),
   ).toEqual([
     ["1", "0xa1", "39"],

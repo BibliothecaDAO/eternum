@@ -77,8 +77,8 @@ const open = async (width: number) => {
 };
 
 const podium = (container: HTMLElement) =>
-  [...container.querySelectorAll(".season-recap__podium li")].map((place) =>
-    [...place.children].map((cell) => cell.textContent),
+  [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
+    [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
   );
 /** The page's own buttons: Season, the end map, Withdraw, Continue, Share my season. */
 const buttons = (container: HTMLElement) =>
@@ -96,18 +96,23 @@ it.each([390, 1440])(
       ["3", "Canzi", "114"],
     ]);
     // A reader with no realm on the board: no card, nothing to share.
-    expect(container.querySelector(".season-card")).toBeNull();
+    expect(container.querySelector(".season-deck")).toBeNull();
     // Its shard is gone: no end map to open; Continue is the page's step.
     expect(buttons(container)).toEqual(["Season", "Continue"]);
   },
 );
 
-it("gives a Season 1 player their card with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
+it("gives a Season 1 player their cards with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
   player.current = "0x510fa645565fc77a784918630a27d0e1c07255b698fb44966ebd0b801439001";
   const container = await open(1440);
-  const card = container.querySelector(".season-card")!;
-  expect(card.querySelector(".season-card__place")?.textContent).toBe("#2of 45 realms");
-  expect(card.querySelector(".season-card__name")?.textContent).toBe("djizus");
-  expect([...card.querySelectorAll(".season-card__figure")].map((figure) => figure.textContent)).toContain("1.5KLORDS");
+  const place = container.querySelector('[data-card="place"]')!;
+  expect(
+    [".season-card__rank", ".season-card__of", ".season-card__name"].map(
+      (part) => place.querySelector(part)?.textContent,
+    ),
+  ).toEqual(["#2", "of 45 realms", "djizus"]);
+  expect(
+    [...container.querySelectorAll('[data-card="haul"] .season-card__tile')].map((tile) => tile.textContent),
+  ).toContain("1.5KLORDS");
   expect(buttons(container)).toEqual(["Season", "Continue", "Share my season"]);
 });

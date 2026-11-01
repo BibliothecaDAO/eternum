@@ -47,6 +47,8 @@ vi.mock("modern-screenshot", () => ({
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonOverRecap } from "@/ui/features/frontier/board/season-board";
+import { SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
+import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { setViewportWidth } from "../frame/test-viewport";
 import { ARCHIVED_SEASONS, archivedSeason } from "./archive/archive";
 
@@ -106,13 +108,19 @@ const open = async ({
   return host;
 };
 
-const card = (host: HTMLElement) => host.querySelector<HTMLElement>(".season-card");
+/** The deck, the node Share makes into an image; and one of its cards. */
+const deck = (host: HTMLElement) => host.querySelector<HTMLElement>(".season-deck");
+const card = (host: HTMLElement, name: string) => host.querySelector<HTMLElement>(`[data-card="${name}"]`);
 const text = (node: Element | null) => node?.textContent?.replace(/\s+/g, " ").trim();
-const cells = (node: Element) => [...node.children].map((cell) => cell.textContent);
-/** The podium's places, each as its cells: place, name, sites cleared and the prize it pays. */
+/** The podium card's places, each as its cells: place, name, sites cleared and the prize it pays. */
 const podium = (host: HTMLElement) =>
-  [...host.querySelectorAll(".season-recap__podium li")].map((place) =>
-    [...place.children].map((cell) => cell.textContent),
+  [...host.querySelectorAll('[data-card="podium"] li')].map((place) =>
+    [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
+  );
+/** A card's tiles, each as its value and its name. */
+const tiles = (node: Element) =>
+  [...node.querySelectorAll(".season-card__tile")].map((tile) =>
+    [...tile.querySelectorAll("b, small")].map((cell) => cell.textContent),
   );
 const steps = (host: HTMLElement) =>
   [...host.querySelectorAll<HTMLButtonElement>("button[data-kind]")].map((button) => [
@@ -121,39 +129,85 @@ const steps = (host: HTMLElement) =>
   ]);
 const press = (host: HTMLElement, word: string) =>
   act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
+const pressLabelled = (host: HTMLElement, label: string) =>
+  act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!.click());
 
-it("tells the season and its ending, then the player's card: their name, place of the field, season and sites by kind", async () => {
+it("tells the season and its ending, then the player's four cards: their place, the podium, their sites, their haul", async () => {
   const host = await open();
   expect([...host.querySelector("header")!.children].map((line) => line.textContent)).toEqual([
     "Season 1 · Playtest · Ended 31 Oct",
     "The mist lifted",
   ]);
-  const drawn = card(host)!;
-  expect(text(drawn.querySelector(".season-card__kick"))).toBe("Season 1 · Playtest");
-  expect(text(drawn.querySelector(".season-card__name"))).toBe("Canzi");
-  expect(cells(drawn.querySelector(".season-card__place")!)).toEqual(["#3", "of 45 realms"]);
-  // Each figure: its value over its name.
-  expect([...drawn.querySelectorAll(".season-card__figure > span")].map(cells)).toEqual([
-    ["114", "Sites cleared"],
+  expect([...deck(host)!.querySelectorAll(".season-card__step")].map((step) => step.textContent)).toEqual([
+    "1 · Your place",
+    "2 · The podium",
+    "3 · Your sites",
+    "4 · Your haul",
+  ]);
+  const place = card(host, "place")!;
+  expect(
+    [".season-card__rank", ".season-card__of", ".season-card__name"].map((part) => text(place.querySelector(part))),
+  ).toEqual(["#3", "of 45 realms", "Canzi"]);
+  // No pool that season: no prize on the card.
+  expect(place.querySelector(".season-card__prize")).toBeNull();
+  expect(text(card(host, "podium")!.querySelector("h2"))).toBe("Volcanic took the season");
+  // Camps, rifts, ruins and beasts, as Herald counts them; no Depth for a realm that never went through.
+  const sites = card(host, "sites")!;
+  expect(text(sites.querySelector(".season-card__big"))).toBe("114");
+  expect(tiles(sites)).toEqual(
+    SITE_KINDS.map((kind, index) => [["19", "32", "3", "60"][index], TARGET_MARKS[kind].word]),
+  );
+  expect(sites.querySelector(".season-card__depth")).toBeNull();
+  expect(tiles(card(host, "haul")!)).toEqual([
     ["3", "Chests"],
     ["450", "LORDS"],
     ["173.4K", "Essence"],
+    ["42.5K", "Labor"],
   ]);
-  // Camps, rifts, ruins and beasts, as Herald counts them; no Depth for a realm that never went through.
-  expect([...drawn.querySelectorAll(".season-card__kinds > span")].map(text)).toEqual(["19", "32", "3", "60"]);
-  // No pool that season: no prize on the card.
-  expect(drawn.querySelector(".season-card__prize")).toBeNull();
+  // The deck's foot: Frontier's lockup, the season, where to play.
+  expect(
+    [...deck(host)!.querySelectorAll(".season-deck__foot > span:not(.app-game-name)")].map((part) => part.textContent),
+  ).toEqual(["Season 1 · Playtest", window.location.host]);
 });
 
 it("draws the wide cut on a desktop and the tall one on a phone, each at the size it is shared", async () => {
   const wide = await open({ width: 1440 });
-  expect([card(wide)!.style.width, card(wide)!.style.height]).toEqual(["1200px", "675px"]);
+  expect([deck(wide)!.style.width, deck(wide)!.style.height]).toEqual(["1200px", "675px"]);
   await unmount!();
   const tall = await open({ width: 390 });
-  expect([card(tall)!.style.width, card(tall)!.style.height]).toEqual(["1080px", "1350px"]);
+  expect([deck(tall)!.style.width, deck(tall)!.style.height]).toEqual(["1080px", "1350px"]);
 });
 
-it("stands the podium beside it, the player's own place theirs, with Season and Exit before Share my season", async () => {
+it("on a phone, steps through the four cards as a story: a mark each, a tap on to the next and back, a swipe too", async () => {
+  const host = await open({ width: 390 });
+  const frame = () => host.querySelector<HTMLElement>(".season-recap__frame")!;
+  const marks = () => [...host.querySelectorAll(".season-recap__ticks li")].map((mark) => mark.hasAttribute("data-on"));
+  expect([frame().dataset.card, marks()]).toEqual(["place", [true, false, false, false]]);
+  await pressLabelled(host, "Next card");
+  expect([frame().dataset.card, marks()]).toEqual(["podium", [true, true, false, false]]);
+  await pressLabelled(host, "Previous card");
+  expect(frame().dataset.card).toBe("place");
+  // A swipe left goes on; past the last card the story stays on it.
+  const swipe = (from: number, to: number) =>
+    act(async () => {
+      frame().dispatchEvent(new MouseEvent("pointerdown", { bubbles: true, clientX: from }));
+      frame().dispatchEvent(new MouseEvent("pointerup", { bubbles: true, clientX: to }));
+    });
+  await swipe(300, 100);
+  expect(frame().dataset.card).toBe("podium");
+  await pressLabelled(host, "Next card");
+  await pressLabelled(host, "Next card");
+  await pressLabelled(host, "Next card");
+  expect([frame().dataset.card, marks()]).toEqual(["haul", [true, true, true, true]]);
+});
+
+it("shows a desktop the whole deck, with no story to step", async () => {
+  const host = await open({ width: 1440 });
+  expect(host.querySelector(".season-recap__ticks")).toBeNull();
+  expect(host.querySelector('button[aria-label="Next card"]')).toBeNull();
+});
+
+it("stands the podium in its card, the player's own place theirs, with Season and Exit before Share my season", async () => {
   const onSeason = vi.fn();
   const onExit = vi.fn();
   const host = await open({ onSeason, onExit });
@@ -172,18 +226,21 @@ it("stands the podium beside it, the player's own place theirs, with Season and 
   expect([onSeason.mock.calls.length, onExit.mock.calls.length]).toEqual([1, 1]);
 });
 
-it("shows a reader with no realm on the board the season and its podium, with no card and nothing to share", async () => {
+it("shows a reader with no realm on the board the season and its podium card alone, with nothing to share", async () => {
   const host = await open({ viewer: null });
-  expect(card(host)).toBeNull();
-  expect(host.querySelectorAll(".season-recap__podium li")).toHaveLength(3);
+  expect(deck(host)).toBeNull();
+  expect([...host.querySelectorAll<HTMLElement>(".season-card")].map((each) => each.dataset.card)).toEqual(["podium"]);
+  // Outside the deck the card is named alone, with no number in it.
+  expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
+  expect(podium(host)).toHaveLength(3);
   expect(steps(host).map(([word]) => word)).toEqual(["Season", "Exit"]);
 });
 
-it("names the prize a place pays, on the card and on the podium, once the season has a pool", async () => {
+it("names the prize a place pays, on the place card and on the podium, once the season has a pool", async () => {
   const board = { ...BOARD, prize: { pool: "300000", top_n: 3, count: null, awards: [] } };
   const prizes = seasonPodium(board)!.map(({ lords }) => lords.toLocaleString("en-US"));
   const host = await open({ board });
-  expect(text(card(host)!.querySelector(".season-card__prize"))).toBe(`Prize · ${prizes[2]} LORDS`);
+  expect(text(card(host, "place")!.querySelector(".season-card__prize"))).toBe(`Prize · ${prizes[2]} LORDS`);
   expect(podium(host)).toEqual([
     ["1", "Volcanic", "166", prizes[0]],
     ["2", "djizus", "136", prizes[1]],
@@ -191,12 +248,12 @@ it("names the prize a place pays, on the card and on the podium, once the season
   ]);
 });
 
-it("on a phone, shares the tall card as an image through the share sheet, with the season's line and its Results", async () => {
+it("on a phone, shares the tall deck as an image through the share sheet, with the season's line and its Results", async () => {
   const share = vi.fn(() => Promise.resolve());
   vi.stubGlobal("navigator", { ...navigator, canShare: () => true, share });
   const host = await open({ width: 390 });
   await press(host, "Share my season");
-  expect(snapshot.calls).toEqual([{ node: card(host), width: 1080, height: 1350 }]);
+  expect(snapshot.calls).toEqual([{ node: deck(host), width: 1080, height: 1350 }]);
   const [sent] = share.mock.calls[0] as unknown as [{ files: File[]; text: string; url: string }];
   expect([sent.files.map((file) => [file.name, file.type]), sent.text]).toEqual([
     [["my-season.png", "image/png"]],
@@ -205,7 +262,7 @@ it("on a phone, shares the tall card as an image through the share sheet, with t
   expect(sent.url).toBe(`${window.location.origin}/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`);
 });
 
-it("on a desktop with no share sheet for images, saves the wide card and says so", async () => {
+it("on a desktop with no share sheet for images, saves the wide deck and says so", async () => {
   vi.stubGlobal("navigator", { ...navigator, canShare: undefined });
   const saved: string[] = [];
   const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
@@ -252,7 +309,7 @@ const pngClipboard = () => {
   return copied;
 };
 
-it("on a desktop whose clipboard takes images, copies the same card image from a quiet Copy image beside Share", async () => {
+it("on a desktop whose clipboard takes images, copies the same deck image from a quiet Copy image beside Share", async () => {
   const copied = pngClipboard();
   const host = await open({ width: 1440 });
   expect(steps(host).slice(-2)).toEqual([
@@ -260,8 +317,8 @@ it("on a desktop whose clipboard takes images, copies the same card image from a
     ["Share my season", "primary"],
   ]);
   await press(host, "Copy image");
-  // The one image: the card's own node at its wide size, the PNG the library made.
-  expect(snapshot.calls).toEqual([{ node: card(host), width: 1200, height: 675 }]);
+  // The one image: the deck's own node at its wide size, the PNG the library made.
+  expect(snapshot.calls).toEqual([{ node: deck(host), width: 1200, height: 675 }]);
   expect(copied.map((image) => image.type)).toEqual(["image/png"]);
   expect(steps(host).slice(-2)).toEqual([
     ["Image copied", "quiet"],

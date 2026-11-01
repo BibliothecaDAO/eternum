@@ -543,6 +543,14 @@ export const RECAP_WORDS = {
   /** The LORDS the player's podium place pays, on the card. */
   prize: "Prize",
   podium: "The podium",
+  /** The deck's four cards, each named at its top. */
+  cardNames: { place: "Your place", podium: "The podium", sites: "Your sites", haul: "Your haul" },
+  /** The podium card's title, after the name of who took first place. */
+  tookTheSeason: "took the season",
+  /** A phone's story through the cards: its strip, and the halves that step it. */
+  cards: "Your season's cards",
+  next: "Next card",
+  previous: "Previous card",
   share: "Share my season",
   /** While the card is made into an image. */
   making: "Making the image",

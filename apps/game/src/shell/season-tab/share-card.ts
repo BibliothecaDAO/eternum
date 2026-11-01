@@ -9,7 +9,13 @@ type CardSize = { width: number; height: number };
  */
 const cardImage = async (card: HTMLElement, { width, height }: CardSize): Promise<Blob> => {
   const { domToBlob } = await import("modern-screenshot");
-  return domToBlob(card, { width, height, scale: 1, type: "image/png" });
+  // The image is the cards as they settle, never mid-flip: their motion is held while it is made.
+  card.toggleAttribute("data-still", true);
+  try {
+    return await domToBlob(card, { width, height, scale: 1, type: "image/png" });
+  } finally {
+    card.toggleAttribute("data-still", false);
+  }
 };
 
 /**

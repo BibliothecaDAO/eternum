@@ -259,36 +259,46 @@ its icon and verbs; a words-only notice keeps its text.
   did not play sees the game (by its name and date, else its number) and the board, and, signed in, that they had no
   seat.
 - **A Frontier season's end** is one recap, the same in the game and on its Results
-  (`src/shell/season-tab/season-recap.tsx`; the owner's pick C, 1 November 2026: the card is the screen). It shows the
-  season and how it ended, then your card at full size: your portrait with your Order, your name, your place ("#3 of 45
-  realms"), the prize your podium place pays when the season has a pool, sites cleared, chests, LORDS, Essence, sites by
-  kind, and your depth once through the spire, with Frontier's lockup and the site's address. Beside the card is the
-  podium: the ledger's prize places once a pool is published (each holder, or Pending, with its LORDS), else the board's
-  first three, each with its sites. Last come the page's steps, with **Share my season** as the gold one. A phone stacks
-  the card, the podium and the steps.
+  (`src/shell/season-tab/season-recap.tsx`; the owner's pick B, 1 November 2026: four cards, Wrapped style). It shows
+  the season and how it ended, then your four cards:
+  - **Your place:** your portrait with your Order, your place ("#3 of 45 realms"), your name (wrapped, never cut), and
+    the prize your podium place pays when the season has a pool.
+  - **The podium:** "… took the season", then the ledger's prize places once a pool is published (each holder, or
+    Pending, with its LORDS), else the board's first three, each with its sites.
+  - **Your sites:** how many you cleared, each kind with its painting, and your depth once through the spire.
+  - **Your haul:** chests, LORDS, Essence and Labor.
+
+  Under the cards is a foot with Frontier's lockup, the season and the site's address. Last come the page's steps, with
+  **Share my season** as the gold one.
+  - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion).
+  - **A phone** steps through them as a story: a strip of four marks on top, a tap at the right or a swipe left for the
+    next card, a tap at the left or a swipe right for the one before.
   - **In the game,** the recap covers the HUD once the season is over, with **Season** and **Exit** and the realm's
     LORDS still to withdraw. A phone holds the steps at the screen's foot. Once the season's end has come, no day's end
     plays.
   - **On Results** (`/results/:chainId-:gameId` of a Frontier season), the steps are **Season**, then **See the end
     map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline beside
     Share.
-  - **A reader with no realm on the board** sees the season and its podium only: no card and no Share, so Continue is
-    the gold step.
-  - **Share my season** makes the card on screen into a PNG at its own size: 1200 × 675 from a desktop, 1080 × 1350 from
-    a phone (modern-screenshot, loaded when Share is pressed). Where the device shares images (a phone), it opens the
-    share sheet with the image, the line ("Season 1 · Playtest · #3 of 45 realms") and the Results address. Otherwise it
-    saves `my-season.png` and the button reads "Image saved". An image that cannot be made says "The image could not be
-    made.", and Share stays.
+  - **A reader with no realm on the board** sees the season and the podium card alone: no deck and no Share, so Continue
+    is the gold step.
+  - **Share my season** makes the deck on screen into a PNG at its own size (modern-screenshot, loaded when Share is
+    pressed): the four cards side by side at 1200 × 675 from a desktop, two by two at 1080 × 1350 from a phone. The
+    phone's story is a view over that same deck, so the image holds all four cards. Where the device shares images (a
+    phone), it opens the share sheet with the image, the line ("Season 1 · Playtest · #3 of 45 realms") and the Results
+    address. Otherwise it saves `my-season.png` and the button reads "Image saved". An image that cannot be made says
+    "The image could not be made.", and Share stays.
   - **Copy image** is a quiet button beside Share, on a desktop whose clipboard takes a PNG (`ClipboardItem` supporting
-    `image/png`). It puts the same card image on the clipboard to paste, and then reads "Image copied". It fails as
+    `image/png`). It puts the same deck image on the clipboard to paste, and then reads "Image copied". It fails as
     Share does, with Copy image kept. A phone, or a browser whose clipboard takes no PNG, has no Copy image.
   - **Lab:**
     - `/lab/kit/hud/season-over`: the game's cover over prod's Season 1, read by its third place;
       `/lab/kit/hud/season-over-strong` shows the other ending.
     - `/lab/app/season-over/results/0x5245414c4d53-3`: Results for a season with a pool, two places paid and one
-      pending, the lab's player twelfth.
+      pending, the lab's player twelfth; `/lab/app/long-name/results/0x5245414c4d53-3` shows the same with the lab's
+      longest name, wrapped.
     - `/lab/app/home/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`: Season 1 · Playtest from its
       archive, for a reader with no realm in it.
+
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
   by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**
   ticket (regular or **Golden ticket**) opens it with its realm's daily claim and **Play**; a ticket just opened on the
