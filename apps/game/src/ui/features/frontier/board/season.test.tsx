@@ -5,7 +5,6 @@ import { describe, expect, it, vi } from "vitest";
 import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
 import { seasonPodium } from "./season-pool";
-import { SeasonOverCard } from "./season-over-card";
 import { TARGET_MARKS } from "../sites/site-marks";
 
 const render = (node: ReactNode) => {
@@ -223,56 +222,5 @@ describe("the season's prizes in game", () => {
     const none = sheet([]);
     expect(none.host.querySelector('[aria-label="Season prizes"]')).toBeNull();
     none.unmount();
-  });
-});
-
-describe("the season's end", () => {
-  it("tells the ending, the place of the field, the podium and the season's totals with its Depth, with Season and Exit", () => {
-    const onSeason = vi.fn();
-    const onExit = vi.fn();
-    const { host, unmount } = render(
-      <SeasonOverCard
-        ending="strong"
-        place={12}
-        field={1_000}
-        podium={[
-          { key: "a", rank: 1, name: "Ysabeau", sitesCleared: 448 },
-          { key: "b", rank: 2, name: "Aldric", sitesCleared: 412 },
-        ]}
-        totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
-        onSeason={onSeason}
-        onExit={onExit}
-      />,
-    );
-    expect(host.textContent).toContain("The mist grew too strong");
-    expect(host.textContent).toContain("You placed");
-    expect(host.textContent).toContain("#12");
-    expect(host.textContent).toContain("1,000");
-    expect(host.querySelector("[aria-label='Depth II']")).not.toBeNull();
-    const podium = [...host.querySelectorAll("ol li")].map((place) => place.textContent);
-    expect(podium[0]).toContain("Aldric");
-    expect(podium[1]).toContain("Ysabeau");
-    act(() => button(host, "Season").click());
-    act(() => button(host, "Exit").click());
-    expect(onSeason).toHaveBeenCalled();
-    expect(onExit).toHaveBeenCalled();
-    unmount();
-  });
-
-  it("leaves Depth out of the totals of a realm that never went through the spire", () => {
-    const { host, unmount } = render(
-      <SeasonOverCard
-        ending="lifted"
-        place={40}
-        field={1_000}
-        podium={[]}
-        totals={{ sitesCleared: 12, chests: 1, lords: 20, depth: 0, essence: 9_000, labor: 4_000 }}
-        onSeason={vi.fn()}
-        onExit={vi.fn()}
-      />,
-    );
-    expect(host.textContent).not.toContain("Depth");
-    expect(host.querySelectorAll("[data-total]")).toHaveLength(5);
-    unmount();
   });
 });

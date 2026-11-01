@@ -389,6 +389,9 @@ importers:
       lodash:
         specifier: ^4.17.21
         version: 4.17.23
+      modern-screenshot:
+        specifier: 4.7.0
+        version: 4.7.0
       react:
         specifier: catalog:game
         version: 18.3.1
@@ -12985,6 +12988,9 @@ packages:
 
   modern-ahocorasick@1.1.0:
     resolution: {integrity: sha512-sEKPVl2rM+MNVkGQt3ChdmD8YsigmXdn5NifZn6jiwn9LRJpWm8F3guhaqrJT/JOat6pwpbXEk6kv+b9DMIjsQ==}
+
+  modern-screenshot@4.7.0:
+    resolution: {integrity: sha512-9YxN+ddPSMMlhylOv25VHzXrl9u67QRxoh7+SEewGtgUw7t6hHTrjptSDJUSne9oG4Xk/h2cwG15nIt4Hc9ujg==}
 
   motion-dom@11.18.1:
     resolution: {integrity: sha512-g76KvA001z+atjfxczdRtw/RXOM3OMSdd1f4DL77qCTF/+avrRJiawSG4yDibEQ215sr9kpinSlX2pCTJ9zbhw==}
@@ -32022,6 +32028,8 @@ snapshots:
       ufo: 1.6.3
 
   modern-ahocorasick@1.1.0: {}
+
+  modern-screenshot@4.7.0: {}
 
   motion-dom@11.18.1:
     dependencies:

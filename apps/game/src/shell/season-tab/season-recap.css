@@ -1,0 +1,353 @@
+/*
+ * A season's end (season-recap.tsx): the recap's layout, and the share card it draws at its exported size, an image on
+ * a fixed canvas (1200 × 675 wide, 1080 × 1350 tall) in the app's palette and faces.
+ */
+
+/* The recap: the season and its ending across the top, the card and the podium, the steps last. */
+.season-recap {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "head head"
+    "card podium"
+    "foot foot";
+  align-items: center;
+  gap: 22px 28px;
+  color: var(--app-ink);
+}
+.season-recap[data-cover] {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  padding: max(34px, env(safe-area-inset-top)) 40px max(28px, env(safe-area-inset-bottom));
+  background: var(--app-ground);
+  pointer-events: auto;
+}
+.season-recap__painting {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: blur(14px) brightness(0.45);
+  transform: scale(1.08);
+}
+.season-recap > :not(.season-recap__painting) {
+  position: relative;
+}
+.season-recap__head {
+  grid-area: head;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.season-recap__frame {
+  grid-area: card;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  box-shadow: 0 30px 90px rgb(0 0 0 / 0.7);
+}
+.season-recap__scaler {
+  width: max-content;
+  transform-origin: 0 0;
+}
+.season-recap__podium {
+  grid-area: podium;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 16px;
+  border: 1px solid var(--app-line);
+  border-radius: 14px;
+  background: var(--app-surface);
+}
+.season-recap__podium h2 {
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.season-recap__podium ol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.season-recap__podium li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.season-recap__podium li > b {
+  width: 22px;
+}
+.season-recap__foot {
+  grid-area: foot;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+.season-recap__steps {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+/* A phone: one column, the card first, the steps held at the foot. */
+.season-recap[data-cut="tall"] {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas:
+    "head"
+    "card"
+    "podium"
+    "foot";
+  gap: 14px;
+}
+.season-recap[data-cut="tall"][data-cover] {
+  padding: max(16px, env(safe-area-inset-top)) 16px 0;
+}
+.season-recap[data-cut="tall"] .season-recap__frame {
+  border-radius: 12px;
+}
+.season-recap[data-cut="tall"] .season-recap__foot {
+  position: sticky;
+  bottom: 0;
+  justify-content: stretch;
+  padding: 12px 0 max(12px, env(safe-area-inset-bottom));
+}
+.season-recap[data-cut="tall"] .season-recap__steps {
+  flex: 1;
+}
+.season-recap[data-cut="tall"] .season-recap__steps > :last-child {
+  flex: 1;
+}
+
+/* The share card, wide: the portrait at the left, the facts at the right, the lockup and the address along the foot. */
+.season-card {
+  position: relative;
+  overflow: hidden;
+  background: var(--app-ground);
+  color: var(--app-ink);
+  font-family: var(--font-body);
+}
+.season-card__painting {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 40%;
+}
+.season-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--app-ground) 55%, transparent),
+    color-mix(in srgb, var(--app-ground) 90%, transparent) 46%,
+    color-mix(in srgb, var(--app-ground) 96%, transparent)
+  );
+}
+.season-card::after {
+  content: "";
+  position: absolute;
+  inset: 14px;
+  border: 2px solid rgb(var(--app-gold) / 0.55);
+  border-radius: 18px;
+  pointer-events: none;
+}
+.season-card__body {
+  position: relative;
+  height: 100%;
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  align-items: center;
+  gap: 40px;
+  padding: 56px 70px 92px 56px;
+}
+.season-card__who {
+  position: relative;
+  justify-self: center;
+  width: 330px;
+}
+.season-card__who .app-portrait {
+  border-width: 5px;
+  box-shadow:
+    0 0 0 4px rgb(var(--app-gold) / 0.18),
+    0 0 40px rgb(var(--app-gold) / 0.35);
+}
+.season-card__order {
+  position: absolute;
+  right: 4px;
+  bottom: 10px;
+  filter: drop-shadow(0 6px 14px rgb(0 0 0));
+}
+.season-card__facts {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.season-card__kick {
+  font-family: var(--font-ui);
+  font-size: 20px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: rgb(var(--app-gold));
+}
+.season-card__name {
+  margin-top: 6px;
+  font-family: var(--font-display);
+  font-size: 58px;
+  line-height: 1;
+}
+.season-card__place {
+  display: flex;
+  align-items: baseline;
+  gap: 18px;
+  margin: 4px 0 10px;
+}
+.season-card__place b {
+  font-family: var(--font-game);
+  font-size: 156px;
+  line-height: 0.9;
+  color: rgb(var(--app-gold));
+  text-shadow:
+    0 0 46px rgb(var(--app-gold) / 0.45),
+    0 6px 0 rgb(74 53 23);
+}
+.season-card__place span {
+  font-size: 32px;
+}
+.season-card__prize {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 28px;
+  font-weight: 700;
+  color: rgb(var(--app-gold));
+}
+.season-card__stats {
+  display: flex;
+  gap: 22px;
+}
+.season-card__figure {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.season-card__figure b {
+  display: block;
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+}
+.season-card__figure small {
+  font-size: 17px;
+  white-space: nowrap;
+  color: var(--app-muted);
+}
+.season-card__kinds {
+  display: flex;
+  gap: 22px;
+  margin-top: 16px;
+}
+.season-card__kinds span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 24px;
+  font-weight: 600;
+}
+.season-card__foot {
+  position: absolute;
+  left: 44px;
+  right: 56px;
+  bottom: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.season-card__foot .app-game-name__lockup {
+  height: 92px;
+}
+.season-card__foot > span {
+  font-family: var(--font-ui);
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* The tall cut: everything in one column over the painting's top. */
+.season-card[data-cut="tall"] .season-card__painting {
+  object-position: center top;
+}
+.season-card[data-cut="tall"]::before {
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--app-ground) 35%, transparent),
+    color-mix(in srgb, var(--app-ground) 88%, transparent) 40%,
+    color-mix(in srgb, var(--app-ground) 97%, transparent)
+  );
+}
+.season-card[data-cut="tall"] .season-card__body {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  align-content: start;
+  gap: 26px;
+  padding: 90px 70px 150px;
+  text-align: center;
+}
+.season-card[data-cut="tall"] .season-card__who {
+  width: 400px;
+}
+.season-card[data-cut="tall"] .season-card__facts {
+  align-items: center;
+}
+.season-card[data-cut="tall"] .season-card__kick {
+  font-size: 26px;
+}
+.season-card[data-cut="tall"] .season-card__name {
+  font-size: 72px;
+}
+.season-card[data-cut="tall"] .season-card__place b {
+  font-size: 200px;
+}
+.season-card[data-cut="tall"] .season-card__place span {
+  font-size: 40px;
+}
+.season-card[data-cut="tall"] .season-card__stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 26px 60px;
+  text-align: left;
+}
+.season-card[data-cut="tall"] .season-card__figure b {
+  font-size: 44px;
+}
+.season-card[data-cut="tall"] .season-card__figure small {
+  font-size: 21px;
+}
+.season-card[data-cut="tall"] .season-card__kinds {
+  gap: 30px;
+  margin-top: 26px;
+}
+.season-card[data-cut="tall"] .season-card__kinds span {
+  font-size: 30px;
+}
+.season-card[data-cut="tall"] .season-card__foot {
+  left: 70px;
+  right: 70px;
+  bottom: 52px;
+}
+.season-card[data-cut="tall"] .season-card__foot .app-game-name__lockup {
+  height: 120px;
+}
+.season-card[data-cut="tall"] .season-card__foot > span {
+  font-size: 26px;
+}

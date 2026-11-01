@@ -610,9 +610,10 @@ it("keeps the extended season live past its old end and reloads its final day fr
   const { useChainTimeStore } = await import("@/hooks/store/use-chain-time-store");
   const { useBlockTimestampStore } = await import("@/hooks/store/use-block-timestamp-store");
   const { configManager, setBlockTimestampSource } = await import("@bibliothecadao/eternum");
+  // Every read answers empty, the season's end included: its board (entries), and its directory and history (games).
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => Response.json({ blocked: [], entries: [] })),
+    vi.fn(async () => Response.json({ blocked: [], entries: [], games: [] })),
   );
   const approved = approvedExtension;
   let currentTime = approved.start;

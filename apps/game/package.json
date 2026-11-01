@@ -111,6 +111,7 @@
     "jolt-physics": "1.1.0",
     "lil-gui": "^0.19.2",
     "lodash": "^4.17.21",
+    "modern-screenshot": "4.7.0",
     "react": "catalog:game",
     "react-dom": "catalog:game",
     "react-router-dom": "^7.9.3",

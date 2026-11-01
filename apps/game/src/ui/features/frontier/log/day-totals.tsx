@@ -29,13 +29,13 @@ export const DayTotalsGrid = ({ totals }: { totals: DayTotals }) => (
 );
 
 /** One total: its icon, the name the icon stands for, and its figure. */
-export type TotalCell = { icon: IconMeaning; name: string; value: string };
+type TotalCell = { icon: IconMeaning; name: string; value: string };
 
 /**
- * Totals, three to a row: a day's, or a season's. Each cell is its icon beside its figure, named in words under it
+ * A day's totals, three to a row. Each cell is its icon beside its figure, named in words under it
  * ("Reveals"), and one image named with its figure ("Reveals 31") for a screen reader.
  */
-export const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
+const TotalsGrid = ({ cells }: { cells: readonly TotalCell[] }) => (
   <HudPanel collapsible={false} bodyClassName="grid grid-cols-3 justify-items-center gap-x-1 gap-y-2">
     {cells.map((cell) => (
       <span key={cell.icon} data-total={cell.icon} className="flex flex-col items-center gap-0.5">

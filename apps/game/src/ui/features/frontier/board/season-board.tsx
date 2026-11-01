@@ -8,18 +8,21 @@ import { getActiveGame } from "@/runtime/world";
 import { startRealmVisit } from "@/sync/active-game-client";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
+import { useFinishedGame } from "@/shell/season-tab/finished-game";
+import { SeasonRecap } from "@/shell/season-tab/season-recap";
+import { AppButton } from "@/ui/design-system/kit/app-elements";
+import { EXIT, SEASON } from "@/ui/design-system/kit/words";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
-import { type ReactNode, useState } from "react";
+import { type ComponentProps, type ReactNode, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { seasonDay } from "../hud/day-clock";
 import { useSeasonEndsAt } from "../hud/season-end";
 import { type SeasonDetail, SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "./season-list";
-import { type PodiumPlace, SeasonOverCard, type SeasonTotals } from "./season-over-card";
 import { type SeasonLords, seasonLordsOf, seasonPodium } from "./season-pool";
 import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
@@ -218,24 +221,27 @@ const seasonDetail = (entry: Entry): SeasonDetail => ({
 });
 
 /**
- * The season-over card once the game has ended. The ending is not yet a recorded fact: the mist lifted stands until
- * Herald names it, as on the app's Results.
+ * The season's recap once the game has ended, over the HUD: the same drawing of the season's end as the app's Results
+ * (SeasonRecap), with Season and Exit before its Share. The ending is not yet a recorded fact: the mist lifted stands
+ * until Herald names it.
  */
 export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
   useNowSeconds();
+  return configManager.isGameOver() ? <EndedSeasonRecap withdraw={withdraw} onSeason={onSeason} /> : null;
+};
+
+/** The ended season's board, its directory entry and the viewer, read only once the season is over. */
+const EndedSeasonRecap = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSeason: () => void }) => {
   const navigate = useNavigate();
-  const board = useSeasonBoard();
-  const viewer = useViewer();
-  if (!configManager.isGameOver()) return null;
-  const entries = board.data;
-  const own = entries && findOwnEntry(entries, viewer);
+  const board = useFrontierBoard((board) => board);
+  const gameRef = { chainId: getActiveGame()!.chainId, gameId: configManager.getActiveGameId() };
   return (
-    <SeasonOverCard
+    <SeasonOverRecap
+      gameRef={gameRef}
+      game={useFinishedGame(gameRef)}
+      board={board.data}
+      viewer={useViewer()}
       ending="lifted"
-      place={own?.rank}
-      field={entries?.length}
-      podium={(entries ?? []).slice(0, 3).map((entry) => podiumPlace(entry, entry === own))}
-      totals={own && seasonTotals(own)}
       withdraw={withdraw}
       onSeason={onSeason}
       onExit={() => navigate("/")}
@@ -243,18 +249,24 @@ export const SeasonOver = ({ withdraw, onSeason }: { withdraw?: ReactNode; onSea
   );
 };
 
-const podiumPlace = (entry: Entry, own: boolean): PodiumPlace => ({
-  key: entry.address,
-  rank: entry.rank,
-  name: <LordName account={entry.address} you={own} portrait />,
-  sitesCleared: entry.sites_cleared.total,
-});
-
-const seasonTotals = (entry: Entry): SeasonTotals => ({
-  sitesCleared: entry.sites_cleared.total,
-  chests: entry.chests_earned,
-  lords: wholeLords(entry.rewards.lords),
-  depth: entry.deepest_depth,
-  essence: earnedResource(entry.rewards.essence),
-  labor: earnedResource(entry.rewards.labor),
-});
+/** The recap over the HUD, from its facts: Season and Exit before its Share. */
+export const SeasonOverRecap = ({
+  onSeason,
+  onExit,
+  ...recap
+}: Omit<ComponentProps<typeof SeasonRecap>, "actions" | "cover"> & { onSeason: () => void; onExit: () => void }) => (
+  <SeasonRecap
+    cover
+    {...recap}
+    actions={
+      <>
+        <AppButton kind="secondary" icon="victory" onClick={onSeason}>
+          {SEASON}
+        </AppButton>
+        <AppButton kind="secondary" icon="exit" onClick={onExit}>
+          {EXIT}
+        </AppButton>
+      </>
+    }
+  />
+);

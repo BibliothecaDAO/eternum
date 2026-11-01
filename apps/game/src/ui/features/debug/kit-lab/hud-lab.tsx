@@ -60,7 +60,8 @@ import { ownerDayLog, siteUseDayLog } from "./today-log-fixture";
 import { SeasonList, type SeasonListRow, type SeasonPodiumPlace } from "@/ui/features/frontier/board/season-list";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonDetailSheet } from "@/ui/features/frontier/board/season-detail";
-import { SeasonOverCard } from "@/ui/features/frontier/board/season-over-card";
+import { SeasonOverRecap } from "@/ui/features/frontier/board/season-board";
+import { ARCHIVED_SEASONS, archivedSeason } from "@/shell/season-tab/archive/archive";
 import { SeasonPayoutRow } from "@/ui/features/frontier/value/season-payout";
 import { linkWalletLine } from "@/ui/features/frontier/value/link-wallet";
 import { VisitFoot } from "@/ui/features/frontier/board/visit-foot";
@@ -1711,6 +1712,10 @@ const labSlots = (lab: LabState) =>
     start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
   }));
 
+/** The season the lab's season-over shows: prod's Season 1 as its archive holds it, read by its third place. */
+const LAB_SEASON = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
+const LAB_SEASON_PLAYER = "0x648174392d94df37bc7d59c3abf22116d20df16ddf0e380c5ff79aff86738c4";
+
 const LabResults = ({
   results,
   seasonLords,
@@ -1721,16 +1726,12 @@ const LabResults = ({
   noWallet: LabState["noWallet"];
 }) =>
   results === "over" || results === "over-strong" ? (
-    <SeasonOverCard
+    <SeasonOverRecap
+      gameRef={LAB_SEASON}
+      game={ARCHIVED_SEASONS[0]}
+      board={archivedSeason(LAB_SEASON)!.board}
+      viewer={LAB_SEASON_PLAYER}
       ending={results === "over" ? "lifted" : "strong"}
-      place={12}
-      field={1_000}
-      podium={[
-        { key: "1", rank: 1, name: "Ysabeau", sitesCleared: 448 },
-        { key: "2", rank: 2, name: "Aldric", sitesCleared: 412 },
-        { key: "3", rank: 3, name: "Corwin", sitesCleared: 397 },
-      ]}
-      totals={{ sitesCleared: 288, chests: 61, lords: 2_003, depth: 2, essence: 2_100_000, labor: 1_400_000 }}
       withdraw={
         seasonLords && (
           <SeasonPayoutRow

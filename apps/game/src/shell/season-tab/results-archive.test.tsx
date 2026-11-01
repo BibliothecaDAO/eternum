@@ -76,32 +76,38 @@ const open = async (width: number) => {
   return container;
 };
 
-const names = (container: HTMLElement) =>
-  [...container.querySelectorAll('[data-age="frontier"] button.app-row')].map(
-    (row) => row.querySelector(".app-row__title")?.textContent,
+const podium = (container: HTMLElement) =>
+  [...container.querySelectorAll(".season-recap__podium li")].map((place) =>
+    [...place.children].map((cell) => cell.textContent),
   );
-/** The page's own buttons: Season, the end map, Withdraw, Continue. */
+/** The page's own buttons: Season, the end map, Withdraw, Continue, Share my season. */
 const buttons = (container: HTMLElement) =>
   [...container.querySelectorAll("button[data-kind]")].map((button) => button.textContent);
 
-it.each([
-  [390, ["Volcanic", "djizus", "Canzi"]],
-  [1440, ["Volcanic", "djizus", "Canzi", "Nexonik", "Krump"]],
-])("shows Season 1 · Playtest's Results from its archive, with no shard behind it, at %ipx", async (width, top) => {
-  const container = await open(width);
-  expect(container.textContent).toContain("Season 1 · Playtest · Ended 31 Oct");
-  expect(container.textContent).toContain("Season over");
-  expect(names(container)).toEqual(top);
-  // No prize pool that season: no podium.
-  expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
-  // Its shard is gone: no end map to open.
-  expect(buttons(container)).not.toContain("See the end map");
-});
+it.each([390, 1440])(
+  "shows Season 1 · Playtest's recap from its archive, with no shard behind it, at %ipx",
+  async (width) => {
+    const container = await open(width);
+    expect(container.textContent).toContain("Season 1 · Playtest · Ended 31 Oct");
+    expect(container.textContent).toContain("The mist lifted");
+    expect(podium(container)).toEqual([
+      ["1", "Volcanic", "166"],
+      ["2", "djizus", "136"],
+      ["3", "Canzi", "114"],
+    ]);
+    // A reader with no realm on the board: no card, nothing to share.
+    expect(container.querySelector(".season-card")).toBeNull();
+    // Its shard is gone: no end map to open; Continue is the page's step.
+    expect(buttons(container)).toEqual(["Season", "Continue"]);
+  },
+);
 
-it("gives a Season 1 player their final place and LORDS, and no Withdraw into a shard that is gone", async () => {
+it("gives a Season 1 player their card with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
   player.current = "0x510fa645565fc77a784918630a27d0e1c07255b698fb44966ebd0b801439001";
   const container = await open(1440);
-  const figures = [...container.querySelectorAll(".app-figure")].map((figure) => figure.textContent);
-  expect(figures).toEqual(["#2You placed · of 45", "1,450LORDS"]);
-  expect(buttons(container)).toEqual(["Season", "Continue"]);
+  const card = container.querySelector(".season-card")!;
+  expect(card.querySelector(".season-card__place")?.textContent).toBe("#2of 45 realms");
+  expect(card.querySelector(".season-card__name")?.textContent).toBe("djizus");
+  expect([...card.querySelectorAll(".season-card__figure")].map((figure) => figure.textContent)).toContain("1.5KLORDS");
+  expect(buttons(container)).toEqual(["Season", "Continue", "Share my season"]);
 });
