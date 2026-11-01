@@ -72,6 +72,24 @@ test("setup waits for the co-signer and its current checkout, then installs once
   expect(box.mock.calls.every(([call]) => call.input === webhook)).toBe(true);
 });
 
+test("setup is done only once Discord accepted the wired message; until then it stays pending and retries", async () => {
+  const lines: string[] = [];
+  const modes: string[] = [];
+  const context = deployment("production", webhook);
+  const answer = (...answers: string[]) =>
+    spyOn(processTools, "command").mockImplementation(async ({ argv }) => {
+      modes.push(argv.at(-1)!.split(" ").at(-1)!);
+      return `${answers.shift()}\n`;
+    });
+  answer("missing", "unconfirmed", "unconfirmed");
+  expect(await runSteps(payoutAlertSteps(context), true, (line) => lines.push(line))).toBe(false);
+  expect(lines.at(-1)).toBe("Payout alerts is pending; run the same command again.");
+  mock.restore();
+  answer("unconfirmed", "installed", "installed");
+  expect(await runSteps(payoutAlertSteps(context), true, () => {})).toBe(true);
+  expect(modes).toEqual(["inspect", "install", "inspect", "inspect", "install", "inspect"]);
+});
+
 test("a missing or malformed webhook is refused by name, never by its contents", async () => {
   const box = boxAnswers("installed");
   await expect(payoutAlertSteps(deployment("production"))[0]!.inspect()).rejects.toThrow(

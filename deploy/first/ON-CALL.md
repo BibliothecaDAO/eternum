@@ -99,8 +99,9 @@ any listed world is down.
 ## Payout alerts — the owner's Discord channel
 
 Production's box posts these from beside the co-signer, never through Cloudflare (`deploy/athanor/cosigner/alerts.ts`,
-every minute). Each change posts once, and again when it clears. On the box: `curl -s 127.0.0.1:<port>/health` (the
-co-signer's port in `/etc/payout-cosigner/config.json`), `journalctl -u payout-cosigner -u payout-alerts`.
+every minute). Each change is posted, and again when it clears; delivery is at least once, so after a crash or a lost
+answer a message can arrive twice. On the box: `curl -s 127.0.0.1:<port>/health` (the co-signer's port in
+`/etc/payout-cosigner/config.json`), `journalctl -u payout-cosigner -u payout-alerts`.
 
 - **Wallet change held:** a player's Realms ID asked to be paid at a new wallet, and the co-signer refuses it for 24 h.
   If the player didn't ask for it (an identity or Cloudflare compromise), pause the ledger with the monitor or the

@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { rpcAt } from "../../../packages/value-ledger/src/rpc";
 import { privateFile, readConfig } from "./config";
@@ -5,14 +6,18 @@ import { COSIGNER_WALLETS, WALLET_CHANGE_SECONDS, readWalletRecords, type Wallet
 
 /**
  * Tells the owner's private Discord channel, from the box and off Cloudflare, when a payout safeguard trips: a wallet
- * change held for 24 h, a paused ledger, or a co-signer that stopped answering. A systemd timer runs `check` every
- * minute; it posts once per change and once when it clears, so a rerun or a crash never repeats a message.
+ * change held for 24 h, a paused ledger, or a co-signer that stopped answering, and again when each clears. A systemd
+ * timer runs `check` every minute. Delivery is at least once: each change is written to an outbox before it is sent and
+ * leaves it only when Discord accepts its message, so no alert is dropped; a crash or a lost answer can repeat one.
  */
 const ALERT_STATE = "/var/lib/payout-cosigner/alerts.json";
 /** The co-signer restarts within seconds; only a silence this long is an outage. */
 const COSIGNER_DOWN_SECONDS = 3 * 60;
 /** Discord refuses a message over 2,000 characters. */
-const MESSAGE_LIMIT = 1_900;
+const MESSAGE_LIMIT = 2_000;
+const HEADER = "Production payouts:";
+/** A Realms ID with more accounts names this many and counts the rest, so one alert always fits one message. */
+const ACCOUNTS_SHOWN = 3;
 
 /** One minute's reading of the box. A source that could not be read is null and changes nothing. */
 interface PayoutSnapshot {
@@ -20,36 +25,93 @@ interface PayoutSnapshot {
   ledgerPaused: boolean | null;
   wallets: WalletRecord[] | null;
 }
+/** The owner's channel: named by a hash of its webhook, so the state never holds the address, and the ledger it hears. */
+export interface Channel {
+  id: string;
+  ledger: string;
+}
+/** An alert owed to the channel. `wires` marks the first one each channel gets; its acceptance proves delivery. */
+interface Alert {
+  text: string;
+  wires?: string;
+}
 interface AlertState {
   held: Record<string, { wallet: string; since: number }>;
   ledgerPaused: boolean;
   cosignerSilentSince: number | null;
   cosignerDownAnnounced: boolean;
+  outbox: Alert[];
+  wiredTo: string | null;
 }
-const QUIET: AlertState = { held: {}, ledgerPaused: false, cosignerSilentSince: null, cosignerDownAnnounced: false };
+const QUIET: AlertState = {
+  held: {},
+  ledgerPaused: false,
+  cosignerSilentSince: null,
+  cosignerDownAnnounced: false,
+  outbox: [],
+  wiredTo: null,
+};
 
-function nextAlerts(previous: AlertState, snapshot: PayoutSnapshot, now: number) {
+export const channelOf = (webhook: string, ledger: string): Channel => ({
+  id: createHash("sha256").update(webhook).digest("hex"),
+  ledger,
+});
+
+function nextAlerts(previous: AlertState, snapshot: PayoutSnapshot, now: number, channel: Channel): AlertState {
   const wallets = walletChanges(previous.held, snapshot.wallets);
   const ledger = ledgerPause(previous.ledgerPaused, snapshot.ledgerPaused);
   const cosigner = cosignerSilence(previous, snapshot.cosignerAnswers, now);
+  const owed = [
+    ...wiring(previous, channel),
+    ...[...wallets.lines, ...ledger.lines, ...cosigner.lines].map((text) => ({ text })),
+  ];
   return {
-    state: { held: wallets.held, ledgerPaused: ledger.paused, ...cosigner.state } satisfies AlertState,
-    lines: [...wallets.lines, ...ledger.lines, ...cosigner.lines],
+    ...previous,
+    held: wallets.held,
+    ledgerPaused: ledger.paused,
+    ...cosigner.state,
+    outbox: [...previous.outbox, ...owed],
   };
 }
+const wiring = (state: AlertState, channel: Channel): Alert[] =>
+  state.wiredTo === channel.id || state.outbox.some((alert) => alert.wires === channel.id)
+    ? []
+    : [
+        {
+          text:
+            `Payout alerts are wired for ledger ${channel.ledger}. This channel hears when a wallet change is held, ` +
+            "when the ledger is paused, and when the co-signer stops answering, then again when each clears.",
+          wires: channel.id,
+        },
+      ];
 
-/** Reads the box, posts what changed, then records it: a failed post records nothing, so the next minute retries. */
+/**
+ * Reads the box and records what changed in the outbox, then sends the outbox in as many messages as Discord's limit
+ * needs. Each message leaves the outbox only once Discord accepts it; a failure stops the round and the rest waits for
+ * the next minute. Returns the alerts Discord accepted.
+ */
 export async function checkPayoutAlerts(
   read: (watchedRealmsIds: string[]) => Promise<PayoutSnapshot>,
   statePath: string,
   post: (content: string) => Promise<void>,
   now: number,
+  channel: Channel,
 ) {
   const previous = readState(statePath);
-  const { state, lines } = nextAlerts(previous, await read(Object.keys(previous.held)), now);
-  if (lines.length) await post(message(lines));
+  let state = nextAlerts(previous, await read(Object.keys(previous.held)), now, channel);
   writeState(statePath, state);
-  return lines;
+  const accepted: string[] = [];
+  for (const batch of messages(state.outbox)) {
+    await post(render(batch));
+    state = {
+      ...state,
+      outbox: state.outbox.slice(batch.length),
+      wiredTo: batch.find((alert) => alert.wires)?.wires ?? state.wiredTo,
+    };
+    writeState(statePath, state);
+    accepted.push(...batch.map((alert) => alert.text));
+  }
+  return accepted;
 }
 
 export async function postToDiscord(webhook: string, content: string, network: typeof fetch = fetch) {
@@ -105,8 +167,12 @@ const holdEnded = (record: WalletRecord, heldWallet: string) =>
   record.wallet === heldWallet
     ? `Wallet change accepted after 24 h: ${who(record)} is now paid at ${record.wallet}.`
     : `Wallet change dropped: ${who(record)} is paid at its known wallet ${record.wallet} again.`;
-const who = (record: WalletRecord) =>
-  `Realms ID ${record.realmsId}${record.accounts.length ? ` (account ${record.accounts.join(", ")})` : ""}`;
+const who = (record: WalletRecord) => `Realms ID ${record.realmsId}${accountsOf(record.accounts)}`;
+function accountsOf(accounts: string[]) {
+  if (!accounts.length) return "";
+  const more = accounts.length - ACCOUNTS_SHOWN;
+  return ` (account ${accounts.slice(0, ACCOUNTS_SHOWN).join(", ")}${more > 0 ? ` and ${more} more` : ""})`;
+}
 
 function ledgerPause(previous: boolean, paused: boolean | null) {
   if (paused === null || paused === previous) return { paused: previous, lines: [] };
@@ -138,11 +204,17 @@ function cosignerSilence(previous: AlertState, answers: boolean, now: number) {
   };
 }
 
-function message(lines: string[]) {
-  const content = `Production payouts:\n${lines.map((line) => `- ${line}`).join("\n")}`;
-  if (content.length <= MESSAGE_LIMIT) return content;
-  return `${content.slice(0, MESSAGE_LIMIT)}\n… more on the box: curl -s 127.0.0.1:<port>/health and journalctl -u payout-cosigner`;
+/** The outbox in order, cut into runs of whole alerts that each fit one Discord message. */
+function messages(outbox: Alert[]) {
+  const batches: Alert[][] = [];
+  for (const alert of outbox) {
+    const last = batches.at(-1);
+    if (last && render([...last, alert]).length <= MESSAGE_LIMIT) last.push(alert);
+    else batches.push([alert]);
+  }
+  return batches;
 }
+const render = (alerts: Alert[]) => `${HEADER}\n${alerts.map((alert) => `- ${alert.text}`).join("\n")}`;
 const utc = (seconds: number) => `${new Date(seconds * 1000).toISOString().slice(0, 16).replace("T", " ")} UTC`;
 
 async function cosignerHealthy(port: number) {
@@ -190,24 +262,16 @@ function writeState(path: string, state: AlertState) {
 
 if (import.meta.main) {
   const [command, configPath, webhookPath] = process.argv.slice(2);
-  if ((command !== "check" && command !== "test") || !configPath || !webhookPath)
-    throw new Error("usage: alerts.ts check|test CONFIG_FILE WEBHOOK_FILE");
+  if (command !== "check" || !configPath || !webhookPath)
+    throw new Error("usage: alerts.ts check CONFIG_FILE WEBHOOK_FILE");
   const config = readConfig(configPath);
   const webhook = privateFile(webhookPath);
-  const post = (content: string) => postToDiscord(webhook, content);
-  if (command === "test") {
-    await post(
-      `Payout alerts are wired for ledger ${config.ledgerAddress}. This channel hears when a wallet change is held, ` +
-        "when the ledger is paused, and when the co-signer stops answering, then again when each clears.",
-    );
-    console.log(JSON.stringify({ service: "payout-alerts", test: "sent" }));
-  } else {
-    const lines = await checkPayoutAlerts(
-      readBox(config, COSIGNER_WALLETS),
-      ALERT_STATE,
-      post,
-      Math.floor(Date.now() / 1000),
-    );
-    if (lines.length) console.log(JSON.stringify({ service: "payout-alerts", posted: lines.length }));
-  }
+  const accepted = await checkPayoutAlerts(
+    readBox(config, COSIGNER_WALLETS),
+    ALERT_STATE,
+    (content) => postToDiscord(webhook, content),
+    Math.floor(Date.now() / 1000),
+    channelOf(webhook, config.ledgerAddress),
+  );
+  if (accepted.length) console.log(JSON.stringify({ service: "payout-alerts", accepted: accepted.length }));
 }

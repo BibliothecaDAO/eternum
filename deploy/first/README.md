@@ -121,8 +121,10 @@ lockfiles and compiler versions key Docker's Cairo layers; changes to Herald or 
     webhook as `discord-alert-webhook` (one line, mode 0600) in the private directory; it is never printed. The step
     waits until the co-signer runs from a checkout of this commit. It then writes the webhook to the box over standard
     input as `/etc/payout-cosigner/discord-webhook` (mode 0600, the co-signer's user), installs and starts
-    `payout-alerts.timer`, and posts one test message, "Payout alerts are wired", to the channel. A rerun compares the
-    saved webhook on the box without reading it back and repeats nothing. Dev sends no alerts.
+    `payout-alerts.timer`, and runs its first check at once. That check's first message tells the channel "Payout alerts
+    are wired"; the step is done only when the box records that Discord accepted it, so a refused message leaves setup
+    pending while the timer keeps trying. A rerun compares the saved webhook on the box without reading it back. Dev
+    sends no alerts.
 
 ## Deploy
 

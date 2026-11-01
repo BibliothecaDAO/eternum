@@ -105,8 +105,10 @@ the journal remains the source of account/identity-change details. On production
 setup step 13, `deploy/first/README.md`) runs `cosigner/alerts.ts check` every minute as the co-signer's user and posts
 to the owner's Discord channel, off Cloudflare: each held wallet change (the Realms ID, its accounts, the candidate
 wallet and when the hold ends), its acceptance or cancellation, a paused and an unpaused ledger, and a co-signer silent
-for three minutes and back. It reads the wallet database read-only and keeps `alerts.json` in the state directory, so
-each change posts once; a failed post records nothing and the next minute retries. What each message means:
+for three minutes and back. It reads the wallet database read-only and keeps `alerts.json` in the state directory.
+Delivery is at least once: each change enters that file's outbox before it is sent, in as many messages as Discord's
+limit needs, and leaves it only when Discord accepts its message. No alert is dropped, even through a Discord outage; a
+crash or a lost answer can repeat one. What each message means:
 [ON-CALL.md](../first/ON-CALL.md#payout-alerts--the-owners-discord-channel). Rehearse `/sign` through an actual
 withdrawal, then check the L2 wallet and `get_payment`; also rehearse deadline treasury returns and signer
 outage/recovery. The service signs synchronously on request, with no timer or cron queue; network-dependent subsecond
