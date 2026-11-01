@@ -132,7 +132,7 @@ const useLabSession = (screen: LabScreen) => {
   useEffect(() => {
     const user = {
       ...LAB_SESSION.user,
-      name: LAB_NAMES[screen] ?? LAB_SESSION.user.name,
+      name: labPlayerName(screen),
       address: LAB_PAYOUT_WALLETS[screen] ?? null,
     };
     const session = { ...LAB_SESSION, user };
@@ -219,7 +219,8 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/guardian": () => json(LAB_GUARDIAN),
     "/api/slots": () => json(labSlots(screen)),
     "/api/factory/calendar": () => json(labCalendar(screen)),
-    "/api/profiles": (url) => json({ profiles: profilesOf(url.searchParams.get("accounts")?.split(",") ?? []) }),
+    "/api/profiles": (url) =>
+      json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
     "/api/ratings/top": () => json(LAB_RATING_TOP),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
@@ -327,12 +328,15 @@ const LAB_BUILD_ORDERS = {
   ],
 };
 
-const profilesOf = (accounts: readonly string[]) =>
+/** The screen's player by name: the one their session carries and the one identity answers for them. */
+const labPlayerName = (screen: LabScreen) => LAB_NAMES[screen] ?? LAB_SESSION.user.name;
+
+const profilesOf = (screen: LabScreen, accounts: readonly string[]) =>
   Object.fromEntries(
     accounts.flatMap((account) => {
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
-          ? { name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image }
+          ? { name: labPlayerName(screen), portrait: LAB_SESSION.user.image }
           : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account]);
       return profile ? [[account, profile]] : [];
     }),

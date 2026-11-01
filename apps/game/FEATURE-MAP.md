@@ -107,43 +107,43 @@ account's orders, and on a desktop the followed one's steps beside them; a Blitz
 entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards, Frontier's
 the last season's final board while none runs (`/lab/app/no-season/season`: prod's Season 1 · Playtest, kept in
 `src/shell/season-tab/archive/` after its shard was torn down) and **Past seasons** under it, each row opening that
-season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) the player's
-place and points, the game's board, points by kind and the chest at its tier; What's new (`/scroll`) a release's patch
-notes, a tab per section, and every release. `/lab/kit/panels` the HUD's holdings and selected-realm panels as a player
-sees them, on a fixture realm. `/lab/kit/unified/<view>` the in-game HUD every mode shares (a phone's width draws the
-compact HUD), as the game mounts it on the lab's game: `blitz` (the Build order panel under Next up, read from the lab
-realm, which has nothing to build now), `blitz-start` (the same realm stocked to build, as the game begins: its news
-over the HUD, every control under it still taking its clicks), `blitz-attack` (the lab army's attack forecast on an
-enemy army beside it, opened as the map opens it), `frontier`, `frontier-army` (an army out holding skill points; its
-panel's Level up sends spend_skill_point, recorded on the page as `window.__labSkillPointSpent`), `eternum` (Eternum's
-player on the same HUD, in Eternum's colours), `blitz-spectator`, `blitz-finished`, `blitz-out` and `blitz-out-watching`
-(the lab player's last realm lost, a Hyperstructure still held, playing then watching);
-`pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and Frontier's states at 1024,
-1280, 1440 and 1920 px (every part whole on the page, none over another, none with content past its edge, every control
-reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom at 27/42 with 1,000 labor to
-claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal in the top bar, Next up's
-route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a newcomer (no build
-steps), and the panel as built on a fixture account holding two orders (its choice of order saves nothing there; each
-row the game's own rule on a realm's case: population short or not, an army short of full, a full army).
-`/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels on the
-Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one alone at a
-phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame rate or
-Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as here; a game
-loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a phone that
-vibrates, the keys only where there is a keyboard); `pnpm --dir apps/game prove:windows <base-url> <out-dir> settings`
-measures it against a 1080 px screen and opens its keys with Show and leaves with Back; every window it draws must keep
-each tab strip inside its panel. `/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms,
-villages, a camp, rifts, a Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an
-army out beside the lab realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the
-receiving army’s relic load; `/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements;
-`/lab/kit/windows/frontier-build` shows a raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes,
-Military picker and window body, Combat and crate panel as the game draws them (the crate from afar: a line saying what
-opening it needs, no button), on the deploy fixture's realm; capture them with
-`pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`. `/lab/kit/words` the words sheet: every voice,
-number, time, noun and name rule of the words module (the rules in `packages/types/src/words`, shared with core's story
-text; the client's phrases in `src/ui/design-system/kit/words.ts`) on sample inputs. `pnpm words:check` fails on any
-number, time or name written outside it where a player reads it, and on any string that breaks a voice rule;
-`node scripts/words/check.mjs` counts them by kind.
+season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) a Blitz's place
+and points, the game's board, points by kind and the chest at its tier, a Frontier season's recap (Season, You and
+Results below); What's new (`/scroll`) a release's patch notes, a tab per section, and every release. `/lab/kit/panels`
+the HUD's holdings and selected-realm panels as a player sees them, on a fixture realm. `/lab/kit/unified/<view>` the
+in-game HUD every mode shares (a phone's width draws the compact HUD), as the game mounts it on the lab's game: `blitz`
+(the Build order panel under Next up, read from the lab realm, which has nothing to build now), `blitz-start` (the same
+realm stocked to build, as the game begins: its news over the HUD, every control under it still taking its clicks),
+`blitz-attack` (the lab army's attack forecast on an enemy army beside it, opened as the map opens it), `frontier`,
+`frontier-army` (an army out holding skill points; its panel's Level up sends spend_skill_point, recorded on the page as
+`window.__labSkillPointSpent`), `eternum` (Eternum's player on the same HUD, in Eternum's colours), `blitz-spectator`,
+`blitz-finished`, `blitz-out` and `blitz-out-watching` (the lab player's last realm lost, a Hyperstructure still held,
+playing then watching); `pnpm --dir apps/game capture:hud-lab --hud-layout --base-url <url> --out <dir>` holds it and
+Frontier's states at 1024, 1280, 1440 and 1920 px (every part whole on the page, none over another, none with content
+past its edge, every control reachable, at most seven parts a region); `/lab/kit/hud/realm-claim` is the owner's Kingdom
+at 27/42 with 1,000 labor to claim, the realm card's widest row. `/lab/kit/guidance` the points-first guidance (the goal
+in the top bar, Next up's route, Events rows with outcomes). `/lab/kit/build-order` the Build order panel: Next up for a
+newcomer (no build steps), and the panel as built on a fixture account holding two orders (its choice of order saves
+nothing there; each row the game's own rule on a realm's case: population short or not, an army short of full, a full
+army). `/lab/kit/progression` Frontier's Research tree and the army's panel (the owner's picks), the game's own panels
+on the Frontier preset's numbers, on the owner's realm or one some days in (`?realm=mid`); `?part=research|army` one
+alone at a phone's width. `/lab/kit/windows/settings` the header's Settings at its popover's width (a Quality, Frame
+rate or Shadows change is saved at once and shows **Applies after a reload** with **Reload** under them, in game as
+here; a game loads the address's `rendererMode`, else the build's WebGPU with its own WebGL2 fallback; Haptics only on a
+phone that vibrates, the keys only where there is a keyboard);
+`pnpm --dir apps/game prove:windows <base-url> <out-dir> settings` measures it against a 1080 px screen and opens its
+keys with Show and leaves with Back; every window it draws must keep each tab strip inside its panel.
+`/lab/kit/windows/transfer-holdings` Transfer for a player holding five kinds (realms, villages, a camp, rifts, a
+Hyperstructure). `/lab/kit/windows/army-transfer` Blitz's Transfer Troops & Relics between an army out beside the lab
+realm and the realm (**Swap** for realm → army). `/lab/kit/windows/army-to-army` shows the receiving army’s relic load;
+`/lab/kit/windows/bank-swap` shows the bank’s price and pickup requirements; `/lab/kit/windows/frontier-build` shows a
+raised building price. `/lab/kit/area-d` the rings, leaderboard, tribes, Military picker and window body, Combat and
+crate panel as the game draws them (the crate from afar: a line saying what opening it needs, no button), on the deploy
+fixture's realm; capture them with `pnpm hud:capture <dir> <base-url> --page /lab/kit/area-d [surface ...]`.
+`/lab/kit/words` the words sheet: every voice, number, time, noun and name rule of the words module (the rules in
+`packages/types/src/words`, shared with core's story text; the client's phrases in `src/ui/design-system/kit/words.ts`)
+on sample inputs. `pnpm words:check` fails on any number, time or name written outside it where a player reads it, and
+on any string that breaks a voice rule; `node scripts/words/check.mjs` counts them by kind.
 
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
@@ -253,10 +253,52 @@ its icon and verbs; a words-only notice keeps its text.
   reached from Play or after a match have **Continue** instead). A session with no name claimed yet offers **Claim
   name** and **Sign out**, on You and in Settings.
 - **Results** of a Blitz opens on your place and points, then the game's board and how your points were made ("No points
-  scored." when none were). **Share** shares the page itself: its line ("Blitz 02:18 · 1st of 2 · 0 points") and its
-  address, through the device's share sheet (a phone), else copied ("Link copied"), else shown to select. A sealed
-  chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who did not play sees
-  the game (by its name and date, else its number) and the board, and, signed in, that they had no seat.
+  scored." when none were). Blitz's **Share** shares the page itself, with no image: its line ("Blitz 02:18 · 1st of 2 ·
+  0 points") and its address, through the device's share sheet (a phone), else copied ("Link copied"), else shown to
+  select. A sealed chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who
+  did not play sees the game (by its name and date, else its number) and the board, and, signed in, that they had no
+  seat.
+- **A Frontier season's end** is one recap, the same in the game and on its Results
+  (`src/shell/season-tab/season-recap.tsx`; the owner's pick B, 1 November 2026: four cards, Wrapped style). It shows
+  the season and how it ended, then your four cards:
+  - **Your place:** your portrait with your Order, your place ("#3 of 45 realms"), your name (wrapped, never cut), and
+    the prize your podium place pays when the season has a pool.
+  - **The podium:** "… took the season", then the ledger's prize places once a pool is published (each holder, or
+    Pending, with its LORDS), else the board's first three, each with its sites.
+  - **Your sites:** how many you cleared, each kind with its painting, and your depth once through the spire.
+  - **Your haul:** chests, LORDS, Essence and Labor.
+
+  Under the cards is a foot with Frontier's lockup, the season and the site's address. Last come the page's steps, with
+  **Share my season** as the gold one.
+  - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion).
+  - **A phone** steps through them as a story: a strip of four marks on top, a tap at the right or a swipe left for the
+    next card, a tap at the left or a swipe right for the one before.
+  - **In the game,** the recap covers the HUD once the season is over, with **Season** and **Exit** and the realm's
+    LORDS still to withdraw. A phone holds the steps at the screen's foot. Once the season's end has come, no day's end
+    plays.
+  - **On Results** (`/results/:chainId-:gameId` of a Frontier season), the steps are **Season**, then **See the end
+    map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline beside
+    Share.
+  - **A reader with no realm on the board** sees the season and the podium card alone: no deck and no Share, so Continue
+    is the gold step.
+  - **Share my season** makes the deck on screen into a PNG at its own size (modern-screenshot, loaded when Share is
+    pressed): the four cards side by side at 1200 × 675 from a desktop, two by two at 1080 × 1350 from a phone. The
+    phone's story is a view over that same deck, so the image holds all four cards. Where the device shares images (a
+    phone), it opens the share sheet with the image, the line ("Season 1 · Playtest · #3 of 45 realms") and the Results
+    address. Otherwise it saves `my-season.png` and the button reads "Image saved". An image that cannot be made says
+    "The image could not be made.", and Share stays.
+  - **Copy image** is a quiet button beside Share, on a desktop whose clipboard takes a PNG (`ClipboardItem` supporting
+    `image/png`). It puts the same deck image on the clipboard to paste, and then reads "Image copied". It fails as
+    Share does, with Copy image kept. A phone, or a browser whose clipboard takes no PNG, has no Copy image.
+  - **Lab:**
+    - `/lab/kit/hud/season-over`: the game's cover over prod's Season 1, read by its third place;
+      `/lab/kit/hud/season-over-strong` shows the other ending.
+    - `/lab/app/season-over/results/0x5245414c4d53-3`: Results for a season with a pool, two places paid and one
+      pending, the lab's player twelfth; `/lab/app/long-name/results/0x5245414c4d53-3` shows the same with the lab's
+      longest name, wrapped.
+    - `/lab/app/home/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`: Season 1 · Playtest from its
+      archive, for a reader with no realm in it.
+
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
   by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**
   ticket (regular or **Golden ticket**) opens it with its realm's daily claim and **Play**; a ticket just opened on the

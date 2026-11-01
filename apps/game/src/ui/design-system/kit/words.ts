@@ -513,9 +513,6 @@ export const DEPTH = "Depth";
 /** The player on any list. */
 export const YOU = "You";
 
-/** The season list and its end, told one of two ways (story): the mist lifted, or it grew too strong. */
-export const SEASON_OVER = "Season over";
-
 /** A finished game's Results: its panels and how its points were made, each kind on its row. */
 export const RESULT_WORDS = {
   theGame: "The game",
@@ -539,7 +536,32 @@ export const RESULT_WORDS = {
   /** Share, once the result's line and address are on the clipboard. */
   copied: "Link copied",
 } as const;
-export const YOU_PLACED = "You placed";
+/** A Frontier season's recap (in the game when it ends, and on its Results) and its share card. */
+export const RECAP_WORDS = {
+  /** After the place on the card: "#3 of 45 realms". */
+  ofRealms: (field: string) => `of ${field} realms`,
+  /** The LORDS the player's podium place pays, on the card. */
+  prize: "Prize",
+  podium: "The podium",
+  /** The deck's four cards, each named at its top. */
+  cardNames: { place: "Your place", podium: "The podium", sites: "Your sites", haul: "Your haul" },
+  /** The podium card's title, after the name of who took first place. */
+  tookTheSeason: "took the season",
+  /** A phone's story through the cards: its strip, and the halves that step it. */
+  cards: "Your season's cards",
+  next: "Next card",
+  previous: "Previous card",
+  share: "Share my season",
+  /** While the card is made into an image. */
+  making: "Making the image",
+  /** Share, once the image is saved on a device with no share sheet for images. */
+  saved: "Image saved",
+  /** Beside Share on a desktop whose clipboard takes images: the same image, to paste. */
+  copy: "Copy image",
+  copied: "Image copied",
+  failed: "The image could not be made.",
+} as const;
+/** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
