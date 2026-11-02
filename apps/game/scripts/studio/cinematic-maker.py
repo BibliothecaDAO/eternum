@@ -91,14 +91,24 @@ def centred_text(image, text, y, font_path, size, colour):
     draw.text((image.width / 2, y), text, anchor="mm", font=font, fill=colour)
 
 
-def load_brand_master(path, width, trim=False):
+def load_brand_master(path, width):
     logo = Image.open(path).convert("RGBA")
-    if trim:
-        logo = logo.crop(logo.getchannel("A").getbbox())
     if logo.width < width:
         raise ValueError(f"Brand master is too small for {width}px output: {path}")
     height = round(logo.height * width / logo.width)
     return logo.resize((width, height), Image.Resampling.LANCZOS)
+
+
+def load_pennant_master(path, height):
+    pennant = Image.open(path).convert("RGBA")
+    visible = pennant.getchannel("A").point(lambda value: 255 if value > 8 else 0).getbbox()
+    if visible is None:
+        raise ValueError("Pennant master has no visible artwork")
+    pennant = pennant.crop(visible)
+    if pennant.height < height:
+        raise ValueError(f"Pennant master is too small for {height}px output: {path}")
+    width = round(pennant.width * height / pennant.height)
+    return pennant.resize((width, height), Image.Resampling.LANCZOS)
 
 
 def make_card(kit, size, plan, target):
@@ -188,11 +198,23 @@ def make_intro_card(kit, size, plan, target):
     position = (size[0] - width - margin - pad, margin - pad)
     card.paste(stamp, position, stamp.getchannel("A"))
     if "devconMark" in plan:
-        partner = load_brand_master(plan["devconMark"], width, trim=True)
+        partner = load_pennant_master(plan["devconPennant"], round(size[1] / 3))
         partner.putalpha(ImageChops.multiply(partner.getchannel("A"), partner.convert("L")))
         partner_stamp, partner_pad = parchment_stamp(partner, scale)
-        card.paste(partner_stamp, (margin - partner_pad, margin - partner_pad),
+        card.paste(partner_stamp, (margin - partner_pad, -partner_pad),
                    partner_stamp.getchannel("A"))
+    card.save(target)
+
+
+def make_intro_wash(size, plan, target):
+    scale = size[0] / BASE_WIDTH
+    pennant = load_pennant_master(plan["devconPennant"], round(size[1] / 3))
+    grain = ink_noise(pennant.size, pennant.size, 144)
+    wash = Image.merge("RGB", tuple(grain.point(lambda value, base=base:
+                       round(base + (value - 128) * .035)) for base in [222, 204, 171])).convert("RGBA")
+    wash.putalpha(fibre_edges(pennant.getchannel("A"), scale).point(lambda value: round(value * .88)))
+    card = Image.new("RGBA", size)
+    card.alpha_composite(wash, (round(54 * scale), 0))
     card.save(target)
 
 
@@ -207,19 +229,26 @@ def render_picture(source, size, plan, folder):
     width, height = size
     film_height = width * 11 // 20
     padding = (height - film_height) // 2
+    wash_graph, opening_source, wash_inputs = "", "held", []
+    if "devconMark" in plan:
+        make_intro_wash(size, plan, folder / "intro-wash.png")
+        wash_graph = (f"[3:v]format=rgba,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:alpha=1[wash];"
+                      "[held][wash]overlay=0:0:shortest=1:format=auto[paper];")
+        opening_source = "paper"
+        wash_inputs = ["-loop", 1, "-framerate", FPS, "-i", folder / "intro-wash.png"]
     graph = (
         f"[0:v]scale={width}:{film_height}:flags=lanczos,"
         f"pad={width}:{height}:0:{padding}:color=0x14101D,setsar=1,"
         f"tpad=stop_mode=clone:stop={hold_frames},format=gbrp[held];"
         f"[1:v]format=gbrp,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:color=white[intro];"
-        "[held][intro]blend=all_mode=multiply:shortest=1[sequence];"
+        f"{wash_graph}[{opening_source}][intro]blend=all_mode=multiply:shortest=1[sequence];"
         f"[2:v]format=rgba,fade=t=in:st={card_start}:d=1:alpha=1[card];"
         "[sequence][card]overlay=0:0:shortest=1:format=auto,format=yuv420p[v]"
     )
     target = folder / "picture.mp4"
     ffmpeg(["-v", "error", "-i", source, "-loop", 1, "-framerate", FPS,
             "-i", folder / "intro-card.png", "-loop", 1, "-framerate", FPS,
-            "-i", folder / "card.png", "-filter_complex", graph, "-map", "[v]", "-an",
+            "-i", folder / "card.png", *wash_inputs, "-filter_complex", graph, "-map", "[v]", "-an",
             "-frames:v", total_frames, "-c:v", "libx264", "-profile:v", "high",
             "-preset", "slow", "-crf", 15,
             "-threads", 2, "-movflags", "+faststart", target])
