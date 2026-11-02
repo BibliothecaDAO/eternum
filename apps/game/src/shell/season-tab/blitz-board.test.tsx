@@ -30,7 +30,8 @@ import { BlitzBoard } from "./blitz-board";
 
 const UNLINKED_WALLET = "0x05b1c6e9a0d3f2e4b7c8d9a1e2f3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1";
 const UNNAMED_WALLET = "0x0c22d4e6f8a0b2c4d6e8f0a2b4c6d8e0f2a4b6c8d0e2f4a6b8c0d2e4f6a877cc";
-const TOP_ROWS = ["1Ysabeau2,480", "20x05b1…f0a11,210", "30x0c22…77cc1,100"];
+// Each rating is read with its tier's name, which its mark alone shows.
+const TOP_ROWS = ["1Ysabeau2,480 Storm Lord", "20x05b1…f0a11,210 Marauder", "30x0c22…77cc1,100 Raider"];
 
 const answered = (self: unknown) => ({
   isError: false,
@@ -88,12 +89,12 @@ it("shows the reader's tier and rating, the top rows in whole points, and the re
   expect(top.askedFor).toBe("0xc");
   expect(container.textContent).toContain("Conqueror");
   expect(container.textContent).toContain("1,744");
-  expect(rows(container)).toEqual([...TOP_ROWS, "—You1,744"]);
+  expect(rows(container)).toEqual([...TOP_ROWS, "—You1,744 Conqueror"]);
 });
 
 it("lights the reader's row in place when it ranks among the top", async () => {
   top.current = answered({ status: "rated", player: UNLINKED_WALLET, rating: "1210", rank: 2, profile: null });
-  expect(rows(await mount())).toEqual([TOP_ROWS[0], "2You1,210", TOP_ROWS[2]]);
+  expect(rows(await mount())).toEqual([TOP_ROWS[0], "2You1,210 Marauder", TOP_ROWS[2]]);
 });
 
 it("tells a reader with no wallet how to carry a rating, never a rating of its own", async () => {

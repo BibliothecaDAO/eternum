@@ -94,8 +94,10 @@ every element of the sheet; `prove:app <base-url> <out-dir> end-map`, on the liv
 game's Results, presses **See the end map** and holds the map to its scene being ready, watched and finished.
 `prove:app <base-url> <out-dir> qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone:
 Share on Results, a release picked on What's new, a legal page's places, a Season row's chips, Settings' Name, You with
-no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), the phone's own card and a
-Results board row on one line. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
+no finished game (`/lab/app/no-games`) and a session with no name (`/lab/app/unnamed`), and the phone's own card.
+`prove:app <base-url> <out-dir> boards` measures every board (`AppBoard`) row by row, Season's Frontier and Blitz and a
+Blitz's Results, at 1920 and 390 px: each column at one x down the board, each value ending on one line, no name run
+into its figures and a long one cut with an ellipsis. The pages: Play (`/`) the lead widest and each age as a painted column, Blitz's always:
 with no Blitz open it shows the season calendar's next ranked game, its start and when its entry opens, in the player's
 local time (`nextBlitz` from the launch service's `/api/factory/calendar`, the schedule's own; `/lab/app/blitz-next`),
 and says none is scheduled only when the season has no next game (`/lab/app/no-blitz`), and otherwise ends on **Build

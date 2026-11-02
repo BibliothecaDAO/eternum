@@ -36,7 +36,7 @@ import { chooseSeason, directoryDay, endedSeasons, seasonEnded, seasonTitle } fr
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
 import { useNowSeconds } from "../use-now";
 import { BlitzBoard } from "./blitz-board";
-import { FrontierRow } from "./frontier-row";
+import { FrontierRows } from "./frontier-rows";
 import { resultsHref } from "./results-link";
 import { SeasonPodium } from "./season-podium";
 
@@ -210,9 +210,7 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
           over={isGameOver(season)}
         />
       )}
-      {rows.map(({ entry, own }) => (
-        <FrontierRow key={entry.address} entry={entry} own={own} />
-      ))}
+      <FrontierRows rows={rows} />
     </div>
   );
 };

@@ -2,6 +2,8 @@ import { AGE_LOCKUP, REALMS_MARK } from "@/ui/design-system/icon-meaning";
 import "@/ui/design-system/kit/app-sheet.css";
 
 import {
+  AppBoard,
+  type AppBoardEntry,
   AppButton,
   AppChip,
   AppChoice,
@@ -73,6 +75,7 @@ export const AppSheetLab = () => (
       <PanelSection />
       <GameCardSection />
       <RowSection />
+      <BoardSection />
       <ChipFigureSection />
       <NoticeSection />
       <SettingSection />
@@ -482,7 +485,7 @@ const GameCardSection = () => (
 const RowSection = () => (
   <Element
     name="Row"
-    rule="One thing of a list: its lead (a rank, a portrait), its words, then its figures or its own button. The player's own row lit; a row that opens something lights on hover."
+    rule="One thing of a list: its lead (a picture), its words, then its figures or its own button. A row that opens something lights on hover. Players ranked are a board."
     sheet={
       <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
         <AppRow
@@ -497,42 +500,41 @@ const RowSection = () => (
             </>
           }
         />
-        <AppRow
-          lead={
-            <>
-              <AppRank rank={1} />
-              <AppPortrait name="Ysabeau" size="sm" src="/images/avatars/02.png" />
-            </>
-          }
-          title="Ysabeau"
-          trail={
-            <>
-              <AppChip icon="explore">148</AppChip>
-              <AppChip icon="lords" tone="gold">
-                2,900
-              </AppChip>
-            </>
-          }
-          onClick={() => undefined}
-        />
-        <AppRow
-          own
-          lead={
-            <>
-              <AppRank rank={12} />
-              <AppPortrait name={PLAYER.name} size="sm" src={PLAYER.portrait} own />
-            </>
-          }
-          title="Maelis · You"
-          trail={
-            <>
-              <AppChip icon="explore">88</AppChip>
-              <AppChip icon="lords" tone="gold">
-                1,500
-              </AppChip>
-            </>
-          }
-        />
+      </div>
+    }
+  />
+);
+
+/** A board's rows, as uneven as a live board's figures, so its columns are seen to align. */
+const BOARD_ENTRIES: AppBoardEntry[] = [
+  { name: "Ysabeau", portrait: "/images/avatars/02.png", rank: 1, sites: "148", lords: "650" },
+  { name: "Aldric", portrait: "/images/avatars/03.png", rank: 2, sites: "132", lords: "2,900" },
+  { name: "Tybalt", portrait: "/images/avatars/04.png", rank: 3, sites: "121", lords: "0" },
+  { name: PLAYER.name, portrait: PLAYER.portrait, rank: 12, sites: "88", lords: "1,500", own: true },
+].map(({ name, portrait, rank, sites, lords, own }) => ({
+  key: name,
+  own,
+  onClick: () => undefined,
+  lead: (
+    <>
+      <AppRank rank={rank} />
+      <AppPortrait name={name} size="sm" src={portrait} own={own} />
+    </>
+  ),
+  name: own ? `${name} · You` : name,
+  figures: [
+    { icon: "explore", value: sites },
+    { icon: "lords", value: lords, tone: "gold" },
+  ],
+}));
+
+const BoardSection = () => (
+  <Element
+    name="Board"
+    rule="Players in columns: rank, name, then each figure in a column as wide as its widest value, icon at its left and value right-aligned, one line down the board at any width. A long name gives way; the player's own row lit."
+    sheet={
+      <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
+        <AppBoard entries={BOARD_ENTRIES} />
       </div>
     }
   />

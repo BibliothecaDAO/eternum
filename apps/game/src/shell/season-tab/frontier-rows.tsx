@@ -1,0 +1,43 @@
+import { formatAmount, LORDS } from "@bibliothecadao/types";
+import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
+import { useLocation, useNavigate } from "react-router-dom";
+
+import { AppBoard, type AppBoardEntry, AppRank } from "@/ui/design-system/kit/app-elements";
+import { OrderEmblem } from "@/ui/design-system/kit/order-emblem";
+import { PlayerName } from "@/ui/design-system/kit/player-name";
+import { SEASON_WORDS } from "@/ui/design-system/kit/words";
+import { wholeLords } from "@/ui/features/frontier/board/standings";
+
+import { openedFrom } from "../frame/opened-from";
+
+/**
+ * A Frontier board's rows: each realm's rank (the first three's medals) and Order, its player, the sites it cleared
+ * (what ranks) and its LORDS, each in its column. The player's own row is lit; a row opens its player.
+ */
+export const FrontierRows = ({
+  rows,
+}: {
+  rows: readonly { entry: HeraldFrontierLeaderboardEntry; own: boolean }[];
+}) => {
+  const navigate = useNavigate();
+  const here = useLocation();
+  const open = (address: string) => navigate(`/p/${address}`, { state: openedFrom(here) });
+  return <AppBoard entries={rows.map(({ entry, own }) => frontierEntry(entry, own, () => open(entry.address)))} />;
+};
+
+const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onClick: () => void): AppBoardEntry => ({
+  key: entry.address,
+  own,
+  onClick,
+  lead: (
+    <>
+      <AppRank rank={entry.rank} medal />
+      <OrderEmblem order={entry.order} />
+    </>
+  ),
+  name: <PlayerName account={entry.address} you={own} portrait />,
+  figures: [
+    { icon: "explore", value: formatAmount(entry.sites_cleared.total), label: SEASON_WORDS.sitesCleared },
+    { icon: "lords", value: formatAmount(wholeLords(entry.rewards.lords)), tone: "gold", label: LORDS },
+  ],
+});
