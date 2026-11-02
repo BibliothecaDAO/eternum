@@ -113,7 +113,11 @@ def make_card(kit, size, plan, target):
         backdrop.alpha_composite(card)
         card = backdrop
     logo = load_brand_master(kit / LOCKUP, round(1080 * scale))
-    card.alpha_composite(logo, ((width - logo.width) // 2, 0))
+    logo_centre = round(550 * scale) if "devconMark" in plan else width // 2
+    card.alpha_composite(logo, (logo_centre - logo.width // 2, 0))
+    if "devconMark" in plan:
+        partner = load_brand_master(plan["devconMark"], round(1000 * scale))
+        card.alpha_composite(partner, (round(900 * scale), round(240 * scale)))
     centred_text(card, plan["line"], round(772 * scale), kit / HEADING,
                  round(54 * scale), palette["brand"]["parchment"])
     centred_text(card, plan["cta"], round(878 * scale), kit / BODY,
@@ -252,6 +256,8 @@ def capture_checks(picture, plan, folder, size):
                 "-frames:v", 1, "-threads", 2, folder / f"{name}.png"])
     scale = size[0] / BASE_WIDTH
     crop = f"crop={round(1080 * scale)}:{round(950 * scale)}:{round(420 * scale)}:0"
+    if "devconMark" in plan:
+        crop = f"crop={size[0]}:{size[1]}:0:0"
     ffmpeg(["-v", "error", "-ss", plan["lockupFullFrame"] / FPS, "-i", picture,
             "-vf", crop, "-frames:v", 1, "-threads", 2,
             folder / "end-card-100-percent.png"])
