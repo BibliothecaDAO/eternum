@@ -114,11 +114,6 @@ interface ZoomRefreshDecisionInput {
   threshold: number;
 }
 
-interface ControlsChangeChunkRefreshPlan {
-  shouldRequestRefresh: boolean;
-  shouldForceRefresh: boolean;
-}
-
 interface StructureBoundsRefreshInput {
   currentChunk: string;
   isChunkTransitioning: boolean;
@@ -378,35 +373,6 @@ export function resolveRefreshCompletionActions(input: {
 }
 
 /**
- * Hydrated fetch completion should enqueue refresh only when the fetched area
- * corresponds to the currently active area key.
- */
-export function shouldScheduleHydratedChunkRefreshForFetch(input: {
-  fetchAreaKey: string;
-  currentAreaKey: string | null;
-  suppressedAreaKeys?: Iterable<string>;
-}): boolean {
-  if (!input.currentAreaKey) {
-    return false;
-  }
-  if (input.fetchAreaKey !== input.currentAreaKey) {
-    return false;
-  }
-
-  if (!input.suppressedAreaKeys) {
-    return true;
-  }
-
-  for (const suppressedAreaKey of input.suppressedAreaKeys) {
-    if (suppressedAreaKey === input.fetchAreaKey) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
  * Resolve how hydrated chunk refresh queue should be processed.
  * While transitioning, queued work must be preserved (not dropped).
  */
@@ -454,25 +420,6 @@ export function shouldForceChunkRefreshForZoomDistanceChange(input: ZoomRefreshD
 
   const threshold = Math.max(0, input.threshold);
   return Math.abs(input.nextDistance - input.previousDistance) >= threshold;
-}
-
-/**
- * Controls-change events should always schedule a debounced chunk refresh when
- * distance samples are valid so pan traversal converges quickly. Large zoom
- * deltas still escalate to forced refresh.
- */
-export function resolveControlsChangeChunkRefreshPlan(input: ZoomRefreshDecisionInput): ControlsChangeChunkRefreshPlan {
-  if (!Number.isFinite(input.nextDistance)) {
-    return {
-      shouldRequestRefresh: false,
-      shouldForceRefresh: false,
-    };
-  }
-
-  return {
-    shouldRequestRefresh: true,
-    shouldForceRefresh: shouldForceChunkRefreshForZoomDistanceChange(input),
-  };
 }
 
 /**

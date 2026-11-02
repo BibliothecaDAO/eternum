@@ -49,11 +49,3 @@ export const VERBOSE_LOGS_ENABLED: boolean = readVerboseFlag();
 export const verboseLog = (...args: unknown[]): void => {
   if (VERBOSE_LOGS_ENABLED) console.log(...args);
 };
-
-export const setDevModeEnabled = (enabled: boolean): void => {
-  try {
-    window.localStorage.setItem(STORAGE_KEY, enabled ? "1" : "0");
-  } catch {
-    // storage unavailable — the ?dev param still works per load
-  }
-};

@@ -42,38 +42,6 @@ export function deferWarpTravelManagerFanout(input: {
   });
 }
 
-export function drainBudgetedDeferredManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
-  queue: T[];
-  budgetBytes: number;
-}): {
-  taskToRun: T | null;
-  remainingQueue: T[];
-  didDeferHeadTask: boolean;
-} {
-  const [headTask, ...remainingQueue] = input.queue;
-  if (!headTask) {
-    return {
-      taskToRun: null,
-      remainingQueue: [],
-      didDeferHeadTask: false,
-    };
-  }
-
-  if (headTask.estimatedUploadBytes > input.budgetBytes && (headTask.deferredCount ?? 0) === 0) {
-    return {
-      taskToRun: null,
-      remainingQueue: [{ ...headTask, deferredCount: 1 }, ...remainingQueue],
-      didDeferHeadTask: true,
-    };
-  }
-
-  return {
-    taskToRun: headTask,
-    remainingQueue,
-    didDeferHeadTask: false,
-  };
-}
-
 export function drainMultiBudgetedDeferredManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
   queue: T[];
   budgetBytes: number;
@@ -126,17 +94,6 @@ export function drainMultiBudgetedDeferredManagerCatchUpQueue<T extends Budgeted
     remainingQueue: input.queue.slice(idx),
     didDeferHeadTask: false,
   };
-}
-
-export function trimPostCommitManagerCatchUpQueue<T extends BudgetedDeferredManagerCatchUpTask>(input: {
-  queue: T[];
-  maxQueueLength: number;
-}): T[] {
-  if (input.queue.length <= input.maxQueueLength) {
-    return input.queue;
-  }
-  // Trim oldest entries from the front
-  return input.queue.slice(input.queue.length - input.maxQueueLength);
 }
 
 export async function runWarpTravelManagerFanout(input: {

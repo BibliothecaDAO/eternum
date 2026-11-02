@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo } from "react";
 import { useRealtimeChatStore } from "../model/store";
 import type {
   InitializeRealtimeClientParams,
-  PlayerPresence,
   RealtimeChatActions,
   RealtimeChatState,
   WorldChatPublishPayload,
@@ -13,29 +12,6 @@ import type {
 type StoreSelector<T> = (state: RealtimeChatState & { actions: RealtimeChatActions }) => T;
 
 export const useRealtimeChatActions = () => useRealtimeChatStore((state) => state.actions);
-
-export const useRealtimeConnection = () => {
-  const connectionStatus = useRealtimeChatStore((state) => state.connectionStatus);
-  const client = useRealtimeChatStore((state) => state.client);
-  const identity = useRealtimeChatStore((state) => state.identity);
-  const lastConnectionError = useRealtimeChatStore((state) => state.lastConnectionError);
-
-  return useMemo(
-    () => ({
-      connectionStatus,
-      client,
-      identity,
-      lastConnectionError,
-    }),
-    [connectionStatus, client, identity, lastConnectionError],
-  );
-};
-
-export const useRealtimePresence = (): PlayerPresence[] => {
-  const onlinePlayers = useRealtimeChatStore((state) => state.onlinePlayers);
-
-  return useMemo(() => Object.values(onlinePlayers), [onlinePlayers]);
-};
 
 export const useRealtimeTypingIndicators = () => useRealtimeChatStore((state) => state.typingIndicators);
 

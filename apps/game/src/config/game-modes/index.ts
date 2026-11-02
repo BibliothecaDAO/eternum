@@ -14,8 +14,6 @@ import { frontierPaintedBuildingPath, frontierPaintedPath } from "@/three/struct
 
 export type GameModeId = "frontier" | "blitz" | "eternum" | "duel";
 
-export type VillageIconKey = "castle" | "tent";
-
 export interface GameModeConfig {
   id: GameModeId;
   displayName: string;
@@ -24,20 +22,14 @@ export interface GameModeConfig {
     realms: string;
     village: string;
     villages: string;
-    timelineSubject: string;
-    shareEventLabel: string;
-    endgameCardTitle: string;
-    endgameCardSubtitle: string;
   };
   audio: {
-    trackArtist: string;
     tickGongSound: string;
   };
   ui: {
     showAttackTypeSelector: boolean;
     showEndSeasonButton: boolean;
     showExplorerCapacity: boolean;
-    villageIconKey: VillageIconKey;
     showGuildsTab: boolean;
     showAutomation: boolean;
     /**
@@ -117,20 +109,14 @@ const blitzConfig: GameModeConfig = {
     realms: "Realms",
     village: "Camp",
     villages: "Camps",
-    timelineSubject: "Game",
-    shareEventLabel: "Realms Blitz",
-    endgameCardTitle: "Realms Blitz",
-    endgameCardSubtitle: "Blitz Leaderboard",
   },
   audio: {
-    trackArtist: "The Minstrels",
     tickGongSound: "event.blitz_gong",
   },
   ui: {
     showAttackTypeSelector: false,
     showEndSeasonButton: false,
     showExplorerCapacity: false,
-    villageIconKey: "tent",
     showGuildsTab: false,
     showAutomation: true,
     showBuildMenus: true,
@@ -156,20 +142,14 @@ const eternumConfig: GameModeConfig = {
     realms: "Realms",
     village: "Village",
     villages: "Villages",
-    timelineSubject: "Season",
-    shareEventLabel: "the Realms leaderboard",
-    endgameCardTitle: "Realms",
-    endgameCardSubtitle: "Final Leaderboard",
   },
   audio: {
-    trackArtist: "Casey Wescott",
     tickGongSound: "event.gong",
   },
   ui: {
     showAttackTypeSelector: true,
     showEndSeasonButton: true,
     showExplorerCapacity: true,
-    villageIconKey: "castle",
     showGuildsTab: true,
     showAutomation: true,
     showBuildMenus: true,
@@ -200,10 +180,6 @@ const frontierConfig: GameModeConfig = {
     ...blitzConfig.labels,
     village: structureName(StructureType.Camp, undefined, "frontier"),
     villages: structurePlural(StructureType.Camp, undefined, "frontier"),
-    timelineSubject: "Season",
-    shareEventLabel: "Realms Frontier",
-    endgameCardTitle: "Realms Frontier",
-    endgameCardSubtitle: "Season Results",
   },
   ui: {
     ...blitzConfig.ui,
@@ -250,7 +226,6 @@ const duelConfig: GameModeConfig = {
   ...blitzConfig,
   id: "duel",
   displayName: "Duel",
-  labels: { ...blitzConfig.labels, shareEventLabel: "Realms Duel", endgameCardTitle: "Realms Duel" },
 };
 const GAME_MODE_CONFIGS: Record<GameModeId, GameModeConfig> = {
   frontier: frontierConfig,
