@@ -227,24 +227,19 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     setIsExpanded(false);
     setSelectedPlayer(0n);
   };
-  // A phone's window has no room beside the list: the detail stands in the list's place, under the tabs.
+  // A phone's window has no room beside the list: the detail stands in the list's place, under the tabs. The tabs show
+  // in every mode, a lone Players too: the lit tab is the detail's way back.
   const body = phone && expanded ? expanded : tabs[activeTabIndex].component;
 
   return (
     <div className="flex max-w-full">
-      <div className="min-w-0 flex-1">
-        {tabsLength === 1 ? (
-          body
-        ) : (
-          <div className="flex h-full flex-col gap-2">
-            <HudTabs
-              tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
-              value={tabs[activeTabIndex].key}
-              onChange={pressTab}
-            />
-            <div className="flex-1 overflow-hidden">{body}</div>
-          </div>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <HudTabs
+          tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
+          value={tabs[activeTabIndex].key}
+          onChange={pressTab}
+        />
+        <div className="flex-1 overflow-hidden">{body}</div>
       </div>
       {!phone && expanded && <div className="w-96 shrink-0 border-l border-hud-divider">{expanded}</div>}
     </div>

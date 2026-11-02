@@ -24,6 +24,7 @@ beforeEach(() => {
 afterEach(async () => {
   await act(async () => root.unmount());
   host.remove();
+  window.history.replaceState(null, "", "/");
   useSocialStore.setState({ selectedTab: 0, isExpanded: false, selectedPlayer: 0n, selectedGuild: 0n } as never);
 });
 
@@ -40,8 +41,17 @@ const membersShown = () => members().length === 3;
 const openMember = (index: number) => act(async () => members()[index]!.click());
 const cardShown = () => host.querySelector('[aria-label="Player details"]') !== null;
 
-/** An Eternum game's standings, on the lab's game: one tribe, Ironwood, of Lord 0222 (its chief), 0333 and 0444. */
-const open = async (width: number) => {
+/** The standings' rows, each a player who opens their card. */
+const players = () => [...host.querySelectorAll<HTMLButtonElement>("[data-player-address] button")];
+const openPlayer = (index: number) => act(async () => players()[index]!.click());
+const tabs = () => [...host.querySelectorAll("[role=tab]")].map((tab) => tab.textContent?.trim());
+
+/**
+ * A game's standings, on the lab's game: Eternum's by default, with one tribe, Ironwood, of Lord 0222 (its chief), 0333
+ * and 0444; Blitz's for `?mode=blitz`.
+ */
+const open = async (width: number, search = "") => {
+  window.history.replaceState(null, "", `/lab/kit/standings${search}`);
   setViewportWidth(width);
   await act(async () =>
     root.render(
@@ -84,5 +94,33 @@ describe("a tribe member's card has no Back (review-no-back-2)", () => {
     await press("Ironwood: its members");
     expect(cardShown()).toBe(false);
     expect(membersShown()).toBe(true);
+  });
+});
+
+describe("a Blitz player's card has no Back (review-no-back-3): Players is its one tab, shown as the way back", () => {
+  it("on a phone stands in the list's place, and the lit Players tab steps back to the list", async () => {
+    await open(390, "?mode=blitz");
+    expect(tabs()).toEqual(["Players"]);
+    const listed = players().length;
+    expect(listed).toBeGreaterThan(1);
+    await openPlayer(0);
+    expect(cardShown()).toBe(true);
+    expect(players()).toHaveLength(0);
+    expect(tabs()).toEqual(["Players"]);
+    await press("Players");
+    expect(cardShown()).toBe(false);
+    expect(players()).toHaveLength(listed);
+    await openPlayer(1);
+    expect(cardShown()).toBe(true);
+  });
+
+  it("on a desktop stands beside the list", async () => {
+    await open(1440, "?mode=blitz");
+    const listed = players().length;
+    await openPlayer(0);
+    expect(cardShown()).toBe(true);
+    expect(players()).toHaveLength(listed);
+    await press("Players");
+    expect(cardShown()).toBe(false);
   });
 });

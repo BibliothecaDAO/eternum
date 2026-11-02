@@ -133,6 +133,19 @@ const SURFACES = [
       { press: "Lord 0444", shows: "player", still: "player-again" },
     ],
   },
+  // A player in a Blitz game's standings, whose one tab is Players: the tab still shows, lit, and is the card's way back
+  // to the list, as Tribes is in Eternum's.
+  {
+    name: "standings-blitz",
+    kind: "flow",
+    path: "/lab/kit/standings?mode=blitz&capture=1",
+    ready: "document.querySelector('[data-player-address]') !== null",
+    steps: [
+      { press: "Lord 0333: their points", shows: "player", still: "player" },
+      { press: "Players", shows: "players", still: "players-again" },
+      { press: "Lord 0444: their points", shows: "player", still: "player-again" },
+    ],
+  },
   // Last: the doorway boots the map behind it, which keeps the tab busy for whatever opens next.
   { name: "doorway", kind: "page", before: app("home", ""), path: app("home", "doorway/map") },
 ];
@@ -322,10 +335,19 @@ const sheetsGestures = async (b, phone, out, record, surface) => {
   shoot(b, out, `${surface.name}-after-back`);
 };
 
-/** What a flow's step must show: a tribe's members (no player's card), or a player's card. */
+const NO_CARD = `!document.querySelector('[aria-label="Player details"]')`;
+
+/** What a flow's step must show, in words and as the page answers it. */
 const SHOWS = {
-  members: `!document.querySelector('[aria-label="Player details"]') && [...document.querySelectorAll("button")].some((each) => each.innerText.trim() === "Lord 0333")`,
-  player: `document.querySelector('[aria-label="Player details"]') !== null`,
+  members: {
+    words: "the tribe's members",
+    test: `${NO_CARD} && [...document.querySelectorAll("button")].some((each) => each.innerText.trim() === "Lord 0333")`,
+  },
+  players: {
+    words: "the players' list",
+    test: `${NO_CARD} && document.querySelectorAll("[data-player-address]").length > 1`,
+  },
+  player: { words: "the player's card", test: `!${NO_CARD}` },
 };
 
 /** A flow's taps in turn, each as a finger presses it, then what it must show, and a still where it names one. */
@@ -336,8 +358,8 @@ const flowSteps = async (b, phone, out, record, surface) => {
     if (!there) return;
     if (step.shows)
       record.checks.push({
-        check: `${step.press} shows the ${step.shows === "members" ? "tribe's members" : "player's card"}`,
-        ok: b.evaluate(SHOWS[step.shows]),
+        check: `${step.press} shows ${SHOWS[step.shows].words}`,
+        ok: b.evaluate(SHOWS[step.shows].test),
       });
     if (step.still) shoot(b, out, `${surface.name}-${step.still}`);
   }

@@ -161,6 +161,10 @@ Players, Tribes and Faith tabs; a tribe opens its members and a member opens the
 detail stands beside the list, and the chosen tribe pressed again shows its members; on a phone it stands in the list's
 place, and the lit Tribes tab pressed again steps back to the members, then to the tribes. `prove:app … phone` plays it.
 
+A Blitz game's standings (`/lab/kit/standings?mode=blitz`) have one tab, Players, shown all the same: a player opens
+their card beside the list on a desktop and in its place on a phone, and the lit Players tab steps back to the list.
+`prove:app … phone` plays it too.
+
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that

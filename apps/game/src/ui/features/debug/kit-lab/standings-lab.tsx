@@ -4,8 +4,9 @@ import { shortString } from "starknet";
 import { LabGame } from "./lab-game";
 import { PLAYER } from "./fixture-game";
 
-/** Eternum's preset, the one mode whose standings hold Tribes. */
+/** Eternum's preset, the one mode whose standings hold Tribes and Faith; Blitz's holds Players alone (`?mode=blitz`). */
 const ETERNUM_PRESET = 3;
+const BLITZ_PRESET = 2;
 
 /** The tribe's master (a tribe's id is its master's address), and its two other members. */
 const MASTER = "0x222";
@@ -29,14 +30,18 @@ const tribeFacts = () => [
   { model: "PlayerEntry", key: `0x7c${PLAYER.slice(2)}`, value: { game_id: 1, owner: PLAYER, player: PLAYER } },
 ];
 
+const presetOfPage = () =>
+  new URLSearchParams(window.location.search).get("mode") === "blitz" ? BLITZ_PRESET : ETERNUM_PRESET;
+
 /**
- * Dev only: an Eternum game's standings at /lab/kit/standings, the real leaderboard window on the lab game with one
- * tribe of three: Tribes, a tribe's members, a member's card, and the chosen tribe pressed again for its members (a
- * player's card has no Back). The phone proof plays it (prove-app-phone.mjs).
+ * Dev only: a game's standings at /lab/kit/standings, the real leaderboard window on the lab game with one tribe of
+ * three. Eternum's has Tribes, a tribe's members, a member's card, and the chosen tribe pressed again for its members;
+ * Blitz's (`?mode=blitz`) has Players alone, its lit tab the card's way back (a player's card has no Back). The phone
+ * proof plays both (prove-app-phone.mjs).
  */
 export const StandingsLab = () => (
   <div data-lab="standings" className="ui flex min-h-screen items-start justify-center bg-hud-surface p-2">
-    <LabGame preset={ETERNUM_PRESET} facts={tribeFacts}>
+    <LabGame preset={presetOfPage()} facts={tribeFacts}>
       {() => <LeaderboardSurface />}
     </LabGame>
   </div>
