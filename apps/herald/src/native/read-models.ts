@@ -55,7 +55,9 @@ export function buildNativeDirectory(input: DirectoryInput): HeraldGameDirectory
   const seasons = publicGames
     .filter(({ value }) => nativeGameModeOf(number(value.preset_id)) === "frontier")
     .sort((a, b) => number(a.value.game_id) - number(b.value.game_id));
-  const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index + 1]));
+  // A chain's first Frontier season is Season 0 (Devcon's on the Nov 2 chain), the next Season 1 (owner, 2 November
+  // 2026: "devcon season is s0").
+  const seasonNumbers = new Map(seasons.map(({ value }, index) => [number(value.game_id), index]));
   const games = publicGames
     .map(({ value }) => directoryEntry(value, facts, input))
     .map((game) => ({ ...game, season_number: seasonNumbers.get(game.game_id) ?? null }))

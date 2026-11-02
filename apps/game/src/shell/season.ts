@@ -62,14 +62,14 @@ export const directoryDay = (
 };
 
 /**
- * The season by its number, as the glossary writes it ("Season 3"), and an archived one's name beside it ("Season 1 ·
- * Playtest"); a number the directory does not serve is a dash.
+ * A season's name, the one every surface shows: an archived season's own ("Playtest"), else its number as the directory
+ * serves it and the glossary writes it ("Season 0" for Devcon, "Season 1"); a number the directory does not serve is a
+ * dash.
  */
-export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id">): string => {
-  const label = archivedSeason({ chainId: season.chainId, gameId: season.game_id })?.label;
-  return [`${SEASON} ${season.season_number ?? "—"}`, ...(label ? [label] : [])].join(" · ");
-};
+export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id">): string =>
+  archivedSeason({ chainId: season.chainId, gameId: season.game_id })?.name ??
+  `${SEASON} ${season.season_number ?? "—"}`;
 
-/** An ended season and the day it ended, "Season 1 · Playtest · Ended 31 Oct". */
+/** An ended season and the day it ended, "Playtest · Ended 31 Oct". */
 export const seasonEnded = (season: DirectoryGame): string =>
   `${seasonTitle(season)} · ${PLAY_WORDS.ended} ${formatDate(season.clock.end_at)}`;

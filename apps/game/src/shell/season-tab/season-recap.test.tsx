@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 
-/** Prod's Season 1 podium, as identity names it. */
+/** Prod's Playtest podium, as identity names it. */
 const NAMES = vi.hoisted(
   () =>
     ({
@@ -152,7 +152,7 @@ const pressLabelled = (host: HTMLElement, label: string) =>
 it("tells the season and its ending, then the player's four cards: their place, the podium, their sites, their haul", async () => {
   const host = await open();
   expect([...host.querySelector("header")!.children].map((line) => line.textContent)).toEqual([
-    "Season 1 · Playtest · Ended 31 Oct",
+    "Playtest · Ended 31 Oct",
     "The mist lifted",
   ]);
   expect([...deck(host)!.querySelectorAll(".season-card__step")].map((step) => step.textContent)).toEqual([
@@ -184,7 +184,7 @@ it("tells the season and its ending, then the player's four cards: their place, 
   // The deck's foot: Frontier's lockup, the season, where to play.
   expect(
     [...deck(host)!.querySelectorAll(".season-deck__foot > span:not(.app-game-name)")].map((part) => part.textContent),
-  ).toEqual(["Season 1 · Playtest", window.location.host]);
+  ).toEqual(["Playtest", window.location.host]);
 });
 
 it("draws the wide cut on a desktop and the tall one on a phone, each at the size it is shared", async () => {
@@ -274,7 +274,7 @@ it("on a phone, shares the tall deck as an image through the share sheet, with t
   const [sent] = share.mock.calls[0] as unknown as [{ files: File[]; text: string; url: string }];
   expect([sent.files.map((file) => [file.name, file.type]), sent.text]).toEqual([
     [["my-season.png", "image/png"]],
-    "Season 1 · Playtest · #3 of 45 realms",
+    "Playtest · #3 of 45 realms",
   ]);
   expect(sent.url).toBe(`${window.location.origin}/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`);
 });

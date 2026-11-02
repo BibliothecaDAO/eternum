@@ -176,7 +176,7 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
   );
 };
 
-/** An ended season and the day it ended, "Season 1 · Ended 31 Oct", on the calendar. */
+/** An ended season and the day it ended, "Playtest · Ended 31 Oct", on the calendar. */
 const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
 /** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */

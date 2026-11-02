@@ -1728,7 +1728,7 @@ const labSlots = (lab: LabState) =>
     start: { bar: slot.start!, words: `${slotStartLine(slot)}.` },
   }));
 
-/** The season the lab's season-over shows: prod's Season 1 as its archive holds it, read by its third place. */
+/** The season the lab's season-over shows: prod's Playtest as its archive holds it, read by its third place. */
 const LAB_SEASON = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
 const LAB_SEASON_PLAYER = "0x648174392d94df37bc7d59c3abf22116d20df16ddf0e380c5ff79aff86738c4";
 

@@ -152,7 +152,7 @@ const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undef
     ({ holder }) => typeof holder === "object" && isSameStarknetAddress(holder.address, entry.address),
   )?.lords;
 
-/** What Share says beside the image: "Season 1 · Playtest · #3 of 45 realms". */
+/** What Share says beside the image: "Playtest · #3 of 45 realms". */
 const shareLine = (title: string, own: Entry, field: number) =>
   `${title} · #${formatAmount(own.rank)} ${RECAP_WORDS.ofRealms(formatAmount(field))}`;
 

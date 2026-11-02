@@ -17,7 +17,7 @@ const herald = vi.hoisted(() => ({
   withheld: null as Promise<void> | null,
   /** The chain clock the HUD reads. */
   now: 0,
-  /** The game's registry: prod's Season 1 ended on 31 Oct 09:46Z, long after day 2. */
+  /** The game's registry: prod's Playtest ended on 31 Oct 09:46Z, long after day 2. */
   game: { end_at: "1793439960" },
 }));
 /** The game's facts as the HUD and the day's turn read them: its registry, and realm 7 owned by the player. */

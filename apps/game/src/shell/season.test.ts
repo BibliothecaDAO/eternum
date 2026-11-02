@@ -1,3 +1,6 @@
+// @vitest-environment node
+import { readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import type { DirectoryGame } from "./herald";
@@ -79,9 +82,23 @@ describe("the season's number", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
   });
 
-  it("names prod's archived first season Playtest beside its number, and only that game on that chain", () => {
+  it("is the one rule that reads the directory's number: no other code of the client names a season", () => {
+    const src = fileURLToPath(new URL("../", import.meta.url));
+    const readers = readdirSync(src, { recursive: true, encoding: "utf8" })
+      .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
+      .filter((file) => readFileSync(`${src}${file}`, "utf8").includes("season_number"))
+      .toSorted();
+    // The lab's directory fixtures write the number; only seasonTitle reads it.
+    expect(readers).toEqual(["shell/lab/app-lab-fixtures.ts", "shell/season.ts"]);
+  });
+
+  it("names Devcon's season by its number, zero", () => {
+    expect(seasonTitle({ chainId: "0x52", game_id: 4, season_number: 0 })).toBe("Season 0");
+  });
+
+  it("names prod's archived October season by its archive's name, Playtest, with no number, and only that game", () => {
     const [archived] = ARCHIVED_SEASONS;
-    expect(seasonTitle(archived!)).toBe("Season 1 · Playtest");
-    expect(seasonTitle({ ...archived!, chainId: "0x52" })).toBe("Season 1");
+    expect(seasonTitle(archived!)).toBe("Playtest");
+    expect(seasonTitle({ ...archived!, chainId: "0x52" })).toBe(`Season ${archived!.season_number}`);
   });
 });
