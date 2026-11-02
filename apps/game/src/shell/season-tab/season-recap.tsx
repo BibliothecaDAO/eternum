@@ -14,6 +14,7 @@ import {
   type ReactNode,
   type RefObject,
 } from "react";
+import { createPortal } from "react-dom";
 
 import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
@@ -91,9 +92,10 @@ export const SeasonRecap = ({
 }) => {
   const cut: Cut = useLayout() === "phone" ? "tall" : "wide";
   const deck = useRef<HTMLDivElement>(null);
+  const { room, deckWidth, layoutStyle, roomStyle } = useDeckFit(cut, cover);
   const own = board && findOwnEntry(board.entries, viewer);
   const title = game ? seasonTitle(game) : ageOf("frontier").name;
-  return (
+  const recap = (
     <section
       data-surface="shell"
       aria-label={SEASON_ENDINGS[ending]}
@@ -102,7 +104,7 @@ export const SeasonRecap = ({
       data-cut={cut}
     >
       {cover && <img className="season-recap__painting" alt="" {...paintingSources("season-citadel")} sizes="100vw" />}
-      <div className="season-recap__layout">
+      <div className="season-recap__layout" style={layoutStyle}>
         <header className="season-recap__head">
           {game && <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>}
           {/* A phone's column is too narrow for the ending at display size: it reads at a title's. */}
@@ -112,14 +114,16 @@ export const SeasonRecap = ({
         </header>
         {board &&
           (own ? (
-            <DeckFrame cut={cut}>
-              <Deck deckRef={deck} cut={cut} title={title}>
-                <PlaceCard own={own} field={board.entries.length} prize={prizeOf(board, own)} />
-                <PodiumCard board={board} viewer={viewer} />
-                <SitesCard own={own} />
-                <HaulCard own={own} />
-              </Deck>
-            </DeckFrame>
+            <div ref={room} className="season-recap__room" style={roomStyle}>
+              <DeckFrame cut={cut} width={deckWidth}>
+                <Deck deckRef={deck} cut={cut} title={title}>
+                  <PlaceCard own={own} field={board.entries.length} prize={prizeOf(board, own)} />
+                  <PodiumCard board={board} viewer={viewer} />
+                  <SitesCard own={own} />
+                  <HaulCard own={own} />
+                </Deck>
+              </DeckFrame>
+            </div>
           ) : (
             <div className="season-recap__alone">
               <PodiumCard board={board} viewer={viewer} alone />
@@ -137,6 +141,9 @@ export const SeasonRecap = ({
       </div>
     </section>
   );
+  // Over the HUD it is drawn at the body's end: inside the desktop HUD it would take the HUD's zoom, and its words
+  // would read smaller than the app draws them.
+  return cover ? createPortal(recap, document.body) : recap;
 };
 
 /** The LORDS a player's place on the podium pays, once a pool is published: the ledger's award, else the place held. */
@@ -150,20 +157,61 @@ const shareLine = (title: string, own: Entry, field: number) =>
   `${title} · #${formatAmount(own.rank)} ${RECAP_WORDS.ofRealms(formatAmount(field))}`;
 
 /**
- * How wide the deck's room is, for the scale that fits the deck to it: the room is whichever element the ref callback is
- * given, and a room replaced (the story's frame and the desktop's, across the layout's breakpoint) is let go and the new
- * one measured.
+ * The deck's room, measured for the scale that fits the deck to it: the room is whichever element the ref callback is
+ * given, and a room replaced is let go and the new one measured.
  */
-const useRoomWidth = () => {
+const useRoomSize = () => {
   const [room, setRoom] = useState<HTMLElement | null>(null);
-  const [width, setWidth] = useState<number | null>(null);
+  const [size, setSize] = useState<RoomSize | null>(null);
   useLayoutEffect(() => {
     if (!room || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => setWidth(entry!.contentRect.width));
+    const observer = new ResizeObserver(([entry]) =>
+      setSize({ width: entry!.contentRect.width, height: entry!.contentRect.height }),
+    );
     observer.observe(room);
     return () => observer.disconnect();
   }, [room]);
-  return [setRoom, width] as const;
+  return [setRoom, size] as const;
+};
+
+type RoomSize = { width: number; height: number };
+
+/**
+ * The least the deck is drawn at, of its own size: its smallest words (19 px in the deck) still read at the app's
+ * smallest text, 14 px. A room shorter than the deck at this scale scrolls instead.
+ */
+const MIN_DECK_SCALE = 14 / 19;
+
+/**
+ * How wide the four cards stand on a desktop: the room's width, and over the HUD (`cover`, the screen's whole height
+ * the recap's) no taller than the room left between the season and the steps, so the whole recap stands on one screen.
+ */
+const wideDeckWidth = (room: RoomSize, cover: boolean) => {
+  if (!cover) return room.width;
+  const height = Math.max(room.height, MIN_DECK_SCALE * CUTS.wide.height);
+  return Math.min(room.width, (height * CUTS.wide.width) / CUTS.wide.height);
+};
+
+/** The wide deck's width, which the season above it and the steps under it share. */
+const deckWidthStyle = (width: number): CSSProperties & Record<"--deck-width", string> => ({
+  "--deck-width": `${width}px`,
+});
+
+/**
+ * The deck fitted to its room: the story's frame as wide as the room on a phone; the four cards as wide as
+ * `wideDeckWidth` lets them on a desktop, the season and the steps as wide as they are, and over the HUD a room never
+ * shorter than the deck at its least size, so a shorter screen scrolls.
+ */
+const useDeckFit = (cut: Cut, cover: boolean) => {
+  const [room, size] = useRoomSize();
+  const wide = cut === "wide";
+  const deckWidth = size && (wide ? wideDeckWidth(size, cover) : size.width);
+  return {
+    room,
+    deckWidth,
+    layoutStyle: wide && deckWidth ? deckWidthStyle(deckWidth) : undefined,
+    roomStyle: wide && cover ? { minHeight: MIN_DECK_SCALE * CUTS.wide.height } : undefined,
+  };
 };
 
 /**
@@ -171,8 +219,7 @@ const useRoomWidth = () => {
  * 1:1. A desktop sees it whole. A phone sees one card at a time over the same node, as a story: a strip of four marks
  * on top, the next card on a tap at the right or a swipe left, the one before on a tap at the left or a swipe right.
  */
-const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
-  const [frame, width] = useRoomWidth();
+const DeckFrame = ({ cut, width, children }: { cut: Cut; width: number | null | undefined; children: ReactNode }) => {
   const [shown, setShown] = useState(0);
   const swipeFrom = useRef(0);
   /** A press that travelled far enough was a swipe: the pointer's click it ends in steps no further. */
@@ -190,9 +237,8 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
   if (cut === "wide")
     return (
       <div
-        ref={frame}
         className="season-recap__frame"
-        style={{ aspectRatio: `${CUTS.wide.width} / ${CUTS.wide.height}` }}
+        style={{ width: width ?? undefined, aspectRatio: `${CUTS.wide.width} / ${CUTS.wide.height}` }}
       >
         <div
           className="season-recap__scaler"
@@ -213,7 +259,6 @@ const DeckFrame = ({ cut, children }: { cut: Cut; children: ReactNode }) => {
         ))}
       </ol>
       <div
-        ref={frame}
         className="season-recap__frame"
         data-card={CARDS[shown]}
         style={{ aspectRatio: `${card.width} / ${card.height}` }}
@@ -373,7 +418,7 @@ const PodiumCard = ({
                 {typeof holder === "object" ? (
                   <PlayerName account={holder.address} you={own} portrait />
                 ) : (
-                  PRIZE_UNHELD[holder]
+                  <span className="season-card__unheld">{PRIZE_UNHELD[holder]}</span>
                 )}
               </span>
               <span className="season-card__counts">

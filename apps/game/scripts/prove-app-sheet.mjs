@@ -8,13 +8,16 @@
  * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap] [--state <signed-in.json>]
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
+ *
+ * `recap` shoots and checks a Frontier season's end over the HUD and on Results (RECAP_PAGES).
  *
  * `end-map` runs on the live stack the client is served against, alone: the newest finished game's Results, its "See
  * the end map" pressed, and the map it opens held until its scene is ready, watched and never played.
  */
+import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -815,6 +818,192 @@ const QA1_PHONE_CASES = [
   },
 ];
 
+/**
+ * A Frontier season's end (season-recap.tsx) as the player meets it: over the HUD (prod's Season 1 read by its third
+ * place, then with LORDS still to withdraw) and on Results with a podium of one, two and three places, at three laptop
+ * sizes and on a phone (each card of its story shot in turn). Over the HUD the whole recap, its steps included, stands
+ * on one screen unless the deck is already at the least size its words read at; no word in the deck reads under the
+ * app's 14 px; each podium place has its numeral, portrait and name on one line and its counts under the name, in
+ * columns shared from place to place, and the places stand centred in their card; Share saves the deck at the size it
+ * is shared.
+ */
+const RECAP_PAGES = {
+  cover: "/lab/kit/hud/season-over",
+  "cover-payout": "/lab/kit/hud/season-over-payout",
+  "results-one": "/lab/app/season-over-one/results/0x5245414c4d53-3",
+  "results-two": "/lab/app/season-over-two/results/0x5245414c4d53-3",
+  "results-three": "/lab/app/season-over/results/0x5245414c4d53-3",
+};
+const RECAP_SIZES = [["1440", "900"], ["1366", "768"], ["1280", "720"], PHONE];
+/** The deck's cuts, at the size each is shared (season-recap.tsx's CUTS). */
+const SHARED_SIZE = { wide: "1200x675", tall: "1080x1350" };
+/** How far apart, in pixels, two edges or centres may stand and still read as lined up. */
+const LINED_UP = 2;
+
+const recapMeasure = `(() => {
+  const box = (element) => element?.getBoundingClientRect();
+  const recap = document.querySelector(".season-recap");
+  const scaler = document.querySelector(".season-recap__scaler");
+  const scale = box(scaler).width / scaler.offsetWidth;
+  const words = [...document.querySelectorAll(".season-deck *")].filter((element) =>
+    [...element.childNodes].some((node) => node.nodeType === 3 && node.textContent.trim()),
+  );
+  const smallest = Math.min(...words.map((element) => parseFloat(getComputedStyle(element).fontSize) * scale));
+  const card = document.querySelector('.season-deck [data-card="podium"]');
+  const cardStyle = getComputedStyle(card);
+  const title = box(card.querySelector(".season-card__title"));
+  const list = box(card.querySelector(".season-card__podium"));
+  const places = [...card.querySelectorAll(".season-card__podium li")].map((place) => {
+    const unheld = place.querySelector(".season-card__unheld");
+    const name = unheld ?? place.querySelector(".season-card__holder > span > :last-child");
+    const portrait = unheld ? null : place.querySelector(".season-card__holder > span > :first-child");
+    const centre = (element) => element && box(element).top + box(element).height / 2;
+    return {
+      numeral: centre(place.querySelector("b")),
+      portrait: centre(portrait),
+      name: centre(name),
+      nameStart: box(name).left + (unheld ? parseFloat(getComputedStyle(unheld).paddingLeft) * scale : 0),
+      sites: box(place.querySelector(".season-card__count:not([data-tone])"))?.left ?? null,
+      lords: box(place.querySelector('.season-card__count[data-tone="gold"]'))?.left ?? null,
+    };
+  });
+  const steps = box(document.querySelector(".season-recap__steps"));
+  // A card cuts what runs past its edge: anything drawn in it that reaches beyond its box is lost.
+  const spilled = [...document.querySelectorAll(".season-card")]
+    .filter((each) => {
+      const edge = box(each);
+      return [...each.querySelectorAll("*")].some((inside) => {
+        const drawn = box(inside);
+        return drawn.width > 0 && (drawn.bottom > edge.bottom + 1 || drawn.right > edge.right + 1);
+      });
+    })
+    .map((each) => each.dataset.card);
+  return {
+    spilled,
+    cut: recap.dataset.cut,
+    cover: recap.hasAttribute("data-cover"),
+    scrolls: recap.hasAttribute("data-cover") ? recap.scrollHeight > recap.clientHeight : document.documentElement.scrollHeight > innerHeight,
+    stepsBottom: Math.round(steps.bottom),
+    screen: innerHeight,
+    scale: Math.round(scale * 1000) / 1000,
+    smallest: Math.round(smallest * 10) / 10,
+    places,
+    above: title.top - (box(card).top + parseFloat(cardStyle.paddingTop) * scale),
+    below: box(card).bottom - parseFloat(cardStyle.paddingBottom) * scale - list.bottom,
+  };
+})()`;
+
+const linedUp = (values) => {
+  const known = values.filter((value) => value !== null);
+  return known.length === 0 || Math.max(...known) - Math.min(...known) <= LINED_UP;
+};
+
+const recapChecks = (drawn) => [
+  {
+    check: "over the HUD, the whole recap stands on one screen, or its deck at the least size its words read at",
+    ok: !drawn.cover || drawn.cut === "tall" || !drawn.scrolls || drawn.smallest < 14.1,
+    drawn: { stepsBottom: drawn.stepsBottom, screen: drawn.screen, scale: drawn.scale },
+  },
+  { check: "no word in the deck reads under 14 px", ok: drawn.smallest >= 14 - 0.05, smallest: drawn.smallest },
+  { check: "nothing in a card runs past its edge", ok: drawn.spilled.length === 0, spilled: drawn.spilled },
+  {
+    check: "each podium place has its numeral, portrait and name on one line",
+    ok: drawn.places.every(({ numeral, portrait, name }) => linedUp([numeral, portrait, name])),
+    places: drawn.places,
+  },
+  {
+    check: "the places' names, sites and LORDS each stand in one column, the sites under the names",
+    ok:
+      linedUp(drawn.places.flatMap(({ nameStart, sites }) => [nameStart, sites])) &&
+      linedUp(drawn.places.map(({ lords }) => lords)),
+  },
+  {
+    check: "the podium stands centred in its card",
+    ok: Math.abs(drawn.above - drawn.below) <= LINED_UP * 2,
+    above: drawn.above,
+    below: drawn.below,
+  },
+];
+
+/** The story's card against its frame: how far its left and right edges stand from the frame's. */
+const storyCardShown = `(() => {
+  const frame = document.querySelector(".season-recap__frame");
+  const card = document.querySelector('.season-card[data-card="' + frame.dataset.card + '"]').getBoundingClientRect();
+  const edge = frame.getBoundingClientRect();
+  return { card: frame.dataset.card, left: Math.round(card.left - edge.left), right: Math.round(card.right - edge.right) };
+})()`;
+
+/** The PNG Share saved, by its header's width and height. */
+const pngSize = (file) => {
+  const header = readFileSync(file);
+  return `${header.readUInt32BE(16)}x${header.readUInt32BE(20)}`;
+};
+
+/** Share pressed as a player presses it, scrolled to first: the PNG it saves, at the size its cut is shared. */
+const sharedImageCheck = (b, png, cut) => {
+  const check = "Share saves the deck at the size it is shared";
+  const share = '.season-recap__steps button[data-kind="primary"]';
+  try {
+    b.run("scrollintoview", share);
+    b.run("download", share, png);
+    return { check, ok: pngSize(png) === SHARED_SIZE[cut], size: pngSize(png) };
+  } catch (error) {
+    return {
+      check,
+      ok: false,
+      error:
+        String(error.message)
+          .split("\n")
+          .find((line) => line.includes("✗")) ?? "no image",
+    };
+  }
+};
+
+const shootRecap = async (b, baseUrl, out, name, path) => {
+  b.run("open", `${baseUrl}${path}`, "--ignore-https-errors");
+  const record = {
+    name,
+    ready: await waitFor(b, `document.querySelector(".season-deck") !== null`, READY_MS),
+    presses: [],
+    checks: [],
+  };
+  if (!record.ready) return record;
+  await sleep(SETTLE_MS);
+  b.run("screenshot", join(out, `${name}.png`));
+  const drawn = b.evaluate(recapMeasure);
+  record.checks.push(...recapChecks(drawn));
+  if (drawn.cut === "tall") {
+    const shownWhole = [];
+    for (const at of [2, 3, 4]) {
+      const refused = clickAsPlayer(b, ".season-recap__next");
+      record.presses.push({ press: "Next card", status: refused ?? "led" });
+      // The story slides to the next card: it is shot once the slide, begun by now, has stopped.
+      await sleep(400);
+      await waitFor(b, `document.getAnimations().every((animation) => animation.playState !== "running")`, READY_MS);
+      b.run("screenshot", join(out, `${name}-card${at}.png`));
+      shownWhole.push(b.evaluate(storyCardShown));
+    }
+    record.checks.push({
+      check: "each card of the story stands whole in its frame",
+      ok: shownWhole.every(({ left, right }) => Math.abs(left) <= LINED_UP && Math.abs(right) <= LINED_UP),
+      shownWhole,
+    });
+  }
+  record.checks.push(sharedImageCheck(b, join(out, `${name}.share.png`), drawn.cut));
+  return record;
+};
+
+const recapRecords = async (b, baseUrl, out) => {
+  const records = [];
+  for (const size of RECAP_SIZES) {
+    b.run("set", "viewport", ...size);
+    for (const [page, path] of Object.entries(RECAP_PAGES))
+      records.push(await shootRecap(b, baseUrl, out, `recap-${page}-${size.join("x")}`, path));
+  }
+  b.run("set", "viewport", ...VIEWPORT);
+  return records;
+};
+
 const qa1 = (cases) =>
   cases.map(({ name, path, act, more }) => ({ name: `qa1-${name}`, path: `/lab/app/${path}?capture=1`, act, more }));
 
@@ -849,6 +1038,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         b.run("set", "viewport", ...VIEWPORT);
       }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
+      if (parts.includes("recap")) records.push(...(await recapRecords(b, baseUrl, out)));
       if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
       if (parts.includes("qa1")) {
         for (const page of qa1(QA1_CASES)) records.push(await shoot(b, baseUrl, out, page));

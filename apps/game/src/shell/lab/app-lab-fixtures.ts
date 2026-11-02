@@ -194,6 +194,10 @@ export const LAB_SCREENS = {
   // ("Entry closes 12:55 · 10h 46m left"), which wraps on a phone.
   "blitz-seat-late-slot": { signedIn: true, games: [frontier(true), liveBlitz(true), eternum] },
   "season-over": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  // The same season's Results with a podium of one place (the owner's dev season of 2 November: the player alone and
+  // paid) and of two.
+  "season-over-one": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
+  "season-over-two": { signedIn: true, games: [endedFrontier, liveBlitz(false), eternum] },
   // No Frontier season listed, the last one settled into the history: production after its first season (10-31).
   "no-season": { signedIn: true, games: [liveBlitz(false), eternum] },
   // A seat in a game still being prepared: Play leads with its lobby, never Enter before the game opens.
@@ -479,6 +483,28 @@ export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
       { rank: 2, address: LAB_FRONTIER_BOARD.entries[1]!.address, lords: "100" },
     ],
   },
+};
+
+/**
+ * A final board of the first rivals and the player after them, every place paid out of the 300 LORDS: a podium of fewer
+ * than three places.
+ */
+const shortFinalBoard = (rivals: number, lords: string[]): HeraldFrontierLeaderboard => {
+  const entries = [...LAB_FRONTIER_BOARD.entries.slice(0, rivals), LAB_FRONTIER_BOARD.entries.at(-1)!].map(
+    (entry, index) => ({ ...entry, rank: index + 1 }),
+  );
+  const awards = entries.map(({ rank, address }, index) => ({ rank, address, lords: lords[index]! }));
+  return {
+    ...LAB_FRONTIER_FINAL_BOARD,
+    entries,
+    prize: { pool: "300", top_n: entries.length, count: entries.length, awards },
+  };
+};
+
+/** The final board each Results screen reads for the ended season: its whole board, or one cut to one or two places. */
+export const LAB_FINAL_BOARDS: Partial<Record<keyof typeof LAB_SCREENS, HeraldFrontierLeaderboard>> = {
+  "season-over-one": shortFinalBoard(0, ["300"]),
+  "season-over-two": shortFinalBoard(1, ["200", "100"]),
 };
 
 /** Production's first season's top twelve, by their public names, in its archived board's order. */
