@@ -1,10 +1,10 @@
 import { Database } from "bun:sqlite";
 import { closeSync, existsSync, openSync, statSync } from "node:fs";
 import type { CosignerWallets } from "../../../apps/value-relay/src/cosigner";
+import { PAYOUT_WALLET_CHANGE_SECONDS } from "../../../packages/value-ledger/src/payout-wallet";
 
 /** The co-signer's wallet history on the box, owned by its systemd state directory. */
 export const COSIGNER_WALLETS = "/var/lib/payout-cosigner/wallets.sqlite";
-export const WALLET_CHANGE_SECONDS = 24 * 60 * 60;
 const SCHEMA = `CREATE TABLE IF NOT EXISTS accounts (account TEXT PRIMARY KEY, realms_id TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS wallets (realms_id TEXT PRIMARY KEY, wallet TEXT NOT NULL, pending TEXT, since INTEGER)`;
 interface Wallet {
@@ -50,14 +50,14 @@ export function openCosignerWallets(
     }
     const time = now();
     const since = previous.pending === wallet && previous.since !== null ? previous.since : time;
-    if (time < since + WALLET_CHANGE_SECONDS) {
+    if (time < since + PAYOUT_WALLET_CHANGE_SECONDS) {
       db.query("UPDATE wallets SET pending=?, since=? WHERE realms_id=?").run(wallet, since, realmsId);
       return {
         event: "cosigner_wallet_change_waiting",
         account,
         realmsId,
         wallet,
-        notBefore: since + WALLET_CHANGE_SECONDS,
+        notBefore: since + PAYOUT_WALLET_CHANGE_SECONDS,
       };
     }
     db.query("UPDATE wallets SET wallet=?, pending=NULL, since=NULL WHERE realms_id=?").run(wallet, realmsId);
@@ -81,7 +81,7 @@ export function openCosignerWallets(
     close: () => db.close(),
   };
 }
-/** One Realms ID's wallet record: its known wallet, and the candidate held for 24 h since `since`, if any. */
+/** One Realms ID's wallet record: its known wallet, and the candidate held since `since`, if any. */
 export interface WalletRecord {
   realmsId: string;
   wallet: string;

@@ -1001,6 +1001,8 @@ export const WALLET_WORDS = {
   newCode: "New code",
   confirmInWallet: "Confirm in your wallet",
   canReceive: "Ready",
+  /** The co-signer holds a replaced wallet's first payout (packages/value-ledger/src/payout-wallet.ts). */
+  newWalletWaits: (hours: number) => `Replace or relink: the new wallet's first Frontier payout waits ${hours} hours`,
   replace: "Replace",
   unlink: "Unlink",
   unlinkTitle: "Unlink wallet",

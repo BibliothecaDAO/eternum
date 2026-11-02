@@ -4,6 +4,7 @@ description: Link the wallet your entries are paid from and your prizes go to
 ---
 
 import { Shot } from "@/components/Media";
+import { PAYOUT_WALLET } from "@/utils/payout-wallet";
 
 # Payout wallet
 
@@ -35,6 +36,10 @@ creates no wallet and holds no key.
 
 **Replace** links another wallet the same way. **Unlink** takes the emailed code alone, so you can unlink a wallet you
 have lost. Nothing pays out until a wallet is linked.
+
+Your first wallet is paid at once. After you replace it, or unlink it and link another, the first Frontier payout to the
+new wallet waits {PAYOUT_WALLET.changeHoldHours} hours. A second, independent signer checks every Frontier payout, and
+the wait gives you time to notice a change you did not make. Payouts to a wallet you keep never wait.
 
 ## Network fees
 

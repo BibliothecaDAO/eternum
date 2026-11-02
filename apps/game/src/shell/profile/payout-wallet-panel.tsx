@@ -1,6 +1,7 @@
 import { WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { SIGN_IN_CODE_LENGTH, type SignInOptions } from "@realms-world/identity";
+import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
 import { lazy, Suspense, useCallback, useEffect, useState } from "react";
 
 import { identityClient } from "@/hooks/context/identity-session";
@@ -35,9 +36,9 @@ type Step =
 
 /**
  * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
- * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. A linked wallet
- * receives at once. A player with no wallet is sent to Ready, whose email wallet needs no install. We create no wallet
- * and hold no key.
+ * account's email; unlinking takes the code alone, so a player who lost the wallet can still unlink it. The first wallet
+ * receives at once; a replacement's first payout waits out the co-signer's hold. A player with no wallet is sent to Ready,
+ * whose email wallet needs no install. We create no wallet and hold no key.
  */
 export const PayoutWalletPanel = ({
   wallet,
@@ -272,7 +273,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
   );
 };
 
-/** A linked wallet, which receives at once; Replace and Unlink each take a new code. */
+/** A linked wallet; Replace and Unlink each take a new code, and the wallet that follows waits out the hold. */
 const Linked = ({ address, onReplace, onUnlink }: { address: string; onReplace: () => void; onUnlink: () => void }) => (
   <>
     <Track at={STEPS.length} />
@@ -286,6 +287,10 @@ const Linked = ({ address, onReplace, onUnlink }: { address: string; onReplace: 
         {WALLET_WORDS.unlink}
       </AppButton>
     </div>
+    <p className="flex items-center gap-2.5 text-app-body text-app-muted">
+      <SemanticIcon name="clock" size={22} />
+      {WALLET_WORDS.newWalletWaits(PAYOUT_WALLET_CHANGE_SECONDS / 3600)}
+    </p>
   </>
 );
 

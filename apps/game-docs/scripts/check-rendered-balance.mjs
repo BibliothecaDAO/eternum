@@ -303,6 +303,14 @@ const blitzLedgerPhrases = (blitz, ledger, chests) => {
   ];
 };
 
+/** The Payout wallet page's statement of the co-signer's hold on a replaced wallet. */
+export const payoutWalletPhrases = (changeHoldSeconds) => [
+  {
+    page: "account/payout-wallet",
+    phrases: [`the first Frontier payout to the new wallet waits ${changeHoldSeconds / 3600} hours`],
+  },
+];
+
 /** The phrases every rules page that states a stamina, guard, chest or points number must show. */
 export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger, chests, riftGuardBound) => [
   ...blitzStaminaPhrases(blitz),
@@ -318,9 +326,8 @@ export const expectedPhrases = (blitz, eternum, frontier, frontierPreset, ledger
 ];
 
 /**
- * The relic table, the Blitz preset's relic rules, Frontier's native preset, the text export's path and Blitz's
- * ledger and chest presets, read from
- * their TypeScript sources through Vite.
+ * The relic table, the Blitz preset's relic rules, Frontier's native preset, the text export's path, Blitz's ledger and
+ * chest presets, and the co-signer's payout-wallet hold, read from their TypeScript sources through Vite.
  */
 const loadBalanceSources = async () => {
   const { createServer } = await import("vite");
@@ -335,6 +342,9 @@ const loadBalanceSources = async () => {
       join(here, "../../../contracts/l3/world-native/schema/site-previews.gen.ts"),
     );
     const { llmTxtFile } = await server.ssrLoadModule(join(here, "../docs/utils/paths.ts"));
+    const { PAYOUT_WALLET_CHANGE_SECONDS } = await server.ssrLoadModule(
+      join(here, "../../../packages/value-ledger/src/payout-wallet.ts"),
+    );
     const { buildLedgerEconomicPreset, chestPresetFor } = await server.ssrLoadModule(
       join(here, "../../../config/deployer/clean/ledger/economics.ts"),
     );
@@ -350,6 +360,7 @@ const loadBalanceSources = async () => {
       llmTxtFile,
       ledger,
       chests,
+      payoutWalletChangeSeconds: PAYOUT_WALLET_CHANGE_SECONDS,
     };
   } finally {
     await server.close();
@@ -481,18 +492,30 @@ export const missingRuns = (dist, pages) =>
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const dist = resolve(process.argv[2] ?? join(here, "../dist"));
-  const { relics, rules, firstRelicId, frontierPreset, llmTxtFile, ledger, chests, previewRiftGuardBound } =
-    await loadBalanceSources();
-  const llm = readFileSync(llmTxtFile, "utf8");
-  const phrases = expectedPhrases(
-    configOf("blitz"),
-    configOf("eternum"),
-    configOf("frontier"),
+  const {
+    relics,
+    rules,
+    firstRelicId,
     frontierPreset,
+    llmTxtFile,
     ledger,
     chests,
     previewRiftGuardBound,
-  );
+    payoutWalletChangeSeconds,
+  } = await loadBalanceSources();
+  const llm = readFileSync(llmTxtFile, "utf8");
+  const phrases = [
+    ...expectedPhrases(
+      configOf("blitz"),
+      configOf("eternum"),
+      configOf("frontier"),
+      frontierPreset,
+      ledger,
+      chests,
+      previewRiftGuardBound,
+    ),
+    ...payoutWalletPhrases(payoutWalletChangeSeconds),
+  ];
   const missing = [
     ...missingRuns(dist, [
       ...expectedRuns(configOf("blitz"), configOf("eternum")),
