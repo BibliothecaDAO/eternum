@@ -8,7 +8,9 @@ import { PlayerList, type PlayerCustom } from "./player/player-list";
 vi.mock("@/config/game-modes/use-game-mode-config", () => ({
   useGameModeConfig: () => ({ ui: { showGuildsTab: false } }),
 }));
-vi.mock("@/hooks/use-player-profile", () => ({ playerAvatarUrl: () => null }));
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
+}));
 vi.mock("@/ui/design-system/molecules/resource-icon", () => ({ ResourceIcon: () => null }));
 vi.mock("./player/use-leaderboard-effects", () => ({
   useLeaderboardEffects: () => ({ effects: new Map(), rowRefs: { current: new Map() } }),

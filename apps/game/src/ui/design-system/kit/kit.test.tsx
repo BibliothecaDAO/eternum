@@ -10,7 +10,6 @@ import { ListRow } from "./list-row";
 import { Pill } from "./pill";
 import { Portrait } from "./portrait";
 import { shortfallLine, staminaShortfall } from "./reasons";
-import { SeasonRow } from "./season-row";
 import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
@@ -175,20 +174,6 @@ describe("ListRow", () => {
     expect(link).toContain('target="_blank"');
     expect(link).toContain('rel="noopener noreferrer"');
     expect(link).toContain('aria-current="true"');
-  });
-});
-
-describe("SeasonRow", () => {
-  it("shows rank, name, sites cleared and LORDS, dashes the unknown, and marks the player's own row", () => {
-    const onOpen = vi.fn();
-    act(() =>
-      root.render(<SeasonRow rank={12} order={1} name="You" sitesCleared={88} lords={undefined} own onOpen={onOpen} />),
-    );
-    const row = host.querySelector("button")!;
-    expect(row.textContent).toBe("12You88—");
-    expect(row.getAttribute("aria-current")).toBe("true");
-    act(() => row.click());
-    expect(onOpen).toHaveBeenCalled();
   });
 });
 

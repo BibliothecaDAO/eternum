@@ -431,13 +431,16 @@ const NAMES = [
   null,
   "Gwenllian",
   "Osric",
-  "Rhoswen",
+  // A name as long as a claim takes: a phone's board cuts it with an ellipsis.
+  "Rhoswen the Unbowed",
   "Peredur",
 ];
 const rival = (index: number) => `0x${(0xb000 + index).toString(16)}`;
 
 /** Rivals' sites cleared, best first: the painted board's numbers. */
 const RIVAL_SITES = [148, 132, 127, 121, 116, 112, 108, 103, 99, 96, 91];
+/** Rivals' LORDS, as uneven as prod's Playtest board (none to four figures), so its columns are seen to align. */
+const RIVAL_LORDS = [650, 2900, 450, 0, 50, 600, 500, 100, 1000, 0, 25];
 
 /** Frontier's board: eleven rivals (one unnamed) and the player twelfth with 88 sites, 31 chests and 1,500 LORDS. */
 export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
@@ -448,7 +451,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
       address: rival(index),
       sites,
       chests: 40 - index,
-      lords: 2900 - index * 120,
+      lords: RIVAL_LORDS[index]!,
     })),
     { address: LAB_PLAYER, sites: 88, chests: 31, lords: 1500 },
   ].map(({ address, sites, chests, lords }, index) => ({
@@ -621,6 +624,20 @@ export const LAB_SEAT_PROFILES = Object.fromEntries(
   ]),
 );
 
+/** A chat player's Realms id: chat names its players by it. */
+const chatPlayerId = (name: string) => `0x${(100 + SEAT_NAMES.indexOf(name)).toString(16)}`;
+
+/**
+ * The chat players' profiles, keyed as identity keys them: by each one's account on our shards, which our guardian
+ * places by their Realms id. Each chose a portrait, so chat is seen to draw the one identity holds.
+ */
+export const LAB_CHAT_PROFILES = new Map(
+  SEAT_NAMES.map((name, position) => [
+    BigInt(realmsAccountAddress(chatPlayerId(name), LAB_GUARDIAN.accountClassHash, LAB_GUARDIAN.publicKey)),
+    { name, portrait: `0${((position + 4) % 9) + 1}` },
+  ]),
+);
+
 /** Blitz ratings by wallet (/api/ratings?players): the only wallet the lab asks for is the player's own, at 1,744. */
 export const labRatings = (wallets: readonly string[]) => ({
   block_number: 812_345,
@@ -637,7 +654,7 @@ export const LAB_CHAT = [
   ["Ysabeau", "two minutes"],
 ].map(([name, content], index) => ({
   id: `lab-chat-${index}`,
-  sender: { playerId: `0x${(100 + SEAT_NAMES.indexOf(name)).toString(16)}`, displayName: name },
+  sender: { playerId: chatPlayerId(name), displayName: name },
   zoneId: "slot:blitz-1630",
   content,
   createdAt: new Date((NOW - 600 + index * 60) * 1000).toISOString(),
@@ -650,7 +667,7 @@ export const LAB_GLOBAL_CHAT = [
   ["Aldric", "gg everyone, see you at the lobby"],
 ].map(([name, content], index) => ({
   id: `lab-global-${index}`,
-  sender: { playerId: `0x${(100 + SEAT_NAMES.indexOf(name)).toString(16)}`, displayName: name },
+  sender: { playerId: chatPlayerId(name), displayName: name },
   zoneId: "world:global",
   content,
   createdAt: new Date((NOW - 900 + index * 120) * 1000).toISOString(),

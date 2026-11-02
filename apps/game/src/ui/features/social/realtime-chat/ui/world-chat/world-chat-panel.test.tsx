@@ -15,9 +15,15 @@ const PLAYERS = vi.hoisted(() =>
 );
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayers: () => PLAYERS,
-  playerAvatarUrl: (address: bigint) => `/portrait/${address}.png`,
   usePlayerNames: () => ({}),
-  resolveChatSenderName: (_names: unknown, _id: string, displayName: string) => displayName,
+}));
+// Each sender by the name the server gave, with no portrait known yet (app-chat.test.tsx reads both through identity).
+vi.mock("../../hooks/use-chat-people", () => ({
+  useChatPeople: () => ({
+    accountOf: () => null,
+    nameOf: (_id: string, displayName: string) => displayName,
+    portraitOf: () => null,
+  }),
 }));
 vi.mock("@/play/navigation/open-place", () => ({ openOnMap: vi.fn() }));
 

@@ -4,7 +4,6 @@ import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
-import { type PlayerNames, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import {
   useRealtimeChatActions,
   useRealtimeChatSelector,
@@ -23,6 +22,7 @@ import { useChatMentions } from "../../hooks/use-chat-mentions";
 import { mentions, messageParts } from "../../model/mentions";
 import { useLinkOpener } from "../shared/leaving-realms";
 import { MessageComposer } from "../shared/message-composer";
+import { useChatPeople } from "../../hooks/use-chat-people";
 import { MessageRow } from "../shared/message-row";
 import { MessageText } from "../shared/message-text";
 import { useShowMessage } from "../shared/use-show-message";
@@ -45,10 +45,6 @@ const formatWorldMessageTime = (message: WorldChatMessage) => {
   return "Now";
 };
 
-/** The registered name first; the chat server's display name only for a sender this game has not registered. */
-const formatSenderName = (names: PlayerNames, playerId: string, displayName?: string | null) =>
-  resolveChatSenderName(names, playerId, displayName) || "Unknown adventurer";
-
 /**
  * A room: its messages, each sender's run under their name, replies quoting what they answer, and the field. A name
  * pressed opens the conversation with that player in Messages: private messages are never written in a room.
@@ -70,7 +66,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
   const { sendMessage, loadHistory, markAsRead } = useWorldChatControls(resolvedZoneId);
   const messages = zone?.messages ?? NO_MESSAGES;
   // A sender's name is read as the list draws, and the list draws again when one lands.
-  const names = usePlayerNames();
+  const people = useChatPeople();
   const mentionable = useChatMentions(resolvedZoneId);
   const links = useLinkOpener();
   const section = useRef<HTMLElement>(null);
@@ -159,7 +155,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
               <ul className="mt-auto flex flex-col">
                 {messages.map((message, index) => {
                   const senderId = message.sender.playerId;
-                  const senderName = formatSenderName(names, senderId, message.sender.displayName);
+                  const senderName = people.nameOf(senderId, message.sender.displayName);
                   const reply = replyOf(message.metadata);
                   const place = placeOf(message.metadata);
                   const previous = messages[index - 1];
@@ -187,7 +183,6 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                             ? {
                                 name: senderName,
                                 playerId: senderId,
-                                avatarUrl: message.sender.avatarUrl,
                                 time: formatWorldMessageTime(message),
                                 onName:
                                   senderId === self
@@ -199,7 +194,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
                         quote={
                           reply && !isMuted
                             ? {
-                                name: formatSenderName(names, reply.playerId, byId.get(reply.id)?.sender.displayName),
+                                name: people.nameOf(reply.playerId, byId.get(reply.id)?.sender.displayName),
                                 excerpt: reply.excerpt,
                                 onShow: () => quoted.show(reply.id),
                               }
@@ -270,7 +265,7 @@ export function WorldChatPanel({ zoneId, name, className }: WorldChatPanelProps)
           replying={
             replying
               ? {
-                  name: formatSenderName(names, replying.sender.playerId, replying.sender.displayName),
+                  name: people.nameOf(replying.sender.playerId, replying.sender.displayName),
                   excerpt: replying.content,
                   onCancel: () => setReplying(null),
                 }

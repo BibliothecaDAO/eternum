@@ -3,6 +3,11 @@ import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+// Chat reads each player's account through our guardian (app-chat.test.tsx proves that path); here none is known.
+vi.mock("@/shell/herald", async (original) => {
+  const none = () => null;
+  return { ...(await original<typeof import("@/shell/herald")>()), useRealmsAccountOf: () => none };
+});
 vi.mock("@realms-world/identity", async (original) => ({
   ...(await original<typeof import("@realms-world/identity")>()),
   fetchIdentityProfiles: async (_origin: string, accounts: string[]) =>

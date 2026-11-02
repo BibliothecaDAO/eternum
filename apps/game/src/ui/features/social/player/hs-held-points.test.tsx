@@ -29,7 +29,9 @@ vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCoarseCurrentDefaultT
 vi.mock("@/hooks/helpers/use-native-facts", async () =>
   (await import("@/hooks/helpers/native-facts-mock")).nativeFactsMock(),
 );
-vi.mock("@/hooks/use-player-profile", () => ({ playerAvatarUrl: () => null }));
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
+}));
 vi.mock("./use-leaderboard-effects", () => ({ useLeaderboardEffects: () => held.effects }));
 // Herald's history as the panel's reader holds it: the last answer it has, while a newer one may be on its way.
 vi.mock("@/hooks/use-leaderboard-activity", () => ({

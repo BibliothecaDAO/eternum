@@ -2,7 +2,14 @@ import { formatExact } from "@bibliothecadao/types";
 import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { useIdentitySession } from "@/hooks/context/identity-session";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppChip, AppEmpty, AppFigure, AppPanel, AppRank, AppRow } from "@/ui/design-system/kit/app-elements";
+import {
+  AppBoard,
+  type AppBoardEntry,
+  AppEmpty,
+  AppFigure,
+  AppPanel,
+  AppRank,
+} from "@/ui/design-system/kit/app-elements";
 import { RATING_WORDS } from "@/ui/design-system/kit/words";
 
 import { PlayerName } from "@/ui/design-system/kit/player-name";
@@ -87,56 +94,30 @@ const TopRows = ({ top, shares }: { top: RatingTop; shares: bigint[] | null }) =
   if (top.entries.length === 0 && self === null) return <AppEmpty icon="leaderboard" line={RATING_WORDS.noneRated} />;
   const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
   const shareOf = (rank: number | null) => (shares && rank !== null ? shares[rank - 1] : undefined);
-  return (
-    <ol className="flex flex-col">
-      {top.entries.map((entry) => (
-        <RatingRow
-          key={entry.player}
-          {...entry}
-          share={shareOf(entry.rank)}
-          own={self !== null && isSameStarknetAddress(entry.player, self.player)}
-        />
-      ))}
-      {self && !ownInTop && <RatingRow {...self} share={shareOf(self.rank)} own />}
-    </ol>
-  );
+  const own = (entry: RatedRow) => self !== null && isSameStarknetAddress(entry.player, self.player);
+  const rows: RatedRow[] = self && !ownInTop ? [...top.entries, self] : top.entries;
+  return <AppBoard entries={rows.map((row) => ratedEntry(row, shareOf(row.rank), own(row)))} />;
 };
 
-const RatingRow = ({
-  rank,
-  player,
-  rating,
-  profile,
-  share,
-  own,
-}: {
-  rank: number | null;
-  player: string;
-  rating: string;
-  profile: RatingProfile;
-  share: bigint | undefined;
-  own: boolean;
-}) => (
-  <li>
-    <AppRow
-      own={own}
-      lead={rank === null ? <span className="app-rank">—</span> : <AppRank rank={rank} />}
-      title={<RatedOwner player={player} profile={profile} own={own} />}
-      trail={
-        <>
-          <AppChip icon={tierOf(ratingPoints(rating)).mark}>
-            <span aria-label={tierOf(ratingPoints(rating)).name}>{formatExact(ratingPoints(rating))}</span>
-          </AppChip>
-          {share !== undefined && (
-            <AppChip icon="lords" tone="gold">
-              {formatExact(lordsOf(share))}
-            </AppChip>
-          )}
-        </>
-      }
-    />
-  </li>
-);
+type RatedRow = { rank: number | null; player: string; rating: string; profile: RatingProfile };
+
+/**
+ * A rated wallet's row: its rank (a dash before its first rated game), its owner, its rating by its tier's mark, and a
+ * paid place's share.
+ */
+const ratedEntry = (row: RatedRow, share: bigint | undefined, own: boolean): AppBoardEntry => {
+  const tier = tierOf(ratingPoints(row.rating));
+  return {
+    key: row.player,
+    own,
+    lead: row.rank === null ? <span className="app-rank">—</span> : <AppRank rank={row.rank} />,
+    name: <RatedOwner player={row.player} profile={row.profile} own={own} />,
+    figures: [
+      { icon: tier.mark, value: formatExact(ratingPoints(row.rating)), label: tier.name },
+      share === undefined ? undefined : { icon: "lords", value: formatExact(lordsOf(share)), tone: "gold" },
+    ],
+  };
+};
 
 /**
  * A rated wallet's owner by the service's profile: their name by the kit's one rule (never looked up by the wallet);

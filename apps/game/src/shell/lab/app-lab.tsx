@@ -32,6 +32,7 @@ import {
   LAB_HELD_REALMS,
   LAB_PLAYER,
   LAB_PROFILES,
+  LAB_CHAT_PROFILES,
   LAB_RATING_TOP,
   LAB_NO_HISTORY_SCREENS,
   LAB_SCREENS,
@@ -338,7 +339,7 @@ const profilesOf = (screen: LabScreen, accounts: readonly string[]) =>
       const profile =
         BigInt(account) === BigInt(LAB_PLAYER)
           ? { name: labPlayerName(screen), portrait: LAB_SESSION.user.image }
-          : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account]);
+          : (LAB_PROFILES[account] ?? LAB_SEAT_PROFILES[account] ?? LAB_CHAT_PROFILES.get(BigInt(account)));
       return profile ? [[account, profile]] : [];
     }),
   );

@@ -161,9 +161,9 @@ it("shows the pool, and on each paid rating place what it would take if the seas
   expect(panel.textContent).toContain("3 places paid");
   // Places 1 to 3 of the rating take 4,000, 2,000 and 1,000 of the pool: ceil(25 × 10%) places, each half the last.
   expect([...panel.querySelectorAll("li")].map((row) => row.textContent)).toEqual([
-    "1Rider 11,9004,000",
-    "2Rider 21,8002,000",
-    "3Rider 31,7001,000",
+    "1Rider 11,900 Conqueror4,000",
+    "2Rider 21,800 Conqueror2,000",
+    "3Rider 31,700 Conqueror1,000",
   ]);
 });
 

@@ -6,7 +6,7 @@ import { expect, it, vi } from "vitest";
 
 vi.hoisted(() => vi.stubGlobal("fetch", () => new Promise<Response>(() => {})));
 
-import { FrontierRow } from "./frontier-row";
+import { FrontierRows } from "./frontier-rows";
 
 it("says what each of a board row's counts is, on hover and to a screen reader, never a bare number (qa-app-1 P3-7)", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -22,13 +22,13 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
   await act(async () =>
     root.render(
       <MemoryRouter>
-        <FrontierRow entry={entry} own={false} />
+        <FrontierRows rows={[{ entry, own: false }]} />
       </MemoryRouter>,
     ),
   );
   try {
-    const chips = [...container.querySelectorAll<HTMLElement>(".app-chip")];
-    expect(chips.map((chip) => [chip.textContent, chip.title])).toEqual([
+    const figures = [...container.querySelectorAll<HTMLElement>(".app-board__figure")];
+    expect(figures.map((figure) => [figure.textContent, figure.title])).toEqual([
       ["12 sites cleared", "sites cleared"],
       ["340 LORDS", "LORDS"],
     ]);

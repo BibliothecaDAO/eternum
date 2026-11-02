@@ -2,7 +2,8 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
-import { playerAvatarUrl } from "@/hooks/use-player-profile";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { ENABLE_LEADERBOARD_EFFECTS_MOCKUP } from "@/ui/constants";
 import type { PlayerActivityBreakdown } from "@/services/leaderboard/player-activity-breakdown-service";
 import {
@@ -249,13 +250,10 @@ export const PlayerList = ({
           sortedPlayers.map((player) => {
             const normalizedAddress = String(player.address);
             const playerEffect = effects.get(normalizedAddress.toLowerCase());
-            const avatarUrl = playerAvatarUrl(player.address);
-
             return (
               <PlayerRow
                 key={normalizedAddress}
                 player={player}
-                avatarUrl={avatarUrl}
                 onSelect={() => handleSelectPlayer(player.address)}
                 whitelistPlayer={whitelistPlayer}
                 isLoading={isLoading}
@@ -388,7 +386,6 @@ const PlayerListHeader = ({
 
 const PlayerRow = ({
   player,
-  avatarUrl,
   onSelect,
   whitelistPlayer,
   isLoading,
@@ -400,7 +397,6 @@ const PlayerRow = ({
   registerRef,
 }: {
   player: PlayerWithActivityStats;
-  avatarUrl: string | null;
   onSelect: () => void;
   whitelistPlayer: (address: ContractAddress) => void;
   isLoading: boolean;
@@ -412,6 +408,7 @@ const PlayerRow = ({
   registerRef: (el: HTMLDivElement | null) => void;
 }) => {
   const setTooltip = useTooltipStore((state) => state.setTooltip);
+  const profile = usePlayerProfile(player.address);
 
   const isUnranked = player.points === null || player.rank === Number.MAX_SAFE_INTEGER;
   // Without a breakdown of this standing's points (players-panel), every activity cell says it is on its way.
@@ -457,10 +454,10 @@ const PlayerRow = ({
           {isUnranked ? "—" : `#${player.rank}`}
         </span>
         <div className="flex min-w-0 items-center gap-2">
-          {avatarUrl && (
+          {profile.known && (
             <img
               className="h-7 w-7 rounded-full border border-hud-line object-cover"
-              src={avatarUrl}
+              src={playerPortraitUrl(player.address, profile.portrait)}
               alt={`${player.name} avatar`}
             />
           )}

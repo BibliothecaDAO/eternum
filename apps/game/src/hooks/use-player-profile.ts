@@ -1,4 +1,3 @@
-import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import {
@@ -108,28 +107,3 @@ export const usePlayerName = (address: string | bigint | null | undefined): Play
 /** The name a surface writes for a player: the one rule's text. */
 export const usePlayerDisplayName = (address: string | bigint | null | undefined): string | null =>
   usePlayerName(address)?.text ?? null;
-
-/** The chosen portrait, else one of the stock portraits picked from the address so it stays stable. */
-export const playerAvatarUrl = (
-  address: string | bigint,
-  profile: Pick<PlayerProfile, "name" | "portrait"> = readPlayerProfile(address),
-): string => playerPortraitUrl(address, profile.portrait);
-
-const isStarknetAddress = (value: string): boolean => /^0x[0-9a-fA-F]+$/.test(value);
-
-/**
- * A chat sender by their registered name; the chat server's own display name stands in only for a sender this
- * game has not registered, and the shortened address for one with neither.
- */
-export const resolveChatSenderName = (
-  names: PlayerNames,
-  playerId: string,
-  displayName: string | null | undefined,
-): string => {
-  if (!isStarknetAddress(playerId)) return displayName?.trim() || playerId;
-  // The chat server stores the sender's address as its display name when they had none; that never shows.
-  const serverName = displayName?.trim();
-  const reading = names.reading(playerId);
-  if (reading.state === "named" && reading.claimed) return reading.text;
-  return serverName && !isStarknetAddress(serverName) ? serverName : reading.text;
-};

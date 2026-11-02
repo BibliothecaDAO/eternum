@@ -14,7 +14,7 @@ export const worldChatPublishSchema = Schema.Struct({
 /** A world-chat message as the chat server sends it. */
 export interface WorldChatMessage {
   readonly id: string;
-  readonly sender: { readonly playerId: string; readonly displayName?: string; readonly avatarUrl?: string };
+  readonly sender: { readonly playerId: string; readonly displayName?: string };
   readonly zoneId: string;
   readonly content: string;
   readonly createdAt: Date | string;

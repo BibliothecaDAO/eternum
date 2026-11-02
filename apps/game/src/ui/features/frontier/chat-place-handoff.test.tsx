@@ -9,6 +9,11 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 // The real Frontier HUD on the lab's game, with the real chat in it: only the network and the identity stand in. The
 // chat's socket keeps what it is handed to send.
 const wire = vi.hoisted(() => ({ sent: [] as unknown[] }));
+// Chat reads each player's account through our guardian (app-chat.test.tsx proves that path); here none is known.
+vi.mock("@/shell/herald", async (original) => {
+  const none = () => null;
+  return { ...(await original<typeof import("@/shell/herald")>()), useRealmsAccountOf: () => none };
+});
 vi.mock("@bibliothecadao/types", async (original) => ({
   ...(await original<typeof import("@bibliothecadao/types")>()),
   RealtimeClient: class {

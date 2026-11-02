@@ -35,7 +35,7 @@ export interface ChatMap {
   /** A player's realm in this game, by their Realms id, as a place to open; none for a player with no realm here. */
   realmOf: (playerId: string) => SharedPlace | null;
   /** The game's registered players with a claimed name, each with their portrait: whom chat mentions in a game. */
-  players: readonly { name: string; portrait: string }[];
+  players: readonly { name: string; portrait: string | null }[];
 }
 
 export const ChatMapContext = createContext<ChatMap | null>(null);
