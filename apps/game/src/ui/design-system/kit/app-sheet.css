@@ -1254,6 +1254,8 @@
   position: absolute;
   inset: -50%;
   z-index: -1;
+  /* The rays spread past the ticket, over its window's head on a phone: a press there reaches the window's cross. */
+  pointer-events: none;
   background: repeating-conic-gradient(rgb(var(--app-gold) / 0.22) 0deg 8deg, transparent 8deg 22deg);
   mask-image: radial-gradient(closest-side, black 30%, transparent);
   animation: app-ticket-rays 600ms var(--app-ease) both;

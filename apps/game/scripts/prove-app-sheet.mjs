@@ -4,7 +4,8 @@
  * next one scheduled, none left in the season, and only Eternum before and after it opens, each mode's card, the lead
  * and every age's column, checked live or idle and shot on its own; the Blitz
  * lobby, Season, Results sealed and opened, What's new) are shot at 1920×1080 and on a phone at 390×844, and checked; so are
- * the account's pages (`account`: Connect's steps, You, Settings and what its rows open) and the doorway into a game at
+ * the account's pages (`account`: Connect's steps, You, Settings and what its rows open, each window closed from its
+ * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
  *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1] [--state <signed-in.json>]
@@ -185,6 +186,56 @@ const doorwayPages = (desktop) =>
     path: `/lab/app/home/doorway/${state}?capture=1`,
     more: sheetPageChecks({ desktop, place: null }),
   }));
+
+/**
+ * Each window over the page (shell-window.tsx) closed from its cross as a player closes it, on the desktop and on a
+ * phone: opened from what opens it (a holding on You, by its label; Connect, from the bar), shot open, then the cross
+ * pressed by the browser, so a cross anything covers fails (the golden ticket's rays did on a phone, 2 November), and
+ * the window must be gone.
+ */
+const WINDOW_CLOSES = {
+  "golden-ticket": { path: "devcon-held/profile", holding: "Golden ticket" },
+  realms: { path: "devcon-held/profile", holding: "Realms" },
+  connect: { path: "first-visit/profile", words: "Connect" },
+};
+
+const markHolding = (label) => `(() => {
+  const holding = [...document.querySelectorAll(".app-holdings__item")].find((item) => item.querySelector(":scope > span:last-child")?.innerText.trim() === ${JSON.stringify(label)});
+  holding?.setAttribute("data-proof-press", "holding");
+  return holding !== undefined;
+})()`;
+
+/** Opens the window as a player does: its holding pressed, or the control with its words. */
+const openWindow = async (b, record, { holding, words }) => {
+  if (words !== undefined) return press(b, record, words);
+  const refused = b.evaluate(markHolding(holding))
+    ? clickAsPlayer(b, '[data-proof-press="holding"]')
+    : "not on the page";
+  record.presses.push({ press: holding, status: refused ?? "led" });
+  return refused === null;
+};
+
+const openAndCloseWindow = (out, name, opener) => async (b, record) => {
+  if (!(await openWindow(b, record, opener))) return;
+  await sleep(SETTLE_MS);
+  b.run("screenshot", join(out, `${name}-open.png`));
+  const refused = clickAsPlayer(b, ".app-window__close");
+  record.presses.push({ press: "the window's cross", status: refused ?? "led" });
+  await sleep(600);
+};
+
+const windowCloses = (out, desktop) =>
+  Object.entries(WINDOW_CLOSES).map(([window, { path, ...opener }]) => {
+    const name = `${desktop ? "window" : "phone-window"}-${window}-close`;
+    return {
+      name,
+      path: `/lab/app/${path}?capture=1`,
+      act: openAndCloseWindow(out, name, opener),
+      more: (b) => [
+        { check: "the window closed from its cross", ok: b.evaluate(`document.querySelector(".app-window") === null`) },
+      ],
+    };
+  });
 
 const accountPages = (desktop) =>
   Object.entries(ACCOUNT_PAGES).map(([page, { path, place, press: words }]) => ({
@@ -790,9 +841,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         b.run("set", "viewport", ...VIEWPORT);
       }
       if (parts.includes("account")) {
-        for (const page of accountPages(true)) records.push(await shoot(b, baseUrl, out, page));
+        for (const page of [...accountPages(true), ...windowCloses(out, true)])
+          records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...PHONE);
-        for (const page of accountPages(false)) records.push(await shoot(b, baseUrl, out, page));
+        for (const page of [...accountPages(false), ...windowCloses(out, false)])
+          records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...VIEWPORT);
       }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
