@@ -183,7 +183,8 @@ const createHerald = () => {
       story: { ExplorationReward: { ...reward, explorer_id: ARMY, receiver: HOME } },
     });
   };
-  const battle = () => {
+  /** A fight the player won, told at `at` (Unix seconds, now by default). */
+  const battle = (at = Math.floor(Date.now() / 1000)) => {
     const recorded = recordedItem("BattleEvent");
     const fight = recorded.value as { attacker: object; defender: object };
     append(recorded, {
@@ -194,7 +195,7 @@ const createHerald = () => {
       winner_id: ARMY,
       attacker: { ...fight.attacker, player: PLAYER_ACCOUNT },
       defender: { ...fight.defender, player: "0x0" },
-      timestamp: Math.floor(Date.now() / 1000),
+      timestamp: at,
     });
   };
   /** Any story of the player's on the next block, written as the explore story was recorded. */
@@ -474,17 +475,16 @@ const createHarness = async (level: "off" | "important" | "all") => {
     endpoints: [] as string[],
     bodies: [] as ArrayBuffer[],
     stalledEndpoint: null as string | null,
-    /** Each push the phones received, as their title and body: every test device shares the first one's keys. */
-    words: async () =>
-      (await Promise.all(push.bodies.map((body) => device.open(body)))).map((envelope) => {
-        const { title, body } = (envelope as { notification: { title: string; body: string } }).notification;
-        return `${title} / ${body}`;
-      }),
-    /** The tag each push carries: a newer push of the tag replaces the one the phone shows. */
-    tags: async () =>
+    /** Each push the phones received, opened: every test device shares the first one's keys. */
+    notifications: async () =>
       (await Promise.all(push.bodies.map((body) => device.open(body)))).map(
-        (envelope) => (envelope as { notification: { tag?: string } }).notification.tag,
+        (envelope) =>
+          (envelope as { notification: { title: string; body: string; tag?: string; createdAt: number } }).notification,
       ),
+    /** Each push the phones received, as their title and body. */
+    words: async () => (await push.notifications()).map(({ title, body }) => `${title} / ${body}`),
+    /** The tag each push carries: a newer push of the tag replaces the one the phone shows. */
+    tags: async () => (await push.notifications()).map(({ tag }) => tag),
   };
   const vapid = await vapidKeys();
   const start = () =>
@@ -650,9 +650,10 @@ describe.concurrent("shard notifications", () => {
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     herald.battle();
-    herald.battle();
-    await waitUntil(() => push.received.length >= 2, 20_000);
-    expect(push.received).toEqual([201, 201]);
+    herald.battle(); // the same game's newer fight replaces the first before it goes
+    await waitUntil(() => push.received.length >= 1, 20_000);
+    await pause(polls(5));
+    expect(push.received).toEqual([201]);
 
     // The host now serves a fresh chain whose history restarts below the old chain's cursor, and the directory says so.
     herald.newChain("0xb");
@@ -660,9 +661,9 @@ describe.concurrent("shard notifications", () => {
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the new chain's head
     herald.battle();
-    await waitUntil(() => push.received.length >= 3, 20_000);
+    await waitUntil(() => push.received.length >= 2, 20_000);
     await pause(polls(10));
-    expect(push.received).toEqual([201, 201, 201]);
+    expect(push.received).toEqual([201, 201]);
     await worker.dispose();
   }, 120_000);
 
@@ -959,18 +960,90 @@ describe.concurrent("shard notifications", () => {
     45_000,
   );
 
-  it("every fight reaches the phone, under one tag per game, so the phone keeps the newest instead of a stack", async () => {
+  it("a burst of fights in one game reaches the phone once, as the newest under the game's tag, never as a stack", async () => {
     const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     for (let fight = 0; fight < 7; fight++) herald.battle();
-    await waitUntil(() => push.received.length >= 7, 30_000);
-    await pause(polls(5));
-    expect(push.received).toEqual([201, 201, 201, 201, 201, 201, 201]);
-    expect(new Set(await push.tags())).toEqual(new Set([`fights:/g/${CHAIN_ID}/${GAME_ID}`]));
+    await waitUntil(() => push.received.length >= 1, 30_000);
+    await pause(polls(10));
+    expect(push.received).toEqual([201]);
+    expect(await push.tags()).toEqual([`fights:/g/${CHAIN_ID}/${GAME_ID}`]);
+    herald.battle(); // a later fight, once the first push went, buzzes again
+    await waitUntil(() => push.received.length >= 2, 30_000);
+    expect(push.received).toEqual([201, 201]);
     await worker.dispose();
   }, 90_000);
+
+  it("a fight still being retried is replaced by a newer one, across a restart: the newer is the one that goes", async () => {
+    const { herald, push, start, worker } = await createHarness("important");
+    herald.state.mode = "blitz"; // a fight between players pushes in Blitz
+    push.status = 503;
+    await worker.runCron();
+    await pause(polls(5)); // the notifier reaches the shard's head
+    herald.battle();
+    await waitUntil(() => push.received.length >= 2, 30_000); // the first fight fails and waits to be tried again
+    await pause(1000);
+    herald.battle(); // newer news under the same tag, while the first still waits
+    const attempts = push.received.length;
+    await waitUntil(() => push.received.length > attempts, 30_000);
+    const [older, ...later] = await push.notifications();
+    // Its next attempt already carries the newer fight: the older one no longer waits.
+    expect(later.at(-1)!.createdAt).toBeGreaterThan(older!.createdAt);
+    await worker.dispose();
+
+    push.status = 201;
+    const restarted = await start();
+    try {
+      await restarted.runCron();
+      await waitUntil(() => push.received.includes(201), 60_000);
+      await pause(polls(10));
+      const sent = await push.notifications();
+      const accepted = sent.filter((_, index) => push.received[index] === 201);
+      // Only the newer fight goes once the service takes pushes again: the older one never lands over it.
+      expect(accepted.map(({ createdAt }) => createdAt)).toEqual([Math.max(...sent.map(({ createdAt }) => createdAt))]);
+    } finally {
+      await restarted.dispose();
+    }
+  }, 180_000);
+
+  it("a result the push service keeps refusing for a while still lands once it takes pushes again", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      push.status = 503;
+      await worker.runCron();
+      await pause(polls(5)); // the notifier reaches the shard's head
+      herald.story("SeasonEnded", {});
+      await waitUntil(() => push.received.length >= 5, 90_000); // five refusals, past the old five-attempt cut
+      push.status = 201;
+      await waitUntil(() => push.received.includes(201), 120_000);
+      expect(push.received).toEqual([503, 503, 503, 503, 503, 201]);
+      expect(await push.words()).toContain("The season is over / frontier-a: see where you finished.");
+    } finally {
+      await worker.dispose();
+    }
+  }, 240_000);
+
+  it("a fight whose hour runs out while the push service refuses it ends there, and is not sent late", async () => {
+    const { herald, push, worker } = await createHarness("important");
+    try {
+      herald.state.mode = "blitz"; // a fight between players pushes in Blitz
+      push.status = 503;
+      await worker.runCron();
+      await pause(polls(5)); // the notifier reaches the shard's head
+      herald.battle(Math.floor(Date.now() / 1000) - 3600 + 20); // twenty seconds of its hour left
+      await waitUntil(() => push.received.length >= 1, 15_000);
+      await pause(30_000); // its life ends between two attempts
+      const tried = push.received.length;
+      push.status = 201;
+      await pause(polls(10));
+      expect(push.received).toHaveLength(tried);
+      expect(push.received).not.toContain(201);
+    } finally {
+      await worker.dispose();
+    }
+  }, 150_000);
 
   it("a phone that turns alerts on gets Alerts are on, and its game's lease keeps the phone's time zone", async () => {
     const { push, worker } = await createHarness("important");

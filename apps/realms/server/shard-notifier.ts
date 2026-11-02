@@ -18,6 +18,7 @@ import {
   gamePath,
   includesArmyRestedNotification,
   includesStoryNotification,
+  kindTag,
   readHistoryStory,
   storyRecipients,
   type LocalNotificationPayload,
@@ -61,7 +62,10 @@ interface OutboxEntry {
 }
 
 const STORY_PAGE = 100;
+/** How often a page or a rested watch that cannot be read is tried before it is given up, loudly. */
 const MAX_ATTEMPTS = 5;
+/** The longest a failed delivery waits before its next attempt; it is tried for as long as the alert lives. */
+const MAX_RETRY_SPACING_MS = 5 * 60_000;
 const SHARD_TIMEOUT_MS = 10_000;
 // Fetch confirmed enrollment before the trigger; delivery itself never depends on a shard read.
 const DAY_OPEN_PREPARE_MS = 60_000;
@@ -127,7 +131,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       await this.ctx.storage.transaction(async (txn) => {
         // An enrollment read that finishes late must not resurrect an already opened day.
         if (Date.now() >= opening.opensAt || (await txn.get(preparedKey)) !== undefined) return;
-        for (const entry of entries) await txn.put(outboxKey(entry), entry);
+        for (const entry of entries) await putNewest(txn, entry);
         // An empty cohort is prepared too; later polls must not admit later enrollments.
         await txn.put(preparedKey, opening.endsAt);
       });
@@ -170,7 +174,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
       if (!(await this.givesUpPage(shard, cursor!, page, error))) return false;
     }
     await this.ctx.storage.transaction(async (txn) => {
-      for (const entry of entries) await txn.put(outboxKey(entry), entry);
+      for (const entry of entries) await putNewest(txn, entry);
       // A player's action replaces every wake time of theirs (a moved army gets a new one, a gone army none) and ends a
       // rested alert still waiting to go: its armies are no longer resting.
       for (const { actor, watches } of resting) {
@@ -257,7 +261,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     await this.ctx.storage.transaction(async (txn) => {
       for (const watch of watches) await txn.delete(restWatchKey(watch));
       for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
-      for (const entry of alert) await txn.put(outboxKey(entry), entry);
+      for (const entry of alert) await putNewest(txn, entry);
     });
   }
 
@@ -306,20 +310,36 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     }
   }
 
+  /** One attempt: sent, tried again later while the alert lives, or ended with its reason, logged when it is a loss. */
   private async deliverEntry(env: IdentityEnv, key: string, entry: OutboxEntry): Promise<void> {
-    const outcome = await deliver(env, entry, Date.now()).catch((error: unknown) => {
-      const retry = retryLater(entry, Date.now(), POLL_MS);
+    const outcome = await deliver(env, entry, Date.now()).catch((error: unknown): Delivery => {
       console.error(
-        retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
+        "shard_notifier_delivery_failed",
         entry.envelope.notification.id,
         `device ${entry.subscriptionId}`,
-        `attempt ${entry.attempts + 1}`,
         error,
       );
-      return retry;
+      return retryOrExpire(entry, Date.now());
     });
-    if (outcome) await this.ctx.storage.put(key, outcome);
-    else await this.ctx.storage.delete(key);
+    if ("next" in outcome) {
+      console.warn(
+        "shard_notifier_delivery_retry",
+        entry.envelope.notification.id,
+        `device ${entry.subscriptionId}`,
+        `attempt ${outcome.next.attempts}`,
+      );
+      await this.ctx.storage.put(key, outcome.next);
+      return;
+    }
+    await this.ctx.storage.delete(key);
+    if (LOST.has(outcome.ended))
+      console.error(
+        "shard_notifier_delivery_ended",
+        outcome.ended,
+        entry.envelope.notification.id,
+        `device ${entry.subscriptionId}`,
+        `after ${entry.attempts + 1} attempts`,
+      );
   }
 }
 
@@ -384,25 +404,32 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
     ),
   );
 
+/** What one attempt left: the alert to try again later, or how it ended. */
+type Delivery = { next: OutboxEntry } | { ended: "sent" | "unwanted" | "expired" | "refused" | "device-gone" };
+/** Endings where the player never got news they wanted: logged, never silent. */
+const LOST = new Set(["expired", "refused", "device-gone"]);
+
 /**
  * Checks current consent, expiry and the game in view before sending; the phone's own night setting decides whether
- * it sounds. Returns the alert to send again later, or null when it is done.
+ * it sounds. A push service that asks to wait (429, 5xx) is tried again while the alert lives.
  */
-const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
+const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number): Promise<Delivery> =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const done = null;
       const notification = entry.envelope.notification;
-      if (notification.expiresAt <= now) return done;
+      if (notification.expiresAt <= now) return { ended: "expired" } as const;
       const store = yield* PushSubscriptionStore;
       const device = yield* store.find(entry.owner, entry.subscriptionId);
       const levels = yield* (yield* NotificationPreferenceStore).levels([entry.owner]);
       if (!device || device.gameAlertsEnabledAt === null || device.gameAlertsEnabledAt > notification.createdAt)
-        return done;
-      if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return done;
+        return { ended: "unwanted" } as const;
+      if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off")
+        return { ended: "unwanted" } as const;
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, envelopeAt(entry, now, device)));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      return outcome === "retry" ? retryLater(entry, now, POLL_MS) : done;
+      return outcome === "retry"
+        ? retryOrExpire(entry, now)
+        : ({ ended: outcome === "accepted" ? "sent" : outcome === "expired" ? "device-gone" : "refused" } as const);
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
@@ -438,20 +465,37 @@ const runningFrontierGames = async (shard: WatchedShard): Promise<Set<string>> =
   );
 };
 
-const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
+/**
+ * One outbox place per player, collapse tag and device: the phone keeps one alert per tag, so only the newest waiting
+ * for it may go. An alert with no tag is its own.
+ */
+const outboxKey = (entry: OutboxEntry) =>
+  `outbox:${entry.owner}:${entry.envelope.notification.tag ?? entry.envelope.notification.id}:${entry.subscriptionId}`;
 
-/** Where a player's rested alerts for one game wait in the outbox: every one of theirs, whatever its wave. */
+/** Queues an alert in its place unless a newer one of its tag already waits there: an older retry never replaces news. */
+const putNewest = async (txn: DurableObjectTransaction, entry: OutboxEntry) => {
+  const waiting = await txn.get<OutboxEntry>(outboxKey(entry));
+  if (waiting && waiting.envelope.notification.createdAt > entry.envelope.notification.createdAt) return;
+  await txn.put(outboxKey(entry), entry);
+};
+
+/** Where a player's rested alert for one game waits, on each of their devices. */
 const restedOutboxPrefix = (shard: WatchedShard, actor: RestingActor) =>
-  `outbox:rested:v3:${shard.chainId}:${actor.gameId}:${actor.owner}:`;
+  `outbox:${actor.owner}:${kindTag("army-rested", gamePath({ chainId: shard.chainId, gameId: actor.gameId }))}:`;
 
 /** The watch whose army was full last: the moment the player's armies were all rested. */
 const latest = (watches: RestWatch[]) => watches.reduce((last, watch) => (watch.fullAt > last.fullAt ? watch : last));
 
-/** A failed attempt waits 1, 2, 4, then 8 polls; after MAX_ATTEMPTS the entry is dropped (null). */
-const retryLater = (entry: OutboxEntry, now: number, pollMs: number): OutboxEntry | null =>
-  entry.attempts + 1 >= MAX_ATTEMPTS
-    ? null
-    : { ...entry, attempts: entry.attempts + 1, dueAt: now + backoffMs(entry.attempts, pollMs) };
+/**
+ * A failed attempt waits 1, 2, 4… polls, never more than MAX_RETRY_SPACING_MS, and is tried again for as long as the
+ * alert lives; one whose next attempt would fall past its life has expired.
+ */
+const retryOrExpire = (entry: OutboxEntry, now: number): Delivery => {
+  const dueAt = now + Math.min(backoffMs(entry.attempts, POLL_MS), MAX_RETRY_SPACING_MS);
+  return dueAt < entry.envelope.notification.expiresAt
+    ? { next: { ...entry, attempts: entry.attempts + 1, dueAt } }
+    : { ended: "expired" };
+};
 
 const backoffMs = (attempts: number, pollMs: number) => 2 ** attempts * pollMs;
 
