@@ -1198,6 +1198,11 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   padding: theme(spacing.4);
   background: rgb(0 0 0 / 0.6);
 }
+/* The layer's dialog takes the keyboard's focus as it opens, so the next Tab reaches its first control: it is no
+   control itself, and draws no ring. */
+.app-scrim [role="dialog"][tabindex="-1"]:focus {
+  outline: none;
+}
 /* On a phone the window rises from the foot, as wide as the screen. */
 .app-scrim--sheet {
   align-items: flex-end;

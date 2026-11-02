@@ -3,6 +3,7 @@ import "@/ui/design-system/kit/app-sheet.css";
 import { Icon } from "@/ui/design-system/icon";
 import { AppModalLayer } from "@/ui/design-system/kit/app-elements";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
+import { useDragDownCloses } from "@/ui/design-system/kit/sheet-closes";
 import { CLOSE } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
@@ -11,8 +12,9 @@ import { useLayout } from "./layout";
 /**
  * A window over the page the player is on (Connect, a holding's sheet): in the page's middle on desktop, a sheet from the
  * foot on a phone. Brooding Plains heads it, its title at its foot. It is the app's modal layer: the page under it is
- * dimmed and inert, never moves, and it closes from its cross, a press beside it, Escape or the system back. It carries
- * the shell's surface, so it draws the same over a game.
+ * dimmed and inert, never moves, and it closes from its cross, a press beside it, a drag down on its head on a touch
+ * screen (the HUD's sheets' gesture; a mouse never drags it, and its body scrolls as ever), Escape or the system back.
+ * It carries the shell's surface, so it draws the same over a game.
  */
 export const ShellWindow = ({
   title,
@@ -24,6 +26,7 @@ export const ShellWindow = ({
   children: ReactNode;
 }) => {
   const phone = useLayout() === "phone";
+  const drag = useDragDownCloses(onClose);
   return (
     <AppModalLayer onClose={onClose} sheet={phone}>
       <section
@@ -33,10 +36,15 @@ export const ShellWindow = ({
         className="app-window"
         data-layout={phone ? "phone" : "desktop"}
       >
-        <header className="app-window__head">
+        <header className="app-window__head touch-none" {...drag.handlers}>
           <img className="app-window__painting" alt="" {...paintingSources("brooding-plains")} sizes="30rem" />
           <h2>{title}</h2>
-          <button type="button" className="app-window__close" aria-label={CLOSE} onClick={onClose}>
+          <button
+            type="button"
+            className="app-window__close"
+            aria-label={CLOSE}
+            onClick={() => !drag.dragged.current && onClose()}
+          >
             <Icon name="close" size={22} />
           </button>
         </header>

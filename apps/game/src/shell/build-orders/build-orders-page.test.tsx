@@ -36,7 +36,7 @@ import {
   type BuildOrderBook,
 } from "@bibliothecadao/eternum/automation";
 
-import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
 import { BuildOrdersPage } from "./build-orders-page";
@@ -63,8 +63,10 @@ beforeEach(() => {
   root = createRoot(host);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
+  // A sheet closed steps back off its history entry a moment later: that step lands here, not in the next test.
+  await settle();
   host.remove();
   service.saveBuildOrders.mockClear();
   service.getBuildOrders.mockReset();
@@ -100,27 +102,31 @@ const Followed = () => {
   return null;
 };
 
-/** Where the page stands: the list, an editor or the paste, each its own address. */
-let address = "";
-const Address = () => {
-  const { pathname, search } = useLocation();
-  address = pathname + search;
-  return null;
-};
+/** History moves a moment after it is asked to. */
+const settle = () => act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
 
-/** The page as Play's row opens it, on a phone unless a test says otherwise: one view at a time. */
+/** The page before Build orders in the browser's history: where the system back leaves to. */
+const BEFORE = "/before";
+/** Where the browser stands. */
+const address = () => window.location.pathname + window.location.search;
+
+/**
+ * The page as Play's row opens it, in the browser's own history after another page, on a phone unless a test says
+ * otherwise.
+ */
 const open = (width = 390) => {
   setViewportWidth(width);
+  window.history.replaceState(null, "", BEFORE);
+  window.history.pushState(null, "", BUILD_ORDERS_PATH);
   return act(async () =>
     root.render(
-      <MemoryRouter initialEntries={[BUILD_ORDERS_PATH]}>
+      <BrowserRouter>
         <Routes>
           <Route path={BUILD_ORDERS_PATH} element={<BuildOrdersPage />} />
           <Route path="*" element={null} />
         </Routes>
         <Followed />
-        <Address />
-      </MemoryRouter>,
+      </BrowserRouter>,
     ),
   );
 };
@@ -279,8 +285,8 @@ describe("the Build orders page", () => {
     );
     type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"coal","count":2}]}');
     await press("Read it");
-    // It opens as a new order on its first rank, to save.
-    expect(address).toBe(`${BUILD_ORDERS_PATH}?edit=new`);
+    // It opens as a new order on its first rank, to save, in the sheet the paste stood in.
+    expect(sheet()?.getAttribute("aria-label")).toBe("Mine");
     expect(field("Name")?.value).toBe("Mine");
     expect(rows()).toEqual(["Coal2"]);
   });
@@ -409,12 +415,12 @@ describe("the Build orders page", () => {
     expect(rows()[0]).toContain("Active");
   });
 
-  it("opens an order to edit at its own address in the sheet over the list, and its cross returns to the list unsaved", async () => {
+  it("opens an order to edit in the sheet over the list, and its cross returns to the list unsaved", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
     expect(rows()).toEqual(["Coal rush2 stepsActive", "The game's order26 stepsUse"]);
     await press("Edit");
-    expect(address).toBe(`${BUILD_ORDERS_PATH}?edit=o1`);
+    expect(sheet()?.getAttribute("aria-label")).toBe("Coal rush");
     // The editor in the sheet, on its first rank (Settlement's farm), the list under it.
     expect(rows()).toEqual(["Farm2"]);
     expect(listRows()[0]).toContain("Coal rush");
@@ -424,7 +430,7 @@ describe("the Build orders page", () => {
     expect(button("Back")).toBeUndefined();
     expect(document.body.querySelector('[data-role="back"]')).toBeNull();
     await press("Close");
-    expect(address).toBe(BUILD_ORDERS_PATH);
+    expect(address()).toBe(BUILD_ORDERS_PATH);
     expect(sheet()).toBeNull();
     expect(rows()[0]).toContain("Coal rush");
     expect(service.saveBuildOrders).not.toHaveBeenCalled();
@@ -450,13 +456,50 @@ describe("the Build orders page", () => {
     expect(listRows().slice(0, 2)).toEqual(["Coal rush2 stepsActive", "The game's order26 stepsUse"]);
   });
 
+  it.each([
+    ["its cross", () => press("Close")],
+    ["Escape", () => act(async () => void window.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" })))],
+    ["the system back", () => act(async () => window.history.back())],
+  ])(
+    "closes an open order once with %s, and the next back leaves the page (review-no-back-1, P2-1)",
+    async (_, close) => {
+      account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
+      await open();
+      await press("Edit");
+      expect(sheet()).not.toBeNull();
+      await close();
+      await settle();
+      expect(sheet()).toBeNull();
+      expect(address()).toBe(BUILD_ORDERS_PATH);
+      await act(async () => window.history.back());
+      await settle();
+      expect(address()).toBe(BEFORE);
+    },
+  );
+
+  it("closes a pasted order turned draft once on the system back, its paste and its draft one sheet", async () => {
+    account({ orders: [], active: null });
+    await open();
+    await press("Paste an order");
+    type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"coal","count":2}]}');
+    await press("Read it");
+    expect(sheet()?.getAttribute("aria-label")).toBe("Mine");
+    await act(async () => window.history.back());
+    await settle();
+    expect(sheet()).toBeNull();
+    expect(address()).toBe(BUILD_ORDERS_PATH);
+    await act(async () => window.history.back());
+    await settle();
+    expect(address()).toBe(BEFORE);
+  });
+
   it("deletes an order from its editor; the game's order is followed when it was the followed one", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
     await press("Edit");
     await press("Delete");
     expect(service.saveBuildOrders.mock.calls[0][0].book).toEqual({ orders: [], active: null });
-    expect(address).toBe(BUILD_ORDERS_PATH);
+    expect(address()).toBe(BUILD_ORDERS_PATH);
     expect(followed).toBe("Default");
     expect(rows()).toEqual(["The game's order26 stepsActive"]);
   });

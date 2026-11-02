@@ -10,6 +10,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
+import { noBackGuardConfigs } from "./no-back-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
@@ -28,21 +29,6 @@ const NO_BITWISE_ID = [
     message: "Math.imul drops an entity id's home (its high 32 bits): hash foldEntityId(id) instead.",
   },
 ];
-
-// No page has Back and no row carries an arrow (the owner's pick A, 2 November 2026: "I feel like no one does that
-// nowadays"): the places in the bar are the way out of a page, a sheet closes on its cross, and a row opens on a press
-// anywhere along it. These are the shapes the Back links and row arrows took, so none comes back.
-const NO_BACK_MESSAGE =
-  "No Back link or row arrow: a page's places are its way out, a sheet closes on its cross, a row opens on a press.";
-const NO_BACK = [
-  "JSXAttribute[name.name='data-role'][value.value='back']",
-  "JSXAttribute[name.name=/^(icon|name)$/][value.value=/^chevron-(left|right)$/]",
-  "JSXAttribute[name.name=/^(back|onBack|opens)$/]",
-  "Property[key.name=/^(onBack|opens)$/]",
-  "JSXAttribute[name.name=/^(aria-label|label)$/][value.value='Back']",
-  "JSXText[value=/^\\s*Back\\s*$/]",
-  "Identifier[name='BACK']",
-].map((selector) => ({ selector, message: NO_BACK_MESSAGE }));
 
 // A HUD colour is a role (tokens.ts HUD_COLOR_CLASSES): it takes no opacity, so `bg-hud-muted/40` makes no class at all
 // and the part it paints shows the track under it (a fight's lost troops drew black, not grey). The slash is written
@@ -214,22 +200,6 @@ const eslint = new ESLint({
       rules: TEXT_VALUES,
     },
     {
-      files: ["apps/game/src/**/*.tsx"],
-      ignores: ["apps/game/src/ui/features/debug/**", "**/*.test.tsx"],
-      rules: {
-        "no-restricted-syntax": [
-          "error",
-          ...NO_BITWISE_ID,
-          ...HUD_ROLE_OPACITY,
-          ...NO_HEAD_RENDER,
-          ...HAND_WRITTEN_GAIN,
-          ...SHORT_IN_CHIPS,
-          ...STAMINA_IS_SEGMENTED,
-          ...NO_BACK,
-        ],
-      },
-    },
-    {
       files: ["apps/game/src/ui/features/**/*.{ts,tsx}"],
       ignores: ["apps/game/src/ui/features/debug/**", "**/*.test.{ts,tsx}"],
       rules: {
@@ -244,12 +214,13 @@ const eslint = new ESLint({
           ...CHOSEN_IS_THE_KIT_PICK,
           ...CHOSEN_STATE_IS_THE_KIT,
           ...CHOSEN_LOOK_IS_THE_KIT,
-          ...NO_BACK,
         ],
       },
     },
     // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
+    // No Back link or row arrow on any screen (no-back-guards.mjs).
+    ...noBackGuardConfigs,
     // One source per fact: no list or partial map of a catalog's members outside its modules (catalog-guards.mjs).
     ...catalogGuardConfigs,
   ],

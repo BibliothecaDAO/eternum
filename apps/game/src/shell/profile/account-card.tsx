@@ -1,6 +1,6 @@
 import { KEEP, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { nameRuleViolation, type Session } from "@realms-world/identity";
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import {
@@ -44,14 +44,15 @@ export const AccountCard = ({ session }: { session: Session }) => {
     close();
     void refresh();
   };
+  const { card, leaveName } = useNameFocusReturn(open);
   return (
-    <div className="flex flex-col gap-4">
+    <div ref={card} className="flex flex-col gap-4">
       <AppPanel title={PROFILE_WORDS.account} icon="person" flush>
         {open === "name" ? (
           <NameRow
             current={identityUsername(session) ?? session.user.suggestedName ?? ""}
-            onDone={done}
-            onCancel={close}
+            onDone={leaveName(done)}
+            onCancel={leaveName(close)}
           />
         ) : (
           <AppSetting
@@ -72,7 +73,7 @@ export const AccountCard = ({ session }: { session: Session }) => {
       </AppPanel>
       {open === "payout" && (
         <ShellWindow title={WALLET_WORDS.payoutWallet} onClose={close}>
-          <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={() => void refresh()} />
+          <PayoutWalletPanel wallet={payout} email={session.user.email} onChanged={done} />
         </ShellWindow>
       )}
       {open === "portrait" && (
@@ -82,6 +83,25 @@ export const AccountCard = ({ session }: { session: Session }) => {
       )}
     </div>
   );
+};
+
+/**
+ * The name's row has the keyboard's focus back once its edit closes (claimed or put back): the edit took the row's
+ * place, so the focus it held would otherwise fall to the page. The Name row leads the Account panel.
+ */
+const useNameFocusReturn = (open: Open) => {
+  const card = useRef<HTMLDivElement>(null);
+  const left = useRef(false);
+  useEffect(() => {
+    if (open !== null || !left.current) return;
+    left.current = false;
+    card.current?.querySelector<HTMLElement>("button.app-row")?.focus();
+  }, [open]);
+  const leaveName = (after: () => void) => () => {
+    left.current = true;
+    after();
+  };
+  return { card, leaveName };
 };
 
 /** Sign out, Settings' last step: a loss, so in the bad tone, asking first. */
@@ -157,6 +177,11 @@ const SignInMethods = ({ session }: { session: Session }) => {
  */
 const NameRow = ({ current, onDone, onCancel }: { current: string; onDone: () => void; onCancel: () => void }) => {
   const phone = useLayout() === "phone";
+  // The field takes the focus the row held, so the keyboard edits the name at once.
+  const form = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    form.current?.querySelector("input")?.focus();
+  }, []);
   const [name, setName] = useState(current);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -190,6 +215,7 @@ const NameRow = ({ current, onDone, onCancel }: { current: string; onDone: () =>
   // A phone's row is too narrow for the field and the verb side by side: the verb stands under the field.
   return (
     <form
+      ref={form}
       onSubmit={(event) => void claim(event)}
       onKeyDown={(event) => event.key === "Escape" && onCancel()}
       className="app-row items-start"

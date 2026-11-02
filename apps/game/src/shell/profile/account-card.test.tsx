@@ -127,6 +127,8 @@ it("edits the name in its own row, offering Claim name only once it differs (qa-
       )!;
     const field = document.querySelector<HTMLInputElement>("form input")!;
     expect(field.value).toBe("Maelis");
+    // The field takes the focus the row held (review-no-back-1, P2-2).
+    expect(document.activeElement).toBe(field);
     // The field stands in the name's own row, in the Account panel: nothing opens under the rows or over the page.
     expect(field.closest(".app-row")?.closest(".app-panel")).not.toBeNull();
     expect(document.querySelector('[role="dialog"], [role="region"]')).toBeNull();
@@ -142,10 +144,46 @@ it("edits the name in its own row, offering Claim name only once it differs (qa-
     // Back to the name held: nothing to claim again.
     await type("Maelis");
     expect(claim().disabled).toBe(true);
-    // Escape puts the row back as it was.
+    // Escape puts the row back as it was, and gives it back the focus.
     await act(async () => void field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
     expect(container.querySelector("form")).toBeNull();
-    expect([...container.querySelectorAll(".app-row")].some((row) => row.textContent === "NameMaelis")).toBe(true);
+    expect(nameRowNow(container)).not.toBeNull();
+    expect(document.activeElement).toBe(nameRowNow(container));
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+/** The Name row as it stands now: the edit replaces it, and closing draws it anew. */
+const nameRowNow = (container: HTMLElement) =>
+  [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) => row.textContent === "NameMaelis") ?? null;
+
+it("gives the Name row the focus back once a new name is claimed (review-no-back-1, P2-2)", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const updateUser = vi.spyOn(identityClient, "updateUser").mockResolvedValue(undefined as never);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    await act(async () => nameRowNow(container)!.click());
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "Maelis2");
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => field.form!.requestSubmit());
+    expect(updateUser).toHaveBeenCalledWith({ name: "Maelis2" });
+    expect(container.querySelector("form")).toBeNull();
+    expect(document.activeElement).toBe(nameRowNow(container));
   } finally {
     await act(async () => root.unmount());
     container.remove();
