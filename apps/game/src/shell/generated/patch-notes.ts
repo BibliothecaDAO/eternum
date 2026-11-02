@@ -43,7 +43,7 @@ export const patchNotes = [
           "kind": "new",
           "icon": "notifications",
           "title": "Push notifications",
-          "line": "Your phone can tell you when a Frontier day opens and what you can claim, when the season is over, when a Blitz settles, and when a message or a mention reaches you. Nothing between 22:00 and 08:00 on your phone's clock."
+          "line": "Your phone can tell you when a Frontier day opens and what you can claim, when your armies are rested, when the season is over, when a Blitz settles, and when a message or a mention reaches you. The game keeps no quiet hours: your phone's Do Not Disturb decides when they sound, and a newer alert replaces an older one of its kind."
         },
         {
           "kind": "new",
