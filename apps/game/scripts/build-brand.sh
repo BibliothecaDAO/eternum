@@ -2,8 +2,8 @@
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
 # each age's transparent lockup, the install icons (each surface's mark by the size it shows it, gold on Hearth) and the
-# favicon (the small globe's master, resampled; the dev sets add a hatched corner), and the link preview (the lettered
-# mark on a painting under Hearth at 80%, the deck's page 19).
+# favicon (the kit's own 32 and 48 px small globes, as they come; the dev sets add a hatched corner), and the link
+# preview (the lettered mark on a painting under Hearth at 80%, the deck's page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
 
@@ -16,6 +16,7 @@ MUTED=$(node -p 'require("./src/brand/palette.json").brand.muted')
 LETTERED="$KIT/01-Logos/Realms/Lettered/realms-lettered-gold.png"
 CONTOUR="$KIT/01-Logos/Realms/Contour/realms-contour-gold.png"
 SMALL="$KIT/01-Logos/Realms/Small/realms-small-master.png"
+SMALL_SIZES="$KIT/01-Logos/Realms/Small/realms-small"
 WORK=$(mktemp -d)
 trap 'rm -rf "$WORK"' EXIT
 
@@ -47,16 +48,12 @@ hatch() {
   magick "$1" "$WORK/hatch.png" -compose Over -composite -strip "$1"
 }
 
-# The favicon: the kit's small globe master as it is, padded to square, to be resampled to each of the .ico's sizes,
-# its ground left clear (owner, 29 October 2026: "just use realms-small-master.png from the brand kit as the favicon
-# its not hard ?").
-magick "$SMALL" -gravity center -background none -extent "%[fx:max(w,h)]x%[fx:max(w,h)]" "$WORK/globe.png"
-
 # set_of_icons <prefix>: one environment's install icons, named game-<prefix>..., each in the kit's drawing for the size
 # its surface shows it at (small below 64, contour 64-120, lettered above): an iPhone's home screen (60 pt: 120 and
 # 180 px) and an Android launcher (48 dp: 192 px and the maskable icon) the small globe; an iPad's (76 and 83.5 pt: 152
 # and 167 px) the contour; the 512 px icon, which Chrome's splash and a desktop's dock show at about 128, the lettered
-# mark. Then the favicon's three frames.
+# mark. Then the favicon's two frames: the kit's 32 and 48 px small globes as they come (owner, 2 November 2026: "cant
+# you just use the 32px icon from the brand kit"). No 16 px frame: a browser draws a 1x tab's 16 px from the 32.
 set_of_icons() {
   icon "$SMALL" "$OUT/game-$1pwa-192x192.png" 192 88
   icon "$LETTERED" "$OUT/game-$1pwa-512x512.png" 512 88
@@ -64,7 +61,7 @@ set_of_icons() {
   icon "$SMALL" "$OUT/game-$1maskable-icon-512x512.png" 512 78
   for size in 120 180; do icon "$SMALL" "$OUT/game-$1apple-touch-icon-${size}x$size.png" "$size" 88; done
   for size in 152 167; do icon "$CONTOUR" "$OUT/game-$1apple-touch-icon-${size}x$size.png" "$size" 88; done
-  for size in 16 32 48; do magick "$WORK/globe.png" -resize "${size}x$size" -strip "$WORK/$size.png"; done
+  for size in 32 48; do cp "$SMALL_SIZES-$size.png" "$WORK/$size.png"; done
 }
 
 # The parent mark by the size it is drawn: the first frame's (240 px), the bar's (28 px), the loader's (96 px).
@@ -78,10 +75,30 @@ done
 # The status page's header mark (40 px); that site shares no file with the app.
 web "$SMALL" "$STATUS/realms-small.webp" 160
 
-# ico <file>: the favicon's three frames, each with its full alpha (left to itself, the writer gives a frame of few
-# colours a one-bit mask, every faint pixel solid).
+# ico <file>: the favicon's frames, each PNG stored in the .ico byte for byte (every current browser reads a PNG frame),
+# so nothing re-encodes the kit's pixels: the icon directory (a 16-byte entry per frame: its width and height, its
+# 32-bit depth, its length and where it starts), then the PNGs.
 ico() {
-  magick "$WORK/16.png" "$WORK/32.png" "$WORK/48.png" -type TrueColorAlpha "$1"
+  node - "$1" "$WORK/32.png" "$WORK/48.png" <<'JS'
+const { readFileSync, writeFileSync } = require("node:fs");
+const [out, ...frames] = process.argv.slice(2);
+const pngs = frames.map((frame) => readFileSync(frame));
+const directory = Buffer.alloc(6 + 16 * pngs.length);
+directory.writeUInt16LE(1, 2);
+directory.writeUInt16LE(pngs.length, 4);
+let offset = directory.length;
+pngs.forEach((png, index) => {
+  const entry = 6 + 16 * index;
+  directory.writeUInt8(png.readUInt32BE(16), entry);
+  directory.writeUInt8(png.readUInt32BE(20), entry + 1);
+  directory.writeUInt16LE(1, entry + 4);
+  directory.writeUInt16LE(32, entry + 6);
+  directory.writeUInt32LE(png.length, entry + 8);
+  directory.writeUInt32LE(offset, entry + 12);
+  offset += png.length;
+});
+writeFileSync(out, Buffer.concat([directory, ...pngs]));
+JS
 }
 
 set_of_icons ""

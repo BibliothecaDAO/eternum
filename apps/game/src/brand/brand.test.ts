@@ -51,6 +51,26 @@ function standaloneSurfaces(): string[] {
   ];
 }
 
+/** The kit's small globes drawn for a favicon (01-Logos/Realms/Small/realms-small-32.png and -48.png), by their SHA-256. */
+const KIT_SMALL_GLOBES = {
+  "32x32": "66edcb26bb67c878498f92500c7bede6ab5fce05f7ff90336b3d8ae01f7a84c5",
+  "48x48": "13478ed450ccfc155974399feb7f6586a3d21c55a7167bcc4ce90a51b98109b5",
+};
+
+/** An .ico's frames, each by its size and the SHA-256 of its stored bytes (a PNG frame is its file). */
+const icoFrames = (file: string) => {
+  const ico = readFileSync(file);
+  return Array.from({ length: ico.readUInt16LE(4) }, (_, index) => {
+    const entry = 6 + 16 * index;
+    const start = ico.readUInt32LE(entry + 12);
+    const stored = ico.subarray(start, start + ico.readUInt32LE(entry + 8));
+    return {
+      size: `${ico[entry] || 256}x${ico[entry + 1] || 256}`,
+      digest: createHash("sha256").update(stored).digest("hex"),
+    };
+  });
+};
+
 const REPO = path("../../../../");
 const shortPath = (file: string) => file.replace(REPO, "");
 
@@ -157,6 +177,20 @@ describe("the brand comes from the Realms Brand Kit v3", () => {
       ].map((hit) => `${shortPath(file)}: ${hit}`);
     });
     expect(own).toEqual([]);
+  });
+
+  it("serves the kit's 32 and 48 px small globes as the favicon, byte for byte, and no other frame", () => {
+    const html = readFileSync(path("../../index.html"), "utf8");
+    expect(html).toContain(
+      `<link rel="icon" href="/images/game-favicon.ico" sizes="${Object.keys(KIT_SMALL_GLOBES).join(" ")}" />`,
+    );
+    expect(
+      Object.fromEntries(icoFrames(`${PUBLIC}images/game-favicon.ico`).map(({ size, digest }) => [size, digest])),
+    ).toEqual(KIT_SMALL_GLOBES);
+    // The dev favicon is the same two globes, each with its hatched corner.
+    expect(icoFrames(`${PUBLIC}images/game-dev-favicon.ico`).map(({ size }) => size)).toEqual(
+      Object.keys(KIT_SMALL_GLOBES),
+    );
   });
 
   it("names the link preview by its content, so a new image is a new address", () => {
