@@ -642,6 +642,9 @@ importers:
       bun-types:
         specifier: catalog:web
         version: 1.4.2
+      effect:
+        specifier: 4.0.4
+        version: 4.0.4
       typescript:
         specifier: ^5.8.2
         version: 5.9.3

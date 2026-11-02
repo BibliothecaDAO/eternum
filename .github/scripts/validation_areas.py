@@ -17,6 +17,12 @@ STATIC = [
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
 ]
+# The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
+VALUE_READERS = [
+    f"apps/value-relay/src/{name}.ts"
+    for name in ("frontier-sweep", "frontier-games", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
+                 "source-url", "ports", "failure")
+]
 AREAS = {
     "client": [
         ".prettierrc",
@@ -47,6 +53,7 @@ AREAS = {
         "scripts/words/**",
         "scripts/check-forbidden-hosts*",
         "apps/herald/src/**",
+        *VALUE_READERS,
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/**",
         "apps/launch-service/wrangler.jsonc",
@@ -68,6 +75,7 @@ AREAS = {
         "deploy/athanor/scripts/directory.py",
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
+        *VALUE_READERS,
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
