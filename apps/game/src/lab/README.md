@@ -307,6 +307,11 @@ Add `--score <picture-length-audio>` when the approved music arrives. Without it
 reference. The main final needs music only. Audio is trimmed and mastered near −14 LUFS, then muxed as AAC; short scores
 are rejected instead of stretched, looped or padded.
 
+The finisher also accepts the approved 2560×1408 upscale. Use `--height 1440` for a 2560×1440 master (16 px top and
+bottom padding); the default 1080p master fits it to 1920×1056 with 12 px padding. Each output renders the kit masters
+and fonts directly at its own resolution, preserving relative branding sizes and all frame timings. The 1440p filename
+ends in `-1440p.mp4`; use separate evidence directories per render.
+
 The edit supplies `holdFrames`, `lockupFullFrame`, `realmsWidth`, `realmsFadeStartFrame`, `realmsFadeEndFrame`, `line`,
 `cta`, and named `reviewFrames` (output seconds). `lockupFullFrame` must equal the source's final frame index, 480: the
 one-second fade ends at 20 seconds as the picture settles. With 47 additional held frames, 481 + 47 = 528 frames,

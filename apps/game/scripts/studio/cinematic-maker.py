@@ -12,7 +12,7 @@ from PIL import Image, ImageChops, ImageColor, ImageDraw, ImageFilter, ImageFont
 RATE = 48000
 FRAME_COUNT = 481
 FPS = 24
-SIZE = (1920, 1080)
+BASE_WIDTH = 1920
 REALMS = "01-Logos/Realms/Lettered/realms-lettered-ink.png"
 LOCKUP = "01-Logos/Frontier/Transparent/frontier-lockup.png"
 HEADING = "02-Fonts/IM-Fell-English-SC/IMFellEnglishSC-Regular.ttf"
@@ -101,15 +101,16 @@ def load_brand_master(path, width):
 
 def make_card(kit, size, plan, target):
     width = size[0]
+    scale = width / BASE_WIDTH
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
     ground = ImageColor.getrgb(palette["brand"]["hearth"])
     card = Image.new("RGBA", size, (*ground, 204))
-    logo = load_brand_master(kit / LOCKUP, 1080)
+    logo = load_brand_master(kit / LOCKUP, round(1080 * scale))
     card.alpha_composite(logo, ((width - logo.width) // 2, 0))
-    centred_text(card, plan["line"], 772, kit / HEADING,
-                 54, palette["brand"]["parchment"])
-    centred_text(card, plan["cta"], 878, kit / BODY,
-                 45, palette["games"]["frontier"]["title"])
+    centred_text(card, plan["line"], round(772 * scale), kit / HEADING,
+                 round(54 * scale), palette["brand"]["parchment"])
+    centred_text(card, plan["cta"], round(878 * scale), kit / BODY,
+                 round(45 * scale), palette["games"]["frontier"]["title"])
     card.save(target)
 
 
@@ -124,15 +125,17 @@ def ink_density(size, opacity, variation):
 
 def make_intro_card(kit, size, plan, target, opacity=.94, bleed=.45, variation=.18):
     card = Image.new("RGB", size, "white")
-    width = plan["realmsWidth"]
+    scale = size[0] / BASE_WIDTH
+    width = round(plan["realmsWidth"] * scale)
+    margin = round(54 * scale)
     logo = load_brand_master(kit / REALMS, width)
     mask = logo.getchannel("A")
-    feather = mask.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(bleed))
+    feather = mask.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(bleed * scale))
     mask = ImageChops.lighter(mask, feather.point(lambda value: round(value * .22)))
     mask = ImageChops.multiply(mask, ink_density(logo.size, opacity, variation))
     ink_colour = next(pixel[:3] for pixel in logo.getdata() if pixel[3] == 255)
     ink = Image.new("RGB", logo.size, ink_colour)
-    position = (size[0] - width - 54, 54)
+    position = (size[0] - width - margin, margin)
     card.paste(ink, position, mask)
     card.save(target)
 
@@ -145,8 +148,12 @@ def render_picture(source, size, plan, folder):
     make_intro_card(plan["kit"], size, plan, folder / "intro-card.png")
     logo_fade_start = plan["realmsFadeStartFrame"] / FPS
     logo_fade_duration = (plan["realmsFadeEndFrame"] - plan["realmsFadeStartFrame"]) / FPS
+    width, height = size
+    film_height = width * 11 // 20
+    padding = (height - film_height) // 2
     graph = (
-        "[0:v]scale=1920:1056:flags=lanczos,pad=1920:1080:0:12:color=0x14101D,setsar=1,"
+        f"[0:v]scale={width}:{film_height}:flags=lanczos,"
+        f"pad={width}:{height}:0:{padding}:color=0x14101D,setsar=1,"
         f"tpad=stop_mode=clone:stop={hold_frames},format=gbrp[held];"
         f"[1:v]format=gbrp,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:color=white[intro];"
         "[held][intro]blend=all_mode=multiply:shortest=1[sequence];"
@@ -195,12 +202,14 @@ def deliver_film(picture, score, target, duration, size, frame_count):
             "bytes": target.stat().st_size, **metrics}
 
 
-def capture_checks(picture, plan, folder):
+def capture_checks(picture, plan, folder, size):
     for name, second in plan["reviewFrames"].items():
         ffmpeg(["-v", "error", "-ss", second, "-i", picture,
                 "-frames:v", 1, "-threads", 2, folder / f"{name}.png"])
+    scale = size[0] / BASE_WIDTH
+    crop = f"crop={round(1080 * scale)}:{round(950 * scale)}:{round(420 * scale)}:0"
     ffmpeg(["-v", "error", "-ss", plan["lockupFullFrame"] / FPS, "-i", picture,
-            "-vf", "crop=1080:950:420:0", "-frames:v", 1, "-threads", 2,
+            "-vf", crop, "-frames:v", 1, "-threads", 2,
             folder / "end-card-100-percent.png"])
 
 
@@ -210,13 +219,15 @@ def finish(args):
     plan = json.loads(args.edit.read_text())
     info = probe(args.source)
     assert len(info["streams"]) == 1
-    assert (info["streams"][0]["width"], info["streams"][0]["height"]) == (1280, 704)
+    source_size = (info["streams"][0]["width"], info["streams"][0]["height"])
+    assert source_size in [(1280, 704), (2560, 1408)]
+    size = (args.height * 16 // 9, args.height)
     assert int(info["streams"][0]["nb_frames"]) == FRAME_COUNT
     assert info["streams"][0]["avg_frame_rate"] == f"{FPS}/1"
     total_frames = FRAME_COUNT + plan["holdFrames"]
     duration = total_frames / FPS
     assert plan["holdFrames"] > 0
-    assert 0 < plan["realmsWidth"] <= SIZE[0] - 108
+    assert 0 < plan["realmsWidth"] <= BASE_WIDTH - 108
     assert 0 <= plan["realmsFadeStartFrame"] < plan["realmsFadeEndFrame"] < FRAME_COUNT
     if plan["lockupFullFrame"] != FRAME_COUNT - 1:
         raise ValueError("The one-second lockup fade must finish on the film's final moving frame.")
@@ -227,10 +238,11 @@ def finish(args):
         score = master_music(raw, duration, args.evidence)
     folder = args.evidence / "16x9"
     folder.mkdir(exist_ok=True)
-    picture = render_picture(args.source, SIZE, dict(plan, kit=args.kit), folder)
-    capture_checks(picture, plan, folder)
-    target = args.out / f"frontier-trailer-{duration:g}-16x9.mp4"
-    export = deliver_film(picture, score, target, duration, SIZE, total_frames)
+    picture = render_picture(args.source, size, dict(plan, kit=args.kit), folder)
+    capture_checks(picture, plan, folder, size)
+    suffix = "" if args.height == 1080 else f"-{args.height}p"
+    target = args.out / f"frontier-trailer-{duration:g}-16x9{suffix}.mp4"
+    export = deliver_film(picture, score, target, duration, size, total_frames)
     exports = [{"aspect": "16x9", **export}]
     print(json.dumps(exports[0]), flush=True)
     result = {"source": str(args.source), "sourceSha256": digest(args.source),
@@ -245,5 +257,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     for option in ["source", "kit", "edit", "out", "evidence"]:
         parser.add_argument(f"--{option}", type=Path, required=True)
+    parser.add_argument("--height", type=int, choices=[1080, 1440], default=1080)
     parser.add_argument("--score", type=Path, help="Picture-length audio; only excess tail is trimmed")
     finish(parser.parse_args())
