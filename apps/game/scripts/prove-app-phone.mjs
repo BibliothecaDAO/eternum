@@ -117,6 +117,22 @@ const SURFACES = [
     back: { press: "Messages", shows: `document.querySelectorAll(".ui-row").length > 1` },
   },
   { name: "settings-name", kind: "name", path: app("wallet-ready", "profile/settings") },
+  // A player in an Eternum game's standings, from a tribe's members. A phone's window shows the detail in the list's
+  // place, so the card has no tribe row beside it and no Back: the lit Tribes tab pressed again steps back to the
+  // tribe's members (social-board.tsx's pressTab), and a member opens again from there.
+  {
+    name: "standings-tribe",
+    kind: "flow",
+    path: "/lab/kit/standings?capture=1",
+    ready: "document.querySelector('[role=tab]') !== null",
+    steps: [
+      { press: "Tribes" },
+      { press: "Ironwood: its members", shows: "members", still: "members" },
+      { press: "Lord 0333", shows: "player", still: "player" },
+      { press: "Tribes", shows: "members", still: "members-again" },
+      { press: "Lord 0444", shows: "player", still: "player-again" },
+    ],
+  },
   // Last: the doorway boots the map behind it, which keeps the tab busy for whatever opens next.
   { name: "doorway", kind: "page", before: app("home", ""), path: app("home", "doorway/map") },
 ];
@@ -252,6 +268,7 @@ const proveSurface = async (b, phone, out, baseUrl, surface) => {
   if (surface.kind === "sheet") await sheetsGestures(b, phone, out, record, surface);
   if (surface.kind === "view" && surface.back) await viewsWayBack(b, phone, record, surface);
   if (surface.kind === "name") await nameWithKeyboard(b, phone, out, record);
+  if (surface.kind === "flow") await flowSteps(b, phone, out, record, surface);
   if (surface.kind === "absent")
     record.checks.push({ check: "not drawn on a touch device", ok: b.evaluate(surface.absent) });
   return record;
@@ -303,6 +320,27 @@ const sheetsGestures = async (b, phone, out, record, surface) => {
     });
   }
   shoot(b, out, `${surface.name}-after-back`);
+};
+
+/** What a flow's step must show: a tribe's members (no player's card), or a player's card. */
+const SHOWS = {
+  members: `!document.querySelector('[aria-label="Player details"]') && [...document.querySelectorAll("button")].some((each) => each.innerText.trim() === "Lord 0333")`,
+  player: `document.querySelector('[aria-label="Player details"]') !== null`,
+};
+
+/** A flow's taps in turn, each as a finger presses it, then what it must show, and a still where it names one. */
+const flowSteps = async (b, phone, out, record, surface) => {
+  for (const step of surface.steps) {
+    const there = await tapControl(b, phone, step.press);
+    record.presses.push({ press: step.press, status: there ? "led" : "not on the page" });
+    if (!there) return;
+    if (step.shows)
+      record.checks.push({
+        check: `${step.press} shows the ${step.shows === "members" ? "tribe's members" : "player's card"}`,
+        ok: b.evaluate(SHOWS[step.shows]),
+      });
+    if (step.still) shoot(b, out, `${surface.name}-${step.still}`);
+  }
 };
 
 /** A view's own way back, pressed as a finger presses it (chat: the lit Messages tab back to the list). */

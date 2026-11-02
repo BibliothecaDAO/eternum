@@ -156,6 +156,11 @@ nothing a finger aims at in the notch or over the home indicator; a page left by
 finger's drag down its head, then by the system back once with the page staying; and the inline Name tapped open with
 its focus, typed above the on-screen keyboard (played through the visual viewport) and put back by a tap beside it.
 
+An Eternum game's standings (the identity chip's leaderboard; `/lab/kit/standings` on the lab game, one tribe of three):
+Players, Tribes and Faith tabs; a tribe opens its members and a member opens their card, with no Back. On a desktop the
+detail stands beside the list, and the chosen tribe pressed again shows its members; on a phone it stands in the list's
+place, and the lit Tribes tab pressed again steps back to the members, then to the tribes. `prove:app … phone` plays it.
+
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that

@@ -92,6 +92,12 @@ const HUD_INSIDE = {
     "kit/windows/:surface?",
     load(() => import("../ui/features/debug/kit-lab/windows-lab"), "WindowsLab"),
   ),
+  standings: view(
+    "Standings",
+    "/lab/kit/standings",
+    "kit/standings",
+    load(() => import("../ui/features/debug/kit-lab/standings-lab"), "StandingsLab"),
+  ),
   areaD: view(
     "Area D",
     "/lab/kit/area-d",
