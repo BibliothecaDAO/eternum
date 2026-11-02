@@ -1,4 +1,6 @@
+import { APP_HOST, DOCS_ADDRESS } from "@/config/app-address";
 import { FOOTER_WORDS, NEWS_WORDS } from "@/ui/design-system/kit/words";
+import { PAYOUT_WALLET_CHANGE_SECONDS } from "@realms-world/value-ledger/payout-wallet";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
@@ -6,6 +8,7 @@ import { Link } from "react-router-dom";
 import { communityPlace } from "./community";
 import { useLayout } from "./frame/layout";
 import { PageFrame } from "./frame/page-frame";
+import { ageOf } from "./play/ages";
 import { AppPanel } from "@/ui/design-system/kit/app-elements";
 
 /** The terms, the privacy policy and the credits: static text, so the shell serves it with no game module. */
@@ -23,6 +26,9 @@ const ExternalLink = ({ href, children }: { href: string; children: ReactNode })
 
 const DISCORD = communityPlace("Discord").href;
 const GITHUB = communityPlace("GitHub").href;
+const DOCS_HOST = new URL(DOCS_ADDRESS).host;
+const FRONTIER = ageOf("frontier").name;
+const WALLET_CHANGE_HOURS = PAYOUT_WALLET_CHANGE_SECONDS / 3600;
 
 const CONTACT = (
   <>
@@ -119,9 +125,9 @@ const TERMS: LegalSection[] = [
     body: (
       <>
         <p>
-          By accessing or using Realms World (realms.world) and its associated services, games, and smart contracts
-          (collectively, the "Services"), you agree to be bound by these Terms of Service ("Terms"). The Services are
-          operated by BibliothecaDAO and its contributors.
+          By accessing or using Realms, the game at {APP_HOST} with its guides at {DOCS_HOST}, and its associated
+          services, games, and smart contracts (collectively, the "Services"), you agree to be bound by these Terms of
+          Service ("Terms"). The Services are operated by BibliothecaDAO and its contributors.
         </p>
         <p>If you do not agree to these Terms, do not use the Services.</p>
       </>
@@ -144,16 +150,12 @@ const TERMS: LegalSection[] = [
     title: "Description of Services",
     body: (
       <>
-        <p>
-          Realms World provides a web interface to interact with on-chain games, governance tools, and ecosystem
-          resources built on the Starknet and Ethereum blockchains. The Services include but are not limited to:
-        </p>
+        <p>Realms provides a web app to play on-chain games. The Services include:</p>
         <ul>
-          <li>Access to on-chain games (Eternum, Blitz, Loot Survivor, and others)</li>
-          <li>$LORDS token staking (veLORDS)</li>
-          <li>DAO governance participation via Frontinus House</li>
-          <li>Game leaderboards, statistics, and ecosystem data</li>
-          <li>Blog content and ecosystem updates (Scroll)</li>
+          <li>The games, their seasons, results and leaderboards</li>
+          <li>Your Realms account: sign-in, your player name, your devices and chat</li>
+          <li>$LORDS entries, chests and prizes, paid to the payout wallet you link</li>
+          <li>The game guides at {DOCS_HOST}</li>
         </ul>
       </>
     ),
@@ -201,6 +203,12 @@ const TERMS: LegalSection[] = [
             mechanics and DAO governance.
           </li>
         </ul>
+        <p>
+          <strong>Payouts.</strong> {FRONTIER} payouts go to the payout wallet you link. Your first wallet is paid at
+          once. After you replace it, or unlink it and link another, the first {FRONTIER} payout to the new wallet waits{" "}
+          {WALLET_CHANGE_HOURS} hours, so you have time to notice a change you did not make. If no wallet is linked by a{" "}
+          {FRONTIER} season's claim deadline, its unpaid $LORDS return to the treasury.
+        </p>
       </>
     ),
   },
@@ -237,7 +245,7 @@ const TERMS: LegalSection[] = [
     body: (
       <>
         <p>
-          The Realms World website design, branding, and original content are the property of BibliothecaDAO and its
+          The Realms app's design, branding, and original content are the property of BibliothecaDAO and its
           contributors. Game source code is open-source and available under the respective licenses published in each
           game's repository.
         </p>
@@ -334,8 +342,8 @@ const PRIVACY: LegalSection[] = [
     body: (
       <>
         <p>
-          Realms World ("we," "us," or "our") is operated by BibliothecaDAO. This Privacy Policy explains how we
-          collect, use, and protect information when you use our website at realms.world and related services
+          Realms ("we," "us," or "our") is operated by BibliothecaDAO. This Privacy Policy explains how we collect, use,
+          and protect information when you use the game at {APP_HOST}, its guides at {DOCS_HOST} and related services
           (collectively, the "Services").
         </p>
         <p>
@@ -353,18 +361,20 @@ const PRIVACY: LegalSection[] = [
           <strong>Information you provide</strong>
         </p>
         <ul>
-          <li>Wallet addresses when you connect to our Services</li>
+          <li>
+            Your email address, from a sign-in code or from Discord; with Discord, also your Discord account's ID and
+            username
+          </li>
+          <li>The player name you choose</li>
+          <li>The payout wallet address you link</li>
+          <li>The chat messages you send</li>
           <li>Communications you send us (e.g., support requests via Discord)</li>
-          <li>Feedback, proposals, or governance votes submitted through the DAO</li>
         </ul>
         <p>
           <strong>Information collected automatically</strong>
         </p>
         <ul>
-          <li>Device and browser information (type, operating system, screen resolution)</li>
-          <li>IP address and approximate geographic location</li>
-          <li>Usage data (pages visited, time spent, referral source)</li>
-          <li>Performance and error data to improve reliability</li>
+          <li>Your IP address and your browser's user agent, stored with each sign-in session</li>
         </ul>
         <p>
           <strong>Blockchain data</strong>
@@ -383,9 +393,8 @@ const PRIVACY: LegalSection[] = [
       <ul>
         <li>Provide, maintain, and improve our Services</li>
         <li>Display game data, leaderboards, and treasury information</li>
-        <li>Process governance proposals and DAO operations</li>
         <li>Detect and prevent fraud or abuse</li>
-        <li>Communicate service updates and announcements</li>
+        <li>Email you your sign-in codes, and a notice when your payout wallet changes</li>
         <li>Comply with legal obligations</li>
       </ul>
     ),
@@ -397,8 +406,8 @@ const PRIVACY: LegalSection[] = [
         <p>We do not sell your personal information. We may share data in the following circumstances:</p>
         <ul>
           <li>
-            <strong>Service Providers:</strong> Third-party analytics and infrastructure providers that help us operate
-            the Services
+            <strong>Service Providers:</strong> Infrastructure providers that help us operate the Services, such as
+            hosting and email delivery
           </li>
           <li>
             <strong>On-chain:</strong> Transaction data submitted to blockchain networks is publicly visible
@@ -427,35 +436,13 @@ const PRIVACY: LegalSection[] = [
             <strong>Starknet / Ethereum</strong> — Public blockchain networks for on-chain game execution
           </li>
           <li>
-            <strong>Snapshot</strong> — Governance voting platform
+            <strong>Discord</strong> — Sign-in, if you choose it
+          </li>
+          <li>
+            <strong>Resend</strong> — Sends our emails
           </li>
         </ul>
         <p>These services have their own privacy policies. We encourage you to review them.</p>
-      </>
-    ),
-  },
-  {
-    title: "Error Reports (Sentry)",
-    body: (
-      <>
-        <p>
-          The game app may send reports to Sentry (Functional Software, Inc.), an error-monitoring service, so that we
-          can find and fix what breaks. A report carries:
-        </p>
-        <ul>
-          <li>the error, the page it happened on and the app's version</li>
-          <li>your browser, operating system and device, and your IP address</li>
-          <li>how long the app's pages and requests took to load</li>
-          <li>
-            for every visit that meets an error, and one visit in ten without one, a recording of what the page showed,
-            with its text and what you type masked
-          </li>
-          <li>for a transaction that failed, its error with your wallet address replaced by a one-way hash</li>
-        </ul>
-        <p>
-          Keys, signatures, passwords and transaction contents are removed before a report leaves your browser. Sentry
-          keeps reports for a limited period under its own privacy policy.
-        </p>
       </>
     ),
   },
@@ -509,7 +496,6 @@ const PRIVACY: LegalSection[] = [
             public half leaves your browser. Realms approves each new device before it can play.
           </li>
           <li>Theme and display preferences</li>
-          <li>Basic analytics to understand site usage</li>
         </ul>
         <p>We do not use third-party advertising cookies or cross-site tracking.</p>
       </>
@@ -583,8 +569,8 @@ const CREDITS: LegalSection[] = [
   },
 ];
 
-export const TermsPage = () => <LegalPage title={FOOTER_WORDS.terms} updated="Feb 2025" sections={TERMS} />;
+export const TermsPage = () => <LegalPage title={FOOTER_WORDS.terms} updated="Nov 2026" sections={TERMS} />;
 
-export const PrivacyPage = () => <LegalPage title={FOOTER_WORDS.privacy} updated="Oct 2026" sections={PRIVACY} />;
+export const PrivacyPage = () => <LegalPage title={FOOTER_WORDS.privacy} updated="Nov 2026" sections={PRIVACY} />;
 
 export const CreditsPage = () => <LegalPage title={FOOTER_WORDS.credits} updated="Oct 2026" sections={CREDITS} />;

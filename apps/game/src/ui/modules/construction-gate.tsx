@@ -1,4 +1,5 @@
 import { ReactComponent as EternumWordsLogo } from "@/assets/icons/blitz-words-logo-g.svg";
+import { DOCS_ADDRESS } from "@/config/app-address";
 import { communityPlace } from "@/shell/community";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 
@@ -26,7 +27,7 @@ export const ConstructionGate = () => (
           <HudButton kind="secondary" icon="twitter" onClick={open(communityPlace("X").href)}>
             Twitter
           </HudButton>
-          <HudButton kind="secondary" onClick={open("https://docs.realms.party/")}>
+          <HudButton kind="secondary" onClick={open(DOCS_ADDRESS)}>
             Docs
           </HudButton>
         </div>

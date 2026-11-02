@@ -10,6 +10,9 @@ export const STAGING_ORIGIN = "https://play.dev-realms.party";
 /** The address as a card or a post prints it. */
 export const APP_HOST = new URL(APP_ADDRESS).host;
 
+/** The docs site (apps/game-docs): the rules, every mode's guide and the account pages. */
+export const DOCS_ADDRESS = "https://docs.realms.party";
+
 /**
  * Realms' own sites, by their domain: the game (play.realms.party), its docs, realms.world and its market. A link to
  * one of them opens as it is; a link anywhere else asks first (chat's Leaving Realms).
