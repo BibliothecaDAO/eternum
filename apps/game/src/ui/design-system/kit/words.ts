@@ -907,7 +907,7 @@ export const SEASON_WORDS = {
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */
   pastSeasons: "Past seasons",
-  /** Prod's first season, kept after its shard was torn down: beside its number, "Season 1 · Playtest". */
+  /** Prod's October season, kept after its shard was torn down: its name, in place of a number. */
   playtest: "Playtest",
 } as const;
 

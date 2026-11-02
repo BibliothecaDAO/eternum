@@ -86,7 +86,8 @@ them (nothing spills out of its block, every picture loads, one gold verb at mos
 painting and the bar on a desktop, each place's word whole on a phone), the bar with the longest name beside the install
 notice at 1024 and 1440 px (`/lab/app/long-name`), the phone's four places at 360 px, the lobby's entry with every
 choice taken at 1920, 1024 and 390 px, the account's pages on a desktop and a phone (`account`: sign-in's steps, You
-signed in, out and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open), the doorway
+signed in, out and unnamed, Settings and what its Name, Portrait, Payout wallet and Sign out rows open, and each window
+over the page, the Golden ticket's, Realms' and Connect's, closed from its cross as a player presses it), the doorway
 into a game at each of its holds (`doorway`: `/lab/app/home/doorway/<state>`, the map booting, sign-in, the season
 awaited, a roster filling, the map failed with the realm to open, the device limit, a Blitz to watch, one ended), and
 every element of the sheet; `prove:app <base-url> <out-dir> end-map`, on the live stack, opens the newest finished
@@ -105,7 +106,7 @@ leading on `/lab/app/eternum-lead`, then open on `/lab/app/eternum-open`; Blitz 
 (`/blitz/build-orders`, `/lab/app/home/blitz/build-orders` on three fixture orders whose saves the tab keeps) the
 account's orders, and on a desktop the followed one's steps beside them; a Blitz lobby (`/blitz/:id`) who is in, the
 entry and the chat side by side; Season (`/season`) the player's figures over Frontier's and Blitz's boards, Frontier's
-the last season's final board while none runs (`/lab/app/no-season/season`: prod's Season 1 · Playtest, kept in
+the last season's final board while none runs (`/lab/app/no-season/season`: prod's October season, the Playtest, kept in
 `src/shell/season-tab/archive/` after its shard was torn down) and **Past seasons** under it, each row opening that
 season's Results (`/lab/app/season-running/season`); Results (`/results/:id`, with **See the end map**) a Blitz's place
 and points, the game's board, points by kind and the chest at its tier, a Frontier season's recap (Season, You and
@@ -262,24 +263,35 @@ action buttons shows its icon and verbs; a words-only notice keeps its text.
   select. A sealed chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who
   did not play sees the game (by its name and date, else its number) and the board, and, signed in, that they had no
   seat.
+- **A season's name** is one rule (`seasonTitle`, `src/shell/season.ts`), read by every surface that shows one (the
+  Season tab's clock and calendar chips and Past seasons, the recap's header, its deck's foot and Share's line, and so
+  Results): an archived season goes by its archive entry's own name, with no number (prod's October season is the
+  **Playtest**); any other by the number the directory serves ("Season 0" for Devcon, "Season 1" from Nov 9).
 - **A Frontier season's end** is one recap, the same in the game and on its Results
   (`src/shell/season-tab/season-recap.tsx`; the owner's pick B, 1 November 2026: four cards, Wrapped style). It shows
   the season and how it ended, then your four cards:
   - **Your place:** your portrait with your Order, your place ("#3 of 45 realms"), your name (wrapped, never cut), and
     the prize your podium place pays when the season has a pool.
   - **The podium:** "… took the season", then the ledger's prize places once a pool is published (each holder, or
-    Pending, with its LORDS), else the board's first three, each with its sites.
+    Pending, with its LORDS), else the board's first three, each with its sites. Each place has its numeral, portrait
+    and name on one line and its sites and LORDS under the name, in columns shared from place to place, and the title
+    and places stand centred in the card, however few the places.
   - **Your sites:** how many you cleared, each kind with its painting, and your depth once through the spire.
   - **Your haul:** chests, LORDS, Essence and Labor.
 
   Under the cards is a foot with Frontier's lockup, the season and the site's address. Last come the page's steps, with
   **Share my season** as the gold one.
-  - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion).
+  - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion). Over the
+    HUD the cards take the height the season and the steps leave, so the whole recap, its steps included, stands on one
+    screen down to 1280 × 720, LORDS to withdraw or not; they shrink no further than their smallest words (19 px in the
+    deck) reading at the app's 14 px, and a screen shorter than that scrolls. On Results they take the page's width, and
+    the page scrolls.
   - **A phone** steps through them as a story: a strip of four marks on top, a tap at the right or a swipe left for the
     next card, a tap at the left or a swipe right for the one before.
   - **In the game,** the recap covers the HUD once the season is over, with **Season** and **Exit** and the realm's
-    LORDS still to withdraw. A phone holds the steps at the screen's foot. Once the season's end has come, no day's end
-    plays.
+    LORDS still to withdraw, which a desktop shows beside the season's heading and a phone above its steps. It is drawn
+    at the app's size, never the desktop HUD's zoom. A phone holds the steps at the screen's foot. Once the season's end
+    has come, no day's end plays.
   - **On Results** (`/results/:chainId-:gameId` of a Frontier season), the steps are **Season**, then **See the end
     map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline beside
     Share.
@@ -288,20 +300,24 @@ action buttons shows its icon and verbs; a words-only notice keeps its text.
   - **Share my season** makes the deck on screen into a PNG at its own size (modern-screenshot, loaded when Share is
     pressed): the four cards side by side at 1200 × 675 from a desktop, two by two at 1080 × 1350 from a phone. The
     phone's story is a view over that same deck, so the image holds all four cards. Where the device shares images (a
-    phone), it opens the share sheet with the image, the line ("Season 1 · Playtest · #3 of 45 realms") and the Results
-    address. Otherwise it saves `my-season.png` and the button reads "Image saved". An image that cannot be made says
-    "The image could not be made.", and Share stays.
+    phone), it opens the share sheet with the image, the line ("Playtest · #3 of 45 realms") and the Results address.
+    Otherwise it saves `my-season.png` and the button reads "Image saved". An image that cannot be made says "The image
+    could not be made.", and Share stays.
   - **Copy image** is a quiet button beside Share, on a desktop whose clipboard takes a PNG (`ClipboardItem` supporting
     `image/png`). It puts the same deck image on the clipboard to paste, and then reads "Image copied". It fails as
     Share does, with Copy image kept. A phone, or a browser whose clipboard takes no PNG, has no Copy image.
   - **Lab:**
-    - `/lab/kit/hud/season-over`: the game's cover over prod's Season 1, read by its third place;
+    - `/lab/kit/hud/season-over`: the game's cover over prod's Playtest, read by its third place;
       `/lab/kit/hud/season-over-strong` shows the other ending.
     - `/lab/app/season-over/results/0x5245414c4d53-3`: Results for a season with a pool, two places paid and one
       pending, the lab's player twelfth; `/lab/app/long-name/results/0x5245414c4d53-3` shows the same with the lab's
-      longest name, wrapped.
-    - `/lab/app/home/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`: Season 1 · Playtest from its
-      archive, for a reader with no realm in it.
+      longest name, wrapped; `/lab/app/season-over-one/…` and `/lab/app/season-over-two/…` the same season with a podium
+      of one place (the player alone, paid) and of two.
+    - `/lab/app/home/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`: the Playtest from its archive,
+      for a reader with no realm in it.
+    - `pnpm --dir apps/game prove:app <base-url> <new-dir> recap` shoots the cover and the Results at 1440 × 900, 1366 ×
+      768, 1280 × 720 and on a phone (each card of its story), presses Share, and checks the one-screen fit, the deck's
+      smallest words, nothing cut by a card, the podium's lines and columns, and the image's size.
 
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
   by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**

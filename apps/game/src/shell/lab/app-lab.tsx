@@ -24,6 +24,7 @@ import {
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
+  LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
   LAB_DEVCON_TICKETS,
@@ -147,7 +148,7 @@ const createLabClient = (screen: LabScreen) => {
     ["shell", "leaderboard", LAB_CHAIN, 1],
     screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
   );
-  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FRONTIER_FINAL_BOARD);
+  client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
   const terms = LAB_ENTRY_TERMS[screen];

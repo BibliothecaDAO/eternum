@@ -46,7 +46,7 @@ const input = (timestamp: number): DirectoryInput => {
   };
 };
 
-it("publishes each seeded day, tomorrow's duration and a stable Frontier-only season ordinal", () => {
+it("publishes each seeded day, tomorrow's duration and a stable Frontier-only season number counted from 0", () => {
   let timestamp = start;
   for (let index = 0; index < 6; index++) {
     const day = dayOf(calendar, timestamp)!;
@@ -55,7 +55,7 @@ it("publishes each seeded day, tomorrow's duration and a stable Frontier-only se
       day_index: day.index,
       day_ends_at: day.end,
       next_day_length: dayOf(calendar, day.end)!.end - day.end,
-      season_number: 2,
+      season_number: 1,
     });
     timestamp = day.end;
   }
@@ -65,6 +65,10 @@ it("publishes each seeded day, tomorrow's duration and a stable Frontier-only se
     next_day_length: null,
     season_number: null,
   });
+  // The chain's first Frontier game is Season 0.
+  expect(buildNativeDirectory(input(start)).games.find((game) => game.game_id === 1)).toMatchObject({
+    season_number: 0,
+  });
 });
 
 it("never invents a current day before main starts or after the season closes", () => {
@@ -73,7 +77,7 @@ it("never invents a current day before main starts or after the season closes", 
       day_index: null,
       day_ends_at: null,
       next_day_length: null,
-      season_number: 2,
+      season_number: 1,
     });
 });
 

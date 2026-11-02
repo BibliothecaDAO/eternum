@@ -4,7 +4,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 
-/** Prod's Season 1 podium, as identity names it. */
+/** Prod's Playtest podium, as identity names it. */
 const NAMES = vi.hoisted(
   () =>
     ({
@@ -47,6 +47,7 @@ vi.mock("modern-screenshot", () => ({
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { seasonPodium } from "@/ui/features/frontier/board/season-pool";
 import { SeasonOverRecap } from "@/shell/season-tab/season-over";
+import { SeasonRecap } from "@/shell/season-tab/season-recap";
 import { SITE_KINDS } from "@/ui/features/frontier/board/season-detail";
 import { TARGET_MARKS } from "@/ui/features/frontier/sites/site-marks";
 import { setViewportWidth } from "../frame/test-viewport";
@@ -70,31 +71,46 @@ const open = async ({
   board = BOARD,
   onSeason = vi.fn(),
   onExit = vi.fn(),
+  results = false,
 }: {
   width?: number;
   viewer?: string | null;
   board?: HeraldFrontierLeaderboard;
   onSeason?: () => void;
   onExit?: () => void;
+  /** The recap standing in a Results page, not covering the HUD. */
+  results?: boolean;
 } = {}) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   setViewportWidth(width);
-  const host = document.createElement("div");
+  // What mounts the recap: the HUD, whose desktop draws under its own zoom, or a Results page.
+  const host = Object.assign(document.createElement("div"), { id: "mount" });
   document.body.append(host);
   const root = createRoot(host);
   await act(async () =>
     root.render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <SeasonOverRecap
-            gameRef={SEASON_ONE}
-            game={ARCHIVED_SEASONS[0]}
-            board={board}
-            viewer={viewer}
-            ending="lifted"
-            onSeason={onSeason}
-            onExit={onExit}
-          />
+          {results ? (
+            <SeasonRecap
+              gameRef={SEASON_ONE}
+              game={ARCHIVED_SEASONS[0]}
+              board={board}
+              viewer={viewer}
+              ending="lifted"
+              actions={null}
+            />
+          ) : (
+            <SeasonOverRecap
+              gameRef={SEASON_ONE}
+              game={ARCHIVED_SEASONS[0]}
+              board={board}
+              viewer={viewer}
+              ending="lifted"
+              onSeason={onSeason}
+              onExit={onExit}
+            />
+          )}
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -105,7 +121,8 @@ const open = async ({
     await act(async () => root.unmount());
     host.remove();
   };
-  return host;
+  // Over the HUD the recap stands at the body's end, where the player meets it; on Results, in the page.
+  return document.body;
 };
 
 /** The deck, the node Share makes into an image; and one of its cards. */
@@ -135,7 +152,7 @@ const pressLabelled = (host: HTMLElement, label: string) =>
 it("tells the season and its ending, then the player's four cards: their place, the podium, their sites, their haul", async () => {
   const host = await open();
   expect([...host.querySelector("header")!.children].map((line) => line.textContent)).toEqual([
-    "Season 1 · Playtest · Ended 31 Oct",
+    "Playtest · Ended 31 Oct",
     "The mist lifted",
   ]);
   expect([...deck(host)!.querySelectorAll(".season-card__step")].map((step) => step.textContent)).toEqual([
@@ -167,7 +184,7 @@ it("tells the season and its ending, then the player's four cards: their place, 
   // The deck's foot: Frontier's lockup, the season, where to play.
   expect(
     [...deck(host)!.querySelectorAll(".season-deck__foot > span:not(.app-game-name)")].map((part) => part.textContent),
-  ).toEqual(["Season 1 · Playtest", window.location.host]);
+  ).toEqual(["Playtest", window.location.host]);
 });
 
 it("draws the wide cut on a desktop and the tall one on a phone, each at the size it is shared", async () => {
@@ -257,7 +274,7 @@ it("on a phone, shares the tall deck as an image through the share sheet, with t
   const [sent] = share.mock.calls[0] as unknown as [{ files: File[]; text: string; url: string }];
   expect([sent.files.map((file) => [file.name, file.type]), sent.text]).toEqual([
     [["my-season.png", "image/png"]],
-    "Season 1 · Playtest · #3 of 45 realms",
+    "Playtest · #3 of 45 realms",
   ]);
   expect(sent.url).toBe(`${window.location.origin}/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`);
 });
@@ -371,10 +388,10 @@ class RoomObserver {
     for (const [node, told] of watched) if (told === this.told) watched.delete(node);
   }
 }
-const roomIs = (width: number) =>
+const roomIs = (width: number, height = 900) =>
   act(async () => {
     for (const [node, told] of watched)
-      if (node.isConnected) told([{ contentRect: { width } } as ResizeObserverEntry], {} as ResizeObserver);
+      if (node.isConnected) told([{ contentRect: { width, height } } as ResizeObserverEntry], {} as ResizeObserver);
   });
 
 it("fits the deck to its room as the window widens past the phone's breakpoint and narrows back, measuring each room", async () => {
@@ -393,6 +410,40 @@ it("fits the deck to its room as the window widens past the phone's breakpoint a
   await act(async () => setViewportWidth(390));
   await roomIs(358);
   expect(fit()).toBe(`scale(${358 / 485}) translate(-40px, -40px)`);
+});
+
+it("over the HUD, fits the four cards to the height the season and the steps leave, never below their words' least size", async () => {
+  watched.clear();
+  vi.stubGlobal("ResizeObserver", RoomObserver);
+  const host = await open({ width: 1280 });
+  const fit = () => host.querySelector<HTMLElement>(".season-recap__scaler")!.style.transform;
+  const shared = () => host.querySelector<HTMLElement>(".season-recap__layout")!.style.getPropertyValue("--deck-width");
+  // A 1280 × 720 laptop leaves the cards 1,200 px across and 506 px down: they stand 900 px wide (506 × 16 / 9), and
+  // the season above and the steps under them take that width too.
+  await roomIs(1200, 506.25);
+  expect(fit()).toBe(`scale(${900 / 1200})`);
+  expect(shared()).toBe("900px");
+  // A room too short for the deck's smallest words (19 px) to read at 14 px keeps it at that size: the recap scrolls.
+  await roomIs(1200, 300);
+  expect(fit()).toBe(`scale(${14 / 19})`);
+  // A tall room fills its width.
+  await roomIs(1200, 900);
+  expect(fit()).toBe("scale(1)");
+});
+
+it("covers the HUD from the body's end, clear of the zoom the desktop HUD draws under, and stands in a Results page", async () => {
+  const mountOf = (host: HTMLElement) => host.querySelector(".season-recap")!.closest("#mount");
+  expect(mountOf(await open())).toBeNull();
+  await unmount!();
+  expect(mountOf(await open({ results: true }))).not.toBeNull();
+});
+
+it("on Results, fits the four cards to the page's width, which scrolls under them", async () => {
+  watched.clear();
+  vi.stubGlobal("ResizeObserver", RoomObserver);
+  const host = await open({ width: 1280, results: true });
+  await roomIs(1200, 300);
+  expect(host.querySelector<HTMLElement>(".season-recap__scaler")!.style.transform).toBe("scale(1)");
 });
 
 it("in the story, a mouse drag across Next steps once, a drag back across it once back, and a tap or a key one", async () => {

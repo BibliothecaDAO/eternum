@@ -4,7 +4,7 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, expect, it, vi } from "vitest";
 
-/** Prod's top five on Season 1 as its archive holds them, and the names identity serves for them. */
+/** Prod's top five on the Playtest as its archive holds them, and the names identity serves for them. */
 const NAMES = vi.hoisted(
   () =>
     ({
@@ -84,25 +84,24 @@ const podium = (container: HTMLElement) =>
 const buttons = (container: HTMLElement) =>
   [...container.querySelectorAll("button[data-kind]")].map((button) => button.textContent);
 
-it.each([390, 1440])(
-  "shows Season 1 · Playtest's recap from its archive, with no shard behind it, at %ipx",
-  async (width) => {
-    const container = await open(width);
-    expect(container.textContent).toContain("Season 1 · Playtest · Ended 31 Oct");
-    expect(container.textContent).toContain("The mist lifted");
-    expect(podium(container)).toEqual([
-      ["1", "Volcanic", "166"],
-      ["2", "djizus", "136"],
-      ["3", "Canzi", "114"],
-    ]);
-    // A reader with no realm on the board: no card, nothing to share.
-    expect(container.querySelector(".season-deck")).toBeNull();
-    // Its shard is gone: no end map to open; Continue is the page's step.
-    expect(buttons(container)).toEqual(["Season", "Continue"]);
-  },
-);
+it.each([390, 1440])("shows the Playtest's recap from its archive, with no shard behind it, at %ipx", async (width) => {
+  const container = await open(width);
+  expect(container.textContent).toContain("Playtest · Ended 31 Oct");
+  // The Playtest goes by its name: no surface numbers it.
+  expect(container.textContent).not.toMatch(/Season \d/);
+  expect(container.textContent).toContain("The mist lifted");
+  expect(podium(container)).toEqual([
+    ["1", "Volcanic", "166"],
+    ["2", "djizus", "136"],
+    ["3", "Canzi", "114"],
+  ]);
+  // A reader with no realm on the board: no card, nothing to share.
+  expect(container.querySelector(".season-deck")).toBeNull();
+  // Its shard is gone: no end map to open; Continue is the page's step.
+  expect(buttons(container)).toEqual(["Season", "Continue"]);
+});
 
-it("gives a Season 1 player their cards with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
+it("gives a Playtest player their cards with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
   player.current = "0x510fa645565fc77a784918630a27d0e1c07255b698fb44966ebd0b801439001";
   const container = await open(1440);
   const place = container.querySelector('[data-card="place"]')!;

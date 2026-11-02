@@ -22,7 +22,7 @@ vi.hoisted(() =>
       "0x4c21": "Volcanic",
       "0x510f": "djizus",
       "0x6481": "Canzi",
-      // Prod's archived Season 1: its first place.
+      // Prod's archived Playtest: its first place.
       "0x4c21ba6f5c8e24182ee0eefd56de97ade5f7570041dd0ec7d7d8ece2195cc4": "Volcanic",
     };
     const accounts = url.searchParams.get("accounts")?.split(",") ?? [];
@@ -203,7 +203,7 @@ it("says no prize is published yet, its medals standing with no amount", async (
 });
 
 const ENDED_AT = Date.UTC(2026, 9, 31, 9, 46) / 1000;
-/** Prod's Season 1, archived: its game on prod's old chain. */
+/** Prod's Playtest, archived: its game on prod's old chain. */
 const PLAYTEST_RESULTS = "/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1";
 /** A Frontier season that has ended: the directory lists it until it settles, the history after. */
 const ended = (game_id: number, season_number: number, end_at: number, status = "Settled") => ({
@@ -246,13 +246,14 @@ it.each([
   [390, 12],
   [1440, 10],
 ])(
-  "with nothing listed or settled, shows prod's archived Season 1 · Playtest as it ended, from its file, at %ipx",
+  "with nothing listed or settled, shows prod's archived Playtest as it ended, from its file, at %ipx",
   async (width, shown) => {
     reads.directory = { data: { games: [] }, isError: false, isPending: false };
     const { container, unmount } = await mount(width);
     try {
       const frontier = frontierPanel(container);
-      expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Playtest · Ended 31 Oct");
+      expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Playtest · Ended 31 Oct");
+      expect(container.textContent).not.toMatch(/Season \d/);
       expect(frontier.textContent).not.toContain("No season running");
       // Prod's final board: Volcanic 166, djizus 136, Canzi 114, then the rest to the layout's count.
       const counts = siteCounts(frontier);
@@ -263,7 +264,7 @@ it.each([
         "59 sites cleared",
       ]);
       expect(counts).toHaveLength(shown);
-      // Season 1 had no prize pool: no podium saying one is still to come.
+      // The Playtest had no prize pool: no podium saying one is still to come.
       expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
       // The season shown is not listed again as past.
       expect(pastPanel(container)).toBeUndefined();
@@ -273,7 +274,7 @@ it.each([
   },
 );
 
-it("with no season live, shows the last to end, and Past seasons lists Season 1 · Playtest with its winner, opening its Results", async () => {
+it("with no season live, shows the last to end, and Past seasons lists the Playtest with its winner, opening its Results", async () => {
   reads.directory = { data: { games: [] }, isError: false, isPending: false };
   reads.settled = { data: [seasonTwo()], isError: false, isPending: false };
   reads.boards = { 2: SEASON_TWO_BOARD };
@@ -281,7 +282,7 @@ it("with no season live, shows the last to end, and Past seasons lists Season 1 
   try {
     expect(frontierPanel(container).querySelector(".app-panel__cue")?.textContent).toBe("Season 2 · Ended 20 Nov");
     expect(siteCounts(frontierPanel(container))).toEqual(["90 sites cleared", "60 sites cleared", "30 sites cleared"]);
-    expect(pastRows(container)).toEqual([["Season 1 · Playtest", "Ended 31 Oct", "#1", "Volcanic"]]);
+    expect(pastRows(container)).toEqual([["Playtest", "Ended 31 Oct", "#1", "Volcanic"]]);
     await act(async () => (pastPanel(container)!.querySelector("button.app-row") as HTMLButtonElement).click());
     expect(container.querySelector("[data-opened]")?.textContent).toBe(PLAYTEST_RESULTS);
   } finally {
@@ -306,7 +307,7 @@ it("with a season live, lists the ended ones under Past seasons, last to end fir
     expect(frontierPanel(container).querySelector(".app-panel__cue")?.textContent).toBe("Season 3 · Day 4");
     expect(pastRows(container)).toEqual([
       ["Season 2", "Ended 20 Nov", "#1", "djizus"],
-      ["Season 1 · Playtest", "Ended 31 Oct", "#1", "Volcanic"],
+      ["Playtest", "Ended 31 Oct", "#1", "Volcanic"],
     ]);
     const seasonOne = pastPanel(container)!.querySelectorAll("button.app-row")[0] as HTMLButtonElement;
     await act(async () => seasonOne.click());
@@ -336,7 +337,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
   const { container, unmount } = await mount(width);
   try {
     const frontier = frontierPanel(container);
-    expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Season 1 · Playtest · Ended 31 Oct");
+    expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Playtest · Ended 31 Oct");
     expect(frontier.querySelector("button.app-row .app-chip")?.textContent).toBe("166 sites cleared");
     expect(frontier.textContent).not.toContain("No realm yet");
   } finally {
