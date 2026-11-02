@@ -91,8 +91,10 @@ def centred_text(image, text, y, font_path, size, colour):
     draw.text((image.width / 2, y), text, anchor="mm", font=font, fill=colour)
 
 
-def load_brand_master(path, width):
+def load_brand_master(path, width, trim=False):
     logo = Image.open(path).convert("RGBA")
+    if trim:
+        logo = logo.crop(logo.getchannel("A").getbbox())
     if logo.width < width:
         raise ValueError(f"Brand master is too small for {width}px output: {path}")
     height = round(logo.height * width / logo.width)
@@ -185,6 +187,12 @@ def make_intro_card(kit, size, plan, target):
     stamp, pad = parchment_stamp(load_brand_master(kit / REALMS, width), scale)
     position = (size[0] - width - margin - pad, margin - pad)
     card.paste(stamp, position, stamp.getchannel("A"))
+    if "devconMark" in plan:
+        partner = load_brand_master(plan["devconMark"], width, trim=True)
+        partner.putalpha(ImageChops.multiply(partner.getchannel("A"), partner.convert("L")))
+        partner_stamp, partner_pad = parchment_stamp(partner, scale)
+        card.paste(partner_stamp, (margin - partner_pad, margin - partner_pad),
+                   partner_stamp.getchannel("A"))
     card.save(target)
 
 

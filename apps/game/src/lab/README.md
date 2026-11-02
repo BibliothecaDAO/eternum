@@ -333,6 +333,11 @@ keeps its size and moves left, with the intact partner mark alongside it. The li
 The native end-card review then captures the entire frame so both brands can be inspected. Export silent picture first;
 copy the approved final's audio stream into the edition without re-encoding or mastering it again.
 
+Devcon editions also print the partner mark at top left, with the Realms seal's visible width and mirrored margin. Only
+transparent padding is trimmed. The supplied mark's luminance preserves its letter interiors and diamond facets in the
+ink impression; both marks then share the same sepia texture, multiply layer and 0–1 second hold / 1–3 second fade.
+Inspect both opening corners at native resolution before rendering the films.
+
 Brand overlays are built at 1920×1080 from the kit masters and font files. The lockup is downsampled directly from its
 1536 px master; the line and URL are rasterized at 54 px and 45 px. No 720p overlay is enlarged. The film is encoded as
 H.264 High profile, CRF 15. `end-card-100-percent.png` is an unscaled crop from the encoded frame for text-edge review.
