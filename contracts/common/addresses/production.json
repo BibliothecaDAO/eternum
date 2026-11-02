@@ -2,8 +2,9 @@
   "l2Chain": "SN_MAIN",
   "lords": "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49",
   "realms": "0x7ae27a31bb6526e3de9cf02f081f6ce0615ac12a6d7b85ee58b8ad7947a2809",
-  "mmrToken": "0x203f682884764e0fb9f6dd00bc7c631df4e8cef9ba9feb19aff008f60c229bb",
-  "lootChests": "0x611399a1f9d8cf4aed3dc05ca4b6f685b3cbd9a11ead2c71e5298a14e357d36",
-  "cosmetics": "0x3f766fb2a59dc2a52401530ace02db47513fb68e0bb4ea5ad3ea75edf1e5cd9",
-  "ledger": "0x0"
+  "ledger": "0x31211509b7ec4b7ac86d0f3ab0492cb568823d4dc893396f6fb97a3cc70996d",
+  "mmrToken": "0x3f30b9914671a1c39d2f5c49602acb389db6b2abadff72fd165c573479dd419",
+  "lootChests": "0x759982c9bcbb17d75ba410182ca4605929d545d91a05faa13fcd3c3a9aa8e06",
+  "cosmetics": "0x57f9901492e943db7e19219aa505e48490b9919ec569dc6353ff012d75e1ebe",
+  "ledgerDeploymentBlock": 17325401
 }
