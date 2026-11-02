@@ -1066,22 +1066,6 @@
   line-height: var(--app-leading-title);
   color: var(--app-ink);
 }
-.app-page-head__back {
-  display: inline-flex;
-  height: var(--app-control);
-  align-items: center;
-  gap: theme(spacing.2);
-  border-radius: var(--app-radius-control);
-  padding: 0 theme(spacing.3);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  font-weight: var(--app-weight-strong);
-  color: var(--app-muted);
-}
-.app-page-head__back:is(:hover, [data-state="hover"]) {
-  background: var(--app-hover);
-  color: var(--app-ink);
-}
 .app-page-head__aside {
   margin-left: auto;
 }

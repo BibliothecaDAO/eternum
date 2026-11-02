@@ -133,17 +133,20 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     );
   }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo, names]);
 
+  // The chosen tribe pressed again shows its members once more (its player's card has no Back), else folds them.
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
-      if (selectedGuild === guildEntityId) {
+      if (selectedGuild === guildEntityId && selectedPlayer !== 0n) {
         setSelectedPlayer(0n);
+        setIsExpanded(true);
+      } else if (selectedGuild === guildEntityId) {
         setIsExpanded(!isExpanded);
       } else {
         setSelectedGuild(guildEntityId);
         setIsExpanded(true);
       }
     },
-    [selectedGuild, isExpanded, setSelectedGuild, setSelectedPlayer, setIsExpanded],
+    [selectedGuild, selectedPlayer, isExpanded, setSelectedGuild, setSelectedPlayer, setIsExpanded],
   );
 
   const viewPlayerInfo = useCallback(
@@ -174,7 +177,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
         key: "Tribes",
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
-          <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
+          <PlayerId selectedPlayer={selectedPlayer} />
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
@@ -194,7 +197,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     focusOwnPlayer,
     showGuildsTab,
     isEternumMode,
-    selectedGuild,
     selectedPlayer,
     playerInfo,
     viewPlayerInfo,

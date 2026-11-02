@@ -1,11 +1,8 @@
 import "@/ui/design-system/kit/app-sheet.css";
 
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
-import { Link, type To } from "react-router-dom";
 
 import { AppPageHead } from "@/ui/design-system/kit/app-elements";
-import { BACK } from "@/ui/design-system/kit/words";
 
 import { paintingSources, type Painting } from "@/ui/design-system/kit/paintings";
 import { useAppNotice } from "./app-notice";
@@ -14,13 +11,14 @@ import { useDesktopKeys } from "./desktop-keys";
 import { AppFooter } from "./footer";
 import { useLayout } from "./layout";
 import { Lockup } from "./lockup";
-import { DesktopBar, TabBar } from "./tabs";
+import { DesktopBar, TabBar, useIsPlace } from "./tabs";
 import { AppChatPane } from "../chat/app-chat";
 
 type PageFrameProps = {
-  /** A page opened from another names where Back leads; a tab page has none. */
-  back?: To;
-  /** The page's title: beside Back on the phone, in the title row on desktop. A tab page shows the lockup instead. */
+  /**
+   * The page's title: in a phone's top row, in the title row on desktop. A place's own page shows the lockup in a
+   * phone's top row instead. No page has Back: the places are the way out (the owner's pick A, 2 November 2026).
+   */
   title?: string;
   /** What the desktop's title row holds at its end: the page's state (Entry open, a clock), its secondary buttons. */
   aside?: ReactNode;
@@ -28,8 +26,6 @@ type PageFrameProps = {
   notice?: ReactNode;
   /** The foot row: the page's buttons (one primary) or its stepper. */
   foot?: ReactNode;
-  /** The places, and the footer the page ends on; a full-screen step (sign-in, entering a match) has neither. */
-  tabs?: boolean;
   /** Play, the one page that offers to install the app. */
   offersInstall?: boolean;
   /**
@@ -52,9 +48,9 @@ type PageFrameProps = {
 
 /**
  * The composer: the only code that places a page's parts. Each part sits in its band, tagged so a test can hold every
- * control to its place: Back top left and nothing else there, nothing to tap in a phone's top right, one foot row,
+ * control to its place: the title or the lockup top left and nothing to tap there, one foot row,
  * notices directly above it on a phone and in the desktop's top bar (covering nothing, pushing nothing down), the tabs
- * at the phone's foot or in the desktop's top bar, with the desktop's keys (Esc Back, Enter the step). On the desktop
+ * at the phone's foot or in the desktop's top bar, with the desktop's key (Enter the step). On the desktop
  * the frame is the app sheet's (app-sheet.css): the page stands on its painting, graded, under the bar. Every page's
  * content starts at the top of its body: a painting is the ground behind it, never a space above it. Its root is the
  * shell's surface: everything under it, fixed layers and sheets included, draws the shell's palette and finish
@@ -73,17 +69,7 @@ export const PageFrame = (props: PageFrameProps) => {
   );
 };
 
-const PhoneFrame = ({
-  back,
-  title,
-  notice,
-  foot,
-  tabs = true,
-  fill = false,
-  painting,
-  stage = false,
-  children,
-}: PageFrameProps) => (
+const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false, children }: PageFrameProps) => (
   // The page ends where the on-screen keyboard begins (--keyboard), so what is typed and what it answers stay in sight.
   <div
     className={
@@ -98,7 +84,7 @@ const PhoneFrame = ({
       data-band="top"
       className="flex min-h-12 shrink-0 items-center gap-1 px-gutter pt-[env(safe-area-inset-top)]"
     >
-      {back === undefined ? <Lockup /> : <PhoneTitle back={back} title={title} />}
+      <PhoneHead title={title} />
     </header>
     {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
     <div
@@ -107,7 +93,7 @@ const PhoneFrame = ({
       <main data-band="body" className={fill ? "min-h-0 flex-1" : "min-h-full"}>
         {children}
       </main>
-      {tabs && !fill && <AppFooter />}
+      {!fill && <AppFooter />}
     </div>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-gutter pb-2">
@@ -119,11 +105,9 @@ const PhoneFrame = ({
         {foot}
       </div>
     ) : null}
-    {tabs ? (
-      <div data-band="tabs" data-keyboard-hides className="shrink-0">
-        <TabBar />
-      </div>
-    ) : null}
+    <div data-band="tabs" data-keyboard-hides className="shrink-0">
+      <TabBar />
+    </div>
   </div>
 );
 
@@ -131,50 +115,39 @@ const PhoneFrame = ({
 const APP_LANDSCAPE: Painting = "brooding-plains";
 
 const DesktopFrame = ({
-  back,
   title,
   aside,
   notice,
   foot,
-  tabs = true,
   fill = false,
   painting = APP_LANDSCAPE,
   stage = false,
   children,
 }: PageFrameProps) => {
-  useDesktopKeys({ back });
+  useDesktopKeys();
   return (
     <div className="app-frame" data-stage={stage || undefined}>
       <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
-      <DesktopBar places={tabs} notice={notice} />
+      <DesktopBar notice={notice} />
       <div className="app-frame__page">
-        {back !== undefined || title ? (
+        {title ? (
           <div data-band="title">
-            <AppPageHead back={back} title={title} aside={aside} />
+            <AppPageHead title={title} aside={aside} />
           </div>
         ) : null}
         <main data-band="body" className={fill ? "h-[min(48rem,calc(100dvh-14rem))] min-w-0" : "min-w-0"}>
           {children}
         </main>
         {foot ? <div data-band="foot">{foot}</div> : null}
-        {tabs && <AppFooter />}
+        <AppFooter />
       </div>
-      {tabs && <AppChatPane />}
+      <AppChatPane />
     </div>
   );
 };
 
-/** The phone's top row: Back, wordless at the top left, and the page's title beside it. */
-const PhoneTitle = ({ back, title }: { back: To; title?: string }) => (
-  <>
-    <Link
-      to={back}
-      data-role="back"
-      aria-label={BACK}
-      className="-ml-2 flex size-12 shrink-0 items-center justify-center rounded-control"
-    >
-      <SemanticIcon name="arrow-left" size={26} />
-    </Link>
-    {title ? <h1 className="truncate text-app-title text-app-ink">{title}</h1> : null}
-  </>
-);
+/** The phone's top row: a place's lockup, or another page's title. */
+const PhoneHead = ({ title }: { title?: string }) => {
+  const place = useIsPlace();
+  return place || !title ? <Lockup /> : <h1 className="truncate text-app-title text-app-ink">{title}</h1>;
+};

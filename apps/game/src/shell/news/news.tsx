@@ -31,7 +31,7 @@ export const WhatsNewPage = () => {
     });
   };
   return (
-    <PageFrame back="/profile" title={WORDS.whatsNew}>
+    <PageFrame title={WORDS.whatsNew}>
       <div className="flex flex-col gap-6">
         <div ref={release} tabIndex={-1} className="flex scroll-mt-6 flex-col gap-6 outline-none">
           <Release key={note.date} note={note} />

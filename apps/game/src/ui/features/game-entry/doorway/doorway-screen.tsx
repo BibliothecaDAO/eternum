@@ -65,7 +65,7 @@ export const DoorwayScreen = ({
   return (
     // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
-      <PageFrame back="/" title={title} tabs={false} painting={painting} stage>
+      <PageFrame title={title} painting={painting} stage>
         {desktop ? (
           <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
             <AppPanel className="w-column">

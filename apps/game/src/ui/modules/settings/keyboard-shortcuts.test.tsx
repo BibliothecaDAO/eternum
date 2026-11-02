@@ -26,11 +26,7 @@ afterEach(async () => {
 /** Settings as it holds the keys: the one row, and the list in its place once Show is pressed. */
 const SettingsKeys = () => {
   const [shown, setShown] = useState(false);
-  return shown ? (
-    <KeyboardShortcuts onBack={() => setShown(false)} />
-  ) : (
-    <KeyboardShortcutsSetting onShow={() => setShown(true)} />
-  );
+  return shown ? <KeyboardShortcuts /> : <KeyboardShortcutsSetting onShow={() => setShown(true)} />;
 };
 
 const press = async (name: string) => {
@@ -46,7 +42,7 @@ const keysListed = () =>
     row.querySelector("dd")!.textContent,
   ]);
 
-it("lists no key in Settings, only the row that opens them, one press away", async () => {
+it("lists no key in Settings, only the row that opens them, one press away, and no Back with them", async () => {
   await act(async () => root.render(<SettingsKeys />));
   expect(host.querySelector(".ui-setting__name")!.textContent).toBe("Keyboard shortcuts");
   expect(keysListed()).toEqual([]);
@@ -58,9 +54,7 @@ it("lists no key in Settings, only the row that opens them, one press away", asy
     ["Enter", "Open chat"],
   ]);
 
-  await press("Back");
-  expect(keysListed()).toEqual([]);
-  expect(host.querySelector(".ui-setting__name")!.textContent).toBe("Keyboard shortcuts");
+  expect([...host.querySelectorAll("button")].map((button) => button.getAttribute("aria-label"))).not.toContain("Back");
 });
 
 it("lists every meaning of a key bound twice whole, a line each, never cut short (qa-app-1 P3-2)", async () => {
@@ -72,7 +66,7 @@ it("lists every meaning of a key bound twice whole, a line each, never cut short
     action: () => {},
   });
   useShortcutStore.getState().addShortcut({ id: "test.back", key: "Escape", description: long, action: () => {} });
-  await act(async () => root.render(<KeyboardShortcuts onBack={() => {}} />));
+  await act(async () => root.render(<KeyboardShortcuts />));
   const esc = [...host.querySelectorAll("dl > div")].find((row) => row.querySelector("dt")!.textContent === "Esc")!;
   const meanings = esc.querySelector("dd")!;
   expect([...meanings.children].map((line) => line.textContent)).toEqual([

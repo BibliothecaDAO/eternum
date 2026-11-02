@@ -40,6 +40,7 @@ vi.mock("@/ui/design-system/kit/player-name", () => ({
   PlayerName: ({ account }: { account: string }) => <span>{account}</span>,
 }));
 
+import { openedFrom } from "../frame/opened-from";
 import { entryHref } from "../game-links";
 import { ResultsPage } from "./results-page";
 
@@ -56,7 +57,7 @@ const Where = () => {
 };
 
 /** A list opens Results with where its Back leads; Play and a match's end open it bare. */
-const FROM_LIST = { pathname: "/results/0x52-3", state: { back: "/p/0xa1" } };
+const FROM_LIST = { pathname: "/results/0x52-3", state: openedFrom({ pathname: "/p/0xa1", search: "" }) };
 
 const open = async (entry: string | typeof FROM_LIST = FROM_LIST) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -96,9 +97,9 @@ it("offers no way in to a reader who held no realm in that season", async () => 
   expect(button("Withdraw")).toBeUndefined();
 });
 
-it("leads Back to the list that opened it, with no Continue; opened from Play, Continue and no Back, Share leading for a player with a card", async () => {
+it("has no Back: opened from a list, no Continue either; opened from Play, Continue, Share leading for a player with a card", async () => {
   const fromList = await open();
-  expect(fromList.container.querySelector('[data-role="back"]')!.getAttribute("href")).toBe("/p/0xa1");
+  expect(fromList.container.querySelector('[data-role="back"]')).toBeNull();
   expect(fromList.button("Continue")).toBeUndefined();
   await unmount?.();
 

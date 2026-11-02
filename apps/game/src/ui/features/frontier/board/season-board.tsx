@@ -153,7 +153,7 @@ const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
 const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
 
 /**
- * The season's first rows as SeasonRow draws them, the player's own lit in place, or pinned under them when it ranks
+ * The season's first rows as SeasonList draws them, the player's own lit in place, or pinned under them when it ranks
  * below.
  */
 const useSeasonListRows = (

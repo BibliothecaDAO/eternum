@@ -1,6 +1,5 @@
 import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
-import { HudIconButton } from "@/ui/design-system/kit/hud-elements";
-import { BACK, CHAT_WORDS } from "@/ui/design-system/kit/words";
+import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 
@@ -30,8 +29,6 @@ const NO_NAMES: readonly string[] = [];
 
 interface DirectMessagesPanelProps {
   threadId: string;
-  /** Back to Messages, the list it was opened from. */
-  onBack: () => void;
   className?: string;
 }
 
@@ -51,7 +48,7 @@ const toDisplayTime = (message: DirectMessage) => {
  * Messages, Mute, the messages and the field. A player who is offline is written to all the same: the server keeps the
  * message for them and tells their devices.
  */
-export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, className }: DirectMessagesPanelProps) {
+export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: DirectMessagesPanelProps) {
   const { thread } = useDirectThread(resolvedThreadId);
   const identity = useRealtimeChatSelector((state) => state.identity);
   const identityId = identity?.playerId ?? "";
@@ -131,7 +128,6 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, onBack, classN
     <section ref={section} className={`relative flex h-full min-h-0 flex-1 flex-col ${className ?? ""}`}>
       {thread && recipientId && (
         <header className="flex items-center gap-2 border-b border-hud-line px-2 py-1 text-hud-label">
-          <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
           <span className="min-w-0 flex-1 truncate text-hud-strong text-hud-ink">{recipientLabel}</span>
           <MuteButton playerId={recipientId} />
         </header>

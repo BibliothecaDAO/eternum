@@ -33,8 +33,9 @@ it.each([
     );
     expect(text(markup)).toContain(line);
     expect(text(markup)).toContain(step);
-    // Back returns to the app at any step.
-    expect(markup).toContain('data-role="back"');
+    // No Back: the places return to the app at any step.
+    expect(markup).not.toContain('data-role="back"');
+    expect(markup).toContain('data-role="tab"');
   },
 );
 

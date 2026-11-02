@@ -1,5 +1,5 @@
 import { reloadBuildOrders, saveBuildOrders, useBuildOrderAccount, useBuildOrders } from "@/hooks/use-build-orders";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { buildOrderGoalIcon } from "@/ui/features/build-orders/build-order-icons";
 import {
   AppButton,
@@ -11,7 +11,7 @@ import {
   AppRow,
   AppTabs,
 } from "@/ui/design-system/kit/app-elements";
-import { BACK, BUILD_ORDER_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { BUILD_ORDER_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import {
   BUILD_ORDER_GOAL_GROUPS,
   BUILD_ORDER_LIMITS,
@@ -31,6 +31,7 @@ import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
+import { ShellWindow } from "../frame/shell-window";
 import { Loading } from "../loading";
 import { addStep, canAdd, moveStep, removeStep, setCount, stepsOfRank } from "./order-edits";
 
@@ -70,32 +71,29 @@ const useOpen = () => {
  * Build orders (the owner's pick, B: reached from Play's Blitz column): the orders saved on the player's account and the
  * one their games follow, an order made from step cards rank by rank, copied as JSON or pasted from it, and a prompt
  * for an AI to help write one. An order has no times: in a game, its next step shows once the realm can take it. The
- * desktop keeps the list at the left and the open order at the right; a phone shows one at a time.
+ * desktop keeps the list at the left and the followed order at the right; a phone shows the list. An order opened or
+ * pasted stands in the app's one sheet over the list (the owner's pick A, 2 November 2026: no Back).
  */
 export const BuildOrdersPage = () => {
   useBuildOrderAccount();
   const view = useView();
   const desktop = useLayout() === "desktop";
   const signIn = useSignInNotice();
-  const open = view.kind === "list" ? <FollowedOrder /> : <OpenView view={view} />;
-  if (desktop)
-    return (
-      <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn}>
+  return (
+    <PageFrame title={BUILD_ORDER_WORDS.page} notice={signIn} foot={desktop ? undefined : <ListActions />}>
+      {desktop ? (
         <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
           <div className="flex flex-col gap-4">
             <OrderList />
             <ListActions />
           </div>
-          {open}
+          <FollowedOrder />
         </div>
-      </PageFrame>
-    );
-  return view.kind === "list" ? (
-    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn} foot={<ListActions />}>
-      <OrderList />
+      ) : (
+        <OrderList />
+      )}
+      {view.kind !== "list" && <OpenView view={view} />}
     </PageFrame>
-  ) : (
-    open
   );
 };
 
@@ -104,45 +102,29 @@ const useSignInNotice = (): ReactNode =>
   useBuildOrders().status === "signed-out" ? <AppNotice line={BUILD_ORDER_WORDS.signInToSave} /> : undefined;
 
 /**
- * An open order or paste: on a desktop, a panel beside the list ending on Back and its step; on a phone, the page
- * itself, its step in the page's foot and the page's Back to the list.
+ * An open order or paste in the app's one sheet over the list, ending on its step; closing it returns to the list. A
+ * signed-out player reads why nothing saves at its top, where Save is, not only on the page under it.
  */
 const ViewFrame = ({
   title,
-  icon,
   step,
   children,
 }: {
   title: string;
-  icon: IconMeaning;
   /** The view's one verb: Save, Read it. */
   step: ReactNode;
   children: ReactNode;
 }) => {
   const open = useOpen();
-  const phone = useLayout() === "phone";
   const signIn = useSignInNotice();
-  const panel = (
-    <AppPanel title={title} icon={icon}>
+  return (
+    <ShellWindow title={title} onClose={open.list}>
       <div className="flex flex-col gap-4">
+        {signIn}
         {children}
-        {!phone && (
-          <div className="flex flex-wrap justify-end gap-2">
-            <AppButton kind="secondary" icon="arrow-left" onClick={open.list}>
-              {BACK}
-            </AppButton>
-            {step}
-          </div>
-        )}
+        <div className="flex flex-wrap justify-end gap-2">{step}</div>
       </div>
-    </AppPanel>
-  );
-  return phone ? (
-    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} notice={signIn} foot={step}>
-      {panel}
-    </PageFrame>
-  ) : (
-    panel
+    </ShellWindow>
   );
 };
 
@@ -347,7 +329,6 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
   return (
     <ViewFrame
       title={order.name || BUILD_ORDER_WORDS.newOrderName}
-      icon="build"
       step={
         <AppButton kind="primary" disabled={problem !== null || !book || busy} onClick={save}>
           {BUILD_ORDER_WORDS.save}
@@ -527,7 +508,6 @@ const PasteOrder = () => {
   return (
     <ViewFrame
       title={BUILD_ORDER_WORDS.pasteOrder}
-      icon="copy"
       step={
         <AppButton kind="primary" disabled={text.trim() === ""} onClick={readIt}>
           {BUILD_ORDER_WORDS.readIt}

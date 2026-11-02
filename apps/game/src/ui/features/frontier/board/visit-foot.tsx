@@ -31,7 +31,7 @@ export const VisitFoot = ({
       {order !== undefined && <OrderMark order={order} />}
       <span className={cn("min-w-0 flex-1 truncate text-hud-body", arriving && "animate-pulse")}>{name}</span>
       {onLeave && (
-        <HudButton kind="primary" icon="arrow-left" onClick={onLeave}>
+        <HudButton kind="primary" icon="exit" onClick={onLeave}>
           {LEAVE}
         </HudButton>
       )}

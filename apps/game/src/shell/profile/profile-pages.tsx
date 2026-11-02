@@ -9,7 +9,6 @@ import { AppButton, AppPanel, AppSetting, AppSwitch } from "@/ui/design-system/k
 import { forgetDeviceKey } from "@bibliothecadao/eternum";
 
 import { setAppMusic, useAppMusic } from "../app-music";
-import { backFrom } from "../frame/opened-from";
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
 import { useRealmsPlayer } from "../herald";
@@ -52,7 +51,7 @@ const SignedOut = ({ card }: { card: ReactNode }) => (
  * on this device, the account's devices, and Sign out last. The desktop sets them in two columns.
  */
 export const SettingsPage = () => (
-  <PageFrame back="/profile" title={PROFILE_WORDS.settings}>
+  <PageFrame title={PROFILE_WORDS.settings}>
     <SignedInOnly fallback={(card) => card}>{() => <Settings />}</SignedInOnly>
   </PageFrame>
 );
@@ -108,12 +107,11 @@ const Settings = () => {
   );
 };
 
-/** Another player's page, from a board: Back, their card and their finished games. */
+/** Another player's page, from a board: their card and their finished games, Season lit as the way back. */
 export const PlayerPage = () => {
   const { address = "" } = useParams();
-  const back = backFrom(useLocation(), "/season");
   const known = /^0x[0-9a-fA-F]{1,64}$/.test(address);
-  return <PageFrame back={back}>{known ? <ProfileView account={address} own={false} /> : <NothingHere />}</PageFrame>;
+  return <PageFrame>{known ? <ProfileView account={address} own={false} /> : <NothingHere />}</PageFrame>;
 };
 
 /**

@@ -72,9 +72,9 @@ const panel = (page: HTMLElement, title: string) =>
   )!;
 
 describe.each([390, 1440])("What's new at %i px", (width) => {
-  it("is read from You: Back leads to You, the bar holds the four places and You is lit; signed out, You is Connect", async () => {
+  it("is read from You: no Back, the bar holds the four places and You is lit as the way back; signed out, You is Connect", async () => {
     const page = await open(width);
-    expect(page.querySelector<HTMLAnchorElement>('[data-role="back"]')!.getAttribute("href")).toBe("/profile");
+    expect(page.querySelector('[data-role="back"]')).toBeNull();
     const places = [...page.querySelectorAll<HTMLElement>('[data-role="tab"]')];
     expect(places.map((place) => place.getAttribute("aria-label") ?? place.textContent)).toEqual([
       "Play",

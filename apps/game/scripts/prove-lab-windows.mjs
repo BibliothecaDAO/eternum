@@ -2,7 +2,7 @@
  * The HUD's windows and modals as the lab draws them (/lab/kit/windows/<surface>, the real components on the lab's
  * fixture game), one screenshot each at the requested size, then one per tab, pressed as a player presses it.
  * Run before and after a window moves onto the HUD sheet: the two runs show each window the same way. Settings is also
- * measured (one short page) and its keys opened with Show and left with Back.
+ * measured (one short page) and its keys opened with Show, with no Back among them (closing Settings closes them).
  *
  *   pnpm --dir apps/game prove:windows <base-url> <out-dir> [surface,surface] [widthxheight]
  * Use frontier/<state> for a Frontier window; the default size is 1920x1080.
@@ -114,10 +114,10 @@ const proveSettings = async (b, out, record) => {
     ok: shown && keys.keysListed > 0 && !keys.shortcutsRow,
     keys,
   });
-  const back = b.evaluate(pressButton("Back"));
-  await sleep(SETTLE_MS / 2);
-  record.presses.push({ press: "Back", status: back ? "led" : "unavailable" });
-  record.checks.push({ check: "Back returns to Settings", ok: back && settingsMeasure(b).shortcutsRow });
+  record.checks.push({
+    check: "The keys carry no Back",
+    ok: b.evaluate(`document.querySelector('button[aria-label="Back"], [data-role="back"]') === null`),
+  });
 };
 
 /** The first tab on screen not yet pressed, if any is left. */

@@ -11,7 +11,7 @@ import {
   HudTier,
   HudTierStep,
 } from "@/ui/design-system/kit/hud-elements";
-import { ARMY_DETAIL, BACK, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
+import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
 
 import { FullIn } from "../full-in";
@@ -25,8 +25,9 @@ import { pointChoices, scoutingChoices } from "../progression-choices";
  * as tiles (each its tier and what it gives, a press
  * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once a held point fits a level,
  * else a way to see the next ranks. Level up turns the same place to the four choices, each with what it gives next
- * and its point, Scouting's kind, and the verb, with a way back. Once the army's last point is spent the choices have
- * nothing left to buy, so the place returns to the status.
+ * and its point, Scouting's kind, and the verb; the sheet's cross closes it, and the army opens again on its status (no
+ * Back: the owner's pick A, 2 November 2026). Once the army's last point is spent the choices have nothing left to buy,
+ * so the place returns to the status.
  */
 export const ArmyDetail = ({
   army,
@@ -68,10 +69,7 @@ export const ArmyDetail = ({
   if (open)
     return (
       <div data-army-step="choose" className="flex flex-col gap-3 pt-1">
-        <div className="flex items-center justify-between gap-2">
-          <HudButton kind="quiet" size="sm" icon="arrow-left" onClick={() => setOpen(false)}>
-            {BACK}
-          </HudButton>
+        <div className="flex items-center justify-end gap-2">
           <XpLine army={army} />
         </div>
         {pointChoices.map((option) =>

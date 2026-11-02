@@ -395,10 +395,10 @@ export const OrderRow = memo(({ offer, entityId, isBuy }: { offer: MarketInterfa
             <HudConfirm
               question="Cancel this order?"
               verb="Cancel order"
-              back="Keep it"
+              cancel="Keep it"
               tone="bad"
               onConfirm={() => onCancel().finally(() => setConfirmOrderModal(false))}
-              onBack={() => setConfirmOrderModal(false)}
+              onCancel={() => setConfirmOrderModal(false)}
             />
           </OrderDialog>
         ) : (
@@ -705,7 +705,7 @@ export const OrderCreation = memo(
           question={`Place this ${isBuy ? "buy" : "sell"} order?`}
           verb={`${isBuy ? "Buy" : "Sell"} ${formatCharge(resource)} ${name}`}
           onConfirm={createOrder}
-          onBack={() => setShowConfirmation(false)}
+          onCancel={() => setShowConfirmation(false)}
         >
           <span>
             {formatCharge(resource)} {name} for {formatCharge(lords)} {LORDS}

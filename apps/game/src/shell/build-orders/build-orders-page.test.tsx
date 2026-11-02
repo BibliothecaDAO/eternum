@@ -124,8 +124,10 @@ const open = (width = 390) => {
     ),
   );
 };
+/** What a player can press or type in: the open sheet, which holds the page under it inert, else the page. */
+const reach = () => document.body.querySelector<HTMLElement>('[role="dialog"]') ?? document.body;
 const button = (name: string) =>
-  [...host.querySelectorAll("button")].find(
+  [...reach().querySelectorAll("button")].find(
     (candidate) => candidate.getAttribute("aria-label") === name || candidate.textContent?.trim() === name,
   );
 const press = async (name: string) => {
@@ -134,7 +136,7 @@ const press = async (name: string) => {
   await act(async () => found.click());
 };
 const field = (label: string) =>
-  [...host.querySelectorAll("label.app-field")]
+  [...reach().querySelectorAll("label.app-field")]
     .find((candidate) => candidate.querySelector(".app-field__label")?.textContent === label)
     ?.querySelector("input");
 const type = (label: string, text: string) => {
@@ -144,8 +146,16 @@ const type = (label: string, text: string) => {
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
 };
-const rows = () => [...host.querySelectorAll(".app-row")].map((row) => row.textContent ?? "");
-const notices = () => [...host.querySelectorAll(".app-notice")].map((notice) => notice.textContent ?? "");
+/** The sheet an order opens in, over the list; none while the list is all there is. */
+const sheet = () => document.body.querySelector<HTMLElement>('[role="dialog"]');
+/** The rows a player reads: the open sheet's, else the page's. */
+const rows = () => [...reach().querySelectorAll(".app-row")].map((row) => row.textContent ?? "");
+/** The page's rows under the sheet. */
+const listRows = () =>
+  [...document.body.querySelectorAll(".app-row")]
+    .filter((row) => !row.closest('[role="dialog"]'))
+    .map((row) => row.textContent ?? "");
+const notices = () => [...reach().querySelectorAll(".app-notice")].map((notice) => notice.textContent ?? "");
 
 describe("the Build orders page", () => {
   it("makes an order from step cards and saves it on the account, where it becomes the one the panel follows", async () => {
@@ -187,11 +197,13 @@ describe("the Build orders page", () => {
     await open();
     await press("New order");
     const group = (label: string) =>
-      [...host.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map((goal) =>
+      [...document.body.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map((goal) =>
         goal.getAttribute("aria-label"),
       );
     const faces = (label: string) =>
-      [...host.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map((goal) => goal.textContent);
+      [...document.body.querySelectorAll(`[role="group"][aria-label="${label}"] button`)].map(
+        (goal) => goal.textContent,
+      );
     expect(group("Resources")).toEqual([
       "Wood",
       "Coal",
@@ -262,7 +274,7 @@ describe("the Build orders page", () => {
     await press("Paste an order");
     type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"mill","count":2}]}');
     await press("Read it");
-    expect(host.querySelector(".app-field__line")?.textContent).toBe(
+    expect(document.body.querySelector(".app-field__line")?.textContent).toBe(
       "Step 1: “mill” is not a goal: farm, wood, coal, copper, ironwood, coldIron, gold, adamantine, mithral, dragonhide, market, knightT1, knightT2, knightT3, crossbowmanT1, crossbowmanT2, crossbowmanT3, paladinT1, paladinT2, paladinT3, hut, barracks, barracksT2, barracksT3, army, armyT2, armyT3, levelUp.",
     );
     type("Paste an order's JSON", '{"name":"Mine","steps":[{"rank":"City","goal":"coal","count":2}]}');
@@ -397,29 +409,32 @@ describe("the Build orders page", () => {
     expect(rows()[0]).toContain("Active");
   });
 
-  it("opens an order to edit at its own address on a phone, and Back returns to the list with nothing saved", async () => {
+  it("opens an order to edit at its own address in the sheet over the list, and its cross returns to the list unsaved", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open();
     expect(rows()).toEqual(["Coal rush2 stepsActive", "The game's order26 stepsUse"]);
     await press("Edit");
     expect(address).toBe(`${BUILD_ORDERS_PATH}?edit=o1`);
-    // The editor alone, on its first rank: Settlement's farm.
+    // The editor in the sheet, on its first rank (Settlement's farm), the list under it.
     expect(rows()).toEqual(["Farm2"]);
+    expect(listRows()[0]).toContain("Coal rush");
     await press("More: Farm");
     expect(rows()).toEqual(["Farm3"]);
-    // The page's own Back, at its head: a phone's editor has no second one.
+    // No Back anywhere: the sheet closes on its cross.
     expect(button("Back")).toBeUndefined();
-    await act(async () => host.querySelector<HTMLAnchorElement>('a[data-role="back"]')!.click());
+    expect(document.body.querySelector('[data-role="back"]')).toBeNull();
+    await press("Close");
     expect(address).toBe(BUILD_ORDERS_PATH);
+    expect(sheet()).toBeNull();
     expect(rows()[0]).toContain("Coal rush");
     expect(service.saveBuildOrders).not.toHaveBeenCalled();
   });
 
-  it("keeps the list beside the followed order's steps on a desktop, and opens an order beside the list", async () => {
+  it("keeps the list beside the followed order's steps on a desktop, and opens an order over them in the sheet", async () => {
     account({ orders: [{ id: "o1", order: COAL_RUSH }], active: "o1" });
     await open(1440);
     const ranks = () =>
-      [...host.querySelectorAll("section[aria-label]")].map((rank) => [
+      [...document.body.querySelectorAll("section[aria-label]")].map((rank) => [
         rank.getAttribute("aria-label"),
         rank.textContent,
       ]);
@@ -431,7 +446,8 @@ describe("the Build orders page", () => {
     ]);
     await press("Edit");
     expect(field("Name")?.value).toBe("Coal rush");
-    expect(rows().slice(0, 2)).toEqual(["Coal rush2 stepsActive", "The game's order26 stepsUse"]);
+    expect(sheet()).not.toBeNull();
+    expect(listRows().slice(0, 2)).toEqual(["Coal rush2 stepsActive", "The game's order26 stepsUse"]);
   });
 
   it("deletes an order from its editor; the game's order is followed when it was the followed one", async () => {
@@ -445,12 +461,13 @@ describe("the Build orders page", () => {
     expect(rows()).toEqual(["The game's order26 stepsActive"]);
   });
 
-  it("starts the copied order when Copy to edit is pressed over an unfinished new draft, and saves that one", async () => {
+  it("starts the copied order when Copy to edit is pressed after an unfinished new draft was closed, and saves that one", async () => {
     account({ orders: [], active: null });
     await open(1440);
     await press("New order");
     type("Name", "My unfinished draft");
     await press("Farm");
+    await press("Close");
     await press("Copy to edit");
     expect(field("Name")?.value).toBe("Default");
     await press("Save");
@@ -459,15 +476,17 @@ describe("the Build orders page", () => {
     expect(saved.book).toMatchObject({ orders: [{ order: JSON.parse(buildOrderJson(DEFAULT_BUILD_ORDER)) }] });
   });
 
-  it("starts a fresh order when New order is pressed over a copied draft", async () => {
+  it("starts a fresh order when New order is pressed after a copied draft was closed", async () => {
     account({ orders: [], active: null });
     await open(1440);
     await press("Copy to edit");
     type("Name", "Copied");
+    await press("Close");
     await press("New order");
     expect(field("Name")?.value).toBe("My order");
-    // The list's one row; a fresh draft has no step.
-    expect(rows()).toEqual(["The game's order26 stepsActive"]);
+    // A fresh draft has no step; the list's one row stands under the sheet.
+    expect(rows()).toEqual([]);
+    expect(listRows()).toEqual(["The game's order26 stepsActive"]);
     await press("Farm");
     await press("Save");
     expect(service.saveBuildOrders.mock.calls[0][0].book).toMatchObject({

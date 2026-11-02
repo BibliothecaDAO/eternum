@@ -1,10 +1,8 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { type ReactNode, useContext } from "react";
+import type { ReactNode } from "react";
 
-import { OpenedFromPanel } from "./opened-from-panel";
 import { SheetHandle, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE } from "./words";
+import { CLOSE } from "./words";
 
 /** Where a desktop sheet docks: under the match's bar, or on an app page's right under its title (under the top bar). */
 const DESKTOP_PLACEMENT = {
@@ -29,7 +27,6 @@ export const Sheet = ({
   placement?: keyof typeof DESKTOP_PLACEMENT;
   children: ReactNode;
 }) => {
-  const fromPanel = useContext(OpenedFromPanel);
   useSheetCloses(onClose);
   return (
     <>
@@ -55,7 +52,7 @@ export const Sheet = ({
         <SheetHandle onClose={onClose}>
           <i className="frontier-handle" />
         </SheetHandle>
-        <Mark back={fromPanel} onClose={onClose} />
+        <Mark onClose={onClose} />
         <div className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto px-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))] lg:pt-3.5">
           {children}
         </div>
@@ -64,18 +61,12 @@ export const Sheet = ({
   );
 };
 
-/** A desktop panel's own way out on its top edge: a cross, or a back arrow to the panel it opened from. */
-const Mark = ({ back, onClose }: { back: boolean; onClose: () => void }) => (
+/** A desktop panel's own way out on its top edge: a cross. */
+const Mark = ({ onClose }: { onClose: () => void }) => (
   <button
     type="button"
-    aria-label={back ? BACK : CLOSE}
+    aria-label={CLOSE}
     onClick={onClose}
-    className={cn(
-      "absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-mark hover:border-kit-gold lg:flex",
-      !back &&
-        "before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-['']",
-    )}
-  >
-    {back && <SemanticIcon name="arrow-left" size={20} />}
-  </button>
+    className="absolute -top-2.5 right-3.5 z-10 hidden size-8 items-center justify-center rounded-full border-[1.5px] border-kit-line2 bg-kit-ink shadow-mark before:absolute before:h-[2.5px] before:w-3.5 before:rotate-45 before:rounded-sm before:bg-kit-gold before:content-[''] after:absolute after:h-[2.5px] after:w-3.5 after:-rotate-45 after:rounded-sm after:bg-kit-gold after:content-[''] hover:border-kit-gold lg:flex"
+  />
 );

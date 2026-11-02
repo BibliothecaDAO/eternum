@@ -194,9 +194,9 @@ const WalletRows = ({
           <SemanticIcon name="backpack" size={34} />
           <span className="text-app-heading text-app-ink">{choice.name}</span>
           {choice.note && <span className="text-app-label text-app-muted">{choice.note}</span>}
-          <span className="ml-auto text-app-label text-app-muted">
-            {wallet.pending === choice.id ? WALLET_WORDS.opening : <SemanticIcon name="arrow-right" size={22} />}
-          </span>
+          {wallet.pending === choice.id && (
+            <span className="ml-auto text-app-label text-app-muted">{WALLET_WORDS.opening}</span>
+          )}
         </button>
       ))}
       {rows.length === 0 && <span className="text-app-body text-app-muted">{WALLET_WORDS.noneHere}</span>}

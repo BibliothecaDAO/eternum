@@ -674,7 +674,7 @@ const ConfirmSection = () => (
           verb="Disband"
           tone="bad"
           onConfirm={() => undefined}
-          onBack={() => undefined}
+          onCancel={() => undefined}
         >
           <span className="ui-row__detail">Its 300 Paladins are lost; a deployed army never goes home.</span>
         </HudConfirm>

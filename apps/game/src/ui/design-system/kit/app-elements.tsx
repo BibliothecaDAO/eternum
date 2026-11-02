@@ -14,8 +14,6 @@ import {
 import { Link, type To, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
-import { BACK } from "./words";
-
 import { paintingSources, type Painting } from "./paintings";
 import { HudPlaceMedal } from "./hud-elements";
 import { useSheetCloses } from "./sheet-closes";
@@ -661,8 +659,8 @@ export const AppSwitch = ({
 );
 
 /**
- * A setting: its icon, its name and what it holds now, then its control (a switch, a chevron to open it, or to another
- * site with `href`).
+ * A setting: its icon, its name and what it holds now, then its control (a switch, a button). With `onClick` or `href`
+ * the whole row is the press that opens it (another site with `href`), lit on hover; it carries no arrow.
  */
 export const AppSetting = ({
   icon,
@@ -685,7 +683,7 @@ export const AppSetting = ({
     trail={
       <>
         {value !== undefined && <span className="app-setting__value">{value}</span>}
-        {control ?? ((onClick || href) && <Icon name="arrow-right" size={18} />)}
+        {control}
       </>
     }
     onClick={onClick}
@@ -762,15 +760,9 @@ export const AppPortrait = ({
   </span>
 );
 
-/** A page's head: Back to where it came from (with Esc on a desktop), its title, and what it does at its end. */
-export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: To; aside?: ReactNode }) => (
+/** A page's head: its title, and what it does at its end. A page has no Back: the places are the way out. */
+export const AppPageHead = ({ title, aside }: { title: ReactNode; aside?: ReactNode }) => (
   <header className="app-page-head">
-    {back !== undefined && (
-      <Link to={back} data-role="back" aria-label={BACK} className="app-page-head__back">
-        <Icon name="arrow-left" size={22} />
-        {BACK}
-      </Link>
-    )}
     <h1>{title}</h1>
     {aside !== undefined && <span className="app-page-head__aside">{aside}</span>}
   </header>

@@ -21,15 +21,10 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
-/**
- * The pages without Back: the app's four places, and a result after a match (spec 08); every other page is opened from
- * another and carries Back (What's new, from You).
- */
-const TAB_PATHS = new Set(["/", "/season", "/chat", "/profile", "/nothing-here", "/results/0x111"]);
 /** A page that is its own scroller: on a phone it fills the page over the tabs, with no footer under it. */
 const FILL_PATHS = new Set(["/chat"]);
-/** Full-screen steps: no tabs, the desktop's top bar keeps the lockup alone (a Blitz lobby). */
-const STEP_PATHS = ["/blitz/0x111", "/join/devcon", "/join/devcon/0x111"];
+/** Pages outside the shell's route that wear the same frame: a Blitz lobby and the Devcon ticket. */
+const OTHER_PATHS = ["/blitz/0x111", "/join/devcon", "/join/devcon/0x111"];
 const CONTROLS = "a[href], button, input, select, textarea";
 
 /**
@@ -79,26 +74,23 @@ const bandOrder = (container: HTMLElement) =>
 describe.each(SIZES)("every page at %i × %i keeps each control in its band", (width) => {
   const layout = width >= 1024 ? "desktop" : "phone";
 
-  it.each([...new Set([...shellPaths(), ...STEP_PATHS])])("%s", async (path) => {
+  it.each([...new Set([...shellPaths(), ...OTHER_PATHS])])("%s", async (path) => {
     setViewportWidth(width);
     const container = await renderPath(path);
     const top = band(container, "top");
-    const isTabPage = TAB_PATHS.has(path);
-    const isStep = STEP_PATHS.includes(path);
 
     // Every control on the page sits in one of the frame's bands.
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
-    // Every page with the places ends on the footer; a full-screen step has neither, nor a phone's page that fills.
-    expect(band(container, "footer") !== null).toBe(!isStep && !(layout === "phone" && FILL_PATHS.has(path)));
-    // Back leads every page opened from another, and only those.
-    const back = container.querySelectorAll('[data-role="back"]');
-    expect(back.length).toBe(isTabPage ? 0 : 1);
+    // Every page ends on the footer but a phone's page that fills.
+    expect(band(container, "footer") !== null).toBe(!(layout === "phone" && FILL_PATHS.has(path)));
+    // No page has Back: the places are the way out (the owner's pick A, 2 November 2026).
+    expect(container.querySelectorAll('[data-role="back"]')).toHaveLength(0);
 
     if (layout === "phone") {
-      // The top row holds the lockup, or Back and the title; nothing else there is to tap.
-      expect(controlsIn(top).map((control) => control.dataset.role)).toEqual(isTabPage ? [] : ["back"]);
+      // The top row holds the lockup or the page's title, and nothing to tap.
+      expect(controlsIn(top)).toEqual([]);
       // The tabs are the foot, below the notice and the foot row; a page's footer follows its body in the same scroll,
       // as on the desktop.
       if (band(container, "footer"))
@@ -106,21 +98,30 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
       expect(bandOrder(container).filter((name) => name !== "body" && name !== "footer")).toEqual(
         ["top", "notice", "foot", "tabs"].filter((name) => band(container, name)),
       );
-      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(
-        isStep ? 0 : 4,
-      );
+      expect(controlsIn(band(container, "tabs")).filter((control) => control.dataset.role === "tab")).toHaveLength(4);
     } else {
-      // One bar across the top: the lockup as a mark, then the four places and nothing else, above every other band;
-      // Back sits in the title row under it.
+      // One bar across the top: the lockup as a mark, then the four places and nothing else, above every other band.
       expect(top).toBeNull();
       const bar = band(container, "bar");
       expect(bandOrder(container)[0]).toBe("bar");
       expect(bar!.querySelector('[data-role="lockup"]')!.matches(CONTROLS)).toBe(false);
       const controls = controlsIn(bar);
-      expect(controls.map((control) => control.dataset.role)).toEqual(isStep ? [] : ["tab", "tab", "tab", "tab"]);
+      expect(controls.map((control) => control.dataset.role)).toEqual(["tab", "tab", "tab", "tab"]);
       expect(band(container, "tabs")).toBeNull();
-      if (!isTabPage) expect(back[0].closest('[data-band="title"]')).not.toBeNull();
     }
+  });
+});
+
+describe("a phone's top row", () => {
+  it.each([
+    ["/season", null],
+    ["/profile/settings", "Settings"],
+    ["/scroll", "What's new"],
+  ])("on %s names the page by its title, a place by the lockup", async (path, title) => {
+    setViewportWidth(390);
+    const top = band(await renderPath(path), "top")!;
+    expect(top.querySelector("h1")?.textContent ?? null).toBe(title);
+    expect(top.querySelector("img.app-mark") !== null).toBe(title === null);
   });
 });
 
@@ -191,7 +192,7 @@ describe("a stage on a phone", () => {
       root!.render(
         <QueryClientProvider client={new QueryClient()}>
           <MemoryRouter>
-            <PageFrame back="/" title="Frontier" tabs={false} painting="dark-plains" stage={stage}>
+            <PageFrame title="Frontier" painting="dark-plains" stage={stage}>
               <p>Steps</p>
             </PageFrame>
           </MemoryRouter>

@@ -1,5 +1,5 @@
-import { HudButton, HudChip, HudIconButton, HudSetting } from "@/ui/design-system/kit/hud-elements";
-import { BACK, SETTINGS_WORDS } from "@/ui/design-system/kit/words";
+import { HudButton, HudChip, HudSetting } from "@/ui/design-system/kit/hud-elements";
+import { SETTINGS_WORDS } from "@/ui/design-system/kit/words";
 import { CHAT_SHORTCUT } from "@/ui/features/world/containers/chat-shortcut";
 import { getShortcutManager } from "@/utils/shortcuts/centralized-shortcut-manager";
 
@@ -43,15 +43,13 @@ export const KeyboardShortcutsSetting = ({ onShow }: { onShow: () => void }) => 
 );
 
 /**
- * The keys, read-only, under Back to Settings: each key with every meaning it has, a line each, wrapped to be read whole
- * (qa-app-1 P3-2: Tab's and Esc's meanings were cut off behind "…").
+ * The keys, read-only, in Settings' place: each key with every meaning it has, a line each, wrapped to be read whole
+ * (qa-app-1 P3-2: Tab's and Esc's meanings were cut off behind "…"). No Back: closing Settings closes them, and Settings
+ * opens again on its own page (the owner's pick A, 2 November 2026).
  */
-export const KeyboardShortcuts = ({ onBack }: { onBack: () => void }) => (
+export const KeyboardShortcuts = () => (
   <section aria-label={SETTINGS_WORDS.shortcuts} className="flex flex-col gap-3 p-1">
-    <header className="flex items-center gap-2">
-      <HudIconButton icon="arrow-left" label={BACK} kind="quiet" size="sm" onClick={onBack} />
-      <h2 className="text-hud-title text-hud-ink">{SETTINGS_WORDS.shortcuts}</h2>
-    </header>
+    <h2 className="text-hud-title text-hud-ink">{SETTINGS_WORDS.shortcuts}</h2>
     <dl className="flex flex-col gap-1">
       {shortcutBindings().map(([key, meanings]) => (
         <div key={key} className="flex items-start gap-3">

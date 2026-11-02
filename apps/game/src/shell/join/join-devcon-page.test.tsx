@@ -107,7 +107,11 @@ const redeemedCodes = () =>
   service.redeemCampaignTicket.mock.calls.map(([, code]) => code).filter((code) => code !== null);
 const kept = () => localStorage.getItem("realms:campaign-code:devcon-2026");
 const text = () => host.textContent ?? "";
-const buttons = () => [...host.querySelectorAll("button")].map((button) => button.textContent);
+/** The page's own buttons; the places in the bar (signed out, You is Connect) are every page's. */
+const buttons = () =>
+  [...host.querySelectorAll("button")]
+    .filter((button) => button.dataset.role !== "tab" && button.dataset.action !== "connect")
+    .map((button) => button.textContent);
 const press = (label: string) =>
   act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent?.includes(label))!.click());
 

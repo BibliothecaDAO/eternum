@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCoarseNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { openOnMap } from "@/play/navigation/open-place";
@@ -38,15 +37,7 @@ import { HudPanel } from "@/ui/design-system/kit/hud-elements";
  * structures they own by kind, and the hyperstructures paying them now, each with its share, its points a second and a
  * way to go to it.
  */
-export const PlayerId = ({
-  selectedPlayer,
-  selectedGuild,
-  back,
-}: {
-  selectedPlayer: ContractAddress;
-  selectedGuild?: ContractAddress;
-  back?: () => void;
-}) => {
+export const PlayerId = ({ selectedPlayer }: { selectedPlayer: ContractAddress }) => {
   const name = usePlayerDisplayName(selectedPlayer);
   const address = normalizeLeaderboardAddress(selectedPlayer);
   const standing = useInGameLeaderboard().standingsByAddress.get(address);
@@ -59,11 +50,6 @@ export const PlayerId = ({
 
   return (
     <section aria-label="Player details" className="flex flex-col gap-2 p-2">
-      {selectedGuild !== undefined && back && (
-        <button type="button" onClick={back} className={`flex items-center gap-1 self-start px-1 text-hud-body`}>
-          <SemanticIcon name="arrow-left" className="h-3 w-3" /> Back
-        </button>
-      )}
       <header className="flex items-center gap-2 px-1">
         <Avatar address={selectedPlayer} />
         <span className={`min-w-0 flex-1 truncate text-hud-title`}>{name || "Unknown player"}</span>

@@ -314,7 +314,7 @@ export const ResourceSwap = ({ entityId, listResourceId }: { entityId: ID; listR
             question="Confirm Swap"
             verb={swapLabel}
             onConfirm={onSwap}
-            onBack={() => setOpenConfirmation(false)}
+            onCancel={() => setOpenConfirmation(false)}
           >
             <SwapSummary
               gives={{

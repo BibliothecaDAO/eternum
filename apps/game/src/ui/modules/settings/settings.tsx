@@ -40,12 +40,12 @@ const effectsCategories = Object.values(AudioCategory).filter((category) => cate
 
 /**
  * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
- * one row whose Show opens their list in Settings' place, so Settings stays one short page. A row a device cannot use
+ * one row whose Show opens their list in Settings' place, so Settings stays one short page; closing Settings closes it. A row a device cannot use
  * (Haptics where nothing vibrates, the keys on a touch-first device) is not drawn there.
  */
 export const SettingsPanel = () => {
   const [shortcuts, setShortcuts] = useState(false);
-  if (shortcuts) return <KeyboardShortcuts onBack={() => setShortcuts(false)} />;
+  if (shortcuts) return <KeyboardShortcuts />;
   return (
     <div className="flex flex-col gap-4 p-1">
       <ProfileHeader />

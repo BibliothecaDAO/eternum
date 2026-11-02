@@ -33,7 +33,7 @@ const usePlace = (game: DirectoryGame, player: string) => {
 
 /**
  * A finished game on a player's list (spec 10): its age's painting, its title and date, the player's place, and LORDS
- * for a Frontier season. The row opens the game's Results, whose Back leads back to the list.
+ * for a Frontier season. The row opens the game's Results, with You lit as the way back to the list.
  */
 export const HistoryRow = ({ game, player, now }: { game: DirectoryGame; player: string; now: number }) => {
   const { rank, lords } = usePlace(game, player);

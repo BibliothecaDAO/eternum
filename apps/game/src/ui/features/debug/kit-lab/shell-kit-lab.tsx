@@ -5,7 +5,6 @@ import { DayDial } from "@/ui/design-system/kit/day-dial";
 import { ListRow, RowThumb } from "@/ui/design-system/kit/list-row";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { Portrait } from "@/ui/design-system/kit/portrait";
-import { SeasonRow } from "@/ui/design-system/kit/season-row";
 import { Sheet } from "@/ui/design-system/kit/sheet";
 import { StoreBar } from "@/ui/design-system/kit/store-bar";
 import { YOU } from "@/ui/design-system/kit/words";
@@ -25,7 +24,6 @@ export const ShellKitLab = () => (
       <ClockSection />
       <StoresSection />
       <PillsSection />
-      <SeasonSection />
       <SheetSection />
       <PortraitsSection />
       <ClockChipsSection />
@@ -177,39 +175,6 @@ const PillsSection = () => (
       <Pill size="lg" tone="muted" icon="lords" struck>
         No LORDS
       </Pill>
-    </div>
-  </Section>
-);
-
-const STANDINGS = [
-  { name: "Ysabeau", order: 1, sites: 148, lords: 704 },
-  { name: "Aldric", order: 2, sites: 132, lords: 640 },
-  { name: "Corwin", order: 3, sites: 127, lords: 576 },
-];
-
-const SeasonSection = () => (
-  <Section title="SeasonRow · OrderEmblem">
-    <div className="flex flex-col">
-      {STANDINGS.map((row, index) => (
-        <SeasonRow
-          key={row.name}
-          rank={index + 1}
-          order={row.order}
-          name={row.name}
-          sitesCleared={row.sites}
-          lords={row.lords}
-          onOpen={() => undefined}
-        />
-      ))}
-      <SeasonRow rank={12} order={6} name={YOU} sitesCleared={88} lords={192} own onOpen={() => undefined} />
-      <SeasonRow
-        rank={undefined}
-        order={7}
-        name="Osric"
-        sitesCleared={undefined}
-        lords={undefined}
-        onOpen={() => undefined}
-      />
     </div>
   </Section>
 );

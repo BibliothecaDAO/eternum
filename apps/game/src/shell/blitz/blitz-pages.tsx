@@ -46,7 +46,7 @@ export const BlitzLobbyPage = () => {
   const row = lobbyRowOf(facts.blitz, facts.slots.data?.slots ?? [], id);
   if (!row) {
     return (
-      <PageFrame back="/" title={BLITZ.name} tabs={false}>
+      <PageFrame title={BLITZ.name}>
         {facts.slots.isSuccess && facts.directory.isSuccess ? <NothingHere /> : <Loading />}
       </PageFrame>
     );
@@ -70,10 +70,8 @@ export const BlitzLobbyPage = () => {
     );
   return (
     <PageFrame
-      back="/"
       title={lobbyTitle(row)}
       aside={chips}
-      tabs={false}
       // A phone's foot row holds a game's one button; a slot's entry is a whole panel, so it stands in the page.
       foot={!desktop && row.kind === "game" ? action : undefined}
       painting={BLITZ.painting}
