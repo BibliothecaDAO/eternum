@@ -114,7 +114,6 @@ const normalizeWorldChatMessage = (message: WorldChatMessage): WorldChatMessage 
   sender: {
     playerId: message.sender.playerId,
     displayName: message.sender.displayName ?? undefined,
-    avatarUrl: message.sender.avatarUrl ?? undefined,
   },
 });
 
@@ -129,7 +128,6 @@ const mapWorldChatRecordToMessage = (record: any, fallbackZoneId: string): World
     sender: {
       playerId: record.sender?.playerId ?? record.senderId ?? "unknown",
       displayName: record.sender?.displayName ?? record.senderDisplayName ?? undefined,
-      avatarUrl: record.sender?.avatarUrl ?? record.senderAvatarUrl ?? undefined,
     },
   });
 

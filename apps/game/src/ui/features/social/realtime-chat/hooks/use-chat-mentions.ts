@@ -1,14 +1,15 @@
 import { useIdentitySessionStore } from "@/hooks/context/identity-session";
-import { playerAvatarUrl, resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { profileOfIdentityUser } from "@realms-world/identity";
 import { useMemo } from "react";
 
 import { useChatMap } from "../ui/shared/use-chat-map";
+import { useChatPeople } from "./use-chat-people";
 import { useRealtimeChatSelector } from "./use-realtime-chat";
 
 export interface MentionablePlayer {
   name: string;
-  portrait: string;
+  /** Their portrait; none until their profile is known. */
+  portrait: string | null;
 }
 
 /** A name a player could type: none for an unclaimed one, which reads as an address. */
@@ -21,7 +22,7 @@ const typable = (name: string | null | undefined): name is string => Boolean(nam
  */
 export const useChatMentions = (zoneId?: string) => {
   const gamePlayers = useChatMap()?.players;
-  const names = usePlayerNames();
+  const people = useChatPeople();
   const messages = useRealtimeChatSelector((state) => (zoneId ? state.worldZones[zoneId]?.messages : undefined));
   const online = useRealtimeChatSelector((state) => state.onlinePlayers);
   const self = useRealtimeChatSelector((state) => state.identity?.playerId);
@@ -29,21 +30,18 @@ export const useChatMentions = (zoneId?: string) => {
   return useMemo(() => {
     const me = user ? profileOfIdentityUser(user).name : null;
     const others = new Map<string, MentionablePlayer>();
-    const add = (name: string | null | undefined, portrait: string) => {
+    const add = (name: string | null | undefined, portrait: string | null) => {
       if (!typable(name) || name.toLowerCase() === me?.toLowerCase() || others.has(name)) return;
       others.set(name, { name, portrait });
     };
     for (const player of gamePlayers ?? []) add(player.name, player.portrait);
     for (const { sender } of messages ?? [])
       if (sender.playerId !== self)
-        add(
-          resolveChatSenderName(names, sender.playerId, sender.displayName),
-          sender.avatarUrl ?? playerAvatarUrl(sender.playerId),
-        );
+        add(people.nameOf(sender.playerId, sender.displayName), people.portraitOf(sender.playerId));
     for (const player of Object.values(online))
       if (player.playerId !== self)
-        add(resolveChatSenderName(names, player.playerId, player.displayName), playerAvatarUrl(player.playerId));
+        add(people.nameOf(player.playerId, player.displayName), people.portraitOf(player.playerId));
     const choices = [...others.values()];
     return { me, choices, names: me ? [...others.keys(), me] : [...others.keys()] };
-  }, [gamePlayers, messages, online, self, names, user]);
+  }, [gamePlayers, messages, online, self, people, user]);
 };

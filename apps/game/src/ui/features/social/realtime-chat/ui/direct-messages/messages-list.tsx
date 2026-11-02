@@ -1,4 +1,3 @@
-import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { HudButton, HudChip, HudRow } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useMemo } from "react";
@@ -6,9 +5,10 @@ import { useShallow } from "zustand/react/shallow";
 
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
 import { threadShown, threadUnread } from "../../model/direct-unread";
+import { useChatPeople } from "../../hooks/use-chat-people";
 import { whenSent } from "../../model/message-grouping";
 import { useMute } from "../shared/player-card";
-import { UserAvatar } from "../shared/user-avatar";
+import { ChatPortrait } from "../shared/chat-portrait";
 
 /**
  * Messages: the player's private conversations, the latest first, each by the other player's name with its last line,
@@ -29,7 +29,7 @@ export function MessagesList() {
     useShallow((state) => Object.keys(state.dmThreads).filter((id) => threadShown(state, id))),
   );
   const known = useRealtimeChatSelector((state) => state.blockList !== null);
-  const names = usePlayerNames();
+  const people = useChatPeople();
   const muted = useRealtimeChatSelector((state) => state.blockList?.blocked) ?? [];
 
   const conversations = useMemo(
@@ -54,11 +54,11 @@ export function MessagesList() {
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-1.5">
       {conversations.map(({ other, last, unreadCount }) => {
-        const name = resolveChatSenderName(names, other, online[other]?.displayName);
+        const name = people.nameOf(other, online[other]?.displayName);
         return (
           <HudRow
             key={other}
-            lead={<UserAvatar name={name} address={other} size="lg" className="rounded-full" />}
+            lead={<ChatPortrait playerId={other} size="lg" className="rounded-full" />}
             label={name}
             title={name}
             detail={<span className="block truncate">{last.content}</span>}
@@ -82,7 +82,7 @@ export function MessagesList() {
             <MutedPlayer
               key={playerId}
               playerId={playerId}
-              name={resolveChatSenderName(names, playerId, online[playerId]?.displayName)}
+              name={people.nameOf(playerId, online[playerId]?.displayName)}
             />
           ))}
         </section>
@@ -96,7 +96,7 @@ const MutedPlayer = ({ playerId, name }: { playerId: string; name: string }) => 
   const { toggle } = useMute(playerId);
   return (
     <HudRow
-      lead={<UserAvatar name={name} address={playerId} size="lg" className="rounded-full" />}
+      lead={<ChatPortrait playerId={playerId} size="lg" className="rounded-full" />}
       title={name}
       controls={
         <HudButton kind="secondary" size="sm" onClick={toggle}>

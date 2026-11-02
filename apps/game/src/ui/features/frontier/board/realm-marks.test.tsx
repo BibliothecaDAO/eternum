@@ -5,7 +5,7 @@ import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
 
 const profiles: Record<string, { name: string | null; portrait: string | null }> = {
-  "0xabc": { name: "Aldric", portrait: null },
+  "0xabc": { name: "Aldric", portrait: "07" },
   "0x1234": { name: null, portrait: null },
 };
 // Identity has answered for both: the one rule names them.
@@ -14,7 +14,6 @@ vi.mock("@/hooks/use-player-profile", async () => {
   return {
     usePlayerProfile: (account: string) => profiles[account],
     usePlayerName: (account: string) => readKnownPlayerName(account, profiles[account].name),
-    playerAvatarUrl: (account: string) => `/portraits/${account}.webp`,
   };
 });
 
@@ -30,11 +29,11 @@ const render = (node: ReactNode) => {
 };
 
 describe("a lord and a realm's Order on the HUD", () => {
-  it("names a lord by the claimed name, with the portrait where there is room", () => {
+  it("names a lord by the claimed name, with their chosen portrait where there is room", () => {
     const host = render(<LordName account="0xabc" portrait />);
     expect(host.textContent).toBe("Aldric");
     expect(host.querySelector('[role="img"]')?.getAttribute("aria-label")).toBe("Aldric");
-    expect(host.querySelector("img")?.getAttribute("src")).toBe("/portraits/0xabc.webp");
+    expect(host.querySelector("img")?.getAttribute("src")).toBe("/images/avatars/07.png");
   });
 
   it("names an unclaimed lord by the account's last four, muted, and the player's own row You", () => {

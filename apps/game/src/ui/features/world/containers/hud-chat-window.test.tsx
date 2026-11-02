@@ -15,7 +15,10 @@ const fixture = vi.hoisted(() => ({
 vi.mock("@/hooks/context/identity-session", () => ({ useIdentitySession: () => ({ status: fixture.status }) }));
 vi.mock("@/shell/sign-in/connect", () => ({ useRequestSignIn: () => fixture.signIn }));
 const NAMES = vi.hoisted(() => ({ text: () => "Ada", reading: () => ({ state: "waiting" as const, text: "…" }) }));
-vi.mock("@/hooks/use-player-profile", () => ({ resolveChatSenderName: () => "Ada", usePlayerNames: () => NAMES }));
+vi.mock("@/hooks/use-player-profile", () => ({ usePlayerNames: () => NAMES }));
+vi.mock("@/ui/features/social/realtime-chat/hooks/use-chat-people", () => ({
+  useChatPeople: () => ({ nameOf: () => "Ada" }),
+}));
 vi.mock("@/runtime/world", () => ({ getActiveGame: () => null }));
 // No game here: a place reads as its message has it (chat-places.test.tsx reads places in a game).
 vi.mock("@/ui/features/social/realtime-chat/ui/shared/use-chat-map", () => ({

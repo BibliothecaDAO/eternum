@@ -8,7 +8,8 @@ import {
 } from "@/hooks/context/identity-session";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
-import { playerAvatarUrl, usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import {
   HudButton,
   HudField,
@@ -88,7 +89,7 @@ function ProfileHeader() {
   // Who, then where they stand, then the address to copy: two lines beside the portrait.
   return (
     <header className="flex items-center gap-3 border-b border-hud-divider pb-2">
-      {address && <HudPortrait src={playerAvatarUrl(address, profile)} label={name ?? "Player"} />}
+      {address && <HudPortrait src={playerPortraitUrl(address, profile.portrait)} label={name ?? "Player"} />}
       <div className="min-w-0 flex-1">
         {session && !spectating ? (
           <UsernameEditor name={name} />
