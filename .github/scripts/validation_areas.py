@@ -68,6 +68,8 @@ AREAS = {
         "deploy/athanor/scripts/directory.py",
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
+        # value-readers.test.ts drives the payout relay's, co-signer's and monitor's readers against Herald.
+        "apps/value-relay/src/**",
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",

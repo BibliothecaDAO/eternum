@@ -488,6 +488,17 @@ describe("native live publication", () => {
   });
 });
 
+it("serves an expedition game whole to a snapshot that names no actor, and an actor's snapshot its scope", async () => {
+  const { live } = await expeditionWorld();
+  const balances = (actor?: string) =>
+    live
+      .snapshot("1", ["ResourceBalance"], actor)
+      .models[0]!.rows.map(({ value }) => Number(value.entity_id))
+      .sort();
+  expect(balances()).toEqual([1, 2]);
+  expect(balances("0xa")).toEqual([1]);
+});
+
 it("validates the whole rebuilt overlay before publishing any of its actions", async () => {
   const { live, pending, tile, messages, native } = fixture();
   pending.transactions.push(

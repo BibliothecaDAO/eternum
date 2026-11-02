@@ -24,6 +24,7 @@
     "@types/node": "^22.13.5",
     "@types/pg": "^8.16.0",
     "bun-types": "catalog:web",
+    "effect": "4.0.4",
     "typescript": "^5.8.2",
     "vitest": "^2.1.9"
   }

@@ -154,14 +154,15 @@ export class LiveWorld {
     return this.preconfirmedBlockValue;
   }
 
-  /** A game's facts as the actor sees them; with an owner, models that carry an owner narrow to that account's rows. */
+  /**
+   * A game's facts as the actor sees them. With no actor, the whole game: every row but an actor's own, which the
+   * server-side readers (payout relay, co-signer, monitor, day-open mail) count from. With an owner, models that carry
+   * an owner narrow to that account's rows.
+   */
   public snapshot(gameId: string, models?: readonly string[], actor?: string, owner?: string): GameSnapshot {
-    const snapshot = this.confirmedFold.subscriptionSnapshot(
-      gameId,
-      this.confirmedBlockValue,
-      this.confirmedFold.subscriptionScope(gameId, actor, this.lastClockTimestamp),
-      models,
-    );
+    const scope =
+      actor === undefined ? {} : this.confirmedFold.subscriptionScope(gameId, actor, this.lastClockTimestamp);
+    const snapshot = this.confirmedFold.subscriptionSnapshot(gameId, this.confirmedBlockValue, scope, models);
     return owner === undefined ? snapshot : this.confirmedFold.ownedBy(gameId, snapshot, owner);
   }
 

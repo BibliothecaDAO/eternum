@@ -53,9 +53,10 @@ For games with expedition epochs, the subscription contains the player's realm, 
 those armies. With no army, the current surface region is available for muster. A new day removes the previous day's
 armies, sites, tiles and rewards, while home production remains. Incoming rift producers belong to the receiving home
 until Cairo settles their final output, including after the expedition ends; their old map sites and tiles are excluded.
-HTTP snapshots apply the same `actor` scope. Scope membership retains keys only; current facts remain in the confirmed
-fold and its provisional overlay. Scope is for relevance, not access control: the actor is not authenticated, and every
-fact is public on the shard's RPC.
+HTTP snapshots apply the same `actor` scope; one that names no actor holds the whole game, every row but an actor's own,
+which the server-side readers count from (the payout relay, co-signer and monitor, the day-open mail). Scope membership
+retains keys only; current facts remain in the confirmed fold and its provisional overlay. Scope is for relevance, not
+access control: the actor is not authenticated, and every fact is public on the shard's RPC.
 
 ## Fold and recovery
 
