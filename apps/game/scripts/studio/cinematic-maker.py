@@ -12,7 +12,7 @@ RATE = 48000
 FRAME_COUNT = 481
 FPS = 24
 FORMATS = {"16x9": (1280, 720), "9x16": (1080, 1920)}
-REALMS = "01-Logos/Realms/Lettered/realms-lettered-gold.png"
+REALMS = "01-Logos/Realms/Lettered/realms-lettered-ink.png"
 LOCKUP = "01-Logos/Frontier/Transparent/frontier-lockup.png"
 HEADING = "02-Fonts/IM-Fell-English-SC/IMFellEnglishSC-Regular.ttf"
 BODY = "02-Fonts/Exo-2/Exo2-Regular.ttf"
@@ -124,13 +124,13 @@ def framing_filter(size, plan):
 
 
 def make_intro_card(kit, size, target):
-    palette = json.loads((kit / "03-Colors/palette.json").read_text())
-    ground = ImageColor.getrgb(palette["brand"]["hearth"])
-    card = Image.new("RGBA", size, (*ground, 204))
+    wide = size[0] > size[1]
+    card = Image.new("RGBA", size, (0, 0, 0, 0))
     logo = Image.open(kit / REALMS).convert("RGBA")
-    width = 350 if size[0] > size[1] else 600
+    width = 240 if wide else 400
     logo = logo.resize((width, round(logo.height * width / logo.width)), Image.Resampling.LANCZOS)
-    card.alpha_composite(logo, ((size[0] - logo.width) // 2, (size[1] - logo.height) // 2))
+    position = (330, 220) if wide else ((size[0] - width) // 2, 1380)
+    card.alpha_composite(logo, position)
     card.save(target)
 
 
@@ -138,20 +138,15 @@ def render_picture(source, size, plan, folder):
     intro_frames, hold_frames = plan["introFrames"], plan["holdFrames"]
     total_frames = intro_frames + FRAME_COUNT + hold_frames
     intro_seconds = intro_frames / FPS
-    card_start = (intro_frames + FRAME_COUNT) / FPS
-    fade_duration = plan["lockupFullFrame"] / FPS - card_start
+    card_start = plan["lockupFullFrame"] / FPS - 1
     make_card(plan["kit"], size, plan, folder / "card.png")
     make_intro_card(plan["kit"], size, folder / "intro-card.png")
     graph = (
-        f"[0:v]{framing_filter(size, plan)},split[film][mist];"
-        f"[mist]trim=start_frame={FRAME_COUNT-intro_frames}:end_frame={FRAME_COUNT},"
-        "setpts=PTS-STARTPTS[introbase];"
-        "[introbase][1:v]overlay=0:0:shortest=1:format=auto,"
-        f"fade=t=in:st=0:d=0.5,fade=t=out:st={intro_seconds-.25}:d=0.25,"
-        "format=yuv420p[intro];"
-        f"[film]tpad=stop_mode=clone:stop={hold_frames}[held];"
-        "[intro][held]concat=n=2:v=1:a=0[sequence];"
-        f"[2:v]format=rgba,fade=t=in:st={card_start}:d={fade_duration}:alpha=1[card];"
+        f"[0:v]{framing_filter(size, plan)},"
+        f"tpad=start_mode=clone:start={intro_frames}:stop_mode=clone:stop={hold_frames}[held];"
+        f"[1:v]format=rgba,fade=t=out:st={intro_seconds}:d=1:alpha=1[intro];"
+        "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
+        f"[2:v]format=rgba,fade=t=in:st={card_start}:d=1:alpha=1[card];"
         "[sequence][card]overlay=0:0:shortest=1:format=auto,format=yuv420p[v]"
     )
     target = folder / "picture.mp4"
@@ -211,7 +206,8 @@ def finish(args):
     total_frames = plan["introFrames"] + FRAME_COUNT + plan["holdFrames"]
     duration = total_frames / FPS
     assert plan["introFrames"] > 0 and plan["holdFrames"] > 0
-    assert plan["introFrames"] + FRAME_COUNT < plan["lockupFullFrame"] < total_frames
+    if not plan["introFrames"] + FRAME_COUNT < plan["lockupFullFrame"] - FPS < total_frames - FPS:
+        raise ValueError("The one-second lockup fade must start after the film settles and finish before the cut ends.")
     save_json(args.evidence / "source.json", {"sha256": digest(args.source), **info})
     score = None
     if args.score:
@@ -223,7 +219,7 @@ def finish(args):
         folder.mkdir(exist_ok=True)
         picture = render_picture(args.source, size, dict(plan, kit=args.kit), folder)
         capture_checks(picture, plan, folder)
-        target = args.out / f"frontier-trailer-26-{aspect}.mp4"
+        target = args.out / f"frontier-trailer-{duration:g}-{aspect}.mp4"
         export = deliver_film(picture, score, target, duration, size, total_frames)
         exports.append({"aspect": aspect, **export})
         print(json.dumps(exports[-1]), flush=True)

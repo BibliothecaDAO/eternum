@@ -307,8 +307,11 @@ python apps/game/scripts/studio/cinematic-maker.py \
 Add `--score <picture-length-audio>` when the approved score is ready. Without it, the command exports silent picture
 references and records that the score is pending. The edit supplies `introFrames`, `holdFrames`, `lockupFullFrame`,
 `portraitCentres` (source-film seconds and source-pixel centre pairs), `line`, `cta`, and named `reviewFrames` (output
-seconds). At 24 fps, 60 intro frames + 481 film frames + 83 held frames make exactly 26 seconds. `lockupFullFrame: 552`
-places the full end card at 23 seconds; its fade begins when the film ends. The intro uses the source's final mist.
+seconds). At 24 fps, 60 intro frames + 481 film frames + 107 held frames make exactly 27 seconds. The intro holds the
+first parchment frame under the kit's ink Realms mark; the mark fades away during the first second of motion.
+`lockupFullFrame: 576` places the full end card at 24 seconds. Its one-second fade starts at 23 seconds, after the final
+picture has settled into its hold at 22.541667 seconds; the full card remains for three seconds. The command rejects an
+end-card fade that starts before the film has settled.
 
 The command renders and fully decodes both crops, checks duration, dimensions, codecs and frame count, and leaves review
 stills, the edit, source/brand/output hashes and score provenance. With audio, it also checks −14 LUFS within 0.25 LU
