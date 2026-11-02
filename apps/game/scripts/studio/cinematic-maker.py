@@ -100,16 +100,18 @@ def load_brand_master(path, width):
 
 
 def make_card(kit, size, plan, target):
-    if plan.get("cardPlacement", "full-frame") == "sky":
-        make_sky_card(kit, size, plan).save(target)
-        return
-    if plan.get("cardPlacement", "full-frame") != "full-frame":
-        raise ValueError("cardPlacement must be sky or full-frame")
     width = size[0]
     scale = width / BASE_WIDTH
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
     ground = ImageColor.getrgb(palette["brand"]["hearth"])
     card = Image.new("RGBA", size, (*ground, 204))
+    if "cardBackdrop" in plan:
+        backdrop = Image.open(plan["cardBackdrop"]).convert("RGBA")
+        if backdrop.width < size[0] or backdrop.width * size[1] != backdrop.height * size[0]:
+            raise ValueError("End-card backdrop must cover the output at its exact aspect ratio")
+        backdrop = backdrop.resize(size, Image.Resampling.LANCZOS)
+        backdrop.alpha_composite(card)
+        card = backdrop
     logo = load_brand_master(kit / LOCKUP, round(1080 * scale))
     card.alpha_composite(logo, ((width - logo.width) // 2, 0))
     centred_text(card, plan["line"], round(772 * scale), kit / HEADING,
@@ -117,23 +119,6 @@ def make_card(kit, size, plan, target):
     centred_text(card, plan["cta"], round(878 * scale), kit / BODY,
                  round(45 * scale), palette["games"]["frontier"]["title"])
     card.save(target)
-
-
-def make_sky_card(kit, size, plan):
-    scale = size[0] / BASE_WIDTH
-    palette = json.loads((kit / "03-Colors/palette.json").read_text())
-    lettering = Image.new("RGBA", size)
-    logo = load_brand_master(kit / LOCKUP, round(420 * scale))
-    lettering.alpha_composite(logo, ((size[0] - logo.width) // 2, 0))
-    centred_text(lettering, plan["line"], round(284 * scale), kit / HEADING,
-                 round(28 * scale), palette["brand"]["parchment"])
-    centred_text(lettering, plan["cta"], round(318 * scale), kit / BODY,
-                 round(24 * scale), palette["games"]["frontier"]["title"])
-    shadow = Image.new("RGBA", size, (20, 12, 27))
-    alpha = lettering.getchannel("A").filter(ImageFilter.GaussianBlur(3 * scale))
-    shadow.putalpha(alpha.point(lambda value: round(value * .4)))
-    shadow.alpha_composite(lettering)
-    return shadow
 
 
 def ink_noise(size, cells, seed):
@@ -271,10 +256,12 @@ def capture_checks(picture, plan, folder, size):
             "-vf", crop, "-frames:v", 1, "-threads", 2,
             folder / "end-card-100-percent.png"])
     last_frame = FRAME_COUNT + plan["holdFrames"] - 1
+    samples = last_frame // 48 + 1 + int(last_frame % 48 != 0)
+    rows = (samples + 3) // 4
     filters = (
         f"select='not(mod(n,48))+eq(n,{last_frame})',scale=480:270,"
         "drawtext=text='%{pts\\:hms}':fontsize=20:fontcolor=white:box=1:boxcolor=black,"
-        "tile=4x3"
+        f"tile=4x{rows}"
     )
     ffmpeg(["-v", "error", "-i", picture, "-vf", filters, "-frames:v", 1,
             "-threads", 2, folder / "contact-sheet-2s.png"])
