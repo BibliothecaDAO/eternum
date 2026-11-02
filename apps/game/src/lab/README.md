@@ -334,13 +334,16 @@ The native end-card review then captures the entire frame so both brands can be 
 copy the approved final's audio stream into the edition without re-encoding or mastering it again.
 
 Devcon editions require `devconPennant`, the supplied vertical banner master, for the opening. Its visible artwork hangs
-from the top edge at one third of the output height, with the Realms seal's mirrored horizontal margin. Near-transparent
-export padding is trimmed at alpha 8; the artwork is scaled proportionally. Its luminance preserves the letter
-interiors, diamond facets and lotus in the sepia impression. The wash samples warm, light parchment from the opening
-frame's upper rim; missing parchment fails the export. Fine grain, uneven darkened edges and 80% opacity keep the paper
-readable over dark landscape while allowing the map beneath to show. Wash and ink share the seal's 0–1 second hold and
-1–3 second fade. Inspect both opening corners at native resolution before rendering the films. The full-colour stacked
-mark remains on the end card.
+from the top edge at 1.8 times the Realms seal diameter in height (about 55% of its width), with the seal's mirrored
+horizontal margin. Both its ink and paper use this shared size. Near-transparent export padding is trimmed at alpha 8;
+the artwork is scaled proportionally. Its luminance preserves the letter interiors, diamond facets and lotus in the
+sepia impression. The wash samples the middle half of warm parchment tones from the opening frame's upper rim, with a
+slight warm darkening; missing parchment fails the export. Fine grain, uneven darkened edges and 80% opacity keep the
+paper readable over dark landscape while allowing the map beneath to show. Wash and ink share the seal's 0–1 second hold
+and 1–3 second fade. Inspect both opening corners at native resolution and the whole frame at 960×540 before rendering
+the films; lettering must remain readable at film size. Every export captures `opening-film-size.png` and
+`opening-corners-100-percent.png` for the same check on the encoded picture. The full-colour stacked mark remains on the
+end card.
 
 Brand overlays are built at 1920×1080 from the kit masters and font files. The lockup is downsampled directly from its
 1536 px master; the line and URL are rasterized at 54 px and 45 px. No 720p overlay is enlarged. The film is encoded as

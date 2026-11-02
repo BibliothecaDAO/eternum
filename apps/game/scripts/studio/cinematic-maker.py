@@ -112,6 +112,11 @@ def load_pennant_master(path, height):
     return pennant.resize((width, height), Image.Resampling.LANCZOS)
 
 
+def opening_pennant(size, plan):
+    seal_diameter = plan["realmsWidth"] * size[0] / BASE_WIDTH
+    return load_pennant_master(plan["devconPennant"], round(seal_diameter * 1.8))
+
+
 def make_card(kit, size, plan, target):
     width = size[0]
     scale = width / BASE_WIDTH
@@ -199,7 +204,7 @@ def make_intro_card(kit, size, plan, target):
     position = (size[0] - width - margin - pad, margin - pad)
     card.paste(stamp, position, stamp.getchannel("A"))
     if "devconMark" in plan:
-        partner = load_pennant_master(plan["devconPennant"], round(size[1] / 3))
+        partner = opening_pennant(size, plan)
         partner.putalpha(ImageChops.multiply(partner.getchannel("A"), partner.convert("L")))
         partner_stamp, partner_pad = parchment_stamp(partner, scale)
         card.paste(partner_stamp, (margin - partner_pad, -partner_pad),
@@ -215,23 +220,24 @@ def parchment_colour(reference):
     if len(samples) < 30:
         raise ValueError("Opening frame has too little warm parchment to sample")
     samples.sort(key=sum)
-    highlights = samples[len(samples) * 3 // 4:]
-    return tuple(round(median(colour[channel] for colour in highlights)) for channel in range(3))
+    midtones = samples[len(samples) // 4:len(samples) * 3 // 4]
+    return tuple(round(median(colour[channel] for colour in midtones) * warmth)
+                 for channel, warmth in enumerate([.99, .97, .94]))
 
 
 def make_intro_wash(size, plan, target, reference):
     scale = size[0] / BASE_WIDTH
-    pennant = load_pennant_master(plan["devconPennant"], round(size[1] / 3))
+    pennant = opening_pennant(size, plan)
     grain = ink_noise(pennant.size, pennant.size, 144)
     mask = fibre_edges(pennant.getchannel("A"), scale)
-    inner = mask.filter(ImageFilter.MinFilter(2 * round(4 * scale) + 1))
-    wear = ImageChops.subtract(mask, inner.filter(ImageFilter.GaussianBlur(2.5 * scale)))
+    inner = mask.filter(ImageFilter.MinFilter(2 * round(6 * scale) + 1))
+    wear = ImageChops.subtract(mask, inner.filter(ImageFilter.GaussianBlur(3 * scale)))
     variation = ink_noise(pennant.size, (9, 27), 316).point(lambda value: 128 + value // 2)
     wear = ImageChops.multiply(wear, variation)
     wash = Image.merge("RGB", tuple(grain.point(lambda value, base=base:
                        round(base + (value - 128) * .035)) for base in parchment_colour(reference)))
     wash = Image.merge("RGB", tuple(ImageChops.subtract(channel, wear.point(lambda value, depth=depth:
-                       round(value * depth))) for channel, depth in zip(wash.split(), [.16, .19, .22])))
+                       round(value * depth))) for channel, depth in zip(wash.split(), [.19, .22, .25])))
     wash = wash.convert("RGBA")
     wash.putalpha(mask.point(lambda value: round(value * .80)))
     card = Image.new("RGBA", size)
@@ -310,7 +316,23 @@ def deliver_film(picture, score, target, duration, size, frame_count):
             "bytes": target.stat().st_size, **metrics}
 
 
+def capture_opening_checks(picture, plan, folder, size):
+    ffmpeg(["-v", "error", "-i", picture, "-frames:v", 1, folder / "opening.png"])
+    opening = Image.open(folder / "opening.png").convert("RGB")
+    opening.resize((960, 540), Image.Resampling.LANCZOS).save(folder / "opening-film-size.png")
+    scale = size[0] / BASE_WIDTH
+    corner_width = round(470 * scale)
+    corner_height = round(420 * scale)
+    if "devconMark" in plan:
+        corner_height = opening_pennant(size, plan).height + round(72 * scale)
+    corners = Image.new("RGB", (corner_width * 2, corner_height))
+    for index, left in enumerate([0, size[0] - corner_width]):
+        corners.paste(opening.crop((left, 0, left + corner_width, corner_height)), (index * corner_width, 0))
+    corners.save(folder / "opening-corners-100-percent.png")
+
+
 def capture_checks(picture, plan, folder, size):
+    capture_opening_checks(picture, plan, folder, size)
     for name, second in plan["reviewFrames"].items():
         ffmpeg(["-v", "error", "-ss", second, "-i", picture,
                 "-frames:v", 1, "-threads", 2, folder / f"{name}.png"])
