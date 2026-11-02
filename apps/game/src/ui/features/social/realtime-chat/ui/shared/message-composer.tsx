@@ -23,6 +23,14 @@ interface MessageComposerProps {
 
 const NO_MENTIONS: readonly MentionablePlayer[] = [];
 
+/** A mention's portrait in the list; an empty plate until the player's profile is known. */
+const MentionPortrait = ({ src }: { src: string | null }) =>
+  src ? (
+    <img src={src} alt="" className="h-6 w-6 rounded object-cover" />
+  ) : (
+    <span aria-hidden className="block h-6 w-6 rounded bg-hud-well" />
+  );
+
 export function MessageComposer({
   onSend,
   placeholder = "Type a message…",
@@ -188,7 +196,7 @@ export function MessageComposer({
               aria-label="Mention a player"
               items={choices.map((name) => ({
                 label: name,
-                lead: <img src={byName.get(name)!.portrait} alt="" className="h-6 w-6 rounded object-cover" />,
+                lead: <MentionPortrait src={byName.get(name)!.portrait} />,
                 onSelect: () => pickMention(name),
               }))}
             />

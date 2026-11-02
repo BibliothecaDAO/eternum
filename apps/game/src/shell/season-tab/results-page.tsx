@@ -9,6 +9,8 @@ import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { buildLandingLeaderboard } from "@/services/leaderboard/landing-leaderboard-service";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import {
+  AppBoard,
+  type AppBoardEntry,
   AppButton,
   AppChip,
   AppFigure,
@@ -241,18 +243,7 @@ const BlitzResult = ({
         </AppPanel>
         {reward && <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">{reward}</div>}
         <AppPanel title={RESULT_WORDS.theGame} icon="leaderboard" flush className="lg:col-span-4">
-          <ol>
-            {rows.map((entry) => (
-              <li key={entry.address}>
-                <AppRow
-                  own={entry === own}
-                  lead={<AppRank rank={entry.rank} />}
-                  title={<PlayerName account={entry.address} you={entry === own} portrait />}
-                  trail={<AppChip icon="star">{formatPoints(Math.round(entry.totalPoints))}</AppChip>}
-                />
-              </li>
-            ))}
-          </ol>
+          <AppBoard entries={rows.map((entry) => pointsEntry(entry, entry === own))} />
         </AppPanel>
         {own && (
           <AppPanel title={RESULT_WORDS.yourPoints} icon="star" flush className="lg:col-span-4">
@@ -263,6 +254,15 @@ const BlitzResult = ({
     </ResultsFrame>
   );
 };
+
+/** A player on a Blitz's board: their place, their name and their points. */
+const pointsEntry = (entry: HeraldLeaderboardEntry, own: boolean): AppBoardEntry => ({
+  key: entry.address,
+  own,
+  lead: <AppRank rank={entry.rank} />,
+  name: <PlayerName account={entry.address} you={own} portrait />,
+  figures: [{ icon: "star", value: formatPoints(Math.round(entry.totalPoints)) }],
+});
 
 /** The player's outcome: their portrait, the game, their place of the field and their points. */
 const BlitzOutcome = ({

@@ -1,4 +1,3 @@
-import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { formatClockTime } from "@bibliothecadao/types";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
@@ -20,6 +19,7 @@ import { useStickToLatest } from "@/hooks/use-stick-to-latest";
 import { JumpToLatest } from "../shared/jump-to-latest";
 import { useLinkOpener } from "../shared/leaving-realms";
 import { MessageComposer } from "../shared/message-composer";
+import { useChatPeople } from "../../hooks/use-chat-people";
 import { MessageRow } from "../shared/message-row";
 import { MessageText } from "../shared/message-text";
 import { useShowMessage } from "../shared/use-show-message";
@@ -71,8 +71,8 @@ export function DirectMessagesPanel({ threadId: resolvedThreadId, className }: D
   }, [selfAliases, thread]);
 
   const onlinePlayers = useRealtimeChatSelector((state) => state.onlinePlayers);
-  const names = usePlayerNames();
-  const nameOf = (playerId: string) => resolveChatSenderName(names, playerId, onlinePlayers[playerId]?.displayName);
+  const people = useChatPeople();
+  const nameOf = (playerId: string) => people.nameOf(playerId, onlinePlayers[playerId]?.displayName);
   const recipientLabel = recipientId ? nameOf(recipientId) : undefined;
 
   const { sendMessage, loadHistory, markAsRead } = useDirectMessageControls(resolvedThreadId, recipientId);

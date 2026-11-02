@@ -8,7 +8,9 @@
  * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards] [--state <signed-in.json>]
+ *
+ * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES).
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
@@ -709,7 +711,7 @@ const QA1_CASES = [
     path: "season-running/season",
     more: (b) => {
       const chips = b.evaluate(
-        `[...document.querySelectorAll(".app-row .app-chip")].slice(0, 2).map((chip) => [chip.innerText.trim(), chip.title, chip.textContent])`,
+        `[...document.querySelectorAll(".app-board__row .app-board__figure")].slice(0, 2).map((chip) => [chip.innerText.trim(), chip.title, chip.textContent])`,
       );
       return [
         {
@@ -777,7 +779,7 @@ const QA1_CASES = [
   },
 ];
 
-/** The phone's: the card says what the desktop's says, and a board's row is one line. */
+/** The phone's: the card says what the desktop's says (a board's rows are measured by `boards`). */
 const QA1_PHONE_CASES = [
   {
     name: "phone-you",
@@ -792,27 +794,6 @@ const QA1_PHONE_CASES = [
         ok: b.evaluate(`!/\\bLord [0-9a-f]{4}\\b/.test(document.querySelector('[data-band="body"]').innerText)`),
       },
     ],
-  },
-  {
-    name: "phone-results-rows",
-    path: "reward-sealed/results/0x5245414c4d53-7",
-    more: (b) => {
-      const rows = b.evaluate(`(() => {
-        const panel = [...document.querySelectorAll(".app-panel")].find((each) => each.querySelector("h2")?.textContent === "The game");
-        return [...panel.querySelectorAll(".app-row")].map((row) => {
-          const words = row.querySelector(".app-row__words").getBoundingClientRect();
-          const trail = row.querySelector(".app-row__trail").getBoundingClientRect();
-          return { text: row.innerText.replace(/\\s+/g, " "), oneLine: trail.top < words.bottom };
-        });
-      })()`);
-      return [
-        {
-          check: "each board row's points stay on its line (P3-11)",
-          ok: rows.length > 0 && rows.every((row) => row.oneLine),
-          rows,
-        },
-      ];
-    },
   },
 ];
 
@@ -1002,6 +983,151 @@ const recapRecords = async (b, baseUrl, out) => {
   return records;
 };
 
+/** A Blitz's Results board, by its panel's title: on a phone it stands below the outcome and the chest. */
+const RESULT_BOARD = "The game";
+
+/** Marks the panel titled `title` for its own still. */
+const markPanel = (title) => `[...document.querySelectorAll(".app-panel")]
+  .find((panel) => panel.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)})
+  ?.setAttribute("data-proof-still", ${JSON.stringify(title)})`;
+
+/**
+ * The boards (AppBoard), each measured row by row: every column (the lead, the name and each figure) must stand at one x
+ * on every row, each figure's value end on one line, and no name run into the figures beside it (the owner, 2 November
+ * 2026: "we must align vertically the column"). Season's Frontier and Blitz boards, and a Blitz's Results board, at the
+ * desktop and on a phone (where Season shows one board at a time, so Blitz's is opened from its tab).
+ */
+const BOARD_PAGES = [
+  {
+    name: "season",
+    path: "season-running/season",
+    stills: [
+      { name: "frontier", selector: '[data-age="frontier"]' },
+      { name: "blitz", selector: '[data-age="blitz"]' },
+    ],
+  },
+  {
+    name: "season-blitz",
+    path: "season-running/season",
+    phoneOnly: true,
+    act: (b, record) => press(b, record, "Blitz"),
+    stills: [{ name: "blitz", selector: '[data-age="blitz"]' }],
+  },
+  {
+    name: "results",
+    path: "reward-sealed/results/0x5245414c4d53-7",
+    act: (b) => b.evaluate(markPanel(RESULT_BOARD)),
+    stills: [{ name: "the-game", selector: `[data-proof-still="${RESULT_BOARD}"]` }],
+  },
+];
+
+/** Each board's rows: per row, each cell's left and right edge, and where each figure's value ends. */
+const boardMeasure = `(() => {
+  const edges = (element) => {
+    const box = element.getBoundingClientRect();
+    return { left: Math.round(box.left * 10) / 10, right: Math.round(box.right * 10) / 10 };
+  };
+  const valueEnd = (figure) => {
+    const walker = document.createTreeWalker(figure, NodeFilter.SHOW_TEXT);
+    let last = null;
+    for (let node = walker.nextNode(); node; node = walker.nextNode())
+      if (node.textContent.trim() && !node.parentElement.closest(".sr-only")) last = node;
+    if (!last) return null;
+    const range = document.createRange();
+    range.selectNodeContents(last);
+    return Math.round(range.getBoundingClientRect().right * 10) / 10;
+  };
+  // A name's text cut cleanly: inside its cell, or ended by an ellipsis on an element that stays inside the cell.
+  const cutCleanly = (name) => {
+    const edge = name.getBoundingClientRect().right + 0.5;
+    const walker = document.createTreeWalker(name, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const range = document.createRange();
+      range.selectNodeContents(node);
+      if (!node.textContent.trim() || range.getBoundingClientRect().right <= edge) continue;
+      const holder = node.parentElement;
+      if (getComputedStyle(holder).textOverflow !== "ellipsis" || holder.getBoundingClientRect().right > edge) return false;
+    }
+    return true;
+  };
+  return [...document.querySelectorAll(".app-board")].map((board) => ({
+    board: board.closest(".app-panel")?.querySelector("h2")?.innerText.trim() ?? null,
+    rows: [...board.querySelectorAll(".app-board__row")].map((row) => {
+      const name = row.querySelector(".app-board__name");
+      return {
+        text: row.innerText.replace(/\s+/g, " ").trim(),
+        lead: edges(row.querySelector(".app-board__lead")),
+        name: { ...edges(name), cutCleanly: cutCleanly(name) },
+        figures: [...row.querySelectorAll(".app-board__figure")].map((figure) =>
+          figure.childElementCount === 0 ? null : { ...edges(figure), value: valueEnd(figure) },
+        ),
+      };
+    }),
+  }));
+})()`;
+
+/** The largest spread of `values` (nulls, an empty cell, left out). */
+const spread = (values) => {
+  const known = values.filter((value) => value !== null && value !== undefined);
+  return known.length === 0 ? 0 : Math.max(...known) - Math.min(...known);
+};
+
+/** Each column of a board, by its cells down the rows. */
+const columnsOf = ({ rows }) => {
+  const figures = Math.max(0, ...rows.map((row) => row.figures.length));
+  return [
+    { column: "lead", cells: rows.map((row) => row.lead) },
+    { column: "name", cells: rows.map((row) => row.name) },
+    ...Array.from({ length: figures }, (_, index) => ({
+      column: `figure ${index + 1}`,
+      cells: rows.map((row) => row.figures[index] ?? null),
+    })),
+  ];
+};
+
+const boardChecks = (b) => {
+  const boards = b.evaluate(boardMeasure);
+  return [
+    { check: "the page draws its boards", ok: boards.length > 0 && boards.every((board) => board.rows.length > 1) },
+    ...boards.flatMap((board) => {
+      const columns = columnsOf(board).map(({ column, cells }) => ({
+        column,
+        left: spread(cells.map((cell) => cell?.left)),
+        right: spread(cells.map((cell) => cell?.right)),
+        value: spread(cells.map((cell) => cell?.value)),
+      }));
+      const crowded = board.rows.filter((row) => {
+        const first = row.figures.find((figure) => figure !== null);
+        return first && row.name.right > first.left;
+      });
+      const unclean = board.rows.filter((row) => !row.name.cutCleanly);
+      return [
+        {
+          check: `${board.board}: every column stands at one x on every row, each value ending on one line`,
+          ok: columns.every((column) => column.left <= 0.5 && column.right <= 0.5 && column.value <= 0.5),
+          columns,
+        },
+        {
+          check: `${board.board}: no name runs into its figures, a long one cut with an ellipsis`,
+          ok: crowded.length === 0 && unclean.length === 0,
+          crowded: crowded.map((row) => row.text),
+          unclean: unclean.map((row) => row.text),
+        },
+      ];
+    }),
+  ];
+};
+
+const boardPages = (desktop) =>
+  BOARD_PAGES.filter((page) => !(desktop && page.phoneOnly)).map(({ name, path, act, stills = [] }) => ({
+    name: `board-${name}-${desktop ? "desktop" : "phone"}`,
+    path: `/lab/app/${path}?capture=1`,
+    act,
+    more: boardChecks,
+    // On a phone, Season shows one board at a time: Blitz's is shot from its own tab.
+    stills: desktop ? stills : stills.filter((still) => name !== "season" || still.name !== "blitz"),
+  }));
+
 const qa1 = (cases) =>
   cases.map(({ name, path, act, more }) => ({ name: `qa1-${name}`, path: `/lab/app/${path}?capture=1`, act, more }));
 
@@ -1037,6 +1163,12 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("recap")) records.push(...(await recapRecords(b, baseUrl, out)));
+      if (parts.includes("boards")) {
+        for (const page of boardPages(true)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...PHONE);
+        for (const page of boardPages(false)) records.push(await shoot(b, baseUrl, out, page));
+        b.run("set", "viewport", ...VIEWPORT);
+      }
       if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
       if (parts.includes("qa1")) {
         for (const page of qa1(QA1_CASES)) records.push(await shoot(b, baseUrl, out, page));

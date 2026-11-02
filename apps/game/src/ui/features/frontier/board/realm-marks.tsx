@@ -1,5 +1,6 @@
 import type { RealmSkin } from "@/three/structures/realm-skins";
-import { playerAvatarUrl, usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { usePlayerName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
@@ -58,7 +59,7 @@ export const LordName = ({
   const muted = !you && !(reading.state === "named" && reading.claimed);
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-2">
-      {portrait && <HudPortrait src={playerAvatarUrl(account, profile)} label={name} />}
+      {portrait && <HudPortrait src={playerPortraitUrl(account, profile.portrait)} label={name} />}
       <span className={cn("truncate", muted && "text-hud-muted")}>{name}</span>
     </span>
   );

@@ -4,7 +4,7 @@ import { usePushDeviceId } from "@/pwa/use-push-device-id";
 import { useChatRevealed } from "@/ui/features/social/realtime-chat/hooks/use-chat-revealed";
 import { useSeenRoom } from "@/ui/features/social/realtime-chat/hooks/use-seen-room";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
-import { resolveChatSenderName, usePlayerNames } from "@/hooks/use-player-profile";
+import { useChatPeople } from "@/ui/features/social/realtime-chat/hooks/use-chat-people";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon } from "@/ui/design-system/icon";
 import { HudChip, HudPage, HudPill } from "@/ui/design-system/kit/hud-elements";
@@ -110,7 +110,7 @@ export function useGameChat(open: boolean) {
   }, [open, setShellOpen]);
 
   // The strip names the last sender, and draws again when a name lands.
-  const names = usePlayerNames();
+  const people = useChatPeople();
   const stripLine = chatStripLine({
     signedIn: initializer !== null,
     connection,
@@ -118,7 +118,7 @@ export function useGameChat(open: boolean) {
     history,
     last:
       lastMessage &&
-      `${resolveChatSenderName(names, lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace).name : null)}`,
+      `${people.nameOf(lastMessage.sender.playerId, lastMessage.sender.displayName)}: ${messageWords(lastMessage.content, lastPlace?.name ?? null, lastPlace ? readPlace(lastPlace).name : null)}`,
   });
   return { status, initializer, requestSignIn, rooms, unread, stripLine };
 }

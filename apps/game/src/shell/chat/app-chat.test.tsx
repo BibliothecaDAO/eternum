@@ -14,20 +14,29 @@ vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
   useIdentitySession: () => ({ status: session.current ? "signed-in" : "signed-out", session: session.current }),
 }));
+// Our guardian, which places each player's account on our shards by their Realms id; and identity's profiles, keyed by
+// those accounts: Aldric (Realms id 0x64) chose portrait 07, everyone else none.
+const GUARDIAN = { publicKey: "0x1a2b", accountClassHash: "0x3c4d" };
+const chosen = vi.hoisted(() => ({ portraits: new Map<bigint, string>() }));
 vi.mock("@realms-world/identity", async (original) => ({
   ...(await original<typeof import("@realms-world/identity")>()),
   fetchIdentityProfiles: async (_origin: string, accounts: string[]) =>
-    Object.fromEntries(accounts.map((account) => [account, { name: null, portrait: null }])),
+    Object.fromEntries(
+      accounts.map((account) => [account, { name: null, portrait: chosen.portraits.get(BigInt(account)) ?? null }]),
+    ),
 }));
 vi.mock("../account-runtime", () => ({ default: () => null }));
 // This device takes alerts, under this push id.
 const DEVICE = "11111111-1111-4111-8111-111111111111";
 vi.mock("@/pwa/use-push-device-id", () => ({ usePushDeviceId: () => DEVICE }));
 
+const { realmsAccountAddress } = await import("@realms-world/identity/account");
+chosen.portraits.set(BigInt(realmsAccountAddress("0x64", GUARDIAN.accountClassHash, GUARDIAN.publicKey)), "07");
 const { AppShell } = await import("../app-shell");
 const { LobbyChat } = await import("./app-chat");
 const { useRealtimeChatStore } = await import("@/ui/features/social/realtime-chat/model/store");
 const { layOutChatLists } = await import("@/hooks/use-stick-to-latest.test-support");
+const { playerPortraitUrl } = await import("@/services/identity/player-portrait");
 
 const LOBBY = "slot:0x52:blitz-1630";
 const SLOT = { chainId: "0x052", name: "blitz-1630" };
@@ -98,7 +107,9 @@ beforeEach(() => {
       const body =
         url.pathname === "/api/chat/world"
           ? { messages: url.searchParams.get("zoneId") === LOBBY ? history : [], nextCursor: null }
-          : { blocked: [], version: 0, profiles: {} };
+          : url.pathname === "/api/guardian"
+            ? GUARDIAN
+            : { blocked: [], version: 0, profiles: {} };
       return new Response(JSON.stringify(body), { status: 200 });
     }),
   );
@@ -190,6 +201,19 @@ it("reads the lobby's history and its room as one list, oldest first, each messa
     lobbySocket().receive({ type: "world:message", zoneId: LOBBY, message: said("c", "0x65", "Corwin", "ready", 3) }),
   );
   expect(lines()).toEqual(["gl hf", "on my way", "ready"]);
+});
+
+it("shows each writer's portrait as their identity profile has it, by their Realms id: the one chosen, else their own stock one", async () => {
+  await draw("lobby");
+  await connect(false);
+  const portraitOf = (words: string) =>
+    [...host.querySelectorAll("li[data-message-id]")]
+      .find((row) => row.textContent?.includes(words))
+      ?.querySelector("img")
+      ?.getAttribute("src");
+  await vi.waitFor(() => expect(portraitOf("gl hf")).toBe("/images/avatars/07.png"));
+  const you = realmsAccountAddress("0x7", GUARDIAN.accountClassHash, GUARDIAN.publicKey);
+  expect(portraitOf("on my way")).toBe(playerPortraitUrl(you, null));
 });
 
 it("lets a registered player write to the lobby's room, and takes the field away when the room refuses for want of registration", async () => {

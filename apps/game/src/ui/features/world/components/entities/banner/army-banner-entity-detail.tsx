@@ -6,7 +6,8 @@ import { memo, type ReactNode, useMemo } from "react";
 
 import { useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
-import { playerAvatarUrl } from "@/hooks/use-player-profile";
+import { usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudChip, HudIconButton, HudPanel, HudPortrait, HudStamina } from "@/ui/design-system/kit/hud-elements";
 import { TroopChip } from "@/ui/features/military/components/troop-chip";
@@ -64,7 +65,9 @@ const ArmyBannerEntityDetailContent = memo(
     const inventoryCounts = useMemo(() => countDisplayItems(inventoryItems), [inventoryItems]);
     const resolvedWorldMode = useResolvedWorldGameMode();
     const movementReadiness = useArmyMovementReadiness(explorer, structureResources);
-    const ownerAvatarUrl = ownerStructure?.owner ? playerAvatarUrl(ownerStructure.owner) : null;
+    const owner = ownerStructure?.owner || null;
+    const ownerProfile = usePlayerProfile(owner);
+    const ownerAvatarUrl = owner && ownerProfile.known ? playerPortraitUrl(owner, ownerProfile.portrait) : null;
 
     if (isLoadingExplorer || (explorer?.owner && isLoadingStructure)) {
       return (

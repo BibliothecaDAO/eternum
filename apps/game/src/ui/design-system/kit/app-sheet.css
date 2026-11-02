@@ -718,39 +718,96 @@
   align-items: flex-start;
   text-align: left;
 }
-/* A trail of one (a board row's points), or a setting's value: it keeps its place on the row and the words give way, so
-   a phone's board or setting is a line a row, never a name over its points or its value (qa-app-1 P3-11). */
+/* A trail of one (a kind's points), or a setting's value: it keeps its place on the row and the words give way, so a
+   phone's row is one line, never its words over its points or its value (qa-app-1 P3-11). */
 .app-row:has(> .app-row__trail > :only-child) > .app-row__words,
 .app-row:has(> .app-row__trail > .app-setting__value) > .app-row__words {
   flex-basis: 6rem;
 }
-/* A board's row stands on one line at any width: its words give way and its figures keep their columns, as on a
-   desktop (owner, 30 October 2026: "fix the alignment btw on mobile"). */
-.app-row[data-line] {
-  flex-wrap: nowrap;
+/* ── Board: players in columns, every row on the board's one grid (owner, 2 November 2026: "we must align vertically
+   the column"). Each row is a subgrid of it, so a column is as wide as its widest value on any row and stands at one x
+   down the board; the name takes what is left and gives way. ── */
+.app-board {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) repeat(var(--app-board-figures), auto);
+  column-gap: theme(spacing.3);
 }
-.app-row[data-line] > .app-row__words {
-  flex-basis: 0;
+.app-board__item,
+.app-board__row {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: subgrid;
 }
-.app-row[data-line] > .app-row__trail {
-  flex: none;
-  flex-wrap: nowrap;
+.app-board__item + .app-board__item {
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
 }
-.app-row[data-line] > .app-row__trail > .app-chip {
-  min-width: 3.75rem;
-  justify-content: flex-end;
+.app-board__row {
+  min-height: 56px;
+  align-items: center;
+  border-left: 3px solid transparent;
+  padding: theme(spacing.2) theme(spacing.4);
+  color: var(--app-ink);
+  text-align: left;
 }
-/* On a phone the figures stand as bare columns, the chips' boxes and the gaps narrower, so the name keeps its room. */
+button.app-board__row:is(:hover, [data-state="hover"]) {
+  background: var(--app-hover);
+}
+.app-board__row[data-own] {
+  border-left-color: rgb(var(--app-accent));
+  background: var(--app-chosen);
+}
+.app-board__lead {
+  display: flex;
+  align-items: center;
+  gap: theme(spacing.2);
+}
+.app-board__name {
+  overflow: hidden;
+  min-width: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--app-face-body);
+  font-size: var(--app-text-body);
+  line-height: var(--app-leading-body);
+  font-weight: var(--app-weight-strong);
+}
+/* Whatever draws the name (a portrait beside it, an address) stays inside the cell, so its own ellipsis shows. */
+.app-board__name > * {
+  max-width: 100%;
+}
+/* A figure: its icon at the cell's left, its value at its right, so icons and values each stand on one line. */
+.app-board__figure {
+  display: flex;
+  height: 28px;
+  align-items: center;
+  justify-content: space-between;
+  gap: theme(spacing[1.5]);
+  border: 1px solid var(--app-line);
+  border-radius: var(--app-radius-chip);
+  background: rgb(0 0 0 / 0.3);
+  padding: 0 theme(spacing[2.5]);
+  font-family: var(--app-face-label);
+  font-size: var(--app-text-label);
+  font-weight: var(--app-weight-label);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.app-board__figure[data-tone="gold"] {
+  border-color: rgb(var(--app-gold) / 0.5);
+  color: rgb(var(--app-gold));
+}
+.app-board__figure[data-empty] {
+  visibility: hidden;
+}
+/* On a phone the figures stand as bare columns, the boxes and the gaps narrower, so the name keeps its room. */
 @media (max-width: 639px) {
-  .app-row[data-line] {
-    gap: theme(spacing.2);
+  .app-board {
+    column-gap: theme(spacing.2);
+  }
+  .app-board__row {
     padding-inline: theme(spacing.3);
   }
-  .app-row[data-line] > .app-row__trail {
-    gap: theme(spacing.2);
-  }
-  .app-row[data-line] > .app-row__trail > .app-chip {
-    min-width: 3.25rem;
+  .app-board .app-board__figure {
     border-color: transparent;
     background: none;
     padding-inline: 0;

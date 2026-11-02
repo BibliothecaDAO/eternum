@@ -5,7 +5,7 @@ import { toast } from "@/ui/features/event-feed/notify";
 import { useRealtimeChatActions, useRealtimeChatSelector } from "../../hooks/use-realtime-chat";
 import { PlaceChip } from "./chat-map";
 import { useChatMap } from "./use-chat-map";
-import { UserAvatar } from "./user-avatar";
+import { ChatPortrait } from "./chat-portrait";
 
 /**
  * Whether a player is muted, and the press that mutes or unmutes them: the server's block list answers, and a press it
@@ -36,7 +36,7 @@ export const PlayerCard = ({ playerId, name }: { playerId: string; name: string 
       data-player-card={playerId}
       className="my-1 flex items-center gap-2 rounded border border-hud-line bg-hud-surface px-2 py-1.5"
     >
-      <UserAvatar name={name} address={playerId} size="lg" className="rounded-full" />
+      <ChatPortrait playerId={playerId} size="lg" className="rounded-full" />
       <div className="min-w-0 flex-1">
         <p className="truncate text-hud-strong text-hud-ink">{name}</p>
         {realm && <PlaceChip place={realm} />}

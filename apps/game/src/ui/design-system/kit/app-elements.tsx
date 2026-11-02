@@ -4,6 +4,7 @@ import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import {
   type AnchorHTMLAttributes,
   type ButtonHTMLAttributes,
+  type CSSProperties,
   type KeyboardEvent,
   type ReactNode,
   type RefObject,
@@ -495,9 +496,7 @@ export const AppGameCard = ({
  * One thing of a list: what leads it (a rank, a portrait, an icon), what it is and what it says, then what follows
  * (figures, its own button). The player's own row is lit. With `onClick` the whole row is the button that opens it;
  * with `href`, the link to another site, in a new tab. A row that opens is one target, its value and arrow included,
- * so what follows it holds no button of its own. A board's row is `line`: one line at any width, its title giving way
- * and its figures in fixed columns at the right, so a phone's board reads as a desktop's (the owner, 30 October 2026:
- * "fix the alignment btw on mobile").
+ * so what follows it holds no button of its own. A board of players is an AppBoard, never rows of these.
  */
 export const AppRow = ({
   lead,
@@ -505,7 +504,6 @@ export const AppRow = ({
   detail,
   trail,
   own = false,
-  line = false,
   onClick,
   href,
 }: {
@@ -514,11 +512,10 @@ export const AppRow = ({
   detail?: ReactNode;
   trail?: ReactNode;
   own?: boolean;
-  line?: boolean;
   onClick?: () => void;
   href?: string;
 }) => {
-  const shape = { "data-own": own || undefined, "data-line": line || undefined };
+  const shape = { "data-own": own || undefined };
   const parts = (
     <>
       {lead !== undefined && <span className="app-row__lead">{lead}</span>}
@@ -547,6 +544,72 @@ export const AppRow = ({
     </div>
   );
 };
+
+/** A figure in a board's column: its icon, its value, and what a bare value means where the icon alone says it. */
+export type AppBoardFigure = { icon: IconMeaning; value: string; tone?: "gold"; label?: string };
+
+/** One player on a board: their rank (and Order), their name, a figure per column (none: the cell left empty). */
+export type AppBoardEntry = {
+  key: string;
+  lead: ReactNode;
+  name: ReactNode;
+  figures: readonly (AppBoardFigure | undefined)[];
+  own?: boolean;
+  onClick?: () => void;
+};
+
+/**
+ * A board of players: every row on one grid, so the lead, the name and each figure stand in one column down the board,
+ * each column as wide as its widest value and each value right-aligned on one line, at any width (the owner, 2 November
+ * 2026: "we must align vertically the column please no accordions"). A long name gives way with an ellipsis. The
+ * player's own row is lit; a row with `onClick` is the one button that opens it.
+ */
+export const AppBoard = ({ entries }: { entries: readonly AppBoardEntry[] }) => {
+  const columns = Math.max(0, ...entries.map((entry) => entry.figures.length));
+  return (
+    <ol className="app-board" style={{ "--app-board-figures": columns } as CSSProperties}>
+      {entries.map((entry) => (
+        <li key={entry.key} className="app-board__item">
+          <BoardRow entry={entry} columns={columns} />
+        </li>
+      ))}
+    </ol>
+  );
+};
+
+const BoardRow = ({ entry, columns }: { entry: AppBoardEntry; columns: number }) => {
+  const cells = (
+    <>
+      <span className="app-board__lead">{entry.lead}</span>
+      <span className="app-board__name">{entry.name}</span>
+      {Array.from({ length: columns }, (_, index) => (
+        <BoardFigure key={index} figure={entry.figures[index]} />
+      ))}
+    </>
+  );
+  const own = entry.own || undefined;
+  return entry.onClick ? (
+    <button type="button" className="app-board__row" data-own={own} onClick={entry.onClick}>
+      {cells}
+    </button>
+  ) : (
+    <div className="app-board__row" data-own={own}>
+      {cells}
+    </div>
+  );
+};
+
+/** A figure's cell: its icon at the left, its value at the right; an empty cell keeps the column. */
+const BoardFigure = ({ figure }: { figure: AppBoardFigure | undefined }) =>
+  figure ? (
+    <span className="app-board__figure" data-tone={figure.tone} title={figure.label}>
+      <Icon name={figure.icon} size={18} />
+      <span className="app-board__value">{figure.value}</span>
+      {figure.label && <span className="sr-only">{` ${figure.label}`}</span>}
+    </span>
+  ) : (
+    <span className="app-board__figure" data-empty />
+  );
 
 /** A rank at the head of a board's row; the top three in gold, or with `medal` as their place's medal. */
 export const AppRank = ({ rank, medal = false }: { rank: number; medal?: boolean }) => (

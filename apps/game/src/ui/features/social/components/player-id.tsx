@@ -5,7 +5,8 @@ import { useFactView } from "@/hooks/use-fact-view";
 import { gameStructuresView } from "@/sync/fact-views";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { useLeaderboardActivity } from "@/hooks/use-leaderboard-activity";
-import { playerAvatarUrl, usePlayerDisplayName } from "@/hooks/use-player-profile";
+import { usePlayerDisplayName, usePlayerProfile } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import {
   configManager,
   getEntityName,
@@ -201,7 +202,14 @@ const useHyperstructuresPaying = (player: ContractAddress): HyperstructurePaying
   }, [player, facts, now]);
 };
 
+/** The player's portrait as identity has it; nothing until their profile is known. */
 const Avatar = ({ address }: { address: ContractAddress }) => {
-  const url = playerAvatarUrl(address);
-  return url ? <img src={url} alt="" className="h-8 w-8 rounded-full border border-hud-line object-cover" /> : null;
+  const profile = usePlayerProfile(address);
+  return profile.known ? (
+    <img
+      src={playerPortraitUrl(address, profile.portrait)}
+      alt=""
+      className="h-8 w-8 rounded-full border border-hud-line object-cover"
+    />
+  ) : null;
 };

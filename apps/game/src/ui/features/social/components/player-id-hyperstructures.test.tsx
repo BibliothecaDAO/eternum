@@ -14,7 +14,10 @@ import preset from "../../../../../../../contracts/l3/world-native/tests/fixture
 const fixture = vi.hoisted(() => ({ store: null as unknown as NativeFactStore, now: 150 }));
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: fixture.store } }) }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useCoarseNowSeconds: () => fixture.now }));
-vi.mock("@/hooks/use-player-profile", () => ({ usePlayerDisplayName: () => "Player", playerAvatarUrl: () => null }));
+vi.mock("@/hooks/use-player-profile", () => ({
+  usePlayerDisplayName: () => "Player",
+  usePlayerProfile: () => ({ name: null, portrait: null, known: true }),
+}));
 vi.mock("@/hooks/use-leaderboard-activity", () => ({ useLeaderboardActivity: () => ({ data: [] }) }));
 vi.mock("../player/use-in-game-leaderboard", () => ({
   useInGameLeaderboard: () => ({ standingsByAddress: new Map() }),

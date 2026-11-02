@@ -1,6 +1,7 @@
 import { fetchHeraldLeaderboard, type GameRef } from "@bibliothecadao/eternum/shard";
 import { realmsAccountAddress } from "@realms-world/identity/account";
 import { hashKey, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 
 import { useIdentitySession, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { appQueryClient } from "@/runtime/query-client";
@@ -84,8 +85,8 @@ export const GUARDIAN_QUERY = {
 /** Any player's account address on our shards, by their Realms id (chat names players by it): null until the guardian
  * has answered. */
 export const useRealmsAccountOf = (): ((realmsId: string) => string | null) => {
-  const guardian = useQuery(GUARDIAN_QUERY);
-  return (realmsId) => realmsPlayerOf(realmsId, guardian.data);
+  const guardian = useQuery(GUARDIAN_QUERY).data;
+  return useCallback((realmsId: string) => realmsPlayerOf(realmsId, guardian), [guardian]);
 };
 
 export const useRealmsPlayer = () => {

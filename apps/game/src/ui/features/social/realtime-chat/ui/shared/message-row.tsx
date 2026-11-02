@@ -3,7 +3,7 @@ import { HudButton } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { type PointerEvent, type ReactNode, useRef, useState } from "react";
 
-import { UserAvatar } from "./user-avatar";
+import { ChatPortrait } from "./chat-portrait";
 
 /** A finger dragged this far right on a message answers it, as a phone's chats do. */
 const SWIPE_PX = 56;
@@ -29,7 +29,7 @@ export const MessageRow = ({
 }: {
   id: string;
   /** The run's head: who wrote it and when; none for a message within a run. */
-  run?: { name: string; playerId: string; avatarUrl?: string; time: string; onName?: () => void };
+  run?: { name: string; playerId: string; time: string; onName?: () => void };
   /** The message this one answers. */
   quote?: { name: string; excerpt: string; onShow: () => void };
   mentionsMe?: boolean;
@@ -67,11 +67,7 @@ export const MessageRow = ({
         lit && "bg-hud-hover",
       )}
     >
-      <span className="w-6 shrink-0">
-        {run && (
-          <UserAvatar name={run.name} address={run.playerId} avatarUrl={run.avatarUrl} size="sm" className="mt-0.5" />
-        )}
-      </span>
+      <span className="w-6 shrink-0">{run && <ChatPortrait playerId={run.playerId} className="mt-0.5" />}</span>
       <div className="min-w-0 flex-1">
         {quote && (
           <button

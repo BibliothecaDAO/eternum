@@ -173,10 +173,10 @@ it("shows the season's three prizes over Frontier's board, each place's holder, 
     ]);
     expect(tiles(container)[2]![1]).toMatch(/Open$/);
     expect(tiles(container)[0]![1]).not.toMatch(/Open$/);
-    // A phone's board reads as a desktop's: each row one line, its figures in columns.
-    const boardRows = [...container.querySelectorAll('[data-age="frontier"] button.app-row')];
+    // A phone's board is the desktop's: one board, each row its rank, name, sites and LORDS.
+    const boardRows = [...container.querySelectorAll('[data-age="frontier"] .app-board button.app-board__row')];
     expect(boardRows).toHaveLength(3);
-    expect(boardRows.every((row) => row.hasAttribute("data-line"))).toBe(true);
+    expect(boardRows.map((row) => row.querySelectorAll(".app-board__figure").length)).toEqual([2, 2, 2]);
   } finally {
     await unmount();
   }
@@ -240,7 +240,9 @@ const pastRows = (container: HTMLElement) =>
     row.querySelector(".app-row__trail")?.textContent?.replace(/^\d/, ""),
   ]);
 const siteCounts = (panel: Element) =>
-  [...panel.querySelectorAll("button.app-row")].map((row) => row.querySelector(".app-chip")?.textContent);
+  [...panel.querySelectorAll("button.app-board__row")].map(
+    (row) => row.querySelector(".app-board__figure")?.textContent,
+  );
 
 it.each([
   [390, 12],
@@ -338,7 +340,7 @@ it.each([390, 1440])("keeps the last season's final board while the next is only
   try {
     const frontier = frontierPanel(container);
     expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Playtest · Ended 31 Oct");
-    expect(frontier.querySelector("button.app-row .app-chip")?.textContent).toBe("166 sites cleared");
+    expect(frontier.querySelector("button.app-board__row .app-board__figure")?.textContent).toBe("166 sites cleared");
     expect(frontier.textContent).not.toContain("No realm yet");
   } finally {
     await unmount();

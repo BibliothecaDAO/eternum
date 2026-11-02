@@ -17,7 +17,7 @@ vi.mock("./herald", () => ({
   useLeaderboard: () => ({}),
 }));
 
-import { playerAvatarUrl } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { PlayerPage } from "./profile/profile-pages";
 
 it("uses the same unchosen portrait on the public profile and in the game", () => {
@@ -26,5 +26,5 @@ it("uses the same unchosen portrait on the public profile and in the game", () =
       <PlayerPage />
     </MemoryRouter>,
   );
-  expect(html).toContain(`src="${playerAvatarUrl("0x111", { name: null, portrait: null })}"`);
+  expect(html).toContain(`src="${playerPortraitUrl("0x111", null)}"`);
 });

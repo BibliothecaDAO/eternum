@@ -70,7 +70,7 @@ const CONNECT_OPEN = `document.querySelector('[role="dialog"][aria-label="Connec
 /** Each flow's end, checked in the page. */
 const END = {
   // A board is shown when its panel holds its first place, or says it has no one on it yet.
-  frontierBoard: `location.pathname === "/season" && ${boardShown("Frontier", `[...panel.querySelectorAll(".app-row .app-rank")].some((rank) => rank.innerText.trim() === "1")`)}`,
+  frontierBoard: `location.pathname === "/season" && ${boardShown("Frontier", `[...panel.querySelectorAll(".app-board__row .app-rank")].some((rank) => rank.innerText.trim() === "1")`)}`,
   blitzBoard: `location.pathname === "/season" && ${boardShown("Blitz", `panel.querySelector("ol li")`)}`,
   // A page opened from a list has no Back: the place that leads back to the list is lit.
   player: `location.pathname.startsWith("/p/") && ${placeLit("Season")} && document.querySelector('[data-band="body"] .app-panel') !== null`,
@@ -282,7 +282,7 @@ const FIND = (step, mark) => `(() => {
   if (step.kind === "view") found = [...document.querySelectorAll('[role="radio"], [role="tab"]')].find((el) => text(el) === step.word);
   if (step.kind === "toggle") found = document.querySelector('[role="switch"][aria-label="' + step.word + '"]');
   // A board's first place: the row ranked 1, itself the button that opens it.
-  if (step.kind === "first-row") found = controls(body, "button.app-row").find((row) => row.querySelector(".app-rank")?.innerText.trim() === "1");
+  if (step.kind === "first-row") found = controls(body, "button.app-board__row").find((row) => row.querySelector(".app-rank")?.innerText.trim() === "1");
   if (step.kind === "finished-game") {
     const games = controls(body, 'a[href^="/results/"]');
     found = games[1] ?? games[0];

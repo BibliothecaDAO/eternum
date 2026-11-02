@@ -5,7 +5,8 @@ import { HudChip } from "@/ui/design-system/kit/hud-elements";
 import { CHAT_WORDS } from "@/ui/design-system/kit/words";
 import { useRealmsAccountOf } from "@/shell/herald";
 import { getBlockTimestamp, isRealmCategory } from "@bibliothecadao/eternum";
-import { playerAvatarUrl, usePlayers } from "@/hooks/use-player-profile";
+import { usePlayers } from "@/hooks/use-player-profile";
+import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { type ReactNode, useMemo } from "react";
 
 import { placeKey, placeOnMap, type SharedPlace, sharedPlaceOf } from "../../model/place";
@@ -25,7 +26,9 @@ export const GameChatMap = ({ children }: { children: ReactNode }) => {
   const players = useMemo(
     () =>
       registered.flatMap((player) =>
-        player.name === null ? [] : [{ name: player.name, portrait: playerAvatarUrl(player.address, player) }],
+        player.name === null
+          ? []
+          : [{ name: player.name, portrait: playerPortraitUrl(player.address, player.portrait) }],
       ),
     [registered],
   );
