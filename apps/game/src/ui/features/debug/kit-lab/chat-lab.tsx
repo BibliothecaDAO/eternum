@@ -357,7 +357,7 @@ const LAB_THREADS = [
  * the store's network steps made to do nothing, so the page opens no socket and reads no history. `view` opens
  * Messages or Isolde's conversation, as the tabs and the list do.
  */
-function installLabRoom(view: string | null): true {
+export function installLabRoom(view: string | null): true {
   answerChatServers();
   const { actions } = useRealtimeChatStore.getState();
   useRealtimeChatStore.setState({

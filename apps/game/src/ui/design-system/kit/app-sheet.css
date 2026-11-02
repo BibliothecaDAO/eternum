@@ -1223,9 +1223,12 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   box-shadow: var(--app-shadow-dialog);
   color: var(--app-ink);
 }
+/* A phone's window keeps its head (the drag that closes it) and the home indicator's inset still: its body scrolls
+   between them, so nothing of a long body runs under the indicator. */
 .app-window[data-layout="phone"] {
   width: 100%;
   max-height: 92dvh;
+  overflow-y: hidden;
   border-bottom: 0;
   border-radius: var(--app-radius-panel) var(--app-radius-panel) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
@@ -1285,6 +1288,8 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   padding: theme(spacing.2) theme(spacing.6) theme(spacing.6);
 }
 .app-window[data-layout="phone"] .app-window__body {
+  min-height: 0;
+  overflow-y: auto;
   padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
 }
 

@@ -159,6 +159,35 @@ it("edits the name in its own row, offering Claim name only once it differs (qa-
 const nameRowNow = (container: HTMLElement) =>
   [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) => row.textContent === "NameMaelis") ?? null;
 
+it("puts the name's row back on a press outside it, as a phone without Escape does", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    await act(async () => nameRowNow(container)!.click());
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    // A press in the row (its field, Claim name) keeps it open.
+    await act(async () => void field.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(container.querySelector("form")).not.toBeNull();
+    // A press on the page beside it puts it back.
+    await act(async () => void document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(container.querySelector("form")).toBeNull();
+    expect(nameRowNow(container)).not.toBeNull();
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
 it("gives the Name row the focus back once a new name is claimed (review-no-back-1, P2-2)", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);

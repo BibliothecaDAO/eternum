@@ -172,8 +172,9 @@ const SignInMethods = ({ session }: { session: Session }) => {
 };
 
 /**
- * The name edited in its own row: the field in the name's place, Claim name at its end; Enter claims, Escape puts the
- * row back as it was.
+ * The name edited in its own row: the field in the name's place, Claim name at its end; Enter claims, and Escape or a
+ * press anywhere outside the row puts it back as it was (a phone's keyboard has no Escape; a press beside a sheet closes
+ * it the same way).
  */
 const NameRow = ({ current, onDone, onCancel }: { current: string; onDone: () => void; onCancel: () => void }) => {
   const phone = useLayout() === "phone";
@@ -182,6 +183,13 @@ const NameRow = ({ current, onDone, onCancel }: { current: string; onDone: () =>
   useEffect(() => {
     form.current?.querySelector("input")?.focus();
   }, []);
+  useEffect(() => {
+    const onPress = (event: PointerEvent) => {
+      if (form.current && event.target instanceof Node && !form.current.contains(event.target)) onCancel();
+    };
+    document.addEventListener("pointerdown", onPress, true);
+    return () => document.removeEventListener("pointerdown", onPress, true);
+  }, [onCancel]);
   const [name, setName] = useState(current);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);

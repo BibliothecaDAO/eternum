@@ -8,9 +8,12 @@
  * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards|phone] [--state <signed-in.json>]
  *
  * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES).
+ *
+ * `phone` plays every surface that had a Back link or a row arrow as a phone: touch, a safe area, drags, the system back
+ * and the on-screen keyboard (prove-app-phone.mjs).
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
@@ -23,6 +26,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { phoneRecords } from "./prove-app-phone.mjs";
 import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORT = ["1920", "1080"];
@@ -1163,6 +1167,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("recap")) records.push(...(await recapRecords(b, baseUrl, out)));
+      if (parts.includes("phone")) records.push(...(await phoneRecords(b, baseUrl, out)));
       if (parts.includes("boards")) {
         for (const page of boardPages(true)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...PHONE);

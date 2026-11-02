@@ -150,6 +150,12 @@ on any string that breaks a voice rule; `node scripts/words/check.mjs` counts th
 Blitz's Results, at 1920 and 390 px: each column at one x down the board, each value ending on one line, no name run
 into its figures and a long one cut with an ellipsis.
 
+`prove:app <base-url> <out-dir> phone` plays every surface that had a Back link or a row arrow as a phone: 390×844 with
+touch and an iPhone's safe area (47 px notch, 34 px home indicator) through DevTools. It checks no Back control and
+nothing a finger aims at in the notch or over the home indicator; a page left by the system back; a sheet closed by a
+finger's drag down its head, then by the system back once with the page staying; and the inline Name tapped open with
+its focus, typed above the on-screen keyboard (played through the visual viewport) and put back by a tap beside it.
+
 Play's paths have a command: `pnpm --dir apps/game prove:play --base-url https://127.0.0.1:<port> --out <dir>` drives
 Play against a running dev build. It opens each lab fixture and the live page signed out (once with the slots read
 failing) at desktop and phone sizes, counts what is on the page, presses each row's verb and checks that it reached that
