@@ -91,7 +91,7 @@ def centred_text(image, text, y, font_path, size, colour):
 
 
 def make_card(kit, size, plan, target):
-    width, height = size
+    width = size[0]
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
     ground = ImageColor.getrgb(palette["brand"]["hearth"])
     card = Image.new("RGBA", size, (*ground, 204))
@@ -109,24 +109,23 @@ def make_card(kit, size, plan, target):
 def make_intro_card(kit, size, target):
     card = Image.new("RGBA", size, (0, 0, 0, 0))
     logo = Image.open(kit / REALMS).convert("RGBA")
-    width = 240
+    width = 120
     logo = logo.resize((width, round(logo.height * width / logo.width)), Image.Resampling.LANCZOS)
-    position = (330, 220)
+    position = (size[0] - width - 36, 36)
     card.alpha_composite(logo, position)
     card.save(target)
 
 
 def render_picture(source, size, plan, folder):
-    intro_frames, hold_frames = plan["introFrames"], plan["holdFrames"]
-    total_frames = intro_frames + FRAME_COUNT + hold_frames
-    intro_seconds = intro_frames / FPS
+    hold_frames = plan["holdFrames"]
+    total_frames = FRAME_COUNT + hold_frames
     card_start = plan["lockupFullFrame"] / FPS - 1
     make_card(plan["kit"], size, plan, folder / "card.png")
     make_intro_card(plan["kit"], size, folder / "intro-card.png")
     graph = (
         "[0:v]pad=1280:720:0:8:color=0x14101D,setsar=1,"
-        f"tpad=start_mode=clone:start={intro_frames}:stop_mode=clone:stop={hold_frames}[held];"
-        f"[1:v]format=rgba,fade=t=out:st={intro_seconds}:d=1:alpha=1[intro];"
+        f"tpad=stop_mode=clone:stop={hold_frames}[held];"
+        "[1:v]format=rgba,fade=t=out:st=0:d=2:alpha=1[intro];"
         "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
         f"[2:v]format=rgba,fade=t=in:st={card_start}:d=1:alpha=1[card];"
         "[sequence][card]overlay=0:0:shortest=1:format=auto,format=yuv420p[v]"
@@ -185,11 +184,11 @@ def finish(args):
     assert (info["streams"][0]["width"], info["streams"][0]["height"]) == (1280, 704)
     assert int(info["streams"][0]["nb_frames"]) == FRAME_COUNT
     assert info["streams"][0]["avg_frame_rate"] == f"{FPS}/1"
-    total_frames = plan["introFrames"] + FRAME_COUNT + plan["holdFrames"]
+    total_frames = FRAME_COUNT + plan["holdFrames"]
     duration = total_frames / FPS
-    assert plan["introFrames"] > 0 and plan["holdFrames"] > 0
-    if not plan["introFrames"] + FRAME_COUNT < plan["lockupFullFrame"] - FPS < total_frames - FPS:
-        raise ValueError("The one-second lockup fade must start after the film settles and finish before the cut ends.")
+    assert plan["holdFrames"] > 0
+    if plan["lockupFullFrame"] != FRAME_COUNT - 1:
+        raise ValueError("The one-second lockup fade must finish on the film's final moving frame.")
     save_json(args.evidence / "source.json", {"sha256": digest(args.source), **info})
     score = None
     if args.score:

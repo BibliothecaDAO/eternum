@@ -290,10 +290,10 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 
 ### Finish recorded footage
 
-`scripts/studio/cinematic-maker.py` finishes the approved 481-frame, 24 fps trailer. It preserves the recorded 1280×704
-film between a Realms intro and a held final frame with the complete Frontier lockup, one line and the address. The 16:9
-export adds eight pixels above and below and uses H.264. An optional picture-length score is trimmed and mastered near
-−14 LUFS, then muxed as AAC. Short audio is rejected; there is no tempo conversion, looping or padding path.
+`scripts/studio/cinematic-maker.py` finishes the approved 481-frame, 24 fps trailer. It preserves the original 1280×704
+film, pads to 1280×720, overlays the kit's small Realms ink mark at top right for the first two seconds, and fades the
+complete Frontier lockup in over the final second of motion. A short final-frame hold keeps the line and address
+readable. The film starts immediately; no intro footage is added.
 
 Run with Python 3.12 or newer, Pillow, FFmpeg and ffprobe installed:
 
@@ -303,16 +303,16 @@ python apps/game/scripts/studio/cinematic-maker.py \
   --out <final-folder> --evidence <proof-folder>
 ```
 
-Add `--score <picture-length-audio>` when the approved score is ready. Without it, the command exports silent picture
-references and records that the score is pending. The edit supplies `introFrames`, `holdFrames`, `lockupFullFrame`,
-`line`, `cta`, and named `reviewFrames` (output seconds). At 24 fps, 60 intro frames + 481 film frames + 107 held frames
-make exactly 27 seconds. The intro holds the first parchment frame under the kit's ink Realms mark; the mark fades away
-during the first second of motion. `lockupFullFrame: 576` places the full end card at 24 seconds. Its one-second fade
-starts at 23 seconds, after the final picture has settled into its hold at 22.541667 seconds; the full card remains for
-three seconds. The command rejects an end-card fade that starts before the film has settled.
+Add `--score <picture-length-audio>` when the approved music arrives. Without it, the export is a silent picture
+reference. The main final needs music only. Audio is trimmed and mastered near −14 LUFS, then muxed as AAC; short scores
+are rejected instead of stretched, looped or padded.
 
-The command renders and fully decodes the landscape film, checks duration, dimensions, codecs and frame count, and
-leaves review stills, the edit, source/brand/output hashes and score provenance. With audio, it also checks −14 LUFS
-within 0.25 LU and true peaks below −1 dBTP. Files replace their destinations only after passing validation. Rerunning
-uses the same inputs and edit; no server, watcher or browser starts. This offline finisher consumes recorded footage;
-the studio's camera recorder remains the entry point for new shots.
+The edit supplies `holdFrames`, `lockupFullFrame`, `line`, `cta`, and named `reviewFrames` (output seconds).
+`lockupFullFrame` must equal the source's final frame index, 480: the one-second fade ends at 20 seconds as the picture
+settles. With 47 additional held frames, 481 + 47 = 528 frames, exactly 22 seconds. The complete card is visible for the
+final two seconds. Realms fades out from 0 to 2 seconds, with kit clear-space at the top and right edges.
+
+The command fully decodes the export, checks dimensions, codec, frame count and duration, and leaves review stills,
+source/brand/output hashes and the edit. With audio, it also checks −14 LUFS within 0.25 LU and true peaks below −1
+dBTP. Files replace their destinations only after validation. Rerunning uses the same inputs and starts no server,
+watcher or browser. The studio camera recorder remains the entry point for new shots.
