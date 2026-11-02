@@ -153,16 +153,16 @@ describe("a button whose press sends", () => {
     expect(errors).toHaveLength(failed ? 1 : 0);
   });
 
-  it("holds a confirm's verb the same way, and its way back stays open", async () => {
+  it("holds a confirm's verb the same way, and its Cancel stays open", async () => {
     const { send, settle } = sender();
-    const back = vi.fn();
-    act(() => root.render(<HudConfirm question="Swap?" verb="Swap" onConfirm={send} onBack={back} />));
+    const cancel = vi.fn();
+    act(() => root.render(<HudConfirm question="Swap?" verb="Swap" onConfirm={send} onCancel={cancel} />));
     const button = (word: string) => [...host.querySelectorAll("button")].find((each) => each.textContent === word)!;
     act(() => button("Swap").click());
     act(() => button("Swap").click());
     expect(send).toHaveBeenCalledTimes(1);
     act(() => button("Cancel").click());
-    expect(back).toHaveBeenCalledTimes(1);
+    expect(cancel).toHaveBeenCalledTimes(1);
     await act(async () => settle());
     expect(button("Swap").disabled).toBe(false);
   });
@@ -705,11 +705,13 @@ describe("a question that stops the task", () => {
     const verb = () => [...host.querySelectorAll<HTMLButtonElement>(".ui-button")].at(-1)!;
     act(() =>
       root.render(
-        <HudConfirm question="Disband this army?" verb="Disband" tone="bad" onConfirm={vi.fn()} onBack={vi.fn()} />,
+        <HudConfirm question="Disband this army?" verb="Disband" tone="bad" onConfirm={vi.fn()} onCancel={vi.fn()} />,
       ),
     );
     expect([verb().textContent, verb().dataset.kind]).toEqual(["Disband", "danger"]);
-    act(() => root.render(<HudConfirm question="Send 300 wheat?" verb="Send" onConfirm={vi.fn()} onBack={vi.fn()} />));
+    act(() =>
+      root.render(<HudConfirm question="Send 300 wheat?" verb="Send" onConfirm={vi.fn()} onCancel={vi.fn()} />),
+    );
     expect([verb().textContent, verb().dataset.kind]).toEqual(["Send", "primary"]);
   });
 });

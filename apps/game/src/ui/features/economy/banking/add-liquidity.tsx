@@ -165,7 +165,7 @@ const AddLiquidity = ({ entityId, listResourceId }: { entityId: ID; listResource
             question="Confirm Deposit"
             verb="Add Liquidity"
             onConfirm={onAddLiquidity}
-            onBack={() => setOpenConfirmation(false)}
+            onCancel={() => setOpenConfirmation(false)}
           >
             <span className="flex items-center justify-center gap-2">
               <ResourceCost withTooltip amount={resourceAmount} resourceId={Number(resourceId)} />

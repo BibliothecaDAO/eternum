@@ -1,4 +1,3 @@
-import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import type { ReactNode } from "react";
 import { Link, type To } from "react-router-dom";
 
@@ -30,8 +29,8 @@ type RowAction =
 
 /**
  * One row of a list: what leads it (a painting, a rank, an icon), its title with a line under it or the host's own
- * cells, and what ends it (a figure, a verb, the chevron of a row that opens). The whole row taps when it leads
- * somewhere. In a list (`as="li"`) the item carries the rule and the row inside it the tap.
+ * cells, and what ends it (a figure, a verb). The whole row taps when it leads somewhere, with no arrow at its end. In
+ * a list (`as="li"`) the item carries the rule and the row inside it the tap.
  */
 export const ListRow = ({
   as: Outer = "div",
@@ -45,7 +44,6 @@ export const ListRow = ({
   line,
   spaced = false,
   trailing,
-  chevron = false,
   className,
   children,
   ...rest
@@ -65,7 +63,6 @@ export const ListRow = ({
   /** Air between the title and its line. */
   spaced?: boolean;
   trailing?: ReactNode;
-  chevron?: boolean;
   className?: string;
   children?: ReactNode;
   /** A hook the page and its proofs name the row by (`data-play-item`). */
@@ -85,7 +82,6 @@ export const ListRow = ({
       )}
       {children}
       {trailing}
-      {chevron && <SemanticIcon name="chevron-right" size={18} />}
     </>
   );
   const tapped = to !== undefined || href !== undefined || onClick !== undefined;

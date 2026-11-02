@@ -29,6 +29,7 @@ import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
+import { installLabRoom } from "./chat-lab";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
 import { GLOBAL_ROOM } from "@/ui/features/social/realtime-chat/model/chat-rooms";
 import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
@@ -52,7 +53,7 @@ import { StoreCard, type StoreLine } from "@/ui/features/frontier/production/sto
 import { MADE_STORES } from "@/ui/features/frontier/stores";
 import { PlaceNav } from "@/ui/features/frontier/hud/place-nav";
 import { StatusStrip, type StoreReading } from "@/ui/features/frontier/hud/status-strip";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams } from "react-router-dom";
 import { type SlotStart, wheatStopsAt } from "@/ui/features/frontier/deploy/deploy-plan";
 import { slotStartLine } from "@/ui/features/frontier/deploy/slot-start";
 import { TodaySheet } from "@/ui/features/frontier/log/today-sheet";
@@ -1175,6 +1176,11 @@ export const HudLab = () => {
   // The game wears Frontier's age (world.tsx's useHudMode); the lab draws it the same.
   useHudMode("frontier");
   useLabNotice(lab.notice);
+  // The phone's chat page reads the chat lab's room (`?view=messages`, `?view=conversation`), as /lab/kit/chat does.
+  const [view] = useSearchParams();
+  useState(() => lab.chat && installLabRoom(view.get("view")));
+  // The season's detail closes back to its list, and a row opens it again, as FrontierSeason plays it.
+  const [detailShut, setDetailShut] = useState(false);
   const chatPane = useRef<HTMLElement>(null);
   // Chat reads the game's players (its mentions), so the phone's page stands in the lab game, as the desktop's does.
   const chat = lab.chat && (
@@ -1236,7 +1242,7 @@ export const HudLab = () => {
             />
           ) : lab.season ? (
             // A realm's detail stands in the list's place, as FrontierSeason shows it.
-            lab.season === "detail" ? (
+            lab.season === "detail" && !detailShut ? (
               <SeasonDetailSheet
                 label="Aldric"
                 detail={{
@@ -1251,7 +1257,7 @@ export const HudLab = () => {
                   labor: 96_000,
                 }}
                 onVisit={noop}
-                onClose={noop}
+                onClose={() => setDetailShut(true)}
               />
             ) : (
               <SeasonList
@@ -1263,7 +1269,7 @@ export const HudLab = () => {
                 pinned={OWN_ROW}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
-                onOpen={noop}
+                onOpen={() => setDetailShut(false)}
                 onClose={noop}
                 ends={{ at: SEASON_ENDS_AT, day: CLOCK.day, lastDay: SEASON_LAST_DAY }}
               />

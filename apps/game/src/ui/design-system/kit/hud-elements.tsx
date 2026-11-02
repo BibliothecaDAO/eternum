@@ -27,9 +27,8 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
-import { OpenedFromPanel } from "./opened-from-panel";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { BACK, CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import { CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -984,8 +983,9 @@ export const HudRing = ({
 
 /**
  * One thing of a list: what it is and what it says, and what it ends on; hover lights it, the chosen one carries a bar
- * in the accent. With `onClick` the whole row is one button, its lead, words, figure and chevron alike: choosing it is
- * pressing it anywhere along it (owner, 30 October: "the whole row should work").
+ * in the accent. With `onClick` the whole row is one button, its lead, words and figure alike: choosing it is pressing
+ * it anywhere along it (owner, 30 October: "the whole row should work"). A row carries no arrow, even one that opens a
+ * page (the owner's pick A, 2 November 2026).
  */
 export const HudRow = ({
   lead,
@@ -993,7 +993,6 @@ export const HudRow = ({
   title,
   detail,
   trail,
-  opens,
   controls,
   selected,
   state,
@@ -1009,8 +1008,6 @@ export const HudRow = ({
   detail?: ReactNode;
   /** What the row ends on, part of it: a figure (a bonus, a count), a chip, a dot. */
   trail?: ReactNode;
-  /** It opens a page of its own: a chevron at its end. */
-  opens?: boolean;
   /**
    * The row's own controls (Provision, Level up). With them the row is a container: its lead, the button that chooses
    * it (its words and trail, when it has `onClick`) and its controls side by side, never one button inside another.
@@ -1032,12 +1029,7 @@ export const HudRow = ({
         <span className="ui-row__title">{title}</span>
         {detail !== undefined && <span className="ui-row__detail">{detail}</span>}
       </span>
-      {(trail !== undefined || opens) && (
-        <span className="ui-row__trail">
-          {trail}
-          {opens && <Icon name="chevron-right" size={20} />}
-        </span>
-      )}
+      {trail !== undefined && <span className="ui-row__trail">{trail}</span>}
     </>
   );
   if (controls !== undefined) {
@@ -1425,15 +1417,15 @@ type FrameParts = {
 /**
  * The one frame every HUD surface wears, a page on the place bar as much as a sheet over the stage (owner, 30 October
  * 2026: "one rule should fit"): the panel's look; its head, one row with its icon, its name, its cue and its way out (a
- * cross, or a back arrow when a sheet opened from another panel, whose place it takes), which a drag down on a touch
+ * cross, wherever it opened from), which a drag down on a touch
  * screen also takes; its body, which scrolls; and its foot (HudWindowFoot) under a rule, which keeps the verb and its
  * cost in view while the body scrolls. Escape and system back close it. It keeps nothing for the screen's safe area:
  * what it stands on (the place bar, or a sheet's place above the screen's foot) keeps that.
  */
 const SurfaceFrame = forwardRef<
   HTMLElement,
-  FrameParts & { back?: boolean; bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, cue, onClose, back = false, bodyClassName, className, children, ...rest }, ref) => {
+  FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
+>(({ label, icon, cue, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
@@ -1446,13 +1438,7 @@ const SurfaceFrame = forwardRef<
           cue={
             <span className="flex items-center gap-1">
               {cue}
-              <HudIconButton
-                icon={back ? "arrow-left" : "close"}
-                label={back ? BACK : CLOSE}
-                kind="quiet"
-                size="sm"
-                onClick={onClose}
-              />
+              <HudIconButton icon="close" label={CLOSE} kind="quiet" size="sm" onClick={onClose} />
             </span>
           }
           press={null}
@@ -1468,19 +1454,17 @@ const SurfaceFrame = forwardRef<
 SurfaceFrame.displayName = "SurfaceFrame";
 
 /**
- * A sheet over the stage, in the one frame (its back arrow when it opened from another panel). On a phone it rises from
+ * A sheet over the stage, in the one frame, closed by its cross wherever it opened from. On a phone it rises from
  * the place bar, as tall as what it holds and at most the phone panel's height, under that one row (owner, 26 October
  * 2026: layout A); the map above it stays playable. From the desktop width up it docks under the top bar or in its
  * host's SheetDock, with the stage playable beside it.
  */
 export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
-  const back = useContext(OpenedFromPanel);
   const dock = useContext(SheetDock);
   const sheet = (
     <SurfaceFrame
       role="dialog"
       label={label}
-      back={back}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}
@@ -1529,24 +1513,24 @@ export const HudActions = ({ className, children }: { className?: string; childr
   <div className={cn("ui-actions", className)}>{children}</div>
 );
 
-/** A question that stops the task: what it does and costs, the way back, and the verb (red when it cannot be undone). */
+/** A question that stops the task: what it does and costs, Cancel, and the verb (red when it cannot be undone). */
 export const HudConfirm = ({
   question,
   children,
   verb,
-  back = "Cancel",
+  cancel = "Cancel",
   tone,
   onConfirm,
-  onBack,
+  onCancel,
 }: {
   question: string;
   children?: ReactNode;
   verb: string;
-  back?: string;
+  cancel?: string;
   tone?: "bad";
   /** The send; one that returns its promise holds the verb until it settles, as every HudButton does. */
   onConfirm: () => unknown;
-  onBack: () => void;
+  onCancel: () => void;
 }) => (
   <section className="ui ui-confirm" role="alertdialog" aria-label={question} data-tone={tone}>
     <div className="ui-confirm__body">
@@ -1554,8 +1538,8 @@ export const HudConfirm = ({
       {children}
     </div>
     <footer className="ui-window__foot ui-actions">
-      <HudButton kind="quiet" onClick={onBack}>
-        {back}
+      <HudButton kind="quiet" onClick={onCancel}>
+        {cancel}
       </HudButton>
       <HudButton kind={tone === "bad" ? "danger" : "primary"} onClick={onConfirm}>
         {verb}
@@ -1575,8 +1559,6 @@ type MenuItem =
       hint?: string;
       /** A choice of a select; an action leaves it out. */
       checked?: boolean;
-      /** It opens a list of its own: a chevron at its end. */
-      opens?: boolean;
       disabled?: boolean;
       tone?: "bad";
       state?: string;
@@ -1588,7 +1570,7 @@ export const menuOptionId = (listId: string, index: number) => `${listId}-option
 
 /**
  * A list of choices: the one a select opens (the chosen one checked), or the actions a right-click on your own
- * structure lists (its name and place at its head, a way back from a list it opened). A rule between groups. The map
+ * structure lists (its name and place at its head; a submenu opens beside it, ContextMenu). A rule between groups. The map
  * has no menu of orders: a right-click on a tile acts. With `suggests`, it is the list a field suggests from while the
  * keyboard stays in the field (chat's mentions): a listbox of options, the active one selected, each with the id the
  * field names as its active descendant (menuOptionId).
@@ -1597,7 +1579,7 @@ export const HudMenu = forwardRef<
   HTMLDivElement,
   {
     items: readonly MenuItem[];
-    head?: { title: string; place?: string; onBack?: () => void };
+    head?: { title: string; place?: string };
     suggests?: { id: string; active: number };
   } & Omit<HTMLAttributes<HTMLDivElement>, "className" | "role" | "style" | "id">
 >(({ items, head, suggests, ...rest }, ref) => (
@@ -1611,7 +1593,6 @@ export const HudMenu = forwardRef<
   >
     {head && (
       <div className="ui-menu__head">
-        {head.onBack && <HudIconButton icon="chevron-left" label="Back" kind="quiet" size="sm" onClick={head.onBack} />}
         <span className="ui-menu__title">{head.title}</span>
         {head.place && <span className="ui-menu__hint">{head.place}</span>}
       </div>
@@ -1637,7 +1618,6 @@ export const HudMenu = forwardRef<
           {item.lead ?? (item.icon && <Icon name={item.icon} size={16} />)}
           <span className="ui-menu__label">{item.label}</span>
           {item.hint && !item.disabled && <span className="ui-menu__hint">{item.hint}</span>}
-          {item.opens && <Icon name="chevron-right" size={14} />}
         </button>
       ),
     )}

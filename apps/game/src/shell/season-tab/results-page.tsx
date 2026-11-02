@@ -30,7 +30,7 @@ import { clockLine } from "@/ui/design-system/kit/clock-chip";
 import { entryHref } from "../game-links";
 import { isSameStarknetAddress } from "@realms-world/identity";
 import { useLayout } from "../frame/layout";
-import { backFrom, isOpenedFrom } from "../frame/opened-from";
+import { isOpenedFrom } from "../frame/opened-from";
 import { PageFrame } from "../frame/page-frame";
 import { type DirectoryGame, useLeaderboard, useRealmsPlayer } from "../herald";
 import { Loading } from "../loading";
@@ -56,8 +56,8 @@ const ROWS = { phone: 3, desktop: 5 } as const;
 /**
  * A finished game's Results (spec 08; the owner's pick, C · Ledger): the outcome first (a Blitz player's place and
  * points, or the season's ending), the board's first rows with the player's own, and Continue; Share for Blitz, Season
- * for Frontier. Opened from a list it has Back to that list and no Continue; after a match (or from Play) it has no
- * Back. A sealed chest's Open is the page's one gold step, and Continue stands beside it in outline. Opening it marks
+ * for Frontier. Opened from a list it has no Continue (its place, lit, leads back to the list); after a match (or from
+ * Play) it has Continue. A sealed chest's Open is the page's one gold step, and Continue stands beside it in outline. Opening it marks
  * the result seen on this device.
  */
 export const ResultsPage = () => {
@@ -70,32 +70,28 @@ export const ResultsPage = () => {
   return ref ? (
     <Result gameRef={ref} fromList={fromList} />
   ) : (
-    <ResultsFrame fromList={fromList}>
+    <ResultsFrame>
       <NothingHere />
     </ResultsFrame>
   );
 };
 
 /**
- * Back to the list that opened it; after a match, none. The painting is the page's ground on desktop. The page's
+ * The page's frame: no Back, the place it was opened from lit. The painting is the page's ground on desktop. The page's
  * buttons stand at the head's end on a desktop and in the foot on a phone.
  */
 const ResultsFrame = ({
-  fromList,
   painting,
   buttons,
   children,
 }: {
-  fromList: boolean;
   painting?: Painting;
   buttons?: ReactNode;
   children: ReactNode;
 }) => {
-  const back = backFrom(useLocation(), "/profile");
   const phone = useLayout() === "phone";
   return (
     <PageFrame
-      back={fromList ? back : undefined}
       title={WORDS.results}
       aside={phone ? undefined : buttons}
       foot={phone ? buttons : undefined}
@@ -112,7 +108,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
   const { data: player } = useRealmsPlayer();
   if (board.isError)
     return (
-      <ResultsFrame fromList={fromList}>
+      <ResultsFrame>
         <AppPanel>
           <ServiceFailure service="results" error={board.error} retry={() => void board.refetch()} />
         </AppPanel>
@@ -120,7 +116,7 @@ const Result = ({ gameRef, fromList }: { gameRef: GameRef; fromList: boolean }) 
     );
   if (board.isPending)
     return (
-      <ResultsFrame fromList={fromList}>
+      <ResultsFrame>
         <Loading />
       </ResultsFrame>
     );
@@ -233,7 +229,7 @@ const BlitzResult = ({
   );
   const reward = game && <GameReward game={game} />;
   return (
-    <ResultsFrame fromList={fromList} painting="blitz-aftermath" buttons={buttons}>
+    <ResultsFrame painting="blitz-aftermath" buttons={buttons}>
       <div className="grid grid-cols-1 items-start gap-6 lg:grid-cols-12">
         <AppPanel className="lg:col-span-8">
           {own ? (
@@ -389,7 +385,7 @@ const FrontierResult = ({
   );
   return (
     // The season's ending is not yet a recorded fact: the mist lifted stands until Herald names it.
-    <ResultsFrame fromList={fromList} painting="season-citadel">
+    <ResultsFrame painting="season-citadel">
       <SeasonRecap gameRef={gameRef} game={game} board={board} viewer={player} ending="lifted" actions={actions} />
     </ResultsFrame>
   );

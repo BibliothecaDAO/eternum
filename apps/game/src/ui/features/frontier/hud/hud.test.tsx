@@ -626,7 +626,7 @@ describe("the chat key", () => {
 });
 
 describe("the HUD's panels", () => {
-  it("lets a sheet opened from a nav page step back to it, and closes one opened anywhere else", () => {
+  it("closes every sheet on its cross, one opened from a nav page as one opened anywhere else", () => {
     const sheet = (label: string) => (
       <Sheet label={label} onClose={() => undefined}>
         <p>rows</p>
@@ -641,7 +641,7 @@ describe("the HUD's panels", () => {
     );
     const mark = (label: string) =>
       host.querySelector(`[aria-label="${label}"][data-kit-sheet]`)!.querySelectorAll("button[aria-label]");
-    expect([...mark("Farm")].map((button) => button.getAttribute("aria-label"))).toEqual(["Close", "Back"]);
+    expect([...mark("Farm")].map((button) => button.getAttribute("aria-label"))).toEqual(["Close", "Close"]);
     expect([...mark("Camp")].map((button) => button.getAttribute("aria-label"))).toEqual(["Close", "Close"]);
   });
 });

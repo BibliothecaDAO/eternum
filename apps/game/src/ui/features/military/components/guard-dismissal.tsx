@@ -65,7 +65,7 @@ export const GuardDismissal = ({
             onConfirm={() => {
               if (!disabled && !pending) dismiss();
             }}
-            onBack={close}
+            onCancel={close}
           >
             <span className="text-hud-body text-hud-muted">All its troops are permanently lost.</span>
           </HudConfirm>

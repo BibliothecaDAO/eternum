@@ -15,8 +15,6 @@ import {
 import { Link, type To, useNavigate } from "react-router-dom";
 import { createPortal } from "react-dom";
 
-import { BACK } from "./words";
-
 import { paintingSources, type Painting } from "./paintings";
 import { HudPlaceMedal } from "./hud-elements";
 import { useSheetCloses } from "./sheet-closes";
@@ -724,8 +722,8 @@ export const AppSwitch = ({
 );
 
 /**
- * A setting: its icon, its name and what it holds now, then its control (a switch, a chevron to open it, or to another
- * site with `href`).
+ * A setting: its icon, its name and what it holds now, then its control (a switch, a button). With `onClick` or `href`
+ * the whole row is the press that opens it (another site with `href`), lit on hover; it carries no arrow.
  */
 export const AppSetting = ({
   icon,
@@ -748,7 +746,7 @@ export const AppSetting = ({
     trail={
       <>
         {value !== undefined && <span className="app-setting__value">{value}</span>}
-        {control ?? ((onClick || href) && <Icon name="arrow-right" size={18} />)}
+        {control}
       </>
     }
     onClick={onClick}
@@ -825,15 +823,9 @@ export const AppPortrait = ({
   </span>
 );
 
-/** A page's head: Back to where it came from (with Esc on a desktop), its title, and what it does at its end. */
-export const AppPageHead = ({ title, back, aside }: { title: ReactNode; back?: To; aside?: ReactNode }) => (
+/** A page's head: its title, and what it does at its end. A page has no Back: the places are the way out. */
+export const AppPageHead = ({ title, aside }: { title: ReactNode; aside?: ReactNode }) => (
   <header className="app-page-head">
-    {back !== undefined && (
-      <Link to={back} data-role="back" aria-label={BACK} className="app-page-head__back">
-        <Icon name="arrow-left" size={22} />
-        {BACK}
-      </Link>
-    )}
     <h1>{title}</h1>
     {aside !== undefined && <span className="app-page-head__aside">{aside}</span>}
   </header>
@@ -885,8 +877,9 @@ export const AppDialog = ({
 
 /**
  * The one layer that opens over the page (a dialog, Connect, a holding's sheet): the page dimmed behind it and inert
- * while it is open, so neither a pointer nor the keyboard reaches the page until it closes. It closes as a sheet does: a
- * press beside it, Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing
+ * while it is open, so neither a pointer nor the keyboard reaches the page until it closes. The keyboard's focus moves
+ * into it as it opens, stays in it (Tab and Shift+Tab go round its controls), and goes back to what opened it once it
+ * closes. It closes as a sheet does: a press beside it, Escape, or the system back. `sheet` rises from the foot, as wide as the screen, instead of standing
  * in the middle. It is drawn at the body's end, whoever opens it: inside a panel (whose backdrop filter holds fixed
  * children to the panel) it would open in the panel rather than over the page.
  */
@@ -902,6 +895,7 @@ export const AppModalLayer = ({
   useSheetCloses(onClose);
   const layer = useRef<HTMLDivElement>(null);
   useInertOutside(layer);
+  useFocusHeld(layer);
   return createPortal(
     <div
       ref={layer}
@@ -913,6 +907,47 @@ export const AppModalLayer = ({
     </div>,
     document.body,
   );
+};
+
+/** What takes the keyboard's focus in a layer, in its order. */
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+/**
+ * The layer holds the keyboard's focus while it is mounted: it takes it as it opens (its dialog, unless a control in
+ * it already took it, a field that focuses itself), Tab and Shift+Tab go round its controls without leaving it, and the
+ * control that opened it has it back once it closes.
+ */
+const useFocusHeld = (layer: RefObject<HTMLElement | null>) => {
+  useEffect(() => {
+    const element = layer.current;
+    if (!element) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const dialog = element.querySelector<HTMLElement>('[role="dialog"]') ?? element;
+    if (!element.contains(document.activeElement)) {
+      if (!dialog.hasAttribute("tabindex")) dialog.setAttribute("tabindex", "-1");
+      dialog.focus({ preventScroll: true });
+    }
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Tab") return;
+      const controls = [...element.querySelectorAll<HTMLElement>(FOCUSABLE)];
+      const active = document.activeElement;
+      const first = controls[0];
+      const last = controls.at(-1);
+      if (!first || !last) return event.preventDefault();
+      const inside = active instanceof HTMLElement && element.contains(active);
+      const wrapsBack = event.shiftKey && (!inside || active === first || active === dialog);
+      const wrapsOn = !event.shiftKey && (!inside || active === last);
+      if (!wrapsBack && !wrapsOn) return;
+      event.preventDefault();
+      (wrapsBack ? last : first).focus();
+    };
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("keydown", onKey, true);
+      if (opener?.isConnected) opener.focus({ preventScroll: true });
+    };
+  }, [layer]);
 };
 
 /** Makes everything outside the layer inert while it is mounted: its siblings, and its ancestors' up to the body. */

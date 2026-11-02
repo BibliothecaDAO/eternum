@@ -3,7 +3,6 @@ import { type CSSProperties, type ReactNode, type RefObject, useLayoutEffect, us
 import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
 import { useSideways } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
-import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
 
 const SAFE_AREA: CSSProperties = {
   paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
@@ -118,9 +117,7 @@ const TopRow = ({ nextUp, purse }: { nextUp: ReactNode; purse: ReactNode }) => (
 /** A nav page's place: as tall as its band gives, scrolling inside. */
 const PageBand = ({ className, children }: { className: string; children: ReactNode }) => (
   <div data-page className={`flex min-h-0 flex-col ${className}`}>
-    <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">
-      <OpenedFromPanel.Provider value>{children}</OpenedFromPanel.Provider>
-    </div>
+    <div className="no-scrollbar flex min-h-0 flex-1 flex-col overflow-y-auto">{children}</div>
   </div>
 );
 

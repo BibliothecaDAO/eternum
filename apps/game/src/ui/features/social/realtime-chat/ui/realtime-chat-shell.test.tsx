@@ -166,7 +166,7 @@ describe("the chat: rooms, then Messages", () => {
     expect(useRealtimeChatStore.getState().worldZones[GLOBAL_CHAT_CHANNEL_ID]!.messages).toHaveLength(1);
   });
 
-  it("opens a conversation from Messages, by name, read, and goes back to the list", () => {
+  it("opens a conversation from Messages, by name, read, and goes back to the list from the lit Messages tab", () => {
     open();
     press("Messages");
     press("Aldric");
@@ -174,7 +174,9 @@ describe("the chat: rooms, then Messages", () => {
     expect(host.querySelector("header")?.textContent).toContain("Aldric");
     expect(host.textContent).toContain("merge armies tomorrow?");
     expect(tabs()).toEqual(["Global", "Messages"]);
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')?.click());
+    // No Back in the conversation: Messages, lit, pressed again, is the way back to the list.
+    expect(host.querySelector('button[aria-label="Back"]')).toBeNull();
+    press("Messages");
     expect(host.querySelectorAll(".ui-row")).toHaveLength(2);
   });
 

@@ -10,7 +10,6 @@ import { ListRow } from "./list-row";
 import { Pill } from "./pill";
 import { Portrait } from "./portrait";
 import { shortfallLine, staminaShortfall } from "./reasons";
-import { OpenedFromPanel } from "./opened-from-panel";
 import { Sheet } from "./sheet";
 import { StoreBar } from "./store-bar";
 import { dayEnds, dayLeft, phraseText, tomorrowLasts } from "./words";
@@ -143,13 +142,13 @@ describe("Portrait", () => {
 });
 
 describe("ListRow", () => {
-  it("taps as a whole when it opens something, and only shows otherwise", () => {
+  it("taps as a whole when it opens something, with no arrow, and only shows otherwise", () => {
     const onClick = vi.fn();
-    act(() => root.render(<ListRow onClick={onClick} title="Settings" chevron />));
+    act(() => root.render(<ListRow onClick={onClick} title="Settings" />));
     const button = host.querySelector("button");
     expect(button?.getAttribute("type")).toBe("button");
     expect(button?.textContent).toBe("Settings");
-    expect(button?.querySelector('[data-icon="chevron-right"]')).not.toBeNull();
+    expect(button?.querySelector("[data-icon]")).toBeNull();
     act(() => button?.click());
     expect(onClick).toHaveBeenCalledOnce();
     const shown = renderToStaticMarkup(<ListRow title="Music" trailing={<input />} />);
@@ -205,22 +204,13 @@ describe("Sheet", () => {
     expect(escape.defaultPrevented).toBe(true);
   });
 
-  it("on a desktop closes from its own mark: a cross, or a back arrow when it opened from another panel", () => {
+  it("on a desktop closes from its own cross, never a back arrow", () => {
     const onClose = vi.fn();
     renderSheet(onClose);
-    expect(host.querySelectorAll('button[aria-label="Close"]')).toHaveLength(2);
+    const closes = host.querySelectorAll<HTMLButtonElement>('button[aria-label="Close"]');
+    expect(closes).toHaveLength(2);
     expect(host.querySelector('button[aria-label="Back"]')).toBeNull();
-    act(() =>
-      root.render(
-        <OpenedFromPanel.Provider value>
-          <Sheet label="Farm" onClose={onClose}>
-            <p>rows</p>
-          </Sheet>
-        </OpenedFromPanel.Provider>,
-      ),
-    );
-    expect(host.querySelectorAll('button[aria-label="Close"]')).toHaveLength(1);
-    act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
+    act(() => closes[1]!.click());
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 

@@ -1123,22 +1123,6 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   line-height: var(--app-leading-title);
   color: var(--app-ink);
 }
-.app-page-head__back {
-  display: inline-flex;
-  height: var(--app-control);
-  align-items: center;
-  gap: theme(spacing.2);
-  border-radius: var(--app-radius-control);
-  padding: 0 theme(spacing.3);
-  font-family: var(--app-face-strong);
-  font-size: var(--app-text-strong);
-  font-weight: var(--app-weight-strong);
-  color: var(--app-muted);
-}
-.app-page-head__back:is(:hover, [data-state="hover"]) {
-  background: var(--app-hover);
-  color: var(--app-ink);
-}
 .app-page-head__aside {
   margin-left: auto;
 }
@@ -1214,6 +1198,11 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   padding: theme(spacing.4);
   background: rgb(0 0 0 / 0.6);
 }
+/* The layer's dialog takes the keyboard's focus as it opens, so the next Tab reaches its first control: it is no
+   control itself, and draws no ring. */
+.app-scrim [role="dialog"][tabindex="-1"]:focus {
+  outline: none;
+}
 /* On a phone the window rises from the foot, as wide as the screen. */
 .app-scrim--sheet {
   align-items: flex-end;
@@ -1234,9 +1223,12 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   box-shadow: var(--app-shadow-dialog);
   color: var(--app-ink);
 }
+/* A phone's window keeps its head (the drag that closes it) and the home indicator's inset still: its body scrolls
+   between them, so nothing of a long body runs under the indicator. */
 .app-window[data-layout="phone"] {
   width: 100%;
   max-height: 92dvh;
+  overflow-y: hidden;
   border-bottom: 0;
   border-radius: var(--app-radius-panel) var(--app-radius-panel) 0 0;
   padding-bottom: env(safe-area-inset-bottom);
@@ -1296,6 +1288,8 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   padding: theme(spacing.2) theme(spacing.6) theme(spacing.6);
 }
 .app-window[data-layout="phone"] .app-window__body {
+  min-height: 0;
+  overflow-y: auto;
   padding: theme(spacing.2) theme(spacing.5) theme(spacing.5);
 }
 

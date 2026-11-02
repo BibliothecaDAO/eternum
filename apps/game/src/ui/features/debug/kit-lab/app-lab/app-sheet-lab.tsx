@@ -605,7 +605,7 @@ const SettingSection = () => {
   return (
     <Element
       name="Setting and switch"
-      rule="A setting: its icon, its name, what it holds, then its control: a switch, or a chevron that opens it."
+      rule="A setting: its icon, its name, what it holds, then its control: a switch; a row that opens is pressed anywhere along it, with no arrow."
       sheet={
         <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
           <AppSetting icon="person" name="Name" value="Maelis" onClick={() => undefined} />
@@ -683,8 +683,8 @@ const PortraitSection = () => (
 const PageHeadSection = () => (
   <Element
     name="Page head"
-    rule="Back to where the page came from (Esc on a desktop), its title, and what it does at its end."
-    sheet={<AppPageHead title="Settings" back="#" aside={<AppChip>Signed in with Discord</AppChip>} />}
+    rule="The page's title and what it does at its end. No Back: the places in the bar are the way out."
+    sheet={<AppPageHead title="Settings" aside={<AppChip>Signed in with Discord</AppChip>} />}
   />
 );
 

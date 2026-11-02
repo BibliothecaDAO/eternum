@@ -7,8 +7,8 @@ import { AppButton } from "@/ui/design-system/kit/app-elements";
 
 import { useDesktopKeys } from "./desktop-keys";
 
-const Page = ({ back }: { back?: string }) => {
-  useDesktopKeys({ back });
+const Page = () => {
+  useDesktopKeys();
   const { pathname } = useLocation();
   const navigate = useNavigate();
   return (
@@ -29,7 +29,7 @@ afterEach(async () => {
   document.body.replaceChildren();
 });
 
-const mount = async (path: string, back?: string) => {
+const mount = async (path: string) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const container = document.createElement("div");
   document.body.append(container);
@@ -38,7 +38,7 @@ const mount = async (path: string, back?: string) => {
     root.render(
       <MemoryRouter initialEntries={[path]}>
         <Routes>
-          <Route path="*" element={<Page back={back} />} />
+          <Route path="*" element={<Page />} />
         </Routes>
       </MemoryRouter>,
     ),
@@ -53,24 +53,23 @@ const mount = async (path: string, back?: string) => {
   };
 };
 
-it("leads Back with Esc, and opens nothing with a number (no key is shown beside a place)", async () => {
-  const page = await mount("/blitz/x", "/blitz");
+it("leads nowhere with Esc on a page, which has no Back, nor with a number (no key is shown beside a place)", async () => {
+  const page = await mount("/blitz/x");
   await page.press("2");
-  expect(page.where()).toBe("/blitz/x");
   await page.press("Escape");
-  expect(page.where()).toBe("/blitz");
+  expect(page.where()).toBe("/blitz/x");
 });
 
-it("leaves Esc to an open sheet and keys typed in a field to the field", async () => {
-  const page = await mount("/blitz/x", "/blitz");
+it("leaves Enter to an open sheet and keys typed in a field to the field", async () => {
+  const page = await mount("/");
   const sheet = document.createElement("div");
   sheet.setAttribute("role", "dialog");
   document.body.append(sheet);
-  await page.press("Escape");
-  expect(page.where()).toBe("/blitz/x");
+  await page.press("Enter");
+  expect(page.where()).toBe("/");
   sheet.remove();
-  await page.press("Escape", page.field());
-  expect(page.where()).toBe("/blitz/x");
+  await page.press("Enter", page.field());
+  expect(page.where()).toBe("/");
 });
 
 it("takes the screen's step with Enter, unless another control holds the focus", async () => {

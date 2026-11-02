@@ -63,7 +63,7 @@ export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRo
       <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         {conversation ? (
           // Keyed by its thread: each conversation opened draws its own list, on its latest message.
-          <DirectMessagesPanel key={conversation} threadId={conversation} onBack={actions.showMessages} />
+          <DirectMessagesPanel key={conversation} threadId={conversation} />
         ) : view.kind !== "room" ? (
           <MessagesList />
         ) : (

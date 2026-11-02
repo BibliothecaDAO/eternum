@@ -227,15 +227,7 @@ const DevconFrame = ({ notice, foot, children }: { notice?: ReactNode; foot: Rea
   const phone = useLayout() === "phone";
   const verb = <div className="flex justify-center">{foot}</div>;
   return (
-    <PageFrame
-      back="/"
-      title={DEVCON_NAME}
-      painting="frontier-mist"
-      stage
-      tabs={false}
-      notice={notice}
-      foot={phone ? verb : undefined}
-    >
+    <PageFrame title={DEVCON_NAME} painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
       <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
         {children}
         {!phone && verb}

@@ -62,12 +62,4 @@ const MenuRow = ({
   icon: keyof typeof MENU_WORDS;
   badge?: ReactNode;
   onClick: () => void;
-}) => (
-  <HudRow
-    lead={<SemanticIcon name={icon} size={22} />}
-    title={MENU_WORDS[icon]}
-    trail={badge}
-    opens
-    onClick={onClick}
-  />
-);
+}) => <HudRow lead={<SemanticIcon name={icon} size={22} />} title={MENU_WORDS[icon]} trail={badge} onClick={onClick} />;

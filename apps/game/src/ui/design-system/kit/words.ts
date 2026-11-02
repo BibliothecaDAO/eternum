@@ -568,7 +568,6 @@ export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
 export const DAY_TOTALS_UNKNOWN = "This day's totals are unknown";
-export const BACK = "Back";
 
 /** Looking at another realm, and stopping. */
 export const VISIT = "Visit";

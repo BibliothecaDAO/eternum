@@ -1,5 +1,5 @@
 import { reloadBuildOrders, saveBuildOrders, useBuildOrderAccount, useBuildOrders } from "@/hooks/use-build-orders";
-import { Icon, type IconMeaning } from "@/ui/design-system/icon";
+import { Icon } from "@/ui/design-system/icon";
 import { buildOrderGoalIcon } from "@/ui/features/build-orders/build-order-icons";
 import {
   AppButton,
@@ -11,7 +11,7 @@ import {
   AppRow,
   AppTabs,
 } from "@/ui/design-system/kit/app-elements";
-import { BACK, BUILD_ORDER_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
+import { BUILD_ORDER_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 import {
   BUILD_ORDER_GOAL_GROUPS,
   BUILD_ORDER_LIMITS,
@@ -26,76 +26,86 @@ import {
   type BuildOrderGoal,
 } from "@bibliothecadao/eternum/automation";
 import { REALM_LEVELS } from "@bibliothecadao/types";
-import { useRef, useState, type ReactNode } from "react";
-import { useLocation, useNavigate, useSearchParams } from "react-router-dom";
+import { createContext, useContext, useMemo, useRef, useState, type ReactNode } from "react";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
+import { ShellWindow } from "../frame/shell-window";
 import { Loading } from "../loading";
 import { addStep, canAdd, moveStep, removeStep, setCount, stepsOfRank } from "./order-edits";
 
 /**
- * What the page shows besides the list, held in its address so Back leaves an editor for the list: an order being
- * edited (`?edit=<id>`, or `new` with its draft in the navigation's state), an order being pasted (`?paste`), or
- * nothing.
+ * What the page shows over the list: an order being edited (a saved one by its id, or a new draft), an order being
+ * pasted, or nothing. It is the page's own state, never its address: the sheet it opens in owns the one history entry a
+ * sub-flow takes, so the system back closes it once and then leaves the page (review-no-back-1, P2-1). Each opening is
+ * numbered, so a new draft starts fresh each time while the account's orders being read again keeps it as typed.
  */
-type View = { kind: "list" } | { kind: "edit"; id: string | null; draft: BuildOrder | undefined } | { kind: "paste" };
+type View =
+  | { kind: "list" }
+  | { kind: "edit"; id: string | null; draft: BuildOrder | undefined; opening: number }
+  | { kind: "paste"; opening: number };
 
-const useView = (): View => {
-  const [params] = useSearchParams();
-  const draft = (useLocation().state as { draft?: BuildOrder } | null)?.draft;
-  const edit = params.get("edit");
-  if (edit !== null) return { kind: "edit", id: edit === "new" ? null : edit, draft };
-  return params.has("paste") ? { kind: "paste" } : { kind: "list" };
+/** What opens a view over the list, or closes it: the page's own, given to its rows and buttons. */
+type Opener = {
+  list: () => void;
+  edit: (id: string) => void;
+  draft: (draft: BuildOrder) => void;
+  paste: () => void;
 };
 
-/** The list: the page's own address, its query cleared. */
-const LIST = { search: "" };
+const OpenerContext = createContext<Opener | null>(null);
 
-/**
- * Opens a view by the address's query alone, so the page keeps whatever path it is served at (the app's, the lab's): a
- * draft travels in the navigation's state.
- */
-const useOpen = () => {
-  const navigate = useNavigate();
-  return {
-    list: () => navigate(LIST),
-    edit: (id: string) => navigate({ search: `?edit=${encodeURIComponent(id)}` }),
-    draft: (draft: BuildOrder) => navigate({ search: "?edit=new" }, { state: { draft } }),
-    paste: () => navigate({ search: "?paste" }),
-  };
+const useOpen = (): Opener => {
+  const open = useContext(OpenerContext);
+  if (!open) throw new Error("A Build orders control stands outside its page");
+  return open;
+};
+
+/** The view over the list and what opens one, each opening numbered. */
+const useViewState = (): [View, Opener] => {
+  const [view, setView] = useState<View>({ kind: "list" });
+  const openings = useRef(0);
+  const open = useMemo<Opener>(
+    () => ({
+      list: () => setView({ kind: "list" }),
+      edit: (id) => setView({ kind: "edit", id, draft: undefined, opening: ++openings.current }),
+      draft: (draft) => setView({ kind: "edit", id: null, draft, opening: ++openings.current }),
+      paste: () => setView({ kind: "paste", opening: ++openings.current }),
+    }),
+    [],
+  );
+  return [view, open];
 };
 
 /**
  * Build orders (the owner's pick, B: reached from Play's Blitz column): the orders saved on the player's account and the
  * one their games follow, an order made from step cards rank by rank, copied as JSON or pasted from it, and a prompt
  * for an AI to help write one. An order has no times: in a game, its next step shows once the realm can take it. The
- * desktop keeps the list at the left and the open order at the right; a phone shows one at a time.
+ * desktop keeps the list at the left and the followed order at the right; a phone shows the list. An order opened or
+ * pasted stands in the app's one sheet over the list (the owner's pick A, 2 November 2026: no Back).
  */
 export const BuildOrdersPage = () => {
   useBuildOrderAccount();
-  const view = useView();
+  const [view, open] = useViewState();
   const desktop = useLayout() === "desktop";
   const signIn = useSignInNotice();
-  const open = view.kind === "list" ? <FollowedOrder /> : <OpenView view={view} />;
-  if (desktop)
-    return (
-      <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn}>
-        <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
-          <div className="flex flex-col gap-4">
-            <OrderList />
-            <ListActions />
+  return (
+    <OpenerContext.Provider value={open}>
+      <PageFrame title={BUILD_ORDER_WORDS.page} notice={signIn} foot={desktop ? undefined : <ListActions />}>
+        {desktop ? (
+          <div className="grid grid-cols-[theme(width.rail)_minmax(0,1fr)] items-start gap-6">
+            <div className="flex flex-col gap-4">
+              <OrderList />
+              <ListActions />
+            </div>
+            <FollowedOrder />
           </div>
-          {open}
-        </div>
+        ) : (
+          <OrderList />
+        )}
+        {view.kind !== "list" && <OpenView view={view} />}
       </PageFrame>
-    );
-  return view.kind === "list" ? (
-    <PageFrame back="/" title={BUILD_ORDER_WORDS.page} notice={signIn} foot={<ListActions />}>
-      <OrderList />
-    </PageFrame>
-  ) : (
-    open
+    </OpenerContext.Provider>
   );
 };
 
@@ -104,56 +114,39 @@ const useSignInNotice = (): ReactNode =>
   useBuildOrders().status === "signed-out" ? <AppNotice line={BUILD_ORDER_WORDS.signInToSave} /> : undefined;
 
 /**
- * An open order or paste: on a desktop, a panel beside the list ending on Back and its step; on a phone, the page
- * itself, its step in the page's foot and the page's Back to the list.
+ * An open order or paste in the app's one sheet over the list, ending on its step; closing it returns to the list. A
+ * signed-out player reads why nothing saves at its top, where Save is, not only on the page under it.
  */
 const ViewFrame = ({
   title,
-  icon,
   step,
   children,
 }: {
   title: string;
-  icon: IconMeaning;
   /** The view's one verb: Save, Read it. */
   step: ReactNode;
   children: ReactNode;
 }) => {
   const open = useOpen();
-  const phone = useLayout() === "phone";
   const signIn = useSignInNotice();
-  const panel = (
-    <AppPanel title={title} icon={icon}>
+  return (
+    <ShellWindow title={title} onClose={open.list}>
       <div className="flex flex-col gap-4">
+        {signIn}
         {children}
-        {!phone && (
-          <div className="flex flex-wrap justify-end gap-2">
-            <AppButton kind="secondary" icon="arrow-left" onClick={open.list}>
-              {BACK}
-            </AppButton>
-            {step}
-          </div>
-        )}
+        <div className="flex flex-wrap justify-end gap-2">{step}</div>
       </div>
-    </AppPanel>
-  );
-  return phone ? (
-    <PageFrame back={LIST} title={BUILD_ORDER_WORDS.page} notice={signIn} foot={step}>
-      {panel}
-    </PageFrame>
-  ) : (
-    panel
+    </ShellWindow>
   );
 };
 
 /**
- * The open view. A new draft is keyed by the navigation that opened it, so each New order, Copy to edit or pasted order
- * starts the draft it names, while the account's orders being read again keeps the draft as typed.
+ * The open view. A new draft is keyed by its opening, so each New order, Copy to edit or pasted order starts the draft
+ * it names, while the account's orders being read again keeps the draft as typed.
  */
 const OpenView = ({ view }: { view: Exclude<View, { kind: "list" }> }) => {
-  const opened = useLocation().key;
   if (view.kind === "paste") return <PasteOrder />;
-  if (view.id === null) return <OrderEditor key={opened} id={null} order={view.draft ?? newOrder()} />;
+  if (view.id === null) return <OrderEditor key={view.opening} id={null} order={view.draft ?? newOrder()} />;
   return <SavedOrder key={view.id} id={view.id} />;
 };
 
@@ -347,7 +340,6 @@ const OrderEditor = ({ id: savedId, order: start }: { id: string | null; order: 
   return (
     <ViewFrame
       title={order.name || BUILD_ORDER_WORDS.newOrderName}
-      icon="build"
       step={
         <AppButton kind="primary" disabled={problem !== null || !book || busy} onClick={save}>
           {BUILD_ORDER_WORDS.save}
@@ -527,7 +519,6 @@ const PasteOrder = () => {
   return (
     <ViewFrame
       title={BUILD_ORDER_WORDS.pasteOrder}
-      icon="copy"
       step={
         <AppButton kind="primary" disabled={text.trim() === ""} onClick={readIt}>
           {BUILD_ORDER_WORDS.readIt}

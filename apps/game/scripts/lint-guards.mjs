@@ -10,6 +10,7 @@ import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 import { CATALOG_RULE, catalogGuardConfigs, planCatalogBaseline } from "./catalog-guards.mjs";
 import { nameGuardConfigs } from "./name-guards.mjs";
+import { noBackGuardConfigs } from "./no-back-guards.mjs";
 
 const REPO = resolve(dirname(fileURLToPath(import.meta.url)), "../../..");
 const SOURCES = ["apps/game/src/**/*.{ts,tsx}", "packages/*/src/**/*.{ts,tsx}"];
@@ -218,6 +219,8 @@ const eslint = new ESLint({
     },
     // Only the imperative consumers reach the imperative name readers, by resolved module (name-guards.mjs).
     ...nameGuardConfigs,
+    // No Back link or row arrow on any screen (no-back-guards.mjs).
+    ...noBackGuardConfigs,
     // One source per fact: no list or partial map of a catalog's members outside its modules (catalog-guards.mjs).
     ...catalogGuardConfigs,
   ],

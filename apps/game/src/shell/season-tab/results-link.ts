@@ -3,7 +3,7 @@ import type { GameRef } from "@bibliothecadao/eternum/shard";
 /**
  * A finished game's Results page, named by the game's own identity: /results/<chain>-<game>. Every way to a game's
  * results (the finished pill, its doorway, Play's card, a history row, Share) goes through here. A list opens it with
- * `openedFrom`, and the page then offers Back to the list and no Continue (spec 08).
+ * `openedFrom`, and the page then offers no Continue: its place, lit, leads back to the list (spec 08).
  */
 export const resultsHref = (game: GameRef) => `/results/${game.chainId}-${game.gameId}`;
 

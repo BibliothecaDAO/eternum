@@ -97,7 +97,7 @@ it("shows the linked payout wallet by its address, changed only with a code, and
     const linkWallet = payoutRow(unlinked.container).querySelector<HTMLElement>(".app-setting__value")!;
     expect(linkWallet.textContent).toBe("Link wallet");
     await act(async () => linkWallet.click());
-    expect(document.querySelector('[role="region"][aria-label="Payout wallet"]')?.textContent).toContain(
+    expect(document.querySelector('[role="dialog"][aria-label="Payout wallet"]')?.textContent).toContain(
       "I have a wallet",
     );
   } finally {
@@ -105,7 +105,7 @@ it("shows the linked payout wallet by its address, changed only with a code, and
   }
 });
 
-it("offers Claim name only once the name differs from the one held (qa-app-1 P3-6)", async () => {
+it("edits the name in its own row, offering Claim name only once it differs (qa-app-1 P3-6), Escape putting it back", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
   const container = document.createElement("div");
@@ -127,6 +127,11 @@ it("offers Claim name only once the name differs from the one held (qa-app-1 P3-
       )!;
     const field = document.querySelector<HTMLInputElement>("form input")!;
     expect(field.value).toBe("Maelis");
+    // The field takes the focus the row held (review-no-back-1, P2-2).
+    expect(document.activeElement).toBe(field);
+    // The field stands in the name's own row, in the Account panel: nothing opens under the rows or over the page.
+    expect(field.closest(".app-row")?.closest(".app-panel")).not.toBeNull();
+    expect(document.querySelector('[role="dialog"], [role="region"]')).toBeNull();
     expect(claim().disabled).toBe(true);
     // A new name to claim: the step lights.
     const type = (value: string) =>
@@ -139,6 +144,75 @@ it("offers Claim name only once the name differs from the one held (qa-app-1 P3-
     // Back to the name held: nothing to claim again.
     await type("Maelis");
     expect(claim().disabled).toBe(true);
+    // Escape puts the row back as it was, and gives it back the focus.
+    await act(async () => void field.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+    expect(container.querySelector("form")).toBeNull();
+    expect(nameRowNow(container)).not.toBeNull();
+    expect(document.activeElement).toBe(nameRowNow(container));
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+/** The Name row as it stands now: the edit replaces it, and closing draws it anew. */
+const nameRowNow = (container: HTMLElement) =>
+  [...container.querySelectorAll<HTMLElement>(".app-row")].find((row) => row.textContent === "NameMaelis") ?? null;
+
+it("puts the name's row back on a press outside it, as a phone without Escape does", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    await act(async () => nameRowNow(container)!.click());
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    // A press in the row (its field, Claim name) keeps it open.
+    await act(async () => void field.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(container.querySelector("form")).not.toBeNull();
+    // A press on the page beside it puts it back.
+    await act(async () => void document.body.dispatchEvent(new MouseEvent("pointerdown", { bubbles: true })));
+    expect(container.querySelector("form")).toBeNull();
+    expect(nameRowNow(container)).not.toBeNull();
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
+  }
+});
+
+it("gives the Name row the focus back once a new name is claimed (review-no-back-1, P2-2)", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const updateUser = vi.spyOn(identityClient, "updateUser").mockResolvedValue(undefined as never);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    await act(async () => nameRowNow(container)!.click());
+    const field = document.querySelector<HTMLInputElement>("form input")!;
+    await act(async () => {
+      Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(field, "Maelis2");
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+    await act(async () => field.form!.requestSubmit());
+    expect(updateUser).toHaveBeenCalledWith({ name: "Maelis2" });
+    expect(container.querySelector("form")).toBeNull();
+    expect(document.activeElement).toBe(nameRowNow(container));
   } finally {
     await act(async () => root.unmount());
     container.remove();
@@ -189,5 +263,36 @@ it("closes Sign out's question on the system back without leaving Settings, and 
     await act(async () => root.unmount());
     container.remove();
     window.history.replaceState({}, "", previous);
+  }
+});
+
+it("opens the portrait in the app's one sheet, its row carrying no arrow, and closes it on its cross", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  vi.spyOn(identityClient, "listSignInProviders").mockResolvedValue([]);
+  const container = document.createElement("div");
+  document.body.append(container);
+  const root = createRoot(container);
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <AccountCard session={session} />
+      </MemoryRouter>,
+    ),
+  );
+  try {
+    const row = [...container.querySelectorAll<HTMLElement>(".app-row")].find(
+      (each) => each.textContent === "Portrait",
+    )!;
+    expect(row.querySelector('[data-icon="arrow-right"]')).toBeNull();
+    await act(async () => row.click());
+    const sheet = () => document.querySelector<HTMLElement>('[role="dialog"][aria-label="Portrait"]');
+    expect(sheet()?.querySelectorAll('[role="radio"]').length).toBeGreaterThan(0);
+    await act(async () => sheet()!.querySelector<HTMLButtonElement>('button[aria-label="Close"]')!.click());
+    expect(sheet()).toBeNull();
+    // The sheet's own history entry goes back a moment later: let it, so it reaches no other test.
+    await settle();
+  } finally {
+    await act(async () => root.unmount());
+    container.remove();
   }
 });

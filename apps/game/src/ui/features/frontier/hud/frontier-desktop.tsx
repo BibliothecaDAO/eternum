@@ -1,7 +1,6 @@
 import { HUD_COLUMN_MARK } from "@/three/utils/labels/hud-clearance";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudBubble, SheetDock } from "@/ui/design-system/kit/hud-elements";
-import { OpenedFromPanel } from "@/ui/design-system/kit/opened-from-panel";
 import { EVENTS_WORDS, REALM, RESEARCH, SEASON } from "@/ui/design-system/kit/words";
 import { FeedToasts, useUnreadImportantCount } from "@/ui/features/event-feed/quick-feed";
 import { HudChatWindow } from "@/ui/features/world/containers/hud-chat-window";
@@ -99,7 +98,7 @@ const FrontierRail = ({
         <FeedToasts />
       </div>
       <div ref={onPanel} data-rail-panel className="flex min-h-0 flex-1 flex-col gap-2 empty:hidden">
-        {page && <OpenedFromPanel.Provider value>{page}</OpenedFromPanel.Provider>}
+        {page}
       </div>
       <div className={cn("mt-auto flex shrink-0 flex-col justify-end", chatOpen && "min-h-hud-chat-least")}>
         <HudChatWindow open={chatOpen} onOpenChange={setChatOpen} />

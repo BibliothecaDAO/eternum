@@ -61,6 +61,12 @@ const useConnect = (): (() => void) | undefined => {
   return status !== "loading" && !session ? () => requestSignIn() : undefined;
 };
 
+/** Whether the page is one of the four places itself, which its phone head names by the lockup, not a title. */
+export const useIsPlace = (): boolean => {
+  const pathname = usePageAddress();
+  return TABS.some((tab) => tab.to === pathname);
+};
+
 const useActiveTab = (): string | undefined => {
   const pathname = usePageAddress();
   return TABS.find((tab) => tab.matches.some((match) => matchesPath(pathname, match)))?.to;
@@ -161,10 +167,10 @@ export const TabBar = () => {
 /**
  * The desktop's bar (the app sheet's AppTopBar): the lockup as the app's mark, then Play, Season and Chat with their
  * icons, the page's notice if it has one, and the player at the bar's far end (their name and portrait once
- * signed in, else Connect). It stays quiet (no gold fill) so the page's one gold step keeps the weight; a full-screen step
- * keeps the lockup and the notice alone.
+ * signed in, else Connect). It stays quiet (no gold fill) so the page's one gold step keeps the weight. Every page has
+ * it: the places are the way out of any page (no page has Back).
  */
-export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactNode }) => {
+export const DesktopBar = ({ notice }: { notice: ReactNode }) => {
   const active = useActiveTab();
   const player = useSignedInPlayer();
   const connect = useConnect();
@@ -180,26 +186,18 @@ export const DesktopBar = ({ places, notice }: { places: boolean; notice: ReactN
   return (
     <AppTopBar
       mark={<Lockup />}
-      places={
-        places
-          ? TABS.filter((tab) => tab !== YOU_TAB).map((tab) =>
-              // Chat opens over the page, as in a game; on a page that draws it itself, Chat is the place it is
-              // (lit on /chat), never a second chat over it.
-              tab === CHAT_TAB && !chatOnPage
-                ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
-                : placeOf(tab),
-            )
-          : []
-      }
-      player={
-        places
-          ? {
-              ...placeOf(YOU_TAB),
-              ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),
-              ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
-            }
-          : null
-      }
+      places={TABS.filter((tab) => tab !== YOU_TAB).map((tab) =>
+        // Chat opens over the page, as in a game; on a page that draws it itself, Chat is the place it is (lit on
+        // /chat), never a second chat over it.
+        tab === CHAT_TAB && !chatOnPage
+          ? { ...placeOf(tab), onSelect: pane.toggle, current: pane.open, count: unread }
+          : placeOf(tab),
+      )}
+      player={{
+        ...placeOf(YOU_TAB),
+        ...(connect && { label: WORDS.connect, onSelect: connect, action: "connect" as const }),
+        ...(player && { label: player.name, portrait: player.url, place: YOU_TAB.word }),
+      }}
       notice={notice}
     />
   );

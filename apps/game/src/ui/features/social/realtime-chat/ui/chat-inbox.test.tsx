@@ -175,7 +175,8 @@ const openConversation = async () => {
   await press("Messages");
   await act(async () => rows()[0]!.click());
 };
-const back = () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Back"]')!.click());
+/** Leaves the conversation as a player does: the lit Messages tab, pressed again, shows the list (there is no Back). */
+const back = () => press("Messages");
 const lineIds = () =>
   [...host.querySelectorAll("li[data-message-id]")].map((row) => row.getAttribute("data-message-id"));
 

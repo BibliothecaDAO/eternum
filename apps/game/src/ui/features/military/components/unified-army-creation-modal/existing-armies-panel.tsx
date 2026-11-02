@@ -155,7 +155,7 @@ const ExistingArmyRow = ({ army, structureId }: { army: ArmyInfo; structureId: I
             verb={deleting ? "Disbanding…" : "Disband"}
             tone="bad"
             onConfirm={handleConfirmDelete}
-            onBack={close}
+            onCancel={close}
           >
             <span className="text-hud-body text-hud-muted">Its troops are lost.</span>
           </HudConfirm>

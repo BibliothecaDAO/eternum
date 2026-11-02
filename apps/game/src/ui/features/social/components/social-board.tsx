@@ -1,3 +1,4 @@
+import { useLayout } from "@/shell/frame/layout";
 import { useGameModeConfig, useResolvedWorldGameMode } from "@/config/game-modes/use-game-mode-config";
 import { useFactView } from "@/hooks/use-fact-view";
 import { usePlayerNames, usePlayers } from "@/hooks/use-player-profile";
@@ -88,6 +89,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
   const setPlayersByRank = useSocialStore((state) => state.setPlayersByRank);
   const setPlayerInfo = useSocialStore((state) => state.setPlayerInfo);
 
+  const phone = useLayout() === "phone";
   const mode = useGameModeConfig();
   const resolvedWorldMode = useResolvedWorldGameMode();
   const isBlitzMode = resolvedWorldMode === "blitz";
@@ -133,17 +135,20 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     );
   }, [players, account.address, playersByRank, playerStructureCountsMap, store, setPlayerInfo, names]);
 
+  // The chosen tribe pressed again shows its members once more (its player's card has no Back), else folds them.
   const viewGuildMembers = useCallback(
     (guildEntityId: ContractAddress) => {
-      if (selectedGuild === guildEntityId) {
+      if (selectedGuild === guildEntityId && selectedPlayer !== 0n) {
         setSelectedPlayer(0n);
+        setIsExpanded(true);
+      } else if (selectedGuild === guildEntityId) {
         setIsExpanded(!isExpanded);
       } else {
         setSelectedGuild(guildEntityId);
         setIsExpanded(true);
       }
     },
-    [selectedGuild, isExpanded, setSelectedGuild, setSelectedPlayer, setIsExpanded],
+    [selectedGuild, selectedPlayer, isExpanded, setSelectedGuild, setSelectedPlayer, setIsExpanded],
   );
 
   const viewPlayerInfo = useCallback(
@@ -174,7 +179,7 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
         key: "Tribes",
         component: <Guilds players={playerInfo} viewGuildMembers={viewGuildMembers} />,
         expandedContent: selectedPlayer ? (
-          <PlayerId selectedPlayer={selectedPlayer} selectedGuild={selectedGuild} back={() => viewPlayerInfo(0n)} />
+          <PlayerId selectedPlayer={selectedPlayer} />
         ) : (
           <GuildMembers players={playerInfo} viewPlayerInfo={viewPlayerInfo} setIsExpanded={setIsExpanded} />
         ),
@@ -194,7 +199,6 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     focusOwnPlayer,
     showGuildsTab,
     isEternumMode,
-    selectedGuild,
     selectedPlayer,
     playerInfo,
     viewPlayerInfo,
@@ -210,29 +214,34 @@ const SocialBoard = ({ focusOwnPlayer = false }: { focusOwnPlayer?: boolean }) =
     }
   }, [activeTabIndex, selectedTab, setSelectedTab, tabsLength]);
 
+  const expanded = isExpanded ? (tabs[activeTabIndex]?.expandedContent ?? null) : null;
+  // A tab pressed opens its list; the lit one pressed again steps back one level, as chat's lit Messages tab does (a
+  // detail has no Back): from a tribe member's card to the tribe's members, else from the detail to the list.
+  const pressTab = (key: string) => {
+    const index = tabs.findIndex((tab) => tab.key === key);
+    if (index === activeTabIndex && key === "Tribes" && selectedGuild !== 0n && selectedPlayer !== 0n) {
+      setSelectedPlayer(0n);
+      return;
+    }
+    setSelectedTab(index);
+    setIsExpanded(false);
+    setSelectedPlayer(0n);
+  };
+  // A phone's window has no room beside the list: the detail stands in the list's place, under the tabs. The tabs show
+  // in every mode, a lone Players too: the lit tab is the detail's way back.
+  const body = phone && expanded ? expanded : tabs[activeTabIndex].component;
+
   return (
     <div className="flex max-w-full">
-      <div className="min-w-0 flex-1">
-        {tabsLength === 1 ? (
-          tabs[0].component
-        ) : (
-          <div className="flex h-full flex-col gap-2">
-            <HudTabs
-              tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
-              value={tabs[activeTabIndex].key}
-              onChange={(key) => {
-                setSelectedTab(tabs.findIndex((tab) => tab.key === key));
-                setIsExpanded(false);
-                setSelectedPlayer(0n);
-              }}
-            />
-            <div className="flex-1 overflow-hidden">{tabs[activeTabIndex].component}</div>
-          </div>
-        )}
+      <div className="flex min-w-0 flex-1 flex-col gap-2">
+        <HudTabs
+          tabs={tabs.map((tab) => ({ key: tab.key, label: tab.key }))}
+          value={tabs[activeTabIndex].key}
+          onChange={pressTab}
+        />
+        <div className="flex-1 overflow-hidden">{body}</div>
       </div>
-      {isExpanded && (
-        <div className="w-96 shrink-0 border-l border-hud-divider">{tabs[activeTabIndex]?.expandedContent ?? null}</div>
-      )}
+      {!phone && expanded && <div className="w-96 shrink-0 border-l border-hud-divider">{expanded}</div>}
     </div>
   );
 };

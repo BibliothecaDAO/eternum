@@ -72,8 +72,9 @@ const END = {
   // A board is shown when its panel holds its first place, or says it has no one on it yet.
   frontierBoard: `location.pathname === "/season" && ${boardShown("Frontier", `[...panel.querySelectorAll(".app-board__row .app-rank")].some((rank) => rank.innerText.trim() === "1")`)}`,
   blitzBoard: `location.pathname === "/season" && ${boardShown("Blitz", `panel.querySelector("ol li")`)}`,
-  player: `location.pathname.startsWith("/p/") && document.querySelector('[data-role="back"]')`,
-  results: `location.pathname.startsWith("/results/") && document.querySelector('[data-role="back"]')`,
+  // A page opened from a list has no Back: the place that leads back to the list is lit.
+  player: `location.pathname.startsWith("/p/") && ${placeLit("Season")} && document.querySelector('[data-band="body"] .app-panel') !== null`,
+  results: `location.pathname.startsWith("/results/") && (${placeLit("You")} || ${placeLit("Connect")}) && document.querySelector("h1")?.innerText.trim() === "Results"`,
   important: `document.querySelector('[role="radio"][aria-checked="true"]')?.innerText.trim() === "Important"`,
   musicOn: `document.querySelector('[role="switch"][aria-label="Music"]')?.getAttribute("aria-checked") === "true"`,
   signOutAsked: `[...document.querySelectorAll("[data-kit-sheet]")].some((sheet) => sheet.innerText.includes("Sign out?"))`,

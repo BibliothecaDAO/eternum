@@ -8,9 +8,12 @@
  * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards|phone] [--state <signed-in.json>]
  *
  * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES).
+ *
+ * `phone` plays every surface that had a Back link or a row arrow as a phone: touch, a safe area, drags, the system back
+ * and the on-screen keyboard (prove-app-phone.mjs).
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *
@@ -23,6 +26,7 @@ import { readFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { phoneRecords } from "./prove-app-phone.mjs";
 import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
 const VIEWPORT = ["1920", "1080"];
@@ -32,7 +36,7 @@ const SETTLE_MS = 2_000;
 
 /**
  * The pages on the app sheet, each over the fixture state it is checked in, with the place lit in the bar while it is
- * open (none on a full-screen step: the lobby).
+ * open.
  */
 const SHEET_PAGES = {
   // Each mode's card, the lead and each age's column, live or idle (nothing to do now). The lab's Eternum opens in a
@@ -48,9 +52,9 @@ const SHEET_PAGES = {
   "play-seated": { path: "blitz-seat", place: "Play" },
   // The same with the slot's entry closing hours away: the longer clock QA met on dev, wrapping on a phone.
   "play-seated-late-slot": { path: "blitz-seat-late-slot", place: "Play" },
-  lobby: { path: "entry-choose/blitz/slot-blitz-1630", place: null },
+  lobby: { path: "entry-choose/blitz/slot-blitz-1630", place: "Play" },
   // A launched game's lobby: its roster, the player's own seat ringed, and Enter.
-  "lobby-game": { path: "blitz-seat/blitz/game-0x5245414c4d53-7", place: null },
+  "lobby-game": { path: "blitz-seat/blitz/game-0x5245414c4d53-7", place: "Play" },
   season: { path: "season-running/season", place: "Season" },
   results: { path: "reward-sealed/results/0x5245414c4d53-7", place: "You" },
   "results-opened": { path: "reward-lords/results/0x5245414c4d53-7", place: "You" },
@@ -182,7 +186,7 @@ const shoot = async (b, baseUrl, out, { name, path, act, more, stills = [] }) =>
 
 const DRAWN = `document.querySelector("[data-layout]") !== null`;
 
-/** The doorway into a game at each of its holds (the app lab's fixtures), a full-screen step with no places. */
+/** The doorway into a game at each of its holds (the app lab's fixtures): the places stand, none of them lit. */
 const DOORWAY_STATES = ["map", "sign-in", "waiting", "preparing", "map-failed", "devices", "watch", "ended"];
 
 const doorwayPages = (desktop) =>
@@ -311,7 +315,6 @@ const sheetPageChecks = (page) => (b) => {
         const row = Math.max(0, ...[...notice.querySelectorAll("button")].map((control) => control.getBoundingClientRect().height));
         return row === 0 || inner <= row + 1;
       })(),
-      places: document.querySelectorAll('[data-band="bar"] [data-role="tab"]').length,
       // The places lit as the page's own, by their word ("You: Maelis" is You), and any place whose word is cut.
       lit: [...document.querySelectorAll('[data-role="tab"][aria-current="page"]')].map((tab) => (tab.getAttribute("aria-label") ?? tab.innerText).split(":")[0].trim()),
       // A word cut short, pushed off the screen, or wrapped onto a second line.
@@ -339,12 +342,12 @@ const sheetPageChecks = (page) => (b) => {
     { check: "every picture loaded", ok: measure.broken.length === 0 },
     { check: "at most one gold verb", ok: measure.goldVerbs <= 1 },
     {
-      check: "a page with the places ends on the footer and its socials' marks; a full-screen step has none",
-      ok: JSON.stringify(measure.socials) === JSON.stringify(place === null ? [] : SOCIALS),
+      check: "the page ends on the footer and its socials' marks",
+      ok: JSON.stringify(measure.socials) === JSON.stringify(SOCIALS),
       measure: measure.socials,
     },
     {
-      check: "its place is the one lit, or a full-screen step lights none",
+      check: "its place is the one lit, or none on a page that belongs to no place (the doorway)",
       ok: JSON.stringify(measure.lit) === JSON.stringify(place === null ? [] : [place]),
     },
     {
@@ -367,10 +370,9 @@ const sheetPageChecks = (page) => (b) => {
       ? [
           ...barChecks(b),
           { check: "stands on its painting", ok: measure.painting },
-          // A full-screen step (the lobby) keeps the mark and the notice alone.
           {
-            check: "the bar ends on the player, or holds no places",
-            ok: measure.places === 0 || (measure.playerRightGap !== null && measure.playerRightGap <= 48),
+            check: "the bar ends on the player",
+            ok: measure.playerRightGap !== null && measure.playerRightGap <= 48,
           },
         ]
       : []),
@@ -1165,6 +1167,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       }
       if (parts.includes("sheet")) records.push(...(await sheetElements(b, baseUrl, out)));
       if (parts.includes("recap")) records.push(...(await recapRecords(b, baseUrl, out)));
+      if (parts.includes("phone")) records.push(...(await phoneRecords(b, baseUrl, out)));
       if (parts.includes("boards")) {
         for (const page of boardPages(true)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...PHONE);
