@@ -291,10 +291,9 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 ### Finish recorded footage
 
 `scripts/studio/cinematic-maker.py` finishes the approved 481-frame, 24 fps trailer. It preserves the recorded 1280×704
-film between a Realms intro and a held final frame with the complete Frontier lockup, one line and the address.
-Landscape adds eight pixels above and below; portrait follows the edit's smooth crop centres. Both exports are H.264. An
-optional picture-length score is trimmed and mastered near −14 LUFS, then muxed as AAC. Short audio is rejected; there
-is no tempo conversion, looping or padding path.
+film between a Realms intro and a held final frame with the complete Frontier lockup, one line and the address. The 16:9
+export adds eight pixels above and below and uses H.264. An optional picture-length score is trimmed and mastered near
+−14 LUFS, then muxed as AAC. Short audio is rejected; there is no tempo conversion, looping or padding path.
 
 Run with Python 3.12 or newer, Pillow, FFmpeg and ffprobe installed:
 
@@ -306,15 +305,14 @@ python apps/game/scripts/studio/cinematic-maker.py \
 
 Add `--score <picture-length-audio>` when the approved score is ready. Without it, the command exports silent picture
 references and records that the score is pending. The edit supplies `introFrames`, `holdFrames`, `lockupFullFrame`,
-`portraitCentres` (source-film seconds and source-pixel centre pairs), `line`, `cta`, and named `reviewFrames` (output
-seconds). At 24 fps, 60 intro frames + 481 film frames + 107 held frames make exactly 27 seconds. The intro holds the
-first parchment frame under the kit's ink Realms mark; the mark fades away during the first second of motion.
-`lockupFullFrame: 576` places the full end card at 24 seconds. Its one-second fade starts at 23 seconds, after the final
-picture has settled into its hold at 22.541667 seconds; the full card remains for three seconds. The command rejects an
-end-card fade that starts before the film has settled.
+`line`, `cta`, and named `reviewFrames` (output seconds). At 24 fps, 60 intro frames + 481 film frames + 107 held frames
+make exactly 27 seconds. The intro holds the first parchment frame under the kit's ink Realms mark; the mark fades away
+during the first second of motion. `lockupFullFrame: 576` places the full end card at 24 seconds. Its one-second fade
+starts at 23 seconds, after the final picture has settled into its hold at 22.541667 seconds; the full card remains for
+three seconds. The command rejects an end-card fade that starts before the film has settled.
 
-The command renders and fully decodes both crops, checks duration, dimensions, codecs and frame count, and leaves review
-stills, the edit, source/brand/output hashes and score provenance. With audio, it also checks −14 LUFS within 0.25 LU
-and true peaks below −1 dBTP. Files replace their destinations only after passing validation. Rerunning uses the same
-inputs and edit; no server, watcher or browser starts. This offline finisher consumes recorded footage; the studio's
-camera recorder remains the entry point for new shots.
+The command renders and fully decodes the landscape film, checks duration, dimensions, codecs and frame count, and
+leaves review stills, the edit, source/brand/output hashes and score provenance. With audio, it also checks −14 LUFS
+within 0.25 LU and true peaks below −1 dBTP. Files replace their destinations only after passing validation. Rerunning
+uses the same inputs and edit; no server, watcher or browser starts. This offline finisher consumes recorded footage;
+the studio's camera recorder remains the entry point for new shots.

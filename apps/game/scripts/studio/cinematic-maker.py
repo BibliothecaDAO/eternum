@@ -11,7 +11,7 @@ from PIL import Image, ImageColor, ImageDraw, ImageFont
 RATE = 48000
 FRAME_COUNT = 481
 FPS = 24
-FORMATS = {"16x9": (1280, 720), "9x16": (1080, 1920)}
+SIZE = (1280, 720)
 REALMS = "01-Logos/Realms/Lettered/realms-lettered-ink.png"
 LOCKUP = "01-Logos/Frontier/Transparent/frontier-lockup.png"
 HEADING = "02-Fonts/IM-Fell-English-SC/IMFellEnglishSC-Regular.ttf"
@@ -92,44 +92,26 @@ def centred_text(image, text, y, font_path, size, colour):
 
 def make_card(kit, size, plan, target):
     width, height = size
-    wide = width > height
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
     ground = ImageColor.getrgb(palette["brand"]["hearth"])
     card = Image.new("RGBA", size, (*ground, 204))
     logo = Image.open(kit / LOCKUP).convert("RGBA")
-    logo_width = 720 if wide else 1020
+    logo_width = 720
     logo = logo.resize((logo_width, round(logo.height * logo_width / logo.width)), Image.Resampling.LANCZOS)
-    card.alpha_composite(logo, ((width - logo_width) // 2, 0 if wide else 180))
-    centred_text(card, plan["line"], 515 if wide else 1010, kit / HEADING,
-                 36 if wide else 44, palette["brand"]["parchment"])
-    centred_text(card, plan["cta"], 585 if wide else 1130, kit / BODY,
-                 30 if wide else 42, palette["games"]["frontier"]["title"])
+    card.alpha_composite(logo, ((width - logo_width) // 2, 0))
+    centred_text(card, plan["line"], 515, kit / HEADING,
+                 36, palette["brand"]["parchment"])
+    centred_text(card, plan["cta"], 585, kit / BODY,
+                 30, palette["games"]["frontier"]["title"])
     card.save(target)
 
 
-def crop_expression(points):
-    expression = str(points[-1][1])
-    for (start, first), (end, last) in reversed(list(zip(points, points[1:]))):
-        u = f"clip((t-{start})/{end-start},0,1)"
-        smooth = f"({first}+({last-first})*({u})*({u})*(3-2*({u})))"
-        expression = f"if(lt(t,{end}),{smooth},{expression})"
-    return expression
-
-
-def framing_filter(size, plan):
-    if size[0] > size[1]:
-        return "pad=1280:720:0:8:color=0x14101D,setsar=1"
-    centre = crop_expression(plan["portraitCentres"])
-    return f"crop=396:704:x='{centre}-198':y=0,scale=1080:1920:flags=lanczos,setsar=1"
-
-
 def make_intro_card(kit, size, target):
-    wide = size[0] > size[1]
     card = Image.new("RGBA", size, (0, 0, 0, 0))
     logo = Image.open(kit / REALMS).convert("RGBA")
-    width = 240 if wide else 400
+    width = 240
     logo = logo.resize((width, round(logo.height * width / logo.width)), Image.Resampling.LANCZOS)
-    position = (330, 220) if wide else ((size[0] - width) // 2, 1380)
+    position = (330, 220)
     card.alpha_composite(logo, position)
     card.save(target)
 
@@ -142,7 +124,7 @@ def render_picture(source, size, plan, folder):
     make_card(plan["kit"], size, plan, folder / "card.png")
     make_intro_card(plan["kit"], size, folder / "intro-card.png")
     graph = (
-        f"[0:v]{framing_filter(size, plan)},"
+        "[0:v]pad=1280:720:0:8:color=0x14101D,setsar=1,"
         f"tpad=start_mode=clone:start={intro_frames}:stop_mode=clone:stop={hold_frames}[held];"
         f"[1:v]format=rgba,fade=t=out:st={intro_seconds}:d=1:alpha=1[intro];"
         "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
@@ -213,16 +195,14 @@ def finish(args):
     if args.score:
         raw = trim_score(args.score, duration, args.evidence)
         score = master_music(raw, duration, args.evidence)
-    exports = []
-    for aspect, size in FORMATS.items():
-        folder = args.evidence / aspect
-        folder.mkdir(exist_ok=True)
-        picture = render_picture(args.source, size, dict(plan, kit=args.kit), folder)
-        capture_checks(picture, plan, folder)
-        target = args.out / f"frontier-trailer-{duration:g}-{aspect}.mp4"
-        export = deliver_film(picture, score, target, duration, size, total_frames)
-        exports.append({"aspect": aspect, **export})
-        print(json.dumps(exports[-1]), flush=True)
+    folder = args.evidence / "16x9"
+    folder.mkdir(exist_ok=True)
+    picture = render_picture(args.source, SIZE, dict(plan, kit=args.kit), folder)
+    capture_checks(picture, plan, folder)
+    target = args.out / f"frontier-trailer-{duration:g}-16x9.mp4"
+    export = deliver_film(picture, score, target, duration, SIZE, total_frames)
+    exports = [{"aspect": "16x9", **export}]
+    print(json.dumps(exports[0]), flush=True)
     result = {"source": str(args.source), "sourceSha256": digest(args.source),
               "edit": plan, "exports": exports, "scoreStatus": "laid in" if score else "awaiting owner score",
               "brand": {name: digest(args.kit / name) for name in [REALMS, LOCKUP, HEADING, BODY, "03-Colors/palette.json"]},
