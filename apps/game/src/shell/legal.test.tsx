@@ -21,9 +21,12 @@ it("names the live game and its guides, and no retired site", () => {
 
 it("states the payout wallet change hold and where unclaimed LORDS go, as the co-signer and the ledger do", () => {
   const terms = textOf(<TermsPage />);
+  expect(terms).toContain("Each payout is made only once its checks pass, so any payout may wait or be refused.");
+  expect(terms).toContain("The first payout wallet seen for your account has no wallet change wait.");
   expect(terms).toContain(
-    "After you replace it, or unlink it and link another, the first Frontier payout to the new wallet waits 24 hours",
+    "its first Frontier payout waits 24 hours, counted from when that payout is first requested, not from when the wallet is linked.",
   );
+  expect(terms).not.toMatch(/paid at once/i);
   expect(terms).toContain(
     "If no wallet is linked by a Frontier season's claim deadline, its unpaid $LORDS return to the treasury.",
   );

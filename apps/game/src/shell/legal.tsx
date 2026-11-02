@@ -204,10 +204,12 @@ const TERMS: LegalSection[] = [
           </li>
         </ul>
         <p>
-          <strong>Payouts.</strong> {FRONTIER} payouts go to the payout wallet you link. Your first wallet is paid at
-          once. After you replace it, or unlink it and link another, the first {FRONTIER} payout to the new wallet waits{" "}
-          {WALLET_CHANGE_HOURS} hours, so you have time to notice a change you did not make. If no wallet is linked by a{" "}
-          {FRONTIER} season's claim deadline, its unpaid $LORDS return to the treasury.
+          <strong>Payouts.</strong> {FRONTIER} payouts go to the payout wallet you link. Each payout is made only once
+          its checks pass, so any payout may wait or be refused. The first payout wallet seen for your account has no
+          wallet change wait. A wallet that replaces it, including one linked after unlinking, does: its first{" "}
+          {FRONTIER} payout waits {WALLET_CHANGE_HOURS} hours, counted from when that payout is first requested, not
+          from when the wallet is linked. If no wallet is linked by a {FRONTIER} season's claim deadline, its unpaid
+          $LORDS return to the treasury.
         </p>
       </>
     ),
