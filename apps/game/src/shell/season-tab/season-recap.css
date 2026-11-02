@@ -53,6 +53,22 @@
 .season-recap[data-cut="wide"] .season-recap__layout > :is(.season-recap__head, .season-recap__foot) {
   width: min(100%, var(--deck-width, 100%));
 }
+/* The season on the left, the LORDS to withdraw (over the HUD) on the right of the same rows. */
+.season-recap[data-cut="wide"] .season-recap__head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 24px;
+}
+.season-recap[data-cut="wide"] .season-recap__head > :not(.season-recap__withdraw) {
+  grid-column: 1;
+}
+/* Its line wraps rather than take the season's room, so the ending keeps one line down to a 1280-wide laptop. */
+.season-recap__withdraw {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  align-self: center;
+  max-width: 26rem;
+}
 .season-recap[data-cut="wide"] .season-recap__alone {
   justify-self: start;
 }

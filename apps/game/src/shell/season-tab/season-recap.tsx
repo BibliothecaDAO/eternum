@@ -111,6 +111,8 @@ export const SeasonRecap = ({
           <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
             {SEASON_ENDINGS[ending]}
           </h1>
+          {/* A desktop's LORDS to withdraw stand beside the season, so the cards keep the height a row of them takes. */}
+          {cut === "wide" && withdraw && <div className="season-recap__withdraw">{withdraw}</div>}
         </header>
         {board &&
           (own ? (
@@ -130,7 +132,7 @@ export const SeasonRecap = ({
             </div>
           ))}
         <footer className="season-recap__foot">
-          {withdraw}
+          {cut === "tall" && withdraw}
           <span className="season-recap__steps">
             {actions}
             {board && own && (

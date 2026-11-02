@@ -819,17 +819,17 @@ const QA1_PHONE_CASES = [
 ];
 
 /**
- * A Frontier season's end (season-recap.tsx) as the player meets it: over the HUD (prod's Season 1 read by its third
- * place, then with LORDS still to withdraw) and on Results with a podium of one, two and three places, at three laptop
- * sizes and on a phone (each card of its story shot in turn). Over the HUD the whole recap, its steps included, stands
- * on one screen unless the deck is already at the least size its words read at; no word in the deck reads under the
- * app's 14 px; each podium place has its numeral, portrait and name on one line and its counts under the name, in
+ * A Frontier season's end (season-recap.tsx) as the player meets it: over the HUD (prod's Playtest read by its third
+ * place, then with LORDS still to withdraw, a payout wallet linked or not) and on Results with a podium of one, two and
+ * three places, at three laptop sizes and on a phone (each card of its story shot in turn). Over the HUD on each laptop
+ * the whole recap, its steps included, stands on one screen; no word in the deck reads under the app's 14 px; each podium place has its numeral, portrait and name on one line and its counts under the name, in
  * columns shared from place to place, and the places stand centred in their card; Share saves the deck at the size it
  * is shared.
  */
 const RECAP_PAGES = {
   cover: "/lab/kit/hud/season-over",
   "cover-payout": "/lab/kit/hud/season-over-payout",
+  "cover-link-wallet": "/lab/kit/hud/season-over-payout-no-wallet",
   "results-one": "/lab/app/season-over-one/results/0x5245414c4d53-3",
   "results-two": "/lab/app/season-over-two/results/0x5245414c4d53-3",
   "results-three": "/lab/app/season-over/results/0x5245414c4d53-3",
@@ -900,8 +900,8 @@ const linedUp = (values) => {
 
 const recapChecks = (drawn) => [
   {
-    check: "over the HUD, the whole recap stands on one screen, or its deck at the least size its words read at",
-    ok: !drawn.cover || drawn.cut === "tall" || !drawn.scrolls || drawn.smallest < 14.1,
+    check: "over the HUD on a desktop, the whole recap, its steps included, stands on one screen",
+    ok: !drawn.cover || drawn.cut === "tall" || (!drawn.scrolls && drawn.stepsBottom <= drawn.screen),
     drawn: { stepsBottom: drawn.stepsBottom, screen: drawn.screen, scale: drawn.scale },
   },
   { check: "no word in the deck reads under 14 px", ok: drawn.smallest >= 14 - 0.05, smallest: drawn.smallest },

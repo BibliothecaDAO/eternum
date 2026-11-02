@@ -283,13 +283,15 @@ action buttons shows its icon and verbs; a words-only notice keeps its text.
   **Share my season** as the gold one.
   - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion). Over the
     HUD the cards take the height the season and the steps leave, so the whole recap, its steps included, stands on one
-    screen down to 1280 × 720; they shrink no further than their smallest words (19 px in the deck) reading at the app's
-    14 px, and a screen shorter than that scrolls. On Results they take the page's width, and the page scrolls.
+    screen down to 1280 × 720, LORDS to withdraw or not; they shrink no further than their smallest words (19 px in the
+    deck) reading at the app's 14 px, and a screen shorter than that scrolls. On Results they take the page's width, and
+    the page scrolls.
   - **A phone** steps through them as a story: a strip of four marks on top, a tap at the right or a swipe left for the
     next card, a tap at the left or a swipe right for the one before.
   - **In the game,** the recap covers the HUD once the season is over, with **Season** and **Exit** and the realm's
-    LORDS still to withdraw. It is drawn at the app's size, never the desktop HUD's zoom. A phone holds the steps at the
-    screen's foot. Once the season's end has come, no day's end plays.
+    LORDS still to withdraw, which a desktop shows beside the season's heading and a phone above its steps. It is drawn
+    at the app's size, never the desktop HUD's zoom. A phone holds the steps at the screen's foot. Once the season's end
+    has come, no day's end plays.
   - **On Results** (`/results/:chainId-:gameId` of a Frontier season), the steps are **Season**, then **See the end
     map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline beside
     Share.
