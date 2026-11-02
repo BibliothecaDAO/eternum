@@ -2,11 +2,12 @@
 import argparse
 import hashlib
 import json
+import random
 import subprocess
 import wave
 from pathlib import Path
 
-from PIL import Image, ImageColor, ImageDraw, ImageFont
+from PIL import Image, ImageChops, ImageColor, ImageDraw, ImageFilter, ImageFont
 
 RATE = 48000
 FRAME_COUNT = 481
@@ -112,12 +113,27 @@ def make_card(kit, size, plan, target):
     card.save(target)
 
 
-def make_intro_card(kit, size, plan, target):
-    card = Image.new("RGBA", size, (0, 0, 0, 0))
+def ink_density(size, opacity, variation):
+    rng = random.Random(741)
+    mottling = Image.frombytes("L", (24, 24), bytes(rng.randrange(256) for _ in range(576)))
+    mottling = mottling.resize(size, Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(2))
+    grain = Image.frombytes("L", size, bytes(rng.randrange(256) for _ in range(size[0] * size[1])))
+    return Image.blend(mottling, grain, .35).point(
+        lambda value: round(255 * opacity * (1 - variation * value / 255)))
+
+
+def make_intro_card(kit, size, plan, target, opacity=.94, bleed=.45, variation=.18):
+    card = Image.new("RGB", size, "white")
     width = plan["realmsWidth"]
     logo = load_brand_master(kit / REALMS, width)
+    mask = logo.getchannel("A")
+    feather = mask.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(bleed))
+    mask = ImageChops.lighter(mask, feather.point(lambda value: round(value * .22)))
+    mask = ImageChops.multiply(mask, ink_density(logo.size, opacity, variation))
+    ink_colour = next(pixel[:3] for pixel in logo.getdata() if pixel[3] == 255)
+    ink = Image.new("RGB", logo.size, ink_colour)
     position = (size[0] - width - 54, 54)
-    card.alpha_composite(logo, position)
+    card.paste(ink, position, mask)
     card.save(target)
 
 
@@ -131,9 +147,9 @@ def render_picture(source, size, plan, folder):
     logo_fade_duration = (plan["realmsFadeEndFrame"] - plan["realmsFadeStartFrame"]) / FPS
     graph = (
         "[0:v]scale=1920:1056:flags=lanczos,pad=1920:1080:0:12:color=0x14101D,setsar=1,"
-        f"tpad=stop_mode=clone:stop={hold_frames}[held];"
-        f"[1:v]format=rgba,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:alpha=1[intro];"
-        "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
+        f"tpad=stop_mode=clone:stop={hold_frames},format=gbrp[held];"
+        f"[1:v]format=gbrp,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:color=white[intro];"
+        "[held][intro]blend=all_mode=multiply:shortest=1[sequence];"
         f"[2:v]format=rgba,fade=t=in:st={card_start}:d=1:alpha=1[card];"
         "[sequence][card]overlay=0:0:shortest=1:format=auto,format=yuv420p[v]"
     )

@@ -313,6 +313,11 @@ one-second fade ends at 20 seconds as the picture settles. With 47 additional he
 exactly 22 seconds. The complete card is visible for the final two seconds. Realms is 360 px wide, holds fully visible
 for one second, then fades from frames 24 to 72 (1–3 seconds), with 54 px clear-space at the top and right edges.
 
+The lettered Realms master is printed into the moving parchment with RGB multiply blending. Its supplied mask and kit
+umber remain authoritative; deterministic ink density and a subpixel edge feather soften the impression. The density
+pattern stays fixed between frames, so it does not shimmer. Its multiplier fades toward white, releasing the ink while
+preserving the paper underneath. The same treatment applies to the second trailer's parchment opening.
+
 Brand overlays are built at 1920×1080 from the kit masters and font files. The lockup is downsampled directly from its
 1536 px master; the line and URL are rasterized at 54 px and 45 px. No 720p overlay is enlarged. The film is encoded as
 H.264 High profile, CRF 15. `end-card-100-percent.png` is an unscaled crop from the encoded frame for text-edge review.
