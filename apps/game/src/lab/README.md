@@ -291,7 +291,7 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 ### Finish recorded footage
 
 `scripts/studio/cinematic-maker.py` finishes the approved 481-frame, 24 fps trailer. It preserves the original 1280×704
-film, pads to 1280×720, overlays the kit's small Realms ink mark at top right for the first two seconds, and fades the
+film, pads to 1280×720, overlays the kit's Realms ink mark at top right for the first three seconds, and fades the
 complete Frontier lockup in over the final second of motion. A short final-frame hold keeps the line and address
 readable. The film starts immediately; no intro footage is added.
 
@@ -307,10 +307,11 @@ Add `--score <picture-length-audio>` when the approved music arrives. Without it
 reference. The main final needs music only. Audio is trimmed and mastered near −14 LUFS, then muxed as AAC; short scores
 are rejected instead of stretched, looped or padded.
 
-The edit supplies `holdFrames`, `lockupFullFrame`, `line`, `cta`, and named `reviewFrames` (output seconds).
-`lockupFullFrame` must equal the source's final frame index, 480: the one-second fade ends at 20 seconds as the picture
-settles. With 47 additional held frames, 481 + 47 = 528 frames, exactly 22 seconds. The complete card is visible for the
-final two seconds. Realms fades out from 0 to 2 seconds, with kit clear-space at the top and right edges.
+The edit supplies `holdFrames`, `lockupFullFrame`, `realmsWidth`, `realmsFadeStartFrame`, `realmsFadeEndFrame`, `line`,
+`cta`, and named `reviewFrames` (output seconds). `lockupFullFrame` must equal the source's final frame index, 480: the
+one-second fade ends at 20 seconds as the picture settles. With 47 additional held frames, 481 + 47 = 528 frames,
+exactly 22 seconds. The complete card is visible for the final two seconds. Realms is 240 px wide, holds fully visible
+for one second, then fades from frames 24 to 72 (1–3 seconds), with 36 px clear-space at the top and right edges.
 
 The command fully decodes the export, checks dimensions, codec, frame count and duration, and leaves review stills,
 source/brand/output hashes and the edit. With audio, it also checks −14 LUFS within 0.25 LU and true peaks below −1

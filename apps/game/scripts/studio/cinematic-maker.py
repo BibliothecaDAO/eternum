@@ -106,10 +106,10 @@ def make_card(kit, size, plan, target):
     card.save(target)
 
 
-def make_intro_card(kit, size, target):
+def make_intro_card(kit, size, plan, target):
     card = Image.new("RGBA", size, (0, 0, 0, 0))
     logo = Image.open(kit / REALMS).convert("RGBA")
-    width = 120
+    width = plan["realmsWidth"]
     logo = logo.resize((width, round(logo.height * width / logo.width)), Image.Resampling.LANCZOS)
     position = (size[0] - width - 36, 36)
     card.alpha_composite(logo, position)
@@ -121,11 +121,13 @@ def render_picture(source, size, plan, folder):
     total_frames = FRAME_COUNT + hold_frames
     card_start = plan["lockupFullFrame"] / FPS - 1
     make_card(plan["kit"], size, plan, folder / "card.png")
-    make_intro_card(plan["kit"], size, folder / "intro-card.png")
+    make_intro_card(plan["kit"], size, plan, folder / "intro-card.png")
+    logo_fade_start = plan["realmsFadeStartFrame"] / FPS
+    logo_fade_duration = (plan["realmsFadeEndFrame"] - plan["realmsFadeStartFrame"]) / FPS
     graph = (
         "[0:v]pad=1280:720:0:8:color=0x14101D,setsar=1,"
         f"tpad=stop_mode=clone:stop={hold_frames}[held];"
-        "[1:v]format=rgba,fade=t=out:st=0:d=2:alpha=1[intro];"
+        f"[1:v]format=rgba,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:alpha=1[intro];"
         "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
         f"[2:v]format=rgba,fade=t=in:st={card_start}:d=1:alpha=1[card];"
         "[sequence][card]overlay=0:0:shortest=1:format=auto,format=yuv420p[v]"
@@ -187,6 +189,8 @@ def finish(args):
     total_frames = FRAME_COUNT + plan["holdFrames"]
     duration = total_frames / FPS
     assert plan["holdFrames"] > 0
+    assert 0 < plan["realmsWidth"] <= SIZE[0] - 72
+    assert 0 <= plan["realmsFadeStartFrame"] < plan["realmsFadeEndFrame"] < FRAME_COUNT
     if plan["lockupFullFrame"] != FRAME_COUNT - 1:
         raise ValueError("The one-second lockup fade must finish on the film's final moving frame.")
     save_json(args.evidence / "source.json", {"sha256": digest(args.source), **info})
