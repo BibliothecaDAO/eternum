@@ -1,9 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  drainBudgetedDeferredManagerCatchUpQueue,
   drainMultiBudgetedDeferredManagerCatchUpQueue,
-  trimPostCommitManagerCatchUpQueue,
   type BudgetedDeferredManagerCatchUpTask,
 } from "./warp-travel-manager-fanout";
 
@@ -114,48 +112,5 @@ describe("drainMultiBudgetedDeferredManagerCatchUpQueue", () => {
     expect(result.tasksToRun).toHaveLength(1);
     expect(result.tasksToRun[0].chunkKey).toBe("0,0");
     expect(result.remainingQueue).toHaveLength(1);
-  });
-});
-
-describe("trimPostCommitManagerCatchUpQueue", () => {
-  it("trims oldest entries when queue exceeds maxQueueLength", () => {
-    const queue: BudgetedDeferredManagerCatchUpTask[] = Array.from({ length: 40 }, (_, i) => ({
-      chunkKey: `chunk-${i}`,
-      estimatedUploadBytes: 100,
-    }));
-
-    const trimmed = trimPostCommitManagerCatchUpQueue({ queue, maxQueueLength: 32 });
-
-    expect(trimmed).toHaveLength(32);
-    // Oldest entries (0-7) are trimmed, newest (8-39) remain
-    expect(trimmed[0].chunkKey).toBe("chunk-8");
-    expect(trimmed[trimmed.length - 1].chunkKey).toBe("chunk-39");
-  });
-
-  it("leaves the queue unchanged when within the cap", () => {
-    const queue: BudgetedDeferredManagerCatchUpTask[] = [
-      { chunkKey: "0,0", estimatedUploadBytes: 100 },
-      { chunkKey: "24,24", estimatedUploadBytes: 100 },
-    ];
-
-    const trimmed = trimPostCommitManagerCatchUpQueue({ queue, maxQueueLength: 32 });
-
-    expect(trimmed).toHaveLength(2);
-    expect(trimmed).toEqual(queue);
-  });
-});
-
-describe("backward compatibility with single-task drainBudgetedDeferredManagerCatchUpQueue", () => {
-  it("single-task drain still works identically for existing callers", () => {
-    const result = drainBudgetedDeferredManagerCatchUpQueue({
-      queue: [
-        { chunkKey: "24,24", estimatedUploadBytes: 512 },
-        { chunkKey: "48,24", estimatedUploadBytes: 512 },
-      ],
-      budgetBytes: 1024,
-    });
-
-    expect(result.taskToRun).toEqual({ chunkKey: "24,24", estimatedUploadBytes: 512 });
-    expect(result.remainingQueue).toEqual([{ chunkKey: "48,24", estimatedUploadBytes: 512 }]);
   });
 });
