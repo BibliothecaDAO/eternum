@@ -336,9 +336,11 @@ copy the approved final's audio stream into the edition without re-encoding or m
 Devcon editions require `devconPennant`, the supplied vertical banner master, for the opening. Its visible artwork hangs
 from the top edge at one third of the output height, with the Realms seal's mirrored horizontal margin. Near-transparent
 export padding is trimmed at alpha 8; the artwork is scaled proportionally. Its luminance preserves the letter
-interiors, diamond facets and lotus in the sepia impression. A pale, grained parchment wash inside the pennant keeps it
-readable over dark landscape. Wash and ink share the seal's 0–1 second hold and 1–3 second fade. Inspect both opening
-corners at native resolution before rendering the films. The full-colour stacked mark remains on the end card.
+interiors, diamond facets and lotus in the sepia impression. The wash samples warm, light parchment from the opening
+frame's upper rim; missing parchment fails the export. Fine grain, uneven darkened edges and 80% opacity keep the paper
+readable over dark landscape while allowing the map beneath to show. Wash and ink share the seal's 0–1 second hold and
+1–3 second fade. Inspect both opening corners at native resolution before rendering the films. The full-colour stacked
+mark remains on the end card.
 
 Brand overlays are built at 1920×1080 from the kit masters and font files. The lockup is downsampled directly from its
 1536 px master; the line and URL are rasterized at 54 px and 45 px. No 720p overlay is enlarged. The film is encoded as

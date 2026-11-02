@@ -3,6 +3,7 @@ import argparse
 import hashlib
 import json
 import random
+from statistics import median
 import subprocess
 import wave
 from pathlib import Path
@@ -206,13 +207,33 @@ def make_intro_card(kit, size, plan, target):
     card.save(target)
 
 
-def make_intro_wash(size, plan, target):
+def parchment_colour(reference):
+    paper = Image.open(reference).convert("RGB")
+    rim = paper.crop((0, 0, paper.width, round(paper.height * .08)))
+    samples = [colour for colour in rim.get_flattened_data()
+               if colour[0] > 150 and colour[0] > colour[1] + 10 and colour[1] > colour[2] + 10]
+    if len(samples) < 30:
+        raise ValueError("Opening frame has too little warm parchment to sample")
+    samples.sort(key=sum)
+    highlights = samples[len(samples) * 3 // 4:]
+    return tuple(round(median(colour[channel] for colour in highlights)) for channel in range(3))
+
+
+def make_intro_wash(size, plan, target, reference):
     scale = size[0] / BASE_WIDTH
     pennant = load_pennant_master(plan["devconPennant"], round(size[1] / 3))
     grain = ink_noise(pennant.size, pennant.size, 144)
+    mask = fibre_edges(pennant.getchannel("A"), scale)
+    inner = mask.filter(ImageFilter.MinFilter(2 * round(4 * scale) + 1))
+    wear = ImageChops.subtract(mask, inner.filter(ImageFilter.GaussianBlur(2.5 * scale)))
+    variation = ink_noise(pennant.size, (9, 27), 316).point(lambda value: 128 + value // 2)
+    wear = ImageChops.multiply(wear, variation)
     wash = Image.merge("RGB", tuple(grain.point(lambda value, base=base:
-                       round(base + (value - 128) * .035)) for base in [222, 204, 171])).convert("RGBA")
-    wash.putalpha(fibre_edges(pennant.getchannel("A"), scale).point(lambda value: round(value * .88)))
+                       round(base + (value - 128) * .035)) for base in parchment_colour(reference)))
+    wash = Image.merge("RGB", tuple(ImageChops.subtract(channel, wear.point(lambda value, depth=depth:
+                       round(value * depth))) for channel, depth in zip(wash.split(), [.16, .19, .22])))
+    wash = wash.convert("RGBA")
+    wash.putalpha(mask.point(lambda value: round(value * .80)))
     card = Image.new("RGBA", size)
     card.alpha_composite(wash, (round(54 * scale), 0))
     card.save(target)
@@ -231,7 +252,9 @@ def render_picture(source, size, plan, folder):
     padding = (height - film_height) // 2
     wash_graph, opening_source, wash_inputs = "", "held", []
     if "devconMark" in plan:
-        make_intro_wash(size, plan, folder / "intro-wash.png")
+        reference = folder / "parchment-reference.png"
+        ffmpeg(["-v", "error", "-i", source, "-frames:v", 1, reference])
+        make_intro_wash(size, plan, folder / "intro-wash.png", reference)
         wash_graph = (f"[3:v]format=rgba,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:alpha=1[wash];"
                       "[held][wash]overlay=0:0:shortest=1:format=auto[paper];")
         opening_source = "paper"
