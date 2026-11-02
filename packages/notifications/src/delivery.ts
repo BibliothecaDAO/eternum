@@ -1,6 +1,7 @@
 import * as Schema from "effect/Schema";
 import { decodeNotification, notificationText } from "./validation";
 import { isSameStarknetAddress } from "../../identity/src/address";
+import { lifetimeOf, NOTIFICATION_KINDS, type NotificationKind } from "./notification-kinds";
 
 export interface LocalNotificationPayload {
   version: 1;
@@ -12,13 +13,9 @@ export interface LocalNotificationPayload {
   target: string;
   createdAt: number;
   expiresAt: number;
-  /** A Day open push lives until an hour before its day ends; every other alert lives two minutes. */
-  kind?: "day-open";
+  /** The game's kind of alert, which bounds how long it may live; a notice with none (Alerts are on) lives two minutes. */
+  kind?: NotificationKind;
 }
-
-const ALERT_LIFETIME_MS = 120_000;
-/** Longer than any game day, so a Day open push can wait for a phone that is out of reach for most of its day. */
-const DAY_OPEN_LIFETIME_MS = 48 * 3_600_000;
 
 const notificationSchema = Schema.Struct({
   version: Schema.Literal(1),
@@ -30,7 +27,7 @@ const notificationSchema = Schema.Struct({
   target: Schema.String.check(Schema.makeFilter(isNotificationTarget)),
   createdAt: Schema.Int,
   expiresAt: Schema.Int,
-  kind: Schema.optional(Schema.Literal("day-open")),
+  kind: Schema.optional(Schema.Literals(NOTIFICATION_KINDS)),
 });
 
 /** A display envelope only; no entity rows or arbitrary navigation URLs cross this boundary. */
@@ -42,7 +39,7 @@ export function parseNotificationPayload(value: unknown, now: number): LocalNoti
         item.createdAt <= now + 30_000 &&
         item.expiresAt > now &&
         item.expiresAt > item.createdAt &&
-        item.expiresAt - item.createdAt <= (item.kind === "day-open" ? DAY_OPEN_LIFETIME_MS : ALERT_LIFETIME_MS),
+        item.expiresAt - item.createdAt <= lifetimeOf(item.kind),
     ),
   );
   decodeNotification(current, payload, "expired_notification");

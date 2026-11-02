@@ -14,14 +14,11 @@ import {
   buildArmyRestedNotification,
   buildDayOpen,
   buildStoryNotification,
-  dayOpenSendAt,
   type DayOpenPush,
   gamePath,
   includesArmyRestedNotification,
   includesStoryNotification,
-  isQuietAt,
   readHistoryStory,
-  sendableAt,
   storyRecipients,
   type LocalNotificationPayload,
   type PushEnvelope,
@@ -68,8 +65,6 @@ const MAX_ATTEMPTS = 5;
 const SHARD_TIMEOUT_MS = 10_000;
 // Fetch confirmed enrollment before the trigger; delivery itself never depends on a shard read.
 const DAY_OPEN_PREPARE_MS = 60_000;
-/** The most game pushes one player gets in any 24 hours; the rest wait in the Feed. Direct messages are not counted. */
-const DAILY_PUSH_CEILING = 6;
 const DAY_MS = 86_400_000;
 
 /**
@@ -176,9 +171,11 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
     }
     await this.ctx.storage.transaction(async (txn) => {
       for (const entry of entries) await txn.put(outboxKey(entry), entry);
-      // A player's action replaces every wake time of theirs: a moved army gets a new one, a gone army none.
+      // A player's action replaces every wake time of theirs (a moved army gets a new one, a gone army none) and ends a
+      // rested alert still waiting to go: its armies are no longer resting.
       for (const { actor, watches } of resting) {
         await txn.delete([...(await txn.list({ prefix: restWatchKey(actor) })).keys()]);
+        await txn.delete([...(await txn.list({ prefix: restedOutboxPrefix(shard, actor) })).keys()]);
         for (const watch of watches) await txn.put(restWatchKey(watch), watch);
       }
       await txn.put("cursor", encodeStoryHistoryCursor(page.next_cursor));
@@ -213,8 +210,8 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 
   /**
-   * Each army whose wake time has come is read again: still there and full, it gets one alert; still recovering, a new
-   * wake time; gone, or its game over, nothing.
+   * Each army whose wake time has come is read again: still recovering, it gets a new wake time; gone, or its game over,
+   * nothing. Once the last army the player left recovering is full, the player gets one alert for them all.
    */
   private async wakeRestedArmies(env: IdentityEnv, shard: Required<WatchedShard>): Promise<void> {
     const now = Date.now();
@@ -242,20 +239,25 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 
   private async wakeActor(env: IdentityEnv, shard: Required<WatchedShard>, watches: RestWatch[], now: number) {
-    const armies = await readActorArmies(shard.url, watches[0]!.gameId, watches[0]!.actor, now);
-    const rested = watches.find((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
+    const { gameId, actor } = watches[0]!;
+    const armies = await readActorArmies(shard.url, gameId, actor, now);
+    const rested = watches.filter((watch) => armies.find((army) => army.armyId === watch.armyId)?.full);
     const renewed = watches.flatMap((watch) => {
       const army = armies.find((candidate) => candidate.armyId === watch.armyId);
       return !army?.full && army?.fullAt ? [{ ...watch, fullAt: army.fullAt, attempts: 0 }] : [];
     });
-    const alert = rested ? await restedAlerts(env, shard, rested, now) : null;
+    const due = new Set(watches.map(restWatchKey));
+    const stillResting = [...(await this.ctx.storage.list({ prefix: restWatchKey({ gameId, actor }) })).keys()].some(
+      (key) => !due.has(key),
+    );
+    const last = rested.length > 0 && renewed.length === 0 && !stillResting;
+    const alert = last
+      ? await restedAlerts(env, shard, latest(rested), armies.filter((army) => army.full).length, now)
+      : [];
     await this.ctx.storage.transaction(async (txn) => {
       for (const watch of watches) await txn.delete(restWatchKey(watch));
       for (const watch of renewed) await txn.put(restWatchKey(watch), watch);
-      // One rested push a day per player, however many of their armies rest that day.
-      if (!alert || (await txn.get(alert.sentKey)) !== undefined) return;
-      for (const entry of alert.entries) await txn.put(outboxKey(entry), entry);
-      await txn.put(alert.sentKey, now + 2 * DAY_MS);
+      for (const entry of alert) await txn.put(outboxKey(entry), entry);
     });
   }
 
@@ -287,8 +289,6 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
    */
   private async deliverDue(env: IdentityEnv, shard: WatchedShard): Promise<void> {
     const now = Date.now();
-    for (const [key, dueAt] of await this.ctx.storage.list<number>({ prefix: "rested-sent:" }))
-      if (dueAt <= now) await this.ctx.storage.delete(key);
     const due = [...(await this.ctx.storage.list<OutboxEntry>({ prefix: "outbox:" }))].filter(
       ([, entry]) => entry.dueAt <= now,
     );
@@ -307,9 +307,7 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
   }
 
   private async deliverEntry(env: IdentityEnv, key: string, entry: OutboxEntry): Promise<void> {
-    const sentKey = `sent:${entry.owner}`;
-    const sent = ((await this.ctx.storage.get<number[]>(sentKey)) ?? []).filter((at) => at > Date.now() - DAY_MS);
-    const outcome = await deliver(env, entry, Date.now(), sent.length).catch((error: unknown) => {
+    const outcome = await deliver(env, entry, Date.now()).catch((error: unknown) => {
       const retry = retryLater(entry, Date.now(), POLL_MS);
       console.error(
         retry ? "shard_notifier_delivery_retry" : "shard_notifier_delivery_dropped",
@@ -318,13 +316,10 @@ export class ShardNotifier extends DurableObject<Record<string, unknown>> {
         `attempt ${entry.attempts + 1}`,
         error,
       );
-      return { next: retry, accepted: false };
+      return retry;
     });
-    await this.ctx.storage.transaction(async (txn) => {
-      if (outcome.next) await txn.put(key, outcome.next);
-      else await txn.delete(key);
-      if (outcome.accepted) await txn.put(sentKey, [...sent, Date.now()]);
-    });
+    if (outcome) await this.ctx.storage.put(key, outcome);
+    else await this.ctx.storage.delete(key);
   }
 }
 
@@ -390,13 +385,13 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
   );
 
 /**
- * Checks current consent, expiry, the game in view, the phone's quiet hours and the player's 24-hour ceiling before
- * sending. Returns the alert to send later (or null when it is done), and whether the push service took it.
+ * Checks current consent, expiry and the game in view before sending; the phone's own night setting decides whether
+ * it sounds. Returns the alert to send again later, or null when it is done.
  */
-const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: number) =>
+const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      const done: { next: OutboxEntry | null; accepted: boolean } = { next: null, accepted: false };
+      const done = null;
       const notification = entry.envelope.notification;
       if (notification.expiresAt <= now) return done;
       const store = yield* PushSubscriptionStore;
@@ -405,15 +400,9 @@ const deliver = (env: IdentityEnv, entry: OutboxEntry, now: number, sentToday: n
       if (!device || device.gameAlertsEnabledAt === null || device.gameAlertsEnabledAt > notification.createdAt)
         return done;
       if (!wantsGameAlerts(device, now) || (levels.get(entry.owner) ?? "off") === "off") return done;
-      // The phone's night as it is now, which a zone change or a late retry can move: Day open waits for its morning.
-      if (isQuietAt(now, device.timeZone)) return { next: laterThisMorning(entry, device.timeZone), accepted: false };
-      if (sentToday >= DAILY_PUSH_CEILING) {
-        console.warn("shard_notifier_daily_ceiling", notification.id, `owner ${entry.owner}`);
-        return done;
-      }
       const outcome = yield* Effect.promise(() => sendPush(vapidKeysOf(env), device, envelopeAt(entry, now, device)));
       if (outcome === "expired") yield* store.expire(entry.owner, entry.subscriptionId);
-      return { next: outcome === "retry" ? retryLater(entry, now, POLL_MS) : null, accepted: outcome === "accepted" };
+      return outcome === "retry" ? retryLater(entry, now, POLL_MS) : done;
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
@@ -438,13 +427,6 @@ const envelopeAt = (entry: OutboxEntry, now: number, device: PushSubscriptionRow
 
 const isDayOpen = (entry: OutboxEntry) => entry.envelope.notification.kind === "day-open";
 
-/** A Day open push in the phone's night waits for its 08:00, if it still lives then; any other alert is dropped. */
-const laterThisMorning = (entry: OutboxEntry, timeZone: string | null): OutboxEntry | null => {
-  if (!isDayOpen(entry)) return null;
-  const dueAt = sendableAt(Date.now(), timeZone);
-  return dueAt < entry.envelope.notification.expiresAt ? { ...entry, dueAt } : null;
-};
-
 /** The Frontier games of this shard still running, by their notification target. */
 const runningFrontierGames = async (shard: WatchedShard): Promise<Set<string>> => {
   const directory = await readShard<HeraldGameDirectory>(shard.url, "/games");
@@ -457,6 +439,13 @@ const runningFrontierGames = async (shard: WatchedShard): Promise<Set<string>> =
 };
 
 const outboxKey = (entry: OutboxEntry) => `outbox:${entry.envelope.notification.id}:${entry.subscriptionId}`;
+
+/** Where a player's rested alerts for one game wait in the outbox: every one of theirs, whatever its wave. */
+const restedOutboxPrefix = (shard: WatchedShard, actor: RestingActor) =>
+  `outbox:rested:v3:${shard.chainId}:${actor.gameId}:${actor.owner}:`;
+
+/** The watch whose army was full last: the moment the player's armies were all rested. */
+const latest = (watches: RestWatch[]) => watches.reduce((last, watch) => (watch.fullAt > last.fullAt ? watch : last));
 
 /** A failed attempt waits 1, 2, 4, then 8 polls; after MAX_ATTEMPTS the entry is dropped (null). */
 const retryLater = (entry: OutboxEntry, now: number, pollMs: number): OutboxEntry | null =>
@@ -532,11 +521,12 @@ const dayOpenAlerts = async (env: IdentityEnv, shard: Required<WatchedShard>, op
         claim,
       };
       for (const device of owned) {
-        const sendAt = dayOpenSendAt(push, device.timeZone);
-        if (sendAt === null) continue;
-        const notification = buildDayOpen({ ...push, sendAt, timeZone: device.timeZone });
+        const notification = buildDayOpen({ ...push, sendAt: push.opensAt, timeZone: device.timeZone });
         entries.push(
-          ...alertsForDevices(owner, [device], notification, sendAt).map((entry) => ({ ...entry, dayOpen: push })),
+          ...alertsForDevices(owner, [device], notification, push.opensAt).map((entry) => ({
+            ...entry,
+            dayOpen: push,
+          })),
         );
       }
     }
@@ -599,49 +589,52 @@ const watchRestingArmies = (env: IdentityEnv, shard: Required<WatchedShard>, pag
     ),
   );
 
-/**
- * The rested push for the player of one watch, if they still want it, to each of their opted-in devices; with the key
- * that holds it to one a day.
- */
-const restedAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, watch: RestWatch, now: number) =>
+/** The rested push for the player of one watch, if they still want it, to each of their opted-in devices. */
+const restedAlerts = (
+  env: IdentityEnv,
+  shard: Required<WatchedShard>,
+  watch: RestWatch,
+  armies: number,
+  now: number,
+): Promise<OutboxEntry[]> =>
   Effect.runPromise(
     Effect.gen(function* () {
       const levels = yield* (yield* NotificationPreferenceStore).levels([watch.owner]);
-      if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return null;
+      if (!includesArmyRestedNotification(levels.get(watch.owner) ?? "off")) return [];
       const devices = yield* (yield* PushSubscriptionStore).gameAlertDevices([watch.owner]);
       const game = (yield* Effect.promise(() => gameDirectory(shard.url))).get(watch.gameId);
-      if (game && (now >= game.clock.end_at * 1000 || watch.fullAt >= game.clock.end_at * 1000)) return null;
-      const day = restedDay(game, watch.fullAt);
       const notification = buildArmyRestedNotification({
         chainId: shard.chainId,
         gameId: watch.gameId,
-        day,
         fullAt: watch.fullAt,
+        until: restedUntil(game, watch.fullAt),
+        armies,
         owner: watch.owner,
         gameName: game?.name ?? `Game ${watch.gameId}`,
         now,
       });
-      if (!notification) return null;
-      return {
-        entries: alertsForDevices(watch.owner, devices, notification, now),
-        sentKey: `rested-sent:${watch.owner}:${watch.gameId}:${day}`,
-      };
+      return notification ? alertsForDevices(watch.owner, devices, notification, now) : [];
     }).pipe(
       Effect.provide(NotificationPreferenceStore.layer(env.DB)),
       Effect.provide(PushSubscriptionStore.layer(env.DB)),
     ),
   );
 
-/** The day a rested army counts against: its Frontier game day, else its UTC date. */
-const restedDay = (game: Game | undefined, fullAt: number): number => {
-  if (!game?.expedition || fullAt / 1000 < game.clock.start_main_at) return Math.floor(fullAt / DAY_MS);
+/**
+ * Until when rested armies stay true news: the end of their Frontier game day (an army of an earlier day is no army),
+ * else of their UTC date, and never past the game's end.
+ */
+const restedUntil = (game: Game | undefined, fullAt: number): number => {
+  const gameEnd = game ? game.clock.end_at * 1000 : Infinity;
+  if (!game?.expedition || fullAt / 1000 < game.clock.start_main_at)
+    return Math.min((Math.floor(fullAt / DAY_MS) + 1) * DAY_MS, gameEnd);
   const calendar = {
     seed: BigInt(game.expedition.seed),
     startMainAt: game.clock.start_main_at,
     endAt: game.clock.end_at,
     dayUnitSeconds: game.expedition.day_unit_seconds,
   };
-  return dayOf(calendar, fullAt / 1000)!.index;
+  return Math.min((dayOf(calendar, fullAt / 1000)?.end ?? 0) * 1000, gameEnd);
 };
 
 const wantsGameAlerts = (device: PushSubscriptionRow, now: number) =>

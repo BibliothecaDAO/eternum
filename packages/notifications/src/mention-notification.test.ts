@@ -20,7 +20,8 @@ it("names who mentioned the player and where, never the message, opening the app
     body: "In Global. Open Realms to read it.",
     target: "/chat",
     createdAt: 1_000,
-    expiresAt: 121_000,
+    expiresAt: 3_601_000,
+    kind: "messages",
   });
 });
 

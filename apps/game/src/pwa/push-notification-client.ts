@@ -148,7 +148,7 @@ async function readInstalledPushDevice(
 
 /**
  * Refreshes the server lease that prevents automatic push while any game window is visible, and tells the server this
- * device's time zone, so a push names its times and keeps its quiet hours by the player's own clock.
+ * device's time zone, so a push names its times by the player's own clock.
  */
 export async function syncPushGameForeground(owner: string, signal?: AbortSignal): Promise<void> {
   signal?.throwIfAborted();

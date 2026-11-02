@@ -123,7 +123,9 @@ export function useNotificationPreferences(owner: string | null) {
 }
 
 function readAnonymousPreference(): SavedPreference {
-  const level = localStorage.getItem(ANONYMOUS_KEY) ?? "off";
+  const stored = localStorage.getItem(ANONYMOUS_KEY) ?? "off";
+  // Standard became All, for this browser's level as migration 0023 moved every account's.
+  const level = stored === "standard" ? saveAnonymousPreference("all").level : stored;
   if (!isNotificationLevel(level)) throw new Error("The saved notification level is invalid.");
   return { owner: null, level, revision: 0 };
 }

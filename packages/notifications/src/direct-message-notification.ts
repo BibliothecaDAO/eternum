@@ -1,4 +1,5 @@
 import { parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
+import { lifetimeOf } from "./notification-kinds";
 import * as Schema from "effect/Schema";
 import { decodeNotification, notificationText, pushOwnerSchema } from "./validation";
 
@@ -24,7 +25,8 @@ export function buildDirectMessageNotification(value: unknown, now: number): Loc
       body: "Open Realms to read it.",
       target: "/",
       createdAt: input.createdAt,
-      expiresAt: input.createdAt + 120_000,
+      expiresAt: input.createdAt + lifetimeOf("messages"),
+      kind: "messages",
     },
     now,
   );

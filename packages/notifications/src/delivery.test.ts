@@ -110,3 +110,16 @@ it("tells a new building's placement and its payment as one story, and keeps two
     logicalStoryIdentity("story:0xfeed:0x3", "BuildingPlacementStory", {}, { coord: { x: 4, y: 5 }, change: "Paused" }),
   ).toBe("story:0xfeed:0x3");
 });
+
+it("lets each kind live as long as it is news, and a notice with no kind two minutes", () => {
+  const living = (kind: string | undefined, lifetime: number) =>
+    parseNotificationPayload({ ...notification, ...(kind ? { kind } : {}), expiresAt: now + lifetime }, now);
+  const hour = 3_600_000;
+  expect(living("army-rested", 12 * hour).kind).toBe("army-rested");
+  expect(living("results", 24 * hour).kind).toBe("results");
+  expect(living("fights", hour).kind).toBe("fights");
+  expect(() => living("fights", hour + 1)).toThrow();
+  expect(() => living("results", 24 * hour + 1)).toThrow();
+  expect(() => living(undefined, 120_001)).toThrow();
+  expect(() => living("standard", 60_000)).toThrow();
+});

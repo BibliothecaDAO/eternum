@@ -463,7 +463,7 @@ const armyPosition = (explorerId: number, home: number, army: ArmyState, step = 
 });
 
 /** The Worker in workerd over storage that survives a restart, a fake Herald, and a push service answering `status`. */
-const createHarness = async (level: "off" | "important" | "standard" | "all") => {
+const createHarness = async (level: "off" | "important" | "all") => {
   const storage = newStorage();
   const herald = createHerald();
   const device = await deviceKeys();
@@ -480,6 +480,11 @@ const createHarness = async (level: "off" | "important" | "standard" | "all") =>
         const { title, body } = (envelope as { notification: { title: string; body: string } }).notification;
         return `${title} / ${body}`;
       }),
+    /** The tag each push carries: a newer push of the tag replaces the one the phone shows. */
+    tags: async () =>
+      (await Promise.all(push.bodies.map((body) => device.open(body)))).map(
+        (envelope) => (envelope as { notification: { tag?: string } }).notification.tag,
+      ),
   };
   const vapid = await vapidKeys();
   const start = () =>
@@ -558,8 +563,8 @@ describe.concurrent("shard notifications", () => {
     await restarted.dispose();
   }, 150_000);
 
-  it("alerts once a day when an army is rested, not if it acted again first, nor once it is gone or from an earlier day", async () => {
-    const { herald, push, worker } = await createHarness("standard");
+  it("alerts each time the armies the player left are all rested, not if they acted again first, nor once gone or from an earlier day", async () => {
+    const { herald, push, worker } = await createHarness("important");
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
 
@@ -584,21 +589,23 @@ describe.concurrent("shard notifications", () => {
     // The player's second army is spent a tick later: when the first is full, it is still recovering.
     herald.state.secondArmy = { amount: 0, settledAt: Math.floor(Date.now() / 1000), day: TODAY };
     herald.story("ExplorationReward", {});
+    // The first army is full while the second still recovers: nothing yet, the player's armies are not all rested.
     await waitUntil(() => Date.now() > firstWake + polls(2), 60_000);
     expect(push.received).toEqual([]);
     await waitUntil(() => push.received.length >= 1, 60_000);
-    expect(await push.words()).toEqual(["An army is rested / frontier-a: its stamina is full."]);
-    await pause(ticks(2) + polls(10)); // the second army rests too: the day's push has gone
+    expect(await push.words()).toEqual(["Your armies are rested / frontier-a: their stamina is full."]);
+    await pause(polls(10));
     expect(push.received).toEqual([201]);
 
-    herald.act(0); // rested again the same game day: still nothing
-    await pause(ticks(REST_TICKS + 1) + polls(10));
-    expect(push.received).toEqual([201]);
+    herald.act(0); // spent and rested again the same game day: another alert, which replaces the first on the phone
+    await waitUntil(() => push.received.length >= 2, ticks(REST_TICKS + 2) + polls(10));
+    expect(push.received).toEqual([201, 201]);
+    expect(new Set(await push.tags())).toEqual(new Set([`army-rested:/g/${CHAIN_ID}/${GAME_ID}`]));
     await worker.dispose();
   }, 420_000);
 
   it("a game that ends while an army rests alerts nothing for it, and every other alert still flows", async () => {
-    const { herald, push, worker } = await createHarness("standard");
+    const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
@@ -618,7 +625,7 @@ describe.concurrent("shard notifications", () => {
   }, 150_000);
 
   it("a wake that keeps failing is retried, then dropped, and every other alert still flows", async () => {
-    const { herald, push, worker } = await createHarness("standard");
+    const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
@@ -742,7 +749,7 @@ describe.concurrent("shard notifications", () => {
     await worker.dispose();
   }, 45_000);
 
-  it("Day open waits for the morning on a phone in its quiet hours, and goes at once to one in its day", async () => {
+  it("Day open goes at the opening to every phone, whatever its clock: the phone's own night setting silences it", async () => {
     const { herald, push, worker } = await createHarness("important");
     const awake = `${PUSH_ENDPOINT}/awake`;
     const now = Date.now();
@@ -760,7 +767,8 @@ describe.concurrent("shard notifications", () => {
     const opensAt = openSoon(herald);
     await worker.runCron();
     await pause(Math.max(0, opensAt + 3000 - Date.now()));
-    expect(push.endpoints).toEqual([awake]);
+    expect(new Set(push.endpoints)).toEqual(new Set([PUSH_ENDPOINT, awake]));
+    expect(push.endpoints).toHaveLength(2);
     await worker.dispose();
   }, 45_000);
 
@@ -951,15 +959,16 @@ describe.concurrent("shard notifications", () => {
     45_000,
   );
 
-  it("a player gets at most six game pushes in a day; the seventh waits in the Feed", async () => {
+  it("every fight reaches the phone, under one tag per game, so the phone keeps the newest instead of a stack", async () => {
     const { herald, push, worker } = await createHarness("important");
     herald.state.mode = "blitz"; // a fight between players pushes in Blitz
     await worker.runCron();
     await pause(polls(5)); // the notifier reaches the shard's head
     for (let fight = 0; fight < 7; fight++) herald.battle();
-    await waitUntil(() => push.received.length >= 6, 30_000);
+    await waitUntil(() => push.received.length >= 7, 30_000);
     await pause(polls(5));
-    expect(push.received).toEqual([201, 201, 201, 201, 201, 201]);
+    expect(push.received).toEqual([201, 201, 201, 201, 201, 201, 201]);
+    expect(new Set(await push.tags())).toEqual(new Set([`fights:/g/${CHAIN_ID}/${GAME_ID}`]));
     await worker.dispose();
   }, 90_000);
 
@@ -1034,21 +1043,6 @@ describe.concurrent("shard notifications", () => {
       await worker.dispose();
     }
   }, 60_000);
-
-  it("Day open checks the phone's quiet hours again when it is due: a phone now in its night gets nothing then", async () => {
-    const { herald, push, worker } = await createHarness("important");
-    try {
-      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(dayZone()).run();
-      const opensAt = openSoon(herald, 8);
-      await worker.runCron();
-      await waitUntil(() => herald.state.ownerReads.length > 0, 6000); // prepared while the phone was in its day
-      await worker.db.prepare('UPDATE "notification_push_subscriptions" SET "timeZone" = ?').bind(nightZone()).run();
-      await pause(Math.max(0, opensAt + 3000 - Date.now()));
-      expect(push.received).toEqual([]);
-    } finally {
-      await worker.dispose();
-    }
-  }, 45_000);
 
   it("a Day open prepared before a restart is not sent if its game settled while the notifier was down", async () => {
     const { herald, push, worker, start } = await createHarness("important");

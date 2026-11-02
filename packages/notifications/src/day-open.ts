@@ -1,5 +1,6 @@
 import { gamePath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
-import { clockTime, sendableAt } from "./quiet-hours";
+import { clockTime } from "./clock";
+import { kindTag } from "./notification-kinds";
 
 /** What the home's claim gives each game day (homeDailyClaim), or null for a home with no claim. */
 export interface DayOpenClaim {
@@ -28,18 +29,6 @@ export interface DayOpenPush {
 }
 
 /**
- * When the day's push may first go to a phone: as the day opens, or at 08:00 on the phone's clock when it opens in the
- * phone's quiet hours. Null when under an hour of the day would be left by then.
- */
-export const dayOpenSendAt = (
-  push: Pick<DayOpenPush, "opensAt" | "endsAt">,
-  timeZone: string | null,
-): number | null => {
-  const sendAt = sendableAt(push.opensAt, timeZone);
-  return sendAt < push.endsAt - LAST_HOUR_MS ? sendAt : null;
-};
-
-/**
  * The one push a game day sends, worded as it goes at `sendAt` to a phone in `timeZone`: the day is open, what the
  * player's home claims in it, and when it ends on that phone's clock then. Its id and expiry depend on neither, so the
  * same day's push is one alert however late, and on whatever clock, it goes.
@@ -56,6 +45,7 @@ export function buildDayOpen(
       owner: push.owner,
       title: push.last ? "The last day is open" : `Day ${push.day + 1} is open`,
       body: `${push.gameName}: ${dayLine(push.claim, ends, push.last)}`,
+      tag: kindTag("day-open", gamePath(push)),
       target: gamePath(push),
       createdAt: push.sendAt,
       expiresAt: push.endsAt - LAST_HOUR_MS,

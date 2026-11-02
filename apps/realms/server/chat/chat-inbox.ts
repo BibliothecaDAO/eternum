@@ -2,7 +2,7 @@ import * as Result from "effect/Result";
 import * as Schema from "effect/Schema";
 import { DurableObject } from "cloudflare:workers";
 import { Effect } from "effect";
-import { buildDirectMessageNotification, includesChatNotification } from "@bibliothecadao/notifications";
+import { buildDirectMessageNotification, includesKind } from "@bibliothecadao/notifications";
 import {
   directMessageCreateSchema,
   directMessageReadReceiptSchema,
@@ -324,7 +324,7 @@ const pushDirectMessage = (env: IdentityEnv, message: DirectMessage, senderName?
     Effect.gen(function* () {
       const owner = message.recipientId;
       const levels = yield* (yield* NotificationPreferenceStore).levels([owner]);
-      if (!includesChatNotification(levels.get(owner) ?? "off")) return;
+      if (!includesKind(levels.get(owner) ?? "off", "messages")) return;
       const store = yield* PushSubscriptionStore;
       const devices = yield* store.chatAlertDevices(owner, Date.now());
       const notification = buildDirectMessageNotification(

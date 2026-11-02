@@ -33,17 +33,18 @@ const envelope = (): PushEnvelope => ({
 const vapid = { publicKey: "public", privateKey: "private", subject: "mailto:push@realms.world" };
 const device = { endpoint: "https://push.test/one", p256dh: "key", auth: "auth" };
 
-it("asks the push service to keep a Day open push until an hour before its day ends", async () => {
+it("asks the push service to keep a Day open push until an hour before its day ends, under its tag's Topic", async () => {
   vi.spyOn(Date, "now").mockReturnValue(now);
   vi.mocked(buildPushPayload).mockResolvedValue({ method: "POST", headers: {}, body: "encrypted" } as never);
   const fetchPush = vi.fn().mockResolvedValue(new Response(null, { status: 201 }));
   expect(await sendPush(vapid, device, envelope(), fetchPush)).toBe("accepted");
-  expect(buildPushPayload).toHaveBeenCalledWith(
-    expect.objectContaining({ options: { ttl: 4 * 3600 - 1, urgency: "high" } }),
-    expect.anything(),
-    vapid,
-  );
-  expect(fetchPush).toHaveBeenCalledOnce();
+  const options = vi.mocked(buildPushPayload).mock.calls.at(-1)![0].options!;
+  expect(options).toMatchObject({ ttl: 4 * 3600 - 1, urgency: "high" });
+  // A Topic is at most 32 base64url characters, and the same for every alert of the tag: the newest replaces the rest.
+  expect(options.topic).toMatch(/^[A-Za-z0-9_-]{32}$/);
+  await sendPush(vapid, device, { ...envelope(), notification: { ...notification(), id: "another" } }, fetchPush);
+  expect(vi.mocked(buildPushPayload).mock.calls.at(-1)![0].options!.topic).toBe(options.topic);
+  expect(fetchPush).toHaveBeenCalledTimes(2);
 });
 
 it("drops a push if encryption crosses its delivery deadline", async () => {

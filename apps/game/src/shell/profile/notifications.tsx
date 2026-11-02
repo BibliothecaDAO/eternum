@@ -5,26 +5,17 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { AppChip, AppSetting, AppSwitch, AppTabs } from "@/ui/design-system/kit/app-elements";
-import type { NotificationLevel } from "@bibliothecadao/notifications";
+import { NOTIFICATION_LEVELS, type NotificationLevel } from "@bibliothecadao/notifications";
 
 import { ServiceFailure } from "@/ui/design-system/kit/service-failure";
+import { levelMeaning } from "./level-meaning";
 import { type ThisDeviceState, useThisDevice } from "./this-device";
 
-/**
- * The three levels the app offers (ruled), stored as the Worker's own off, important and all. The Worker also keeps
- * an older Standard between Important and All; the app offers no such level, so a stored Standard lights none of the
- * three until the player picks one, rather than claiming a level the player does not get.
- */
-type Level = keyof typeof LEVEL_WORDS;
-const LEVELS: Level[] = ["off", "important", "all"];
-const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
-  saved === "standard" ? undefined : saved;
-/** No tab chosen: a stored Standard, or the level still loading. */
-const NO_LEVEL = "" as Level;
+/** No tab chosen while the level loads. */
+const NO_LEVEL = "" as NotificationLevel;
 
 /**
- * Notifications (spec 12): three levels with the chosen one's meaning in one line (Important carries the push that opens
- * each Frontier game day), and This device as one switch. Signed out, the level is kept on this browser and
+ * Notifications (spec 12): three levels with the chosen one's meaning in one line, and This device as one switch. Signed out, the level is kept on this browser and
  * moves to the account at sign-in. A switch that failed turns back with the reason.
  */
 export const NotificationsCard = () => {
@@ -32,18 +23,19 @@ export const NotificationsCard = () => {
   const owner = notificationOwnerOf(session);
   const preferences = useNotificationPreferences(owner);
   const device = useThisDevice(owner);
-  const level = shownLevel(preferences.saved?.level);
+  const level = preferences.saved?.level;
   const waiting = preferences.status !== "ready";
   return (
     <section className="flex flex-col gap-3">
       <div className={cn(waiting && "pointer-events-none opacity-50")}>
         <AppTabs
           label={PROFILE_WORDS.notifications}
-          tabs={LEVELS.map((key) => ({ key, label: LEVEL_WORDS[key] }))}
+          tabs={NOTIFICATION_LEVELS.map((key) => ({ key, label: LEVEL_WORDS[key] }))}
           value={level ?? NO_LEVEL}
           onChange={(next) => void preferences.save(next)}
         />
       </div>
+      {level && <p className="text-app-body text-app-muted">{levelMeaning(level)}</p>}
       <div className="-mx-5">
         <AppSetting
           icon="monitor"
