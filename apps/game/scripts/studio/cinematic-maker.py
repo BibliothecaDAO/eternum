@@ -11,7 +11,7 @@ from PIL import Image, ImageColor, ImageDraw, ImageFont
 RATE = 48000
 FRAME_COUNT = 481
 FPS = 24
-SIZE = (1280, 720)
+SIZE = (1920, 1080)
 REALMS = "01-Logos/Realms/Lettered/realms-lettered-ink.png"
 LOCKUP = "01-Logos/Frontier/Transparent/frontier-lockup.png"
 HEADING = "02-Fonts/IM-Fell-English-SC/IMFellEnglishSC-Regular.ttf"
@@ -90,28 +90,33 @@ def centred_text(image, text, y, font_path, size, colour):
     draw.text((image.width / 2, y), text, anchor="mm", font=font, fill=colour)
 
 
+def load_brand_master(path, width):
+    logo = Image.open(path).convert("RGBA")
+    if logo.width < width:
+        raise ValueError(f"Brand master is too small for {width}px output: {path}")
+    height = round(logo.height * width / logo.width)
+    return logo.resize((width, height), Image.Resampling.LANCZOS)
+
+
 def make_card(kit, size, plan, target):
     width = size[0]
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
     ground = ImageColor.getrgb(palette["brand"]["hearth"])
     card = Image.new("RGBA", size, (*ground, 204))
-    logo = Image.open(kit / LOCKUP).convert("RGBA")
-    logo_width = 720
-    logo = logo.resize((logo_width, round(logo.height * logo_width / logo.width)), Image.Resampling.LANCZOS)
-    card.alpha_composite(logo, ((width - logo_width) // 2, 0))
-    centred_text(card, plan["line"], 515, kit / HEADING,
-                 36, palette["brand"]["parchment"])
-    centred_text(card, plan["cta"], 585, kit / BODY,
-                 30, palette["games"]["frontier"]["title"])
+    logo = load_brand_master(kit / LOCKUP, 1080)
+    card.alpha_composite(logo, ((width - logo.width) // 2, 0))
+    centred_text(card, plan["line"], 772, kit / HEADING,
+                 54, palette["brand"]["parchment"])
+    centred_text(card, plan["cta"], 878, kit / BODY,
+                 45, palette["games"]["frontier"]["title"])
     card.save(target)
 
 
 def make_intro_card(kit, size, plan, target):
     card = Image.new("RGBA", size, (0, 0, 0, 0))
-    logo = Image.open(kit / REALMS).convert("RGBA")
     width = plan["realmsWidth"]
-    logo = logo.resize((width, round(logo.height * width / logo.width)), Image.Resampling.LANCZOS)
-    position = (size[0] - width - 36, 36)
+    logo = load_brand_master(kit / REALMS, width)
+    position = (size[0] - width - 54, 54)
     card.alpha_composite(logo, position)
     card.save(target)
 
@@ -125,7 +130,7 @@ def render_picture(source, size, plan, folder):
     logo_fade_start = plan["realmsFadeStartFrame"] / FPS
     logo_fade_duration = (plan["realmsFadeEndFrame"] - plan["realmsFadeStartFrame"]) / FPS
     graph = (
-        "[0:v]pad=1280:720:0:8:color=0x14101D,setsar=1,"
+        "[0:v]scale=1920:1056:flags=lanczos,pad=1920:1080:0:12:color=0x14101D,setsar=1,"
         f"tpad=stop_mode=clone:stop={hold_frames}[held];"
         f"[1:v]format=rgba,fade=t=out:st={logo_fade_start}:d={logo_fade_duration}:alpha=1[intro];"
         "[held][intro]overlay=0:0:shortest=1:format=auto[sequence];"
@@ -136,7 +141,8 @@ def render_picture(source, size, plan, folder):
     ffmpeg(["-v", "error", "-i", source, "-loop", 1, "-framerate", FPS,
             "-i", folder / "intro-card.png", "-loop", 1, "-framerate", FPS,
             "-i", folder / "card.png", "-filter_complex", graph, "-map", "[v]", "-an",
-            "-frames:v", total_frames, "-c:v", "libx264", "-preset", "slow", "-crf", 18,
+            "-frames:v", total_frames, "-c:v", "libx264", "-profile:v", "high",
+            "-preset", "slow", "-crf", 15,
             "-threads", 2, "-movflags", "+faststart", target])
     return target
 
@@ -154,6 +160,7 @@ def deliver_film(picture, score, target, duration, size, frame_count):
     video = next(stream for stream in info["streams"] if stream["codec_type"] == "video")
     assert (video["width"], video["height"]) == size
     assert video["codec_name"] == "h264" and video["avg_frame_rate"] == f"{FPS}/1"
+    assert video["profile"] == "High"
     assert int(video["nb_frames"]) == frame_count
     assert abs(float(info["format"]["duration"]) - duration) < 1 / FPS
     metrics = {}
@@ -167,7 +174,8 @@ def deliver_film(picture, score, target, duration, size, frame_count):
     ffmpeg(["-v", "error", "-i", partial, "-f", "null", "-"])
     partial.replace(target)
     return {"file": target.name, "width": size[0], "height": size[1], "seconds": duration,
-            "frameCount": frame_count, "hasAudio": bool(score), "sha256": digest(target),
+            "frameCount": frame_count, "profile": video["profile"], "crf": 15,
+            "hasAudio": bool(score), "sha256": digest(target),
             "bytes": target.stat().st_size, **metrics}
 
 
@@ -175,6 +183,9 @@ def capture_checks(picture, plan, folder):
     for name, second in plan["reviewFrames"].items():
         ffmpeg(["-v", "error", "-ss", second, "-i", picture,
                 "-frames:v", 1, "-threads", 2, folder / f"{name}.png"])
+    ffmpeg(["-v", "error", "-ss", plan["lockupFullFrame"] / FPS, "-i", picture,
+            "-vf", "crop=1080:950:420:0", "-frames:v", 1, "-threads", 2,
+            folder / "end-card-100-percent.png"])
 
 
 def finish(args):
@@ -189,7 +200,7 @@ def finish(args):
     total_frames = FRAME_COUNT + plan["holdFrames"]
     duration = total_frames / FPS
     assert plan["holdFrames"] > 0
-    assert 0 < plan["realmsWidth"] <= SIZE[0] - 72
+    assert 0 < plan["realmsWidth"] <= SIZE[0] - 108
     assert 0 <= plan["realmsFadeStartFrame"] < plan["realmsFadeEndFrame"] < FRAME_COUNT
     if plan["lockupFullFrame"] != FRAME_COUNT - 1:
         raise ValueError("The one-second lockup fade must finish on the film's final moving frame.")
