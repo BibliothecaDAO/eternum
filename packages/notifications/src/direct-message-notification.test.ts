@@ -19,7 +19,8 @@ it("names the sender, never the message, with a per-thread collapse tag", () => 
     body: "Open Realms to read it.",
     target: "/",
     createdAt: 1_000,
-    expiresAt: 121_000,
+    expiresAt: 3_601_000,
+    kind: "messages",
   });
 });
 

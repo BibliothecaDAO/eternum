@@ -1,5 +1,5 @@
 import { Effect } from "effect";
-import { buildMentionNotification, includesChatNotification } from "@bibliothecadao/notifications";
+import { buildMentionNotification, includesKind } from "@bibliothecadao/notifications";
 import type { MentionPlace } from "@bibliothecadao/notifications";
 import { GLOBAL_CHAT_CHANNEL_ID } from "@bibliothecadao/types";
 import { mentionCandidates, profileOfIdentityUser } from "@realms-world/identity";
@@ -82,7 +82,7 @@ export const pushMentions = async (
       const levels = yield* (yield* NotificationPreferenceStore).levels(targets);
       const store = yield* PushSubscriptionStore;
       for (const owner of targets) {
-        if (!includesChatNotification(levels.get(owner) ?? "off")) continue;
+        if (!includesKind(levels.get(owner) ?? "off", "messages")) continue;
         const { blocked } = yield* Effect.promise(() => inboxOf(env, owner).blockList());
         if (blocked.includes(message.senderId)) continue;
         const notification = buildMentionNotification(

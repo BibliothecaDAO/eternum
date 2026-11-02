@@ -1,5 +1,6 @@
 import { logicalStoryIdentity, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 import type { NotificationCopy } from "./story-copy";
+import { kindTag, lifetimeOf } from "./notification-kinds";
 import { storyNotificationRule } from "./story-policy";
 
 /** Shared display content and logical identity for live-page and server delivery. */
@@ -18,9 +19,12 @@ export function buildStoryNotification(input: {
   const read = readHistoryStory(input.model ?? "StoryEvent", input.value);
   if (!read) throw new Error(`Not a notification story: ${input.model}`);
   const { story, payload } = read;
+  const rule = storyNotificationRule(story);
+  if ("excluded" in rule) throw new Error(`Not a notified story: ${story}`);
   const createdAt = storyNotificationCreatedAt(input.value);
-  if (createdAt + 120_000 <= input.now) return null;
-  const copy = storyNotificationCopy(story, payload, input.recipient);
+  const expiresAt = createdAt + lifetimeOf(rule.kind);
+  if (expiresAt <= input.now) return null;
+  const copy = rule.copy({ payload, recipient: input.recipient });
   return parseNotificationPayload(
     {
       version: 1,
@@ -28,9 +32,11 @@ export function buildStoryNotification(input: {
       id: logicalStoryIdentity(input.sourceId, story, input.value, payload),
       title: copy.title,
       body: `${input.gameName}: ${copy.body}`,
+      tag: kindTag(rule.kind, input.target),
       target: input.target,
       createdAt,
-      expiresAt: createdAt + 120_000,
+      expiresAt,
+      kind: rule.kind,
     },
     input.now,
   );

@@ -19,7 +19,11 @@ const SEND_TIMEOUT_MS = 10_000;
 /** What the push service did with one message: kept it, forgot the device, asked to retry, or refused it. */
 type PushOutcome = "accepted" | "expired" | "retry" | "rejected";
 
-/** Encrypts the envelope for the device (RFC 8291), signs it with our VAPID key (RFC 8292) and hands it over. */
+/**
+ * Encrypts the envelope for the device (RFC 8291), signs it with our VAPID key (RFC 8292) and hands it over. It lives at
+ * the push service for as long as the alert does, under a Topic named for its tag (RFC 8030): a newer alert of the same
+ * tag replaces one still waiting there for a phone out of reach.
+ */
 export const sendPush = async (
   vapid: VapidKeys,
   device: PushDevice,
@@ -29,7 +33,14 @@ export const sendPush = async (
   let remaining = envelope.notification.expiresAt - Date.now();
   if (remaining <= 0) return "rejected";
   const message = await buildPushPayload(
-    { data: envelope as never, options: { ttl: Math.ceil(remaining / 1000) - 1, urgency: "high" } },
+    {
+      data: envelope as never,
+      options: {
+        ttl: Math.ceil(remaining / 1000) - 1,
+        urgency: "high",
+        topic: await pushTopic(envelope.notification.tag ?? envelope.notification.id),
+      },
+    },
     { endpoint: device.endpoint, expirationTime: null, keys: { p256dh: device.p256dh, auth: device.auth } },
     vapid,
   );
@@ -46,4 +57,14 @@ export const sendPush = async (
   if (response.status === 404 || response.status === 410) return "expired";
   if (response.status === 429 || response.status >= 500) return "retry";
   return "rejected";
+};
+
+/** A Topic is at most 32 characters of base64url (RFC 8030 5.4): the tag's SHA-256, cut to fit. */
+const pushTopic = async (tag: string): Promise<string> => {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(tag)));
+  return btoa(String.fromCharCode(...digest))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
+    .slice(0, 32);
 };

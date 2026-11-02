@@ -1,9 +1,9 @@
 # Local game notifications
 
-Local delivery is opt-in per identity account on this device. Settings separates the account's
-Off/Important/Standard/All level from device enablement and browser permission. Enabling requests permission in the
-button gesture. Spectators do not see permission controls; anonymous preferences stay local, but device delivery
-requires sign-in. Home Screen guidance follows
+Local delivery is opt-in per identity account on this device. Settings separates the account's Off/Important/All level
+from device enablement and browser permission. Enabling requests permission in the button gesture. Spectators do not see
+permission controls; anonymous preferences stay local, but device delivery requires sign-in. Home Screen guidance
+follows
 [WebKit's installation and gesture requirements](https://webkit.org/blog/13878/web-push-for-web-apps-on-ios-and-ipados/).
 
 The transport's `confirmedAfterAttach` flag is true only for confirmed events newer than the head advertised when that
@@ -26,10 +26,13 @@ the live chat UI while the player is active. DM delivery requires explicit conse
 subscriptions can enable DM alerts in Settings; the server excludes registrations that have not completed that upgrade.
 
 The worker receives bounded version-1 display envelopes: source/logical ID, account owner, title/body, an allowlisted
-game entry path, and creation/expiry times. There are no gameplay entity rows or arbitrary URLs. Alerts expire after two
-minutes; a Day open push lives until an hour before its day ends. Game entry always uses the normal bootstrap. Clicks
-focus an existing matching game without navigating it, or open a separate entry flow; an existing game's transactions
-are never interrupted by forced navigation.
+game entry path, creation/expiry times, its kind and its tag. There are no gameplay entity rows or arbitrary URLs. Each
+kind lives while it is news (`packages/notifications/src/notification-kinds.ts`): a Day open push until an hour before
+its day ends, rested armies until their day ends, results a day, fights, deliveries and messages an hour; a notice with
+no kind two minutes. One tag per game and kind, and the matching Web Push Topic, let a newer alert replace the one shown
+or still waiting at the push service. Game entry always uses the normal bootstrap. Clicks focus an existing matching
+game without navigating it, or open a separate entry flow; an existing game's transactions are never interrupted by
+forced navigation.
 
 Shared logical identity groups paired battle and delayed-transfer records by their action identity. The native emitters
 and notification rules must agree on perspective and ordering; behavior tests cover mirrored records and distinct

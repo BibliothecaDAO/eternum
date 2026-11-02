@@ -7,6 +7,7 @@ export * from "./direct-message-notification";
 export * from "./mention-notification";
 export * from "./army-rested";
 export * from "./day-open";
-export * from "./quiet-hours";
+export * from "./clock";
+export * from "./notification-kinds";
 export * from "./email";
 export * from "./player-emails";

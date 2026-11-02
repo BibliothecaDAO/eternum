@@ -1,4 +1,5 @@
-import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
+import type { NotificationLevel } from "./preferences";
+import { includesKind, type NotificationKind } from "./notification-kinds";
 import {
   bitcoinAwardCopy,
   battleCopy,
@@ -15,12 +16,12 @@ type RecipientSource = "capture" | "owner" | "transferReceiver" | "nativeBattle"
 /** A game's mode, as its shard's directory names it. */
 export type StoryGameMode = "blitz" | "eternum" | "frontier" | "duel" | null;
 /**
- * A delivered story's level, who it is for, the game modes it is pushed in (every mode when absent), and what its alert
- * says; a story is delivered with its words or not at all.
+ * A delivered story's kind (which names its level and how long it lives), who it is for, the game modes it is pushed in
+ * (every mode when absent), and what its alert says; a story is delivered with its words or not at all.
  */
 type StoryRule =
   | {
-      level: Exclude<NotificationLevel, "off">;
+      kind: NotificationKind;
       recipients: RecipientSource;
       copy: StoryCopy;
       modes?: readonly StoryGameMode[];
@@ -34,32 +35,32 @@ const PLAYER_FIGHTS: readonly StoryGameMode[] = ["blitz", "eternum", "duel"];
 const OWN_ACTION = "The player's own action: the Feed and the Log show it";
 const STORY_RULES = {
   // What happens to the player without their tap.
-  BattleEvent: { level: "important", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
-  StructureCapturedStory: { level: "important", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
-  RaidEvent: { level: "important", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
+  BattleEvent: { kind: "fights", recipients: "nativeBattle", copy: battleCopy, modes: PLAYER_FIGHTS },
+  StructureCapturedStory: { kind: "fights", recipients: "capture", copy: captureStoryCopy, modes: PLAYER_FIGHTS },
+  RaidEvent: { kind: "fights", recipients: "raid", copy: raidStoryCopy, modes: PLAYER_FIGHTS },
   SeasonEnded: {
-    level: "important",
+    kind: "results",
     recipients: "owner",
     copy: says("The season is over", "see where you finished."),
   },
   BlitzFinalized: {
-    level: "important",
+    kind: "results",
     recipients: "owner",
     copy: says("Your Blitz is settled", "see where you finished."),
   },
   ResourceReceiveArrivalStory: {
-    level: "standard",
+    kind: "deliveries",
     recipients: "owner",
     copy: says("Your caravan arrived", "the resources are in your stores."),
   },
   TradeAccepted: {
-    level: "all",
+    kind: "deliveries",
     recipients: "owner",
     copy: says("A trade was filled", "the goods changed hands."),
   },
-  ResourceTransferStory: { level: "all", recipients: "transferReceiver", copy: transferStoryCopy },
-  BitcoinAwardStory: { level: "all", recipients: "owner", copy: bitcoinAwardCopy },
-  HyperstructurePoints: { level: "all", recipients: "owner", copy: hyperstructurePointsCopy },
+  ResourceTransferStory: { kind: "deliveries", recipients: "transferReceiver", copy: transferStoryCopy },
+  BitcoinAwardStory: { kind: "bitcoin", recipients: "owner", copy: bitcoinAwardCopy },
+  HyperstructurePoints: { kind: "points", recipients: "owner", copy: hyperstructurePointsCopy },
 
   // The player's own taps: the Feed and the Log tell them, a push would only echo them.
   TradeCreated: { excluded: OWN_ACTION },
@@ -106,9 +107,7 @@ export function storyNotificationRule(story: string): StoryRule {
 export function includesStoryNotification(level: NotificationLevel, story: string, mode: StoryGameMode): boolean {
   const rule = storyNotificationRule(story);
   return (
-    !("excluded" in rule) &&
-    (rule.modes === undefined || rule.modes.includes(mode)) &&
-    NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf(rule.level)
+    !("excluded" in rule) && (rule.modes === undefined || rule.modes.includes(mode)) && includesKind(level, rule.kind)
   );
 }
 

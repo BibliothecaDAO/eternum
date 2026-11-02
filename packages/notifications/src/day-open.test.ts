@@ -1,7 +1,6 @@
 import { expect, it } from "vitest";
-import { buildDayOpen, dayOpenSendAt } from "./day-open";
+import { buildDayOpen } from "./day-open";
 import { buildArmyRestedNotification } from "./army-rested";
-import { isQuietAt, sendableAt } from "./quiet-hours";
 
 const HOUR = 3_600_000;
 /** Mon Nov 3 2026, 14:00 in Mumbai (08:30 UTC). */
@@ -44,19 +43,6 @@ it("names the last day with the season's end", () => {
   });
 });
 
-it("goes at 08:00 on a phone whose day opens in its quiet hours, and not at all for a day nearly gone by then", () => {
-  // 23:00 in Mumbai: a 12-hour day still has two hours left at 08:00 after its last-hour cut.
-  const night = Date.UTC(2026, 10, 3, 17, 30);
-  const morning = Date.UTC(2026, 10, 4, 2, 30);
-  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, "Asia/Kolkata")).toBe(morning);
-  // A 10-hour day from 23:00 ends at 09:00: under an hour is left after 08:00, so it sends nothing.
-  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 10 * HOUR }, "Asia/Kolkata")).toBeNull();
-  // The same instant is 12:30 in New York: it goes at once.
-  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, "America/New_York")).toBe(night);
-  // No zone reported yet: no quiet hours.
-  expect(dayOpenSendAt({ opensAt: night, endsAt: night + 12 * HOUR }, null)).toBe(night);
-});
-
 it.each([
   ["Asia/Kolkata", "Devcon: claim 1,000 Labor before 20:00."],
   ["UTC", "Devcon: claim 1,000 Labor before 14:30."],
@@ -68,10 +54,6 @@ it.each([
   expect(sent.id).toBe(buildDayOpen(day).id);
 });
 
-it("reads UTC, with no quiet hours, on a phone that has not reported its zone", () => {
-  expect(isQuietAt(Date.UTC(2026, 10, 3, 2), null)).toBe(false);
-});
-
 it("is one push per player and day, whatever phone or wording", () => {
   const id = buildDayOpen(day).id;
   expect(buildDayOpen({ ...day, timeZone: "UTC" }).id).toBe(id);
@@ -80,41 +62,35 @@ it("is one push per player and day, whatever phone or wording", () => {
   expect(buildDayOpen({ ...day, owner: "0x2" }).id).not.toBe(id);
 });
 
-it("keeps quiet from 22:00 to 08:00 on the phone's clock", () => {
-  const mumbai = (hour: number, minute = 0) => Date.UTC(2026, 10, 3, hour - 5, minute - 30);
-  expect(isQuietAt(mumbai(21, 59), "Asia/Kolkata")).toBe(false);
-  expect(isQuietAt(mumbai(22), "Asia/Kolkata")).toBe(true);
-  expect(isQuietAt(mumbai(7, 59), "Asia/Kolkata")).toBe(true);
-  expect(isQuietAt(mumbai(8), "Asia/Kolkata")).toBe(false);
-  expect(sendableAt(mumbai(3, 17), "Asia/Kolkata")).toBe(mumbai(8));
-  expect(sendableAt(mumbai(15), "Asia/Kolkata")).toBe(mumbai(15));
+it("keeps one Day open shown per game: the next day's replaces it", () => {
+  expect(buildDayOpen(day).tag).toBe("day-open:/g/0x0a/6");
+  expect(buildDayOpen({ ...day, day: 2, owner: "0x2" }).tag).toBe(buildDayOpen(day).tag);
 });
 
-it.each([
-  // 23:00 on Oct 31 in New York; the clock goes back an hour that night, so 08:00 is 13:00 UTC, not 12:00.
-  ["New York, autumn", "America/New_York", Date.UTC(2026, 10, 1, 3), Date.UTC(2026, 10, 1, 13)],
-  // 22:00 on Mar 13 in New York; the clock goes forward an hour that night, so 08:00 is 12:00 UTC, not 13:00.
-  ["New York, spring", "America/New_York", Date.UTC(2027, 2, 14, 3), Date.UTC(2027, 2, 14, 12)],
-  // Midnight on Oct 25 in Paris; summer time ends that night, so 08:00 is 07:00 UTC.
-  ["Paris, autumn", "Europe/Paris", Date.UTC(2026, 9, 24, 22), Date.UTC(2026, 9, 25, 7)],
-] as const)("waits for 08:00 on the phone's clock across its clock change: %s", (_case, zone, night, morning) => {
-  expect(sendableAt(night, zone)).toBe(morning);
-  expect(isQuietAt(morning, zone)).toBe(false);
-  expect(isQuietAt(morning - 1000, zone)).toBe(true);
-});
-
-it("tells a player once a day that an army is rested, however many rest", () => {
-  const rested = (armyDay: number, fullAt: number) =>
+it("tells a player each time their armies are all rested, until their day ends, one shown per game", () => {
+  const rested = (fullAt: number, armies = 2) =>
     buildArmyRestedNotification({
       chainId: "0xa",
       gameId: 6,
-      day: armyDay,
       fullAt,
+      until: opensAt + 6 * HOUR,
+      armies,
       owner: "0x1",
       gameName: "Devcon",
       now: fullAt,
     })!;
-  expect(rested(1, opensAt)).toMatchObject({ title: "An army is rested", body: "Devcon: its stamina is full." });
-  expect(rested(1, opensAt + HOUR).id).toBe(rested(1, opensAt).id);
-  expect(rested(2, opensAt).id).not.toBe(rested(1, opensAt).id);
+  expect(rested(opensAt)).toMatchObject({
+    kind: "army-rested",
+    title: "Your armies are rested",
+    body: "Devcon: their stamina is full.",
+    tag: "army-rested:/g/0xa/6",
+    createdAt: opensAt,
+    expiresAt: opensAt + 6 * HOUR,
+  });
+  expect(rested(opensAt, 1)).toMatchObject({ title: "Your army is rested", body: "Devcon: its stamina is full." });
+  // A second refill the same day is a second alert, under the same tag: it replaces the first on the phone.
+  expect(rested(opensAt + 2 * HOUR).id).not.toBe(rested(opensAt).id);
+  expect(rested(opensAt + 2 * HOUR).tag).toBe(rested(opensAt).tag);
+  // Its day over, the armies are gone: nothing to tell.
+  expect(rested(opensAt + 6 * HOUR)).toBeNull();
 });

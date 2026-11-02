@@ -10,15 +10,23 @@ const input = {
   target: "/g/0xa1/7",
   now: 1100,
 };
-it("builds shared display content from the original event clock", () => {
+it("builds shared display content from the original event clock, alive while its kind is news", () => {
   expect(buildStoryNotification(input)).toMatchObject({
     id: input.sourceId,
+    kind: "results",
     title: "The season is over",
     body: "game: see where you finished.",
+    tag: "results:/g/0xa1/7",
     createdAt: 1000,
-    expiresAt: 121000,
+    expiresAt: 1000 + 24 * 3_600_000,
   });
-  expect(buildStoryNotification({ ...input, now: 121000 })).toBeNull();
+  expect(buildStoryNotification({ ...input, now: 1000 + 24 * 3_600_000 })).toBeNull();
+  const fight = { ...input, value: { timestamp: "0x1", story: { StructureCapturedStory: { structure_id: 1 } } } };
+  expect(buildStoryNotification({ ...fight, now: 1000 + 3_599_000 })).toMatchObject({
+    kind: "fights",
+    tag: "fights:/g/0xa1/7",
+    expiresAt: 1000 + 3_600_000,
+  });
 });
 
 it.each([

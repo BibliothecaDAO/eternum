@@ -5,6 +5,7 @@
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
 import type { CampaignKey } from "@realms-world/identity";
+import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import {
   BuildingType,
   XP,
@@ -626,7 +627,7 @@ export const SEASON_DAY_STATES = {
 } as const;
 export const seasonDayLabel = (day: number, state: keyof typeof SEASON_DAY_STATES) =>
   `Day ${day} ${SEASON_DAY_STATES[state]}`;
-/** The phone's own time zone: the server words a push's times, and keeps its quiet hours, by this clock. */
+/** The phone's own time zone: the server words a push's times by this clock. */
 export const deviceTimeZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
 /** The claimed sheet's ask for a push when the next game day opens, on this device, and its state once on. */
 export const REMIND_ME = "Remind me";
@@ -1117,8 +1118,33 @@ export const SEASON_PRIZE_WORDS = {
   claim: "Claim",
 } as const;
 
-/** The three alert levels (ruled) and what each carries, in one line. */
+/** The three alert levels (ruled). */
 export const LEVEL_WORDS = { off: "Off", important: "Important", all: "All" } as const;
+
+/** Each kind of alert as Settings names it in a level's line. */
+export const NOTIFICATION_KIND_WORDS = {
+  "day-open": "each day's opening",
+  "army-rested": "rested armies",
+  fights: "fights",
+  results: "results",
+  messages: "messages",
+  deliveries: "deliveries and trades",
+  bitcoin: "Bitcoin payouts",
+  points: "Hyperstructure points",
+} as const satisfies Record<NotificationKind, string>;
+
+/**
+ * What a level brings, in one line under the levels: the kinds it carries beyond the level below it, as the kinds table
+ * gives them ("Important, plus deliveries and trades, …").
+ */
+export const levelLine = (kinds: readonly NotificationKind[], below: NotificationLevel | null): string => {
+  if (kinds.length === 0) return "No alerts";
+  const named = kinds.map((kind) => NOTIFICATION_KIND_WORDS[kind]);
+  const list = named.length === 1 ? named[0]! : `${named.slice(0, -1).join(", ")} and ${named.at(-1)}`;
+  return below === null || below === "off"
+    ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
+    : `${LEVEL_WORDS[below]}, plus ${list}`;
+};
 
 /** What's new: its patch notes, and the legal pages' date. */
 export const NEWS_WORDS = {

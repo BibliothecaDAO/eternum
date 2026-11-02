@@ -1,11 +1,9 @@
 import * as Schema from "effect/Schema";
 import { decodeNotification } from "./validation";
 
-export const NOTIFICATION_LEVELS = ["off", "important", "standard", "all"] as const;
+/** The three levels Settings offers; each carries the kinds NOTIFICATION_KIND_RULES gives it and every level below. */
+export const NOTIFICATION_LEVELS = ["off", "important", "all"] as const;
 export type NotificationLevel = (typeof NOTIFICATION_LEVELS)[number];
-
-/** Chat alerts (a private message, a mention) reach a player at every level but off. */
-export const includesChatNotification = (level: NotificationLevel): boolean => level !== "off";
 
 export interface NotificationPreferences {
   owner: string;

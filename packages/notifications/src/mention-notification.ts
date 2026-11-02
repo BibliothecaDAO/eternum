@@ -1,6 +1,7 @@
 import * as Schema from "effect/Schema";
 
 import { CHAT_PATH, lobbyPath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
+import { lifetimeOf } from "./notification-kinds";
 import { decodeNotification, notificationText, pushOwnerSchema } from "./validation";
 
 /** Where a mention was written: Global, or a Blitz slot's lobby room, by the slot's name. */
@@ -33,7 +34,8 @@ export function buildMentionNotification(value: unknown, now: number): LocalNoti
       body: lobby ? "In a Blitz lobby. Open Realms to read it." : "In Global. Open Realms to read it.",
       target: input.place.kind === "lobby" ? lobbyPath(input.place.slot) : CHAT_PATH,
       createdAt: input.createdAt,
-      expiresAt: input.createdAt + 120_000,
+      expiresAt: input.createdAt + lifetimeOf("messages"),
+      kind: "messages",
     },
     now,
   );

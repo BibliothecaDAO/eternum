@@ -1,36 +1,41 @@
 import { gamePath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
-import { NOTIFICATION_LEVELS, type NotificationLevel } from "./preferences";
+import { includesKind, kindTag } from "./notification-kinds";
+import type { NotificationLevel } from "./preferences";
 
-/** An army whose stamina is full again is news at the standard level: the player can act with it now. */
-export const includesArmyRestedNotification = (level: NotificationLevel): boolean =>
-  NOTIFICATION_LEVELS.indexOf(level) >= NOTIFICATION_LEVELS.indexOf("standard");
+/** Armies whose stamina is full again are news at Important: the player can act with them now. */
+export const includesArmyRestedNotification = (level: NotificationLevel): boolean => includesKind(level, "army-rested");
 
 /**
- * An army of the player's is rested: one alert a day per player and game, the first time one of their armies is full
- * that day (a Frontier game day, else a UTC date), so armies that rest at three times the speed still buzz once. It
- * names one army, since others may still be recovering. It lives two minutes like every alert.
+ * The armies a player left spent are all rested again: one alert each time, once the last of them is full, so a
+ * player who stops playing gets no more. It lives while it is true, until the armies' day ends (`until`), and a newer
+ * one in the same game replaces it on the phone.
  */
 export function buildArmyRestedNotification(input: {
   chainId: string;
   gameId: number;
-  /** The day it is for: the Frontier day's index, or the UTC date's number in a game without days. */
-  day: number;
+  /** When the last of the armies was full. */
   fullAt: number;
+  /** When the armies' day ends: an army of an earlier day is no army any more. */
+  until: number;
+  armies: number;
   owner: string;
   gameName: string;
   now: number;
 }): LocalNotificationPayload | null {
-  if (input.fullAt + 120_000 <= input.now) return null;
+  if (input.until <= input.now) return null;
+  const target = gamePath({ chainId: input.chainId, gameId: input.gameId });
   return parseNotificationPayload(
     {
       version: 1,
-      id: `rested:v2:${input.chainId}:${input.gameId}:${input.day}:${input.owner}`,
+      kind: "army-rested",
+      id: `rested:v3:${input.chainId}:${input.gameId}:${input.owner}:${input.fullAt}`,
       owner: input.owner,
-      title: "An army is rested",
-      body: `${input.gameName}: its stamina is full.`,
-      target: gamePath({ chainId: input.chainId, gameId: input.gameId }),
+      title: input.armies === 1 ? "Your army is rested" : "Your armies are rested",
+      body: `${input.gameName}: ${input.armies === 1 ? "its stamina is" : "their stamina is"} full.`,
+      tag: kindTag("army-rested", target),
+      target,
       createdAt: input.fullAt,
-      expiresAt: input.fullAt + 120_000,
+      expiresAt: input.until,
     },
     input.now,
   );

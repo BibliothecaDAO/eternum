@@ -4,33 +4,27 @@ import { useNotificationPreferences } from "@/hooks/use-notification-preferences
 import { useThisDevice, type ThisDeviceState } from "@/shell/profile/this-device";
 import { failureLine } from "@/ui/design-system/kit/failure-lines";
 import { HudChip, HudLoading, HudNotice, HudSelect, HudSetting, HudSwitch } from "@/ui/design-system/kit/hud-elements";
-import type { NotificationLevel } from "@bibliothecadao/notifications";
+import { NOTIFICATION_LEVELS, type NotificationLevel } from "@bibliothecadao/notifications";
 
 /**
  * Notifications in the game's Settings, on the HUD sheet: the same three levels and This device as the profile's
- * card, read and saved through the same hooks. A stored Standard (an older level the app no longer offers) shows no
- * level until the player picks one.
+ * card, read and saved through the same hooks.
  */
-type Level = keyof typeof LEVEL_WORDS;
-const LEVELS: Level[] = ["off", "important", "all"];
-const shownLevel = (saved: NotificationLevel | undefined): Level | undefined =>
-  saved === "standard" ? undefined : saved;
-
 export const NotificationSettings = () => {
   const { session } = useIdentitySession();
   const owner = notificationOwnerOf(session);
   const preferences = useNotificationPreferences(owner);
   const device = useThisDevice(owner);
-  const level = shownLevel(preferences.saved?.level);
+  const level = preferences.saved?.level;
   return (
     <>
       <HudSetting name={PROFILE_WORDS.notifications}>
-        <HudSelect<Level | "">
+        <HudSelect<NotificationLevel | "">
           label={PROFILE_WORDS.notifications}
           value={level ?? ""}
           options={[
             ...(level ? [] : [{ value: "" as const, label: "—", disabled: true }]),
-            ...LEVELS.map((id) => ({ value: id, label: LEVEL_WORDS[id] })),
+            ...NOTIFICATION_LEVELS.map((id) => ({ value: id, label: LEVEL_WORDS[id] })),
           ]}
           disabled={preferences.status !== "ready"}
           onChange={(next) => next && void preferences.save(next)}

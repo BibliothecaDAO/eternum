@@ -410,7 +410,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
           id,
         },
       ),
-    /** Whether a game is in view on this device, and the device's time zone, which a push's times and quiet hours use. */
+    /** Whether a game is in view on this device, and the device's time zone, which a push's times use. */
     setPushGameForeground: (owner: string, id: string, foreground: boolean, timeZone: string) =>
       pushRequest(
         "foreground",
