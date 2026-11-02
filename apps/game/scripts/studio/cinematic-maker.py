@@ -100,6 +100,11 @@ def load_brand_master(path, width):
 
 
 def make_card(kit, size, plan, target):
+    if plan.get("cardPlacement", "full-frame") == "sky":
+        make_sky_card(kit, size, plan).save(target)
+        return
+    if plan.get("cardPlacement", "full-frame") != "full-frame":
+        raise ValueError("cardPlacement must be sky or full-frame")
     width = size[0]
     scale = width / BASE_WIDTH
     palette = json.loads((kit / "03-Colors/palette.json").read_text())
@@ -114,29 +119,83 @@ def make_card(kit, size, plan, target):
     card.save(target)
 
 
-def ink_density(size, opacity, variation):
-    rng = random.Random(741)
-    mottling = Image.frombytes("L", (24, 24), bytes(rng.randrange(256) for _ in range(576)))
-    mottling = mottling.resize(size, Image.Resampling.BICUBIC).filter(ImageFilter.GaussianBlur(2))
-    grain = Image.frombytes("L", size, bytes(rng.randrange(256) for _ in range(size[0] * size[1])))
-    return Image.blend(mottling, grain, .35).point(
-        lambda value: round(255 * opacity * (1 - variation * value / 255)))
+def make_sky_card(kit, size, plan):
+    scale = size[0] / BASE_WIDTH
+    palette = json.loads((kit / "03-Colors/palette.json").read_text())
+    lettering = Image.new("RGBA", size)
+    logo = load_brand_master(kit / LOCKUP, round(420 * scale))
+    lettering.alpha_composite(logo, ((size[0] - logo.width) // 2, 0))
+    centred_text(lettering, plan["line"], round(284 * scale), kit / HEADING,
+                 round(28 * scale), palette["brand"]["parchment"])
+    centred_text(lettering, plan["cta"], round(318 * scale), kit / BODY,
+                 round(24 * scale), palette["games"]["frontier"]["title"])
+    shadow = Image.new("RGBA", size, (20, 12, 27))
+    alpha = lettering.getchannel("A").filter(ImageFilter.GaussianBlur(3 * scale))
+    shadow.putalpha(alpha.point(lambda value: round(value * .4)))
+    shadow.alpha_composite(lettering)
+    return shadow
 
 
-def make_intro_card(kit, size, plan, target, opacity=.94, bleed=.45, variation=.18):
+def ink_noise(size, cells, seed):
+    rng = random.Random(seed)
+    noise = Image.frombytes("L", cells, bytes(rng.randrange(256) for _ in range(cells[0] * cells[1])))
+    return noise.resize(size, Image.Resampling.BICUBIC)
+
+
+def fibre_edges(mask, scale):
+    width, height = mask.size
+    step = max(4, round(8 * scale))
+    amplitude = 1.1 * scale
+    rng = random.Random(813)
+    xs = list(range(0, width, step)) + [width]
+    ys = list(range(0, height, step)) + [height]
+    points = {(x, y): (x + rng.uniform(-amplitude, amplitude),
+                       y + rng.uniform(-amplitude, amplitude)) for x in xs for y in ys}
+    mesh = []
+    for left, right in zip(xs, xs[1:]):
+        for top, bottom in zip(ys, ys[1:]):
+            quad = sum((points[p] for p in [(left, top), (left, bottom),
+                                           (right, bottom), (right, top)]), ())
+            mesh.append(((left, top, right, bottom), quad))
+    return mask.transform(mask.size, Image.Transform.MESH, mesh, Image.Resampling.BILINEAR)
+
+
+def parchment_stamp(logo, scale):
+    mask = fibre_edges(logo.getchannel("A"), scale)
+    fibre = ink_noise(mask.size, (max(1, mask.width // 2), max(1, mask.height // 7)), 741)
+    dry_brush = fibre.point(lambda value: 65 if value > 177 else 150 if value > 148 else 238)
+    impression = ImageChops.multiply(mask, dry_brush)
+    edge_pool = ImageChops.subtract(mask, mask.filter(ImageFilter.MinFilter(3)))
+    impression = ImageChops.lighter(impression, edge_pool.point(lambda value: round(value * .7)))
+    pools = ink_noise(mask.size, (19, 17), 812)
+    colour = Image.merge("RGB", tuple(pools.point(lambda value, base=base, span=span:
+                         round(base + span * value / 255)) for base, span in [(73, 83), (37, 67), (17, 39)]))
+    pad = round(20 * scale)
+    stamp = Image.new("RGBA", (mask.width + pad * 2, mask.height + pad * 2))
+    echo = Image.new("RGBA", mask.size, (117, 66, 30))
+    echo.putalpha(mask.point(lambda value: round(value * .25)))
+    stamp.alpha_composite(echo, (pad + max(1, round(scale)), pad + max(1, round(scale))))
+    colour.putalpha(impression)
+    stamp.alpha_composite(colour, (pad, pad))
+    draw = ImageDraw.Draw(stamp)
+    rng = random.Random(194)
+    for _ in range(24):
+        x, y = rng.randrange(stamp.width), rng.randrange(stamp.height)
+        if pad < x < stamp.width - pad and pad < y < stamp.height - pad:
+            continue
+        radius = rng.uniform(.6, 2.4) * scale
+        draw.ellipse((x-radius, y-radius, x+radius, y+radius), fill=(153, 85, 35, rng.randrange(18, 48)))
+    return stamp, pad
+
+
+def make_intro_card(kit, size, plan, target):
     card = Image.new("RGB", size, "white")
     scale = size[0] / BASE_WIDTH
     width = round(plan["realmsWidth"] * scale)
     margin = round(54 * scale)
-    logo = load_brand_master(kit / REALMS, width)
-    mask = logo.getchannel("A")
-    feather = mask.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(bleed * scale))
-    mask = ImageChops.lighter(mask, feather.point(lambda value: round(value * .22)))
-    mask = ImageChops.multiply(mask, ink_density(logo.size, opacity, variation))
-    ink_colour = next(pixel[:3] for pixel in logo.getdata() if pixel[3] == 255)
-    ink = Image.new("RGB", logo.size, ink_colour)
-    position = (size[0] - width - margin, margin)
-    card.paste(ink, position, mask)
+    stamp, pad = parchment_stamp(load_brand_master(kit / REALMS, width), scale)
+    position = (size[0] - width - margin - pad, margin - pad)
+    card.paste(stamp, position, stamp.getchannel("A"))
     card.save(target)
 
 
@@ -211,6 +270,14 @@ def capture_checks(picture, plan, folder, size):
     ffmpeg(["-v", "error", "-ss", plan["lockupFullFrame"] / FPS, "-i", picture,
             "-vf", crop, "-frames:v", 1, "-threads", 2,
             folder / "end-card-100-percent.png"])
+    last_frame = FRAME_COUNT + plan["holdFrames"] - 1
+    filters = (
+        f"select='not(mod(n,48))+eq(n,{last_frame})',scale=480:270,"
+        "drawtext=text='%{pts\\:hms}':fontsize=20:fontcolor=white:box=1:boxcolor=black,"
+        "tile=4x3"
+    )
+    ffmpeg(["-v", "error", "-i", picture, "-vf", filters, "-frames:v", 1,
+            "-threads", 2, folder / "contact-sheet-2s.png"])
 
 
 def finish(args):

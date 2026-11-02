@@ -318,15 +318,22 @@ one-second fade ends at 20 seconds as the picture settles. With 47 additional he
 exactly 22 seconds. The complete card is visible for the final two seconds. Realms is 360 px wide, holds fully visible
 for one second, then fades from frames 24 to 72 (1–3 seconds), with 54 px clear-space at the top and right edges.
 
-The lettered Realms master is printed into the moving parchment with RGB multiply blending. Its supplied mask and kit
-umber remain authoritative; deterministic ink density and a subpixel edge feather soften the impression. The density
-pattern stays fixed between frames, so it does not shimmer. Its multiplier fades toward white, releasing the ink while
-preserving the paper underneath. The same treatment applies to the second trailer's parchment opening.
+The lettered Realms master is printed into the moving parchment with RGB multiply blending. Its supplied geometry is
+retained with small fibre-edge displacement, warm sepia pooling, dry-brush gaps, a faint second nib pass and sparse
+foxing. The texture stays fixed between frames. Its multiplier fades toward white, releasing the ink while preserving
+the paper underneath. Both trailers use this treatment.
+
+Set `cardPlacement` to `sky` for the dawn realm: the lockup, line and URL occupy the top 350 px at 1080p, with a light
+shadow confined to the lettering. The realm remains bright. The default `full-frame` placement retains the mist
+trailer's larger card. Placement scales with output resolution; fade and hold timing do not change.
 
 Brand overlays are built at 1920×1080 from the kit masters and font files. The lockup is downsampled directly from its
 1536 px master; the line and URL are rasterized at 54 px and 45 px. No 720p overlay is enlarged. The film is encoded as
 H.264 High profile, CRF 15. `end-card-100-percent.png` is an unscaled crop from the encoded frame for text-edge review.
-The native 4:3 film is still pending; its delivery target is 1440×1080, with its own cue review before finishing.
+Every render also writes `contact-sheet-2s.png`: frames 0, 48, 96 and so on through frame 480, plus the final held
+frame, labelled with picture time. Before delivering, inspect the contact sheet and native-resolution end card for each
+output, and put their paths in the delivery report. These captures are part of the export command. The native 4:3 film
+is still pending; its delivery target is 1440×1080, with its own cue review before finishing.
 
 The command fully decodes the export, checks dimensions, codec/profile, frame count and duration, and leaves review
 stills, source/brand/output hashes and the edit. With audio, it also checks −14 LUFS within 0.25 LU and true peaks below
