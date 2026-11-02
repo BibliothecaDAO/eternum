@@ -985,6 +985,14 @@ const recapRecords = async (b, baseUrl, out) => {
   return records;
 };
 
+/** A Blitz's Results board, by its panel's title: on a phone it stands below the outcome and the chest. */
+const RESULT_BOARD = "The game";
+
+/** Marks the panel titled `title` for its own still. */
+const markPanel = (title) => `[...document.querySelectorAll(".app-panel")]
+  .find((panel) => panel.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)})
+  ?.setAttribute("data-proof-still", ${JSON.stringify(title)})`;
+
 /**
  * The boards (AppBoard), each measured row by row: every column (the lead, the name and each figure) must stand at one x
  * on every row, each figure's value end on one line, and no name run into the figures beside it (the owner, 2 November
@@ -1007,7 +1015,12 @@ const BOARD_PAGES = [
     act: (b, record) => press(b, record, "Blitz"),
     stills: [{ name: "blitz", selector: '[data-age="blitz"]' }],
   },
-  { name: "results", path: "reward-sealed/results/0x5245414c4d53-7" },
+  {
+    name: "results",
+    path: "reward-sealed/results/0x5245414c4d53-7",
+    act: (b) => b.evaluate(markPanel(RESULT_BOARD)),
+    stills: [{ name: "the-game", selector: `[data-proof-still="${RESULT_BOARD}"]` }],
+  },
 ];
 
 /** Each board's rows: per row, each cell's left and right edge, and where each figure's value ends. */
