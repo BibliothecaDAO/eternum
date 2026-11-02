@@ -56,13 +56,14 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-it("shows a linked wallet as receiving at once, with no wait, and a player with none the two ways to one", async () => {
+it("shows a linked wallet, the co-signer's hold on a replacement, and a player with none the two ways to one", async () => {
   const linked = await mount("0x04a1000000000000000000000000000000000000000000000000000000009c2e");
   expect(linked.textContent).toContain("0x04a1…9c2e");
   expect(linked.textContent).toContain("Prizes go here");
-  // Linking is the wallet and the emailed code, and nothing after them: no hold, no time to receive from.
+  // Linking is the wallet and the emailed code, and nothing after them.
   expect([...linked.querySelectorAll("ol > li")].map((step) => step.textContent)).toEqual(["Wallet", "Email code"]);
-  expect(linked.textContent).not.toMatch(/hold|Receives from/i);
+  // The hours come from the co-signer's own constant (packages/value-ledger/src/payout-wallet.ts).
+  expect(linked.textContent).toContain("Replace or relink: the new wallet's first Frontier payout waits 24 hours");
 
   const none = await mount(null);
   expect(none.textContent).toContain("I have a wallet");

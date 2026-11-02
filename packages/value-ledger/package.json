@@ -10,6 +10,7 @@
     "./codecs": "./src/codecs.ts",
     "./blitz-slots": "./src/blitz-slots.ts",
     "./blitz-timetable": "./src/blitz-timetable.ts",
+    "./payout-wallet": "./src/payout-wallet.ts",
     "./dev-shard": "./src/dev-shard.ts"
   },
   "scripts": {

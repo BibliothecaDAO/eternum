@@ -2,11 +2,12 @@ import { createHash } from "node:crypto";
 import { existsSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { rpcAt } from "../../../packages/value-ledger/src/rpc";
 import { privateFile, readConfig } from "./config";
-import { COSIGNER_WALLETS, WALLET_CHANGE_SECONDS, readWalletRecords, type WalletRecord } from "./wallets";
+import { PAYOUT_WALLET_CHANGE_SECONDS } from "../../../packages/value-ledger/src/payout-wallet";
+import { COSIGNER_WALLETS, readWalletRecords, type WalletRecord } from "./wallets";
 
 /**
  * Tells the owner's private Discord channel, from the box and off Cloudflare, when a payout safeguard trips: a wallet
- * change held for 24 h, a paused ledger, or a co-signer that stopped answering, and again when each clears. A systemd
+ * change held, a paused ledger, or a co-signer that stopped answering, and again when each clears. A systemd
  * timer runs `check` every minute. Delivery is at least once: each change is written to an outbox before it is sent and
  * leaves it only when Discord accepts its message, so no alert is dropped; a crash or a lost answer can repeat one.
  */
@@ -162,10 +163,10 @@ function walletChanges(previous: AlertState["held"], records: WalletRecord[] | n
 }
 const holdBegan = (record: WalletRecord) =>
   `Wallet change held: ${who(record)} asks to be paid at ${record.pending} instead of ${record.wallet}. ` +
-  `Payouts to it wait until ${utc(record.since! + WALLET_CHANGE_SECONDS)}. If the player didn't ask for this, pause the ledger before then.`;
+  `Payouts to it wait until ${utc(record.since! + PAYOUT_WALLET_CHANGE_SECONDS)}. If the player didn't ask for this, pause the ledger before then.`;
 const holdEnded = (record: WalletRecord, heldWallet: string) =>
   record.wallet === heldWallet
-    ? `Wallet change accepted after 24 h: ${who(record)} is now paid at ${record.wallet}.`
+    ? `Wallet change accepted after ${PAYOUT_WALLET_CHANGE_SECONDS / 3600} h: ${who(record)} is now paid at ${record.wallet}.`
     : `Wallet change dropped: ${who(record)} is paid at its known wallet ${record.wallet} again.`;
 const who = (record: WalletRecord) => `Realms ID ${record.realmsId}${accountsOf(record.accounts)}`;
 function accountsOf(accounts: string[]) {
