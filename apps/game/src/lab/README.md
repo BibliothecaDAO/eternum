@@ -290,24 +290,28 @@ pnpm --dir apps/game prove:studio --port 4199 --out <fresh-evidence-directory>
 
 ### Finish recorded footage
 
-`scripts/studio/cinematic-maker.py` is the offline finishing path for the approved 481-frame, 24 fps trailer. It takes
-the recorded 1280×704 picture, two stereo music edits, the supplied brand kit and an edit JSON. It preserves the shot,
-retimes music with pitch-preserving tempo changes and 40 ms crossfades, fades in the complete kit lockup and one line
-with the address, and exports H.264/AAC landscape and portrait films. Landscape adds eight pixels above and below;
-portrait follows the edit's smooth crop centres. No extra rendered scene or game runtime is needed.
+`scripts/studio/cinematic-maker.py` finishes the approved 481-frame, 24 fps trailer. It preserves the recorded 1280×704
+film between a Realms intro and a held final frame with the complete Frontier lockup, one line and the address.
+Landscape adds eight pixels above and below; portrait follows the edit's smooth crop centres. Both exports are H.264. An
+optional picture-length score is trimmed and mastered near −14 LUFS, then muxed as AAC. Short audio is rejected; there
+is no tempo conversion, looping or padding path.
 
-Run with Python, Pillow, NumPy, SoundFile, FFmpeg and ffprobe installed:
+Run with Python 3.12 or newer, Pillow, FFmpeg and ffprobe installed:
 
 ```sh
 python apps/game/scripts/studio/cinematic-maker.py \
-  --source <approved-video.mp4> --music-dir <folder-with-teaser20-take1-and-take2.wav> \
-  --kit <extracted-brand-kit> --edit <edit.json> --out <final-folder> --evidence <proof-folder>
+  --source <approved-video.mp4> --kit <extracted-brand-kit> --edit <edit.json> \
+  --out <final-folder> --evidence <proof-folder>
 ```
 
-The edit supplies `musicAnchors` (source and target seconds plus cue names), source-derived `accents` (time and gain),
-`portraitCentres` (time and source-pixel centre pairs), `cardFade`, `line`, `cta`, and named `reviewFrames`. The final
-anchor is 481/24 seconds. The command renders and decodes all four outputs, checks duration, dimensions, codecs, frame
-count, −14 LUFS within 0.25 LU and true peaks below −1 dBTP, and leaves final-frame stills, timing records, mastering
-passes and source/brand/output hashes. It replaces a finished file only after that file passes. Rerunning uses the same
-inputs and edit; no server, watcher or browser starts. This script adds the recorded-footage finishing step without
-replacing the studio's camera recorder.
+Add `--score <picture-length-audio>` when the approved score is ready. Without it, the command exports silent picture
+references and records that the score is pending. The edit supplies `introFrames`, `holdFrames`, `lockupFullFrame`,
+`portraitCentres` (source-film seconds and source-pixel centre pairs), `line`, `cta`, and named `reviewFrames` (output
+seconds). At 24 fps, 60 intro frames + 481 film frames + 83 held frames make exactly 26 seconds. `lockupFullFrame: 552`
+places the full end card at 23 seconds; its fade begins when the film ends. The intro uses the source's final mist.
+
+The command renders and fully decodes both crops, checks duration, dimensions, codecs and frame count, and leaves review
+stills, the edit, source/brand/output hashes and score provenance. With audio, it also checks −14 LUFS within 0.25 LU
+and true peaks below −1 dBTP. Files replace their destinations only after passing validation. Rerunning uses the same
+inputs and edit; no server, watcher or browser starts. This offline finisher consumes recorded footage; the studio's
+camera recorder remains the entry point for new shots.
