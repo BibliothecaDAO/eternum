@@ -8,7 +8,7 @@ import { keepLabelsBesideHudColumns } from "./utils/labels/hud-clearance";
 export type RendererLabelCadenceView = "close" | "medium" | "far" | undefined;
 
 export interface RendererLabelRuntime {
-  initialize(): Promise<void>;
+  /** Whether the world UI's label layer is mounted to draw into. */
   isReady(): boolean;
   markDirty(): void;
   resize(width: number, height: number): void;
@@ -21,48 +21,23 @@ interface CreateRendererLabelRuntimeInput {
   isMobileDevice: boolean;
 }
 
-interface WaitForRendererLabelElementInput {
-  getElementById: (id: string) => HTMLDivElement | null;
-  isDisposed: () => boolean;
-  requestAnimationFrame: (callback: () => void) => void;
-}
-
 export function createRendererLabelRuntime(input: CreateRendererLabelRuntimeInput): RendererLabelRuntime {
   return new GameRendererLabelRuntime(input);
 }
 
-function waitForRendererLabelElement(input: WaitForRendererLabelElementInput): Promise<HTMLDivElement> {
-  return new Promise((resolve, reject) => {
-    const warnAfterAttempts = 300;
-    let attempts = 0;
+/** The world UI's label layer (`ui/layouts/world.tsx`), while a game's page is mounted. */
+const findLabelLayer = () => document.getElementById("labelrenderer") as HTMLDivElement | null;
 
-    const checkElement = () => {
-      if (input.isDisposed()) {
-        reject(new Error("GameRenderer destroyed while waiting for label renderer element"));
-        return;
-      }
-
-      const element = input.getElementById("labelrenderer");
-      if (element) {
-        resolve(element);
-        return;
-      }
-
-      attempts++;
-      if (attempts === warnAfterAttempts) {
-        console.warn("GameRenderer: labelrenderer element not found yet; continuing to wait for world UI to mount");
-      }
-
-      input.requestAnimationFrame(checkElement);
-    };
-
-    checkElement();
-  });
-}
-
+/**
+ * The scenes' labels draw into the world UI's label layer, which the renderer outlives: leaving a game keeps the game
+ * booted for a return, while its page unmounts with the layer and the return mounts a new one. So the runtime follows
+ * the layer mounted now, bound again whenever it changes (each label moves into it on the next draw), and draws nothing
+ * while none is mounted.
+ */
 class GameRendererLabelRuntime implements RendererLabelRuntime {
   private renderer?: CSS2DRenderer;
-  private labelRendererElement?: HTMLDivElement;
+  private labelLayer: HTMLDivElement | null = null;
+  private size?: { width: number; height: number };
   private labelsDirty = true;
   private lastLabelRenderTime = 0;
   private lastLabelsActive = false;
@@ -70,27 +45,8 @@ class GameRendererLabelRuntime implements RendererLabelRuntime {
 
   constructor(private readonly input: CreateRendererLabelRuntimeInput) {}
 
-  public async initialize(): Promise<void> {
-    if (this.renderer || this.isDisposed) {
-      return;
-    }
-
-    const labelRendererElement = await waitForRendererLabelElement({
-      getElementById: (id) => document.getElementById(id) as HTMLDivElement | null,
-      isDisposed: () => this.isDisposed,
-      requestAnimationFrame: (callback) => window.requestAnimationFrame(callback),
-    });
-    if (this.isDisposed) {
-      return;
-    }
-
-    this.labelRendererElement = labelRendererElement;
-    this.renderer = new CSS2DRenderer({ element: labelRendererElement });
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
-  }
-
   public isReady(): boolean {
-    return Boolean(this.renderer);
+    return Boolean(this.followMountedLayer());
   }
 
   public markDirty(): void {
@@ -98,6 +54,7 @@ class GameRendererLabelRuntime implements RendererLabelRuntime {
   }
 
   public resize(width: number, height: number): void {
+    this.size = { width, height };
     this.markDirty();
     this.renderer?.setSize(width, height);
   }
@@ -120,17 +77,35 @@ class GameRendererLabelRuntime implements RendererLabelRuntime {
   }
 
   public render(scene: Object3D<Object3DEventMap>, camera: Camera): void {
+    const renderer = this.followMountedLayer();
+    if (!renderer) return;
     incrementWorldmapRenderCounter("css2dLabelRenders");
     runWithFrameWorkOwner("labels:css2d", () => {
-      this.renderer?.render(scene as never, camera as never);
-      if (this.labelRendererElement) keepLabelsBesideHudColumns(this.labelRendererElement);
+      renderer.render(scene as never, camera as never);
+      keepLabelsBesideHudColumns(renderer.domElement);
     });
   }
 
   public dispose(): void {
     this.isDisposed = true;
-    this.labelRendererElement?.replaceChildren();
+    this.labelLayer?.replaceChildren();
     this.renderer = undefined;
-    this.labelRendererElement = undefined;
+    this.labelLayer = null;
+  }
+
+  /** The renderer bound to the label layer mounted now, bound afresh when that layer is another than the last. */
+  private followMountedLayer(): CSS2DRenderer | undefined {
+    if (this.isDisposed) return undefined;
+    const mounted = findLabelLayer();
+    if (mounted !== this.labelLayer) this.bindTo(mounted);
+    return this.renderer;
+  }
+
+  private bindTo(labelLayer: HTMLDivElement | null): void {
+    this.labelLayer = labelLayer;
+    this.renderer = labelLayer ? new CSS2DRenderer({ element: labelLayer }) : undefined;
+    const size = this.size ?? { width: window.innerWidth, height: window.innerHeight };
+    this.renderer?.setSize(size.width, size.height);
+    this.markDirty();
   }
 }

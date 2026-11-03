@@ -4,10 +4,11 @@ import { chainOf } from "./lab-chain";
 import { LAB_SCENARIOS } from "./lab-games";
 
 // Each lab game writes its facts over the spire's: a row written twice under two keys stops the game from opening.
+// The settle game's player has no realm until they found it.
 it.each(Object.keys(LAB_SCENARIOS))("builds the %s lab game", (name) => {
   const scenario = LAB_SCENARIOS[name]!();
   const chain = chainOf(scenario);
-  if (scenario.entersFromHome) {
+  if (name === "settle") {
     expect(chain.get("Structure", { game_id: 1, entity_id: 7 })).toBeUndefined();
     chain.applyFacts(
       scenario.answer({ kind: "SettleSeason", fields: {}, calldata: [] }, chain, scenario.startsAt) as never,

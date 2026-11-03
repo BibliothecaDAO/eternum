@@ -140,7 +140,6 @@ export default class GameRenderer {
       onControlsChange: () => {
         this.supportRuntimeRegistry.getControlBridge().handleInteractionChange();
       },
-      warn: (message, error) => console.warn(message, error),
     });
 
     this.interactionRuntime = foundationRuntime.interactionRuntime;

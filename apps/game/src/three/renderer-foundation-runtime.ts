@@ -12,7 +12,6 @@ export interface RendererFoundationRuntime {
 interface CreateRendererFoundationRuntimeInput {
   isMobileDevice: boolean;
   onControlsChange: () => void;
-  warn: (message: string, error: unknown) => void;
 }
 
 export function createRendererFoundationRuntime(
@@ -23,10 +22,6 @@ export function createRendererFoundationRuntime(
   });
   const labelRuntime = createRendererLabelRuntime({
     isMobileDevice: input.isMobileDevice,
-  });
-
-  labelRuntime.initialize().catch((error) => {
-    input.warn("GameRenderer: Failed to initialize label renderer:", error);
   });
 
   return {

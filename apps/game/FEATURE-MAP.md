@@ -542,9 +542,12 @@ the contracts write one. **Feed** at the foot opens it (with the count of what i
 closed), a second press or its × closes it, and any other page, sheet or card replaces it. Chat stands at the rail's
 foot. The whole desktop HUD draws bigger on a bigger screen (`frontier/hud/hud-scale.ts`: its own size at 1920 wide,
 1.33 at 2560, 0.85 at 1440). A desktop has no Menu: Settings (the top bar's gear) holds Next up's Tips and Leave game.
-Orders go from the map as in Blitz: hover a tile for its order, right-click to give it. On a phone it keeps its own
-bands (`frontier/hud/hud-bands.tsx`): a strip at the top, a place bar at the foot. A page or a sheet stands on the place
-bar, as tall as what it holds and at most 45% of the screen, under one row (its name and its way out; a drag down on it
+Leaving by a phone's Menu, Exit or by Back keeps the game booted: Back from the map goes to the page it was entered
+from, and the home card's Resume returns to the map with its labels and plates as they were
+(`/lab/game?scenario=from-home`, `playtest --steps lab-reenter`); Leave game loads the page afresh. Orders go from the
+map as in Blitz: hover a tile for its order, right-click to give it. On a phone it keeps its own bands
+(`frontier/hud/hud-bands.tsx`): a strip at the top, a place bar at the foot. A page or a sheet stands on the place bar,
+as tall as what it holds and at most 45% of the screen, under one row (its name and its way out; a drag down on it
 closes a sheet), its verb in its foot; while one is open, Next up's row folds away. Tapping a build plot keeps the realm
 camera still. The realm view zooms out until every plot of the castle’s reach fits the screen’s width, including an
 Empire on an upright phone. Chat's tabs are its rooms (Global; a game's own only where its mode keeps one, none for now)
