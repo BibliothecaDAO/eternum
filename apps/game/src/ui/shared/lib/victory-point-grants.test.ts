@@ -17,7 +17,7 @@ describe("what a held hyperstructure earns", () => {
     expect(describeHyperstructureHold(blitz)).toEqual({
       grant: "x/min",
       tip:
-        "Hold a Hyperstructure: 60 points a minute for each realm settled on the six sites around it, split by " +
+        "Hold a Hyperstructure: points +60/min for each realm settled on the six sites around it, split by " +
         "share among its holders; a realm settled later counts from its next capture or share allocation",
     });
   });
@@ -25,14 +25,14 @@ describe("what a held hyperstructure earns", () => {
   it("is its rate a minute where no multiplier applies, split among its holders", () => {
     expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "flat" })).toEqual({
       grant: "+60/min",
-      tip: "Hold a Hyperstructure: 60 points a minute, split by share among its holders",
+      tip: "Hold a Hyperstructure: points +60/min, split by share among its holders",
     });
   });
 
   it("is twice its rate a minute in a Duel, split among its holders", () => {
     expect(describeHyperstructureHold({ ...blitz, hyperstructureScale: "double" })).toEqual({
       grant: "+120/min",
-      tip: "Hold a Hyperstructure: 120 points a minute, split by share among its holders",
+      tip: "Hold a Hyperstructure: points +120/min, split by share among its holders",
     });
   });
 });

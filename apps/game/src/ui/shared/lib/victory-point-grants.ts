@@ -1,4 +1,4 @@
-import { formatRate, formatPoints } from "@bibliothecadao/types";
+import { formatRate } from "@bibliothecadao/types";
 import type { configManager } from "@bibliothecadao/eternum";
 
 /** The points each activity grants, as the game's rules give them. */
@@ -19,11 +19,11 @@ export const describeHyperstructureHold = ({
   if (scale === "per-realm")
     return {
       grant: "x/min",
-      tip: `Hold a Hyperstructure: ${formatPoints(rate * 60)} a minute for each realm settled on the six sites around it, split by share among its holders; a realm settled later counts from its next capture or share allocation`,
+      tip: `Hold a Hyperstructure: points ${formatRate(rate)} for each realm settled on the six sites around it, split by share among its holders; a realm settled later counts from its next capture or share allocation`,
     };
   const perSecond = scale === "double" ? rate * 2 : rate;
   return {
     grant: formatRate(perSecond),
-    tip: `Hold a Hyperstructure: ${formatPoints(perSecond * 60)} a minute, split by share among its holders`,
+    tip: `Hold a Hyperstructure: points ${formatRate(perSecond)}, split by share among its holders`,
   };
 };
