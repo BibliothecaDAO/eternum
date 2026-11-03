@@ -2519,6 +2519,117 @@ const LAB_VISIT_STEPS = [
   { name: "leave-again", play: leaveTheVisit, settleMs: 0, verify: homeAgain },
 ];
 
+/**
+ * A game left for the app and entered again draws its map's labels as it did on entry (owner, 2026-11-03, on a phone:
+ * "when I leave game and reenter it I dont have the labels"). Leaving keeps the game booted for a return while its page
+ * unmounts, the label layer with it; the return mounts a new layer, which must show the labels and plates read on entry.
+ * The lab's spire game opens on the home page; the player enters by the card's Resume, leaves by the browser's Back and
+ * then by the HUD's own way out, and comes back by Resume each time.
+ */
+function labReenterSteps() {
+  let onEntry = null;
+  const enter = async (context) => {
+    const played = await resumeFromTheHomeCard(context);
+    onEntry = played.labels;
+    return played;
+  };
+  const resume = async (context) => ({ ...(await resumeFromTheHomeCard(context)), onEntry });
+  return [
+    { name: "enter", play: enter, settleMs: 0, verify: labelsDrawn },
+    { name: "back", play: leaveByBack, settleMs: 0, verify: onTheAppPage },
+    { name: "resume", play: resume, settleMs: 0, verify: labelsAsOnEntry },
+    { name: "leave", play: leaveByTheHud, settleMs: 0, verify: onTheAppPage },
+    { name: "resume-again", play: resume, settleMs: 0, verify: labelsAsOnEntry },
+  ];
+}
+
+const LABELS_WAIT_MS = 15_000;
+const EXIT_WAIT_MS = 10_000;
+/**
+ * What the map's label layer shows, or null with no layer mounted: its size, the scenes' labels drawn in it (each one's
+ * words), and the plates' nodes while their box has a size (the plates fill the layer, so an unsized layer clips them).
+ */
+const MAP_LABELS = `JSON.stringify((() => {
+  const layer = document.getElementById("labelrenderer");
+  if (!layer) return null;
+  const plates = layer.querySelector('[data-role="map-plates"]');
+  const labels = [...layer.children].filter((each) => each !== plates && each.style.display !== "none");
+  const box = plates?.getBoundingClientRect();
+  return {
+    layer: [layer.offsetWidth, layer.offsetHeight],
+    labels: labels.length,
+    words: labels.map((each) => each.innerText.trim()).filter(Boolean),
+    plates: box && box.width > 0 && box.height > 0 ? plates.querySelectorAll("*").length : 0,
+  };
+})())`;
+
+function labelsDrawn({ seen, played }) {
+  if (!played.onMap) return inScene("map")({ seen });
+  if (!played.labels?.labels) return failed("the map drew no labels on entry", played);
+  return completed(played.labels);
+}
+
+/**
+ * The HUD's way out of the game on a phone: Menu, then Exit. A desktop's is Settings' Leave game, which loads the page
+ * afresh: the lab's game lives in the tab and does not come back from that, so a desktop leaves by Back again.
+ */
+async function leaveByTheHud({ browser, owner }) {
+  if (onADesktop()) return leaveByBack({ browser, owner });
+  browser.click("Menu");
+  const exit = await readUntil(() => browser.read(buttonNamed("Exit")), Boolean, SHEET_WAIT_MS);
+  if (!exit) return { missing: "Menu showed no Exit" };
+  browser.click("Exit");
+  return { by: "Menu, Exit", ...(await theHomePage(browser, owner)) };
+}
+
+/** One press of the browser's Back, which leaves the map for the home page the game was entered from. */
+async function leaveByBack({ browser, owner }) {
+  browser.run(["back"]);
+  return { by: "Back", ...(await theHomePage(browser, owner)) };
+}
+
+async function theHomePage(browser, owner) {
+  const path = () => browser.read("JSON.stringify(location.pathname)");
+  const startedAt = Date.now();
+  while (path() !== "/" && Date.now() - startedAt < EXIT_WAIT_MS) await owner.sleep(POLL_MS);
+  return { path: path(), labels: browser.read(MAP_LABELS) };
+}
+
+function onTheAppPage({ played }) {
+  if (played.missing) return failed(played.missing, played);
+  if (played.path !== "/") return failed(`${played.by} left for ${played.path}, not the home page`, played);
+  if (played.labels !== null) return failed("the game's label layer stays mounted on the home page", played);
+  return completed({ by: played.by, path: played.path });
+}
+
+/** The home card's Resume, as a player returns, then the map and its labels once they are drawn. */
+async function resumeFromTheHomeCard({ browser, owner }) {
+  const entry = await findHomeCardEntry(browser, owner, SHEET_WAIT_MS * 6, {
+    card: LAB_FROM_HOME.card,
+    game: LAB_FROM_HOME,
+  });
+  browser.run(["click", ENTRY_BUTTON]);
+  const onMap = await arrives(browser, "Map", "map");
+  const labels = await readUntil(
+    () => browser.read(MAP_LABELS),
+    (shown) => shown?.labels > 0,
+    LABELS_WAIT_MS,
+  );
+  return { entry: entry.entry, onMap, labels };
+}
+
+/** Back on the map, every label read on entry is drawn again, and the plates too when there were some. */
+function labelsAsOnEntry({ seen, played }) {
+  const { onEntry, labels } = played;
+  if (!played.onMap) return inScene("map")({ seen });
+  if (!onEntry) return blocked("no labels were read on entry to compare with", played);
+  if (!labels?.labels) return failed(`the map drew no labels after Resume (${onEntry.labels} on entry)`, played);
+  const missing = onEntry.words.filter((word) => !labels.words.includes(word));
+  if (missing.length) return failed(`labels drawn on entry are missing after Resume: ${missing.join(", ")}`, played);
+  if (onEntry.plates > 0 && labels.plates === 0) return failed("the map's plates are gone after Resume", played);
+  return completed({ entry: played.entry, onEntry, labels });
+}
+
 const VISIT_FOOT = `JSON.stringify(document.querySelector('[role="status"][aria-label^="Visit "]')?.getAttribute("aria-label") ?? null)`;
 const BOARD_HOVER = `JSON.stringify((() => {
   const label = document.querySelector('[data-label-type="hex-hover"]');
@@ -2750,6 +2861,8 @@ function eachCardIsItsHover({ played }) {
 const labSpireGame = (scenario) => ({ ...LAB_SPIRE, lab: scenario });
 /** The spire's game before its player settled: the run opens on the home page, and its first step enters the game. */
 const LAB_SETTLE = { ...labSpireGame("settle"), entersFromHome: true };
+/** The spire's game opened on the home page: the run's first step enters it by the card's Resume. */
+const LAB_FROM_HOME = { ...labSpireGame("from-home"), entersFromHome: true };
 /** The spire's army, the one a player picks first: the fixture's SPIRE_ARMY. */
 const PICKED_ARMY = 201;
 const MERGE_WAIT_MS = 10_000;
@@ -3932,6 +4045,7 @@ export const STEP_SETS = {
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
+  "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },
   "lab-ruin-fight": { game: labSpireGame("ruin-fight"), steps: LAB_RUIN_FIGHT_STEPS },
   "lab-ruin-far": { game: labSpireGame("ruin-far"), steps: LAB_RUIN_FAR_STEPS },
   "lab-hover-zoom": { game: labSpireGame("after-battle"), steps: LAB_HOVER_ZOOM_STEPS, devOverlays: true },

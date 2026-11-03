@@ -32,6 +32,8 @@ import { upkeepScenario } from "./upkeep-scenario";
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   spire: spireScenario,
+  /** The spire's game opened on the home page, entered by its card's Resume: a way back home there is the app's own. */
+  "from-home": () => ({ ...spireScenario(), entersFromHome: true }),
   actions: actionsScenario,
   "high-ground": highGroundScenario,
   "day-end": dayEndScenario,

@@ -167,15 +167,19 @@ order: Visit from the board, Leave, and Visit and Leave again, each arrival fail
 laid out without its model attached, shown and loaded, or a HUD panel past the screen's edge; each board swept point by
 point, each hovered then tapped, a visit failing on a building's card that names another building than its hover or
 offers more than its close, an open plot's card, or any command signed, and home failing on such a card or on no open
-plot opening Build), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`, the owner's army beside the ruin before
-its fight: the army picked from the HUD must bring the camera onto it; then, on a phone with the ruin first panned under
-where its card opens, the ruin's card opened from the map (a right-click, a tap) and **Attack** pressed must leave the
-camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011 and the ruin's chest shown; then
-the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's; play it at
-`--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the dev
-overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own model,
-and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the same
-with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
+plot opening Build), `--steps lab-reenter` (`/lab/game?scenario=from-home`, the spire's game opened on the home page:
+entered by its card's Resume, left by Back and then by the HUD's way out (a phone's Menu, Exit; a desktop Back again, as
+its Leave game loads the page afresh), and entered by Resume each time: each leave failing short of the home page or
+with the game's label layer still mounted, each return on the map's labels or plates read on entry missing; play it at
+`--viewport 390x844` too), `--steps lab-ruin-fight` (`/lab/game?scenario=ruin-fight`, the owner's army beside the ruin
+before its fight: the army picked from the HUD must bring the camera onto it; then, on a phone with the ruin first
+panned under where its card opens, the ruin's card opened from the map (a right-click, a tap) and **Attack** pressed
+must leave the camera where it was, the chain's BattleGuard answered, the ruin gone, the army at 4,011 and the ruin's
+chest shown; then the Feed, opened from its place, must tell the attack and the clear it won as one row, the clear's;
+play it at `--viewport 390x844` too), `--steps lab-hover-zoom` (the army after its fight, with nothing selected and the
+dev overlays on, at each wheel step from the closest zoom to the farthest: each army's token must stand over its own
+model, and the pointer on its model at its feet, middle and top must open its plate; `--steps lab-hover-zoom-pair` the
+same with the realm's two armies side by side, the merge game's), `--steps lab-high-ground`
 (`/lab/game?scenario=high-ground`, the spire's game on snow, bare rock and tundra, with the dev overlays on: the army
 picked, every tile it is lit on must lie above the highest ground under it), `--steps lab-day-turn`,
 `--steps lab-day-later`, `--steps lab-day-turn-slow` and `--steps lab-day-later-short` (the same game on Frontier's day
