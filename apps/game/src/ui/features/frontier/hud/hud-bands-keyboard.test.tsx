@@ -5,7 +5,8 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { useKeyboardInset } from "@/hooks/use-keyboard-inset";
-import { HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudPage, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import appStyles from "@/index.css?raw";
 
 import { HudBands } from "./hud-bands";
 
@@ -156,4 +157,58 @@ it("keeps the sheet on the keyboard when the visible part of the page only scrol
   });
   expect(document.documentElement.style.getPropertyValue("--keyboard")).toBe("336px");
   expect(sheetBottom()).toBe(508 - 6);
+});
+
+/** The app's own rule for what steps aside while the keyboard is up, as index.css states it, applied to the page. */
+const KEYBOARD_RULE = /html\[data-keyboard\] \[data-keyboard-hides\][^}]*\}/.exec(appStyles)![0];
+
+it("steps the strip and Next up aside with the place bar while the keyboard is up, so a page typed in keeps the screen", async () => {
+  const style = document.createElement("style");
+  style.textContent = KEYBOARD_RULE;
+  document.head.append(style);
+  const ChatLike = () => {
+    useKeyboardInset();
+    return (
+      <HudBands
+        strip={<div>Day</div>}
+        nextUp={<div>Build barracks</div>}
+        nav={<nav aria-label="Places">Places</nav>}
+        page={
+          <HudPage label="Chat" icon="chat" fills onClose={() => {}}>
+            <input aria-label="Message" />
+          </HudPage>
+        }
+      />
+    );
+  };
+  await act(async () =>
+    root.render(
+      <MemoryRouter>
+        <ChatLike />
+      </MemoryRouter>,
+    ),
+  );
+  const shown = (words: string) =>
+    [...host.querySelectorAll<HTMLElement>("div, nav")]
+      .filter((element) => element.textContent === words)
+      .every((element) => {
+        for (let part: HTMLElement | null = element; part; part = part.parentElement)
+          if (getComputedStyle(part).display === "none") return false;
+        return true;
+      });
+  expect([shown("Day"), shown("Build barracks"), shown("Places")]).toEqual([true, true, true]);
+
+  await act(async () => host.querySelector<HTMLInputElement>('input[aria-label="Message"]')!.focus());
+  await act(async () => {
+    visual.height = 311;
+    visual.dispatchEvent(new Event("resize"));
+  });
+  expect([shown("Day"), shown("Build barracks"), shown("Places")]).toEqual([false, false, false]);
+
+  await act(async () => {
+    visual.height = SCREEN;
+    visual.dispatchEvent(new Event("resize"));
+  });
+  expect([shown("Day"), shown("Build barracks"), shown("Places")]).toEqual([true, true, true]);
+  style.remove();
 });

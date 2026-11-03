@@ -21,64 +21,96 @@ const MESSAGES = "messages";
  * closing it never reconnects.
  */
 export function RealtimeChatShell({ rooms, className }: { rooms: readonly ChatRoom[]; className?: string }) {
-  const actions = useRealtimeChatActions();
-  const view = useRealtimeChatSelector((state) => state.view);
-  const worldZones = useRealtimeChatSelector((state) => state.worldZones);
-  const unreadMessages = useRealtimeChatSelector(directUnread);
-  // A conversation opened shows while its player is not muted; one muted gives way to Messages, where Unmute is.
-  const conversation = useRealtimeChatSelector((state) =>
-    state.view.kind === "conversation" && threadShown(state, state.view.threadId) ? state.view.threadId : null,
-  );
-  const online = useRealtimeChatSelector((state) => Object.keys(state.onlinePlayers).length);
-  // A room this place does not have (a game's, kept from another game) gives way to the first it has.
-  const strayRoom = view.kind === "room" && !rooms.some((room) => room.zoneId === view.zoneId);
-  useEffect(() => {
-    if (strayRoom && rooms[0]) actions.showRoom(rooms[0].zoneId);
-  }, [actions, rooms, strayRoom]);
-
-  const zoneId = view.kind === "room" && !strayRoom ? view.zoneId : rooms[0]?.zoneId;
-  const tab = view.kind === "room" ? (zoneId ?? MESSAGES) : MESSAGES;
   return (
     <div className={cn("flex h-full min-h-0 w-full flex-col", className)}>
       <div className="flex items-center justify-between gap-2 px-2 py-1">
-        <HudTabs
-          size="sm"
-          tabs={[
-            ...rooms.map((room) => ({
-              key: room.zoneId,
-              label: room.label,
-              count: shown(worldZones[room.zoneId]?.unreadCount),
-            })),
-            { key: MESSAGES, label: CHAT_WORDS.messages, count: shown(unreadMessages) },
-          ]}
-          value={tab}
-          onChange={(key) => (key === MESSAGES ? actions.showMessages() : actions.showRoom(key))}
-        />
-        {online > 0 && (
-          <span data-online className="shrink-0 text-hud-label tabular-nums text-hud-cue">
-            {online} {CHAT_WORDS.online}
-          </span>
-        )}
+        <RealtimeChatTabs rooms={rooms} />
+        <RealtimeChatOnline />
       </div>
-      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-        {conversation ? (
-          // Keyed by its thread: each conversation opened draws its own list, on its latest message.
-          <DirectMessagesPanel key={conversation} threadId={conversation} />
-        ) : view.kind !== "room" ? (
-          <MessagesList />
-        ) : (
-          zoneId && (
-            <WorldChatPanel
-              key={zoneId}
-              zoneId={zoneId}
-              name={rooms.find((room) => room.zoneId === zoneId)?.label ?? ""}
-            />
-          )
-        )}
-      </div>
+      <RealtimeChatBody rooms={rooms} />
     </div>
   );
 }
+
+/**
+ * The shell's tabs, for a place that draws them in its own row (a phone's Chat page, in its head): a tab per room, then
+ * Messages, each with what is unread behind it.
+ */
+export function RealtimeChatTabs({ rooms }: { rooms: readonly ChatRoom[] }) {
+  const actions = useRealtimeChatActions();
+  const worldZones = useRealtimeChatSelector((state) => state.worldZones);
+  const unreadMessages = useRealtimeChatSelector(directUnread);
+  const { tab } = useShownPlace(rooms);
+  return (
+    <HudTabs
+      size="sm"
+      tabs={[
+        ...rooms.map((room) => ({
+          key: room.zoneId,
+          label: room.label,
+          count: shown(worldZones[room.zoneId]?.unreadCount),
+        })),
+        { key: MESSAGES, label: CHAT_WORDS.messages, count: shown(unreadMessages) },
+      ]}
+      value={tab}
+      onChange={(key) => (key === MESSAGES ? actions.showMessages() : actions.showRoom(key))}
+    />
+  );
+}
+
+/** How many players are online, once any are. */
+export function RealtimeChatOnline() {
+  const online = useRealtimeChatSelector((state) => Object.keys(state.onlinePlayers).length);
+  if (online === 0) return null;
+  return (
+    <span data-online className="shrink-0 text-hud-label tabular-nums text-hud-cue">
+      {online} {CHAT_WORDS.online}
+    </span>
+  );
+}
+
+/** What the chosen tab shows: a room's list, Messages, or the conversation opened from it. */
+export function RealtimeChatBody({ rooms, className }: { rooms: readonly ChatRoom[]; className?: string }) {
+  const actions = useRealtimeChatActions();
+  const { view, zoneId, conversation, strayRoom } = useShownPlace(rooms);
+  useEffect(() => {
+    if (strayRoom && rooms[0]) actions.showRoom(rooms[0].zoneId);
+  }, [actions, rooms, strayRoom]);
+  return (
+    <div className={cn("flex min-h-0 flex-1 flex-col overflow-hidden", className)}>
+      {conversation ? (
+        // Keyed by its thread: each conversation opened draws its own list, on its latest message.
+        <DirectMessagesPanel key={conversation} threadId={conversation} />
+      ) : view.kind !== "room" ? (
+        <MessagesList />
+      ) : (
+        zoneId && (
+          <WorldChatPanel
+            key={zoneId}
+            zoneId={zoneId}
+            name={rooms.find((room) => room.zoneId === zoneId)?.label ?? ""}
+          />
+        )
+      )}
+    </div>
+  );
+}
+
+/**
+ * Where the chat stands among this place's rooms: the view, the room shown (a room this place does not have, a game's
+ * kept from another game, gives way to the first it has), its tab, and the conversation open, while its player is not
+ * muted (one muted gives way to Messages, where Unmute is).
+ */
+const useShownPlace = (rooms: readonly ChatRoom[]) => {
+  const view = useRealtimeChatSelector((state) => state.view);
+  const conversation = useRealtimeChatSelector((state) =>
+    state.view.kind === "conversation" && threadShown(state, state.view.threadId) ? state.view.threadId : null,
+  );
+  const strayRoom = view.kind === "room" && !rooms.some((room) => room.zoneId === view.zoneId);
+  const zoneId = view.kind === "room" && !strayRoom ? view.zoneId : rooms[0]?.zoneId;
+  const tab = view.kind === "room" ? (zoneId ?? MESSAGES) : MESSAGES;
+  return { view, zoneId, tab, conversation, strayRoom };
+};
 
 /** A tab's count, shown only once something is unread. */
 const shown = (count: number | undefined) => (count ? count : undefined);

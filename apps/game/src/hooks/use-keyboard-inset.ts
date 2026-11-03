@@ -38,9 +38,9 @@ export const useKeyboardHeight = (): number =>
 
 /**
  * The on-screen keyboard, for every layout that stands on the screen's foot: `--keyboard` on the root is how tall it is
- * (0 when closed), so a phone's page, HUD and chat end above it, and `data-keyboard` marks it open, so what stands at
- * the foot for moving between places (marked `data-keyboard-hides`) steps aside while the player types. Read from the
- * visual viewport as it changes.
+ * (0 when closed), so a phone's page, HUD and chat end above it, and `data-keyboard` marks it open, so what is marked
+ * `data-keyboard-hides` (what stands at the foot for moving between places, a game's top band) steps aside while the
+ * player types. Read from the visual viewport as it changes.
  */
 export const useKeyboardInset = () =>
   useEffect(() => {

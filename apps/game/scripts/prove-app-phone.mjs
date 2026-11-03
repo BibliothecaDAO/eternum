@@ -9,7 +9,12 @@
  * - a sheet: a finger's drag down its head closes it; opened again, the system back closes it once and the page stays,
  *   and the next back leaves the page;
  * - the inline Name: a tap opens the field with the focus; with the on-screen keyboard up the field and Claim name stand
- *   above it and the place bar steps aside; a tap beside the row puts it back.
+ *   above it and the place bar steps aside; a tap beside the row puts it back;
+ * - Frontier's Season board: its prizes folded in one line that a tap opens and folds, more of the board in sight than
+ *   the podium left, and after a flick to the board's end the columns' names still on top;
+ * - Frontier's Chat while typing, under the owner's keyboard (533 px: his phone leaves 311 px above it): its rooms' tabs
+ *   in the head row beside its cross, the strip and the place bar stepped aside, the field above the keyboard and the
+ *   history in sight, and the strip back once the keyboard goes.
  *
  * Headless Chrome draws no on-screen keyboard: it is played as the page meets one, its visual viewport shortened by a
  * phone keyboard's 336 px and resized (use-keyboard-inset.ts reads it from there). Taps and drags are DevTools touch
@@ -23,6 +28,8 @@ import { sleep, waitFor } from "./prove-run.mjs";
 const PHONE = ["390", "844"];
 const SAFE_AREA = { top: 47, bottom: 34 };
 const KEYBOARD_PX = 336;
+/** The owner's phone: Brave's bars and SwiftKey with its suggestion and autofill rows leave 311 px of the page's 844. */
+const OWNER_KEYBOARD_PX = 533;
 const READY_MS = 30_000;
 const SETTLE_MS = 2_000;
 const DRAWN = `document.querySelector("[data-layout], [data-kit-frame], .ui-panel, .ui-menu, [data-lab]") !== null`;
@@ -148,6 +155,8 @@ const SURFACES = [
   },
   // Last: the doorway boots the map behind it, which keeps the tab busy for whatever opens next.
   { name: "doorway", kind: "page", before: app("home", ""), path: app("home", "doorway/map") },
+  { name: "season-board", kind: "season", path: "/lab/kit/hud/season?capture=1" },
+  { name: "chat-typing", kind: "chat-typing", path: "/lab/kit/hud/chat?capture=1" },
 ];
 
 /** A control by its words (first line) or its label, marked for a measured tap; whether one was found. */
@@ -282,6 +291,8 @@ const proveSurface = async (b, phone, out, baseUrl, surface) => {
   if (surface.kind === "view" && surface.back) await viewsWayBack(b, phone, record, surface);
   if (surface.kind === "name") await nameWithKeyboard(b, phone, out, record);
   if (surface.kind === "flow") await flowSteps(b, phone, out, record, surface);
+  if (surface.kind === "season") await seasonBoard(b, phone, out, record);
+  if (surface.kind === "chat-typing") await chatTyping(b, phone, out, record);
   if (surface.kind === "absent")
     record.checks.push({ check: "not drawn on a touch device", ok: b.evaluate(surface.absent) });
   return record;
@@ -416,6 +427,135 @@ const nameWithKeyboard = async (b, phone, out, record) => {
   record.checks.push({
     check: "a tap beside the row puts it back",
     ok: b.evaluate(`document.querySelector("form input") === null`),
+  });
+};
+
+/** Rows of the board in sight under the podium's tiles before they folded: next at 466be253e5f, played by this proof. */
+const ROWS_UNDER_TILES = 3;
+
+/**
+ * What the Season page shows: the board's rows wholly in sight inside its scroll (the player's pinned row too), the
+ * folded prizes' line and whether it is open, the podium's tiles, and whether the columns' names stand at the top of
+ * the scroll.
+ */
+const SEASON_SEEN = `(() => {
+  const page = document.querySelector('section[aria-label="Season"]');
+  const scroll = page?.querySelector(".overflow-y-auto");
+  const box = scroll?.getBoundingClientRect();
+  const whole = (element) => {
+    const r = element.getBoundingClientRect();
+    const own = element.closest(".overflow-y-auto")?.getBoundingClientRect() ?? { top: 0, bottom: innerHeight };
+    return r.height > 0 && r.top >= own.top - 0.5 && r.bottom <= Math.min(own.bottom, innerHeight) + 0.5;
+  };
+  const rows = [...(page?.querySelectorAll(".ui-table-row") ?? [])].filter(whole).length;
+  const line = page?.querySelector('button[aria-label="Season prizes"]');
+  const head = scroll?.querySelector(".ui-table-head");
+  return {
+    rows,
+    line: line ? { open: line.getAttribute("aria-expanded") === "true", height: Math.round(line.getBoundingClientRect().height) } : null,
+    tiles: page?.querySelectorAll('ol[aria-label="Season prizes"] li[data-place]').length ?? 0,
+    headOnTop: head ? Math.abs(head.getBoundingClientRect().top - box.top) < 1 : false,
+  };
+})()`;
+
+/** Frontier's Season board on a phone: the prizes folded, opened and folded by a tap, then the board flicked to its end. */
+const seasonBoard = async (b, phone, out, record) => {
+  const rest = b.evaluate(SEASON_SEEN);
+  record.checks.push(
+    {
+      check: "the prizes stand folded in one line",
+      ok: rest.line?.open === false && rest.line.height <= 56 && rest.tiles === 0,
+      rest,
+    },
+    {
+      check: `more of the board in sight than the tiles left (${ROWS_UNDER_TILES} rows)`,
+      ok: rest.rows > ROWS_UNDER_TILES,
+      rows: rest.rows,
+    },
+  );
+  const opened = (await tapControl(b, phone, "Season prizes")) && b.evaluate(SEASON_SEEN);
+  record.checks.push({
+    check: "a tap on the line opens the podium's three tiles",
+    ok: opened?.line?.open === true && opened.tiles === 3,
+    opened,
+  });
+  shoot(b, out, "season-board-opened");
+  const folded = (await tapControl(b, phone, "Season prizes")) && b.evaluate(SEASON_SEEN);
+  record.checks.push({ check: "another tap folds it again", ok: folded?.line?.open === false && folded.tiles === 0 });
+  b.evaluate(
+    `(() => { const s = document.querySelector('section[aria-label="Season"] .overflow-y-auto'); s.scrollTop = s.scrollHeight; return true; })()`,
+  );
+  await sleep(600);
+  const flicked = b.evaluate(SEASON_SEEN);
+  record.checks.push(
+    { check: "flicked to the board's end, the columns' names stay on top", ok: flicked.headOnTop, flicked },
+    {
+      check: "and the board has the page: more rows in sight than at rest",
+      ok: flicked.rows > rest.rows,
+      rows: flicked.rows,
+    },
+  );
+  shoot(b, out, "season-board-flicked");
+};
+
+/** What Chat shows while typing: its head row's tabs and cross, the strip and place bar, the field and the history. */
+const chatSeen = (floor) => `(() => {
+  const page = document.querySelector('section[aria-label="Chat"]');
+  const head = page?.querySelector(".ui-frame__head");
+  const gone = (element) => {
+    if (!element || element.getBoundingClientRect().height === 0) return true;
+    for (let part = element; part; part = part.parentElement) if (getComputedStyle(part).display === "none") return true;
+    return false;
+  };
+  const field = page?.querySelector("textarea, input");
+  const fieldBox = field?.getBoundingClientRect();
+  const history = page?.querySelector("ul.mt-auto")?.closest(".overflow-y-auto")?.getBoundingClientRect();
+  return {
+    headTabs: head ? head.querySelectorAll('[role="tab"]').length : 0,
+    headClose: Boolean(head?.querySelector('button[aria-label="Close"]')),
+    stripGone: gone(document.querySelector("[data-hud-top]")),
+    barGone: gone(document.querySelector('nav[aria-label="Places"]')),
+    field: Boolean(fieldBox && fieldBox.height > 0 && fieldBox.bottom <= ${floor} + 0.5),
+    historyPx: history ? Math.max(0, Math.round(Math.min(history.bottom, ${floor}) - Math.max(history.top, 0))) : 0,
+  };
+})()`;
+
+/**
+ * History in sight while typing under the owner's keyboard and this proof's notch: next at 466be253e5f left none (as the
+ * owner's screenshot shows); with the strip aside and the tabs in the head row, 119 px, two or three lines.
+ */
+const HISTORY_TYPING_PX = 100;
+
+/** Frontier's Chat on a phone: read, then typed in under the owner's keyboard, then read again once it goes. */
+const chatTyping = async (b, phone, out, record) => {
+  const reading = b.evaluate(chatSeen(Number(PHONE[1])));
+  record.checks.push({
+    check: "the rooms' tabs stand in the head row beside its cross",
+    ok: reading.headTabs >= 2 && reading.headClose,
+    reading,
+  });
+  const field = b.evaluate(centreOf('section[aria-label="Chat"] textarea, section[aria-label="Chat"] input'));
+  if (field) await phone.tap(field);
+  const floor = Number(PHONE[1]) - OWNER_KEYBOARD_PX;
+  const keyboard = b.evaluate(keyboardUp(floor));
+  await sleep(800);
+  const typing = b.evaluate(chatSeen(floor));
+  record.checks.push(
+    { check: "the owner's keyboard is met", ok: keyboard === "open" },
+    { check: "the strip and the place bar step aside while typing", ok: typing.stripGone && typing.barGone, typing },
+    { check: "the field stands above the keyboard", ok: typing.field },
+    {
+      check: `at least ${HISTORY_TYPING_PX} px of history in sight above it`,
+      ok: typing.historyPx >= HISTORY_TYPING_PX,
+      historyPx: typing.historyPx,
+    },
+  );
+  shoot(b, out, "chat-typing-keyboard");
+  b.evaluate(KEYBOARD_DOWN);
+  await sleep(600);
+  record.checks.push({
+    check: "the strip is back once the keyboard goes",
+    ok: !b.evaluate(chatSeen(Number(PHONE[1]))).stripGone,
   });
 };
 
