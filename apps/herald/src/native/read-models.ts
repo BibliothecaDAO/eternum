@@ -108,15 +108,17 @@ function directoryPlayerState(
   const structures = gameRows(facts.structures, game.game_id).filter((row) => address(row.owner) === player);
   const roster = (gameRows(facts.rosters, game.game_id)[0]?.players as Row[] | undefined) ?? [];
   const seat = roster.find((row) => address(row.account) === player);
-  const held = gameRows(facts.entitlements, game.game_id).find(
-    (row) => address(row.owner) === player && number(row.pass_kind) === 2,
-  );
+  const entitlements = gameRows(facts.entitlements, game.game_id);
+  const own = entitlements.find((row) => address(row.owner) === player);
+  const held = own && number(own.pass_kind) === 2 ? own : null;
   const settlement = required(facts.settlementRules, game.game_id, "SettlementRules");
   return {
     registered: gameRows(facts.entries, game.game_id).some((row) => address(row.player) === player),
     settled: structures.some((row) => isRealmCategory(number(record(row.base).category))),
     roster_wallet: seat ? address(seat.wallet) : null,
     held_realm_id: held ? number(held.realm_id) : null,
+    has_home_source: own !== undefined,
+    taken_realm_ids: entitlements.filter((row) => number(row.pass_kind) === 2).map((row) => number(row.realm_id)),
     structures: structures.map((row) => playerStructure(row, game, settlement, facts, input.timestamp)),
   };
 }

@@ -288,3 +288,39 @@ it("preserves player-facing registration errors across the shard object's RPC bo
   expect(response.status).toBe(409);
   expect(await response.json()).toEqual({ error: "realm_not_owned" });
 });
+
+it("authenticates campaign recovery and derives its account without accepting a source override", async () => {
+  const register = vi.fn(async () => ({ entry: { campaign: "devcon-2026", tier: "regular" } }));
+  const account = vi.fn(async () => "0x3");
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "test",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ realmEntry: register }) },
+    IDENTITY: { accountForRealmsId: account },
+  };
+  const body = { chainId: "0x1", gameId: 7, realmsId: "0x2" };
+  const send = (payload: unknown, token = "test") =>
+    worker.fetch(
+      new Request("https://app.test/api/value/operator/campaign-entry", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify(payload),
+      }),
+      env as never,
+    );
+  expect((await send(body, "wrong")).status).toBe(401);
+  expect((await send({ ...body, account: "0x9" })).status).toBe(400);
+  expect((await send({ ...body, tier: "golden" })).status).toBe(400);
+  expect(register).not.toHaveBeenCalled();
+  const result = await send(body);
+  expect([result.status, await result.json()]).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
+  expect(account).toHaveBeenCalledExactlyOnceWith("0x2");
+  expect(register).toHaveBeenCalledExactlyOnceWith({ ...body, account: "0x3", realmId: null, recoverFlyer: true });
+});

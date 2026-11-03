@@ -46,8 +46,16 @@ export function HomeSourcePicker({
   onChange,
   onSettled,
   disabled,
+  title = HOME_STEP_WORDS.title,
+  takenRealmIds = [],
+  onSourceAvailable,
+  requireSource = false,
 }: {
   presetId: number;
+  title?: string;
+  requireSource?: boolean;
+  takenRealmIds?: readonly number[];
+  onSourceAvailable?: (available: boolean) => void;
   registered: number | null;
   value: string;
   onChange: (value: string) => void;
@@ -55,17 +63,25 @@ export function HomeSourcePicker({
   disabled: boolean;
 }) {
   const sources = useHomeSources(presetId);
-  const choices = choicesOf(sources);
-  const offered = usePickOffered(choices, sources.ready, registered, value, onChange, disabled);
-  const settled = registered !== null || (sources.ready && offered);
+  const choices = choicesOf(sources).map((choice) =>
+    choice.kind === "realm" ? { ...choice, taken: takenRealmIds.includes(choice.realmId) } : choice,
+  );
+  const available = choices.filter((choice) => !isTaken(choice));
+  const hasSource = available.length > 0;
+  const hasChoices = choices.length > 0;
+  useEffect(() => {
+    if (sources.ready) onSourceAvailable?.(hasChoices);
+  }, [sources.ready, hasChoices, onSourceAvailable]);
+  const offered = usePickOffered(available, sources.ready, registered, value, onChange, disabled);
+  const settled = registered !== null || (sources.ready && offered && (!requireSource || hasSource));
   useEffect(() => {
     onSettled(settled);
   }, [settled, onSettled]);
-  const picked = registered !== null ? realmChoice({ realmId: registered, map: null }) : pickedChoice(choices, value);
+  const picked = registered !== null ? realmChoice({ realmId: registered, map: null }) : pickedChoice(available, value);
   return (
-    <section className="home-picker" aria-label={HOME_STEP_WORDS.title}>
+    <section className="home-picker" aria-label={title}>
       <header className="home-picker__head">
-        <h2>{HOME_STEP_WORDS.title}</h2>
+        <h2>{title}</h2>
         {registered === null && choices.length > 0 && <span>{choiceCount(choices)}</span>}
       </header>
       {picked ? (
@@ -77,7 +93,7 @@ export function HomeSourcePicker({
           <HudLoading line={HOME_STEP_WORDS.loading} />
         </div>
       )}
-      {registered === null && choices.length > 1 && (
+      {registered === null && (choices.length > 1 || choices.some(isTaken)) && (
         <Choices choices={choices} value={value} onChange={onChange} disabled={disabled} />
       )}
       {registered === null && sources.ready && sources.wallet === null && choices.length > 0 && <LinkWallet />}
@@ -97,6 +113,7 @@ export type Choice =
   | {
       kind: "realm";
       realmId: number;
+      taken?: boolean;
       map: string | null;
       name: string;
       order: number;
@@ -105,6 +122,7 @@ export type Choice =
     };
 
 export const realmChoice = (held: HeldRealm): Choice => ({ kind: "realm", ...held, ...canonicalRealm(held.realmId) });
+const isTaken = (choice: Choice) => choice.kind === "realm" && choice.taken === true;
 const valueOf = (choice: Choice) => (choice.kind === "ticket" ? "" : String(choice.realmId));
 
 /** The ticket first (its home claims Essence on top of Labor), then the Realms: wonders first, the richest, by number. */
@@ -324,7 +342,7 @@ export function ChoiceButton({
       aria-pressed={picked}
       aria-label={choiceLabel(choice)}
       onClick={() => onPick(choice)}
-      disabled={disabled}
+      disabled={disabled || isTaken(choice)}
     >
       <ChoiceArt choice={choice} />
       {picked && (
@@ -333,6 +351,7 @@ export function ChoiceButton({
         </span>
       )}
       <span className="home-picker__caption">{choiceLabel(choice)}</span>
+      {isTaken(choice) && <span>{HOME_STEP_WORDS.taken}</span>}
       {traits && choice.kind === "realm" && (
         <span className="home-picker__traits">
           <Resources resources={choice.resources} />

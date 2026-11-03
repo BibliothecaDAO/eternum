@@ -6,7 +6,9 @@
     "lint": "eslint",
     "typecheck": "tsc --noEmit -p server",
     "test": "vitest run",
-    "campaign-codes": "tsx scripts/campaign-codes.ts"
+    "campaign-codes": "tsx scripts/campaign-codes.ts",
+    "campaign-shared-code": "tsx scripts/campaign-shared-code.ts",
+    "campaign-founded-homes": "tsx scripts/campaign-founded-homes.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",

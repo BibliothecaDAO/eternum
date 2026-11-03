@@ -44,7 +44,7 @@ function releaseFacts() {
   });
   return {
     releaseId: NATIVE_RELEASE_ID,
-    migrationClassHash: migrationClassHash(),
+    migrationClassHash: "0x0",
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),
@@ -56,18 +56,6 @@ function releaseFacts() {
     },
     presets: Object.fromEntries(presets),
   };
-}
-
-function migrationClassHash(): string {
-  const index = JSON.parse(readFileSync(resolve(WORLD, "target/dev/world_native.starknet_artifacts.json"), "utf8")) as {
-    contracts: Array<{ contract_name: string; artifacts: { sierra: string; casm: string } }>;
-  };
-  const migration = index.contracts.find(({ contract_name }) => contract_name === "ReleaseMigration");
-  if (!migration) return "0x0";
-  return readClassArtifact(
-    resolve(WORLD, "target/dev", migration.artifacts.sierra),
-    resolve(WORLD, "target/dev", migration.artifacts.casm),
-  ).classHash;
 }
 
 console.log(JSON.stringify(releaseFacts(), null, 2));

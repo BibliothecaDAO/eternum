@@ -103,6 +103,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   }
   const player = option("--player", null);
   if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
+  const storageState = option("--storage-state", null);
+  if (storageState && !player) throw new Error("--storage-state requires --player");
   const stepSet = option("--steps", player ? "player" : "spectator");
   if (!STEP_SETS[stepSet]) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
@@ -135,6 +137,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     network: link && { downMbps: Number(link[1]), roundTripMs: Number(link[2]) },
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
     player,
+    storageState: storageState ? resolve(callerDir, storageState) : null,
     port: integer("--port", DEFAULTS.port, 1),
     rendererModes,
     stepSet,
@@ -323,6 +326,7 @@ async function playRun(context) {
       "--args",
       BROWSER_ARGS.join(","),
     ]);
+    if (context.storageState) browser.run(["state", "load", context.storageState]);
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
@@ -388,10 +392,14 @@ async function playRun(context) {
   try {
     return writeRunEvidence({ browser, context, record });
   } finally {
-    await releaseDevTools();
-    // A previous live game must not keep rendering during the next measurement.
-    await releaseBrowser();
-    await releaseProfile();
+    try {
+      if (context.storageState && record.signIn === "kept") browser.run(["state", "save", context.storageState]);
+    } finally {
+      await releaseDevTools();
+      // A previous live game must not keep rendering during the next measurement.
+      await releaseBrowser();
+      await releaseProfile();
+    }
   }
 }
 
@@ -547,13 +555,14 @@ function playerProfile(email) {
 }
 
 /** A profile whose session was lost signs in again, through Connect, and the run's page opens once more. */
-async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url }) {
+async function signInAsPlayer({ baseUrl, browser, owner, player, runDir, url, storageState }) {
   const signIn = await signInIfSignedOut({
     browser,
     owner,
     email: player,
     baseUrl,
     codeFile: join(runDir, "sign-in-code"),
+    requireExisting: Boolean(storageState),
   });
   browser.run(["open", url]);
   return signIn;

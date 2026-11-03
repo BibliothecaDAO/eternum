@@ -22,10 +22,11 @@ export const ENTRY_BUTTON = "[data-playtest-entry]";
  * asks for the code on stderr and waits for whoever runs it to write the code to `codeFile`. Returns "kept" or
  * "signed in"; the home page is to be opened again after.
  */
-export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFile }) {
+export async function signInIfSignedOut({ browser, owner, email, baseUrl, codeFile, requireExisting = false }) {
   browser.run(["open", new URL("/", baseUrl).href]);
   const before = await signInState(browser, owner, email, ["signed-in", "signed-out"]);
   if (before === "signed-in") return "kept";
+  if (requireExisting) throw new Error("Saved player state is signed out; no sign-in code was sent");
   browser.run(["click", CONNECT_PLACE]);
   await waitUntil(owner, () => browser.read(isShown(EMAIL_FIELD)), "Connect opened no email field");
   browser.run(["fill", EMAIL_FIELD, email]);

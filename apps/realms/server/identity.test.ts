@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "n
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   buildSiwsMessage,
   normalizeStarknetAddress,
@@ -14,7 +14,7 @@ import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-wor
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
 import { deliverWalletNotices } from "./wallet-changes";
@@ -956,7 +956,15 @@ describe("identity Worker", () => {
     mode: "frontier",
     preset_id: 6,
     status: "Live",
-    player_state: { registered: entered, settled: entered, roster_wallet: null, held_realm_id: null, structures: [] },
+    player_state: {
+      registered: entered,
+      settled: entered,
+      roster_wallet: null,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+    },
   });
   /**
    * What every listed shard tells the redeem about this account: no running Devcon game entered, except on the shards
@@ -970,6 +978,35 @@ describe("identity Worker", () => {
     for (const { url, chainId } of results) {
       const games = url in devcon ? [devconGame(devcon[url]!)] : [];
       heralds.set(`${url}/games?player=${account}`, { chain: chainId, games });
+      if (url in devcon)
+        heralds.set(`${url}/games/41/snapshot?models=EntryEntitlement%2CStructure%2CCampaignHome%2CSettledRealm`, {
+          game_id: "41",
+          confirmed_block: 1,
+          models: [
+            {
+              model: "EntryEntitlement",
+              rows: devcon[url]
+                ? [
+                    {
+                      key: `41:${account}`,
+                      value: {
+                        game_id: 41,
+                        owner: account,
+                        realm_id: "711",
+                        metadata_1: "0",
+                        metadata_2: "0",
+                        metadata_3: "0",
+                        pass_kind: 2,
+                      },
+                    },
+                  ]
+                : [],
+            },
+            { model: "Structure", rows: [] },
+            { model: "CampaignHome", rows: [] },
+            { model: "SettledRealm", rows: [] },
+          ],
+        });
     }
   };
 
@@ -991,6 +1028,14 @@ describe("identity Worker", () => {
     };
     const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
     const taken = [410, { error: "ticket_taken" }];
+    /** The tiers of the printed codes no account holds yet, which a shared code draws from. */
+    const unspentTiers = async () =>
+      (
+        await env.DB.prepare(
+          `SELECT "tier" FROM "campaign_codes" AS code WHERE "campaign" = 'devcon-2026'
+           AND NOT EXISTS (SELECT 1 FROM "campaign_tickets" AS ticket WHERE ticket."code_hash" = code."code_hash")`,
+        ).all<{ tier: string }>()
+      ).results.map(({ tier }) => tier);
     type Player = Awaited<ReturnType<typeof player>>;
     let first: Player, second: Player, regular: Player, other: Player, late: Player;
     let goldenRacers: [Player, Player], regularRacers: [Player, Player];
@@ -1047,6 +1092,41 @@ describe("identity Worker", () => {
       expect(raced.find(([status]) => status === 200)).toEqual(ticket(tier));
     });
 
+    it("draws each account bringing a shared code one unspent printed ticket, at its tier, until none is left", async () => {
+      const shared = "SH4R3DQX";
+      // The operator's script writes the shared code's SQL from its environment; loading it twice changes nothing.
+      const out = join(mkdtempSync(join(tmpdir(), "campaign-shared-")), "shared.sql");
+      execFileSync("pnpm", ["campaign-shared-code", "devcon-2026", out], {
+        cwd: new URL("..", import.meta.url),
+        env: { ...process.env, CAMPAIGN_SHARED_CODE: shared.toLowerCase() },
+      });
+      const sql = readFileSync(out, "utf8");
+      expect(sql).not.toContain(shared);
+      await env.DB.batch([sql, sql].map((statement) => env.DB.prepare(statement)));
+      rmSync(dirname(out), { recursive: true, force: true });
+      await Promise.all([
+        printed("D2AWG8LD", "golden"),
+        printed("P5YKE3MV", "regular"),
+        printed("U7CJ9TFB", "regular"),
+      ]);
+      const pool = await unspentTiers();
+      expect(pool.length).toBeGreaterThanOrEqual(3);
+      const drawers = await Promise.all(pool.map((_, index) => player(`shared-${index}`)));
+      // Every account draws at once: each gets a different printed code, so the drawn tiers are exactly the pool's.
+      const drawn = await Promise.all(drawers.map((drawer) => drawer.redeem(shared)));
+      expect(drawn.map(([status]) => status)).toEqual(pool.map(() => 200));
+      expect(drawn.map(([, body]) => (body as { tier: string }).tier).sort()).toEqual([...pool].sort());
+      expect(await unspentTiers()).toEqual([]);
+      // A retry, with the shared code or none, answers the ticket drawn.
+      expect(await drawers[0]!.redeem(shared)).toEqual(drawn[0]);
+      expect(await drawers[0]!.redeem()).toEqual(drawn[0]);
+      expect(await campaignTicketFor(env.DB, drawers[0]!.realmsId, 6)).toEqual(drawn[0]![1]);
+      // Once every printed ticket is drawn, the shared code gives none.
+      const late = await player("shared-late");
+      expect(await late.redeem(shared)).toEqual(taken);
+      expect(await campaignTicketFor(env.DB, late.realmsId, 6)).toBeNull();
+    });
+
     it("refuses a new ticket after the season but still answers a held ticket", async () => {
       await printed("M3XKP7HQ", "regular");
       await printed("Z9X2M4NH", "golden");
@@ -1059,6 +1139,38 @@ describe("identity Worker", () => {
         now.mockRestore();
       }
     });
+  });
+
+  it("recovers a founded free home through the operator draw, preserving the ticket on retry", async () => {
+    const shard = "https://recovery-season.test";
+    onTestFinished(async () => {
+      await env.DB.prepare("DELETE FROM shards WHERE url = ?").bind(shard).run();
+    });
+    await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdd', 'active', ?)`)
+      .bind(shard, Date.now())
+      .run();
+    await env.DB.prepare('INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, ?)')
+      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "H9MP3QWA"), "regular")
+      .run();
+    const browser = createBrowser();
+    await signInWithCode(browser, "recovered-home@realms.test");
+    const realmsId = (await browser.session())!.user.realmsId;
+    await heraldsAnswerFor(realmsId, { [shard]: false });
+    const account = realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey());
+    heralds.set(`${shard}/games?player=${account}`, { chain: "0xdd", games: [devconGame(true)] });
+    const operator = createBrowser();
+    const path = "/api/operator/campaign-draw";
+    const body = { campaign: "devcon-2026", realmsId };
+    const send = (token?: string, extra = {}) =>
+      operator.request(path, { body: { ...body, ...extra }, ...(token ? { token } : {}) });
+    expect((await send()).status).toBe(401);
+    expect((await send(OPERATOR_TOKEN, { tier: "golden" })).status).toBe(400);
+    const first = await send(OPERATOR_TOKEN);
+    const ticket = await first.json();
+    expect(first.status).toBe(200);
+    expect(ticket).toEqual({ campaign: "devcon-2026", tier: expect.stringMatching(/^(regular|golden)$/) });
+    expect(await (await send(OPERATOR_TOKEN)).json()).toEqual(ticket);
+    expect(await campaignTicketFor(env.DB, realmsId, 6)).toEqual(ticket);
   });
 
   it("prints flyers whose codes, once loaded, give exactly the campaign's golden count of golden tickets", async () => {
@@ -1116,7 +1228,7 @@ describe("identity Worker", () => {
     rmSync(out, { recursive: true, force: true });
   }, 60_000);
 
-  it("keeps a flyer unspent for an account whose realm is already founded in the running Devcon game, or while a shard cannot say", async () => {
+  it("keeps a flyer unspent for a home with a source, or while a shard cannot say", async () => {
     const shard = "https://devcon-season.test";
     await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xdc', 'active', ?)`)
       .bind(shard, Date.now())
@@ -1135,12 +1247,24 @@ describe("identity Worker", () => {
       };
     };
 
-    // Founded first (from a poster, say): refused, and the flyer is not spent.
+    // Founded with a held Realm: refused, and the flyer is not spent.
     const founded = await player("founded-first", true);
     expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
     expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
+    // A shared code draws nothing for it either.
+    await env.DB.prepare('INSERT INTO "campaign_shared_codes" ("campaign", "code_hash") VALUES (?, ?)')
+      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "SH4R3DW7"))
+      .run();
+    expect(await founded("SH4R3DW7")).toEqual([409, { error: "realm_founded" }]);
     // The friend it is passed to, not yet in the game, opens it at its tier.
     const friend = await player("flyer-friend", false);
+    for (const [url, body] of heralds) {
+      if (
+        url.startsWith(`${shard}/games?`) &&
+        (body as { games?: { player_state?: { settled: boolean } }[] }).games?.[0]?.player_state?.settled === false
+      )
+        heralds.set(url, { chain: "0xdc", games: [devconGame(true)] });
+    }
     expect(await friend("F7QZ2KHM")).toEqual([200, { campaign: "devcon-2026", tier: "golden" }]);
     expect(await founded("F7QZ2KHM")).toEqual([410, { error: "ticket_taken" }]);
 
@@ -1298,7 +1422,15 @@ describe("identity Worker", () => {
     expect(await list()).toEqual(listed);
 
     // A player's standing comes from each shard as it answers that player; shard B cannot answer, and says so.
-    const standing = { registered: true, settled: false, roster_wallet: null, held_realm_id: null, structures: [] };
+    const standing = {
+      registered: true,
+      settled: false,
+      roster_wallet: null,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+    };
     heralds.set("https://shard-a.test/games?player=0xabc", {
       chain: "0xa",
       games: [

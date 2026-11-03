@@ -1,7 +1,8 @@
 /**
  * Campaigns: an event's tickets to a campaign home, a realm the player founds through the campaign rather than with a
- * Realm they hold. Each printed flyer carries its own code, good for one account; the identity Worker keeps the codes
- * hashed with the tier each gives (apps/realms/server/campaigns.ts), so only it knows which are golden. An account holds
+ * Realm they hold. Each printed code is good for one account; the identity Worker keeps the codes hashed with the tier
+ * each gives (apps/realms/server/campaigns.ts), so only it knows which are golden. A code every flyer shares instead
+ * draws one of the unspent printed codes at random for each account that brings it, so the tiers stay exact. An account holds
  * one ticket per campaign, and the relay registers it onchain, under the campaign's key as a short string, when that
  * account founds its home in one of the campaign's games. Nothing else gives a ticket: posters and promotion link to the
  * game itself, where any account founds an ordinary home.

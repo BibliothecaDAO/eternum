@@ -100,7 +100,6 @@ export async function readHomeClaim(shardUrl: string, gameId: number, account: s
     const claim = homeDailyClaim(store, {
       gameId,
       entityId: structure.entity_id,
-      realmId: structure.metadata.realm_id,
     });
     if (claim) return claim;
   }

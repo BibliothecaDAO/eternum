@@ -296,6 +296,7 @@ export async function recordRpcSends(devTools) {
  */
 export async function openOrderSendGate(devTools) {
   const held = [];
+  let closed = false;
   const stopListening = devTools.onEvent(({ method, params }) => {
     if (method !== "Fetch.requestPaused") return;
     if (isOrderSend(params.request)) held.push({ requestId: params.requestId, id: rpcIdOf(params.request) });
@@ -312,6 +313,8 @@ export async function openOrderSendGate(devTools) {
         held.splice(0).map(({ requestId, id }) => devTools.send("Fetch.fulfillRequest", refusal(requestId, id))),
       ),
     close: async () => {
+      if (closed) return;
+      closed = true;
       await release();
       await devTools.send("Fetch.disable");
       stopListening();

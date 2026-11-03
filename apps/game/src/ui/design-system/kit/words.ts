@@ -673,7 +673,13 @@ export const HOME_STEP_WORDS = {
   /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
-  freeHomeLine: "No daily Labor. Hold a Realm or a Devcon ticket to found with it.",
+  freeHomeLine: "Hold a Realm or a Devcon ticket to add a daily claim.",
+  taken: "Taken",
+  keepFree: "Continue with my free home",
+  attachTitle: "Choose a daily claim",
+  attach: "Add this daily claim",
+  attaching: "Adding daily claim…",
+  attachLine: "One source per home. Your home keeps its existing traits.",
   linkWallet: "Link the wallet that holds your Realms",
   registered: "Registered for this game",
   noMatch: "No Realm matches",
@@ -797,7 +803,7 @@ export const JOIN_WORDS = {
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",
-  founded: "Your realm is already founded: give this flyer to a friend.",
+  founded: "Your realm already has a daily claim. Give this flyer to a friend.",
   noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
   failed: "Your ticket could not be opened.",
 } as const;

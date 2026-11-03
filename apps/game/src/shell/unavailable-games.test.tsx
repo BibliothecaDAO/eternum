@@ -28,6 +28,8 @@ const season = {
     registered: true,
     roster_wallet: null,
     held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
     structures: [{ category: 1, realm_id: 3098, level: 1 }],
   },
 } as unknown as DirectoryGame;

@@ -76,7 +76,15 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   expedition: null,
   clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 7 * DAY, end_grace_seconds: 0 },
   player_count: 0,
-  player_state: { registered: false, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
+  player_state: {
+    registered: false,
+    settled: false,
+    roster_wallet: null,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [],
+  },
   roster_count: 0,
   preset_id: 0,
   registration: null,
@@ -86,7 +94,15 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame => ({
   ...over,
 });
 
-const owned = { registered: true, settled: true, roster_wallet: LAB_WALLET, held_realm_id: null, structures: [REALM] };
+const owned = {
+  registered: true,
+  settled: true,
+  roster_wallet: LAB_WALLET,
+  held_realm_id: null,
+  has_home_source: false,
+  taken_realm_ids: [],
+  structures: [REALM],
+};
 
 /** Frontier's season on Day 12, the player's realm in it or not. */
 const frontier = (withRealm: boolean) =>
@@ -140,7 +156,15 @@ const preparingBlitz = game({
   clock: { start_settling_at: NOW + 3600, start_main_at: NOW + 7200, end_at: NOW + 14_400, end_grace_seconds: 0 },
   player_count: 18,
   roster_count: 24,
-  player_state: { registered: true, settled: false, roster_wallet: LAB_WALLET, held_realm_id: null, structures: [] },
+  player_state: {
+    registered: true,
+    settled: false,
+    roster_wallet: LAB_WALLET,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [],
+  },
   slotId: LAB_SLOT_KEY.slotId,
 });
 const eternum = game({
@@ -163,7 +187,15 @@ const openEternum = game({
   status: "Live",
   ready: true,
   clock: { start_settling_at: NOW - DAY, start_main_at: NOW - DAY, end_at: NOW + 60 * DAY, end_grace_seconds: 0 },
-  player_state: { registered: true, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
+  player_state: {
+    registered: true,
+    settled: false,
+    roster_wallet: null,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [],
+  },
 });
 
 /** One state per screen the painted pass draws. */

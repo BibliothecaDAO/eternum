@@ -67,7 +67,7 @@ import { PlayPage } from "./play-page";
 
 import { useBuildOrderStore } from "@/hooks/use-build-orders";
 
-const REALM = { category: 1, realm_id: 3098, level: 1 };
+const REALM = { entity_id: 1, category: 1, realm_id: 3098, level: 1, coord_x: 0, coord_y: 0, resources_packed: "0" };
 const game = (over: Partial<DirectoryGame>): DirectoryGame =>
   ({
     chainId: "0xa",
@@ -80,11 +80,27 @@ const game = (over: Partial<DirectoryGame>): DirectoryGame =>
     clock: { start_settling_at: 0, start_main_at: 100, end_at: 4_000_000_000, end_grace_seconds: 0 },
     player_count: 10,
     roster_count: 0,
-    player_state: { registered: false, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
+    player_state: {
+      registered: false,
+      settled: false,
+      roster_wallet: null,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+    },
     ...over,
   }) as DirectoryGame;
 const ownSeason = game({
-  player_state: { registered: true, settled: true, roster_wallet: null, held_realm_id: null, structures: [REALM] },
+  player_state: {
+    registered: true,
+    settled: true,
+    roster_wallet: null,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [REALM],
+  },
 } as Partial<DirectoryGame>);
 const slot: PlaytestSlot = {
   slotId: 3,
@@ -103,7 +119,15 @@ const preparing = game({
   clock: { start_settling_at: 0, start_main_at: 4_000_000_000, end_at: 4_000_100_000, end_grace_seconds: 0 },
   roster_count: 24,
   player_count: 18,
-  player_state: { registered: true, settled: false, roster_wallet: "0x4a1", held_realm_id: null, structures: [] },
+  player_state: {
+    registered: true,
+    settled: false,
+    roster_wallet: "0x4a1",
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [],
+  },
 } as Partial<DirectoryGame>);
 
 let where = "";

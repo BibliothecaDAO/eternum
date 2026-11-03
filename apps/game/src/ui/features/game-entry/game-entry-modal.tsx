@@ -135,11 +135,13 @@ export const GameEntryModal = ({
   });
   const isCheckingWorldAvailability = gameEntry.data === undefined && gameEntry.error == null;
   const worldMeta = gameEntry.data ?? null;
+  const hasWorldMeta = worldMeta !== null;
   const worldName = worldMeta?.name ?? `Game ${game.gameId}`;
   const worldMode = worldMeta?.mode ?? "unknown";
   const isBlitzMode = worldMode === "blitz";
   const isEternumMode = worldMode === "eternum";
   const isFrontierMode = worldMode === "frontier";
+  const gameOver = worldMeta ? isGameOver(worldMeta) : false;
   // Eternum and Frontier both settle one realm from here; Blitz realms are settled by the launch service.
   const isSeasonMode = isEternumMode || isFrontierMode;
   const isDevMode = worldMeta?.dev_mode_on === true;
@@ -168,6 +170,10 @@ export const GameEntryModal = ({
   const [settledRealmCount, setSettledRealmCount] = useState(0);
   const [needsSettlement, setNeedsSettlement] = useState(false);
   const [canPlay, setCanPlay] = useState(false);
+  const [sourceLessHome, setSourceLessHome] = useState(false);
+  const [sourceAvailable, setSourceAvailable] = useState<boolean | null>(null);
+  const [takenRealmIds, setTakenRealmIds] = useState<number[]>([]);
+  const choosingSource = sourceLessHome && sourceAvailable !== false;
 
   const expectedSettlementCount = SEASON_SETTLEMENT_COUNT;
   const hasEnteredGameRef = useRef(false);
@@ -182,6 +188,9 @@ export const GameEntryModal = ({
     setPreflightError(null);
     setNeedsSettlement(false);
     setCanPlay(false);
+    setSourceLessHome(false);
+    setSourceAvailable(null);
+    setTakenRealmIds([]);
     setSettlementCheckComplete(false);
     setSettleStage("idle");
     setIsSettling(false);
@@ -281,8 +290,8 @@ export const GameEntryModal = ({
       hasAccount: account != null,
       isSeasonMode,
       checksComplete,
-      needsSettlement,
-      canPlay,
+      needsSettlement: needsSettlement || choosingSource,
+      canPlay: canPlay && !choosingSource,
       isEternumDevMode,
       isSettlingAdditionalRealm: devSettlementTarget !== null,
       isSettlementUnlocked: seasonTimingValid,
@@ -301,6 +310,7 @@ export const GameEntryModal = ({
     checksComplete,
     needsSettlement,
     canPlay,
+    choosingSource,
     seasonTimingValid,
     isSeasonMode,
     isCheckingWorldAvailability,
@@ -309,9 +319,9 @@ export const GameEntryModal = ({
   ]);
 
   const readSettlementSnapshot = useCallback(async (): Promise<SettlementSnapshot | null> => {
-    if (!account?.address || !worldMeta) return null;
+    if (!account?.address || !hasWorldMeta) return null;
     return fetchSettlementSnapshot(game, account.address);
-  }, [account?.address, game, worldMeta]);
+  }, [account?.address, game, hasWorldMeta]);
 
   const syncSettlementStateFromSnapshot = useCallback(
     (snapshot: SettlementSnapshot) => {
@@ -320,6 +330,7 @@ export const GameEntryModal = ({
         expectedSettlementCount: expectedSettlementCount,
       });
       setRegisteredRealmId(snapshot.heldRealmId);
+      setTakenRealmIds(snapshot.takenRealmIds);
       setSettledRealmCount(status.settledCount);
       setNeedsSettlement(status.needsSettlement);
       setCanPlay(status.canPlay);
@@ -381,6 +392,7 @@ export const GameEntryModal = ({
           setSettlementCheckComplete(true);
           return;
         }
+        setSourceLessHome(isFrontierMode && snapshot.hasSettledStructure && !snapshot.hasHomeSource && !gameOver);
         syncSettlementStateFromSnapshot(snapshot);
 
         setSettlementCheckComplete(true);
@@ -400,6 +412,9 @@ export const GameEntryModal = ({
     isSpectateMode,
     worldName,
     preflightRetryNonce,
+    game,
+    isFrontierMode,
+    gameOver,
     readSettlementSnapshot,
     syncSettlementStateFromSnapshot,
   ]);
@@ -471,6 +486,20 @@ export const GameEntryModal = ({
     [autoSettleEnabled, autoSettleEntryKey, markFailed, worldName],
   );
 
+  const attachChosenSource = useCallback(async () => {
+    setSettleStage("settling");
+    await registerHomeSource(game, heldRealmNumber === "" ? null : Number(heldRealmNumber));
+    setSettleStage("syncing");
+    await waitForSelectedWorldEntityState({
+      ...game,
+      description: "daily claim indexing",
+      isTarget: (snapshot) => snapshot?.hasHomeSource === true,
+      read: readSettlementSnapshot,
+      signal: beginEntityWait(),
+      slowAfterMs: SETTLEMENT_SYNC_TIMEOUT_MS,
+    });
+  }, [beginEntityWait, game, heldRealmNumber, readSettlementSnapshot]);
+
   // Settlement is an authenticated, recorded action.
   const handleSettle = useCallback(async () => {
     if (!isSeasonMode) {
@@ -495,6 +524,10 @@ export const GameEntryModal = ({
       if (initialSnapshot) {
         const initialStatus = syncSettlementStateFromSnapshot(initialSnapshot);
         if (initialStatus.canPlay && !isEternumDevMode) {
+          if (choosingSource && !initialSnapshot.hasHomeSource) {
+            await attachChosenSource();
+          }
+          setSourceLessHome(false);
           finalizeSuccessfulSettlement();
           return;
         }
@@ -535,6 +568,8 @@ export const GameEntryModal = ({
     expectedSettlementCount,
     game,
     heldRealmNumber,
+    choosingSource,
+    attachChosenSource,
     isFrontierMode,
     finalizeFailedSettlement,
     finalizeSuccessfulSettlement,
@@ -616,6 +651,10 @@ export const GameEntryModal = ({
             {isFrontierMode && worldMeta && (
               <HomeSourcePicker
                 presetId={worldMeta.preset_id}
+                title={choosingSource ? HOME_STEP_WORDS.attachTitle : undefined}
+                takenRealmIds={takenRealmIds}
+                requireSource={choosingSource}
+                onSourceAvailable={setSourceAvailable}
                 registered={registeredRealmId}
                 value={heldRealmNumber}
                 onChange={setHeldRealmNumber}
@@ -623,15 +662,27 @@ export const GameEntryModal = ({
                 disabled={isSettling}
               />
             )}
+            {choosingSource && <p>{HOME_STEP_WORDS.attachLine}</p>}
             {settlementError && <HudNotice tone="bad" line={settlementError} />}
             {isEternumDevMode && (
               <RealmNumberPicker value={devRealmNumber} onChange={setDevRealmNumber} disabled={isSettling} />
             )}
             <FoundButton
+              upgrading={choosingSource}
               founding={isSettling}
               ready={(!isEternumDevMode || validDevRealmNumber) && (!isFrontierMode || (validHeldRealm && homeSettled))}
               onFound={() => void handleSettle()}
             />
+            {choosingSource && (
+              <button
+                type="button"
+                className="home-picker__link"
+                disabled={isSettling}
+                onClick={() => setSourceLessHome(false)}
+              >
+                {HOME_STEP_WORDS.keepFree}
+              </button>
+            )}
           </>
         )}
       {phase === "ready" && !isSpectateMode && isEternumDevMode && (
@@ -658,10 +709,12 @@ export const FoundButton = ({
   founding,
   ready,
   onFound,
+  upgrading = false,
 }: {
   founding: boolean;
   ready: boolean;
   onFound: () => void;
+  upgrading?: boolean;
 }) => (
   <button
     type="button"
@@ -671,6 +724,12 @@ export const FoundButton = ({
     className="frontier-primary flex w-full items-center justify-center gap-3"
   >
     {founding && <span className="ui-spinner" aria-hidden="true" />}
-    {founding ? HOME_STEP_WORDS.founding : HOME_STEP_WORDS.found}
+    {upgrading
+      ? founding
+        ? HOME_STEP_WORDS.attaching
+        : HOME_STEP_WORDS.attach
+      : founding
+        ? HOME_STEP_WORDS.founding
+        : HOME_STEP_WORDS.found}
   </button>
 );

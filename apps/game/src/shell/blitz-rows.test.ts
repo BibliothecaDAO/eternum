@@ -15,7 +15,15 @@ const blitz = (gameId: number, over: Partial<DirectoryGame>): DirectoryGame =>
     player_count: 24,
     roster_count: 24,
     clock: { start_settling_at: 0, start_main_at: 0, end_at: 9_000, end_grace_seconds: 0 },
-    player_state: { registered: false, settled: false, roster_wallet: null, held_realm_id: null, structures: [] },
+    player_state: {
+      registered: false,
+      settled: false,
+      roster_wallet: null,
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+    },
     ...over,
   }) as DirectoryGame;
 
@@ -43,6 +51,8 @@ describe("the lobby's Blitz rows", () => {
             settled: false,
             roster_wallet: "0x4a1",
             held_realm_id: null,
+            has_home_source: false,
+            taken_realm_ids: [],
             structures: [],
           },
         }),
@@ -53,6 +63,8 @@ describe("the lobby's Blitz rows", () => {
             settled: false,
             roster_wallet: "0x4a1",
             held_realm_id: null,
+            has_home_source: false,
+            taken_realm_ids: [],
             structures: [],
           },
         }),
@@ -80,7 +92,15 @@ describe("the lobby's Blitz rows", () => {
 it("keeps ended Blitz games available to watch until their settled result lists", () => {
   const ended = blitz(7, {
     status: "Ended",
-    player_state: { registered: true, settled: true, roster_wallet: "0x4a1", held_realm_id: null, structures: [] },
+    player_state: {
+      registered: true,
+      settled: true,
+      roster_wallet: "0x4a1",
+      held_realm_id: null,
+      has_home_source: false,
+      taken_realm_ids: [],
+      structures: [],
+    },
   });
   const rows = blitzRows([ended], []);
   expect(rows).toMatchObject([{ key: "game:0xa:7", action: "spectate", startsAt: null }]);
@@ -107,6 +127,8 @@ describe("the game that seats a wallet", () => {
     settled: false,
     roster_wallet: wallet,
     held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
     structures: [],
   });
   const games = [

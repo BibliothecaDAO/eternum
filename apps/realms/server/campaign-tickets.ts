@@ -10,19 +10,33 @@ import { json, readBody } from "./http";
 const REDEEM_BYTES = 1024;
 
 /**
- * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried. It
- * answers the ticket's tier, to this account only; repeating it answers the same ticket, so a reload or a retry never
- * shows another outcome, with a code or without. A code another account already took, or one no flyer carries, gives
- * none; an account that already founded its realm in the campaign's running game is refused and the code stays unspent.
+ * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried: a
+ * printed flyer's own ticket, or, for a code every flyer shares, one of the campaign's unspent printed tickets drawn at
+ * random. It answers the ticket's tier, to this account only; repeating it answers the same ticket, so a reload or a
+ * retry never shows another outcome, with a code or without. A code another account already took, one no flyer carries,
+ * or a shared code once every printed ticket is spent gives none; an account whose home already has a source in the
+ * campaign's running game is refused and nothing is spent.
  */
 export function handleCampaignRedeem(
   request: Request,
   auth: IdentityAuth,
   db: D1Database,
-  hasEntered: EnteredCampaignGame,
+  hasSource: CampaignHomeSource,
 ): Promise<Response> {
+  return campaignResponse(db, redeemTicket(request, auth, hasSource));
+}
+
+/** Whether the account already has a home source in a running campaign game; null when unknown. */
+type CampaignHomeSource = (realmsId: string, presets: readonly number[]) => Promise<boolean | null>;
+
+/** Operator recovery uses the same finite pool and eligibility check as a shared flyer. */
+export function handleCampaignDraw(request: Request, db: D1Database, hasSource: CampaignHomeSource) {
+  return campaignResponse(db, drawTicket(request, db, hasSource));
+}
+
+function campaignResponse(db: D1Database, operation: ReturnType<typeof redeemTicket>) {
   return Effect.runPromise(
-    redeemTicket(request, auth, hasEntered).pipe(
+    operation.pipe(
       Effect.provide(CampaignTicketStore.layer(db)),
       Effect.catchTag("CampaignStorageError", () => Effect.succeed(json({ error: "campaigns_unavailable" }, 503))),
       Effect.catchTag("CampaignRequestError", (error) => Effect.succeed(json({ error: error.code }, error.status))),
@@ -30,10 +44,53 @@ export function handleCampaignRedeem(
   );
 }
 
-/** Whether the account already entered a running game of the campaign (campaign-entry.ts); null when unknown. */
-type EnteredCampaignGame = (realmsId: string, presets: readonly number[]) => Promise<boolean | null>;
+function drawTicket(request: Request, db: D1Database, hasSource: CampaignHomeSource) {
+  return Effect.gen(function* () {
+    const asked = yield* Effect.tryPromise({
+      try: () => readOperatorDraw(request),
+      catch: () => new CampaignRequestError({ code: "invalid_redemption", status: 400 }),
+    });
+    const exists = yield* Effect.tryPromise({
+      try: () => db.prepare('SELECT id FROM "user" WHERE "realmsId" = ?').bind(asked.realmsId).first(),
+      catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
+    });
+    if (!exists) return json({ error: "account_unavailable" }, 404);
+    const store = yield* CampaignTicketStore;
+    const held = yield* store.read(asked.campaign, asked.realmsId);
+    if (held) return json({ campaign: held.campaign, tier: held.tier });
+    const now = Math.floor(Date.now() / 1000);
+    if (now >= CAMPAIGNS[asked.campaign].redeemUntil) return json({ error: "campaign_closed" }, 410);
+    const refusal = yield* sourceRefusal(asked.realmsId, asked.campaign, hasSource);
+    if (refusal) return refusal;
+    const ticket = yield* store.draw(asked.campaign, asked.realmsId, now);
+    return ticket ? json({ campaign: ticket.campaign, tier: ticket.tier }) : json({ error: "ticket_taken" }, 410);
+  });
+}
 
-function redeemTicket(request: Request, auth: IdentityAuth, hasEntered: EnteredCampaignGame) {
+async function readOperatorDraw(request: Request): Promise<{ campaign: CampaignKey; realmsId: string }> {
+  const body = JSON.parse(await readBody(request, REDEEM_BYTES));
+  if (
+    !isCampaignKey(body.campaign) ||
+    typeof body.realmsId !== "string" ||
+    !/^0x[0-9a-f]{1,64}$/i.test(body.realmsId) ||
+    Object.keys(body).sort().join() !== "campaign,realmsId"
+  )
+    throw new Error("invalid_redemption");
+  return body;
+}
+
+function sourceRefusal(realmsId: string, campaign: CampaignKey, hasSource: CampaignHomeSource) {
+  return Effect.gen(function* () {
+    const sourced = yield* Effect.tryPromise({
+      try: () => hasSource(realmsId, CAMPAIGNS[campaign].presets),
+      catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
+    });
+    if (sourced === null) return json({ error: "campaigns_unavailable" }, 503);
+    return sourced ? json({ error: "realm_founded" }, 409) : null;
+  });
+}
+
+function redeemTicket(request: Request, auth: IdentityAuth, hasSource: CampaignHomeSource) {
   return Effect.gen(function* () {
     if (request.method !== "POST") return json({ error: "method_not_allowed" }, 405);
     const session = yield* Effect.tryPromise({
@@ -56,33 +113,31 @@ function redeemTicket(request: Request, auth: IdentityAuth, hasEntered: EnteredC
       session.user.realmsId,
       { campaign: asked.campaign, code: asked.code },
       now,
-      hasEntered,
+      hasSource,
     );
   });
 }
 
 /**
- * A new ticket from a flyer's code: refused while another account holds the code, and, so the flyer stays unspent for
- * someone else, while this account's realm is already founded in the campaign's running game (it would never claim).
+ * A new ticket from a flyer's code: refused while another account holds the code, and, so nothing is spent for someone
+ * else, while this account already has a home source in the campaign's running game.
  */
 function openFlyerTicket(
   realmsId: string,
   { campaign, code }: { campaign: CampaignKey; code: string },
   now: number,
-  hasEntered: EnteredCampaignGame,
+  hasSource: CampaignHomeSource,
 ) {
   return Effect.gen(function* () {
     const store = yield* CampaignTicketStore;
     const codeHash = yield* Effect.promise(() => campaignCodeHash(campaign, code));
-    const tier = yield* store.offered(campaign, codeHash);
-    if (!tier) return json({ error: "ticket_taken" }, 410);
-    const entered = yield* Effect.tryPromise({
-      try: () => hasEntered(realmsId, CAMPAIGNS[campaign].presets),
-      catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
-    });
-    if (entered === null) return json({ error: "campaigns_unavailable" }, 503);
-    if (entered) return json({ error: "realm_founded" }, 409);
-    const ticket = yield* store.redeem(campaign, realmsId, codeHash, tier, now);
+    const source = yield* store.source(campaign, codeHash);
+    if (!source) return json({ error: "ticket_taken" }, 410);
+    const refusal = yield* sourceRefusal(realmsId, campaign, hasSource);
+    if (refusal) return refusal;
+    const ticket = yield* source.kind === "shared"
+      ? store.draw(campaign, realmsId, now)
+      : store.redeem(campaign, realmsId, codeHash, source.tier, now);
     if (!ticket) return json({ error: "ticket_taken" }, 410);
     return json({ campaign: ticket.campaign, tier: ticket.tier });
   });
