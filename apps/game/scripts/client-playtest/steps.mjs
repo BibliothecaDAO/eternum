@@ -1173,9 +1173,9 @@ const SHEET_REGION = sheetRegion('[data-kit-sheet][aria-label="Castle"]');
 /**
  * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
  * the outermost open plot is the second ring's, nearer on a phone than on a desktop), then presses Build for the sheet's
- * first offer.
+ * requested building, or its first offer.
  */
-async function buildOnAnOpenPlot({ browser }) {
+async function buildOnAnOpenPlot({ browser }, building) {
   browser.press("Escape");
   const tapped = [];
   for (const offset of PLOT_CANDIDATES) {
@@ -1187,6 +1187,11 @@ async function buildOnAnOpenPlot({ browser }) {
     );
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
+      if (building) {
+        const choice = browser.read(sheetButton(`^${building}`));
+        if (!choice) throw new Error(`No ${building} in the Build sheet`);
+        browser.tap(choice.offset);
+      }
       browser.click("Build");
       return { tapped, plot: offset, region: tileRegion(offset) };
     }
@@ -1195,7 +1200,7 @@ async function buildOnAnOpenPlot({ browser }) {
   return { tapped };
 }
 
-const PLOT_CANDIDATES = [-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]);
+const PLOT_CANDIDATES = [...[-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]), [-60, -90], [60, -90]];
 
 /** Has the probe report the first frame `expression` holds in, under `name`. */
 function watchFor(browser, name, expression) {
@@ -4012,6 +4017,7 @@ function armyManagementSteps() {
     {
       name: "deploy-rehearsal-army",
       play: async ({ browser }) => {
+        armyId = undefined;
         const before = browser.armies().map(({ label }) => label);
         await deployFromTheDock({ browser }, 10);
         const arrived = await readUntil(
@@ -4026,7 +4032,7 @@ function armyManagementSteps() {
         browser.click(`${arrived.label}: details`);
         return { armyId, troops: count(browser) };
       },
-      settleMs: 1_000,
+      settleMs: 10_000,
       verify: ({ played }) =>
         played.armyId && played.troops === "10"
           ? completed(played)
@@ -4035,11 +4041,13 @@ function armyManagementSteps() {
     {
       name: "reinforce-army",
       play: async ({ browser, extraScreenshot }) => {
+        if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
         await press(browser, "Reinforce");
         browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops to add"]', "1"]);
         const preview = browser.read(
           `JSON.stringify(document.querySelector('[aria-label="Troops after reinforcement"]')?.textContent ?? null)`,
         );
+        browser.read(sheetButton("^Reinforce$"));
         extraScreenshot("reinforce-preview");
         if (preview?.trim() !== "10 → 11") return { preview };
         await press(browser, "Reinforce");
@@ -4050,21 +4058,24 @@ function armyManagementSteps() {
         );
         return { armyId, preview, troops };
       },
-      settleMs: 1_000,
+      settleMs: 10_000,
       verify: ({ played }) =>
         played.troops === "11" ? completed(played) : failed("reinforcement did not add exactly one troop", played),
     },
     {
       name: "delete-rehearsal-army",
       play: async ({ browser, extraScreenshot }) => {
+        if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
         await press(browser, "Delete");
         const loss = browser.read(
           `JSON.stringify(document.querySelector('[role="alertdialog"]')?.textContent ?? null)`,
         );
+        browser.read(sheetButton("^Delete$"));
         extraScreenshot("delete-confirmation");
         if (!loss?.includes("troops, skills, XP and carried resources are lost")) return { loss };
         await press(browser, "Cancel");
         const retained = count(browser) === "11";
+        if (!retained) return { armyId, loss, retained };
         await press(browser, "Delete");
         await press(browser, "Delete");
         const removed = await readUntil(
@@ -4074,7 +4085,7 @@ function armyManagementSteps() {
         );
         return { armyId, loss, retained, removed };
       },
-      settleMs: 1_000,
+      settleMs: 10_000,
       verify: ({ played }) =>
         played.retained && played.removed
           ? completed(played)
@@ -4084,6 +4095,34 @@ function armyManagementSteps() {
 }
 
 export const STEP_SETS = {
+  "army-stock": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+      {
+        name: "build-rehearsal-barracks",
+        play: async ({ browser }) => {
+          const built = await buildOnAnOpenPlot({ browser }, "Barracks");
+          if (!built.plot) return built;
+          await readUntil(() => browser.read(SHEET_NAME) !== "Build", Boolean, ORDER_OUTCOME_WAIT_MS);
+          browser.press("Escape");
+          browser.tap(built.plot);
+          const sheet = await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === "Barracks",
+            SHEET_WAIT_MS,
+          );
+          return { ...built, sheet };
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.sheet === "Barracks"
+            ? completed(played)
+            : failed("Barracks did not appear on the chosen plot", played),
+      },
+    ],
+  },
   "army-management": { game: FRONTIER, steps: armyManagementSteps() },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
