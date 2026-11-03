@@ -2,15 +2,13 @@ import { useRef, useState } from "react";
 
 import { Icon } from "@/ui/design-system/icon";
 import { AppLink, AppPanel, AppTabs } from "@/ui/design-system/kit/app-elements";
+import { DOCS_ADDRESS } from "@/config/app-address";
 import { NEWS_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import { PageFrame } from "../frame/page-frame";
 import { patchNotes } from "../generated/patch-notes";
 import type { PatchNote } from "./patch-note";
 import { changedSections, PatchHead, PatchSection, patchSection, ReleaseRows } from "./patch-notes";
-
-/** The game's full rules, on the docs site: the notes say what changed, the docs say everything. */
-const FULL_RULES = "https://docs.realms.party";
 
 /**
  * What's new (spec 13), read from You: the game's patch notes, the page's whole width. A release's head
@@ -66,7 +64,7 @@ const Release = ({ note }: { note: PatchNote }) => {
 };
 
 const FullRulesLink = () => (
-  <AppLink to={FULL_RULES} className="flex items-center gap-2 text-app-strong text-app-ink hover:underline">
+  <AppLink to={DOCS_ADDRESS} className="flex items-center gap-2 text-app-strong text-app-ink hover:underline">
     {NEWS_WORDS.fullRules}
     <Icon name="external-link" size={18} />
   </AppLink>

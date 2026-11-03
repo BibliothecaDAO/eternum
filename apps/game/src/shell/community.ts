@@ -1,4 +1,5 @@
 import { REALMS_X_TAG, REALMS_X_URL } from "@realms-world/chain";
+import { DOCS_ADDRESS } from "@/config/app-address";
 import type { IconMeaning } from "@/ui/design-system/icon";
 
 /**
@@ -25,7 +26,7 @@ export const X_HANDLE = REALMS_X_TAG;
  * their first season (owner, 29 October 2026: "the how to play link should go to frontier not blitz"). The site's front
  * page only points at each game.
  */
-export const HOW_TO_PLAY = "https://docs.realms.party/frontier";
+export const HOW_TO_PLAY = `${DOCS_ADDRESS}/frontier`;
 
 /** Realms' marketplace: a site of its own, opened from You in a new tab. */
 export const MARKET = "https://realms.market/";

@@ -105,6 +105,8 @@ export function clientEnvironment(platform: Platform, revision: string) {
     VITE_PUBLIC_L2_RPC_URL: platform.inputs.rpc,
     VITE_PUBLIC_ENVIRONMENT: platform.target.worker,
     VITE_PUBLIC_GAME_VERSION: revision,
+    // The privacy policy (apps/game/src/shell/legal.tsx) describes no error reports: a DSN here needs a section there
+    // saying what a report carries.
     VITE_PUBLIC_SENTRY_DSN: "",
   };
 }
