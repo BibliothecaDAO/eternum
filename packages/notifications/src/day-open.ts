@@ -1,5 +1,6 @@
 import { gamePath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 import { clockTime } from "./clock";
+import { pushGameName, type PushGame } from "./game-name";
 import { kindTag } from "./notification-kinds";
 
 /** What the home's claim gives each game day (homeDailyClaim), or null for a home with no claim. */
@@ -16,7 +17,7 @@ export interface DayOpenPush {
   chainId: string;
   worldAddress: string;
   gameId: number;
-  gameName: string;
+  game: PushGame;
   /** The day's index in its season; Day 1 is index 0. */
   day: number;
   opensAt: number;
@@ -44,7 +45,7 @@ export function buildDayOpen(
       id: `day-open:v1:0x${BigInt(push.chainId).toString(16)}:0x${BigInt(push.worldAddress).toString(16)}:${push.gameId}:${push.day}:${push.owner}`,
       owner: push.owner,
       title: push.last ? "The last day is open" : `Day ${push.day + 1} is open`,
-      body: `${push.gameName}: ${dayLine(push.claim, ends, push.last)}`,
+      body: `${pushGameName(push.game)}: ${dayLine(push.claim, ends, push.last)}`,
       tag: kindTag("day-open", gamePath(push)),
       target: gamePath(push),
       createdAt: push.sendAt,

@@ -15,6 +15,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+/** The icon the build stamps into the worker, and the status bar's badge every alert carries. */
+const ICON = "/images/game-pwa-192x192.png";
+const BADGE = "/images/game-badge-96x96.png";
+
 const now = Date.now();
 const payload = {
   version: 1,
@@ -52,6 +56,7 @@ function harness() {
     registration,
     clients,
     location: { origin: "https://game.test" },
+    REALMS_ALERT_ICON: ICON,
   } as any);
   const send = async (action = "deliver", override: Record<string, unknown> = {}) => {
     const reply = vi.fn();
@@ -103,6 +108,13 @@ it("delivers once across worker restarts, respects foreground activity and stops
   ]);
   expect(replies.map((reply) => reply.value)).toEqual(["shown", "suppressed"]);
   expect(h.registration.showNotification).toHaveBeenCalledOnce();
+  expect(h.registration.showNotification).toHaveBeenCalledWith("Battle", {
+    body: "A battle was confirmed",
+    tag: "story:1",
+    data: local,
+    icon: ICON,
+    badge: BADGE,
+  });
 
   h.client.visibilityState = "visible";
   const visible = { ...local, id: "visible" };
@@ -140,7 +152,7 @@ it("delivers once across worker restarts, respects foreground activity and stops
   expect(restarted.registration.showNotification).toHaveBeenCalledOnce();
   expect(restarted.registration.showNotification).toHaveBeenCalledWith(
     notification.title,
-    expect.objectContaining({ tag: "thread:one" }),
+    expect.objectContaining({ tag: "thread:one", icon: ICON, badge: BADGE }),
   );
   await restarted.click(envelope);
   expect(restarted.clients.openWindow).toHaveBeenCalledWith("https://game.test/g/0xa1/1");

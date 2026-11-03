@@ -9,7 +9,7 @@ const day = {
   chainId: "0x0a",
   worldAddress: "0x0123",
   gameId: 6,
-  gameName: "Devcon",
+  game: { mode: "frontier" as const, season_number: 0 },
   day: 1,
   opensAt,
   endsAt: opensAt + 6 * HOUR,
@@ -21,10 +21,10 @@ const day = {
 };
 
 it.each([
-  ["a held Realm", { labor: 1000, essence: 0 }, "Devcon: claim 1,000 Labor before 20:00."],
-  ["a Devcon realm", { labor: 1000, essence: 1000 }, "Devcon: claim 1,000 Labor and 1,000 Essence before 20:00."],
-  ["a golden ticket", { labor: 2000, essence: 2000 }, "Devcon: claim 2,000 Labor and 2,000 Essence before 20:00."],
-  ["a home with no claim", null, "Devcon: it ends at 20:00."],
+  ["a held Realm", { labor: 1000, essence: 0 }, "Season 0: claim 1,000 Labor before 20:00."],
+  ["a Devcon realm", { labor: 1000, essence: 1000 }, "Season 0: claim 1,000 Labor and 1,000 Essence before 20:00."],
+  ["a golden ticket", { labor: 2000, essence: 2000 }, "Season 0: claim 2,000 Labor and 2,000 Essence before 20:00."],
+  ["a home with no claim", null, "Season 0: it ends at 20:00."],
 ] as const)("tells %s's player the day is open, what to claim and when it ends", (_home, claim, body) => {
   expect(buildDayOpen({ ...day, claim })).toMatchObject({
     kind: "day-open",
@@ -39,15 +39,15 @@ it.each([
 it("names the last day with the season's end", () => {
   expect(buildDayOpen({ ...day, day: 9, last: true })).toMatchObject({
     title: "The last day is open",
-    body: "Devcon: claim 1,000 Labor. The season ends at 20:00.",
+    body: "Season 0: claim 1,000 Labor. The season ends at 20:00.",
   });
 });
 
 it.each([
-  ["Asia/Kolkata", "Devcon: claim 1,000 Labor before 20:00."],
-  ["UTC", "Devcon: claim 1,000 Labor before 14:30."],
-  ["America/New_York", "Devcon: claim 1,000 Labor before 09:30."],
-  [null, "Devcon: claim 1,000 Labor before 14:30 UTC."],
+  ["Asia/Kolkata", "Season 0: claim 1,000 Labor before 20:00."],
+  ["UTC", "Season 0: claim 1,000 Labor before 14:30."],
+  ["America/New_York", "Season 0: claim 1,000 Labor before 09:30."],
+  [null, "Season 0: claim 1,000 Labor before 14:30 UTC."],
 ] as const)("names the day's end on the clock of the phone it goes to (%s), with one id and expiry", (zone, body) => {
   const sent = buildDayOpen({ ...day, timeZone: zone, sendAt: opensAt + HOUR });
   expect(sent).toMatchObject({ body, createdAt: opensAt + HOUR, expiresAt: opensAt + 5 * HOUR });
@@ -76,18 +76,18 @@ it("tells a player each time their armies are all rested, until their day ends, 
       until: opensAt + 6 * HOUR,
       armies,
       owner: "0x1",
-      gameName: "Devcon",
+      game: { mode: "frontier" as const, season_number: 0 },
       now: fullAt,
     })!;
   expect(rested(opensAt)).toMatchObject({
     kind: "army-rested",
     title: "Your armies are rested",
-    body: "Devcon: their stamina is full.",
+    body: "Season 0: their stamina is full.",
     tag: "army-rested:/g/0xa/6",
     createdAt: opensAt,
     expiresAt: opensAt + 6 * HOUR,
   });
-  expect(rested(opensAt, 1)).toMatchObject({ title: "Your army is rested", body: "Devcon: its stamina is full." });
+  expect(rested(opensAt, 1)).toMatchObject({ title: "Your army is rested", body: "Season 0: its stamina is full." });
   // A second refill the same day is a second alert, under the same tag: it replaces the first on the phone.
   expect(rested(opensAt + 2 * HOUR).id).not.toBe(rested(opensAt).id);
   expect(rested(opensAt + 2 * HOUR).tag).toBe(rested(opensAt).tag);

@@ -2,9 +2,11 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
+import { pushGameName } from "@bibliothecadao/notifications";
 
 import type { DirectoryGame } from "./herald";
 import { chooseSeason, directoryDay, seasonTitle } from "./season";
+import { ageOf } from "./play/ages";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
@@ -77,6 +79,12 @@ describe("the season's number", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
   });
 
+  it("is what its pushes call it, as a Blitz push calls its game what Play does", () => {
+    const season = { chainId: "0x52", game_id: 3, season_number: 0 };
+    expect(pushGameName({ mode: "frontier", ...season })).toBe(seasonTitle(season));
+    expect(pushGameName({ mode: "blitz" })).toBe(ageOf("blitz").name);
+  });
+
   it("is a dash when the directory serves none, never a zero", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3 })).toBe("Season —");
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
@@ -88,8 +96,14 @@ describe("the season's number", () => {
       .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
       .filter((file) => readFileSync(`${src}${file}`, "utf8").includes("season_number"))
       .toSorted();
-    // The lab's directory fixtures write the number; only seasonTitle reads it.
-    expect(readers).toEqual(["shell/lab/app-lab-fixtures.ts", "shell/season.ts"]);
+    // The lab's directory fixtures write the number; seasonTitle names it, and the game's profile carries it to the
+    // game's own alerts, which name it with the same seasonName.
+    expect(readers).toEqual([
+      "pwa/local-story-notifications.ts",
+      "runtime/world/profile-builder.ts",
+      "shell/lab/app-lab-fixtures.ts",
+      "shell/season.ts",
+    ]);
   });
 
   it("names Devcon's season by its number, zero", () => {

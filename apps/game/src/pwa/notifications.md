@@ -30,9 +30,10 @@ game entry path, creation/expiry times, its kind and its tag. There are no gamep
 kind lives while it is news (`packages/notifications/src/notification-kinds.ts`): a Day open push until an hour before
 its day ends, rested armies until their day ends, results a day, fights, deliveries and messages an hour; a notice with
 no kind two minutes. One tag per game and kind, and the matching Web Push Topic, let a newer alert replace the one shown
-or still waiting at the push service. Game entry always uses the normal bootstrap. Clicks focus an existing matching
-game without navigating it, or open a separate entry flow; an existing game's transactions are never interrupted by
-forced navigation.
+or still waiting at the push service. Every alert is shown by one call (`showAlert`) with the installed app's icon,
+which the build stamps into the worker per environment, and the small globe in white as Android's status bar badge. Game
+entry always uses the normal bootstrap. Clicks focus an existing matching game without navigating it, or open a separate
+entry flow; an existing game's transactions are never interrupted by forced navigation.
 
 Shared logical identity groups paired battle and delayed-transfer records by their action identity. The native emitters
 and notification rules must agree on perspective and ordering; behavior tests cover mirrored records and distinct

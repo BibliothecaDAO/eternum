@@ -113,7 +113,8 @@ const createHerald = () => {
         games: [
           {
             game_id: GAME_ID,
-            name: "frontier-a",
+            name: "frontier-1793451600",
+            season_number: 0,
             status: state.status,
             mode: state.mode,
             clock: {
@@ -593,7 +594,7 @@ describe.concurrent("shard notifications", () => {
     await waitUntil(() => Date.now() > firstWake + polls(2), 60_000);
     expect(push.received).toEqual([]);
     await waitUntil(() => push.received.length >= 1, 60_000);
-    expect(await push.words()).toEqual(["Your armies are rested / frontier-a: their stamina is full."]);
+    expect(await push.words()).toEqual(["Your armies are rested / Season 0: their stamina is full."]);
     await pause(polls(10));
     expect(push.received).toEqual([201]);
 
@@ -724,7 +725,7 @@ describe.concurrent("shard notifications", () => {
       expect(herald.state.ownerReads).toContain(PLAYER_ACCOUNT);
       expect(await push.words()).toEqual([
         expect.stringMatching(
-          /^Day 2 is open \/ frontier-a: claim 2,000 Labor and 2,000 Essence before \d\d:\d\d UTC\.$/,
+          /^Day 2 is open \/ Season 0: claim 2,000 Labor and 2,000 Essence before \d\d:\d\d UTC\.$/,
         ),
       ]);
       await worker.dispose();
@@ -1019,7 +1020,7 @@ describe.concurrent("shard notifications", () => {
       push.status = 201;
       await waitUntil(() => push.received.includes(201), 120_000);
       expect(push.received).toEqual([503, 503, 503, 503, 503, 201]);
-      expect(await push.words()).toContain("The season is over / frontier-a: see where you finished.");
+      expect(await push.words()).toContain("The season is over / Season 0: see where you finished.");
     } finally {
       await worker.dispose();
     }
@@ -1109,8 +1110,8 @@ describe.concurrent("shard notifications", () => {
       await pause(polls(3));
       expect(push.endpoints.sort()).toEqual([PUSH_ENDPOINT, second].sort());
       expect(await push.words()).toEqual([
-        "You won a battle / frontier-a: your army beat the enemy.",
-        "You won a battle / frontier-a: your army beat the enemy.",
+        "You won a battle / Blitz: your army beat the enemy.",
+        "You won a battle / Blitz: your army beat the enemy.",
       ]);
     } finally {
       await worker.dispose();
@@ -1136,26 +1137,26 @@ describe.concurrent("shard notifications", () => {
   }, 45_000);
 
   it.each([
-    ["a held Realm", "realm", false, (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor before ${ends}.`],
+    ["a held Realm", "realm", false, (ends: string) => `Day 2 is open / Season 0: claim 1,000 Labor before ${ends}.`],
     [
       "an ordinary Devcon realm",
       "campaign",
       false,
-      (ends: string) => `Day 2 is open / frontier-a: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
+      (ends: string) => `Day 2 is open / Season 0: claim 1,000 Labor and 1,000 Essence before ${ends}.`,
     ],
     [
       "a golden Devcon realm",
       "golden",
       false,
-      (ends: string) => `Day 2 is open / frontier-a: claim 2,000 Labor and 2,000 Essence before ${ends}.`,
+      (ends: string) => `Day 2 is open / Season 0: claim 2,000 Labor and 2,000 Essence before ${ends}.`,
     ],
-    ["a home with no claim", null, false, (ends: string) => `Day 2 is open / frontier-a: it ends at ${ends}.`],
+    ["a home with no claim", null, false, (ends: string) => `Day 2 is open / Season 0: it ends at ${ends}.`],
     [
       "the season's last day",
       "golden",
       true,
       (ends: string) =>
-        `The last day is open / frontier-a: claim 2,000 Labor and 2,000 Essence. The season ends at ${ends}.`,
+        `The last day is open / Season 0: claim 2,000 Labor and 2,000 Essence. The season ends at ${ends}.`,
     ],
   ] as const)(
     "Day open names its day's end on the phone's clock as it is sent, after the phone changed zone: %s",

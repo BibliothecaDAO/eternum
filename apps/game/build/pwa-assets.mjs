@@ -8,6 +8,8 @@ export const PWA_PRECACHE_FILES = [
   "images/game-dev-pwa-192x192.png",
   "images/game-dev-pwa-512x512.png",
   "images/game-dev-maskable-icon-512x512.png",
+  // Every alert's status bar badge, one for both environments: a white shape carries no hatched corner.
+  "images/game-badge-96x96.png",
   "manifest.webmanifest",
 ];
 

@@ -120,9 +120,10 @@ export default defineConfig(({ command, mode }: ConfigEnv): UserConfig => {
           sourcemap: false,
           buildPlugins: {
             rollup: [
-              createPwaReleasePlugin(
-                process.env.VITE_PUBLIC_GAME_VERSION || appEnv.VITE_PUBLIC_GAME_VERSION || "development",
-              ),
+              createPwaReleasePlugin({
+                release: process.env.VITE_PUBLIC_GAME_VERSION || appEnv.VITE_PUBLIC_GAME_VERSION || "development",
+                alertIcon: identity.icon("pwa-192x192.png"),
+              }),
             ],
           },
         },

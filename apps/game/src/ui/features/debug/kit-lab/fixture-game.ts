@@ -22,7 +22,13 @@ import preset from "../../../../../../../contracts/l3/world-native/tests/fixture
 export const LAB_CHAIN = "0x1ab";
 
 /** The lab game as the page plays it (setActiveGame): its chain, game 1 there, its preset. */
-export const labGameProfile = (preset: number) => ({ chainId: LAB_CHAIN, gameId: 1, presetId: preset, name: "Lab" });
+export const labGameProfile = (preset: number) => ({
+  chainId: LAB_CHAIN,
+  gameId: 1,
+  presetId: preset,
+  name: "Lab",
+  seasonNumber: null,
+});
 
 export const PLAYER = "0x111";
 

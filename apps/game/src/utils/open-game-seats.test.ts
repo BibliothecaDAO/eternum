@@ -14,7 +14,7 @@ const B = { chainId: "SHARD_B", gameId: 1 };
 
 /** Enters a game as the client does (its profile as the active game), watching it, on its own native store. */
 const enter = (game: typeof A) => {
-  setActiveGame({ ...game, presetId: 5, name: game.chainId });
+  setActiveGame({ ...game, presetId: 5, name: game.chainId, seasonNumber: 0 });
   configManager.setActiveGame(game.gameId, 5);
   overrideSpectateIntent(true);
   return new NativeFactStore();
