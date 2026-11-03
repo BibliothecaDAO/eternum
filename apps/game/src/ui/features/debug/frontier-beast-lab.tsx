@@ -228,8 +228,6 @@ export function FrontierBeastLab() {
             army={{ art: "knight-t1", troops: 5000 }}
             guard={strength}
             fight={{
-              outcome: "wins",
-              exchanges: 2,
               troopsLost: Math.floor(strength / 5),
               guardLeft: Math.floor(strength / 3),
             }}

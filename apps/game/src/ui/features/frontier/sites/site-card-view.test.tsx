@@ -42,7 +42,7 @@ describe("a guarded site's card", () => {
           beast={plan.beast && plan.guard ? { ...plan.beast, combatClass: plan.guard.type } : undefined}
           army={army}
           guard={plan.guard?.count}
-          fight={{ outcome: "wins", exchanges: 1, troopsLost: 30, guardLeft: 0 }}
+          fight={{ troopsLost: 30, guardLeft: 0 }}
           pay={{ icon: resourceMeaning(payout.resourceId), amount: payout.amount, fits: payout.fits }}
           xp={plan.xp}
           verb={{ kind: "attack", stamina: plan.attackStamina, onAttack: () => {} }}
@@ -63,8 +63,6 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{
-            outcome: "wins",
-            exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
           }}
@@ -104,8 +102,6 @@ describe("a guarded site's card", () => {
           army={{ ...army, troops: 1_500 }}
           guard={1_300}
           fight={{
-            outcome: "wins",
-            exchanges: 3,
             troopsLost: 180,
             guardLeft: 740,
           }}
@@ -136,8 +132,6 @@ describe("a guarded site's card", () => {
           army={{ ...army, troops: 1_200 }}
           guard={3_400}
           fight={{
-            outcome: "loses",
-            exchanges: 3,
             troopsLost: 1_200,
             guardLeft: 2_300,
           }}
@@ -169,31 +163,41 @@ describe("a guarded site's card", () => {
     expect(document.querySelector('[role="status"]')).toBeNull();
   });
 
-  it("holds the clear's reward dimmed under a guard that holds, and warns under Attack when the whole fight loses the army", () => {
+  it("reads the owner's Blightglow Rift as this attack leaves it: 794 → 193 against 1,400 → 1,033, and warns of no loss", () => {
+    // Prod, 3 November 2026: this attack leaves the army 193, and the card said "Army will be lost" of a second attack
+    // it does not send (owner: "the army will be lost shouldnt be shown either ?").
+    const onAttack = vi.fn();
     act(() =>
       root.render(
         <SiteCardView
-          site="Camp"
-          beast={{ name: "Troll", beast: "troll", combatClass: "Knight" }}
-          army={{ ...army, troops: 1_200 }}
-          guard={3_400}
-          fight={{
-            outcome: "loses",
-            exchanges: 3,
-            troopsLost: 400,
-            guardLeft: 3_000,
-          }}
-          pay={{ icon: "labor", amount: 550 }}
-          xp={82}
-          verb={{ kind: "attack", stamina: 30, onAttack: () => {} }}
+          site="Rift"
+          name="Blightglow"
+          beast={{ name: "Wyvern", beast: "wyvern", combatClass: "Knight" }}
+          army={{ ...army, troops: 794 }}
+          guard={1_400}
+          fight={{ troopsLost: 601, guardLeft: 1_033 }}
+          pay={{ icon: "essence", amount: 4_200 }}
+          xp={93}
+          verb={{ kind: "attack", stamina: 30, onAttack }}
           onClose={() => {}}
         />,
       ),
     );
-    const header = document.querySelector(".ui-frame__body header")!;
-    expect(header.textContent).toBe("The guard holds+550+82 XP");
-    expect(header.querySelector(".opacity-50")?.textContent).toBe("+550+82 XP");
-    expect(document.querySelector('[role="status"]')?.textContent).toBe("Army will be lost");
+    const card = document.querySelector("section[aria-label='Blightglow Rift']")!;
+    const header = card.querySelector(".ui-frame__body header")!;
+    expect(header.textContent).toBe("The guard holds+4,200+93 XP");
+    expect(header.querySelector(".opacity-50")?.textContent).toBe("+4,200+93 XP");
+    expect(card.textContent).toContain("794");
+    expect(card.textContent).toContain("193");
+    expect(card.textContent).toContain("1,400");
+    expect(card.textContent).toContain("1,033");
+    expect(card.textContent).not.toContain("Army will be lost");
+    expect(document.querySelector('[role="status"]')).toBeNull();
+    const attack = buttons().find((button) => button.textContent?.startsWith("Attack"))!;
+    expect(attack.dataset.kind).toBe("primary");
+    // An attack the army survives is confirmed by Enter, as any other.
+    act(() => void document.body.dispatchEvent(new KeyboardEvent("keydown", { key: "Enter", bubbles: true })));
+    expect(onAttack).toHaveBeenCalledOnce();
   });
 
   it("says only that the attack clears a site that pays nothing", () => {
@@ -205,8 +209,6 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{
-            outcome: "wins",
-            exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
           }}
@@ -230,8 +232,6 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{
-            outcome: "wins",
-            exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
           }}
@@ -267,8 +267,6 @@ describe("a guarded site's card", () => {
           army={army}
           guard={1_100}
           fight={{
-            outcome: "wins",
-            exchanges: 1,
             troopsLost: 180,
             guardLeft: 0,
           }}
@@ -385,9 +383,7 @@ describe("Enter on a guarded site's card", () => {
       army={army}
       guard={1_100}
       fight={{
-        outcome: fight,
-        exchanges: 1,
-        troopsLost: 180,
+        troopsLost: fight === "wins" ? 180 : army.troops,
         guardLeft: fight === "wins" ? 0 : 900,
       }}
       pay={{ icon: "labor", amount: 550 }}
@@ -514,8 +510,8 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
 });
 
 describe("one fight panel for every state of every target (owner, 10-27: 'this panel doesnt match at all')", () => {
-  const holds: SiteFight = { outcome: "wins", exchanges: 3, troopsLost: 180, guardLeft: 740 };
-  const clears: SiteFight = { outcome: "wins", exchanges: 1, troopsLost: 180, guardLeft: 0 };
+  const holds: SiteFight = { troopsLost: 180, guardLeft: 740 };
+  const clears: SiteFight = { troopsLost: 180, guardLeft: 0 };
   const attack: SiteVerb = { kind: "attack", stamina: 30, onAttack: () => {} };
   /** Each state: the forecast the card holds, its step, the two sides' figures kept, the line and whether Attack runs. */
   const STATES: {
@@ -551,16 +547,17 @@ describe("one fight panel for every state of every target (owner, 10-27: 'this p
       attacks: false,
     },
     {
+      // The contract refuses an attack short of its stamina, so the card holds no figures, only why.
       state: "short of stamina",
-      fight: holds,
+      fight: { refused: true },
       verb: { kind: "short", stamina: { cost: 30, held: 10, wait: 40 * 60 } },
-      kept: ["4,820", "740"],
+      kept: ["—", "—"],
       line: () => "Needs 30 stamina, have 10 · in 40m",
       attacks: false,
     },
     {
       state: "refused",
-      fight: { outcome: "refused" },
+      fight: { refused: true },
       verb: { ...attack, refused: "The army is on battle cooldown" },
       kept: ["—", "—"],
       line: () => "The army is on battle cooldown",

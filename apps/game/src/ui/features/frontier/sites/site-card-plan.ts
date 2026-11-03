@@ -2,14 +2,13 @@ import { readStandingFrontierBeast, type FrontierBeast } from "@/three/structure
 import {
   availableRuinLords,
   configManager,
-  forecastFight,
   getBlockTimestamp,
   ResourceManager,
+  resolveExchange,
   getGuardsByStructure,
   siteKindOf,
   siteReward,
   siteClearXp,
-  StaminaManager,
 } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -40,9 +39,8 @@ export interface SiteAttack {
 
 /**
  * What Frontier's tile card shows of a site (wireframe 06), read from facts with no UI of its own: its kind and name
- * (a ruin by its beast), its guard as troops and tier (never strength), what clearing it pays, the attack's stamina, and the whole
- * fight from the selected army as exact exchanges, wherever it stands. The guard's count is unknown until its slots
- * arrive.
+ * (a ruin by its beast), its guard as troops and tier (never strength), what clearing it pays, the attack's stamina, and the
+ * attack the selected army would send now, wherever it stands. The guard's count is unknown until its slots arrive.
  */
 export interface SiteCardPlan {
   name: string;
@@ -65,18 +63,11 @@ export interface SiteCardPlan {
 }
 
 /**
- * The fight ahead, in two scales that never mix. The outcome and its count of attacks speak of the whole fight,
- * attack after attack. The troops lost and the guard left speak of the one attack the Attack button sends now, so they
- * are the figures its result will show.
+ * The one attack the Attack button sends, as the contract resolves it now: what it costs the army and leaves the guard,
+ * the figures its result will show; or refused, as the contract refuses it now (an army short of the attack's stamina),
+ * where the card says why instead. Nothing on the card speaks of later attacks.
  */
-export type SiteFight =
-  | { outcome: "refused" }
-  | {
-      outcome: "wins" | "loses" | "stalls";
-      exchanges: number;
-      troopsLost: number;
-      guardLeft: number;
-    };
+export type SiteFight = { refused: true } | { troopsLost: number; guardLeft: number };
 
 export const readSiteCard = (
   store: NativeFactStore,
@@ -114,7 +105,7 @@ export const readSiteCard = (
     payout: reward && fittingPayout(store, site.game_id, reward, attack),
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, siteTile) !== undefined,
-    fight: guard && attack ? forecastFightAt(store, guard.troops, siteTile, attack, true) : undefined,
+    fight: guard && attack ? attackNow(store, guard.troops, siteTile, attack, true) : undefined,
   };
 };
 
@@ -138,7 +129,7 @@ export const readArmyCard = (
     payout: null,
     attackStamina: configManager.getCombatRules().stamina.stamina_attack_req,
     inReach: attack !== null && reachOf(store, attack, armyTile) !== undefined,
-    fight: troops && troops.count > 0n && attack ? forecastFightAt(store, troops, armyTile, attack, false) : undefined,
+    fight: troops && troops.count > 0n && attack ? attackNow(store, troops, armyTile, attack, false) : undefined,
   };
 };
 
@@ -194,12 +185,12 @@ const reachOf = (
 const BESIDE = 1;
 
 /**
- * The fight as the contract resolves it, attack after attack from the moment the army can attack, with no dice:
- * Frontier's combat is exact. An army out of reach is forecast from beside the target, with the stamina it holds now:
- * how far it stands decides only whether Attack can be sent yet (owner, 31 October 2026: "I should still have the
- * projection even if I'm too far I think").
+ * The attack as the contract would resolve it at the army's clock, with no dice: Frontier's combat is exact. An army
+ * out of reach is read from beside the target, with the stamina it holds now: how far it stands decides only whether
+ * Attack can be sent yet (owner, 31 October 2026: "I should still have the projection even if I'm too far I think").
+ * Both sides' stamina are this moment's, so the guard's (a tired guard strikes at 70%) is the one Attack meets.
  */
-const forecastFightAt = (
+const attackNow = (
   store: NativeFactStore,
   guard: Troops,
   siteTile: { col: number; row: number; alt: boolean },
@@ -210,13 +201,12 @@ const forecastFightAt = (
     throw new Error("Frontier's site forecast is exact; this game rolls dice");
   const troops = resolveExplorerTroops(store, attack.army);
   if (!troops) return undefined;
-  const distance = reachOf(store, attack, siteTile) ?? BESIDE;
-  const forecast = forecastFight(
+  const exchange = resolveExchange(
     troops,
     guard,
     {
-      timestamp: whenItCanAttack(troops, attack.timestamp),
-      attackDistance: distance,
+      timestamp: attack.timestamp,
+      attackDistance: reachOf(store, attack, siteTile) ?? BESIDE,
       attackerBiome: attack.biome,
       defenderBiome: attack.biome,
       attackerIsStructureGuard: false,
@@ -226,19 +216,9 @@ const forecastFightAt = (
     },
     configManager.getCombatRules(),
   );
-  if (forecast.outcome === "refused") return { outcome: "refused" };
+  if (!exchange.ok) return { refused: true };
   return {
-    outcome: forecast.outcome,
-    exchanges: forecast.exchanges,
-    troopsLost: Number(forecast.firstExchange.attackerLoss / PRECISION),
-    guardLeft: Number((guard.count - forecast.firstExchange.defenderLoss) / PRECISION),
+    troopsLost: Number(exchange.attackerLoss / PRECISION),
+    guardLeft: Number((guard.count - exchange.defenderLoss) / PRECISION),
   };
 };
-
-/**
- * The moment the army holds the attack's stamina: now, or later for an army short of it, so the card counts the fight
- * its Attack will send rather than none. Damage does not depend on the attacker's stamina; the guard's own stamina at
- * that moment does, and is read then.
- */
-const whenItCanAttack = (troops: Troops, now: number): number =>
-  StaminaManager.getAffordableAt(troops, configManager.getCombatRules().stamina.stamina_attack_req, now) ?? now;

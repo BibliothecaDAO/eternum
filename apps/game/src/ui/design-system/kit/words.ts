@@ -346,7 +346,6 @@ export const fightLine = (site: string, verdict: string, lost: string, guardBefo
 export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
-export const ARMY_WILL_BE_LOST = "Army will be lost";
 /**
  * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
  * attack does to each side, what it comes to, and under Details the whole fight's figures.

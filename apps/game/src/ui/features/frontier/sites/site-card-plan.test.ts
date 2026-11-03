@@ -17,28 +17,20 @@ describe("Frontier's tile card", () => {
     expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 825, fits: 825 });
     expect(plan.xp).toBe(123);
     expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
-    // The fight takes two attacks. The figures are the one Attack sends now, as its result will show them: this
-    // attack's losses and the guard it leaves standing, never the whole fight's total.
-    expect(plan.fight).toEqual({
-      outcome: "wins",
-      exchanges: 2,
-      troopsLost: 320,
-      guardLeft: 492,
-      // Over both attacks: the whole guard killed, and what the army loses and spends doing it.
-    });
+    // The one attack Attack sends now, as the contract resolves it and its result will show it: this attack's losses
+    // and the guard it leaves standing (a second attack would clear the camp; the card speaks of none but this one).
+    expect(plan.fight).toEqual({ troopsLost: 320, guardLeft: 492 });
   });
 
-  it("counts the fight for an army short of the attack's stamina, as its Attack will send it once it can", () => {
+  it("refuses the attack of an army short of its stamina as the contract does, with no figures of a later fight", () => {
     const { store, site, structure, attack } = campBeside("Camp", true, 0n);
     const plan = readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
-    // The one attack its stamina will then pay for. The guard has rested by then, so it costs more than now (320 above).
-    expect(plan.fight).toEqual({
-      outcome: "stalls",
-      exchanges: 1,
-      troopsLost: 457,
-      guardLeft: 492,
-      // One attack is the whole fight: its figures and the fight's are the same.
-    });
+    // Sent now, the contract refuses it ("you have 0 stamina, but need …"). The card once counted the attack its
+    // stamina would pay for later, against a guard rested by then (457 lost, not this moment's 320): figures no
+    // Attack pressed now would bring (owner, 3 November 2026: "when you dont have enough stamina the fight calc is
+    // incorrect").
+    expect(plan.fight).toEqual({ refused: true });
+    expect(plan.attackStamina).toBe(preset.rules.troop_stamina_config.stamina_attack_req);
   });
 
   it("forecasts an army out of reach as it would attack from beside the site, and none with no army selected", () => {
@@ -48,7 +40,7 @@ describe("Frontier's tile card", () => {
     expect(beside.inReach).toBe(true);
     expect(far.inReach).toBe(false);
     // The same army, stamina and biome: the attack its Move leads to is the one beside the site.
-    expect(far.fight).toEqual({ outcome: "wins", exchanges: 2, troopsLost: 320, guardLeft: 492 });
+    expect(far.fight).toEqual({ troopsLost: 320, guardLeft: 492 });
     const armyless = readSiteCard(store, site, structure, SITE_TILE, null);
     expect(armyless.fight).toBeUndefined();
     expect(armyless.inReach).toBe(false);
@@ -115,7 +107,7 @@ it("reads another player's army as a target: its troops, the same exact fight ne
   expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 300 });
   expect(plan.payout).toBeNull();
   expect(plan.xp).toBeUndefined();
-  expect(plan.fight).toMatchObject({ outcome: "wins", guardLeft: 0 });
+  expect(plan.fight).toEqual({ troopsLost: 134, guardLeft: 0 });
   expect(plan.inReach).toBe(true);
   const far = readArmyCard(store, other, { col: 44, row: 12, alt: false }, attack({ col: 41, row: 12, alt: false }));
   expect(far.inReach).toBe(false);
