@@ -8,6 +8,12 @@ interface CampaignTicket {
   tier: TicketTier;
 }
 
+/**
+ * What a code brings: a printed flyer's own unspent ticket at its tier, or a draw for a code every flyer shares; null for
+ * a code no flyer carries, or a printed one another account already took.
+ */
+type CodeSource = { kind: "printed"; tier: TicketTier } | { kind: "shared" };
+
 function createCampaignTicketStore(db: D1Database) {
   const ticketOf = (campaign: CampaignKey, owner: string) =>
     db
@@ -43,20 +49,52 @@ function createCampaignTicketStore(db: D1Database) {
       .bind(campaign, owner, codeHash, tier, now, campaign, codeHash)
       .first<CampaignTicket>();
 
+  const isSharedCode = async (campaign: CampaignKey, codeHash: string) =>
+    (await db
+      .prepare('SELECT 1 AS "shared" FROM "campaign_shared_codes" WHERE "campaign" = ? AND "code_hash" = ?')
+      .bind(campaign, codeHash)
+      .first()) !== null;
+
+  const codeSource = async (campaign: CampaignKey, codeHash: string): Promise<CodeSource | null> => {
+    const tier = await unspentTier(campaign, codeHash);
+    if (tier) return { kind: "printed", tier };
+    return (await isSharedCode(campaign, codeHash)) ? { kind: "shared" } : null;
+  };
+
+  /**
+   * The account's ticket from one of the campaign's unspent printed codes, picked at random, at that code's tier: the
+   * printed tiers stay exact however the codes are handed out. Null when the account already holds this campaign's
+   * ticket, or no printed code is left. The pick and the insert are one statement, so two draws at once never take one
+   * code.
+   */
+  const insertDrawnTicket = (campaign: CampaignKey, owner: string, now: number) =>
+    db
+      .prepare(
+        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at")
+         SELECT code."campaign", ?, code."code_hash", code."tier", ? FROM "campaign_codes" AS code
+         WHERE code."campaign" = ?
+           AND NOT EXISTS (SELECT 1 FROM "campaign_tickets" AS ticket
+                           WHERE ticket."campaign" = code."campaign" AND ticket."code_hash" = code."code_hash")
+         ORDER BY random() LIMIT 1
+         ON CONFLICT DO NOTHING RETURNING "campaign", "owner", "tier"`,
+      )
+      .bind(owner, now, campaign)
+      .first<CampaignTicket>();
+
   const read = (campaign: CampaignKey, owner: string) =>
     Effect.tryPromise({
       try: () => ticketOf(campaign, owner),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
 
-  const offered = (campaign: CampaignKey, codeHash: string) =>
+  const source = (campaign: CampaignKey, codeHash: string) =>
     Effect.tryPromise({
-      try: () => unspentTier(campaign, codeHash),
+      try: () => codeSource(campaign, codeHash),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
 
   /**
-   * The account's ticket from its flyer's code, at the tier the code offered; the one it holds if it already has one.
+   * The account's ticket from its flyer's own code, at the tier the code offered; the one it holds if it already has one.
    * Null when another account took the code first. Safe to repeat: a retry, or two redemptions at once, return the one
    * ticket.
    */
@@ -66,7 +104,18 @@ function createCampaignTicketStore(db: D1Database) {
         (await insertTicket(campaign, owner, codeHash, tier, now)) ?? (await ticketOf(campaign, owner)),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
-  return { ticketOf, read, offered, redeem };
+
+  /**
+   * The account's ticket drawn from the campaign's unspent printed codes; the one it holds if it already has one. Null
+   * when every printed code is spent. Safe to repeat: a retry, or two draws at once, return the one ticket.
+   */
+  const draw = (campaign: CampaignKey, owner: string, now: number) =>
+    Effect.tryPromise({
+      try: async (): Promise<CampaignTicket | null> =>
+        (await insertDrawnTicket(campaign, owner, now)) ?? (await ticketOf(campaign, owner)),
+      catch: (cause) => new CampaignStorageError({ cause }),
+    });
+  return { ticketOf, read, source, redeem, draw };
 }
 
 class CampaignStorageError extends Data.TaggedError("CampaignStorageError")<{ readonly cause: unknown }> {}

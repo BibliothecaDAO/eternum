@@ -10,10 +10,12 @@ import { json, readBody } from "./http";
 const REDEEM_BYTES = 1024;
 
 /**
- * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried. It
- * answers the ticket's tier, to this account only; repeating it answers the same ticket, so a reload or a retry never
- * shows another outcome, with a code or without. A code another account already took, or one no flyer carries, gives
- * none; an account that already founded its realm in the campaign's running game is refused and the code stays unspent.
+ * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried: a
+ * printed flyer's own ticket, or, for a code every flyer shares, one of the campaign's unspent printed tickets drawn at
+ * random. It answers the ticket's tier, to this account only; repeating it answers the same ticket, so a reload or a
+ * retry never shows another outcome, with a code or without. A code another account already took, one no flyer carries,
+ * or a shared code once every printed ticket is spent gives none; an account that already founded its realm in the
+ * campaign's running game is refused and nothing is spent.
  */
 export function handleCampaignRedeem(
   request: Request,
@@ -62,8 +64,8 @@ function redeemTicket(request: Request, auth: IdentityAuth, hasEntered: EnteredC
 }
 
 /**
- * A new ticket from a flyer's code: refused while another account holds the code, and, so the flyer stays unspent for
- * someone else, while this account's realm is already founded in the campaign's running game (it would never claim).
+ * A new ticket from a flyer's code: refused while another account holds the code, and, so nothing is spent for someone
+ * else, while this account's realm is already founded in the campaign's running game (it would never claim).
  */
 function openFlyerTicket(
   realmsId: string,
@@ -74,15 +76,17 @@ function openFlyerTicket(
   return Effect.gen(function* () {
     const store = yield* CampaignTicketStore;
     const codeHash = yield* Effect.promise(() => campaignCodeHash(campaign, code));
-    const tier = yield* store.offered(campaign, codeHash);
-    if (!tier) return json({ error: "ticket_taken" }, 410);
+    const source = yield* store.source(campaign, codeHash);
+    if (!source) return json({ error: "ticket_taken" }, 410);
     const entered = yield* Effect.tryPromise({
       try: () => hasEntered(realmsId, CAMPAIGNS[campaign].presets),
       catch: () => new CampaignRequestError({ code: "campaigns_unavailable", status: 503 }),
     });
     if (entered === null) return json({ error: "campaigns_unavailable" }, 503);
     if (entered) return json({ error: "realm_founded" }, 409);
-    const ticket = yield* store.redeem(campaign, realmsId, codeHash, tier, now);
+    const ticket = yield* source.kind === "shared"
+      ? store.draw(campaign, realmsId, now)
+      : store.redeem(campaign, realmsId, codeHash, source.tier, now);
     if (!ticket) return json({ error: "ticket_taken" }, 410);
     return json({ campaign: ticket.campaign, tier: ticket.tier });
   });
