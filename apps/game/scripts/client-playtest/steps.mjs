@@ -4069,8 +4069,18 @@ function armyManagementSteps() {
         const loss = browser.read(
           `JSON.stringify(document.querySelector('[role="alertdialog"]')?.textContent ?? null)`,
         );
+        const fits = browser.read(`JSON.stringify((() => {
+          const dialog = document.querySelector('[role="alertdialog"]');
+          const sheet = dialog?.closest('[data-kit-sheet]');
+          if (!dialog || !sheet) return false;
+          const bounds = sheet.getBoundingClientRect();
+          return [dialog, ...dialog.querySelectorAll('button')].every((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.left >= Math.max(0, bounds.left) && rect.right <= Math.min(innerWidth, bounds.right);
+          });
+        })())`);
         extraScreenshot("delete-confirmation");
-        if (!loss?.includes("troops, skills, XP and carried resources are lost")) return { loss };
+        if (!fits || !loss?.includes("troops, skills, XP and carried resources are lost")) return { loss, fits };
         await press(browser, "Cancel");
         const retained = count(browser) === "11";
         if (!retained) return { armyId, loss, retained };
@@ -4081,11 +4091,11 @@ function armyManagementSteps() {
           Boolean,
           ORDER_OUTCOME_WAIT_MS,
         );
-        return { armyId, loss, retained, removed };
+        return { armyId, loss, fits, retained, removed };
       },
       settleMs: 10_000,
       verify: ({ played }) =>
-        played.retained && played.removed
+        played.fits && played.retained && played.removed
           ? completed(played)
           : failed("army deletion or cancellation did not settle", played),
     },

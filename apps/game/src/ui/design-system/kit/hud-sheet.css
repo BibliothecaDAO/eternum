@@ -1723,6 +1723,7 @@ button.ui-relic:focus-visible {
 .ui-confirm {
   display: flex;
   width: 26rem;
+  max-width: 100%;
   flex-direction: column;
   border: 1px solid var(--hud-line-strong);
   border-radius: var(--hud-radius-panel);
