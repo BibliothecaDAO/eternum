@@ -257,6 +257,26 @@ describe("the voice rules", () => {
       expect({ rule, good: forbidden!.test(good) }).toEqual({ rule, good: false });
     }
   });
+
+  it("refuse a rate in any unit but the minute, each form on its own", () => {
+    const { forbidden } = VOICE_RULES.find((each) => each.rule === "Rates per minute")!;
+    const refused = (words: string) => ({ words, refused: forbidden!.test(words) });
+    for (const words of [
+      "+1.1/s",
+      "2 points/s",
+      "FP/s",
+      "FP/sec",
+      "Total FP / sec",
+      "then per second",
+      "44.6K/h",
+      "+302/hr",
+      "per hour",
+      "+302 an hour",
+    ])
+      expect(refused(words)).toEqual({ words, refused: true });
+    for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
+      expect(refused(words)).toEqual({ words, refused: false });
+  });
 });
 
 describe("amounts", () => {

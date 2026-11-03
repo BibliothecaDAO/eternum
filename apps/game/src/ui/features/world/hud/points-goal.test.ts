@@ -18,9 +18,9 @@ it("puts the goal in one line, with the game's own length, and without one for a
 
 it("says the goal and what scores in one compact line, from the game's grants", () => {
   expect(goalScoring(3600, BLITZ_GRANTS)).toBe(
-    "Most points in 1h wins · tile +5 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per second",
+    "Most points in 1h wins · tile +5 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per minute",
   );
   expect(goalScoring(null, { ...BLITZ_GRANTS, exploreTile: 10 })).toBe(
-    "Most points wins · tile +10 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per second",
+    "Most points wins · tile +10 · crate +250 · camp or rift +250 · Hyperstructure +1,000, then per minute",
   );
 });

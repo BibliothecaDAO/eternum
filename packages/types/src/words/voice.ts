@@ -39,9 +39,9 @@ export const VOICE_RULES: readonly VoiceRule[] = [
   {
     rule: "Rates per minute",
     instead: "always a minute's (formatRate), never a second's or an hour's",
-    bad: "+302 an hour · 44.6K/h · +1.1/s",
-    good: "+5/min · +66/min",
-    forbidden: /\/\s?hr?\b|\bper hour\b|\d an hour\b|\d\/s\b/,
+    bad: "+1.1/s · 2 points/s · FP/sec · then per second",
+    good: "+66/min · points +120/min · FP rate · then per minute",
+    forbidden: /\/\s?hr?\b|\/\s?s(?:ec)?\b|\bper (?:hour|second)\b|\d an hour\b/,
   },
   {
     rule: "A rank by its name",

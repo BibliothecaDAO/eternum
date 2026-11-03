@@ -3,7 +3,7 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { formatExact, formatFigure, formatGain, resourceName, structureName } from "@bibliothecadao/types";
+import { formatExact, formatFigure, formatGain, formatRate, resourceName, structureName } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -177,7 +177,7 @@ const LocalTilePanel = () => {
     return configManager.getResourceBuildingProduced(buildingCategory as BuildingType);
   }, [buildingCategory, hasBuilding]);
 
-  const producedPerTick = useMemo(() => {
+  const producedPerSecond = useMemo(() => {
     if (producedResource === undefined) return 0;
     return divideByPrecision(configManager.getResourceOutputs(producedResource));
   }, [producedResource]);
@@ -432,10 +432,10 @@ const LocalTilePanel = () => {
           )}
 
           {producedResource && producedResourceName && (
-            <SectionRow label="Produces / sec">
+            <SectionRow label="Produces">
               <span title={producedResourceName}>
                 <HudChip tone="good">
-                  +{producedPerTick}
+                  {formatRate(producedPerSecond)}
                   <ResourceIcon withTooltip={false} resource={producedResource} size="xs" />
                 </HudChip>
               </span>
@@ -475,12 +475,12 @@ const LocalTilePanel = () => {
           )}
 
           {ongoingCost === undefined && (
-            <SectionRow label="Consumes / sec">
+            <SectionRow label="Burns a cycle">
               <span className="text-hud-muted">—</span>
             </SectionRow>
           )}
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
-            <SectionRow label="Consumes / sec">
+            <SectionRow label="Burns a cycle">
               {ongoingCost.map((entry, index) => {
                 const name = resourceName(Number(entry.resource));
                 return (
