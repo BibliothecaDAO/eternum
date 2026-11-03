@@ -5,7 +5,7 @@ import { readGameEntry } from "./shard-directory";
 import type { GameProfile } from "./types";
 
 /**
- * A game's preset, name and season come from its own shard's directory, so a stale local copy never boots it. They never change,
+ * A game's preset and name come from its own shard's directory, so a stale local copy never boots it. They never change,
  * so any answer this page already read will do: the boot asks the shard once.
  */
 export const buildGameProfile = async (game: GameRef): Promise<GameProfile> => {
@@ -17,6 +17,5 @@ export const buildGameProfile = async (game: GameRef): Promise<GameProfile> => {
     gameId: entry.game_id,
     presetId: entry.preset_id,
     name: entry.name,
-    seasonNumber: entry.season_number ?? null,
   };
 };

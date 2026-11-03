@@ -2,13 +2,9 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
-import { pushGameName } from "@bibliothecadao/notifications";
-import { GAME_MODE_NAMES, type GameModeName } from "@bibliothecadao/types";
 
 import type { DirectoryGame } from "./herald";
 import { chooseSeason, directoryDay, seasonTitle } from "./season";
-import { modeLabel } from "./game-links";
-import { ageOf } from "./play/ages";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
 const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
@@ -81,20 +77,6 @@ describe("the season's number", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
   });
 
-  it("is what its pushes call it, and every other game is named in a push as the app labels its mode", () => {
-    const season = { chainId: "0x52", game_id: 3, season_number: 0 };
-    expect(pushGameName({ mode: "frontier", ...season })).toBe(seasonTitle(season));
-    expect(pushGameName({ mode: "frontier", ...season })).toBe("Season 0");
-    for (const mode of Object.keys(GAME_MODE_NAMES) as GameModeName[]) {
-      // A Frontier game whose season the directory does not number is named by its mode, like any other game.
-      expect(pushGameName({ mode, season_number: null }), mode).toBe(modeLabel({ mode, preset_id: 1 }));
-      if (mode !== "duel") expect(ageOf(mode).name, mode).toBe(modeLabel({ mode, preset_id: 1 }));
-    }
-    // A game the directory no longer lists, or lists with no mode, is never named by an id.
-    expect(pushGameName(undefined)).toBe("Realms");
-    expect(pushGameName({ mode: null })).toBe("Realms");
-  });
-
   it("is a dash when the directory serves none, never a zero", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3 })).toBe("Season —");
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: null })).toBe("Season —");
@@ -106,14 +88,8 @@ describe("the season's number", () => {
       .filter((file) => /\.tsx?$/.test(file) && !/\.test\.tsx?$/.test(file))
       .filter((file) => readFileSync(`${src}${file}`, "utf8").includes("season_number"))
       .toSorted();
-    // The lab's directory fixtures write the number; seasonTitle names it, and the game's profile carries it to the
-    // game's own alerts, which name it with the same seasonName.
-    expect(readers).toEqual([
-      "pwa/local-story-notifications.ts",
-      "runtime/world/profile-builder.ts",
-      "shell/lab/app-lab-fixtures.ts",
-      "shell/season.ts",
-    ]);
+    // The lab's directory fixtures write the number; only seasonTitle reads it.
+    expect(readers).toEqual(["shell/lab/app-lab-fixtures.ts", "shell/season.ts"]);
   });
 
   it("names Devcon's season by its number, zero", () => {

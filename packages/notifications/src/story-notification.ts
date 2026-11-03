@@ -13,7 +13,7 @@ export function buildStoryNotification(input: {
   recipient?: string;
   value: Record<string, unknown>;
   owner: string;
-  /** The game, which the alert names as players do ("Season 0"); undefined when the directory no longer lists it. */
+  /** The game, which the alert names by its mode ("Frontier"); undefined when the directory no longer lists it. */
   game: PushGame | undefined;
   target: string;
   now: number;

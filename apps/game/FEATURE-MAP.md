@@ -358,15 +358,15 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   its row, Portrait and Payout wallet open in the app's sheet, and a destructive step (sign out, remove a device) asks
   first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
-  says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Season 0:
+  says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full
   again (the next only after they play again), the season's or a Blitz's end, fights between players outside Frontier,
   and messages; All adds deliveries and trades, Bitcoin payouts and Hyperstructure points. Each kind, its level and how
   long it lives come from one table (`packages/notifications/src/notification-kinds.ts`). The phone's own night setting
   decides when one sounds; the game keeps no quiet hours and no daily cap: a newer push of a kind in a game replaces the
-  one shown. Each names its game as players do, a season by its number ("Season 0"), any other game by its mode
-  ("Blitz"), never an id (`packages/notifications/src/game-name.ts`), and shows the installed app's icon, with the small
-  globe as the status bar's badge. None for the player's own taps (the Feed and the Log have them). Server:
+  one shown. Each names its game by its mode as the app labels it ("Frontier", "Blitz"), never a season's number or an
+  id (`packages/notifications/src/game-name.ts`, reading `GAME_MODE_NAMES`), and shows the installed app's icon, with
+  the small globe as the status bar's badge. None for the player's own taps (the Feed and the Log have them). Server:
   `apps/realms/server/shard-notifier.ts`.
 - **The Blitz lobby** counts down to one moment: entry closing while the slot takes players, then the games' start (the
   lobby's title names the start time).

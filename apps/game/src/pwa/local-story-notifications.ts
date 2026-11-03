@@ -104,7 +104,7 @@ function buildEligibleNotification(value: Record<string, unknown>, scope: StoryE
     sourceId: storyEventIdentity(scope, value),
     value,
     owner: context.identity,
-    game: { mode: nativeGameModeOf(context.world.presetId), season_number: context.world.seasonNumber },
+    game: { mode: nativeGameModeOf(context.world.presetId) },
     target: buildEntryHref({
       chainId: context.world.chainId,
       gameId: context.world.gameId,

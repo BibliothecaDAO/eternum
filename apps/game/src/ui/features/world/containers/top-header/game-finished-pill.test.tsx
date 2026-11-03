@@ -9,8 +9,8 @@ vi.mock("@/audio/hooks/useAudio", () => ({ useAudio: () => ({ play: () => Promis
 import { setActiveGame } from "@/runtime/world/store";
 import { GameFinishedPill } from "./game-finished-pill";
 
-const BLITZ = { chainId: "0xa", gameId: 5, presetId: 2, name: "blitz-20261021-1200-1", seasonNumber: null };
-const FRONTIER = { chainId: "0xa", gameId: 1, presetId: 1, name: "frontier", seasonNumber: 0 };
+const BLITZ = { chainId: "0xa", gameId: 5, presetId: 2, name: "blitz-20261021-1200-1" };
+const FRONTIER = { chainId: "0xa", gameId: 1, presetId: 1, name: "frontier" };
 
 /** Another tab of the app on this device: its own copy of the client's modules, sharing this page's storage. */
 const enterInAnotherTab = async (game: typeof FRONTIER) => {

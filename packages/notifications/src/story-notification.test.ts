@@ -6,7 +6,7 @@ const input = {
   sourceId: "story:v1:0xa1:0x123:0x7:0xabc:0x64",
   value: { timestamp: "0x1", story: { SeasonEnded: {} } },
   owner: "0x1",
-  game: { mode: "frontier", season_number: 0 } as const,
+  game: { mode: "frontier" } as const,
   target: "/g/0xa1/7",
   now: 1100,
 };
@@ -15,7 +15,7 @@ it("builds shared display content from the original event clock, alive while its
     id: input.sourceId,
     kind: "results",
     title: "The season is over",
-    body: "Season 0: see where you finished.",
+    body: "Frontier: see where you finished.",
     tag: "results:/g/0xa1/7",
     createdAt: 1000,
     expiresAt: 1000 + 24 * 3_600_000,
@@ -99,7 +99,7 @@ it("puts every delivered story into its own words, in production as in developme
       const value =
         model === "StoryEvent" ? { timestamp: "0x1", story: { [story]: payload } } : { timestamp: "0x1", ...payload };
       const alert = buildStoryNotification({ ...input, model, value, recipient: "0x1" });
-      expect(alert?.body.startsWith("Season 0: ")).toBe(true);
+      expect(alert?.body.startsWith("Frontier: ")).toBe(true);
       expect(`${alert!.title} ${alert!.body}`).not.toMatch(/0x[\da-f]+|\d{5,}/i);
       return alert!.title;
     });

@@ -1,4 +1,3 @@
-import { seasonName } from "@bibliothecadao/notifications";
 import { formatDate } from "@bibliothecadao/types";
 
 import { isGameOver } from "@/runtime/world/directory";
@@ -64,12 +63,12 @@ export const directoryDay = (
 
 /**
  * A season's name, the one every surface shows: an archived season's own ("Playtest"), else its number as the directory
- * serves it, in the words its pushes use (`seasonName`: "Season 0" for Devcon, "Season 1"); a number the directory does
- * not serve is a dash.
+ * serves it and the glossary writes it ("Season 0" for Devcon, "Season 1"); a number the directory does not serve is a
+ * dash.
  */
 export const seasonTitle = (season: Pick<DirectoryGame, "season_number" | "chainId" | "game_id">): string =>
   archivedSeason({ chainId: season.chainId, gameId: season.game_id })?.name ??
-  (season.season_number == null ? `${SEASON} —` : seasonName(season.season_number));
+  `${SEASON} ${season.season_number ?? "—"}`;
 
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct". */
 export const seasonEnded = (season: DirectoryGame): string =>

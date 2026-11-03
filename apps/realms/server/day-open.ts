@@ -3,10 +3,7 @@ import type { HeraldGameDirectoryEntry } from "@bibliothecadao/eternum/game-sync
 import { dayOf, homeDailyClaim, isRealmCategory, type HomeDailyClaim } from "@bibliothecadao/eternum/expeditions";
 import type { PushGame } from "@bibliothecadao/notifications";
 
-export type DayOpenGame = Pick<
-  HeraldGameDirectoryEntry,
-  "game_id" | "mode" | "season_number" | "status" | "expedition"
-> & {
+export type DayOpenGame = Pick<HeraldGameDirectoryEntry, "game_id" | "mode" | "status" | "expedition"> & {
   clock: Pick<HeraldGameDirectoryEntry["clock"], "start_main_at" | "end_at">;
 };
 
@@ -65,7 +62,7 @@ function nextOpening(game: DayOpenGame, now: number): DayOpening | null {
   if (!day) return null;
   return {
     gameId: game.game_id,
-    game: { mode: game.mode, season_number: game.season_number ?? null },
+    game: { mode: game.mode },
     day: day.index,
     opensAt: day.start * 1000,
     endsAt: day.end * 1000,

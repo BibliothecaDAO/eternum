@@ -14,7 +14,7 @@ const notification = () =>
     chainId: "0xa",
     worldAddress: "0x123",
     gameId: 1,
-    game: { mode: "frontier", season_number: 0 },
+    game: { mode: "frontier" },
     day: 1,
     opensAt: now,
     endsAt: now + 5 * 3_600_000,
