@@ -56,8 +56,6 @@ export function BeastIconsLab() {
                 army={{ art: "knight-t1", troops: 1500 }}
                 guard={guard}
                 fight={{
-                  outcome: "wins",
-                  exchanges: 1,
                   troopsLost: 50,
                   guardLeft: 0,
                 }}

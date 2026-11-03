@@ -6,6 +6,7 @@ import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
 import { canonicalRealm, dayOf, heldRealmForHome, homeDailyClaim, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
+import { nextDayOf } from "../hud/day-clock";
 import { useRealmStores } from "../realm-stores";
 import { campaignMarkOf, readCampaignHome, type CampaignMark } from "./campaign-home";
 import { planRealmLabor, seasonStrip, type LaborHome } from "./realm-labor";
@@ -51,7 +52,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
       claimedToday: claimed,
     }),
     secondsLeft: day.end - now,
-    nextDay: day.end < endAt ? day.index + 2 : null,
+    nextDay: nextDayOf(rules, now),
     claim: () => claimRealmLabor(realm),
   };
 };

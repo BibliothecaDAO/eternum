@@ -214,8 +214,8 @@ body {
   @apply cursor-fancy text-gold;
 }
 
-/* While the on-screen keyboard is open (useKeyboardInset), what stands at a phone's foot for moving between places steps
-   aside: the field typed in sits on the keyboard, the messages above it. */
+/* While the on-screen keyboard is open (useKeyboardInset), what stands at a phone's foot for moving between places, and
+   a game's top band, step aside: the field typed in sits on the keyboard, the messages above it. */
 html[data-keyboard] [data-keyboard-hides] {
   display: none;
 }

@@ -6,6 +6,7 @@ import {
   parsePushEnvelope,
   isPushDeviceId,
   isPushOwner,
+  type LocalNotificationPayload,
 } from "@bibliothecadao/notifications";
 import {
   configureAutomaticPush,
@@ -20,8 +21,17 @@ import {
   readNotificationDevice,
 } from "./notification-database";
 
+/** The worker as the build stamps it: with the installed app's icon, the dev app's own on dev (`pwa-release.ts`). */
+export type AlertWorker = ServiceWorkerGlobalScope & { REALMS_ALERT_ICON: string };
+
+/**
+ * The status bar's badge, the small globe as a white shape on transparency: Android draws a badge from its alpha alone,
+ * so the full-colour icon would show there as a blank square (`scripts/build-brand.sh`).
+ */
+const ALERT_BADGE = "/images/game-badge-96x96.png";
+
 /** All local OS emission goes through this one worker queue. Durable claims cover restarts and worker upgrades. */
-export function installNotificationWorker(worker: ServiceWorkerGlobalScope): void {
+export function installNotificationWorker(worker: AlertWorker): void {
   let queue = Promise.resolve();
   let queued = 0;
   worker.addEventListener("message", (event) => {
@@ -59,10 +69,7 @@ export function installNotificationWorker(worker: ServiceWorkerGlobalScope): voi
   });
 }
 
-async function handleNotificationMessage(
-  worker: ServiceWorkerGlobalScope,
-  event: ExtendableMessageEvent,
-): Promise<void> {
+async function handleNotificationMessage(worker: AlertWorker, event: ExtendableMessageEvent): Promise<void> {
   try {
     const source = event.source;
     if (!source || !("id" in source)) throw new Error("Notification source is not a game page");
@@ -79,7 +86,7 @@ async function handleNotificationMessage(
 }
 
 async function runNotificationCommand(
-  worker: ServiceWorkerGlobalScope,
+  worker: AlertWorker,
   source: Client,
   input: { owner: string; action: string; payload?: unknown; token?: string; id?: string },
 ) {
@@ -140,13 +147,7 @@ async function runNotificationCommand(
     )
   )
     return "foreground";
-  await worker.registration.showNotification(payload.title, {
-    body: payload.body,
-    tag: payload.tag ?? payload.id,
-    data: payload,
-    icon: "/images/game-pwa-192x192.png",
-    badge: "/images/game-pwa-192x192.png",
-  });
+  await showAlert(worker, payload, payload);
   return "shown";
 }
 
@@ -202,7 +203,7 @@ function isChatClient(clientUrl: string, target: string, origin: string): boolea
   return !target.startsWith("/blitz/") || !isNotificationGameClient(clientUrl, origin);
 }
 
-async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: PushEvent): Promise<void> {
+async function receivePushNotification(worker: AlertWorker, event: PushEvent): Promise<void> {
   const text = event.data?.text();
   if (!text || text.length > 4096) throw new Error("Invalid push payload");
   const envelope = parsePushEnvelope(JSON.parse(text), Date.now());
@@ -229,11 +230,16 @@ async function receivePushNotification(worker: ServiceWorkerGlobalScope, event: 
     ))
   )
     return;
-  await worker.registration.showNotification(payload.title, {
+  await showAlert(worker, payload, { ...envelope, owner: payload.owner });
+}
+
+/** Every alert the app shows, in its own look: the title and line, the installed app's icon and the status bar's badge. */
+function showAlert(worker: AlertWorker, payload: LocalNotificationPayload, data: unknown): Promise<void> {
+  return worker.registration.showNotification(payload.title, {
     body: payload.body,
     tag: payload.tag ?? payload.id,
-    data: { ...envelope, owner: payload.owner },
-    icon: "/images/game-pwa-192x192.png",
-    badge: "/images/game-pwa-192x192.png",
+    data,
+    icon: worker.REALMS_ALERT_ICON,
+    badge: ALERT_BADGE,
   });
 }

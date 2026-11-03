@@ -4,6 +4,8 @@ import { build, type Rollup } from "vite";
 import { expect, it } from "vitest";
 import { createPwaReleasePlugin } from "./pwa-release";
 
+const ICON = "/images/game-dev-pwa-192x192.png";
+
 /** The worker's minified production build, stamped with this release. */
 async function buildWorker(release: string): Promise<string> {
   const result = await build({
@@ -15,7 +17,7 @@ async function buildWorker(release: string): Promise<string> {
       minify: true,
       rollupOptions: {
         input: fileURLToPath(new URL("../src/sw.ts", import.meta.url)),
-        plugins: [createPwaReleasePlugin(release)],
+        plugins: [createPwaReleasePlugin({ release, alertIcon: ICON })],
         output: { inlineDynamicImports: true },
       },
     },
@@ -29,17 +31,18 @@ async function buildWorker(release: string): Promise<string> {
 /** The plugin's stamp on a built worker entry, as Rollup hands it the bundle. */
 function stampBuiltWorker(release: string, code: string): string {
   const bundle = { "sw.js": { type: "chunk", isEntry: true, code } } as unknown as Rollup.OutputBundle;
-  const plugin = createPwaReleasePlugin(release);
+  const plugin = createPwaReleasePlugin({ release, alertIcon: ICON });
   (plugin.generateBundle as (options: unknown, bundle: Rollup.OutputBundle) => void)({}, bundle);
   return (bundle["sw.js"] as { code: string }).code;
 }
 
-/** Runs the worker's first line, the release stamp, against a stand-in worker scope. */
-function stampedRelease(code: string): unknown {
-  const self: { REALMS_RELEASE?: unknown } = {};
+/** Runs the worker's first line, the stamp, against a stand-in worker scope. */
+function stamped(code: string): { REALMS_RELEASE?: unknown; REALMS_ALERT_ICON?: unknown } {
+  const self = {};
   new Function("self", code.split("\n")[0])(self);
-  return self.REALMS_RELEASE;
+  return self;
 }
+const stampedRelease = (code: string) => stamped(code).REALMS_RELEASE;
 
 const body = (code: string) => code.split("\n").slice(1).join("\n");
 
@@ -52,8 +55,8 @@ it("makes each release's worker distinct by its stamp alone, whatever the releas
   expect([stampedRelease(first), stampedRelease(next)]).toEqual(["release-a", "release-b */ arbitrary label"]);
 });
 
-it("stamps the minified production worker, which carries no production logging", async () => {
+it("stamps the minified production worker, which carries no production logging, with the icon its alerts show", async () => {
   const worker = await buildWorker("release-a");
-  expect(stampedRelease(worker)).toBe("release-a");
+  expect(stamped(worker)).toEqual({ REALMS_RELEASE: "release-a", REALMS_ALERT_ICON: ICON });
   expect(worker).not.toContain("pwa_worker_installed");
 });

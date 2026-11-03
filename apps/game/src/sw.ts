@@ -2,9 +2,9 @@
 import * as Effect from "effect/Effect";
 import * as Data from "effect/Data";
 import { cleanupOutdatedCaches, matchPrecache, precacheAndRoute } from "workbox-precaching";
-import { installNotificationWorker } from "./pwa/notification-worker";
+import { type AlertWorker, installNotificationWorker } from "./pwa/notification-worker";
 
-declare const self: ServiceWorkerGlobalScope & {
+declare const self: AlertWorker & {
   __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
   /** Stamped at build time by the release plugin. */
   REALMS_RELEASE?: string;

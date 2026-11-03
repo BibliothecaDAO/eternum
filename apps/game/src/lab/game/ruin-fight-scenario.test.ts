@@ -79,6 +79,7 @@ it("stands the far ruin's army out of an attack's reach, and the card forecasts 
   expect(army.troops.count).toBe(1_626n * 1_000_000_000n);
   expect(plan.guard?.count).toBe(3_000);
   expect(plan.inReach).toBe(false);
-  // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,412; the next loses the army.
-  expect(plan.fight).toEqual({ outcome: "loses", exchanges: 2, troopsLost: 1_109, guardLeft: 2_412 });
+  // The attack from beside it: this one costs 1,109 of the 1,626 and leaves the guard 2,412. A second would lose the
+  // army; the card speaks only of this one, so it warns of no loss (the owner's Blightglow Rift, 3 November 2026).
+  expect(plan.fight).toEqual({ troopsLost: 1_109, guardLeft: 2_412 });
 });

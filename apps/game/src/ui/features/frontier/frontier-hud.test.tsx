@@ -40,6 +40,9 @@ vi.mock("@/sync/active-game-client", async (original) => ({
 vi.mock("@/ui/features/social", async () => ({
   ...(await import("@/ui/features/social/realtime-chat/hooks/use-realtime-chat")),
   RealtimeChatShell: () => <input aria-label="Message" />,
+  RealtimeChatTabs: () => <div role="tablist" aria-label="Chat rooms" />,
+  RealtimeChatOnline: () => null,
+  RealtimeChatBody: () => <input aria-label="Message" />,
   GameChatMap: ({ children }: { children: ReactNode }) => children,
 }));
 
@@ -309,7 +312,10 @@ it.each([false, true])(
   },
 );
 
-/** The real HUD with Herald's Frontier board answering `prize`, its Season opened; returns the podium's tiles and words. */
+/**
+ * The real HUD with Herald's Frontier board answering `prize`, its Season opened and, on a phone, its folded prizes
+ * opened as a player presses them; returns the podium's tiles and words.
+ */
 const openSeasonWith = async (prize: unknown) => {
   const entry = (address: string, rank: number, sites: number) => ({
     address,
@@ -345,7 +351,11 @@ const openSeasonWith = async (prize: unknown) => {
     await act(async () => row.click());
   }
   await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
-  const podium = document.querySelector('section[aria-label="Season"] [aria-label="Season prizes"]');
+  const folded = document.querySelector<HTMLButtonElement>(
+    'section[aria-label="Season"] button[aria-label="Season prizes"]',
+  );
+  if (folded) await act(async () => folded.click());
+  const podium = document.querySelector('section[aria-label="Season"] ol[aria-label="Season prizes"]');
   return {
     tiles: [...(podium?.querySelectorAll("li[data-place]") ?? [])].map((tile) => tile.textContent),
     words: podium?.textContent ?? null,

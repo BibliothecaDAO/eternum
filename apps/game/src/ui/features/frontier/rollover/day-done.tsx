@@ -3,13 +3,14 @@ import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, homeDailyClaim, type readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { useDayAsk } from "@/shell/profile/alerts-ask";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
-import { dayClock, endedDay } from "../hud/day-clock";
+import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
 import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
@@ -56,6 +57,9 @@ export const DayDone = ({
   const openedAt = useOpenedAt(now);
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
   const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
+  // A home with no daily claim is asked for alerts here; one with a claim is asked after its claim instead.
+  const hasClaim = homeDailyClaim(setup.store, { gameId: realm.game_id, entityId: realm.entity_id }) !== null;
+  const dayAsk = useDayAsk("summary", { hasClaim, nextDay: nextDayOf(rules, now) });
 
   const summary = (() => {
     if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;
@@ -75,7 +79,12 @@ export const DayDone = ({
         armies={gone.length}
         troopsLost={taken - (returned?.sent ?? 0)}
         returned={returned && returned.sent > 0 ? returned : undefined}
-        onContinue={continueDay}
+        ask={dayAsk ?? undefined}
+        onContinue={() => {
+          // Continue passes the day's ask by: a Not now.
+          dayAsk?.notNow();
+          continueDay();
+        }}
       />
     );
   })();

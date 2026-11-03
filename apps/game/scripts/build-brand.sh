@@ -2,8 +2,9 @@
 # Every brand image the app and the status page serve, exported from the Realms Brand Kit v3 folder, so a new kit is one
 # run: the parent mark by displayed size (the kit's README: lettered above 120 px, contour 64-120 px, small below 64 px),
 # each age's transparent lockup, the install icons (each surface's mark by the size it shows it, gold on Hearth) and the
-# favicon (the kit's own 32 and 48 px small globes, as they come; the dev sets add a hatched corner), and the link
-# preview (the lettered mark on a painting under Hearth at 80%, the deck's page 19).
+# favicon (the kit's own 32 and 48 px small globes, as they come; the dev sets add a hatched corner), the alerts' badge
+# (the small globe in white), and the link preview (the lettered mark on a painting under Hearth at 80%, the deck's
+# page 19).
 # Needs ImageMagick 7 (`magick`). Run from apps/game: bash scripts/build-brand.sh <Realms-Brand-Kit-v3 folder>
 set -euo pipefail
 
@@ -68,6 +69,11 @@ set_of_icons() {
 web "$LETTERED" "$LOGOS/realms-lettered.webp" 480
 web "$SMALL" "$LOGOS/realms-small.webp" 112
 web "$CONTOUR" "$LOGOS/realms-contour.webp" 192
+# The alerts' status bar badge (96 px, Android's 24 dp at 4x), one for both environments: Android draws a badge from its
+# alpha alone, so it is the small globe at 88% of the frame, turned white on transparency. Read from the small mark
+# written above, so it can be rebuilt from the repository alone.
+magick "$LOGOS/realms-small.webp" -trim +repage -resize 84x84 -background none -gravity center -extent 96x96 \
+  -channel RGB -evaluate set 100% +channel -strip "PNG32:$OUT/game-badge-96x96.png"
 # Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting: Play's cards.
 for age in blitz frontier eternum; do
   web "$KIT/01-Logos/${age^}/Transparent/$age-lockup.png" "$LOGOS/$age-lockup.webp" 640

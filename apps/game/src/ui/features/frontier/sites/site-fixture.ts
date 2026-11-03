@@ -11,6 +11,7 @@ import {
 import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fixtures/row-set.json";
 import { nativeCommandBits } from "../../../../../../../contracts/l3/world-native/schema/commands.gen";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
+import frontierConfig from "../../../../../../../config/generated/frontier.madara.json";
 import { frontierDay } from "../deploy/deploy-fixture";
 import type { SiteAttack } from "./site-card-plan";
 
@@ -146,6 +147,114 @@ export const campBeside = (kind: SiteKind = "Camp", guardKnown = true, armyStami
     structure: store.require("Structure", { game_id: 1, entity_id: SITE }),
     attack,
   };
+};
+
+/**
+ * Frontier's combat as deployed (config/generated/frontier.madara.json): its troop damage, its troop stamina (30 to
+ * attack, 40 to defend, a bar of 120 gaining one a tick, no refund) and its two-minute army tick, over the fixture's
+ * rules. Wheat and fish costs in the config are whole units; the rules hold them in the resource precision.
+ */
+const frontierCombatRules = () => {
+  const { damage, stamina } = frontierConfig.configuration.troop;
+  const units = (amount: number) => String(Math.round(amount * Number(PRECISION)));
+  return {
+    troop_damage_config: {
+      damage_raid_percent_num: damage.damageRaidPercentNum,
+      damage_biome_bonus_num: damage.damageBiomeBonusNum,
+      damage_scaling_factor: damage.damageScalingFactor,
+      t1_damage_value: damage.t1DamageValue,
+      t2_damage_multiplier: damage.t2DamageMultiplier,
+      t3_damage_multiplier: damage.t3DamageMultiplier,
+    },
+    troop_stamina_config: {
+      damage_stamina_refund: stamina.damageStaminaRefund,
+      capture_stamina_refund: stamina.captureStaminaRefund,
+      stamina_gain_per_tick: stamina.staminaGainPerTick,
+      stamina_initial: stamina.staminaInitial,
+      stamina_bonus_value: stamina.staminaBonusValue,
+      stamina_knight_max: stamina.staminaKnightMax,
+      stamina_paladin_max: stamina.staminaPaladinMax,
+      stamina_crossbowman_max: stamina.staminaCrossbowmanMax,
+      stamina_attack_req: stamina.staminaAttackReq,
+      stamina_defense_req: stamina.staminaDefenseReq,
+      stamina_explore_stamina_cost: stamina.staminaExploreStaminaCost,
+      stamina_travel_stamina_cost: stamina.staminaTravelStaminaCost,
+      stamina_explore_wheat_cost: units(stamina.staminaExploreWheatCost),
+      stamina_explore_fish_cost: units(stamina.staminaExploreFishCost),
+      stamina_travel_wheat_cost: units(stamina.staminaTravelWheatCost),
+      stamina_travel_fish_cost: units(stamina.staminaTravelFishCost),
+    },
+    tick_config: {
+      ...preset.rules.tick_config,
+      armies_tick_in_seconds: frontierConfig.configuration.tick.armiesTickIntervalInSeconds,
+    },
+  };
+};
+
+/**
+ * Prod's Blightglow Rift as the owner met it on 3 November 2026, on Frontier's deployed combat: the rift's guard of
+ * 1,400 T1 knights holding `guardStamina` (40 or more rested; less, tired: it strikes at 70%), and the realm's army of
+ * `troops` T1 knights beside it in its first army slot, at Battle 1 (+10% damage), its bar holding `armyStamina`.
+ */
+export const blightglowRift = ({
+  troops: armyTroops,
+  guardStamina,
+  armyStamina,
+}: {
+  troops: bigint;
+  guardStamina: bigint;
+  armyStamina: bigint;
+}) => {
+  const fixture = campBeside("Rift");
+  const { store } = fixture;
+  const army = store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 });
+  const wire = (value: unknown) =>
+    JSON.parse(JSON.stringify(value, (_, field) => (typeof field === "bigint" ? field.toString() : field)));
+  store.applyFacts([
+    set("0x100", "SliceRules", { ...wire(store.require("SliceRules", { game_id: 1 })), ...frontierCombatRules() }),
+    set("0x73", "Guard", {
+      game_id: 1,
+      structure_id: SITE,
+      slot: 0,
+      troops: troops(1_400n, guardStamina),
+      destroyed_tick: 0,
+    }),
+    set("0xf1", "ArmyProgressionRules", frontierArmyRules()),
+    set("0x74", "ExplorerTroops", {
+      ...wire(army),
+      troops: { ...wire(army.troops), count: String(armyTroops * PRECISION), stamina: { Slot: 0 } },
+    }),
+    set("0xf2012", "ArmyProgress", {
+      game_id: 1,
+      explorer_id: 201,
+      xp: 0,
+      common_points: 0,
+      uncommon_points: 0,
+      rare_points: 0,
+      epic_points: 0,
+      legendary_points: 0,
+      battle: 1,
+      logistics: 0,
+      scouting: 0,
+      homecoming: 0,
+      scouting_kinds: 0,
+    }),
+    set("0x9", "ArmySlot", {
+      game_id: 1,
+      structure_id: 7,
+      epoch: "0",
+      slot: 0,
+      explorer_id: 201,
+      stamina: { amount: String(armyStamina), settled_at: "350", remainder: 0 },
+    }),
+  ] as never);
+  const attack = (armyTile: SiteAttack["armyTile"]): SiteAttack => ({
+    army: store.require("ExplorerTroops", { game_id: 1, explorer_id: 201 }),
+    armyTile,
+    biome: BiomeType.Grassland,
+    timestamp: 350,
+  });
+  return { ...fixture, attack };
 };
 
 /** Another player's 300-knight army (explorer 301) on a tile of the fixture's day. */

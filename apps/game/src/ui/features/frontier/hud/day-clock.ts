@@ -15,6 +15,16 @@ export type DayClock = {
   tone: Tone;
 };
 
+/**
+ * The next day's number, one-based as the player counts days; null when the season ends with today (its last day,
+ * however its final stub was cut or merged) or is not running.
+ */
+export const nextDayOf = (calendar: SeasonCalendar, now: number): number | null => {
+  const today = dayOf(calendar, now);
+  const tomorrow = today && dayOf(calendar, today.end);
+  return tomorrow ? tomorrow.index + 1 : null;
+};
+
 /** The dial and the clock line turn ember in today's last hour. */
 export const dayTone = (secondsLeft: number): Tone => (secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm");
 
