@@ -76,7 +76,7 @@ describe("the day's end", () => {
           onRetry={vi.fn()}
           armies={0}
           troopsLost={0}
-          ask={{ ask: { kind: "remind", busy: false, act: act_ }, nextDay: 14, notNow: vi.fn() }}
+          ask={{ ask: { kind: "remind", busy: false, act: act_ }, nextDay: 14, offer: vi.fn(), notNow: vi.fn() }}
           onContinue={vi.fn()}
         />,
       ),

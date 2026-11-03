@@ -220,11 +220,28 @@ describe("the alerts ask on the summary of a home with no daily claim", () => {
   const ask = () => host.querySelector(`${SUMMARY} .ui-notice`)?.textContent;
   const buttons = () => [...host.querySelectorAll(`${SUMMARY} button`)].map((button) => button.textContent);
 
-  it("offers the next day's push, by the season's own calendar", async () => {
+  it("offers the next day's push, by the season's own calendar, spending the day once it is shown", async () => {
     alerts.owner = "0x7";
     await openTheGame();
     expect(ask()).toBe("Get one push when Day 4 opens.");
     expect(buttons()).toEqual(["Remind me", "Continue"]);
+    expect(useAskMemory.getState().asked).toEqual({ "0x1:1": { day: 3, host: expect.any(String) } });
+  });
+
+  it("spends nothing while the HUD's day end shows no summary", async () => {
+    alerts.owner = "0x7";
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Visiting another realm: the day's end passes with no summary.
+    await act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={REALM_7} visiting />
+        </QueryClientProvider>,
+      ),
+    );
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(useAskMemory.getState().asked).toEqual({});
   });
 
   it("offers nothing on the season's last day: none follows it", async () => {

@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import type { DayAsk } from "@/shell/profile/alerts-ask";
 import { HudActions, HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { ADD_TO_HOME_SCREEN, ALERTS_ASK, REMIND_ME, TURNING_ALERTS_ON } from "@/ui/design-system/kit/words";
@@ -17,7 +18,9 @@ export const AlertsAskCard = ({
   says: { remind: string; install: string };
   verb: "turn-on" | "remind";
 }) => {
-  const { ask, notNow } = dayAsk;
+  const { ask, notNow, offer } = dayAsk;
+  // Drawn, it spends the game day's ask (useDayAsk); an ask a surface leaves undrawn spends nothing.
+  useEffect(offer, [offer]);
   const install = ask.kind === "install";
   // The way out first and the verb last, as every row of buttons stands.
   const buttons = (

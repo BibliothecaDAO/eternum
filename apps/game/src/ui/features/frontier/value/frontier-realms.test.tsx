@@ -460,6 +460,38 @@ it("once claimed, asks for a push when the next day opens, and one tap turns thi
   }
 });
 
+it("spends the day's ask only once it is drawn: the sheet opened and closed before the claim asks after it, once", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const host = document.createElement("div");
+  let root = createRoot(host);
+  const open = () => act(async () => root.render(<Sheet />));
+  const close = () => {
+    act(() => root.unmount());
+    root = createRoot(host);
+  };
+  const turnOn = () => [...host.querySelectorAll("button")].some((each) => each.textContent === "Turn on alerts");
+  try {
+    alerts.owner = "0xowner";
+    alerts.device = "off";
+    alerts.level = "off";
+    useAskMemory.setState({ notNows: 0, asked: {} });
+    await open();
+    expect(turnOn()).toBe(false);
+    close();
+    await open();
+    expect(useAskMemory.getState().asked).toEqual({});
+    close();
+    facts.claimedDay = 0n;
+    await open();
+    expect(turnOn()).toBe(true);
+    close();
+    await open();
+    expect(turnOn()).toBe(false);
+  } finally {
+    act(() => root.unmount());
+  }
+});
+
 it("shows the days around today: each claimed ticked, a missed one struck, none missed before the home was founded", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const host = document.createElement("div");

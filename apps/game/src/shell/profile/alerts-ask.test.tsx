@@ -22,15 +22,18 @@ import { ALERTS_ASK } from "@/ui/design-system/kit/words";
 import { AlertsAskCard } from "@/ui/features/frontier/alerts-ask-card";
 import { useAskMemory, useDayAsk } from "./alerts-ask";
 
-type Home = { hasClaim: boolean; nextDay: number | null };
+/**
+ * One home's game day as its pages draw it: the Realm sheet, which draws A only once the day is claimed (`claimed`), and
+ * the HUD's day end, which draws B only on a summary (`summary`), with Continue passing it by.
+ */
+type Home = { hasClaim: boolean; nextDay: number | null; claimed?: boolean; summary?: boolean };
 
-/** One home's game day, at the moment its page asks: the Realm sheet after a claim (A), or the day's summary (B). */
-const Moment = ({ hasClaim, nextDay }: Home) => {
+const Moment = ({ hasClaim, nextDay, claimed = true, summary: summaryShown = true }: Home) => {
   const afterClaim = useDayAsk("claim", { hasClaim, nextDay });
   const summary = useDayAsk("summary", { hasClaim, nextDay });
   return (
     <>
-      {afterClaim && (
+      {afterClaim && claimed && (
         <section data-ask="A">
           <HudSheet label="Realm Labor" onClose={() => undefined}>
             <AlertsAskCard
@@ -41,13 +44,14 @@ const Moment = ({ hasClaim, nextDay }: Home) => {
           </HudSheet>
         </section>
       )}
-      {summary && (
+      {summary && summaryShown && (
         <section data-ask="B">
           <AlertsAskCard
             dayAsk={summary}
             says={{ remind: ALERTS_ASK.day(summary.nextDay), install: ALERTS_ASK.install }}
             verb="remind"
           />
+          <button onClick={summary.notNow}>Continue</button>
         </section>
       )}
     </>
@@ -149,6 +153,38 @@ it("ends both asks, in every game, after three Not nows", async () => {
   expect(await reopen({ hasClaim: true, nextDay: 15 })).toEqual([]);
   playing.game = { chainId: "0xa", gameId: 3 };
   expect(await reopen({ hasClaim: false, nextDay: 2 })).toEqual([]);
+});
+
+it("spends the day only on an ask drawn: an unclaimed sheet opened and closed, then the claim, asks once", async () => {
+  expect(await show({ hasClaim: true, nextDay: 13, claimed: false })).toEqual([]);
+  expect(await reopen({ hasClaim: true, nextDay: 13, claimed: false })).toEqual([]);
+  expect(useAskMemory.getState().asked).toEqual({});
+  expect(asks(await reopen({ hasClaim: true, nextDay: 13 }))).toEqual(["A"]);
+  expect(await reopen({ hasClaim: true, nextDay: 13 })).toEqual([]);
+});
+
+it("spends nothing on a HUD whose day end shows no summary", async () => {
+  expect(await show({ hasClaim: false, nextDay: 13, summary: false })).toEqual([]);
+  expect(useAskMemory.getState().asked).toEqual({});
+  expect(asks(await show({ hasClaim: false, nextDay: 13 }))).toEqual(["B"]);
+});
+
+it("asks again on the next day in a page still open, unanswered or after Not now or Continue", async () => {
+  // Unanswered, the sheet open through the day's turn: the new day asks.
+  expect(asks(await show({ hasClaim: true, nextDay: 13 }))).toEqual(["A"]);
+  expect(asks(await show({ hasClaim: true, nextDay: 14 }))).toEqual(["A"]);
+  // The memory now holds the new game day (13, whose next is Day 14), drawn by this page.
+  expect(useAskMemory.getState().asked).toEqual({ "0xa:1": { day: 13, host: expect.any(String) } });
+  // Not now holds the day, and the next day asks again in the same page.
+  await press("Not now");
+  expect(await show({ hasClaim: true, nextDay: 14 })).toEqual([]);
+  expect(asks(await show({ hasClaim: true, nextDay: 15 }))).toEqual(["A"]);
+  // The HUD's day end stays mounted: Continue passes B by, and the next day's summary asks again.
+  playing.game = { chainId: "0xa", gameId: 2 };
+  expect(asks(await reopen({ hasClaim: false, nextDay: 4 }))).toEqual(["B"]);
+  await press("Continue");
+  expect(await show({ hasClaim: false, nextDay: 4 })).toEqual([]);
+  expect(asks(await show({ hasClaim: false, nextDay: 5 }))).toEqual(["B"]);
 });
 
 it("asks nothing on the season's last day, which has no next day to tell of", async () => {

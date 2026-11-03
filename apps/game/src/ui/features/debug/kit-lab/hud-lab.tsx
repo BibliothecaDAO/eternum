@@ -1916,7 +1916,7 @@ const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
 function labDayAsk(kind: LabRealms["dayAsk"], nextDay: number): DayAsk | null {
   return kind === undefined
     ? null
-    : { ask: { kind, busy: false, act: () => undefined }, nextDay, notNow: () => undefined };
+    : { ask: { kind, busy: false, act: () => undefined }, nextDay, offer: () => undefined, notNow: () => undefined };
 }
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
