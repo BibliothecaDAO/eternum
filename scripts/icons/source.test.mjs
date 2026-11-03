@@ -107,7 +107,10 @@ test("production validation rejects a changed model, master or stale delivery", 
     await writeFile(file, "replacement master");
     await assert.rejects(validateIconFiles(icons, source, output), /Source master changed: farm/);
     await writeFile(file, master);
-    await writeFile(`${output}/64/farm.webp`, "stale icon");
+    const drifted = await sharp(await deliverIcon(normalized, 64, "farm"))
+      .webp({ quality: 60 })
+      .toBuffer();
+    await writeFile(`${output}/64/farm.webp`, drifted);
     await assert.rejects(validateIconFiles(icons, source, output), /Stale production delivery/);
   } finally {
     await rm(root, { recursive: true, force: true });

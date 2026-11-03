@@ -2,6 +2,11 @@ import sharp from "sharp";
 
 const SUBJECT_ALPHA = 128;
 const MIN_ICON_FILL = 0.85;
+/**
+ * Lossless alpha keeps every subject edge exact. Effort 5, not 6: effort 6 spends about 100 times the encode time on
+ * that alpha plane for a file about 1% smaller, and `icons:check` re-encodes every delivery.
+ */
+export const DELIVERY_WEBP = { quality: 90, alphaQuality: 100, effort: 5 };
 
 /** Measure connected subject pixels; isolated export specks and faint glow cannot set the crop. */
 async function iconBounds(file) {
@@ -117,7 +122,7 @@ export async function deliverIcon(master, size, label) {
     .toBuffer();
   const bytes = await sharp({ create: { width: size, height: size, channels: 4, background: "#00000000" } })
     .composite([{ input: subject, left: inset, top: inset }])
-    .webp({ quality: 90, alphaQuality: 100, effort: 6 })
+    .webp(DELIVERY_WEBP)
     .toBuffer();
   await assertIconFill(bytes, `${label}/${size}`);
   return bytes;

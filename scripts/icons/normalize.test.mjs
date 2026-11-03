@@ -9,11 +9,7 @@ test("the shipped undersized hammer is rejected and its normalized subject fills
   await assert.rejects(assertIconFill(original, "old hammer"), /Undersized icon old hammer/);
   const normalized = await normalizeMaster(original);
   for (const size of [64, 128, 256]) {
-    const image = await sharp(normalized)
-      .resize(size, size)
-      .webp({ quality: 90, alphaQuality: 100, effort: 6 })
-      .toBuffer();
-    const { fill } = await assertIconFill(image, `hammer/${size}`);
+    const { fill } = await assertIconFill(await deliverIcon(normalized, size, "hammer"), `hammer/${size}`);
     assert.ok(fill >= 0.85 && fill <= 0.92, `unexpected subject fill ${fill}`);
   }
 });
