@@ -49,10 +49,10 @@ export const useAlertsAsk = (): AlertsAsk => {
 };
 
 /** A game day's moment to ask: after the day's claim for a home with one, on the day's summary for a home without. */
-export type AskMoment = "claim" | "summary";
+type AskMoment = "claim" | "summary";
 
 /** Three Not nows on this device end the game day asks; Settings keeps the switch. */
-export const NOT_NOW_LIMIT = 3;
+const NOT_NOW_LIMIT = 3;
 
 /** This device's answers to the game day asks: how many Not nows, and the game day of the last. */
 interface AskMemory {
