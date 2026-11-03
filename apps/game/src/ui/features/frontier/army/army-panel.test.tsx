@@ -97,6 +97,13 @@ it("shows empty sockets and the inventory beside a cumulative XP milestone", () 
   expect(host.textContent).toContain("12 / 75 XP");
 });
 
+it("says on an attribute's hover what its next rank gives, the rank as the tooltip's gem", () => {
+  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  const battle = host.querySelector('button[aria-label^="Battle"]')!;
+  expect(battle.getAttribute("data-tip")).toBe("I: 0% → +10% damage");
+  expect(JSON.parse(battle.getAttribute("data-tip-ranks")!)).toEqual([{ rank: 1 }, ": 0% → +10% damage"]);
+});
+
 it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
   act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={() => undefined} />));
   const stats = host.querySelector('[data-army-step="stats"]')!;

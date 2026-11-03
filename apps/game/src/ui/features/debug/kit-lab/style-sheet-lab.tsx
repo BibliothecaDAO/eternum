@@ -1,3 +1,4 @@
+import { rankedText } from "@/ui/design-system/kit/words";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -852,7 +853,7 @@ const TooltipSection = () => (
         <LabTip line="Wheat, 1,200 held" />
         <LabTip line="Deploy an army here" />
         {ORDER_LINES.map((order) => (
-          <LabTip key={order.line} line={order.line} cost={order.cost ?? undefined} />
+          <LabTip key={rankedText(order.line)} line={order.line} cost={order.cost ?? undefined} />
         ))}
       </div>
     }

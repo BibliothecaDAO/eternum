@@ -23,7 +23,18 @@ import {
   typedNumberText,
 } from "./amount";
 import { formatCount } from "./count";
-import { ageLine, buildingName, guardSlotName, rankName, resourceName, structureName, troopPlural } from "./nouns";
+import {
+  ageLine,
+  asRanked,
+  buildingName,
+  guardSlotName,
+  rankedText,
+  rankName,
+  resourceName,
+  skillPointGain,
+  structureName,
+  troopPlural,
+} from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
 import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
@@ -186,6 +197,26 @@ describe("times", () => {
 });
 
 describe("nouns", () => {
+  it("says ranked words as plain text, each rank by its numeral and untrained as 0", () => {
+    expect(rankedText(["Battle ", { rank: 2 }])).toBe("Battle II");
+    expect(rankedText([{ rank: 0 }, " → ", { rank: 1 }])).toBe("0 → I");
+    expect(rankedText("Well used")).toBe("Well used");
+    expect(() => rankedText([{ rank: 6 }])).toThrow("Invalid rank 6");
+  });
+
+  it("joins plain words with ranked ones as ranked words", () => {
+    expect([...asRanked("Research "), ...asRanked(["War hall ", { rank: 2 }])]).toEqual([
+      "Research ",
+      "War hall ",
+      { rank: 2 },
+    ]);
+  });
+
+  it("gives a skill point as its rank and +1", () => {
+    expect(skillPointGain(3)).toEqual([{ rank: 3 }, " +1"]);
+    expect(rankedText(skillPointGain(3))).toBe("III +1");
+  });
+
   it("names a resource as a player reads it, never by its table key", () => {
     expect(resourceName(ResourcesIds.AncientFragment)).toBe("Ancient Fragment");
     expect(resourceName(ResourcesIds.KnightT2)).toBe("Knight T2");

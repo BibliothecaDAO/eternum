@@ -2,7 +2,7 @@ import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import { openOnMap } from "@/play/navigation/open-place";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
-import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { HudEventRow, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { Position } from "@bibliothecadao/eternum";
 import { formatClockTime } from "@bibliothecadao/types";
 import type { HeadlineType } from "../news-headlines/headline-types";
@@ -29,7 +29,7 @@ export const headlineIcon = (type: HeadlineType): IconMeaning => HEADLINE_ICONS[
  */
 export const FeedRowLine = ({ event, own = false }: { event: ProcessedStoryEvent; own?: boolean }) => {
   const open = useStoryOpener(event);
-  const text = event.presentation.title;
+  const text = <HudRanked words={event.presentation.ranked?.title ?? event.presentation.title} />;
   return (
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}

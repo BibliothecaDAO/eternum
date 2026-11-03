@@ -1,4 +1,3 @@
-import { skillPointName } from "@bibliothecadao/types";
 import { frontierArmyRules } from "../army/progression-rules-fixture";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -94,7 +93,21 @@ describe("a Well's tile card", () => {
  */
 const openWith = (
   kind: "Well" | "Shrine",
-  { stamina, xp, tier = 1, rank = 3 }: { stamina: bigint; xp: number; tier?: number; rank?: number },
+  {
+    stamina,
+    xp,
+    tier = 1,
+    rank = 3,
+    selected = true,
+    armyAt = { col: 41, row: 12 },
+  }: {
+    stamina: bigint;
+    xp: number;
+    tier?: number;
+    rank?: number;
+    selected?: boolean;
+    armyAt?: { col: number; row: number };
+  },
 ) => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   const { store } = campBeside("Camp", true, stamina);
@@ -141,7 +154,17 @@ const openWith = (
   const tile = { hexCoords: SITE_TILE, occupierType: kind === "Well" ? 41 : 40 } as unknown as TileSpatialRenderable;
   const host = document.createElement("div");
   const root = createRoot(host);
-  act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
+  // The army walked to another tile: its old tile's row goes, as the chain moves it.
+  if (armyAt.col !== 41 || armyAt.row !== 12)
+    store.applyFacts([
+      { model: "TileOccupancy", key: "0x75", value: null },
+      {
+        model: "TileOccupancy",
+        key: "0x7a",
+        value: { game_id: 1, alt: false, ...armyAt, entity_id: 201, category: 15, is_structure: false },
+      },
+    ] as never);
+  if (selected) act(() => useUIStore.getState().selectOnMap({ kind: "army", entityId: 201, tile: null }));
   act(() =>
     root.render(
       <GameProvider
@@ -157,7 +180,9 @@ const openWith = (
     row: row?.textContent ?? null,
     meter: row?.querySelector('[role="meter"]')?.getAttribute("aria-valuenow") ?? null,
     gem: row?.querySelector(".ui-tier")?.getAttribute("aria-label") ?? null,
+    rule: host.querySelector("[data-site-rule]")?.textContent ?? null,
     foot: host.querySelector(".ui-window__foot")?.textContent ?? null,
+    footGem: host.querySelector(".ui-window__foot .ui-tier")?.getAttribute("data-size") ?? null,
   };
   act(() => root.unmount());
   return reading;
@@ -170,7 +195,9 @@ describe('the army a Well or Shrine acts on (owner, 28 October 2026: "ok for B")
       row: "Army 140 → 100+2 explores",
       meter: "100",
       gem: null,
+      rule: null,
       foot: "+60",
+      footGem: null,
     });
   });
 
@@ -179,17 +206,41 @@ describe('the army a Well or Shrine acts on (owner, 28 October 2026: "ok for B")
       row: "Army 1100 → 120",
       meter: "120",
       gem: null,
+      rule: null,
       foot: "+60",
+      footGem: null,
     });
   });
 
-  it.each([1, 2, 3, 4, 5])("shows stored rank %s before walking, independent of army XP", (rank) => {
+  it.each([
+    [1, "I", "20"],
+    [3, "III", "40"],
+    [5, "V", "60"],
+  ])("shows stored rank %s as its gem and +1, independent of army XP", (rank, numeral, refill) => {
     for (const xp of [40, 800])
       expect(openWith("Shrine", { stamina: 100n, xp, rank })).toEqual({
-        row: "Army 1",
+        row: `Army 1 · beside it${numeral}0 → 1`,
         meter: null,
-        gem: null,
-        foot: skillPointName(rank),
+        gem: numeral,
+        rule: `Raises one attribute up to ${numeral} · refills up to ${refill} stamina`,
+        foot: `${numeral} +1`,
+        footGem: "lg",
       });
+  });
+
+  it("names the player's nearest army and how far it stands when no army is selected", () => {
+    expect(openWith("Shrine", { stamina: 100n, xp: 40, selected: false, armyAt: { col: 44, row: 14 } })).toMatchObject({
+      row: "Army 1 · nearest, 5 tiles awayIII0 → 1",
+      gem: "III",
+      foot: "III +1",
+    });
+  });
+
+  it("names no army where none of the player's stands in the Shrine's region, only what the point does", () => {
+    expect(openWith("Shrine", { stamina: 100n, xp: 40, selected: false, armyAt: { col: 51, row: 12 } })).toMatchObject({
+      row: null,
+      rule: "Raises one attribute up to III · refills up to 40 stamina",
+      foot: "III +1",
+    });
   });
 });

@@ -1,7 +1,7 @@
 import { formatExact } from "@bibliothecadao/types";
 import { beastMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
+import { HudRanked, HudStamina, HudTierChip, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
 
 import { type MapPlate, type PlateTroops } from "./map-plate-model";
 import { plateRows, type PlateSegment } from "./map-plate-rows";
@@ -33,6 +33,12 @@ const Segment = ({ segment }: { segment: PlateSegment }) => {
       return <span className="mp-divider" />;
     case "stamina":
       return <Stamina stamina={segment} />;
+    case "ranked":
+      return (
+        <span className="mp-label mp-ranked">
+          <HudRanked words={segment.words} gem="row" />
+        </span>
+      );
     default:
       return <span className={`mp-${segment.kind}`}>{segment.text}</span>;
   }

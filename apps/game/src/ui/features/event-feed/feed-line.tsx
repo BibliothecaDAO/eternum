@@ -1,9 +1,10 @@
+import { HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { useGame } from "@/hooks/context/game-context";
 import { usePlayerNames } from "@/hooks/use-player-profile";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { Icon } from "@/ui/design-system/icon";
-import { XP } from "@/ui/design-system/kit/words";
+import { type RankedWords, XP } from "@/ui/design-system/kit/words";
 import { formatClockTime, formatShort } from "@bibliothecadao/types";
 
 import { readFeedStory, type ToldReading } from "./feed-reading";
@@ -88,7 +89,7 @@ const ObjectWords = ({
     ) : (
       object.icon && <Icon name={object.icon} size={16} className="ui-feed-line__glyph" />
     )}
-    {"player" in object ? names(object.player) : object.name}
+    {"player" in object ? names(object.player) : <HudRanked words={object.name} />}
   </>
 );
 
@@ -111,15 +112,15 @@ const OwnWordsLine = ({
   named,
   name,
 }: {
-  words: string;
+  words: RankedWords | string;
   named: { at: number; length: number } | undefined;
   name: string | undefined;
 }) => {
-  if (!name) return <>{words}</>;
-  if (!named)
+  if (!name) return <HudRanked words={words} />;
+  if (!named || typeof words !== "string")
     return (
       <>
-        <Name text={name} /> · {words}
+        <Name text={name} /> · <HudRanked words={words} />
       </>
     );
   return (

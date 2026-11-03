@@ -10,6 +10,7 @@ import {
   fightVerdict,
   formatCharge,
   formatGain,
+  type RankedWords,
   resourceName,
   type ResourcesIds,
   scaledToUnits,
@@ -31,7 +32,7 @@ export interface ToldReading {
   verb: string;
   /** What the act was done to or made: troops, an attribute, a building; a player; or a site, painted by its guard. */
   object?:
-    | { name: string; icon?: IconMeaning }
+    | { name: RankedWords | string; icon?: IconMeaning }
     | { player: string; icon: IconMeaning }
     | { name: string; site: number };
   outcome?: { word: string; tone: "good" | "bad" | "neutral" };
@@ -45,12 +46,15 @@ export interface ToldReading {
  * A story this reading does not take apart, in its own words: who did it is its owner, a player; a story no player owns
  * (a season's end) has no one to name.
  */
-interface OwnWords {
-  actor?: string;
-  words: string;
-  /** Where the words name the actor, as the story formatter wrote them (`ownerAt`); none where they do not. */
-  named?: { at: number; length: number };
-}
+type OwnWords =
+  | {
+      actor?: string;
+      words: string;
+      /** Where the words name the actor, as the story formatter wrote them (`ownerAt`); none where they do not. */
+      named?: { at: number; length: number };
+    }
+  /** Words with a rank in them ("Battle II"), which never name the actor inside them. */
+  | { actor?: string; words: RankedWords; named?: undefined };
 
 const BUILDING_CHANGES: Record<string, string> = {
   Created: "built",
@@ -114,9 +118,9 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return {
         actor,
         verb: "spent a point on",
-        // The attribute and its rank as the story says them: "Logistics II".
+        // The attribute and its rank as the story says them: "Logistics [II]".
         object: {
-          name: story.presentation.title,
+          name: story.presentation.ranked?.title ?? story.presentation.title,
           icon: skillPointIcon(payload.choice),
         },
       };
@@ -134,11 +138,9 @@ export const readFeedStory = (story: ProcessedStoryEvent, store: NativeFactStore
       return { actor, verb, object: { name: buildingName(Number(payload.category), true) } };
     }
     default:
-      return {
-        actor: playerOwner(story.owner),
-        words: story.presentation.title,
-        named: ownerNamed(story.presentation),
-      };
+      return story.presentation.ranked
+        ? { actor: playerOwner(story.owner), words: story.presentation.ranked.title }
+        : { actor: playerOwner(story.owner), words: story.presentation.title, named: ownerNamed(story.presentation) };
   }
 };
 

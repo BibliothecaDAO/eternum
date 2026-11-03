@@ -1,4 +1,4 @@
-import { skillPointName, tierNumeral } from "@bibliothecadao/types";
+import { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 import {
   siteUsedLine,
   buildingName,
@@ -54,6 +54,8 @@ type StoryEventIcon =
 export interface StoryEventPresentation {
   title: string;
   description?: string;
+  /** The same title and description with their ranks as parts, where a story names a rank ("Battle II"). */
+  ranked?: { title: RankedWords; description?: RankedWords };
   icon: StoryEventIcon;
   owner?: string | null;
   /**
@@ -73,9 +75,21 @@ type StoryFormatter = (
   resolvePlayerName?: PlayerNameResolver,
 ) => StoryEventPresentation;
 
-/** A rank by its numeral, as the army panel shows it; undefined for none or one out of range. */
-const rankOf = (rank: number | null): string | undefined =>
-  rank === null || rank < 1 || rank > 5 ? undefined : tierNumeral(rank);
+/** A rank of I to V as a part of ranked words; undefined for none or one out of range. */
+const rankOf = (rank: number | null): { rank: number } | undefined =>
+  rank === null || rank < 1 || rank > 5 ? undefined : { rank };
+
+/** A story worded with ranks in it: its plain title and description from the same ranked words. */
+const rankedStory = (
+  title: RankedWords,
+  description: RankedWords | undefined,
+  icon: StoryEventIcon,
+): StoryEventPresentation => ({
+  title: rankedText(title),
+  description: description && rankedText(description),
+  ranked: { title, description },
+  icon,
+});
 /** What a story model other than StoryEvent's own variants reaches the feed as. */
 type StoryEventModel = "BattleEvent" | "RaidEvent";
 
@@ -255,11 +269,8 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     if (benefit?.ShrinePoint !== undefined) {
       const rank = toNumber(benefit.ShrinePoint);
       if (rank === null) throw new Error("Incomplete shrine point story");
-      return {
-        title: `Shrine used, +1 ${skillPointName(rank)}`,
-        description: describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
-        icon: "scroll",
-      };
+      const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+      return rankedStory(["Shrine used, ", ...skillPointGain(rank)], [army], "scroll");
     }
     const kind = benefit?.Shrine !== undefined ? "Shrine" : benefit?.Well !== undefined ? "Well" : null;
     const amount = kind && toNumber(benefit![kind]);
@@ -278,28 +289,20 @@ const formatters: Record<NativeStoryVariant | StoryEventModel | "TierBought", St
     const pointRank = rankOf(point);
     if (!choice || !pointRank || stamina === null || (choice !== "Stamina" && !tier))
       throw new Error("Incomplete skill point story");
-    return {
-      title: choice === "Stamina" ? `Stamina +${stamina}` : `${choice} ${tier}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
-        `${pointRank} point · +${stamina} stamina`,
-      ]),
-      icon: "scroll",
-    };
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    return rankedStory(
+      choice === "Stamina" || !tier ? [`Stamina +${stamina}`] : [`${choice} `, tier],
+      [`${army} · `, pointRank, ` point · +${stamina} stamina`],
+      "scroll",
+    );
   },
   TierBought: (event, payload, components, resolvePlayerName) => {
     const attribute = formatEnum(payload.attribute);
     const tier = rankOf(toNumber(payload.tier));
     const price = toNumber(payload.price);
     if (!attribute || !tier || price === null) throw new Error("Incomplete tier purchase story");
-    return {
-      title: `${attribute} ${tier}`,
-      description: joinPieces([
-        describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName)),
-        `${price} XP`,
-      ]),
-      icon: "scroll",
-    };
+    const army = describeExplorer(payload.explorer_id, components, playerOf(event, components, resolvePlayerName));
+    return rankedStory([`${attribute} `, tier], [`${army} · ${price} XP`], "scroll");
   },
   LordsWithdrawn: (event, payload, components, resolvePlayerName) => {
     const amount = toNumber(payload.amount);
@@ -541,10 +544,15 @@ export function buildStoryEventPresentation(
   const owner = nameOwner(event.ownerAddress, components, resolvePlayerName) ?? null;
   const ownerAt = base.title.indexOf(OWNER_MARK);
   const unmark = (text: string) => text.replaceAll(OWNER_MARK, owner ?? "");
+  const unmarkWords = (words: RankedWords) => words.map((part) => (typeof part === "string" ? unmark(part) : part));
   return {
     ...base,
     title: unmark(base.title),
     description: base.description === undefined ? undefined : unmark(base.description),
+    ranked: base.ranked && {
+      title: unmarkWords(base.ranked.title),
+      description: base.ranked.description && unmarkWords(base.ranked.description),
+    },
     owner,
     ownerAt: ownerAt === -1 ? null : ownerAt,
   };

@@ -1,4 +1,5 @@
-import { formatGain, skillPointName } from "@bibliothecadao/types";
+import { formatGain, type RankedWords, skillPointGain } from "@bibliothecadao/types";
+import { SKILL_POINT_RANKS, type SkillPointRank } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { WELL_REFILL_PERCENT, wellRefillStamina } from "@bibliothecadao/eternum/troop-stamina";
 
@@ -28,7 +29,8 @@ export const siteGain = (
 ): number | undefined => {
   if (kind === "Well") return stamina && wellRefillStamina(stamina.max);
   if (!reward) return undefined;
-  skillPointName(reward.rank);
+  // A stored rank is a skill point's, I to V; any other is a broken fact, said loudly rather than drawn.
+  if (!SKILL_POINT_RANKS.includes(reward.rank as SkillPointRank)) throw new Error(`Invalid rank ${reward.rank}`);
   return reward.rank;
 };
 
@@ -36,10 +38,10 @@ export const siteGainLine = (
   kind: MapSiteKind,
   gain: number | undefined,
   stamina: { current: number; max: number } | undefined,
-): string | null => {
+): RankedWords | string | null => {
   if (kind === "Well" && !stamina) return `${wellRefillShare(WELL_REFILL_PERCENT)} ${STAMINA}`;
   if (gain === undefined) return null;
-  if (kind === "Shrine") return skillPointName(gain);
+  if (kind === "Shrine") return skillPointGain(gain);
   const lands = stamina ? Math.max(0, Math.min(gain, stamina.max - stamina.current)) : gain;
   if (lands === 0) return `Stamina full: the well would be wasted`;
   return lands < gain ? `${formatGain(lands)} ${STAMINA}, to full` : `${formatGain(gain)} ${STAMINA}`;

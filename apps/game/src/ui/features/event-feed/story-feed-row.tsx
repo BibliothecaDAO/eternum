@@ -15,7 +15,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { formatClockTime } from "@bibliothecadao/types";
-import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { HudEventRow, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -103,8 +103,12 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
         <BattleDetails description={event.presentation.description} />
       ) : (
         <span className="flex flex-col">
-          <span className="truncate">{event.presentation.title}</span>
-          <span className="line-clamp-2 text-hud-label text-hud-muted">{event.presentation.description}</span>
+          <span className="truncate">
+            <HudRanked words={event.presentation.ranked?.title ?? event.presentation.title} />
+          </span>
+          <span className="line-clamp-2 text-hud-label text-hud-muted">
+            <HudRanked words={event.presentation.ranked?.description ?? event.presentation.description ?? ""} />
+          </span>
         </span>
       )}
     </HudEventRow>

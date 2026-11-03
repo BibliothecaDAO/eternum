@@ -742,16 +742,26 @@ three Workshops (Tools twice), three Farms (Fields) and two Barracks (Drill) bes
 rows, "450 come home at day end"; on a phone's tokens, its mark and +450), each store's card (a ring), Research, the
 build sheet (**Realm**, an open plot) and the phone's dock and place bar (390 wide).
 
-`/lab/map-labels?sites=1` shows both on the lab's drawn world: an army with a Shrine and a Well beside it (and a Shrine
-three tiles off), under the world map's own input and handlers. Hover a site for its order line; right-click it (hold on
-a phone) to use it; click it for its card with the army kept. Each use is the InteractSite call the provider builds,
-recorded where the game would sign it (`window.__siteUseLab`); the site then goes.
-`src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
+`/lab/map-labels?sites=1&mode=frontier` shows both on the lab's drawn world in Frontier's look, at the address's `zoom`:
+an army with a Shrine and a Well beside it (and a Shrine three tiles off), under the world map's own input and handlers.
+Hover a site for its order line; right-click it (hold on a phone) to use it; click it for its card with the army kept.
+Each use is the InteractSite call the provider builds, recorded where the game would sign it (`window.__siteUseLab`);
+the site then goes. `src/three/scenes/worldmap-site-use.test.tsx` runs the same handlers as the regression test.
 
 `/lab/game?scenario=sites` is the spire's game with a Well and a Shrine beside its army, the army at 40 stamina and 40
 XP: select it (dock or **Armies**), tap either site. Its card shows the army as one use will leave it (a Well's refill
-on its bar with the explores it buys), the Shrine's stored III skill point, and **Use**. The Shrine's plate and hover
-show that rank before walking. Use adds exactly one III point, leaves XP unchanged, and removes the site and reward row.
+on its bar with the explores it buys), the Shrine's stored point as its level gem and +1, and **Use**. A Shrine's card
+names on one line the army that would take the point (the selected one, else the player's nearest in the Shrine's
+region, with how far) and its points of that rank before → after, then what the point does once spent ("Raises one
+attribute up to [III] · refills up to 40 stamina"); `/lab/kit/hud/shrine-beside`, `shrine-far` and `shrine-none` show
+it. The Shrine's plate and hover show that rank before walking. Use adds exactly one III point, leaves XP unchanged, and
+removes the site and reward row.
+
+Every rank a line names, a skill point's or an attribute's or research tier's, is the level gem (`HudTier`), never a
+numeral in the words: the Feed and Today ("Battle [II]", "Shrine used, [III] +1"), the hover lines (an army's XP, an
+attribute's next rank, a training building's "new armies start with Battle [I]"), research's figures and its button, and
+the map's order line. Words carry their ranks as `RankedWords` and draw them with `HudRanked`, the gem sized to the line
+so a Feed row keeps its height (`/lab/kit/hud/feed`); plain text says each rank by its numeral.
 `playtest --steps lab-actions-sites` drives both uses and records their resulting facts.
 
 With the local client running, open `/lab/terrain?evidence=/absolute/capture/directory` and run

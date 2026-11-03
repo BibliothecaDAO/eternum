@@ -1,3 +1,4 @@
+import type { RankedWords } from "@bibliothecadao/types";
 import { formatDuration } from "@bibliothecadao/types";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARRIVING, siteTitle, UNDEFENDED } from "@/ui/design-system/kit/words";
@@ -14,6 +15,8 @@ export type PlateSegment =
   | { kind: "title"; text: string }
   | { kind: "word"; text: string }
   | { kind: "label"; text: string }
+  /** Words with a rank in them (a Shrine's point), its gem filling the row. */
+  | { kind: "ranked"; words: RankedWords }
   | { kind: "cue"; text: string }
   | { kind: "troops"; troops: PlateTroops }
   | ({ kind: "stamina" } & StaminaBar)
@@ -62,7 +65,7 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
       : { kind: "word", text: plate.name };
   // Three rows at most: what it holds, and troops on their way to one of the player's own sites, follow its guard.
   const holds = plate.reward
-    ? [...(plate.guards ? [{ kind: "divider" } as const] : []), { kind: "label", text: plate.reward } as const]
+    ? [...(plate.guards ? [{ kind: "divider" } as const] : []), rewardSegment(plate.reward)]
     : [];
   const arriving = plate.arrivals.length > 0 ? [{ kind: "divider" } as const, ...arrivals(plate)] : [];
   const owner = plate.beast ? siteTitle(plate.place, plate.name, plate.beast) : plate.owner;
@@ -73,6 +76,10 @@ const siteRows = (plate: StructurePlate): PlateRow[] => {
   ];
   return rows.filter((row) => row.length > 0);
 };
+
+/** What a site holds, in the panel's label colour; a rank in it as its gem. */
+const rewardSegment = (reward: RankedWords | string): PlateSegment =>
+  typeof reward === "string" ? { kind: "label", text: reward } : { kind: "ranked", words: reward };
 
 /**
  * A player and their realm, the same on a realm's plate and on an army's from it: "clientlane | Stolsli". A realm not

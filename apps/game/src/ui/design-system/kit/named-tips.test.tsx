@@ -6,6 +6,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
 import { HudButton, HudChip } from "./hud-elements";
+import { rankedTip } from "./named-tips";
 
 let host: HTMLDivElement;
 let root: Root;
@@ -51,12 +52,25 @@ const mount = (onClick = () => undefined) =>
         <span data-testid="store" data-tip="Wheat 1,771 of 6,000 · +302 an hour · Full in 14h">
           1,771
         </span>
+        <span data-testid="xp" {...rankedTip(["XP 8 of 100 · next ", { rank: 2 }, " point"])}>
+          8
+        </span>
         <p data-testid="plain">plain</p>
       </>,
     ),
   );
 
 describe("a name on the one tooltip", () => {
+  it("draws a rank in a thing's own line as its gem, sized to the line, and keeps its words plain for matching", () => {
+    mount();
+    const xp = host.querySelector('[data-testid="xp"]')!;
+    expect(xp.getAttribute("data-tip")).toBe("XP 8 of 100 · next II point");
+    pointer("pointerover", xp, "mouse");
+    const gem = document.querySelector('[role="tooltip"] .ui-tier');
+    expect([gem?.getAttribute("aria-label"), gem?.getAttribute("data-size")]).toEqual(["II", "line"]);
+    expect(tip()).toBe("XP 8 of 100 · next II point");
+  });
+
   it("shows a chip's name while the mouse is over it and takes it away when the mouse leaves", () => {
     mount();
     pointer("pointerover", host.querySelector('[role="img"]')!, "mouse");

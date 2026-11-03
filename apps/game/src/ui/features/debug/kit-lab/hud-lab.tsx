@@ -1,3 +1,9 @@
+import { costLine } from "@/ui/design-system/kit/price-faces";
+import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
+import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+import { FeedLine } from "@/ui/features/event-feed/feed-line";
+import { MapSiteCardView } from "@/ui/features/frontier/sites/map-site-card";
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk } from "@/shell/profile/alerts-ask";
@@ -12,10 +18,12 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
+  EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
   PAYOUTS_PAUSED,
   type Rank,
+  startsNewArmies,
   TRAINING_BUILDINGS,
   WITHDRAWALS_CLOSED,
   YOU,
@@ -196,6 +204,11 @@ const holding = (stores: readonly StoreReading[], kind: StoreReading["kind"], am
 
 type LabSite = Omit<Parameters<typeof SiteCardView>[0], "onClose" | "onRealm">;
 
+type LabShrine = Pick<Parameters<typeof MapSiteCardView>[0], "taker" | "action">;
+/** A III Shrine's card (owner, 3 November 2026: "ok for D"): Army 2 holding one III point, Army 1 none. */
+const SHRINE_ARMY_2 = { art: "knight-t1" as const, label: "Army 2", held: 1 };
+const SHRINE_ARMY_1 = { art: "knight-t1" as const, label: "Army 1", held: 0 };
+
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
 /**
@@ -343,7 +356,11 @@ const BUILD_TILES: LabTile[] = [
     price(6_800),
   ),
   tile("hut", "workers-hut", "Hut", { icon: "person", value: "+6" }, gem(1), 0, price(5_100)),
-  tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, { kind: "built" }),
+  // Its hover line as the build sheet words a training building: what every new army starts with, its tier a gem.
+  {
+    ...tile("war", "war-hall", TRAINING_BUILDINGS[0], { icon: "order-rage" }, gem(1), 2, { kind: "built" }),
+    tip: [`${TRAINING_BUILDINGS[0]}: `, ...startsNewArmies("Battle", 1)],
+  },
   tile("supply", "supply-yard", TRAINING_BUILDINGS[1], { icon: "order-skill" }, gem(1), 2, trainingPrice),
   tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
   tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
@@ -635,6 +652,38 @@ const STATES = {
     deploy: { count: 0, troopsWait: 6 * 60 },
   },
   "site-camp": { clock: CLOCK, stores: STORES, armies: ARMIES, site: CAMP_CARD },
+  "shrine-beside": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    shrine: {
+      taker: { ...SHRINE_ARMY_2, tiles: 1, nearest: false },
+      action: { kind: "use", busy: undefined, onUse: () => undefined },
+    },
+  },
+  "shrine-far": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    shrine: {
+      taker: { ...SHRINE_ARMY_1, tiles: 4, nearest: false },
+      action: {
+        kind: "move",
+        cost: costLine([
+          { of: "stamina", amount: 60 },
+          { of: "wheat", amount: 90 },
+        ]),
+        onMove: () => undefined,
+      },
+    },
+  },
+  "shrine-none": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    shrine: { taker: { ...SHRINE_ARMY_2, tiles: 3, nearest: true }, action: null },
+  },
+  feed: { clock: CLOCK, stores: STORES, armies: ARMIES, feed: true },
   "site-full": {
     clock: CLOCK,
     stores: [
@@ -1137,6 +1186,10 @@ type LabState = {
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
+  /** A Shrine's card (MapSiteCardView): the army that would take its point, and Use or Move. */
+  shrine?: LabShrine;
+  /** The Feed's lines for ranked stories beside plain ones, to read their alignment. */
+  feed?: boolean;
   deploy?: LabDeploy;
   /** The realm's army slots, where a state draws other than the lab's four. */
   slots?: number;
@@ -1353,9 +1406,13 @@ export const HudLab = () => {
         )}
         {lab.building && <LabBuildingCard building={lab.building} />}
         {lab.site && <SiteCardView {...lab.site} onRealm={noop} onClose={noop} />}
+        {lab.shrine && <MapSiteCardView kind="Shrine" gain={3} army={undefined} {...lab.shrine} onClose={noop} />}
+        {lab.feed && <LabFeed />}
         {lab.withdraw && <LabWithdrawSheet withdraw={lab.withdraw} />}
         {lab.realms && <LabRealmsSheet realms={lab.realms} />}
       </LabBands>
+      {/* The game's one tooltip, as world.tsx mounts it, so a hover line shows here too. */}
+      <Tooltip />
     </>
   );
 };
@@ -1885,6 +1942,56 @@ function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {
   }, []);
   return <DayEndScreen summary={<DayDoneCard {...card} />} />;
 }
+
+/**
+ * The Feed's lines for a point spent, a tier bought and a Shrine used, worded by the game's story formatter, between two
+ * plain ones (a Well used, a reveal), so a rank's gem reads against the rows round it.
+ */
+const LabFeed = () => {
+  useLabPlayer();
+  const [store] = useState(transferXpArmies);
+  const told = (id: string, storyType: string, storyPayload: Record<string, unknown>) =>
+    ({
+      id,
+      event_id: id,
+      story: storyType,
+      owner: "0x111",
+      participants: ["0x111"],
+      tx_hash: `0x${id}`,
+      timestamp: String(NOW),
+      timestampMs: NOW * 1_000,
+      storyPayload,
+      presentation: buildStoryEventPresentation(
+        { storyType, storyPayload, ownerAddress: "0x111", viewerAddress: "0x111", timestamp: NOW * 1_000 } as never,
+        store,
+      ),
+    }) as unknown as ProcessedStoryEvent;
+  const used = (benefit: Record<string, number>) => ({ explorer_id: 201, coord: { x: 3, y: 4 }, benefit });
+  const stories = [
+    told("well", "SiteUsed", used({ Well: 60 })),
+    told("spent", "SkillPointSpent", { explorer_id: 201, choice: "Battle", point_rank: 3, stamina: 40, tier: 2 }),
+    told("bought", "TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 }),
+    told("shrine", "SiteUsed", used({ ShrinePoint: 3 })),
+    told("well-full", "SiteUsed", used({ Well: 0 })),
+  ];
+  const feed = (
+    <HudSheet label={EVENTS_WORDS.feed} onClose={noop}>
+      <div className="flex flex-col">
+        {stories.map((story) => (
+          <FeedLine key={story.id} story={story} own />
+        ))}
+      </div>
+    </HudSheet>
+  );
+  // A desktop's HUD already stands in the lab game (its docked chat); a phone's needs one.
+  return useLayout() === "desktop" ? (
+    feed
+  ) : (
+    <GameProvider value={{ store, systemCalls: {} } as never} account={{ address: "0x111" } as never}>
+      {feed}
+    </GameProvider>
+  );
+};
 
 /** The same transfer selection as the map, on two adjacent armies; this lab never sends a transaction. */
 const LabMerge = () => {

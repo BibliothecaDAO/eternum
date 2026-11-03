@@ -582,6 +582,21 @@ button.ui-chip:disabled {
   font-weight: 800;
   line-height: 1;
 }
+/* In a line of words (a log row, a tooltip, a cost): sized from the line's own text, so the row keeps its height and
+   the gem sits on the line's middle as a word does. */
+.ui-tier[data-size="line"] {
+  width: 1.6em;
+  height: 1.3em;
+  font-size: 0.72em;
+  vertical-align: middle;
+  margin: 0 0.15em;
+}
+/* A card's reward, read at a glance. */
+.ui-tier[data-size="lg"] {
+  width: 36px;
+  height: 30px;
+  font-size: var(--hud-text-body);
+}
 .ui-tier[data-tier="0"] {
   background: var(--hud-line);
   position: relative;

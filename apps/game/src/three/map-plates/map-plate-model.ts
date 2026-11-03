@@ -1,3 +1,4 @@
+import type { RankedWords } from "@bibliothecadao/types";
 import { realmSkinIcon } from "../structures/realm-skins";
 
 import type { CSSProperties } from "react";
@@ -74,8 +75,8 @@ export interface StructurePlate {
   named: boolean;
   /** A site's name, as its holder and every list read it (siteDisplayName); absent for a realm or a Hyperstructure. */
   place?: string;
-  /** What taking it gives, said in words: "1,200 Essence", "50 Labor". */
-  reward?: string;
+  /** What taking it gives, said in words: "1,200 Essence", "50 Labor"; a Shrine's point, "[III] +1". */
+  reward?: RankedWords | string;
   /** The same as an amount of a unit, for a mark that shows it (the lab's icon study). */
   holding?: PlateReward;
   /**

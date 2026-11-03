@@ -93,6 +93,12 @@
 .mp-cue {
   color: var(--hud-muted);
 }
+/* A Shrine's point: its gem filling the row, then "+1". */
+.mp-ranked {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 .mp-count {
   font-weight: var(--hud-weight-strong);
   font-variant-numeric: tabular-nums;

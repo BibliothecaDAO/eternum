@@ -204,13 +204,13 @@ it("keeps the chosen Research action outside the tree scroll on every pick, incl
 });
 
 it.each([
-  [0, "0 · 0% damage → I · +10% damage"],
-  [1, "I · +10% damage → II · +25% damage"],
-  [2, "II · +25% damage → III · +45% damage"],
-  [3, "III · +45% damage → IV · +70% damage"],
-  [4, "IV · +70% damage → V · +100% damage"],
-  [5, "V · +100% damage"],
-] as const)("labels the War hall's current and next training ranks at rank %s", (tier, label) => {
+  [0, "Untrained · 0% damage → I · +10% damage", ["Untrained", "I"]],
+  [1, "I · +10% damage → II · +25% damage", ["I", "II"]],
+  [2, "II · +25% damage → III · +45% damage", ["II", "III"]],
+  [3, "III · +45% damage → IV · +70% damage", ["III", "IV"]],
+  [4, "IV · +70% damage → V · +100% damage", ["IV", "V"]],
+  [5, "V · +100% damage", ["V"]],
+] as const)("labels the War hall's current and next training ranks at rank %s as their gems", (tier, label, gems) => {
   const ranked = readResearchTree({
     ...MID_REALM,
     learned: { ...MID_REALM.learned, 4: { tier, sides: [] } },
@@ -232,8 +232,17 @@ it.each([
   const effect = [...card.querySelectorAll(":scope > span")].find((line) =>
     line.textContent?.startsWith("New armies start with Battle"),
   );
-  expect(effect?.textContent).toBe(`New armies start with Battle · ${label}`);
+  // Each rank is its gem, read by its name, never a numeral in the words.
+  expect([...effect!.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
+  expect(saidWithGems(effect!)).toBe(`New armies start with Battle · ${label}`);
 });
+
+/** An element's words with each gem said by its name, as a screen reader reads the line. */
+const saidWithGems = (element: Element): string => {
+  const copy = element.cloneNode(true) as Element;
+  copy.querySelectorAll(".ui-tier").forEach((gem) => gem.replaceWith(gem.getAttribute("aria-label") ?? ""));
+  return copy.textContent ?? "";
+};
 
 it.each([null, research.ROW_SHRINE, research.ROW_WELL])(
   "gates the Sanctuary research choice on either site (%s)",

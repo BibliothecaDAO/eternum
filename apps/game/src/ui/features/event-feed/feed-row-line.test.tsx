@@ -316,32 +316,36 @@ it("draws each story in Events and the Log by its act, as Frontier's Feed does, 
 });
 
 it.each([
-  [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
-  [{ Well: 5 }, "Well used, +5 stamina"],
-])("the Log renders site use and opens its historical tile after the army is gone (%j)", async (benefit, expected) => {
-  game.armies.clear();
-  const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
-  event.presentation = buildStoryEventPresentation({
-    storyType: event.story,
-    storyPayload: event.storyPayload,
-    entityId: 9,
-    ownerAddress: PLAYER,
-    viewerAddress: PLAYER,
-  } as never);
-  expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
-  expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
-  expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
-  const [row] = selectEventStories([event], "all", PLAYER, () => false);
-  const root = createRoot(host);
-  try {
-    act(() => root.render(<StoryFeedRow event={row} />));
-    expect(host.textContent).toContain(expected);
-    expect(host.textContent).toContain("army");
-    await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
-    expect(game.navigate).toHaveBeenCalledOnce();
-    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
-  } finally {
-    act(() => root.unmount());
-  }
-});
+  [{ Shrine: 200 }, "Shrine used, +200 XP", []],
+  [{ ShrinePoint: 3 }, "Shrine used, III +1", ["III"]],
+  [{ Well: 5 }, "Well used, +5 stamina", []],
+])(
+  "the Log renders site use and opens its historical tile after the army is gone (%j)",
+  async (benefit, expected, gems) => {
+    game.armies.clear();
+    const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
+    event.presentation = buildStoryEventPresentation({
+      storyType: event.story,
+      storyPayload: event.storyPayload,
+      entityId: 9,
+      ownerAddress: PLAYER,
+      viewerAddress: PLAYER,
+    } as never);
+    expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
+    expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
+    expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
+    const [row] = selectEventStories([event], "all", PLAYER, () => false);
+    const root = createRoot(host);
+    try {
+      act(() => root.render(<StoryFeedRow event={row} />));
+      expect(host.textContent).toContain(expected);
+      expect([...host.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
+      expect(host.textContent).toContain("army");
+      await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
+      expect(game.navigate).toHaveBeenCalledOnce();
+      expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+    } finally {
+      act(() => root.unmount());
+    }
+  },
+);

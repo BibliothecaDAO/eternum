@@ -1,4 +1,4 @@
-import { BuildingType, ResourcesIds } from "@bibliothecadao/types";
+import { BuildingType, rankedText, ResourcesIds } from "@bibliothecadao/types";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { describe, expect, it } from "vitest";
 
@@ -106,7 +106,7 @@ describe("the day log's line for a story", () => {
 
 it.each([
   [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
+  [{ ShrinePoint: 3 }, "Shrine used, III +1"],
   [{ Well: 60 }, "Well used, +60 stamina"],
   [{ Well: 5 }, "Well used, +5 stamina"],
   [{ Well: 0 }, "Well used, +0 stamina"],
@@ -119,7 +119,36 @@ it.each([
     store,
   );
   expect(presentation.title).toBe(expected);
-  expect(dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store)).toBe(expected);
+  expect(rankedText(dayLogLine({ story: "SiteUsed", storyPayload, presentation }, store))).toBe(expected);
+});
+
+it("keeps a story's ranks as parts, so the row draws each as its gem", () => {
+  const { store } = campBeside();
+  const line = (storyType: string, storyPayload: Record<string, unknown>) =>
+    dayLogLine(
+      {
+        story: storyType,
+        storyPayload,
+        presentation: buildStoryEventPresentation(
+          { storyType, storyPayload, entityId: 201, ownerAddress: "0x111", viewerAddress: "0x111" } as never,
+          store,
+        ),
+      },
+      store,
+    );
+  expect(line("SkillPointSpent", { explorer_id: 201, choice: "Battle", tier: 2, point_rank: 3, stamina: 40 })).toEqual([
+    "Battle ",
+    { rank: 2 },
+  ]);
+  expect(line("TierBought", { explorer_id: 201, attribute: "Logistics", tier: 3, price: 400 })).toEqual([
+    "Logistics ",
+    { rank: 3 },
+  ]);
+  expect(line("SiteUsed", { explorer_id: 201, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: 3 } })).toEqual([
+    "Shrine used, ",
+    { rank: 3 },
+    " +1",
+  ]);
 });
 
 it.each([

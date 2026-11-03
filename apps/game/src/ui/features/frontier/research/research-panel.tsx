@@ -1,9 +1,17 @@
 import { researchHasIndependentSides } from "@bibliothecadao/eternum";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudPage, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudPage, HudRanked, HudTier, HudTierStep } from "@/ui/design-system/kit/hud-elements";
 import type { Fix } from "@/ui/design-system/kit/refusal";
-import { CLOSE, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank, tierNumeral } from "@/ui/design-system/kit/words";
+import {
+  CLOSE,
+  RESEARCH,
+  RESEARCH_TREE,
+  RESEARCHING,
+  type Rank,
+  type RankedWords,
+  tierNumeral,
+} from "@/ui/design-system/kit/words";
 import { formatAmount, formatExact } from "@bibliothecadao/types";
 import { useState } from "react";
 
@@ -213,7 +221,8 @@ const NodeChoice = ({
   const choice = researchSideChoice(rowNode, side);
   const missing = firstMissing(node);
   const fixing = missing && fix(missing);
-  const verb = node.sides?.[side]?.name ?? (node.nextTier ? `${node.name} ${tierNumeral(node.nextTier)}` : node.name);
+  const verb: RankedWords | string =
+    node.sides?.[side]?.name ?? (node.nextTier ? [`${node.name} `, { rank: node.nextTier }] : node.name);
   const price = node.needs.filter(isPrice);
   return (
     <div
@@ -254,7 +263,9 @@ const NodeChoice = ({
                 <span className="truncate text-hud-strong text-hud-ink">{option.name}</span>
                 <span className="text-hud-label leading-tight text-hud-muted">{option.line}</span>
                 <span className="truncate text-hud-label tabular-nums text-hud-good">
-                  {option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
+                  <HudRanked
+                    words={option.state === "done" ? option.now : RESEARCH_TREE.step(option.now, option.next)}
+                  />
                 </span>
               </span>
             </button>
@@ -265,7 +276,7 @@ const NodeChoice = ({
           {node.gives.line}
           {" · "}
           <span className="tabular-nums text-hud-good">
-            {node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now}
+            <HudRanked words={node.gives.next ? RESEARCH_TREE.step(node.gives.now, node.gives.next) : node.gives.now} />
           </span>
         </span>
       )}
@@ -305,7 +316,7 @@ const NodeChoice = ({
             busy={sending ? RESEARCHING : undefined}
             onClick={() => choice !== undefined && onResearch(choice)}
           >
-            {RESEARCH_TREE.research(verb)}
+            <HudRanked words={RESEARCH_TREE.research(verb)} />
           </HudButton>
         </div>
       )}

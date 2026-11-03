@@ -26,7 +26,7 @@ it("recovers the distant Shrine's exact reward from a cold snapshot", () => {
   const restored = reloadSiteFacts(store);
   expect(restored).toBeInstanceOf(NativeFactStore);
   const reward = shrineRewardAt(restored, FAR_SHRINE_TILE);
-  expect(siteGainLine("Shrine", siteGain("Shrine", reward), undefined)).toBe("V skill point");
+  expect(siteGainLine("Shrine", siteGain("Shrine", reward), undefined)).toEqual([{ rank: 5 }, " +1"]);
 });
 
 it("refuses an invalid stored rank", () => {

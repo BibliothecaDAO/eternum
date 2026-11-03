@@ -11,14 +11,22 @@ import {
 } from "@/ui/design-system/kit/words";
 import { siteClearXp, configManager, findGain, readRevealXp } from "@bibliothecadao/eternum";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { formatExact, LORDS, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
+import { formatExact, LORDS, type RankedWords, ResourcesIds, scaledToUnits } from "@bibliothecadao/types";
 
 import { frontierBuildingName } from "../build/building-names";
 import { armyLabel } from "../hud/dock-armies";
 import { fightCost, fightLogLine } from "./fight-line";
 
 /** A story as the day's log reads it: what it is, what it carries, and the line every mode gives it. */
-type LoggedStory = { story: string; storyPayload: Record<string, unknown>; presentation: { title: string } };
+type LoggedStory = {
+  story: string;
+  storyPayload: Record<string, unknown>;
+  presentation: { title: string; ranked?: { title: RankedWords } };
+};
+
+/** A story's own title, its ranks as parts where it names one ("Battle II"). */
+const titleOf = (story: LoggedStory): RankedWords | string =>
+  story.presentation.ranked?.title ?? story.presentation.title;
 
 /** What a reveal sends home, by the kit's word for it. */
 const REVEAL_WORDS: Partial<Record<number, string>> = {
@@ -34,7 +42,7 @@ const REVEAL_WORDS: Partial<Record<number, string>> = {
  * fightConcludedBy finds): what the attack cost. Each story that moved XP says how much, as the contract counted it: a
  * reveal's `reveal_xp`, a clear's XP from the guard its site started with, a point spent keeps XP unchanged.
  */
-export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): string => {
+export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: LoggedStory): RankedWords | string => {
   const payload = story.storyPayload;
   switch (story.story) {
     case "BattleEvent":
@@ -44,7 +52,7 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
     case "SitePayout":
       return withClearXp(withFightCost(story.presentation.title, fight), payload.site_id, store);
     case "SkillPointSpent":
-      return story.presentation.title;
+      return titleOf(story);
     case "BuildingPaymentStory":
       return builtLineOf(payload) ?? story.presentation.title;
     case "ExplorerCreateStory":
@@ -52,7 +60,7 @@ export const dayLogLine = (story: LoggedStory, store: NativeFactStore, fight?: L
     case "ExplorerDeleteStory":
       return disbandedLine(armyLabel(store, Number(payload.explorer_id)));
     default:
-      return story.presentation.title;
+      return titleOf(story);
   }
 };
 

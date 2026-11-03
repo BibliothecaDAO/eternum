@@ -348,7 +348,14 @@ it("draws no guard, never an old or guessed one, for a site neither the map nor 
   expect(paintings()).toEqual(["attack"]);
 });
 
-it("says what an army spent its point on, the rank by its numeral as the army panel shows it", async () => {
+/** The gems a row draws in its words, each by its name and size (owner, 3 November 2026: the Feed keeps its alignment). */
+const gems = () =>
+  [...host.querySelectorAll("[data-feed-line] .ui-event__text .ui-tier")].map((gem) => [
+    gem.getAttribute("aria-label"),
+    gem.getAttribute("data-size"),
+  ]);
+
+it("says what an army spent its point on, the rank as its gem sized to the line", async () => {
   const row = story(KRUMP, "SkillPointSpent", {
     explorer_id: 71,
     choice: "Battle",
@@ -357,7 +364,18 @@ it("says what an army spent its point on, the rank by its numeral as the army pa
     stamina: 30,
   });
   expect((await draw(row)).words).toBe("Krump spent a point on Battle IV");
+  expect(gems()).toEqual([["IV", "line"]]);
   expect(host.querySelector(".ui-event__text .ui-feed-line__glyph")!.getAttribute("data-icon")).toBe("order-rage");
+});
+
+it("draws a tier bought and a Shrine's point in the story's own words, each rank as its gem", async () => {
+  expect(
+    (await draw(story(KRUMP, "TierBought", { explorer_id: 71, attribute: "Logistics", tier: 3, price: 400 }))).words,
+  ).toBe("Krump · Logistics III");
+  expect(gems()).toEqual([["III", "line"]]);
+  const shrine = story(KRUMP, "SiteUsed", { explorer_id: 71, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: 2 } });
+  expect((await draw(shrine)).words).toBe("Krump · Shrine used, II +1");
+  expect(gems()).toEqual([["II", "line"]]);
 });
 
 it("names who moved troops once, with how many moved (prod's day: 'Maelis Maelis moved 1,095 troops')", async () => {

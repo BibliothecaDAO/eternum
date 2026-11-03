@@ -26,6 +26,8 @@ import {
   structureName,
   StructureType,
   tierNumeral as rankNumeral,
+  asRanked,
+  type RankedWords,
 } from "@bibliothecadao/types";
 
 /** One scale for chests, building types and attributes. */
@@ -35,6 +37,8 @@ export type Tier = 1 | 2 | 3 | 4 | 5;
 export type Rank = 0 | Tier;
 /** A tier by its numeral, Common I to Legendary V; untrained is 0. */
 export const tierNumeral = (tier: Rank): string => (tier === 0 ? "0" : rankNumeral(tier));
+/** Words with ranks in them, a skill point's gain, and their plain text: one way to write a rank in a line. */
+export { type RankedWords, rankedText, skillPointGain } from "@bibliothecadao/types";
 
 /** Species names shared by Frontier's models, plates and selected-site cards. */
 export { BEAST_NAMES } from "@bibliothecadao/types";
@@ -297,15 +301,21 @@ export const priceEach = (price: string, currency: string) => `${price} ${curren
 /** What a building does, in one line on its card's tooltip: "Wheat +5/min". */
 export const makes = (noun: string, rate: string) => `${noun} ${rate}`;
 export const takesPopulation = (amount: string) => `takes ${amount} ${POPULATION}`;
-/** What a training building gives, by its tier's numeral: "new armies start with Battle II". */
-export const startsNewArmies = (attribute: string, numeral: string) => `new armies start with ${attribute} ${numeral}`;
+/** What a training building gives, by its tier: "new armies start with Battle [II]". */
+export const startsNewArmies = (attribute: string, tier: number): RankedWords => [
+  `new armies start with ${attribute} `,
+  { rank: tier },
+];
 
 /**
- * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next II point". XP is a balance
+ * An army's XP on its tooltip, against the skill point it earns next: "XP 8 of 100 · next [II] point". XP is a balance
  * an army spends on its attributes; it has no level.
  */
-export const xpTowardTip = (held: string, milestone: string, tier: string) =>
-  `${XP} ${held} of ${milestone} · next ${tier} point`;
+export const xpTowardTip = (held: string, milestone: string, rank: number): RankedWords => [
+  `${XP} ${held} of ${milestone} · next `,
+  { rank },
+  " point",
+];
 
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
@@ -329,6 +339,21 @@ export const CLEARED = "Cleared";
 export const CHESTS = "Chests";
 export const SHRINE = "Shrine";
 export const WELL = "Well";
+/**
+ * What a Shrine's point does once spent, as the contract grants it: one attribute up a rank, up to the point's own, and
+ * a refill never past the army's maximum: "Raises one attribute up to [III] · refills up to 40 stamina".
+ */
+export const shrinePointUse = (rank: number, refill: string): RankedWords => [
+  "Raises one attribute up to ",
+  { rank },
+  ` · refills up to ${refill} ${STAMINA}`,
+];
+/**
+ * Where an army stands from a Shrine, after its name: beside it (it can take the point now) or so many tiles off, said
+ * as the player's nearest where no army is selected: "nearest, 3 tiles away".
+ */
+export const shrineArmyAt = (tiles: number, nearest: boolean): string =>
+  `${nearest ? "nearest, " : ""}${tiles <= 1 ? "beside it" : `${formatExact(tiles)} tiles away`}`;
 /** A Well's refill share when no army is selected. */
 export const wellRefillShare = (percent: number): string => `${formatPercent(percent / 100)} max`;
 export const ATTACK = "Attack";
@@ -1411,6 +1436,14 @@ export const automationRefusal = (ordersAllowed: boolean, hydrated: boolean): st
   return null;
 };
 
+/** A figure's step to the next: "+10% → +25% damage"; with a rank in either, "[I] · +10% → [II] · +25%". */
+function figureStep(from: string, to: string): string;
+function figureStep(from: RankedWords | string, to: RankedWords | string): RankedWords | string;
+function figureStep(from: RankedWords | string, to: RankedWords | string): RankedWords | string {
+  if (typeof from === "string" && typeof to === "string") return `${from} → ${to}`;
+  return [...asRanked(from), " → ", ...asRanked(to)];
+}
+
 /**
  * The castle's tree, read as a tree (the owner's pick, 20 October: "Branches"): its branches, how each node stands,
  * what each side and node gives, and each thing a node's next tier needs, in the order a player meets them.
@@ -1445,8 +1478,8 @@ export const RESEARCH_TREE = {
   newArmiesStart: (attribute: string) => `New armies start with ${attribute}`,
   /** A training building's figure, under the attribute's name on its card: what that level is given to. */
   everyNewArmy: "Every new army",
-  /** A level and what it gives: "Uncommon · +10% damage". */
-  at: (tier: string, effect: string) => `${tier} · ${effect}`,
+  /** A level and what it gives: "[II] · +10% damage". */
+  at: (tier: number, effect: string): RankedWords => [{ rank: tier }, ` · ${effect}`],
   /**
    * What an attribute gives, said as the figure and what it is a figure of, the one wording Research and an army's
    * panel share (the owner, 22 October: by attribute, Homecoming compact): "+10% damage", "3% come home".
@@ -1467,10 +1500,10 @@ export const RESEARCH_TREE = {
   first: (what: string) => `${what} first`,
   store: (limit: string, need: string, level: string) => `Labor storage ${limit} / ${need} · ${level}`,
   held: (noun: string, have: string, need: string) => `${noun} ${have} / ${need}`,
-  research: (what: string) => `Research ${what}`,
+  research: (what: RankedWords | string): RankedWords => ["Research ", ...asRanked(what)],
   levelUpCastle: "Level up the castle",
   complete: "Complete",
-  step: (from: string, to: string) => `${from} → ${to}`,
+  step: figureStep,
   price: (essence: string) => `${essence} ${ESSENCE}`,
 } as const;
 

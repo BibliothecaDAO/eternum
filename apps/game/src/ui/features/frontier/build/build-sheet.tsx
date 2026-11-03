@@ -23,7 +23,7 @@ import {
   priceRaised,
   RESEARCH,
   startsNewArmies,
-  tierNumeral,
+  type RankedWords,
   takesPopulation,
 } from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -331,16 +331,16 @@ const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): Bui
  * What a building does, in one line from its real effect: "Farm: +302 wheat an hour, takes 1 population". A training
  * building starts every new army at its type's tier in its attribute.
  */
-const buildingLine = (option: BuildOption): string => {
+const buildingLine = (option: BuildOption): RankedWords => {
   const { effect } = option;
-  const does =
+  const does: RankedWords =
     effect.kind === "produces"
-      ? makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))
+      ? [makes(FRONTIER_STORES[madeStore(effect.resource)].word, formatRate(effect.output.total))]
       : effect.kind === "trains"
-        ? startsNewArmies(effect.attribute, tierNumeral(option.tier))
-        : `${formatGain(effect.amount)} ${POPULATION}`;
+        ? startsNewArmies(effect.attribute, option.tier)
+        : [`${formatGain(effect.amount)} ${POPULATION}`];
   const takes = option.populationCost > 0 ? `, ${takesPopulation(formatCharge(option.populationCost))}` : "";
-  return `${buildingName(option.category)}: ${does}${takes}`;
+  return [`${buildingName(option.category)}: `, ...does, ...(takes ? [takes] : [])];
 };
 
 /** Why a price is above its first: the copies standing raise it. None when no copy stands yet. */
