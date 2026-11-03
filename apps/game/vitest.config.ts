@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import { availableParallelism } from "node:os";
 import path from "path";
 import wasm from "vite-plugin-wasm";
 import { defineConfig } from "vitest/config";
@@ -14,6 +15,10 @@ export default defineConfig({
       VITE_PUBLIC_L2_RPC_URL: "https://identity-rpc.realms.test",
     },
     globals: true,
+    // Every core: vitest 2 keeps one back for its main process, which mostly waits, so a 4-core CI runner ran 3 files at
+    // a time. It also reads only VITEST_MAX_FORKS, so the shared machine's VITEST_MAX_WORKERS cap is applied here.
+    maxWorkers: Number(process.env.VITEST_MAX_WORKERS) || availableParallelism(),
+    minWorkers: 1,
     environment: "jsdom",
     environmentMatchGlobs: [
       ["src/three/**/*.test.ts", "node"],
