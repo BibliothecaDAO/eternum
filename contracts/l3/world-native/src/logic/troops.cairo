@@ -477,8 +477,7 @@ pub mod TroopsLogic {
             let home = crate::logic::troops::owned_structure(game_id, explorer.owner, actor);
             assert!(
                 crate::geometry::adjacent(
-                    explorer.coord,
-                    crate::structures::structure_coord(ResourceKey { game_id, entity_id: explorer.owner }),
+                    explorer.coord, self.army_home(ResourceKey { game_id, entity_id: explorer.owner }, game_context),
                 ),
                 "explorer not adjacent to home",
             );
@@ -494,7 +493,9 @@ pub mod TroopsLogic {
                 );
             explorer.troops.count += command.amount;
             crate::troop_management::refill(ref explorer.troops, rules, timestamp);
-            explorer.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
+            if rules.day_unit_seconds == 0 {
+                explorer.troops.stamina.revert_initial_amount(rules.troop_stamina_config, timestamp);
+            }
             crate::troop_management::assert_size(explorer.troops, home.base.level, rules);
             self
                 .resources_dispatcher(game_id)
@@ -719,13 +720,7 @@ pub mod TroopsLogic {
             } else {
                 crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index
             };
-            let origin = if rules.day_unit_seconds == 0 {
-                crate::structures::structure_coord(ResourceKey { game_id, entity_id: command.structure_id })
-            } else {
-                crate::expeditions::site(
-                    self.expedition_spacing(game_id), crate::entity_ids::namespace(command.structure_id), today, 0,
-                )
-            };
+            let origin = self.army_home(ResourceKey { game_id, entity_id: command.structure_id }, context);
             let coord = neighbor(origin, command.direction);
             if rules.day_unit_seconds != 0 {
                 crate::logic::map::raise_expedition_home(
@@ -888,6 +883,17 @@ pub mod troop_helpers {
     pub impl TroopHelpers<
         TContractState, impl Release: ReleaseState::HasComponent<TContractState>, +Drop<TContractState>,
     > of TroopHelpersTrait<TContractState> {
+        fn army_home(self: @TContractState, home: ResourceKey, context: ExecutionContext) -> Coord {
+            let rules = context.rules.unbox();
+            if rules.day_unit_seconds == 0 {
+                return crate::structures::structure_coord(home);
+            }
+            let today = crate::days::day_of(context.game.unbox(), rules.day_unit_seconds, context.timestamp).index;
+            crate::expeditions::site(
+                self.expedition_spacing(home.game_id), crate::entity_ids::namespace(home.entity_id), today, 0,
+            )
+        }
+
         fn expedition_spacing(self: @TContractState, game_id: u32) -> u32 {
             crate::logic::settlement::rules(game_id).spacing
         }

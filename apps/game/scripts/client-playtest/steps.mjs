@@ -656,7 +656,7 @@ const DEPLOY_ACTION_STEPS = [
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }) {
+async function deployFromTheDock({ browser }, amount) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -665,7 +665,8 @@ async function deployFromTheDock({ browser }) {
     SHEET_WAIT_MS,
   );
   if (sheet !== "Deploy") return { sheet };
-  browser.click("Max");
+  if (amount === undefined) browser.click("Max");
+  else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -3994,7 +3995,96 @@ const FAR_PLACE_STEPS = [
   { name: "leave-far-army", play: leaveTheFarVisit, settleMs: 0, verify: leftForHome },
 ];
 
+/** Deploy a small army through the normal dock, reinforce it, then confirm its permanent deletion. */
+function armyManagementSteps() {
+  let armyId;
+  const count = (browser) =>
+    browser.read(
+      `JSON.stringify(document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent ?? null)`,
+    );
+  const press = async (browser, verb) => {
+    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`)), Boolean, SHEET_WAIT_MS);
+    if (!button) throw new Error(`Army sheet has no ${verb} button`);
+    browser.tap(button.offset);
+  };
+  return [
+    ...FRONTIER_MAP.opening,
+    {
+      name: "deploy-rehearsal-army",
+      play: async ({ browser }) => {
+        const before = browser.armies().map(({ label }) => label);
+        await deployFromTheDock({ browser }, 10);
+        const arrived = await readUntil(
+          () => browser.armies().find(({ label }) => !before.includes(label)),
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        if (!arrived) return { arrived: false };
+        await pickArmy(browser, arrived.label);
+        armyId = browser.observe().selection?.army?.id;
+        if (onADesktop()) return { armyId, troops: count(browser) };
+        browser.click(`${arrived.label}: details`);
+        return { armyId, troops: count(browser) };
+      },
+      settleMs: 1_000,
+      verify: ({ played }) =>
+        played.armyId && played.troops === "10"
+          ? completed(played)
+          : failed("small army not deployed and selected", played),
+    },
+    {
+      name: "reinforce-army",
+      play: async ({ browser, extraScreenshot }) => {
+        await press(browser, "Reinforce");
+        browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops to add"]', "1"]);
+        const preview = browser.read(
+          `JSON.stringify(document.querySelector('[aria-label="Troops after reinforcement"]')?.textContent ?? null)`,
+        );
+        extraScreenshot("reinforce-preview");
+        if (preview?.trim() !== "10 → 11") return { preview };
+        await press(browser, "Reinforce");
+        const troops = await readUntil(
+          () => count(browser),
+          (value) => value === "11",
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        return { armyId, preview, troops };
+      },
+      settleMs: 1_000,
+      verify: ({ played }) =>
+        played.troops === "11" ? completed(played) : failed("reinforcement did not add exactly one troop", played),
+    },
+    {
+      name: "delete-rehearsal-army",
+      play: async ({ browser, extraScreenshot }) => {
+        await press(browser, "Delete");
+        const loss = browser.read(
+          `JSON.stringify(document.querySelector('[role="alertdialog"]')?.textContent ?? null)`,
+        );
+        extraScreenshot("delete-confirmation");
+        if (!loss?.includes("troops, skills, XP and carried resources are lost")) return { loss };
+        await press(browser, "Cancel");
+        const retained = count(browser) === "11";
+        await press(browser, "Delete");
+        await press(browser, "Delete");
+        const removed = await readUntil(
+          () => count(browser) === null && !browser.observe().selection?.army,
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        return { armyId, loss, retained, removed };
+      },
+      settleMs: 1_000,
+      verify: ({ played }) =>
+        played.retained && played.removed
+          ? completed(played)
+          : failed("army deletion or cancellation did not settle", played),
+    },
+  ];
+}
+
 export const STEP_SETS = {
+  "army-management": { game: FRONTIER, steps: armyManagementSteps() },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
   "unit-assets-spectator": {

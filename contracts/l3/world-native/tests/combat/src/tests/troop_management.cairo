@@ -38,6 +38,29 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stami
 }
 
 #[test]
+fn blitz_recruitment_still_caps_stamina_at_the_initial_bar() {
+    use crate::game::IGameDispatcherTrait;
+    let (d, _, first, _) = setup();
+    let rules = crate::game::IGameDispatcher { contract_address: d.games }.rules(3);
+    let mut before = troop(d, first).unwrap();
+    before.troops.stamina.set_amount(rules.troop_stamina_config.stamina_initial.into() + 1);
+    before.troops.stamina.set_settled_at(140);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: first }, before,
+    );
+    assert!(
+        execute(
+            d,
+            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION })),
+            140,
+        ),
+    );
+    assert_eq!(
+        troop(d, first).unwrap().troops.stamina.inline().amount, rules.troop_stamina_config.stamina_initial.into(),
+    );
+}
+
+#[test]
 fn explorer_transfer_preserves_the_worse_stamina_and_cooldown_and_deletes_an_empty_source() {
     let (d, home, first, second) = setup();
     for (id, stamina, cooldown) in array![(first, 2_u64, 190_u32), (second, 9, 150)] {

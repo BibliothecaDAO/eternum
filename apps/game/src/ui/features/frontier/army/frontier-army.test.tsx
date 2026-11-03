@@ -76,6 +76,7 @@ vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
+vi.mock("./army-management", () => ({ ArmyManagement: () => null }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
 vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));

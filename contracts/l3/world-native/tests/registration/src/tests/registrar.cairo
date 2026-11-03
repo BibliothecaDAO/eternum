@@ -936,19 +936,108 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
 }
 
 #[test]
-fn an_expedition_army_cannot_recruit_because_its_home_stands_off_the_map() {
-    let d = setup();
-    let (game_id, _, category) = expedition_home(d);
-    let (army, _) = expedition_armies(d, game_id, category);
-    let recruit = Command::ManageTroops(
-        crate::troop_management::ManageTroops::RecruitExplorer(
-            crate::troop_management::RecruitExplorer { explorer_id: army.explorer_id, amount: RESOURCE_PRECISION },
-        ),
-    );
-    assert!(!execute_in_game(d, game_id, recruit, 352));
-    assert_eq!(
-        GameState { contract_address: d.games }.resolved_explorer(army).unwrap().troops.count, 3 * RESOURCE_PRECISION,
-    );
+fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina() {
+    use crate::tests::army_merge::{progress, slot, timers, write_progress};
+    for direction in 0_u8..6 {
+        let d = setup();
+        let (game_id, preset, category) = expedition_home(d);
+        let (army, _) = expedition_armies(d, game_id, category);
+        let state = GameState { contract_address: d.games };
+        let mut before = state.resolved_explorer(army).unwrap();
+        let center = crate::expeditions::site(preset.settlement.spacing, 1, 0, 0);
+        // Direction 1 is occupied by the second army; use the first army there only after removing it.
+        let home = ResourceKey { game_id, entity_id: 1 };
+        if direction == 1 {
+            let armies = IStructureOperationsDispatcher { contract_address: d.games }.home_armies(home);
+            assert!(
+                execute_in_game(
+                    d,
+                    game_id,
+                    Command::ManageTroops(crate::troop_management::ManageTroops::RemoveExplorer(*armies.at(1))),
+                    351,
+                ),
+            );
+        }
+        before.coord = crate::geometry::neighbor(center, direction);
+        crate::tests::resource_commands::set_explorer_fixture(d.games, army, before);
+        let veteran = crate::progression::ArmyProgress {
+            xp: 123, logistics: 5, rare_points: 2, ..crate::progression::initial(),
+        };
+        write_progress(d, army, veteran);
+        let maximum = crate::progression::stamina_max(
+            veteran, before.troops.category, preset.rules.troop_stamina_config,
+        );
+        let bar = if direction == 0 {
+            7
+        } else {
+            maximum
+        };
+        assert!(maximum > preset.rules.troop_stamina_config.stamina_initial.into());
+        timers(d, army, bar, 400);
+        let resource_type = crate::troops::stock_resource(before.troops.category, before.troops.tier);
+        let resources = IResourceOperationsDispatcher { contract_address: d.games };
+        let stock_key = ResourceSlot { game_id, entity_id: 1, resource_type };
+        let stock = resources.resource_balance(stock_key);
+        let capacity = resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity;
+        let elapsed = if direction == 0 {
+            preset.rules.tick_config.armies_tick_in_seconds
+        } else {
+            0
+        };
+        let expected_bar = if direction == 0 {
+            bar + preset.rules.troop_stamina_config.stamina_gain_per_tick.into()
+        } else {
+            bar
+        };
+        assert!(
+            execute_in_game(d, game_id, crate::tests::frontier_economy::reinforce(army.explorer_id, 2), 360 + elapsed),
+        );
+        let after = state.resolved_explorer(army).unwrap();
+        assert_eq!(after.coord, before.coord);
+        assert_eq!(after.troops.count, 5 * RESOURCE_PRECISION);
+        assert_eq!(slot(d, army, 0).stamina.amount, expected_bar);
+        assert_eq!(slot(d, army, 0).stamina.settled_at, (360 + elapsed).try_into().unwrap());
+        assert_eq!(after.troops.battle_cooldown_end, 400);
+        assert_eq!(progress(d, army), Some(veteran));
+        assert_eq!(resources.resource_balance(stock_key), stock - 2 * RESOURCE_PRECISION);
+        assert_eq!(
+            resources.resource_weight(ResourceKey { game_id, entity_id: army.explorer_id }).capacity, capacity * 5 / 3,
+        );
+    }
+}
+
+#[test]
+fn expedition_recruitment_refuses_other_regions_depths_and_expired_armies_without_spending() {
+    for location in 0_u8..4 {
+        let d = setup();
+        let (game_id, preset, category) = expedition_home(d);
+        let (army, _) = expedition_armies(d, game_id, category);
+        let state = GameState { contract_address: d.games };
+        let mut explorer = state.resolved_explorer(army).unwrap();
+        let home = crate::expeditions::site(preset.settlement.spacing, 1, 0, 0);
+        explorer.coord = match location {
+            0 => crate::geometry::neighbor(crate::geometry::neighbor(home, 0), 0),
+            1 => crate::geometry::neighbor(crate::expeditions::site(preset.settlement.spacing, 2, 0, 0), 0),
+            2 => crate::geometry::neighbor(crate::expeditions::site(preset.settlement.spacing, 1, 0, 1), 0),
+            _ => explorer.coord,
+        };
+        crate::tests::resource_commands::set_explorer_fixture(d.games, army, explorer);
+        let before = state.explorer(army);
+        let resource_type = crate::troops::stock_resource(explorer.troops.category, explorer.troops.tier);
+        let resources = IResourceOperationsDispatcher { contract_address: d.games };
+        let stock_key = ResourceSlot { game_id, entity_id: 1, resource_type };
+        let stock = resources.resource_balance(stock_key);
+        let timestamp = if location == 3 {
+            day_start(d, game_id, 1)
+        } else {
+            352
+        };
+        assert!(
+            !execute_in_game(d, game_id, crate::tests::frontier_economy::reinforce(army.explorer_id, 2), timestamp),
+        );
+        assert_eq!(state.explorer(army), before);
+        assert_eq!(resources.resource_balance(stock_key), stock);
+    }
 }
 
 #[test]
