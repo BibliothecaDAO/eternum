@@ -174,20 +174,22 @@ fn interrupted_held_entry_keeps_its_claim_and_the_buyer_can_register_another_rea
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_free_settlement_cannot_become_a_held_realm_after_entry() {
+fn a_free_settlement_attaches_only_the_chosen_held_realm_once() {
     let (d, game_id) = super::registrar::setup_open_frontier();
     let command = crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None });
     assert!(super::resource_commands::execute_in_game(d, game_id, command, 360));
+    let home = snforge_std::interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor));
     set_operator(d, authority());
     start_cheat_caller_address(d.games, authority());
-    assert!(
-        ledger(d)
-            .register_entitlement(
-                EntryKey { game_id, owner: d.actor },
-                EntryEntitlement { realm_id: 711, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 },
-            )
-            .is_err(),
-    );
+    let key = EntryKey { game_id, owner: d.actor };
+    let chosen = EntryEntitlement { realm_id: 712, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
+    ledger(d).register_entitlement(key, chosen).unwrap();
+    assert_eq!(ledger(d).settled_realm(game_id, 712).unwrap(), home);
+    assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), 0);
+    assert!(ledger(d).register_entitlement(key, EntryEntitlement { realm_id: 711, ..chosen }).is_err());
+    assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(chosen));
+    ledger(d).register_entitlement(key, chosen).unwrap();
+    assert_eq!(ledger(d).settled_realm(game_id, 712).unwrap(), home);
     assert_eq!(ledger(d).settled_realm(game_id, 711).unwrap(), 0);
 }
 
