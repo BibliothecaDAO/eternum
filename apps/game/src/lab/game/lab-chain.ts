@@ -223,7 +223,17 @@ const playerState = (chain: NativeFactStore, player: string) => {
       coord_y: null,
       resources_packed: String(structure.resources_packed),
     }));
-  return { registered: true, settled: structures.length > 0, roster_wallet: null, held_realm_id: null, structures };
+  const entitlements = [...chain.rows("EntryEntitlement")];
+  const own = entitlements.find((row) => BigInt(row.owner) === BigInt(player));
+  return {
+    registered: true,
+    settled: structures.length > 0,
+    roster_wallet: null,
+    held_realm_id: own?.pass_kind === 2 ? own.realm_id : null,
+    has_home_source: own !== undefined,
+    taken_realm_ids: entitlements.filter((row) => row.pass_kind === 2).map((row) => row.realm_id),
+    structures,
+  };
 };
 
 const answerDirectory = (
@@ -345,8 +355,7 @@ const answerLaborClaims = (
 
 /** The home's daily receipt and balances, derived from the same eligibility rules the claim button reads. */
 const grantLabor = (chain: NativeFactStore, account: string, gameId: number, home: bigint, day: number): LabFact[] => {
-  const structure = chain.require("Structure", { game_id: gameId, entity_id: home });
-  const daily = homeDailyClaim(chain, { gameId, entityId: home, realmId: structure.metadata.realm_id });
+  const daily = homeDailyClaim(chain, { gameId, entityId: home });
   if (!daily) throw new Error("The lab's home has no daily claim");
   const amount = BigInt(daily.labor) * BigInt(RESOURCE_PRECISION);
   const essence = BigInt(daily.essence) * BigInt(RESOURCE_PRECISION);

@@ -1,7 +1,7 @@
 import { JSDOM } from "jsdom";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { CONNECT_PLACE, markHomeCardEntryExpression } from "./player-entry.mjs";
+import { CONNECT_PLACE, markHomeCardEntryExpression, signInIfSignedOut } from "./player-entry.mjs";
 import { STEP_SETS } from "./steps.mjs";
 
 /**
@@ -61,4 +61,19 @@ describe("the runner's entry", () => {
     });
     expect(JSON.parse(seated().window.eval(markHomeCardEntryExpression(frontierCard, FRONTIER_GAME)))).toBeNull();
   });
+});
+
+it("refuses an expired saved state without sending another email code", async () => {
+  const browser = { run: vi.fn(), read: () => "signed-out", click: vi.fn() };
+  await expect(
+    signInIfSignedOut({
+      browser,
+      owner: { throwIfCancelled() {} },
+      email: "saved@test",
+      baseUrl: "https://dev.test",
+      requireExisting: true,
+    }),
+  ).rejects.toThrow("no sign-in code was sent");
+  expect(browser.run.mock.calls).toEqual([[["open", "https://dev.test/"]]]);
+  expect(browser.click).not.toHaveBeenCalled();
 });

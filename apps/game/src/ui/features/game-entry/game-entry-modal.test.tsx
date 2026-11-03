@@ -15,6 +15,8 @@ const settlement = vi.hoisted(() => ({
   /** The game's preset: Frontier's (5), or the Devcon season's (6), whose homes a Devcon ticket founds. */
   presetId: 5,
   heldRealmId: null as number | null,
+  hasSource: false,
+  taken: [] as number[],
   calls: [] as unknown[],
   order: [] as string[],
 }));
@@ -44,6 +46,8 @@ vi.mock("@/hooks/use-game-entry", () => ({
 vi.mock("@/runtime/world/herald-pre-session-reader", () => ({
   fetchSettlementSnapshot: async () => ({
     heldRealmId: settlement.heldRealmId,
+    hasHomeSource: settlement.hasSource,
+    takenRealmIds: settlement.taken,
     hasSettlementRecord: settlement.settled,
     hasSettledStructure: settlement.settled,
     settledCount: settlement.settled ? 1 : 0,
@@ -90,6 +94,8 @@ afterEach(() => {
   settlement.settled = false;
   settlement.presetId = 5;
   settlement.heldRealmId = null;
+  settlement.hasSource = false;
+  settlement.taken = [];
   settlement.calls = [];
   settlement.order = [];
   useAccountStore.setState({ account: null });
@@ -199,6 +205,7 @@ const relay = (holdings: () => Response) => {
     if (url === HELD_REALMS) return holdings();
     settlement.order.push("register");
     registered.push(JSON.parse(String(init.body)));
+    settlement.hasSource = true;
     return Response.json({});
   });
   return registered;
@@ -273,7 +280,7 @@ it.each(["the ticket", "712"])("lets a refused Realm claimant found with another
     await entry.pick(realmChoice(711));
     await entry.press("Found your realm");
     expect(settlement.calls).toEqual([]);
-    expect(entry.host.textContent).toContain("This Realm cannot be your home in this game. Choose another home.");
+    expect(entry.host.textContent).toContain("This source cannot be attached to your home.");
     await entry.pick(alternative === "712" ? realmChoice(712) : "Golden Devcon ticket");
     await entry.press("Found your realm");
     expect(sent).toEqual(alternative === "712" ? [711, 712] : [711, undefined]);
@@ -330,7 +337,7 @@ it.each([
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe("A free home"));
-    expect(entry.host.textContent).toContain("No daily Labor. Hold a Realm or a Devcon ticket to found with it.");
+    expect(entry.host.textContent).toContain("Hold a Realm or a Devcon ticket to add a daily claim.");
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
     expect(asked.includes(HELD_REALMS)).toBe(wallet !== null);
     expect(entry.host.textContent?.includes("Link the wallet that holds your Realms")).toBe(link);
@@ -469,6 +476,7 @@ it("spins while the realm is founded and says so, at full strength, until the fo
   vi.stubGlobal("fetch", async (url: string, init: RequestInit) => {
     if (url === HELD_REALMS) return held(711);
     registered.push(JSON.parse(String(init.body)));
+    settlement.hasSource = true;
     await new Promise<void>((resolve) => (answer = resolve));
     return Response.json({});
   });
@@ -586,7 +594,7 @@ it.each([
   // The home as the contract founds it from that source, read by the Realm sheet and the Day open push alike.
   const store = new NativeFactStore();
   store.applyFacts(founded as never);
-  const claim = homeDailyClaim(store, { gameId: 1, entityId: 7, realmId: 711 })!;
+  const claim = homeDailyClaim(store, { gameId: 1, entityId: 7 })!;
   const lines = [
     `${claim.labor.toLocaleString("en-US")} Labor each day`,
     ...(claim.essence ? [`${claim.essence.toLocaleString("en-US")} Essence each day`] : []),
@@ -598,6 +606,115 @@ it.each([
     if (pick) await entry.pick(realmChoice(pick));
     const claimed = [...entry.host.querySelectorAll(".home-picker__claim li")].map((line) => line.textContent);
     expect(claimed).toEqual(lines);
+  } finally {
+    await entry.close();
+  }
+});
+
+it.each(["ticket", "711"])(
+  "a founded home holding a ticket and Realm attaches only its explicit %s pick",
+  async (pick) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    settlement.presetId = 6;
+    settlement.settled = true;
+    signIn("0x456");
+    vi.spyOn(identityClient, "redeemCampaignTicket").mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
+    const registered = relay(() => held(711));
+    const entry = await openEntry();
+    try {
+      await vi.waitFor(() =>
+        expect(
+          [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
+            ?.disabled,
+        ).toBe(false),
+      );
+      expect(registered).toEqual([]);
+      if (pick === "711") await entry.pick(realmChoice(711));
+      await act(async () =>
+        [...entry.host.querySelectorAll("button")]
+          .find((button) => button.textContent === "Add this daily claim")!
+          .click(),
+      );
+      await vi.waitFor(() =>
+        expect(registered).toEqual([pick === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]),
+      );
+      expect(settlement.calls).toEqual([]);
+    } finally {
+      await entry.close();
+    }
+  },
+);
+
+it("a founded home chooses one of two Realms, leaves the other free, and shows used Realms as taken", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  settlement.settled = true;
+  settlement.taken = [713];
+  signIn("0x456");
+  noTicket();
+  const registered = relay(() => held(711, 712, 713));
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() =>
+      expect(
+        [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
+          ?.disabled,
+      ).toBe(false),
+    );
+    const taken = [...entry.host.querySelectorAll("button")].find(
+      (button) => button.getAttribute("aria-label") === realmChoice(713),
+    );
+    expect(taken?.disabled).toBe(true);
+    expect(taken?.textContent).toContain("Taken");
+    expect(registered).toEqual([]);
+    await entry.pick(realmChoice(712));
+    await act(async () =>
+      [...entry.host.querySelectorAll("button")]
+        .find((button) => button.textContent === "Add this daily claim")!
+        .click(),
+    );
+    await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 712 }]));
+    expect(settlement.calls).toEqual([]);
+  } finally {
+    await entry.close();
+  }
+});
+
+it("offers only Continue for a founded home whose held Realm is already taken", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  settlement.settled = true;
+  settlement.taken = [711];
+  signIn("0x456");
+  noTicket();
+  const registered = relay(() => held(711));
+  const entry = await openEntry();
+  try {
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Taken"));
+    expect(
+      [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
+        ?.disabled,
+    ).toBe(true);
+    await entry.press("Continue with my free home");
+    expect(registered).toEqual([]);
+    expect(settlement.calls).toEqual([]);
+    expect(entry.host.textContent).not.toContain("Choose a daily claim");
+  } finally {
+    await entry.close();
+  }
+});
+
+it("resumes a home with an existing campaign source without offering or submitting another source", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  settlement.settled = true;
+  settlement.hasSource = true;
+  signIn("0x456");
+  noTicket();
+  const registered = relay(() => held(711));
+  const entry = await openEntry();
+  try {
+    await act(async () => {});
+    expect(entry.host.textContent).not.toContain("Choose a daily claim");
+    expect(registered).toEqual([]);
+    expect(settlement.calls).toEqual([]);
   } finally {
     await entry.close();
   }

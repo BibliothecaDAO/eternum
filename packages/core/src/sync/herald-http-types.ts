@@ -47,6 +47,8 @@ export interface HeraldPlayerGameState {
   /** The wallet frozen for this account at slot close, or null outside its roster. */
   roster_wallet: string | null;
   held_realm_id: number | null;
+  has_home_source: boolean;
+  taken_realm_ids: number[];
   structures: HeraldPlayerStructure[];
 }
 

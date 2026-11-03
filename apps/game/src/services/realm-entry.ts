@@ -3,8 +3,8 @@ import type { GameRef } from "@bibliothecadao/eternum/game-client";
 import type { HeldRealm, HeldRealmsAnswer } from "@realms-world/identity";
 
 /**
- * Registers the source a Frontier home claims from, before the player founds it: the held Realm they name, else the
- * campaign ticket (Devcon's) their account holds, which the relay reads from identity; with neither, nothing.
+ * Registers the source a Frontier home claims from: a held Realm or the campaign ticket
+ * their account holds, before or after founding a free home; with neither, nothing.
  */
 export async function registerHomeSource(game: GameRef, realmId: number | null): Promise<void> {
   const response = await fetchApi(`/api/value/realm-entry?chainId=${game.chainId}`, {
@@ -19,8 +19,8 @@ export async function registerHomeSource(game: GameRef, realmId: number | null):
     realm_not_owned: "Linked wallet does not hold this Realm.",
     realm_wallet_missing: "Link your Realm's wallet in Settings.",
     realm_already_settled: "Realm already settled in this game.",
-    realm_registration_refused: "This Realm cannot be your home in this game. Choose another home.",
-    conflicting_entry_entitlement: "This game already holds another home for you.",
+    realm_registration_refused: "This source cannot be attached to your home.",
+    conflicting_entry_entitlement: "Your home already has a daily claim source.",
     settlement_closed: "This game's settlement is closed.",
     realm_check_unavailable: "Realm check unavailable. Try again.",
   };

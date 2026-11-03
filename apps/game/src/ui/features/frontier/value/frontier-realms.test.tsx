@@ -47,6 +47,7 @@ vi.mock("@/hooks/context/game-context", () => ({
   useGame: () => ({
     setup: {
       store: {
+        inGame: () => (facts.held ? [{ home: 412n, realm_id: 711 }] : []),
         get: (model: string, key: { day?: bigint }) => {
           facts.read(model, key);
           return model === "GameRegistry"

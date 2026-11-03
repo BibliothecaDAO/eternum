@@ -74,6 +74,8 @@ beforeEach(() => {
       { model: "SliceRules", rows: [{ value: { entry_rule: entryRule, day_unit_seconds: 86400 } }] },
       { model: "GameRelease", rows: [{ value: { release_id: 3 } }] },
       { model: "PlayerEntry", rows: entries.map((value) => ({ value })) },
+      { model: "EntryEntitlement", rows: registered ? [{ value: { owner: claim.account, ...registered } }] : [] },
+      { model: "SettledRealm", rows: settledHome ? [{ value: { realm_id: 711, home: settledHome } }] : [] },
     ],
   }));
   io.view.mockImplementation(async (method: string) =>
@@ -108,7 +110,7 @@ it("refuses a Realm not currently held and a missing linked wallet", async () =>
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "realm_wallet_missing" });
   expect(io.admin).not.toHaveBeenCalled();
 });
-it("does not register against another account, Blitz, or an already settled home", async () => {
+it("does not register against another account or Blitz", async () => {
   io.account.mockResolvedValue("0x999");
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "account_unavailable" });
   io.account.mockResolvedValue("0x123");
@@ -116,8 +118,9 @@ it("does not register against another account, Blitz, or an already settled home
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "held_realm_requires_frontier" });
   entryRule = 1;
   entries = [{ player: "0x123" }];
-  await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "owner_already_settled" });
-  expect(io.admin).not.toHaveBeenCalled();
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
+  expect(io.admin).toHaveBeenCalledOnce();
 });
 it("refuses a reused Realm and conflicting registration", async () => {
   settledHome = 99n;
@@ -227,6 +230,14 @@ it.each([0, 8001, 1.5, "711"])("refuses invalid Realm number %s", async (realmId
 it("resumes the first registration after an NFT transfer and leaves a refused buyer free to choose another Realm", async () => {
   const saved = new Map<string, typeof entitlement>();
   const buyer = { ...claim, realmsId: "0x3", account: "0x124" };
+  const snapshot = io.snapshot.getMockImplementation()!;
+  io.snapshot.mockImplementation(async (...args: unknown[]) => {
+    const result = await snapshot(...args);
+    result.models.find((model: { model: string }) => model.model === "EntryEntitlement").rows = [...saved].map(
+      ([owner, value]) => ({ value: { owner, ...value } }),
+    );
+    return result;
+  });
   io.account.mockImplementation(async (id: string) => (id === claim.realmsId ? claim.account : buyer.account));
   io.wallet.mockImplementation(async (id: string) => (id === claim.realmsId ? "0x456" : "0x457"));
   io.view.mockImplementation(async (method: string, args: (string | number)[]) => {
@@ -284,12 +295,14 @@ it("registers the campaign ticket identity holds for this game's preset, and ans
   // The source is fixed: naming a Realm afterwards is refused, never swapped.
   await expect(registerHomeSource(target, claim)).rejects.toMatchObject({ code: "conflicting_entry_entitlement" });
 });
-it("registers nothing for an account with no ticket, or a free home already founded", async () => {
+it("registers nothing without a ticket and attaches a ticket to a founded free home once", async () => {
   expect(await registerHomeSource(target, shared)).toEqual({});
   io.ticket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
   entries = [{ player: "0x123" }];
-  expect(await registerHomeSource(target, shared)).toEqual({});
-  expect(io.admin).not.toHaveBeenCalled();
+  expect(await registerHomeSource(target, shared)).toEqual({ campaign: "devcon-2026", tier: "regular" });
+  expect(io.admin).toHaveBeenCalledOnce();
+  expect(await registerHomeSource(target, shared)).toEqual({ campaign: "devcon-2026", tier: "regular" });
+  expect(io.admin).toHaveBeenCalledOnce();
 });
 it("answers a held Realm already registered when the player enters again without its number", async () => {
   expect(await registerHomeSource(target, claim)).toEqual({ realmId: 711 });
@@ -305,4 +318,26 @@ it("takes the shared entry without a Realm number through the HTTP route", async
   const response = await handleRealmEntryRequest(request({ gameId: 7 }), deps);
   expect([response.status, await response.json()]).toEqual([200, { campaign: "devcon-2026", tier: "regular" }]);
   expect(deps.register).toHaveBeenCalledExactlyOnceWith(shared);
+});
+
+it("attests flyer recovery only for a founded Devcon home, including an interrupted ordinary registration", async () => {
+  io.ticket.mockResolvedValue({ campaign: "devcon-2026", tier: "regular" });
+  const recovery = { ...shared, recoverFlyer: true as const };
+  await expect(registerHomeSource(target, recovery)).rejects.toMatchObject({
+    code: "recovery_requires_founded_devcon_home",
+  });
+  expect(io.admin).not.toHaveBeenCalled();
+  entries = [{ player: "0x123" }];
+  await registerHomeSource(target, shared);
+  expect(registered?.metadata_3).toBe(0n);
+  expect(await registerHomeSource(target, recovery)).toEqual({ campaign: "devcon-2026", tier: "regular" });
+  expect(registered?.metadata_3).toBe(BigInt(shortString.encodeShortString("devcon-recovery")));
+  expect(await registerHomeSource(target, recovery)).toEqual({ campaign: "devcon-2026", tier: "regular" });
+  expect(io.admin).toHaveBeenCalledTimes(2);
+});
+it("does not let a player attest flyer recovery", async () => {
+  const deps = route();
+  const response = await handleRealmEntryRequest(request({ gameId: 7, recoverFlyer: true }), deps);
+  expect(response.status).toBe(400);
+  expect(deps.register).not.toHaveBeenCalled();
 });

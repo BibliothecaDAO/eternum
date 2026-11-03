@@ -216,7 +216,7 @@ it("offers Try again when the ticket could not be opened, and Play once the camp
 
 it.each([
   ["/join/devcon/K7M2QX4R", 410, "ticket_taken", "Another player already opened this ticket."],
-  ["/join/devcon/K7M2QX4R", 409, "realm_founded", "Your realm is already founded: give this flyer to a friend."],
+  ["/join/devcon/K7M2QX4R", 409, "realm_founded", "Your realm already has a daily claim. Give this flyer to a friend."],
   ["/join/devcon", 400, "invalid_redemption", "This link holds no ticket. Scan the QR on your Devcon flyer."],
 ])("on %s, says why no ticket opens (%i %s) and leads on to Play", async (address, status, code, line) => {
   signIn();
@@ -264,7 +264,7 @@ it.each([
   // The realm as the contract founds it, read by the game's Realm sheet and the Day open push alike.
   const store = new NativeFactStore();
   store.applyFacts(campaignHomeFacts(tier) as never);
-  expect(homeDailyClaim(store, { gameId: 1, entityId: 7, realmId: 0 })).toEqual(claim);
+  expect(homeDailyClaim(store, { gameId: 1, entityId: 7 })).toEqual(claim);
 
   signIn();
   tickets({ opens: tier });

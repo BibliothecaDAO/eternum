@@ -248,7 +248,7 @@ pub mod SettlementPoolState {
 #[starknet::component]
 pub mod SettlementState {
     use core::num::traits::Zero;
-    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess};
+    use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess, StoragePathEntry, StoragePointerReadAccess};
     use crate::events::RowSet;
     use crate::settlement::{EntryEntitlement, EntryKey, PlayerEntry, SettlementProgress};
 
@@ -270,11 +270,13 @@ pub mod SettlementState {
         ) {
             let previous = self.data.settlements.entitlements.read((key.game_id, key.owner));
             if let Some(previous) = previous {
-                assert!(previous == entitlement, "conflicting entry entitlement");
-                return;
-            }
-            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_none(), "owner already settled");
-            if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
+                if previous == entitlement {
+                    return;
+                }
+                self.recover_registered_ticket(key, previous, entitlement);
+            } else if self.data.settlements.entries.read((key.game_id, key.owner)).is_some() {
+                self.attach_source_to_founded_home(key, entitlement);
+            } else if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
                 self.reserve_held_realm(key, entitlement);
             } else if entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND {
                 self.validate_campaign_entry(key, entitlement);
@@ -292,10 +294,107 @@ pub mod SettlementState {
                     },
                 );
         }
+        fn recover_registered_ticket(
+            ref self: ComponentState<TContractState>,
+            key: EntryKey,
+            previous: EntryEntitlement,
+            entitlement: EntryEntitlement,
+        ) {
+            assert!(
+                entitlement.metadata_3 == 'devcon-recovery'
+                    && previous == EntryEntitlement { metadata_3: 0, ..entitlement },
+                "conflicting entry entitlement",
+            );
+            self.validate_campaign_entry(key, entitlement);
+            let home = self.owned_open_home(key);
+            assert!(
+                self
+                    .data
+                    .settlements
+                    .campaign_homes
+                    .read(
+                        (key.game_id, home),
+                    ) == Some((entitlement.metadata_1, entitlement.metadata_2.try_into().unwrap())),
+                "home source differs",
+            );
+            self.recover_flyer_days(key, home, entitlement);
+        }
+        fn owned_open_home(self: @ComponentState<TContractState>, key: EntryKey) -> u64 {
+            let home = self.data.games.open_homes.read((key.game_id, key.owner));
+            assert!(home != 0, "owner has no open home");
+            let owner = self.data.structures.structures.entry((key.game_id, home)).owner.read();
+            assert!(owner == key.owner, "home owner changed");
+            home
+        }
+        fn attach_source_to_founded_home(
+            ref self: ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
+        ) {
+            let home = self.owned_open_home(key);
+            assert!(self.data.settlements.campaign_homes.read((key.game_id, home)).is_none(), "home source is fixed");
+            if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
+                self.reserve_held_realm(key, entitlement);
+                self.claim_held_realm(key, entitlement.realm_id.try_into().unwrap(), home);
+            } else {
+                assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "invalid home source");
+                self.claim_campaign_home(key, home, entitlement);
+                if entitlement.metadata_3 == 'devcon-recovery' {
+                    self.recover_flyer_days(key, home, entitlement);
+                }
+            }
+        }
+        fn recover_flyer_days(
+            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
+        ) {
+            let timestamp = starknet::get_block_timestamp();
+            let game = crate::logic::game::game(key.game_id);
+            let preset = crate::logic::preset_record::for_game(key.game_id);
+            crate::game::assert_playing(game, timestamp);
+            let created_at = self.data.structures.structures.entry((key.game_id, home)).base.read().created_at;
+            let unit = preset.rules.day_unit_seconds.read();
+            let founded = core::cmp::max(created_at.into(), game.start_main_at);
+            let first = crate::days::day_of(game, unit, founded).index;
+            let today = crate::days::day_of(game, unit, timestamp).index;
+            let rules = preset.labor_rules.read().expect('labor is disabled');
+            let resource_context = crate::commands::ResourceContext {
+                production_start: if preset.rules.mode_rules.read() & crate::rules::PRODUCTION_START != 0 {
+                    game.start_main_at.try_into().unwrap()
+                } else {
+                    0
+                },
+                troop_capacity: preset.rules.capacity_config.read().troop_capacity,
+                spire_fee: preset.rules.spire_travel_essence_cost.read(),
+                delivery_tick: preset.rules.tick_config.read().delivery_tick_in_seconds,
+            };
+            let release_id = self.data.game_releases.read(key.game_id);
+            let resources = self.data.releases.read(release_id).classes.resources;
+            for day in first..today {
+                if self.data.entry.home_labor_grants.read((key.game_id, home, day)).is_some() {
+                    continue;
+                }
+                let (amount, essence) = crate::logic::entry::grant_home_amounts(
+                    crate::entry::LaborHome { game_id: key.game_id, home },
+                    Some(entitlement.metadata_2.try_into().unwrap()),
+                    rules,
+                    resource_context,
+                    resources,
+                );
+                crate::logic::entry::record_labor_grant(
+                    day, crate::entry::LaborGrant { game_id: key.game_id, account: key.owner, home, amount, essence },
+                );
+            }
+        }
         fn validate_campaign_entry(
             self: @ComponentState<TContractState>, key: EntryKey, entitlement: EntryEntitlement,
         ) {
-            assert!(entitlement.realm_id == 0 && entitlement.metadata_3 == 0, "campaign has no NFT");
+            assert!(entitlement.pass_kind == crate::settlement::CAMPAIGN_KIND, "campaign source required");
+            assert!(entitlement.realm_id == 0, "campaign has no NFT");
+            assert!(
+                entitlement.metadata_3 == 0
+                    || (entitlement.metadata_3 == 'devcon-recovery'
+                        && entitlement.metadata_1 == 'devcon-2026'
+                        && self.data.settlements.entries.read((key.game_id, key.owner)).is_some()),
+                "invalid campaign recovery",
+            );
             assert!(entitlement.metadata_1 != 0, "campaign id is required");
             assert!(
                 entitlement.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()

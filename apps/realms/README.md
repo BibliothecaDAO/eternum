@@ -49,3 +49,37 @@ chain or ledger. The single `L2_RPC_URL` secret serves the Worker and the browse
 both optional credentials are configured; email code sign-in uses the required Resend key. The deployment script
 supplies the required generated VAPID pair; the push contact, notifier interval and account class are code constants.
 Operators configure and deploy the environment.
+
+## Campaign tickets and founded free homes
+
+Players open `/join/devcon/<code>`, sign in, and redeem through `/api/campaigns/redeem`. A free home can receive its
+first source after founding: a campaign ticket or a held Realm. A home with a source cannot switch. The relay's
+`/api/value/realm-entry` verifies the held NFT or reads the ticket and uses the existing contract entrypoint. A player
+returns to game entry → Choose a daily claim → Add this daily claim. The founding picker shows the ticket and held
+Realms together, marks used Realms as taken, and submits only the player’s confirmed choice. Tickets are one per
+account. Registration preserves the home's identity, traits and prior daily grants. The existing daily action pays that
+source's reward. A late NFT grants the normal held-Realm Labor, without Essence or missed-days compensation.
+
+For the approved recovery list, run from the repository root:
+
+```sh
+OPERATOR_TOKEN_FILE=/private/operator-token pnpm --dir apps/realms campaign-founded-homes \
+  /private/affected.json https://play.dev-realms.party CHAIN_ID GAME_ID devcon-2026
+```
+
+The command selects exactly 22 distinct `home: "free"` accounts. It draws each ticket from D1 through the authenticated
+`/api/operator/campaign-draw`, then registers it through `/api/value/operator/campaign-entry`. It prints counts only. A
+retry retains the original ticket and repeats registration safely, including after interruption between the steps. These
+routes reuse the existing draw, eligibility and relay registration paths; their cost is two operator handlers and the
+recovery script, allowing recovery without player impersonation or exporting the relay signing key. Production execution
+requires separate approval. The compatible contract release and both Workers must be deployed first.
+
+Only the operator recovery route sets the Devcon recovery attestation in existing entitlement metadata. It compensates
+unclaimed game days from founding through yesterday, through the normal capped Labor and uncapped Essence grant. Today's
+claim stays separate. Exact retries pay nothing again, and recovery can finish if ordinary registration landed between
+the draw and recovery. The contract verifies the attestation and home state; the script supplies the incident's approved
+account list. Ordinary late redemption and late NFT attachment carry no compensation attestation.
+
+Service behavior is checked with `pnpm --dir apps/realms test server/identity.test.ts` and
+`pnpm --dir apps/value-relay test src/realm-entry.test.ts src/worker-jobs.test.ts`. Live release preservation and claim
+payment additionally require the three-snapshot dev rehearsal recorded in the change's report.

@@ -21,12 +21,16 @@ fn register(d: Deployment, game_id: u32, entitlement: EntryEntitlement) {
 }
 
 fn found(d: Deployment, game_id: u32) -> LaborHome {
+    found_at(d, game_id, 360)
+}
+
+fn found_at(d: Deployment, game_id: u32, timestamp: u64) -> LaborHome {
     assert!(
         super::resource_commands::execute_in_game(
             d,
             game_id,
             crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: None }),
-            360,
+            timestamp,
         ),
     );
     LaborHome { game_id, home: interact_with_state(d.games, || crate::entity_ids::home_for_actor(game_id, d.actor)) }
@@ -256,13 +260,53 @@ fn campaign_tier_and_id_are_fixed_and_malformed_tickets_do_not_lock_entry() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn a_free_home_cannot_become_a_campaign_home_after_founding() {
-    let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
-    let other = super::bind_authority(d);
-    let free = found(other, home.game_id);
-    start_cheat_caller_address(d.games, authority());
-    assert!(ledger(d).register_entitlement(EntryKey { game_id: home.game_id, owner: other.actor }, ticket(2)).is_err());
-    assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.grant_labor(free, 0, other.actor).is_err());
+fn founded_free_homes_gain_one_campaign_source_without_changing_existing_claims() {
+    for (tier, amount) in array![
+        (crate::settlement::CAMPAIGN_NORMAL, 1000_u128), (crate::settlement::CAMPAIGN_GOLDEN, 2000_u128),
+    ] {
+        let (d, home) = campaign_home("devcon", crate::settlement::CAMPAIGN_NORMAL);
+        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let previous = operator.grant_labor(home, 0, d.actor).unwrap();
+        let other = super::bind_authority(d);
+        let free = found(other, home.game_id);
+        let key = EntryKey { game_id: home.game_id, owner: other.actor };
+        let resource = ResourceKey { game_id: free.game_id, entity_id: free.home };
+        let before = interact_with_state(d.games, || crate::logic::structures::record(resource));
+        let labor = balance(d, free, LABOR);
+        let essence = balance(d, free, ESSENCE);
+        start_cheat_caller_address(d.games, authority());
+        assert!(operator.grant_labor(free, 0, other.actor).is_err());
+        assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_2: 3, ..ticket(tier) }).is_err());
+        assert!(ledger(d).entry_entitlement(key).unwrap().is_none());
+        let mut events = spy_events();
+        ledger(d).register_entitlement(key, ticket(tier)).unwrap();
+        let emitted = events.get_events().emitted_by(d.games);
+        assert_eq!(emitted.events.len(), 2);
+        let (_, campaign) = emitted.events.at(0);
+        assert_eq!(*campaign.keys.at(campaign.keys.len() - 1), 'CampaignHome');
+        assert_eq!(
+            campaign.data.span(),
+            array![2, free.game_id.into(), free.home.into(), 2, 'devcon-2026', tier.into()].span(),
+        );
+        let (_, entitlement) = emitted.events.at(1);
+        assert_eq!(*entitlement.keys.at(entitlement.keys.len() - 1), 'EntryEntitlement');
+        assert_eq!(ledger(d).entry_entitlement(key).unwrap(), Some(ticket(tier)));
+        assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(resource)), before);
+        assert_eq!(balance(d, free, LABOR), labor);
+        assert_eq!(balance(d, free, ESSENCE), essence);
+        assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(previous));
+        let grant = operator.grant_labor(free, 0, other.actor).unwrap();
+        assert_eq!(grant.amount, amount * RESOURCE_PRECISION);
+        assert_eq!(grant.essence, amount * RESOURCE_PRECISION);
+        let mut retry = spy_events();
+        ledger(d).register_entitlement(key, ticket(tier)).unwrap();
+        assert_eq!(operator.grant_labor(free, 0, other.actor).unwrap(), grant);
+        assert_eq!(operator.grant_labor(home, 0, d.actor).unwrap(), previous);
+        assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
+        assert_eq!(balance(d, free, LABOR), labor + grant.amount);
+        assert_eq!(balance(d, free, ESSENCE), essence + grant.essence);
+        assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_1: 'other', ..ticket(tier) }).is_err());
+    }
 }
 
 #[feature("safe_dispatcher")]
@@ -355,4 +399,149 @@ fn partial_seasons_grant_once_per_actual_day_and_stop_at_the_end() {
 #[should_panic(expected: "season does not end on a tick")]
 fn a_partial_season_still_requires_an_aligned_end() {
     super::registrar::setup_open_frontier_duration("devcon", 85 * 3600 + 1);
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn a_late_held_realm_keeps_the_home_and_grants_only_today_without_essence() {
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    let other = super::bind_authority(d);
+    set_operator(d, authority());
+    let game = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    );
+    let boundary = crate::days::day_of(game, 7200, 360).end;
+    let home = found_at(d, game_id, boundary - 1);
+    let second = found_at(other, game_id, boundary - 1);
+    start_cheat_block_timestamp(d.games, boundary);
+    let key = ResourceKey { game_id, entity_id: home.home };
+    let before = interact_with_state(d.games, || crate::logic::structures::record(key));
+    let realm_id = if before.metadata.realm_id == 711 {
+        712
+    } else {
+        711
+    };
+    let held = EntryEntitlement { realm_id, metadata_1: 0, metadata_2: 0, metadata_3: 0, pass_kind: 2 };
+    let labor = balance(d, home, LABOR);
+    let essence = balance(d, home, ESSENCE);
+    register(d, game_id, held);
+    assert_eq!(ledger(d).settled_realm(game_id, realm_id.try_into().unwrap()).unwrap(), home.home);
+    assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(key)), before);
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.labor_grant(home, 0).unwrap().is_none());
+    assert_eq!(balance(d, home, LABOR), labor);
+    assert_eq!(balance(d, home, ESSENCE), essence);
+    assert!(ledger(d).register_entitlement(EntryKey { game_id, owner: other.actor }, held).is_err());
+    assert!(ledger(d).entry_entitlement(EntryKey { game_id, owner: other.actor }).unwrap().is_none());
+    assert!(operator.grant_labor(second, 1, other.actor).is_err());
+    let grant = operator.grant_labor(home, 1, d.actor).unwrap();
+    assert_eq!(grant.amount, 1000 * RESOURCE_PRECISION);
+    assert_eq!(grant.essence, 0);
+    let mut retry = spy_events();
+    register(d, game_id, held);
+    assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), grant);
+    assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
+    assert!(ledger(d).register_entitlement(EntryKey { game_id, owner: d.actor }, ticket(1)).is_err());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn flyer_recovery_grants_missed_days_once_and_leaves_today_to_the_normal_claim() {
+    for (tier, amount) in array![(1_u8, 1000_u128), (2_u8, 2000_u128)] {
+        let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+        set_operator(d, authority());
+        let game = crate::game::IGameDispatcherTrait::game(
+            crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+        );
+        let boundary = crate::days::day_of(game, 7200, 360).end;
+        let home = found_at(d, game_id, boundary - 1);
+        let labor = balance(d, home, LABOR);
+        let essence = balance(d, home, ESSENCE);
+        let resource = ResourceKey { game_id, entity_id: home.home };
+        let before = interact_with_state(d.games, || crate::logic::structures::record(resource));
+        let production = interact_with_state(d.games, || crate::logic::resources::production(resource, LABOR));
+        start_cheat_block_timestamp(d.games, boundary);
+        let recovery = EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(tier) };
+        register(d, game_id, recovery);
+        let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+        let grant = operator.labor_grant(home, 0).unwrap().unwrap();
+        assert_eq!(grant.amount, amount * RESOURCE_PRECISION);
+        assert_eq!(grant.essence, amount * RESOURCE_PRECISION);
+        assert_eq!(balance(d, home, LABOR), labor + production.production_rate.into() + grant.amount);
+        assert_eq!(balance(d, home, ESSENCE), essence + grant.essence);
+        assert_eq!(interact_with_state(d.games, || crate::logic::structures::record(resource)), before);
+        assert!(operator.labor_grant(home, 1).unwrap().is_none());
+        let mut retry = spy_events();
+        register(d, game_id, recovery);
+        assert_eq!(retry.get_events().emitted_by(d.games).events.len(), 0);
+        let today = operator.grant_labor(home, 1, d.actor).unwrap();
+        assert_eq!(today.essence, amount * RESOURCE_PRECISION);
+        assert_eq!(balance(d, home, ESSENCE), essence + 2 * amount * RESOURCE_PRECISION);
+    }
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn recovery_resumes_a_drawn_ticket_without_repaying_claimed_days_and_obeys_storage_limits() {
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    set_operator(d, authority());
+    let home = found(d, game_id);
+    register(d, game_id, ticket(2));
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    let original = operator.grant_labor(home, 0, d.actor).unwrap();
+    let game = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    );
+    let tomorrow = crate::days::day_of(game, 7200, 360).end;
+    let day_two = crate::days::day_of(game, 7200, tomorrow).end;
+    start_cheat_block_timestamp(d.games, day_two);
+    let before = balance(d, home, ESSENCE);
+    register(d, game_id, EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(2) });
+    assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(original));
+    let recovered = operator.labor_grant(home, 1).unwrap().unwrap();
+    assert_eq!(recovered.amount, 0);
+    assert_eq!(recovered.essence, 2000 * RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, ESSENCE), before + recovered.essence);
+    assert!(operator.labor_grant(home, 2).unwrap().is_none());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn recovery_requires_a_founded_devcon_home_and_pays_nothing_for_today() {
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    set_operator(d, authority());
+    start_cheat_caller_address(d.games, authority());
+    let key = EntryKey { game_id, owner: d.actor };
+    let recovery = EntryEntitlement { metadata_3: 'devcon-recovery', ..ticket(1) };
+    assert!(ledger(d).register_entitlement(key, recovery).is_err());
+    let home = found(d, game_id);
+    let labor = balance(d, home, LABOR);
+    let essence = balance(d, home, ESSENCE);
+    start_cheat_caller_address(d.games, authority());
+    assert!(ledger(d).register_entitlement(key, EntryEntitlement { metadata_1: 'other', ..recovery }).is_err());
+    register(d, game_id, recovery);
+    assert_eq!(balance(d, home, LABOR), labor);
+    assert_eq!(balance(d, home, ESSENCE), essence);
+    assert!(ILedgerOperatorSafeDispatcher { contract_address: d.games }.labor_grant(home, 0).unwrap().is_none());
+}
+
+#[test]
+#[feature("safe_dispatcher")]
+fn an_ordinary_late_ticket_does_not_compensate_previous_days() {
+    let (d, game_id) = super::registrar::setup_open_frontier_preset("devcon", 3);
+    set_operator(d, authority());
+    let home = found(d, game_id);
+    let game = crate::game::IGameDispatcherTrait::game(
+        crate::game::IGameDispatcher { contract_address: d.games }, game_id,
+    );
+    start_cheat_block_timestamp(d.games, crate::days::day_of(game, 7200, 360).end);
+    let labor = balance(d, home, LABOR);
+    let essence = balance(d, home, ESSENCE);
+    register(d, game_id, ticket(2));
+    let operator = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert!(operator.labor_grant(home, 0).unwrap().is_none());
+    assert!(operator.labor_grant(home, 1).unwrap().is_none());
+    assert_eq!(balance(d, home, LABOR), labor);
+    assert_eq!(balance(d, home, ESSENCE), essence);
 }

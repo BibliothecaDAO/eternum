@@ -16,6 +16,8 @@ vi.stubGlobal("fetch", async (input: string) => {
         status: "active",
         games: [{ game_id: 1, mode: "blitz", status: "Live", player_state: { roster_wallet: "0x4a1" } }],
         held_realm_id: null,
+        has_home_source: false,
+        taken_realm_ids: [],
       },
     ],
   });

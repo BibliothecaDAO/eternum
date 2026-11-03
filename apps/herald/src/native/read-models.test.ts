@@ -109,6 +109,8 @@ it("restores a player's held Realm registration before a settlement exists", () 
   const input = { chain: "madara", confirmedBlock: 11, timestamp: 30, fold, playerAddress: "0x111" };
   const entry = () => buildNativeDirectory(input).games.find((game) => game.game_id === 1)!.player_state!;
   expect(entry().held_realm_id).toBeNull();
+  expect(entry().has_home_source).toBe(false);
+  expect(entry().taken_realm_ids).toEqual([]);
   native.applyReceipt(
     fold,
     receipt([
@@ -124,11 +126,46 @@ it("restores a player's held Realm registration before a settlement exists", () 
     0,
   );
   expect(entry().held_realm_id).toBe(711);
+  expect(entry().has_home_source).toBe(true);
+  expect(entry().taken_realm_ids).toEqual([711]);
+  const other = buildNativeDirectory({ ...input, playerAddress: "0x222" }).games.find(
+    (game) => game.game_id === 1,
+  )!.player_state!;
+  expect(other.has_home_source).toBe(false);
+  expect(other.taken_realm_ids).toEqual([711]);
   expect(entry().settled).toBe(false);
   expect(
     buildNativeDirectory({ ...input, playerAddress: "0x222" }).games.find((game) => game.game_id === 1)!.player_state!
       .held_realm_id,
   ).toBeNull();
+});
+
+it("projects a late campaign source without marking any NFT as taken", () => {
+  const { fold, native } = world();
+  native.applyReceipt(
+    fold,
+    receipt([
+      rowEvent("EntryEntitlement", ["1", "0x111"], {
+        realm_id: 0n,
+        pass_kind: 3n,
+        metadata_1: 711n,
+        metadata_2: 1n,
+        metadata_3: 0n,
+      }),
+    ]),
+    11,
+    0,
+  );
+  const entry = buildNativeDirectory({
+    chain: "madara",
+    confirmedBlock: 11,
+    timestamp: 30,
+    fold,
+    playerAddress: "0x111",
+  }).games.find((game) => game.game_id === 1)!.player_state!;
+  expect(entry.has_home_source).toBe(true);
+  expect(entry.held_realm_id).toBeNull();
+  expect(entry.taken_realm_ids).toEqual([]);
 });
 
 describe("native directory and leaderboard", () => {
