@@ -43,8 +43,8 @@ vi.mock("@/runtime/world/store", async (importOriginal) => ({
   getActiveGame: () => ({ chainId: "0x1", gameId: 1 }),
 }));
 
-/** Realm 7 as the HUD hands it to the day's end: the game, its entity and its realm number (a free home: no Labor rules). */
-const REALM_7 = { game_id: 1, entity_id: 7n, metadata: { realm_id: 7 } } as never;
+/** Realm 7 as the HUD hands it to the day's end: its game and entity (a free home: the game has no Labor rules). */
+const REALM_7 = { game_id: 1, entity_id: 7n } as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({

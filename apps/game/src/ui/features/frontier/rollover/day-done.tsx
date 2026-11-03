@@ -58,12 +58,7 @@ export const DayDone = ({
   const { phase, summaryMissed, landReady, begin, continueDay, showSummary } = useDayEndStore();
   const unseen = !visiting && player !== null && ended !== null && (seen === null || seen < ended.day);
   // A home with no daily claim is asked for alerts here; one with a claim is asked after its claim instead.
-  const hasClaim =
-    homeDailyClaim(setup.store, {
-      gameId: realm.game_id,
-      entityId: realm.entity_id,
-      realmId: realm.metadata.realm_id,
-    }) !== null;
+  const hasClaim = homeDailyClaim(setup.store, { gameId: realm.game_id, entityId: realm.entity_id }) !== null;
   const dayAsk = useDayAsk("summary", { hasClaim, nextDay: nextDayOf(rules, now) });
 
   const summary = (() => {
