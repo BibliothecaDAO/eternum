@@ -9,7 +9,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          sparse-checkout: .github/actions
           persist-credentials: false
+      - uses: ./.github/actions/checkout-without-media
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: contracts/l2/season_pass/.tool-versions

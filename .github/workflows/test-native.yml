@@ -25,6 +25,9 @@ jobs:
             required: Verifier
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
@@ -48,6 +51,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       # The account package pins its own toolchain: its compiler fixes the account class every player address derives from.
       - uses: software-mansion/setup-scarb@v1
         with:
@@ -68,6 +74,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -126,6 +135,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -152,6 +164,9 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:

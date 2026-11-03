@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
