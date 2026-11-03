@@ -411,7 +411,7 @@ it("once claimed, asks for a push when the next day opens, and one tap turns thi
   try {
     alerts.owner = "0xowner";
     facts.claimedDay = 0n;
-    useAskMemory.setState({ notNows: 0, lastNotNow: null });
+    useAskMemory.setState({ notNows: 0, asked: {} });
     await show();
     // Right after the claim, the game day's ask stands in the countdown's place and says it.
     expect(host.querySelector(".ui-notice")?.textContent).toMatch(

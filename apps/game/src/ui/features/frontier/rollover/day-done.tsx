@@ -10,7 +10,7 @@ import { useDayAsk } from "@/shell/profile/alerts-ask";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
-import { dayClock, endedDay } from "../hud/day-clock";
+import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
 import { usePlayerDay } from "../log/player-day";
 import { DayDoneCard } from "./day-done-card";
 import { DayEndScreen } from "./day-end-screen";
@@ -64,7 +64,7 @@ export const DayDone = ({
       entityId: realm.entity_id,
       realmId: realm.metadata.realm_id,
     }) !== null;
-  const dayAsk = useDayAsk("summary", { hasClaim, today: (ended?.day ?? 0) + 1 });
+  const dayAsk = useDayAsk("summary", { hasClaim, nextDay: nextDayOf(rules, now) });
 
   const summary = (() => {
     if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;

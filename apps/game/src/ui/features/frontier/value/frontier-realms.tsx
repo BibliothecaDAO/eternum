@@ -15,8 +15,7 @@ export const FrontierRealms = ({
 }) => {
   const [sending, setSending] = useState(false);
   const ask = useAlertsAsk();
-  // Today is the day before the next; the season's last day has no next day, and the sheet asks nothing then.
-  const dayAsk = useDayAsk("claim", { hasClaim: !!labor?.home, today: (labor?.nextDay ?? 1) - 1 });
+  const dayAsk = useDayAsk("claim", { hasClaim: !!labor?.home, nextDay: labor?.nextDay ?? null });
   const map = useHeldRealmMap(labor?.home ?? null);
   if (!labor) return null;
   const claim = async () => {

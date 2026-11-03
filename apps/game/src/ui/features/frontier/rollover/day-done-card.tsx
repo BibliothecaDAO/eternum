@@ -90,7 +90,7 @@ export const DayDoneCard = ({
     {ask && (
       <AlertsAskCard
         dayAsk={ask}
-        says={{ remind: ALERTS_ASK.day(endedDay + 2), install: ALERTS_ASK.install }}
+        says={{ remind: ALERTS_ASK.day(ask.nextDay), install: ALERTS_ASK.install }}
         verb="remind"
       />
     )}

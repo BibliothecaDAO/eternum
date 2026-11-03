@@ -1032,8 +1032,9 @@ onto the realm on a phone too after a desktop went through it. The summary shows
 day (owner, 2026-10-25): once their history holds a story of theirs after the day's end, from any device, a device
 arriving later goes through the black without it. A home with no daily claim (a free home) is asked for alerts on the
 summary, above Continue: "Get told when Day N opens / One push when the next day opens." with **Remind me**; Continue
-passes it by as a Not now (lab: `/lab/kit/hud/day-done-ask`). A home with a claim is asked after its claim instead. One
-memory on the device holds both asks: a Not now until the next game day, three for good (`useDayAsk`,
+passes it by as a Not now (lab: `/lab/kit/hud/day-done-ask`). A home with a claim is asked after its claim instead. Each
+game day asks once on a device, at whichever moment comes first (a page closed and opened again, another game, or the
+other moment asks no more that day), and only while a next day is coming; three Not nows end the asking (`useDayAsk`,
 `shell/profile/alerts-ask.ts`). Code: `hooks/store/use-day-end-store.ts`, `ExpeditionRollover`, `rollover/day-done.tsx`
 and `day-end-screen.tsx`.
 

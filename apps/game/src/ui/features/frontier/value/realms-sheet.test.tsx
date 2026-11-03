@@ -46,7 +46,10 @@ const sheet = (dayAsk: Parameters<typeof RealmsSheet>[0]["dayAsk"]) => {
 
 it("puts the game day's ask after the claim in the countdown's place, and Not now gives back the countdown and its Remind me", () => {
   const notNow = vi.fn();
-  expect(sheet({ ask: { kind: "remind", busy: false, act: vi.fn() }, notNow })).toEqual(["Not now", "Turn on alerts"]);
+  expect(sheet({ ask: { kind: "remind", busy: false, act: vi.fn() }, nextDay: 13, notNow })).toEqual([
+    "Not now",
+    "Turn on alerts",
+  ]);
   // It says the countdown it stands in place of, and what the push brings.
   expect(host.querySelector('[role="timer"]')).toBeNull();
   expect(host.querySelector(".ui-notice")?.textContent).toBe(

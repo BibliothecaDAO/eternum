@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
@@ -54,44 +55,65 @@ type AskMoment = "claim" | "summary";
 /** Three Not nows on this device end the game day asks; Settings keeps the switch. */
 const NOT_NOW_LIMIT = 3;
 
-/** This device's answers to the game day asks: how many Not nows, and the game day of the last. */
+/** This device's game day asks: how many Not nows, and the day each game last asked on ("0xa:1" → 12). */
 interface AskMemory {
   notNows: number;
-  lastNotNow: string | null;
-  notNow: (day: string) => void;
+  asked: Record<string, number>;
+  offer: (game: string, day: number) => void;
+  notNow: () => void;
 }
 
 export const useAskMemory = create<AskMemory>()(
   persist(
     (set) => ({
       notNows: 0,
-      lastNotNow: null,
-      notNow: (day) => set((memory) => ({ notNows: memory.notNows + 1, lastNotNow: day })),
+      asked: {},
+      offer: (game, day) => set((memory) => ({ asked: { ...memory.asked, [game]: day } })),
+      notNow: () => set((memory) => ({ notNows: memory.notNows + 1 })),
     }),
     {
       name: "realms-alerts-ask",
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ notNows, lastNotNow }) => ({ notNows, lastNotNow }),
+      partialize: ({ notNows, asked }) => ({ notNows, asked }),
     },
   ),
 );
 
-/** The ask a game day shows, and its Not now. */
-export type DayAsk = { ask: Extract<AlertsAsk, { act: () => void }>; notNow: () => void };
+/** The ask a game day shows, the day its push tells of, and its Not now. */
+export type DayAsk = { ask: Extract<AlertsAsk, { act: () => void }>; nextDay: number; notNow: () => void };
 
 /**
- * The game day's one ask to turn alerts on, at `moment` (owner's pick, A and B of reports/push-ask-1.md): shown only at
- * this home's moment, so a home with a claim is asked after it and a home without one on the day's summary, never both.
- * A Not now holds both until the next game day; three end them.
+ * The game day's one ask to turn alerts on, at `moment` (owner's pick, A and B of reports/push-ask-1.md): a home with a
+ * claim is asked after it and a home without one on the day's summary, and only while a next day is coming. Each game
+ * day asks once on this device, at whichever moment comes first: once shown, the ask stands on its page until answered,
+ * and no other page, reopened sheet or moment asks again that day. Three Not nows end the asking.
  */
-export const useDayAsk = (moment: AskMoment, home: { hasClaim: boolean; today: number }): DayAsk | null => {
+export const useDayAsk = (moment: AskMoment, home: { hasClaim: boolean; nextDay: number | null }): DayAsk | null => {
   const ask = useAlertsAsk();
-  const { notNows, lastNotNow, notNow } = useAskMemory();
-  const game = getActiveGame();
-  if (!ask || ask.kind === "on" || !game) return null;
-  const day = `${game.chainId}:${game.gameId}:${home.today}`;
-  if (momentOf(home.hasClaim) !== moment || notNows >= NOT_NOW_LIMIT || lastNotNow === day) return null;
-  return { ask, notNow: () => notNow(day) };
+  const memory = useAskMemory();
+  const active = getActiveGame();
+  const [offered, setOffered] = useState<string | null>(null);
+  const game = active && `${active.chainId}:${active.gameId}`;
+  const today = home.nextDay === null ? null : home.nextDay - 1;
+  const day = game && today !== null ? `${game}:${today}` : null;
+  const askable = ask !== null && ask.kind !== "on" && momentOf(home.hasClaim) === moment;
+  const unasked = memory.notNows < NOT_NOW_LIMIT && game !== null && memory.asked[game] !== today;
+  const shown = askable && day !== null && (offered === day || (offered === null && unasked));
+  const { offer } = memory;
+  useEffect(() => {
+    if (!shown || offered === day || !game || today === null) return;
+    setOffered(day);
+    offer(game, today);
+  }, [shown, offered, day, game, today, offer]);
+  if (!shown || !ask || home.nextDay === null) return null;
+  return {
+    ask,
+    nextDay: home.nextDay,
+    notNow: () => {
+      memory.notNow();
+      setOffered("answered");
+    },
+  };
 };
 
 const momentOf = (hasClaim: boolean): AskMoment => (hasClaim ? "claim" : "summary");

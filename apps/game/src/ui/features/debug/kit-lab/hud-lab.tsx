@@ -787,7 +787,7 @@ const STATES = {
     clock: NIGHT,
     stores: STORES,
     armies: [],
-    dayDone: { ...DAY_DONE, ask: labDayAsk("remind")! },
+    dayDone: { ...DAY_DONE, ask: labDayAsk("remind", DAY_DONE.endedDay + 2)! },
   },
   night: {
     clock: NIGHT,
@@ -1843,7 +1843,7 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     labor={labRealmLabor(realms)}
     map={realms.home === "held" ? LAB_REALM_MAP : null}
     ask={labAlertsAsk(realms.ask)}
-    dayAsk={labDayAsk(realms.dayAsk)}
+    dayAsk={labDayAsk(realms.dayAsk, CLOCK.day + 1)}
     sending={false}
     onClaim={noop}
     onClose={noop}
@@ -1913,8 +1913,10 @@ const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
   ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
 
 /** A game day's ask on the fiction. A declaration, with its own empty taps: the rooms above build theirs at load. */
-function labDayAsk(kind: LabRealms["dayAsk"]): DayAsk | null {
-  return kind === undefined ? null : { ask: { kind, busy: false, act: () => undefined }, notNow: () => undefined };
+function labDayAsk(kind: LabRealms["dayAsk"], nextDay: number): DayAsk | null {
+  return kind === undefined
+    ? null
+    : { ask: { kind, busy: false, act: () => undefined }, nextDay, notNow: () => undefined };
 }
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
