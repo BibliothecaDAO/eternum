@@ -57,6 +57,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 import { FeedRowLine } from "./feed-row-line";
 import { eventsReads, selectEventStories } from "./event-stories";
 import { StoryFeedRow } from "./story-feed-row";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { relicChestRelics } from "@bibliothecadao/types";
 
@@ -349,3 +351,44 @@ it.each([
     }
   },
 );
+
+it("says a clipped Log row whole on hover, its ranks as gems sized to the line", async () => {
+  const payload = { explorer_id: 9, choice: "Battle", tier: 2, point_rank: 3, stamina: 40 };
+  const presentation = buildStoryEventPresentation({
+    storyType: "SkillPointSpent",
+    storyPayload: payload,
+    entityId: 9,
+    ownerAddress: PLAYER,
+  } as never);
+  const event = { ...story("point", "SkillPointSpent", PLAYER, payload, presentation.title), presentation };
+  document.body.append(host);
+  const root = createRoot(host);
+  try {
+    await act(async () =>
+      root.render(
+        <>
+          <Tooltip />
+          <StoryFeedRow event={event} />
+        </>,
+      ),
+    );
+    const row = host.querySelector<HTMLElement>(".ui-event__text")!;
+    // The row's description runs past its two lines.
+    Object.defineProperty(row, "scrollHeight", { value: 60 });
+    Object.defineProperty(row, "clientHeight", { value: 30 });
+    const hover = new MouseEvent("pointerover", { bubbles: true, clientX: 10, clientY: 10 });
+    Object.defineProperty(hover, "pointerType", { value: "mouse" });
+    await act(async () => row.dispatchEvent(hover));
+    const tip = document.querySelector('[role="tooltip"]')!;
+    expect(tip.textContent).toBe(presentation.description);
+    expect(
+      [...tip.querySelectorAll(".ui-tier")].map((gem) => [
+        gem.getAttribute("aria-label"),
+        gem.getAttribute("data-size"),
+      ]),
+    ).toEqual([["III", "line"]]);
+  } finally {
+    await act(async () => root.unmount());
+    useTooltipStore.setState({ tooltip: null });
+  }
+});

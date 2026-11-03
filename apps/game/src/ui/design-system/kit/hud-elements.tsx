@@ -29,7 +29,17 @@ import {
 import { createPortal } from "react-dom";
 
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, type RankedWords, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import {
+  CLOSE,
+  type RankedWords,
+  rankedText,
+  STAMINA,
+  type Tier,
+  type Rank,
+  tierNumeral,
+  TIER_WORDS,
+  TRY_AGAIN,
+} from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -887,6 +897,15 @@ export const HudRanked = ({ words, gem = "line" }: { words: RankedWords | string
     </>
   );
 
+/**
+ * A thing's own line with ranks in it, as its `data-tip`: the plain words it is matched and read by, and the same words
+ * with their ranks (`data-tip-ranks`), which the one tooltip draws as gems.
+ */
+export const rankedTip = (words: RankedWords | string) =>
+  typeof words === "string"
+    ? { "data-tip": words }
+    : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
+
 /** A tier's next step, from the gem it holds to the next one's. */
 export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
   <span
@@ -1287,7 +1306,7 @@ export const HudEventRow = ({
   time?: string;
   tone?: Tone;
   icon?: IconMeaning;
-  tip?: string;
+  tip?: RankedWords | string;
   onOpen?: () => void;
   trail?: ReactNode;
   children: ReactNode;
@@ -1300,7 +1319,7 @@ export const HudEventRow = ({
       ) : (
         <span className="ui-event__mark" aria-hidden="true" />
       )}
-      <span className="ui-event__text" data-tip={tip}>
+      <span className="ui-event__text" {...(tip === undefined ? {} : rankedTip(tip))}>
         {children}
       </span>
     </>

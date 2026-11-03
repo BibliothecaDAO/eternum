@@ -5,8 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
 
-import { HudButton, HudChip } from "./hud-elements";
-import { rankedTip } from "./named-tips";
+import { HudButton, HudChip, rankedTip } from "./hud-elements";
 
 let host: HTMLDivElement;
 let root: Root;

@@ -2,8 +2,7 @@ import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothec
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { rankedTip } from "@/ui/design-system/kit/named-tips";
+import { HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
 import { comesHomeAtDayEnd, type RankedWords, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every

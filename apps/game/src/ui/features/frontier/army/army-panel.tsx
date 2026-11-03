@@ -1,4 +1,3 @@
-import { rankedTip } from "@/ui/design-system/kit/named-tips";
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -11,6 +10,7 @@ import {
   HudStamina,
   HudTier,
   HudTierStep,
+  rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";

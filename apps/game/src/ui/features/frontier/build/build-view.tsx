@@ -1,4 +1,3 @@
-import { rankedTip } from "@/ui/design-system/kit/named-tips";
 import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
 import { researchTier } from "@bibliothecadao/eternum";
 import {
@@ -18,6 +17,7 @@ import {
   HudSheet,
   HudTier,
   HudWindowFoot,
+  rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {

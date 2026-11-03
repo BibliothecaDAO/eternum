@@ -2,7 +2,7 @@ import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useEffect } from "react";
 
 import { HudRanked } from "./hud-elements";
-import { type RankedWords, rankedText } from "./words";
+import { type RankedWords } from "./words";
 
 /**
  * What names itself: anything carrying a line of its own (`data-tip`), and every chip, icon, meter and wordless
@@ -28,16 +28,7 @@ export const TipLine = ({ line }: { line: RankedWords | string }) => (
   </span>
 );
 
-/**
- * A thing's own line with ranks in it, as its `data-tip`: the plain words it is matched and read by, and the same words
- * with their ranks (`data-tip-ranks`), which the tooltip draws as gems.
- */
-export const rankedTip = (words: RankedWords | string) =>
-  typeof words === "string"
-    ? { "data-tip": words }
-    : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
-
-/** A thing's own line: its ranked words where rankedTip wrote them, else its plain words. */
+/** A thing's own line: its ranked words where the kit's rankedTip wrote them, else its plain words. */
 const ownLine = (anchor: HTMLElement, own: string): RankedWords | string =>
   anchor.dataset.tipRanks ? (JSON.parse(anchor.dataset.tipRanks) as RankedWords) : own;
 

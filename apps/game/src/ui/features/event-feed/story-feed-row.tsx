@@ -92,11 +92,13 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
 /** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */
 export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const open = useStoryOpener(event);
+  // The row's second line and its tip are the same words, ranks and all: the tip says them whole where the line is cut.
+  const description = event.presentation.ranked?.description ?? event.presentation.description;
   return (
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}
       icon={storyMeaning(event.story)}
-      tip={open ? event.presentation.description : "This event’s location is no longer available"}
+      tip={open ? description : "This event’s location is no longer available"}
       onOpen={open ?? undefined}
     >
       {event.story === "BattleEvent" ? (
@@ -107,7 +109,7 @@ export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
             <HudRanked words={event.presentation.ranked?.title ?? event.presentation.title} />
           </span>
           <span className="line-clamp-2 text-hud-label text-hud-muted">
-            <HudRanked words={event.presentation.ranked?.description ?? event.presentation.description ?? ""} />
+            <HudRanked words={description ?? ""} />
           </span>
         </span>
       )}
