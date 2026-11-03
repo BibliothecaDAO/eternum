@@ -4187,7 +4187,9 @@ async function claimFoundedHome({ browser }) {
   return {
     ...pressed,
     claimed: Boolean(claimed),
-    sheetText: browser.read(`document.querySelector(${JSON.stringify(REALMS_SHEET)})?.innerText`),
+    sheetText: browser.read(
+      `JSON.stringify(document.querySelector(${JSON.stringify(REALMS_SHEET)})?.innerText ?? null)`,
+    ),
   };
 }
 
@@ -4223,7 +4225,7 @@ async function moveAcrossRelease({ base, browser, devTools, extraScreenshot, own
     }, 180_000);
     if (!released) throw new Error("release application deadline; held move not used as proof");
     const lines = await linesLoggedDuring(browser, () => gate.close());
-    const message = browser.read("document.body.innerText");
+    const message = browser.read("JSON.stringify(document.body.innerText)");
     extraScreenshot("refused");
     await owner.sleep(10_000);
     const cost = await observation.measure();
