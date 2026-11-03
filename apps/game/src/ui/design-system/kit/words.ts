@@ -359,6 +359,12 @@ export const FIGHT_WORDS = {
   clears: "This attack clears it",
   holds: "The guard holds",
 } as const;
+/**
+ * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
+ * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
+ */
+export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
+export const NONE_LOST = "None lost";
 /** Why a village's trade in troops is refused, wherever the market and the bank say so. */
 export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";

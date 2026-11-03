@@ -1,6 +1,7 @@
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { fightLost, NONE_LOST } from "@/ui/design-system/kit/words";
 
 import type { ReactNode } from "react";
 
@@ -13,7 +14,9 @@ export type Kept = number | { low: number; high: number } | undefined;
 /**
  * One side of a fight, as every card that shows a fight draws it, in every state (owner, 10-27: "this panel doesnt
  * match at all our new battle panels"): the attack's card in reach or not, its result, and Blitz's preview. Its mark
- * and troops before, then the troops it keeps, large (red when none are, a dash when not known), and its bar.
+ * and troops before, then the troops it keeps, large (red when none are, a dash when not known), its bar, and under the
+ * bar what the fight costs it in troops and share ("−601 · 76% lost"; owner, 3 November 2026, layout A), red for the
+ * player's side and gold for the enemy's. A side whose fight is not known claims no loss.
  *
  * The two sides share their row's width evenly, whatever their numbers (owner, 10-27: "the army & enemy numbers must
  * both fit"): each side may shrink below its figures' width, and its figures stand on two lines, so a seven-digit army
@@ -41,7 +44,7 @@ export const FightSide = ({
   return (
     <span
       role="img"
-      aria-label={`${label} ${formatExact(before)} → ${spokenKept(range)}`}
+      aria-label={[`${label} ${formatExact(before)} → ${spokenKept(range)}`, figures.lost].filter(Boolean).join(", ")}
       data-tip={tip}
       className="flex min-w-0 flex-1 basis-0"
     >
@@ -70,6 +73,18 @@ export const FightSide = ({
           {figures.kept}
         </span>
         <FightBar before={before} range={range} side={side} />
+        {figures.lost && (
+          <span
+            aria-hidden
+            className={cn(
+              "max-w-full whitespace-nowrap text-hud-label tabular-nums",
+              side === "ours" ? "text-hud-bad" : "text-hud-gold",
+            )}
+            style={{ fontSize: fittedSize("label", figures.lost) }}
+          >
+            {figures.lost}
+          </span>
+        )}
       </HudPanel>
     </span>
   );
@@ -96,7 +111,7 @@ const MARK_ROOM = "36px";
  * A figure line's size: its type role's, or smaller where its characters would outrun its side's width (`cqi`, the
  * side's own width, which its body measures as a container).
  */
-const fittedSize = (role: "body" | "display", line: string, beside = "0px"): string =>
+const fittedSize = (role: "label" | "body" | "display", line: string, beside = "0px"): string =>
   `min(var(--hud-text-${role}), calc((100cqi - ${beside}) / ${line.length * CHARACTER_EM}))`;
 
 /** From eight digits a figure no longer fits half a 360 px phone's card. */
@@ -106,14 +121,42 @@ const SHORT_FROM = 10_000_000;
  * A side's figures as it shows them: exact below ten million, short from there as the HUD writes amounts ("12.3M"),
  * unless two different figures would read alike, which reads as a fight that cost nothing: then exact, set smaller to
  * fit. A range reads low to high ("3,900–4,006"), one figure when the dice cannot move it; what is not known is a dash.
+ * What the fight costs reads in the same figures with its share ("−601 · 76% lost"), and is absent while the side's
+ * troops or the fight are not known.
  */
-export const fightFigures = (before: number | undefined, range: KeptRange): { before: string; kept: string } => {
+export const fightFigures = (
+  before: number | undefined,
+  range: KeptRange,
+): { before: string; kept: string; lost?: string } => {
   const known = [before, range?.low, range?.high].filter((value): value is number => value !== undefined);
   const readsAlike = known.some((a) => known.some((b) => a !== b && formatShort(a) === formatShort(b)));
   const format = Math.max(0, ...known) < SHORT_FROM || readsAlike ? formatExact : formatShort;
   const write = (value: number | undefined) => (value === undefined ? formatExact(undefined) : format(value));
   const [low, high] = [write(range?.low), write(range?.high)];
-  return { before: write(before), kept: low === high ? low : `${low}–${high}` };
+  const figures = { before: write(before), kept: low === high ? low : `${low}–${high}` };
+  if (before === undefined || !range) return figures;
+  return { ...figures, lost: lostLine(before, range, format) };
+};
+
+/** What the fight takes of a side, in its figures' format and as its share; the dice's range low to high. */
+const lostLine = (before: number, range: { low: number; high: number }, format: (value: number) => string): string => {
+  const [least, most] = [before - range.high, before - range.low];
+  if (most <= 0) return NONE_LOST;
+  const between = (low: string, high: string) => (low === high ? low : `${low}–${high}`);
+  return fightLost(
+    between(format(least), format(most)),
+    between(String(lostShare(before, range.high)), String(lostShare(before, range.low))),
+  );
+};
+
+/**
+ * What a side loses of its troops, as a whole percent that reads 100 only once none are kept and 0 only when none are
+ * lost: a side that keeps one troop of a thousand has lost 99%, one that loses one has lost 1%.
+ */
+const lostShare = (before: number, kept: number): number => {
+  if (before <= 0 || kept >= before) return 0;
+  if (kept <= 0) return 100;
+  return Math.min(99, Math.max(1, Math.round(((before - kept) / before) * 100)));
 };
 
 /**
