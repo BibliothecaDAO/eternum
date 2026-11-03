@@ -60,7 +60,25 @@ Realms together, marks used Realms as taken, and submits only the player’s con
 account. Registration preserves the home's identity, traits and prior daily grants. The existing daily action pays that
 source's reward. A late NFT grants the normal held-Realm Labor, without Essence or missed-days compensation.
 
-For the approved recovery list, run from the repository root:
+Production recovery starts with one account, after the owner's production go and the compatible release and services are
+deployed:
+
+1. Select one account from the approved 22-account file whose free home has at least one unclaimed game day before
+   today. Save a confirmed Herald snapshot and calculate its expected missed-day grants from the home's founding
+   timestamp, the game's day calendar, prior `LaborGrant` rows and the ticket tier drawn in the next step.
+2. For that account only, send authenticated operator POSTs to `/api/operator/campaign-draw` with
+   `{ campaign: "devcon-2026", realmsId }`, then `/api/value/operator/campaign-entry` with
+   `{ chainId, gameId, realmsId }`. Keep credentials, account identifiers and responses in private files. Do not start
+   the bulk command yet.
+3. Wait for confirmed Herald indexing. Check that the same home gained the expected source and one `LaborGrant` for each
+   previously unclaimed day through yesterday. Check exact tier amounts, allowing Labor's existing storage cap and
+   accrued production; Essence must show the full nonzero catch-up. Today's grant must remain untouched. Compare the
+   snapshots for unexpected changes to other homes. If any amount or row differs, stop before the other accounts.
+4. Once the first account's grant is verified, run the command below with the same original 22-account file and the
+   approved production origin, chain and game. It safely retries the first account without paying again, then recovers
+   the other 21. Verify the final counts and Herald grants; reruns retain each ticket and never duplicate grants.
+
+For that bulk step, run from the repository root (replace the illustrated dev target with the approved target):
 
 ```sh
 OPERATOR_TOKEN_FILE=/private/operator-token pnpm --dir apps/realms campaign-founded-homes \
