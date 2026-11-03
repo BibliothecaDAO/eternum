@@ -1,3 +1,4 @@
+import { useLayout } from "@/shell/frame/layout";
 import type { RealmSkin } from "@/three/structures/realm-skins";
 import { formatAmount, formatExact, formatMoment, LORDS, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
@@ -31,7 +32,7 @@ import {
   seasonEnds,
   seasonPool,
 } from "@/ui/design-system/kit/words";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 
 /** A realm's row on the list, keyed to open its detail; `label` is its name as text, for assistive technology. */
 export type SeasonListRow = {
@@ -55,6 +56,9 @@ const SKELETON_ROWS = 8;
  * the player's rank, the season's pool on that chip's tip, then the realms by sites cleared with LORDS beside, the
  * player's own row lit in place or pinned at the foot when it ranks below the rows shown. A row opens its detail. When
  * the season did not answer, the card says so, with Try again. It closes as every panel does: its X, Escape or back.
+ * The season's end and its prizes scroll away with the board under the columns' names, which stay; on a phone the
+ * prizes stand folded in one line that opens the podium (owner, 3 November 2026: "C podium scroll the prizes but also
+ * fold the podium so we save space"), so the board, not the podium, has the page.
  */
 export const SeasonList = ({
   rank,
@@ -86,6 +90,7 @@ export const SeasonList = ({
   /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
   ends?: { at: number; day?: number; lastDay?: number };
 }) => {
+  const phone = useLayout() === "phone";
   return (
     <HudPage
       label={SEASON}
@@ -94,23 +99,23 @@ export const SeasonList = ({
       onClose={onClose}
       bodyClassName="gap-1"
     >
-      {ends && <SeasonEnds {...ends} />}
-      {podium !== undefined && <SeasonPodium podium={podium} />}
-      {state === "failed" ? (
-        <Failed onRetry={onRetry} />
-      ) : (
-        <>
-          <BoardHead />
-          <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {ends && <SeasonEnds {...ends} />}
+        {podium !== undefined && (phone ? <FoldedPodium podium={podium} /> : <SeasonPodium podium={podium} />)}
+        {state === "failed" ? (
+          <Failed onRetry={onRetry} />
+        ) : (
+          <>
+            <BoardHead />
             {state === "loading" ? (
               <HudSkeleton rows={SKELETON_ROWS} />
             ) : (
               rows.map((row) => <ListRow key={row.key} row={row} onOpen={onOpen} />)
             )}
-          </div>
-          {pinned && <ListRow row={pinned} onOpen={onOpen} />}
-        </>
-      )}
+          </>
+        )}
+      </div>
+      {state !== "failed" && pinned && <ListRow row={pinned} onOpen={onOpen} />}
     </HudPage>
   );
 };
@@ -146,7 +151,8 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
 
 /**
  * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its rank and depth, and name), Sites cleared
- * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip.
+ * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip. It stays on top while the rows
+ * scroll under it.
  */
 const BoardHead = () => (
   <HudTableHead cols={COLS}>
@@ -224,7 +230,7 @@ const podiumOrder = (places: readonly SeasonPodiumPlace[]) =>
  */
 const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null }) => {
   if (podium?.length === 0) return null;
-  const places = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" as const }));
+  const places = prizePlaces(podium);
   return (
     <ol aria-label={SEASON_PRIZES} className="my-1 grid shrink-0 grid-cols-3 items-end gap-1.5">
       {podiumOrder(places).map(({ place, lords, holder }) => (
@@ -239,24 +245,67 @@ const SeasonPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null 
           <HudPlaceMedal place={place} size={place === 1 ? 30 : 24} below={`#${place}`} />
           <span className="inline-flex items-center gap-1 text-hud-strong tabular-nums text-hud-gold">
             <SemanticIcon name="lords" size={16} />
-            {Number.isNaN(lords) ? "—" : formatExact(lords)}
+            {prizeShown(lords, formatExact)}
           </span>
-          {podium !== null && (
-            <span
-              className={cn(
-                "max-w-full truncate text-hud-label",
-                typeof holder === "string" ? "text-hud-muted" : "text-hud-ink",
-              )}
-            >
-              {typeof holder === "string" ? PRIZE_UNHELD[holder] : holder.name}
-            </span>
-          )}
+          {podium !== null && <PrizeHolder holder={holder} />}
         </li>
       ))}
       {podium === null && (
         <li className="col-span-3 text-center text-hud-label text-hud-muted">{POOL_NOT_PUBLISHED}</li>
       )}
     </ol>
+  );
+};
+
+/** The prize places shown: the season's, or its first three standing with "—" while no pool is published. */
+const prizePlaces = (podium: readonly SeasonPodiumPlace[] | null): readonly SeasonPodiumPlace[] =>
+  podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" as const }));
+
+const prizeShown = (lords: number, format: (lords: number) => string) => (Number.isNaN(lords) ? "—" : format(lords));
+
+/** Who holds a prize place by name, or why no one does yet. */
+const PrizeHolder = ({ holder }: { holder: SeasonPodiumPlace["holder"] }) => (
+  <span
+    className={cn("max-w-full truncate text-hud-label", typeof holder === "string" ? "text-hud-muted" : "text-hud-ink")}
+  >
+    {typeof holder === "string" ? PRIZE_UNHELD[holder] : holder.name}
+  </span>
+);
+
+/**
+ * The podium folded into one line on a phone, first place first: each place's medal, its LORDS and who holds it. A press
+ * opens the podium under it, and another folds it again.
+ */
+const FoldedPodium = ({ podium }: { podium: readonly SeasonPodiumPlace[] | null }) => {
+  const [open, setOpen] = useState(false);
+  if (podium?.length === 0) return null;
+  return (
+    <div className="shrink-0">
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-label={SEASON_PRIZES}
+        onClick={() => setOpen(!open)}
+        className="my-1 flex w-full items-center gap-1.5 rounded-md border border-hud-line bg-hud-well px-2 py-1.5"
+      >
+        <span className="grid min-w-0 flex-1 grid-cols-3 gap-1.5">
+          {prizePlaces(podium).map(({ place, lords, holder }) => (
+            <span key={place} data-place={place} className="flex min-w-0 items-center gap-1">
+              <HudPlaceMedal place={place} size={18} below={`#${place}`} />
+              <span className="flex min-w-0 flex-col items-start leading-tight">
+                <span className="inline-flex items-center gap-0.5 text-hud-label tabular-nums text-hud-gold">
+                  <SemanticIcon name="lords" size={12} />
+                  {prizeShown(lords, formatShort)}
+                </span>
+                {podium !== null && <PrizeHolder holder={holder} />}
+              </span>
+            </span>
+          ))}
+        </span>
+        <SemanticIcon name="chevron-down" size={16} className={cn("shrink-0", open && "rotate-180")} />
+      </button>
+      {open && <SeasonPodium podium={podium} />}
+    </div>
   );
 };
 

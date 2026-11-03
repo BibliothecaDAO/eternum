@@ -162,7 +162,7 @@ const fightSides = (host: HTMLElement) =>
     .map((side) => side.getAttribute("aria-label"))
     .filter((l) => l?.includes("→"));
 /** The fixture army's attack on the camp from beside it: what the card shows near or far. */
-const FORECAST = ["Army 1,498 → 1,178", "Troll 1,100 → 492"];
+const FORECAST = ["Army 1,498 → 1,178, −320 · 21% lost", "Troll 1,100 → 492, −608 · 55% lost"];
 
 describe("the tile card", () => {
   it("titles the site by its map name over its kind, names the guard, offers no Attack until an army is chosen, then attacks with the same tap", async () => {

@@ -17,7 +17,6 @@ import { type Reason, reasonLine } from "@/ui/design-system/kit/reasons";
 import {
   type Tier,
   ARMY,
-  ARMY_WILL_BE_LOST,
   ATTACK,
   ATTACKING,
   MOVE,
@@ -108,13 +107,13 @@ export const SiteCardView = ({
   const { word: kind, icon } = TARGET_MARKS[site];
   const word = attackTargetName(site, beast);
   const title = name ? siteTitle(name, kind, beast?.name) : word;
-  const lost = fight && fight.outcome === "loses";
   // With no army selected the card says what the site is and pays, and its guard (owner, 28 October 2026: "agree with
   // no picker"); selecting an army, then the site, gives the fight.
   const armyless = army === null;
   const guardIcon = beast ? beastMeaning(beast.beast) : "troops";
-  // The army against a guard of known size, with the fight forecast: what option A reads, side by side.
+  // The army against a guard of known size, with this attack's forecast: what option A reads, side by side.
   const facing = facingOf(army, guard, fight);
+  const lost = facing !== undefined && isArmyLost(facing);
   const reward =
     chest || pay || xp !== undefined ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
@@ -161,15 +160,14 @@ export const SiteCardView = ({
       <Verb
         verb={verb}
         site={word}
-        armyLost={lost === true}
-        lossInHeadline={facing !== undefined && isArmyLost(facing)}
+        armyLost={lost}
         onRealm={pay?.fits !== undefined && pay.fits < pay.amount ? onRealm : undefined}
       />
     </HudSheet>
   );
 };
 
-type KnownFight = Exclude<SiteFight, { outcome: "refused" }>;
+type KnownFight = Exclude<SiteFight, { refused: true }>;
 type Facing = { army: { art: IconMeaning; troops: number }; guard: number; fight: KnownFight };
 
 const facingOf = (
@@ -177,7 +175,7 @@ const facingOf = (
   guard: number | null | undefined,
   fight: SiteFight | undefined,
 ): Facing | undefined =>
-  army && typeof guard === "number" && fight && fight.outcome !== "refused" ? { army, guard, fight } : undefined;
+  army && typeof guard === "number" && fight && !("refused" in fight) ? { army, guard, fight } : undefined;
 
 const armyLeft = ({ army, fight }: Facing) => Math.max(0, army.troops - fight.troopsLost);
 const isArmyLost = (facing: Facing) => armyLeft(facing) === 0;
@@ -285,15 +283,12 @@ const Verb = ({
   verb,
   site,
   armyLost,
-  lossInHeadline,
   onRealm,
 }: {
   verb: SiteVerb | null;
   site: string;
-  /** The forecast ends with the army gone: Attack still runs, in red, and says so. */
+  /** This attack leaves the army no troops, as the headline says: Attack still runs, in red. */
   armyLost: boolean;
-  /** The headline already says this attack loses the army: the line under the step does not say it again. */
-  lossInHeadline: boolean;
   onRealm: (() => void) | undefined;
 }) => {
   const warns = verb?.kind === "attack" && armyLost;
@@ -302,7 +297,7 @@ const Verb = ({
   if (!verb) return null;
   return (
     <>
-      <VerbLine {...verbLine(verb, site, warns && !lossInHeadline)} />
+      <VerbLine {...verbLine(verb, site)} />
       <HudWindowFoot note={<FootNote verb={verb} site={site} />}>
         {onRealm && (
           <HudButton kind="secondary" icon="realm" onClick={onRealm}>
@@ -338,14 +333,13 @@ export const inFlightWord = (inFlight: OrderInFlight | undefined, own: OrderInFl
   inFlight && (inFlight === own ? word : ON_ITS_WAY);
 
 /**
- * The one line under the step. An attack that did not happen says why, in red, ahead of the forecast's warning: it
- * is the news. Otherwise the warning that the whole fight loses the army, where the headline does not already say it,
- * or, under Move, that the site is out of reach.
+ * The one line under the step: why an attack did not happen, in red, as the news; or, under Move, that the site is out
+ * of reach. An attack that loses the army says so in the headline, from the same figures as the sides.
  */
-const verbLine = (verb: SiteVerb, site: string, warns: boolean): { line: string | undefined; warns: boolean } => {
+const verbLine = (verb: SiteVerb, site: string): { line: string | undefined; warns: boolean } => {
   if (verb.kind === "blocked") return { line: verb.reason, warns: true };
   if (verb.kind === "attack" && verb.refused && !verb.inFlight) return { line: verb.refused, warns: true };
-  return { line: warns ? ARMY_WILL_BE_LOST : verb.kind === "move" ? tooFarFrom(site) : undefined, warns };
+  return { line: verb.kind === "move" ? tooFarFrom(site) : undefined, warns: false };
 };
 
 /**

@@ -4,10 +4,11 @@ import { useKeyboardHeight } from "@/hooks/use-keyboard-inset";
 import { useSideways } from "@/shell/frame/layout";
 import { HUD_COLUMN_MARK, HUD_FOOT_MARK, HUD_TOP_MARK } from "@/three/utils/labels/hud-clearance";
 
+/** The phone's safe area; the on-screen keyboard covers the home indicator, so while it is up the foot keeps none for it. */
 const SAFE_AREA: CSSProperties = {
   paddingTop: "max(env(safe-area-inset-top), 0.5rem)",
   paddingRight: "max(env(safe-area-inset-right), 0.5rem)",
-  paddingBottom: "max(env(safe-area-inset-bottom), 0.5rem)",
+  paddingBottom: "max(calc(env(safe-area-inset-bottom) - var(--keyboard, 0px)), 0.5rem)",
   paddingLeft: "max(env(safe-area-inset-left), 0.5rem)",
 };
 
@@ -39,7 +40,9 @@ type Bands = {
  * row and the dock step aside under it and Next up's row folds away, so the map keeps what they took (owner, 26 October
  * 2026: layout A); the notices stay. A page that marks itself `data-page-fills` (Chat) takes the whole band from the strip
  * to the place bar, the map hidden behind it: a page read and written in, not glanced at over the map. The page says
- * so itself, so wherever it is drawn (the game, the lab) it stands the same. A desktop has the HUD every mode shares (FrontierDesktop).
+ * so itself, so wherever it is drawn (the game, the lab) it stands the same. While the on-screen keyboard is up, the
+ * strip and Next up step aside with the place bar (`data-keyboard-hides`), so what is typed in has the screen above the
+ * keyboard (owner, 3 November 2026: Chat's history was gone while typing). A desktop has the HUD every mode shares (FrontierDesktop).
  */
 export const HudBands = (bands: Bands) => (useSideways() ? <SidewaysBands {...bands} /> : <UprightBands {...bands} />);
 
@@ -54,7 +57,7 @@ const UprightBands = ({ strip, purse, page, nextUp, notices, action, dock, nav, 
       className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
       style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
     >
-      <div {...HUD_TOP_MARK} className="flex flex-col gap-1.5">
+      <div {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
         <TopRow nextUp={nextUp} purse={purse} />
       </div>
@@ -92,7 +95,7 @@ const SidewaysBands = ({ strip, purse, page, nextUp, notices, action, dock, nav,
       </div>
       <div className="relative min-w-0 flex-1" />
       <div {...HUD_COLUMN_MARK} className="flex min-h-0 w-hud-column flex-col gap-1.5">
-        <div ref={top} className="flex flex-col gap-1.5">
+        <div ref={top} data-keyboard-hides className="flex flex-col gap-1.5">
           <div className="relative">{strip}</div>
           <TopRow nextUp={nextUp} purse={purse} />
         </div>
