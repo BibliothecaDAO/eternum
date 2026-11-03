@@ -438,7 +438,9 @@ export const GameEntryModal = ({
         renderer: parseRendererOptions(new URLSearchParams(window.location.search)),
       });
 
-      navigate(entryTarget.url);
+      // The doorway gives its place in history to the game: Back from the map leaves for where the player came from,
+      // never onto a doorway that enters the booted game again.
+      navigate(entryTarget.url, { replace: true });
       window.dispatchEvent(new Event("urlChanged"));
     },
     [navigate, navigationEntryContext],
