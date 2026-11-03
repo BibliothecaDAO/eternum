@@ -4008,6 +4008,48 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "home-recovery": {
+    game: { ...FRONTIER, entersFromHome: true },
+    steps: [
+      {
+        name: "inspect-daily-source-choice",
+        play: async ({ browser, extraScreenshot }) => {
+          const offered = await readUntil(
+            () =>
+              browser.read(`JSON.stringify(document.querySelector('.home-picker__featured h3')?.textContent ?? null)`),
+            (name) => Boolean(name && name !== "A free home"),
+            PLAYABLE_WAIT_MS,
+          );
+          if (!offered) return { offered };
+          const screenshot = extraScreenshot("choice");
+          browser.click("Continue with my free home");
+          return { offered, screenshot };
+        },
+        settleMs: 5_000,
+        verify: ({ played }) =>
+          played.offered ? completed(played) : failed("daily source choice not offered", played),
+      },
+      {
+        name: "recover-and-claim-home",
+        play: async ({ base, browser, owner }) => {
+          const ready = `${base}-registration-ready.json`;
+          const registered = `${base}-registered.json`;
+          writeFileSync(ready, JSON.stringify({ ready: true }), { mode: 0o600, flag: "wx" });
+          if (
+            !(await waitUntil(() => {
+              owner.throwIfCancelled();
+              return existsSync(registered);
+            }, 180_000))
+          )
+            throw new Error("operator registration deadline");
+          return claimFoundedHome({ browser });
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.claimed ? completed(played) : failed("daily claim not shown as claimed", played),
+      },
+    ],
+  },
   "home-claim": {
     game: FRONTIER,
     steps: [

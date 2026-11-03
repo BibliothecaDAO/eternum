@@ -462,3 +462,8 @@ uses the same ticket and linked-wallet holdings as founding. The home keeps its 
 `--steps home-claim --player <saved test identity> --storage-state <private state file>` opens Realm Labor, claims once,
 and checks today's claimed mark. It leaves the sheet screenshot and text; use the confirmed snapshot to verify exact
 Labor/Essence and the day's receipt.
+
+`--steps home-recovery` first records the existing entry picker's offered source and continues with the free home. On
+the map it writes `<step>-registration-ready.json`; after operator registration and the third snapshot, write
+`<step>-registered.json`. It then claims through Realm Labor and verifies today's claimed mark. This rehearsal uses a
+source-less dev home with a held ticket and leaves the source attachment to the operator.

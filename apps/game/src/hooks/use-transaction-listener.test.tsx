@@ -47,18 +47,21 @@ const fail = (payload: Record<string, unknown>) =>
     provider.emitter!.emit("transactionFailed", { type: TransactionType.TRAVEL_HEX, ...payload });
   });
 
-it("says on screen why the game refused an action, whichever handler sent it, and leaves its report to the reporter", async () => {
-  const logged = vi.spyOn(console, "error").mockImplementation(() => {});
-  await fail({
-    transactionHash: "0x476f",
-    stage: "revert",
-    message: "movement tile occupied",
-    error: new Error("movement tile occupied"),
-  });
-  expect(shownNotices()).toEqual(["movement tile occupied"]);
-  expect(logged).not.toHaveBeenCalled();
-  logged.mockRestore();
-});
+it.each(["movement tile occupied", "stale release"])(
+  "shows the refusal %s on screen, whichever handler sent it",
+  async (reason) => {
+    const logged = vi.spyOn(console, "error").mockImplementation(() => {});
+    await fail({
+      transactionHash: "0x476f",
+      stage: "revert",
+      message: reason,
+      error: new Error(reason),
+    });
+    expect(shownNotices()).toEqual([reason]);
+    expect(logged).not.toHaveBeenCalled();
+    logged.mockRestore();
+  },
+);
 
 it("says on screen an action the shard refused before sending it, in the refusal's words", async () => {
   const refusal = new Error("Another action from this account was sent first, perhaps from another tab. Try again.");
