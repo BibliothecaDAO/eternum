@@ -81,6 +81,8 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   again; on a desktop, right-click the tile whose hover offers Explore), then the next order dropped by leaving the map.
   Orders use the map's default zoom; the army must be deployed. The next order is a phone's: on a desktop an order goes
   from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
+- **Saved player state.** Pass `--storage-state /private/player-storage.json` with `--player` to restore and renew an
+  existing dev identity. If that state is signed out, the run refuses before sending an email code.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
@@ -443,3 +445,25 @@ source and image hashes live in `asset-sources/building-thumbnails.json`; regene
 | Named artwork, no arbitrary image path         | `IconMeaning`, the renderer's props and `scripts/catalog-guards.mjs` |
 | Distinct Transfer/Move and Production/Settings | `scripts/icons/validate.test.mjs` reproduces both rejected mappings  |
 | Every resource and reviewed painting exists    | `pnpm icons:check`, client build and client CI                       |
+
+`--steps stale-release --viewport 390x844` holds a real signed Move at the network and writes
+`<step>-release-ready.json` in the run's evidence directory. It deploys an army and explores if necessary before that
+marker; take the first game snapshot after preparation. On a quiescent dev game, apply the reviewed compatible release,
+take the second snapshot, then create `<step>-release-applied.json`. The step releases the original invoke, captures its
+refusal and UI, observes submission attempts for ten seconds, and writes `<step>-release-observed.json` with nonce
+before/after and actual fees from included receipts (a validation refusal has no inclusion fee). It retains no signature
+or account address in those measurements and never fabricates an RPC reply or applies a release. Use a fresh evidence
+directory for each run; the handshake expires after three minutes.
+
+A founded free home's daily source is self-serve at game entry → Choose a daily claim → Add this daily claim. The picker
+uses the same ticket and linked-wallet holdings as founding. The home keeps its traits, and Herald's `CampaignHome` or
+`SettledRealm` update enables the normal claim.
+
+`--steps home-claim --player <saved test identity> --storage-state <private state file>` opens Realm Labor, claims once,
+and checks today's claimed mark. It leaves the sheet screenshot and text; use the confirmed snapshot to verify exact
+Labor/Essence and the day's receipt.
+
+`--steps home-recovery` first records the existing entry picker's offered source and continues with the free home. On
+the map it writes `<step>-registration-ready.json`; after operator registration and the third snapshot, write
+`<step>-registered.json`. It then claims through Realm Labor and verifies today's claimed mark. This rehearsal uses a
+source-less dev home with a held ticket and leaves the source attachment to the operator.

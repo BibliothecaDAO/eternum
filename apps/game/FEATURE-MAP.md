@@ -392,6 +392,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   Realm already registered for the game shows alone, **Registered for this game**. The relay checks the holder live on
   Starknet, so a Realm just bought counts and one just sold does not; when Starknet does not answer it says **Realm
   check unavailable. Try again.**
+- Returning to a Frontier home with no daily-claim source (Play → **Resume**): when you hold a ticket or linked-wallet
+  Realms, entry reuses the picker as **Choose a daily claim**. Select one ticket or Realm, then **Add this daily
+  claim**; nothing is submitted before confirmation. Realms already backing a home in this game are marked **Taken** and
+  cannot be selected. **Continue with my free home** enters without attaching a source; with no sources to offer, entry
+  resumes normally. A home can gain only one source, which cannot be replaced. Its identity and existing traits stay
+  unchanged.
 - A Blitz lobby, signed out, asks to **Sign in** and returns to it. With no payout wallet, **Link wallet** opens
   Settings on the wallet (`/profile/settings?next=…`) and returns to the lobby once one is linked. The lobby keeps the
   places, Play lit. Sign-in from You or Settings returns to the page it was asked from.

@@ -4,7 +4,7 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { recordClientActionSendStage } from "@/observability/client-action-latency";
 import { fetchApi } from "@/runtime/app-api";
 import { requireActiveGame } from "@/runtime/world/store";
-import { canonicalRealm, dayOf, homeDailyClaim, type ExpeditionRules } from "@bibliothecadao/eternum";
+import { canonicalRealm, dayOf, heldRealmForHome, homeDailyClaim, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useRealmStores } from "../realm-stores";
 import { campaignMarkOf, readCampaignHome, type CampaignMark } from "./campaign-home";
@@ -25,7 +25,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   if (!realm || !day) return undefined;
   const { game_id, entity_id } = realm;
   if (!setup.store.get("LaborRules", { game_id }) || labor?.amount === undefined) return undefined;
-  const daily = homeDailyClaim(setup.store, { gameId: game_id, entityId: entity_id, realmId: realm.metadata.realm_id });
+  const daily = homeDailyClaim(setup.store, { gameId: game_id, entityId: entity_id });
   const claimedOn = (index: number) =>
     !!setup.store.get("LaborGrant", { game_id, home: entity_id, day: BigInt(index) });
   const mark = campaignMarkOf(readCampaignHome(setup.store, realm));
@@ -42,7 +42,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
     }),
     dailyAmount: daily?.labor ?? 0,
     dailyEssence: daily?.essence ?? 0,
-    home: laborHomeOf(daily !== null, mark, realm.metadata.realm_id),
+    home: laborHomeOf(daily !== null, mark, heldRealmForHome(setup.store, { gameId: game_id, entityId: entity_id })),
     days: seasonStrip({
       today: day.index,
       last: dayOf(rules, endAt - 1)!.index,
@@ -60,9 +60,10 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
 export type RealmLaborFacts = Omit<NonNullable<ReturnType<typeof useRealmLabor>>, "claim">;
 
 /** The home a claim comes from, or null for a home that claims nothing. */
-const laborHomeOf = (claims: boolean, mark: CampaignMark | null, realmId: number): LaborHome | null => {
+const laborHomeOf = (claims: boolean, mark: CampaignMark | null, realmId: number | null): LaborHome | null => {
   if (!claims) return null;
   if (mark) return { kind: "campaign", mark };
+  if (realmId === null) throw new Error("Claim source is missing its held Realm");
   return { kind: "realm", realmId, name: canonicalRealm(realmId).name };
 };
 

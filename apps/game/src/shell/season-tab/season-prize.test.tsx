@@ -90,7 +90,15 @@ const blitz = (gameId: number, start: number, slotId = gameId, wallet = "0x4a1")
   mode: "blitz",
   clock: { start_main_at: start },
   slotId,
-  player_state: { registered: true, settled: true, roster_wallet: wallet, held_realm_id: null, structures: [] },
+  player_state: {
+    registered: true,
+    settled: true,
+    roster_wallet: wallet,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: [],
+  },
 });
 
 const mount = async (seed?: (client: QueryClient) => void) => {

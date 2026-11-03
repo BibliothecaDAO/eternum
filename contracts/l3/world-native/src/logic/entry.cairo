@@ -1,4 +1,6 @@
-use starknet::storage::StoragePointerReadAccess;
+use starknet::Event;
+use starknet::storage::{StorageMapWriteAccess, StoragePointerReadAccess};
+use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
 pub fn assert_ledger_operator() {
     let operator = crate::state::read().entry.operator.read();
@@ -14,7 +16,7 @@ pub mod EntryAdministration {
     use crate::entry::{LaborGrant, LaborHome};
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
-    use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
+    use crate::resources::ResourceKey;
 
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
@@ -191,9 +193,15 @@ pub mod EntryAdministration {
                 "incorrect labor day",
             );
             let campaign_tier = self.home_campaign_tier(target, account);
-            let (amount, essence) = self.grant_home_amounts(target, campaign_tier, rules, context);
+            let (amount, essence) = super::grant_home_amounts(
+                target,
+                campaign_tier,
+                rules,
+                crate::commands::resource_context(context),
+                get_dep_component!(@self, Life).classes(target.game_id).resources.read(),
+            );
             let grant = LaborGrant { game_id: target.game_id, account, home: target.home, amount, essence };
-            self.record_labor_grant(day, grant);
+            super::record_labor_grant(day, grant);
             grant
         }
         fn home_campaign_tier(
@@ -209,73 +217,74 @@ pub mod EntryAdministration {
             if let Some((_, tier)) = self.data.settlements.campaign_homes.read((target.game_id, target.home)) {
                 return Some(tier);
             }
+            let source = self
+                .data
+                .settlements
+                .entitlements
+                .read((target.game_id, account))
+                .expect('home has no daily claim');
+            let realm_id: u32 = source.realm_id.try_into().expect('invalid canonical realm');
             assert!(
-                self
-                    .data
-                    .settlements
-                    .held_realm_homes
-                    .read((target.game_id, record.metadata.realm_id.into())) == target
-                    .home,
+                source.pass_kind == crate::settlement::HELD_REALM_KIND
+                    && self.data.settlements.held_realm_homes.read((target.game_id, realm_id)) == target.home,
                 "home has no daily claim",
             );
             None
         }
-        fn grant_home_amounts(
-            ref self: ComponentState<TContractState>,
-            target: LaborHome,
-            campaign_tier: Option<u8>,
-            rules: crate::entry::LaborRules,
-            context: crate::commands::ExecutionContext,
-        ) -> (u128, u128) {
-            let (labor_amount, essence_amount) = if campaign_tier == Some(crate::settlement::CAMPAIGN_GOLDEN) {
-                (rules.golden_amount, rules.golden_essence)
-            } else if campaign_tier.is_some() {
-                (rules.amount, rules.campaign_essence)
-            } else {
-                (rules.amount, 0)
-            };
-            let home = ResourceKey { game_id: target.game_id, entity_id: target.home };
-            let timestamp = starknet::get_block_timestamp();
-            let classes = get_dep_component!(@self, Life).classes(target.game_id);
-            let resources = IResourceOperationsLibraryDispatcher { class_hash: classes.resources.read() };
-            let resource_context = crate::commands::resource_context(context);
-            let amount = resources
-                .grant_resource(
-                    home,
-                    crate::resources::LABOR,
-                    labor_amount * crate::rules::RESOURCE_PRECISION,
-                    timestamp,
-                    resource_context,
-                );
-            let essence = if essence_amount != 0 {
-                resources
-                    .grant_resource(
-                        home,
-                        crate::resources::ESSENCE,
-                        essence_amount * crate::rules::RESOURCE_PRECISION,
-                        timestamp,
-                        resource_context,
-                    )
-            } else {
-                0
-            };
-            (amount, essence)
-        }
-        fn record_labor_grant(ref self: ComponentState<TContractState>, day: u64, grant: LaborGrant) {
-            self
-                .data
-                .entry
-                .home_labor_grants
-                .write((grant.game_id, grant.home, day), Some((grant.account, grant.amount, grant.essence)));
-            self
-                .emit(
-                    crate::events::RowSet {
-                        version: 1,
-                        model: 'LaborGrant',
-                        keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
-                        values: array![grant.account.into(), grant.amount.into(), grant.essence.into()].span(),
-                    },
-                );
-        }
     }
+}
+
+pub fn grant_home_amounts(
+    target: crate::entry::LaborHome,
+    campaign_tier: Option<u8>,
+    rules: crate::entry::LaborRules,
+    resource_context: crate::commands::ResourceContext,
+    resource_class: starknet::ClassHash,
+) -> (u128, u128) {
+    let (labor_amount, essence_amount) = if campaign_tier == Some(crate::settlement::CAMPAIGN_GOLDEN) {
+        (rules.golden_amount, rules.golden_essence)
+    } else if campaign_tier.is_some() {
+        (rules.amount, rules.campaign_essence)
+    } else {
+        (rules.amount, 0)
+    };
+    let home = ResourceKey { game_id: target.game_id, entity_id: target.home };
+    let timestamp = starknet::get_block_timestamp();
+    let resources = IResourceOperationsLibraryDispatcher { class_hash: resource_class };
+    let amount = resources
+        .grant_resource(
+            home, crate::resources::LABOR, labor_amount * crate::rules::RESOURCE_PRECISION, timestamp, resource_context,
+        );
+    let essence = if essence_amount != 0 {
+        resources
+            .grant_resource(
+                home,
+                crate::resources::ESSENCE,
+                essence_amount * crate::rules::RESOURCE_PRECISION,
+                timestamp,
+                resource_context,
+            )
+    } else {
+        0
+    };
+    (amount, essence)
+}
+
+pub fn record_labor_grant(day: u64, grant: crate::entry::LaborGrant) {
+    crate::state::write()
+        .entry
+        .home_labor_grants
+        .write((grant.game_id, grant.home, day), Some((grant.account, grant.amount, grant.essence)));
+    let event = EntryAdministration::Event::RowSet(
+        crate::events::RowSet {
+            version: 1,
+            model: 'LaborGrant',
+            keys: array![grant.game_id.into(), grant.home.into(), day.into()].span(),
+            values: array![grant.account.into(), grant.amount.into(), grant.essence.into()].span(),
+        },
+    );
+    let mut keys = array![selector!("AdministrationEvent")];
+    let mut data = array![];
+    event.append_keys_and_data(ref keys, ref data);
+    starknet::syscalls::emit_event_syscall(keys.span(), data.span()).unwrap();
 }

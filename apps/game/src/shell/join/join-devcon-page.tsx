@@ -111,7 +111,7 @@ const useOpenOnReturn = (ready: boolean, open: () => void) => {
 /**
  * The signed-in account's ticket. One it already holds is shown as held, and this flyer's code is never redeemed: the
  * account keeps one ticket per campaign, so the server would only answer the held one. Otherwise the kept code opens
- * one. The code is let go once answered, or refused for good (taken, or the realm already founded).
+ * one. The code is let go once answered, or refused for good (taken, or the realm already has a source).
  */
 const openTicket = async (): Promise<Opening> => {
   try {

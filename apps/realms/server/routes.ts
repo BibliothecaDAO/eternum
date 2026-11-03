@@ -16,8 +16,8 @@ import {
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleBuildOrders } from "./build-orders";
-import { hasEnteredCampaignGame } from "./campaign-entry";
-import { handleCampaignRedeem } from "./campaign-tickets";
+import { hasCampaignHomeSource } from "./campaign-entry";
+import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
@@ -103,9 +103,15 @@ export const routeIdentityRequest = async (
   if (pathname.startsWith("/api/chat/")) return routeChat(request, env, auth, pathname);
   if (pathname === "/api/notifications/preferences") return handleNotificationPreferences(request, auth, env.DB);
   if (pathname === "/api/build-orders") return handleBuildOrders(request, auth, env.DB);
+  if (pathname === "/api/operator/campaign-draw" && request.method === "POST") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleCampaignDraw(request, env.DB, (realmsId, presets) =>
+      hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
+    );
+  }
   if (pathname === "/api/campaigns/redeem")
     return handleCampaignRedeem(request, auth, env.DB, (realmsId, presets) =>
-      hasEnteredCampaignGame(env, platform.fetchShard, realmsId, presets),
+      hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
     );
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
@@ -168,6 +174,7 @@ const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken
 /** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {
   const operatorRoute = [
+    "/api/operator/campaign-draw",
     "/api/devices/bots",
     "/api/directory/shards",
     "/api/directory/shards/status",

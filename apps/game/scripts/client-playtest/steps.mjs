@@ -1,3 +1,4 @@
+import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import sharp from "sharp";
@@ -16,6 +17,7 @@ import {
   compareCensus,
   judgeAfterDoorway,
 } from "./evidence.mjs";
+import { watchReleaseMove } from "./stale-release.mjs";
 import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
@@ -4006,6 +4008,80 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "home-recovery": {
+    game: { ...FRONTIER, entersFromHome: true },
+    steps: [
+      {
+        name: "inspect-daily-source-choice",
+        play: async ({ browser, extraScreenshot }) => {
+          const offered = await readUntil(
+            () =>
+              browser.read(`JSON.stringify(document.querySelector('.home-picker__featured h3')?.textContent ?? null)`),
+            (name) => Boolean(name && name !== "A free home"),
+            PLAYABLE_WAIT_MS,
+          );
+          if (!offered) return { offered };
+          const screenshot = extraScreenshot("choice");
+          browser.click("Continue with my free home");
+          return { offered, screenshot };
+        },
+        settleMs: 5_000,
+        verify: ({ played }) =>
+          played.offered ? completed(played) : failed("daily source choice not offered", played),
+      },
+      {
+        name: "recover-and-claim-home",
+        play: async ({ base, browser, owner }) => {
+          const ready = `${base}-registration-ready.json`;
+          const registered = `${base}-registered.json`;
+          writeFileSync(ready, JSON.stringify({ ready: true }), { mode: 0o600, flag: "wx" });
+          if (
+            !(await waitUntil(() => {
+              owner.throwIfCancelled();
+              return existsSync(registered);
+            }, 180_000))
+          )
+            throw new Error("operator registration deadline");
+          return claimFoundedHome({ browser });
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.claimed ? completed(played) : failed("daily claim not shown as claimed", played),
+      },
+    ],
+  },
+  "home-claim": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "claim-founded-home",
+        play: claimFoundedHome,
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.claimed ? completed(played) : failed("the daily claim did not become claimed in the sheet", played),
+      },
+    ],
+  },
+  "stale-release": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "stale-release-move",
+        play: moveAcrossRelease,
+        settleMs: 10_000,
+        verify: ({ played, actionLatency, window }) => {
+          if (!played.army || !played.target) return blocked("no adjacent Move offered", played);
+          if (!played.firstSent || !played.applied) return failed("release boundary was not exercised", played);
+          const orders = describeOrders({ armyTrace: actionLatency.armyMovement, ...window });
+          return played.stale
+            ? completed({ orders, cost: played.cost, message: played.message })
+            : failed("the held move did not report stale release", { orders, ...played });
+        },
+      },
+    ],
+  },
   actions: { game: FRONTIER, steps: ACTION_STEPS },
   "ownership-rings": { game: FRONTIER, steps: OWNERSHIP_RING_STEPS },
   "blitz-orders": { game: BLITZ, steps: BLITZ_ORDER_STEPS },
@@ -4135,6 +4211,84 @@ async function clearTheSelection({ browser }) {
 async function tapTheCentre({ browser }) {
   browser.tap([0, 0]);
   return {};
+}
+
+/** The live daily claim, verified by the same claimed-day state the player reads. */
+async function claimFoundedHome({ browser }) {
+  const pressed = await claimARealmsLabor({ browser });
+  const claimed =
+    pressed.watching &&
+    (await readUntil(
+      () =>
+        browser.read(
+          `document.querySelector(${JSON.stringify(REALMS_SHEET)})?.querySelector('[aria-current="date"]')?.getAttribute('data-state') === 'claimed'`,
+        ),
+      Boolean,
+      ORDER_OUTCOME_WAIT_MS,
+    ));
+  return {
+    ...pressed,
+    claimed: Boolean(claimed),
+    sheetText: browser.read(
+      `JSON.stringify(document.querySelector(${JSON.stringify(REALMS_SHEET)})?.innerText ?? null)`,
+    ),
+  };
+}
+
+/** Holds a real signed move until the operator applies a compatible release; no RPC answer is fabricated. */
+async function moveAcrossRelease({ base, browser, devTools, extraScreenshot, owner }) {
+  if (onADesktop()) throw new Error("stale-release needs the phone viewport for tap then Enter");
+  const ready = `${base}-release-ready.json`;
+  const applied = `${base}-release-applied.json`;
+  if (existsSync(ready) || existsSync(applied)) throw new Error("release evidence already exists; use a new run");
+  let army = await focusTheArmyFromItsDock(browser);
+  if (!army) {
+    await deployFromTheDock({ browser });
+    await owner.sleep(6_000);
+    army = await focusTheArmyFromItsDock(browser);
+  }
+  if (!army) return { army };
+  await exploreBesideArmy({ browser, extraScreenshot });
+  await owner.sleep(6_000);
+  const observation = watchReleaseMove(devTools);
+  const gate = await openOrderSendGate(devTools);
+  try {
+    const move = await orderBesideArmy({ browser, extraScreenshot }, "Move");
+    const target = move.target;
+    if (!target) return { army, target, offered: move.offered };
+    const firstSent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
+    if (!firstSent) return { army, target, firstSent };
+    await observation.before();
+    extraScreenshot("held");
+    writeFileSync(ready, JSON.stringify({ ready: true }), { mode: 0o600, flag: "wx" });
+    const released = await waitUntil(() => {
+      owner.throwIfCancelled();
+      return existsSync(applied);
+    }, 180_000);
+    if (!released) throw new Error("release application deadline; held move not used as proof");
+    const lines = await linesLoggedDuring(browser, () => gate.close());
+    const message = browser.read("JSON.stringify(document.body.innerText)");
+    extraScreenshot("refused");
+    await owner.sleep(10_000);
+    const cost = await observation.measure();
+    writeFileSync(`${base}-release-observed.json`, JSON.stringify({ observed: true, cost }), {
+      mode: 0o600,
+      flag: "wx",
+    });
+    return {
+      army,
+      target,
+      firstSent,
+      applied: true,
+      stale: cost.attempts.some((attempt) => attempt.staleRelease),
+      cost,
+      message,
+      provokedErrors: refusalErrors(lines),
+    };
+  } finally {
+    await gate.close();
+    observation.stop();
+  }
 }
 
 /**

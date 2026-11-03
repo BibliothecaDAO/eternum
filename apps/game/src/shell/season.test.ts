@@ -7,23 +7,35 @@ import type { DirectoryGame } from "./herald";
 import { chooseSeason, directoryDay, seasonTitle } from "./season";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
-const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame =>
-  ({
-    chainId: "0xa",
-    game_id: gameId,
-    mode: "frontier",
-    status: "Live",
-    clock: { start_settling_at: 0, start_main_at: startMainAt, end_at: 9_000_000_000, end_grace_seconds: 0 },
-    player_state: {
-      registered: ownRealm,
-      settled: ownRealm,
-      roster_wallet: null,
-      held_realm_id: null,
-      structures: ownRealm
-        ? [{ entity_id: 1, category: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
-        : [],
-    },
-  }) as DirectoryGame;
+const season = (gameId: number, startMainAt: number, ownRealm: boolean): DirectoryGame => ({
+  ready: true,
+  dev_mode_on: false,
+  expedition: null,
+  name: "Season",
+  preset_id: 6,
+  player_count: ownRealm ? 1 : 0,
+  roster_count: 0,
+  registration: null,
+  settlement: null,
+  settled_realms_count: ownRealm ? 1 : 0,
+  settled_villages_count: 0,
+  chainId: "0xa",
+  game_id: gameId,
+  mode: "frontier",
+  status: "Live",
+  clock: { start_settling_at: 0, start_main_at: startMainAt, end_at: 9_000_000_000, end_grace_seconds: 0 },
+  player_state: {
+    registered: ownRealm,
+    settled: ownRealm,
+    roster_wallet: null,
+    held_realm_id: null,
+    has_home_source: false,
+    taken_realm_ids: [],
+    structures: ownRealm
+      ? [{ entity_id: 1, category: 1, level: 1, realm_id: 7, coord_x: 0, coord_y: 0, resources_packed: "0" }]
+      : [],
+  },
+});
 
 describe("the season a screen shows", () => {
   it("is the player's own, the latest to start among several, whatever the directory's order", () => {
