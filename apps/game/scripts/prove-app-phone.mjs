@@ -13,8 +13,9 @@
  * - Frontier's Season board: its prizes folded in one line that a tap opens and folds, more of the board in sight than
  *   the podium left, and after a flick to the board's end the columns' names still on top;
  * - Frontier's Chat while typing, under the owner's keyboard (533 px: his phone leaves 311 px above it): its rooms' tabs
- *   in the head row beside its cross, the strip and the place bar stepped aside, the field above the keyboard and the
- *   history in sight, and the strip back once the keyboard goes.
+ *   in the head row beside its cross, a pinch-zoom with nothing typed taken for no keyboard, the strip and the place bar
+ *   stepped aside while typing, the field above the keyboard and the history in sight, and the strip back once the
+ *   keyboard goes.
  *
  * Headless Chrome draws no on-screen keyboard: it is played as the page meets one, its visual viewport shortened by a
  * phone keyboard's 336 px and resized (use-keyboard-inset.ts reads it from there). Taps and drags are DevTools touch
@@ -390,6 +391,22 @@ const keyboardUp = (height) => `(() => {
   return document.documentElement.dataset.keyboard ?? null;
 })()`;
 
+/** A pinch-zoom as the page meets one: its visual viewport scaled up, showing that much less of the page. */
+const zoomedIn = (scale) => `(() => {
+  const height = innerHeight / ${scale};
+  Object.defineProperty(visualViewport, "height", { configurable: true, get: () => height });
+  Object.defineProperty(visualViewport, "scale", { configurable: true, get: () => ${scale} });
+  visualViewport.dispatchEvent(new Event("resize"));
+  return document.documentElement.dataset.keyboard ?? null;
+})()`;
+
+const ZOOM_OUT = `(() => {
+  delete visualViewport.height;
+  delete visualViewport.scale;
+  visualViewport.dispatchEvent(new Event("resize"));
+  return true;
+})()`;
+
 const KEYBOARD_DOWN = `(() => {
   delete visualViewport.height;
   visualViewport.dispatchEvent(new Event("resize"));
@@ -533,6 +550,17 @@ const chatTyping = async (b, phone, out, record) => {
     check: "the rooms' tabs stand in the head row beside its cross",
     ok: reading.headTabs >= 2 && reading.headClose,
     reading,
+  });
+  // A pinch-zoom shows less of the page too, with nothing typed: no keyboard, and the strip stays.
+  const zoomed = b.evaluate(zoomedIn(2));
+  await sleep(400);
+  const zoomRead = b.evaluate(chatSeen(Number(PHONE[1])));
+  b.evaluate(ZOOM_OUT);
+  await sleep(400);
+  record.checks.push({
+    check: "a pinch-zoom with nothing typed is no keyboard: the strip stays",
+    ok: zoomed === null && !zoomRead.stripGone,
+    zoomed,
   });
   const field = b.evaluate(centreOf('section[aria-label="Chat"] textarea, section[aria-label="Chat"] input'));
   if (field) await phone.tap(field);
