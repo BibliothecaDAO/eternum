@@ -1,4 +1,5 @@
 pub use world_test_support::tests::registrar::*;
+use crate::tests::army_merge::{progress, slot, timers, write_progress};
 
 
 #[test]
@@ -937,7 +938,6 @@ fn expedition_armies_merge_into_the_lower_stamina_and_never_past_the_size_limit(
 
 #[test]
 fn expedition_recruitment_uses_todays_home_and_preserves_progress_and_slot_stamina() {
-    use crate::tests::army_merge::{progress, slot, timers, write_progress};
     for direction in 0_u8..6 {
         let d = setup();
         let (game_id, preset, category) = expedition_home(d);

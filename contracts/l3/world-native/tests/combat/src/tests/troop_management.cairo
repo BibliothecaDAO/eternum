@@ -1,4 +1,5 @@
 pub use world_test_support::tests::troop_management::*;
+use crate::game::IGameDispatcherTrait;
 
 
 #[test]
@@ -39,7 +40,6 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stami
 
 #[test]
 fn blitz_recruitment_still_caps_stamina_at_the_initial_bar() {
-    use crate::game::IGameDispatcherTrait;
     let (d, _, first, _) = setup();
     let rules = crate::game::IGameDispatcher { contract_address: d.games }.rules(3);
     let mut before = troop(d, first).unwrap();
