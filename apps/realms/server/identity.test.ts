@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "n
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import {
   buildSiwsMessage,
   normalizeStarknetAddress,
@@ -991,6 +991,14 @@ describe("identity Worker", () => {
     };
     const ticket = (tier: string) => [200, { campaign: "devcon-2026", tier }];
     const taken = [410, { error: "ticket_taken" }];
+    /** The tiers of the printed codes no account holds yet, which a shared code draws from. */
+    const unspentTiers = async () =>
+      (
+        await env.DB.prepare(
+          `SELECT "tier" FROM "campaign_codes" AS code WHERE "campaign" = 'devcon-2026'
+           AND NOT EXISTS (SELECT 1 FROM "campaign_tickets" AS ticket WHERE ticket."code_hash" = code."code_hash")`,
+        ).all<{ tier: string }>()
+      ).results.map(({ tier }) => tier);
     type Player = Awaited<ReturnType<typeof player>>;
     let first: Player, second: Player, regular: Player, other: Player, late: Player;
     let goldenRacers: [Player, Player], regularRacers: [Player, Player];
@@ -1045,6 +1053,41 @@ describe("identity Worker", () => {
       const raced = await Promise.all(racers.map((racer) => racer.redeem(code)));
       expect(raced.map(([status]) => status).sort()).toEqual([200, 410]);
       expect(raced.find(([status]) => status === 200)).toEqual(ticket(tier));
+    });
+
+    it("draws each account bringing a shared code one unspent printed ticket, at its tier, until none is left", async () => {
+      const shared = "SH4R3DQX";
+      // The operator's script writes the shared code's SQL from its environment; loading it twice changes nothing.
+      const out = join(mkdtempSync(join(tmpdir(), "campaign-shared-")), "shared.sql");
+      execFileSync("pnpm", ["campaign-shared-code", "devcon-2026", out], {
+        cwd: new URL("..", import.meta.url),
+        env: { ...process.env, CAMPAIGN_SHARED_CODE: shared.toLowerCase() },
+      });
+      const sql = readFileSync(out, "utf8");
+      expect(sql).not.toContain(shared);
+      await env.DB.batch([sql, sql].map((statement) => env.DB.prepare(statement)));
+      rmSync(dirname(out), { recursive: true, force: true });
+      await Promise.all([
+        printed("D2AWG8LD", "golden"),
+        printed("P5YKE3MV", "regular"),
+        printed("U7CJ9TFB", "regular"),
+      ]);
+      const pool = await unspentTiers();
+      expect(pool.length).toBeGreaterThanOrEqual(3);
+      const drawers = await Promise.all(pool.map((_, index) => player(`shared-${index}`)));
+      // Every account draws at once: each gets a different printed code, so the drawn tiers are exactly the pool's.
+      const drawn = await Promise.all(drawers.map((drawer) => drawer.redeem(shared)));
+      expect(drawn.map(([status]) => status)).toEqual(pool.map(() => 200));
+      expect(drawn.map(([, body]) => (body as { tier: string }).tier).sort()).toEqual([...pool].sort());
+      expect(await unspentTiers()).toEqual([]);
+      // A retry, with the shared code or none, answers the ticket drawn.
+      expect(await drawers[0]!.redeem(shared)).toEqual(drawn[0]);
+      expect(await drawers[0]!.redeem()).toEqual(drawn[0]);
+      expect(await campaignTicketFor(env.DB, drawers[0]!.realmsId, 6)).toEqual(drawn[0]![1]);
+      // Once every printed ticket is drawn, the shared code gives none.
+      const late = await player("shared-late");
+      expect(await late.redeem(shared)).toEqual(taken);
+      expect(await campaignTicketFor(env.DB, late.realmsId, 6)).toBeNull();
     });
 
     it("refuses a new ticket after the season but still answers a held ticket", async () => {
@@ -1139,6 +1182,11 @@ describe("identity Worker", () => {
     const founded = await player("founded-first", true);
     expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
     expect(await founded("F7QZ2KHM")).toEqual([409, { error: "realm_founded" }]);
+    // A shared code draws nothing for it either.
+    await env.DB.prepare('INSERT INTO "campaign_shared_codes" ("campaign", "code_hash") VALUES (?, ?)')
+      .bind("devcon-2026", await campaignCodeHash("devcon-2026", "SH4R3DW7"))
+      .run();
+    expect(await founded("SH4R3DW7")).toEqual([409, { error: "realm_founded" }]);
     // The friend it is passed to, not yet in the game, opens it at its tier.
     const friend = await player("flyer-friend", false);
     expect(await friend("F7QZ2KHM")).toEqual([200, { campaign: "devcon-2026", tier: "golden" }]);
