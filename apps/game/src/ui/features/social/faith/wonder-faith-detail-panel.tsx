@@ -78,7 +78,7 @@ export const WonderFaithDetailPanel = ({
           compact
           className="col-span-2"
         />
-        <StatCard label="FP/s" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono compact />
+        <StatCard label="FP rate" value={formatRate(wonderDetail.totalFaithPointsPerSec)} mono compact />
         <StatCard label="Followers" value={formatExact(wonderDetail.followerCount)} mono compact />
       </div>
     );
@@ -106,9 +106,9 @@ export const WonderFaithDetailPanel = ({
       )}
       <div className="grid grid-cols-2 gap-2 text-hud-label">
         <StatCard label="Total FP" value={formatExact(wonderDetail.totalFaithPoints)} mono />
-        <StatCard label="Total FP/sec" value={formatExact(wonderDetail.totalFaithPointsPerSec)} mono />
-        <StatCard label="Own Baseline" value={formatExact(wonderDetail.ownBaselinePerSec)} mono />
-        <StatCard label="Followers FP/sec" value={formatExact(wonderDetail.followersContributionPerSec)} mono />
+        <StatCard label="Total FP rate" value={formatRate(wonderDetail.totalFaithPointsPerSec)} mono />
+        <StatCard label="Own Baseline" value={formatRate(wonderDetail.ownBaselinePerSec)} mono />
+        <StatCard label="Followers FP rate" value={formatRate(wonderDetail.followersContributionPerSec)} mono />
       </div>
 
       <div className="rounded-lg border border-hud-line bg-hud-hover p-3">

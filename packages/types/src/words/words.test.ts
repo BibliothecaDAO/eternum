@@ -84,9 +84,12 @@ describe("numbers", () => {
     expect(formatPercent(undefined)).toBe("—");
   });
 
-  it("writes a rate a second from one a second up, a minute below, never an hour", () => {
-    expect(formatRate(2.5)).toBe("+2.5/s");
-    expect(formatRate(12.4)).toBe("+12/s");
+  it("writes every rate a minute's, never a second's or an hour's", () => {
+    // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
+    expect(formatRate(1.1)).toBe("+66/min");
+    expect(formatRate(54 / 60)).toBe("+54/min");
+    expect(formatRate(2.5)).toBe("+150/min");
+    expect(formatRate(1_000)).toBe("+60,000/min");
     expect(formatRate(0.5)).toBe("+30/min");
     // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
     expect(formatRate(6.3 / 60)).toBe("+6/min");

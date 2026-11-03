@@ -1,4 +1,4 @@
-import { formatExact } from "@bibliothecadao/types";
+import { formatExact, formatRate } from "@bibliothecadao/types";
 import { usePopoverStore } from "@/hooks/store/use-popover-store";
 import { displayAddress } from "@/ui/utils/utils";
 import type { FaithLeaderboardEntry } from "@/services/leaderboard/faith-leaderboard-service";
@@ -67,7 +67,7 @@ export const FaithLeaderboardPanel = () => {
               <span>Wonder</span>
               <span>Owner</span>
               <span className="text-right">Total FP</span>
-              <span className="text-right">FP/sec</span>
+              <span className="text-right">FP rate</span>
               <span className="text-right">Followers</span>
             </HudTableHead>
             {entries.map((entry) => (
@@ -86,7 +86,7 @@ export const FaithLeaderboardPanel = () => {
                   </span>
                 </span>
                 <span className="text-right font-mono">{formatExact(entry.totalFaithPoints)}</span>
-                <span className="text-right font-mono">{formatExact(entry.faithPointsPerSecond)}</span>
+                <span className="text-right font-mono">{formatRate(entry.faithPointsPerSecond)}</span>
                 <span className="text-right font-mono">{formatExact(entry.followerCount)}</span>
               </HudTableRow>
             ))}

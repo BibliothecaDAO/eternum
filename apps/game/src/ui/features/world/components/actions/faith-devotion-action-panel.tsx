@@ -21,7 +21,7 @@ import {
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { displayAddress } from "@/ui/utils/utils";
 import { useGame } from "@/hooks/context/game-context";
-import { ID, formatExact, formatPercent, formatRate, formatFigure } from "@bibliothecadao/types";
+import { ID, formatExact, formatPercent, formatRate } from "@bibliothecadao/types";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -392,7 +392,7 @@ const WonderTable = ({
   <div>
     <HudTableHead cols={WONDER_COLUMNS}>
       <span>Wonder</span>
-      <span className="text-right">FP/sec</span>
+      <span className="text-right">FP rate</span>
       <span className="text-right">Followers</span>
     </HudTableHead>
     {entries.map((entry) => (
@@ -407,7 +407,7 @@ const WonderTable = ({
           <span className="block truncate text-hud-body text-hud-ink">{entry.wonderName}</span>
           <span className="block truncate text-hud-label text-hud-muted">{buildWonderOwnerLabel(entry)}</span>
         </span>
-        <span className="text-right text-hud-body text-hud-ink">{formatFigure(entry.faithPointsPerSecond)}</span>
+        <span className="text-right text-hud-body text-hud-ink">{formatRate(entry.faithPointsPerSecond)}</span>
         <span className="text-right text-hud-body text-hud-ink">{formatExact(entry.followerCount)}</span>
       </HudTableRow>
     ))}

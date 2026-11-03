@@ -226,7 +226,7 @@ const ROLE_SAMPLES: Record<keyof typeof HUD_TYPE, string> = {
   title: "Structure Tile · Guards",
   body: "Sacred Hyperstructure of Destiny, held by The Vanguard",
   strong: "1,576 · Deploy",
-  label: "points/s · 3/4 · 13m · 0·103",
+  label: "points/min · 3/4 · 13m · 0·103",
   badge: "1.2K",
 };
 

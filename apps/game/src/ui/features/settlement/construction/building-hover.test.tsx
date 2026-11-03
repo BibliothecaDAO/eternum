@@ -57,7 +57,7 @@ it("leaves the numbers off the Build card and writes them compactly in its hover
       active={false}
       entityId={undefined}
       useSimpleCost={false}
-      gives="Copper +2/s"
+      gives="Copper +120/min"
       requirements={[
         { resource: ResourcesIds.Labor, current: 2_834, amount: 66 },
         { resource: ResourcesIds.Wood, current: 50, amount: 66 },
@@ -67,7 +67,7 @@ it("leaves the numbers off the Build card and writes them compactly in its hover
   // The card names the building and offers its actions; what it gives and costs is a hover away.
   expect(card.querySelector(".ui-card__title")?.textContent).toBe("Copper");
   expect(card.querySelector(".ui-card__detail")).toBeNull();
-  expect(card.textContent).not.toContain("+2/s");
+  expect(card.textContent).not.toContain("+120/min");
   expect(card.textContent).not.toContain("you have");
 
   act(() =>
@@ -80,7 +80,7 @@ it("leaves the numbers off the Build card and writes them compactly in its hover
   expect(rows.map((row) => row.className.includes("text-hud-bad"))).toEqual([false, true]);
   expect(hover.textContent).toContain("Copper");
   expect(hover.textContent).toContain("2 population");
-  expect(hover.textContent).toContain("Copper +2/s");
+  expect(hover.textContent).toContain("Copper +120/min");
   expect(hover.textContent).toContain("2 Copper from 1 Wheat · 0.3 Wood · 0.2 Coal");
 });
 
@@ -116,7 +116,7 @@ const liveCard = () => {
   const root = createRoot(host);
   const store = frontierDay().store;
   const Tip = () => <aside data-tip-host>{useTooltipStore((state) => state.tooltip?.content)}</aside>;
-  const render = ({ held, cost = 66, gives = "Copper +2/s", card = true }: Partial<Reading> & { card?: boolean }) =>
+  const render = ({ held, cost = 66, gives = "Copper +120/min", card = true }: Partial<Reading> & { card?: boolean }) =>
     act(() =>
       root.render(
         <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
@@ -170,9 +170,9 @@ it("follows a changed cost and a changed output while open", () => {
   const card = liveCard();
   card.render({ held: 100 });
   card.open();
-  card.render({ held: 100, cost: 120, gives: "Copper +3/s" });
+  card.render({ held: 100, cost: 120, gives: "Copper +180/min" });
   expect(card.tip().textContent).toContain("Wood100 / 120");
-  expect(card.tip().textContent).toContain("Copper +3/s");
+  expect(card.tip().textContent).toContain("Copper +180/min");
   expect(card.tip().querySelector('[aria-label="Build cost"] li')!.className).toContain("text-hud-bad");
   card.done();
 });
