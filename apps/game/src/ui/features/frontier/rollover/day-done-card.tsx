@@ -1,7 +1,9 @@
 import { formatExact, formatShort } from "@bibliothecadao/types";
+import type { DayAsk } from "@/shell/profile/alerts-ask";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudButton, HudChip, HudMeter, HudNotice, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import {
+  ALERTS_ASK,
   ARMIES_ENDED,
   CONTINUE,
   DAY,
@@ -13,6 +15,7 @@ import {
   tomorrowLasts,
 } from "@/ui/design-system/kit/words";
 
+import { AlertsAskCard } from "../alerts-ask-card";
 import { DayEnds } from "../day-ends";
 import type { DayClock } from "../hud/day-clock";
 import { type DayTotals, DayTotalsGrid } from "../log/day-totals";
@@ -22,7 +25,8 @@ import type { DayHistory } from "../log/player-day";
  * The day-done card (wireframe 11), over the map at the day's end (DayEndScreen places it): the day done and the realm
  * kept, when the new day ends and how long tomorrow lasts, the ended day's totals (and why they are unknown, when the
  * player's history cannot give them), the rank it moved to, and the troops the ended armies took with them against
- * those that came home. Continue goes on into the new day.
+ * those that came home. A home with no daily claim may be asked for alerts there, under Continue's weight. Continue goes
+ * on into the new day.
  */
 export const DayDoneCard = ({
   endedDay,
@@ -34,6 +38,7 @@ export const DayDoneCard = ({
   armies,
   troopsLost,
   returned,
+  ask,
   onContinue,
 }: {
   endedDay: number;
@@ -50,6 +55,8 @@ export const DayDoneCard = ({
   troopsLost: number;
   /** What Homecoming sent home, and what fitted the troop store. */
   returned?: { sent: number; fitted: number };
+  /** The game day's ask for alerts (useDayAsk), for a home with no daily claim. */
+  ask?: DayAsk;
   onContinue: () => void;
 }) => (
   <HudPanel
@@ -80,6 +87,13 @@ export const DayDoneCard = ({
       </p>
     )}
     {armies > 0 && <ArmiesLine armies={armies} troopsLost={troopsLost} returned={returned} />}
+    {ask && (
+      <AlertsAskCard
+        dayAsk={ask}
+        says={{ remind: ALERTS_ASK.day(endedDay + 2), install: ALERTS_ASK.install }}
+        verb="remind"
+      />
+    )}
     <div className="grid w-full">
       <HudButton kind="primary" onClick={onContinue}>
         {CONTINUE}

@@ -1,6 +1,6 @@
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
-import type { AlertsAsk } from "@/shell/profile/alerts-ask";
+import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -239,13 +239,15 @@ const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
 /**
  * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
- * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
+ * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the game day's ask after
+ * the claim (on this device, or an iPhone's browser), the season's last day.
  */
 type LabRealms = {
   home: "golden" | "devcon" | "held" | "none";
   claimed?: boolean;
   room?: number;
   ask?: "remind" | "install" | "on";
+  dayAsk?: "remind" | "install";
   lastDay?: boolean;
 };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
@@ -780,6 +782,13 @@ const STATES = {
     armies: [],
     dayDone: { ...DAY_DONE, totals: UNKNOWN_TOTALS, history: "short" as const },
   },
+  // A home with no daily claim, asked for alerts on the day's summary (push ask B).
+  "day-done-ask": {
+    clock: NIGHT,
+    stores: STORES,
+    armies: [],
+    dayDone: { ...DAY_DONE, ask: labDayAsk("remind")! },
+  },
   night: {
     clock: NIGHT,
     stores: [
@@ -1112,6 +1121,21 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1240 },
     realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
+  },
+  // The game day's ask right after the claim (push ask A), and the same on an iPhone's browser.
+  "realms-ask": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "remind", dayAsk: "remind" },
+  },
+  "realms-ask-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "install", dayAsk: "install" },
   },
 } as const;
 
@@ -1819,6 +1843,7 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     labor={labRealmLabor(realms)}
     map={realms.home === "held" ? LAB_REALM_MAP : null}
     ask={labAlertsAsk(realms.ask)}
+    dayAsk={labDayAsk(realms.dayAsk)}
     sending={false}
     onClaim={noop}
     onClose={noop}
@@ -1886,6 +1911,11 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
 
 const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
   ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
+
+/** A game day's ask on the fiction. A declaration, with its own empty taps: the rooms above build theirs at load. */
+function labDayAsk(kind: LabRealms["dayAsk"]): DayAsk | null {
+  return kind === undefined ? null : { ask: { kind, busy: false, act: () => undefined }, notNow: () => undefined };
+}
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

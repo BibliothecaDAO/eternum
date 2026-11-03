@@ -26,6 +26,9 @@ const facts = vi.hoisted(() => ({
   structuresOwnedBy: () => [{ entity_id: 7 }],
 }));
 
+/** Realm 7 as the HUD hands it to the day's end: the game, its entity and its realm number (a free home: no Labor rules). */
+const REALM_7 = { game_id: 1, entity_id: 7n, metadata: { realm_id: 7 } } as never;
+
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
   usePlayerNames: () => ({ text: () => "", reading: () => ({ state: "waiting", text: "…" }) }),
@@ -110,7 +113,7 @@ let client: QueryClient;
 const draw = () =>
   root.render(
     <QueryClientProvider client={client}>
-      <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={{} as never} visiting={false} />
+      <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={REALM_7} visiting={false} />
     </QueryClientProvider>,
   );
 const totalsShown = () =>
@@ -255,7 +258,7 @@ describe("a device arriving in a new day", () => {
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>
-          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={{} as never} visiting={visiting} />
+          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={REALM_7} visiting={visiting} />
         </QueryClientProvider>,
       ),
     );

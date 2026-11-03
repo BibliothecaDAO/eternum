@@ -69,13 +69,17 @@ vi.mock("@/hooks/context/game-context", () => ({
 }));
 vi.mock("@/hooks/helpers/use-native-facts", () => ({ useNativeRevision: () => 0 }));
 vi.mock("@/hooks/helpers/use-block-timestamp", () => ({ useNowSeconds: () => facts.now }));
-vi.mock("@/runtime/world/store", () => ({ requireActiveGame: () => ({ chainId: "0x52", gameId: 3 }) }));
+vi.mock("@/runtime/world/store", () => ({
+  requireActiveGame: () => ({ chainId: "0x52", gameId: 3 }),
+  getActiveGame: () => ({ chainId: "0x52", gameId: 3 }),
+}));
 vi.mock("../realm-stores", () => ({ useRealmStores: () => ({ labor: { amount: facts.balance, limit: 18000 } }) }));
 /** The account's held-Realms answer: Realm 711 with its map from the Realm index. */
 vi.mock("@/hooks/use-holdings", () => ({
   useHeldRealms: () => ({ held: { data: [{ realmId: 711, map: "https://index.test/711.svg" }] } }),
 }));
 import { snapshotClientActionLatency } from "@/observability/client-action-latency";
+import { useAskMemory } from "@/shell/profile/alerts-ask";
 import { FrontierRealms } from "./frontier-realms";
 import { RealmsChip } from "./lords-purse";
 import { dailyClaimWaiting } from "./realm-labor";
@@ -407,11 +411,21 @@ it("once claimed, asks for a push when the next day opens, and one tap turns thi
   try {
     alerts.owner = "0xowner";
     facts.claimedDay = 0n;
+    useAskMemory.setState({ notNows: 0, lastNotNow: null });
     await show();
-    expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Day 2 opens in \d/);
-    await act(async () => button("Remind me")!.click());
+    // Right after the claim, the game day's ask stands in the countdown's place and says it.
+    expect(host.querySelector(".ui-notice")?.textContent).toMatch(
+      /^Day 2 opens in \d.*\. Get one push when your claim is ready\.$/,
+    );
+    expect(button("Remind me")).toBeUndefined();
+    await act(async () => button("Turn on alerts")!.click());
     expect(alerts.toggle).toHaveBeenCalledTimes(1);
     expect(alerts.save).toHaveBeenCalledWith("important");
+    // Not now gives the place back to the small Remind me until the next game day.
+    await act(async () => button("Not now")!.click());
+    expect(button("Turn on alerts")).toBeUndefined();
+    expect(host.querySelector('[role="timer"]')?.textContent).toMatch(/^Day 2 opens in \d/);
+    expect(button("Remind me")).toBeDefined();
 
     // On already, at All: nothing to ask, the reminder on. On, but the account's level Off: one tap lifts the level only.
     alerts.device = "on";

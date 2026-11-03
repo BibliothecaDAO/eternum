@@ -639,6 +639,18 @@ export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
 export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
+/**
+ * The game day's ask to turn alerts on (useDayAsk): after the day's claim for a home with one, on the day's summary for
+ * a home without, so its line promises a claim only to a home that has one.
+ */
+export const ALERTS_ASK = {
+  /** After the claim, in the next day's countdown's place ("Day 13 opens in 7h 14m"). */
+  claim: (opensIn: string) => `${opensIn}. Get one push when your claim is ready.`,
+  day: (day: number) => `Get one push when Day ${day} opens.`,
+  install: "On an iPhone, alerts need Realms on your Home Screen first.",
+  turnOn: "Turn on alerts",
+  notNow: "Not now",
+} as const;
 export const REALM_NUMBER = "Realm number";
 export const YOUR_REALMS = "Your Realms";
 /** A held Realm as a pick or a row names it: its number, then its name where it has one ("711 · Ket ek Ëtläl"). */
