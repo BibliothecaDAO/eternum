@@ -1,6 +1,8 @@
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { setViewportWidth } from "@/shell/frame/test-viewport";
 
 import { SeasonDetailSheet } from "./season-detail";
 import { SeasonList, type SeasonListRow } from "./season-list";
@@ -171,25 +173,31 @@ describe("the season list", () => {
 });
 
 describe("the season's prizes in game", () => {
-  const sheet = (podium: Parameters<typeof SeasonList>[0]["podium"]) =>
-    render(
+  afterEach(() => vi.unstubAllGlobals());
+  const sheet = (podium: Parameters<typeof SeasonList>[0]["podium"], width: number) => {
+    setViewportWidth(width);
+    return render(
       <SeasonList
-        rank={2}
+        rank={12}
         podium={podium}
         rows={[row(1), row(2), row(3), row(4)]}
-        pinned={undefined}
+        pinned={row(12, true)}
         state="ready"
         onRetry={vi.fn()}
         onOpen={vi.fn()}
         onClose={vi.fn()}
+        ends={{ at: Date.UTC(2026, 10, 6, 19), day: 1, lastDay: 11 }}
       />,
     );
+  };
   const tiles = (host: HTMLElement) =>
     [...host.querySelectorAll('[aria-label="Season prizes"] li[data-place]')].map((tile) => tile.textContent);
-
-  it("stands a podium of the prizes over the board, second, first and third, each with who holds it or Open", () => {
-    // The game's own rule over a board where only two players cleared a site.
-    const podium = seasonPodium({
+  const folded = (host: HTMLElement) => host.querySelector<HTMLButtonElement>('button[aria-label="Season prizes"]');
+  const foldedPlaces = (host: HTMLElement) =>
+    [...folded(host)!.querySelectorAll("[data-place]")].map((place) => place.textContent);
+  // The game's own rule over a board where only two players cleared a site.
+  const twoHolders = () =>
+    seasonPodium({
       prize: { pool: "300", top_n: 3, count: null, awards: [] },
       entries: [
         { address: "Realm 1", sites_cleared: { total: 5, camps: 5, rifts: 0, ruins: 0, beasts: 0 } },
@@ -201,26 +209,80 @@ describe("the season's prizes in game", () => {
       lords,
       holder: typeof holder === "string" ? holder : { name: holder.address },
     }));
-    const { host, unmount } = sheet(podium);
+
+  it("stands a desktop's podium of the prizes over the board, second, first and third, each with who holds it or Open", () => {
+    const { host, unmount } = sheet(twoHolders(), 1440);
+    expect(folded(host)).toBeNull();
     expect(tiles(host)).toEqual(["2100Realm 2", "1150Realm 1", "350Open"]);
     // The board's first three rows wear the podium's medals; the fourth its number.
     expect(
-      [...host.querySelectorAll(".ui-table-row")].map(
-        (row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null,
-      ),
+      [...host.querySelectorAll(".ui-table-row")]
+        .slice(0, 4)
+        .map((row) => row.querySelector("[data-medal]")?.getAttribute("data-medal") ?? null),
     ).toEqual(["1", "2", "3", null]);
     unmount();
   });
 
-  it("says no prize pool is published yet, its medals standing with no amount, and stands nothing once no place is paid", () => {
-    const unpublished = sheet(null);
-    expect(tiles(unpublished.host)).toEqual(["2—", "1—", "3—"]);
-    expect(unpublished.host.querySelector('[aria-label="Season prizes"]')!.textContent).toContain(
-      "Pool not published yet",
-    );
-    unpublished.unmount();
-    const none = sheet([]);
-    expect(none.host.querySelector('[aria-label="Season prizes"]')).toBeNull();
-    none.unmount();
+  it("folds a phone's podium into one line, first place first, which a press opens and another folds", () => {
+    const { host, unmount } = sheet(twoHolders(), 390);
+    expect(tiles(host)).toEqual([]);
+    expect(folded(host)!.getAttribute("aria-expanded")).toBe("false");
+    expect(foldedPlaces(host)).toEqual(["1150Realm 1", "2100Realm 2", "350Open"]);
+
+    act(() => folded(host)!.click());
+    expect(folded(host)!.getAttribute("aria-expanded")).toBe("true");
+    expect(tiles(host)).toEqual(["2100Realm 2", "1150Realm 1", "350Open"]);
+
+    act(() => folded(host)!.click());
+    expect(tiles(host)).toEqual([]);
+    unmount();
   });
+
+  it.each([390, 1440])(
+    "scrolls the season's end and its prizes away with the board at %i px, the columns' names staying on top and the player's own row pinned under",
+    (width) => {
+      const { host, unmount } = sheet(twoHolders(), width);
+      const scroll = host.querySelector(".overflow-y-auto")!;
+      expect(scroll.textContent).toContain("Season ends");
+      expect(scroll.querySelector('[aria-label="Season prizes"]')).not.toBeNull();
+      // The columns' head stands in the board's own scroll, after the prizes and before the rows: the kit's table head
+      // sticks to the top of the scroll it is in (a browser measures it there: prove:app phone, season-board).
+      const parts = [...scroll.children];
+      const head = scroll.querySelector(":scope > .ui-table-head")!;
+      expect(parts.indexOf(head)).toBeGreaterThan(
+        parts.findIndex((part) => part.matches('[aria-label="Season prizes"], :has(> [aria-label="Season prizes"])')),
+      );
+      expect(parts.indexOf(head)).toBeLessThan(parts.findIndex((part) => part.matches(".ui-table-row")));
+      expect([...scroll.querySelectorAll(".ui-table-row")].map((row) => row.getAttribute("aria-label"))).toEqual([
+        "#1 Realm 1",
+        "#2 Realm 2",
+        "#3 Realm 3",
+        "#4 Realm 4",
+      ]);
+      const own = [...host.querySelectorAll(".ui-table-row")].find(
+        (row) => row.getAttribute("aria-label") === "#12 Realm 12",
+      );
+      expect(own && !scroll.contains(own)).toBe(true);
+      unmount();
+    },
+  );
+
+  it.each([390, 1440])(
+    "says no prize pool is published yet at %i px, its medals standing with no amount, and stands nothing once no place is paid",
+    (width) => {
+      const unpublished = sheet(null, width);
+      if (width < 1024) {
+        expect(foldedPlaces(unpublished.host)).toEqual(["1—", "2—", "3—"]);
+        act(() => folded(unpublished.host)!.click());
+      }
+      expect(tiles(unpublished.host)).toEqual(["2—", "1—", "3—"]);
+      expect(unpublished.host.querySelector('ol[aria-label="Season prizes"]')!.textContent).toContain(
+        "Pool not published yet",
+      );
+      unpublished.unmount();
+      const none = sheet([], width);
+      expect(none.host.querySelector('[aria-label="Season prizes"]')).toBeNull();
+      none.unmount();
+    },
+  );
 });

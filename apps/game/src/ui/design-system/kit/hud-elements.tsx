@@ -1459,6 +1459,11 @@ export const SheetDock = createContext<HTMLElement | null>(null);
 type FrameParts = {
   label: string;
   icon?: IconMeaning;
+  /**
+   * A page's own places (Chat's rooms), shown in its head row in its name's place: one row for the way between them and
+   * the way out, the label still naming the frame to assistive tech.
+   */
+  nav?: ReactNode;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
   onClose: () => void;
@@ -1476,7 +1481,7 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, cue, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, icon, nav, cue, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
@@ -1484,8 +1489,8 @@ const SurfaceFrame = forwardRef<
     <section ref={ref} {...rest} aria-label={label} data-kit-frame className={cn("ui ui-panel ui-frame", className)}>
       <div className="ui-frame__head" {...drag.handlers}>
         <PanelHead
-          title={label}
-          icon={icon}
+          title={nav ?? label}
+          icon={nav ? undefined : icon}
           cue={
             <span className="flex items-center gap-1">
               {cue}

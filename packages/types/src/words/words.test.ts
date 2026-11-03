@@ -23,8 +23,8 @@ import {
   typedNumberText,
 } from "./amount";
 import { formatCount } from "./count";
+import { ageLine } from "./modes";
 import {
-  ageLine,
   asRanked,
   buildingName,
   guardSlotName,

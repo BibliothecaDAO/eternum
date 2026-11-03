@@ -371,7 +371,6 @@ export const fightLine = (site: string, verdict: string, lost: string, guardBefo
 export const clearCostLine = (line: string, lost: string) => `${line}, lost ${lost}`;
 /** Why an attack cannot run, or what it costs, in one line under its button. */
 export const tooFarFrom = (site: string) => `Too far from the ${site}`;
-export const ARMY_WILL_BE_LOST = "Army will be lost";
 /**
  * A site's fight card, read as its result will read (the owner's pick, 20 October 2026: "A for the fight"): what this
  * attack does to each side, what it comes to, and under Details the whole fight's figures.
@@ -385,6 +384,12 @@ export const FIGHT_WORDS = {
   clears: "This attack clears it",
   holds: "The guard holds",
 } as const;
+/**
+ * What an attack costs a side, under its bar (a player: "# of troops lost, % lost/remaining"; owner, 3 November 2026:
+ * "A probably good enough"): "−601 · 76% lost", a range where the dice decide it ("−994–1,100 · 20–22% lost").
+ */
+export const fightLost = (lost: string, share: string) => `−${lost} · ${share}% lost`;
+export const NONE_LOST = "None lost";
 /** Why a village's trade in troops is refused, wherever the market and the bank say so. */
 export const VILLAGE_TROOP_TRADE_REFUSED = "Villages cannot trade military resources.";
 export const USE = "Use";
@@ -659,6 +664,18 @@ export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
 export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
+/**
+ * The game day's ask to turn alerts on (useDayAsk): after the day's claim for a home with one, on the day's summary for
+ * a home without, so its line promises a claim only to a home that has one.
+ */
+export const ALERTS_ASK = {
+  /** After the claim, in the next day's countdown's place ("Day 13 opens in 7h 14m"). */
+  claim: (opensIn: string) => `${opensIn}. Get one push when your claim is ready.`,
+  day: (day: number) => `Get one push when Day ${day} opens.`,
+  install: "On an iPhone, alerts need Realms on your Home Screen first.",
+  turnOn: "Turn on alerts",
+  notNow: "Not now",
+} as const;
 export const REALM_NUMBER = "Realm number";
 export const YOUR_REALMS = "Your Realms";
 /** A held Realm as a pick or a row names it: its number, then its name where it has one ("711 · Ket ek Ëtläl"). */

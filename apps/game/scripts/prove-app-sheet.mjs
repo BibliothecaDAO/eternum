@@ -12,8 +12,8 @@
  *
  * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES).
  *
- * `phone` plays every surface that had a Back link or a row arrow as a phone: touch, a safe area, drags, the system back
- * and the on-screen keyboard (prove-app-phone.mjs).
+ * `phone` plays every surface that had a Back link or a row arrow, Frontier's Season board and its Chat while typing as a
+ * phone: touch, a safe area, drags, the system back and the on-screen keyboard (prove-app-phone.mjs).
  *
  * `qa1` presses qa-app-1's findings on the real pages over the fixtures, desktop and phone (QA1_CASES).
  *

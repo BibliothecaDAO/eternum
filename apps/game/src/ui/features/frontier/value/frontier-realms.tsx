@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useHeldRealms } from "@/hooks/use-holdings";
-import { useAlertsAsk } from "@/shell/profile/alerts-ask";
+import { useAlertsAsk, useDayAsk } from "@/shell/profile/alerts-ask";
 import { toast } from "@/ui/features/event-feed/notify";
 import type { LaborHome } from "./realm-labor";
 import { RealmsSheet } from "./realms-sheet";
@@ -15,6 +15,7 @@ export const FrontierRealms = ({
 }) => {
   const [sending, setSending] = useState(false);
   const ask = useAlertsAsk();
+  const dayAsk = useDayAsk("claim", { hasClaim: !!labor?.home, nextDay: labor?.nextDay ?? null });
   const map = useHeldRealmMap(labor?.home ?? null);
   if (!labor) return null;
   const claim = async () => {
@@ -28,7 +29,15 @@ export const FrontierRealms = ({
     }
   };
   return (
-    <RealmsSheet labor={labor} map={map} ask={ask} sending={sending} onClaim={() => void claim()} onClose={onClose} />
+    <RealmsSheet
+      labor={labor}
+      map={map}
+      ask={ask}
+      dayAsk={dayAsk}
+      sending={sending}
+      onClaim={() => void claim()}
+      onClose={onClose}
+    />
   );
 };
 

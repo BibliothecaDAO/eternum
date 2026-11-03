@@ -8,6 +8,7 @@ export * from "./mention-notification";
 export * from "./army-rested";
 export * from "./day-open";
 export * from "./clock";
+export * from "./game-name";
 export * from "./notification-kinds";
 export * from "./email";
 export * from "./player-emails";

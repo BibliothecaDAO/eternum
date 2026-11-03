@@ -17,7 +17,6 @@ const calendar = {
 };
 const game: DayOpenGame = {
   game_id: 1,
-  name: "Devcon",
   mode: "frontier",
   status: "Live",
   clock: { start_main_at: calendar.startMainAt, end_at: calendar.startMainAt + 2 * 20 * calendar.dayUnitSeconds },
@@ -37,7 +36,7 @@ it("prepares the next day a minute before it opens, and wakes then", () => {
     prepare: [
       {
         gameId: 1,
-        gameName: "Devcon",
+        game: { mode: "frontier" },
         day: 1,
         opensAt,
         endsAt: second!.end * 1000,
@@ -157,7 +156,7 @@ it.each([81, 84, 85])("opens the actual final day of an %ih season and never pre
   expect(planDayOpenings([partial], lastStart * 1000 - 10_000, 60_000).prepare).toEqual([
     {
       gameId: 1,
-      gameName: "Devcon",
+      game: { mode: "frontier" },
       day: hours === 81 ? 9 : 10,
       opensAt: lastStart * 1000,
       endsAt: end * 1000,

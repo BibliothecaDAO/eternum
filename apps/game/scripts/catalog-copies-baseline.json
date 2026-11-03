@@ -1,7 +1,7 @@
 {
   "apps/game/src/config/game-modes/index.ts": 1,
   "apps/game/src/lib/structure-type-utils.ts": 1,
-  "apps/game/src/pwa/notification-worker.ts": 4,
+  "apps/game/src/pwa/notification-worker.ts": 1,
   "apps/game/src/services/identity/player-portrait.ts": 1,
   "apps/game/src/three/cosmetics/mount-resolver.ts": 1,
   "apps/game/src/three/map-plates/map-plate-model.ts": 1,

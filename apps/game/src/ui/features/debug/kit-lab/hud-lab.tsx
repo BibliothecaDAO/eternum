@@ -6,7 +6,7 @@ import { FeedLine } from "@/ui/features/event-feed/feed-line";
 import { MapSiteCardView } from "@/ui/features/frontier/sites/map-site-card";
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
-import type { AlertsAsk } from "@/shell/profile/alerts-ask";
+import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
@@ -211,30 +211,28 @@ const SHRINE_ARMY_1 = { art: "knight-t1" as const, label: "Army 1", held: 0 };
 
 const ARMY_CHIP = { art: "knight-t1" as const, troops: 5_000 };
 const ATTACK_30 = { kind: "attack" as const, stamina: 30, onAttack: () => undefined };
-/**
- * A fight the army wins in so many attacks: this attack's losses and the guard it leaves, as its result shows.
- */
-const WIN = (exchanges: number, troopsLost: number, guardLeft = 0) => ({
-  outcome: "wins" as const,
-  exchanges,
-  troopsLost,
-  guardLeft,
-});
-/** A fight that ends with the army gone in so many attacks: this attack's losses and the guard it leaves. */
-const LOSE = (exchanges: number, troopsLost: number, guardLeft: number) => ({
-  outcome: "loses" as const,
-  exchanges,
-  troopsLost,
-  guardLeft,
-});
+/** This attack: the army's losses and the guard it leaves, as its result shows (none left clears the site). */
+const FIGHT = (troopsLost: number, guardLeft = 0) => ({ troopsLost, guardLeft });
 const CAMP_CARD: LabSite = {
   site: "Camp",
   beast: undefined,
   army: ARMY_CHIP,
   guard: 1_100,
-  fight: WIN(1, 180),
+  fight: FIGHT(180),
   pay: { icon: "labor", amount: 550 },
   xp: 82,
+  verb: ATTACK_30,
+};
+/** Blightglow Rift as the owner met it on prod (11-03): 794 knights against a rested guard of 1,400. */
+const BLIGHTGLOW: LabSite = {
+  site: "Rift",
+  name: "Blightglow",
+  beast: { name: "Wyvern", beast: "wyvern", combatClass: "Knight" },
+  army: { art: "knight-t1", troops: 794 },
+  guard: 1_400,
+  fight: FIGHT(601, 1_033),
+  pay: { icon: "essence", amount: 4_200 },
+  xp: 93,
   verb: ATTACK_30,
 };
 const RUIN_CARD: LabSite = {
@@ -242,7 +240,7 @@ const RUIN_CARD: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: ARMY_CHIP,
   guard: 3_400,
-  fight: WIN(2, 1_250, 1_520),
+  fight: FIGHT(1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
   ruinChoice: { depth: "Surface" },
@@ -254,13 +252,15 @@ const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
 /**
  * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
- * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
+ * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the game day's ask after
+ * the claim (on this device, or an iPhone's browser), the season's last day.
  */
 type LabRealms = {
   home: "golden" | "devcon" | "held" | "none";
   claimed?: boolean;
   room?: number;
   ask?: "remind" | "install" | "on";
+  dayAsk?: "remind" | "install";
   lastDay?: boolean;
 };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
@@ -546,7 +546,7 @@ const OWNERS_CAMP: LabSite = {
   beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
   army: { art: "knight-t1", troops: 1_500 },
   guard: 1_300,
-  fight: WIN(3, 180, 740),
+  fight: FIGHT(180, 740),
   pay: { icon: "wood", amount: 650 },
   xp: 90,
   verb: { kind: "short", stamina: { cost: 30, held: 14, wait: 31 * 60 } },
@@ -559,7 +559,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
       beast: undefined,
       army: { art: "knight-t1", troops: 5_000 },
       guard: 1_100,
-      fight: WIN(1, 180),
+      fight: FIGHT(180),
       pay: { icon: "labor", amount: 550 },
       xp: 82,
       verb: ATTACK_30,
@@ -567,7 +567,7 @@ const FIGHT_STATES: Record<string, LabState> = Object.fromEntries(
     loses: {
       ...OWNERS_CAMP,
       army: { art: "knight-t1", troops: 400 },
-      fight: LOSE(1, 400, 1_150),
+      fight: FIGHT(400, 1_150),
       verb: ATTACK_30,
     },
   } satisfies Record<string, LabSite>).map(([name, site]) => [
@@ -699,7 +699,7 @@ const STATES = {
     clock: CLOCK,
     stores: STORES,
     armies: ARMIES,
-    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: WIN(1, 15), pay: null, xp: 50 },
+    site: { ...CAMP_CARD, site: "Beasts", guard: 400, fight: FIGHT(15), pay: null, xp: 50 },
   },
   "site-ruin": { clock: CLOCK, stores: STORES, armies: ARMIES, site: RUIN_CARD },
   // The owner's Titanwatch on 28 October, no army selected: a named ruin, its Ammit, its chest and XP on one row.
@@ -726,7 +726,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300),
+      fight: FIGHT(1_200, 2_300),
     },
   },
   "site-far": {
@@ -758,11 +758,23 @@ const STATES = {
       beast: { name: "Troll", beast: "troll", combatClass: "Knight" },
       army: { ...ARMY_CHIP, troops: 7_100 },
       guard: 1_300,
-      fight: WIN(1, 140),
+      fight: FIGHT(140),
       pay: { icon: "labor", amount: 650 },
       xp: 90,
       verb: { kind: "far" },
     },
+  },
+  // The owner's phone card on prod (11-03): Blightglow Rift's wyvern guard of 1,400, paying 4,200 essence and 93 XP.
+  // Rested, the guard strikes at full strength: this attack leaves the army 193 of its 794 and the guard 1,033. It
+  // said "Army will be lost" then, of a second attack the card does not send (owner: "the army will be lost shouldnt be
+  // shown either ?").
+  "site-blightglow": { clock: CLOCK, stores: STORES, armies: ARMIES, site: BLIGHTGLOW },
+  // The same guard tired (short of its 40 defense stamina, it strikes at 70%): 793 leave 372, the guard 1,034.
+  "site-blightglow-tired": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    site: { ...BLIGHTGLOW, army: { art: "knight-t1", troops: 793 }, fight: FIGHT(421, 1_034) },
   },
   // The army's last attack here refused, with no forecast: the same sides, the refusal on the line.
   "site-refused": {
@@ -771,7 +783,7 @@ const STATES = {
     armies: ARMIES,
     site: {
       ...CAMP_CARD,
-      fight: { outcome: "refused" },
+      fight: { refused: true },
       verb: { ...ATTACK_30, refused: "The army is on battle cooldown" },
     },
   },
@@ -799,7 +811,7 @@ const STATES = {
       site: "Beasts",
       army: { art: ARMY_CHIP.art, troops: 432 },
       guard: 150,
-      fight: WIN(1, 40),
+      fight: FIGHT(40),
       pay: null,
       xp: 50,
     },
@@ -818,6 +830,13 @@ const STATES = {
     stores: STORES,
     armies: [],
     dayDone: { ...DAY_DONE, totals: UNKNOWN_TOTALS, history: "short" as const },
+  },
+  // A home with no daily claim, asked for alerts on the day's summary (push ask B).
+  "day-done-ask": {
+    clock: NIGHT,
+    stores: STORES,
+    armies: [],
+    dayDone: { ...DAY_DONE, ask: labDayAsk("remind", DAY_DONE.endedDay + 2)! },
   },
   night: {
     clock: NIGHT,
@@ -951,7 +970,7 @@ const STATES = {
     site: {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_200 },
-      fight: LOSE(3, 1_200, 2_300),
+      fight: FIGHT(1_200, 2_300),
     },
   },
   // The owner's phone card on prod (10-27): Runereach's guard of 3,500 against 4,291 knights, an Uncommon chest of 100
@@ -964,7 +983,7 @@ const STATES = {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 4_291 },
       guard: 3_500,
-      fight: WIN(3, 816, 1_650),
+      fight: FIGHT(816, 1_650),
       chest: { tier: 2, lords: 100 },
       xp: 147,
       verb: { kind: "short", stamina: { cost: 30, held: 26, wait: 7 * 60 + 38 } },
@@ -979,7 +998,7 @@ const STATES = {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 1_284_500 },
       guard: 987_650,
-      fight: WIN(3, 216_400, 612_300),
+      fight: FIGHT(216_400, 612_300),
     },
   },
   // Twelve-digit sides that lose one troop each: short, both would read alike ("123B → 123B"), so they stay exact and
@@ -992,7 +1011,7 @@ const STATES = {
       ...RUIN_CARD,
       army: { ...ARMY_CHIP, troops: 123_456_789_123 },
       guard: 98_765_432_100,
-      fight: WIN(3, 1, 98_765_432_099),
+      fight: FIGHT(1, 98_765_432_099),
     },
   },
   "value-hud": {
@@ -1151,6 +1170,21 @@ const STATES = {
     armies: ARMIES,
     purse: { lords: 1240 },
     realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
+  },
+  // The game day's ask right after the claim (push ask A), and the same on an iPhone's browser.
+  "realms-ask": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "remind", dayAsk: "remind" },
+  },
+  "realms-ask-install": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    purse: { lords: 1240 },
+    realms: { home: "golden", claimed: true, ask: "install", dayAsk: "install" },
   },
 } as const;
 
@@ -1866,6 +1900,7 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     labor={labRealmLabor(realms)}
     map={realms.home === "held" ? LAB_REALM_MAP : null}
     ask={labAlertsAsk(realms.ask)}
+    dayAsk={labDayAsk(realms.dayAsk, CLOCK.day + 1)}
     sending={false}
     onClaim={noop}
     onClose={noop}
@@ -1933,6 +1968,13 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
 
 const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
   ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
+
+/** A game day's ask on the fiction. A declaration, with its own empty taps: the rooms above build theirs at load. */
+function labDayAsk(kind: LabRealms["dayAsk"], nextDay: number): DayAsk | null {
+  return kind === undefined
+    ? null
+    : { ask: { kind, busy: false, act: () => undefined }, nextDay, offer: () => undefined, notNow: () => undefined };
+}
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

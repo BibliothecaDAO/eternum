@@ -1,4 +1,4 @@
-/** What a story's alert says: its title, and its line after the game's name ("Devcon: their stamina is full."). */
+/** What a story's alert says: its title, and its line after the game's name ("Blitz: your army beat the enemy."). */
 export interface NotificationCopy {
   title: string;
   body: string;

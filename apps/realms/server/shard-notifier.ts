@@ -390,7 +390,7 @@ const planAlerts = (env: IdentityEnv, shard: Required<WatchedShard>, page: Heral
               recipient: account,
               value: item.value,
               owner,
-              gameName: game?.name ?? `Game ${gameId}`,
+              game,
               target: gamePath({ chainId: shard.chainId, gameId }),
               now,
             });
@@ -654,7 +654,7 @@ const restedAlerts = (
         until: restedUntil(game, watch.fullAt),
         armies,
         owner: watch.owner,
-        gameName: game?.name ?? `Game ${watch.gameId}`,
+        game,
         now,
       });
       return notification ? alertsForDevices(watch.owner, devices, notification, now) : [];

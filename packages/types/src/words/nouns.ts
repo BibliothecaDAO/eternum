@@ -142,14 +142,6 @@ export const buildingName = (category: BuildingType | number, frontier: boolean)
 /** A guard slot by its wall, never its internal name: "Castle Wall", not "Gamma". */
 export const guardSlotName = (slot: GuardSlot): string => GUARD_SLOT_NAMES[slot] ?? UNKNOWN;
 
-/** Each game as its age of the lore. */
-export const AGES = {
-  blitz: { game: "Blitz", age: "Age I" },
-  frontier: { game: "Frontier", age: "Age II" },
-  eternum: { game: "Eternum", age: "Age III" },
-} as const;
-export const ageLine = (game: keyof typeof AGES): string => `${AGES[game].game} · ${AGES[game].age}`;
-
 export const BEAST_NAMES = {
   troll: "Troll",
   wyvern: "Wyvern",

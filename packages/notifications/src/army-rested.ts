@@ -1,4 +1,5 @@
 import { gamePath, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
+import { pushGameName, type PushGame } from "./game-name";
 import { includesKind, kindTag } from "./notification-kinds";
 import type { NotificationLevel } from "./preferences";
 
@@ -19,7 +20,7 @@ export function buildArmyRestedNotification(input: {
   until: number;
   armies: number;
   owner: string;
-  gameName: string;
+  game: PushGame | undefined;
   now: number;
 }): LocalNotificationPayload | null {
   if (input.until <= input.now) return null;
@@ -31,7 +32,7 @@ export function buildArmyRestedNotification(input: {
       id: `rested:v3:${input.chainId}:${input.gameId}:${input.owner}:${input.fullAt}`,
       owner: input.owner,
       title: input.armies === 1 ? "Your army is rested" : "Your armies are rested",
-      body: `${input.gameName}: ${input.armies === 1 ? "its stamina is" : "their stamina is"} full.`,
+      body: `${pushGameName(input.game)}: ${input.armies === 1 ? "its stamina is" : "their stamina is"} full.`,
       tag: kindTag("army-rested", target),
       target,
       createdAt: input.fullAt,

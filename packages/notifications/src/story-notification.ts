@@ -1,5 +1,6 @@
 import { logicalStoryIdentity, parseNotificationPayload, type LocalNotificationPayload } from "./delivery";
 import type { NotificationCopy } from "./story-copy";
+import { pushGameName, type PushGame } from "./game-name";
 import { kindTag, lifetimeOf } from "./notification-kinds";
 import { storyNotificationRule } from "./story-policy";
 
@@ -12,7 +13,8 @@ export function buildStoryNotification(input: {
   recipient?: string;
   value: Record<string, unknown>;
   owner: string;
-  gameName: string;
+  /** The game, which the alert names by its mode ("Frontier"); undefined when the directory no longer lists it. */
+  game: PushGame | undefined;
   target: string;
   now: number;
 }): LocalNotificationPayload | null {
@@ -31,7 +33,7 @@ export function buildStoryNotification(input: {
       owner: input.owner,
       id: logicalStoryIdentity(input.sourceId, story, input.value, payload),
       title: copy.title,
-      body: `${input.gameName}: ${copy.body}`,
+      body: `${pushGameName(input.game)}: ${copy.body}`,
       tag: kindTag(rule.kind, input.target),
       target: input.target,
       createdAt,
