@@ -4197,27 +4197,21 @@ async function moveAcrossRelease({ base, browser, devTools, extraScreenshot, own
   const ready = `${base}-release-ready.json`;
   const applied = `${base}-release-applied.json`;
   if (existsSync(ready) || existsSync(applied)) throw new Error("release evidence already exists; use a new run");
-  let army = await focusTheReadiestArmy(browser);
+  let army = await focusTheArmyFromItsDock(browser);
   if (!army) {
     await deployFromTheDock({ browser });
     await owner.sleep(6_000);
-    army = await focusTheReadiestArmy(browser);
+    army = await focusTheArmyFromItsDock(browser);
   }
   if (!army) return { army };
-  let scanned = await scanTheRing(browser, army);
-  if (!scanned.some(({ verb }) => verb === "Move")) {
-    await exploreBesideArmy({ browser, devTools, extraScreenshot, owner });
-    await owner.sleep(6_000);
-    army = await focusTheReadiestArmy(browser);
-    scanned = await scanTheRing(browser, army);
-  }
-  const target = scanned.find(({ verb }) => verb === "Move")?.offset;
-  if (!target) return { army, target, scanned };
+  await exploreBesideArmy({ browser, extraScreenshot });
+  await owner.sleep(6_000);
   const observation = watchReleaseMove(devTools);
   const gate = await openOrderSendGate(devTools);
   try {
-    browser.tap(target);
-    browser.press("Enter");
+    const move = await orderBesideArmy({ browser, extraScreenshot }, "Move");
+    const target = move.target;
+    if (!target) return { army, target, offered: move.offered };
     const firstSent = await waitUntil(() => gate.held() > 0, ORDER_SEND_WAIT_MS);
     if (!firstSent) return { army, target, firstSent };
     await observation.before();
