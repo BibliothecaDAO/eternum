@@ -3,7 +3,7 @@ import { setBlockTimestampSource } from "@bibliothecadao/eternum";
 import { ResourcesIds, TroopTier, TroopType } from "@bibliothecadao/types";
 import preset from "../../../../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { readArmyCard, readSiteCard } from "./site-card-plan";
-import { campBeside, otherArmyAt, SITE_TILE } from "./site-fixture";
+import { blightglowRift, campBeside, otherArmyAt, SITE_TILE } from "./site-fixture";
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -146,4 +146,28 @@ it("shows beast labor from initial guards and clips it at the home store, alongs
   const plan = readSiteCard(store, site, structure, SITE_TILE, own);
   expect(plan.payout).toEqual({ resourceId: ResourcesIds.Labor, amount: 375, fits: 10 });
   expect(plan.xp).toBe(118);
+});
+
+describe("prod's Blightglow Rift, read through the card's own facts on Frontier's deployed combat", () => {
+  const card = (troops: bigint, guardStamina: bigint, armyStamina = 100n) => {
+    const { store, site, structure, attack } = blightglowRift({ troops, guardStamina, armyStamina });
+    return readSiteCard(store, site, structure, SITE_TILE, attack({ col: 41, row: 12, alt: false }));
+  };
+
+  it("forecasts a rested guard as the owner's first card read it: 794 → 193, 1,400 → 1,033", () => {
+    const plan = card(794n, 120n);
+    expect(plan.guard).toEqual({ type: TroopType.Knight, tier: TroopTier.T1, count: 1_400 });
+    expect(plan.attackStamina).toBe(30);
+    expect(plan.fight).toEqual({ troopsLost: 601, guardLeft: 1_033 });
+  });
+
+  it("forecasts the guard tired, short of its 40 defense stamina, as the second read it: 793 → 372, 1,400 → 1,034", () => {
+    // A tired guard strikes at 70%: 421 lost where 601 would be; the army's own blow is unchanged.
+    expect(card(793n, 39n).fight).toEqual({ troopsLost: 421, guardLeft: 1_034 });
+  });
+
+  it("refuses the attack of an army below the attack's stamina, as the contract does", () => {
+    expect(card(794n, 120n, 29n).fight).toEqual({ refused: true });
+    expect(card(794n, 120n, 30n).fight).toEqual({ troopsLost: 601, guardLeft: 1_033 });
+  });
 });
