@@ -1,4 +1,4 @@
-import { AGES } from "@bibliothecadao/types";
+import { GAME_MODE_NAMES } from "@bibliothecadao/types";
 import { buildEntryHref } from "@/play/navigation/play-route";
 
 import type { DirectoryGame } from "./herald";
@@ -10,9 +10,8 @@ export const modeLabel = (game: Pick<DirectoryGame, "mode" | "preset_id">): stri
     case "frontier":
     case "blitz":
     case "eternum":
-      return AGES[game.mode].game;
     case "duel":
-      return "Duel";
+      return GAME_MODE_NAMES[game.mode];
     default:
       return `Preset ${game.preset_id}`;
   }

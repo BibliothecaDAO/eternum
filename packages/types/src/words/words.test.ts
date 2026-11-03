@@ -23,7 +23,8 @@ import {
   typedNumberText,
 } from "./amount";
 import { formatCount } from "./count";
-import { ageLine, buildingName, guardSlotName, rankName, resourceName, structureName, troopPlural } from "./nouns";
+import { ageLine } from "./modes";
+import { buildingName, guardSlotName, rankName, resourceName, structureName, troopPlural } from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
 import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";

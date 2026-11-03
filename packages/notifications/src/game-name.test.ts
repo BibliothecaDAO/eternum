@@ -14,7 +14,11 @@ it.each([
   [devcon, "Season 0"],
   [{ ...devcon, season_number: 1 }, "Season 1"],
   [blitz, "Blitz"],
+  [{ mode: "eternum", season_number: null }, "Eternum"],
+  [{ mode: "duel" }, "Duel"],
   [{ ...devcon, season_number: null }, "Frontier"],
+  [{ ...devcon, season_number: undefined }, "Frontier"],
+  [{ mode: null }, "Realms"],
   [undefined, "Realms"],
 ] as const)("names %o as players do: %s", (game, name) => {
   expect(pushGameName(game)).toBe(name);

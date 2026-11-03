@@ -3,9 +3,11 @@ import { readdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { pushGameName } from "@bibliothecadao/notifications";
+import { GAME_MODE_NAMES, type GameModeName } from "@bibliothecadao/types";
 
 import type { DirectoryGame } from "./herald";
 import { chooseSeason, directoryDay, seasonTitle } from "./season";
+import { modeLabel } from "./game-links";
 import { ageOf } from "./play/ages";
 import { ARCHIVED_SEASONS } from "./season-tab/archive/archive";
 
@@ -79,10 +81,18 @@ describe("the season's number", () => {
     expect(seasonTitle({ chainId: "0x52", game_id: 3, season_number: 3 })).toBe("Season 3");
   });
 
-  it("is what its pushes call it, as a Blitz push calls its game what Play does", () => {
+  it("is what its pushes call it, and every other game is named in a push as the app labels its mode", () => {
     const season = { chainId: "0x52", game_id: 3, season_number: 0 };
     expect(pushGameName({ mode: "frontier", ...season })).toBe(seasonTitle(season));
-    expect(pushGameName({ mode: "blitz" })).toBe(ageOf("blitz").name);
+    expect(pushGameName({ mode: "frontier", ...season })).toBe("Season 0");
+    for (const mode of Object.keys(GAME_MODE_NAMES) as GameModeName[]) {
+      // A Frontier game whose season the directory does not number is named by its mode, like any other game.
+      expect(pushGameName({ mode, season_number: null }), mode).toBe(modeLabel({ mode, preset_id: 1 }));
+      if (mode !== "duel") expect(ageOf(mode).name, mode).toBe(modeLabel({ mode, preset_id: 1 }));
+    }
+    // A game the directory no longer lists, or lists with no mode, is never named by an id.
+    expect(pushGameName(undefined)).toBe("Realms");
+    expect(pushGameName({ mode: null })).toBe("Realms");
   });
 
   it("is a dash when the directory serves none, never a zero", () => {

@@ -1,15 +1,10 @@
+import { GAME_MODE_NAMES, type GameModeName } from "../../types/src/words/modes";
+
 /** What a push needs to name its game: the directory's mode and, for a season, its number. */
 export interface PushGame {
-  mode: "blitz" | "eternum" | "frontier" | "duel" | null;
+  mode: GameModeName | null;
   season_number?: number | null;
 }
-
-const MODE_NAMES = {
-  blitz: "Blitz",
-  eternum: "Eternum",
-  frontier: "Frontier",
-  duel: "Duel",
-} satisfies Record<NonNullable<PushGame["mode"]>, string>;
 
 /** A season's name as every surface writes it: "Season 0" for Devcon. */
 export const seasonName = (number: number): string => `Season ${number}`;
@@ -21,5 +16,5 @@ export const seasonName = (number: number): string => `Season ${number}`;
 export const pushGameName = (game: PushGame | undefined): string => {
   if (!game?.mode) return "Realms";
   if (game.mode === "frontier" && game.season_number != null) return seasonName(game.season_number);
-  return MODE_NAMES[game.mode];
+  return GAME_MODE_NAMES[game.mode];
 };
