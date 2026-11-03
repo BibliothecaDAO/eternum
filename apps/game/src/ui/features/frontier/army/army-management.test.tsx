@@ -27,6 +27,7 @@ import { transferArmies } from "./transfer-fixture";
 let host: HTMLDivElement;
 let root: Root;
 beforeEach(() => {
+  Element.prototype.scrollIntoView = vi.fn();
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   host = document.createElement("div");
   document.body.append(host);

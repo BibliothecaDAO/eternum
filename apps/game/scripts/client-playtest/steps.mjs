@@ -4047,7 +4047,6 @@ function armyManagementSteps() {
         const preview = browser.read(
           `JSON.stringify(document.querySelector('[aria-label="Troops after reinforcement"]')?.textContent ?? null)`,
         );
-        browser.read(sheetButton("^Reinforce$"));
         extraScreenshot("reinforce-preview");
         if (preview?.trim() !== "10 → 11") return { preview };
         await press(browser, "Reinforce");
@@ -4070,7 +4069,6 @@ function armyManagementSteps() {
         const loss = browser.read(
           `JSON.stringify(document.querySelector('[role="alertdialog"]')?.textContent ?? null)`,
         );
-        browser.read(sheetButton("^Delete$"));
         extraScreenshot("delete-confirmation");
         if (!loss?.includes("troops, skills, XP and carried resources are lost")) return { loss };
         await press(browser, "Cancel");

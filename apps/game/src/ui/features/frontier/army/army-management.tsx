@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getBlockTimestamp, multiplyByPrecision } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { formatExact, RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -52,6 +52,10 @@ export const ArmyManagement = ({
   const busy = useInFlight("army", army.explorerId) !== undefined;
   const [mode, setMode] = useState<"reinforce" | "delete" | null>(null);
   const [amount, setAmount] = useState(1);
+  const form = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (mode) form.current?.scrollIntoView({ block: "nearest" });
+  }, [mode]);
   const plan = readReinforcePlan(setup.store, realm, army.explorerId, amount, timestamp);
   if (!ordersAllowed) return null;
 
@@ -95,7 +99,7 @@ export const ArmyManagement = ({
   };
 
   return (
-    <div className="flex flex-col gap-2 border-t border-hud-divider pt-3">
+    <div ref={form} className="flex flex-col gap-2 border-t border-hud-divider pt-3">
       {mode === null && (
         <div className="flex items-center justify-between gap-2">
           <HudButton kind="secondary" disabled={busy || !plan?.besideHome} onClick={() => setMode("reinforce")}>
