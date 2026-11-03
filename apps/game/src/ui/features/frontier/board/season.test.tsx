@@ -245,7 +245,14 @@ describe("the season's prizes in game", () => {
       const scroll = host.querySelector(".overflow-y-auto")!;
       expect(scroll.textContent).toContain("Season ends");
       expect(scroll.querySelector('[aria-label="Season prizes"]')).not.toBeNull();
-      expect(scroll.querySelector(".ui-table-head")!.hasAttribute("data-sticky")).toBe(true);
+      // The columns' head stands in the board's own scroll, after the prizes and before the rows: the kit's table head
+      // sticks to the top of the scroll it is in (a browser measures it there: prove:app phone, season-board).
+      const parts = [...scroll.children];
+      const head = scroll.querySelector(":scope > .ui-table-head")!;
+      expect(parts.indexOf(head)).toBeGreaterThan(
+        parts.findIndex((part) => part.matches('[aria-label="Season prizes"], :has(> [aria-label="Season prizes"])')),
+      );
+      expect(parts.indexOf(head)).toBeLessThan(parts.findIndex((part) => part.matches(".ui-table-row")));
       expect([...scroll.querySelectorAll(".ui-table-row")].map((row) => row.getAttribute("aria-label"))).toEqual([
         "#1 Realm 1",
         "#2 Realm 2",

@@ -803,13 +803,6 @@ span.ui-row__choose {
   column-gap: theme(spacing.3);
   padding: theme(spacing.1) theme(spacing.3);
 }
-/* A head that stays on top of its scroll: opaque, so the rows pass under it unseen. */
-.ui-table-head[data-sticky] {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: var(--hud-surface-from);
-}
 @media (min-width: 768px) {
   .ui-table-row,
   .ui-table-head {

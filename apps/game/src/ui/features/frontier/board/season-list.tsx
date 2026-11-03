@@ -155,7 +155,7 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
  * scroll under it.
  */
 const BoardHead = () => (
-  <HudTableHead cols={COLS} sticky>
+  <HudTableHead cols={COLS}>
     <span className="text-center">{RANK}</span>
     <span className="col-span-2">{REALM}</span>
     <span className="text-right" data-tip={SITES_CLEARED}>

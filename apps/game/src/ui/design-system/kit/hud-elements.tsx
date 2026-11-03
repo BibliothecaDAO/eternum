@@ -1150,20 +1150,13 @@ export const HudTableRow = ({
 export const HudTableHead = ({
   cols,
   colsWide,
-  sticky = false,
   children,
 }: {
   cols: string;
   colsWide?: string;
-  /** Stays at the top of the table's scroll while what stands above it and its rows scroll away under it. */
-  sticky?: boolean;
   children: ReactNode;
 }) => (
-  <div
-    className="ui-table-head"
-    data-sticky={sticky ? "" : undefined}
-    style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-  >
+  <div className="ui-table-head" style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}>
     {children}
   </div>
 );
