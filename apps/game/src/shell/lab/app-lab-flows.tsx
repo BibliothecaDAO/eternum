@@ -5,7 +5,6 @@ import { CAMPAIGNS } from "@realms-world/identity";
 import { useState, type ReactNode } from "react";
 import { useParams } from "react-router-dom";
 
-import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
 import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
@@ -105,6 +104,9 @@ export const LabConnect = () => {
   );
 };
 
+/** The Frontier game the lab's doorway enters: the campaign's season, as the home step's picker reads it. */
+const LAB_FRONTIER = { mode: "frontier", preset_id: CAMPAIGNS[DEVCON.campaign].presets[0] } as const;
+
 /** The doorway into Frontier at one of its holds (/lab/app/<screen>/doorway/<state>), as entering a game draws it. */
 export const LabDoorway = () => {
   const { state } = useParams();
@@ -115,8 +117,7 @@ export const LabDoorway = () => {
     <DoorwayScreen
       view={doorway.view}
       realm={doorway.realm}
-      title="Frontier"
-      painting={gamePainting({ mode: "frontier" })}
+      game={LAB_FRONTIER}
       onRetry={noop}
       onOpenRealm={noop}
       onSignIn={noop}
@@ -139,7 +140,7 @@ const LabHomeStep = () => {
   return (
     <>
       <HomeSourcePicker
-        presetId={CAMPAIGNS[DEVCON.campaign].presets[0]}
+        presetId={LAB_FRONTIER.preset_id}
         registered={null}
         value={value}
         onChange={setValue}

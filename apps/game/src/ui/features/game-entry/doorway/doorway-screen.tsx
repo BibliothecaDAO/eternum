@@ -3,7 +3,8 @@ import { useNavigate } from "react-router-dom";
 
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
-import type { Painting } from "@/ui/design-system/kit/paintings";
+import { gamePainting, modeLabel } from "@/shell/game-links";
+import type { DirectoryGame } from "@/shell/herald";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { TRY_AGAIN, DOORWAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
@@ -19,16 +20,15 @@ export interface DoorwayRealm {
 
 /**
  * The doorway (spec 07): the realm rising under its Order's emblem, and one bar across the steps (account → realm →
- * map → play) continuing by themselves, with what the first minutes hold while a player's map loads, on the app's
- * frame over the mode's painting: on desktop one plate, on a phone the middle of the screen. It holds only for the one
+ * map → play) continuing by themselves, with what a Frontier player's first minutes hold while their map loads, on the
+ * app's frame over the mode's painting: on desktop one plate, on a phone the middle of the screen. It holds only for the one
  * thing the player must do, whose words come from their owners: sign in, try again, Devices, Watch or Results; a step
  * that asks the player to choose (the Realm step's homes) stands in the bar's place, its verb under the thumb on a phone.
  */
 export const DoorwayScreen = ({
   view,
   realm,
-  title,
-  painting,
+  game,
   onRetry,
   onOpenRealm,
   onSignIn,
@@ -40,10 +40,8 @@ export const DoorwayScreen = ({
 }: {
   view: DoorwayView;
   realm: DoorwayRealm | null;
-  /** The mode being entered, beside Back, once it is known. */
-  title?: string;
-  /** The mode's painting behind the desktop's doorway, once the mode is known. */
-  painting?: Painting;
+  /** The game being entered, once the directory has it: its mode names the page, paints it and picks its advice. */
+  game?: Pick<DirectoryGame, "mode" | "preset_id">;
   onRetry: () => void;
   /** Opens the realm view without the map, when the map could not be drawn. */
   onOpenRealm?: () => void;
@@ -62,7 +60,7 @@ export const DoorwayScreen = ({
   const player = view.steps.some(({ step }) => step === "account");
   const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
   const progress = !asking && <EntryProgress view={view} />;
-  const comingUp = player && loadingMap && view.blocker === null && <ComingUp />;
+  const comingUp = game?.mode === "frontier" && player && loadingMap && view.blocker === null && <ComingUp />;
   const hold = (
     <Hold
       view={view}
@@ -76,7 +74,12 @@ export const DoorwayScreen = ({
   return (
     // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
-      <PageFrame title={title} painting={painting} stage foot={desktop ? undefined : verb}>
+      <PageFrame
+        title={game ? modeLabel(game) : undefined}
+        painting={game ? gamePainting(game) : undefined}
+        stage
+        foot={desktop ? undefined : verb}
+      >
         {desktop ? (
           <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
             <AppPanel className="w-column">

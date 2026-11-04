@@ -24,7 +24,6 @@ import { submitSettlement } from "@/services/settlement";
 import { fetchSettlementSnapshot, type SettlementSnapshot } from "@/runtime/world/herald-pre-session-reader";
 import { isGameOver, isMember } from "@/runtime/world/directory";
 import { markGameEntryMilestone } from "@/ui/layouts/game-entry-timeline";
-import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
@@ -635,8 +634,7 @@ export const GameEntryModal = ({
     <DoorwayScreen
       view={view}
       realm={null}
-      title={worldMeta ? modeLabel(worldMeta) : undefined}
-      painting={worldMeta ? gamePainting(worldMeta) : undefined}
+      game={worldMeta ?? undefined}
       onRetry={
         accountError
           ? () => window.location.reload()

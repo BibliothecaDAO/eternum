@@ -45,7 +45,7 @@ export const EntryProgress = ({ view }: { view: DoorwayView }) => {
   );
 };
 
-/** What the first minutes hold, said while a player's map loads: the day's claim, then the first thing to build. */
+/** What a Frontier player's first minutes hold, said while their map loads: the day's claim, then the first build. */
 export const ComingUp = () => (
   <AppPanel className="w-full">
     <ul className="flex flex-col gap-3 text-left text-app-ink">
