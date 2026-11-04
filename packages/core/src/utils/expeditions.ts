@@ -91,6 +91,25 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
   expeditionBand(rules, coord) % 4;
 
 /**
+ * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer
+ * (a spire's travel), or into another expedition region (a spire's portal to the Ethereal layer, which the contract
+ * places a region down the same map). Regions lie a spacing apart with void between, so no walk joins two.
+ */
+export const isArmyCrossing = (
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  from: { col: number; row: number; alt: boolean },
+  to: { col: number; row: number; alt: boolean },
+): boolean => {
+  if (from.alt !== to.alt) return true;
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return false;
+  const region = ({ col, row }: { col: number; row: number }) =>
+    `${Math.floor(col / rules.spacing)}:${expeditionBand(rules, { y: row })}`;
+  return region(from) !== region(to);
+};
+
+/**
  * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
  */
 export const expeditionDayEndsAt = (rules: ExpeditionRules, nowSeconds: number): number =>

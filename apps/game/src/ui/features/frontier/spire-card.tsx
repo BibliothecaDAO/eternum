@@ -150,7 +150,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
         explorerId: army.explorerId,
         depth,
       }),
-    ).catch((error: unknown) => toast.failed(error, "The army could not enter the depth."));
+    ).catch((error: unknown) => toast.failed(error, "The army could not enter the Spire."));
 
   const stamina = actor?.stamina && formatHeldAgainst(actor.stamina.current, actor.stamina.max);
   return (

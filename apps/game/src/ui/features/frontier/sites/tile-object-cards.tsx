@@ -31,7 +31,7 @@ export const SpireCard = ({ onClose }: { onClose: () => void }) => {
       <SemanticIcon name={reachMark(1)} size={96} />
       <HudButton
         kind="primary"
-        aria-label={mapLayer ? "Look at the surface" : "Look at the depth"}
+        aria-label={mapLayer ? "Look at the surface" : "Look at the Ethereal layer"}
         onClick={() => setMapLayer(!mapLayer)}
       >
         Look

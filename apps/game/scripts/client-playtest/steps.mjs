@@ -309,8 +309,9 @@ const ACTION_STEPS = [
 ];
 
 /**
- * The spire's depth entered (the lab's spire game): the army selected, the spire beside it tapped for its card, then
- * Enter on Ethereal II; the result is the army setting off into the depth (its walk), seen on its figure.
+ * Ethereal II entered through the spire (the lab's spire game): the army selected, the spire beside it tapped for its
+ * card, then Enter on Ethereal II; the result is the view switched there with the army standing at its arrival, seen
+ * on its figure (no walk crosses the void).
  */
 const SPIRE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -320,15 +321,19 @@ const SPIRE_ACTION_STEPS = [
     "enter-depth",
     "EnterDepth",
     enterEtherealIIFromItsCard,
-    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
+    ({ played }) => played.armyId && { presented: `army-shown:${played.armyId}` },
   ),
 ];
 
 async function enterEtherealIIFromItsCard({ browser }) {
-  const selection = browser.observe().selection;
-  const armyAt = armyOnScreen(browser, selection?.army?.id);
+  const armyId = browser.observe().selection?.army?.id ?? null;
   browser.click("Enter Ethereal II");
-  return { armyId: selection?.army?.id ?? null, region: armyAt && armyRegion(armyAt) };
+  // The view switches to the arrival, so the army's place on screen is read once it stands there.
+  const locate = () => {
+    const armyAt = armyOnScreen(browser, armyId);
+    return armyAt && armyRegion(armyAt);
+  };
+  return { armyId, locate };
 }
 
 /**
@@ -2378,7 +2383,7 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
  * A realm's spire as a player uses it, at either size: the army selected from the dock, the spire found beside it by
  * its hover, tapped for its card (the army kept as its actor, each researched depth with its stamina and Enter, the next
  * one's research, and what entering commits the army to), then Enter on Ethereal II: the command the game signs, and
- * the army in Ethereal II.
+ * the view switched with the army into Ethereal II.
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -2473,10 +2478,16 @@ async function enterEtherealII({ browser }) {
   browser.click("Enter Ethereal II");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
-  return { before, after };
+  const centred = (at) => at !== null && Math.hypot(at[0], at[1]) <= VIEW_CENTRE_PX;
+  const onScreen = await readUntil(() => armyOnScreen(browser, before.army?.id), centred, SPIRE_WAIT_MS);
+  return { before, after, onScreen };
 }
 
-/** The command the game signed for the press, and the army it moved, shown in Ethereal II. */
+/**
+ * The command the game signed for the press, and the army it moved into Ethereal II, the view switched with it: the
+ * army, still selected, stands near the view's centre (owner, 2026-11-04: "spire entering lmao we should just switch
+ * view like realm/world/ethereal no ?").
+ */
 function armyEnteredEtherealII({ played }) {
   const { before, after } = played;
   const command = after.sent.at(-1);
@@ -2487,12 +2498,16 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II today/.test(after.text ?? ""))
-    return failed("the card does not show the army in Ethereal II", { before, after });
-  return completed({ command, before: before.army, after: after.army, card: after.text });
+  if (played.onScreen === null || Math.hypot(...played.onScreen) > VIEW_CENTRE_PX)
+    return failed("the view did not switch to the army in Ethereal II", { before, after, onScreen: played.onScreen });
+  if (after.army?.id !== before.army.id)
+    return failed("the army is no longer selected in Ethereal II", { before, after });
+  return completed({ command, before: before.army, after: after.army, onScreen: played.onScreen });
 }
 
 const SPIRE_WAIT_MS = 5_000;
+/** How far from the view's centre the army may stand once the view switched to it, in CSS pixels. */
+const VIEW_CENTRE_PX = 160;
 
 /** The board's buildings draw within this long, after the realm's scene holds. */
 const BOARD_DRAW_MS = 10_000;

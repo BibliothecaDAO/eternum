@@ -5,7 +5,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
-import { followArmyLayerChange } from "./worldmap-layer-follow";
+import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager, type RuleSpires } from "../managers/spire-manager";
@@ -82,6 +82,7 @@ import {
   configManager,
   dayOf,
   expeditionSpires,
+  isArmyCrossing,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   isOpenSpawnHex,
@@ -1686,12 +1687,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private followSelectedArmyLayer(changes: readonly ArmySpatialProjectionChange[]): void {
-    void followArmyLayerChange({
+    void followArmyCrossing({
       changes,
       getSelectedId: () => getLiveWorldmapEntityActions().selectedEntityId,
       getLayer: activeMapLayer,
       isSceneActive: () => !this.isSwitchedOff,
+      isCrossing: (from, to) => isArmyCrossing(this.game.store, configManager.getActiveGameId(), from, to),
       setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
+      lookAt: ({ col, row }) => this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "crossing"),
       finishMovement: (entityId) => {
         this.completePendingArmyMovementVisuals(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);

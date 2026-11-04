@@ -9,6 +9,7 @@ import {
   expeditionRealmSite,
   expeditionSpires,
   expeditionSpireTile,
+  isArmyCrossing,
   isAtExpeditionSpire,
   liveHomeArmies,
   structureMapPosition,
@@ -169,6 +170,29 @@ describe("expedition spire", () => {
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
       { col: 25, row: 46, deepest: 1, realm: realm(3) },
     ]);
+  });
+});
+
+describe("isArmyCrossing", () => {
+  const at = (col: number, row: number, alt = false) => ({ col, row, alt });
+
+  it("crosses through the spire into the Ethereal layer a region down, as enter_depth places the army", () => {
+    const store = storeWith(expeditionRules);
+    // Day 1's surface region of home 3 is rows 40..49, columns 20..29; Ethereal I lies a spacing below, rows 50..59.
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 56))).toBe(true);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 76))).toBe(true);
+  });
+
+  it("walks any step inside one region, up to its edge", () => {
+    const store = storeWith(expeditionRules);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(26, 47))).toBe(false);
+    expect(isArmyCrossing(store, 7, at(20, 40), at(29, 49))).toBe(false);
+  });
+
+  it("crosses between map layers in any game, and walks everywhere else without expeditions", () => {
+    const store = storeWith({ ...expeditionRules, SliceRules: { day_unit_seconds: 0 } });
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 46, true))).toBe(true);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 56))).toBe(false);
   });
 });
 

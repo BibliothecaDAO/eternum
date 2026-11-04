@@ -3,7 +3,7 @@ import { LORDS, formatShort } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { TARGET_MARKS } from "../sites/site-marks";
 import { OrderMark } from "./realm-marks";
-import { CHESTS, CLEARED, ESSENCE, DEPTH, DEPTH_NUMERALS, LABOR, SEASON, VISIT } from "@/ui/design-system/kit/words";
+import { CHESTS, CLEARED, ESSENCE, DEPTH_NUMERALS, ETHEREAL, LABOR, SEASON, VISIT } from "@/ui/design-system/kit/words";
 
 /** A realm's season, as Herald totals it. */
 export type SeasonDetail = {
@@ -75,7 +75,7 @@ export const SeasonDetailSheet = ({
           {formatShort(detail.lords)}
         </HudChip>
         {detail.depth > 0 && (
-          <HudChip icons={["portal"]} label={DEPTH}>
+          <HudChip icons={["portal"]} label={ETHEREAL}>
             {DEPTH_NUMERALS[detail.depth - 1]}
           </HudChip>
         )}

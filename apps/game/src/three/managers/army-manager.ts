@@ -58,6 +58,7 @@ import {
   divideByPrecision,
   getBlockTimestamp,
   getExplorerOwner,
+  isArmyCrossing,
   ResourceManager,
   storedBiomeAt,
 } from "@bibliothecadao/eternum";
@@ -1950,10 +1951,34 @@ export class ArmyManager {
   }
 
   public async moveArmy(entityId: ID, hexCoords: Position): Promise<void> {
+    if (this.isCrossing(entityId, hexCoords)) return this.placeCrossedArmy(entityId, hexCoords);
     const layerRevision = this.layerRevision;
     const plan = await this.computeMovementPlan(entityId, hexCoords);
     if (!plan || layerRevision !== this.layerRevision) return;
     await this.applyMovementPlan(plan);
+  }
+
+  /** Whether the army's next place lies through a spire (isArmyCrossing): no walk crosses the void to it. */
+  private isCrossing(entityId: ID, to: Position): boolean {
+    const army = this.armyPresentations.get(entityId);
+    if (!army || !this.store) return false;
+    const alt = activeMapLayer();
+    const place = (position: Position) => {
+      const { x, y } = position.getContract();
+      return { col: x, row: y, alt };
+    };
+    return isArmyCrossing(this.store, configManager.getActiveGameId(), place(army.hexCoords), place(to));
+  }
+
+  /** An army through a spire stands at its arrival at once; a walk still playing ends where the army stood. */
+  private async placeCrossedArmy(entityId: ID, to: Position): Promise<void> {
+    const army = this.armyPresentations.get(entityId)!;
+    const numericEntityId = this.toNumericId(entityId);
+    this.removeVisibleArmy(entityId);
+    this.armyPresentations.set(entityId, { ...army, hexCoords: to });
+    await this.renderArmyIntoCurrentChunkIfVisible(entityId);
+    this.runMovementStartListeners(numericEntityId);
+    this.runMovementCompleteListeners(numericEntityId);
   }
 
   public removeArmy(entityId: ID, options: { playDefeatFx?: boolean } = {}) {
