@@ -63,9 +63,10 @@ export function deriveGameSyncScope(
       timestamp,
     );
   });
-  // With no current army, morning muster starts on the surface, at the site the contract raises the realm on today.
+  // The home's surface region today, where the contract raises the realm and Deploy steps out, whatever layer its
+  // armies stand in: a realm whose every army went into an Ethereal layer still sees its home and deploys from it.
   const viewingArmies = armies.filter(({ value }) => viewingRealms.has(syncScalar(value.owner)));
-  if (today >= 0 && viewingArmies.length === 0)
+  if (today >= 0)
     for (const { value } of viewingHomes) {
       const site = expeditionRealmSite(expedition, entityHomeNamespace(syncScalar(value.entity_id)), timestamp);
       if (site) regions.add(gameSyncRegion({ alt: false, x: site.col, y: site.row }, spacing)!);
