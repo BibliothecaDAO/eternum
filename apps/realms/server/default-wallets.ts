@@ -2,7 +2,7 @@ import { defaultWalletDeployment } from "@realms-world/identity/wallet";
 import type { PasskeyOwner } from "@realms-world/identity/wallet";
 
 /**
- * An account's default wallet as `default_wallets` keeps it (migration 0027): its address, the passkey key it was
+ * An account's default wallet as `default_wallets` keeps it (migration 0028): its address, the passkey key it was
  * deployed with, and the passkey that owns it today, with the origin and relying party both were made on.
  */
 export interface DefaultWalletRow {
