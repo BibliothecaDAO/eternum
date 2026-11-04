@@ -1298,6 +1298,79 @@
       {
         "name": "RowSet",
         "prefix": [
+          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "model",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "keys",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          },
+          {
+            "name": "values",
+            "type": "core::array::Span::<core::felt252>",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "StoryEvent",
+        "prefix": [
+          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
+          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
+        ],
+        "members": [
+          {
+            "name": "version",
+            "type": "core::integer::u8",
+            "kind": "key"
+          },
+          {
+            "name": "game_id",
+            "type": "core::integer::u32",
+            "kind": "key"
+          },
+          {
+            "name": "owner",
+            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
+            "kind": "key"
+          },
+          {
+            "name": "entity_id",
+            "type": "core::option::Option::<core::integer::u64>",
+            "kind": "key"
+          },
+          {
+            "name": "tx_hash",
+            "type": "core::felt252",
+            "kind": "key"
+          },
+          {
+            "name": "story",
+            "type": "world_native::ownership::Story",
+            "kind": "data"
+          },
+          {
+            "name": "timestamp",
+            "type": "core::integer::u64",
+            "kind": "data"
+          }
+        ]
+      },
+      {
+        "name": "RowSet",
+        "prefix": [
           "0x3928dc11165e890253f789440484151979481b14f31e18bdb3efce1debf3f99",
           "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
         ],
@@ -1745,79 +1818,6 @@
         "name": "StoryEvent",
         "prefix": [
           "0x3e50265c9f967c83de816cef243b045f3dd470037ce9fcd20fbd6884b8c572d",
-          "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "game_id",
-            "type": "core::integer::u32",
-            "kind": "key"
-          },
-          {
-            "name": "owner",
-            "type": "core::option::Option::<core::starknet::contract_address::ContractAddress>",
-            "kind": "key"
-          },
-          {
-            "name": "entity_id",
-            "type": "core::option::Option::<core::integer::u64>",
-            "kind": "key"
-          },
-          {
-            "name": "tx_hash",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "story",
-            "type": "world_native::ownership::Story",
-            "kind": "data"
-          },
-          {
-            "name": "timestamp",
-            "type": "core::integer::u64",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "RowSet",
-        "prefix": [
-          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
-          "0x1381128f2a0228389d1eba9d3aa09f8ed24da656b884a49eea09a5ed2e87724"
-        ],
-        "members": [
-          {
-            "name": "version",
-            "type": "core::integer::u8",
-            "kind": "key"
-          },
-          {
-            "name": "model",
-            "type": "core::felt252",
-            "kind": "key"
-          },
-          {
-            "name": "keys",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          },
-          {
-            "name": "values",
-            "type": "core::array::Span::<core::felt252>",
-            "kind": "data"
-          }
-        ]
-      },
-      {
-        "name": "StoryEvent",
-        "prefix": [
-          "0x290a08c6ab68498a377b8f273bd5f696816ceb60f3cf345badb48f949797e6c",
           "0x33b7d96bc1ff34b0a89214516b6ef5d2b8bdd9c301222eda2a1e96f78b84b96"
         ],
         "members": [
@@ -14073,5 +14073,5 @@
       ]
     }
   },
-  "identity": "0dcf1f8200eb83effd030d3666c8c324a252a8087b5befcaf814886d05c77870"
+  "identity": "ab3864f0631e2117d1a1faece25f2fea4228b728da8262883e1426cb94dac831"
 }
