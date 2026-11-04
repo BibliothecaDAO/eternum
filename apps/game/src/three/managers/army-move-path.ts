@@ -25,8 +25,8 @@ const isSameHex = (left: HexPlace, right: HexPlace): boolean => {
 
 /**
  * Whether the path worker could return a route for this walk: none is shorter than the tiles between its ends, and the
- * worker returns none longer than `maxHex`. A walk past that (into a spire's depth, a region away) is drawn straight,
- * and asking the worker first only delays it.
+ * worker returns none longer than `maxHex`. A walk past that is drawn straight, and asking the worker first only
+ * delays it. A spire's crossing is never walked (isArmyCrossing).
  */
 export const isRoutable = (from: HexPlace, to: HexPlace, maxHex: number): boolean => {
   const [a, b] = [from.getNormalized(), to.getNormalized()];

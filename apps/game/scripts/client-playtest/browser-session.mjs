@@ -94,6 +94,11 @@ export function createBrowserSession(session, { executablePath, headed, profile 
     },
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
+    doubleClick: (offset) => {
+      run(["batch", ...tapCommands(offset), ...tapCommands(offset)]);
+      // agent-browser's mouse sends each click on its own, so the dblclick a browser fires on the second is sent here.
+      evaluate(doubleClickExpression(screenPoint(offset)));
+    },
     screenshot: (path) => run(["screenshot", path]),
     observe: () => read(OBSERVE_EXPRESSION),
     orderBar: () => read(ORDER_BAR_EXPRESSION),
@@ -131,6 +136,9 @@ function tapCommands(offset) {
   const [x, y] = screenPoint(offset);
   return [`mouse move ${x} ${y}`, "mouse down", "mouse up"];
 }
+
+const doubleClickExpression = ([x, y]) =>
+  `document.elementFromPoint(${x}, ${y})?.dispatchEvent(new MouseEvent("dblclick", { bubbles: true, cancelable: true, view: window, detail: 2, clientX: ${x}, clientY: ${y} })) ?? false`;
 
 function rightClickCommands(offset) {
   const [x, y] = screenPoint(offset);

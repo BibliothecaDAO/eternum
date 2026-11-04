@@ -65,6 +65,7 @@ const ArmyPanel = ({
     learned,
     name: army.label,
     art: army.art,
+    ethereal: army.ethereal,
     troops: army.troops,
     xp: progress.xp,
     stamina: army.stamina,

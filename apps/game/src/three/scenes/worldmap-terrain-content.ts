@@ -1,3 +1,4 @@
+import type { EtherealSurface } from "../terrain/ethereal-depths";
 import { resolveWorldmapVisualTerrainPageKeyForHex } from "./worldmap-terrain-presentation-runtime";
 /** The biome a terrain cell draws while its tile is unexplored: its outline. */
 export const UNEXPLORED_TERRAIN_BIOME = "Outline";
@@ -12,7 +13,7 @@ interface TerrainCoverageCell {
 export interface TerrainCellFacts {
   projectedBiome: string | undefined;
   occupied: boolean;
-  surfacePresentation: "ethereal" | undefined;
+  surfacePresentation: EtherealSurface | undefined;
 }
 
 interface CaptureTerrainContentInput {
@@ -23,7 +24,7 @@ interface CaptureTerrainContentInput {
 }
 
 interface TerrainContentSnapshot {
-  cells: Array<TerrainCoverageCell & { occupied: boolean; surfacePresentation?: "ethereal" }>;
+  cells: Array<TerrainCoverageCell & { occupied: boolean; surfacePresentation?: EtherealSurface }>;
   commitMode: "atomic" | "ambient";
   revision: number;
 }

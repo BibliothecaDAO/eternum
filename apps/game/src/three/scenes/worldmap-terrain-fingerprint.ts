@@ -1,9 +1,10 @@
+import type { EtherealSurface } from "../terrain/ethereal-depths";
 interface TerrainFingerprintEntry {
   col: number;
   row: number;
   biomeKey: string;
   occupied?: boolean;
-  surfacePresentation?: "ethereal";
+  surfacePresentation?: EtherealSurface;
 }
 
 const FNV_OFFSET_BASIS = 0x811c9dc5;

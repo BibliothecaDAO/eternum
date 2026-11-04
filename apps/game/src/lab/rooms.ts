@@ -380,6 +380,12 @@ export const ROOMS: LabRoom[] = [
             load(() => import("../ui/features/debug/procedural-terrain-debug-view"), "ProceduralTerrainDebugView"),
           ),
           view(
+            "Ethereal depths",
+            "/lab/ethereal-depths",
+            "ethereal-depths",
+            load(() => import("./ethereal-depths/view"), "EtherealDepthLabView"),
+          ),
+          view(
             "Props",
             "/lab/terrain-props",
             "terrain-props",

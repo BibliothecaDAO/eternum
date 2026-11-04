@@ -1,4 +1,5 @@
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import type { EtherealLayer } from "@bibliothecadao/eternum";
 import type { IconMeaning } from "@/ui/design-system/icon";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, RESEARCH_TREE, type Tier, type Rank } from "@/ui/design-system/kit/words";
@@ -32,6 +33,8 @@ export interface ArmyDetailFacts {
   progress: Record<AttributeKey, number> & { scoutingKinds: readonly ScoutKind[] };
   points: readonly number[];
   rules: NativeRows["ArmyProgressionRules"];
+  /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
+  ethereal?: EtherealLayer;
 }
 
 export interface AttributeView {
@@ -49,6 +52,7 @@ export interface ArmyView {
   scoutingKinds: readonly ScoutKind[];
   name: string;
   art: IconMeaning;
+  ethereal?: EtherealLayer;
   troops: number;
   xp: number;
   stamina: StaminaBar;
@@ -111,6 +115,7 @@ export const readArmyDetail = (army: ArmyDetailFacts): ArmyView => {
     scoutingKinds: availableScoutingChoices((row) => researchTier(army.learned, row)).map((choice) => choice.key),
     name: army.name,
     art: army.art,
+    ethereal: army.ethereal,
     troops: army.troops,
     xp: army.xp,
     stamina: army.stamina,

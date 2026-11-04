@@ -1,3 +1,4 @@
+import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
@@ -310,8 +311,9 @@ const ACTION_STEPS = [
 ];
 
 /**
- * The spire's depth entered (the lab's spire game): the army selected, the spire beside it tapped for its card, then
- * Enter on Ethereal II; the result is the army setting off into the depth (its walk), seen on its figure.
+ * Ethereal II entered through the spire (the lab's spire game): the army selected, the spire beside it tapped for its
+ * card, then Enter on Ethereal II; the result is the view switched there with the army standing at its arrival, seen
+ * on its figure (no walk crosses the void).
  */
 const SPIRE_ACTION_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -321,15 +323,19 @@ const SPIRE_ACTION_STEPS = [
     "enter-depth",
     "EnterDepth",
     enterEtherealIIFromItsCard,
-    ({ played }) => played.armyId && { presented: `walk:${played.armyId}` },
+    ({ played }) => played.armyId && { presented: `army-shown:${played.armyId}` },
   ),
 ];
 
 async function enterEtherealIIFromItsCard({ browser }) {
-  const selection = browser.observe().selection;
-  const armyAt = armyOnScreen(browser, selection?.army?.id);
+  const armyId = browser.observe().selection?.army?.id ?? null;
   browser.click("Enter Ethereal II");
-  return { armyId: selection?.army?.id ?? null, region: armyAt && armyRegion(armyAt) };
+  // The view switches to the arrival, so the army's place on screen is read once it stands there.
+  const locate = () => {
+    const armyAt = armyOnScreen(browser, armyId);
+    return armyAt && armyRegion(armyAt);
+  };
+  return { armyId, locate };
 }
 
 /**
@@ -2385,7 +2391,7 @@ const LAB_SPIRE = { mode: "frontier", lab: "spire", chainId: "0x1ab9", gameId: 1
  * A realm's spire as a player uses it, at either size: the army selected from the dock, the spire found beside it by
  * its hover, tapped for its card (the army kept as its actor, each researched depth with its stamina and Enter, the next
  * one's research, and what entering commits the army to), then Enter on Ethereal II: the command the game signs, and
- * the army in Ethereal II.
+ * the view switched with the army into Ethereal II.
  */
 const LAB_SPIRE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -2394,6 +2400,90 @@ const LAB_SPIRE_STEPS = [
   { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
+
+/** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
+function etherealDepthSteps(depth) {
+  const label = `Ethereal ${"I".repeat(depth)}`;
+  return [
+    ...LAB_SPIRE_STEPS.slice(0, 3),
+    {
+      name: "spire-card",
+      play: pressSpire,
+      settleMs: 0,
+      verify: ({ played }) =>
+        played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
+        played.state.depths.length === Object.keys(depthLooks).length
+          ? completed(played)
+          : failed("The Spire does not offer all researched depths", played),
+    },
+    {
+      name: `ethereal-${depth}`,
+      settleMs: 1500,
+      play: async ({ browser }) => {
+        const before = browser.read(SPIRE_STATE);
+        browser.click(`Enter ${label}`);
+        const after = await readUntil(
+          () => browser.read(SPIRE_STATE),
+          (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        const camera = await readUntil(
+          () => browser.read(MAP_CAMERA),
+          (camera) => camera && after.army && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES,
+          SPIRE_WAIT_MS,
+        );
+        const terrain = await readUntil(
+          () => browser.read("JSON.stringify(window.__eternumMapSelection?.etherealTerrain ?? [])"),
+          (pages) => pages.some((page) => page.depth === depth && page.instances > 0),
+          SPIRE_WAIT_MS,
+        );
+        for (let i = 0; i < ESCAPES_TO_DESELECT; i++) browser.press("Escape");
+        if (!onADesktop()) {
+          browser.run(["eval", "void window.__playtest.wheel(100, 4)"]);
+          await sleep(ZOOM_SETTLE_MS);
+        }
+        const subjects = browser.read(`JSON.stringify((() => {
+          const framed = element => {
+            if (!element) return false;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+          };
+          return {
+            army: framed(document.querySelector('.mp-at[data-key="army:${before.army.id}"] .mp-token')),
+            spire: [...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element)),
+            alternateLayer: window.__eternumMapSelection?.layer,
+          };
+        })())`);
+        return { before, after, camera, terrain, subjects, label, look: depthLooks[depth].title };
+      },
+      verify: ({ played }) => {
+        const { before, after, camera, terrain, subjects } = played;
+        if (!subjects.army || !subjects.spire || subjects.alternateLayer !== false)
+          return failed("The Frontier still does not frame both the army and Spire", played);
+        const command = after.sent.at(-1);
+        if (
+          after.sent.length !== before.sent.length + 1 ||
+          command?.kind !== "EnterDepth" ||
+          Number(command.fields.depth) !== depth ||
+          Number(command.fields.explorer_id) !== before.army?.id
+        )
+          return failed("The Spire did not sign the chosen depth entry", played);
+        if (
+          after.army?.id !== before.army.id ||
+          after.army.hex.col !== before.army.hex.col ||
+          after.army.hex.row - before.army.hex.row !== depth * 100 ||
+          !camera ||
+          hexesApart(camera, after.army.hex) > FRAMED_WITHIN_HEXES
+        )
+          return failed("The army and view did not reach the chosen Frontier depth", played);
+        const rendered = terrain.filter((page) => page.depth === depth && page.instances > 0);
+        if (!rendered.length || rendered.some((page) => page.material !== `terrain-ethereal-depth-${depth}`))
+          return failed("The committed terrain does not render the chosen material", played);
+        return completed(played);
+      },
+    },
+  ];
+}
 
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -2480,10 +2570,19 @@ async function enterEtherealII({ browser }) {
   browser.click("Enter Ethereal II");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
-  return { before, after };
+  const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
+  const camera = await readUntil(() => browser.read(MAP_CAMERA), framed, SPIRE_WAIT_MS);
+  return { before, after, camera };
 }
 
-/** The command the game signed for the press, and the army it moved, shown in Ethereal II. */
+/** Where the map's camera looks, as the page reports it. */
+const MAP_CAMERA = `JSON.stringify(window.__eternumMapSelection?.camera ?? null)`;
+
+/**
+ * The command the game signed for the press, and the army it moved into Ethereal II, the view switched with it: the
+ * camera looks at the army's arrival, two regions from the spire, and the army is still selected (owner, 2026-11-04:
+ * "spire entering lmao we should just switch view like realm/world/ethereal no ?").
+ */
 function armyEnteredEtherealII({ played }) {
   const { before, after } = played;
   const command = after.sent.at(-1);
@@ -2494,10 +2593,68 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (!/is in Ethereal II today/.test(after.text ?? ""))
-    return failed("the card does not show the army in Ethereal II", { before, after });
-  return completed({ command, before: before.army, after: after.army, card: after.text });
+  if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
+    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
+  if (after.army?.id !== before.army.id)
+    return failed("the army is no longer selected in Ethereal II", { before, after });
+  return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
+
+/**
+ * A double-click goes inside only what has an inside (the lab's camp game: the spire's army beside a Troll's camp). The
+ * camp's tile leaves the map as it was, and the spire's switches the view into the Ethereal layer below it (owner,
+ * 2026-11-04: "I shouldnt be able to double click a beast", "(no local mode for beasts)", "double clicking the spire
+ * should make me enter the ethereal layer"). A desktop finds each tile by its order's hover.
+ */
+const LAB_DOUBLE_CLICK_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "double-click-camp", play: doubleClickTheTileOffering("Attack"), settleMs: 0, verify: leftTheMapAsItWas },
+  {
+    name: "double-click-spire",
+    play: doubleClickTheTileOffering("Enter the Spire"),
+    settleMs: 0,
+    verify: viewWentIntoTheEtherealBelow,
+  },
+];
+
+/** Finds the tile beside the army whose hover offers `verb`, then double-clicks it, reading the camera either side. */
+function doubleClickTheTileOffering(verb) {
+  return async ({ browser }) => {
+    const army = browser.observe().selection?.army ?? null;
+    const { target, scanned } = await findOrderTile(browser, [verb], armyOnScreen(browser, army?.id) ?? [0, 0]);
+    if (!target) return { verb, tile: null, scanned };
+    const before = browser.read(MAP_CAMERA);
+    browser.doubleClick(target.offset);
+    await sleep(DOUBLE_CLICK_SETTLE_MS);
+    return { verb, tile: target.offset, army: army?.hex ?? null, before, after: browser.read(MAP_CAMERA) };
+  };
+}
+
+/** The double-clicked camp opened no view of its own: the map is still the scene, its camera where it was. */
+function leftTheMapAsItWas({ played, seen }) {
+  if (!played.tile) return failed(`no tile beside the army offers ${played.verb}`, played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return failed(`a double-click on the camp left the map: ${scene.reason}`, played);
+  if (played.after === null || hexesApart(played.after, played.before) > 1)
+    return failed("a double-click on the camp moved the camera", played);
+  return completed(played);
+}
+
+/** The double-clicked spire switched the view into Ethereal I straight below it, on the map, a region down. */
+function viewWentIntoTheEtherealBelow({ played, seen }) {
+  if (!played.tile) return failed(`no tile beside the army offers ${played.verb}`, played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return failed(`a double-click on the spire left the map: ${scene.reason}`, played);
+  // The spire stands beside the army; Ethereal I is one region of Frontier's hundred rows below it.
+  const below = { col: played.army.col, row: played.army.row + 100 };
+  if (played.after === null || hexesApart(played.after, below) > FRAMED_WITHIN_HEXES)
+    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Ethereal I below the spire`, played);
+  return completed(played);
+}
+
+/** How long a double-click's view takes to settle: a camera move, or nothing at all. */
+const DOUBLE_CLICK_SETTLE_MS = 2_000;
 
 const SPIRE_WAIT_MS = 5_000;
 
@@ -4347,6 +4504,12 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  ...Object.fromEntries(
+    Object.keys(depthLooks).map((depth) => [
+      `lab-ethereal-${depth}`,
+      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+    ]),
+  ),
   "lab-merge-loses-xp": {
     game: labSpireGame("merge-loses-xp"),
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
@@ -4354,6 +4517,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
+  "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },

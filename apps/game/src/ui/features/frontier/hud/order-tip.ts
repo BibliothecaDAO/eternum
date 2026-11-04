@@ -1,7 +1,7 @@
 import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
-import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
+import { ATTACK, EXPLORE, MOVE, SPIRE_WORDS, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
 import { type MapSiteKind, siteGainLine } from "../sites/map-site-plan";
 import {
   type ActionPath,
@@ -67,7 +67,7 @@ const ORDERS: Partial<Record<ActionType, string>> = {
   [ActionType.Chest]: OPEN_CRATE,
   [ActionType.Help]: `${TRANSFER} troops`,
   [ActionType.SpireTravel]: "Travel through the spire",
-  [ActionType.EnterDepth]: "Enter a depth",
+  [ActionType.EnterDepth]: SPIRE_WORDS.order,
   [ActionType.UseSite]: USE,
 };
 
@@ -75,7 +75,7 @@ const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | nu
   const actionType = path && path.length >= 2 ? ActionPaths.getActionType(path) : undefined;
   const line = actionType === undefined ? undefined : ORDERS[actionType];
   if (!path || line === undefined) return null;
-  // A crate costs nothing; a depth's entry depends on the depth, which the spire's card picks with its cost.
+  // A crate costs nothing; the spire's entry is free, and its card picks the Ethereal layer to enter.
   if (actionType === ActionType.Chest || actionType === ActionType.EnterDepth) return { line, cost: null };
   if (actionType === ActionType.UseSite)
     return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };

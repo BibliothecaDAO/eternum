@@ -128,7 +128,7 @@ describe("the season list", () => {
     unmount();
   });
 
-  it("details a realm's season by kind and its Depth once it has one, with Visit for another realm and none for the player's own", () => {
+  it("details a realm's season by kind and its Ethereal layer once it has one, with Visit for another realm and none for the player's own", () => {
     const detail = {
       rank: 2,
       order: 2,
@@ -142,13 +142,13 @@ describe("the season list", () => {
     const onVisit = vi.fn();
     const other = render(<SeasonDetailSheet detail={detail} label="Aldric" onVisit={onVisit} onClose={vi.fn()} />);
     expect(other.host.querySelector("[aria-label='Ruin 9']")).not.toBeNull();
-    // Depth 0 is not drawn: no realm has gone through yet.
-    expect(other.host.querySelector("[aria-label^='Depth']")).toBeNull();
+    // No Ethereal layer is drawn until the realm has gone through its spire.
+    expect(other.host.querySelector("[aria-label^='Ethereal']")).toBeNull();
     act(() => button(other.host, "Visit").click());
     expect(onVisit).toHaveBeenCalled();
     other.unmount();
     const own = render(<SeasonDetailSheet detail={{ ...detail, depth: 2 }} label="You" onClose={vi.fn()} />);
-    expect(own.host.querySelector("[aria-label='Depth II']")).not.toBeNull();
+    expect(own.host.querySelector("[aria-label='Ethereal II']")).not.toBeNull();
     expect(button(own.host, "Visit")).toBeUndefined();
     own.unmount();
   });

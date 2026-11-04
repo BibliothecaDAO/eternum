@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
+  armyEtherealLayer,
   dayOf,
   entityHomeNamespace,
   seasonDay,
@@ -9,12 +10,15 @@ import {
   expeditionRealmSite,
   expeditionSpires,
   expeditionSpireTile,
+  isArmyCrossing,
   isAtExpeditionSpire,
+  isEtherealTile,
   liveHomeArmies,
   structureMapPosition,
   structureLocalPosition,
   siteReward,
   siteClearXp,
+  spireEtherealView,
   LOCAL_VIEW_REACH,
 } from "./expeditions";
 
@@ -131,6 +135,31 @@ describe("liveHomeArmies", () => {
     atFloor(86400 * 9);
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
   });
+
+  it("names the Ethereal layer each army stands in, and none on the surface or without expeditions", () => {
+    // Day 0: the surface is rows 0..9, Ethereal I rows 10..19, Ethereal III rows 30..39.
+    const store = armiesStore(expeditionRules, [army(1, 6), army(2, 15), army(3, 35)]);
+    expect([1, 2, 3].map((id) => armyEtherealLayer(store as never, 7, id))).toEqual([undefined, 1, 3]);
+    const plain = armiesStore({ SliceRules: { day_unit_seconds: 0 } }, [army(2, 15)]);
+    expect(armyEtherealLayer(plain as never, 7, 2)).toBeUndefined();
+  });
+
+  describe("a look into a spire's Ethereal layer", () => {
+    // Realm 42's spire on day 0's surface (rows 0..9); Ethereal I below is rows 10..19, Ethereal II rows 20..29.
+    const spire = { col: 24, row: 5, realm: { game_id: 7, entity_id: 42 } as never };
+
+    it("goes to the realm's army in the Ethereal layer today", () => {
+      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25)]);
+      atFloor(rules.startMainAt + 60);
+      expect(spireEtherealView(store as never, spire)).toEqual({ col: 25, row: 25 });
+    });
+
+    it("goes to Ethereal I straight below the spire while none of the realm's armies is there", () => {
+      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25, 1_000n, 99)]);
+      atFloor(rules.startMainAt + 60);
+      expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
+    });
+  });
 });
 
 describe("expedition spire", () => {
@@ -169,6 +198,48 @@ describe("expedition spire", () => {
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
       { col: 25, row: 46, deepest: 1, realm: realm(3) },
     ]);
+  });
+});
+
+describe("isEtherealTile", () => {
+  it("draws Ethereal I to III with the ethereal surface, and each day's surface without it", () => {
+    // Spacing 10: day 1's surface is rows 40..49, its Ethereal I to III rows 50..79, day 2's surface rows 80..89.
+    expect([45, 49, 50, 65, 79, 80].map((row) => isEtherealTile(rules, { row, alt: false }))).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it("draws Eternum's other layer ethereal, and nothing else in a game without expeditions", () => {
+    expect(isEtherealTile(null, { row: 65, alt: true })).toBe(true);
+    expect(isEtherealTile(null, { row: 65, alt: false })).toBe(false);
+  });
+});
+
+describe("isArmyCrossing", () => {
+  const at = (col: number, row: number, alt = false) => ({ col, row, alt });
+
+  it("crosses through the spire into the Ethereal layer a region down, as enter_depth places the army", () => {
+    const store = storeWith(expeditionRules);
+    // Day 1's surface region of home 3 is rows 40..49, columns 20..29; Ethereal I lies a spacing below, rows 50..59.
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 56))).toBe(true);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 76))).toBe(true);
+  });
+
+  it("walks any step inside one region, up to its edge", () => {
+    const store = storeWith(expeditionRules);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(26, 47))).toBe(false);
+    expect(isArmyCrossing(store, 7, at(20, 40), at(29, 49))).toBe(false);
+  });
+
+  it("crosses between map layers in any game, and walks everywhere else without expeditions", () => {
+    const store = storeWith({ ...expeditionRules, SliceRules: { day_unit_seconds: 0 } });
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 46, true))).toBe(true);
+    expect(isArmyCrossing(store, 7, at(25, 46), at(25, 56))).toBe(false);
   });
 });
 

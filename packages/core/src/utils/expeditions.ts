@@ -90,6 +90,49 @@ const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number =>
 export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): number =>
   expeditionBand(rules, coord) % 4;
 
+/** An Ethereal layer, I to III: a Frontier depth below the day's surface. */
+export type EtherealLayer = 1 | 2 | 3;
+
+/**
+ * The Ethereal layer an army stands in, by the same depth the terrain and the spire read; none on the day's surface or
+ * in a game without expeditions.
+ */
+export const armyEtherealLayer = (
+  store: Pick<NativeFactStore, "get" | "entityOccupancy">,
+  gameId: number,
+  explorerId: number | bigint,
+): EtherealLayer | undefined => {
+  const rules = readExpeditionRules(store, gameId);
+  const layer = rules ? expeditionDepth(rules, entityMapPosition(store, gameId, explorerId)) : 0;
+  return layer === 0 ? undefined : (layer as EtherealLayer);
+};
+
+/**
+ * Whether a tile lies in the Ethereal layer, which the terrain draws with its ethereal surface: Eternum's other map
+ * layer, or a Frontier depth below the day's surface (Ethereal I to III, a region down the same map).
+ */
+export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
+  hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
+
+/**
+ * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer
+ * (a spire's travel), or into another expedition region (a spire's portal to the Ethereal layer, which the contract
+ * places a region down the same map). Regions lie a spacing apart with void between, so no walk joins two.
+ */
+export const isArmyCrossing = (
+  store: Pick<NativeFactStore, "get">,
+  gameId: number,
+  from: { col: number; row: number; alt: boolean },
+  to: { col: number; row: number; alt: boolean },
+): boolean => {
+  if (from.alt !== to.alt) return true;
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) return false;
+  const region = ({ col, row }: { col: number; row: number }) =>
+    `${Math.floor(col / rules.spacing)}:${expeditionBand(rules, { y: row })}`;
+  return region(from) !== region(to);
+};
+
 /**
  * When today's expedition ends, where the contract rolls every army and site over; before the season, when it starts.
  */
@@ -129,6 +172,23 @@ export const liveHomeArmies = (
   return armies.filter((army) =>
     isCurrentExpeditionArmy(rules, entityMapPosition(store, gameId, army.explorer_id), floor),
   );
+};
+
+/**
+ * Where a look into a lit spire's Ethereal layer goes: its realm's army there today, else Ethereal I straight below the
+ * spire, where an army beside it lands (enter_depth keeps its column).
+ */
+export const spireEtherealView = (
+  store: Pick<NativeFactStore, "get" | "require" | "armiesAtHome" | "entityOccupancy">,
+  spire: { col: number; row: number; realm: NativeRows["Structure"] },
+): { col: number; row: number } => {
+  const gameId = spire.realm.game_id;
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) throw new Error("A spire lights only in an expedition game");
+  const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
+    .map((army) => entityMapPosition(store, gameId, army.explorer_id))
+    .find((at) => expeditionDepth(rules, at) > 0);
+  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : { col: spire.col, row: spire.row + rules.spacing };
 };
 
 export { entityHomeNamespace } from "./entity-home";

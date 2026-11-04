@@ -2,6 +2,7 @@
 import { act, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { ActionPath } from "@bibliothecadao/eternum";
+import { StructureType } from "@bibliothecadao/types";
 import { PerspectiveCamera } from "three";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -817,10 +818,20 @@ describe("the click matrix: what is selected × what is clicked", () => {
         { reason: "too-far" },
       );
     Object.assign(map.scene, {
+      // The two realms, by their kind: a double-click opens the view of a home with a board (worldmap-double-click.ts).
+      game: {
+        store: {
+          get: (model: string, row: { entity_id?: number }) =>
+            model === "Structure" && (row.entity_id === 9 || row.entity_id === 98)
+              ? { base: { category: StructureType.Realm } }
+              : undefined,
+        },
+      },
       worldSpatialProjection: {
         getArmy: (id: number) => (armies.has(id) ? { hexCoords: contract(armies.get(id)!) } : undefined),
         getStructuresAtHex: (at: { col: number; row: number }) =>
           at.col === cleared.col && at.row === cleared.row ? [{ clearedSite: true }] : [],
+        getTileAtHex: () => undefined,
       },
       getHexagonEntity: (hex: { col: number; row: number }) => entities.get(key(hex)) ?? {},
       getOwnArmyOrderedTo: () => undefined,

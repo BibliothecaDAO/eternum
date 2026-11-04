@@ -77,10 +77,13 @@ it.each(["phone", "desktop"])("shows every open slot and its bar on %s, and open
   }
 });
 
-/** Two armies out, as useDockArmies reads them: 1,498 troops whose Homecoming returns 134, and one of a single troop. */
+/**
+ * Two armies out, as useDockArmies reads them: 1,498 troops whose Homecoming returns 134, through the spire in
+ * Ethereal II, and one of a single troop on the surface.
+ */
 const ARMIES_OUT = [
-  { explorerId: 201, number: 1, troops: 1_498, returnsHome: 134 },
-  { explorerId: 202, number: 2, troops: 1, returnsHome: 0 },
+  { explorerId: 201, number: 1, troops: 1_498, returnsHome: 134, ethereal: 2 as const },
+  { explorerId: 202, number: 2, troops: 1, returnsHome: 0, ethereal: undefined },
 ].map((army) => ({
   ...army,
   troopsFact: {} as never,
@@ -136,6 +139,37 @@ it.each(["phone", "desktop"] as const)(
       expect(shown()).toEqual(
         size === "desktop" ? ["134 come home at day end", "0 come home at day end"] : ["+134", "+0"],
       );
+    } finally {
+      act(() => root.unmount());
+      host.remove();
+    }
+  },
+);
+
+it.each(["phone", "desktop"] as const)(
+  "marks on a %s each army in an Ethereal layer with that layer, and an army on the surface with nothing",
+  (size) => {
+    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+    layout.current = size;
+    useAccountStore.setState({ account: { address: "0x111" } as never });
+    const { store, row } = frontierDay();
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <ArmyDock realm={row} armies={ARMIES_OUT} />
+        </GameProvider>,
+      ),
+    );
+    try {
+      // Each army's own button: the layer's name, and the numeral it shows beside the layer's painting.
+      const marks = ARMIES_OUT.map(({ label }) => {
+        const mark = host.querySelector(`button[aria-label="${label}"]`)!.querySelector('[aria-label^="Ethereal"]');
+        return mark && [mark.getAttribute("aria-label"), mark.textContent, mark.querySelector("img")?.dataset.icon];
+      });
+      expect(marks).toEqual([["Ethereal II", "II", "depth-2"], null]);
     } finally {
       act(() => root.unmount());
       host.remove();

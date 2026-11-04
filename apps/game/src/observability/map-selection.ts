@@ -1,8 +1,12 @@
+import type { WorldmapProceduralTerrain } from "@/three/terrain/worldmap-procedural-terrain";
+
 /**
  * The world map's selection as the page shows it: the selected hex, the structure on it, the hexes ringed, the army,
  * the structure under the pointer, and the hex the camera looks at.
  */
 interface MapSelectionSnapshot {
+  /** Depth materials and instance counts committed by the map terrain renderer. */
+  etherealTerrain: ReturnType<WorldmapProceduralTerrain["getEtherealPresentation"]>;
   hex: { col: number; row: number } | null;
   structure: { id: number; owner: string; realm: boolean; ownedByViewer: boolean } | null;
   /** Hexes the ownership ring layer draws: every one the selected structure's owner holds, or none. */

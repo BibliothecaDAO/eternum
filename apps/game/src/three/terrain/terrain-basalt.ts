@@ -1,4 +1,4 @@
-import { terrainHexCorners } from "./terrain-coordinates";
+import { TERRAIN_HEX_CORNER_OFFSETS, snapTerrainCoordinate } from "./terrain-coordinates";
 
 export const BASALT_SUPPORT_HEIGHT = 0.12;
 // Seven regular slabs per gameplay radius keep the pattern aligned across gameplay hexes.
@@ -20,7 +20,11 @@ export function sampleBasaltSurface(): { height: number; normal: Triple } {
 /** A single shared, flat hex shell supplies both close and distant terrain. */
 export function buildBasaltShell(): CellGeometry {
   const geometry: CellGeometry = { positions: [], normals: [], indices: [], colors: [] };
-  const cap = terrainHexCorners(0, 0).map((point) => ({ ...point, y: BASALT_SUPPORT_HEIGHT }));
+  const cap = TERRAIN_HEX_CORNER_OFFSETS.map((point) => ({
+    x: snapTerrainCoordinate(point.x),
+    z: snapTerrainCoordinate(point.z),
+    y: BASALT_SUPPORT_HEIGHT,
+  }));
   appendFace(geometry, cap, UP, [1, 1, 1]);
   for (let edge = 0; edge < 6; edge += 1) {
     const start = cap[edge];
