@@ -48,38 +48,22 @@ pub mod FailingReleaseMigrationFixture {
         }
     }
 }
+#[starknet::interface]
+pub trait IChangedSweep<T> {
+    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
+}
+
 #[starknet::contract]
-pub mod ChangedEarnedSweepPrizesFixture {
-    use crate::logic::entry::EntryAdministration;
-    use crate::logic::release::ReleaseState;
-
-    component!(path: ReleaseState, storage: release, event: ReleaseEvent);
-    impl ReleaseInternal = ReleaseState::InternalImpl<ContractState>;
-    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
-    #[abi(embed_v0)]
-    impl Administration = EntryAdministration::LedgerOperatorImpl<ContractState>;
-    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
-
+pub mod ChangedSweepPrizesFixture {
     #[storage]
-    #[allow(starknet::colliding_storage_paths)]
-    struct Storage {
-        #[substorage(v0)]
-        release: ReleaseState::Storage,
-        #[substorage(v0)]
-        administration: EntryAdministration::Storage,
-    }
-    #[event]
-    #[derive(Drop, starknet::Event)]
-    enum Event {
-        ReleaseEvent: ReleaseState::Event,
-        AdministrationEvent: EntryAdministration::Event,
-    }
+    struct Storage {}
+
     #[abi(embed_v0)]
-    impl EarnedSweep of crate::relics::IEarnedLordsSweep<ContractState> {
-        fn sweep_earned_lords(
+    impl Sweep of super::IChangedSweep<ContractState> {
+        fn sweep_lords(
             ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
         ) {
-            panic_with_felt252('earned release 2');
+            panic_with_felt252('sweep release 2');
         }
     }
 }

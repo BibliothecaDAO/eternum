@@ -233,7 +233,7 @@ fn principal_only_sweep_needs_no_published_reward_budget() {
 
 #[test]
 #[feature("safe_dispatcher")]
-fn mixed_sweep_keeps_earned_release_pinned_until_applied() {
+fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
     use super::{IReleasesDispatcher, IReleasesDispatcherTrait};
     use crate::resources::{
         IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot,
@@ -279,13 +279,20 @@ fn mixed_sweep_keeps_earned_release_pinned_until_applied() {
             2,
             crate::logic::release::Release {
                 classes: games_storage::release::LogicClasses {
-                    prizes: super::declare_logic("ChangedEarnedSweepPrizesFixture"), ..original.classes,
+                    prizes: super::declare_logic("ChangedSweepPrizesFixture"), ..original.classes,
                 },
                 ..original,
             },
         );
     assert_eq!(releases.current_release(), 2);
     assert_eq!(releases.game_release(game_id), 1);
+    assert_eq!(releases.release(2).classes.bridge, original.classes.bridge);
+    assert_eq!(
+        resources.resource_balance(ResourceSlot { game_id, entity_id: home, resource_type: crate::resources::LORDS }),
+        30 * crate::rules::RESOURCE_PRECISION,
+    );
+    assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
+    assert!(entry.principal_withdrawal(game_id, d.actor).is_none());
     let budget = snforge_std::interact_with_state(d.games, || crate::logic::lords_budget::budget(game_id));
     start_cheat_block_timestamp(d.games, context.game.unbox().end_at);
     snforge_std::start_cheat_transaction_hash(d.games, 88203);
@@ -312,11 +319,16 @@ fn mixed_sweep_keeps_earned_release_pinned_until_applied() {
     assert_eq!(releases.game_release(game_id), 2);
     snforge_std::start_cheat_transaction_hash(d.games, 88205);
     let safe = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    // Earned library, administration library, then the Games contract each frame the failure.
+    // Pinned sweep library, administration library, then the Games contract each frame the failure.
     assert_eq!(
         safe.sweep_lords(game_id, home).unwrap_err(),
-        array!['earned release 2', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED'],
+        array!['sweep release 2', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED'],
     );
+    assert_eq!(
+        resources.resource_balance(ResourceSlot { game_id, entity_id: home, resource_type: crate::resources::LORDS }),
+        0,
+    );
+    assert_eq!(snforge_std::interact_with_state(d.games, || crate::logic::lords_budget::budget(game_id)), budget);
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 0, consumed: 0, swept: 40 });
     assert_eq!(entry.principal_withdrawal(game_id, d.actor).unwrap().amount, 40);
     assert!(

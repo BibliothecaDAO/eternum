@@ -29,6 +29,30 @@ pub mod LordsState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
+        fn sweep_lords(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            structure_id: u64,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::entry::assert_ledger_operator();
+            let context = crate::commands::execution_context(game_id, context);
+            let realm = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(realm);
+            assert!(
+                record.base.category == crate::taxonomy::REALM_CATEGORY && record.owner != 0.try_into().unwrap(),
+                "sweep requires an owned realm",
+            );
+            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
+            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
+            crate::logic::deposits::sweep(game_id, record.owner);
+            if balance == 0 {
+                return;
+            }
+            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
+            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
+        }
+
         fn refill_stamina(
             ref self: ComponentState<TContractState>,
             game_id: u32,
@@ -93,34 +117,6 @@ pub mod LordsState {
             assert!(record.owner == actor, "actor does not own structure");
             self.withdraw_realm_lords(realm, actor, command.amount, context);
             ()
-        }
-    }
-
-    #[embeddable_as(EarnedLordsSweepImpl)]
-    pub impl EarnedLordsSweep<
-        TContractState,
-        +HasComponent<TContractState>,
-        impl Life: ReleaseState::HasComponent<TContractState>,
-        +Drop<TContractState>,
-    > of crate::relics::IEarnedLordsSweep<ComponentState<TContractState>> {
-        fn sweep_earned_lords(
-            ref self: ComponentState<TContractState>,
-            game_id: u32,
-            structure_id: u64,
-            context: crate::commands::ActionContext,
-        ) {
-            crate::logic::entry::assert_ledger_operator();
-            let context = crate::commands::execution_context(game_id, context);
-            let realm = ResourceKey { game_id, entity_id: structure_id };
-            let record = crate::logic::structures::record(realm);
-            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
-            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
-            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
-            if balance == 0 {
-                return;
-            }
-            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
-            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
         }
     }
 
