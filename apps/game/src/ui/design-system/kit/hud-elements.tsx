@@ -731,19 +731,10 @@ export const HudTabs = <K extends string | number>({
   /**
    * Each tab; `title` is its hover text, what the tab holds in full. A tab may be its painting (`icon`) and count with
    * no word, named then by `ariaLabel`: it draws compact, its count a badge on the painting, so a row of kinds fits a
-   * narrow column. A strip too wide for its place wraps; no tab ever leaves it.
+   * narrow column. A tab with a `menu` opens it on a press instead of being chosen, its cue beside its word. A strip too
+   * wide for its place wraps; no tab ever leaves it.
    */
-  tabs: readonly {
-    key: K;
-    label?: string;
-    icon?: IconMeaning;
-    ariaLabel?: string;
-    count?: number;
-    /** The count's tone, where it says how things stand (green: ready to claim). */
-    countTone?: Tone;
-    disabled?: boolean;
-    title?: string;
-  }[];
+  tabs: readonly HudTab<K>[];
   value: K;
   onChange: (key: K) => void;
   /** A strip in a line of body text (the top bar's): its words at the body's size. */
@@ -752,42 +743,93 @@ export const HudTabs = <K extends string | number>({
   states?: Partial<Record<K, string>>;
 }) => (
   <div className="ui-tabs" role="tablist" data-size={size}>
-    {tabs.map((tab) => (
-      <button
-        key={tab.key}
-        type="button"
-        role="tab"
-        className="ui-tab"
-        aria-selected={tab.key === value}
-        disabled={tab.disabled}
-        title={tab.title}
-        aria-label={tab.ariaLabel}
-        data-state={states[tab.key]}
-        data-shape={tab.icon && !tab.label ? "mark" : undefined}
-        onClick={() => onChange(tab.key)}
-      >
-        {tab.icon && !tab.label ? (
-          <span className="ui-tab__mark">
-            <Icon name={tab.icon} size={22} />
-            {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
-          </span>
-        ) : (
-          <>
-            {tab.icon && <Icon name={tab.icon} size={22} />}
-            {tab.label}
-            {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
-          </>
-        )}
-      </button>
-    ))}
+    {tabs.map((tab) =>
+      tab.menu ? (
+        <MenuTab key={tab.key} tab={tab} menu={tab.menu} selected={tab.key === value} state={states[tab.key]} />
+      ) : (
+        <button
+          key={tab.key}
+          type="button"
+          role="tab"
+          className="ui-tab"
+          aria-selected={tab.key === value}
+          disabled={tab.disabled}
+          title={tab.title}
+          aria-label={tab.ariaLabel}
+          data-state={states[tab.key]}
+          data-shape={tab.icon && !tab.label ? "mark" : undefined}
+          onClick={() => onChange(tab.key)}
+        >
+          <TabFace tab={tab} />
+        </button>
+      ),
+    )}
   </div>
 );
 
-/**
- * A small tag: a count in the age's accent, or a state in its tone. With `onPress` it is a press at a chip's size, framed
- * as a button, for an action that stands among the tags (the army card's Refill); `disabled`, it is that press drawn
- * inert, with or without its action, so a chip that does nothing never looks like one that does.
- */
+type HudTab<K> = {
+  key: K;
+  label?: string;
+  icon?: IconMeaning;
+  ariaLabel?: string;
+  count?: number;
+  /** The count's tone, where it says how things stand (green: ready to claim). */
+  countTone?: Tone;
+  disabled?: boolean;
+  title?: string;
+  /** The choices a press opens (useHudList), in place of choosing the tab. */
+  menu?: readonly MenuItem[];
+};
+
+/** A tab's painting, word and count. */
+const TabFace = <K,>({ tab }: { tab: HudTab<K> }) =>
+  tab.icon && !tab.label ? (
+    <span className="ui-tab__mark">
+      <Icon name={tab.icon} size={22} />
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+    </span>
+  ) : (
+    <>
+      {tab.icon && <Icon name={tab.icon} size={22} />}
+      {tab.label}
+      {tab.count !== undefined && <HudChip tone={tab.countTone}>{tab.count}</HudChip>}
+    </>
+  );
+
+/** A tab that opens its choices: its face and the cue that it opens, its list under it. */
+const MenuTab = <K,>({
+  tab,
+  menu,
+  selected,
+  state,
+}: {
+  tab: HudTab<K>;
+  menu: readonly MenuItem[];
+  selected: boolean;
+  state: string | undefined;
+}) => {
+  const { triggerProps, list } = useHudList(tab.ariaLabel ?? tab.label ?? "");
+  return (
+    <>
+      <button
+        {...triggerProps}
+        type="button"
+        role="tab"
+        className="ui-tab"
+        aria-selected={selected}
+        disabled={tab.disabled}
+        title={tab.title}
+        aria-label={tab.ariaLabel}
+        data-state={state}
+      >
+        <TabFace tab={tab} />
+        <Icon name="chevron-down" size={16} />
+      </button>
+      {list(menu)}
+    </>
+  );
+};
+
 export const HudChip = ({
   tone,
   icons,
@@ -1662,7 +1704,7 @@ export const HudConfirm = ({
   </section>
 );
 
-type MenuItem =
+export type MenuItem =
   | { kind: "rule" }
   | {
       kind?: "item";
@@ -1758,35 +1800,16 @@ const reachableItems = (menu: HTMLElement | null) =>
   menu ? [...menu.querySelectorAll<HTMLButtonElement>(".ui-menu__item:not(:disabled)")] : [];
 
 /**
- * A choice opened from its trigger: what is chosen and the cue that it opens; its list under it, drawn over every surface
- * so no window clips it. Arrows move through the list, Enter chooses, Escape and a press outside close it.
+ * A list opened from its trigger, drawn over every surface so no window clips it: under the trigger, or over it when the
+ * screen has no room below. Arrows move through it, Enter chooses, Escape, Tab and a press outside close it, and so does
+ * a choice. A select's (HudSelect), a tab's that opens choices (HudTabs) and the phone's view slot's.
  */
-export const HudSelect = <K extends string | number>({
-  label,
-  value,
-  options,
-  onChange,
-  disabled,
-  tip,
-  state,
-}: {
-  /** What is chosen, for assistive technology. */
-  label: string;
-  value: K;
-  options: readonly { value: K; label: string; disabled?: boolean; hint?: string }[];
-  onChange: (value: K) => void;
-  disabled?: boolean;
-  /** Its line on hover: what the choice does, or why it can't be changed. */
-  tip?: string;
-  /** The lab's forced state. */
-  state?: string;
-}) => {
+export const useHudList = (label: string) => {
   const [open, setOpen] = useState(false);
   const [place, setPlace] = useState<ReturnType<typeof menuPlace> | null>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const layerId = useId();
-  const chosen = options.find((option) => option.value === value);
 
   const close = (refocus: boolean) => {
     setOpen(false);
@@ -1846,46 +1869,87 @@ export const HudSelect = <K extends string | number>({
     items[(at + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length]?.focus({ preventScroll: true });
   };
 
+  /** What the trigger carries: its hold on the list, its press and its keys. */
+  const triggerProps = {
+    ref: trigger,
+    "aria-haspopup": "listbox" as const,
+    "aria-expanded": open,
+    "aria-controls": open ? layerId : undefined,
+    onClick: () => (open ? close(false) : setOpen(true)),
+    onKeyDown: onTriggerKey,
+  };
+  const list = (items: readonly MenuItem[]) =>
+    open &&
+    createPortal(
+      <div id={layerId} className="ui-select__layer" data-placed={place !== null} style={place ?? undefined}>
+        <HudMenu
+          ref={menu}
+          aria-label={label}
+          onKeyDown={onMenuKey}
+          items={items.map((item) =>
+            item.kind === "rule"
+              ? item
+              : {
+                  ...item,
+                  onSelect: () => {
+                    item.onSelect?.();
+                    close(true);
+                  },
+                },
+          )}
+        />
+      </div>,
+      document.body,
+    );
+  return { triggerProps, list };
+};
+
+/** A choice opened from its trigger: what is chosen and the cue that it opens, its list (useHudList) under it. */
+export const HudSelect = <K extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+  disabled,
+  tip,
+  state,
+}: {
+  /** What is chosen, for assistive technology. */
+  label: string;
+  value: K;
+  options: readonly { value: K; label: string; disabled?: boolean; hint?: string }[];
+  onChange: (value: K) => void;
+  disabled?: boolean;
+  /** Its line on hover: what the choice does, or why it can't be changed. */
+  tip?: string;
+  /** The lab's forced state. */
+  state?: string;
+}) => {
+  const { triggerProps, list } = useHudList(label);
+  const chosen = options.find((option) => option.value === value);
   return (
     <>
       <button
-        ref={trigger}
+        {...triggerProps}
         type="button"
         className="ui-select"
         data-state={state}
         aria-label={label}
         data-tip={tip}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-controls={open ? layerId : undefined}
         disabled={disabled}
-        onClick={() => (open ? close(false) : setOpen(true))}
-        onKeyDown={onTriggerKey}
       >
         <span>{chosen?.label ?? ""}</span>
         <Icon name="chevron-down" size={16} />
       </button>
-      {open &&
-        createPortal(
-          <div id={layerId} className="ui-select__layer" data-placed={place !== null} style={place ?? undefined}>
-            <HudMenu
-              ref={menu}
-              aria-label={label}
-              onKeyDown={onMenuKey}
-              items={options.map((option) => ({
-                label: option.label,
-                hint: option.hint,
-                disabled: option.disabled,
-                checked: option.value === value,
-                onSelect: () => {
-                  onChange(option.value);
-                  close(true);
-                },
-              }))}
-            />
-          </div>,
-          document.body,
-        )}
+      {list(
+        options.map((option) => ({
+          label: option.label,
+          hint: option.hint,
+          disabled: option.disabled,
+          checked: option.value === value,
+          onSelect: () => onChange(option.value),
+        })),
+      )}
     </>
   );
 };

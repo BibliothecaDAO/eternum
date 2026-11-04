@@ -92,6 +92,23 @@ export function createBrowserSession(session, { executablePath, headed, profile 
       if (!at) throw new Error(`The place bar shows no ${word}`);
       run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
     },
+    /** Opens the list of views (the map's layers) from the switch that names the one shown, with the mouse. */
+    openViews: () => {
+      const at = read(VIEW_SWITCH_EXPRESSION);
+      if (!at) throw new Error("No view switch opens a list of views");
+      run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+    },
+    /** The open list's choices, each by its word and whether it is the one shown. */
+    viewChoices: () => read(VIEW_CHOICES_EXPRESSION),
+    /** Chooses a view: opens the list, then presses the choice by its word. */
+    chooseView: (word) => {
+      if (!read(VIEW_CHOICES_EXPRESSION).length) {
+        const at = read(VIEW_SWITCH_EXPRESSION);
+        if (!at) throw new Error("No view switch opens a list of views");
+        run(["batch", `mouse move ${at.x} ${at.y}`, "mouse down", "mouse up"]);
+      }
+      run(["find", "role", "menuitemradio", "click", "--name", word, "--exact"]);
+    },
     hover: (offset) => run(["mouse", "move", ...screenPoint(offset).map(String)]),
     rightClick: (offset) => run(["batch", ...rightClickCommands(offset)]),
     doubleClick: (offset) => {
@@ -131,6 +148,22 @@ const placeSlotExpression = (word) => `JSON.stringify((() => {
   // agent-browser's mouse takes whole pixels.
   return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
 })())`;
+
+/**
+ * The centre of the switch that names the view shown and opens the list of views, once a realm has an Ethereal layer:
+ * a phone's place-bar switch, a desktop's World tab.
+ */
+const VIEW_SWITCH_EXPRESSION = `JSON.stringify((() => {
+  const rect = document
+    .querySelector('nav[aria-label="Places"] [data-switch][aria-haspopup], [aria-label="Map view"] [role="tab"][aria-haspopup]')
+    ?.getBoundingClientRect();
+  return rect ? { x: Math.round(rect.left + rect.width / 2), y: Math.round(rect.top + rect.height / 2) } : null;
+})())`;
+
+const VIEW_CHOICES_EXPRESSION = `JSON.stringify([...document.querySelectorAll('[role="menu"] [role="menuitemradio"]')].map((item) => ({
+  word: item.textContent.trim(),
+  shown: item.getAttribute("aria-checked") === "true",
+})))`;
 
 function tapCommands(offset) {
   const [x, y] = screenPoint(offset);

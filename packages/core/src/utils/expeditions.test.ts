@@ -19,6 +19,8 @@ import {
   siteReward,
   siteClearXp,
   spireEtherealView,
+  viewInLayer,
+  regionSpire,
   LOCAL_VIEW_REACH,
 } from "./expeditions";
 
@@ -159,6 +161,31 @@ describe("liveHomeArmies", () => {
       atFloor(rules.startMainAt + 60);
       expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
     });
+  });
+
+  it("finds the same spot in each layer of its region, from the surface or from any Ethereal layer", () => {
+    // Day 0, spacing 10: the surface is rows 0..9, Ethereal I rows 10..19, II rows 20..29, III rows 30..39.
+    const layers = [0, 1, 2, 3] as const;
+    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 7 }, layer))).toEqual([
+      { col: 24, row: 7 },
+      { col: 24, row: 17 },
+      { col: 24, row: 27 },
+      { col: 24, row: 37 },
+    ]);
+    expect(layers.map((layer) => viewInLayer(rules, { col: 24, row: 23 }, layer).row)).toEqual([3, 13, 23, 33]);
+    // Day 1's surface starts at row 40: its layers stay in day 1.
+    expect(viewInLayer(rules, { col: 3, row: 71 }, 0)).toEqual({ col: 3, row: 41 });
+  });
+
+  it("finds the realm's own spire on the surface, and the spot under it in each Ethereal layer of the region", () => {
+    const now = dayStart(1) + 60;
+    const own = expeditionSpireTile(rules, structure(), now)!;
+    const site = expeditionRealmSite(rules, entityHomeNamespace(3), now)!;
+    for (const layer of [0, 1, 2, 3])
+      expect(regionSpire(rules, { col: site.col - 2, row: site.row + layer * rules.spacing + 1 })).toEqual({
+        col: own.col,
+        row: own.row + layer * rules.spacing,
+      });
   });
 });
 
