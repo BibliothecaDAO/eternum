@@ -1,3 +1,4 @@
+import type { EtherealSurface } from "./ethereal-depths";
 import type { GameModeId } from "@/config/game-modes";
 import { NEUTRAL_BIOME_CLIMATE, type BiomeClimateConfig } from "@bibliothecadao/eternum";
 import { BiomeType, getNeighborHexes } from "@bibliothecadao/types";
@@ -32,7 +33,7 @@ import type { TerrainFogFieldStats } from "./terrain-fog-field";
 import type { TerrainMovementInteraction } from "./terrain-movement-effects";
 
 interface WorldmapProceduralCell {
-  surfacePresentation?: "ethereal";
+  surfacePresentation?: EtherealSurface;
   biomeKey: string;
   col: number;
   occupied: boolean;
@@ -331,6 +332,10 @@ export class WorldmapProceduralTerrain {
 
   getUploadMetrics(): TerrainUploadMetrics {
     return this.terrain.getUploadMetrics();
+  }
+
+  getEtherealPresentation() {
+    return this.terrain.getEtherealPresentation();
   }
 
   getPresentMetrics(): TerrainPresentMetrics {

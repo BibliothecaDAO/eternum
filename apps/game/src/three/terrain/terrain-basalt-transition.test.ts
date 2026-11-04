@@ -146,7 +146,7 @@ describe("surface basalt margins", () => {
     expect(world.borderBuffers).toBeNull();
     expect(world.basaltInstances).toBeNull();
     const underground = prepareTerrainPage({ ...source([spire, cell(1)]), surfacePresentation: "ethereal" });
-    expect(underground.basaltInstances).toHaveLength(4);
+    expect(underground.basaltInstances).toHaveLength(6);
     expect(underground.borderBuffers!.indices.length).toBe(72);
     expect(underground.buffers.indices.length).toBe(0);
   });

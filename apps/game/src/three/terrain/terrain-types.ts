@@ -1,11 +1,12 @@
+import type { EtherealSurface } from "./ethereal-depths";
 import type { BiomeClimateConfig } from "@bibliothecadao/eternum";
 import type { BiomeType, StructureType } from "@bibliothecadao/types";
 import type { TerrainPropArchetypeId } from "./terrain-prop-catalog";
 
-export const PROCEDURAL_TERRAIN_STYLE_VERSION = 29;
+export const PROCEDURAL_TERRAIN_STYLE_VERSION = 30;
 
 export interface TerrainCellInput {
-  surfacePresentation?: "ethereal";
+  surfacePresentation?: EtherealSurface;
   biome: BiomeType | null;
   col: number;
   explored: boolean;
@@ -132,7 +133,7 @@ export interface TerrainPageDiagnostics {
 }
 
 export interface PreparedTerrainPage {
-  /** Two floats per explored ethereal-layer tile: world X, world Z. */
+  /** Three floats per explored ethereal-layer tile: world X, world Z, depth (0 is Eternum’s original surface). */
   basaltInstances?: Float32Array | null;
   borderBuffers?: TerrainBorderBuffers | null;
   buffers: TerrainGeometryBuffers;

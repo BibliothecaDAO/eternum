@@ -1,0 +1,35 @@
+{
+  "1": {
+    "title": "Weathered slate",
+    "stone": "#645271",
+    "shadow": "#2b2336",
+    "energy": "#aa76dc",
+    "scale": 0.9,
+    "veins": 0.04,
+    "shape": "shelf",
+    "height": 0.2,
+    "density": 0.18
+  },
+  "2": {
+    "title": "Pale amethyst",
+    "stone": "#9384a8",
+    "shadow": "#3c3357",
+    "energy": "#d4b9ff",
+    "scale": 1.4,
+    "veins": 0.06,
+    "shape": "crystal",
+    "height": 0.55,
+    "density": 0.14
+  },
+  "3": {
+    "title": "Obsidian heart",
+    "stone": "#372539",
+    "shadow": "#160d1d",
+    "energy": "#ff8edb",
+    "scale": 0.55,
+    "veins": 0.14,
+    "shape": "column",
+    "height": 0.8,
+    "density": 0.12
+  }
+}

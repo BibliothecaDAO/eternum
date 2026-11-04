@@ -1,3 +1,4 @@
+import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
@@ -2393,6 +2394,90 @@ const LAB_SPIRE_STEPS = [
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
+/** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
+function etherealDepthSteps(depth) {
+  const label = `Ethereal ${"I".repeat(depth)}`;
+  return [
+    ...LAB_SPIRE_STEPS.slice(0, 3),
+    {
+      name: "spire-card",
+      play: pressSpire,
+      settleMs: 0,
+      verify: ({ played }) =>
+        played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
+        played.state.depths.length === Object.keys(depthLooks).length
+          ? completed(played)
+          : failed("The Spire does not offer all researched depths", played),
+    },
+    {
+      name: `ethereal-${depth}`,
+      settleMs: 1500,
+      play: async ({ browser }) => {
+        const before = browser.read(SPIRE_STATE);
+        browser.click(`Enter ${label}`);
+        const after = await readUntil(
+          () => browser.read(SPIRE_STATE),
+          (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        const camera = await readUntil(
+          () => browser.read(MAP_CAMERA),
+          (camera) => camera && after.army && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES,
+          SPIRE_WAIT_MS,
+        );
+        const terrain = await readUntil(
+          () => browser.read("JSON.stringify(window.__eternumMapSelection?.etherealTerrain ?? [])"),
+          (pages) => pages.some((page) => page.depth === depth && page.instances > 0),
+          SPIRE_WAIT_MS,
+        );
+        for (let i = 0; i < ESCAPES_TO_DESELECT; i++) browser.press("Escape");
+        if (!onADesktop()) {
+          browser.run(["eval", "void window.__playtest.wheel(100, 4)"]);
+          await sleep(ZOOM_SETTLE_MS);
+        }
+        const subjects = browser.read(`JSON.stringify((() => {
+          const framed = element => {
+            if (!element) return false;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+          };
+          return {
+            army: framed(document.querySelector('.mp-at[data-key="army:${before.army.id}"] .mp-token')),
+            spire: [...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element)),
+            alternateLayer: window.__eternumMapSelection?.layer,
+          };
+        })())`);
+        return { before, after, camera, terrain, subjects, label, look: depthLooks[depth].title };
+      },
+      verify: ({ played }) => {
+        const { before, after, camera, terrain, subjects } = played;
+        if (!subjects.army || !subjects.spire || subjects.alternateLayer !== false)
+          return failed("The Frontier still does not frame both the army and Spire", played);
+        const command = after.sent.at(-1);
+        if (
+          after.sent.length !== before.sent.length + 1 ||
+          command?.kind !== "EnterDepth" ||
+          Number(command.fields.depth) !== depth ||
+          Number(command.fields.explorer_id) !== before.army?.id
+        )
+          return failed("The Spire did not sign the chosen depth entry", played);
+        if (
+          after.army?.id !== before.army.id ||
+          after.army.hex.col !== before.army.hex.col ||
+          after.army.hex.row - before.army.hex.row !== depth * 100 ||
+          !camera ||
+          hexesApart(camera, after.army.hex) > FRAMED_WITHIN_HEXES
+        )
+          return failed("The army and view did not reach the chosen Frontier depth", played);
+        const rendered = terrain.filter((page) => page.depth === depth && page.instances > 0);
+        if (!rendered.length || rendered.some((page) => page.material !== `terrain-ethereal-depth-${depth}`))
+          return failed("The committed terrain does not render the chosen material", played);
+        return completed(played);
+      },
+    },
+  ];
+}
+
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   depths: [...document.querySelectorAll("[data-spire-depths] .ui-row")].map((row) => ({
@@ -4307,6 +4392,12 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  ...Object.fromEntries(
+    Object.keys(depthLooks).map((depth) => [
+      `lab-ethereal-${depth}`,
+      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+    ]),
+  ),
   "lab-merge-loses-xp": {
     game: labSpireGame("merge-loses-xp"),
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),

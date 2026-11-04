@@ -18,15 +18,18 @@ export function terrainHexToWorld(col: number, row: number): TerrainWorldCoordin
   return { x: snapTerrainCoordinate(world.x), z: snapTerrainCoordinate(world.z) };
 }
 
+/** Local shell corners: shared geometry must never include the map's floating origin. */
+export const TERRAIN_HEX_CORNER_OFFSETS = Array.from({ length: 6 }, (_, index) => {
+  const angle = Math.PI / 6 + index * (Math.PI / 3);
+  return { x: Math.cos(angle) * TERRAIN_HEX_RADIUS, z: Math.sin(angle) * TERRAIN_HEX_RADIUS };
+});
+
 export function terrainHexCorners(col: number, row: number): TerrainWorldCoordinate[] {
   const center = terrainHexToWorld(col, row);
-  return Array.from({ length: 6 }, (_, index) => {
-    const angle = Math.PI / 6 + index * (Math.PI / 3);
-    return {
-      x: snapTerrainCoordinate(center.x + Math.cos(angle) * TERRAIN_HEX_RADIUS),
-      z: snapTerrainCoordinate(center.z + Math.sin(angle) * TERRAIN_HEX_RADIUS),
-    };
-  });
+  return TERRAIN_HEX_CORNER_OFFSETS.map((offset) => ({
+    x: snapTerrainCoordinate(center.x + offset.x),
+    z: snapTerrainCoordinate(center.z + offset.z),
+  }));
 }
 
 export function snapTerrainCoordinate(value: number): number {

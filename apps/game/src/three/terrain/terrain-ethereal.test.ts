@@ -39,8 +39,8 @@ describe("ethereal terrain integration", () => {
       cell(index % 24, { row: Math.floor(index / 24), occupied: index % 17 === 0 }),
     );
     const page = prepareTerrainPage(request(cells));
-    expect(page.basaltInstances).toHaveLength(24 * 24 * 2);
-    expect(page.basaltInstances!.byteLength).toBe(24 * 24 * 8);
+    expect(page.basaltInstances).toHaveLength(24 * 24 * 3);
+    expect(page.basaltInstances!.byteLength).toBe(24 * 24 * 12);
     expect(page.diagnostics.geometryBytes).toBeLessThan(2 * 1024 * 1024);
     expect(page.diagnostics.triangles).toBeLessThan(20_000);
     expect(page.diagnostics.vertices).toBeLessThan(40_000);

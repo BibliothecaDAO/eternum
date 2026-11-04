@@ -1164,18 +1164,23 @@ Training construction includes I; research raises it through V. Preview `/lab/ki
 choose an attribute or **Stamina**; `/lab/kit/hud/research` shows both research sides. Native command tests cover
 awarding and spending, while the browser capture records the shared controls at desktop and phone sizes.
 
-## Ethereal depth studies
+## Ethereal depths
 
-Art → Terrain → Ethereal depths (`/lab/ethereal-depths`). Set selects the current surface or one of two proposed
-families; Depth selects I–III. Every view keeps the same camera, shipped Spire and articulated knight. This is a
-presentation study only; it does not change live depth routing or the surface map.
+Frontier: select an army beside its realm’s Spire → **Spire** → **Enter Ethereal I, II or III**. The army and camera
+move into the chosen band. `src/three/terrain/ethereal-depths.json` owns Violet descent’s material and mineral values;
+the renderer selects them from each tile’s contract depth. Eternum’s alternate layer retains its original basalt.
 
-Reproduce the desktop and phone stills and the comparison page with one command from the repository root:
+Art → Terrain → Ethereal depths (`/lab/ethereal-depths`) previews the approved depths and the original material through
+the same terrain renderer. `/lab/game?scenario=ethereal-depths` opens the real Frontier client with fixture facts: all
+three depths researched, explored landing areas, and a Spire beside each arrival for scale. No live game is used.
+
+Reproduce all three Spire entries at desktop and phone sizes, with their stills and review page:
 
 ```sh
 pnpm --dir apps/game prove:ethereal-depths --port 4197 --out .context/ethereal-depths
 ```
 
-The command owns its dev server and browser, opens each lab address, checks both scale labels are in frame, captures the
-view and renderer state, and leaves each WebGL page immediately. `captures.json` and `client.log` retain evidence;
-`index.html` compares each depth against the current look. One set/depth table owns the preview and gallery content.
+This wraps the standard `playtest` command’s `lab-ethereal-1`, `lab-ethereal-2` and `lab-ethereal-3` steps. It checks
+the signed command, army position, camera and committed material, then clears selection overlays for the still. Each
+browser closes after its proof. `captures.json`, per-run transcripts and `index.html` remain. One run per depth/device
+verifies routing and appearance; it is not a performance benchmark.
