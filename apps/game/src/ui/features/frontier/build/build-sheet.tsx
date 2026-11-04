@@ -321,7 +321,11 @@ const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): Bui
       : undefined;
   return {
     kind: "price",
-    prices: option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount })),
+    prices: option.cost.map(({ resource, amount }) => ({
+      of: priceKind(resource),
+      amount,
+      short: (held(resource) ?? 0) < amount,
+    })),
     raised: riseLine(option),
     short,
   };

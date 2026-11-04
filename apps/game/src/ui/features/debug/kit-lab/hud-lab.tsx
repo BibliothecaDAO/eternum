@@ -311,16 +311,25 @@ const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
 const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): LabTile["gems"] =>
   [make, other].map(([side, tier]) => ({ side, tier }));
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
-  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short, raised }) as const;
+  ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 /** A training building waiting for the two Barracks research purchases. */
 const LOCKED = { kind: "locked", gate: 2, bought: 0 } as const;
 
 const trainingPrice: LabTile["standing"] = {
   kind: "price",
   prices: [
-    { of: "essence", amount: 6_000 },
-    { of: "labor", amount: 1_500 },
+    { of: "essence", amount: 6_000, short: false },
+    { of: "labor", amount: 1_500, short: false },
   ],
+};
+/** A training building's price with the Essence short and the Labor held: only the Essence line is red. */
+const essenceShortPrice: LabTile["standing"] = {
+  kind: "price",
+  prices: [
+    { of: "essence", amount: 6_000, short: true },
+    { of: "labor", amount: 1_500, short: false },
+  ],
+  short: { of: "essence", wait: undefined },
 };
 /**
  * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
@@ -365,6 +374,17 @@ const BUILD_TILES: LabTile[] = [
   tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
   tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
 ];
+/**
+ * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
+ * 13 minutes short.
+ */
+const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
+  card.key === "hut"
+    ? { ...card, standing: price(5_100, { of: "labor", wait: 13 * 60 }) }
+    : card.key === "farm" || card.key === "workshop" || card.key === "barracks"
+      ? card
+      : { ...card, standing: essenceShortPrice },
+);
 /** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
@@ -851,6 +871,7 @@ const STATES = {
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
   "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
+  "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -1213,7 +1234,7 @@ type LabState = {
    * realm holding 500 LORDS.
    */
   picked?: "owner" | "rested" | "pay";
-  realmView?: "build-training" | "build" | "build-early" | "castle" | "castle-short" | "full";
+  realmView?: "build-training" | "build" | "build-early" | "build-short" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1400,10 +1421,19 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
+        {(lab.realmView === "build" ||
+          lab.realmView === "build-early" ||
+          lab.realmView === "build-short" ||
+          lab.realmView === "build-training") && (
           <BuildView
             population={lab.realmView === "build-early" ? { used: 0, total: 6 } : LAB_POPULATION}
-            tiles={lab.realmView === "build-early" ? EARLY_TILES : BUILD_TILES}
+            tiles={
+              lab.realmView === "build-early"
+                ? EARLY_TILES
+                : lab.realmView === "build-short"
+                  ? SHORT_TILES
+                  : BUILD_TILES
+            }
             chosen={lab.realmView === "build-training" ? 5 : lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
             prices={
