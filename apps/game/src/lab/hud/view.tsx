@@ -22,8 +22,7 @@ const MOMENTS: { title: string; test: RegExp }[] = [
   { title: "Deploy", test: /^deploy/ },
   { title: "Realm & build", test: /^(build|castle|realm-full|stores)/ },
   { title: "Research", test: /^research/ },
-  { title: "Next up", test: /^next-up-/ },
-  { title: "The day", test: /^(last-hour|day-done|night|today|notice)/ },
+  { title: "The day", test: /^(last-|day-done|night|today|notice)/ },
   { title: "Season & purse", test: /^(season|value-|purse|withdraw|realms)/ },
 ];
 

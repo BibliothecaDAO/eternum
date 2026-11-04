@@ -14,7 +14,7 @@ import { useDockArmies } from "../hud/dock-armies";
  * the player acting in it (canIssueOrders, which reads spectator-session's intent: a signed-in owner who entered to
  * spectate never gets the panel), and none on a visit (no realm). The map's selection changing to such an army opens
  * it, never the same selection seen again (an order's update, a visit left), so a panel the player closed stays
- * closed. Returns the pick of an army (its row, its token, Today, Next up): another army is selected and that change
+ * closed. Returns the pick of an army (its row, its token, Today): another army is selected and that change
  * opens the panel, once; the army already selected reopens it. A phone's Level up opens its choices. Also returns the
  * way back to an army a card acted for, once the card's job is done (an order settled, useOnePanel; owner 27 October
  * 2026: "the panel on the right should go back to my army panel since its still selected"): the selection goes back to

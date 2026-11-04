@@ -310,8 +310,8 @@ export const SURFACES = [
 /**
  * The lab pages the layout is held on: the one desktop HUD as each mode and viewer meets it (a Blitz player with the
  * Build order panel in the rail, the same as the game begins with news over it, a Blitz spectator while the game runs and once it has finished, a Frontier player), then Frontier's own moments on it (an
- * army picked, a camp's card, Deploy, Research, Next up on the deploy, the purse with Next up, the owner's
- * Kingdom with labor to claim, the last hour, a sheet).
+ * army picked, a camp's card, Deploy, Research, the purse, the owner's Kingdom with labor to claim, the last hour and
+ * its last ten minutes, a sheet).
  */
 const HUD_LAYOUT_PAGES = [
   "unified/blitz",
@@ -323,10 +323,10 @@ const HUD_LAYOUT_PAGES = [
   "hud/site-camp",
   "hud/deploy",
   "hud/research",
-  "hud/next-up-deploy",
-  "hud/purse-next-up",
+  "hud/value-hud",
   "hud/realm-claim",
   "hud/last-hour",
+  "hud/last-minutes",
   "hud/stores",
 ];
 

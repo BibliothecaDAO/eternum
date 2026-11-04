@@ -13,6 +13,7 @@ import {
   HudButton,
   HudCard,
   HudChip,
+  HudConfirm,
   HudCost,
   HudNotice,
   HudSheet,
@@ -31,6 +32,7 @@ import {
   purchasesOfGate,
   type Rank,
   type RankedWords,
+  ROOM_ASK,
 } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
@@ -80,7 +82,8 @@ export type BuildTile = {
  * arrow marks a price that has risen, and the chosen one's foot says why in one line), so the verb never scrolls out of
  * view however many cards there are. When the
  * building cannot rise, the foot says what it needs against what there is, and its gold button carries the fix: the Hut
- * that houses it, the map that pays it, the Research that opens it.
+ * that houses it, the map that pays it, the Research that opens it. Build pressed on a building the realm has no free
+ * population for asks instead, in the grid's place (RoomAsk): the Hut on this plot, or another pick.
  */
 export const BuildView = ({
   population,
@@ -93,6 +96,7 @@ export const BuildView = ({
   sending,
   onBuild,
   onClose,
+  ask,
 }: {
   /** The realm's population, used of all it can hold; unknown is left out. */
   population: RealmPopulation | undefined;
@@ -105,6 +109,8 @@ export const BuildView = ({
   sending: boolean;
   onBuild: () => void;
   onClose: () => void;
+  /** Build was pressed on the chosen building with no free population: the ask stands where the grid stood. */
+  ask?: RoomAskChoices;
 }) => {
   const chosenStanding = tiles[chosen]?.standing;
   // Why the chosen building's price has risen, in sight under its price, never only on its arrow's hover.
@@ -115,19 +121,8 @@ export const BuildView = ({
   );
   const scoutingOptions = scouting ? availableScoutingChoices((row) => researchTier(scouting.learned, row)) : [];
   const needsScoutingChoice = scouting !== undefined && !scoutingOptions.some(({ side }) => side === scouting.kind);
-  return (
-    <HudSheet label={BUILD} onClose={onClose}>
-      {population && (
-        <header className="flex items-center justify-end">
-          <HudChip
-            icons={["person"]}
-            label={POPULATION}
-            tip={formatPopulationInWords(population.used, population.total)}
-          >
-            {formatPopulation(population.used, population.total)}
-          </HudChip>
-        </header>
-      )}
+  const choice = (
+    <>
       <div className="grid grid-cols-3 gap-1.5">
         {tiles.map((tile, index) => (
           <TileButton key={tile.key} tile={tile} chosen={index === chosen} onChoose={() => onChoose(index)} />
@@ -187,9 +182,77 @@ export const BuildView = ({
           </HudButton>
         </HudWindowFoot>
       )}
+    </>
+  );
+  return (
+    <HudSheet label={BUILD} onClose={onClose}>
+      {population && (
+        <header className="flex items-center justify-end">
+          <HudChip
+            icons={["person"]}
+            label={POPULATION}
+            tip={formatPopulationInWords(population.used, population.total)}
+          >
+            {formatPopulation(population.used, population.total)}
+          </HudChip>
+        </header>
+      )}
+      {ask && population ? <RoomAsk population={population} building={tiles[chosen]!} choices={ask} /> : choice}
     </HudSheet>
   );
 };
+
+/** The ask's two choices: the Hut on this plot (or, when it cannot be paid yet, picking it), or another building. */
+export type RoomAskChoices = { hut: BuildTile; hutVerb: string; onHut: () => unknown; onAnother: () => void };
+
+/**
+ * Build pressed with no free population (Devcon feedback, 4 November 2026: the sheet swapped to a Hut with no word):
+ * the realm full, what the chosen building takes, what a Hut adds, and the choice, never made for the player.
+ */
+const RoomAsk = ({
+  population,
+  building,
+  choices: { hut, hutVerb, onHut, onAnother },
+}: {
+  population: RealmPopulation;
+  building: BuildTile;
+  choices: RoomAskChoices;
+}) => (
+  <HudConfirm
+    question={ROOM_ASK.question}
+    verb={hutVerb}
+    cancel={ROOM_ASK.another}
+    onConfirm={onHut}
+    onCancel={onAnother}
+  >
+    <span className="flex items-center gap-3">
+      <SemanticIcon name={hut.icon} size={64} />
+      <span className="flex flex-col items-start gap-1.5">
+        <HudChip tone="bad" icons={["person"]} label={POPULATION}>
+          {formatPopulation(population.used, population.total)}
+        </HudChip>
+        <AskLine tile={building}>
+          <HudChip icons={["person"]} label={`${building.name} ${POPULATION}`}>
+            {formatCharge(building.takes)}
+          </HudChip>
+        </AskLine>
+        <AskLine tile={hut}>
+          <HudChip tone="good" icons={["person"]} label={`${hut.name} ${POPULATION}`}>
+            {hut.gives.value}
+          </HudChip>
+        </AskLine>
+      </span>
+    </span>
+  </HudConfirm>
+);
+
+const AskLine = ({ tile, children }: { tile: BuildTile; children: ReactNode }) => (
+  <span className="flex items-center gap-1.5 text-hud-body text-hud-ink">
+    <SemanticIcon name={tile.icon} size={22} />
+    {tile.name}
+    {children}
+  </span>
+);
 
 /**
  * Why the building cannot rise, in the foot where Build would stand, over the price of the way past it (the Hut that
