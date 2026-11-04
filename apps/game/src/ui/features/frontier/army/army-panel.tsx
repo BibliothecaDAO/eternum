@@ -10,6 +10,7 @@ import {
   HudStamina,
   HudTier,
   HudTierStep,
+  HudWindowFoot,
   rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
@@ -36,10 +37,13 @@ export const ArmyDetail = ({
   sending,
   choosing = false,
   onLevelUp,
+  remove,
 }: {
   army: ArmyView;
   /** The refill's control, at the end of the chips' row, so the stamina line keeps its width. */
   refill?: ReactNode;
+  /** Lab (army panel layouts): Delete, which the layouts draw in the sheet's foot. */
+  remove?: ReactNode;
   sending: boolean;
   /** Opens on the choices: the picked army's Level up on a phone, and the lab's second step. */
   choosing?: boolean;
@@ -140,6 +144,18 @@ export const ArmyDetail = ({
     setChosen(attribute);
     setOpen(true);
   };
+  const layout = armyLayout();
+  if (layout)
+    return (
+      <LayoutStats
+        layout={layout}
+        army={army}
+        refill={refill}
+        remove={remove}
+        onChoose={choose}
+        onLevelUp={() => setOpen(true)}
+      />
+    );
   return (
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
@@ -161,6 +177,120 @@ export const ArmyDetail = ({
     </div>
   );
 };
+
+type ArmyLayout = "a" | "b" | "c";
+
+/** Lab only: the army panel layout drawn for the owner's pick (4 November), from `?armyLayout=a|b|c`; none is today's. */
+export const armyLayout = (): ArmyLayout | null => {
+  const layout = new URLSearchParams(window.location.search).get("armyLayout");
+  return layout === "a" || layout === "b" || layout === "c" ? layout : null;
+};
+
+/**
+ * The layouts for the owner's pick. A: today's order, the refill said in full under the stamina line, the points only
+ * when held, Delete in the foot. B: A with the attributes as a 2×2 list. C: the body only reads; the foot holds every
+ * action, Delete, Refill and Level up.
+ */
+const LayoutStats = ({
+  layout,
+  army,
+  refill,
+  remove,
+  onChoose,
+  onLevelUp,
+}: {
+  layout: ArmyLayout;
+  army: ArmyView;
+  refill?: ReactNode;
+  remove?: ReactNode;
+  onChoose: (attribute: AttributeKey) => void;
+  onLevelUp: () => void;
+}) => {
+  const levelUp = <LevelUpButton affordable={army.available > 0} onPress={onLevelUp} />;
+  return (
+    <div data-army-step="stats" data-army-layout={layout} className="flex flex-col gap-3 pt-1">
+      <div className="flex items-center gap-3">
+        <HudPortrait icon={army.art} label={TROOPS} />
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <StatusChips army={army} />
+          <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
+        </div>
+      </div>
+      {layout !== "c" && refill && <div className="-mt-1 flex justify-end">{refill}</div>}
+      {layout === "b" ? (
+        <div className="grid grid-cols-2 gap-1.5">
+          {army.attributes.map((attribute) => (
+            <AttributeRow key={attribute.key} attribute={attribute} onOpen={() => onChoose(attribute.key)} />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-1.5">
+          {army.attributes.map((attribute) => (
+            <AttributeTile key={attribute.key} attribute={attribute} onOpen={() => onChoose(attribute.key)} />
+          ))}
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2">
+          <XpLine army={army} />
+          <span className="ml-auto flex items-center gap-2">
+            <HeldPoints points={army.points} />
+            {layout !== "c" && levelUp}
+          </span>
+        </div>
+        <HudMeter share={army.goal.share} label={XP} />
+      </div>
+      {layout === "c" ? (
+        <HudWindowFoot>
+          {remove}
+          {refill}
+          {levelUp}
+        </HudWindowFoot>
+      ) : (
+        <HudWindowFoot note={remove} />
+      )}
+    </div>
+  );
+};
+
+/** The skill points held, only the ranks held: nothing at all while none is. */
+const HeldPoints = ({ points }: { points: readonly number[] }) => (
+  <span className="flex items-center gap-2" role="group" aria-label="Skill points">
+    {SKILL_POINT_RANKS.filter((rank) => points[rank - 1]! > 0).map((rank) => (
+      <span
+        key={rank}
+        className="flex items-center gap-0.5 text-hud-label tabular-nums text-hud-ink"
+        aria-label={`${tierNumeral(rank)} points: ${points[rank - 1]}`}
+      >
+        <HudTier tier={rank} />×{points[rank - 1]}
+      </span>
+    ))}
+  </span>
+);
+
+/** Layout B's attribute: its mark, then its name and tier over what it gives, in a row half the sheet wide. */
+const AttributeRow = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
+  <button
+    type="button"
+    aria-label={`${attribute.name} ${attribute.now}`}
+    {...rankedTip(
+      attribute.next
+        ? [{ rank: attribute.next.tier }, `: ${attribute.next.change}`]
+        : ARMY_DETAIL.legendary(attribute.name),
+    )}
+    onClick={onOpen}
+    className="flex min-w-0 items-center gap-2 rounded-md border border-hud-line bg-hud-well px-2 py-1.5 text-left hover:bg-hud-hover"
+  >
+    <Icon name={attribute.mark} size={32} />
+    <span className="flex min-w-0 flex-col">
+      <span className="flex items-center gap-1 text-hud-label text-hud-ink">
+        {attribute.name}
+        <HudTier tier={attribute.level} />
+      </span>
+      <span className="truncate text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
+    </span>
+  </button>
+);
 
 /** Over the stamina line: the army's troops, and what each tile explored sends home (none where reveals pay none). */
 const StatusChips = ({ army }: { army: ArmyView }) => (

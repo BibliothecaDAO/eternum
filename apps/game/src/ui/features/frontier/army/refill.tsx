@@ -49,6 +49,40 @@ export const RefillChip = ({
 );
 
 /**
+ * Lab (army panel layouts, 4 November): the refill said in full, "Refill · 123 LORDS", the LORDS mark on it; short of
+ * one LORDS it is red and out of reach, and says what the realm holds.
+ */
+export const RefillPrice = ({
+  price,
+  held,
+  saysHeld = true,
+  onRefill,
+}: {
+  price: number;
+  held: number | undefined;
+  /** Says what the realm holds beside it when short: not in a foot, where a phone has no room for it. */
+  saysHeld?: boolean;
+  onRefill: () => void;
+}) => (
+  <span className="flex items-center gap-2">
+    {saysHeld && refillOutOfReach(held) && (
+      <span className="text-hud-label tabular-nums text-hud-muted">You have {formatExact(Math.floor(held ?? 0))}</span>
+    )}
+    <HudButton
+      kind="secondary"
+      size="sm"
+      icon="lords"
+      tone={refillOutOfReach(held) ? "bad" : undefined}
+      disabled={refillOutOfReach(held)}
+      title={refillOutOfReach(held) ? `You have ${formatExact(Math.floor(held ?? 0))} ${LORDS}` : undefined}
+      onClick={onRefill}
+    >
+      {REFILL} · {formatExact(price)} {LORDS}
+    </HudButton>
+  </span>
+);
+
+/**
  * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press
  * opening the refill's confirm. A whole LORDS buys a partial refill;
  * with no affordable point, or with a full bar, it takes no press.

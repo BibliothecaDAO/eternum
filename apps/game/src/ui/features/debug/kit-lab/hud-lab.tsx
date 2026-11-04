@@ -15,9 +15,10 @@ import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/t
 import { TransferTroopsSheet, useSelectedTransfer } from "@/ui/features/frontier/army/transfer-troops";
 import { useGame } from "@/hooks/context/game-context";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
-import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
+  ARMY_MANAGEMENT,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
@@ -49,8 +50,8 @@ import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
-import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
-import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
+import { type ArmyDetailFacts, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
+import { ArmyDetail, armyLayout } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
@@ -82,7 +83,13 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
+import {
+  RefillButton,
+  RefillChip,
+  RefillConfirm,
+  RefillPrice,
+  StaminaRefill,
+} from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
@@ -423,7 +430,8 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 });
 
 /** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
-type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
+/** `owner`: the owner's Army 4 (4 November, the crowded panel), drawn with its Reinforce and Delete; `ready` holds a point. */
+type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number; owner?: "crowded" | "ready" };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
@@ -930,6 +938,21 @@ const STATES = {
     armies: ARMIES,
     selected: 0,
     army: { stamina: 170, lords: 1_240 },
+  },
+  // The owner's Army 4 (4 November): the panel as it stood, or in the pick's layouts with `?armyLayout=a|b|c`.
+  "army-crowded": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { lords: 0, owner: "crowded" },
+  },
+  "army-crowded-ready": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { lords: 1_240, owner: "ready" },
   },
   "army-refill-short": {
     clock: CLOCK,
@@ -1602,27 +1625,68 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
   };
 };
 
+/** The owner's Army 4 (4 November): 4.7K troops, +704 a tile, 17/140 full in 1h 22m, Battle III, Logistics I, 652 XP. */
+const OWNER_ARMY: ArmyDetailFacts = {
+  ...VETERAN_ARMY,
+  name: `${ARMY} 4`,
+  troops: 4_700,
+  xp: 652,
+  stamina: { current: 17, max: 140, perExplore: 20 },
+  secondsToFull: 82 * 60,
+  revealYield: 704,
+  progress: { battle: 3, logistics: 1, scouting: 0, homecoming: 0, scoutingKinds: [] },
+  points: [0, 0, 0, 0, 0],
+};
+
 /** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const stamina = { ...VETERAN_ARMY.stamina, current: army.stamina ?? VETERAN_ARMY.stamina.current };
+  const base = army.owner
+    ? { ...OWNER_ARMY, points: army.owner === "ready" ? [0, 0, 1, 0, 0] : OWNER_ARMY.points }
+    : VETERAN_ARMY;
+  const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
+  const price = stamina.max - stamina.current;
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
+  const layout = army.owner ? armyLayout() : null;
+  const refill =
+    army.lords === undefined || full ? undefined : layout ? (
+      <RefillPrice price={price} held={army.lords} saysHeld={layout !== "c"} onRefill={noop} />
+    ) : (
+      <RefillChip price={price} held={army.lords} onRefill={noop} />
+    );
   return (
-    <HudSheet label={VETERAN_ARMY.name} onClose={noop}>
+    <HudSheet label={base.name} onClose={noop}>
       <ArmyDetail
-        army={readArmyDetail({ ...VETERAN_ARMY, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
-        refill={
-          army.lords === undefined || full ? undefined : (
-            <RefillChip price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
-          )
+        army={readArmyDetail({ ...base, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
+        refill={refill}
+        remove={
+          <HudButton kind="quiet" size="sm" onClick={noop}>
+            {ARMY_MANAGEMENT.remove}
+          </HudButton>
         }
         sending={false}
         onLevelUp={noop}
       />
+      {army.owner && !layout && <TodayManagement />}
     </HudSheet>
   );
 };
+
+/** Today's Reinforce and Delete under the panel, away from home: Reinforce out of reach, and why. */
+const TodayManagement = () => (
+  <div className="flex flex-col gap-2 border-t border-hud-divider pt-3">
+    <div className="flex items-center justify-between gap-2">
+      <HudButton kind="secondary" disabled>
+        {ARMY_MANAGEMENT.reinforce}
+      </HudButton>
+      <HudButton kind="quiet" onClick={noop}>
+        {ARMY_MANAGEMENT.remove}
+      </HudButton>
+    </div>
+    <HudNotice line={ARMY_MANAGEMENT.homeOnly} />
+  </div>
+);
 
 /**
  * The lab realm's Farms, Barracks, War hall and Scouts' lodge, each as its card shows it: how many stand and what they
