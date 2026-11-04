@@ -293,8 +293,9 @@ its key and wallet database, and add the runner's loopback RPC and Herald to `sh
 Give the runner's ledger-operator role back to the relay account in `gameplay-contracts.json`. Create its Frontier game
 through the harness with a preset registered on the dev ledger. Activate the runner through the existing
 `directory_status(configuration, "active")` operation; this rehearsal deliberately promotes the runner beyond its
-ordinary PENDING measurement lifecycle. Schedule shared service updates and activation after game 2's sweep to leave its
-running game untouched, while keeping its settlement routing available.
+ordinary PENDING measurement lifecycle. Activate it after the existing launch calendar's Frontier phase ends: the launch
+cron schedules that phase on every active shard. The additive relay, monitor and co-signer updates can run beforehand;
+keep the existing shard's settlement routing available.
 
 Fund the new game with `fund:frontier dev`. Mainnet funding, including dev funding, remains an owner operation. Submit
 the calls prepared by `pnpm deposits:operations prepare`: ledger `upgrade` and `enable_deposits` through the existing

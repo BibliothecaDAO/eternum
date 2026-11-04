@@ -27,7 +27,7 @@ describe("visited realm scope", () => {
     const scope = visit();
     expect(scope.expedition?.owners).toEqual(new Set(["10", "11", "3003"]));
     expect(scope.expedition?.realms).toEqual(new Set(["1", "2"]));
-    expect(scope.expedition?.regions).toEqual(new Set(["0:1"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
     expect(scope.expedition?.entities).toEqual(new Set(["1", "2", "101", "102"]));
     for (const model of ["Building", "RealmKnowledge", "ArmySlot"])
       expect(rowInGameSyncScope(model, { structure_id: "2", epoch: 0 }, scope)).toBe(true);
@@ -53,18 +53,42 @@ describe("visited realm scope", () => {
   it("gives a spectator the watched realm's tiles without its actor-only events", () => {
     const scope = deriveGameSyncScope(undefined, 350, expedition, read, "0xbbb");
     expect(scope.actor).toBeUndefined();
-    expect(scope.expedition?.regions).toEqual(new Set(["1:2"]));
+    expect(scope.expedition?.regions).toEqual(new Set(["1:0", "1:2"]));
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 1600, row: 2700 }, scope)).toBe(true);
     expect(rowInGameSyncScope("TileOpt", { alt: false, col: 512, row: 1600 }, scope)).toBe(false);
     expect(rowInGameSyncScope("GameplayRejected", { actor: "11" }, scope)).toBe(false);
     expect(deriveGameSyncScope(undefined, 350, expedition, read).expedition?.regions).toEqual(new Set());
-    expect(deriveGameSyncScope(undefined, 350, expedition, read, "0xa").expedition?.regions).toEqual(new Set(["0:1"]));
+    expect(deriveGameSyncScope(undefined, 350, expedition, read, "0xa").expedition?.regions).toEqual(
+      new Set(["0:0", "0:1"]),
+    );
   });
 
   it("rejects invalid visit addresses", () => {
     for (const value of ["0x0", `0x${((1n << 251n) - 256n).toString(16)}`])
       expect(() => deriveGameSyncScope("0xa", 350, expedition, read, value)).toThrow("Invalid gameplay account");
   });
+});
+
+it("keeps the home's surface and its ring while every army stands in an Ethereal layer, and moves it with the day", () => {
+  // Realm 1's only army stands at row 1600, Ethereal I (band 1) below day 0's surface region 0:0, where the realm stands
+  // at (512, 512); the owner's production stream lost exactly that surface (reports: prod deploy bug, 4 November).
+  const scope = deriveGameSyncScope("0xa", 350, expedition, read);
+  expect(scope.expedition?.regions).toEqual(new Set(["0:0", "0:1"]));
+  const ring = [
+    [513, 512],
+    [511, 512],
+    [512, 511],
+    [512, 513],
+  ];
+  for (const [col, row] of ring) {
+    expect(rowInGameSyncScope("TileOpt", { alt: false, col, row }, scope)).toBe(true);
+    expect(rowInGameSyncScope("TileOccupancy", { entity_id: "0", category: "0", alt: false, col, row }, scope)).toBe(
+      true,
+    );
+  }
+  // Day 1's surface is four bands down; yesterday's home region leaves the scope with the day.
+  const tomorrow = deriveGameSyncScope("0xa", dayOf(expedition, 350)!.end, expedition, read);
+  expect(tomorrow.expedition?.regions).toEqual(new Set(["0:4"]));
 });
 
 it("retains the cleared site's facts by its own coordinate, then drops yesterday's region", () => {

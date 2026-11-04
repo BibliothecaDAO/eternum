@@ -14,7 +14,7 @@ interface CampaignTicket {
  */
 type CodeSource = { kind: "printed"; tier: TicketTier } | { kind: "shared" };
 
-function createCampaignTicketStore(db: D1Database) {
+export function createCampaignTicketStore(db: D1Database) {
   const ticketOf = (campaign: CampaignKey, owner: string) =>
     db
       .prepare('SELECT "campaign", "owner", "tier" FROM "campaign_tickets" WHERE "campaign" = ? AND "owner" = ?')
@@ -63,9 +63,8 @@ function createCampaignTicketStore(db: D1Database) {
 
   /**
    * The account's ticket from one of the campaign's unspent printed codes, picked at random, at that code's tier: the
-   * printed tiers stay exact however the codes are handed out. Null when the account already holds this campaign's
-   * ticket, or no printed code is left. The pick and the insert are one statement, so two draws at once never take one
-   * code.
+   * printed tiers stay exact while codes are left. Null when the account already holds this campaign's ticket, or no
+   * printed code is left. The pick and the insert are one statement, so two draws at once never take one code.
    */
   const insertDrawnTicket = (campaign: CampaignKey, owner: string, now: number) =>
     db
@@ -80,6 +79,24 @@ function createCampaignTicketStore(db: D1Database) {
       )
       .bind(owner, now, campaign)
       .first<CampaignTicket>();
+
+  /** A regular ticket from no printed code: a draw once the printed codes are spent. */
+  const insertGivenTicket = (campaign: CampaignKey, owner: string, now: number) =>
+    db
+      .prepare(
+        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at")
+         VALUES (?, ?, NULL, 'regular', ?)
+         ON CONFLICT DO NOTHING RETURNING "campaign", "owner", "tier"`,
+      )
+      .bind(campaign, owner, now)
+      .first<CampaignTicket>();
+
+  /** The ticket an insert that found one already held falls back to; an account always holds one after either. */
+  const heldTicket = async (campaign: CampaignKey, owner: string) => {
+    const ticket = await ticketOf(campaign, owner);
+    if (!ticket) throw new Error("campaign_ticket_missing");
+    return ticket;
+  };
 
   const read = (campaign: CampaignKey, owner: string) =>
     Effect.tryPromise({
@@ -106,13 +123,15 @@ function createCampaignTicketStore(db: D1Database) {
     });
 
   /**
-   * The account's ticket drawn from the campaign's unspent printed codes; the one it holds if it already has one. Null
-   * when every printed code is spent. Safe to repeat: a retry, or two draws at once, return the one ticket.
+   * The account's ticket drawn from the campaign's unspent printed codes, or a regular one once every printed code is
+   * spent; the one it holds if it already has one. Safe to repeat: a retry, or two draws at once, return the one ticket.
    */
   const draw = (campaign: CampaignKey, owner: string, now: number) =>
     Effect.tryPromise({
-      try: async (): Promise<CampaignTicket | null> =>
-        (await insertDrawnTicket(campaign, owner, now)) ?? (await ticketOf(campaign, owner)),
+      try: async (): Promise<CampaignTicket> =>
+        (await insertDrawnTicket(campaign, owner, now)) ??
+        (await insertGivenTicket(campaign, owner, now)) ??
+        (await heldTicket(campaign, owner)),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
   return { ticketOf, read, source, redeem, draw };

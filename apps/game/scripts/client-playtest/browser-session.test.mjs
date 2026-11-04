@@ -5,7 +5,13 @@ import { join } from "node:path";
 
 import { afterEach, expect, it, vi } from "vitest";
 
-import { createBrowserSession, modelPathOf, serveModelOverrides } from "./browser-session.mjs";
+import {
+  createBrowserSession,
+  modelPathOf,
+  screenPoint,
+  serveModelOverrides,
+  setViewport,
+} from "./browser-session.mjs";
 
 const { spawnSync } = vi.hoisted(() => ({ spawnSync: vi.fn(() => ({ status: 0, stdout: "", stderr: "" })) }));
 vi.mock("node:child_process", async (original) => ({ ...(await original()), spawnSync }));
@@ -74,4 +80,11 @@ it("answers a model found in the override directory with its bytes, and lets eve
   expect(Buffer.from(fulfilled.params.body, "base64").toString()).toBe("heavier city");
   expect(passed).toEqual({ method: "Fetch.continueRequest", params: { requestId: "b" } });
   expect(served()).toEqual(["realms/city.glb"]);
+});
+
+it("aims a press in whole pixels on a page of odd size, as agent-browser's mouse takes no fraction", () => {
+  setViewport({ width: 412, height: 915 });
+  expect(screenPoint([0, 0])).toEqual([206, 458]);
+  expect(screenPoint([-10, 3])).toEqual([196, 461]);
+  setViewport({ width: 1920, height: 1080 });
 });

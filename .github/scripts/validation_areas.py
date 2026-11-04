@@ -44,6 +44,10 @@ AREAS = {
         "README.md",
         "apps/game-docs/docs/styles.css",
         "apps/game-docs/docs/pages/index.mdx",
+        # Each game's How to play guide, which apps/game/src/ui/modules/how-to-play.test.tsx requires to be a page.
+        "apps/game-docs/docs/pages/frontier/index.mdx",
+        "apps/game-docs/docs/pages/blitz/index.mdx",
+        "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
         "apps/game-docs/docs/brand.gen.json",
         "apps/game-docs/vocs.config.ts",
         "apps/game-docs/docs/utils/paths.ts",
@@ -248,13 +252,15 @@ AREAS = {
         "contracts/utils/**",
         "apps/herald/src/native/schema.ts",
         "apps/herald/src/shard-manifest.ts",
-        # The game files the docs draw on: its icon set and meanings, the patch notes the changelog page shows, the
-        # LaborRules a preset writes, which the Devcon page states a ticket's claim from, and the link preview's address.
+        # The game files the docs draw on: its icon set and meanings (with the Diwali sprites' manifest icon-meaning.ts
+        # reads), the patch notes the changelog page shows, the LaborRules a preset writes, which the Devcon page states a
+        # ticket's claim from, and the link preview's address.
         "apps/game/public/**",
         "apps/game/src/brand/link-preview.ts",
         "apps/game/src/config/app-address.ts",
         "apps/game/src/shell/frame/environment.ts",
         "apps/game/asset-sources/facets/**",
+        "apps/game/asset-sources/festival/**",
         "apps/game/src/ui/design-system/icon-meaning.ts",
         "apps/game/src/services/home-claim-rules.ts",
         "apps/game/src/shell/generated/patch-notes.ts",

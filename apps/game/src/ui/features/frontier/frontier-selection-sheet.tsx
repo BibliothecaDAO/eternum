@@ -7,7 +7,6 @@ import { RealmSpireSheet, useSelectedSpire } from "./spire-card";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import type { ReactNode } from "react";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
-import type { BuildingType } from "@bibliothecadao/types";
 import { BuildSheet, useOpenPlot } from "./build/build-sheet";
 import { HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { MapSiteCard, useSelectedMapSite } from "./sites/map-site-card";
@@ -35,13 +34,10 @@ import { useTappedBuilding } from "./research/selected-building";
  */
 export const useSelectionCard = ({
   realm,
-  asked,
   onResearch,
 }: {
   /** The realm the board draws: the player's own, or the realm they visit or watch. */
   realm: NativeRows["Structure"] | null;
-  /** The building Next up asks for, which an open plot's build sheet opens on. */
-  asked: BuildingType | null;
   /** Opens Research, on a node where the card names one, for a card whose next step is there. */
   onResearch: (node?: string) => void;
 }): { key: string; sheet: ReactNode } | null => {
@@ -72,10 +68,7 @@ export const useSelectionCard = ({
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
   if (realm && openPlot)
-    return card(
-      "plot",
-      <BuildSheet realm={realm} plot={openPlot} asked={asked} onResearch={onResearch} onClose={close} />,
-    );
+    return card("plot", <BuildSheet realm={realm} plot={openPlot} onResearch={onResearch} onClose={close} />);
   if (target)
     return card(
       "target",

@@ -28,8 +28,11 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, formatExact } from "@bibliothecadao/types";
 
+import { getGameModeId } from "@/config/game-modes";
+import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { HowToPlayRow, useHowToPlay } from "../how-to-play";
 import { AppSettings } from "./app-settings";
 import { SettingsSection } from "./settings-section";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
@@ -40,12 +43,14 @@ export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
 /**
- * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
+ * Player settings first; installing the app and the keys, rarely touched, then How to play (the game's guide on the
+ * docs site, in a new tab, the one help Blitz's HUD offers) come last before the session. The keys are
  * one row whose Show opens their list in Settings' place, so Settings stays one short page; closing Settings closes it. A row a device cannot use
  * (Haptics where nothing vibrates, the keys on a touch-first device) is not drawn there.
  */
 export const SettingsPanel = () => {
   const [shortcuts, setShortcuts] = useState(false);
+  const guide = useHowToPlay();
   if (shortcuts) return <KeyboardShortcuts />;
   return (
     <div className="flex flex-col gap-4 p-1">
@@ -59,6 +64,7 @@ export const SettingsPanel = () => {
         <NotificationSettings />
       </SettingsSection>
       <AppSettings onShowKeys={() => setShortcuts(true)} />
+      <HowToPlayRow guide={guide} />
       <SessionActions />
     </div>
   );
@@ -189,9 +195,13 @@ function UsernameEditor({ name }: { name: string | null }) {
   );
 }
 
-/** One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. */
+/**
+ * One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. Frontier's
+ * HUD has no Next up (owner, 4 November 2026: "Do cut next up indeed for frontier"), so there the switch is not drawn.
+ */
 function NextUpSettings() {
   const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
+  if (hudFor(getGameModeId(), true) === "frontier") return null;
   return (
     <SettingsSection title="Next up">
       <HudSetting name="Tips">

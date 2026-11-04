@@ -10,6 +10,7 @@
 /blitz/:id / 200
 /join/devcon / 200
 /join/devcon/:code / 200
+/join/devcon/r/:referral / 200
 /season / 200
 /results/:id / 200
 /profile / 200

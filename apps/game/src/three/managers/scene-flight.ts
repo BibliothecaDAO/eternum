@@ -20,7 +20,7 @@ export class SceneFlight {
   private resolveFlight: ((completed: boolean) => void) | null = null;
   private destroyed = false;
   private cancelAnimation: (() => void) | undefined;
-  private cameraOwned = false;
+  private handCameraBack: (() => void) | undefined;
   private readonly originalPosition: Vector3;
   private readonly originalTarget: Vector3;
 
@@ -42,8 +42,7 @@ export class SceneFlight {
       .clone()
       .sub(this.originalTarget)
       .multiplyScalar(enteringRealm ? 0.45 : 1.25);
-    this.cameraOwned = true;
-    this.outgoing.setCameraOwnedByFlight(true);
+    this.handCameraBack = this.outgoing.holdCamera();
     this.cancelAnimation = this.outgoing.cameraAnimate(target.clone().add(offset), target, 0.45);
     return new Promise((resolve) => {
       this.resolveFlight = resolve;
@@ -116,9 +115,8 @@ export class SceneFlight {
   }
 
   private releaseCamera(): void {
-    if (!this.cameraOwned) return;
-    this.cameraOwned = false;
-    this.outgoing.setCameraOwnedByFlight(false);
+    this.handCameraBack?.();
+    this.handCameraBack = undefined;
   }
 
   /**

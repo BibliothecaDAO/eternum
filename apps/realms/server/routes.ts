@@ -16,7 +16,13 @@ import {
 import { ACCOUNT_CLASS_HASH, socialProvidersOf, type IdentityEnv } from "./env";
 import { json } from "./http";
 import { handleBuildOrders } from "./build-orders";
-import { hasCampaignHomeSource } from "./campaign-entry";
+import { campaignStandings, hasCampaignHomeSource, homeSourceOf, playerAccounts } from "./campaign-entry";
+import {
+  handleCampaignReferral,
+  handleCampaignReferrer,
+  settleReferrals,
+  type ReferralWorld,
+} from "./campaign-referrals";
 import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
 import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
@@ -113,10 +119,19 @@ export const routeIdentityRequest = async (
       hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
     );
   }
-  if (pathname === "/api/campaigns/redeem")
-    return handleCampaignRedeem(request, auth, env.DB, (realmsId, presets) =>
-      hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
-    );
+  if (pathname === "/api/campaigns/redeem") {
+    const world = referralWorld(env, platform);
+    return handleCampaignRedeem(request, auth, env.DB, {
+      hasSource: (realmsId, presets) => hasCampaignHomeSource(env, platform.fetchShard, realmsId, presets),
+      settle: (realmsId, campaign) => settleReferrals(world, campaign, realmsId, Math.floor(Date.now() / 1000)),
+    });
+  }
+  if (pathname === "/api/campaigns/referral" && request.method === "GET")
+    return handleCampaignReferral(request, auth, referralWorld(env, platform));
+  if (pathname.startsWith("/api/campaigns/referral/") && request.method === "GET") {
+    if (!(await withinPublicBudget(env, "referral", request))) return json({ error: "too_many_requests" }, 429);
+    return handleCampaignReferrer(env.DB, new URL(request.url), pathname.slice("/api/campaigns/referral/".length));
+  }
   if (pathname.startsWith("/api/notifications/push/")) return handlePushSubscriptions(request, auth, env);
   if (pathname === "/api/directory" && request.method === "GET") {
     if (!(await withinPublicBudget(env, "directory", request))) return json({ error: "too_many_requests" }, 429);
@@ -174,6 +189,21 @@ const codeAccess = async (env: IdentityEnv, request: Request, sendsCode: boolean
 };
 
 const isOperator = (env: IdentityEnv, request: Request) => presentsOperatorToken(request, env.OPERATOR_TOKEN);
+
+/** What referral settlement reaches: the shards' Heralds for home sources and season boards, and the relay. */
+const referralWorld = (env: IdentityEnv, platform: WorkerPlatform): ReferralWorld => ({
+  db: env.DB,
+  homeSource: (realmsId, presets) => homeSourceOf(env, platform.fetchShard, realmsId, presets),
+  standings: (presets) => campaignStandings(env, platform.fetchShard, presets),
+  accountOf: playerAccounts(env),
+  upgradeHome: (home) =>
+    env.VALUE_RELAY.fetch("https://value-relay/api/value/operator/campaign-upgrade", {
+      method: "POST",
+      redirect: "manual",
+      headers: { authorization: `Bearer ${env.OPERATOR_TOKEN}`, "content-type": "application/json" },
+      body: JSON.stringify(home),
+    }),
+});
 
 /** Cookie authority is accepted only from the app itself; operator endpoints authenticate a bearer token below. */
 const requiresSameOrigin = (request: Request, pathname: string): boolean => {

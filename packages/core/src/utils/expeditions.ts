@@ -188,8 +188,21 @@ export const spireEtherealView = (
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))
     .find((at) => expeditionDepth(rules, at) > 0);
-  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : { col: spire.col, row: spire.row + rules.spacing };
+  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : viewInLayer(rules, spire, 1);
 };
+
+/**
+ * The same spot of a region in another of its layers, the day's surface (0) or an Ethereal layer: the contract lays each
+ * layer a region down the same map, column kept, so a view switches layer by moving the camera that many regions.
+ */
+export const viewInLayer = (
+  rules: ExpeditionRules,
+  at: { col: number; row: number },
+  layer: 0 | EtherealLayer,
+): { col: number; row: number } => ({
+  col: at.col,
+  row: at.row + (layer - expeditionDepth(rules, { y: at.row })) * rules.spacing,
+});
 
 export { entityHomeNamespace } from "./entity-home";
 
@@ -263,12 +276,23 @@ export const expeditionSpireTile = (
   nowSeconds: number,
 ): { col: number; row: number } | null => {
   const site = expeditionRealmSite(rules, entityHomeNamespace(structure.entity_id), nowSeconds);
-  const day = seasonDay(rules, nowSeconds);
-  if (!site || day === null) return null;
+  return site && regionSpire(rules, site);
+};
+
+/**
+ * The spire of the region a tile lies in, at its spot in the tile's own layer: the spire itself on that day's surface,
+ * the spot under it in an Ethereal layer. The spire is the home-ring tile in direction (day % 6) around the realm's
+ * site, which the region's column and the tile's day name. A view through a spire dives in and out there, inside the
+ * region it shows.
+ */
+export const regionSpire = (rules: ExpeditionRules, at: { col: number; row: number }): { col: number; row: number } => {
+  const half = Math.floor(rules.spacing / 2);
+  const day = Math.floor(expeditionBand(rules, { y: at.row }) / 4);
+  const site = { col: Math.floor(at.col / rules.spacing) * rules.spacing + half, row: day * 4 * rules.spacing + half };
   const direction = day % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);
-  return { col: spire.col, row: spire.row };
+  return { col: spire.col, row: spire.row + expeditionDepth(rules, { y: at.row }) * rules.spacing };
 };
 
 /** Whether an army stands where enter_depth takes it: on its realm's spire or beside it. */
