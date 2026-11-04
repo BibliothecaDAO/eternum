@@ -1,4 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useHeldTicket } from "@/hooks/use-holdings";
+import { getActiveGame } from "@/runtime/world";
+import { campaignOfPreset } from "@/services/home-claim-rules";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
@@ -93,6 +96,9 @@ export const FrontierHud = ({
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const spectating = useUIStore(isWatching);
+  // A player's ticket to this season's campaign, read as they play: the read settles what friends earned and asks for
+  // a golden upgrade earned for this home, so it lands without a visit to You.
+  useHeldTicket(spectating ? null : campaignOfPreset(getActiveGame()?.presetId ?? -1));
   const realm = useFrontierRealm();
   // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
   // armies the HUD shows; no order renders for a realm the player does not own.

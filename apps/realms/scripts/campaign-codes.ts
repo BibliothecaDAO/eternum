@@ -1,5 +1,5 @@
 /**
- * A campaign's printed codes: N codes, the campaign's golden count of them golden, each one flyer.
+ * A campaign's printed codes: N codes, the print run's golden count (printedGolden) of them golden, each one flyer.
  *
  *   CAMPAIGN_CODE_SEED=<secret> pnpm --dir apps/realms campaign-codes devcon-2026 315 https://play.realms.party <out>
  *
@@ -30,7 +30,7 @@ const QR_COLOURS = { dark: "#2a1f14", light: "#f1e7d4" };
 async function main() {
   const { campaign, count, base, out, seed } = readArguments(process.argv.slice(2), process.env.CAMPAIGN_CODE_SEED);
   const codes = generateCodes(campaign, count, seed);
-  const golden = new Set(codes.slice(0, CAMPAIGNS[campaign].golden));
+  const golden = new Set(codes.slice(0, CAMPAIGNS[campaign].printedGolden));
   const printed = printOrder(campaign, codes, seed);
   mkdirSync(join(out, "qr"), { recursive: true });
   writeFileSync(join(out, "qr", "game.svg"), await qrSvg(base));
@@ -53,8 +53,8 @@ function readArguments(args: string[], seed: string | undefined) {
   const [campaign, count, base, out] = args;
   if (!isCampaignKey(campaign)) throw new Error(`Campaigns: ${Object.keys(CAMPAIGNS).join(", ")}.`);
   const flyers = Number(count);
-  if (!Number.isInteger(flyers) || flyers < CAMPAIGNS[campaign].golden || flyers > 100_000)
-    throw new Error(`Print at least ${CAMPAIGNS[campaign].golden} flyers, at most 100000.`);
+  if (!Number.isInteger(flyers) || flyers < CAMPAIGNS[campaign].printedGolden || flyers > 100_000)
+    throw new Error(`Print at least ${CAMPAIGNS[campaign].printedGolden} flyers, at most 100000.`);
   if (!base || !/^https:\/\/[^/]+$/.test(base)) throw new Error("The site's base, as https://host with no path.");
   if (!out) throw new Error("Name the directory to write into.");
   if (!seed || seed.length < 32) throw new Error("CAMPAIGN_CODE_SEED must hold at least 32 secret characters.");

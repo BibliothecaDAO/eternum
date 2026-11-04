@@ -29,6 +29,9 @@ import {
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
   LAB_DEVCON_TICKETS,
+  LAB_FIRST_REFERRAL,
+  LAB_REFERRALS,
+  LAB_REFERRER,
   LAB_GUARDIAN,
   LAB_HELD_REALMS,
   LAB_PLAYER,
@@ -125,6 +128,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="doorway/:state" element={<LabDoorway />} />
         <Route path="join/devcon" element={<JoinDevconPage />} />
         <Route path="join/devcon/:code" element={<JoinDevconPage />} />
+        <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </PageAddress.Provider>
@@ -199,6 +203,8 @@ function installLabFixtures(screen: LabScreen, field: number | null): () => void
     "getBuildOrders",
     "saveBuildOrders",
     "redeemCampaignTicket",
+    "campaignReferral",
+    "campaignReferrer",
   ];
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
@@ -273,11 +279,13 @@ const answerIdentity = (screen: LabScreen) => {
   };
   const ticket = LAB_DEVCON_TICKETS[screen];
   let held = ticket?.held === true;
-  identityClient.redeemCampaignTicket = async (campaign, code) => {
-    if (!ticket || (code === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
+  identityClient.redeemCampaignTicket = async (campaign, opening) => {
+    if (!ticket || (opening === null && !held)) throw new IdentityRequestError(400, "invalid_redemption");
     held = true;
     return { campaign, tier: ticket.tier };
   };
+  identityClient.campaignReferral = async () => LAB_REFERRALS[screen] ?? LAB_FIRST_REFERRAL;
+  identityClient.campaignReferrer = async () => LAB_REFERRER;
   // The account's build orders, kept in the tab: each save is held, and read back, at the next revision.
   let orders = { revision: 3, book: LAB_BUILD_ORDERS as unknown };
   const buildOrders = () => ({ owner: useIdentitySessionStore.getState().session?.user.realmsId ?? "", ...orders });

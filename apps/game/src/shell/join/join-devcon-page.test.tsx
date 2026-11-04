@@ -11,6 +11,7 @@ const service = vi.hoisted(() => ({
     session: { user: { realmsId: string } } | null;
   },
   redeemCampaignTicket: vi.fn(),
+  campaignReferrer: vi.fn(),
 }));
 vi.mock("@/hooks/context/identity-session", async (original) => ({
   ...(await original<typeof import("@/hooks/context/identity-session")>()),
@@ -24,7 +25,7 @@ vi.mock("../herald", async (original) => ({
   useDirectory: () => ({ data: directory.games && { games: directory.games }, isError: false }),
 }));
 
-import { CAMPAIGNS, IdentityRequestError } from "@realms-world/identity";
+import { IdentityRequestError } from "@realms-world/identity";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 
 import { setViewportWidth } from "../frame/test-viewport";
@@ -53,6 +54,7 @@ beforeEach(() => {
   localStorage.clear();
   service.session = { status: "signed-out", session: null };
   service.redeemCampaignTicket.mockReset();
+  service.campaignReferrer.mockReset();
   directory.games = [season(2, 5), DEVCON_SEASON];
   useConnectStore.setState({ request: null });
   host = document.createElement("div");
@@ -80,6 +82,7 @@ const visit = (address: string) =>
           <Routes>
             <Route path="/join/devcon" element={<JoinDevconPage />} />
             <Route path="/join/devcon/:code" element={<JoinDevconPage />} />
+            <Route path="/join/devcon/r/:referral" element={<JoinDevconPage />} />
             <Route path="*" element={null} />
           </Routes>
           <Where />
@@ -91,20 +94,25 @@ const signIn = () => {
   service.session = { status: "signed-in", session: { user: { realmsId: "0xa1" } } };
 };
 type Answer = "regular" | "golden" | Error;
+type Opening = { code: string } | { referral: string } | null;
 /**
  * The account's tickets as the redeem route answers them: `held`, the read without a code (none unless given), and
- * `opens`, what a flyer's code opens.
+ * `opens`, what a flyer's code or a referral link opens.
  */
 const tickets = ({ held, opens }: { held?: Answer; opens?: Answer }) =>
-  service.redeemCampaignTicket.mockImplementation(async (_campaign: string, code: string | null) => {
-    const answer = code === null ? (held ?? new IdentityRequestError(400, "invalid_redemption")) : opens;
+  service.redeemCampaignTicket.mockImplementation(async (_campaign: string, opening: Opening) => {
+    const answer = opening === null ? (held ?? new IdentityRequestError(400, "invalid_redemption")) : opens;
     if (answer === undefined) throw new Error("no answer for a code");
     if (answer instanceof Error) throw answer;
     return { campaign: "devcon-2026", tier: answer };
   });
-/** The flyers' codes the page redeemed: a read without a code opens nothing. */
+/** The codes the page redeemed, a referral link's named as one: a read without a code opens nothing. */
 const redeemedCodes = () =>
-  service.redeemCampaignTicket.mock.calls.map(([, code]) => code).filter((code) => code !== null);
+  service.redeemCampaignTicket.mock.calls
+    .map(([, opening]) => opening as Opening)
+    .flatMap((opening) =>
+      opening === null ? [] : ["code" in opening ? opening.code : `referral ${opening.referral}`],
+    );
 const kept = () => localStorage.getItem("realms:campaign-code:devcon-2026");
 const text = () => host.textContent ?? "";
 /** The page's own buttons; the places in the bar (signed out, You is Connect) are every page's. */
@@ -135,8 +143,9 @@ it("shows every visitor the sealed ticket alone, and opens it as soon as sign-in
   expect(path()).toBe("/join/devcon");
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("golden");
   expect(text()).toContain("Golden Devcon ticket");
-  // The count printed on flyers and the one the landing tells are the campaign's one golden count.
-  expect(text()).toContain(`One of ${CAMPAIGNS["devcon-2026"].golden} at Devcon`);
+  // Golden tickets are no longer counted: the stub names the event only.
+  expect(text()).toContain("Golden · Devcon · Mumbai");
+  expect(text()).not.toMatch(/One of/);
   expect(text()).toContain("2,000 Labor each day");
   expect(text()).toContain("2,000 Essence each day");
   expect(kept()).toBeNull();
@@ -148,8 +157,8 @@ it("lets an account already signed in open its ticket with a deliberate press, a
   signIn();
   let answer: () => void = () => undefined;
   const answered = new Promise<void>((resolve) => (answer = resolve));
-  service.redeemCampaignTicket.mockImplementation(async (_campaign: string, code: string | null) => {
-    if (code === null) throw new IdentityRequestError(400, "invalid_redemption");
+  service.redeemCampaignTicket.mockImplementation(async (_campaign: string, opening: Opening) => {
+    if (opening === null) throw new IdentityRequestError(400, "invalid_redemption");
     await answered;
     return { campaign: "devcon-2026", tier: "regular" };
   });
@@ -196,6 +205,35 @@ it("checks for a held ticket again when Open is pressed before the account's tic
   expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened");
   expect(text()).not.toMatch(/golden/i);
   expect(redeemedCodes()).toEqual([]);
+});
+
+it("names who sent a friend's referral link, keeps its code through sign-in and opens it as a referral", async () => {
+  service.campaignReferrer.mockResolvedValue("Isolde");
+  await visit("/join/devcon/r/7KQ2MX4D");
+  await vi.waitFor(() => expect(text()).toContain("Isolde sent you a Devcon realm"));
+  expect(service.campaignReferrer).toHaveBeenCalledWith("devcon-2026", "7KQ2MX4D");
+  expect(text()).toContain("Open it until Fri 6 Nov 23:30 IST.");
+  await press("Open your ticket");
+  expect(useConnectStore.getState().request).toEqual({ next: "/join/devcon?open" });
+
+  signIn();
+  tickets({ opens: "regular" });
+  await visit("/join/devcon?open");
+  await vi.waitFor(() => expect(host.querySelector(".app-ticket")?.getAttribute("data-face")).toBe("opened"));
+  expect(redeemedCodes()).toEqual(["referral 7KQ2MX4D"]);
+  expect(localStorage.getItem("realms:campaign-referral:devcon-2026")).toBeNull();
+  expect(kept()).toBeNull();
+});
+
+it("tells a player opening their own invite link to share it, with Play as the way on", async () => {
+  signIn();
+  service.campaignReferrer.mockResolvedValue(null);
+  tickets({ opens: new IdentityRequestError(409, "self_referral") });
+  await visit("/join/devcon/r/7KQ2MX4D");
+  await vi.waitFor(() => expect(text()).toContain("A friend sent you a Devcon realm"));
+  await press("Open your ticket");
+  expect(text()).toContain("This is your own invite link. Share it with a friend.");
+  expect(buttons()).toEqual(["Continue"]);
 });
 
 it("offers Try again when the ticket could not be opened, and Play once the campaign has closed", async () => {

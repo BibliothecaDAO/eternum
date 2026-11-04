@@ -112,6 +112,34 @@ const campaignTicketSchema = Schema.Struct({
   tier: Schema.Literals(TICKET_TIERS),
 });
 export type CampaignTicket = typeof campaignTicketSchema.Type;
+/** What opens a new ticket: the code a flyer carried, or a friend's referral link. */
+export type CampaignOpening = { code: string } | { referral: string };
+/**
+ * The account's referral link to a campaign, told to that account only: its code, what its friends can still earn it
+ * (a ticket for a free home, golden for a Devcon one, nothing more), each friend's public name and progress, and what
+ * they earned it so far.
+ */
+/**
+ * The inviter's referral link as identity settles it. `home`: no ticket (free), a ticket not on a home yet (ticket), a
+ * founded Devcon home the confirmed board shows regular (devcon) or golden (golden), or a claim from elsewhere (held).
+ * `goldenPending`: golden earned on a Devcon home the board does not show golden yet.
+ */
+const campaignReferralSchema = Schema.Struct({
+  code: Schema.String,
+  home: Schema.Literals(["free", "ticket", "devcon", "golden", "held"]),
+  tier: Schema.NullOr(Schema.Literals(TICKET_TIERS)),
+  goldenPending: Schema.Boolean,
+  link: Schema.Struct({ counted: Schema.Number, golden: Schema.Boolean }),
+  friends: Schema.Array(
+    Schema.Struct({
+      name: Schema.NullOr(Schema.String),
+      state: Schema.Literals(["signed", "founded", "counted", "excluded"]),
+      golden: Schema.Boolean,
+    }),
+  ),
+  earned: Schema.Struct({ ticket: Schema.Boolean, golden: Schema.Boolean }),
+});
+export type CampaignReferral = typeof campaignReferralSchema.Type;
 
 const readJson = async <T>(response: Response, decode: (value: unknown) => T): Promise<T> => {
   if (!response.ok) throw await requestFailure(response);
@@ -348,12 +376,36 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return readJson(response, decode(savedBuildOrdersSchema));
   };
 
-  /** Takes the account's one ticket to a campaign, from its flyer's code or none; again, the same ticket. */
-  const redeemCampaignTicket = async (campaign: string, code: string | null): Promise<CampaignTicket> =>
+  /**
+   * Takes the account's one ticket to a campaign, from its flyer's code or a friend's referral link; without either, the
+   * ticket it holds. Again, the same ticket.
+   */
+  const redeemCampaignTicket = async (campaign: string, opening: CampaignOpening | null): Promise<CampaignTicket> =>
     readJson(
-      await request("/campaigns/redeem", { method: "POST", body: JSON.stringify({ campaign, code }) }),
+      await request("/campaigns/redeem", { method: "POST", body: JSON.stringify({ campaign, ...opening }) }),
       decode(campaignTicketSchema),
     );
+
+  /** The account's referral link to a campaign and what its friends earned it, settled as it is read. */
+  const campaignReferral = async (campaign: string): Promise<CampaignReferral> =>
+    readJson(
+      await request(`/campaigns/referral?campaign=${encodeURIComponent(campaign)}`, {
+        method: "GET",
+        cache: "no-store",
+      }),
+      decode(campaignReferralSchema),
+    );
+
+  /** The public name of the inviter behind a referral link; null when they chose none. */
+  const campaignReferrer = async (campaign: string, code: string): Promise<string | null> =>
+    (
+      await readJson(
+        await request(`/campaigns/referral/${encodeURIComponent(code)}?campaign=${encodeURIComponent(campaign)}`, {
+          method: "GET",
+        }),
+        decode(Schema.Struct({ name: Schema.NullOr(Schema.String) })),
+      )
+    ).name;
 
   const pushRequest = async <T>(
     action: string,
@@ -396,6 +448,8 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     getBuildOrders,
     saveBuildOrders,
     redeemCampaignTicket,
+    campaignReferral,
+    campaignReferrer,
     getPushConfiguration: () => pushRequest("config", decode(pushConfigurationSchema)),
     registerPushSubscription: (input: PushRegistration) =>
       pushRequest("subscribe", decode(Schema.Struct({ id: Schema.String })), input),
