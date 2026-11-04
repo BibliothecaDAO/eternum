@@ -2478,15 +2478,18 @@ async function enterEtherealII({ browser }) {
   browser.click("Enter Ethereal II");
   const moved = (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row;
   const after = await readUntil(() => browser.read(SPIRE_STATE), moved, ORDER_OUTCOME_WAIT_MS);
-  const centred = (at) => at !== null && Math.hypot(at[0], at[1]) <= VIEW_CENTRE_PX;
-  const onScreen = await readUntil(() => armyOnScreen(browser, before.army?.id), centred, SPIRE_WAIT_MS);
-  return { before, after, onScreen };
+  const framed = (camera) => camera !== null && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES;
+  const camera = await readUntil(() => browser.read(MAP_CAMERA), framed, SPIRE_WAIT_MS);
+  return { before, after, camera };
 }
+
+/** Where the map's camera looks, as the page reports it. */
+const MAP_CAMERA = `JSON.stringify(window.__eternumMapSelection?.camera ?? null)`;
 
 /**
  * The command the game signed for the press, and the army it moved into Ethereal II, the view switched with it: the
- * army, still selected, stands near the view's centre (owner, 2026-11-04: "spire entering lmao we should just switch
- * view like realm/world/ethereal no ?").
+ * camera looks at the army's arrival, two regions from the spire, and the army is still selected (owner, 2026-11-04:
+ * "spire entering lmao we should just switch view like realm/world/ethereal no ?").
  */
 function armyEnteredEtherealII({ played }) {
   const { before, after } = played;
@@ -2498,16 +2501,14 @@ function armyEnteredEtherealII({ played }) {
   // Two regions of Frontier's hundred rows straight below where it stood.
   if (after.army?.hex.col !== before.army.hex.col || after.army.hex.row - before.army.hex.row !== 200)
     return failed("the army did not land in Ethereal II", { before, after });
-  if (played.onScreen === null || Math.hypot(...played.onScreen) > VIEW_CENTRE_PX)
-    return failed("the view did not switch to the army in Ethereal II", { before, after, onScreen: played.onScreen });
+  if (played.camera === null || hexesApart(played.camera, after.army.hex) > FRAMED_WITHIN_HEXES)
+    return failed("the view did not switch to the army in Ethereal II", { before, after, camera: played.camera });
   if (after.army?.id !== before.army.id)
     return failed("the army is no longer selected in Ethereal II", { before, after });
-  return completed({ command, before: before.army, after: after.army, onScreen: played.onScreen });
+  return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
 const SPIRE_WAIT_MS = 5_000;
-/** How far from the view's centre the army may stand once the view switched to it, in CSS pixels. */
-const VIEW_CENTRE_PX = 160;
 
 /** The board's buildings draw within this long, after the realm's scene holds. */
 const BOARD_DRAW_MS = 10_000;
