@@ -20,8 +20,10 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
+  BUILD,
   ARMY_MANAGEMENT,
   EVENTS_WORDS,
+  HUT,
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
   PAYOUTS_PAUSED,
@@ -82,6 +84,7 @@ import { frontierCoachSteps } from "@/ui/features/frontier/next-up/frontier-coac
 import type { NextUpFacts } from "@/ui/features/frontier/next-up/next-up-facts";
 import type { NextStep } from "@/ui/features/world/hud/next-step";
 import { NextUpView } from "@/ui/features/world/hud/next-up";
+import { ClarityOverlay, clarityBuild, clarityNextUp, clarityNotices, type ClarityMock } from "./clarity-options";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
@@ -279,6 +282,7 @@ const NIGHT: DayClock = {
   tone: "calm",
 };
 const LAST_HOUR: DayClock = { ...CLOCK, secondsLeft: 42 * 60, shareLeft: 42 / 960, tone: "ember" };
+const FINAL_MINUTES: DayClock = { ...CLOCK, secondsLeft: 9 * 60, shareLeft: 9 / 960, tone: "ember" };
 const UNKNOWN_TOTALS = {
   reveals: undefined,
   cleared: undefined,
@@ -390,6 +394,41 @@ const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
       ? card
       : { ...card, standing: essenceShortPrice },
 );
+/** The realm at 18 of 18 population: every card that takes population stands short of it. */
+const FULL_TILES: LabTile[] = BUILD_TILES.map((card) =>
+  card.takes > 0 && card.standing.kind === "price"
+    ? { ...card, standing: { ...card.standing, short: { of: "population" } } }
+    : card,
+);
+
+/** The clarity round's build sheet: the realm full, opened on the Hut Next up asks for (today) or the player's Barracks. */
+const LabClarityBuild = ({ mock }: { mock: ClarityMock }) => {
+  const option = clarityBuild(mock);
+  if (!option) return null;
+  const chosen = FULL_TILES.findIndex(({ key }) => key === option.chosen);
+  const hutPrice = [{ of: "labor" as const, amount: 5_100 }];
+  return (
+    <BuildView
+      population={{ used: 18, total: 18 }}
+      tiles={FULL_TILES}
+      chosen={chosen}
+      onChoose={noop}
+      prices={option.chosen === "hut" ? hutPrice : [{ of: "labor", amount: 6_800 }]}
+      refusal={
+        option.foot === "refuse"
+          ? {
+              reason: { kind: "short", of: "population", counted: "free", held: 0, need: 3 },
+              fix: { word: option.fixWord ?? `${BUILD} ${HUT}`, prices: hutPrice, onFix: noop },
+            }
+          : undefined
+      }
+      sending={false}
+      onBuild={noop}
+      onClose={noop}
+    />
+  );
+};
+
 /** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
@@ -913,6 +952,32 @@ const STATES = {
   "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
   "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
+  // In-game clarity, design round 1 (clarity-options.tsx): the realm full, a plot tapped to build Barracks.
+  "clarity-pop-now": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    realmView: "clarity",
+    clarity: "pop-now",
+    nextUp: { populationFull: true },
+  },
+  "clarity-pop-a": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "clarity", clarity: "pop-a" },
+  "clarity-pop-b": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "clarity", clarity: "pop-b" },
+  "clarity-pop-c": { clock: CLOCK, stores: STORES, armies: ARMIES, clarity: "pop-c" },
+  "clarity-day-now": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true },
+  "clarity-day-a": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true, clarity: "day-a" },
+  "clarity-day-b": { clock: LAST_HOUR, stores: STORES, armies: ARMIES, lastHour: true, clarity: "day-b" },
+  "clarity-day-b-final": {
+    clock: FINAL_MINUTES,
+    stores: STORES,
+    armies: ARMIES,
+    lastHour: true,
+    clarity: "day-b-final",
+  },
+  "clarity-day-c": { clock: FINAL_MINUTES, stores: STORES, armies: ARMIES, lastHour: true, clarity: "day-c" },
+  "clarity-next-now": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES },
+  "clarity-next-a": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, clarity: "next-a" },
+  "clarity-next-b": { clock: CLOCK, stores: FULL_STORES, armies: ARMIES, clarity: "next-b" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -1293,7 +1358,17 @@ type LabState = {
    * realm holding 500 LORDS.
    */
   picked?: "owner" | "rested" | "pay";
-  realmView?: "build-training" | "build" | "build-early" | "build-short" | "castle" | "castle-short" | "full";
+  realmView?:
+    | "build-training"
+    | "build"
+    | "build-early"
+    | "build-short"
+    | "castle"
+    | "castle-short"
+    | "full"
+    | "clarity";
+  /** In-game clarity, design round 1: the option this state draws (clarity-options.tsx). */
+  clarity?: ClarityMock;
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1442,8 +1517,20 @@ export const HudLab = () => {
             )
           ) : undefined
         }
-        nextUp={!lab.visiting && <NextUpView steps={labNextUpSteps(lab, desktop)} compact={!desktop} />}
-        notices={lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
+        nextUp={
+          !lab.visiting &&
+          (clarityNextUp(lab.clarity) !== undefined ? (
+            clarityNextUp(lab.clarity)
+          ) : (
+            <NextUpView steps={labNextUpSteps(lab, desktop)} compact={!desktop} />
+          ))
+        }
+        notices={
+          <>
+            {lab.offline && <HudNotice tone="bad" line={OFFLINE} retry={noop} />}
+            {clarityNotices(lab.clarity)}
+          </>
+        }
         action={
           <>
             {lab.order && !desktop && (
@@ -1508,6 +1595,8 @@ export const HudLab = () => {
             onClose={noop}
           />
         )}
+        {lab.realmView === "clarity" && lab.clarity && <LabClarityBuild mock={lab.clarity} />}
+        <ClarityOverlay mock={lab.clarity} />
         {(lab.realmView === "castle" || lab.realmView === "castle-short") && (
           <CastleView
             now={CASTLE_SIDE(1, 18_000)}
