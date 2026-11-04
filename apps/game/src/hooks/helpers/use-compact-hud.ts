@@ -1,9 +1,15 @@
 import { useSyncExternalStore } from "react";
 
+import { DESKTOP_MIN_PX } from "@/tokens";
+
 /** Below Tailwind's `lg` breakpoint the HUD collapses into the compact tab-bar shell. */
-export const COMPACT_HUD_MEDIA_QUERY = "(max-width: 1023px)";
-/** A phone held sideways: still compact, but the budget is horizontal, so the shell docks to the right instead. */
-export const COMPACT_LANDSCAPE_MEDIA_QUERY = "(max-width: 1023px) and (orientation: landscape)";
+export const COMPACT_HUD_MEDIA_QUERY = `(max-width: ${DESKTOP_MIN_PX - 1}px)`;
+/**
+ * A screen held sideways below the desktop's width (a phone, a Fold's inner screen, a 7–10" tablet): still compact, but
+ * the budget is horizontal, so the HUD stands in a rail at one side and a column at the other. hud-sheet.css writes the
+ * same query wherever it lays the sideways HUD out; hud-sheet-queries.test.ts fails a copy that differs.
+ */
+export const COMPACT_LANDSCAPE_MEDIA_QUERY = `${COMPACT_HUD_MEDIA_QUERY} and (orientation: landscape)`;
 
 /** Which way the compact shell is laid out; null is the desktop lane. */
 export type CompactLane = "portrait" | "landscape";

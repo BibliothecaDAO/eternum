@@ -26,7 +26,7 @@ import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
-import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -2408,10 +2408,10 @@ const LAB_SPIRE_STEPS = [
 
 /**
  * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
- * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
- * the rest; a step that could not reach its state is blocked, never read as the map's. Run it at each device's size
- * with --viewport.
+ * map is like 15%"), on the lab's sites game: the map at rest, the army picked, Next up opened over it, its panel, a
+ * site's card beside it, Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
+ * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
+ * state is blocked, never read as the map's. Run it at each device's size with --viewport.
  */
 const HUD_DEVICE_STEPS = [
   { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
@@ -2420,6 +2420,25 @@ const HUD_DEVICE_STEPS = [
     play: async (context) => ({ ...(await pickTheSpireArmy(context)), ...readTheMapShare(context) }),
     settleMs: 1_500,
     verify: (context) => (context.played.army ? mapShareRead(context) : blocked("no army picked", context.played)),
+  },
+  {
+    name: "next-up",
+    play: async ({ browser }) => {
+      const pill = browser.read(buttonLabelled("^Next up: "));
+      if (!pill) return { opened: false, ...readTheMapShare({ browser }) };
+      browser.tap(pill.offset);
+      await sleep(HOVER_SETTLE_MS);
+      const shown = {
+        opened: browser.read(buttonLabelled("^Fold Next up$")) !== null,
+        ...readTheMapShare({ browser }),
+      };
+      const fold = browser.read(buttonLabelled("^Fold Next up$"));
+      if (fold) browser.tap(fold.offset);
+      return shown;
+    },
+    settleMs: 0,
+    verify: (context) =>
+      context.played.opened ? mapShareRead(context) : blocked("Next up did not open", context.played),
   },
   {
     name: "army-panel",
@@ -2443,7 +2462,7 @@ const HUD_DEVICE_STEPS = [
       return readTheMapShare({ browser });
     },
     settleMs: 0,
-    verify: mapShareRead,
+    verify: mapShareReadUnheld,
   },
   {
     name: "menu",
@@ -2461,7 +2480,16 @@ function readTheMapShare({ browser }) {
   return { share: browser.mapShare() };
 }
 
+/** The share read, and the map keeping at least MAP_LEAST_SHARE of the page. */
 function mapShareRead({ played }) {
+  if (!played.share?.canvas) return blocked("the map's canvas is not on the page", played);
+  if (played.share.map < MAP_LEAST_SHARE)
+    return failed(`the map shows ${played.share.map}% of the page, under ${MAP_LEAST_SHARE}%`, played);
+  return completed(played);
+}
+
+/** Chat's share, read but not held to the least: Chat fills the band by the owner's call (3 November). */
+function mapShareReadUnheld({ played }) {
   return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 

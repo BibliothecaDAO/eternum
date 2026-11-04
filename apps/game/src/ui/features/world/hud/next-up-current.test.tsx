@@ -115,3 +115,17 @@ it("steps its button down to secondary while an order's or attack's preview is o
   act(() => usePopoverStore.getState().closeSurface());
   expect(kind()).toBe("primary");
 });
+
+it("marks a phone's Next up open while it is unfolded, so the foot steps aside for it, and not once it folds", () => {
+  act(() => root.render(<NextUpView steps={[step("a")]} compact />));
+  expect(host.querySelector("[data-next-up-open]")).toBeNull();
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label^="Next up:"]')!.click());
+  expect(host.querySelector("[data-next-up-open]")).not.toBeNull();
+  act(() => host.querySelector<HTMLButtonElement>('button[aria-label="Fold Next up"]')!.click());
+  expect(host.querySelector("[data-next-up-open]")).toBeNull();
+});
+
+it("draws a desktop's Next up with no open mark: its rail has no foot to step aside", () => {
+  draw([step("a")]);
+  expect(host.querySelector("[data-next-up-open]")).toBeNull();
+});

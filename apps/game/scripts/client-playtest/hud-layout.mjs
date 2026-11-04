@@ -123,6 +123,12 @@ export function judgeHudLayout(layout) {
 /** Two boxes share more than a hairline (a border's pixel). */
 const overlap = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
 
+/**
+ * The least share of the page the map keeps on any shape, in percent: tokens.ts's HUD_MAP_LEAST_SHARE, which the phone
+ * panel's cap follows (a test holds the two equal).
+ */
+export const MAP_LEAST_SHARE = 40;
+
 /** The keyboard's share of a phone's height when it is up (a portrait phone's, about 40%), for the map's share above it. */
 const KEYBOARD_SHARE = 0.4;
 

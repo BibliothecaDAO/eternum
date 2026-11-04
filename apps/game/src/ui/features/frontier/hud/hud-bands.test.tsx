@@ -77,3 +77,27 @@ it("puts a nav page where the action row and the dock stood, held either way, an
   draw(true);
   expect(parts()).toEqual(["nav:column", "strip:column", "next-up:column", "page:column"]);
 });
+
+it("tells a sheet where the strip ends, as it tells it where the place bar starts, so the map keeps its least share", () => {
+  holdPhone(false);
+  vi.stubGlobal("innerHeight", 640);
+  vi.spyOn(Element.prototype, "getBoundingClientRect").mockImplementation(function (this: Element) {
+    if (this.hasAttribute("data-hud-top")) return new DOMRect(0, 8, 360, 52);
+    if (this.firstElementChild?.hasAttribute("data-keyboard-hides") && !this.hasAttribute("data-hud-top"))
+      return new DOMRect(0, 568, 360, 64);
+    return new DOMRect(0, 0, 360, 0);
+  });
+  draw(true);
+  const bands = host.querySelector<HTMLElement>('[aria-label="Frontier HUD"]')!;
+  // The strip's bottom (8 + 52) and the bands' gap; the place bar's top from the screen's foot (640 - 568) and the gap.
+  expect(bands.style.getPropertyValue("--hud-phone-top")).toBe("66px");
+  expect(bands.style.getPropertyValue("--hud-phone-foot")).toBe("78px");
+  vi.restoreAllMocks();
+});
+
+it("steps the foot's action row and dock aside for an open sheet or an unfolded Next up alike, held upright", () => {
+  holdPhone(false);
+  draw();
+  const bands = host.querySelector('[aria-label="Frontier HUD"]')!;
+  expect(bands.className).toContain("[&:has([data-kit-sheet],[data-next-up-open])_[data-under-sheet]]:hidden");
+});
