@@ -1,14 +1,18 @@
 use snforge_std::signature::KeyPairTrait;
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
+use starknet::storage::StorageMapReadAccess;
 use world_test_support::tests::state::ResourceObservationTrait;
+use crate::commands::Command;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
     ILedgerOperatorSafeDispatcherTrait,
 };
+use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
+use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot};
 use crate::stamina::StaminaSourceTrait;
-use super::{GameState, TroopObservationTrait};
+use super::{GameState, IReleasesDispatcher, IReleasesDispatcherTrait, TroopObservationTrait};
 
 fn key() -> StarkCurveKeyPair {
     KeyPairTrait::from_secret_key(0xc0519)
@@ -22,7 +26,6 @@ fn sign(
 #[test]
 #[feature("safe_dispatcher")]
 fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
-    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
     let (d, game_id, army) = super::registrar::setup_frontier_chests();
     let realm = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
     let other_game = super::registrar::registry(d)
@@ -122,9 +125,6 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
 
 #[test]
 fn purchased_refill_changes_stamina_without_reward_issuance_or_withdrawable_resources() {
-    use crate::commands::Command;
-    use crate::resources::{IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceSlot};
-    use starknet::storage::StorageMapReadAccess;
     let (d, game_id, key_army) = super::registrar::setup_frontier_chests();
     let army = GameState { contract_address: d.games }.resolved_explorer(key_army).unwrap();
     let mut tired = army.troops;
@@ -234,11 +234,6 @@ fn principal_only_sweep_needs_no_published_reward_budget() {
 #[test]
 #[feature("safe_dispatcher")]
 fn mixed_sweep_keeps_both_balances_game_pinned_until_applied() {
-    use super::{IReleasesDispatcher, IReleasesDispatcherTrait};
-    use crate::resources::{
-        IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot,
-    };
-    use starknet::storage::StorageMapReadAccess;
     let (d, game_id, key_army) = super::registrar::setup_frontier_chests();
     let home = GameState { contract_address: d.games }.resolved_explorer(key_army).unwrap().owner;
     let realm = ResourceKey { game_id, entity_id: home };
