@@ -69,9 +69,12 @@ const MUSIC_FADE_DURATION_MS = 800;
 export const MusicRouterProvider = ({
   children,
   modeId = null,
+  waitsForWorld = false,
 }: {
   children: ReactNode;
   modeId?: GameModeId | null;
+  /** A game's music waits for its first view: its files would take a slow link's share from the map's. */
+  waitsForWorld?: boolean;
 }) => {
   const location = useLocation();
   const { ensureReady, play, audioState, isReady, fadeOutAndStopMusic } = useAudio();
@@ -105,8 +108,7 @@ export const MusicRouterProvider = ({
     const pendingTrackId = state.pendingTrackId;
     if (!pendingTrackId) return;
     if (!isReady) return;
-    // Music waits for the first view: its files would take a slow link's share from the map's.
-    if (!worldInteractive) return;
+    if (waitsForWorld && !worldInteractive) return;
     if (audioState?.muted) return;
 
     let cancelled = false;
@@ -178,6 +180,7 @@ export const MusicRouterProvider = ({
     play,
     state.currentTrackId,
     state.pendingTrackId,
+    waitsForWorld,
     worldInteractive,
   ]);
 
