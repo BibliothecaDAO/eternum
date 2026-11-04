@@ -5,7 +5,7 @@ import { buildLedgerEconomicPreset, chestPresetFor } from "../../../../../config
 import { blitzVictoryPointConfig } from "../../../../../config/source/blitz/balance";
 import { VICTORY_POINTS_MULTIPLIER } from "../../../../../config/source/common/arena/points";
 import { realmsAccountAddress } from "@realms-world/identity/account";
-import type { CampaignTicket, Session } from "@realms-world/identity";
+import type { CampaignReferral, CampaignTicket, Session } from "@realms-world/identity";
 
 import { orderEmblem } from "@/ui/design-system/kit/order-emblem";
 import type { DoorwayRealm } from "@/ui/features/game-entry/doorway/doorway-screen";
@@ -268,6 +268,15 @@ export const LAB_SCREENS = {
   "devcon-flyer": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "devcon-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   "devcon-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // A friend's referral link (/join/devcon/r/<code>): who sent it over the sealed ticket, which opens a regular one.
+  "devcon-referral": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  // Invite friends on You (/profile), for each home: a free home before its first friend counts, a Devcon home on its
+  // way to golden, a held Realm's, and the moments friends earn a free home its ticket and a Devcon home golden.
+  "invite-free": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "invite-devcon": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "invite-held": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "invite-earned": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
+  "invite-golden": { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
 } as const;
 
 /** The Devcon ticket each Devcon screen's account opens with any flyer's code, or already holds. */
@@ -277,6 +286,35 @@ export const LAB_DEVCON_TICKETS: Partial<
   "devcon-flyer": { tier: "regular", held: false },
   "devcon-golden": { tier: "golden", held: false },
   "devcon-held": { tier: "golden", held: true },
+  "devcon-referral": { tier: "regular", held: false },
+};
+
+const LAB_REFERRAL_CODE = "7KQ2MX4D";
+/** The inviter a referral link names on the friend's landing. */
+export const LAB_REFERRER = "Isolde";
+const friends = (...states: CampaignReferral["friends"][number]["state"][]) =>
+  states.map((state, index) => ({ name: ["Corvin", "Isolde", "Tamsin", null][index] ?? null, state }));
+const referral = (
+  home: CampaignReferral["home"],
+  friendStates: CampaignReferral["friends"][number]["state"][],
+  earned: Partial<CampaignReferral["earned"]> = {},
+): CampaignReferral => ({
+  code: LAB_REFERRAL_CODE,
+  home,
+  friends: friends(...friendStates),
+  earned: { ticket: false, golden: false, ...earned },
+});
+
+/** A screen's referral link on You when LAB_REFERRALS names none: a free home's, with no friend yet. */
+export const LAB_FIRST_REFERRAL = referral("free", []);
+
+/** Each screen's referral link and friends on You. */
+export const LAB_REFERRALS: Partial<Record<keyof typeof LAB_SCREENS, CampaignReferral>> = {
+  "invite-free": referral("free", ["founded", "signed"]),
+  "invite-devcon": referral("devcon", ["counted", "counted", "founded"]),
+  "invite-held": referral("held", ["counted", "signed"]),
+  "invite-earned": referral("devcon", ["counted", "signed"], { ticket: true }),
+  "invite-golden": referral("golden", ["counted", "counted", "counted", "founded"], { ticket: true, golden: true }),
 };
 
 /** The Realms the linked wallet holds on each screen that reads them (the relay's held-Realms answer). */

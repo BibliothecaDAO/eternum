@@ -208,8 +208,8 @@ it("says a linked wallet holding no Realm holds none", async () => {
 it("shows a ticket just opened on the landing on You and on a game's Realm step at once, with no read again", async () => {
   relay(() => held());
   let opened = false;
-  const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, code) => {
-    if (code) opened = true;
+  const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, opening) => {
+    if (opening) opened = true;
     if (opened) return { campaign: DEVCON.campaign, tier: "golden" };
     throw new IdentityRequestError(400, "invalid_redemption");
   });
@@ -226,7 +226,7 @@ it("shows a ticket just opened on the landing on You and on a game's Realm step 
   expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
   // You's read, the landing's check for a ticket already held, then its one redeem, which told every screen: no
   // screen read the ticket again.
-  expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, null, "TEST0000"]);
+  expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
 });
 
 it.each([1440, 390])(
@@ -234,8 +234,8 @@ it.each([1440, 390])(
   async (width) => {
     relay(() => held());
     let answerFirstRead: (reason: unknown) => void = () => undefined;
-    const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, code) => {
-      if (code) return { campaign: DEVCON.campaign, tier: "golden" };
+    const reads = vi.spyOn(identityClient, "redeemCampaignTicket").mockImplementation(async (_campaign, opening) => {
+      if (opening) return { campaign: DEVCON.campaign, tier: "golden" };
       // You's read stays out; the landing's own check for a held ticket answers none, as it did before the opening.
       if (reads.mock.calls.length === 1) return new Promise((_resolve, reject) => (answerFirstRead = reject)) as never;
       throw new IdentityRequestError(400, "invalid_redemption");
@@ -255,7 +255,7 @@ it.each([1440, 390])(
     expect(you.strip()).toEqual(["Link a wallet for your Realms and LORDS", "DevconGolden ticket"]);
     await you.follow("Test step");
     expect(you.container.querySelector(".home-picker__featured h3")?.textContent).toBe("Golden Devcon ticket");
-    expect(reads.mock.calls.map(([, code]) => code)).toEqual([null, null, "TEST0000"]);
+    expect(reads.mock.calls.map(([, opening]) => opening)).toEqual([null, null, { code: "TEST0000" }]);
   },
 );
 

@@ -1,5 +1,5 @@
 import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
-import { CAMPAIGNS, type CampaignKey } from "@realms-world/identity";
+import { CAMPAIGNS, type CampaignKey, type CampaignOpening } from "@realms-world/identity";
 
 import { laborRulesOf } from "@/services/home-claim-rules";
 import { frontierDevconPreset } from "../../../../../config/source/frontier/devcon";
@@ -17,35 +17,49 @@ const CAMPAIGN = "devcon-2026" satisfies CampaignKey;
 export const DEVCON = {
   campaign: CAMPAIGN,
   path: CAMPAIGNS[CAMPAIGN].link,
-  golden: CAMPAIGNS[CAMPAIGN].golden,
+  /** The address a friend's referral link opens, with the inviter's code after it. */
+  referralPath: (code: string) => `${CAMPAIGNS[CAMPAIGN].link}/r/${code}`,
+  closesAt: CAMPAIGNS[CAMPAIGN].redeemUntil,
+  goldenAt: CAMPAIGNS[CAMPAIGN].referral.goldenAt,
   claim: (golden: boolean) => campaignHomeClaim(DEVCON_LABOR_RULES, golden),
 } as const;
 
-const KEY = `realms:campaign-code:${DEVCON.campaign}`;
+/** One key per kind of opening; the latest link opened replaces the other. */
+const KEYS = {
+  code: `realms:campaign-code:${DEVCON.campaign}`,
+  referral: `realms:campaign-referral:${DEVCON.campaign}`,
+} as const;
 
 /**
- * The code a flyer's QR brought, kept from the moment the landing opens until the ticket is redeemed: a sign-in leaves
- * the page (Discord, a phone's home-screen app reloading on its start page), and the code must outlive it.
+ * The code a flyer's QR or a friend's referral link brought, kept from the moment the landing opens until the ticket is
+ * redeemed: a sign-in leaves the page (Discord, a phone's home-screen app reloading on its start page), and the code
+ * must outlive it.
  */
-export const keepCampaignCode = (code: string) => {
+export const keepCampaignOpening = (opening: CampaignOpening) => {
   try {
-    localStorage.setItem(KEY, code);
+    forgetCampaignOpening();
+    if ("referral" in opening) localStorage.setItem(KEYS.referral, opening.referral);
+    else localStorage.setItem(KEYS.code, opening.code);
   } catch {
     // Without storage the code still rides in the landing's own address.
   }
 };
 
-export const keptCampaignCode = (): string | null => {
+export const keptCampaignOpening = (): CampaignOpening | null => {
   try {
-    return localStorage.getItem(KEY);
+    const referral = localStorage.getItem(KEYS.referral);
+    if (referral) return { referral };
+    const code = localStorage.getItem(KEYS.code);
+    return code ? { code } : null;
   } catch {
     return null;
   }
 };
 
-export const forgetCampaignCode = () => {
+export const forgetCampaignOpening = () => {
   try {
-    localStorage.removeItem(KEY);
+    localStorage.removeItem(KEYS.code);
+    localStorage.removeItem(KEYS.referral);
   } catch {
     // Nothing was kept.
   }
