@@ -6,6 +6,7 @@ import { Icon } from "@/ui/design-system/icon";
 import { iconDefinition, orderMeaning } from "@/ui/design-system/icon-meaning";
 import { HudPortrait } from "@/ui/design-system/kit/hud-elements";
 import { DEPTH_NUMERALS, depthName, YOU } from "@/ui/design-system/kit/words";
+import { HOME_KINDS, homeKind } from "@/ui/design-system/home-icons";
 import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { rankName } from "@bibliothecadao/types";
 
@@ -17,12 +18,24 @@ const DEPTH_ICONS = ["depth-1", "depth-2", "depth-3"] as const;
  * gone to as that depth's painting on its corner (none before the first), named on its tip ("City · Ethereal II"). No
  * numeral: on the board a numeral would read as a tier.
  */
-export const RealmBadge = ({ level, depth, skin }: { level: number; depth: number; skin?: RealmSkin }) => {
+export const RealmBadge = ({
+  level,
+  depth,
+  skin,
+  hasWonder = false,
+}: {
+  level: number;
+  depth: number;
+  skin?: RealmSkin;
+  hasWonder?: boolean;
+}) => {
   const step = Math.min(depth, DEPTH_NUMERALS.length) as 0 | 1 | 2 | 3;
-  const line = step === 0 ? rankName(level) : `${rankName(level)} · ${depthName(step)}`;
+  const kind = homeKind(skin, hasWonder);
+  const name = kind === "realm" ? rankName(level) : `${HOME_KINDS[kind].label} · ${rankName(level)}`;
+  const line = step === 0 ? name : `${name} · ${depthName(step)}`;
   return (
     <span role="img" aria-label={line} data-tip={line} className="relative inline-flex size-7 shrink-0">
-      <Icon name={realmMeaning(level, skin)} size={28} />
+      <Icon name={realmMeaning(level, skin, hasWonder)} size={28} />
       {step > 0 && (
         <span
           aria-hidden

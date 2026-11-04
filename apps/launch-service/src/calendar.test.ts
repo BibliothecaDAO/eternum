@@ -329,16 +329,12 @@ test("reconciles the approved extension only after both chains agree, with retri
   const now = (approved.oldEnd - 3600) * 1000;
   const before = {
     phase: "frontier" as const,
-    presetId: approved.presetId,
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.oldEnd * 1000).toISOString(),
   };
   const after = { ...before, endsAt: new Date(approved.end * 1000).toISOString() };
-  const blitz = {
-    phase: "blitz" as const,
-    startsAt: new Date((approved.start + 3600) * 1000).toISOString(),
-    endsAt: new Date((approved.end + 3600) * 1000).toISOString(),
-  };
+  const blitz = { phase: "blitz" as const, startsAt: "2026-10-21T10:30:00.000Z", endsAt: "2026-10-28T10:30:00.000Z" };
   const ordinary = new D1CalendarStore(database.db);
   await ordinary.set(before, approved.start * 1000 - 1);
   await ordinary.set(blitz, approved.start * 1000 - 1);
@@ -354,7 +350,7 @@ test("reconciles the approved extension only after both chains agree, with retri
   expect(await guarded.set(after, now)).toEqual(after);
   expect(verify).toHaveBeenCalledTimes(3);
   expect(await guarded.list()).toEqual([after, blitz]);
-  await expect(guarded.set({ ...after, presetId: approved.presetId + 1 }, now)).rejects.toThrow("keeps its preset");
+  await expect(guarded.set({ ...after, presetId: 6 }, now)).rejects.toThrow("keeps its preset");
   expect(verify).toHaveBeenCalledTimes(3);
   // A fresh store sees persisted dates, and arbitrary future edits still use the fixed-end rule.
   expect(await new D1CalendarStore(database.db).list()).toEqual([after, blitz]);
@@ -367,7 +363,7 @@ test.each(["ends_at", "preset_id"])("refuses %s changed while extension confirma
   const approved = (await import("../../../config/source/frontier/extension.json")).default;
   const before = {
     phase: "frontier" as const,
-    presetId: approved.presetId,
+    presetId: 5,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.oldEnd * 1000).toISOString(),
   };
@@ -381,6 +377,6 @@ test.each(["ends_at", "preset_id"])("refuses %s changed while extension confirma
   ).rejects.toThrow("The calendar changed; reload and edit again");
   const stored = (await guarded.list())[0]!;
   expect(column === "ends_at" ? Date.parse(stored.endsAt) : stored.presetId).toBe(
-    column === "ends_at" ? approved.oldEnd * 1000 + 1 : approved.presetId + 1,
+    column === "ends_at" ? approved.oldEnd * 1000 + 1 : 6,
   );
 });

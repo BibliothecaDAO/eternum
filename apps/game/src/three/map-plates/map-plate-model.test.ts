@@ -10,6 +10,8 @@ const structure = (fields: Partial<Parameters<typeof buildStructurePlate>[0]> = 
   entityId: 29,
   structureName: "Epakehamamut",
   structureType: StructureType.Realm,
+  level: 0,
+  hasWonder: false,
   mineKind: undefined,
   isMine: false,
   isAlly: false,

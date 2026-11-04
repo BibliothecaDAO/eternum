@@ -13,9 +13,9 @@ export const cameraHexOf = (position: Position): HexPosition => {
 };
 
 /**
- * Why the world map moves its camera: a player's request to look somewhere, and nothing else. A tap, a selection on the
- * map and an order (attack, explore, move, build, deploy, claim) have no reason here, so they leave the camera where the
- * player put it (owner, 28 October 2026: "it moves the camera when I fight").
+ * Why the world map moves its camera: a player's request to look somewhere, or the view switching through a spire. A
+ * tap, a selection on the map and any other order (attack, explore, move, build, deploy, claim) have no reason here, so
+ * they leave the camera where the player put it (owner, 28 October 2026: "it moves the camera when I fight").
  */
 export type CameraNavigation =
   /** The map's first view: the realm the entry opens on. */
@@ -28,4 +28,10 @@ export type CameraNavigation =
   /** A HUD control that shows an army, in sight or not: the Armies list, the dock, Next up, idle armies, a coach step. */
   | "show"
   /** The renderer's dev tools. */
-  | "dev-tools";
+  | "dev-tools"
+  /**
+   * The view switching through a spire: with the selected army, to where it arrived (followArmyCrossing; owner, 4 November
+   * 2026: "spire entering lmao we should just switch view like realm/world/ethereal no ?"), or on a double-click on the
+   * spire, into its Ethereal layer ("double clicking the spire should make me enter the ethereal layer").
+   */
+  | "spire";

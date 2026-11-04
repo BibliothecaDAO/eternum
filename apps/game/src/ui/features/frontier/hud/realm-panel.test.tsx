@@ -1,4 +1,5 @@
-import { REALM_SKIN_MODELS, REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKIN_MODELS, REALM_SKINS } from "@/three/structures/realm-skins";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -200,7 +201,7 @@ it("offers a desktop's places, Research, the Feed and the Season, each a panel i
 it.each(REALM_SKIN_MODELS)(
   "shows the $skin painting on the HUD at level $level, its name as a tip",
   ({ skin, level }) => {
-    const icon = realmSkinIcon(skin);
+    const icon = homeIcon(skin, level);
     act(() =>
       root.render(
         <RealmPanel
@@ -208,13 +209,14 @@ it.each(REALM_SKIN_MODELS)(
           level={level}
           highest={3}
           stores={STORES}
+          kind={skin}
           mark={{ line: REALM_SKINS[skin].label, golden: skin === "devcon-golden", icon }}
         />,
       ),
     );
     const panel = host.querySelector('section[aria-label="Realm"]')!;
     // The painting alone carries the campaign: no tag spells its name beside the rank, the tip names it.
-    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"]`)];
+    const paintings = [...panel.querySelectorAll(`img[src$="/${icon}.webp"][data-tip]`)];
     expect(paintings.map((painting) => painting.getAttribute("data-tip"))).toEqual([REALM_SKINS[skin].label]);
     expect(paintings[0].getAttribute("alt")).toBe(REALM_SKINS[skin].label);
     expect(panel.textContent).not.toContain(REALM_SKINS[skin].label);

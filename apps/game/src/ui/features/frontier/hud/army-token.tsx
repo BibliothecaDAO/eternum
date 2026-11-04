@@ -3,7 +3,18 @@ import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon"
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
 import { HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
-import { comesHomeAtDayEnd, type RankedWords, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
+import {
+  comesHomeAtDayEnd,
+  DEPTH_NUMERALS,
+  depthName,
+  type RankedWords,
+  TROOPS,
+  XP,
+  xpTowardTip,
+} from "@/ui/design-system/kit/words";
+import type { EtherealLayer } from "@bibliothecadao/eternum";
+
+import { reachMark } from "../depth-art";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
@@ -48,6 +59,28 @@ export const GuardToken = ({
   </div>
 );
 
+/**
+ * The Ethereal layer an army stands in, on its portrait's left: the layer's painting and its numeral, named on its tip
+ * ("Ethereal II"); nothing on the surface (owner, 4 November 2026: "add the little depth icon to the army so we know if
+ * its an eth layer and if so which one"). A row and the panel wear it on the lower corner; a token, whose foot holds its
+ * XP, under its number.
+ */
+export const EtherealMark = ({ layer, at = "corner" }: { layer: EtherealLayer | undefined; at?: "corner" | "side" }) =>
+  layer === undefined ? null : (
+    <span
+      role="img"
+      aria-label={depthName(layer)}
+      data-tip={depthName(layer)}
+      className={cn(
+        "absolute flex h-5 items-center gap-0.5 rounded-full border border-hud-line-strong bg-hud-dark pl-0.5 pr-1 text-hud-strong leading-none text-hud-ink",
+        at === "corner" ? "-bottom-1.5 -left-2.5" : "-left-2.5 top-3.5",
+      )}
+    >
+      <SemanticIcon name={reachMark(layer)} size={14} />
+      {DEPTH_NUMERALS[layer - 1]}
+    </span>
+  );
+
 /** The next cumulative XP milestone and the point it awards. */
 export type XpGoal = { at: number; rank: number };
 
@@ -71,6 +104,7 @@ export const ArmyToken = ({
   troops,
   returnsHome,
   canSpendSkillPoint,
+  ethereal,
   selected,
   flyTarget,
   onPick,
@@ -78,6 +112,8 @@ export const ArmyToken = ({
   label: string;
   /** The army's number among its realm's; absent where a token stands for no numbered army. */
   number?: number;
+  /** The Ethereal layer it stands in; none on the surface. */
+  ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
   xp: number | undefined;
   /** The attribute tier the XP buys next; none once every attribute is legendary, or while unknown. */
@@ -115,6 +151,7 @@ export const ArmyToken = ({
             <SemanticIcon name="picks" className="size-full" />
           </span>
         )}
+        <EtherealMark layer={ethereal} at="side" />
       </span>
       <TokenStamina stamina={stamina} />
       <span

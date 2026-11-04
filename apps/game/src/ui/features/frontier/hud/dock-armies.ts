@@ -8,7 +8,14 @@ import { buildStaminaDisplayModel } from "@/lib/army-stamina/presentation";
 import { exploreStaminaOf } from "@/lib/army-stamina/explore-stamina";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import { getExplorerStaminaSnapshot } from "@/utils/explorer-stamina";
-import { configManager, getArmyName, homecomingReturn, liveHomeArmies } from "@bibliothecadao/eternum";
+import {
+  armyEtherealLayer,
+  configManager,
+  type EtherealLayer,
+  getArmyName,
+  homecomingReturn,
+  liveHomeArmies,
+} from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore, type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { armyNumber, resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -41,6 +48,8 @@ export type DockArmy = {
   canSpendSkillPoint: boolean;
   /** The whole troops its Homecoming returns when its day ends; unknown while its progress is. */
   returnsHome: number | undefined;
+  /** The Ethereal layer it stands in (armyEtherealLayer); none on the surface. */
+  ethereal: EtherealLayer | undefined;
 };
 
 /** The realm's armies out today, in the order the castle granted their slots; none without a realm. */
@@ -96,6 +105,7 @@ export const useDockArmies = (realm: NativeRows["Structure"] | null): DockArmy[]
             stamina.committedCurrent < stamina.committedMax)),
       returnsHome:
         progress && homecomingReturn(Number(army.troops.count / BigInt(RESOURCE_PRECISION)), progress.homecoming),
+      ethereal: armyEtherealLayer(setup.store, army.game_id, explorerId),
     };
   });
 };

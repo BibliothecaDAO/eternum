@@ -121,9 +121,9 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
 
   for (const cell of canonicalCells(request.cells)) {
     if (cell.explored && cell.biome) {
-      if (request.surfacePresentation === "ethereal") {
+      if (request.surfacePresentation === "ethereal" || typeof cell.surfacePresentation === "number") {
         const center = terrainHexToWorld(cell.col, cell.row);
-        basalt.push(center.x, center.z);
+        basalt.push(center.x, center.z, typeof cell.surfacePresentation === "number" ? cell.surfacePresentation : 0);
         appendBorderCell(borders, buildEtherealBorderCell(cell.col, cell.row));
         continue;
       }
@@ -176,11 +176,11 @@ export function prepareTerrainPage(request: TerrainPageRequest): PreparedTerrain
       shroudInstances: shroudInstances.length,
       triangles:
         [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.indices.length ?? 0), 0) / 3 +
-        (basalt.length / 2) * BASALT_SHELL_TRIANGLES,
+        (basalt.length / 3) * BASALT_SHELL_TRIANGLES,
       vertices:
         [buffers, waterBuffers, borderBuffers].reduce((sum, geometry) => sum + (geometry?.positions.length ?? 0), 0) /
           3 +
-        (basalt.length / 2) * BASALT_SHELL_VERTICES,
+        (basalt.length / 3) * BASALT_SHELL_VERTICES,
     },
     fingerprint,
     propInstances,

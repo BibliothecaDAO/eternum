@@ -1,4 +1,5 @@
-import { REALM_SKIN_MODELS, realmSkinIcon } from "@/three/structures/realm-skins";
+import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
+import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 // @vitest-environment jsdom
 import { act, type ReactNode } from "react";
 import { createRoot } from "react-dom/client";
@@ -62,5 +63,21 @@ describe("a lord and a realm's Order on the HUD", () => {
 
 it.each(REALM_SKIN_MODELS)("shows $skin at level $level on the season list", ({ skin, level }) => {
   const badge = render(<RealmBadge level={level} depth={0} skin={skin} />);
-  expect(badge.querySelector(`img[src$="/${realmSkinIcon(skin)}.webp"]`)).not.toBeNull();
+  expect(badge.querySelector(`img[src$="/${homeIcon(skin, level)}.webp"]`)).not.toBeNull();
+});
+
+it.each([0, 1, 2, 3])("shows a jade Wonder at level %s, including its depth", (level) => {
+  const badge = render(<RealmBadge level={level} depth={2} hasWonder />);
+  expect(badge.querySelector(`img[src$="/${homeIcon("wonder", level)}.webp"]`)).not.toBeNull();
+  expect(badge.querySelector('[role="img"]')?.getAttribute("aria-label")).toContain("Wonder");
+  expect(badge.querySelector('[data-icon="depth-2"]')).not.toBeNull();
+});
+
+it("draws every home kind at every level with sixteen distinct paintings", () => {
+  const drawn = Object.keys(HOME_KINDS).flatMap((kind) =>
+    [0, 1, 2, 3].map((level) => homeIcon(kind as HomeKind, level)),
+  );
+  expect(new Set(drawn).size).toBe(16);
+  expect(() => homeIcon("wonder", 4)).toThrow("Unknown realm level");
+  expect(() => homeIcon("devcon", 1.5)).toThrow("Unknown realm level");
 });

@@ -418,7 +418,8 @@ export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.Hearth, true),
 ] as const;
 /** The castle rows that unlock the three depths beyond the spire. */
-const ETHEREAL = "Ethereal";
+/** The layer a realm's spire is the portal to (owner, 4 November 2026: "its a portal to the ethereal layer bro"). */
+export const ETHEREAL = "Ethereal";
 export const DEPTH_NUMERALS = ["I", "II", "III"] as const;
 /** A depth by its name: "Ethereal II". */
 export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUMERALS[depth - 1]}`;
@@ -430,6 +431,8 @@ export const depthName = (depth: 1 | 2 | 3): string => `${ETHEREAL} ${DEPTH_NUME
 export const SPIRE_WORDS = {
   title: "Spire",
   enter: "Enter",
+  /** The order on the spire's tile; its card then picks the Ethereal layer to enter. */
+  order: "Enter the Spire",
   foreign: "Another realm's spire",
   pickArmy: "Select an army beside the spire",
   away: (army: string) => `${army} must be beside the spire`,
@@ -546,7 +549,6 @@ export const disbandedLine = (army: string) => `${army} disbanded`;
 /** A day's count of tiles explored, on its total. */
 export const REVEALS = "Reveals";
 /** How deep a realm went beyond the spire, I to III. */
-export const DEPTH = "Depth";
 
 /** The player on any list. */
 export const YOU = "You";

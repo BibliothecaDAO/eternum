@@ -202,6 +202,12 @@ export const ROOMS: LabRoom[] = [
             load(() => import("../ui/features/debug/kit-lab/reward-chests-lab"), "RewardChestsLab"),
           ),
           view(
+            "Home levels",
+            "/lab/kit/home-icons",
+            "kit/home-icons",
+            load(() => import("../ui/features/debug/kit-lab/home-icons-lab"), "HomeIconsLab"),
+          ),
+          view(
             "Frontier guards",
             "/lab/kit/beast-icons",
             "kit/beast-icons",
@@ -372,6 +378,12 @@ export const ROOMS: LabRoom[] = [
             "/lab/terrain",
             "terrain",
             load(() => import("../ui/features/debug/procedural-terrain-debug-view"), "ProceduralTerrainDebugView"),
+          ),
+          view(
+            "Ethereal depths",
+            "/lab/ethereal-depths",
+            "ethereal-depths",
+            load(() => import("./ethereal-depths/view"), "EtherealDepthLabView"),
           ),
           view(
             "Props",

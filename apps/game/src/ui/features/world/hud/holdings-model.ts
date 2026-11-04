@@ -97,7 +97,8 @@ export const holdingIcon = (
   holding: Pick<ListedHolding, "category" | "realmLevel" | "realmSkin" | "structure">,
   mode?: StructureNamingMode,
 ): IconMeaning => {
-  if (holding.category === StructureType.Realm) return realmMeaning(holding.realmLevel, holding.realmSkin);
+  if (holding.category === StructureType.Realm)
+    return realmMeaning(holding.realmLevel, holding.realmSkin, holding.structure.metadata.has_wonder);
   const mineKind = mineKindOf(holding);
   return mineKind !== undefined ? mineMeaning(mineKind) : structureMeaning(holding.category as StructureType, mode);
 };

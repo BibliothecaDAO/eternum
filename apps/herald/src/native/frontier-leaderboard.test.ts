@@ -13,7 +13,7 @@ function facts(depths = [2]) {
       entity_id: i + 1,
       owner: i + 10,
       base: { category: 1, level: i % 4 },
-      metadata: { deepest_depth: depth, order: i + 3 },
+      metadata: { has_wonder: false, deepest_depth: depth, order: i + 3 },
     }),
   );
   return { rows, read: (model: string) => rows[model] ?? [] };
@@ -213,4 +213,21 @@ describe("Frontier season standings", () => {
     expect(buildFrontierLeaderboard(read, "1", history)).toEqual(board);
     expect(buildFrontierLeaderboard(read, "1", []).entries.map(({ rank }) => rank)).toEqual([1, 1, 1, 1]);
   });
+});
+
+it("keeps Wonder identity for every settled home in the complete board, without visiting it", () => {
+  const { read, rows } = facts([0, 0]);
+  (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder = true;
+  expect(
+    buildFrontierLeaderboard(read, "1", []).entries.map(({ structure_id, has_wonder, level }) => ({
+      structure_id,
+      has_wonder,
+      level,
+    })),
+  ).toEqual([
+    { structure_id: "1", has_wonder: false, level: 0 },
+    { structure_id: "2", has_wonder: true, level: 1 },
+  ]);
+  delete (rows.Structure![1]!.value.metadata as Record<string, unknown>).has_wonder;
+  expect(() => buildFrontierLeaderboard(read, "1", [])).toThrow("missing its Wonder identity");
 });

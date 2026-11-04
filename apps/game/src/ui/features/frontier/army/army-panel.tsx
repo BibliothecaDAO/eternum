@@ -1,4 +1,5 @@
 import { SKILL_POINT_RANKS, type SkillPointChoice, type SkillPointRank } from "@bibliothecadao/eternum";
+import { EtherealMark } from "../hud/army-token";
 import { formatExact, formatShort } from "@bibliothecadao/types";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { Icon, IconGroup } from "@/ui/design-system/icon";
@@ -159,7 +160,10 @@ export const ArmyDetail = ({
   return (
     <div data-army-step="stats" className="flex flex-col gap-3 pt-1">
       <div className="flex items-center gap-3">
-        <HudPortrait icon={army.art} label={TROOPS} />
+        <span className="relative shrink-0">
+          <HudPortrait icon={army.art} label={TROOPS} />
+          <EtherealMark layer={army.ethereal} />
+        </span>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <span className="flex items-center gap-2">
             <StatusChips army={army} />

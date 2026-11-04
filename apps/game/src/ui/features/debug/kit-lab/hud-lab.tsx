@@ -1,4 +1,5 @@
 import { costLine } from "@/ui/design-system/kit/price-faces";
+import type { EtherealLayer } from "@bibliothecadao/eternum";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { Tooltip } from "@/ui/design-system/molecules/tooltip";
@@ -8,7 +9,8 @@ import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
-import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -159,13 +161,15 @@ const UNKNOWN_STORES = [
   store("troops", undefined, 0),
 ];
 
-type LabArmy = { troops?: number; xp?: number; stamina?: number; tier?: boolean };
+type LabArmy = { troops?: number; xp?: number; stamina?: number; tier?: boolean; ethereal?: EtherealLayer };
 const ARMIES: LabArmy[] = [
   { troops: 5_000, xp: 260, stamina: 90, tier: true },
   { troops: 1, xp: 40, stamina: 150 },
   { troops: 1_200, xp: 120, stamina: 21, tier: true },
 ];
 const UNKNOWN_ARMIES: LabArmy[] = [{}, {}, {}];
+/** The same armies through the spire: Army 2 in Ethereal II, Army 3 in Ethereal I, Army 1 on the surface. */
+const ETHEREAL_ARMIES: LabArmy[] = [ARMIES[0]!, { ...ARMIES[1]!, ethereal: 2 }, { ...ARMIES[2]!, ethereal: 1 }];
 /** The lab's explore cost, as its rules say it: a 150 bar is five explores. */
 const LAB_EXPLORE = 30;
 
@@ -424,8 +428,17 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 });
 
 /** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
-/** `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. */
-type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number; owner?: "crowded" | "ready" };
+/**
+ * `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. `ethereal`: the army
+ * in an Ethereal depth.
+ */
+type LabArmySheet = {
+  lords?: number;
+  confirm?: boolean;
+  stamina?: number;
+  owner?: "crowded" | "ready";
+  ethereal?: EtherealLayer;
+};
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
@@ -626,6 +639,10 @@ const STATES = {
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
+  // Armies through the spire: each one in an Ethereal layer wears its layer's mark; its panel and a phone's pick too.
+  "armies-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES },
+  "selected-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES, selected: 1, army: { ethereal: 2 } },
+  "picked-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES, selected: 1, picked: "owner" },
   // Deploy's slots as the Armies card draws them: no army out of three, or one, the first open one chosen.
   "deploy-slots": { clock: CLOCK, stores: STORES, armies: [], slots: 3, deploy: DEPLOY },
   "deploy-slots-mix": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 1), slots: 3, deploy: DEPLOY },
@@ -1587,7 +1604,13 @@ const LabPicked = ({ lab }: { lab: LabState }) => {
 /** The owner's Army 2, it rested or its realm able to pay its refill (`picked`), else the state's selected army, with the realm's LORDS. */
 const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } => {
   const index = lab.selected ?? 0;
-  const base = { explorerId: index + 1, number: index + 1, label: `${ARMY} ${index + 1}`, art: "knight-t1" as const };
+  const base = {
+    explorerId: index + 1,
+    number: index + 1,
+    label: `${ARMY} ${index + 1}`,
+    art: "knight-t1" as const,
+    ethereal: lab.armies[index]?.ethereal,
+  };
   if (lab.picked) {
     const rested = lab.picked === "rested";
     const army = {
@@ -1641,7 +1664,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
     army.owner === "ready" ? { ...OWNER_ARMY, points: [0, 0, 1, 0, 0] } : army.owner ? OWNER_ARMY : VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
-  const view = readArmyDetail({ ...base, stamina, ...(full ? { secondsToFull: 0 } : {}) });
+  const view = readArmyDetail({ ...base, stamina, ethereal: army.ethereal, ...(full ? { secondsToFull: 0 } : {}) });
   const step = useArmyStep(view.available);
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
@@ -1870,6 +1893,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
             stamina={stamina(army)}
             xp={army.xp}
             canSpendSkillPoint={army.tier === true}
+            ethereal={army.ethereal}
             selected={lab.selected === index}
             onPick={lab.visiting ? undefined : noop}
           />
@@ -1891,6 +1915,7 @@ const LabDock = ({ lab }: { lab: LabState }) => {
           troops={army.troops}
           returnsHome={returnsHome(army)}
           canSpendSkillPoint={army.tier === true}
+          ethereal={army.ethereal}
           selected={lab.selected === index}
           onPick={noop}
         />
@@ -2062,7 +2087,7 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
   const skin = home === "golden" ? "devcon-golden" : "devcon";
   return {
     kind: "campaign",
-    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: realmSkinIcon(skin) },
+    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: homeIcon(skin, 0) },
   };
 };
 

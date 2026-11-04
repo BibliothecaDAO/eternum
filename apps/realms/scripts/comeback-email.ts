@@ -20,8 +20,14 @@ import { sendEmail, type Email } from "../../../packages/notifications/src/email
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
+  Activity,
+  isAway,
   sendCampaign,
+  stillFits,
   sendRecord,
+  type HistoryEvent,
+  type LaborGrant,
+  visitRecord,
   variantOf,
   wranglerFailure,
   type Account,
@@ -65,7 +71,10 @@ interface Season {
   usdLeft: number;
   endsAt: number;
   rules: LaborRuleAmounts;
-  lastAction: Map<string, number>;
+  /** Each player's latest confirmed action (Herald's history and daily claims); caught up before each send. */
+  activity: Activity;
+  /** The block the claims were last read at (the snapshot's confirmed head when they were read). */
+  confirmedBlock: number;
   seasonPlayers: Set<string>;
 }
 
@@ -91,13 +100,14 @@ async function readSeason(): Promise<Season> {
   const budget = model("LordsBudget")[0];
   const prize = Number(BigInt(model("FrontierPrize")[0].pool));
   const left = Number(BigInt(budget.pool_left));
-  const lastAction = new Map<string, number>();
-  for (const event of history) {
-    const owner = event.value?.owner;
-    if (!owner) continue;
-    const at = Number(BigInt(event.value.timestamp));
-    lastAction.set(norm(owner), Math.max(lastAction.get(norm(owner)) ?? 0, at));
-  }
+  const activity = new Activity({
+    seed: BigInt(game.expedition.seed),
+    startMainAt: Number(game.clock.start_main_at),
+    endAt: Number(game.clock.end_at),
+    dayUnitSeconds: Number(game.expedition.day_unit_seconds),
+  });
+  activity.noteHistory(history as HistoryEvent[]);
+  activity.noteClaims(model("LaborGrant") as LaborGrant[]);
   return {
     players: Number(game.player_count),
     pool: Number(BigInt(budget.pool)) + prize,
@@ -107,7 +117,8 @@ async function readSeason(): Promise<Season> {
     usdLeft: left * price,
     endsAt: Number(game.clock.end_at),
     rules: model("LaborRules")[0] as LaborRuleAmounts,
-    lastAction,
+    activity,
+    confirmedBlock: Number(snapshot.confirmed_block),
     seasonPlayers: new Set(model("PlayerEntry").map((entry: Row) => norm(entry.owner))),
   };
 }
@@ -121,6 +132,24 @@ async function readHistory(): Promise<Row[]> {
   }
 }
 
+/**
+ * Reads the confirmed activity since the season was read: the daily claims again (one small snapshot read, which also
+ * names its confirmed block), then Herald's history, newest first, until a page reaches a block already held.
+ */
+async function catchUpActivity(season: Season) {
+  const claims = await herald(`/games/${GAME}/snapshot?models=LaborGrant`);
+  const fresh: Row[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await herald(`/games/${GAME}/history?limit=500&offset=${offset}`);
+    fresh.push(...(page.items as Row[]));
+    const reachedHeld = (page.items as Row[]).some((event) => Number(event.block_number) <= season.activity.heldBlock);
+    if (reachedHeld || offset + 500 >= page.total) break;
+  }
+  season.activity.noteHistory(fresh as HistoryEvent[]);
+  season.activity.noteClaims((claims.models as Row[])[0]?.rows.map((row: Row) => row.value) ?? []);
+  season.confirmedBlock = Number(claims.confirmed_block);
+}
+
 async function readLordsPrice(): Promise<number> {
   const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd");
   if (!response.ok) throw new Error(`CoinGecko: ${response.status}`);
@@ -131,14 +160,24 @@ async function readLordsPrice(): Promise<number> {
 
 // ---- Who gets which variant (counts only leave this file) -----------------------------------------------------------
 
-/** A campaign account with its email address, read only by a send. */
-type Recipient = Account & { email: string };
+/** A campaign account with the player addresses it owns, in memory only. */
+type Reached = Account & { addresses: readonly string[] };
+/** The same with its email address, read only by a send. */
+type Recipient = Reached & { email: string };
+
+/** When the environment's visit record began (migration 0026), in seconds; null where it has not run. */
+const visitsSinceOf = (target: Target) => visitRecord.beganAt(d1(target, visitRecord.began));
 
 /** Every account with a verified email, as comeback-campaign.ts decides on them; addresses only when asked for. */
-function readAccounts(target: Target, season: Season, withEmail: boolean): (Account & { email?: string })[] {
+function readAccounts(
+  target: Target,
+  season: Season,
+  withEmail: boolean,
+  visitsRecorded: boolean,
+): (Reached & { email?: string })[] {
   const users = d1(
     target,
-    `SELECT u.realmsId, u.newsEmailOptOutAt, ${withEmail ? "u.email, " : ""}EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
+    `SELECT u.realmsId, u.newsEmailOptOutAt, ${visitsRecorded ? "u.lastSeenAt" : "NULL AS lastSeenAt"}, ${withEmail ? "u.email, " : ""}EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
   );
   const tickets = new Map(
     d1(target, `SELECT owner, tier FROM campaign_tickets WHERE campaign = '${TICKETS}'`).map((row) => [
@@ -158,7 +197,9 @@ function readAccounts(target: Target, season: Season, withEmail: boolean): (Acco
       ticket: tickets.get(user.realmsId) ?? null,
       playtester: owned.some((address) => playtesters.has(address)),
       inSeason: owned.some((address) => season.seasonPlayers.has(address)),
-      lastAction: Math.max(0, ...owned.map((address) => season.lastAction.get(address) ?? 0)),
+      lastAction: season.activity.latestOf(owned),
+      lastVisit: visitRecord.seconds(user.lastSeenAt),
+      addresses: owned,
       optedOut: user.newsEmailOptOutAt != null,
       ...(withEmail ? { email: String(user.email) } : {}),
     };
@@ -254,9 +295,10 @@ const daysLeft = (s: Season) => {
   const days = Math.floor((s.endsAt - Date.now() / 1000) / 86400);
   return days <= 0 ? "Last day" : `${WORDS[days] ?? n(days)} day${days === 1 ? "" : "s"} left`;
 };
+/** The season's end as Herald serves it when the run starts, dated, so an extended season reads its new day. */
 const endsLine = (s: Season) => {
   const end = new Date(s.endsAt * 1000);
-  const day = end.toLocaleDateString("en-US", { weekday: "long", timeZone: "UTC" });
+  const day = end.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
   const time = end.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
   return `Season 0 ends ${day} at ${time} UTC.`;
 };
@@ -483,22 +525,40 @@ function figures(s: Season) {
   };
 }
 
-const todayStart = () => Math.floor(Date.now() / 86_400_000) * 86_400;
+/** Players who acted in the last 24 hours, as of this moment, have come back: the email is not for them. */
+const activeSince = () => Math.floor(Date.now() / 1000) - 24 * 60 * 60;
 
 async function dryRun(target: Target) {
   const season = await readSeason();
+  const since = activeSince();
+  const visitsSince = visitsSinceOf(target);
   const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`);
   const reserved = new Set(record.map((row) => row.realmsId));
   /** Reserved by a run that never marked them sent: check them against Resend's log before anything else. */
   const unresolved = record.filter((row) => row.status === "reserved").length;
   const counts = Object.fromEntries(
-    (["D", "N", "P"] as const).map((key) => [key, { email: 0, discord: 0, golden: 0, alreadyReserved: 0 }]),
+    (["D", "N", "P"] as const).map((key) => [
+      key,
+      {
+        email: 0,
+        discord: 0,
+        golden: 0,
+        alreadyReserved: 0,
+        leftOut: { visited: 0, actedOnly: 0, visitsUnknown: 0 },
+      },
+    ]),
   );
   let optedOut = 0;
-  for (const account of readAccounts(target, season, false)) {
+  for (const account of readAccounts(target, season, false, visitsSince !== null)) {
     if (account.optedOut) optedOut++;
-    const key = variantOf(account, todayStart());
-    if (!key) continue;
+    const key = variantOf(account, since, visitsSince);
+    // Who the email would be for with no visit or action and a record covering the window: the players it now leaves
+    // out, and why.
+    const candidate = variantOf({ ...account, lastAction: 0, lastVisit: 0 }, since, 0);
+    if (!key) {
+      if (candidate) counts[candidate]!.leftOut[leftOutBy(account, since, visitsSince)]++;
+      continue;
+    }
     if (reserved.has(account.realmsId)) counts[key]!.alreadyReserved++;
     else counts[key]![account.discord ? "discord" : "email"]++;
     if (account.ticket === "golden") counts[key]!.golden++;
@@ -507,7 +567,10 @@ async function dryRun(target: Target) {
     JSON.stringify(
       {
         readAt: new Date().toISOString(),
-        todayStartUtc: new Date(todayStart() * 1000).toISOString(),
+        activeSinceUtc: new Date(since * 1000).toISOString(),
+        confirmedBlock: season.confirmedBlock,
+        historyBlock: season.activity.heldBlock,
+        visitsRecordedSince: visitsSince === null ? null : new Date(visitsSince * 1000).toISOString(),
         figures: figures(season),
         recipients: counts,
         unresolved,
@@ -517,6 +580,12 @@ async function dryRun(target: Target) {
       1,
     ),
   );
+}
+
+/** Why a player who would get the email is left out: a recorded visit, a confirmed action alone, or no record yet. */
+function leftOutBy(account: Account, since: number, visitsSince: number | null) {
+  if (!isAway({ lastAction: 0, lastVisit: 0 }, since, visitsSince)) return "visitsUnknown" as const;
+  return isAway({ ...account, lastAction: 0 }, since, visitsSince) ? ("actedOnly" as const) : ("visited" as const);
 }
 
 async function render(dir: string) {
@@ -586,13 +655,25 @@ async function test(target: Target, to: string) {
  */
 async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
-  const today = todayStart();
-  const deliveries = (readAccounts(target, season, true) as Recipient[]).flatMap((account) => {
-    const variant = variantOf(account, today);
+  const visitsSince = visitsSinceOf(target);
+  const deliveries = (readAccounts(target, season, true, visitsSince !== null) as Recipient[]).flatMap((account) => {
+    const variant = variantOf(account, activeSince(), visitsSince);
     return variant && variants.includes(variant) && (withDiscord || !account.discord) ? [{ ...account, variant }] : [];
   });
   const counts = await sendCampaign({
     deliveries,
+    stillAway: async (delivery) => {
+      await catchUpActivity(season);
+      return stillFits(
+        delivery.variant,
+        {
+          lastAction: season.activity.latestOf(delivery.addresses),
+          lastVisit: visitRecord.seconds(d1(target, visitRecord.lastVisit(delivery.realmsId))[0]?.lastSeenAt),
+        },
+        activeSince(),
+        visitsSince,
+      );
+    },
     reserve: async (delivery) => reserveSend(target, delivery),
     send: async (delivery): Promise<Handoff> => {
       const reader = {

@@ -1,3 +1,5 @@
+import { etherealSurfaceAt } from "../terrain/ethereal-depths";
+import type { EtherealSurface } from "../terrain/ethereal-depths";
 import { rankedText } from "@/ui/design-system/kit/words";
 import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -5,7 +7,7 @@ import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
 import { isWithinWorldOriginReach, setWorldOrigin } from "../world-origin";
 import { markShadowCastersChanged } from "../shadow-refresh-policy";
 import { forgetCameraView, publishCameraView } from "./worldmap-camera-view";
-import { followArmyLayerChange } from "./worldmap-layer-follow";
+import { followArmyCrossing } from "./worldmap-layer-follow";
 import { SelectedArmyOrders } from "./worldmap-selected-army-orders";
 import { TileOccupier } from "@bibliothecadao/types";
 import { SpireManager, type RuleSpires } from "../managers/spire-manager";
@@ -54,7 +56,7 @@ import {
   isPendingReservedHyperstructureCreation,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
-import { runWorldmapDoubleClick } from "./worldmap-double-click";
+import { type DoubleClickTarget, runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
@@ -82,12 +84,15 @@ import {
   configManager,
   dayOf,
   expeditionSpires,
+  isArmyCrossing,
   NEUTRAL_BIOME_CLIMATE,
   Position,
+  spireEtherealView,
   isOpenSpawnHex,
   isViewerOwner,
   isExpeditionRealm,
   readExpeditionRules,
+  type ExpeditionRules,
   spawnRing,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
@@ -1108,6 +1113,7 @@ export default class WorldmapScene extends WarpTravel {
   private spireManager!: SpireManager;
   /** The block second the veil's nearness was last asked at. */
   private veilCheckedAt = -1;
+  private expeditionGridOf: { gameId: number; rules: ExpeditionRules | null } | null = null;
   private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
@@ -1577,13 +1583,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
-    this.strategicMarkers.setStructure(
-      structure.entityId,
-      facts.realmSkin ?? structureMarkerKind(facts.structureType),
-      position.x,
-      position.z,
-      color,
-    );
+    this.strategicMarkers.setStructure(structure.entityId, structureMarkerKind(facts), position.x, position.z, color);
   }
 
   private writeArmyMarker(army: ArmySpatialRenderable): void {
@@ -1686,12 +1686,14 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private followSelectedArmyLayer(changes: readonly ArmySpatialProjectionChange[]): void {
-    void followArmyLayerChange({
+    void followArmyCrossing({
       changes,
       getSelectedId: () => getLiveWorldmapEntityActions().selectedEntityId,
       getLayer: activeMapLayer,
       isSceneActive: () => !this.isSwitchedOff,
+      isCrossing: (from, to) => isArmyCrossing(this.game.store, configManager.getActiveGameId(), from, to),
       setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
+      lookAt: ({ col, row }) => this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "spire"),
       finishMovement: (entityId) => {
         this.completePendingArmyMovementVisuals(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);
@@ -2573,11 +2575,52 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    runWorldmapDoubleClick(hexCoords, {
-      isReservedHyperstructureSite: (hex) => this.isReservedHyperstructureHex(hex),
-      foundHyperstructure: (hex) => void this.createReservedHyperstructureFromWorldmap(hex),
-      enterStructure: (hex) => this.enterStructureFromSelectedHex(hex),
+    runWorldmapDoubleClick(this.doubleClickTargetAt(hexCoords), {
+      throughSpire: () => this.lookThroughSpire(hexCoords),
+      enterStructure: () => this.enterStructureFromSelectedHex(hexCoords),
+      foundHyperstructure: () => void this.createReservedHyperstructureFromWorldmap(hexCoords),
     });
+  }
+
+  /** What stands on a double-clicked hex (normalized), as runWorldmapDoubleClick reads it. */
+  private doubleClickTargetAt(hexCoords: HexPosition): DoubleClickTarget {
+    if (this.litSpireAt(hexCoords) || this.isLayerSpireHex(hexCoords)) return { kind: "spire" };
+    if (this.isReservedHyperstructureHex(hexCoords)) return { kind: "reserved-hyperstructure" };
+    const { structure } = this.getHexagonEntity(hexCoords);
+    const standing =
+      structure &&
+      this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.id });
+    return standing ? { kind: "structure", category: standing.base.category } : { kind: "other" };
+  }
+
+  /** Frontier's lit spire on a hex (normalized), with its realm; a game without expeditions lights none. */
+  private litSpireAt(hexCoords: HexPosition) {
+    const gameId = configManager.getActiveGameId();
+    if (!readExpeditionRules(this.game.store, gameId)) return undefined;
+    const { x, y } = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    return expeditionSpires(this.game.store, gameId, now).find((spire) => spire.col === x && spire.row === y);
+  }
+
+  /** Whether a spire between Eternum's two layers stands on a hex (normalized). */
+  private isLayerSpireHex(hexCoords: HexPosition): boolean {
+    const { x, y } = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const tile = this.worldSpatialProjection.getTileAtHex({ col: x, row: y, alt: activeMapLayer() });
+    return tile?.occupierType === TileOccupier.Spire;
+  }
+
+  /**
+   * The view through a spire, as an army passing it switches it (followArmyCrossing): Eternum's other layer, or the
+   * Ethereal layer below Frontier's lit spire.
+   */
+  private lookThroughSpire(hexCoords: HexPosition): void {
+    const spire = this.litSpireAt(hexCoords);
+    if (!spire) {
+      useUIStore.getState().setMapLayer(!activeMapLayer());
+      return;
+    }
+    const view = spireEtherealView(this.game.store, spire);
+    this.moveCameraToMapPosition(Position.fromContract({ x: view.col, y: view.row }), "spire");
   }
 
   private enterStructureFromSelectedHex(hexCoords: HexPosition) {
@@ -4401,19 +4444,30 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * A cell's facts as the terrain presents them, from one tile read and, off a spire, one structures read: its projected
-   * biome, its surface (a spire's is ethereal) and whether terrain levels a pad under it (a structure or a spire). Every
-   * terrain path reads a cell through here; a panned page reads thousands, and each projection lookup builds a key.
+   * biome, its surface (ethereal on a spire and in the Ethereal layer, etherealSurfaceAt) and whether terrain levels a pad
+   * under it (a structure or a spire). Every terrain path reads a cell through here; a panned page reads thousands, and
+   * each projection lookup builds a key.
    */
   private readTerrainCell(col: number, row: number): TerrainCellFacts {
     const center = FELT_CENTER();
     const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
     const tile = this.worldSpatialProjection.getTileAtHex(hex);
-    const surfacePresentation = tile?.occupierType === TileOccupier.Spire ? "ethereal" : undefined;
+    const spire = tile?.occupierType === TileOccupier.Spire;
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
-      surfacePresentation,
-      occupied: surfacePresentation === "ethereal" || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
+      surfacePresentation: etherealSurfaceAt(this.expeditionGrid(), hex, spire),
+      occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
     };
+  }
+
+  /** The game's expedition grid, read once per game: the terrain asks it of every cell it draws. */
+  private expeditionGrid(): ExpeditionRules | null {
+    const gameId = configManager.getActiveGameId();
+    if (this.expeditionGridOf?.gameId === gameId) return this.expeditionGridOf.rules;
+    const rules = readExpeditionRules(this.game.store, gameId);
+    // Rules that have not arrived read as none: they are asked again until the game's slice rules are in.
+    if (rules || this.game.store.get("SliceRules", { game_id: gameId })) this.expeditionGridOf = { gameId, rules };
+    return rules;
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {
@@ -6402,6 +6456,7 @@ export default class WorldmapScene extends WarpTravel {
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
         this.terrainContent.presented(content);
+        publishMapSelection({ etherealTerrain: this.proceduralTerrain.getEtherealPresentation() });
         incrementWorldmapRenderCounter("biomeMismatchCount", terrainDiagnostics.biomeMismatchCount);
         this.traceChunk("terrain_composite_rebuilt", {
           capped: composite.capped,
@@ -7204,7 +7259,7 @@ export default class WorldmapScene extends WarpTravel {
       col: number;
       row: number;
       occupied: boolean;
-      surfacePresentation?: "ethereal";
+      surfacePresentation?: EtherealSurface;
     }> = [];
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {

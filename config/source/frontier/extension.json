@@ -1,15 +1,15 @@
 {
-  "chainId": "0x50524f44554354494f4e5f31386534326539316432343133646337",
+  "chainId": "0x50524f44554354494f4e5f31386530376435323330633539393933",
   "gameId": 1,
-  "presetId": 6,
-  "name": "frontier-1793682000",
-  "start": 1793682000,
-  "oldEnd": 1793988000,
-  "end": 1794592800,
-  "seed": "0x744294fbe70e87074e1e7f65807334427f2061bc04bf140183490202bd48483",
-  "dayUnit": 7200,
+  "presetId": 5,
+  "name": "frontier-1792575960",
+  "start": 1792575960,
+  "oldEnd": 1793151960,
+  "end": 1793439960,
+  "seed": "0x5b0a63f717733291c17fc3ecf7ead6e4bd6ae7157150430908152aad0d4ef09",
+  "dayUnit": 14400,
   "claimWindow": 604800,
-  "poolLords": 210000,
-  "release": 8,
-  "previousLedgerClass": "0x64dca33dadddf0bbbea4405be6a4f53716e3721f7bb2dcc5b12ea37d615b373"
+  "poolLords": 1000000,
+  "release": 4,
+  "previousLedgerClass": "0x1fc1d7a67f775e2dd65be2d64738facd508213afd8628c156cce024ac4efda1"
 }

@@ -1,4 +1,5 @@
-import { REALM_SKIN_MODELS, realmSkinIcon, readRealmSkin } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKIN_MODELS, readRealmSkin } from "@/three/structures/realm-skins";
 import { shortString } from "starknet";
 // @vitest-environment jsdom
 import { setBlockTimestampSource } from "@bibliothecadao/eternum";
@@ -107,7 +108,7 @@ it.each(REALM_SKIN_MODELS)(
     ]);
     expect(readRealmSkin(store, realm)).toBe(skin);
     expect(minimapMarkersView.read(store, ContractAddress("0x111")).get("7")).toEqual({
-      name: realmSkinIcon(skin),
+      name: homeIcon(skin, level),
       owner: "own",
       value: String(level),
     });

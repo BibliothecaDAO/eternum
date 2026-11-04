@@ -1,3 +1,4 @@
+import type { EtherealSurface } from "../terrain/ethereal-depths";
 import { worldHexAt, worldHexBoundsForRect } from "../world-origin";
 import { hexCellKey } from "@/three/terrain/hex-cell-key";
 import type { WorldmapCameraGroundBounds } from "./worldmap-camera-ground-bounds";
@@ -27,7 +28,7 @@ export interface WorldmapTerrainSourceCellRef {
   biomeKey: string;
   instanceIndex: number;
   occupied?: boolean;
-  surfacePresentation?: "ethereal";
+  surfacePresentation?: EtherealSurface;
 }
 
 export interface WorldmapTerrainCellRef extends WorldmapTerrainSourceCellRef {

@@ -42,7 +42,7 @@ export const minimapMarkersView: FactView<Map<string, MinimapMarker>> = {
       const category = row.base.category;
       const name =
         category === StructureType.Realm
-          ? realmMarkerMeaning(row.base.level, readRealmSkin(store, row))
+          ? realmMarkerMeaning(row.base.level, readRealmSkin(store, row), row.metadata.has_wonder)
           : category === StructureType.Village
             ? "map-village"
             : category === StructureType.Mine
