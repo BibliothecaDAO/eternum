@@ -379,7 +379,7 @@ export class ArmyActionManager {
         actionType = ActionType.SpireTravel;
       } else if (isMine) {
         // Help is a transfer between the player's own entities; where the game allows none, the hex offers nothing.
-        if (configManager.helpTransfers(!isArmyMine).length === 0) {
+        if (configManager.helpTransfers(isArmyMine ? "armies" : "to-structure").length === 0) {
           actionPaths.refuse(key, { reason: "no-transfer" });
           continue;
         }

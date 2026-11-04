@@ -9,12 +9,13 @@ separate `--steps home-golden` run checks the golden home and claimed day after 
 
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details. The
 panel's red trash, right after its name at the top left, is **Delete**: it asks for confirmation in the panel (troops,
-skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. The panel offers no
-Reinforce: troops reach a standing army by deploying a fresh one at home and using **Transfer troops** once the two
-stand side by side. Proof: the standard client playtest with
-`--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten troops, cancels Delete once,
-then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the owner's Army 4 with 0 LORDS) and
-`army-crowded-ready` (1,240 LORDS and a point held).
+skills, XP and carried resources are lost; the freed slot keeps its stamina), then removes the army. Reinforce is the
+realm's, as in Blitz: select the realm on the map, then right-click (on a phone, hold) its army on a tile beside home
+(the tooltip reads **Reinforce**): the **Reinforce** sheet takes the count (Max, +500, slider), shows the army's troops
+before → after and the wheat price, and sends `explorer_add` from the realm's stock of the army's own troop. Proof: the
+standard client playtest with `--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten
+troops, cancels Delete once, then confirms it and checks the army disappears. Dev: `/lab/kit/hud/army-crowded` (the
+owner's Army 4 with 0 LORDS) and `army-crowded-ready` (1,240 LORDS and a point held).
 
 The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
 reserve troops.
@@ -760,6 +761,11 @@ World, each at the camera's same spot, then to the realm from Ethereal II and ba
 for a phone. No live game, account or transaction is involved. `--steps lab-realm-load` times the same game's realm view
 as a player first opens it (Realm pressed from the map, then again, then the realm's address loaded again), with what
 each step downloads; add `--network 20,40` for a player's connection.
+
+`/lab/game?scenario=reinforce` stands the spire's 1,498 knights on a tile beside home, with 420 knights and 1,000 wheat
+at home: select the realm, right-click the army, **Max**, **Reinforce**; the lab's chain answers RecruitExplorer as the
+contract does, and the army reads 1,918 (`--steps lab-reinforce`; with `--viewport 390x844` a finger taps the realm and
+holds the army).
 
 `/lab/game?scenario=merge-loses-xp` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and 2,517
 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps the

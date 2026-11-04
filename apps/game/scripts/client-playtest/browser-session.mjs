@@ -295,6 +295,18 @@ export async function openPageDevTools(browser) {
  */
 const touchEmulation = (width) => ({ enabled: width < DESKTOP_MIN_WIDTH, maxTouchPoints: 5 });
 
+/**
+ * A finger on the screen at an offset from its centre, lifted after `ms`, through DevTools' touch input: the page gets
+ * the touch pointer events a phone sends, which the map's gesture recognizer reads (a short press a tap, one past its
+ * 500 ms a hold).
+ */
+export async function touchAt(devTools, offset, ms) {
+  const [x, y] = screenPoint(offset);
+  await devTools.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+  await new Promise((lifted) => setTimeout(lifted, ms));
+  await devTools.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+}
+
 /** That touch on the driven page, held while `devTools` stays open. */
 export const touchAtPhoneWidth = (devTools, width) =>
   devTools.send("Emulation.setTouchEmulationEnabled", touchEmulation(width));

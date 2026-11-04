@@ -14,6 +14,7 @@ const tip = (
     staminaHeld: number;
     food: { wheat: number; fish: number };
     site: Parameters<typeof orderTip>[0]["site"];
+    byRealm: boolean;
   }> = {},
 ) =>
   orderTip({
@@ -25,6 +26,7 @@ const tip = (
     staminaWait: undefined,
     staminaHeld: undefined,
     site: undefined,
+    byRealm: false,
     ...more,
   });
 const line = (...args: Parameters<typeof tip>) => tip(...args)?.line ?? null;
@@ -39,6 +41,12 @@ describe("what a right-click on a tile does, said before the click", () => {
     expect(line([step(ActionType.Move), step(ActionType.Help)])).toBe("Transfer troops");
     expect(line([step(ActionType.Move), step(ActionType.SpireTravel)])).toBe("Travel through the spire");
     expect(line([step(ActionType.Move), step(ActionType.UseSite, 0)])).toBe("Use");
+  });
+
+  it("names the realm's Help on its army beside it a reinforcement, priced on its sheet", () => {
+    const help = [step(ActionType.Move), step(ActionType.Help)];
+    expect(tip(help, { byRealm: true })).toEqual({ line: "Reinforce", cost: null });
+    expect(line([step(ActionType.Move), step(ActionType.CreateArmy)], { byRealm: true })).toBeNull();
   });
 
   it("says under a site's Use what it gives, which costs nothing: a Shrine's point, the stamina a Well lands", () => {

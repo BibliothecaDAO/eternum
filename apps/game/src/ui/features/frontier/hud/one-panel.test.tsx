@@ -192,7 +192,9 @@ describe("an order settled gives the panel back to its army (owner, 30 October 2
         ? `chest@${picked.hex.col},${picked.hex.row}`
         : picked?.kind === "army" && typeof picked.tile === "object" && picked.tile
           ? `card@${picked.tile.col},${picked.tile.row}`
-          : null;
+          : picked?.kind === "structure" && picked.tile
+            ? `reinforce@${picked.tile.col},${picked.tile.row}`
+            : null;
     const { surface, openSurface, showsCard } = useOnePanel(card, false);
     useOrderSettledReturnsToTheArmy(card, {
       returnTo: (armyId) => {
@@ -302,6 +304,54 @@ describe("an order settled gives the panel back to its army (owner, 30 October 2
     await settle(APPLIED);
     expect(selection()).toEqual({ kind: "army", entityId: ARMY, tile: null });
     expect(open()).toEqual([]);
+  });
+
+  describe("reinforced from its realm (the realm acting on the army's tile, its Reinforce sheet open)", () => {
+    const REALM = 7;
+    const reinforcing = { kind: "structure", entityId: REALM, tile: TARGET } as const;
+    /** The realm picks the army's tile, the sheet opens, and Reinforce is sent for the army; returns how to settle it. */
+    const reinforcementSent = () => {
+      let settle: (outcome: unknown) => void = () => {};
+      waitForAction.mockReturnValue(new Promise((resolve) => (settle = resolve)));
+      act(() => root.render(<ArmyHud />));
+      act(() => useUIStore.getState().selectOnMap(reinforcing));
+      const sent = sendOnce(
+        "army",
+        ARMY,
+        { order: "use" },
+        () => Promise.resolve({ transaction_hash: "0x1" }) as never,
+      ).catch(() => null);
+      return async (outcome: unknown) => {
+        await act(async () => {
+          settle(outcome);
+          await sent;
+        });
+      };
+    };
+
+    it("hands the panel to the reinforced army once the troops land", async () => {
+      const settle = reinforcementSent();
+      expect(open()).toEqual(["reinforce@4,5"]);
+      await settle(APPLIED);
+      expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+      expect(selection()).toMatchObject({ kind: "army", entityId: ARMY });
+      expect(open()).toEqual(["army"]);
+    });
+
+    it.each([
+      ["picked another tile", { kind: "hex", hex: { col: 9, row: 9 } }],
+      ["picked another army", { kind: "army", entityId: 202, tile: "own" }],
+      ["closed the sheet, the realm still selected", { kind: "structure", entityId: REALM }],
+    ] as const)(
+      "keeps the player's newer choice when they %s while the troops were on their way",
+      async (_c, newer) => {
+        const settle = reinforcementSent();
+        act(() => useUIStore.getState().selectOnMap(newer as never));
+        await settle(APPLIED);
+        expect(selection()).toEqual(newer);
+        expect(open()).not.toContain("army");
+      },
+    );
   });
 
   it.each([
