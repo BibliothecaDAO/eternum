@@ -1212,3 +1212,17 @@ This wraps the standard `playtest` command’s `lab-ethereal-1`, `lab-ethereal-2
 the signed command, army position, camera and committed material, then clears selection overlays for the still. Each
 browser closes after its proof. `captures.json`, per-run transcripts and `index.html` remain. One run per depth/device
 verifies routing and appearance; it is not a performance benchmark.
+
+## Wallet LORDS deposits
+
+In a deposit-enabled Frontier season, open the LORDS purse in the HUD. **Deposit LORDS** accepts whole LORDS from the
+linked Starknet wallet; the wallet pays its network fee in STRK. The purse separates winnings from deposited LORDS,
+shows delivery/refund receipts, and allows another deposit after confirmation. An uncertain payment retains its request
+identity for retry. **Withdraw winnings** uses the existing earned-only path. Refills spend deposited LORDS first.
+Unused deposits return to the linked wallet through the existing season-end sweep; undelivered deposits are refunded to
+the original paying wallet.
+
+`pnpm --dir apps/game playtest --steps lab-spend-lords --iterations 1 --out <evidence>` drives the real refill and purse
+against a native-fact fixture. On the reviewed isolated dev season, use the same command with `--steps s1-deposits`, the
+candidate HTTPS origin and an authorized test wallet. That step refuses chains outside `S1_DEPOSIT_`, records the wallet
+action and requires a new native receipt and exact purchased-balance increase without changing winnings.

@@ -851,6 +851,74 @@ const ARMY_ACTION_STEPS = [
   ),
 ];
 
+/** Keep the observed purse before the action; the final judgment can replay without a browser. */
+function purchasedRefillSteps() {
+  let before;
+  return [
+    {
+      ...ARMY_ACTION_STEPS[0],
+      play: async ({ browser }) => {
+        before = await readPurchasedPurse(browser);
+        browser.press("Escape");
+        await readUntil(
+          () => browser.read(SHEET_NAME),
+          (name) => name === null,
+          SHEET_WAIT_MS,
+        );
+        return { before };
+      },
+    },
+    clickToResultStep(
+      "refill",
+      "RefillStamina",
+      (context) => refillTheArmy({ ...context, partial: true }),
+      ({ played }) => played.watching && { watch: "refilled" },
+    ),
+    ARMY_ACTION_STEPS[2],
+    {
+      name: "purchased-refill-isolation",
+      settleMs: 0,
+      play: async ({ browser }) => ({
+        before,
+        after: await readPurchasedPurse(browser),
+        rejected: browser.read("JSON.stringify(window.__labChain?.rejected ?? [])"),
+        amounts: browser.read(`JSON.stringify((window.__labChain?.sent ?? [])
+          .filter(({ command, answered }) => command.kind === "RefillStamina" && answered?.length)
+          .map(({ command }) => command.fields.amount))`),
+      }),
+      verify: ({ played }) => {
+        const { before, after, amounts } = played;
+        const amount = Number(amounts?.[0]);
+        if (!before || !after || amounts?.length !== 1 || !Number.isSafeInteger(amount) || amount <= 0)
+          return failed("Missing purse balances or one confirmed refill amount", played);
+        const purchased = Math.min(before.purchased, amount);
+        return after.purchased === before.purchased - purchased && after.earned === before.earned - (amount - purchased)
+          ? completed(played)
+          : failed("Refill must spend purchased LORDS first and only the remainder from winnings", played);
+      },
+    },
+  ];
+}
+
+async function readPurchasedPurse(browser) {
+  if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return null;
+  browser.tap(purse.offset);
+  const sheet = await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "LORDS",
+    SHEET_WAIT_MS,
+  );
+  if (sheet !== "LORDS") return null;
+  return browser.read(`JSON.stringify((() => {
+    const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
+    const earned = /^Winnings: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-earned-lords]')?.textContent ?? "");
+    const purchased = /^Spend-only: ([\\d,]+) LORDS$/.exec(sheet?.querySelector('[data-spend-lords]')?.textContent ?? "");
+    return earned && purchased ? {earned: Number(earned[1].replaceAll(",", "")), purchased: Number(purchased[1].replaceAll(",", ""))} : null;
+  })())`);
+}
+
 /**
  * Opens the readiest army's panel as a player does: its dock entry (a desktop opens it on select; a phone's details).
  * A panel already open (a phone's stands where its dock was) is used as it is.
@@ -878,9 +946,12 @@ async function openTheArmyPanel(browser) {
   };
 }
 
-async function refillTheArmy({ browser }) {
+async function refillTheArmy({ browser, partial = false }) {
   const panel = await openTheArmyPanel(browser);
   if (panel.sheet !== panel.army) return panel;
+  const maximum = browser.read(`JSON.stringify(Number(document.querySelector('[data-kit-sheet] [data-stamina-line]')
+    ?.textContent?.match(/\\/([\\d,]+)/)?.[1]?.replaceAll(",", "")))`);
+  if (!Number.isSafeInteger(maximum) || maximum <= 0) throw new Error("Army panel has no stamina maximum");
   const refill = browser.read(sheetButton("^Refill"));
   if (!refill) return { ...panel, refill };
   browser.tap(refill.offset);
@@ -891,21 +962,39 @@ async function refillTheArmy({ browser }) {
     SHEET_WAIT_MS,
   );
   if (!confirm) return { ...panel, refill: refill.name, confirm };
-  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army));
+  if (partial) selectPartialRefill(browser);
+  watchFor(browser, "refilled", panelReadsTheChainsStamina(panel.army, maximum));
   browser.tap(confirm.offset);
   return { ...panel, refill: refill.name, watching: true };
+}
+
+function selectPartialRefill(browser) {
+  const slider = browser.read(`JSON.stringify((() => {
+    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
+    if (!input) return null;
+    const box = input.getBoundingClientRect();
+    return {offset: [box.left + box.width * 0.75 - innerWidth / 2, box.top + box.height / 2 - innerHeight / 2]};
+  })())`);
+  if (!slider) throw new Error("Refill has no stamina slider");
+  browser.tap(slider.offset);
+  const selected = browser.read(`JSON.stringify((() => {
+    const input = document.querySelector('[data-kit-sheet][aria-label="Refill"] input[aria-label="Stamina to refill"]');
+    return {amount: Number(input.value), missing: Number(input.max)};
+  })())`);
+  if (!(selected.amount > 0 && selected.amount < selected.missing))
+    throw new Error("Refill slider did not select a partial amount");
 }
 
 /**
  * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
  * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
  */
-const panelReadsTheChainsStamina = (army) => `(() => {
+const panelReadsTheChainsStamina = (army, maximum) => `(() => {
   const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
   const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
   const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
   const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
-  return amount !== undefined && text.includes(amount + "/" + amount);
+  return amount !== undefined && text.replaceAll(",", "").includes(amount + "/" + ${maximum});
 })()`;
 
 async function levelUpTheArmy({ browser }) {
@@ -1085,6 +1174,51 @@ const WITHDRAW_ACTION_STEPS = [
     ({ played }) => played.watching && { watch: "withdrawn" },
   ),
 ];
+
+/** A wallet-funded ten-LORDS purchase on an isolated S1 rehearsal chain, through the real purse and wallet. */
+async function depositTenLords({ browser }) {
+  const route = browser.read("location.pathname");
+  const chain = route.match(/\/g\/(0x[0-9a-f]+)\//i)?.[1];
+  if (!chain || !Buffer.from(chain.slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
+    throw new Error("Deposit proof requires an isolated S1_DEPOSIT_ shard");
+  const purse = browser.read(buttonLabelled("^LORDS "));
+  if (!purse) return { blocked: "No owned purse" };
+  browser.tap(purse.offset);
+  await readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => name === "LORDS",
+    SHEET_WAIT_MS,
+  );
+  const before = browser.read(DEPOSIT_BALANCES);
+  const button = browser.read(sheetButton("^Deposit LORDS$"));
+  if (!button || before.amount !== "10") return { blocked: "Deposit unavailable or amount is not ten", before };
+  browser.tap(button.offset);
+  const after = await readUntil(
+    () => browser.read(DEPOSIT_BALANCES),
+    (state) =>
+      state.spend !== null &&
+      BigInt(state.spend) === BigInt(before.spend) + 10n &&
+      state.earned === before.earned &&
+      state.credited.some((id) => !before.credited.includes(id)),
+    55_000,
+  );
+  return {
+    before,
+    after,
+    credited:
+      after.spend !== null &&
+      BigInt(after.spend) === BigInt(before.spend) + 10n &&
+      after.earned === before.earned &&
+      after.credited.some((id) => !before.credited.includes(id)),
+  };
+}
+const DEPOSIT_BALANCES = `JSON.stringify({
+  spend:document.querySelector('[data-spend-lords]')?.getAttribute('data-spend-lords') ?? null,
+  earned:document.querySelector('[data-earned-lords]')?.getAttribute('data-earned-lords') ?? null,
+  amount:document.querySelector('[aria-label="Whole LORDS to deposit"]')?.value ?? null,
+  credited:[...document.querySelectorAll('[data-deposit-id]')].filter((row)=>/ · Credited$/.test(row.textContent)).map((row)=>row.getAttribute('data-deposit-id')),
+  text:document.querySelector('[role="dialog"]')?.textContent ?? null
+})`;
 
 async function withdrawTheLords({ browser }) {
   const purse = browser.read(buttonLabelled("^LORDS "));
@@ -4443,6 +4577,23 @@ export const STEP_SETS = {
       },
     ],
   },
+  "s1-deposits": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "wallet-deposit",
+        play: depositTenLords,
+        settleMs: 0,
+        verify: ({ played }) =>
+          played.blocked
+            ? blocked(played.blocked, played)
+            : played.credited
+              ? completed(played)
+              : failed("Deposit did not credit exactly ten spend-only LORDS while preserving winnings", played),
+      },
+    ],
+  },
   "home-claim": {
     game: FRONTIER,
     steps: [
@@ -4511,6 +4662,10 @@ export const STEP_SETS = {
   "lab-actions-research": { game: labSpireGame("research"), steps: RESEARCH_ACTION_STEPS },
   "lab-actions-claim": { game: labSpireGame("claim"), steps: CLAIM_ACTION_STEPS },
   "lab-far-place": { game: labSpireGame("far-place"), steps: FAR_PLACE_STEPS, devOverlays: true },
+  "lab-spend-lords": {
+    game: labSpireGame("spend-lords"),
+    steps: purchasedRefillSteps(),
+  },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },

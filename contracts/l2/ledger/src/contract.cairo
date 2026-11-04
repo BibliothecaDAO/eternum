@@ -205,6 +205,17 @@ pub mod GameLedger {
 
     #[storage]
     struct Storage {
+        deposit_targets: Map<(felt252, u32), ContractAddress>,
+        deposit_counts: Map<felt252, u64>,
+        deposit_target_size: u64,
+        deposit_target_index: Map<u64, (felt252, u32)>,
+        lords_deposits: Map<(felt252, u64), crate::deposits::LordsDeposit>,
+        deposit_requests: Map<(ContractAddress, felt252), (felt252, u64)>,
+        deposit_received: u256,
+        deposit_refunded: u256,
+        principal_returned: u256,
+        principal_payments: Map<(felt252, u32, ContractAddress), Option<(ContractAddress, u128)>>,
+        deposit_delivered: Map<(felt252, u32, ContractAddress), u128>,
         frontier_days: Map<(felt252, u32), FrontierSeason>,
         frontier_prize_claims: Map<(felt252, u32, u16), felt252>,
         frontier_prize_count: Map<(felt252, u32), u16>,
@@ -720,10 +731,7 @@ pub mod GameLedger {
                 reported.prize_rank,
                 reported.prize_count,
             );
-            assert!(
-                core::ecdsa::check_ecdsa_signature(message, self.cosigner_public_key.read(), signature_r, signature_s),
-                "Ledger: invalid cosignature",
-            );
+            self.assert_cosignature(message, signature_r, signature_s);
             if reported.prize_rank == 0 {
                 assert!(amount <= self.frontier_unlocked(shard, season_id) - season.paid, "Ledger: unlock exceeded");
                 season.paid += amount;
@@ -816,10 +824,7 @@ pub mod GameLedger {
                 prize_withdrawn,
                 season.pool - season.paid + season.prize_pool - season.prize_paid,
             );
-            assert!(
-                core::ecdsa::check_ecdsa_signature(message, self.cosigner_public_key.read(), signature_r, signature_s),
-                "Ledger: invalid cosignature",
-            );
+            self.assert_cosignature(message, signature_r, signature_s);
 
             assert!(starknet::get_block_timestamp() >= season.end, "Ledger: season has not ended");
             assert!(
@@ -1197,6 +1202,13 @@ pub mod GameLedger {
 
     #[generate_trait]
     impl LedgerAssertionsImpl of LedgerAssertionsTrait {
+        #[inline(never)]
+        fn assert_cosignature(self: @ContractState, message: felt252, r: felt252, s: felt252) {
+            assert!(
+                core::ecdsa::check_ecdsa_signature(message, self.cosigner_public_key.read(), r, s),
+                "Ledger: invalid cosignature",
+            );
+        }
         fn assert_constructor_addresses(
             self: @ContractState,
             admin: ContractAddress,
@@ -1778,6 +1790,215 @@ pub mod GameLedger {
         }
     }
 
+    #[abi(embed_v0)]
+    impl DepositsImpl of crate::deposits::IDeposits<ContractState> {
+        fn enable_deposits(ref self: ContractState, shard: felt252, game_id: u32, games: ContractAddress) {
+            self.accesscontrol.assert_only_role(DEFAULT_ADMIN_ROLE);
+            assert(games.is_non_zero(), 'empty deposit target');
+            let existing = self.deposit_targets.entry((shard, game_id)).read();
+            assert(existing.is_zero() || existing == games, 'deposit target immutable');
+            if existing == games {
+                return;
+            }
+            let season = self.get_frontier(shard, game_id);
+            assert(season.funded && !season.closed, 'deposit season not funded');
+            self.deposit_targets.entry((shard, game_id)).write(games);
+            let index = self.deposit_target_size.read();
+            self.deposit_target_index.entry(index).write((shard, game_id));
+            self.deposit_target_size.write(index + 1);
+        }
+        fn deposit_target(self: @ContractState, shard: felt252, game_id: u32) -> ContractAddress {
+            self.deposit_targets.entry((shard, game_id)).read()
+        }
+        fn deposit_target_count(self: @ContractState) -> u64 {
+            self.deposit_target_size.read()
+        }
+        fn deposit_target_at(self: @ContractState, index: u64) -> (felt252, u32) {
+            assert(index < self.deposit_target_size.read(), 'target index out of range');
+            self.deposit_target_index.entry(index).read()
+        }
+        fn deposit_count(self: @ContractState, shard: felt252) -> u64 {
+            self.deposit_counts.entry(shard).read()
+        }
+        #[inline(never)]
+        fn get_deposit(self: @ContractState, shard: felt252, id: u64) -> crate::deposits::LordsDeposit {
+            self.lords_deposits.entry((shard, id)).read()
+        }
+        fn deposit_principal(self: @ContractState) -> (u256, u256, u256) {
+            (self.deposit_received.read(), self.deposit_refunded.read(), self.principal_returned.read())
+        }
+        fn principal_payment(
+            self: @ContractState, shard: felt252, game_id: u32, account: ContractAddress,
+        ) -> Option<(ContractAddress, u128)> {
+            self.principal_payments.entry((shard, game_id, account)).read()
+        }
+        fn pay_principal(
+            ref self: ContractState,
+            shard: felt252,
+            game_id: u32,
+            account: ContractAddress,
+            wallet: ContractAddress,
+            amount: u128,
+            r: felt252,
+            s: felt252,
+        ) {
+            if let Some(previous) = self.principal_payments.entry((shard, game_id, account)).read() {
+                assert(previous == (wallet, amount), 'principal payment differs');
+                return;
+            }
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
+            let games = self.deposit_targets.entry((shard, game_id)).read();
+            assert(
+                games.is_non_zero() && account.is_non_zero() && wallet.is_non_zero() && amount != 0,
+                'invalid principal payment',
+            );
+            assert(starknet::get_block_timestamp() >= self.get_frontier(shard, game_id).end, 'season still live');
+            assert(
+                amount <= self.deposit_delivered.entry((shard, game_id, account)).read(), 'principal exceeds delivered',
+            );
+            self
+                .assert_cosignature(
+                    crate::deposits::principal_hash(
+                        starknet::get_tx_info().unbox().chain_id,
+                        starknet::get_contract_address(),
+                        self.cosigner_epoch.read(),
+                        shard,
+                        games,
+                        game_id,
+                        account,
+                        wallet,
+                        amount,
+                    ),
+                    r,
+                    s,
+                );
+            self.principal_payments.entry((shard, game_id, account)).write(Some((wallet, amount)));
+            let wei: u256 = amount.into() * crate::deposits::LORDS_UNIT;
+            self.principal_returned.write(self.principal_returned.read() + wei);
+            self.send_lords(wallet, wei);
+        }
+        fn deposit_lords(
+            ref self: ContractState,
+            shard: felt252,
+            game_id: u32,
+            account: ContractAddress,
+            realms_id: felt252,
+            home: u64,
+            amount: u128,
+            request: felt252,
+        ) -> u64 {
+            let payer = starknet::get_caller_address();
+            if let Some(id) = self.existing_deposit(payer, request, shard, game_id, account, realms_id, home, amount) {
+                return id;
+            }
+            self.pausable.assert_not_paused();
+            let value = self.new_deposit(shard, game_id, account, realms_id, home, payer, amount);
+            let id = self.record_deposit(shard, value, request);
+            let wei: u256 = amount.into() * crate::deposits::LORDS_UNIT;
+            self.deposit_received.write(self.deposit_received.read() + wei);
+            self.pull_lords(payer, wei);
+            id
+        }
+        fn resolve_deposit(ref self: ContractState, shard: felt252, id: u64, cancelled: bool, r: felt252, s: felt252) {
+            let mut value = self.get_deposit(shard, id);
+            assert(value.amount != 0, 'missing deposit');
+            let status = if cancelled {
+                2
+            } else {
+                1
+            };
+            if value.status != 0 {
+                assert(value.status == status, 'deposit already resolved');
+                return;
+            }
+            self.accesscontrol.assert_only_role(OPERATOR_ROLE);
+            self.pausable.assert_not_paused();
+            let message = crate::deposits::resolution_hash(
+                starknet::get_tx_info().unbox().chain_id,
+                starknet::get_contract_address(),
+                self.cosigner_epoch.read(),
+                crate::deposits::commitment(
+                    starknet::get_tx_info().unbox().chain_id, starknet::get_contract_address(), shard, id, value,
+                ),
+                cancelled,
+            );
+            self.assert_cosignature(message, r, s);
+            value.status = status;
+            self.lords_deposits.entry((shard, id)).write(value);
+            if cancelled {
+                let wei: u256 = value.amount.into() * crate::deposits::LORDS_UNIT;
+                self.deposit_refunded.write(self.deposit_refunded.read() + wei);
+                self.send_lords(value.payer, wei);
+            } else {
+                let key = (shard, value.game_id, value.account);
+                self.deposit_delivered.entry(key).write(self.deposit_delivered.entry(key).read() + value.amount);
+            }
+        }
+    }
+
+    #[generate_trait]
+    impl DepositHelpers of DepositHelpersTrait {
+        fn existing_deposit(
+            self: @ContractState,
+            payer: ContractAddress,
+            request: felt252,
+            shard: felt252,
+            game_id: u32,
+            account: ContractAddress,
+            realms_id: felt252,
+            home: u64,
+            amount: u128,
+        ) -> Option<u64> {
+            assert(request != 0, 'empty deposit request');
+            let (previous_shard, id) = self.deposit_requests.entry((payer, request)).read();
+            if id == 0 {
+                return None;
+            }
+            let value = self.get_deposit(previous_shard, id);
+            assert(
+                previous_shard == shard
+                    && value.game_id == game_id
+                    && value.account == account
+                    && value.realms_id == realms_id
+                    && value.home == home
+                    && value.payer == payer,
+                'deposit request differs',
+            );
+            assert(value.amount == amount, 'deposit amount differs');
+            Some(id)
+        }
+        fn new_deposit(
+            self: @ContractState,
+            shard: felt252,
+            game_id: u32,
+            account: ContractAddress,
+            realms_id: felt252,
+            home: u64,
+            payer: ContractAddress,
+            amount: u128,
+        ) -> crate::deposits::LordsDeposit {
+            let season = self.get_frontier(shard, game_id);
+            let games = self.deposit_targets.entry((shard, game_id)).read();
+            let now = starknet::get_block_timestamp();
+            assert(games.is_non_zero() && season.funded && !season.closed, 'deposits unavailable');
+            assert(now >= season.start && now < season.end, 'deposit outside season');
+            assert(account.is_non_zero() && realms_id != 0 && home != 0 && amount != 0, 'empty deposit');
+            crate::deposits::LordsDeposit {
+                game_id, games, account, realms_id, home, payer, amount, paid_at: now, status: 0,
+            }
+        }
+        fn record_deposit(
+            ref self: ContractState, shard: felt252, value: crate::deposits::LordsDeposit, request: felt252,
+        ) -> u64 {
+            let id = self.deposit_counts.entry(shard).read() + 1;
+            self.deposit_counts.entry(shard).write(id);
+            self.deposit_requests.entry((value.payer, request)).write((shard, id));
+            self.lords_deposits.entry((shard, id)).write(value);
+            id
+        }
+    }
+
     #[generate_trait]
     impl LordsTransferImpl of LordsTransferTrait {
         fn pull_lords(ref self: ContractState, owner: ContractAddress, amount: u256) {
@@ -1792,6 +2013,15 @@ pub mod GameLedger {
 
         fn send_lords(ref self: ContractState, recipient: ContractAddress, amount: u256) {
             if amount > 0 {
+                let held = IERC20Dispatcher { contract_address: self.lords.read() }
+                    .balance_of(starknet::get_contract_address());
+                assert(
+                    held >= amount
+                        + self.deposit_received.read()
+                        - self.deposit_refunded.read()
+                        - self.principal_returned.read(),
+                    'deposit principal reserved',
+                );
                 assert!(
                     IERC20Dispatcher { contract_address: self.lords.read() }.transfer(recipient, amount),
                     "Ledger: LORDS transfer failed",

@@ -185,6 +185,7 @@ it("continues a full confirmed page through its alarm and stops when caught up",
     undefined,
     expect.objectContaining({ address: "0x10" }),
     expect.any(Function),
+    expect.any(Function),
   );
   expect(pools).toHaveBeenCalledWith(
     expect.objectContaining({ chainId: "0x1", accountAddress: "0x5" }),
@@ -335,3 +336,63 @@ it.each(["recover", "upgrade"])(
     });
   },
 );
+
+it.each([null, "deposit_head_rewritten", [{ obligation: "deposit:1", error: "source unavailable" }]])(
+  "deposit progress participates in shard health: %j",
+  async (error) => {
+    const data = new Map<string, unknown>([
+      [
+        "shardTick",
+        {
+          checked_at: Math.floor(Date.now() / 1000),
+          value: { status: "ready" },
+          funding_error: null,
+          deposits: { error },
+        },
+      ],
+    ]);
+    const relay = new ValueRelay(
+      { storage: { get: async (key: string) => data.get(key) } } as unknown as DurableObjectState,
+      {} as never,
+    );
+    expect((await relay.shardHealth()).success).toBe(error === null);
+  },
+);
+
+it("authenticates source retirement and refuses source overrides or unresolved obligations", async () => {
+  const retire = vi.fn(async () => ({ chainId: "0x1", gamesAddress: "0x2", retirementReady: true }));
+  const env = {
+    ENVIRONMENT: "staging",
+    BASE_URL: "https://app.test",
+    L2_RPC_URL: "https://ledger.test",
+    OPERATOR_TOKEN: "test",
+    SHARD_LEDGER_OPERATOR_PRIVATE_KEY: "0x1",
+    COSIGNER_URL: "https://cosigner.test",
+    COSIGNER_TOKEN: "test-cosigner-token",
+    LEDGER_OPERATOR_ADDRESS: "0x2",
+    LEDGER_OPERATOR_PRIVATE_KEY: "0x3",
+    RELAY: { idFromName: (id: string) => id, get: () => ({ depositRetirement: retire }) },
+    IDENTITY: {},
+  };
+  const send = (body: unknown, token = "test") =>
+    worker.fetch(
+      new Request("https://app.test/api/value/operator/deposit-retirement", {
+        method: "POST",
+        headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      env as never,
+    );
+  expect((await send({ chainId: "0x1" }, "wrong")).status).toBe(401);
+  for (const body of [null, { chainId: "0x1", gamesAddress: "0x9" }, { chainId: "bad" }])
+    expect((await send(body)).status).toBe(400);
+  expect(retire).not.toHaveBeenCalled();
+  expect(await (await send({ chainId: "0x1" })).json()).toEqual({
+    chainId: "0x1",
+    gamesAddress: "0x2",
+    retirementReady: true,
+  });
+  expect(retire).toHaveBeenCalledWith("0x1");
+  retire.mockRejectedValue(new Error("principal_return_pending"));
+  expect((await send({ chainId: "0x1" })).status).toBe(409);
+});

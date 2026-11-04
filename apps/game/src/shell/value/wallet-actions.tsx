@@ -56,13 +56,19 @@ const ProofRows = ({ only, onProof }: { only?: readonly WalletId[]; onProof: (pr
  * offered the swap instead; a sent call shows Confirming until its receipt lands, then `onLanded` (the panel reads the
  * ledger again), or the ledger's reason when it reverted.
  */
-export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => (
+type WalletSignProps = {
+  owner: string;
+  calls: Call[];
+  onLanded: () => void;
+  onState?: (state: "idle" | "sending" | WalletSendOutcome) => void;
+};
+export const WalletSign = (props: WalletSignProps) => (
   <StarknetProvider>
     <OwnerSend {...props} />
   </StarknetProvider>
 );
 
-const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
+const OwnerSend = ({ owner, calls, onLanded, onState }: WalletSignProps) => {
   const { connectors } = useConnect();
   const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
   /** The connector holding `owner`: undefined while it is looked for, null when this browser has never opened it. */
@@ -70,12 +76,18 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
   const send: OnAccount = async (account, _connectorId, provider) => {
     setOutcome(undefined);
     const sent = await sendFromWallet(account, owner, calls, provider, () => setOutcome({ kind: "confirming" }));
+    onState?.(sent);
     if (sent.kind === "landed") onLanded();
     else setOutcome(sent);
   };
-  const wallet = useWalletAction("pay", send);
+  const wallet = useWalletAction(
+    "pay",
+    send,
+    () => onState?.("sending"),
+    (cause) => onState?.({ kind: "refused", reason: walletFailureLine("pay", cause) }),
+  );
   // Asked once, for the wallet this send was opened for.
-  const opening = useLatest({ owner, connectors, wallet });
+  const opening = useLatest({ owner, connectors, wallet, onState });
   const asked = useRef(false);
   useEffect(() => {
     // Development replays effects on mount: the wallet is still prompted once.
@@ -85,6 +97,7 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
     void connectorHolding(opened.owner, opened.connectors).then((found) => {
       setHolder(found ?? null);
       if (found) void opened.wallet.open(found);
+      else opened.onState?.("idle");
     });
   }, [opening]);
 
@@ -93,7 +106,9 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
   return (
     <div className="flex w-full flex-col gap-2.5">
       {outcome?.kind === "no-strk" && <NoStrkLine />}
-      {outcome?.kind === "refused" && <span className="text-app-label text-app-bad">{outcome.reason}</span>}
+      {(outcome?.kind === "refused" || outcome?.kind === "uncertain") && (
+        <span className="text-app-label text-app-bad">{outcome.reason}</span>
+      )}
       {holder === null && !confirming ? (
         <>
           <span className="text-app-label text-app-muted">{WALLET_WORDS.whichHolds(shortAddress(owner))}</span>
@@ -131,7 +146,12 @@ type OnAccount = (account: AccountInterface, connectorId: string, provider: Prov
  * `open` while connecting starts over and the one it replaces is ignored; once an account is in hand, nothing else
  * starts until it is done, so nothing is signed or sent twice.
  */
-const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
+const useWalletAction = (
+  failure: "link" | "pay",
+  onAccount: OnAccount,
+  onBegin?: () => void,
+  onFailure?: (cause: unknown) => void,
+) => {
   const { provider } = useProvider();
   const connect = useL2Account();
   const [pending, setPending] = useState<string | null>(null);
@@ -142,6 +162,7 @@ const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
 
   const open = async (connector: Connector) => {
     if (inHand.current) return;
+    onBegin?.();
     const attempt = ++latest.current;
     const current = () => attempt === latest.current;
     setPending(connector.id);
@@ -153,7 +174,10 @@ const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
       setSigning(true);
       await onAccount(account, connector.id, provider);
     } catch (cause) {
-      if (current()) setError(walletFailureLine(failure, cause));
+      if (current()) {
+        setError(walletFailureLine(failure, cause));
+        onFailure?.(cause);
+      }
     } finally {
       if (current()) {
         inHand.current = false;

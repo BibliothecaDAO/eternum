@@ -9,6 +9,7 @@ pub mod buildings;
 pub mod combat;
 pub mod combat_domain;
 pub mod construction;
+pub mod deposits;
 pub mod economy;
 pub mod entry;
 pub mod expeditions;

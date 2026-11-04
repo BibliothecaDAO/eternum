@@ -107,12 +107,14 @@ export const StaminaRefill = ({
 export const RefillConfirm = ({
   stamina,
   held,
+  spendOnly = 0,
   sending,
   onRefill,
   onCancel,
 }: {
   stamina: { current: number; max: number };
   held: number | undefined;
+  spendOnly?: number;
   sending: boolean;
   onRefill: (amount: number) => void;
   onCancel: () => void;
@@ -131,6 +133,9 @@ export const RefillConfirm = ({
           {formatShortChange(held, held === undefined ? undefined : held - amount)}
         </HudChip>
       </div>
+      <p>
+        {Math.min(amount, spendOnly)} spend-only LORDS + {Math.max(0, amount - spendOnly)} winnings.
+      </p>
       <HudSlider
         label="Stamina to refill"
         value={amount}

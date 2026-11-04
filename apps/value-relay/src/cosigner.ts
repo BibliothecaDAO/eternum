@@ -1,3 +1,5 @@
+import { decodeDepositSigningRequest, depositReader, type DepositAnchors } from "@realms-world/value-ledger/deposits";
+import { verifiedDepositHash } from "./deposit-verifier";
 import { ec } from "starknet";
 import { isLoopbackHttp } from "./source-url";
 import { Effect } from "effect";
@@ -27,7 +29,7 @@ export interface CosignerConfig {
   shards: (ShardConnection & { heraldUrl: string })[];
 }
 
-export interface CosignerWallets {
+export interface CosignerWallets extends DepositAnchors {
   assertWallet(account: string, realmsId: string, wallet: string): void;
   pendingChanges(): { count: number; oldestSince: number | null };
 }
@@ -47,7 +49,11 @@ export function createCosigner(
     publicKey,
     health: () => ({ service: "payout-cosigner", publicKey, pendingWalletChanges: wallets.pendingChanges() }),
     async sign(input: unknown): Promise<Cosignature> {
-      const request = decodeCosignRequest(input);
+      const kind = input && typeof input === "object" ? (input as { kind?: unknown }).kind : null;
+      const isDeposit = ["deposit", "resolve-deposit", "principal"].includes(String(kind));
+      const request = isDeposit
+        ? decodeDepositSigningRequest(input as Record<string, unknown>)
+        : decodeCosignRequest(input);
       const shard = config.shards.find((row) => BigInt(row.chainId) === BigInt(request.shard));
       if (!shard) throw new Error("cosigner_shard_unlisted");
       if (BigInt(await provider.getChainId()) !== BigInt(config.l2ChainId))
@@ -59,6 +65,39 @@ export function createCosigner(
       const domain = decodeCosigner(key);
       if (BigInt(domain.publicKey) !== BigInt(publicKey)) throw new Error("cosigner_key_differs");
       if (paused.length !== 1 || BigInt(paused[0]!) !== 0n) throw new Error("cosigner_ledger_paused");
+      const signingDomain = { chainId: config.l2ChainId, ledger: config.ledgerAddress, epoch: domain.epoch };
+      if (request.kind !== "pay" && request.kind !== "settle") {
+        const anchorKey = `ledger:${BigInt(config.l2ChainId)}:${BigInt(config.ledgerAddress)}`;
+        const ledger = await depositReader(
+          provider,
+          config.ledgerAddress,
+          config.l2ChainId,
+          await wallets.getAnchor(anchorKey),
+        );
+        const depositKey = decodeCosigner(await ledger.read("cosigner", []));
+        const depositPaused = await ledger.read("is_paused", []);
+        if (
+          BigInt(depositKey.publicKey) !== BigInt(publicKey) ||
+          depositPaused.length !== 1 ||
+          BigInt(depositPaused[0]!) !== 0n
+        )
+          throw new Error("deposit_signer_unavailable");
+        const digest = await verifiedDepositHash(
+          {
+            domain: { ...signingDomain, epoch: depositKey.epoch },
+            publicKey,
+            shard,
+            ledger,
+            anchors: wallets,
+            payoutIdentity: (account, wallet) => verifyPayoutWallet(identity, wallets, account, wallet),
+          },
+          request,
+        );
+        await ledger.assertCanonical();
+        await wallets.putAnchor(anchorKey, ledger.head);
+        const signature = ec.starkCurve.sign(digest, privateKey);
+        return { r: `0x${signature.r.toString(16)}`, s: `0x${signature.s.toString(16)}` };
+      }
       if (request.kind === "pay") {
         await verifyPayment(config, shard, request, identity, read, wallets);
       } else {
@@ -91,11 +130,20 @@ async function verifyPayment(
     shardWithdrawalPorts(reader, bindings).withdrawalReceipt(request.shard, request.claim),
   );
   if (!receipt || !matchesReceipt(request, receipt)) throw new Error("cosigner_receipt_differs");
-  const player = await identity(receipt.account);
-  if (!player || BigInt(player.wallet) !== BigInt(request.wallet)) throw new Error("cosigner_wallet_differs");
+  await verifyPayoutWallet(identity, wallets, receipt.account, request.wallet);
   const reported = decodeWithdrawalPayment(await read("get_payment", [request.shard, request.claim]));
   if (!reported || reported.paid || !matchesReceipt(request, reported)) throw new Error("cosigner_report_differs");
-  wallets.assertWallet(receipt.account, player.realmsId, player.wallet);
+}
+async function verifyPayoutWallet(
+  identity: (account: string) => ReturnType<typeof readPayoutIdentity>,
+  wallets: CosignerWallets,
+  account: string,
+  wallet: string,
+) {
+  const player = await identity(account);
+  if (!player || BigInt(player.wallet) !== BigInt(wallet)) throw new Error("cosigner_wallet_differs");
+  wallets.assertWallet(account, player.realmsId, player.wallet);
+  return player.realmsId;
 }
 async function verifySettlement(
   config: CosignerConfig,

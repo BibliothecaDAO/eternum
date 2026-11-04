@@ -69,6 +69,7 @@
     "mmr:grantupdater:local": "cd ./contracts/l2/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:local",
     "mmr:grantupdater:sepolia": "cd ./contracts/l2/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:sepolia",
     "mmr:grantupdater:mainnet": "cd ./contracts/l2/mmr/ext/scripts/deployment && pnpm run mmr:grantupdater:mainnet",
+    "deposits:operations": "bun deploy/athanor/scripts/deposit-operations.ts",
     "ledger:check-live-assets:mainnet": "pnpm --dir ./contracts/l2/ledger/scripts run check-live-assets:mainnet",
     "ledger:upgrade-live-assets:mainnet": "pnpm --dir ./contracts/l2/ledger/scripts run upgrade-live-assets:mainnet",
     "format": "pnpm prettier --write .",

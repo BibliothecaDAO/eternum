@@ -22,16 +22,24 @@ export const PurseRow = ({ children }: { children: ReactNode }) => (
 export const LordsPurse = ({
   lords,
   gain,
+  spendOnly,
   linkWalletLine = null,
   onOpen,
 }: {
   lords: number | undefined;
   gain?: number;
+  spendOnly?: bigint;
   linkWalletLine?: string | null;
   onOpen?: () => void;
 }) => (
   <HudPill
-    label={[`${LORDS} ${formatExact(lords)}`, linkWalletLine].filter(Boolean).join(". ")}
+    label={[
+      `${LORDS} ${formatExact(lords)}`,
+      spendOnly === undefined ? null : `${spendOnly} spend-only LORDS`,
+      linkWalletLine,
+    ]
+      .filter(Boolean)
+      .join(". ")}
     data-tip={linkWalletLine ?? undefined}
     role={onOpen ? undefined : "img"}
     onPress={onOpen}
@@ -40,6 +48,7 @@ export const LordsPurse = ({
       <span key="lords" className="flex items-center gap-1.5 tabular-nums">
         <SemanticIcon name="lords" size={26} />
         {formatShort(lords)}
+        {spendOnly !== undefined && <span className="text-hud-muted"> + {spendOnly.toString()} spend-only</span>}
         {linkWalletLine && <SemanticIcon name="warning" size={16} />}
       </span>,
       ...(gain === undefined

@@ -229,3 +229,68 @@ the runner keeps its containers' logs in `DIRECTORY/SHARD/shard-logs.log` and re
 and network; the images it ran stay for the next arm.
 
 Preserve the baseline image and chain data until final acceptance and the approved cutover.
+
+## LORDS deposit activation and source retirement
+
+Deposits require a new Games root and matching native schema. An existing root is immutable. Upgrade the L2 ledger with
+its additive deposit storage and keep the reward season's funding separate. Wallet ingress is `deposit_lords` on that
+ledger. The existing public Games RPC admits `configure_deposits`, `deliver_deposit` and `sweep_lords`; contract roles
+and the independent signature remain required.
+
+Prepare the owner's exact calls without signing or submitting:
+
+```sh
+pnpm deposits:operations prepare /absolute/path/deposit-deployment.json /absolute/path/deposit-owner-calls.json
+```
+
+The input contains `shard` (`chainId`, `rpcUrl`, `gamesAddress`, `firstRelease`, `heraldUrl`), `ledger` (`rpcUrl`,
+`chainId`, `address`), `gameId` and the reviewed `ledgerClassHash`. The output binds the ledger upgrade, immutable
+destination and native signer/epoch configuration. Resolve these values from the new manifests and reviewed build; never
+reuse the existing dev root or invent an address. S1's funded calendar starts no earlier than 15 November. For signer
+rotation, update the native source's signer/epoch from the ledger's `cosigner` view for every enabled game, including
+ended games with unpaid obligations. Chain and ledger binding stay immutable. Preserve co-signer wallet history and
+canonical block anchors across restart and rotation.
+
+The relay discovers receipts independently of delivery progress. A failed receipt stays pending while later receipts
+continue. Known invalid destinations require an irreversible native cancellation before refund to the original payer. At
+season end the existing `sweep_lords` debits unused principal and emits `PrincipalWithdrawal`. Its separate L2 payment
+uses the existing verified payout-wallet identity and wallet-change hold. Principal needs no reward publication and
+remains payable after reward closure or its claim deadline. A missing wallet keeps principal pending while eligible
+reward settlement continues. Spent principal remains reserved custody; reward payment and treasury settlement cannot
+consume it.
+
+`shard.py` removal, official teardown and pending-shard reinitialization call the authenticated existing relay route
+`POST /api/value/operator/deposit-retirement` before stopping or deleting state. The relay derives connections from the
+registered chain, rejects live enabled seasons, and requires terminal L2 receipts, matching confirmed native balances,
+and payment of every principal withdrawal. Outage or lag refuses retirement. The removal path records
+`deposit-retirement.json`; teardown preserves that evidence outside the removed directory. Keep the source and its
+co-signer routing available until the gate passes.
+
+### Isolated deposit rehearsal prerequisites
+
+A different private directory does not isolate the standard dev deployment. Do not run `deploy dev`, `setup dev` or
+`teardown dev` for this rehearsal: their service and address-book targets belong to the shared stack. Use the supported
+non-matrix runner only after assigning a unique `S1_DEPOSIT_...` chain, a fresh compose project, pinned candidate
+images, unused `port_base` and dedicated HTTPS RPC/Herald routes:
+
+```sh
+python3 deploy/athanor/scripts/operator-command.py runner /absolute/path/candidate.json /absolute/path/candidate-run
+```
+
+The runner stays PENDING. A candidate client also needs a separately listed/activated directory record and candidate
+identity/relay/monitor routing bound to its fresh test ledger. Hand the native ledger-operator role from the harness
+operator to the candidate relay after initialization. The present setup/address-book commands target only dev or
+production, so candidate central-service routing must be prepared explicitly before this command can prove a client
+payment. Host access and spare capacity alone do not satisfy these prerequisites.
+
+Run the co-signer in an isolated filesystem/service with its own key, configuration, loopback port and persistent
+`/var/lib/payout-cosigner/wallets.sqlite`; a second process sharing the standard state directory is not isolated. Use an
+authorized dev test wallet and test token only. Never retrieve or sign with the owner's cold key. Review any missing
+admin transactions through the preparation command above.
+
+After source review and the single native gate, reuse `apps/game`'s `playtest` command with `s1-deposits` for the real
+wallet payment and native credit, and `lab-spend-lords` for refill isolation. Capture the ledger receipt, canonical
+heads, native balances, separate season-end receipts and destination wallet deltas. Exercise interrupted delivery,
+invalid-destination refund, absent-wallet retry after reward close, and final retirement refusal/pass. Preserve proof
+output and retire only the candidate resources after all obligations resolve. No rehearsal pass is implied until those
+candidate services and actual transactions have been exercised.

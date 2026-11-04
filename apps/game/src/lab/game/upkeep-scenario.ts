@@ -51,6 +51,26 @@ export const upkeepScenario = (): LabScenario => {
   };
 };
 
+/** The same refill path with fifty purchased LORDS held separately from the five hundred earned. */
+export const spendLordsScenario = (): LabScenario => {
+  const scenario = upkeepScenario();
+  const store = chainOf(scenario);
+  const realm = store.require("Structure", { game_id: 1, entity_id: 7n });
+  store.applyFacts([
+    {
+      model: "DepositSource",
+      key: "0xd001",
+      value: { game_id: 1, chain: "0x534e5f4d41494e", ledger: "0x1", signer: "0x1", epoch: "0" },
+    },
+    {
+      model: "SpendLords",
+      key: "0xd002",
+      value: wire({ game_id: 1, account: realm.owner, available: 50n, consumed: 0n, swept: 0n }),
+    },
+  ] as never);
+  return { ...scenario, store };
+};
+
 const lordsHeld = (store: NativeFactStore): LabFact => {
   const held = [...store.entries("ResourceBalance")].find(
     ([, row]) => row.entity_id === 7n && row.resource_type === ResourcesIds.Lords,
@@ -123,12 +143,26 @@ const refill = (command: LabCommand, chain: NativeFactStore, now: number): LabFa
   const explorerId = BigInt(command.fields.explorer_id);
   const bar = barOf(chain, explorerId, now);
   const [, army] = armyRow(chain, explorerId);
-  const missing = bar.maximum - bar.now;
+  const amount = BigInt(command.fields.amount);
+  if (amount <= 0n || amount > bar.maximum - bar.now) throw new Error("Invalid refill amount");
+  const owner = chain.require("Structure", { game_id: 1, entity_id: army.owner }).owner;
+  const purchased = [...chain.entries("SpendLords")].find(([, row]) => row.account === owner);
+  const available = purchased?.[1].available ?? 0n;
+  const spent = available < amount ? available : amount;
   return [
-    withStamina(chain, explorerId, bar.maximum, now),
+    withStamina(chain, explorerId, bar.now + amount, now),
     ...balancesPaid(chain, army.owner, [
-      { resource: ResourcesIds.Lords, amount: missing * BigInt(RESOURCE_PRECISION) },
+      { resource: ResourcesIds.Lords, amount: (amount - spent) * BigInt(RESOURCE_PRECISION) },
     ]),
+    ...(purchased
+      ? [
+          {
+            model: "SpendLords",
+            key: purchased[0],
+            value: wire({ ...purchased[1], available: available - spent, consumed: purchased[1].consumed + spent }),
+          },
+        ]
+      : []),
   ];
 };
 

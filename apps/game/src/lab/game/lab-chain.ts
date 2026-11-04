@@ -89,6 +89,12 @@ export interface LabScenario {
 interface LabChainRecord {
   /** Every command the game signed, in order, with the facts the lab answered it with. */
   sent: { hash: string; command: LabCommand; answered: LabFact[] }[];
+  rejected: {
+    hash: string;
+    command: LabCommand;
+    at: number;
+    error: { name: string; message: string; stack?: string };
+  }[];
   /** How many stream sockets the game opened to the lab's Herald since this page loaded. */
   streams: number;
   /** The stream goes silent, as a slept phone's does: its socket stays open and nothing more comes on it. */
@@ -158,7 +164,7 @@ let installing: Promise<LabScenario> | undefined;
 const installOnce = async (makeScenario: () => LabScenario, startedAt: number): Promise<LabScenario> => {
   // Building a scenario seats its fixture's player, so it is built only here, once, never over the lab's signing account.
   const scenario = makeScenario();
-  const record: LabChainRecord = { sent: [], streams: 0, silence: () => herald.silence(), scopes: [] };
+  const record: LabChainRecord = { sent: [], rejected: [], streams: 0, silence: () => herald.silence(), scopes: [] };
   window.__labChain = record;
   const { nativeBindings } = await import("@/runtime/world/native-bindings");
   const chain = chainOf(scenario);
@@ -534,9 +540,21 @@ const labAccount = (
         { chainId: LAB_GAME.chainId, l2GasBound: BigInt(LAB_L2_GAS_BOUND) },
         frame,
       );
-      const answered = scenario
-        .answer(command, chain, now())
-        .map((fact) => (events.has(fact.model) ? fact : keyedAsHeldOnChain(fact)));
+      const at = now();
+      let answered: LabFact[];
+      try {
+        answered = scenario
+          .answer(command, chain, at)
+          .map((fact) => (events.has(fact.model) ? fact : keyedAsHeldOnChain(fact)));
+      } catch (error) {
+        const detail =
+          error instanceof Error
+            ? { name: error.name, message: error.message, stack: error.stack }
+            : { name: "Error", message: String(error) };
+        record.rejected.push({ hash, command, at, error: detail });
+        console.error("[lab chain] rejected", command, "at", at, error);
+        throw error;
+      }
       record.sent.push({ hash, command, answered });
       // The answer lands a moment later, as a block would; a lab answer that fails says so in the console.
       setTimeout(() => {

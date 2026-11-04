@@ -23,7 +23,7 @@ STATIC = [
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
     f"apps/value-relay/src/{name}.ts"
-    for name in ("frontier-sweep", "frontier-games", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
+    for name in ("frontier-sweep", "deposit-destination", "frontier-games", "shard-conservation", "shard-snapshot", "shard-rpc", "shard-page",
                  "source-url", "ports", "failure")
 ]
 AREAS = {
@@ -57,6 +57,7 @@ AREAS = {
         "scripts/check-forbidden-hosts*",
         "apps/herald/src/**",
         *VALUE_READERS,
+        "apps/value-relay/test-support/**",
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/**",
         "apps/launch-service/wrangler.jsonc",
@@ -80,6 +81,7 @@ AREAS = {
         "deploy/athanor/scripts/service_requests.py",
         "apps/herald/**",
         *VALUE_READERS,
+        "apps/value-relay/test-support/**",
         "apps/launch-service/src/release.ts",
         "packages/**",
         "config/**",
@@ -155,6 +157,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        "apps/value-relay/test-support/**",
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",
@@ -181,6 +184,7 @@ AREAS = {
         "contracts/l2/ledger/scripts/commands/deployment/**",
         "contracts/scripts-runtime/**",
         "apps/value-relay/src/**",
+        "apps/value-relay/test-support/**",
         # The relay's Realm-entry test runs the identity Worker's holdings reader, as the IDENTITY binding serves it.
         "apps/realms/server/realm-holdings.ts",
         "apps/realms/server/l2.ts",

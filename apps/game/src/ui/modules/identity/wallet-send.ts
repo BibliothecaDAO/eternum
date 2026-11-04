@@ -5,7 +5,11 @@ import type { AccountInterface, Call, ProviderInterface } from "starknet";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 /** What a wallet's send came to: landed, refused by the ledger with its reason, or not sent for lack of STRK. */
-export type WalletSendOutcome = { kind: "landed" } | { kind: "refused"; reason: string } | { kind: "no-strk" };
+export type WalletSendOutcome =
+  | { kind: "landed" }
+  | { kind: "refused"; reason: string }
+  | { kind: "no-strk" }
+  | { kind: "uncertain"; reason: string };
 
 /** The connected wallet is not the one the call must come from. */
 export class WrongWalletError extends Error {
@@ -27,15 +31,29 @@ export const sendFromWallet = async (
   onSigned: () => void,
 ): Promise<WalletSendOutcome> => {
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
-  if ((await feeBalanceOf(provider, account.address)) === 0n) return { kind: "no-strk" };
-  const { transaction_hash: hash } = await account.execute(calls);
+  try {
+    const gas = await feeBalanceOf(provider, account.address);
+    if (gas === 0n) return { kind: "no-strk" };
+    const estimate = await account.estimateInvokeFee(calls);
+    if (gas < BigInt(estimate.overall_fee)) return { kind: "no-strk" };
+  } catch (error) {
+    return { kind: "refused", reason: error instanceof Error ? error.message : VALUE_WORDS.refused };
+  }
+  let hash: string;
+  try {
+    hash = (await account.execute(calls)).transaction_hash;
+  } catch (error) {
+    if (error && typeof error === "object" && "code" in error && error.code === 4001)
+      return { kind: "refused", reason: "Payment rejected in wallet." };
+    return { kind: "uncertain", reason: VALUE_WORDS.unconfirmed };
+  }
   onSigned();
   try {
     const receipt = await provider.waitForTransaction(hash, { retryInterval: RECEIPT_POLL_MS });
     return receipt.isReverted() ? { kind: "refused", reason: refusalOf(receipt) } : { kind: "landed" };
   } catch (error) {
     console.error("l2_send_unconfirmed", { hash, error: error instanceof Error ? error.message : error });
-    return { kind: "refused", reason: VALUE_WORDS.unconfirmed };
+    return { kind: "uncertain", reason: VALUE_WORDS.unconfirmed };
   }
 };
 

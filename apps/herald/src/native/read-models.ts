@@ -32,6 +32,10 @@ export const FINALIZED_GAME_MODELS: ReadonlySet<string> = new Set([
   "LordsBudget",
   "FrontierPrize",
   "LordsWithdrawal",
+  "DepositSource",
+  "SpendLords",
+  "PrincipalWithdrawal",
+  "DepositReceipt",
 ]);
 
 import { integer, number, address, record, gameRows, required, type Row } from "./values";

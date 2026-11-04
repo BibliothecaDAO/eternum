@@ -1,5 +1,5 @@
 // Generated from native fact models and contract ABIs. Run the native schema generator to update.
-export const nativeFactSchemaIdentity = "857284f417bc948de383c42f7641277017c5c43ec61eebbb718ea7085ebeae2b";
+export const nativeFactSchemaIdentity = "0dcf1f8200eb83effd030d3666c8c324a252a8087b5befcaf814886d05c77870";
 export const nativeRuleConstants = {
   "SHRINE_COMMON_BPS": 5000,
   "SHRINE_UNCOMMON_BPS": 3000,
@@ -195,6 +195,10 @@ export interface NativeRows {
   ArmyProgressionRules: { readonly game_id: number; readonly reveal_xp: number; readonly reveal_xp_per_depth: number; readonly common_xp: number; readonly uncommon_xp: number; readonly rare_xp: number; readonly epic_xp: number; readonly legendary_xp: number };
   FrontierDiscoveryRules: { readonly game_id: number; readonly beasts_bps: number; readonly camp_bps: number; readonly rift_bps: number; readonly ruin_bps: number; readonly shrine_bps: number; readonly well_bps: number; readonly empty_reveal_limit: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint; readonly empty_reveals: number; readonly ruin_cleared: boolean };
+  DepositSource: { readonly game_id: number; readonly chain: bigint; readonly ledger: bigint; readonly signer: bigint; readonly epoch: bigint };
+  SpendLords: { readonly game_id: number; readonly account: bigint; readonly available: bigint; readonly consumed: bigint; readonly swept: bigint };
+  PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint; readonly amount: bigint };
+  DepositReceipt: { readonly game_id: number; readonly id: bigint; readonly commitment: bigint; readonly account: bigint; readonly amount: bigint; readonly cancelled: boolean };
   LaborRules: { readonly game_id: number; readonly amount: bigint; readonly campaign_essence: bigint; readonly golden_amount: bigint; readonly golden_essence: bigint };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint; readonly account: bigint; readonly amount: bigint; readonly essence: bigint };
   ChestRules: { readonly game_id: number; readonly price_ceiling: bigint; readonly shares: { readonly common: number; readonly uncommon: number; readonly rare: number; readonly epic: number; readonly legendary: number }; readonly claim_window_seconds: number; readonly pool_bps: number; readonly top_n: number };
@@ -291,6 +295,10 @@ export interface NativeKeys {
   ArmyProgressionRules: { readonly game_id: number };
   FrontierDiscoveryRules: { readonly game_id: number };
   ExpeditionDiscovery: { readonly game_id: number; readonly structure_id: bigint; readonly epoch: bigint };
+  DepositSource: { readonly game_id: number };
+  SpendLords: { readonly game_id: number; readonly account: bigint };
+  PrincipalWithdrawal: { readonly game_id: number; readonly account: bigint };
+  DepositReceipt: { readonly game_id: number; readonly id: bigint };
   LaborRules: { readonly game_id: number };
   LaborGrant: { readonly game_id: number; readonly home: bigint; readonly day: bigint };
   ChestRules: { readonly game_id: number };
@@ -590,6 +598,60 @@ export const nativeFactModels = {
       },
       "value": "zero",
       "meaning": "No empty player reveals in this expedition yet."
+    }
+  },
+  "DepositSource": {
+    "keys": [
+      "game_id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "chain": "felt",
+      "ledger": "felt",
+      "signer": "felt",
+      "epoch": "u64"
+    }
+  },
+  "SpendLords": {
+    "keys": [
+      "game_id",
+      "account"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "account": "felt",
+      "available": "u128",
+      "consumed": "u128",
+      "swept": "u128"
+    }
+  },
+  "PrincipalWithdrawal": {
+    "keys": [
+      "game_id",
+      "account"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "account": "felt",
+      "amount": "u128"
+    }
+  },
+  "DepositReceipt": {
+    "keys": [
+      "game_id",
+      "id"
+    ],
+    "scope": "game",
+    "fields": {
+      "game_id": "u32",
+      "id": "u64",
+      "commitment": "felt",
+      "account": "felt",
+      "amount": "u128",
+      "cancelled": "boolean"
     }
   },
   "LaborRules": {
@@ -2204,6 +2266,7 @@ export const nativeSyncScopes = {
   "FrontierDiscoveryRules": "shared",
   "RelicDiscovery": "shared",
   "DepositRules": "shared",
+  "DepositSource": "shared",
   "WithdrawalRules": "shared",
   "ResourceToken": "shared",
   "BankRules": "shared",
@@ -2315,6 +2378,21 @@ export const nativeSyncScopes = {
     ]
   },
   "LaborGrant": {
+    "owners": [
+      "account"
+    ]
+  },
+  "SpendLords": {
+    "owners": [
+      "account"
+    ]
+  },
+  "PrincipalWithdrawal": {
+    "owners": [
+      "account"
+    ]
+  },
+  "DepositReceipt": {
     "owners": [
       "account"
     ]

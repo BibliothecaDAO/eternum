@@ -1,3 +1,7 @@
+import { depositStructure } from "../../value-relay/test-support/deposit-structure";
+vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
+  readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_source" }] }],
+}));
 import { Effect } from "effect";
 import { CairoCustomEnum, CairoOption, CairoOptionVariant } from "starknet";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -132,7 +136,7 @@ async function endedSeason() {
       rowEvent("LordsWithdrawal", ["1", "0x102"], { account: winner, amount: 40n, prize_rank: 0, prize_count: 0 }),
     ]);
   const network = ((url: string | URL | Request) => handler(new Request(String(url)))) as typeof fetch;
-  return { network, sweep };
+  return { network, sweep, apply };
 }
 
 const funding = (chestPaid: number) => ({
@@ -176,4 +180,32 @@ it("sweeps the season's realm LORDS and settles it once every receipt is paid, f
   expect(conservation).toEqual([
     { chainId: shard.chainId, gameId: 1, confirmedBlock: 10, pool: "700", receipts: "340", netIssued: "340" },
   ]);
+});
+
+it("selects a deposit-only Realm from Herald's actual nested native Structure wire row", async () => {
+  const herald = await endedSeason();
+  vi.stubGlobal("fetch", herald.network);
+  const { game_id: _, entity_id: __, ...structure } = depositStructure("0xa");
+  herald.apply([
+    rowEvent("ResourceBalance", ["1", realm, String(ResourcesIds.Lords)], lords(0)),
+    rowEvent("LordsWithdrawal", ["1", "0x102"], { account: winner, amount: 40n, prize_rank: 0, prize_count: 0 }),
+    rowEvent("Structure", ["1", "17"], structure),
+    rowEvent("SpendLords", ["1", String(winner)], { available: 40n, consumed: 10n, swept: 0n }),
+  ]);
+  calls.funding.mockResolvedValue(funding(40));
+  calls.admin.mockImplementation(async () =>
+    herald.apply([
+      rowEvent("SpendLords", ["1", String(winner)], { available: 0n, consumed: 10n, swept: 40n }),
+      rowEvent("PrincipalWithdrawal", ["1", String(winner)], { amount: 40n }),
+    ]),
+  );
+  const pay = vi.fn();
+  const tick = () =>
+    sweepFrontierLords({ ...shard, accountAddress: "0x20", privateKey: "0x1" }, heraldUrl, ledger, calls.settle, pay);
+  await tick();
+  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 1, structure_id: "17" }]]);
+  expect(pay).not.toHaveBeenCalled();
+  calls.funding.mockResolvedValue({ ...funding(40), closed: true });
+  await tick();
+  expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 1, account: String(winner), amount: "40" });
 });

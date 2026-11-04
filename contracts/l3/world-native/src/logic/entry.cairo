@@ -36,6 +36,41 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::entry::ILedgerOperator<ComponentState<TContractState>> {
+        fn configure_deposits(
+            ref self: ComponentState<TContractState>, game_id: u32, source: crate::deposits::DepositSource,
+        ) {
+            crate::logic::deposits::configure(game_id, source)
+        }
+        fn deposit_source(
+            self: @ComponentState<TContractState>, game_id: u32,
+        ) -> Option<crate::deposits::DepositSource> {
+            crate::logic::deposits::source(game_id)
+        }
+        fn deliver_deposit(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            deposit: crate::deposits::LordsDeposit,
+            r: felt252,
+            s: felt252,
+            cancel: bool,
+        ) {
+            crate::logic::deposits::deliver(game_id, deposit, r, s, cancel)
+        }
+        fn deposit_receipt(
+            self: @ComponentState<TContractState>, game_id: u32, id: u64,
+        ) -> Option<crate::deposits::DepositReceipt> {
+            crate::logic::deposits::receipt(game_id, id)
+        }
+        fn spend_lords(
+            self: @ComponentState<TContractState>, game_id: u32, account: ContractAddress,
+        ) -> crate::deposits::SpendLords {
+            crate::logic::deposits::balance(game_id, account)
+        }
+        fn principal_withdrawal(
+            self: @ComponentState<TContractState>, game_id: u32, account: ContractAddress,
+        ) -> Option<crate::deposits::PrincipalWithdrawal> {
+            crate::logic::deposits::withdrawal(game_id, account)
+        }
         fn ledger_operator(self: @ComponentState<TContractState>) -> ContractAddress {
             self.data.entry.operator.read()
         }
@@ -96,7 +131,7 @@ pub mod EntryAdministration {
         }
         fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
             super::assert_ledger_operator();
-            self.assert_prize_ready(game_id);
+            self.assert_season_ended(game_id);
             let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
             crate::relics::ILordsDispatcherTrait::sweep_lords(
                 crate::relics::ILordsLibraryDispatcher {
@@ -152,10 +187,12 @@ pub mod EntryAdministration {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn assert_prize_ready(self: @ComponentState<TContractState>, game_id: u32) {
+        fn assert_season_ended(self: @ComponentState<TContractState>, game_id: u32) {
             let game = crate::logic::game::game(game_id);
-            let now = starknet::get_block_timestamp();
-            assert!(now >= game.end_at, "season has not ended");
+            assert!(starknet::get_block_timestamp() >= game.end_at, "season has not ended");
+        }
+        fn assert_prize_ready(self: @ComponentState<TContractState>, game_id: u32) {
+            self.assert_season_ended(game_id);
             assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
         }
         fn record_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32) {

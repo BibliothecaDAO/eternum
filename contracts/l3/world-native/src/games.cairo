@@ -71,6 +71,59 @@ pub mod Games {
     impl Registrar = GamesEntry::RegistrarImpl<ContractState>;
     #[abi(embed_v0)]
     impl LedgerOperator of crate::entry::ILedgerOperator<ContractState> {
+        fn configure_deposits(ref self: ContractState, game_id: u32, source: crate::deposits::DepositSource) {
+            crate::entry::ILedgerOperatorDispatcherTrait::configure_deposits(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                source,
+            )
+        }
+        fn deposit_source(self: @ContractState, game_id: u32) -> Option<crate::deposits::DepositSource> {
+            crate::entry::ILedgerOperatorDispatcherTrait::deposit_source(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+            )
+        }
+        fn deliver_deposit(
+            ref self: ContractState,
+            game_id: u32,
+            deposit: crate::deposits::LordsDeposit,
+            r: felt252,
+            s: felt252,
+            cancel: bool,
+        ) {
+            crate::entry::ILedgerOperatorDispatcherTrait::deliver_deposit(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                deposit,
+                r,
+                s,
+                cancel,
+            )
+        }
+        fn deposit_receipt(self: @ContractState, game_id: u32, id: u64) -> Option<crate::deposits::DepositReceipt> {
+            crate::entry::ILedgerOperatorDispatcherTrait::deposit_receipt(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                id,
+            )
+        }
+        fn spend_lords(self: @ContractState, game_id: u32, account: ContractAddress) -> crate::deposits::SpendLords {
+            crate::entry::ILedgerOperatorDispatcherTrait::spend_lords(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                account,
+            )
+        }
+        fn principal_withdrawal(
+            self: @ContractState, game_id: u32, account: ContractAddress,
+        ) -> Option<crate::deposits::PrincipalWithdrawal> {
+            crate::entry::ILedgerOperatorDispatcherTrait::principal_withdrawal(
+                crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },
+                game_id,
+                account,
+            )
+        }
         fn ledger_operator(self: @ContractState) -> ContractAddress {
             crate::entry::ILedgerOperatorDispatcherTrait::ledger_operator(
                 crate::entry::ILedgerOperatorLibraryDispatcher { class_hash: self.release.current_classes().bridge },

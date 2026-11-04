@@ -1862,6 +1862,126 @@
     "entrypoints": [
       {
         "type": "function",
+        "name": "configure_deposits",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "source",
+            "type": "world_native::deposits::DepositSource"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "deposit_source",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::option::Option::<world_native::deposits::DepositSource>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "deliver_deposit",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "deposit",
+            "type": "world_native::deposits::LordsDeposit"
+          },
+          {
+            "name": "r",
+            "type": "core::felt252"
+          },
+          {
+            "name": "s",
+            "type": "core::felt252"
+          },
+          {
+            "name": "cancel",
+            "type": "core::bool"
+          }
+        ],
+        "outputs": [],
+        "state_mutability": "external"
+      },
+      {
+        "type": "function",
+        "name": "deposit_receipt",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "id",
+            "type": "core::integer::u64"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::option::Option::<world_native::deposits::DepositReceipt>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "spend_lords",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "world_native::deposits::SpendLords"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
+        "name": "principal_withdrawal",
+        "inputs": [
+          {
+            "name": "game_id",
+            "type": "core::integer::u32"
+          },
+          {
+            "name": "account",
+            "type": "core::starknet::contract_address::ContractAddress"
+          }
+        ],
+        "outputs": [
+          {
+            "type": "core::option::Option::<world_native::deposits::PrincipalWithdrawal>"
+          }
+        ],
+        "state_mutability": "view"
+      },
+      {
+        "type": "function",
         "name": "ledger_operator",
         "inputs": [],
         "outputs": [
@@ -2984,6 +3104,157 @@
         "value": "zero",
         "meaning": "No empty player reveals in this expedition yet."
       }
+    },
+    {
+      "name": "DepositSource",
+      "identity": "0x4465706f736974536f75726365",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "chain",
+          "type": "core::felt252",
+          "id": "0x636861696e",
+          "feltLength": 1
+        },
+        {
+          "name": "ledger",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6c6564676572",
+          "feltLength": 1
+        },
+        {
+          "name": "signer",
+          "type": "core::felt252",
+          "id": "0x7369676e6572",
+          "feltLength": 1
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64",
+          "id": "0x65706f6368",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 1,
+      "valueLength": 4
+    },
+    {
+      "name": "SpendLords",
+      "identity": "0x5370656e644c6f726473",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "available",
+          "type": "core::integer::u128",
+          "id": "0x617661696c61626c65",
+          "feltLength": 1
+        },
+        {
+          "name": "consumed",
+          "type": "core::integer::u128",
+          "id": "0x636f6e73756d6564",
+          "feltLength": 1
+        },
+        {
+          "name": "swept",
+          "type": "core::integer::u128",
+          "id": "0x7377657074",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 3
+    },
+    {
+      "name": "PrincipalWithdrawal",
+      "identity": "0x5072696e636970616c5769746864726177616c",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 1
+    },
+    {
+      "name": "DepositReceipt",
+      "identity": "0x4465706f73697452656365697074",
+      "scope": "game",
+      "keys": [
+        {
+          "name": "game_id",
+          "type": "core::integer::u32",
+          "feltLength": 1
+        },
+        {
+          "name": "id",
+          "type": "core::integer::u64",
+          "feltLength": 1
+        }
+      ],
+      "members": [
+        {
+          "name": "commitment",
+          "type": "core::felt252",
+          "id": "0x636f6d6d69746d656e74",
+          "feltLength": 1
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress",
+          "id": "0x6163636f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128",
+          "id": "0x616d6f756e74",
+          "feltLength": 1
+        },
+        {
+          "name": "cancelled",
+          "type": "core::bool",
+          "id": "0x63616e63656c6c6564",
+          "feltLength": 1
+        }
+      ],
+      "keyLength": 2,
+      "valueLength": 4
     },
     {
       "name": "LaborRules",
@@ -7405,6 +7676,48 @@
         }
       ]
     },
+    "core::option::Option::<world_native::deposits::DepositReceipt>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deposits::DepositReceipt>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deposits::DepositReceipt"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::deposits::DepositSource>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deposits::DepositSource>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deposits::DepositSource"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
+    "core::option::Option::<world_native::deposits::PrincipalWithdrawal>": {
+      "type": "enum",
+      "name": "core::option::Option::<world_native::deposits::PrincipalWithdrawal>",
+      "variants": [
+        {
+          "name": "Some",
+          "type": "world_native::deposits::PrincipalWithdrawal"
+        },
+        {
+          "name": "None",
+          "type": "()"
+        }
+      ]
+    },
     "core::option::Option::<world_native::entry::LaborGrant>": {
       "type": "enum",
       "name": "core::option::Option::<world_native::entry::LaborGrant>",
@@ -8980,6 +9293,112 @@
         {
           "name": "spire_direction",
           "type": "core::integer::u8"
+        }
+      ]
+    },
+    "world_native::deposits::DepositReceipt": {
+      "type": "struct",
+      "name": "world_native::deposits::DepositReceipt",
+      "members": [
+        {
+          "name": "commitment",
+          "type": "core::felt252"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "cancelled",
+          "type": "core::bool"
+        }
+      ]
+    },
+    "world_native::deposits::DepositSource": {
+      "type": "struct",
+      "name": "world_native::deposits::DepositSource",
+      "members": [
+        {
+          "name": "chain",
+          "type": "core::felt252"
+        },
+        {
+          "name": "ledger",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "signer",
+          "type": "core::felt252"
+        },
+        {
+          "name": "epoch",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deposits::LordsDeposit": {
+      "type": "struct",
+      "name": "world_native::deposits::LordsDeposit",
+      "members": [
+        {
+          "name": "id",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "account",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "realms_id",
+          "type": "core::felt252"
+        },
+        {
+          "name": "home",
+          "type": "core::integer::u64"
+        },
+        {
+          "name": "payer",
+          "type": "core::starknet::contract_address::ContractAddress"
+        },
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "paid_at",
+          "type": "core::integer::u64"
+        }
+      ]
+    },
+    "world_native::deposits::PrincipalWithdrawal": {
+      "type": "struct",
+      "name": "world_native::deposits::PrincipalWithdrawal",
+      "members": [
+        {
+          "name": "amount",
+          "type": "core::integer::u128"
+        }
+      ]
+    },
+    "world_native::deposits::SpendLords": {
+      "type": "struct",
+      "name": "world_native::deposits::SpendLords",
+      "members": [
+        {
+          "name": "available",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "consumed",
+          "type": "core::integer::u128"
+        },
+        {
+          "name": "swept",
+          "type": "core::integer::u128"
         }
       ]
     },
@@ -13654,5 +14073,5 @@
       ]
     }
   },
-  "identity": "857284f417bc948de383c42f7641277017c5c43ec61eebbb718ea7085ebeae2b"
+  "identity": "0dcf1f8200eb83effd030d3666c8c324a252a8087b5befcaf814886d05c77870"
 }

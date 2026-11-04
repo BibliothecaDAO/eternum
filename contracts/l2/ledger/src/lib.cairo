@@ -3,6 +3,7 @@ pub mod chests;
 pub mod contract;
 
 mod days;
+pub mod deposits;
 pub mod mmr;
 
 pub mod test_lords;

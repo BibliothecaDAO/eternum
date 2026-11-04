@@ -5,9 +5,16 @@ import { sendFromWallet, WrongWalletError } from "./wallet-send";
 
 const CALLS = [{ contractAddress: "0x1ed9e7", entrypoint: "register", calldata: [] }];
 
-const wallet = () => {
+const wallet = (fee = 1n) => {
   const execute = vi.fn(async () => ({ transaction_hash: "0xtx" }));
-  return { account: { address: "0x4a1", execute } as unknown as AccountInterface, execute };
+  return {
+    account: {
+      address: "0x4a1",
+      execute,
+      estimateInvokeFee: vi.fn(async () => ({ overall_fee: fee })),
+    } as unknown as AccountInterface,
+    execute,
+  };
 };
 
 const chain = (strk: bigint, receipt: Promise<object>) =>
@@ -62,5 +69,29 @@ it("says the network did not confirm a send whose receipt could not be read, nev
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { account } = wallet();
   const outcome = await sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.reject(new Error("503"))), vi.fn());
-  expect(outcome).toEqual({ kind: "refused", reason: "The network has not confirmed it yet" });
+  expect(outcome).toEqual({ kind: "uncertain", reason: "The network has not confirmed it yet" });
+});
+
+it("refuses a nonzero STRK balance below the estimated network fee", async () => {
+  const { account, execute } = wallet(2n);
+  expect(
+    await sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.resolve({ isReverted: () => false })), vi.fn()),
+  ).toEqual({ kind: "no-strk" });
+  expect(execute).not.toHaveBeenCalled();
+  expect(account.estimateInvokeFee).toHaveBeenCalledWith(CALLS);
+});
+
+it("distinguishes a rejected signature from a lost submission response", async () => {
+  const { account, execute } = wallet();
+  const provider = chain(1n, Promise.resolve({ isReverted: () => false }));
+  execute.mockRejectedValueOnce(Object.assign(new Error("User rejected"), { code: 4001 }));
+  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn())).toEqual({
+    kind: "refused",
+    reason: "Payment rejected in wallet.",
+  });
+  execute.mockRejectedValueOnce(new Error("response lost"));
+  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn())).toEqual({
+    kind: "uncertain",
+    reason: "The network has not confirmed it yet",
+  });
 });

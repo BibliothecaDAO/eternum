@@ -256,8 +256,6 @@ pub mod RelicState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::relics::ILords<ComponentState<TContractState>> {
-        // Each purchased stamina point returns one LORDS from the realm to the season's chest pool.
-        // It is always allowed, including while the day's ruin stands.
         fn refill_stamina(
             ref self: ComponentState<TContractState>,
             game_id: u32,
@@ -278,17 +276,19 @@ pub mod RelicState {
             let mut stamina = explorer.troops.stamina.inline();
             assert!(stamina.amount < maximum, "stamina is already full");
             assert!(command.amount > 0 && command.amount <= maximum - stamina.amount, "invalid refill amount");
-            let purchased: u128 = command.amount.into();
-            self
-                .resources(game_id)
-                .spend_resource(
-                    ResourceKey { game_id, entity_id: explorer.owner },
-                    crate::resources::LORDS,
-                    purchased * crate::rules::RESOURCE_PRECISION,
-                    context.timestamp,
-                    crate::commands::resource_context(context),
-                );
-            crate::logic::lords_budget::return_to_pool(game_id, purchased, context);
+            let earned = crate::logic::deposits::spend(game_id, actor, command.amount.into());
+            if earned != 0 {
+                self
+                    .resources(game_id)
+                    .spend_resource(
+                        ResourceKey { game_id, entity_id: explorer.owner },
+                        crate::resources::LORDS,
+                        earned * crate::rules::RESOURCE_PRECISION,
+                        context.timestamp,
+                        crate::commands::resource_context(context),
+                    );
+                crate::logic::lords_budget::return_to_pool(game_id, earned, context);
+            }
             stamina.amount += command.amount;
             stamina.clamp(maximum);
             crate::troops::IArmySlotStaminaDispatcherTrait::army_slot_stamina(
@@ -314,9 +314,11 @@ pub mod RelicState {
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
             let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
             assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
+            crate::logic::deposits::sweep(game_id, record.owner);
             if balance == 0 {
                 return;
             }
+            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
             self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
         }
 

@@ -1,3 +1,6 @@
+vi.mock("../../../packages/value-ledger/src/shard-abi", () => ({
+  readShardAbi: async () => [{ type: "interface", items: [{ name: "deposit_source" }] }],
+}));
 import { beforeEach, expect, it, vi } from "vitest";
 import { sweepFrontierLords, frontierSettlementEvidence } from "./frontier-sweep";
 import { ResourcesIds, RESOURCE_PRECISION } from "@bibliothecadao/types";
@@ -168,7 +171,7 @@ it.each(["old block", "before end"])(
   "refuses a snapshot %s even when the latest head is past the end",
   async (reason) => {
     if (reason === "old block") state.confirmed_block = 9;
-    else calls.header.mockResolvedValueOnce({ timestamp: 100 }).mockResolvedValueOnce({ timestamp: 99 });
+    else calls.header.mockImplementation(async (block) => ({ timestamp: block === "latest" ? 100 : 99 }));
     await expect(run()).rejects.toThrow("frontier_sweep_snapshot_before_end");
     expect(calls.admin).not.toHaveBeenCalled();
     expect(calls.settle).not.toHaveBeenCalled();
@@ -377,4 +380,149 @@ it("co-signs only L2 paid totals after the deadline and still checks funding and
   expect(await frontierSettlementEvidence(target, "https://herald.test", report, ledger, wei(700))).toBe(
     "settlement_funding_or_totals_differ",
   );
+});
+
+it("the existing end-of-season sweep includes a deposit-only realm", async () => {
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  state.models.push(
+    {
+      model: "SpendLords",
+      rows: [{ key: "7:0x8", value: { game_id: 7, account: "0x8", available: "40", consumed: "0", swept: "0" } }],
+    },
+    {
+      model: "Structure",
+      rows: [
+        {
+          key: "7:17",
+          value: {
+            game_id: 7,
+            entity_id: "17",
+            owner: "0x8",
+            base: {
+              troop_max_guard_count: 1,
+              troop_max_explorer_count: 5,
+              created_at: 1,
+              category: 1,
+              level: 1,
+              starting_troops_granted: true,
+            },
+            resources_packed: "0",
+            metadata: { realm_id: 0, order: 0, has_wonder: false, village_realm: "0", mine_kind: 0, deepest_depth: 0 },
+          },
+        },
+      ],
+    },
+  );
+  await run();
+  expect(calls.admin).toHaveBeenCalledWith("sweep_lords", { game_id: 7, structure_id: "17" });
+});
+
+it("sweeps a mixed realm once and keeps principal payment outside reward conservation", async () => {
+  const { structureSnapshot } = await import("../test-support/deposit-structure");
+  rows("ResourceBalance", [balance(17, 100)]);
+  state.models.push(
+    {
+      model: "SpendLords",
+      rows: [{ key: "7:8", value: { game_id: 7, account: "0x8", available: "40", consumed: "10", swept: "0" } }],
+    },
+    { model: "Structure", rows: [{ key: "7:17", value: structureSnapshot("0x8") }] },
+    { model: "PrincipalWithdrawal", rows: [] },
+  );
+  const pay = vi.fn();
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 7, structure_id: "17" }]]);
+  expect(pay).not.toHaveBeenCalled();
+  rows("ResourceBalance", []);
+  rows("SpendLords", [{ account: "0x8", available: "0", consumed: "10", swept: "40" }]);
+  rows("PrincipalWithdrawal", [{ account: "0x8", amount: "40" }]);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  calls.funding.mockResolvedValue({
+    closed: false,
+    pool: wei(700),
+    prizePool: wei(300),
+    paid: wei(100),
+    prizePaid: wei(300),
+    claimDeadline: 604900,
+  });
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7, account: "8", amount: "40" });
+  expect(calls.settle).toHaveBeenCalledWith({
+    chainId: "0x1",
+    gameId: 7,
+    chestWithdrawn: wei(100),
+    prizeWithdrawn: wei(300),
+  });
+});
+
+it("continues principal sweeps and retries payments after reward closure and its deadline", async () => {
+  const { structureSnapshot } = await import("../test-support/deposit-structure");
+  calls.funding.mockResolvedValue({ closed: true, claimDeadline: 101 });
+  calls.ledgerHead.mockResolvedValue({ number: 10, time: 999999 });
+  state.models.push(
+    {
+      model: "SpendLords",
+      rows: [{ key: "7:8", value: { game_id: 7, account: "0x8", available: "40", consumed: "0", swept: "0" } }],
+    },
+    { model: "Structure", rows: [{ key: "7:17", value: structureSnapshot("0x8") }] },
+    { model: "PrincipalWithdrawal", rows: [] },
+  );
+  const pay = vi.fn();
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(calls.admin.mock.calls).toEqual([["sweep_lords", { game_id: 7, structure_id: "17" }]]);
+  rows("SpendLords", [{ account: "0x8", available: "0", consumed: "0", swept: "40" }]);
+  rows("PrincipalWithdrawal", [
+    { account: "0x8", amount: "40" },
+    { account: "0x9", amount: "20" },
+  ]);
+  pay.mockRejectedValueOnce(new Error("wallet unavailable"));
+  await expect(sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay)).rejects.toThrow(
+    "wallet unavailable",
+  );
+  expect(pay).toHaveBeenCalledWith({ chainId: "0x1", gameId: 7, account: "9", amount: "20" });
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(pay).toHaveBeenCalledTimes(4);
+  expect(calls.settle).not.toHaveBeenCalled();
+});
+
+it("sweeps principal-only balances after end even when reward publication never succeeded", async () => {
+  const { structureSnapshot } = await import("../test-support/deposit-structure");
+  rows("LordsBudget", []);
+  rows("FrontierPrize", []);
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", []);
+  state.models.push(
+    {
+      model: "SpendLords",
+      rows: [{ key: "7:8", value: { game_id: 7, account: "0x8", available: "40", consumed: "0", swept: "0" } }],
+    },
+    { model: "Structure", rows: [{ key: "7:17", value: structureSnapshot("0x8") }] },
+  );
+  await expect(run()).rejects.toThrow("frontier_pool_unpublished");
+  expect(calls.admin).toHaveBeenCalledWith("sweep_lords", { game_id: 7, structure_id: "17" });
+  expect(calls.settle).not.toHaveBeenCalled();
+});
+
+it("closes eligible rewards despite an unavailable principal wallet, then retries principal after close", async () => {
+  rows("ResourceBalance", []);
+  rows("LordsWithdrawal", [receipt(101, 300, 1), receipt(102, 100)]);
+  state.models.push({
+    model: "PrincipalWithdrawal",
+    rows: [{ key: "7:8", value: { game_id: 7, account: "0x8", amount: "40" } }],
+  });
+  calls.ledgerHead.mockResolvedValue({ number: 10, time: 604900 });
+  const pay = vi.fn().mockRejectedValueOnce(new Error("principal_wallet_unavailable")).mockResolvedValue(undefined);
+  await expect(sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay)).rejects.toThrow(
+    "principal_wallet_unavailable",
+  );
+  expect(calls.settle).toHaveBeenCalledWith({
+    chainId: "0x1",
+    gameId: 7,
+    chestWithdrawn: wei(100),
+    prizeWithdrawn: wei(300),
+  });
+  calls.funding.mockResolvedValue({ closed: true });
+  await sweepFrontierLords(target, "https://herald.test", ledger, calls.settle, pay);
+  expect(pay).toHaveBeenCalledTimes(2);
+  expect(calls.settle).toHaveBeenCalledTimes(1);
 });
