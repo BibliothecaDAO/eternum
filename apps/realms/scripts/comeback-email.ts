@@ -173,12 +173,13 @@ function d1(target: Target, query: string): Row[] {
     ],
     {
       cwd: new URL("..", import.meta.url).pathname,
-      env: { ...process.env, CLOUDFLARE_API_TOKEN: store.cloudflareToken, WRANGLER_LOG_PATH: "/dev/null" },
+      env: { ...process.env, CLOUDFLARE_API_TOKEN: store.cloudflareToken },
       encoding: "utf8",
       maxBuffer: 64 * 1024 * 1024,
     },
   );
-  if (run.status !== 0) throw new Error(`wrangler exit ${run.status}`);
+  // wrangler's own error names the missing table or column; it carries no secret and no row.
+  if (run.status !== 0) throw new Error(`wrangler exit ${run.status}: ${(run.stderr || run.stdout).slice(-300)}`);
   return JSON.parse(run.stdout)[0].results;
 }
 
