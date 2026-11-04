@@ -1,8 +1,9 @@
 /**
  * Every leaderboard's one rule (the owner, 4 November 2026: "now that we have a lot of players they need to see where
- * they stand"): a board shows every place in a scroll area, and the player's own row waits at the area's foot while its
- * place is below the view (the stylesheets' `[data-own]` board rows, `position: sticky`). Pressing it there brings its
- * place into view with its neighbours round it; in its place it does what any row does.
+ * they stand"): a board shows every place in a scroll area, and the player's own row stays in sight (the stylesheets'
+ * `[data-own]` board rows, `position: sticky`): at the area's foot while its place is below the view, at its top (under
+ * a table's head) once scrolled past. Pressing it there brings its place into view with its neighbours round it; in
+ * its place it does what any row does.
  *
  * Brings the place of the player's own row into the middle of its board's scroll area when that place is out of view,
  * and says whether it did: false when the place already shows (the press is the row's own) or the row scrolls nowhere.
@@ -11,8 +12,12 @@ export const revealOwnPlace = (row: HTMLElement): boolean => {
   const area = scrollAreaOf(row);
   if (!area) return false;
   const place = placeOf(row, area);
-  if (place >= area.scrollTop && place + row.offsetHeight <= area.scrollTop + area.clientHeight) return false;
-  area.scrollTo({ top: place - (area.clientHeight - row.offsetHeight) / 2, behavior: "smooth" });
+  // What a table's head covers at the area's top is not in view.
+  const head = parseFloat(getComputedStyle(row).getPropertyValue("--ui-table-head")) || 0;
+  const top = area.scrollTop + head;
+  const height = area.clientHeight - head;
+  if (place >= top && place + row.offsetHeight <= top + height) return false;
+  area.scrollTo({ top: place - head - (height - row.offsetHeight) / 2, behavior: "smooth" });
   return true;
 };
 

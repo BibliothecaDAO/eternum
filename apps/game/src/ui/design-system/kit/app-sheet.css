@@ -762,10 +762,11 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   border-left-color: rgb(var(--app-accent));
   background: var(--app-chosen);
 }
-/* The player's own row waits at the area's foot while its place is below the view, on the panel's ground, so no row
-   shows through it. */
+/* The player's own row stays in sight: at the area's foot while its place is below the view, at its top once scrolled
+   past, on the panel's ground, so no row shows through it. */
 .app-board__item[data-own] {
   position: sticky;
+  top: 0;
   bottom: 0;
   z-index: 1;
   background: var(--app-surface);

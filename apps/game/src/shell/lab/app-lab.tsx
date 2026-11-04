@@ -24,6 +24,7 @@ import {
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
+  LAB_FIELD_MIN,
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
   LAB_FRONTIER_UNPUBLISHED_BOARD,
@@ -34,6 +35,9 @@ import {
   LAB_PROFILES,
   LAB_CHAT_PROFILES,
   LAB_RATING_TOP,
+  LAB_SHARD_MANIFEST,
+  labFrontierBoard,
+  labRatingTop,
   LAB_NO_HISTORY_SCREENS,
   LAB_SCREENS,
   LAB_SEAT_PROFILES,
@@ -78,8 +82,9 @@ const isLabScreen = (screen: string | undefined): screen is LabScreen =>
 const LabScreenView = ({ screen }: { screen: LabScreen }) => {
   const [client, setClient] = useState<QueryClient | null>(null);
   useEffect(() => {
-    const restore = installLabFixtures(screen);
-    const client = createLabClient(screen);
+    const field = labField();
+    const restore = installLabFixtures(screen, field);
+    const client = createLabClient(screen, field);
     setClient(client);
     return () => {
       client.clear();
@@ -142,13 +147,27 @@ const useLabSession = (screen: LabScreen) => {
   }, [screen]);
 };
 
-/** The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game. */
-const createLabClient = (screen: LabScreen) => {
+/**
+ * The field the lab's Season boards hold: `?field=<players>` sizes Frontier's board and the Blitz rating to that many,
+ * Frontier's read through Herald's own route on its refresh (its shard listed with its manifest, so it opens with no
+ * read of its own), to measure a board of many players (prove:app board-load). Without it, the painted boards.
+ */
+const labField = (): number | null => {
+  const field = Number(new URLSearchParams(window.location.search).get("field"));
+  return Number.isSafeInteger(field) && field >= LAB_FIELD_MIN ? field : null;
+};
+
+/**
+ * The lab's own query client: the app's /api answered from the fixtures, the shard boards seeded by game (Frontier's
+ * read from Herald's route instead when the lab holds a field).
+ */
+const createLabClient = (screen: LabScreen, field: number | null) => {
   const client = new QueryClient({ defaultOptions: { queries: { staleTime: Infinity, retry: false } } });
-  client.setQueryData(
-    ["shell", "leaderboard", LAB_CHAIN, 1],
-    screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
-  );
+  if (field === null)
+    client.setQueryData(
+      ["shell", "leaderboard", LAB_CHAIN, 1],
+      screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
+    );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);
   const wallet = LAB_PAYOUT_WALLETS[screen];
@@ -167,7 +186,7 @@ const createLabClient = (screen: LabScreen) => {
   return client;
 };
 
-function installLabFixtures(screen: LabScreen): () => void {
+function installLabFixtures(screen: LabScreen, field: number | null): () => void {
   const previousFetch = window.fetch;
   const previousWebSocket = window.WebSocket;
   const previousSession = useIdentitySessionStore.getState().session;
@@ -184,7 +203,7 @@ function installLabFixtures(screen: LabScreen): () => void {
   const descriptors = identityMethods.map(
     (name) => [name, Object.getOwnPropertyDescriptor(identityClient, name)] as const,
   );
-  answerAppReads(screen);
+  answerAppReads(screen, field);
   answerChat(screen);
   answerIdentity(screen);
   return () => {
@@ -201,16 +220,17 @@ function installLabFixtures(screen: LabScreen): () => void {
 const json = (body: unknown) =>
   new Response(JSON.stringify(body), { status: 200, headers: { "content-type": "application/json" } });
 
-/** The /api reads the shell's pages make, by path; anything else goes to the network as before. */
-const answerAppReads = (screen: LabScreen) => {
+/**
+ * The /api reads the shell's pages make, by path; anything else goes to the network as before. With a field, the
+ * shard is listed with its manifest and its Frontier board answered at Herald's path, a site on for the player at each
+ * read.
+ */
+const answerAppReads = (screen: LabScreen, field: number | null) => {
   const network = window.fetch.bind(window);
+  let boardReads = 0;
+  const shard = { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games };
   const answers: Record<string, (url: URL) => Response> = {
-    "/api/directory": () =>
-      json({
-        shards: [
-          { url: "https://lab.invalid", chainId: LAB_CHAIN, status: "active", games: LAB_SCREENS[screen].games },
-        ],
-      }),
+    "/api/directory": () => json({ shards: [field === null ? shard : { ...shard, manifest: LAB_SHARD_MANIFEST }] }),
     // The player's own finished Blitz.
     "/api/directory/history": () =>
       json({
@@ -223,13 +243,14 @@ const answerAppReads = (screen: LabScreen) => {
     "/api/factory/calendar": () => json(labCalendar(screen)),
     "/api/profiles": (url) =>
       json({ profiles: profilesOf(screen, url.searchParams.get("accounts")?.split(",") ?? []) }),
-    "/api/ratings/top": () => json(LAB_RATING_TOP),
+    "/api/ratings/top": () => json(field === null ? LAB_RATING_TOP : labRatingTop(field)),
     "/api/ratings": (url) => json(labRatings(url.searchParams.get("players")?.split(",") ?? [])),
     "/api/value/held-realms": () => {
       const held = LAB_HELD_REALMS[screen] ?? [];
       return json({ realms: held.map(({ realmId }) => realmId), held });
     },
   };
+  if (field !== null) answers["/games/1/leaderboard"] = () => json(labFrontierBoard(field, boardReads++));
   window.fetch = (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input), window.location.origin);
     const answer = answers[url.pathname];

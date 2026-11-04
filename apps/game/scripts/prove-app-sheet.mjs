@@ -8,10 +8,17 @@
  * cross) and the doorway into a game at
  * each of its holds (`doorway`).
  *
- *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards|phone] [--state <signed-in.json>]
+ *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards|own-row|board-load|phone] [--state <signed-in.json>]
  *
  * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES), and its
  * scroll: every place in an area its rows tall, the player's own row waiting at its foot while its place is below.
+ *
+ * `own-row` presses every board's own row as a player does, desktop and phone: waiting at the foot at rest, at the top
+ * once scrolled past, its place brought to the middle when pressed there, its row's own action pressed in place
+ * (OWN_ROW_BOARDS).
+ *
+ * `board-load` measures a board of many players through its real path, desktop and a 4× slowed phone, three runs each:
+ * Season opened by the router to every row drawn, Herald's refresh landing, and a scroll (BOARD_FIELDS).
  *
  * `phone` plays every surface that had a Back link or a row arrow, Frontier's Season board and its Chat while typing as a
  * phone: touch, a safe area, drags, the system back and the on-screen keyboard (prove-app-phone.mjs).
@@ -24,9 +31,11 @@
  * the end map" pressed, and the map it opens held until its scene is ready, watched and never played.
  */
 import { readFileSync } from "node:fs";
+import { loadavg } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { openPageDevTools } from "./client-playtest/browser-session.mjs";
 import { phoneRecords } from "./prove-app-phone.mjs";
 import { clickAsPlayer, pathOf, runProof, sleep, waitFor } from "./prove-run.mjs";
 
@@ -1172,6 +1181,316 @@ const boardPages = (desktop) =>
     stills: desktop ? stills : stills.filter((still) => name !== "season" || still.name !== "blitz"),
   }));
 
+/**
+ * Every board's own row, pressed as a player presses it (the leaderboards' one rule, own-place.ts): the app's Season
+ * boards and the HUD's Season sheet, on the desktop and a phone. At rest, a place below the view waits at the foot;
+ * scrolled to the board's end, past the place, the row waits at the top (under a table's head); pressed there, its
+ * place comes to the middle of the scroll; pressed again in its place, it does what its row does (opens the player, the
+ * realm's detail; a Blitz rating's row opens nothing, so nothing changes).
+ */
+const OWN_ROW_BOARDS = [
+  {
+    name: "frontier",
+    path: "/lab/app/season-running/season?capture=1",
+    row: '[data-age="frontier"] .app-board__item[data-own] > button',
+    opens: `location.pathname.startsWith("/p/")`,
+  },
+  {
+    name: "blitz",
+    path: "/lab/app/season-running/season?capture=1",
+    tab: "Blitz",
+    row: '[data-age="blitz"] .app-board__item[data-own] > button',
+    opens: null,
+  },
+  {
+    // The lab room whose rows open their realm's detail: it opens on one, and its Close returns to the list.
+    name: "hud-season",
+    path: "/lab/kit/hud/season-detail?capture=1",
+    first: 'button[aria-label="Close"]',
+    row: ".ui-table-row[data-own]",
+    opens: `document.querySelector(".ui-table-row") === null && document.body.innerText.includes("Visit")`,
+  },
+];
+
+/** What a board's own row pressed in its place leads to: its row's action, or, for a row that opens nothing, the row still there. */
+const pressedInPlace = (board) => board.opens ?? `document.querySelector(${JSON.stringify(board.row)}) !== null`;
+
+/** Where a board's own row stands in its scroll area against its place (right under the row before it). */
+const ownRowAt = (row) => `(() => {
+  const row = document.querySelector(${JSON.stringify(row)});
+  if (!row) return null;
+  const pinned = row.closest(".app-board__item") ?? row;
+  let area = pinned.parentElement;
+  while (area && !/(auto|scroll)/.test(getComputedStyle(area).overflowY)) area = area.parentElement;
+  const box = area.getBoundingClientRect();
+  const head = parseFloat(getComputedStyle(pinned).getPropertyValue("--ui-table-head")) || 0;
+  const at = pinned.getBoundingClientRect();
+  const before = pinned.previousElementSibling;
+  const place = before ? before.getBoundingClientRect().bottom : pinned.parentElement.getBoundingClientRect().top;
+  const near = (left, right) => Math.abs(left - right) < 1.5;
+  return {
+    placeBelow: place + at.height > box.bottom + 0.5,
+    placeAbove: place < box.top + head - 0.5,
+    atFoot: near(at.bottom, box.bottom),
+    atTop: near(at.top, box.top + head),
+    inPlace: near(at.top, place),
+    middle: Math.abs((at.top + at.bottom) / 2 - (box.top + head + box.bottom) / 2) < at.height,
+  };
+})()`;
+
+/** Scrolls the page to the board's scroll area and that area to `to` ("foot": in sight; "end": its rows' end). */
+const scrollBoard = (row, to) => `(() => {
+  let area = document.querySelector(${JSON.stringify(row)})?.parentElement;
+  while (area && !/(auto|scroll)/.test(getComputedStyle(area).overflowY)) area = area.parentElement;
+  if (!area) return false;
+  area.scrollIntoView({ block: "end" });
+  if (${JSON.stringify(to)} === "end") area.scrollTop = area.scrollHeight;
+  return true;
+})()`;
+
+/** An app page drawn in its frame, or a HUD lab room drawn. */
+const DRAWN_LAB = `document.querySelector("[data-layout], [data-kit-frame], .ui-panel, [data-lab]") !== null`;
+
+/** Presses what `selector` finds with the browser's own click, where it stands; says whether there was one. */
+const pressWhere = async (b, record, selector) => {
+  try {
+    b.run("click", selector);
+  } catch {
+    record.presses.push({ press: selector, status: "not on the page" });
+    return false;
+  }
+  record.presses.push({ press: selector, status: "led" });
+  await sleep(1200);
+  return true;
+};
+
+const ownRowRecord = async (b, baseUrl, out, board, desktop) => {
+  const name = `own-row-${board.name}-${desktop ? "desktop" : "phone"}`;
+  b.run("open", `${baseUrl}${board.path}`, "--ignore-https-errors");
+  const record = { name, ready: await waitFor(b, DRAWN_LAB, READY_MS), presses: [], checks: [] };
+  if (!record.ready) return record;
+  await sleep(SETTLE_MS);
+  if (board.first) await pressWhere(b, record, board.first);
+  if (board.tab && !desktop) await press(b, record, board.tab);
+  b.evaluate(scrollBoard(board.row, "foot"));
+  await sleep(800);
+  const rest = b.evaluate(ownRowAt(board.row));
+  record.checks.push({
+    check: "at rest, the own row waits at the foot while its place is below, else stands in it",
+    ok: rest !== null && (rest.placeBelow ? rest.atFoot : rest.inPlace),
+    rest,
+  });
+  b.run("screenshot", join(out, `${name}-rest.png`));
+  b.evaluate(scrollBoard(board.row, "end"));
+  await sleep(800);
+  const past = b.evaluate(ownRowAt(board.row));
+  record.checks.push({
+    check: "scrolled past its place, the own row waits at the top of the scroll, under any head",
+    ok: past?.placeAbove === true && past.atTop,
+    past,
+  });
+  b.run("screenshot", join(out, `${name}-past.png`));
+  await pressWhere(b, record, board.row);
+  const found = b.evaluate(ownRowAt(board.row));
+  record.checks.push({
+    check: "pressed there, its place comes to the middle of the scroll and nothing opens",
+    ok: found?.inPlace === true && found.middle && (board.opens === null || b.evaluate(board.opens) === false),
+    found,
+  });
+  b.run("screenshot", join(out, `${name}-found.png`));
+  await pressWhere(b, record, board.row);
+  record.checks.push({
+    check: "pressed again in its place, it does what its row does",
+    ok: b.evaluate(pressedInPlace(board)) === true,
+  });
+  b.run("screenshot", join(out, `${name}-opened.png`));
+  return record;
+};
+
+const ownRowRecords = async (b, baseUrl, out) => {
+  const records = [];
+  for (const [desktop, viewport] of [
+    [true, VIEWPORT],
+    [false, PHONE],
+  ]) {
+    b.run("set", "viewport", ...viewport);
+    for (const board of OWN_ROW_BOARDS) records.push(await ownRowRecord(b, baseUrl, out, board, desktop));
+  }
+  b.run("set", "viewport", ...VIEWPORT);
+  return records;
+};
+
+/**
+ * A board of many players through its real path (the app lab's `?field=<players>`: Frontier's board read at Herald's
+ * route and refreshed on its 30 s interval, the Blitz rating at /api/ratings/top with every row's profile, names
+ * through /api/profiles): Season opened from Play by the router (the lab's places lead out of the lab, so the route is
+ * changed as a link changes it: its address pushed, the router told), its every row drawn; the refresh that lands next; and a
+ * scroll down the board. On the desktop as this machine runs it, and on a phone's viewport with the CPU slowed 4×
+ * (DevTools' throttling, a phone's class of CPU, not a measured phone). Each field, device and run is a record; the
+ * machine's load is kept beside each.
+ */
+const BOARD_FIELDS = [87, 1000, 3000];
+const BOARD_LOAD_RUNS = 3;
+const BOARD_DEVICES = [
+  { name: "desktop", viewport: VIEWPORT, cpu: 1 },
+  { name: "phone", viewport: PHONE, cpu: 4 },
+];
+const FRONTIER_ROWS = '[data-age="frontier"] .app-board__item';
+/** How long a refresh is waited for after the board is drawn: its 30 s interval and a margin. */
+const REFRESH_WAIT_MS = 40_000;
+
+/**
+ * Opens Season from Play as a link does (its address pushed, the router told) and times it to the frame after the board
+ * holds `field` rows, with the longest frame between.
+ */
+const openSeasonWatched = (field) => `(() => {
+  window.__boardOpen = null;
+  const start = performance.now();
+  history.pushState(null, "", "/lab/app/season-running/season" + location.search);
+  dispatchEvent(new PopStateEvent("popstate"));
+  const frames = [];
+  let last = performance.now();
+  const tick = (now) => {
+    frames.push(now - last);
+    last = now;
+    if (document.querySelectorAll(${JSON.stringify(FRONTIER_ROWS)}).length >= ${field}) {
+      requestAnimationFrame((end) => {
+        window.__boardOpen = { openMs: Math.round(end - start), longestFrameMs: Math.round(Math.max(...frames, end - last)) };
+      });
+    } else requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return true;
+})()`;
+
+/** The next change Herald's refresh makes on the board: the frame it lands in, and how long after the watch began. */
+const WATCH_BOARD_REFRESH = `(() => {
+  window.__boardRefresh = null;
+  const board = document.querySelector(${JSON.stringify(FRONTIER_ROWS)}).parentElement;
+  const began = performance.now();
+  let changed = null;
+  let last = began;
+  const observer = new MutationObserver(() => { if (changed === null) changed = performance.now(); });
+  observer.observe(board, { subtree: true, childList: true, characterData: true });
+  const tick = (now) => {
+    if (changed !== null && changed <= now) {
+      observer.disconnect();
+      window.__boardRefresh = { frameMs: Math.round(now - last), afterMs: Math.round(changed - began) };
+      return;
+    }
+    last = now;
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+  return true;
+})()`;
+
+/** 120 frames scrolling the board 120 px each: the frames' median, 95th percentile and longest. */
+const SCROLL_BOARD = `(async () => {
+  let area = document.querySelector(${JSON.stringify(FRONTIER_ROWS)}).parentElement;
+  while (area && !/(auto|scroll)/.test(getComputedStyle(area).overflowY)) area = area.parentElement;
+  area.scrollTop = 0;
+  const frames = [];
+  let last = await new Promise(requestAnimationFrame);
+  for (let step = 0; step < 120; step += 1) {
+    area.scrollTop += 120;
+    const now = await new Promise(requestAnimationFrame);
+    frames.push(now - last);
+    last = now;
+  }
+  frames.sort((a, b) => a - b);
+  const at = (share) => Math.round(frames[Math.min(frames.length - 1, Math.floor(share * frames.length))] * 10) / 10;
+  return { medianMs: at(0.5), p95Ms: at(0.95), maxMs: at(1) };
+})()`;
+
+/** The bytes of the two reads the boards make, as the page receives them. */
+const BOARD_READ_BYTES = `Promise.all([
+  fetch("https://lab.invalid/games/1/leaderboard").then((response) => response.text()),
+  fetch("/api/ratings/top?player=0x1").then((response) => response.text()),
+]).then(([board, ratings]) => ({ heraldBoard: board.length, ratingsTop: ratings.length }))`;
+
+const boardLoadRecord = async (b, baseUrl, out, { field, device, run }) => {
+  const name = `board-load-${field}-${device.name}-${run}`;
+  b.run("open", `${baseUrl}/lab/app/season-running?capture=1&field=${field}`, "--ignore-https-errors");
+  const record = {
+    name,
+    ready: await waitFor(b, DRAWN, READY_MS),
+    presses: [],
+    checks: [],
+    load: { before: loadavg()[0] },
+  };
+  if (!record.ready) return record;
+  await sleep(SETTLE_MS);
+  const devTools = await openPageDevTools({ run: (args) => b.run(...args) });
+  try {
+    await devTools.send("Emulation.setCPUThrottlingRate", { rate: device.cpu });
+    b.evaluate(openSeasonWatched(field));
+    const opened = await waitFor(b, "window.__boardOpen !== null", READY_MS);
+    record.open = opened ? b.evaluate("window.__boardOpen") : null;
+    b.evaluate(WATCH_BOARD_REFRESH);
+    const refreshed = await waitFor(b, "window.__boardRefresh !== null", REFRESH_WAIT_MS);
+    record.refresh = refreshed ? b.evaluate("window.__boardRefresh") : null;
+    record.scroll = b.evaluate(SCROLL_BOARD);
+    if (run === 1) record.bytes = b.evaluate(BOARD_READ_BYTES);
+    b.run("screenshot", join(out, `${name}.png`));
+  } finally {
+    await devTools.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+    devTools.close();
+  }
+  record.load.after = loadavg()[0];
+  record.checks.push(
+    { check: `Season opened with all ${field} of Frontier's rows drawn`, ok: record.open !== null, open: record.open },
+    { check: "Herald's 30 s refresh landed on the board", ok: record.refresh !== null, refresh: record.refresh },
+    { check: "the board scrolled", ok: record.scroll !== null, scroll: record.scroll },
+  );
+  return record;
+};
+
+/** Each field and device's runs, as median and range, beside the records they come from. */
+const boardLoadSummary = (records) =>
+  BOARD_FIELDS.flatMap((field) =>
+    BOARD_DEVICES.map((device) => {
+      const runs = records.filter((record) => record.name.startsWith(`board-load-${field}-${device.name}-`));
+      const spread = (read) => {
+        const values = runs
+          .map(read)
+          .filter((value) => typeof value === "number")
+          .sort((a, b) => a - b);
+        return values.length
+          ? { median: values[Math.floor(values.length / 2)], min: values[0], max: values.at(-1), runs: values.length }
+          : null;
+      };
+      return {
+        field,
+        device: device.name,
+        cpuSlowdown: device.cpu,
+        openMs: spread((run) => run.open?.openMs),
+        openLongestFrameMs: spread((run) => run.open?.longestFrameMs),
+        refreshFrameMs: spread((run) => run.refresh?.frameMs),
+        scrollMedianMs: spread((run) => run.scroll?.medianMs),
+        scrollP95Ms: spread((run) => run.scroll?.p95Ms),
+        scrollMaxMs: spread((run) => run.scroll?.maxMs),
+        loadAverage: spread((run) => run.load?.after),
+        bytes: runs.find((run) => run.bytes)?.bytes ?? null,
+      };
+    }),
+  );
+
+const boardLoadRecords = async (b, baseUrl, out) => {
+  const records = [];
+  for (const device of BOARD_DEVICES) {
+    b.run("set", "viewport", ...device.viewport);
+    for (const field of BOARD_FIELDS)
+      for (let run = 1; run <= BOARD_LOAD_RUNS; run += 1)
+        records.push(await boardLoadRecord(b, baseUrl, out, { field, device, run }));
+  }
+  b.run("set", "viewport", ...VIEWPORT);
+  return [
+    ...records,
+    { name: "board-load-summary", ready: true, presses: [], checks: [], summary: boardLoadSummary(records) },
+  ];
+};
+
 const qa1 = (cases) =>
   cases.map(({ name, path, act, more }) => ({ name: `qa1-${name}`, path: `/lab/app/${path}?capture=1`, act, more }));
 
@@ -1214,6 +1533,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
         for (const page of boardPages(false)) records.push(await shoot(b, baseUrl, out, page));
         b.run("set", "viewport", ...VIEWPORT);
       }
+      if (parts.includes("own-row")) records.push(...(await ownRowRecords(b, baseUrl, out)));
+      if (parts.includes("board-load")) records.push(...(await boardLoadRecords(b, baseUrl, out)));
       if (parts.includes("end-map")) records.push(await proveEndMap(b, baseUrl, out, state));
       if (parts.includes("qa1")) {
         for (const page of qa1(QA1_CASES)) records.push(await shoot(b, baseUrl, out, page));
