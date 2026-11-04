@@ -413,15 +413,15 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   mode holding something of yours. Blitz: slots to **Join**, a refund to **Take refund**, a seat's **Lobby**,
   **Results**. Eternum: when it opens.
 - A read that fails (Blitz's slots, your results) says so with **Try again**; the games that answered stay usable.
-- Founding a Frontier home (the game's entry, **Choose your home**, then **Found your realm**): the chosen home stands
+- Founding a Frontier home (the game's entry, **Choose your home**, then **Create your realm**): the chosen home stands
   large (a Realm's map from the marketplace's Realm index, its name, number, Order, resources and wonder; or your Devcon
   ticket) with what it claims each day by the game's preset. Under it a strip of the other choices (six, two on a
   phone); past that **All N** opens every choice in a grid with **Search N Realms** (name or number), maps loading as
   they scroll in. It starts on your ticket when you hold one, else your first Realm (wonders first, then the most
   resources, then by number). No Realm number is typed: with neither a ticket nor a Realm it offers **A free home** (and
   **Link the wallet that holds your Realms** without a linked wallet); when the index cannot be read it says so with
-  **Try again**. The chosen tile wears a gold ring and a check. **Found your realm** waits until the step knows what you
-  hold (the step says **Reading what you hold…**), and spins with **Founding your realm…** while the home is founded. A
+  **Try again**. The chosen tile wears a gold ring and a check. **Create your realm** waits until the step knows what you
+  hold (the step says **Reading what you hold…**), and spins with **Creating your realm…** while the home is founded. A
   Realm already registered for the game shows alone, **Registered for this game**. The relay checks the holder live on
   Starknet, so a Realm just bought counts and one just sold does not; when Starknet does not answer it says **Realm
   check unavailable. Try again.**

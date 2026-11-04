@@ -702,8 +702,8 @@ export const campaignTicketName = (campaign: CampaignKey, golden: boolean) =>
 export const HOME_STEP_WORDS = {
   title: "Choose your home",
   /** The step's one verb, and what it says while the home is founded. */
-  found: "Found your realm",
-  founding: "Founding your realm…",
+  found: "Create your realm",
+  founding: "Creating your realm…",
   /** While the account's Realms and ticket are read: the step offers nothing yet, and says why. */
   loading: "Reading what you hold…",
   freeHome: "A free home",
@@ -961,7 +961,7 @@ export const SEASON_WORDS = {
   /** Under the LORDS the player's realm has earned this season. */
   lordsEarned: "LORDS earned",
   /** Frontier's board before any realm is on it, and how to get on it. */
-  boardEmpty: "No realm yet. Found one from Play.",
+  boardEmpty: "No realm yet. Create one from Play.",
   /** A player with no realm on Frontier's board this season. */
   notOnBoard: "Not on Frontier's board yet",
   /** Frontier's seasons that have ended, under its board. */

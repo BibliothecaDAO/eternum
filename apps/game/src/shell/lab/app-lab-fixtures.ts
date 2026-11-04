@@ -938,7 +938,7 @@ export const LAB_DOORWAYS = {
     view: doorwayView({ source: "boot", phase: "ready", audience: "player", ended: true }),
     realm: null,
   },
-  // The Realm step: choose your home, then Found your realm.
+  // The Realm step: choose your home, then Create your realm.
   home: {
     view: doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }),
     realm: null,

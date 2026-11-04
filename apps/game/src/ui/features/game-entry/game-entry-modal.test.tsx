@@ -140,7 +140,7 @@ const openEntry = async () => {
     await act(async () => root.unmount());
     query.clear();
   };
-  const found = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
+  const found = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your realm")!;
   /** The tiles wearing the chosen mark (its check), by name. */
   const checked = () =>
     [...host.querySelectorAll(".home-picker__choice")]
@@ -227,7 +227,7 @@ it("starts a holder with no ticket on their first Realm, wonders first, and foun
     expect(entry.strip()).toEqual([`${realmChoice(538)} *`, realmChoice(3)]);
     expect(entry.host.textContent).toContain("The Glowing Geyser");
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
     expect(settlement.settled).toBe(true);
   } finally {
@@ -252,7 +252,7 @@ it.each(["the ticket", "a Realm"])(
       expect(entry.featured()).toBe(chosen === "a Realm" ? name(711) : "Golden Devcon ticket");
       // The chosen mark follows the pick, on a golden ticket's art as on a Realm's map.
       expect(entry.checked()).toEqual([chosen === "a Realm" ? realmChoice(711) : "Golden Devcon ticket"]);
-      await entry.press("Found your realm");
+      await entry.press("Create your realm");
       expect(registered).toEqual([chosen === "a Realm" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
     } finally {
       await entry.close();
@@ -278,11 +278,11 @@ it.each(["the ticket", "712"])("lets a refused Realm claimant found with another
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
     await entry.pick(realmChoice(711));
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(settlement.calls).toEqual([]);
     expect(entry.host.textContent).toContain("This source cannot be attached to your home.");
     await entry.pick(alternative === "712" ? realmChoice(712) : "Golden Devcon ticket");
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(sent).toEqual(alternative === "712" ? [711, 712] : [711, undefined]);
     expect(settlement.settled).toBe(true);
   } finally {
@@ -313,7 +313,7 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x3", "0xabc") }));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(12)));
     expect(asked).toEqual(["0x456", "0x789", "0xabc"]);
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(registered).toEqual([{ gameId: 8, realmId: 12 }]);
   } finally {
     await entry.close();
@@ -345,7 +345,7 @@ it.each([
       await entry.press("Link the wallet that holds your Realms");
       expect(entry.host.textContent).toContain("Settings page");
     } else {
-      await entry.press("Found your realm");
+      await entry.press("Create your realm");
       expect(settlement.order).toEqual(["register", "settle"]);
     }
   } finally {
@@ -408,7 +408,7 @@ it.each([
       const home = failed === "the Realms" ? name(711) : "Golden Devcon ticket";
       await vi.waitFor(() => expect(entry.featured()).toBe(home));
       expect(entry.host.textContent).not.toContain(notice);
-      await entry.press("Found your realm");
+      await entry.press("Create your realm");
       expect(registered).toEqual([failed === "the Realms" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
       expect(settlement.settled).toBe(true);
     } finally {
@@ -434,7 +434,7 @@ it("waits on an unreadable ticket: says so, founds nothing, and offers the ticke
     await entry.press("Try again");
     await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
     expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(registered).toEqual([{ gameId: 8 }]);
   } finally {
     await entry.close();
@@ -459,7 +459,7 @@ it("waits to found until it knows what the account holds, so a holder never foun
     await act(async () => answer(held(711)));
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(entry.found().disabled).toBe(false);
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
   } finally {
     await entry.close();
@@ -483,9 +483,9 @@ it("spins while the realm is founded and says so, at full strength, until the fo
   const entry = await openEntry();
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     const founding = [...entry.host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Founding your realm…",
+      (button) => button.textContent === "Creating your realm…",
     )!;
     expect(founding.getAttribute("aria-busy")).toBe("true");
     expect(founding.querySelector(".ui-spinner")).not.toBeNull();
@@ -541,7 +541,7 @@ it.each([
       await entry.pick(realmChoice(17));
       expect(entry.featured()).toBe(name(17));
       expect(grid()).toHaveLength(0);
-      await entry.press("Found your realm");
+      await entry.press("Create your realm");
       expect(registered).toEqual([{ gameId: 8, realmId: 17 }]);
     } finally {
       await entry.close();
@@ -563,7 +563,7 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
     await act(async () => useIdentitySessionStore.setState({ session: signedIn("0x2", null) }));
     await entry.askHoldingsAgain();
     expect(entry.featured()).toBe(name(711));
-    await entry.press("Found your realm");
+    await entry.press("Create your realm");
     expect(registered).toEqual([]);
     expect(settlement.order).toEqual(["settle"]);
   } finally {

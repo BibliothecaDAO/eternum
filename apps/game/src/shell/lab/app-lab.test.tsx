@@ -174,6 +174,6 @@ it("draws the Devcon game's Realm step with the held golden ticket chosen and Fo
   await vi.waitFor(() => expect(lab.textContent).toContain("1 ticket · 1 Realm"));
   expect(lab.textContent).toContain("Golden Devcon ticket");
   expect(lab.textContent).toContain("4786");
-  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Found your realm");
+  const found = [...lab.querySelectorAll("button")].find((each) => each.textContent === "Create your realm");
   await vi.waitFor(() => expect(found?.disabled).toBe(false));
 });

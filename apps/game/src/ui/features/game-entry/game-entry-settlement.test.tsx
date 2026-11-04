@@ -87,7 +87,7 @@ it.each(["play", "settle"] as const)(
     );
     try {
       expect(state.navigate).not.toHaveBeenCalled();
-      const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Found your realm")!;
+      const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your realm")!;
       await act(async () => found.click());
       expect(state.navigate).toHaveBeenCalledTimes(1);
       expect(state.milestone.mock.calls.filter(([name]) => name === "enter-game-started")).toHaveLength(1);
