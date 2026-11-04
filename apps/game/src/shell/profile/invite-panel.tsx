@@ -99,7 +99,7 @@ const CompactBody = ({ referral }: { referral: CampaignReferral }) => (
     <CompactLink code={referral.code} />
     <LinkSlots counted={referral.link.counted} golden={referral.link.golden} />
     {referral.friends.length > 0 && (
-      <ul className="flex flex-col divide-y divide-[var(--app-line)]">
+      <ul className="flex flex-col divide-y divide-kit-line">
         {referral.friends.map((friend, index) => (
           <CompactFriend key={index} friend={friend} />
         ))}
@@ -112,7 +112,7 @@ const CompactBody = ({ referral }: { referral: CampaignReferral }) => (
 const CompactLink = ({ code }: { code: string }) => {
   const { url, copied, copy, share } = useShareLink(code);
   return (
-    <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-black/25 py-1 pl-3 pr-1">
+    <div className="flex items-center gap-1 rounded-lg border border-kit-line bg-kit-ground/40 py-1 pl-3 pr-1">
       <span className="min-w-0 flex-1 truncate font-mono text-xs text-app-ink">{url.replace(/^https?:\/\//, "")}</span>
       <AppIconButton
         icon={copied ? "check" : "copy"}
@@ -137,9 +137,7 @@ const LinkSlots = ({ counted, golden }: { counted: number; golden: boolean }) =>
         <span
           key={index}
           className={`grid h-5 min-w-0 flex-1 place-items-center rounded border ${
-            index < counted || golden
-              ? "border-[rgb(var(--app-gold))] bg-[rgb(var(--app-gold))/0.25]"
-              : "border-[var(--app-line)]"
+            index < counted || golden ? "border-kit-gold bg-kit-gold/25" : "border-kit-line"
           }`}
         >
           {(index < counted || golden) && <Icon name="check" size={12} />}
@@ -207,7 +205,7 @@ const LinkRow = ({ code }: { code: string }) => {
   const { url, copied, copy, share } = useShareLink(code);
   const canShare = share !== null;
   return (
-    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/15 bg-black/25 px-3 py-2">
+    <div className="flex flex-wrap items-center gap-2 rounded-lg border border-kit-line bg-kit-ground/40 px-3 py-2">
       <span className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:flex-1">
         <Icon name="share" size={22} />
         <span className="min-w-0 truncate font-mono text-sm text-app-ink">{url.replace(/^https?:\/\//, "")}</span>
@@ -286,7 +284,7 @@ const Milestone = ({
 }) => (
   <div
     className={`flex flex-col items-center gap-1 rounded-lg border px-2 py-3 text-center ${
-      reached ? "border-[rgb(var(--app-gold))]" : "border-[var(--app-line)] opacity-60"
+      reached ? "border-kit-gold" : "border-kit-line opacity-60"
     }`}
   >
     <Icon name={icon} size={44} />
