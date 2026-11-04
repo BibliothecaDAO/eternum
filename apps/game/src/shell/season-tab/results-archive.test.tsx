@@ -80,9 +80,12 @@ const podium = (container: HTMLElement) =>
   [...container.querySelectorAll('[data-card="podium"] li')].map((place) =>
     [...place.querySelectorAll("b, .season-card__holder, .season-card__count")].map((cell) => cell.textContent),
   );
-/** The page's own buttons: Season, the end map, Withdraw, Continue, Share my season. */
+/**
+ * The page's own buttons, each by its word (a sharing step without its number): Season, the end map, Withdraw,
+ * Continue, then the two steps to post.
+ */
 const buttons = (container: HTMLElement) =>
-  [...container.querySelectorAll("button[data-kind]")].map((button) => button.textContent);
+  [...container.querySelectorAll("button[data-kind]")].map((button) => button.textContent?.replace(/^\d/, ""));
 
 it.each([390, 1440])("shows the Playtest's recap from its archive, with no shard behind it, at %ipx", async (width) => {
   const container = await open(width);
@@ -101,7 +104,7 @@ it.each([390, 1440])("shows the Playtest's recap from its archive, with no shard
   expect(buttons(container)).toEqual(["Season", "Continue"]);
 });
 
-it("gives a Playtest player their cards with their final place and LORDS, Share last, and no Withdraw into a shard that is gone", async () => {
+it("gives a Playtest player their cards with their final place and LORDS, the steps to post last, and no Withdraw into a shard that is gone", async () => {
   player.current = "0x510fa645565fc77a784918630a27d0e1c07255b698fb44966ebd0b801439001";
   const container = await open(1440);
   const place = container.querySelector('[data-card="place"]')!;
@@ -113,5 +116,6 @@ it("gives a Playtest player their cards with their final place and LORDS, Share 
   expect(
     [...container.querySelectorAll('[data-card="haul"] .season-card__tile')].map((tile) => tile.textContent),
   ).toContain("1.5KLORDS");
-  expect(buttons(container)).toEqual(["Season", "Continue", "Share my season"]);
+  // jsdom's clipboard takes no image, so the first step saves it.
+  expect(buttons(container)).toEqual(["Season", "Continue", "Save image", "Post on X"]);
 });

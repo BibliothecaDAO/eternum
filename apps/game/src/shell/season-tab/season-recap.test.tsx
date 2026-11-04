@@ -139,13 +139,21 @@ const tiles = (node: Element) =>
   [...node.querySelectorAll(".season-card__tile")].map((tile) =>
     [...tile.querySelectorAll("b, small")].map((cell) => cell.textContent),
   );
+/** The steps as a player reads them: each button's word (an icon's, its label), without its step number. */
 const steps = (host: HTMLElement) =>
   [...host.querySelectorAll<HTMLButtonElement>("button[data-kind]")].map((button) => [
-    button.textContent,
+    button.getAttribute("aria-label") ?? wordOf(button),
     button.dataset.kind,
   ]);
+const wordOf = (button: HTMLElement) =>
+  [...button.querySelectorAll("span")].map((span) => span.lastChild?.textContent ?? "").join("") || button.textContent;
+const hint = (host: HTMLElement) => host.querySelector(".season-recap__hint")?.textContent ?? null;
 const press = (host: HTMLElement, word: string) =>
-  act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent === word)!.click());
+  act(async () =>
+    [...host.querySelectorAll<HTMLButtonElement>("button")]
+      .find((button) => (button.getAttribute("aria-label") ?? wordOf(button)) === word)!
+      .click(),
+  );
 const pressLabelled = (host: HTMLElement, label: string) =>
   act(async () => host.querySelector<HTMLButtonElement>(`button[aria-label="${label}"]`)!.click());
 
@@ -224,9 +232,10 @@ it("shows a desktop the whole deck, with no story to step", async () => {
   expect(host.querySelector('button[aria-label="Next card"]')).toBeNull();
 });
 
-it("stands the podium in its card, the player's own place theirs, with Season and Exit before Share my season", async () => {
+it("stands the podium in its card, the player's own place theirs, with Season and Exit before the two steps to post", async () => {
   const onSeason = vi.fn();
   const onExit = vi.fn();
+  pngClipboard();
   const host = await open({ onSeason, onExit });
   expect(podium(host)).toEqual([
     ["1", "Volcanic", "166"],
@@ -236,7 +245,8 @@ it("stands the podium in its card, the player's own place theirs, with Season an
   expect(steps(host)).toEqual([
     ["Season", "secondary"],
     ["Exit", "secondary"],
-    ["Share my season", "primary"],
+    ["Copy image", "secondary"],
+    ["Post on X", "primary"],
   ]);
   await press(host, "Season");
   await press(host, "Exit");
@@ -251,6 +261,7 @@ it("shows a reader with no realm on the board the season and its podium card alo
   expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
   expect(podium(host)).toHaveLength(3);
   expect(steps(host).map(([word]) => word)).toEqual(["Season", "Exit"]);
+  expect(hint(host)).toBeNull();
 });
 
 it("names the prize a place pays, on the place card and on the podium, once the season has a pool", async () => {
@@ -263,44 +274,6 @@ it("names the prize a place pays, on the place card and on the podium, once the 
     ["2", "djizus", "136", prizes[1]],
     ["3", "You", "114", prizes[2]],
   ]);
-});
-
-it("on a phone, shares the tall deck as an image through the share sheet, with the season's line and its Results", async () => {
-  const share = vi.fn(() => Promise.resolve());
-  vi.stubGlobal("navigator", { ...navigator, canShare: () => true, share });
-  const host = await open({ width: 390 });
-  await press(host, "Share my season");
-  expect(snapshot.calls).toEqual([{ node: deck(host), width: 1080, height: 1350 }]);
-  const [sent] = share.mock.calls[0] as unknown as [{ files: File[]; text: string; url: string }];
-  expect([sent.files.map((file) => [file.name, file.type]), sent.text]).toEqual([
-    [["my-season.png", "image/png"]],
-    "Playtest · #3 of 45 realms",
-  ]);
-  expect(sent.url).toBe(`${window.location.origin}/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`);
-});
-
-it("on a desktop with no share sheet for images, saves the wide deck and says so", async () => {
-  vi.stubGlobal("navigator", { ...navigator, canShare: undefined });
-  const saved: string[] = [];
-  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
-    saved.push(this.download);
-  });
-  URL.createObjectURL = () => "blob:card";
-  URL.revokeObjectURL = () => {};
-  const host = await open({ width: 1440 });
-  await press(host, "Share my season");
-  expect(snapshot.calls.map(({ width, height }) => [width, height])).toEqual([[1200, 675]]);
-  expect(saved).toEqual(["my-season.png"]);
-  expect(steps(host).at(-1)).toEqual(["Image saved", "primary"]);
-  click.mockRestore();
-});
-
-it("says so when the image cannot be made, and keeps Share my season to try again", async () => {
-  snapshot.fails = true;
-  const host = await open();
-  await press(host, "Share my season");
-  expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
-  expect(steps(host).at(-1)).toEqual(["Share my season", "primary"]);
 });
 
 /**
@@ -316,7 +289,6 @@ const pngClipboard = () => {
   vi.stubGlobal("ClipboardItem", PngClipboardItem);
   vi.stubGlobal("navigator", {
     ...navigator,
-    canShare: undefined,
     clipboard: {
       write: async (items: PngClipboardItem[]) => {
         for (const item of items) copied.push(await item.items["image/png"]!);
@@ -326,24 +298,51 @@ const pngClipboard = () => {
   return copied;
 };
 
-it("on a desktop whose clipboard takes images, copies the same deck image from a quiet Copy image beside Share", async () => {
+/** X's compose page as the game opened it: its address's page, post and link, and where it opened. */
+const xPosts = () => {
+  const opened = vi.fn();
+  vi.stubGlobal("open", opened);
+  return () =>
+    (opened.mock.calls as [string, string][]).map(([href, target]) => {
+      const post = new URL(href);
+      return [post.origin + post.pathname, post.searchParams.get("text"), post.searchParams.get("url"), target];
+    });
+};
+
+const RESULTS = `${window.location.origin}/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`;
+
+it("posts the season on X in two steps: Copy image puts the deck's image on the clipboard, Post on X opens the post", async () => {
   const copied = pngClipboard();
+  const posts = xPosts();
   const host = await open({ width: 1440 });
-  expect(steps(host).slice(-2)).toEqual([
-    ["Copy image", "quiet"],
-    ["Share my season", "primary"],
-  ]);
+  expect(hint(host)).toBe("Copy the image, then paste it in your post on X.");
   await press(host, "Copy image");
   // The one image: the deck's own node at its wide size, the PNG the library made.
   expect(snapshot.calls).toEqual([{ node: deck(host), width: 1200, height: 675 }]);
   expect(copied.map((image) => image.type)).toEqual(["image/png"]);
   expect(steps(host).slice(-2)).toEqual([
-    ["Image copied", "quiet"],
-    ["Share my season", "primary"],
+    ["Image copied", "secondary"],
+    ["Post on X", "primary"],
   ]);
+  await press(host, "Post on X");
+  expect(posts()).toEqual([["https://x.com/intent/tweet", "Playtest · #3 of 45 realms", RESULTS, "_blank"]]);
 });
 
-it("offers no Copy image where the clipboard takes no PNG, nor on a phone, which shares", async () => {
+it("on a phone, keeps the steps in one row, Season and Exit as their icons, and copies the tall deck", async () => {
+  pngClipboard();
+  const host = await open({ width: 390 });
+  expect(steps(host)).toEqual([
+    ["Season", "secondary"],
+    ["Exit", "secondary"],
+    ["Copy image", "secondary"],
+    ["Post on X", "primary"],
+  ]);
+  expect([...host.querySelectorAll('button[data-size="icon"]')].map((button) => button.textContent)).toEqual(["", ""]);
+  await press(host, "Copy image");
+  expect(snapshot.calls).toEqual([{ node: deck(host), width: 1080, height: 1350 }]);
+});
+
+it("where the clipboard takes no PNG, saves the deck's image instead, and the hint says to add it to the post", async () => {
   vi.stubGlobal(
     "ClipboardItem",
     class {
@@ -351,12 +350,22 @@ it("offers no Copy image where the clipboard takes no PNG, nor on a phone, which
     },
   );
   vi.stubGlobal("navigator", { ...navigator, clipboard: { write: async () => {} } });
-  const noPng = await open({ width: 1440 });
-  expect(steps(noPng).map(([word]) => word)).toEqual(["Season", "Exit", "Share my season"]);
-  await unmount!();
-  pngClipboard();
-  const phone = await open({ width: 390 });
-  expect(steps(phone).map(([word]) => word)).toEqual(["Season", "Exit", "Share my season"]);
+  const saved: string[] = [];
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+    saved.push(this.download);
+  });
+  URL.createObjectURL = () => "blob:card";
+  URL.revokeObjectURL = () => {};
+  const host = await open({ width: 1440 });
+  expect(hint(host)).toBe("Save the image, then add it to your post on X.");
+  await press(host, "Save image");
+  expect(snapshot.calls.map(({ width, height }) => [width, height])).toEqual([[1200, 675]]);
+  expect(saved).toEqual(["my-season.png"]);
+  expect(steps(host).slice(-2)).toEqual([
+    ["Image saved", "secondary"],
+    ["Post on X", "primary"],
+  ]);
+  click.mockRestore();
 });
 
 it("says the image could not be made when the copy fails, and keeps Copy image to try again", async () => {
@@ -366,8 +375,8 @@ it("says the image could not be made when the copy fails, and keeps Copy image t
   await press(host, "Copy image");
   expect(host.querySelector("[role=alert]")?.textContent).toBe("The image could not be made.");
   expect(steps(host).slice(-2)).toEqual([
-    ["Copy image", "quiet"],
-    ["Share my season", "primary"],
+    ["Copy image", "secondary"],
+    ["Post on X", "primary"],
   ]);
 });
 

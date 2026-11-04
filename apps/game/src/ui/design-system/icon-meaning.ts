@@ -16,9 +16,6 @@ export const REALMS_MARK = {
   small: "/images/logos/realms-small.webp",
 } as const;
 
-/** Devcon's wordmark as Devcon delivers it, black on white: drawn inverted on a dark field. */
-export const DEVCON_MARK = "/images/logos/devcon-wordmark.png";
-
 /** Each age's complete lockup (emblem, title and Realms stamp), with real alpha, for its painting or a dark field. */
 export const AGE_LOCKUP = {
   blitz: "/images/logos/blitz-lockup.webp",

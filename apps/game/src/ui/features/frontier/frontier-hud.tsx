@@ -85,8 +85,12 @@ export const FrontierHud = ({
   seasonOver: SeasonOver,
 }: {
   rules: ExpeditionRules;
-  /** The host owns the shell recap; the HUD supplies its board action and pending payout. */
-  seasonOver: ComponentType<{ withdraw?: ReactNode; onSeason: () => void }>;
+  /** The host owns the shell recap; the HUD supplies the player's realm, its board action and pending payout. */
+  seasonOver: ComponentType<{
+    realm: NativeRows["Structure"] | null;
+    withdraw?: ReactNode;
+    onSeason: () => void;
+  }>;
 }) => {
   // Parts shared with the Blitz and Eternum HUD read upright, untracked and in sentence case here (index.css).
   useDocumentClass("frontier-hud");
@@ -229,6 +233,7 @@ export const FrontierHud = ({
       {/* The card covers the HUD: the season's board and Withdraw each open in its place. */}
       {surface !== "season" && surface !== "withdraw" && (
         <SeasonOver
+          realm={visit ? null : realm}
           withdraw={realm && !visit && <SeasonPayout realm={realm} />}
           onSeason={() => setSurface("season")}
         />

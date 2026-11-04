@@ -1,6 +1,3 @@
-/** How a card left the device: through its share sheet, or saved as a file where there is none for images. */
-export type SharedCard = "shared" | "saved";
-
 type CardSize = { width: number; height: number };
 
 /**
@@ -18,25 +15,9 @@ const cardImage = async (card: HTMLElement, { width, height }: CardSize): Promis
   }
 };
 
-/**
- * The card's image handed to the device's share sheet with its line and address where the device shares images (a
- * phone), else saved as a file. A sheet the player closes counts as shared: the player chose not to send it.
- */
-export const shareSeasonCard = async (
-  card: HTMLElement,
-  { line, url, ...size }: CardSize & { line: string; url: string },
-): Promise<SharedCard> => {
-  const file = new File([await cardImage(card, size)], "my-season.png", { type: "image/png" });
-  if (navigator.canShare?.({ files: [file] })) {
-    const sent = await navigator.share({ files: [file], text: line, url }).then(
-      () => true,
-      (error: unknown) => error instanceof DOMException && error.name === "AbortError",
-    );
-    if (sent) return "shared";
-  }
-  saveFile(file);
-  return "saved";
-};
+/** The card's image saved as a file, where the clipboard takes no PNG: the player adds it to the post themselves. */
+export const saveSeasonCard = async (card: HTMLElement, size: CardSize): Promise<void> =>
+  saveFile(new File([await cardImage(card, size)], "my-season.png", { type: "image/png" }));
 
 /** Whether this browser's clipboard takes a PNG: only there is the card offered to copy. */
 export const canCopyCard = (): boolean =>

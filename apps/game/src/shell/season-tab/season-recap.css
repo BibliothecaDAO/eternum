@@ -185,6 +185,43 @@
 .season-recap[data-cut="tall"] .season-recap__steps > :last-child {
   flex: 1;
 }
+/*
+ * Over the HUD a phone keeps its steps in one row (owner, 4 November 2026): Season and Exit as their icons, Copy image
+ * and Post on X sharing the rest, a failure under them.
+ */
+.season-recap[data-cut="tall"][data-cover] .season-recap__steps {
+  gap: 8px;
+}
+.season-recap[data-cut="tall"][data-cover] .season-recap__steps > .app-button:not([data-size="icon"]) {
+  flex: 1 1 0;
+  min-width: 0;
+  padding-inline: 10px;
+}
+.season-recap__steps > [role="alert"] {
+  flex-basis: 100%;
+}
+/* The order of sharing, said once over its two numbered steps. */
+.season-recap__hint {
+  flex-basis: 100%;
+  text-align: right;
+  color: var(--app-muted);
+  font-size: var(--app-text-small);
+}
+.season-recap[data-cut="tall"] .season-recap__hint {
+  text-align: center;
+}
+.season-recap__step-number {
+  display: inline-grid;
+  place-items: center;
+  width: 1.35em;
+  height: 1.35em;
+  margin-right: 0.4em;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-ui);
+  font-size: 0.85em;
+  line-height: 1;
+}
 
 /* The deck: the cards over its foot, on the season's ground. */
 .season-deck {
