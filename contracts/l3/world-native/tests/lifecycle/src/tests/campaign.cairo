@@ -1,5 +1,4 @@
 use snforge_std::{interact_with_state, start_cheat_block_timestamp};
-use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
 use world_test_support::tests::entry::*;
 use crate::entry::LaborHome;
 use crate::resources::{ESSENCE, LABOR, ResourceKey};
@@ -589,14 +588,24 @@ fn golden_upgrade_preserves_home_and_paid_claims_then_grants_prospectively(recov
     let game = crate::game::IGameDispatcherTrait::game(
         crate::game::IGameDispatcher { contract_address: d.games }, home.game_id,
     );
-    start_cheat_block_timestamp(d.games, crate::days::day_of(game, 7200, 360).end);
+    let first_day = crate::days::day_of(game, 7200, 360);
+    start_cheat_block_timestamp(d.games, first_day.end);
     let next = operator.grant_labor(home, 1, d.actor).unwrap();
-    assert_eq!(next.amount, 0);
+    // The first day produces 1,814.4 on top of 3,000 stored; the golden claim fills the 6,000 limit.
+    assert_eq!(next.amount, 11856 * RESOURCE_PRECISION / 10);
     assert_eq!(next.essence, 2000 * RESOURCE_PRECISION);
     assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
     assert_eq!(balance(d, home, ESSENCE), essence + next.essence);
     assert_eq!(operator.grant_labor(home, 1, d.actor).unwrap(), next);
     assert_eq!(operator.labor_grant(home, 0).unwrap(), Some(paid));
+    let second_day = crate::days::day_of(game, 7200, first_day.end);
+    start_cheat_block_timestamp(d.games, second_day.end);
+    let full = operator.grant_labor(home, 2, d.actor).unwrap();
+    assert_eq!(full.amount, 0);
+    assert_eq!(full.essence, 2000 * RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, LABOR), 6000 * RESOURCE_PRECISION);
+    assert_eq!(balance(d, home, ESSENCE), essence + next.essence + full.essence);
+    assert_eq!(operator.grant_labor(home, 2, d.actor).unwrap(), full);
 }
 
 #[test]
