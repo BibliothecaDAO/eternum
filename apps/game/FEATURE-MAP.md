@@ -1,5 +1,11 @@
 # Feature map — game client
 
+A confirmed golden Devcon upgrade updates the home skin and Realm Labor amounts together. Open Realm Labor from the
+Labor chip (desktop) or Menu → Realm Labor (phone). Paid days stay claimed; the next unpaid claim uses golden amounts.
+The standard playtest `--steps home-upgrade` starts with an unclaimed regular home, writes an upgrade-ready marker,
+waits for the operator route and confirmed snapshots, then observes the golden home and claims normally. A separate
+`--steps home-golden` run checks the golden home and claimed day after a fresh load.
+
 Frontier army management: select an army from the dock or map; on a phone tap its selected token for details.
 **Reinforce** opens the troop amount, normal raising cost and resulting count. It is available on the six tiles beside
 your own home on today’s surface. Reinforcement preserves the army’s regenerated stamina bar, skills and XP. **Delete**

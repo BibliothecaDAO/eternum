@@ -612,7 +612,9 @@ export default {
   async fetch(request: Request, raw: RelayEnv): Promise<Response> {
     const env = { ...raw, ...decodeRelaySettings(raw) };
     if (new URL(request.url).pathname === "/api/value/operator/campaign-entry" && request.method === "POST")
-      return recoverCampaignEntry(request, env);
+      return operatorCampaignEntry(request, env, "recover");
+    if (new URL(request.url).pathname === "/api/value/operator/campaign-upgrade" && request.method === "POST")
+      return operatorCampaignEntry(request, env, "upgrade");
     if (new URL(request.url).pathname === "/api/value/operator/reset" && request.method === "POST") {
       if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
         return Response.json({ error: "unauthorized" }, { status: 401 });
@@ -729,8 +731,12 @@ const finishChestResponse = async (request: Request, env: RelayEnv) => {
 const relayEffect = <A, E>(operation: string, make: () => Effect.Effect<A, E>) =>
   relayOperation(operation, () => Effect.runPromise(make()));
 
-/** Recovery attaches only the campaign ticket held by identity; the operator cannot choose its tier or a held Realm. */
-async function recoverCampaignEntry(request: Request, env: RelayEnv): Promise<Response> {
+/** Identity supplies the awarded ticket; operator requests cannot choose a tier, account or held Realm. */
+async function operatorCampaignEntry(
+  request: Request,
+  env: RelayEnv,
+  action: "recover" | "upgrade",
+): Promise<Response> {
   if (!(await presentsOperatorToken(request, env.OPERATOR_TOKEN)))
     return Response.json({ error: "unauthorized" }, { status: 401 });
   const body = (await request.json().catch(() => null)) as {
@@ -760,7 +766,7 @@ async function recoverCampaignEntry(request: Request, env: RelayEnv): Promise<Re
       realmsId: body.realmsId,
       account,
       realmId: null,
-      recoverFlyer: true,
+      ...(action === "recover" ? { recoverFlyer: true as const } : { upgradeCampaign: true as const }),
     });
     if (result.error) return Response.json({ error: result.error.code }, { status: result.error.status });
     return Response.json(result.entry);
