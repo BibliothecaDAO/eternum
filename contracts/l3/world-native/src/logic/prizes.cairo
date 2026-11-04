@@ -10,7 +10,9 @@ pub mod PrizesLogic {
     use crate::faith::{FaithfulStructure, PlayerFaithKey, PlayerFaithPoints, WonderFaith, WonderFaithWinners};
     use crate::game::assert_playing;
     use crate::logic::blitz_results::BlitzResultState;
+    use crate::logic::entry::EntryAdministration;
     use crate::logic::faith::FaithState;
+    use crate::logic::lords::LordsState;
     use crate::logic::release::ReleaseState;
     use crate::resources::{IResourceOperationsDispatcherTrait, IResourceOperationsLibraryDispatcher, ResourceKey};
 
@@ -25,9 +27,21 @@ pub mod PrizesLogic {
     impl BlitzResults = BlitzResultState::BlitzResultsImpl<ContractState>;
     component!(path: ReleaseState, storage: release, event: ReleaseEvent);
     impl LifeInternal = ReleaseState::InternalImpl<ContractState>;
+    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
+    #[abi(embed_v0)]
+    impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
+    component!(path: LordsState, storage: relics, event: RelicEvent);
+    #[abi(embed_v0)]
+    impl Lords = LordsState::LordsImpl<ContractState>;
+    impl LordsInternal = LordsState::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]
     struct Storage {
+        #[substorage(v0)]
+        administration: EntryAdministration::Storage,
+        #[substorage(v0)]
+        relics: LordsState::Storage,
         #[substorage(v0)]
         release: ReleaseState::Storage,
         #[substorage(v0)]
@@ -40,6 +54,8 @@ pub mod PrizesLogic {
     #[event]
     #[derive(Drop, starknet::Event)]
     enum Event {
+        AdministrationEvent: EntryAdministration::Event,
+        RelicEvent: LordsState::Event,
         ReleaseEvent: ReleaseState::Event,
         BlitzEvent: BlitzResultState::Event,
         FaithEvent: FaithState::Event,

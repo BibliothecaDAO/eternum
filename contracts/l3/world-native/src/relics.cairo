@@ -208,7 +208,6 @@ pub struct LordsWithdrawal {
 
 #[starknet::interface]
 pub trait ILords<T> {
-    fn sweep_lords(ref self: T, game_id: u32, structure_id: u64, context: crate::commands::ActionContext);
     fn refill_stamina(
         ref self: T,
         game_id: u32,

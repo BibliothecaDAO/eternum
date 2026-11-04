@@ -14,6 +14,8 @@ pub mod EntryAdministration {
         StorageMapReadAccess, StorageMapWriteAccess, StoragePointerReadAccess, StoragePointerWriteAccess,
     };
     use crate::entry::{LaborGrant, LaborHome};
+    use crate::logic::lords::LordsState;
+    use crate::logic::lords::LordsState::InternalTrait as LordsInternal;
     use crate::logic::release::ReleaseState;
     use crate::logic::release::ReleaseState::InternalTrait as LifeInternal;
     use crate::resources::ResourceKey;
@@ -33,6 +35,7 @@ pub mod EntryAdministration {
     pub impl Administration<
         TContractState,
         +HasComponent<TContractState>,
+        impl Lords: LordsState::HasComponent<TContractState>,
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of crate::entry::ILedgerOperator<ComponentState<TContractState>> {
@@ -139,14 +142,8 @@ pub mod EntryAdministration {
             );
             crate::logic::deposits::sweep(game_id, realm.owner);
             let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
-            crate::relics::ILordsDispatcherTrait::sweep_lords(
-                crate::relics::ILordsLibraryDispatcher {
-                    class_hash: get_dep_component!(@self, Life).classes(game_id).relics.read(),
-                },
-                game_id,
-                structure_id,
-                crate::commands::action_context(context),
-            );
+            let mut lords = get_dep_component_mut!(ref self, Lords);
+            lords.sweep_earned(ResourceKey { game_id, entity_id: structure_id }, realm.owner, context);
         }
         fn award_frontier_prize(ref self: ComponentState<TContractState>, game_id: u32, rank: u16) {
             super::assert_ledger_operator();
