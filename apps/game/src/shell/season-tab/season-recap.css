@@ -200,14 +200,18 @@
 .season-recap__steps > [role="alert"] {
   flex-basis: 100%;
 }
-/* The order of sharing, said once over its two numbered steps. */
+/*
+ * The order of sharing, said once before its two numbered steps: on a desktop in their row while it has room (so the
+ * cover keeps its one screen), on its own line over them otherwise and on a phone.
+ */
 .season-recap__hint {
-  flex-basis: 100%;
+  flex: 1 1 16rem;
   text-align: right;
   color: var(--app-muted);
   font-size: var(--app-text-small);
 }
 .season-recap[data-cut="tall"] .season-recap__hint {
+  flex-basis: 100%;
   text-align: center;
 }
 .season-recap__step-number {

@@ -1,17 +1,20 @@
 import "./festival.css";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 
-import { drawShow, PEAK_SECONDS, SHOW_SECONDS } from "./fireworks";
+import { DIWALI_SPRITES } from "@/ui/design-system/icon-meaning";
+
+import { drawShow, SHOW_SECONDS, type FireworkColour, type FireworkSheets } from "./fireworks";
 
 /**
- * Diwali's marks for Season 0's end: fireworks over the season (a canvas drawing the show of fireworks.ts), a rangoli
- * in the kit's gold line, and the diya, a small clay lamp. Every mark is still under prefers-reduced-motion.
+ * Diwali's marks for Season 0's end: painted fireworks over the season (a canvas drawing the show of fireworks.ts), a
+ * rangoli in the kit's gold line, and painted diyas whose flames breathe. Every mark is still under
+ * prefers-reduced-motion.
  */
 
 /**
  * The fireworks: the show plays once as the screen opens, then the sky is left clear. `frame` holds it at that second
- * (the lab's stills); reduced motion holds it at its fullest moment.
+ * (the lab's stills); reduced motion holds every burst at its poster frame.
  */
 export const FireworkSky = ({ frame, className }: { frame?: number; className?: string }) => {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -19,26 +22,55 @@ export const FireworkSky = ({ frame, className }: { frame?: number; className?: 
     const sky = canvas.current;
     const context = sky?.getContext("2d");
     if (!sky || !context) return;
-    const still = frame ?? (matchMedia("(prefers-reduced-motion: reduce)").matches ? PEAK_SECONDS : undefined);
-    const begun = performance.now();
+    const still = frame ?? (matchMedia("(prefers-reduced-motion: reduce)").matches ? "poster" : undefined);
     let pending = 0;
-    const draw = () => {
-      const seconds = still ?? (performance.now() - begun) / 1000;
-      fitToScreen(sky);
-      drawShow(context, sky.width, sky.height, seconds);
-      if (still === undefined && seconds < SHOW_SECONDS) pending = requestAnimationFrame(draw);
+    let resized: ResizeObserver | undefined;
+    let gone = false;
+    const play = (sheets: FireworkSheets) => {
+      if (gone) return;
+      const begun = performance.now();
+      const draw = () => {
+        fitToScreen(sky);
+        if (still !== undefined) return drawShow(context, sheets, sky.width, sky.height, still);
+        const seconds = (performance.now() - begun) / 1000;
+        drawShow(context, sheets, sky.width, sky.height, seconds);
+        if (seconds < SHOW_SECONDS) pending = requestAnimationFrame(draw);
+      };
+      draw();
+      // A still sky is drawn again at its new size; a playing one fits itself each frame.
+      resized = new ResizeObserver(() => still !== undefined && draw());
+      resized.observe(sky);
     };
-    draw();
-    // A still sky is drawn again at its new size; a playing one fits itself each frame.
-    const resized = new ResizeObserver(() => still !== undefined && draw());
-    resized.observe(sky);
+    loadSheets().then(play, (error: unknown) => console.error("The Diwali fireworks did not load", error));
     return () => {
+      gone = true;
       cancelAnimationFrame(pending);
-      resized.disconnect();
+      resized?.disconnect();
     };
   }, [frame]);
   return <canvas ref={canvas} className={`festival-sky ${className ?? ""}`} aria-hidden />;
 };
+
+const COLOURS = Object.keys(DIWALI_SPRITES.fireworks) as FireworkColour[];
+
+let sheets: Promise<FireworkSheets> | undefined;
+
+/** Every firework's sheet, decoded once for every sky; a failed load is tried again by the next sky. */
+const loadSheets = () =>
+  (sheets ??= Promise.all(
+    COLOURS.map(async (colour) => {
+      const image = new Image();
+      image.src = DIWALI_SPRITES.fireworks[colour].url;
+      await image.decode();
+      return [colour, image] as const;
+    }),
+  ).then(
+    (loaded) => Object.fromEntries(loaded) as FireworkSheets,
+    (error: unknown) => {
+      sheets = undefined;
+      throw error;
+    },
+  ));
 
 /** The canvas at the screen's pixels, up to twice its size in CSS pixels. */
 const fitToScreen = (sky: HTMLCanvasElement) => {
@@ -94,39 +126,36 @@ export const Rangoli = ({ size, className }: { size: number; className?: string 
   );
 };
 
-/** A diya: a clay lamp with its flame lit. */
-const Diya = ({ size }: { size: number }) => (
-  <svg className="festival-diya" width={size} height={size} viewBox="0 0 64 64" aria-hidden>
-    <defs>
-      <radialGradient id="diya-glow">
-        <stop offset="0" stopColor="#FFE45E" stopOpacity="0.55" />
-        <stop offset="1" stopColor="#FFE45E" stopOpacity="0" />
-      </radialGradient>
-      <linearGradient id="diya-clay" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0" stopColor="#D8743A" />
-        <stop offset="1" stopColor="#7A2E10" />
-      </linearGradient>
-      <linearGradient id="diya-flame" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="0" stopColor="#FFF6DA" />
-        <stop offset="0.45" stopColor="#FFE45E" />
-        <stop offset="1" stopColor="#F4A644" />
-      </linearGradient>
-    </defs>
-    <circle cx="32" cy="22" r="20" fill="url(#diya-glow)" />
-    <path className="festival-diya__flame" d="M32 6 C 38 15 38 22 32 27 C 26 22 26 15 32 6 Z" fill="url(#diya-flame)" />
-    <path d="M6 34 C 14 33 50 33 60 30 C 56 44 46 52 32 52 C 18 52 9 45 6 34 Z" fill="url(#diya-clay)" />
-    <path d="M8 34 C 18 37 46 37 59 31" fill="none" stroke="#F3D08A" strokeWidth="1.6" opacity="0.8" />
-    <circle cx="22" cy="43" r="1.6" fill="#F3D08A" />
-    <circle cx="32" cy="45" r="1.6" fill="#F3D08A" />
-    <circle cx="42" cy="43" r="1.6" fill="#F3D08A" />
-  </svg>
-);
+const DIYA = DIWALI_SPRITES.diya;
+const DIYA_ROWS = DIYA.frames / DIYA.columns;
 
-/** A row of lit diyas. */
+/** The diya's sheet as CSS steps it: its grid, a column's and a whole cycle's time, and its poster cell. */
+const DIYA_SHEET = {
+  backgroundImage: `url(${DIYA.url})`,
+  "--diya-columns": DIYA.columns,
+  "--diya-rows": DIYA_ROWS,
+  "--diya-column-seconds": `${DIYA.columns / DIYA.fps}s`,
+  "--diya-cycle-seconds": `${DIYA.frames / DIYA.fps}s`,
+  "--diya-sweep-x": `${(DIYA.columns / (DIYA.columns - 1)) * 100}%`,
+  "--diya-sweep-y": `${(DIYA_ROWS / (DIYA_ROWS - 1)) * 100}%`,
+  "--diya-poster-x": `${((DIYA.posterFrame % DIYA.columns) / (DIYA.columns - 1)) * 100}%`,
+  "--diya-poster-y": `${(Math.floor(DIYA.posterFrame / DIYA.columns) / (DIYA_ROWS - 1)) * 100}%`,
+} as CSSProperties;
+
+/** A row of lit diyas, each flame a few frames from its neighbour's, all from one decoded sheet. */
 export const DiyaRow = ({ count, size }: { count: number; size: number }) => (
   <span className="festival-diyas" aria-hidden>
     {Array.from({ length: count }, (_, index) => (
-      <Diya key={index} size={size} />
+      <span
+        key={index}
+        className="festival-diya"
+        style={{
+          ...DIYA_SHEET,
+          width: size,
+          height: size,
+          animationDelay: `${-((index * 5) % DIYA.frames) / DIYA.fps}s`,
+        }}
+      />
     ))}
   </span>
 );

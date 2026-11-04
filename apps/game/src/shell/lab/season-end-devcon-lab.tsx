@@ -17,9 +17,9 @@ import { prizeOf } from "../season-tab/season-recap";
 /**
  * Season 0's end on Diwali, the owner's pick page's stills (/lab/app/<screen>/season-end-devcon/<step>/<who>): a Devcon
  * realm's owner's greeting (`greeting`), then the recap See my season opens (`recap`), which every other player meets
- * at once. `?frame=<s>` holds the fireworks at that
- * second. The board is prod's Playtest read by its third place, as the HUD lab's season-over is; the season is named
- * Season 0, ending Fri 6 Nov 18:00Z.
+ * at once. `?frame=<s>` holds the fireworks at that second; without it they play (still, under reduced motion). The
+ * board is prod's Playtest read by its third place, as the HUD lab's season-over is; the season is named Season 0,
+ * ending Fri 6 Nov 18:00Z.
  */
 type Step = "greeting" | "recap";
 
@@ -43,7 +43,8 @@ const SEASON_0 = {
 
 export const LabSeasonEndDevcon = () => {
   const { step, who } = useParams() as { step: Step; who: Who };
-  const frame = Number(useSearchParams()[0].get("frame") ?? 1.4);
+  const held = useSearchParams()[0].get("frame");
+  const frame = held === null ? undefined : Number(held);
   const cut = useLayout() === "phone" ? "tall" : "wide";
   const own = findOwnEntry(BOARD.entries, VIEWER)!;
   if (step === "greeting")
