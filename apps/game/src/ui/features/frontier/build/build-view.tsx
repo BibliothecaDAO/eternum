@@ -6,6 +6,7 @@ import {
   formatCharge,
   formatPopulation,
   formatPopulationInWords,
+  formatShort,
   formatShortDuration,
 } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, IconGroup, type IconMeaning } from "@/ui/design-system/icon";
@@ -233,7 +234,7 @@ const RoomAsk = ({
         </HudChip>
         <AskLine tile={building}>
           <HudChip icons={["person"]} label={`${building.name} ${POPULATION}`}>
-            {formatCharge(building.takes)}
+            {formatShort(building.takes)}
           </HudChip>
         </AskLine>
         <AskLine tile={hut}>
