@@ -27,6 +27,7 @@ import {
   needsResearchPurchases,
   POPULATION,
   PRICE_UP,
+  purchasesOfGate,
   type Rank,
   type RankedWords,
 } from "@/ui/design-system/kit/words";
@@ -40,7 +41,7 @@ import type { RealmPopulation } from "../realm/realm-population";
  * One building on the build sheet (the owner's pick, option B · Cards): its painting and name with the population it
  * takes in the card's corner, what one more gives, its research as gems (one per side of a row that has sides), and a
  * band for where it stands: its resource prices, with the wait while the realm holds too little or the population it
- * lacks, a lock with the gate it waits for (Barracks research purchases), or a tick when the realm already holds its one copy.
+ * lacks, a lock with the Barracks research purchases bought against its gate ("1/2 research"), or a tick when the realm already holds its one copy.
  */
 export type BuildTile = {
   key: string;
@@ -68,7 +69,7 @@ export type BuildTile = {
         short?: { of: Price["of"]; wait: number | undefined } | { of: "population" };
       }
     | { kind: "built" }
-    | { kind: "locked"; purchases: number };
+    | { kind: "locked"; gate: number; bought: number };
 };
 
 /**
@@ -268,14 +269,14 @@ const bandTone = (standing: BuildTile["standing"]) =>
 const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
   <HudChip
     tone={bandTone(standing)}
-    tip={standing.kind === "locked" ? needsResearchPurchases(BARRACKS, standing.purchases) : undefined}
+    tip={standing.kind === "locked" ? needsResearchPurchases(BARRACKS, standing.bought, standing.gate) : undefined}
   >
     <span className="flex items-center gap-1 whitespace-nowrap tabular-nums">
       {standing.kind === "built" && <SemanticIcon name="check" size={16} />}
       {standing.kind === "locked" && (
         <>
           <SemanticIcon name="lock" size={14} />
-          {standing.purchases} research
+          {purchasesOfGate(standing.bought, standing.gate)} research
         </>
       )}
       {standing.kind === "price" && <Price standing={standing} />}

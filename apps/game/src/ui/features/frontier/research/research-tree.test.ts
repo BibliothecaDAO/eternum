@@ -1,3 +1,4 @@
+import { nativeResearchConstants as research } from "@bibliothecadao/eternum/game-client";
 import { describe, expect, it } from "vitest";
 
 import { readArmyDetail } from "../army/army-detail";
@@ -30,7 +31,7 @@ describe("the castle's tree as the contract rules it", () => {
     expect(why(EARLY_REALM, "row-0")).toBe("Essence 300 / 500");
     expect(why(EARLY_REALM, "row-1")).toBe("Build a Workshop");
     // A training building can only stand once the Barracks row is rare.
-    expect(why(EARLY_REALM, "row-4")).toBe("Barracks 2 purchases first");
+    expect(why(EARLY_REALM, "row-4")).toBe("Barracks 0/2 purchases first");
     expect(why(EARLY_REALM, "reach-2")).toBe("Ethereal I first");
     expect(canResearchNow(readResearchTree(EARLY_REALM))).toBe(true);
   });
@@ -54,11 +55,22 @@ describe("the castle's tree as the contract rules it", () => {
     ]);
     expect(node(MID_REALM, "shrine").state).toBe("done");
     expect(node(MID_REALM, "row-2").gate).toEqual({
-      name: "Barracks 2 purchases",
+      name: "Barracks 2/2 purchases",
       met: true,
       line: "Training buildings open",
     });
     expect(canResearchNow(readResearchTree(MID_REALM))).toBe(true);
+  });
+
+  it("counts the owner's one Barracks purchase toward the training gate, and opens it on a second on either side", () => {
+    // Prod, 4 November: Drill I bought, Rations none; the contract refuses a War hall until a second purchase.
+    const barracks = (sides: number[]) => ({
+      ...EARLY_REALM,
+      learned: { ...EARLY_REALM.learned, [research.ROW_BARRACKS]: { tier: 1, sides } },
+    });
+    expect(why(barracks([0]), "row-4")).toBe("Barracks 1/2 purchases first");
+    expect(node(barracks([0]), "row-2").gate).toMatchObject({ name: "Barracks 1/2 purchases", met: false });
+    expect(node(barracks([0, 1]), "row-2").gate).toMatchObject({ name: "Barracks 2/2 purchases", met: true });
   });
 
   it("gives a Farm tier's two sides their figures now and with one more pick, and the lodge its three kinds", () => {

@@ -313,7 +313,7 @@ const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): L
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
   ({ kind: "price", prices: [{ of: "labor", amount: labor }], short, raised }) as const;
 /** A training building waiting for the two Barracks research purchases. */
-const LOCKED = { kind: "locked", purchases: 2 } as const;
+const LOCKED = { kind: "locked", gate: 2, bought: 0 } as const;
 
 const trainingPrice: LabTile["standing"] = {
   kind: "price",

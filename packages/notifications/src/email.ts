@@ -17,6 +17,8 @@ export interface Email {
   images?: readonly InlineImage[];
   /** A retry sends exactly the same email under the same key, and Resend delivers it once. */
   idempotencyKey?: string;
+  /** Extra headers, such as a news email's List-Unsubscribe pair. */
+  headers?: Readonly<Record<string, string>>;
 }
 
 /**
@@ -37,6 +39,7 @@ export const sendEmail = (apiKey: string, email: Email, network: typeof fetch = 
       subject: email.subject,
       text: email.text,
       ...(email.html ? { html: email.html } : {}),
+      ...(email.headers ? { headers: email.headers } : {}),
       ...(email.images?.length
         ? {
             attachments: email.images.map((image) => ({

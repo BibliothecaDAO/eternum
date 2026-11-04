@@ -1,6 +1,7 @@
 import type { IconMeaning, IconMark } from "@/ui/design-system/icon";
 import {
   depthName,
+  purchasesOfGate,
   RESEARCH_TREE,
   SHRINE,
   STAMINA,
@@ -306,10 +307,12 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
     { icon: "tools", words: sides.tools, at: output },
     { icon: "storehouse", words: sides.storeroom, at: storage },
   ];
-  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${realm.board.trainingGateTier} purchases`;
+  // One side entry per purchase, on either side: the contract's purchases(learned, ROW_BARRACKS).
+  const barracksBought = learned(ROWS.barracks).sides.length;
+  const gateBarracks = `${buildingName(BuildingType.ResourceKnightT1)} ${purchasesOfGate(barracksBought, realm.board.trainingGateTier)} purchases`;
   const gateNeed: Need = {
     kind: "tier",
-    met: learned(ROWS.barracks).sides.length >= realm.board.trainingGateTier,
+    met: barracksBought >= realm.board.trainingGateTier,
     node: gateBarracks,
     icon: buildingIcon(BuildingType.ResourceKnightT1),
   };
@@ -516,7 +519,7 @@ const stateOf = (done: boolean, needs: Need[]): NodeState => {
 /** The first thing a node waits on: the one line a locked or short node shows, and the step its fix takes. */
 export const firstMissing = (node: TreeNode): Need | undefined => node.needs.find((need) => !need.met);
 
-/** A need in a player's words: "Build a Workshop", "Barracks 2 purchases first", "Essence 300 / 1,000". */
+/** A need in a player's words: "Build a Workshop", "Barracks 1/2 purchases first", "Essence 300 / 1,000". */
 export const needLine = (need: Need): string => {
   switch (need.kind) {
     case "stands":

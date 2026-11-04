@@ -98,15 +98,22 @@ describe("Frontier's build options", () => {
     const warHall = () =>
       readBuildOptions(store, realm, true, 350)!.find(({ category }) => category === BuildingType.WarHall)!;
     const gate = store.require("BoardRules", { game_id: 1 }).training_gate_tier;
-    expect(warHall()).toMatchObject({ standing: { gate }, effect: { kind: "trains", attribute: "Battle" }, tier: 1 });
-    // One Drill and one Rations purchase meet the two-purchase gate.
-    store.applyFacts([
-      {
-        model: "RealmKnowledge",
-        key: "0x77",
-        value: { game_id: 1, structure_id: realm.entity_id, learned: (1n << 14n) | (1n << 17n) },
-      },
-    ] as never);
+    expect(warHall()).toMatchObject({
+      standing: { gate, bought: 0 },
+      effect: { kind: "trains", attribute: "Battle" },
+      tier: 1,
+    });
+    const learn = (learned: bigint) =>
+      store.applyFacts([
+        { model: "RealmKnowledge", key: "0x77", value: { game_id: 1, structure_id: realm.entity_id, learned } },
+      ] as never);
+    // The owner's realm on prod (4 November): Drill I, no Rations. The contract refuses a training building.
+    learn(1n << 14n);
+    expect(warHall().standing).toEqual({ gate: 2, bought: 1 });
+    // One Drill and one Rations purchase meet the two-purchase gate, as two Drill purchases do.
+    learn((1n << 14n) | (1n << 17n));
+    expect(warHall().standing).toBe("open");
+    learn(2n << 14n);
     expect(warHall().standing).toBe("open");
   });
 });
