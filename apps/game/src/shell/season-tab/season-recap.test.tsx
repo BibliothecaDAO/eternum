@@ -69,14 +69,12 @@ const open = async ({
   width = 1440,
   viewer = CANZI,
   board = BOARD,
-  onSeason = vi.fn(),
   onExit = vi.fn(),
   results = false,
 }: {
   width?: number;
   viewer?: string | null;
   board?: HeraldFrontierLeaderboard;
-  onSeason?: () => void;
   onExit?: () => void;
   /** The recap standing in a Results page, not covering the HUD. */
   results?: boolean;
@@ -107,7 +105,6 @@ const open = async ({
               board={board}
               viewer={viewer}
               ending="lifted"
-              onSeason={onSeason}
               onExit={onExit}
             />
           )}
@@ -232,25 +229,22 @@ it("shows a desktop the whole deck, with no story to step", async () => {
   expect(host.querySelector('button[aria-label="Next card"]')).toBeNull();
 });
 
-it("stands the podium in its card, the player's own place theirs, with Season and Exit before the two steps to post", async () => {
-  const onSeason = vi.fn();
+it("stands the podium in its card, the player's own place theirs, with Exit before the two steps to post", async () => {
   const onExit = vi.fn();
   pngClipboard();
-  const host = await open({ onSeason, onExit });
+  const host = await open({ onExit });
   expect(podium(host)).toEqual([
     ["1", "Volcanic", "166"],
     ["2", "djizus", "136"],
     ["3", "You", "114"],
   ]);
   expect(steps(host)).toEqual([
-    ["Season", "secondary"],
     ["Exit", "secondary"],
     ["Copy image", "secondary"],
     ["Post on X", "primary"],
   ]);
-  await press(host, "Season");
   await press(host, "Exit");
-  expect([onSeason.mock.calls.length, onExit.mock.calls.length]).toEqual([1, 1]);
+  expect(onExit.mock.calls.length).toBe(1);
 });
 
 it("shows a reader with no realm on the board the season and its podium card alone, with nothing to share", async () => {
@@ -260,7 +254,7 @@ it("shows a reader with no realm on the board the season and its podium card alo
   // Outside the deck the card is named alone, with no number in it.
   expect(host.querySelector(".season-card__step")?.textContent).toBe("The podium");
   expect(podium(host)).toHaveLength(3);
-  expect(steps(host).map(([word]) => word)).toEqual(["Season", "Exit"]);
+  expect(steps(host).map(([word]) => word)).toEqual(["Exit"]);
   expect(hint(host)).toBeNull();
 });
 
@@ -328,16 +322,15 @@ it("posts the season on X in two steps: Copy image puts the deck's image on the 
   expect(posts()).toEqual([["https://x.com/intent/tweet", "Playtest · #3 of 45 realms", RESULTS, "_blank"]]);
 });
 
-it("on a phone, keeps the steps in one row, Season and Exit as their icons, and copies the tall deck", async () => {
+it("on a phone, keeps the steps in one row, Exit as its icon, and copies the tall deck", async () => {
   pngClipboard();
   const host = await open({ width: 390 });
   expect(steps(host)).toEqual([
-    ["Season", "secondary"],
     ["Exit", "secondary"],
     ["Copy image", "secondary"],
     ["Post on X", "primary"],
   ]);
-  expect([...host.querySelectorAll('button[data-size="icon"]')].map((button) => button.textContent)).toEqual(["", ""]);
+  expect([...host.querySelectorAll('button[data-size="icon"]')].map((button) => button.textContent)).toEqual([""]);
   await press(host, "Copy image");
   expect(snapshot.calls).toEqual([{ node: deck(host), width: 1080, height: 1350 }]);
 });

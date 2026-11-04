@@ -1929,7 +1929,6 @@ const LabResults = ({
           />
         )
       }
-      onSeason={noop}
       onExit={noop}
     />
   ) : (

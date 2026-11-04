@@ -49,8 +49,8 @@
 }
 
 /*
- * The greeting: thanks, the festival, the player's place, and the Season 1 ticket when they own a Devcon realm, on one
- * card under the fireworks; See my season, the one step, under it.
+ * The greeting, a Devcon realm's owner's only: thanks, the festival, their place and their Season 1 ticket, on one card
+ * under the fireworks; See my season, the one step, under it.
  */
 .festival-cover {
   position: fixed;
@@ -91,11 +91,6 @@
   );
   box-shadow: 0 30px 80px rgb(0 0 0 / 0.6);
 }
-.festival-card[data-ticket="none"] {
-  grid-template-columns: minmax(0, 1fr);
-  width: min(100%, 640px);
-  text-align: center;
-}
 .festival-card__rangoli {
   position: absolute;
   z-index: -1;
@@ -108,14 +103,8 @@
   flex-direction: column;
   gap: 12px;
 }
-.festival-card[data-ticket="none"] .festival-card__words {
-  align-items: center;
-}
 .festival-card__words .festival-greeting {
   max-width: 32rem;
-}
-.festival-card__see-you {
-  font-size: var(--app-text-body);
 }
 .festival-card__diyas {
   position: absolute;
