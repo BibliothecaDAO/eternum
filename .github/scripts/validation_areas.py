@@ -44,6 +44,10 @@ AREAS = {
         "README.md",
         "apps/game-docs/docs/styles.css",
         "apps/game-docs/docs/pages/index.mdx",
+        # Each game's How to play guide, which apps/game/src/ui/modules/how-to-play.test.tsx requires to be a page.
+        "apps/game-docs/docs/pages/frontier/index.mdx",
+        "apps/game-docs/docs/pages/blitz/index.mdx",
+        "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
         "apps/game-docs/docs/brand.gen.json",
         "apps/game-docs/vocs.config.ts",
         "apps/game-docs/docs/utils/paths.ts",
