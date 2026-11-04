@@ -68,9 +68,11 @@ export const FrontierNav = ({
   const goToPlace = useGoToFrontierPlace(board);
   const researchDot = canResearchNow(useResearchTree(realm)?.nodes);
   const stores = useRealmStores(realm, rules);
+  // A view choice shows its view, the Realm / World switch's and a layer's alike: the open page goes.
+  const putPageAway = () => onSurface(null);
   const go = (to: Place) => {
     if (to === "realm") {
-      onSurface(null);
+      putPageAway();
       goToPlace(!isMapView);
       return;
     }
@@ -84,7 +86,7 @@ export const FrontierNav = ({
         layers && {
           icon: layerMark(layers.shown),
           word: layerName(layers.shown),
-          items: [viewChoice(REALM, realmIcon, false, () => go("realm")), ...layerChoices(layers)],
+          items: [viewChoice(REALM, realmIcon, false, () => go("realm")), ...layerChoices(layers, putPageAway)],
         }
       }
       place={place}

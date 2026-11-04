@@ -71,9 +71,17 @@ export const viewChoice = (label: string, icon: IconMeaning, checked: boolean, o
   label,
   lead: <Icon name={icon} size={22} />,
   checked,
-  onSelect: checked ? undefined : onSelect,
+  onSelect,
 });
 
-/** The layers as a list's choices, each with its painting, the one shown checked. */
-export const layerChoices = ({ layers, shown, go }: MapLayers): MenuItem[] =>
-  layers.map((layer) => viewChoice(layerName(layer), layerMark(layer), layer === shown, () => go(layer)));
+/**
+ * The layers as a list's choices, each with its painting, the one shown checked. A choice goes to its layer, the one
+ * shown staying put, and then runs `chosen` (a phone puts its open page away, so any choice shows the map).
+ */
+export const layerChoices = ({ layers, shown, go }: MapLayers, chosen: () => void = () => {}): MenuItem[] =>
+  layers.map((layer) =>
+    viewChoice(layerName(layer), layerMark(layer), layer === shown, () => {
+      if (layer !== shown) go(layer);
+      chosen();
+    }),
+  );
