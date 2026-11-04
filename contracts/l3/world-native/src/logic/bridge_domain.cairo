@@ -23,6 +23,14 @@ pub mod BridgeLogic {
             crate::logic::preset_record::store_withdrawals(commitment, withdrawals);
         }
     }
+    #[abi(embed_v0)]
+    impl SpendDepositedLords of crate::deposits::ISpendDepositedLords<ContractState> {
+        fn spend_deposited_lords(
+            ref self: ContractState, game_id: u32, account: starknet::ContractAddress, amount: u128,
+        ) -> u128 {
+            crate::logic::deposits::spend(game_id, account, amount)
+        }
+    }
     component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
     #[abi(embed_v0)]
     impl LedgerOperator = EntryAdministration::LedgerOperatorImpl<ContractState>;

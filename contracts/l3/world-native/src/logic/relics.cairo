@@ -276,7 +276,14 @@ pub mod RelicState {
             let mut stamina = explorer.troops.stamina.inline();
             assert!(stamina.amount < maximum, "stamina is already full");
             assert!(command.amount > 0 && command.amount <= maximum - stamina.amount, "invalid refill amount");
-            let earned = crate::logic::deposits::spend(game_id, actor, command.amount.into());
+            let earned = crate::deposits::ISpendDepositedLordsDispatcherTrait::spend_deposited_lords(
+                crate::deposits::ISpendDepositedLordsLibraryDispatcher {
+                    class_hash: self.logic_classes(game_id).bridge.read(),
+                },
+                game_id,
+                actor,
+                command.amount.into(),
+            );
             if earned != 0 {
                 self
                     .resources(game_id)
@@ -314,7 +321,6 @@ pub mod RelicState {
             assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
             let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
             assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
-            crate::logic::deposits::sweep(game_id, record.owner);
             if balance == 0 {
                 return;
             }

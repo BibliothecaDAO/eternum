@@ -61,3 +61,8 @@ pub fn authorization_hash(commitment: felt252, epoch: u64, cancel: bool) -> felt
         }].span(),
     )
 }
+
+#[starknet::interface]
+pub trait ISpendDepositedLords<T> {
+    fn spend_deposited_lords(ref self: T, game_id: u32, account: ContractAddress, amount: u128) -> u128;
+}

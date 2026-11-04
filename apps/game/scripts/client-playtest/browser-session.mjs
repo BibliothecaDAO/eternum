@@ -117,7 +117,7 @@ const withoutNpmNoise = (output) =>
     .trim();
 
 /** A point at an offset from the screen's centre, where selecting an army puts it. */
-const screenPoint = ([dx, dy]) => [VIEWPORT.width / 2 + dx, VIEWPORT.height / 2 + dy];
+const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), Math.round(VIEWPORT.height / 2 + dy)];
 
 /**
  * The centre of a phone's place-bar slot, found by its word: a count of what is unread stands beside the word in the

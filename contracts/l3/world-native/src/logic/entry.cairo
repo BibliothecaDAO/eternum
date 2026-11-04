@@ -132,6 +132,12 @@ pub mod EntryAdministration {
         fn sweep_lords(ref self: ComponentState<TContractState>, game_id: u32, structure_id: u64) {
             super::assert_ledger_operator();
             self.assert_season_ended(game_id);
+            let realm = crate::logic::structures::record(ResourceKey { game_id, entity_id: structure_id });
+            assert!(
+                realm.base.category == crate::taxonomy::REALM_CATEGORY && realm.owner != 0.try_into().unwrap(),
+                "sweep requires an owned realm",
+            );
+            crate::logic::deposits::sweep(game_id, realm.owner);
             let context = crate::commands::load_context(game_id, 0, starknet::get_block_timestamp());
             crate::relics::ILordsDispatcherTrait::sweep_lords(
                 crate::relics::ILordsLibraryDispatcher {
