@@ -47,6 +47,7 @@ import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
+import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
@@ -499,6 +500,7 @@ const HudMenu = ({
 }) => {
   const navigate = useNavigate();
   const rank = useSeasonRank();
+  const guide = useHowToPlay();
   return (
     <MenuPage
       rank={rank}
@@ -506,6 +508,7 @@ const HudMenu = ({
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: claimWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
+      guide={guide}
       onExit={() => navigate("/")}
       onClose={onClose}
     />
