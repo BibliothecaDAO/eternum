@@ -392,13 +392,19 @@ const PRIVACY: LegalSection[] = [
   {
     title: "How We Use Your Information",
     body: (
-      <ul>
-        <li>Provide, maintain, and improve our Services</li>
-        <li>Display game data, leaderboards, and treasury information</li>
-        <li>Detect and prevent fraud or abuse</li>
-        <li>Email you your sign-in codes, and a notice when your payout wallet changes</li>
-        <li>Comply with legal obligations</li>
-      </ul>
+      <>
+        <ul>
+          <li>Provide, maintain, and improve our Services</li>
+          <li>Display game data, leaderboards, and treasury information</li>
+          <li>Detect and prevent fraud or abuse</li>
+          <li>Email you your sign-in codes, and a notice when your payout wallet changes</li>
+          <li>Comply with legal obligations</li>
+        </ul>
+        <p>
+          We may occasionally email you news about seasons you can play. Every such email has a link to stop them, and
+          you can also ask us to stop them through the contacts below.
+        </p>
+      </>
     ),
   },
   {

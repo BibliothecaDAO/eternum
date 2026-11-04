@@ -1,30 +1,45 @@
 // The Devcon Season 0 comeback email: one email in three variants, sent from the identity Worker's sender (Realms
-// <no-reply@realms.party>, Resend, the production key in ~/.realms-production). Every number is read when it runs: the
-// players, the chests won and the LORDS left from Herald, the LORDS price from CoinGecko, the ticket home's daily claim
-// from the game's LaborRules row. No mode sends to a player; a player send waits for the owner's go.
-//   bun apps/realms/scripts/comeback-email.ts dry-run          recipients per variant, counts only (read-only D1 + Herald)
-//   bun apps/realms/scripts/comeback-email.ts render <dir>     each variant's HTML (header inlined) and text, for a look
-//   bun apps/realms/scripts/comeback-email.ts test <address>   each variant once to that one address, "[TEST D]" etc.
+// <no-reply@realms.party>, Resend). Every number is read when it runs: the players, the chests won and the LORDS left
+// from Herald, the LORDS price from CoinGecko, a ticket home's daily claim from the game's LaborRules row. Each email
+// carries its account's stop link (server/news-email-opt-out.ts) as a footer link and as List-Unsubscribe headers.
+//   pnpm --dir apps/realms comeback-email dry-run [--env dev]        recipients per variant, counts only (read-only)
+//   pnpm --dir apps/realms comeback-email render <dir>               each variant's HTML (header inlined) and text
+//   pnpm --dir apps/realms comeback-email test <address> [--env dev] each variant once to that address's account
+//   pnpm --dir apps/realms comeback-email send <D,N,P> [--discord]   the campaign, after the owner's go
+// The environment's Resend key, auth secret and Cloudflare token come from its private directory and are never printed;
+// no player's email address is printed either.
 import { spawnSync } from "node:child_process";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { readFile } from "node:fs/promises";
+import { setTimeout } from "node:timers/promises";
 import sharp from "sharp";
-import { APP_ADDRESS, DOCS_ADDRESS } from "../../game/src/config/app-address";
+import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
+import { APP_ADDRESS, DOCS_ADDRESS, STAGING_ORIGIN } from "../../game/src/config/app-address";
 import playtest from "../../game/src/shell/season-tab/archive/playtest.json";
-import { campaignHomeClaim, type LaborRuleAmounts } from "../../../packages/core/src/utils/home-claim";
 import { sendEmail, type Email } from "../../../packages/notifications/src/email";
-import { BRAND, headingFontFile, paintingFile } from "../../../packages/notifications/scripts/email-art-inputs.mjs";
-import { environments, root, type Inputs } from "../../../deploy/first/settings";
-import { PrivateStore } from "../../../deploy/first/private-store";
-import { Platform } from "../../../deploy/first/platform";
+import BRAND from "../../../packages/notifications/src/brand.gen.json";
+import { newsEmailOptOutLink } from "../server/news-email-opt-out";
+import { sendCampaign, variantOf, type Account, type VariantKey } from "./comeback-campaign";
 
 const HERALD = "https://herald.realms.party";
 const GAME = 1;
-const CAMPAIGN = "devcon-2026";
-const PRIVATE = `${process.env.HOME}/.realms-production`;
+const TICKETS = "devcon-2026";
+/** This email's key in the send record (news_email_sends): an account it reached is never sent it again. */
+const NEWS_CAMPAIGN = "devcon-s0-comeback";
+
+/** Where each environment's accounts live. The season's numbers always come from production's Herald. */
+const TARGETS = {
+  production: {
+    store: ".realms-production",
+    wranglerEnv: "production",
+    database: "realms-identity-production",
+    app: APP_ADDRESS,
+  },
+  dev: { store: ".realms-dev", wranglerEnv: "staging", database: "realms-identity-staging", app: STAGING_ORIGIN },
+} as const;
+type Target = (typeof TARGETS)[keyof typeof TARGETS];
 
 type Row = Record<string, any>;
-type VariantKey = "D" | "N" | "P";
 
 // ---- What the email says, read live ---------------------------------------------------------------------------------
 
@@ -36,7 +51,7 @@ interface Season {
   prize: number;
   usdLeft: number;
   endsAt: number;
-  claim: { labor: number; essence: number };
+  rules: LaborRuleAmounts;
   lastAction: Map<string, number>;
   seasonPlayers: Set<string>;
 }
@@ -78,7 +93,7 @@ async function readSeason(): Promise<Season> {
     prize,
     usdLeft: left * price,
     endsAt: Number(game.clock.end_at),
-    claim: campaignHomeClaim(model("LaborRules")[0] as LaborRuleAmounts, false),
+    rules: model("LaborRules")[0] as LaborRuleAmounts,
     lastAction,
     seasonPlayers: new Set(model("PlayerEntry").map((entry: Row) => norm(entry.owner))),
   };
@@ -103,38 +118,23 @@ async function readLordsPrice(): Promise<number> {
 
 // ---- Who gets which variant (counts only leave this file) -----------------------------------------------------------
 
-interface Account {
-  realmsId: string;
-  discord: boolean;
-  ticket: "regular" | "golden" | null;
-  playtester: boolean;
-  inSeason: boolean;
-  lastAction: number;
-}
+/** A campaign account with its email address, read only by a send. */
+type Recipient = Account & { email: string };
 
-/**
- * Each account in at most one variant, D before N before P:
- * - D: holds a Devcon ticket, founded in Season 0, no action yet today (UTC).
- * - N: holds a Devcon ticket, never founded.
- * - P: owns an address on the playtest's final board, holds no ticket, no Season 0 action yet today (UTC).
- * Only accounts whose email is verified; their addresses are never read by a dry run.
- */
-function variantOf(account: Account, todayStart: number): VariantKey | null {
-  if (account.ticket && account.inSeason) return account.lastAction < todayStart ? "D" : null;
-  if (account.ticket) return "N";
-  if (account.playtester && account.lastAction < todayStart) return "P";
-  return null;
-}
-
-function readAccounts(season: Season): Account[] {
+/** Every account with a verified email, as comeback-campaign.ts decides on them; addresses only when asked for. */
+function readAccounts(target: Target, season: Season, withEmail: boolean): (Account & { email?: string })[] {
   const users = d1(
-    `SELECT u.realmsId, EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
+    target,
+    `SELECT u.realmsId, u.newsEmailOptOutAt, ${withEmail ? "u.email, " : ""}EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
   );
   const tickets = new Map(
-    d1(`SELECT owner, tier FROM campaign_tickets WHERE campaign = '${CAMPAIGN}'`).map((row) => [row.owner, row.tier]),
+    d1(target, `SELECT owner, tier FROM campaign_tickets WHERE campaign = '${TICKETS}'`).map((row) => [
+      row.owner,
+      row.tier,
+    ]),
   );
   const addresses = new Map<string, string[]>();
-  for (const row of d1(`SELECT address, realmsId FROM realms_accounts`))
+  for (const row of d1(target, `SELECT address, realmsId FROM realms_accounts`))
     addresses.set(row.realmsId, [...(addresses.get(row.realmsId) ?? []), norm(row.address)]);
   const playtesters = new Set((playtest as Row).leaderboard.entries.map((entry: Row) => norm(entry.address)));
   return users.map((user) => {
@@ -146,35 +146,54 @@ function readAccounts(season: Season): Account[] {
       playtester: owned.some((address) => playtesters.has(address)),
       inSeason: owned.some((address) => season.seasonPlayers.has(address)),
       lastAction: Math.max(0, ...owned.map((address) => season.lastAction.get(address) ?? 0)),
+      optedOut: user.newsEmailOptOutAt != null,
+      ...(withEmail ? { email: String(user.email) } : {}),
     };
   });
 }
 
-/** One read-only SELECT against production's identity D1, through wrangler with the deployer's Cloudflare token. */
-function d1(query: string): Row[] {
-  if (!/^select\b/i.test(query) || query.includes(";")) throw new Error("refused: not a single SELECT");
+/** One statement against the environment's identity D1, through wrangler with the deployer's Cloudflare token. */
+function d1(target: Target, query: string): Row[] {
+  if (query.includes(";")) throw new Error("refused: one statement at a time");
+  const store = privateFile<{ cloudflareToken: string }>(target, "inputs.json");
   const run = spawnSync(
     "pnpm",
     [
-      "--dir",
-      "apps/realms",
       "exec",
       "wrangler",
       "d1",
       "execute",
-      "realms-identity-production",
+      target.database,
       "--remote",
       "--env",
-      "production",
+      target.wranglerEnv,
       "--json",
       "--command",
       query,
     ],
-    { cwd: root, env: cloudflare, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+    {
+      cwd: new URL("..", import.meta.url).pathname,
+      env: { ...process.env, CLOUDFLARE_API_TOKEN: store.cloudflareToken, WRANGLER_LOG_PATH: "/dev/null" },
+      encoding: "utf8",
+      maxBuffer: 64 * 1024 * 1024,
+    },
   );
   if (run.status !== 0) throw new Error(`wrangler exit ${run.status}`);
   return JSON.parse(run.stdout)[0].results;
 }
+
+/** The send record's one write: the account this campaign reached, once. */
+const recordSend = (target: Target, realmsId: string, variant: VariantKey, id: string | null) => {
+  if (!/^0x[0-9a-f]+$/.test(realmsId) || (id !== null && !/^[0-9a-f-]+$/i.test(id)))
+    throw new Error("refused: unexpected id");
+  d1(
+    target,
+    `INSERT INTO news_email_sends (campaign, realmsId, variant, resend_id, sent_at) VALUES ('${NEWS_CAMPAIGN}', '${realmsId}', '${variant}', ${id === null ? "NULL" : `'${id}'`}, ${Date.now()}) ON CONFLICT DO NOTHING`,
+  );
+};
+
+const privateFile = <T>(target: Target, name: string): T =>
+  JSON.parse(readFileSync(`${process.env.HOME}/${target.store}/${name}`, "utf8")) as T;
 
 // ---- The email ------------------------------------------------------------------------------------------------------
 
@@ -231,13 +250,14 @@ const endsLine = (s: Season) => {
 };
 
 /** The words, in order, that both the HTML and the text part say. */
-function paragraphs(variant: Variant, s: Season) {
+function paragraphs(variant: Variant, s: Season, golden: boolean) {
+  const claim = campaignHomeClaim(s.rules, golden);
   return {
     opening: variant.opening,
     fight: `${n(s.players)} players are fighting over ${n(s.pool)} LORDS in Frontier's Devcon season, and only ${n(s.won)} have been won so far.`,
     left: `That leaves about ${about(s.left)} LORDS (around ${dollars(s.usdLeft)}) sitting in chests in the ruins. Another ${n(s.prize)} go to the top three when the season ends.`,
     claim: variant.claims
-      ? `Your Devcon realm pays ${n(s.claim.labor)} Labor and ${n(s.claim.essence)} Essence every game day. Miss a day and it's gone.`
+      ? `Your Devcon realm pays ${n(claim.labor)} Labor and ${n(claim.essence)} Essence every game day. Miss a day and it's gone.`
       : undefined,
     ends: endsLine(s),
   };
@@ -246,9 +266,17 @@ function paragraphs(variant: Variant, s: Season) {
 const PREHEADER = (s: Season) => `${n(s.players)} players are in Frontier's Devcon season. Your realm is waiting.`;
 const HEADER_ID = "header";
 
-function buildEmail(key: VariantKey, s: Season, to: string, header: Buffer, subjectPrefix = ""): Email {
+/** Who one email is for: their address, their app, their stop link, and whether their ticket is golden. */
+interface Reader {
+  to: string;
+  app: string;
+  optOut: string;
+  golden: boolean;
+}
+
+function buildEmail(key: VariantKey, s: Season, reader: Reader, header: string, subjectPrefix = ""): Email {
   const variant = VARIANTS[key];
-  const words = paragraphs(variant, s);
+  const words = paragraphs(variant, s, reader.golden);
   const docsUrl = `${DOCS_ADDRESS}${variant.docs.path}`;
   const subject = `${subjectPrefix}${variant.subject(s)}`;
   const text = [
@@ -257,19 +285,20 @@ function buildEmail(key: VariantKey, s: Season, to: string, header: Buffer, subj
     words.left,
     words.claim,
     words.ends,
-    `${variant.action}: ${APP_ADDRESS}`,
+    `${variant.action}: ${reader.app}`,
     `${variant.docs.label}: ${docsUrl}`,
-    `Realms · Frontier · Devcon Season 0\nSent to ${to}, the email of your Realms account. Privacy: ${APP_ADDRESS}/privacy`,
+    `Realms · Frontier · Devcon Season 0\nSent to ${reader.to}, the email of your Realms account.\nStop these emails: ${reader.optOut}\nPrivacy: ${reader.app}/privacy`,
   ]
     .filter(Boolean)
     .join("\n\n");
   return {
     sender: "Realms",
-    to,
+    to: reader.to,
     subject,
     text,
-    html: emailHtml({ subject, preheader: PREHEADER(s), words, variant, docsUrl, to, s }),
-    images: [{ id: HEADER_ID, filename: "devcon-season-0.jpg", content: header.toString("base64") }],
+    html: emailHtml({ subject, preheader: PREHEADER(s), words, variant, docsUrl, reader, s }),
+    images: [{ id: HEADER_ID, filename: "devcon-season-0.jpg", content: header }],
+    headers: { "List-Unsubscribe": `<${reader.optOut}>`, "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" },
   };
 }
 
@@ -314,7 +343,7 @@ function emailHtml(e: {
   words: ReturnType<typeof paragraphs>;
   variant: Variant;
   docsUrl: string;
-  to: string;
+  reader: Reader;
   s: Season;
 }) {
   const rows = [
@@ -327,7 +356,7 @@ function emailHtml(e: {
     row("16px 40px 0", escape(e.words.ends), `${reading};color:${GOLD2};font-weight:700`),
     row(
       "28px 40px 0",
-      `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:${GOLD};border-radius:8px"><a href="${escape(APP_ADDRESS)}" style="display:inline-block;padding:15px 30px;font-family:${BODY};font-size:17px;font-weight:700;color:${INK};text-decoration:none">${escape(e.variant.action)} &rarr;</a></td></tr></table>`,
+      `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr><td style="background:${GOLD};border-radius:8px"><a href="${escape(e.reader.app)}" style="display:inline-block;padding:15px 30px;font-family:${BODY};font-size:17px;font-weight:700;color:${INK};text-decoration:none">${escape(e.variant.action)} &rarr;</a></td></tr></table>`,
     ),
     row(
       "16px 40px 0",
@@ -336,7 +365,7 @@ function emailHtml(e: {
     row("32px 40px 0", `<div style="height:1px;line-height:1px;font-size:0;background:${LINE}">&nbsp;</div>`),
     row(
       "18px 40px 36px",
-      `<a href="${escape(APP_ADDRESS)}" style="color:${GOLD};text-decoration:none;font-weight:700">Realms</a> · Frontier · <span style="color:${VIOLET}">Devcon Season 0</span><br>Sent to ${escape(e.to)}, the email of your Realms account. <a href="${escape(APP_ADDRESS)}/privacy" style="color:${MUTED}">Privacy</a>`,
+      `<a href="${escape(e.reader.app)}" style="color:${GOLD};text-decoration:none;font-weight:700">Realms</a> · Frontier · <span style="color:${VIOLET}">Devcon Season 0</span><br>Sent to ${escape(e.reader.to)}, the email of your Realms account.<br><a href="${escape(e.reader.optOut)}" style="color:${MUTED}">Stop these emails</a> · <a href="${escape(e.reader.app)}/privacy" style="color:${MUTED}">Privacy</a>`,
       `font-family:${BODY};font-size:13px;line-height:20px;color:${MUTED}`,
     ),
   ];
@@ -372,18 +401,19 @@ ${rows.join("\n")}
 
 const WIDTH = 1200; // drawn at 600: twice the pixels for sharp phones
 const HEADER_LINE = "THE DEVCON SEASON · MUMBAI";
+/** The game's public files: the sign-in emails' painting, the Frontier lockup and the heading face. */
+const PUBLIC = new URL("../../game/public/", import.meta.url);
 const HEIGHT = 640;
 
-async function drawHeader(): Promise<Buffer> {
-  const painting = await sharp(await readFile(paintingFile("frontier-mist")))
+/** The header JPEG, in base64. */
+async function drawHeader(): Promise<string> {
+  const painting = await sharp(await readFile(new URL("images/landscapes/frontier-mist-1536.webp", PUBLIC)))
     .resize({ width: WIDTH })
     .toBuffer({ resolveWithObject: true });
   const crop = await sharp(painting.data)
     .extract({ left: 0, top: Math.round((painting.info.height - HEIGHT) * 0.45), width: WIDTH, height: HEIGHT })
     .toBuffer();
-  const lockup = await sharp(
-    await readFile(new URL(BRAND.marks.lockups.frontier.slice(1), new URL("../../game/public/", import.meta.url))),
-  )
+  const lockup = await sharp(await readFile(new URL(BRAND.marks.lockups.frontier.slice(1), PUBLIC)))
     .resize({ height: 400 })
     .png()
     .toBuffer({ resolveWithObject: true });
@@ -402,7 +432,8 @@ async function drawHeader(): Promise<Buffer> {
       { input: line.data, left: lineLeft, top: lineTop },
     ])
     .jpeg({ quality: 70, progressive: true, mozjpeg: true })
-    .toBuffer();
+    .toBuffer()
+    .then((jpeg) => Buffer.from(jpeg).toString("base64"));
 }
 
 /** The poster's violet storm over the top, night rising from the bottom under the lettering. */
@@ -417,7 +448,7 @@ const lettering = (text: string, colour: string, size: number) =>
     text: {
       text: `<span foreground="${colour}">${text}</span>`,
       font: `${BRAND.faces.display.family} ${size}`,
-      fontfile: headingFontFile().pathname,
+      fontfile: new URL(BRAND.faces.display.files[0]!.slice(1), PUBLIC).pathname,
       dpi: 96,
       rgba: true,
     },
@@ -426,13 +457,6 @@ const lettering = (text: string, colour: string, size: number) =>
     .toBuffer({ resolveWithObject: true });
 
 // ---- Modes ----------------------------------------------------------------------------------------------------------
-
-const store = new PrivateStore(PRIVATE, root, false);
-const inputs = store.read<Inputs>("inputs.json")!;
-const cloudflare = {
-  ...process.env,
-  ...(await new Platform(environments.production, inputs, store, false).cloudflareEnvironment()),
-};
 
 function figures(s: Season) {
   return {
@@ -443,31 +467,36 @@ function figures(s: Season) {
     prize: s.prize,
     usdLeft: Math.round(s.usdLeft),
     endsAt: new Date(s.endsAt * 1000).toISOString(),
-    claim: s.claim,
   };
 }
 
-async function dryRun() {
+const todayStart = () => Math.floor(Date.now() / 86_400_000) * 86_400;
+
+async function dryRun(target: Target) {
   const season = await readSeason();
-  const todayStart = Math.floor(Date.now() / 86_400_000) * 86_400;
-  const counts = {
-    D: { email: 0, discord: 0, golden: 0 },
-    N: { email: 0, discord: 0, golden: 0 },
-    P: { email: 0, discord: 0, golden: 0 },
-  };
-  for (const account of readAccounts(season)) {
-    const key = variantOf(account, todayStart);
+  const sent = new Set(
+    d1(target, `SELECT realmsId FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`).map((row) => row.realmsId),
+  );
+  const counts = Object.fromEntries(
+    (["D", "N", "P"] as const).map((key) => [key, { email: 0, discord: 0, golden: 0, alreadySent: 0 }]),
+  );
+  let optedOut = 0;
+  for (const account of readAccounts(target, season, false)) {
+    if (account.optedOut) optedOut++;
+    const key = variantOf(account, todayStart());
     if (!key) continue;
-    counts[key][account.discord ? "discord" : "email"]++;
-    if (account.ticket === "golden") counts[key].golden++;
+    if (sent.has(account.realmsId)) counts[key]!.alreadySent++;
+    else counts[key]![account.discord ? "discord" : "email"]++;
+    if (account.ticket === "golden") counts[key]!.golden++;
   }
   console.log(
     JSON.stringify(
       {
         readAt: new Date().toISOString(),
-        todayStartUtc: new Date(todayStart * 1000).toISOString(),
+        todayStartUtc: new Date(todayStart() * 1000).toISOString(),
         figures: figures(season),
         recipients: counts,
+        optedOut,
       },
       null,
       1,
@@ -477,24 +506,39 @@ async function dryRun() {
 
 async function render(dir: string) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
+  const reader = {
+    to: "player@example.com",
+    app: APP_ADDRESS,
+    optOut: await newsEmailOptOutLink(APP_ADDRESS, "render-only", "0x0"),
+    golden: false,
+  };
   mkdirSync(dir, { recursive: true });
   for (const key of Object.keys(VARIANTS) as VariantKey[]) {
-    const email = buildEmail(key, season, "player@example.com", header);
-    writeFileSync(
-      `${dir}/${key}.html`,
-      email.html!.replace(`cid:${HEADER_ID}`, `data:image/jpeg;base64,${header.toString("base64")}`),
-    );
+    const email = buildEmail(key, season, reader, header);
+    writeFileSync(`${dir}/${key}.html`, email.html!.replace(`cid:${HEADER_ID}`, `data:image/jpeg;base64,${header}`));
     writeFileSync(`${dir}/${key}.txt`, `Subject: ${email.subject}\n\n${email.text}\n`);
   }
-  console.log(JSON.stringify({ figures: figures(season), headerKb: Math.round(header.length / 1024), wrote: dir }));
+  console.log(
+    JSON.stringify({ figures: figures(season), headerKb: Math.round((header.length * 3) / 4 / 1024), wrote: dir }),
+  );
 }
 
-/** Each variant once to one address, the subject marked "[TEST X]"; Resend's quota headers say what today used. */
-async function test(to: string) {
-  if (!/^[^\s@]+@[^\s@]+$/.test(to)) throw new Error("test needs one email address");
+/**
+ * Each variant once to one address, the subject marked "[TEST X]", with the stop link of the account that address
+ * signs in to. Nothing goes once that account has stopped news emails.
+ */
+async function test(target: Target, to: string) {
+  if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(to)) throw new Error("test needs one email address");
+  const [account] = d1(target, `SELECT realmsId, newsEmailOptOutAt FROM "user" WHERE email = '${to}'`);
+  if (!account) throw new Error("no account signs in with that address in this environment");
+  if (account.newsEmailOptOutAt != null) {
+    console.log(JSON.stringify({ realmsId: account.realmsId, sent: 0, skipped: "opted_out" }));
+    return;
+  }
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
+  const reader = { to, app: target.app, optOut: await optOutLinkOf(target, account.realmsId), golden: false };
   for (const key of Object.keys(VARIANTS) as VariantKey[]) {
-    const response = await sendEmail(inputs.resend, buildEmail(key, season, to, header, `[TEST ${key}] `));
+    const response = await sendEmail(resendKey(target), buildEmail(key, season, reader, header, `[TEST ${key}] `));
     const quota = Object.fromEntries([...response.headers].filter(([name]) => /quota|ratelimit/i.test(name)));
     const body = (await response.json()) as Row;
     console.log(
@@ -508,11 +552,72 @@ async function test(to: string) {
     );
     if (!response.ok) throw new Error(`Resend refused variant ${key}: ${response.status} ${body.name ?? ""}`);
   }
-  console.log(JSON.stringify({ figures: figures(season) }));
+  console.log(JSON.stringify({ realmsId: account.realmsId, optOutLink: reader.optOut, figures: figures(season) }));
 }
 
-const [mode, argument] = process.argv.slice(2);
-if (mode === "dry-run") await dryRun();
+/** The campaign to every account in the chosen variants that has not stopped news emails and has not had it yet. */
+async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean) {
+  const [season, header] = await Promise.all([readSeason(), drawHeader()]);
+  const today = todayStart();
+  const deliveries = (readAccounts(target, season, true) as Recipient[]).flatMap((account) => {
+    const variant = variantOf(account, today);
+    return variant && variants.includes(variant) && (withDiscord || !account.discord) ? [{ ...account, variant }] : [];
+  });
+  const alreadySent = new Set(
+    d1(target, `SELECT realmsId FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`).map((row) =>
+      String(row.realmsId),
+    ),
+  );
+  const counts = await sendCampaign({
+    campaign: NEWS_CAMPAIGN,
+    deliveries,
+    alreadySent,
+    send: async (delivery, idempotencyKey) => {
+      const reader = {
+        to: delivery.email,
+        app: target.app,
+        optOut: await optOutLinkOf(target, delivery.realmsId),
+        golden: delivery.ticket === "golden",
+      };
+      const response = await sendEmail(resendKey(target), {
+        ...buildEmail(delivery.variant, season, reader, header),
+        idempotencyKey,
+      });
+      const body = (await response.json().catch(() => ({}))) as Row;
+      return { ok: response.ok, id: typeof body.id === "string" ? body.id : null };
+    },
+    record: async (delivery, id) => recordSend(target, delivery.realmsId, delivery.variant, id),
+    pause: () => setTimeout(1000),
+  });
+  console.log(
+    JSON.stringify({
+      campaign: NEWS_CAMPAIGN,
+      variants,
+      withDiscord,
+      selected: deliveries.length,
+      ...counts,
+      figures: figures(season),
+    }),
+  );
+  if (counts.refused) process.exitCode = 1;
+}
+
+const optOutLinkOf = (target: Target, realmsId: string) =>
+  newsEmailOptOutLink(target.app, privateFile<{ auth: string }>(target, "secrets.json").auth, realmsId);
+const resendKey = (target: Target) => privateFile<{ resend: string }>(target, "inputs.json").resend;
+
+const args = process.argv.slice(2);
+const flag = (name: string) => args.includes(name);
+const envName = args[args.indexOf("--env") + 1];
+const target = flag("--env") ? TARGETS[envName as keyof typeof TARGETS] : TARGETS.production;
+if (!target) throw new Error("--env is production or dev");
+const [mode, argument] = args;
+if (mode === "dry-run") await dryRun(target);
 else if (mode === "render" && argument) await render(argument);
-else if (mode === "test" && argument) await test(argument);
-else throw new Error("usage: comeback-email.ts dry-run | render <dir> | test <address>");
+else if (mode === "test" && argument) await test(target, argument);
+else if (mode === "send" && argument && /^[DNP](,[DNP])*$/.test(argument))
+  await send(target, argument.split(",") as VariantKey[], flag("--discord"));
+else
+  throw new Error(
+    "usage: comeback-email.ts dry-run | render <dir> | test <address> | send <D,N,P> [--discord] [--env dev]",
+  );
