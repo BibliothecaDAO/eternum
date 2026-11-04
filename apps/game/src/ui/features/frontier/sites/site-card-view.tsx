@@ -24,7 +24,9 @@ import {
   REALM,
   REST_DID_NOT_FIT,
   RUIN_RULE,
+  SEASON_CLIMB,
   siteTitle,
+  SITES_CLEARED,
   STORAGE,
   tooFarFrom,
   TROOPS,
@@ -114,13 +116,21 @@ export const SiteCardView = ({
   // The army against a guard of known size, with this attack's forecast: what option A reads, side by side.
   const facing = facingOf(army, guard, fight);
   const lost = facing !== undefined && isArmyLost(facing);
+  // Every guarded site an army clears counts one on the Season board (Herald's frontier-leaderboard.ts creditSiteClear);
+  // an army is no site.
+  const countsOnBoard = site !== "Army";
   const reward =
-    chest || pay || xp !== undefined ? (
+    chest || pay || xp !== undefined || countsOnBoard ? (
       <Reward dimmed={facing !== undefined && !clears(facing)}>
         {chest ? <ChestPay chest={chest} /> : pay ? <Pay pay={pay} /> : null}
         {xp !== undefined && !(chest && lost) && (
           <HudChip>
             {formatShort(xp, { signed: true })} {XP}
+          </HudChip>
+        )}
+        {countsOnBoard && (
+          <HudChip icons={["flag"]} label={SITES_CLEARED} tip={SEASON_CLIMB.rule}>
+            {SEASON_CLIMB.plusOne}
           </HudChip>
         )}
       </Reward>

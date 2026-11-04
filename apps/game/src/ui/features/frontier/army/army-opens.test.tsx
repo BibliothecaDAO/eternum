@@ -387,3 +387,48 @@ describe.each([["desktop", true]])("the army's panel on a %s", (_, desktop) => {
     expect(panel()).toBeNull();
   });
 });
+
+const { takeArmySelectRequest } = await import("@/three/scenes/worldmap-army-select-request");
+
+// Review clarity-2, P2: Today's Select picks the readiest army as the dock does, so the army already selected is handed
+// back too: a desktop's panel in Today's place, a phone's action row with Today put away.
+describe.each([
+  ["desktop", true],
+  ["phone", false],
+])("Today's Select on a %s, for the army already selected", (_, desktop) => {
+  beforeEach(() => layout(desktop));
+
+  const todaySheet = () => host.querySelector('[aria-label="Today"][data-kit-sheet]');
+  const openToday = () => act(async () => host.querySelector<HTMLButtonElement>('button[aria-label="Today"]')!.click());
+  const pressSelect = () =>
+    act(async () =>
+      [...host.querySelectorAll<HTMLButtonElement>("[data-kit-sheet] button")]
+        .find((button) => button.textContent === "Select")!
+        .click(),
+    );
+  /** The map takes the request as focusAndSelectArmy does: the army's hex, then the army, in one continuation. */
+  const mapAnswers = (request: ReturnType<typeof takeArmySelectRequest>) =>
+    act(async () => {
+      useUIStore.getState().selectOnMap({ kind: "hex", hex: { col: 10, row: 10 } });
+      useUIStore.getState().selectOnMap({ kind: "army", entityId: request!.entityId, tile: "own" });
+    });
+
+  it("hands the army back and puts Today away", async () => {
+    await renderHud();
+    await select(ARMY);
+    if (desktop) await closePanel();
+    takeArmySelectRequest();
+    await openToday();
+    expect(todaySheet()).not.toBeNull();
+
+    await pressSelect();
+    const request = takeArmySelectRequest();
+    expect(request?.entityId).toBe(ARMY);
+    await mapAnswers(request);
+
+    expect(todaySheet()).toBeNull();
+    expect(useUIStore.getState().entityActions.selectedEntityId).toBe(ARMY);
+    if (desktop) expect(panel()).not.toBeNull();
+    else expect([panel(), details() !== null]).toEqual([null, true]);
+  });
+});

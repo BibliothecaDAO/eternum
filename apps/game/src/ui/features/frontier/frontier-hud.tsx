@@ -41,8 +41,7 @@ import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
 import { layerChoices, layerName, type MapLayers, useMapLayers } from "./hud/map-layers";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
-import { FrontierNextUp } from "./next-up/frontier-next-up";
-import { useNextUpBuilding } from "./next-up/next-up-steps";
+import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -79,7 +78,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
  * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
- * its stores, a nav page or the map, Next up, the action bar while an army is selected, the armies and the places.
+ * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
  * Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({
@@ -108,11 +107,8 @@ export const FrontierHud = ({
   // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
-  // An open plot's build sheet opens on the building Next up asks for.
-  const asked = useNextUpBuilding(rules, realm);
   const card = useSelectionCard({
     realm: shown,
-    asked,
     onResearch: (node) => {
       setResearchPick(node);
       setSurface("research");
@@ -126,7 +122,7 @@ export const FrontierHud = ({
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
-  // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
+  // Selecting one of the realm's armies opens its panel; a pick in the dock or Today goes the same way.
   const [armyChoosing, setArmyChoosing] = useState(false);
   const armyPanel = useArmyPanelOpens(
     visit ? null : realm,
@@ -142,6 +138,19 @@ export const FrontierHud = ({
   });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
+  // The day's end speaks to a player in their own realm: a visit or a spectator has none. Its army is picked as the
+  // dock picks one: a desktop opens the army's panel in Today's place, even for the army already selected; a phone puts
+  // Today away and shows the army in the action row, the map first.
+  const dayEnd = useDayEnd(rules, visit ? null : realm, {
+    claimWaiting: claimWaiting !== null,
+    onClaim: () => setSurface("realms"),
+    onPickArmy: desktop
+      ? openArmy
+      : (explorerId) => {
+          pickArmy(explorerId);
+          setSurface(null);
+        },
+  });
   const seasonRank = useSeasonRank();
   const layers = useMapLayers(rules, shown);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
@@ -198,6 +207,7 @@ export const FrontierHud = ({
       <ChestLordsMoment />
       <OfflineNotice />
       <SceneFailureNotice />
+      {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
     </>
   );
   const action = (
@@ -225,6 +235,7 @@ export const FrontierHud = ({
         <FrontierToday
           rules={rules}
           realm={realm ?? visited}
+          dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
           onOpenArmy={realm && !visit ? openArmy : undefined}
           onClose={close}
         />
@@ -239,11 +250,6 @@ export const FrontierHud = ({
       {realm && <DayDone rules={rules} realm={realm} visiting={Boolean(visit)} />}
       <BuildingsInFlight />
     </>
-  );
-
-  // Next up speaks to a player in their own realm: a visit or a spectator has none.
-  const nextUp = realm && !visit && (
-    <FrontierNextUp rules={rules} realm={realm} onSurface={setSurface} onOpenArmy={openArmy} />
   );
 
   return desktop ? (
@@ -264,7 +270,6 @@ export const FrontierHud = ({
         )
       }
       armies={dock}
-      nextUp={nextUp}
       page={page}
       foot={
         <>
@@ -296,7 +301,6 @@ export const FrontierHud = ({
       strip={strip}
       purse={purse}
       page={page}
-      nextUp={nextUp}
       notices={notices}
       action={action}
       dock={dock}
@@ -337,7 +341,6 @@ const FrontierPhoneHud = ({
   strip: ReactNode;
   purse: ReactNode;
   page: ReactNode;
-  nextUp: ReactNode;
   notices: ReactNode;
   action: ReactNode;
   dock: ReactNode;

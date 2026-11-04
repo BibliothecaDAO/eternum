@@ -28,6 +28,13 @@ export const nextDayOf = (calendar: SeasonCalendar, now: number): number | null 
 /** The dial and the clock line turn ember in today's last hour. */
 export const dayTone = (secondsLeft: number): Tone => (secondsLeft <= LAST_HOUR_SECONDS ? "ember" : "calm");
 
+/** The last ten minutes, when the day end's line turns from a warning to an alarm. */
+const FINAL_MINUTES_SECONDS = 600;
+
+/** The day end's line in the last hour: a warning, then red in its last ten minutes. */
+export const dayEndUrgency = (secondsLeft: number): "warn" | "bad" =>
+  secondsLeft <= FINAL_MINUTES_SECONDS ? "bad" : "warn";
+
 const OUTSIDE_THE_SEASON: DayClock = {
   day: undefined,
   endsAt: undefined,

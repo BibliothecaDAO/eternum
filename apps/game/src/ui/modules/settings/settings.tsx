@@ -28,6 +28,8 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { ContractAddress, formatExact } from "@bibliothecadao/types";
 
+import { getGameModeId } from "@/config/game-modes";
+import { hudFor } from "@/ui/layouts/hud-for";
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { HowToPlayRow, useHowToPlay } from "../how-to-play";
@@ -193,9 +195,13 @@ function UsernameEditor({ name }: { name: string | null }) {
   );
 }
 
-/** One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. */
+/**
+ * One switch for Next up's tips: off, Next up shows only alerts (attacks, arrivals), and nothing without one. Frontier's
+ * HUD has no Next up (owner, 4 November 2026: "Do cut next up indeed for frontier"), so there the switch is not drawn.
+ */
 function NextUpSettings() {
   const { nextUpTips, setNextUpTips } = useWorldAppearanceStore();
+  if (hudFor(getGameModeId(), true) === "frontier") return null;
   return (
     <SettingsSection title="Next up">
       <HudSetting name="Tips">

@@ -74,6 +74,25 @@ export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
 export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
   readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
 
+/**
+ * The day's end, before it comes (Devcon feedback, 4 November 2026: players did not know the day was ending or what it
+ * takes): the last hour's line, which opens Today, and Today's block of what goes and what can still be done. What goes
+ * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
+ */
+export const DAY_END = {
+  endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
+    `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
+  toDo: (count: number) => `${count} left to do`,
+  open: "Open",
+  goes: "At day end, today's map, its armies and chests go",
+  claim: "Claim today's Labor",
+  claimVerb: "Claim",
+  site: (name: string) => `Clear today's ${name}`,
+  siteVerb: "Show",
+  explore: "Your army can explore",
+  exploreVerb: "Select",
+} as const;
+
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
   starts: "Starts",
@@ -160,6 +179,17 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+/**
+ * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
+ * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
+ * guarded site an army clears counts one (creditSiteClear). The Sites column's tip, the board's line while the player is
+ * off the podium, and a site card's "+1 site".
+ */
+export const SEASON_CLIMB = {
+  rule: "Ranked by sites cleared, then deepest depth",
+  climb: "Clear sites with your armies to climb",
+  plusOne: "+1 site",
+} as const;
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
@@ -407,10 +437,8 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const FARM = buildingName(BuildingType.ResourceWheat, true);
-export const WORKSHOP = buildingName(BuildingType.ResourceLabor, true);
 export const BARRACKS = buildingName(BuildingType.ResourceKnightT1, true);
-export const HUT = buildingName(BuildingType.WorkersHut, true);
+const HUT = buildingName(BuildingType.WorkersHut, true);
 export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.WarHall, true),
   buildingName(BuildingType.SupplyYard, true),
@@ -497,6 +525,17 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
+/**
+ * Build pressed on a building the realm has no free population for (Devcon feedback, 4 November 2026: the sheet
+ * swapped the player's pick to a Hut with no word): the ask, with the Hut on the same plot as a choice, never as a swap.
+ * When the Hut itself cannot be paid yet, the choice picks it, so its price and wait show.
+ */
+export const ROOM_ASK = {
+  question: "Population full",
+  buildHut: `${BUILD} a ${HUT} here`,
+  chooseHut: `Choose the ${HUT}`,
+  another: "Choose another",
+} as const;
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";

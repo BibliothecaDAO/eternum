@@ -16,7 +16,7 @@ const READY_MS = 60_000;
 const SETTLE_MS = 2_000;
 
 /**
- * Frontier's windows of the same area (its castle and research, the season board, Next up), as the Frontier HUD's lab
+ * Frontier's windows of the same area (its castle and research, the season board), as the Frontier HUD's lab
  * draws them at /lab/kit/hud/<state>.
  */
 const FRONTIER_STATES = [
@@ -29,7 +29,6 @@ const FRONTIER_STATES = [
   "season-over-payout",
   "season-over-payout-no-wallet",
   "visiting",
-  "next-up-deploy",
 ];
 
 /** The surfaces the lab lists, by the name in their address; none when the lab never drew its list. */

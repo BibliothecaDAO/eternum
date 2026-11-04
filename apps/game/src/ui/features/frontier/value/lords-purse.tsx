@@ -7,7 +7,7 @@ import type { ReactNode } from "react";
 import type { DailyClaimWaiting } from "./realm-labor";
 
 /**
- * Under the phone's strip, beside Next up at its right: the realm's LORDS count (it opens Withdraw where one exists)
+ * Under the phone's strip, at its right: the realm's LORDS count (it opens Withdraw where one exists)
  * and, while the player's Realms have labor waiting today, the Realms chip beside it (the phone's Menu always has
  * Realms). A desktop's realm panel carries both, its Realms chip always.
  */
