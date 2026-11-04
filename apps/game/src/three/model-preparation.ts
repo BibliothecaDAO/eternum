@@ -5,15 +5,23 @@
  */
 let inFlight = 0;
 let settleWaiters: Array<() => void> = [];
+/** Every load and compile this page has started, and how many of them have ended: the doorway's map progress. */
+let started = 0;
+let finished = 0;
+const listeners = new Set<() => void>();
 
 /** Marks one load or compile started; the returned function ends it, once. */
 export function beginModelPreparation(): () => void {
   inFlight += 1;
+  started += 1;
+  listeners.forEach((listener) => listener());
   let ended = false;
   return () => {
     if (ended) return;
     ended = true;
     inFlight -= 1;
+    finished += 1;
+    listeners.forEach((listener) => listener());
     // Checked a task later: a load that hands its model to a compile, or a manager that compiles its models one after
     // another, is not read as done in between.
     if (inFlight === 0) setTimeout(releaseIfIdle, 0);
@@ -40,4 +48,13 @@ function releaseIfIdle(): void {
   const waiters = settleWaiters;
   settleWaiters = [];
   waiters.forEach((resolve) => resolve());
+}
+
+/** The share of the model loads and compiles started so far that have ended, 1 when none has started or all are done. */
+export const modelPreparationShare = (): number => (started === 0 ? 1 : finished / started);
+
+/** Calls `listener` as a load or compile starts or ends; returns the unsubscribe. */
+export function subscribeModelPreparation(listener: () => void): () => void {
+  listeners.add(listener);
+  return () => listeners.delete(listener);
 }

@@ -1,5 +1,6 @@
 import { configManager } from "@bibliothecadao/eternum";
 import type { GameClientSetup } from "@bibliothecadao/eternum/game-client";
+import { useSyncExternalStore } from "react";
 import { useLocation } from "react-router-dom";
 
 import type { PlayRouteBootPhase } from "@/game-entry/play-route-boot";
@@ -10,6 +11,7 @@ import { parsePlayRoute } from "@/play/navigation/play-route";
 import { gamePainting, modeLabel } from "@/shell/game-links";
 import { resultsHref } from "@/shell/season-tab/results-link";
 import { useRequestSignIn } from "@/shell/sign-in/connect";
+import { modelPreparationShare, subscribeModelPreparation } from "@/three/model-preparation";
 import { BootDebugPanel } from "@/ui/debug/boot-debug-panel";
 
 import { doorwayRealmOf } from "./doorway-realm";
@@ -45,6 +47,7 @@ export const PlayRouteDoorway = ({
   const entry = useRouteGame(route);
   const realm = useOwnRealm(setup, audience);
   const failedScene = usePlayRouteReadinessStore((state) => state.sceneFailure?.scene ?? null);
+  const modelShare = useSyncExternalStore(subscribeModelPreparation, modelPreparationShare);
   const view = doorwayView({
     source: "boot",
     phase,
@@ -53,6 +56,7 @@ export const PlayRouteDoorway = ({
     failedScene,
     realmCanOpen: realm !== null,
     ended,
+    modelShare,
   });
   return (
     <DoorwayScreen
