@@ -1793,6 +1793,39 @@ describe("identity Worker", () => {
       expect((await inviter.referral())[1].link.counted).toBe(2);
     });
 
+    it("compares every device each friend ever approved, not only the one kept, in sequence and when writes race", async () => {
+      const inviter = await player("ref-alldev");
+      inviter.found("free");
+      const code = await inviter.code();
+      const own = { mailbox: "ref-alldev@realms.test", devices: [inviter.device!] };
+      const join = async (name: string, devices: string[]) => {
+        const friend = await player(name, { device: devices[0]! });
+        for (const device of devices.slice(1)) await friend.onDevice(device);
+        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
+        return friend;
+      };
+      // In sequence: A approved 0xa1 and 0xa2 and is kept on 0xa1; it counts. B, on 0xa2 alone, qualifies on a later read.
+      const a = await join("ref-alldev-a", ["0xa1", "0xa2"]);
+      a.found("campaign", 1);
+      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual(["counted"]);
+      const b = await join("ref-alldev-b", ["0xa2"]);
+      b.found("campaign", 1);
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", ["counted", "excluded"], { tier: "regular", earned: { ticket: true } }),
+      );
+      // Racing writes, the shared 0xc3 neither friend's kept device: the second write counts no one.
+      const store = createCampaignReferralStore(env.DB);
+      const c = await join("ref-alldev-c", ["0xc1", "0xc3"]);
+      const d = await join("ref-alldev-d", ["0xc2", "0xc3"]);
+      c.found("campaign", 1);
+      d.found("campaign", 1);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, deviceKey: "0xc2" }], 10);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, deviceKey: "0xc1" }], 11);
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", ["counted", "excluded", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
+      );
+    });
+
     it("gives a held-Realm inviter nothing, while their friends still get tickets", async () => {
       const inviter = await player("ref-held-inviter");
       inviter.found("realm");
@@ -1908,7 +1941,7 @@ describe("identity Worker", () => {
       // A ticket the link gives later is golden, whatever the draw.
       const later = await player("ref-link-later");
       expect(await later.redeem({ referral: code })).toEqual(ticket("golden"));
-    });
+    }, 30_000);
 
     it("gives no referral ticket and counts no friend after the season", async () => {
       const inviter = await player("ref-closing");

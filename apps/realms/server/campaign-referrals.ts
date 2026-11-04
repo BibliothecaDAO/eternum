@@ -142,7 +142,8 @@ export async function settleReferrals(world: ReferralWorld, campaign: CampaignKe
 
 /**
  * Counts each friend the board shows with a site cleared whose mailbox and devices are their own: neither the
- * inviter's nor a counted friend's, every device the guardian ever approved for either counting, signed in or not.
+ * inviter's nor a counted friend's, every device the guardian ever approved for any of them counting, signed in or
+ * not, on both sides of the comparison.
  * Friends counted before keep their count and claim their identity first; the rest are taken oldest first. A friend
  * with no device known yet waits for one: an unknown device proves nothing. The counting write checks again, so racing
  * reads count one person once. Answers the friends excluded as someone else's.
@@ -157,17 +158,17 @@ async function countFriends(
 ) {
   const referrals = createCampaignReferralStore(world.db);
   const own = await referrals.identityOf(inviter);
+  const approved = await referrals.devicesOfFriends(campaign, inviter);
+  const devicesOf = (friend: ReferredFriend) => [
+    ...new Set([...(friend.deviceKey === null ? [] : [friend.deviceKey]), ...(approved.get(friend.friend) ?? [])]),
+  ];
   const mailboxes = new Set<string | null>([own.mailbox, ...friends.filter(isCounted).map((friend) => friend.mailbox)]);
-  const devices = new Set<string | null>([
-    ...own.devices,
-    ...friends.filter(isCounted).map((friend) => friend.deviceKey),
-  ]);
+  const devices = new Set<string>([...own.devices, ...friends.filter(isCounted).flatMap(devicesOf)]);
   const excluded = new Set<string>();
   const newlyCounted: { friend: string; deviceKey: string }[] = [];
   for (const friend of friends.filter((candidate) => !isCounted(candidate))) {
     if (!(await hasClearedSite(world, friend, board))) continue;
-    const known = (await referrals.identityOf(friend.friend)).devices;
-    const friendDevices = [...new Set(friend.deviceKey === null ? known : [friend.deviceKey, ...known])];
+    const friendDevices = devicesOf(friend);
     if (friendDevices.length === 0) continue;
     if (mailboxes.has(friend.mailbox) || friendDevices.some((device) => devices.has(device))) {
       excluded.add(friend.friend);

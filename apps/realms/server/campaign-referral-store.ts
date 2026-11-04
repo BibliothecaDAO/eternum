@@ -31,6 +31,16 @@ interface CampaignTicket {
   tier: TicketTier;
 }
 
+/**
+ * Whether a device key, as the counting write's SQL names it, is someone else's on the link: one the inviter ever
+ * approved, or a counted friend's, kept or ever approved. `f` is the friend being counted.
+ */
+const taken = (key: string) => `(${key} IN (SELECT "deviceKey" FROM "account_devices" WHERE "realmsId" = f."referrer")
+  OR EXISTS (SELECT 1 FROM "campaign_referrals" AS o
+             WHERE o."campaign" = f."campaign" AND o."referrer" = f."referrer" AND o."counted_at" IS NOT NULL
+               AND (o."device_key" = ${key}
+                    OR EXISTS (SELECT 1 FROM "account_devices" AS d WHERE d."realmsId" = o."friend" AND d."deviceKey" = ${key}))))`;
+
 /** A new code takes another try only when it collides with another inviter's; eight letters make that rare. */
 const CODE_ATTEMPTS = 4;
 
@@ -168,8 +178,9 @@ export function createCampaignReferralStore(db: D1Database) {
 
   /**
    * Counts friends for their inviter, keeping the device each counted on; a friend once counted stays counted. The
-   * write itself refuses a friend whose mailbox or device is the inviter's or a counted friend's on the link, so reads
-   * that race, each deciding from its own snapshot, still count one person once.
+   * write itself refuses a friend who shares the inviter's mailbox or any approved device, or a counted friend's on the
+   * link: every device either account ever approved (account_devices), and each counted friend's kept one. Reads that
+   * race, each deciding from its own snapshot, still count one person once.
    */
   const markCounted = async (
     campaign: CampaignKey,
@@ -183,27 +194,34 @@ export function createCampaignReferralStore(db: D1Database) {
       friends.map(({ friend, deviceKey }) =>
         db
           .prepare(
-            `UPDATE "campaign_referrals" AS f SET "counted_at" = ?, "device_key" = coalesce(f."device_key", ?)
-             WHERE f."campaign" = ? AND f."friend" = ? AND f."referrer" = ? AND f."counted_at" IS NULL
-               AND f."mailbox" IS NOT ? AND coalesce(f."device_key", ?) NOT IN (SELECT "value" FROM json_each(?))
+            `UPDATE "campaign_referrals" AS f SET "counted_at" = ?1, "device_key" = coalesce(f."device_key", ?2)
+             WHERE f."campaign" = ?3 AND f."friend" = ?4 AND f."referrer" = ?5 AND f."counted_at" IS NULL
+               AND f."mailbox" IS NOT ?6
                AND NOT EXISTS (SELECT 1 FROM "campaign_referrals" AS o
                                WHERE o."campaign" = f."campaign" AND o."referrer" = f."referrer"
-                                 AND o."counted_at" IS NOT NULL
-                                 AND (o."mailbox" = f."mailbox" OR o."device_key" = coalesce(f."device_key", ?)))`,
+                                 AND o."counted_at" IS NOT NULL AND o."mailbox" = f."mailbox")
+               AND NOT ${taken('coalesce(f."device_key", ?2)')}
+               AND NOT EXISTS (SELECT 1 FROM "account_devices" AS mine
+                               WHERE mine."realmsId" = f."friend" AND ${taken('mine."deviceKey"')})`,
           )
-          .bind(
-            now,
-            deviceKey,
-            campaign,
-            friend,
-            inviter,
-            own.mailbox,
-            deviceKey,
-            JSON.stringify(own.devices),
-            deviceKey,
-          ),
+          .bind(now, deviceKey, campaign, friend, inviter, own.mailbox),
       ),
     );
+  };
+
+  /** Every device each friend on the link ever approved, by friend: the one-person check's whole relation. */
+  const devicesOfFriends = async (campaign: CampaignKey, inviter: string) => {
+    const { results } = await db
+      .prepare(
+        `SELECT f."friend", d."deviceKey" FROM "campaign_referrals" AS f
+         JOIN "account_devices" AS d ON d."realmsId" = f."friend"
+         WHERE f."campaign" = ? AND f."referrer" = ?`,
+      )
+      .bind(campaign, inviter)
+      .all<{ friend: string; deviceKey: string }>();
+    const byFriend = new Map<string, string[]>();
+    for (const { friend, deviceKey } of results) byFriend.set(friend, [...(byFriend.get(friend) ?? []), deviceKey]);
+    return byFriend;
   };
 
   /** The inviter's reward ticket, with the mark that friends earned it, both or neither. */
@@ -270,6 +288,7 @@ export function createCampaignReferralStore(db: D1Database) {
     identityOf,
     deviceOfSession,
     markCounted,
+    devicesOfFriends,
     giveInviterTicket,
     promoteInviter,
     goldLink,
