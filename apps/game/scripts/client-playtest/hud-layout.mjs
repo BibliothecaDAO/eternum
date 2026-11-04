@@ -122,3 +122,58 @@ export function judgeHudLayout(layout) {
 
 /** Two boxes share more than a hairline (a border's pixel). */
 const overlap = (a, b) => a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+
+/** The keyboard's share of a phone's height when it is up (a portrait phone's, about 40%), for the map's share above it. */
+const KEYBOARD_SHARE = 0.4;
+
+/**
+ * How much of the page shows the map, by hit-testing a grid of points 8 CSS px apart: a point shows the map where the map's
+ * canvas is the first thing a press there reaches (its labels take no press, so they count as map). Each point that
+ * does not names the HUD part over it (a kit part, a frame or a sheet, else the element's own tag and class), and the
+ * points over each part are counted. The share above the keyboard reads only the points above it, as a phone with
+ * the keyboard up shows them (the page keeps its height: no interactive-widget, so the keyboard covers its foot). A
+ * part that takes no press is not seen by the hit test; the HUD draws its surfaces as parts that do.
+ */
+export const MAP_SHARE_EXPRESSION = `JSON.stringify((() => {
+  const STEP = 8;
+  const canvas = document.getElementById("main-canvas");
+  const PART = ".ui-panel, .ui-pill, .ui-bubble, .ui-notice, [data-kit-sheet], [data-kit-frame], nav, header, aside";
+  const BANDS = ["data-hud-top", "data-hud-foot", "data-hud-column", "data-hud-rail"];
+  const bandOf = (element) => {
+    const band = element.closest(BANDS.map((name) => "[" + name + "]").join(","));
+    return band ? BANDS.find((name) => band.hasAttribute(name)).slice("data-hud-".length) : "page";
+  };
+  const partOf = (element) => {
+    const named = element.closest("[aria-label]");
+    const part = element.closest(PART);
+    if (part && named && part.contains(named)) return named.getAttribute("aria-label");
+    if (part) return part.getAttribute("aria-label") || part.querySelector(".ui-panel__title, .ui-bubble__word")?.textContent.trim() || named?.getAttribute("aria-label") || part.className.split(" ").find((name) => name.startsWith("ui-")) || part.tagName.toLowerCase();
+    return named?.getAttribute("aria-label") || element.tagName.toLowerCase() + (typeof element.className === "string" && element.className ? "." + element.className.split(" ")[0] : "");
+  };
+  const nameOf = (element) => bandOf(element) + ": " + partOf(element);
+  const keyboardTop = innerHeight * (1 - ${KEYBOARD_SHARE});
+  let total = 0, map = 0, aboveKeyboard = 0, mapAboveKeyboard = 0;
+  const parts = {};
+  for (let y = STEP / 2; y < innerHeight; y += STEP)
+    for (let x = STEP / 2; x < innerWidth; x += STEP) {
+      const hit = document.elementFromPoint(x, y);
+      const onMap = hit !== null && canvas !== null && hit === canvas;
+      total += 1;
+      if (y < keyboardTop) aboveKeyboard += 1;
+      if (onMap) {
+        map += 1;
+        if (y < keyboardTop) mapAboveKeyboard += 1;
+      } else if (hit) {
+        const name = nameOf(hit);
+        parts[name] = (parts[name] ?? 0) + 1;
+      }
+    }
+  const share = (count) => Math.round((count / total) * 1000) / 10;
+  return {
+    viewport: { width: innerWidth, height: innerHeight },
+    canvas: canvas !== null,
+    map: share(map),
+    mapAboveKeyboard: Math.round((mapAboveKeyboard / aboveKeyboard) * 1000) / 10,
+    parts: Object.fromEntries(Object.entries(parts).sort(([, a], [, b]) => b - a).map(([name, count]) => [name, share(count)])),
+  };
+})())`;
