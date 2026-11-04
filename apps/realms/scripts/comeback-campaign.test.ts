@@ -8,7 +8,10 @@ import {
   type Handoff,
 } from "./comeback-campaign";
 
-const TODAY = 1_000_000;
+/** 24 hours before the send: a player who acted after it has come back. */
+const SINCE = 1_000_000;
+/** The visit record began long before the window. */
+const RECORDED = 0;
 const account = (overrides: Partial<Account>): Account => ({
   realmsId: "0x1",
   discord: false,
@@ -16,20 +19,33 @@ const account = (overrides: Partial<Account>): Account => ({
   playtester: false,
   inSeason: false,
   lastAction: 0,
+  lastVisit: 0,
   optedOut: false,
   ...overrides,
 });
 
 it("picks each account's variant, and none for an account that stopped news emails", () => {
-  const idleFounder = account({ ticket: "regular", inSeason: true, lastAction: TODAY - 1 });
-  expect(variantOf(idleFounder, TODAY)).toBe("D");
-  expect(variantOf({ ...idleFounder, lastAction: TODAY + 5 }, TODAY)).toBeNull();
-  expect(variantOf(account({ ticket: "golden" }), TODAY)).toBe("N");
-  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: TODAY - 1 }), TODAY)).toBe("P");
-  expect(variantOf(account({ playtester: true }), TODAY)).toBe("P");
-  expect(variantOf(account({}), TODAY)).toBeNull();
+  const idleFounder = account({ ticket: "regular", inSeason: true, lastAction: SINCE - 1 });
+  expect(variantOf(idleFounder, SINCE, RECORDED)).toBe("D");
+  expect(variantOf({ ...idleFounder, lastAction: SINCE + 5 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf(account({ ticket: "golden" }), SINCE, RECORDED)).toBe("N");
+  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE - 1 }), SINCE, RECORDED)).toBe("P");
+  expect(variantOf(account({ playtester: true }), SINCE, RECORDED)).toBe("P");
+  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE + 5 }), SINCE, RECORDED)).toBeNull();
+  expect(variantOf(account({}), SINCE, RECORDED)).toBeNull();
+  // A recorded visit leaves the player out, research-only or not: within the window, or within the hour the record
+  // can lag behind a visit.
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE + 60 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 * 60 + 60 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 * 60 - 60 }, SINCE, RECORDED)).toBe("D");
+  // Before the visit record began, a visit is unknown: nobody is away over a window reaching back that far.
+  expect(variantOf(idleFounder, SINCE, SINCE - 60)).toBeNull();
+  expect(variantOf(idleFounder, SINCE, null)).toBeNull();
+  expect(variantOf(account({ ticket: "golden" }), SINCE, null)).toBe("N");
+  // N asks for a realm not yet founded: a visit since signing up does not found it.
+  expect(variantOf(account({ ticket: "golden", lastVisit: SINCE + 5 }), SINCE, RECORDED)).toBe("N");
   for (const stopped of [{ ...idleFounder }, account({ ticket: "golden" }), account({ playtester: true })])
-    expect(variantOf({ ...stopped, optedOut: true }, TODAY)).toBeNull();
+    expect(variantOf({ ...stopped, optedOut: true }, SINCE, RECORDED)).toBeNull();
 });
 
 /**
@@ -39,13 +55,19 @@ it("picks each account's variant, and none for an account that stopped news emai
 const world = () => {
   const record = new Map<string, "reserved" | "sent">();
   const optedOut = new Set<string>();
+  const cameBack = new Set<string>();
   const delivered: string[] = [];
   const run = (
     deliveries: Delivery[],
-    options: { answer?: (delivery: Delivery) => Handoff; crashBeforeMark?: string; duringPause?: () => void } = {},
+    options: {
+      answer?: (delivery: Delivery) => Handoff;
+      crashBeforeMark?: string;
+      duringPause?: () => void;
+    } = {},
   ) =>
     sendCampaign({
       deliveries,
+      stillAway: async ({ realmsId }) => !cameBack.has(realmsId),
       reserve: async ({ realmsId }) => {
         if (optedOut.has(realmsId)) return "opted_out";
         if (record.has(realmsId)) return "taken";
@@ -65,7 +87,7 @@ const world = () => {
       release: async ({ realmsId }) => void record.delete(realmsId),
       pause: async () => options.duringPause?.(),
     });
-  return { run, record, optedOut, delivered };
+  return { run, record, optedOut, cameBack, delivered };
 };
 const deliveries: Delivery[] = [
   { realmsId: "0xa", variant: "D" },
@@ -130,4 +152,11 @@ it("logs a failed D1 call by the error it names, never the query wrangler echoes
   ];
   expect(failures).toEqual(["wrangler exit 1: no such table: news_email_sends", "wrangler exit 1"]);
   for (const failure of failures) expect(failure).not.toMatch(/example\.com|0x60f67|4sG3KOH|player/);
+});
+
+it("leaves out a player who comes back while the run is going, by the latest confirmed activity", async () => {
+  const { run, cameBack, delivered } = world();
+  const counts = await run(deliveries, { duringPause: () => cameBack.add("0xc") });
+  expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
+  expect(delivered).toEqual(["0xa", "0xb"]);
 });

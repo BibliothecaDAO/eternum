@@ -6,6 +6,8 @@ import {
   IDENTITY_PORTRAITS,
   nameRuleViolation,
   SIGN_IN_CODE_LENGTH,
+  SESSION_RENEWAL_SECONDS,
+  SESSION_SECONDS,
   SIGN_IN_CODE_SECONDS,
   suggestedNameOf,
 } from "@realms-world/identity";
@@ -17,8 +19,6 @@ import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
 import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
-
-const DAY_SECONDS = 24 * 60 * 60;
 
 /** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
 interface IdentityServices {
@@ -95,9 +95,9 @@ export const createIdentityAuth = (
     baseURL: env.BASE_URL,
     basePath: "/api/auth",
     database: env.DB,
-    // A month, renewed by a day's use, so a phone stays signed in. Every session read comes from the database: a cached
+    // A month, renewed by a day's use (account-rules.ts). Every session read comes from the database: a cached
     // copy of the account went stale for an hour after a wallet link or a name change made on another device.
-    session: { expiresIn: 30 * DAY_SECONDS, updateAge: DAY_SECONDS },
+    session: { expiresIn: SESSION_SECONDS, updateAge: SESSION_RENEWAL_SECONDS },
     socialProviders: socialProvidersOf(env),
     // Other realms.party services set better-auth's default cookie names for the whole domain; a browser sends that
     // older cookie first, and it would hide this service's session. Our cookies carry their own name.
