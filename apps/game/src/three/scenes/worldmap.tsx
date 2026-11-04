@@ -76,7 +76,14 @@ import { CAMERA_CONFIG } from "@/three/constants";
 import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
-import { createSpireVeil, diveThroughSpire, type SpireDiveStage } from "@/three/scenes/worldmap-spire-dive";
+import type { CameraClaim } from "@/three/scenes/camera-moves";
+import {
+  createSpireVeil,
+  diveThroughSpire,
+  spireCrossing,
+  type SpireDive,
+  type SpireDiveStage,
+} from "@/three/scenes/worldmap-spire-dive";
 import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/worldmap-layer-request";
 import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { LeftView } from "@/types";
@@ -84,7 +91,6 @@ import {
   armyRealmSpire,
   configManager,
   dayOf,
-  expeditionDepth,
   expeditionSpires,
   isArmyCrossing,
   isEtherealTile,
@@ -95,7 +101,6 @@ import {
   isViewerOwner,
   isExpeditionRealm,
   readExpeditionRules,
-  regionSpire,
   type ExpeditionRules,
   spawnRing,
   structureMapPosition,
@@ -976,8 +981,8 @@ export default class WorldmapScene extends WarpTravel {
       (event as CustomEvent<LayerViewRequest>).detail,
     );
   };
-  /** The dive under way, if any: a second view through a spire waits for none and is dropped. */
-  private spireDive: Promise<void> | null = null;
+  /** The dive under way, if any: the map's exit ends it, as does a newer writer of the camera (a newer view's dive too). */
+  private spireDive: SpireDive | null = null;
   private readonly spireVeil = createSpireVeil();
 
   /** Shown, the map takes the army selection asked while another view was showing, and an open deploy order. */
@@ -2649,24 +2654,29 @@ export default class WorldmapScene extends WarpTravel {
    * The camera passes from one tile to another through a spire, the view left drawn there: Frontier's layers, down the
    * same map, by a dive through the region's spire (diveThroughSpire); Eternum's other layer, which the follow has
    * switched already, by a move onto it. Every view switch through a spire (an army's crossing, a double-click on the
-   * spire, the layer chooser) comes here.
+   * spire, the layer chooser) comes here. True once the view lands; false when a newer writer of the camera (a newer
+   * view's dive among them) or the map's exit cut the dive short.
    */
-  private async viewThroughSpire(from: { col: number; row: number }, to: { col: number; row: number }): Promise<void> {
-    if (this.spireDive) return;
+  private async viewThroughSpire(
+    from: { col: number; row: number },
+    to: { col: number; row: number },
+  ): Promise<boolean> {
     const rules = readExpeditionRules(this.game.store, configManager.getActiveGameId());
-    const dive = rules
-      ? diveThroughSpire(this.spireDiveStage(), {
-          spire: regionSpire(rules, to),
-          arrival: to,
-          down: expeditionDepth(rules, { y: to.row }) > expeditionDepth(rules, { y: from.row }),
-          reducedMotion: useWorldAppearanceStore.getState().reducedMotion,
-        })
-      : this.cutToMapHex(to);
+    if (!rules) {
+      await this.cutToMapHex(to);
+      return true;
+    }
+    const dive = diveThroughSpire(
+      this.controls,
+      (claim) => this.spireDiveStage(claim),
+      spireCrossing(rules, from, to),
+      useWorldAppearanceStore.getState().reducedMotion,
+    );
     this.spireDive = dive;
     try {
-      await dive;
+      return await dive.done;
     } finally {
-      this.spireDive = null;
+      if (this.spireDive === dive) this.spireDive = null;
     }
   }
 
@@ -2680,25 +2690,22 @@ export default class WorldmapScene extends WarpTravel {
     ]);
   }
 
-  private spireDiveStage(): SpireDiveStage {
+  /** The dive's camera, written only through its claim: once a newer writer takes the camera, the dive writes nothing. */
+  private spireDiveStage(claim: CameraClaim): SpireDiveStage {
     return {
       pose: () => ({ position: this.camera.position.clone(), target: this.controls.target.clone() }),
       fly: (position, target, seconds, ease) =>
-        new Promise((resolve) => {
-          this.cameraAnimate(position, target, seconds, resolve, { ease });
-          // A move another camera writer cancels calls no finish, so the dive also goes on once the move's time is up.
-          setTimeout(resolve, seconds * 1000 + 100);
-        }),
-      place: (position, target) => this.placeCamera(position, target),
+        new Promise((resolve) => claim.move(() => this.cameraAnimate(position, target, seconds, resolve, { ease }))),
+      place: (position, target) => claim.move(() => this.placeCamera(position, target)),
       // The map draws the cut as its own camera move, under the veil, which waits for it SPIRE_CUT_DRAW_MS at most.
       cutTo: (hex) =>
-        Promise.race([this.cutToMapHex(hex), new Promise<void>((resolve) => setTimeout(resolve, SPIRE_CUT_DRAW_MS))]),
+        Promise.race([
+          new Promise<void>((resolve, reject) => claim.move(() => this.cutToMapHex(hex).then(resolve, reject))),
+          new Promise<void>((resolve) => setTimeout(resolve, SPIRE_CUT_DRAW_MS)),
+        ]),
       pointOf: (hex) => this.hexSpace.positionForHex(cameraHexOf(Position.fromContract({ x: hex.col, y: hex.row }))),
       veil: this.spireVeil,
-      hold: (held) => {
-        this.setCameraOwnedByFlight(held);
-        if (!held) this.notifyControlsChanged();
-      },
+      hold: () => this.holdCamera(),
     };
   }
 
@@ -4664,10 +4671,9 @@ export default class WorldmapScene extends WarpTravel {
     if (destination) this.moveCameraToMapPosition(destination, "entry");
   }
 
-  /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
-  public override setCameraOwnedByFlight(owned: boolean): void {
-    super.setCameraOwnedByFlight(owned);
-    this.chunkWorkQueue.setHeld(owned);
+  /** A flight holds the camera: no chunk work (terrain pages, composites, refreshes) draws on its way. */
+  protected override onCameraHeld(held: boolean): void {
+    this.chunkWorkQueue.setHeld(held);
   }
 
   private reportAmbientConvergenceError(error: unknown): void {
@@ -4894,6 +4900,8 @@ export default class WorldmapScene extends WarpTravel {
     // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
     this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
+    // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
+    this.spireDive?.cancel();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
     this.clearWorldmapVisibilityRuntimeForSwitchOff();

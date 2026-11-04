@@ -280,9 +280,10 @@ export const expeditionSpireTile = (
 };
 
 /**
- * The spire of the region a tile lies in, on that day's surface, whichever of the region's layers the tile is in: the
- * home-ring tile in direction (day % 6) around the realm's site, which the region's column and the tile's day name. The
- * one place a view through a spire dives into.
+ * The spire of the region a tile lies in, at its spot in the tile's own layer: the spire itself on that day's surface,
+ * the spot under it in an Ethereal layer. The spire is the home-ring tile in direction (day % 6) around the realm's
+ * site, which the region's column and the tile's day name. A view through a spire dives in and out there, inside the
+ * region it shows.
  */
 export const regionSpire = (rules: ExpeditionRules, at: { col: number; row: number }): { col: number; row: number } => {
   const half = Math.floor(rules.spacing / 2);
@@ -291,7 +292,7 @@ export const regionSpire = (rules: ExpeditionRules, at: { col: number; row: numb
   const direction = day % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);
-  return { col: spire.col, row: spire.row };
+  return { col: spire.col, row: spire.row + expeditionDepth(rules, { y: at.row }) * rules.spacing };
 };
 
 /** Whether an army stands where enter_depth takes it: on its realm's spire or beside it. */

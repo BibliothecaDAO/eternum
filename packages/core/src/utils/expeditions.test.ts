@@ -177,12 +177,15 @@ describe("liveHomeArmies", () => {
     expect(viewInLayer(rules, { col: 3, row: 71 }, 0)).toEqual({ col: 3, row: 41 });
   });
 
-  it("names one spire for every layer of a region, the realm's own spire that day", () => {
+  it("finds the realm's own spire on the surface, and the spot under it in each Ethereal layer of the region", () => {
     const now = dayStart(1) + 60;
     const own = expeditionSpireTile(rules, structure(), now)!;
     const site = expeditionRealmSite(rules, entityHomeNamespace(3), now)!;
     for (const layer of [0, 1, 2, 3])
-      expect(regionSpire(rules, { col: site.col - 2, row: site.row + layer * rules.spacing + 1 })).toEqual(own);
+      expect(regionSpire(rules, { col: site.col - 2, row: site.row + layer * rules.spacing + 1 })).toEqual({
+        col: own.col,
+        row: own.row + layer * rules.spacing,
+      });
   });
 });
 

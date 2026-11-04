@@ -8,15 +8,17 @@ import { SceneFlight, canFlyBetweenScenes } from "./scene-flight";
 function scene(presentable: Promise<void> = Promise.resolve()) {
   const camera = { position: new Vector3(0, 20, 20) };
   const cancel = vi.fn();
+  const handBack = vi.fn();
   return {
     getCamera: () => camera,
     getCameraTargetPosition: () => new Vector3(),
     getLocationCoordinates: () => ({ x: 10, z: 20 }),
     cameraAnimate: vi.fn(() => cancel),
     moveCameraToXYZ: vi.fn(),
-    setCameraOwnedByFlight: vi.fn(),
+    holdCamera: vi.fn(() => handBack),
     whenPresentable: () => presentable,
     cancel,
+    handBack,
   };
 }
 beforeEach(() => {
@@ -50,8 +52,8 @@ it("holds the outgoing frame through setup, then crossfades as the incoming came
   const completion = flight.flyOut();
   expect(outgoing.cameraAnimate).toHaveBeenCalledWith(expect.any(Vector3), new Vector3(10, 0, 20), 0.45);
   // The flight owns the outgoing camera from flyOut until it hands the original camera back.
-  expect(outgoing.setCameraOwnedByFlight).toHaveBeenCalledWith(true);
-  expect(outgoing.setCameraOwnedByFlight).not.toHaveBeenCalledWith(false);
+  expect(outgoing.holdCamera).toHaveBeenCalledOnce();
+  expect(outgoing.handBack).not.toHaveBeenCalled();
   await vi.advanceTimersByTimeAsync(500);
   const source = document.querySelector("canvas")!;
   expect(document.querySelector('[data-scene-transition="frame"]')).toBeNull();
@@ -59,7 +61,7 @@ it("holds the outgoing frame through setup, then crossfades as the incoming came
   await expect(completion).resolves.toBe(true);
   expect(document.querySelector('[data-scene-transition="frame"]')).not.toBeNull();
   expect(outgoing.cancel).toHaveBeenCalledOnce();
-  expect(outgoing.setCameraOwnedByFlight).toHaveBeenLastCalledWith(false);
+  expect(outgoing.handBack).toHaveBeenCalledOnce();
   flight.reveal(incoming as unknown as HexagonScene);
   await vi.advanceTimersByTimeAsync(500);
   expect(incoming.cameraAnimate).toHaveBeenCalledWith(new Vector3(0, 20, 20), new Vector3(), 0.3);
@@ -80,9 +82,9 @@ it("cancels an interrupted flight and removes its timer without touching a destr
   expect(outgoing.moveCameraToXYZ).not.toHaveBeenCalled();
   expect(vi.getTimerCount()).toBe(0);
   // The camera never came back through a restore, so the cancel itself hands it back to the scene.
-  expect(outgoing.setCameraOwnedByFlight).toHaveBeenLastCalledWith(false);
+  expect(outgoing.handBack).toHaveBeenCalledOnce();
   flight.destroy();
-  expect(outgoing.setCameraOwnedByFlight).toHaveBeenCalledTimes(2);
+  expect(outgoing.handBack).toHaveBeenCalledOnce();
 });
 
 it("snapshots the just-rendered buffer on the GPU before restoring the outgoing camera", async () => {

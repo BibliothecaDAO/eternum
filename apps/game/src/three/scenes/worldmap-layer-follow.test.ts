@@ -22,7 +22,7 @@ function setup() {
     setLayer: vi.fn((value: boolean) => {
       alt = value;
     }),
-    lookThrough: vi.fn().mockResolvedValue(undefined),
+    lookThrough: vi.fn().mockResolvedValue(true),
     finishMovement: vi.fn(),
     select: vi.fn(),
   };
@@ -37,10 +37,10 @@ function setup() {
 describe("following an army through a spire", () => {
   it("switches on the projection crossing and selects only once the view has passed into the new layer", async () => {
     const { input } = setup();
-    let finish!: () => void;
+    let finish!: (landed: boolean) => void;
     input.lookThrough.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<boolean>((resolve) => {
           finish = resolve;
         }),
     );
@@ -48,7 +48,7 @@ describe("following an army through a spire", () => {
     expect(input.setLayer).toHaveBeenCalledWith(true);
     expect(input.finishMovement).toHaveBeenCalledWith(7);
     expect(input.select).not.toHaveBeenCalled();
-    finish();
+    finish(true);
     await pending;
     expect(input.select).toHaveBeenCalledWith(7);
     input.changes = input.changes.map((change) => ({
@@ -56,7 +56,7 @@ describe("following an army through a spire", () => {
       previous: change.current,
       current: { ...change.current!, hexCoords: { ...change.current!.hexCoords, alt: false } },
     }));
-    input.lookThrough.mockResolvedValue(undefined);
+    input.lookThrough.mockResolvedValue(true);
     await followArmyCrossing(input);
     expect(input.setLayer).toHaveBeenLastCalledWith(false);
   });
@@ -107,8 +107,17 @@ describe("following an army through a spire", () => {
     const { input, selectOther } = setup();
     input.lookThrough.mockImplementation(async () => {
       selectOther();
+      return true;
     });
     await followArmyCrossing(input);
+    expect(input.select).not.toHaveBeenCalled();
+  });
+
+  it("leaves the newer view alone when it cut the pass short", async () => {
+    const { input } = setup();
+    input.lookThrough.mockResolvedValue(false);
+    await followArmyCrossing(input);
+    expect(input.setLayer).toHaveBeenCalledWith(true);
     expect(input.select).not.toHaveBeenCalled();
   });
 });

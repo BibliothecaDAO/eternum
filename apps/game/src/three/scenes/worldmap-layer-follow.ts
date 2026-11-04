@@ -9,8 +9,11 @@ interface FollowArmyCrossingInput {
   /** Whether the army passed through a spire between the two places (isArmyCrossing). */
   isCrossing(from: WorldSpatialHex, to: WorldSpatialHex): boolean;
   setLayer(alt: boolean): void;
-  /** The view passes from the army's old tile to its arrival through the spire, left drawn there (viewThroughSpire). */
-  lookThrough(from: WorldSpatialHex, to: WorldSpatialHex): Promise<void>;
+  /**
+   * The view passes from the army's old tile to its arrival through the spire, left drawn there (viewThroughSpire):
+   * true once it lands, false when a newer view or the map's exit cut it short.
+   */
+  lookThrough(from: WorldSpatialHex, to: WorldSpatialHex): Promise<boolean>;
   finishMovement(entityId: ID): void;
   select(entityId: ID): void;
 }
@@ -31,7 +34,8 @@ export async function followArmyCrossing(input: FollowArmyCrossingInput): Promis
   const { entityId, hexCoords } = crossing.current;
   input.finishMovement(entityId);
   input.setLayer(hexCoords.alt);
-  await input.lookThrough(crossing.previous.hexCoords, hexCoords);
-  if (!input.isSceneActive() || input.getLayer() !== hexCoords.alt || input.getSelectedId() !== entityId) return;
+  const landed = await input.lookThrough(crossing.previous.hexCoords, hexCoords);
+  if (!landed || !input.isSceneActive() || input.getLayer() !== hexCoords.alt || input.getSelectedId() !== entityId)
+    return;
   input.select(entityId);
 }
