@@ -67,7 +67,7 @@ export const DoorwayScreen = ({
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
       <PageFrame title={title} painting={painting} stage>
         {desktop ? (
-          <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+          <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
             <AppPanel className="w-column">
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}

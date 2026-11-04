@@ -8,13 +8,7 @@ import { identityClient, useIdentitySession } from "@/hooks/context/identity-ses
 import { heldCampaignTicket, useHeldTicket, useTicketOpened } from "@/hooks/use-holdings";
 import { campaignOfPreset } from "@/services/home-claim-rules";
 import { AppButton, AppNotice, AppTicket } from "@/ui/design-system/kit/app-elements";
-import {
-  campaignTicketName,
-  DEVCON as DEVCON_NAME,
-  HOME_STEP_WORDS,
-  JOIN_WORDS,
-  TRY_AGAIN,
-} from "@/ui/design-system/kit/words";
+import { campaignTicketName, DEVCON as DEVCON_NAME, JOIN_WORDS, TRY_AGAIN } from "@/ui/design-system/kit/words";
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
@@ -160,7 +154,7 @@ const SealedTicket = ({
 
 /** The ticket this flyer opened, turned over: gold under its rays for a golden one, and what its realm claims each day. */
 const TicketRevealed = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: string | null }) => (
-  <DevconFrame foot={<ChooseYourHome entry={entry} />}>
+  <DevconFrame foot={<StartYourAdventure entry={entry} />}>
     <h1 className="text-app-title text-app-ink">{campaignTicketName(DEVCON.campaign, tier === "golden")}</h1>
     <DevconTicket tier={tier} />
   </DevconFrame>
@@ -175,7 +169,7 @@ const TicketHeld = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: stri
     forgetCampaignCode();
   }, []);
   return (
-    <DevconFrame foot={<ChooseYourHome entry={entry} />}>
+    <DevconFrame foot={<StartYourAdventure entry={entry} />}>
       <h1 className="text-app-title text-app-ink">{JOIN_WORDS.alreadyHeld}</h1>
       <DevconTicket tier={tier} />
     </DevconFrame>
@@ -183,16 +177,16 @@ const TicketHeld = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: stri
 };
 
 /** On to the Devcon game's entry, whose Realm step stands on the ticket; it spins until the directory says where. */
-const ChooseYourHome = ({ entry }: { entry: string | null }) => (
+const StartYourAdventure = ({ entry }: { entry: string | null }) => (
   <AppButton
     kind="primary"
     size="lg"
     icon="play"
     step
-    busy={entry === null ? HOME_STEP_WORDS.title : undefined}
+    busy={entry === null ? JOIN_WORDS.startAdventure : undefined}
     to={entry ?? "/"}
   >
-    {HOME_STEP_WORDS.title}
+    {JOIN_WORDS.startAdventure}
   </AppButton>
 );
 

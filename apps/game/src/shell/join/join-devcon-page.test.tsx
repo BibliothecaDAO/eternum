@@ -140,7 +140,7 @@ it("shows every visitor the sealed ticket alone, and opens it as soon as sign-in
   expect(text()).toContain("2,000 Labor each day");
   expect(text()).toContain("2,000 Essence each day");
   expect(kept()).toBeNull();
-  await press("Choose your home");
+  await press("Start your adventure");
   expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
 });
 
@@ -181,7 +181,7 @@ it("says plainly that an account already holds its ticket, shows that one, and n
   // The second flyer's code is never redeemed, and leaves this browser for someone else.
   expect(redeemedCodes()).toEqual([]);
   expect(kept()).toBeNull();
-  await press("Choose your home");
+  await press("Start your adventure");
   expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
 });
 
@@ -231,29 +231,29 @@ it.each([
   expect(path()).toBe("/");
 });
 
-it("holds Choose your home until the directory says where the Devcon game is, never sending the player to Play", async () => {
+it("holds Start your adventure until the directory says where the Devcon game is, never sending the player to Play", async () => {
   directory.games = undefined;
   signIn();
   tickets({ opens: "regular" });
   await visit("/join/devcon/K7M2QX4R");
   await press("Open your ticket");
-  const waiting = [...host.querySelectorAll("button")].find((button) => button.textContent === "Choose your home")!;
+  const waiting = [...host.querySelectorAll("button")].find((button) => button.textContent === "Start your adventure")!;
   expect(waiting.disabled).toBe(true);
   expect(waiting.querySelector(".ui-spinner")).not.toBeNull();
   // The directory answers: the same reveal, now leading to the Devcon game.
   directory.games = [DEVCON_SEASON];
   await visit("/join/devcon/K7M2QX4R");
-  await press("Choose your home");
+  await press("Start your adventure");
   expect(path()).toBe(entryHref(DEVCON_SEASON as never, "play"));
 });
 
-it("leads Choose your home to Play while no Devcon game runs", async () => {
+it("leads Start your adventure to Play while no Devcon game runs", async () => {
   directory.games = [season(2, 5)];
   signIn();
   tickets({ opens: "regular" });
   await visit("/join/devcon/K7M2QX4R");
   await press("Open your ticket");
-  await press("Choose your home");
+  await press("Start your adventure");
   expect(path()).toBe("/");
 });
 

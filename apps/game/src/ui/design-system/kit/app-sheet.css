@@ -182,7 +182,6 @@
   position: relative;
   isolation: isolate;
   display: flex;
-  min-height: 100vh;
   min-width: 0;
   flex-direction: column;
 }
@@ -1351,6 +1350,20 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   font-family: var(--app-face-title);
   font-size: var(--app-text-heading);
   line-height: var(--app-leading-heading);
+}
+/* A short phone (a browser's toolbars showing): the art draws smaller, so the ticket, what it claims and its verb fit one
+   screen. */
+@media (max-height: 720px) {
+  .app-ticket__art {
+    padding: theme(spacing.2);
+  }
+  .app-ticket__art img {
+    width: auto;
+    height: 5.5rem;
+  }
+  .app-ticket__line {
+    padding: theme(spacing.3) theme(spacing.4) theme(spacing.3);
+  }
 }
 .app-ticket__stub {
   border-top: 2px dashed rgb(0 0 0 / 0.45);

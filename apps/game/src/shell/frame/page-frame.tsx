@@ -86,14 +86,15 @@ const PhoneFrame = ({ title, notice, foot, fill = false, painting, stage = false
     >
       <PhoneHead title={title} />
     </header>
-    {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. */}
+    {/* The page fills the first screen at least, so the footer starts below it and no fold falls among its links. A step
+        page (its verb in the foot row) has no footer: it is one screen, and nothing under it scrolls. */}
     <div
       className={fill ? "flex min-h-0 flex-1 flex-col px-gutter pb-2" : "min-h-0 flex-1 overflow-y-auto px-gutter pb-4"}
     >
       <main data-band="body" className={fill ? "min-h-0 flex-1" : "min-h-full"}>
         {children}
       </main>
-      {!fill && <AppFooter />}
+      {!fill && !foot && <AppFooter />}
     </div>
     {notice ? (
       <div data-band="notice" className="shrink-0 px-gutter pb-2">
@@ -126,7 +127,9 @@ const DesktopFrame = ({
 }: PageFrameProps) => {
   useDesktopKeys();
   return (
-    <div className="app-frame" data-stage={stage || undefined}>
+    // As tall as the window at least. A phone's frame is exactly the visible screen (dvh): Android's Chrome measures the
+    // large viewport unit with its toolbar hidden, so a frame sized by it runs past the screen and the page scrolls.
+    <div className="app-frame min-h-dvh" data-stage={stage || undefined}>
       <img aria-hidden {...paintingSources(painting)} sizes="100vw" alt="" className="app-frame__painting" />
       <DesktopBar notice={notice} />
       <div className="app-frame__page">

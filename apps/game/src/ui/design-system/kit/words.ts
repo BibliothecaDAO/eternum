@@ -834,6 +834,8 @@ export const JOIN_WORDS = {
   goldenStub: (count: number) => `One of ${count} at Devcon`,
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
+  /** The reveal's way on, into the Devcon game's Realm step. */
+  startAdventure: "Start your adventure",
   continue: "Continue",
   closed: "Devcon tickets have closed.",
   taken: "Another player already opened this ticket.",

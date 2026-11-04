@@ -2,6 +2,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { createRoutesFromChildren, MemoryRouter, Routes, type RouteObject } from "react-router-dom";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { appRoutes, RETIRED_PATHS } from "@/app";
@@ -83,8 +85,10 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
-    // Every page ends on the footer but a phone's page that fills.
-    expect(band(container, "footer") !== null).toBe(!(layout === "phone" && FILL_PATHS.has(path)));
+    // Every page ends on the footer but a phone's page that fills, and a phone's step page (its verb in the foot row),
+    // which is one screen with nothing under it to scroll to (the Devcon reveal on a real phone, 4 November 2026).
+    const step = band(container, "foot") !== null;
+    expect(band(container, "footer") !== null).toBe(!(layout === "phone" && (FILL_PATHS.has(path) || step)));
     // No page has Back: the places are the way out (the owner's pick A, 2 November 2026).
     expect(container.querySelectorAll('[data-role="back"]')).toHaveLength(0);
 
@@ -225,5 +229,26 @@ describe.each([
       (img) => `${img.alt} ${img.getAttribute("src")}`,
     );
     expect(marks).toEqual([`Realms ${REALMS_MARK.lettered}`]);
+  });
+});
+
+/**
+ * Android's Chrome measures 100vh with its toolbar hidden, so a page sized in vh runs past the visible screen while the
+ * toolbar shows and the whole page scrolls (the Devcon reveal's title slid away on a real phone, 4 November 2026). The
+ * shell, the kit and the game's entry size themselves in dvh.
+ */
+describe("the app's frame sizes itself to the visible screen", () => {
+  const ROOTS = ["src/shell", "src/ui/design-system", "src/ui/features/game-entry"];
+  const VIEWPORT_HEIGHT = /\b\d+vh\b|\b(?:min-|max-)?h-screen\b/;
+  const sources = (dir: string): string[] =>
+    readdirSync(dir).flatMap((name) => {
+      const path = join(dir, name);
+      if (statSync(path).isDirectory()) return sources(path);
+      return /\.(tsx?|css)$/.test(name) && !/\.test\./.test(name) ? [path] : [];
+    });
+
+  it("in dvh, never vh or h-screen", () => {
+    const offenders = ROOTS.flatMap(sources).filter((path) => VIEWPORT_HEIGHT.test(readFileSync(path, "utf8")));
+    expect(offenders).toEqual([]);
   });
 });
