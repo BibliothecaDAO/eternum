@@ -117,11 +117,6 @@ export const FrontierHud = ({
   const { surface, openSurface: setSurface, showsCard } = useOnePanel(card?.key ?? null, !desktop);
   const realmLabor = useRealmLabor(rules, realm);
   const claimWaiting = dailyClaimWaiting(realmLabor?.plan);
-  // The day's end speaks to a player in their own realm: a visit or a spectator has none.
-  const dayEnd = useDayEnd(rules, visit ? null : realm, {
-    claimWaiting: claimWaiting !== null,
-    onClaim: () => setSurface("realms"),
-  });
   const research = useResearchTree(realm);
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
@@ -142,6 +137,19 @@ export const FrontierHud = ({
   });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
+  // The day's end speaks to a player in their own realm: a visit or a spectator has none. Its army is picked as the
+  // dock picks one: a desktop opens the army's panel in Today's place, even for the army already selected; a phone puts
+  // Today away and shows the army in the action row, the map first.
+  const dayEnd = useDayEnd(rules, visit ? null : realm, {
+    claimWaiting: claimWaiting !== null,
+    onClaim: () => setSurface("realms"),
+    onPickArmy: desktop
+      ? openArmy
+      : (explorerId) => {
+          pickArmy(explorerId);
+          setSurface(null);
+        },
+  });
   const seasonRank = useSeasonRank();
   const layers = useMapLayers(rules, shown);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.

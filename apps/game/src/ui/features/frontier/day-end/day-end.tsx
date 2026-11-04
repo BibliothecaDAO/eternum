@@ -1,5 +1,4 @@
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
-import { useSelectArmyOnMap } from "@/hooks/helpers/use-navigate";
 import { openOnMap } from "@/play/navigation/open-place";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import { HudButton, HudNotice } from "@/ui/design-system/kit/hud-elements";
@@ -51,22 +50,26 @@ export interface DayEnd {
 
 /**
  * The player's day end: today's clock and the list, a claim opening Realms (`onClaim`), today's camp shown on the map,
- * and the readiest army selected there.
+ * and the readiest army picked as the HUD picks one (`onPickArmy`, the dock's own pick), so an army already selected is
+ * handed back too.
  */
 export const useDayEnd = (
   rules: ExpeditionRules,
   realm: NativeRows["Structure"] | null,
-  { claimWaiting, onClaim }: { claimWaiting: boolean; onClaim: () => void },
+  {
+    claimWaiting,
+    onClaim,
+    onPickArmy,
+  }: { claimWaiting: boolean; onClaim: () => void; onPickArmy: (explorerId: number) => void },
 ): DayEnd => {
   const clock = dayClock(rules, useNowSeconds());
   const facts = useDayEndFacts(rules, realm);
   const armies = useDockArmies(realm);
-  const selectArmy = useSelectArmyOnMap();
   const run = (key: DayEndItem["key"]) => {
     if (key === "claim") return onClaim();
     if (key === "camp") return facts.camp && openOnMap(Position.fromContract(facts.camp), "tile");
     const readiest = readiestArmy(armies);
-    return readiest && selectArmy(readiest.explorerId);
+    return readiest && onPickArmy(readiest.explorerId);
   };
   return { clock, items: dayEndItems({ ...facts, claimWaiting }), run };
 };
