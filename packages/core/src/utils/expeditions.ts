@@ -276,8 +276,18 @@ export const expeditionSpireTile = (
   nowSeconds: number,
 ): { col: number; row: number } | null => {
   const site = expeditionRealmSite(rules, entityHomeNamespace(structure.entity_id), nowSeconds);
-  const day = seasonDay(rules, nowSeconds);
-  if (!site || day === null) return null;
+  return site && regionSpire(rules, site);
+};
+
+/**
+ * The spire of the region a tile lies in, on that day's surface, whichever of the region's layers the tile is in: the
+ * home-ring tile in direction (day % 6) around the realm's site, which the region's column and the tile's day name. The
+ * one place a view through a spire dives into.
+ */
+export const regionSpire = (rules: ExpeditionRules, at: { col: number; row: number }): { col: number; row: number } => {
+  const half = Math.floor(rules.spacing / 2);
+  const day = Math.floor(expeditionBand(rules, { y: at.row }) / 4);
+  const site = { col: Math.floor(at.col / rules.spacing) * rules.spacing + half, row: day * 4 * rules.spacing + half };
   const direction = day % 6;
   const spire = getNeighborHexes(site.col, site.row).find((hex) => hex.direction === direction);
   if (!spire) throw new Error(`No hex in direction ${direction} around the expedition site`);

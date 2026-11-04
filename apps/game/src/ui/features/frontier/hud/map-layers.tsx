@@ -1,7 +1,7 @@
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { useUIStore } from "@/hooks/store/use-ui-store";
-import { openPlace } from "@/play/navigation/open-place";
+import { requestLayerView } from "@/three/scenes/worldmap-layer-request";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
 import type { MenuItem } from "@/ui/design-system/kit/hud-elements";
 import { depthName, WORLD } from "@/ui/design-system/kit/words";
@@ -9,7 +9,6 @@ import {
   type EtherealLayer,
   type ExpeditionRules,
   expeditionDepth,
-  Position,
   researchedDepth,
   structureMapPosition,
   viewInLayer,
@@ -51,8 +50,7 @@ export const useMapLayers = (rules: ExpeditionRules, realm: NativeRows["Structur
     shown: from ? (expeditionDepth(rules, { y: from.row }) as MapLayer) : 0,
     go: (layer) => {
       if (!from) return;
-      const to = viewInLayer(rules, from, layer);
-      openPlace("map", Position.fromContract({ x: to.col, y: to.row }));
+      requestLayerView(viewInLayer(rules, from, layer));
     },
   };
 };
