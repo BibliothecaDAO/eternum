@@ -1308,6 +1308,14 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
 }
 
 /* ── Ticket: a campaign's flyer in small, sealed, then turned over once; gold under rays when golden. ── */
+/* The ticket's room: as wide as its column, where the golden rays end at the sides, so they never push a phone's page
+   sideways; above and below they spread free. */
+.app-ticket-room {
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  overflow-x: clip;
+}
 .app-ticket {
   position: relative;
   isolation: isolate;
@@ -1363,6 +1371,11 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
   }
   .app-ticket__line {
     padding: theme(spacing.3) theme(spacing.4) theme(spacing.3);
+  }
+}
+@media (max-height: 640px) {
+  .app-ticket__art img {
+    height: 4rem;
   }
 }
 .app-ticket__stub {

@@ -11,6 +11,7 @@ import { appRoutes, RETIRED_PATHS } from "@/app";
 import { REALMS_MARK } from "@/ui/design-system/icon-meaning";
 
 import { PageFrame } from "./page-frame";
+import { TABS } from "./tabs";
 import { setViewportWidth } from "./test-viewport";
 
 // Every service stays silent: the guard holds the frame, not the data, so each page shows its waiting state.
@@ -23,6 +24,8 @@ const SIZES = [
   [1920, 1080],
 ] as const;
 
+/** The four places, the tabs' own pages. */
+const PLACES = new Set(TABS.map((tab) => tab.to));
 /** A page that is its own scroller: on a phone it fills the page over the tabs, with no footer under it. */
 const FILL_PATHS = new Set(["/chat"]);
 /** Pages outside the shell's route that wear the same frame: a Blitz lobby and the Devcon ticket. */
@@ -85,9 +88,10 @@ describe.each(SIZES)("every page at %i × %i keeps each control in its band", (w
     for (const control of controlsIn(container))
       expect(control.closest("[data-band]"), control.outerHTML).not.toBeNull();
 
-    // Every page ends on the footer but a phone's page that fills, and a phone's step page (its verb in the foot row),
-    // which is one screen with nothing under it to scroll to (the Devcon reveal on a real phone, 4 November 2026).
-    const step = band(container, "foot") !== null;
+    // Every page ends on the footer but a phone's page that fills, and a phone's step: a stage that is not one of the
+    // places (the doorway, a landing, Not found), one screen with nothing under it to scroll to (the Devcon reveal on a
+    // real phone, 4 November 2026).
+    const step = container.querySelector("[data-stage]") !== null && !PLACES.has(path);
     expect(band(container, "footer") !== null).toBe(!(layout === "phone" && (FILL_PATHS.has(path) || step)));
     // No page has Back: the places are the way out (the owner's pick A, 2 November 2026).
     expect(container.querySelectorAll('[data-role="back"]')).toHaveLength(0);

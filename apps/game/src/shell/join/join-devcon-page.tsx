@@ -222,7 +222,7 @@ const DevconFrame = ({ notice, foot, children }: { notice?: ReactNode; foot: Rea
   const verb = <div className="flex justify-center">{foot}</div>;
   return (
     <PageFrame title={DEVCON_NAME} painting="frontier-mist" stage notice={notice} foot={phone ? verb : undefined}>
-      <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center">
+      <div className="mx-auto flex max-w-[28rem] flex-col items-center gap-5 pt-4 text-center [@media(max-height:720px)]:gap-3 [@media(max-height:720px)]:pt-2">
         {children}
         {!phone && verb}
       </div>
