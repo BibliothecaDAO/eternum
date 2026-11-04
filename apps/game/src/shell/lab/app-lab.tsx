@@ -60,6 +60,7 @@ import {
   type LabScreen,
 } from "./app-lab-fixtures";
 import { LabConnect, LabDoorway } from "./app-lab-flows";
+import { LabSeasonEndDevcon } from "./season-end-devcon-lab";
 import { answerLabChat } from "./lab-chat";
 import { AppChatConnection } from "../chat/app-chat";
 import { ChatPage } from "../chat/chat-page";
@@ -123,6 +124,7 @@ const LabPages = ({ screen }: { screen: LabScreen }) => {
         <Route path="credits" element={<CreditsPage />} />
         <Route path="connect/:step" element={<LabConnect />} />
         <Route path="doorway/:state" element={<LabDoorway />} />
+        <Route path="season-end-devcon/:layout/:who" element={<LabSeasonEndDevcon />} />
         <Route path="join/devcon" element={<JoinDevconPage />} />
         <Route path="join/devcon/:code" element={<JoinDevconPage />} />
         <Route path="*" element={<NotFoundPage />} />

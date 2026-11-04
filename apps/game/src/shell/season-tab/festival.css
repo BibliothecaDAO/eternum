@@ -1,0 +1,340 @@
+/*
+ * Season 0's end on Diwali (festival-art.tsx, festival.tsx): the fireworks, rangoli and diya, the Season 1 ticket's
+ * three forms, and the greeting that opens the season's end.
+ */
+
+/* Fireworks: each burst blooms from its centre, fades, and blooms again every six seconds, four times in all. */
+.festival-sky {
+  pointer-events: none;
+}
+.festival-burst {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: festival-burst 6s cubic-bezier(0.15, 0.7, 0.3, 1) var(--festival-delay) 4 both;
+}
+/* The lab's frame strip holds the sky at one second of its opening. */
+.festival-sky[data-frame] .festival-burst {
+  animation-play-state: paused;
+  animation-delay: calc(var(--festival-delay) - var(--festival-t));
+}
+@keyframes festival-burst {
+  0% {
+    transform: scale(0.12);
+    opacity: 0;
+  }
+  3% {
+    opacity: 1;
+  }
+  20% {
+    transform: scale(1);
+    opacity: 0.95;
+  }
+  34% {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.08);
+    opacity: 0;
+  }
+}
+
+.festival-rangoli {
+  color: rgb(var(--app-gold) / 0.4);
+  pointer-events: none;
+}
+
+.festival-diyas {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 6px;
+}
+.festival-diya__flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: festival-flicker 1.4s ease-in-out infinite alternate;
+}
+.festival-diyas > :nth-child(even) .festival-diya__flame {
+  animation-delay: -0.7s;
+}
+@keyframes festival-flicker {
+  0% {
+    transform: scale(0.94, 0.9) skewX(-3deg);
+  }
+  100% {
+    transform: scale(1.04, 1.06) skewX(3deg);
+  }
+}
+
+/* Both hosts: Devcon's wordmark is black on white, so it is drawn inverted, its white ground dropped, and cut to its words. */
+.festival-lockup {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  color: var(--app-muted);
+}
+.festival-lockup img {
+  height: 100%;
+  width: auto;
+}
+.festival-lockup__devcon {
+  object-view-box: inset(39% 4% 39% 4%);
+  filter: invert(1);
+  mix-blend-mode: screen;
+}
+.festival-lockup__by {
+  font-size: 0.7em;
+}
+
+.festival-greeting {
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  color: rgb(var(--app-gold));
+}
+
+/* The ticket in one row (beside the season, or over the steps on a phone). */
+.festival-ticket-strip {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 18px 6px 8px;
+  border: 1px solid rgb(var(--app-gold) / 0.7);
+  border-radius: var(--app-radius-panel);
+  background: linear-gradient(
+    100deg,
+    color-mix(in srgb, rgb(var(--app-gold)) 26%, var(--app-surface)),
+    var(--app-surface) 80%
+  );
+  box-shadow: 0 0 32px rgb(var(--app-gold) / 0.25);
+}
+.festival-ticket-strip b {
+  display: block;
+  font-family: var(--app-face-title);
+  font-size: var(--app-text-heading);
+  color: var(--app-ink);
+}
+.festival-ticket-strip small {
+  display: block;
+  color: var(--app-muted);
+  font-size: var(--app-text-small);
+}
+
+/* The ticket stamped on the player's place, in the deck's own pixels. */
+.festival-ticket-stamp {
+  position: absolute;
+  z-index: 1;
+  top: 62px;
+  right: 12px;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 6px 6px 8px;
+  border: 2px dashed rgb(0 0 0 / 0.35);
+  border-radius: 10px;
+  background: var(--app-ink);
+  color: var(--app-dark);
+  box-shadow: 0 10px 24px rgb(0 0 0 / 0.5);
+  transform: rotate(8deg);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.15;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* The deck dressed for Diwali: a night sky through its gaps, a rangoli in each card's corner. */
+.season-deck {
+  position: relative;
+}
+.season-deck[data-festive] {
+  background: radial-gradient(ellipse at 50% -10%, #2b1a3f 0%, var(--app-ground) 65%);
+}
+/* Over the cards' heads only, so no burst crosses what a card says. */
+.season-deck__sky {
+  position: absolute;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 34%;
+  mix-blend-mode: screen;
+  opacity: 0.45;
+  z-index: 1;
+}
+.season-card__rangoli {
+  position: absolute;
+  right: -56px;
+  bottom: -56px;
+}
+.season-deck:not([data-festive]) .season-card__rangoli {
+  display: none;
+}
+.season-deck__greeting {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  color: rgb(var(--app-gold));
+}
+
+/* The fireworks over the season's end, over its painting. */
+.season-recap__sky {
+  position: fixed;
+  inset: 0 0 auto;
+  width: 100%;
+  height: 75vh;
+}
+/* A phone's season heading stands in the sky: the bursts dim behind its words. */
+.season-recap[data-cut="tall"] .season-recap__sky {
+  opacity: 0.45;
+}
+
+/*
+ * The greeting that opens the season's end: thanks, the festival, the player's place, and the Season 1 ticket when
+ * they own a Devcon realm, on one card under the fireworks; See my season, the one step, under it.
+ */
+.festival-cover {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 22px;
+  padding: max(34px, env(safe-area-inset-top)) 40px max(28px, env(safe-area-inset-bottom));
+  background: var(--app-ground);
+  color: var(--app-ink);
+}
+.festival-card {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  width: min(100%, 980px);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 40px;
+  padding: 44px 48px 96px;
+  border: 1px solid rgb(var(--app-gold) / 0.55);
+  border-radius: 24px;
+  background: radial-gradient(
+    ellipse at 30% 20%,
+    color-mix(in srgb, rgb(var(--app-gold)) 18%, var(--app-surface)),
+    color-mix(in srgb, var(--app-surface) 92%, transparent) 70%
+  );
+  box-shadow: 0 30px 80px rgb(0 0 0 / 0.6);
+}
+.festival-card[data-ticket="none"] {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 640px);
+  text-align: center;
+}
+.festival-card__rangoli {
+  position: absolute;
+  z-index: -1;
+  right: -120px;
+  bottom: -160px;
+  opacity: 0.55;
+}
+.festival-card__words {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.festival-card[data-ticket="none"] .festival-card__words {
+  align-items: center;
+}
+.festival-card__words .festival-greeting {
+  max-width: 32rem;
+}
+.festival-card__diyas {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 20px;
+  display: flex;
+  justify-content: center;
+}
+.festival-result {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+.festival-result__rank {
+  font-family: var(--font-game);
+  font-size: 64px;
+  line-height: 1;
+  color: rgb(var(--app-gold));
+  text-shadow: 0 0 30px rgb(var(--app-gold) / 0.5);
+}
+.festival-result__of {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+  font-size: var(--app-text-body);
+}
+.festival-result__prize {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgb(var(--app-gold));
+  font-weight: 600;
+}
+.festival-ticket {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.festival-ticket__how {
+  max-width: 20rem;
+  color: var(--app-ink);
+  font-size: var(--app-text-body);
+}
+/* Positioned, as the card is, so the painting fixed under them never draws over them. */
+.festival-cover__steps {
+  position: relative;
+  width: min(100%, 980px);
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A phone: one column, the ticket under the words, the step as wide as the card. */
+/* The card stands at the foot, the step under the thumb, the fireworks over its head. */
+.festival-cover[data-cut="tall"] {
+  align-content: end;
+  gap: 16px;
+  padding: max(20px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+}
+.festival-cover[data-cut="tall"] .festival-card {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 18px;
+  padding: 24px 20px 72px;
+  text-align: center;
+}
+.festival-cover[data-cut="tall"] .festival-card__words {
+  align-items: center;
+  gap: 8px;
+}
+.festival-cover[data-cut="tall"] .festival-result__rank {
+  font-size: 48px;
+}
+.festival-cover[data-cut="tall"] .festival-card__diyas {
+  bottom: 14px;
+}
+.festival-cover[data-cut="tall"] .festival-cover__steps > * {
+  flex: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .festival-burst {
+    animation: none;
+    opacity: 0.7;
+  }
+  .festival-diya__flame {
+    animation: none;
+  }
+}

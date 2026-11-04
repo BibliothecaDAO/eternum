@@ -603,6 +603,23 @@ export const RECAP_WORDS = {
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
+
+/**
+ * Season 0's end, the weekend of Diwali, for its Devcon players: thanks, the festival, and for a Devcon realm's owner
+ * the Season 1 ticket the owner promised (11-04: a special ticket with a special realm, on the same account; no tier is
+ * named). Plain words for players who read English as a second language.
+ */
+export const FESTIVAL_WORDS = {
+  thanks: "Thanks for playing",
+  diwali: "Happy Diwali!",
+  enjoy: "Happy Diwali! Go enjoy it with the people you love.",
+  ticketTitle: "Your Season 1 ticket",
+  ticketLine: "A special realm waits",
+  ticketStub: "Season 1 · Devcon",
+  ticketHow: "It will be on this account. Nothing to do.",
+  seeYou: "See you in Season 1.",
+  seeSeason: "See my season",
+} as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */

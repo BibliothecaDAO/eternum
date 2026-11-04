@@ -26,6 +26,7 @@ import { PlayerName } from "@/ui/design-system/kit/player-name";
 import {
   DEPTH_NUMERALS,
   ESSENCE,
+  FESTIVAL_WORDS,
   LABOR,
   PRIZE_UNHELD,
   RECAP_WORDS,
@@ -44,6 +45,8 @@ import { seasonEnded, seasonTitle } from "../season";
 import { FailureLine } from "../sign-in/failure-line";
 import { resultsHref } from "./results-link";
 import { canCopyCard, copySeasonCard, shareSeasonCard, type SharedCard } from "./share-card";
+import { DiyaRow, FestivalLockup, FireworkSky, Rangoli } from "./festival-art";
+import { type Festival, FestivalHeading, SeasonTicketStamp, SeasonTicketStrip } from "./festival";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -76,6 +79,7 @@ export const SeasonRecap = ({
   actions,
   withdraw,
   cover = false,
+  festival,
 }: {
   gameRef: GameRef;
   /** The season as the directory lists it; unknown while the directory loads. */
@@ -89,12 +93,29 @@ export const SeasonRecap = ({
   /** The realm's LORDS still to withdraw, where the recap covers the way to them. */
   withdraw?: ReactNode;
   cover?: boolean;
+  /** Season 0's end on Diwali, dressed one of two ways (festival.tsx). */
+  festival?: Festival;
 }) => {
   const cut: Cut = useLayout() === "phone" ? "tall" : "wide";
   const deck = useRef<HTMLDivElement>(null);
   const { room, deckWidth, layoutStyle, roomStyle } = useDeckFit(cut, cover);
   const own = board && findOwnEntry(board.entries, viewer);
   const title = game ? seasonTitle(game) : ageOf("frontier").name;
+  const sky = festival?.look === "sky";
+  const festiveDeck = festival?.look === "deck";
+  /** The ticket stands beside the season (a desktop) or over the steps (a phone); the deck's look stamps it instead. */
+  const ticketStrip = sky && festival.ticket ? <SeasonTicketStrip /> : null;
+  /** Beside the season on a desktop stands the ticket, when it has one; the LORDS to withdraw go to the steps. */
+  const besideSeason = cut === "wide" ? (ticketStrip ?? withdraw) : null;
+  const overSteps =
+    cut === "tall" ? (
+      <>
+        {ticketStrip}
+        {withdraw}
+      </>
+    ) : (
+      ticketStrip && withdraw
+    );
   const recap = (
     <section
       data-surface="shell"
@@ -104,22 +125,32 @@ export const SeasonRecap = ({
       data-cut={cut}
     >
       {cover && <img className="season-recap__painting" alt="" {...paintingSources("season-citadel")} sizes="100vw" />}
+      {cover && sky && <FireworkSky className="season-recap__sky" frame={festival.frame} />}
       <div className="season-recap__layout" style={layoutStyle}>
         <header className="season-recap__head">
           {game && <p className="text-app-label text-app-gold">{seasonEnded(game)}</p>}
           {/* A phone's column is too narrow for the ending at display size: it reads at a title's. */}
-          <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
-            {SEASON_ENDINGS[ending]}
-          </h1>
+          {festival ? (
+            <FestivalHeading ending={ending} tall={cut === "tall"} />
+          ) : (
+            <h1 className={cut === "tall" ? "text-app-title text-app-ink" : "text-app-display text-app-ink"}>
+              {SEASON_ENDINGS[ending]}
+            </h1>
+          )}
           {/* A desktop's LORDS to withdraw stand beside the season, so the cards keep the height a row of them takes. */}
-          {cut === "wide" && withdraw && <div className="season-recap__withdraw">{withdraw}</div>}
+          {besideSeason && <div className="season-recap__withdraw">{besideSeason}</div>}
         </header>
         {board &&
           (own ? (
             <div ref={room} className="season-recap__room" style={roomStyle}>
               <DeckFrame cut={cut} width={deckWidth}>
-                <Deck deckRef={deck} cut={cut} title={title}>
-                  <PlaceCard own={own} field={board.entries.length} prize={prizeOf(board, own)} />
+                <Deck deckRef={deck} cut={cut} title={title} festive={festiveDeck}>
+                  <PlaceCard
+                    own={own}
+                    field={board.entries.length}
+                    prize={prizeOf(board, own)}
+                    ticket={festiveDeck && festival.ticket}
+                  />
                   <PodiumCard board={board} viewer={viewer} />
                   <SitesCard own={own} />
                   <HaulCard own={own} />
@@ -132,7 +163,7 @@ export const SeasonRecap = ({
             </div>
           ))}
         <footer className="season-recap__foot">
-          {cut === "tall" && withdraw}
+          {overSteps}
           <span className="season-recap__steps">
             {actions}
             {board && own && (
@@ -149,7 +180,7 @@ export const SeasonRecap = ({
 };
 
 /** The LORDS a player's place on the podium pays, once a pool is published: the ledger's award, else the place held. */
-const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
+export const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
   seasonPodium(board)?.find(
     ({ holder }) => typeof holder === "object" && isSameStarknetAddress(holder.address, entry.address),
   )?.lords;
@@ -319,19 +350,35 @@ const Deck = ({
   deckRef,
   cut,
   title,
+  festive,
   children,
 }: {
   deckRef: RefObject<HTMLDivElement>;
   cut: Cut;
   title: string;
+  /**
+   * Dressed for Diwali: still fireworks over a wide deck (it is an image), a rangoli in each card's corner, diyas and
+   * both hosts in its foot.
+   */
+  festive: boolean;
   children: ReactNode;
 }) => (
-  <div ref={deckRef} className="season-deck" data-cut={cut} style={deckStyle(cut)}>
+  <div ref={deckRef} className="season-deck" data-cut={cut} data-festive={festive || undefined} style={deckStyle(cut)}>
+    {/* Only the wide cut has sky over its cards' heads; a tall card fills its top. */}
+    {festive && cut === "wide" && <FireworkSky className="season-deck__sky" bursts={4} frame={2.2} />}
     <div className="season-deck__cards">{children}</div>
     <div className="season-deck__foot">
       <AppGameName age="frontier" name={ageOf("frontier").name} />
-      <span>{title}</span>
-      <span>{window.location.host}</span>
+      {festive ? (
+        <span className="season-deck__greeting">
+          <DiyaRow count={2} size={cut === "tall" ? 56 : 40} />
+          {`${FESTIVAL_WORDS.diwali} · ${title}`}
+          <DiyaRow count={2} size={cut === "tall" ? 56 : 40} />
+        </span>
+      ) : (
+        <span>{title}</span>
+      )}
+      {festive ? <FestivalLockup height={cut === "tall" ? 44 : 30} /> : <span>{window.location.host}</span>}
     </div>
   </div>
 );
@@ -347,6 +394,7 @@ const deckStyle = (cut: Cut): CSSProperties & Record<`--deck-${string}`, string>
 /** One card: its number in the deck and its name at the top (its name alone, outside the deck), what it holds under. */
 const Card = ({ name, alone = false, children }: { name: CardName; alone?: boolean; children: ReactNode }) => (
   <article className="season-card" data-card={name}>
+    <Rangoli size={150} className="season-card__rangoli" />
     <span className="season-card__step">
       {alone ? RECAP_WORDS.cardNames[name] : `${CARDS.indexOf(name) + 1} · ${RECAP_WORDS.cardNames[name]}`}
     </span>
@@ -355,11 +403,22 @@ const Card = ({ name, alone = false, children }: { name: CardName; alone?: boole
 );
 
 /** Your place: your portrait with your Order, your place of the field, your name (whole, however long), your prize. */
-const PlaceCard = ({ own, field, prize }: { own: Entry; field: number; prize: number | undefined }) => {
+const PlaceCard = ({
+  own,
+  field,
+  prize,
+  ticket,
+}: {
+  own: Entry;
+  field: number;
+  prize: number | undefined;
+  ticket: boolean;
+}) => {
   const profile = usePlayerProfile(own.address);
   const name = usePlayerDisplayName(own.address)!;
   return (
     <Card name="place">
+      {ticket && <SeasonTicketStamp />}
       <span className="season-card__who">
         <AppPortrait src={playerPortraitUrl(own.address, profile.portrait)} name={name} size="fill" own />
         <span className="season-card__order">
