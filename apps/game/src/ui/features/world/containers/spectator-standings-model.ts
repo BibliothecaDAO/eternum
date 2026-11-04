@@ -8,22 +8,12 @@ interface Standing {
 }
 
 /**
- * The top ten by rank, then, when they rank lower, the viewer's own row (as Results keeps it) and the selected
- * structure's owner. Only the viewer's row is marked `own`, as on Results: a tie is never lit as someone's first place.
+ * Every player by rank, the viewer's own row marked `own`, as on Results: a tie is never lit as someone's first place.
  */
-export function selectSpectatorStandings(
-  entries: readonly Standing[],
-  { viewer, selected }: { viewer: string | null | undefined; selected: bigint | undefined },
-) {
+export function selectSpectatorStandings(entries: readonly Standing[], viewer: string | null | undefined) {
   const ownKey = viewer ? normalizeLeaderboardAddress(viewer) : null;
-  const selectedKey = selected ? normalizeLeaderboardAddress(selected) : null;
-  const ranked = entries
+  return entries
     .map((entry) => ({ ...entry, address: normalizeLeaderboardAddress(entry.address) }))
-    .toSorted((left, right) => left.rank - right.rank);
-  const kept = new Set(ranked.slice(0, 10).map((entry) => entry.address));
-  if (ownKey) kept.add(ownKey);
-  if (selectedKey) kept.add(selectedKey);
-  return ranked
-    .filter((entry) => kept.has(entry.address))
+    .toSorted((left, right) => left.rank - right.rank)
     .map((entry) => ({ ...entry, own: entry.address === ownKey }));
 }

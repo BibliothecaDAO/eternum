@@ -1,3 +1,5 @@
+import { etherealSurfaceAt } from "../terrain/ethereal-depths";
+import type { EtherealSurface } from "../terrain/ethereal-depths";
 import { rankedText } from "@/ui/design-system/kit/words";
 import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
@@ -93,7 +95,6 @@ import {
   dayOf,
   expeditionSpires,
   isArmyCrossing,
-  isEtherealTile,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   spireEtherealView,
@@ -1605,13 +1606,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
-    this.strategicMarkers.setStructure(
-      structure.entityId,
-      facts.realmSkin ?? structureMarkerKind(facts.structureType),
-      position.x,
-      position.z,
-      color,
-    );
+    this.strategicMarkers.setStructure(structure.entityId, structureMarkerKind(facts), position.x, position.z, color);
   }
 
   private writeArmyMarker(army: ArmySpatialRenderable): void {
@@ -4530,7 +4525,7 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * A cell's facts as the terrain presents them, from one tile read and, off a spire, one structures read: its projected
-   * biome, its surface (ethereal on a spire and in the Ethereal layer, isEtherealTile) and whether terrain levels a pad
+   * biome, its surface (ethereal on a spire and in the Ethereal layer, etherealSurfaceAt) and whether terrain levels a pad
    * under it (a structure or a spire). Every terrain path reads a cell through here; a panned page reads thousands, and
    * each projection lookup builds a key.
    */
@@ -4541,7 +4536,7 @@ export default class WorldmapScene extends WarpTravel {
     const spire = tile?.occupierType === TileOccupier.Spire;
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
-      surfacePresentation: spire || isEtherealTile(this.expeditionGrid(), hex) ? "ethereal" : undefined,
+      surfacePresentation: etherealSurfaceAt(this.expeditionGrid(), hex, spire),
       occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
     };
   }
@@ -6527,6 +6522,7 @@ export default class WorldmapScene extends WarpTravel {
       .then((terrainDiagnostics) => {
         if (!terrainDiagnostics) return;
         this.terrainContent.presented(content);
+        publishMapSelection({ etherealTerrain: this.proceduralTerrain.getEtherealPresentation() });
         incrementWorldmapRenderCounter("biomeMismatchCount", terrainDiagnostics.biomeMismatchCount);
         this.traceChunk("terrain_composite_rebuilt", {
           capped: composite.capped,
@@ -7329,7 +7325,7 @@ export default class WorldmapScene extends WarpTravel {
       col: number;
       row: number;
       occupied: boolean;
-      surfacePresentation?: "ethereal";
+      surfacePresentation?: EtherealSurface;
     }> = [];
 
     for (let row = bounds.minRow; row <= bounds.maxRow; row++) {

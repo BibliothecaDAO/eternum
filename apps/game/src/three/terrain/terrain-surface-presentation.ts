@@ -5,5 +5,5 @@ export function isEtherealTerrainCell(
   request: Pick<TerrainPageRequest, "surfacePresentation">,
   cell: Pick<TerrainCellInput, "surfacePresentation"> | undefined,
 ): boolean {
-  return request.surfacePresentation === "ethereal" || cell?.surfacePresentation === "ethereal";
+  return request.surfacePresentation === "ethereal" || cell?.surfacePresentation !== undefined;
 }

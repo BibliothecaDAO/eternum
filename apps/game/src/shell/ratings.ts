@@ -25,7 +25,6 @@ export type RatingProfile = { realmsId: string; name: string | null; portrait: s
 interface RatingTopResponse {
   block_number: number;
   block_hash: string;
-  total: number;
   entries: { rank: number; player: string; rating: string; profile: RatingProfile }[];
   self: null | { status: "rated"; player: string; rating: string; rank: number | null; profile: RatingProfile };
 }
@@ -36,11 +35,11 @@ const readJson = async <T>(path: string): Promise<T> => {
   return (await response.json()) as T;
 };
 
-/** The rating's top rows, and the reader's own rating and rank when their wallet is given. */
-export const useRatingTop = (limit: number, wallet: string | null) =>
+/** Every rated wallet in rating order, and the reader's own rating and rank when their wallet is given. */
+export const useRatingTop = (wallet: string | null) =>
   useQuery({
-    queryKey: ["shell", "ratings", "top", limit, wallet],
-    queryFn: () => readJson<RatingTopResponse>(`/api/ratings/top?limit=${limit}${wallet ? `&player=${wallet}` : ""}`),
+    queryKey: ["shell", "ratings", "top", wallet],
+    queryFn: () => readJson<RatingTopResponse>(`/api/ratings/top${wallet ? `?player=${wallet}` : ""}`),
     staleTime: 0,
     retry: 1,
   });

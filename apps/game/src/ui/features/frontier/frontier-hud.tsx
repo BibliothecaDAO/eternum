@@ -52,6 +52,7 @@ import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
 import { SeasonPayout } from "./value/season-payout";
 import { LordsPurse, PurseRow, RealmsChip } from "./value/lords-purse";
+import { useHomeKind } from "@/hooks/helpers/use-home-kind";
 import { useCampaignMark } from "./value/campaign-home";
 import { dailyClaimWaiting, type DailyClaimWaiting } from "./value/realm-labor";
 import { useRealmLabor } from "./value/use-realm-labor";
@@ -540,10 +541,12 @@ const FrontierRealmPanel = ({
   const population = useRealmPopulation(realm);
   const goToPlace = useGoToFrontierPlace(realm);
   const mark = useCampaignMark(realm);
+  const kind = useHomeKind(realm);
   return (
     <RealmPanel
       name={name}
       mark={mark}
+      kind={kind}
       level={realm.base.level}
       highest={configManager.getMaxLevel(StructureType.Realm)}
       population={population}

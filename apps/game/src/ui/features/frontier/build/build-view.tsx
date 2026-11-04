@@ -1,3 +1,4 @@
+import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { availableScoutingChoices, type ScoutingSide } from "../progression-choices";
 import { researchTier } from "@bibliothecadao/eternum";
 import {
@@ -62,7 +63,8 @@ export type BuildTile = {
   standing:
     | {
         kind: "price";
-        prices: readonly Price[];
+        /** Each price, and whether the realm holds less than it: each line reads its own, white or red. */
+        prices: readonly (Price & { short: boolean })[];
         /** Why the price is above its base, when it is. */
         raised?: string;
         /** The missing resource and its wait (unknown when nothing fills it), or population. */
@@ -285,16 +287,18 @@ const Band = ({ standing }: { standing: BuildTile["standing"] }) => (
 );
 
 /**
- * Every resource price, the arrow of a price that has risen, and the wait at a glance ("3h"; the chosen building's line under
- * the grid says it whole) or the population the realm lacks.
+ * Every resource price, each in red only while the realm holds less of it (owner, 4 November: "white if the player has
+ * sufficient amount of that resource"), the arrow of a price that has risen, and the wait at a glance ("3h"; the chosen
+ * building's line under the grid says it whole) or the population the realm lacks.
  */
 const Price = ({ standing }: { standing: Extract<BuildTile["standing"], { kind: "price" }> }) => (
   <>
     <span className="flex flex-col gap-0.5">
-      {standing.prices.map(({ of, amount }) => (
+      {standing.prices.map(({ of, amount, short }) => (
         <span
           key={of}
-          className="inline-flex items-center gap-1"
+          data-short={short || undefined}
+          className={cn("inline-flex items-center gap-1", short ? "text-hud-bad" : "text-hud-ink")}
           aria-label={`${formatExact(amount)} ${PRICE_FACES[of].word}`}
         >
           {PRICE_FACES[of].icon && <SemanticIcon name={PRICE_FACES[of].icon!} size={14} />}

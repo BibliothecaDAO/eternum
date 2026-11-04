@@ -1,3 +1,4 @@
+import { setWorldOrigin, worldOrigin } from "../world-origin";
 import { describe, expect, it } from "vitest";
 import {
   BASALT_SUPPORT_HEIGHT,
@@ -10,6 +11,20 @@ import { terrainHexCorners } from "./terrain-coordinates";
 import { createEtherealTerrainMaterial } from "./terrain-ethereal-material";
 
 describe("flat ethereal basalt", () => {
+  it("keeps the shared shell local when Frontier moves its floating origin", () => {
+    const previous = worldOrigin();
+    try {
+      setWorldOrigin({ col: 0, row: 0 });
+      const original = buildBasaltShell();
+      setWorldOrigin({ col: -2147482996, row: -2147483498 });
+      const frontier = buildBasaltShell();
+      expect(frontier).toEqual(original);
+      expect(Math.max(...frontier.positions.map(Math.abs))).toBeLessThanOrEqual(1);
+    } finally {
+      setWorldOrigin(previous);
+    }
+  });
+
   it("uses one deterministic shell with one flat walkable plane", () => {
     const geometry = buildBasaltShell();
     expect(geometry).toEqual(buildBasaltShell());

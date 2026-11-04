@@ -10,8 +10,9 @@
  *   and the next back leaves the page;
  * - the inline Name: a tap opens the field with the focus; with the on-screen keyboard up the field and Claim name stand
  *   above it and the place bar steps aside; a tap beside the row puts it back;
- * - Frontier's Season board: its prizes folded in one line that a tap opens and folds, more of the board in sight than
- *   the podium left, and after a flick to the board's end the columns' names still on top;
+ * - Frontier's Season board: every realm on it, the player's own row waiting at the foot of its scroll and a tap there
+ *   bringing its place to the middle, its prizes folded in one line that a tap opens and folds, more of the board in
+ *   sight than the podium left, and after a flick to the board's end the columns' names still on top;
  * - Frontier's Chat while typing, under the owner's keyboard (533 px: his phone leaves 311 px above it): its rooms' tabs
  *   in the head row beside its cross, a pinch-zoom with nothing typed taken for no keyboard, the strip and the place bar
  *   stepped aside while typing, the field above the keyboard and the history in sight, and the strip back once the
@@ -451,9 +452,9 @@ const nameWithKeyboard = async (b, phone, out, record) => {
 const ROWS_UNDER_TILES = 3;
 
 /**
- * What the Season page shows: the board's rows wholly in sight inside its scroll (the player's pinned row too), the
- * folded prizes' line and whether it is open, the podium's tiles, and whether the columns' names stand at the top of
- * the scroll.
+ * What the Season page shows: the board's rows wholly in sight inside its scroll (the player's own row too) and how
+ * many it holds, the folded prizes' line and whether it is open, the podium's tiles, whether the columns' names stand
+ * at the top of the scroll, and where the player's own row stands: at the scroll's foot, or in its middle.
  */
 const SEASON_SEEN = `(() => {
   const page = document.querySelector('section[aria-label="Season"]');
@@ -467,17 +468,56 @@ const SEASON_SEEN = `(() => {
   const rows = [...(page?.querySelectorAll(".ui-table-row") ?? [])].filter(whole).length;
   const line = page?.querySelector('button[aria-label="Season prizes"]');
   const head = scroll?.querySelector(".ui-table-head");
+  const own = scroll?.querySelector(".ui-table-row[data-own]")?.getBoundingClientRect();
   return {
     rows,
+    total: page?.querySelectorAll(".ui-table-row").length ?? 0,
+    own: own && {
+      atFoot: Math.abs(own.bottom - box.bottom) < 1.5,
+      middle: Math.abs((own.top + own.bottom) / 2 - (box.top + box.bottom) / 2) < own.height,
+      centre: { x: Math.round(own.left + own.width / 2), y: Math.round(own.top + own.height / 2) },
+    },
     line: line ? { open: line.getAttribute("aria-expanded") === "true", height: Math.round(line.getBoundingClientRect().height) } : null,
     tiles: page?.querySelectorAll('ol[aria-label="Season prizes"] li[data-place]').length ?? 0,
     headOnTop: head ? Math.abs(head.getBoundingClientRect().top - box.top) < 1 : false,
   };
 })()`;
 
-/** Frontier's Season board on a phone: the prizes folded, opened and folded by a tap, then the board flicked to its end. */
+/** Every realm of the HUD lab's season (hud-lab.tsx: eleven rivals, the player twelfth, 75 more). */
+const SEASON_REALMS = 87;
+
+/**
+ * Frontier's Season board on a phone: every realm on it, the player's own row waiting at the foot and a tap there
+ * bringing its place to the middle; the prizes folded, opened and folded by a tap, then the board flicked to its end.
+ */
 const seasonBoard = async (b, phone, out, record) => {
   const rest = b.evaluate(SEASON_SEEN);
+  record.checks.push(
+    {
+      check: `every realm stands on the board (${SEASON_REALMS})`,
+      ok: rest.total === SEASON_REALMS,
+      total: rest.total,
+    },
+    {
+      check: "the player's own row waits at the foot of the board's scroll",
+      ok: rest.own?.atFoot === true,
+      own: rest.own,
+    },
+  );
+  shoot(b, out, "season-board-own-at-foot");
+  if (rest.own) await phone.tap(rest.own.centre);
+  await sleep(900);
+  const found = b.evaluate(SEASON_SEEN);
+  record.checks.push({
+    check: "a tap on it there brings its place to the middle of the scroll, no detail opened",
+    ok: found.own?.middle === true && found.own.atFoot === false && found.total === SEASON_REALMS,
+    own: found.own,
+  });
+  shoot(b, out, "season-board-own-found");
+  b.evaluate(
+    `(() => { document.querySelector('section[aria-label="Season"] .overflow-y-auto').scrollTop = 0; return true; })()`,
+  );
+  await sleep(600);
   record.checks.push(
     {
       check: "the prizes stand folded in one line",

@@ -64,12 +64,13 @@ export const fullLaborCampaignScenario = (): LabScenario => {
   return spire;
 };
 
-/** The Season lists three unvisited homes: regular Devcon, golden Devcon, and an ordinary control. */
+/** The Season lists four unvisited homes: regular Devcon, golden Devcon, ordinary Realm, and Wonder. */
 export const devconSeasonScenario = (): LabScenario => ({
   ...campaignScenario("regular", 0)(),
-  board: LAB_FRONTIER_BOARD.entries.slice(0, 3).map((entry, index) => ({
+  board: LAB_FRONTIER_BOARD.entries.slice(0, 4).map((entry, index) => ({
     ...entry,
     structure_id: String(901 + index),
+    has_wonder: index === 3,
     campaign: index < 2 ? { campaign_id: shortString.encodeShortString(DEVCON.campaign), tier: index + 1 } : null,
   })),
 });

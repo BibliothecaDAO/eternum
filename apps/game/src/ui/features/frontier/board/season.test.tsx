@@ -34,13 +34,12 @@ const button = (host: HTMLElement, word: string) =>
   [...host.querySelectorAll("button")].find((candidate) => candidate.textContent === word)!;
 
 describe("the season list", () => {
-  it("names its columns, lists the realms, pins the player's own row under them and opens a row, with no Back", () => {
+  it("names its columns, lists the realms with the player's own lit and opens a row, with no Back", () => {
     const onOpen = vi.fn();
     const { host, unmount } = render(
       <SeasonList
         rank={12}
-        rows={[row(1), row(2)]}
-        pinned={row(12, true)}
+        rows={[row(1), row(2), row(12, true)]}
         state="ready"
         onRetry={vi.fn()}
         onOpen={onOpen}
@@ -71,15 +70,7 @@ describe("the season list", () => {
   it("closes as every panel does: its X and Escape (audit 10-27: the desktop Season had neither)", () => {
     const onClose = vi.fn();
     const { host, unmount } = render(
-      <SeasonList
-        rank={1}
-        rows={[row(1, true)]}
-        pinned={undefined}
-        state="ready"
-        onRetry={vi.fn()}
-        onOpen={vi.fn()}
-        onClose={onClose}
-      />,
+      <SeasonList rank={1} rows={[row(1, true)]} state="ready" onRetry={vi.fn()} onOpen={vi.fn()} onClose={onClose} />,
     );
     act(() => host.querySelector<HTMLButtonElement>("button[aria-label='Close']")!.click());
     expect(onClose).toHaveBeenCalledTimes(1);
@@ -94,7 +85,6 @@ describe("the season list", () => {
       <SeasonList
         rank={1}
         rows={[row(1, true)]}
-        pinned={undefined}
         state="ready"
         onRetry={vi.fn()}
         onOpen={vi.fn()}
@@ -109,15 +99,7 @@ describe("the season list", () => {
   it("says the season did not answer, with Try again on the card", () => {
     const onRetry = vi.fn();
     const { host, unmount } = render(
-      <SeasonList
-        rank={undefined}
-        rows={[]}
-        pinned={undefined}
-        state="failed"
-        onRetry={onRetry}
-        onOpen={vi.fn()}
-        onClose={vi.fn()}
-      />,
+      <SeasonList rank={undefined} rows={[]} state="failed" onRetry={onRetry} onOpen={vi.fn()} onClose={vi.fn()} />,
     );
     expect(host.textContent).toContain("Season did not answer.");
     expect(host.querySelector("[aria-label='Season —']")).not.toBeNull();
@@ -180,8 +162,7 @@ describe("the season's prizes in game", () => {
       <SeasonList
         rank={12}
         podium={podium}
-        rows={[row(1), row(2), row(3), row(4)]}
-        pinned={row(12, true)}
+        rows={[...[1, 2, 3, 4].map((rank) => row(rank)), row(12, true), ...[13, 14].map((rank) => row(rank))]}
         state="ready"
         onRetry={vi.fn()}
         onOpen={vi.fn()}
@@ -239,7 +220,7 @@ describe("the season's prizes in game", () => {
   });
 
   it.each([390, 1440])(
-    "scrolls the season's end and its prizes away with the board at %i px, the columns' names staying on top and the player's own row pinned under",
+    "scrolls the season's end and its prizes away with every realm at %i px, the columns' names staying on top and the player's own row waiting at the foot",
     (width) => {
       const { host, unmount } = sheet(twoHolders(), width);
       const scroll = host.querySelector(".overflow-y-auto")!;
@@ -258,11 +239,15 @@ describe("the season's prizes in game", () => {
         "#2 Realm 2",
         "#3 Realm 3",
         "#4 Realm 4",
+        "#12 Realm 12",
+        "#13 Realm 13",
+        "#14 Realm 14",
       ]);
-      const own = [...host.querySelectorAll(".ui-table-row")].find(
-        (row) => row.getAttribute("aria-label") === "#12 Realm 12",
-      );
-      expect(own && !scroll.contains(own)).toBe(true);
+      // The player's row stands in its place in the same scroll, the one row the stylesheet holds at the foot.
+      expect([...scroll.querySelectorAll(".ui-table-row[data-own]")].map((row) => row.ariaLabel)).toEqual([
+        "#12 Realm 12",
+      ]);
+      expect(host.querySelectorAll(".ui-table-row")).toHaveLength(7);
       unmount();
     },
   );

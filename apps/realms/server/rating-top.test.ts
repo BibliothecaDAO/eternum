@@ -48,17 +48,18 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-it("serves tied top positions and the reader below the top from one block and value map", async () => {
-  const response = await request("limit=2&player=0xd");
+it("serves every rated wallet, tied places shared, and the reader's own from one block and value map", async () => {
+  const response = await request("player=0xd");
   expect(response.status).toBe(200);
   expect(response.headers.get("cache-control")).toBe("no-store");
   expect(await response.json()).toEqual({
     block_number: 77,
     block_hash: "0xabc",
-    total: 4,
     entries: [
       { rank: 1, player: "0xa", rating: "2000", profile: null },
       { rank: 1, player: "0xb", rating: "2000", profile: null },
+      { rank: 3, player: "0xc", rating: "1600", profile: null },
+      { rank: 4, player: "0xd", rating: "1000", profile: null },
     ],
     self: { status: "rated", player: "0xd", rating: "1000", rank: 4, profile: null },
   });
@@ -77,12 +78,17 @@ it("uses the same current rating read for a ranked reader and a never-ranked ini
   });
   const unrated = await request("player=0xe");
   expect(await unrated.json()).toMatchObject({
-    total: 4,
+    entries: [{ rank: 1 }, { rank: 1 }, { rank: 3 }, { rank: 4 }],
     self: { status: "rated", rating: "1000", rank: null },
   });
 });
 
-it.each(["limit=0", "limit=101", "limit=x", "player=0x0", "player=0xa&realmsId=0x1", "realmsId=broken"])(
+it("answers every place to a client that still asks for a few, as the board once did", async () => {
+  const answer = (await (await request("limit=2&player=0xd")).json()) as { entries: unknown[] };
+  expect(answer.entries).toHaveLength(4);
+});
+
+it.each(["player=0x0", "player=0xa&player=0xb", "player=0xa&realmsId=0x1", "realmsId=broken"])(
   "rejects invalid top queries: %s",
   async (query) => {
     expect((await request(query)).status).toBe(400);
@@ -113,20 +119,25 @@ it("reads trusted names alongside fresh wallet ratings and leaves unlinked owner
     { address: "0xa", realmsId: "0x1", id: "a", name: "Aster", image: "portrait-1" },
     { address: "0xd", realmsId: "0x2", id: "default", name: "default", image: null },
   ];
-  const first = await (await request("limit=2&player=0xd")).json();
+  const unnamed = { realmsId: "0x2", name: null, portrait: null };
+  const first = await (await request("player=0xd")).json();
   expect(first).toMatchObject({
     entries: [
       { player: "0xa", profile: { realmsId: "0x1", name: "Aster", portrait: "portrait-1" } },
       { player: "0xb", profile: null },
+      { player: "0xc", profile: null },
+      { player: "0xd", profile: unnamed },
     ],
-    self: { profile: { realmsId: "0x2", name: null, portrait: null } },
+    self: { profile: unnamed },
   });
   profiles[0]!.name = "Renamed";
-  const second = await (await request("limit=2&player=0xd")).json();
-  expect(second).toMatchObject({ entries: [{ profile: { name: "Renamed" } }, { profile: null }] });
+  const second = await (await request("player=0xd")).json();
+  expect(second).toMatchObject({
+    entries: [{ profile: { name: "Renamed" } }, { profile: null }, { profile: null }, { profile: unnamed }],
+  });
   profiles = [];
-  expect(await (await request("limit=2&player=0xd")).json()).toMatchObject({
-    entries: [{ profile: null }, { profile: null }],
+  expect(await (await request("player=0xd")).json()).toMatchObject({
+    entries: [{ profile: null }, { profile: null }, { profile: null }, { profile: null }],
     self: { profile: null },
   });
   expect(RpcProvider.prototype.callContract).toHaveBeenCalledTimes(12);

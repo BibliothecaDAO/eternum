@@ -7,7 +7,7 @@ import { useUIStore } from "@/hooks/store/use-ui-store";
 import { FrontierNav, type HudSurface } from "./frontier-nav";
 import { useOnePanel } from "./one-panel";
 
-vi.mock("../value/campaign-home", () => ({ useCampaignMark: () => null }));
+vi.mock("@/hooks/helpers/use-home-kind", () => ({ useHomeKind: () => "realm" }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: true }) }));
 vi.mock("../frontier-home", () => ({ useGoToFrontierPlace: () => vi.fn() }));
 vi.mock("../realm-stores", () => ({ useRealmStores: () => null, realmDot: () => undefined }));

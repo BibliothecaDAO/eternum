@@ -16,7 +16,11 @@ export function createEtherealTerrainMaterial(): MeshStandardNodeMaterial {
 }
 
 /** Shared with surface-biome transitions; ground coordinates must be world aligned. */
-export function createBasaltSurface(ground: Node<"vec2">): { color: Node<"vec3">; softEdge: Node<"float"> } {
+export function createBasaltSurface(ground: Node<"vec2">): {
+  color: Node<"vec3">;
+  slab: Node<"float">;
+  softEdge: Node<"float">;
+} {
   const radius = BASALT_BLOCK_RADIUS;
   const spacing = vec2(Math.sqrt(3) * radius, 3 * radius);
   const a = ground.sub(ground.div(spacing).round().mul(spacing));
@@ -59,6 +63,7 @@ export function createBasaltSurface(ground: Node<"vec2">): { color: Node<"vec3">
   const stone = vec3(0.035, 0.04, 0.049).mul(variation.mul(0.3).add(0.85));
   return {
     color: mix(vec3(0.011, 0.014, 0.02), stone, slab),
+    slab,
     // Outer mineral traces dissolve into their host biome instead of ending in hard polygon edges.
     softEdge: smoothstep((radius * Math.sqrt(3)) / 2 - 0.045, (radius * Math.sqrt(3)) / 2, distance).oneMinus(),
   };

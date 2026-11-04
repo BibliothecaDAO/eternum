@@ -24,22 +24,19 @@ import { useNowSeconds } from "../use-now";
 import { lordsOf } from "../value/ledger";
 import { PrizeHead, PrizeLines, useBoardPrize } from "./season-prize";
 
-/** How many of the rating's top rows Season shows before the reader's own row. */
-const TOP_ROWS = 10;
-
 type RatingTop = NonNullable<ReturnType<typeof useRatingTop>["data"]>;
 type Self = RatingTop["self"];
 
 /**
  * Blitz's board on Season, under Blitz's painting: the season's pool at its title, the reader's rating with its tier's
- * mark, then the rating's top rows with the reader's own under them when it ranks below. The season prize is paid by rating place, so while it
- * runs each paid row carries what it would take if the season ended now; once over, the reader's share and its claim
- * stand above the rows. The prize and the rating are two reads, each waiting and failing on its own: a share to claim
- * stays claimable while the rating is down.
+ * mark, then every rated wallet's row in a scroll area `rows` rows tall, the reader's own lit (AppBoard's one rule).
+ * The season prize is paid by rating place, so while it runs each paid row carries what it would take if the season
+ * ended now; once over, the reader's share and its claim stand above the rows. The prize and the rating are two reads,
+ * each waiting and failing on its own: a share to claim stays claimable while the rating is down.
  */
-export const BlitzBoard = () => {
+export const BlitzBoard = ({ rows }: { rows: number }) => {
   const { session } = useIdentitySession();
-  const top = useRatingTop(TOP_ROWS, session ? payoutAddressOf(session.user) : null);
+  const top = useRatingTop(session ? payoutAddressOf(session.user) : null);
   const now = useNowSeconds();
   const prize = useBoardPrize(now);
   const blitz = ageOf("blitz");
@@ -56,17 +53,25 @@ export const BlitzBoard = () => {
           {top.isSuccess && <OwnRating self={top.data.self} signedIn={session !== null} />}
           <PrizeLines prize={prize} now={now} onClaimed={() => void prize.query.refetch()} />
         </div>
-        <Ratings top={top} shares={prize.shares} />
+        <Ratings top={top} shares={prize.shares} rows={rows} />
       </AppPanel>
     </div>
   );
 };
 
 /** The rating's rows, or its own wait or failure. */
-const Ratings = ({ top, shares }: { top: ReturnType<typeof useRatingTop>; shares: bigint[] | null }) => {
+const Ratings = ({
+  top,
+  shares,
+  rows,
+}: {
+  top: ReturnType<typeof useRatingTop>;
+  shares: bigint[] | null;
+  rows: number;
+}) => {
   if (top.isError) return <ServiceFailure service="ratings" error={top.error} retry={() => void top.refetch()} />;
   if (top.isPending) return <Loading />;
-  return <TopRows top={top.data} shares={shares} />;
+  return <RatedRows top={top.data} shares={shares} rows={rows} />;
 };
 
 /** The reader's rating with its tier's mark; a reader with no wallet is told how to carry one. Signed out, nothing. */
@@ -86,17 +91,17 @@ const OwnRating = ({ self, signedIn }: { self: Self; signedIn: boolean }) => {
 };
 
 /**
- * The top rows, the reader's own lit in place, or pinned under them (its rank a dash before its first rated game); a
+ * Every rated wallet's row, the reader's own lit in place, or last before its first rated game (its rank a dash); a
  * paid place carries its share of the pool today.
  */
-const TopRows = ({ top, shares }: { top: RatingTop; shares: bigint[] | null }) => {
+const RatedRows = ({ top, shares, rows }: { top: RatingTop; shares: bigint[] | null; rows: number }) => {
   const self = top.self;
   if (top.entries.length === 0 && self === null) return <AppEmpty icon="leaderboard" line={RATING_WORDS.noneRated} />;
-  const ownInTop = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
+  const ranked = self !== null && top.entries.some((entry) => isSameStarknetAddress(entry.player, self.player));
   const shareOf = (rank: number | null) => (shares && rank !== null ? shares[rank - 1] : undefined);
   const own = (entry: RatedRow) => self !== null && isSameStarknetAddress(entry.player, self.player);
-  const rows: RatedRow[] = self && !ownInTop ? [...top.entries, self] : top.entries;
-  return <AppBoard entries={rows.map((row) => ratedEntry(row, shareOf(row.rank), own(row)))} />;
+  const rated: RatedRow[] = self && !ranked ? [...top.entries, self] : top.entries;
+  return <AppBoard rows={rows} entries={rated.map((row) => ratedEntry(row, shareOf(row.rank), own(row)))} />;
 };
 
 type RatedRow = { rank: number | null; player: string; rating: string; profile: RatingProfile };

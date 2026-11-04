@@ -19,6 +19,44 @@ vi.mock("./terrain-prop-asset-cache", async () => {
 });
 
 describe("ProceduralTerrain", () => {
+  it("renders mixed Frontier depths with distinct materials and retains Eternum basalt", () => {
+    const terrain = new ProceduralTerrain();
+    const source = request(BiomeType.Ocean, false);
+    const cells: TerrainCellInput[] = [1, 2, 3].map((depth, col) => ({
+      ...source.cells[0],
+      col,
+      surfacePresentation: depth as 1 | 2 | 3,
+    }));
+    cells.push({ ...cells[0], col: 4, explored: false, biome: null });
+    const frontier = prepareTerrainPage({ ...source, cells });
+    const eternum = prepareTerrainPage({ ...source, pageKey: "alt", surfacePresentation: "ethereal" });
+    terrain.present([frontier, eternum]);
+    const meshes: InstancedMesh[] = [];
+    terrain.object3d.traverse((object) => {
+      if (object instanceof InstancedMesh && object.userData.basaltInstances) meshes.push(object);
+    });
+    expect(meshes.map((mesh) => mesh.userData.surfaceDepth).sort()).toEqual([0, 1, 2, 3]);
+    expect(meshes.map((mesh) => mesh.count)).toEqual([1, 1, 1, 1]);
+    expect(new Set(meshes.map((mesh) => mesh.material)).size).toBe(4);
+    expect(new Set(meshes.map((mesh) => mesh.geometry)).size).toBe(1);
+    expect(frontier.waterBuffers).toBeNull();
+    expect(frontier.propInstances).toEqual([]);
+    for (const depth of [1, 2, 3]) {
+      const mesh = meshes.find((mesh) => mesh.userData.surfaceDepth === depth)!;
+      expect(Array.isArray(mesh.material)).toBe(false);
+      expect((mesh.material as { name: string }).name).toBe(`terrain-ethereal-depth-${depth}`);
+    }
+    const original = meshes.find((mesh) => mesh.userData.surfaceDepth === 0)!.material;
+    terrain.present([eternum]);
+    const remaining: InstancedMesh[] = [];
+    terrain.object3d.traverse((object) => {
+      if (object instanceof InstancedMesh && object.userData.basaltInstances) remaining.push(object);
+    });
+    expect(remaining).toHaveLength(1);
+    expect(remaining[0].material).toBe(original);
+    terrain.dispose();
+  });
+
   it("uses one flat shared surface for every occupied state and camera distance", () => {
     const terrain = new ProceduralTerrain();
     const pages = [-1, 0].flatMap((pageRow) =>

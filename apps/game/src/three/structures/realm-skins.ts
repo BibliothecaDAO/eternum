@@ -1,5 +1,4 @@
 import { isGoldenCampaignHome } from "@bibliothecadao/eternum";
-import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 import { shortString } from "starknet";
 import assets from "./realm-assets.json";
@@ -46,8 +45,4 @@ export function realmSkinModel(skin: RealmSkin, level: number) {
 
 export function isRealmSkinPath(path: string): boolean {
   return REALM_SKIN_MODELS.some((model) => model.path === path);
-}
-
-export function realmSkinIcon(skin: RealmSkin): IconMeaning {
-  return REALM_SKINS[skin].icon as IconMeaning;
 }

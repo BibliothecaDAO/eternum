@@ -1,3 +1,5 @@
+import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
+import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
@@ -790,7 +792,8 @@ const CLAIM_ACTION_STEPS = [
 
 const REALMS_SHEET = `[data-kit-sheet][aria-label="${HUD_WORDS.realmLabor}"]`;
 
-async function claimARealmsLabor({ browser }) {
+async function openRealmLabor(browser) {
+  if (browser.read(SHEET_NAME) === HUD_WORDS.realmLabor) return HUD_WORDS.realmLabor;
   // A desktop's purse chip opens Realm Labor (its name goes on with what waits); a phone's Menu holds it.
   if (onADesktop()) {
     const chip = await readUntil(
@@ -810,6 +813,11 @@ async function claimARealmsLabor({ browser }) {
     (name) => name === HUD_WORDS.realmLabor,
     SHEET_WAIT_MS,
   );
+  return sheet;
+}
+
+async function claimARealmsLabor({ browser }) {
+  const sheet = await openRealmLabor(browser);
   if (sheet !== HUD_WORDS.realmLabor) return { sheet };
   const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
   if (!claim) return { sheet, claim };
@@ -2404,6 +2412,90 @@ const LAB_SPIRE_STEPS = [
   { name: "spire-card", play: pressSpire, settleMs: 0, verify: spireCardOffersDepths },
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
+
+/** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
+function etherealDepthSteps(depth) {
+  const label = `Ethereal ${"I".repeat(depth)}`;
+  return [
+    ...LAB_SPIRE_STEPS.slice(0, 3),
+    {
+      name: "spire-card",
+      play: pressSpire,
+      settleMs: 0,
+      verify: ({ played }) =>
+        played.state.depths.every((row) => row.button === "Enter" && row.enabled) &&
+        played.state.depths.length === Object.keys(depthLooks).length
+          ? completed(played)
+          : failed("The Spire does not offer all researched depths", played),
+    },
+    {
+      name: `ethereal-${depth}`,
+      settleMs: 1500,
+      play: async ({ browser }) => {
+        const before = browser.read(SPIRE_STATE);
+        browser.click(`Enter ${label}`);
+        const after = await readUntil(
+          () => browser.read(SPIRE_STATE),
+          (shown) => shown.sent.length > before.sent.length && shown.army?.hex.row !== before.army?.hex.row,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        const camera = await readUntil(
+          () => browser.read(MAP_CAMERA),
+          (camera) => camera && after.army && hexesApart(camera, after.army.hex) <= FRAMED_WITHIN_HEXES,
+          SPIRE_WAIT_MS,
+        );
+        const terrain = await readUntil(
+          () => browser.read("JSON.stringify(window.__eternumMapSelection?.etherealTerrain ?? [])"),
+          (pages) => pages.some((page) => page.depth === depth && page.instances > 0),
+          SPIRE_WAIT_MS,
+        );
+        for (let i = 0; i < ESCAPES_TO_DESELECT; i++) browser.press("Escape");
+        if (!onADesktop()) {
+          browser.run(["eval", "void window.__playtest.wheel(100, 4)"]);
+          await sleep(ZOOM_SETTLE_MS);
+        }
+        const subjects = browser.read(`JSON.stringify((() => {
+          const framed = element => {
+            if (!element) return false;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 && rect.left >= 0 && rect.right <= innerWidth && rect.top >= 0 && rect.bottom <= innerHeight;
+          };
+          return {
+            army: framed(document.querySelector('.mp-at[data-key="army:${before.army.id}"] .mp-token')),
+            spire: [...document.querySelectorAll('div')].some(element => element.children.length === 0 && element.textContent === "Spire" && framed(element)),
+            alternateLayer: window.__eternumMapSelection?.layer,
+          };
+        })())`);
+        return { before, after, camera, terrain, subjects, label, look: depthLooks[depth].title };
+      },
+      verify: ({ played }) => {
+        const { before, after, camera, terrain, subjects } = played;
+        if (!subjects.army || !subjects.spire || subjects.alternateLayer !== false)
+          return failed("The Frontier still does not frame both the army and Spire", played);
+        const command = after.sent.at(-1);
+        if (
+          after.sent.length !== before.sent.length + 1 ||
+          command?.kind !== "EnterDepth" ||
+          Number(command.fields.depth) !== depth ||
+          Number(command.fields.explorer_id) !== before.army?.id
+        )
+          return failed("The Spire did not sign the chosen depth entry", played);
+        if (
+          after.army?.id !== before.army.id ||
+          after.army.hex.col !== before.army.hex.col ||
+          after.army.hex.row - before.army.hex.row !== depth * 100 ||
+          !camera ||
+          hexesApart(camera, after.army.hex) > FRAMED_WITHIN_HEXES
+        )
+          return failed("The army and view did not reach the chosen Frontier depth", played);
+        const rendered = terrain.filter((page) => page.depth === depth && page.instances > 0);
+        if (!rendered.length || rendered.some((page) => page.material !== `terrain-ethereal-depth-${depth}`))
+          return failed("The committed terrain does not render the chosen material", played);
+        return completed(played);
+      },
+    },
+  ];
+}
 
 const SPIRE_STATE = `JSON.stringify({
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
@@ -4007,11 +4099,11 @@ function reloadOn(place, scene, labScenario = null) {
 }
 
 /** Each approved family through the real map, HUD and local keep, opened through the lab game's route. */
-const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, icon, label }]) =>
+const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, label }]) =>
   realmAssets
     .filter((asset) => !asset.wonder)
     .flatMap(({ id, level }) => {
-      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon, label };
+      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon: homeIcons[skin][level], label };
       return [
         {
           name: `${skin}-${id}-map`,
@@ -4095,9 +4187,15 @@ const devconSeasonStep = {
   },
   verify: ({ seen, played }) => {
     if (!seen.panels.includes(HUD_WORDS.season)) return failed("Season did not open", played);
-    const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
-    if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
-      return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);
+    const campaigns = Object.keys(realmSkins).map((skin) =>
+      Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`),
+    );
+    if (
+      !campaigns.every((icons) => icons.some((icon) => played.includes(icon))) ||
+      !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)) ||
+      !Object.values(homeIcons.wonder).some((icon) => played.includes(`${icon}.webp`))
+    )
+      return failed("Season must distinguish both unvisited campaign homes, the ordinary home, and the Wonder", played);
     return completed(played);
   },
 };
@@ -4310,6 +4408,105 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "home-found-regular": {
+    game: { ...FRONTIER, entersFromHome: true },
+    steps: [
+      {
+        name: "found-regular-campaign-home",
+        play: async ({ browser, extraScreenshot }) => {
+          const tier = await readUntil(
+            () =>
+              browser.read(
+                `JSON.stringify(document.querySelector('.home-picker__featured .home-art')?.getAttribute('data-tier') ?? null)`,
+              ),
+            Boolean,
+            PLAYABLE_WAIT_MS,
+          );
+          extraScreenshot("source-choice");
+          if (tier !== "regular") return { tier, founded: false };
+          browser.click("Found your realm");
+          return { tier, founded: true };
+        },
+        settleMs: 5_000,
+        verify: ({ played }) =>
+          played.tier === "regular" && played.founded
+            ? completed(played)
+            : failed("regular campaign source was not offered", played),
+      },
+      ...FRONTIER_MAP.opening,
+      {
+        name: "read-founded-regular-home",
+        play: async ({ browser }) => {
+          await openRealmLabor(browser);
+          return readCampaignClaim(browser);
+        },
+        settleMs: 1_000,
+        verify: ({ played }) =>
+          played.tier === "regular" && !played.claimed
+            ? completed(played)
+            : failed("founded regular home with an unpaid claim was not confirmed", played),
+      },
+    ],
+  },
+  "home-upgrade": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "upgrade-campaign-home",
+        play: async ({ base, browser, owner, extraScreenshot }) => {
+          await openRealmLabor(browser);
+          const before = readCampaignClaim(browser);
+          extraScreenshot("regular");
+          if (before.tier !== "regular" || before.claimed) return { before };
+          writeFileSync(`${base}-upgrade-ready.json`, JSON.stringify({ ready: true, before }), {
+            mode: 0o600,
+            flag: "wx",
+          });
+          const applied = await waitUntil(() => {
+            owner.throwIfCancelled();
+            return existsSync(`${base}-upgrade-applied.json`);
+          }, 180_000);
+          if (!applied) throw new Error("operator upgrade deadline");
+          const upgraded = await readUntil(
+            () => readCampaignClaim(browser),
+            (state) => state.tier === "golden",
+            ORDER_OUTCOME_WAIT_MS,
+          );
+          extraScreenshot("golden");
+          if (!upgraded || upgraded.claimed) return { before, upgraded };
+          const claim = await claimFoundedHome({ browser });
+          return { before, upgraded, claimed: claim.claimed, after: readCampaignClaim(browser) };
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.before?.tier === "regular" &&
+          played.upgraded?.tier === "golden" &&
+          played.claimed &&
+          played.after?.claimed
+            ? completed(played)
+            : failed("golden upgrade and prospective claim did not settle", played),
+      },
+    ],
+  },
+  "home-golden": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "read-golden-home-after-reload",
+        play: async ({ browser }) => {
+          await openRealmLabor(browser);
+          return readCampaignClaim(browser);
+        },
+        settleMs: 1_000,
+        verify: ({ played }) =>
+          played.tier === "golden" && played.claimed
+            ? completed(played)
+            : failed("golden claim did not survive a fresh load", played),
+      },
+    ],
+  },
   "home-recovery": {
     game: { ...FRONTIER, entersFromHome: true },
     steps: [
@@ -4401,6 +4598,12 @@ export const STEP_SETS = {
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
+  ...Object.fromEntries(
+    Object.keys(depthLooks).map((depth) => [
+      `lab-ethereal-${depth}`,
+      { game: { ...LAB_SPIRE, lab: "ethereal-depths" }, steps: etherealDepthSteps(Number(depth)) },
+    ]),
+  ),
   "lab-merge-loses-xp": {
     game: labSpireGame("merge-loses-xp"),
     steps: labMergeSteps("Lose 100 XP, merge into Army 2"),
@@ -4518,6 +4721,18 @@ async function tapTheCentre({ browser }) {
 }
 
 /** The live daily claim, verified by the same claimed-day state the player reads. */
+function readCampaignClaim(browser) {
+  return browser.read(`JSON.stringify((() => {
+    const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)});
+    return {
+      tier: sheet?.querySelector('.home-art')?.getAttribute('data-tier') ?? null,
+      claimed: sheet?.querySelector('[aria-current="date"]')?.getAttribute('data-state') === 'claimed',
+      days: sheet?.querySelectorAll('.realm-labor__days li').length ?? 0,
+      text: sheet?.innerText ?? null,
+    };
+  })())`);
+}
+
 async function claimFoundedHome({ browser }) {
   const pressed = await claimARealmsLabor({ browser });
   const claimed =

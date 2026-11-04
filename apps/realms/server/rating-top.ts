@@ -6,28 +6,24 @@ import { ratingFailure } from "./rating-failure";
 import { ratingPoints } from "./rating-ledger";
 import { ratingIdentifier } from "./ratings";
 
-interface TopQuery {
-  limit: number;
-  reader: string | null;
-}
-
-/** The list and the reader's own position are one snapshot, including readers outside the visible top. */
+/**
+ * Every rated wallet in rating order and the reader's own position, one snapshot: the whole board, which the reader
+ * holds in full already, so a board shows every place. A reader before their first rated game has no rank.
+ */
 export async function handleRatingTop(env: Pick<IdentityEnv, "DB" | "RATING_READER" | "ENVIRONMENT">, url: URL) {
   const query = topQuery(url);
-  if (!query) return json({ error: "invalid_rating_query" }, 400);
+  if (query === undefined) return json({ error: "invalid_rating_query" }, 400);
   try {
     const reader = env.RATING_READER.get(env.RATING_READER.idFromName(environmentL2(env.ENVIRONMENT).chain));
     const snapshot = await reader.top();
-    const self = await readerPosition(reader, snapshot, query.reader);
-    const entries = snapshot.entries.slice(0, query.limit);
+    const self = await readerPosition(reader, snapshot, query);
     const profiles = await profilesOfRatingOwners(env.DB, [
-      ...entries.map(({ player }) => player),
+      ...snapshot.entries.map(({ player }) => player),
       ...(self?.player ? [self.player] : []),
     ]);
     return json({
       ...snapshot,
-      total: snapshot.entries.length,
-      entries: entries.map((entry) => ({ ...entry, profile: profiles.get(entry.player) ?? null })),
+      entries: snapshot.entries.map((entry) => ({ ...entry, profile: profiles.get(entry.player) ?? null })),
       self: self?.player ? { ...self, profile: profiles.get(self.player) ?? null } : self,
     });
   } catch (error) {
@@ -49,14 +45,11 @@ async function readerPosition(
   return { status: "rated", player: player, rating: ratingPoints(BigInt(amount)), rank: null };
 }
 
-function topQuery(url: URL): TopQuery | null {
-  const limits = url.searchParams.getAll("limit");
+/** The reader whose position is asked for, null for none, or undefined for a query this route does not answer. */
+function topQuery(url: URL): string | null | undefined {
   const players = url.searchParams.getAll("player");
-  if (url.searchParams.has("realmsId")) return null;
-  const limit = limits.length ? Number(limits[0]) : 20;
-  if (limits.length > 1 || !Number.isInteger(limit) || limit < 1 || limit > 100 || players.length > 1) return null;
+  if (url.searchParams.has("realmsId") || players.length > 1) return undefined;
   const value = players[0];
-  const reader = value === undefined ? null : ratingIdentifier(value);
-  if (value !== undefined && reader === null) return null;
-  return { limit, reader };
+  if (value === undefined) return null;
+  return ratingIdentifier(value) ?? undefined;
 }

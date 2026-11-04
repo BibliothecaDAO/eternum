@@ -23,11 +23,13 @@ import {
   useContext,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
 import { createPortal } from "react-dom";
 
+import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import {
   CLOSE,
@@ -1185,10 +1187,12 @@ export const HudRow = ({
 };
 
 /**
- * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
- * the list row's hover and the chosen one's bar. With `onClick` it is a button, so Enter and Space choose it; `disabled`
- * when it leads nowhere, `title` its hover. Without it the row is only read (a reference table in a role="table"): no
- * hover, no cursor.
+ * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up),
+ * with the list row's hover and the chosen one's bar. With `onClick` it is a button, so Enter and Space choose it;
+ * `disabled` when it leads nowhere, `title` its hover. Without it the row is only read (a reference table in a
+ * role="table"): no hover, no cursor. The player's own row on a board (`own`) is lit as chosen and stays in sight at
+ * the edge of the board's scroll area its place is beyond; pressed there, it brings its place into view
+ * (revealOwnPlace), even when `disabled` says its own action leads nowhere.
  */
 export const HudTableRow = ({
   cols,
@@ -1196,6 +1200,7 @@ export const HudTableRow = ({
   label,
   title,
   selected = false,
+  own = false,
   disabled = false,
   state,
   onClick,
@@ -1206,40 +1211,43 @@ export const HudTableRow = ({
   label: string;
   title?: string;
   selected?: boolean;
+  own?: boolean;
   disabled?: boolean;
   state?: string;
   onClick?: () => void;
   children: ReactNode;
-}) =>
-  onClick ? (
-    <button
-      type="button"
-      className="ui-table-row"
-      aria-label={label}
-      title={title}
-      aria-current={selected || undefined}
-      disabled={disabled}
-      data-state={state}
-      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-      onClick={onClick}
-    >
+}) => {
+  const shape = {
+    className: "ui-table-row",
+    "aria-label": label,
+    title,
+    "aria-current": selected || own || undefined,
+    "data-own": own || undefined,
+    "data-state": state,
+    style: { "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties,
+  };
+  if (!onClick)
+    return (
+      <div role="row" {...shape}>
+        {children}
+      </div>
+    );
+  // The own row finds its place even when its action leads nowhere (a player with no realm left still has a rank).
+  const press = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (own && revealOwnPlace(event.currentTarget)) return;
+    if (!disabled) onClick();
+  };
+  return (
+    <button type="button" disabled={disabled && !own} aria-disabled={disabled || undefined} onClick={press} {...shape}>
       {children}
     </button>
-  ) : (
-    <div
-      className="ui-table-row"
-      role="row"
-      aria-label={label}
-      title={title}
-      aria-current={selected || undefined}
-      data-state={state}
-      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-    >
-      {children}
-    </div>
   );
+};
 
-/** A table's header: its column names on the same grid as its rows, staying over them as they scroll. */
+/**
+ * A table's header: its column names on the same grid as its rows, staying over them as they scroll. Its height is
+ * handed to what holds it and its rows (--ui-table-head), so the player's own row, scrolled past, waits under it.
+ */
 export const HudTableHead = ({
   cols,
   colsWide,
@@ -1248,11 +1256,34 @@ export const HudTableHead = ({
   cols: string;
   colsWide?: string;
   children: ReactNode;
-}) => (
-  <div className="ui-table-head" style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}>
-    {children}
-  </div>
-);
+}) => {
+  const head = useHeightOnHolder("--ui-table-head");
+  return (
+    <div
+      ref={head}
+      className="ui-table-head"
+      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
+    >
+      {children}
+    </div>
+  );
+};
+
+/** Keeps the element's height, as it changes, in `property` on its parent, for what the parent holds beside it. */
+const useHeightOnHolder = (property: string) => {
+  const [element, setElement] = useState<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    const holder = element?.parentElement;
+    if (!element || !holder) return;
+    const observer = new ResizeObserver(() => holder.style.setProperty(property, `${element.offsetHeight}px`));
+    observer.observe(element);
+    return () => {
+      observer.disconnect();
+      holder.style.removeProperty(property);
+    };
+  }, [element, property]);
+  return setElement;
+};
 
 /**
  * A card to pick (a building to build): its painting on the well, drawn whole, its name and what it says on the foot,

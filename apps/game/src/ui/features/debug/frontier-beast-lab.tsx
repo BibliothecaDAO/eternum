@@ -89,6 +89,8 @@ export function FrontierBeastLab() {
   const strength = site === 3 ? (band === "lowly" ? 325 : 500) : 2800;
   const plate = buildStructurePlate({
     entityId: 29,
+    level: 0,
+    hasWonder: false,
     structureName: siteDisplayName(29),
     structureType: SITES[site].category,
     isMine: false,
