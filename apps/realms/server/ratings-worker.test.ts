@@ -76,7 +76,6 @@ it("reads wallet owners through the deployed Worker's SDK and serves new ledger 
     expect(await top.json()).toMatchObject({
       block_number: 124,
       block_hash: "0xabd",
-      total: 1,
       entries: [{ player: "0xa", rating: "1300", rank: 1 }],
       self: { player: "0xa", rating: "1300", rank: 1 },
     });

@@ -26,7 +26,7 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
   await act(async () =>
     root.render(
       <MemoryRouter>
-        <FrontierRows rows={[{ entry, own: false }]} />
+        <FrontierRows entries={[entry]} own={undefined} rows={10} />
       </MemoryRouter>,
     ),
   );

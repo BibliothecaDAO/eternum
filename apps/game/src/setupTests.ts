@@ -19,3 +19,12 @@ if (typeof window !== "undefined" && !window.matchMedia) {
 if (typeof Element !== "undefined" && !Element.prototype.scrollIntoView) {
   Element.prototype.scrollIntoView = () => {};
 }
+
+// Nor does it resize anything: an element watched for its size is never told of one.
+if (typeof window !== "undefined" && !window.ResizeObserver) {
+  window.ResizeObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+  } as unknown as typeof ResizeObserver;
+}

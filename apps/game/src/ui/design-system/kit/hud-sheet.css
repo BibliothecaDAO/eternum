@@ -859,6 +859,17 @@ span.ui-row__choose {
   border-left-color: rgb(var(--hud-accent));
   background: var(--hud-chosen);
 }
+/* The player's own row on a board stays in sight: at the foot of its scroll area while its place is below the view,
+   under the table's head once scrolled past (its height, --ui-table-head, is the head's own), on the panel's ground,
+   so no row shows through it (every leaderboard's one rule, own-place.ts). */
+.ui-table-row[data-own],
+.ui-board-own {
+  position: sticky;
+  top: var(--ui-table-head, 0px);
+  bottom: 0;
+  z-index: 1;
+  background: linear-gradient(var(--hud-chosen), var(--hud-chosen)), var(--hud-surface-to);
+}
 .ui-table-row:is(:focus-visible, [data-state="focus"]) {
   outline: none;
   box-shadow: var(--hud-focus);

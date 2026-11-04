@@ -12,18 +12,28 @@ import { wholeLords } from "@/ui/features/frontier/board/standings";
 import { openedFrom } from "../frame/opened-from";
 
 /**
- * A Frontier board's rows: each realm's rank (the first three's medals) and home, its player, the sites it cleared
- * (what ranks) and its LORDS, each in its column. The player's own row is lit; a row opens its player.
+ * A Frontier board's rows, every realm's: each realm's rank (the first three's medals) and home, its player, the sites
+ * it cleared (what ranks) and its LORDS, each in its column, in a scroll area `rows` rows tall. The player's own row is
+ * lit; a row opens its player.
  */
 export const FrontierRows = ({
+  entries,
+  own,
   rows,
 }: {
-  rows: readonly { entry: HeraldFrontierLeaderboardEntry; own: boolean }[];
+  entries: readonly HeraldFrontierLeaderboardEntry[];
+  own: HeraldFrontierLeaderboardEntry | undefined;
+  rows: number;
 }) => {
   const navigate = useNavigate();
   const here = useLocation();
   const open = (address: string) => navigate(`/p/${address}`, { state: openedFrom(here) });
-  return <AppBoard entries={rows.map(({ entry, own }) => frontierEntry(entry, own, () => open(entry.address)))} />;
+  return (
+    <AppBoard
+      rows={rows}
+      entries={entries.map((entry) => frontierEntry(entry, entry === own, () => open(entry.address)))}
+    />
+  );
 };
 
 const frontierEntry = (entry: HeraldFrontierLeaderboardEntry, own: boolean, onClick: () => void): AppBoardEntry => ({

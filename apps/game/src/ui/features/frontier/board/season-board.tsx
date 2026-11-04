@@ -23,7 +23,6 @@ import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 type Entry = HeraldFrontierLeaderboardEntry;
 
 const REFRESH_MS = 30_000;
-const LIST_LENGTH = 50;
 
 /**
  * Frontier's season board from Herald's read model: sites cleared, then deepest depth, then who reached the count
@@ -78,8 +77,8 @@ export const useSeasonRank = (): string => {
 };
 
 /**
- * Season over the board: a common chest at today's price with the season's pool behind it, the first fifty realms and
- * the player's own, a row's detail with Visit. Visiting closes the page for the visited realm.
+ * Season over the board: a common chest at today's price with the season's pool behind it, every realm with the
+ * player's own lit, a row's detail with Visit. Visiting closes the page for the visited realm.
  */
 export const FrontierSeason = ({
   rules,
@@ -97,7 +96,7 @@ export const FrontierSeason = ({
   const now = useNowSeconds();
   const entries = board.data ?? [];
   const own = findOwnEntry(entries, viewer);
-  const { rows, pinned } = useSeasonListRows(board.data, LIST_LENGTH);
+  const rows = useSeasonListRows(board.data);
   const podium = useSeasonPodium(own?.address);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
@@ -120,7 +119,6 @@ export const FrontierSeason = ({
       pool={pool}
       podium={podium}
       rows={rows}
-      pinned={pinned}
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
       onRetry={() => void board.refetch()}
       onOpen={setOpened}
@@ -152,23 +150,12 @@ const useSeasonLords = (rules: ExpeditionRules): Partial<SeasonLords> => {
 
 const LORDS_MODELS = ["GameRegistry", "LordsBudget", "ChestRules"] as const;
 
-/**
- * The season's first rows as SeasonList draws them, the player's own lit in place, or pinned under them when it ranks
- * below.
- */
-const useSeasonListRows = (
-  entries: readonly Entry[] | undefined,
-  length: number,
-): { rows: SeasonListRow[]; pinned: SeasonListRow | undefined } => {
+/** Every realm's row as SeasonList draws it, the player's own lit. */
+const useSeasonListRows = (entries: readonly Entry[] | undefined): SeasonListRow[] => {
   const own = findOwnEntry(entries ?? [], useSeasonViewer());
   // Each row's label is the one name rule's, read as the rows are built: built again when a name lands.
   const names = usePlayerNames();
-  const top = (entries ?? []).slice(0, length);
-  const row = (entry: Entry) => listRow(entry, entry === own, names);
-  return {
-    rows: top.map(row),
-    pinned: own && !top.includes(own) ? row(own) : undefined,
-  };
+  return (entries ?? []).map((entry) => listRow(entry, entry === own, names));
 };
 
 /**
