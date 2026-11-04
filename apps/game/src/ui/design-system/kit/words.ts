@@ -179,6 +179,17 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+/**
+ * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
+ * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
+ * guarded site an army clears counts one (creditSiteClear). The Sites column's tip, the board's line while the player is
+ * off the podium, and a site card's "+1 site".
+ */
+export const SEASON_CLIMB = {
+  rule: "Ranked by sites cleared, then deepest depth",
+  climb: "Clear sites with your armies to climb",
+  plusOne: "+1 site",
+} as const;
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
