@@ -1,3 +1,4 @@
+import { formatPercent } from "@bibliothecadao/types";
 import { useEffect, useRef, useState } from "react";
 
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
@@ -18,17 +19,17 @@ export const EntryProgress = ({ view }: { view: DoorwayView }) => {
     <section aria-label={DOORWAY_WORDS.entering} className="flex w-full flex-col gap-2 text-app-ink">
       <div className="flex items-baseline justify-between gap-3 font-semibold">
         <span>{DOORWAY_WORDS[running.step]}</span>
-        <span className="tabular-nums">{`${percent}%`}</span>
+        <span className="tabular-nums">{formatPercent(percent / 100)}</span>
       </div>
       <div
         role="progressbar"
         aria-valuenow={percent}
         aria-valuemin={0}
         aria-valuemax={100}
-        className="h-3 w-full overflow-hidden rounded-full bg-black/40"
+        className="h-3 w-full overflow-hidden rounded-full bg-kit-shade/40"
       >
         <div
-          className="h-full rounded-full bg-[rgb(var(--app-gold))] transition-[width] duration-500"
+          className="h-full rounded-full bg-kit-gold transition-[width] duration-500"
           style={{ width: `${percent}%` }}
         />
       </div>

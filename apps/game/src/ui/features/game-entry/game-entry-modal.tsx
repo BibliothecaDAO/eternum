@@ -724,7 +724,7 @@ export const PlaysAs = () => {
   const name = session ? identityUsername(session) : null;
   if (!name) return null;
   return (
-    <p className="flex w-full items-center gap-2 text-sm text-app-ink">
+    <p className="flex w-full items-center gap-2 text-hud-body text-app-ink">
       <span className="flex-1">{HOME_STEP_WORDS.playsAs(name)}</span>
       <span className="opacity-70">{HOME_STEP_WORDS.changeOnYou}</span>
     </p>
