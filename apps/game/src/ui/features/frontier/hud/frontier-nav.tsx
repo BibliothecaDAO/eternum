@@ -1,5 +1,6 @@
 import { useCampaignMark } from "../value/campaign-home";
 import { useQuery } from "@/hooks/helpers/use-query";
+import { REALM } from "@/ui/design-system/kit/words";
 import type { ExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
@@ -7,6 +8,7 @@ import { useGoToFrontierPlace } from "../frontier-home";
 import { realmDot, useRealmStores } from "../realm-stores";
 import { useResearchTree } from "../research/research-facts";
 import { canResearchNow } from "../research/research-tree";
+import { layerChoices, layerMark, layerName, type MapLayers, viewChoice } from "./map-layers";
 import { type Place, PlaceNav } from "./place-nav";
 
 /** What the HUD has open over the map: a nav page, the Menu, or a way the Menu opens. */
@@ -28,12 +30,15 @@ export type HudSurface =
  * the world from the board, putting any page away; each other slot opens its place over the map and a second tap
  * closes it. The Realm slot carries a dot
  * while a store the realm spends is full or fills within the hour. A spectator, with no realm of their own, opens the
- * realm they watch, and has no Research.
+ * realm they watch, and has no Research. Once the realm has an Ethereal layer, the switch on the map names the layer
+ * shown and opens the list of views: Realm, the world and each Ethereal layer (owner, 4 November 2026: "yeah B is pretty
+ * good on mobile").
  */
 export const FrontierNav = ({
   rules,
   realm,
   board,
+  layers,
   surface,
   onSurface,
   events,
@@ -44,6 +49,8 @@ export const FrontierNav = ({
   realm: NativeRows["Structure"] | null;
   /** The realm the Realm slot goes to: the player's own, or the one a spectator watches. */
   board: NativeRows["Structure"] | null;
+  /** The map's layers (useMapLayers); none on the board or before Ethereal I. */
+  layers: MapLayers | null;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   /** Events arrived since the Feed was last read. */
@@ -69,9 +76,17 @@ export const FrontierNav = ({
     }
     onSurface(surface === to ? null : to);
   };
+  const realmIcon = mark?.icon ?? "realm";
   return (
     <PlaceNav
-      realmIcon={mark?.icon}
+      realmIcon={realmIcon}
+      views={
+        layers && {
+          icon: layerMark(layers.shown),
+          word: layerName(layers.shown),
+          items: [viewChoice(REALM, realmIcon, false, () => go("realm")), ...layerChoices(layers)],
+        }
+      }
       place={place}
       onRealm={!isMapView}
       onGo={go}

@@ -159,7 +159,9 @@ dev overlays on, as the plate lists do), `--steps lab-spire` (no live game: the 
 signed commands are recorded in `window.__labChain` and answered as the contract applies them; the spire's army picked
 from the dock, which must show its own panel, not the spire's card, and offer **Spire**; Spire pressed for the spire's
 card, its depths, costs and commitment read, then Enter on Ethereal II: the EnterDepth command signed for that army, and
-the army two regions below, shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-merge-loses-xp`,
+the army two regions below, shown in Ethereal II; play it at `--viewport 390x844` too), `--steps lab-layers` (the same
+game: the view switch's list, World and each Ethereal layer, a phone's with Realm; Ethereal II and World each at the
+camera's same spot, then the realm from Ethereal II and back), `--steps lab-merge-loses-xp`,
 `--steps lab-merge-keeps-tapped` and `--steps lab-after-battle` (the same game with two of the realm's armies merged
 through **Transfer troops**, under with and without lost XP (the target always survives; lost XP must be confirmed once
 more), or with the owner's army after its fight standing on the camp it cleared: each army's tile, found under its

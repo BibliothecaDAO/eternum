@@ -3,7 +3,7 @@ import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { useCompactLane } from "@/hooks/helpers/use-compact-hud";
 import { HudPill } from "@/ui/design-system/kit/hud-elements";
 import { HudHeaderLayout } from "./hud-header-layout";
-import { MapViewControls } from "./map-view-controls";
+import { MapViewControls, type WorldTab } from "./map-view-controls";
 import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useGoToStructure } from "@/hooks/helpers/use-navigate";
 import { useUIStore } from "@/hooks/store/use-ui-store";
@@ -18,11 +18,14 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeFacts } from "@/hooks/helpers/use-native-facts";
 import { memo, type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
+type TopHeaderProps = { season?: SeasonGoal; clock?: ReactNode; worldTab?: WorldTab };
+
 /**
  * The in-game top bar every mode shares: who plays (a mode may add its season goal), the clock (a mode may bring its
- * own: Frontier's day), the realm and world views, and settings.
+ * own: Frontier's day), the realm and world views (a mode may list its layers under World: Frontier's Ethereal), and
+ * settings.
  */
-export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?: ReactNode }) => {
+export const TopHeader = memo(({ season, clock, worldTab }: TopHeaderProps) => {
   const lane = useCompactLane();
   const { setup } = useGame();
 
@@ -109,6 +112,7 @@ export const TopHeader = memo(({ season, clock }: { season?: SeasonGoal; clock?:
             canOpenLocal={selectedStructurePosition !== null}
             mapLayer={mapLayer}
             showLayerSwitch={showLayerSwitch}
+            worldTab={worldTab}
             onNavigate={navigateToView}
             onLayerChange={switchLayer}
           />

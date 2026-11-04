@@ -38,6 +38,7 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
+import { layerChoices, layerName, type MapLayers, useMapLayers } from "./hud/map-layers";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
@@ -140,6 +141,7 @@ export const FrontierHud = ({
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
   const seasonRank = useSeasonRank();
+  const layers = useMapLayers(rules, shown);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   if (showBlankOverlay) return null;
@@ -246,6 +248,7 @@ export const FrontierHud = ({
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      worldTab={layers ? { label: layerName(layers.shown), menu: layerChoices(layers) } : undefined}
       realm={
         shown && (
           <FrontierRealmPanel
@@ -284,6 +287,7 @@ export const FrontierHud = ({
       rules={rules}
       realm={realm}
       board={shown}
+      layers={layers}
       visiting={visit !== null}
       surface={surface}
       onSurface={setSurface}
@@ -310,6 +314,7 @@ const FrontierPhoneHud = ({
   rules,
   realm,
   board,
+  layers,
   visiting,
   surface,
   onSurface,
@@ -323,6 +328,7 @@ const FrontierPhoneHud = ({
   realm: NativeRows["Structure"] | null;
   /** The realm the dock reads: the player's, or the one visited. */
   board: NativeRows["Structure"] | null;
+  layers: MapLayers | null;
   visiting: boolean;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
@@ -363,6 +369,7 @@ const FrontierPhoneHud = ({
             rules={rules}
             realm={realm}
             board={board}
+            layers={layers}
             surface={surface}
             onSurface={onSurface}
             events={events}

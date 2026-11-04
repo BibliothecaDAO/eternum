@@ -188,8 +188,21 @@ export const spireEtherealView = (
   const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
     .map((army) => entityMapPosition(store, gameId, army.explorer_id))
     .find((at) => expeditionDepth(rules, at) > 0);
-  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : { col: spire.col, row: spire.row + rules.spacing };
+  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : viewInLayer(rules, spire, 1);
 };
+
+/**
+ * The same spot of a region in another of its layers, the day's surface (0) or an Ethereal layer: the contract lays each
+ * layer a region down the same map, column kept, so a view switches layer by moving the camera that many regions.
+ */
+export const viewInLayer = (
+  rules: ExpeditionRules,
+  at: { col: number; row: number },
+  layer: 0 | EtherealLayer,
+): { col: number; row: number } => ({
+  col: at.col,
+  row: at.row + (layer - expeditionDepth(rules, { y: at.row })) * rules.spacing,
+});
 
 export { entityHomeNamespace } from "./entity-home";
 
