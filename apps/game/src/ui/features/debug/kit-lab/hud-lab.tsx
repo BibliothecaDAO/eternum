@@ -523,6 +523,7 @@ const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[]
   }));
 };
 const SEASON_COMMON_CHEST = { lords: 24 };
+/** The player's row, twelfth, then the rest of an 87-realm season: the board holds every place. */
 const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
@@ -534,6 +535,27 @@ const OWN_ROW: SeasonListRow = {
   lords: 192,
   own: true,
 };
+const SEASON_FIELD: SeasonListRow[] = Array.from({ length: 75 }, (_, index) => {
+  const rank = index + 13;
+  return {
+    key: `lord-${rank}`,
+    rank,
+    order: (rank % 16) + 1,
+    realm: { level: 0, depth: 0 },
+    name: `Lord ${rank}`,
+    label: `Lord ${rank}`,
+    sitesCleared: Math.max(0, 87 - index),
+    lords: 0,
+    own: false,
+  };
+});
+const SEASON_BOARD = [...SEASON_ROWS, OWN_ROW, ...SEASON_FIELD];
+/** The same season with the player first: the eleven named realms a place lower each. */
+const SEASON_BOARD_YOU_FIRST = [
+  { ...OWN_ROW, rank: 1 },
+  ...SEASON_ROWS.map((row) => ({ ...row, rank: row.rank + 1 })),
+  ...SEASON_FIELD,
+];
 
 /**
  * What Next up reads on the lab's realm: barracks built, troops at home, the preset's numbers. Each state adds its
@@ -968,6 +990,7 @@ const STATES = {
   },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
+  "season-detail-first": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail", seasonFirst: true },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
   // The season over, its prize's three winners posted; and one where only the leader has cleared a site.
   "season-final": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "final" },
@@ -1221,6 +1244,8 @@ type LabState = {
   /** The account has no linked wallet to receive its LORDS: the purse marked, Withdraw and the season's card say so. */
   noWallet?: boolean;
   season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
+  /** The player first on the season's board, right under its column names. */
+  seasonFirst?: boolean;
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
@@ -1369,12 +1394,11 @@ export const HudLab = () => {
               />
             ) : (
               <SeasonList
-                rank={12}
+                rank={lab.seasonFirst ? 1 : 12}
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 podium={labPodium(lab.season)}
-                rows={SEASON_ROWS}
-                pinned={OWN_ROW}
+                rows={lab.seasonFirst ? SEASON_BOARD_YOU_FIRST : SEASON_BOARD}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={() => setDetailShut(false)}

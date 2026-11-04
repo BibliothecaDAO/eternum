@@ -6,6 +6,7 @@ import {
   type ButtonHTMLAttributes,
   type CSSProperties,
   type KeyboardEvent,
+  type MouseEvent,
   type ReactNode,
   type RefObject,
   useEffect,
@@ -17,6 +18,7 @@ import { createPortal } from "react-dom";
 
 import { paintingSources, type Painting } from "./paintings";
 import { HudPlaceMedal } from "./hud-elements";
+import { revealOwnPlace } from "./own-place";
 import { useSheetCloses } from "./sheet-closes";
 
 /**
@@ -561,19 +563,24 @@ export type AppBoardEntry = {
 /**
  * A board of players: every row on one grid, so the lead, the name and each figure stand in one column down the board,
  * each column as wide as its widest value and each value right-aligned on one line, at any width (the owner, 2 November
- * 2026: "we must align vertically the column please no accordions"). A long name gives way with an ellipsis. The
- * player's own row is lit; a row with `onClick` is the one button that opens it.
+ * 2026: "we must align vertically the column please no accordions"). A long name gives way with an ellipsis. A row with
+ * `onClick` is the one button that opens it.
+ *
+ * Every place stands on it, in a scroll area `rows` rows tall, and the player's own row is lit and waits at the area's
+ * foot while its place is below the view; pressed there, it brings its place into view (revealOwnPlace).
  */
-export const AppBoard = ({ entries }: { entries: readonly AppBoardEntry[] }) => {
+export const AppBoard = ({ entries, rows }: { entries: readonly AppBoardEntry[]; rows: number }) => {
   const columns = Math.max(0, ...entries.map((entry) => entry.figures.length));
   return (
-    <ol className="app-board" style={{ "--app-board-figures": columns } as CSSProperties}>
-      {entries.map((entry) => (
-        <li key={entry.key} className="app-board__item">
-          <BoardRow entry={entry} columns={columns} />
-        </li>
-      ))}
-    </ol>
+    <div className="app-board-scroll" style={{ "--app-board-rows": rows } as CSSProperties}>
+      <ol className="app-board" style={{ "--app-board-figures": columns } as CSSProperties}>
+        {entries.map((entry) => (
+          <li key={entry.key} className="app-board__item" data-own={entry.own || undefined}>
+            <BoardRow entry={entry} columns={columns} />
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 };
 
@@ -588,8 +595,14 @@ const BoardRow = ({ entry, columns }: { entry: AppBoardEntry; columns: number })
     </>
   );
   const own = entry.own || undefined;
-  return entry.onClick ? (
-    <button type="button" className="app-board__row" data-own={own} onClick={entry.onClick}>
+  // The player's own row is always a button: waiting at the foot, its press finds its place.
+  const press = own
+    ? (event: MouseEvent<HTMLButtonElement>) => {
+        if (!revealOwnPlace(event.currentTarget.parentElement!)) entry.onClick?.();
+      }
+    : entry.onClick;
+  return press ? (
+    <button type="button" className="app-board__row" data-own={own} onClick={press}>
       {cells}
     </button>
   ) : (

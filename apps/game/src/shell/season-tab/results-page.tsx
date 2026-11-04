@@ -50,15 +50,15 @@ import { RewardPanel } from "./reward-panel";
 import { useFinishedGame } from "./finished-game";
 import { SeasonRecap } from "./season-recap";
 
-/** How many of the board's rows a result shows: the top three on a phone, the final top five on desktop. */
-const ROWS = { phone: 3, desktop: 5 } as const;
+/** How many rows tall a result's board stands, by layout: every place is on it, the rest a scroll away. */
+const BOARD_ROWS = { phone: 3, desktop: 5 } as const;
 
 /**
  * A finished game's Results (spec 08; the owner's pick, C · Ledger): the outcome first (a Blitz player's place and
- * points, or the season's ending), the board's first rows with the player's own, and Continue; Share for Blitz, Season
- * for Frontier. Opened from a list it has no Continue (its place, lit, leads back to the list); after a match (or from
- * Play) it has Continue. A sealed chest's Open is the page's one gold step, and Continue stands beside it in outline. Opening it marks
- * the result seen on this device.
+ * points, or the season's ending), the board with every place and the player's own lit, and Continue; Share for Blitz,
+ * Season for Frontier. Opened from a list it has no Continue (its place, lit, leads back to the list); after a match
+ * (or from Play) it has Continue. A sealed chest's Open is the page's one gold step, and Continue stands beside it in
+ * outline. Opening it marks the result seen on this device.
  */
 export const ResultsPage = () => {
   const { id } = useParams();
@@ -218,8 +218,6 @@ const BlitzResult = ({
   const layout = useLayout();
   const own = player ? entries.find((entry) => isSameStarknetAddress(entry.address, player)) : undefined;
   const chestToOpen = useSealedChest(game ? rewardSeatOf(game) : null);
-  const top = entries.slice(0, ROWS[layout]);
-  const rows = own && !top.includes(own) ? [...top, own] : top;
   const buttons = (
     <span className="flex flex-wrap gap-2">
       <ShareButton gameRef={gameRef} line={shareLine(game, own, entries.length)} />
@@ -243,7 +241,7 @@ const BlitzResult = ({
         </AppPanel>
         {reward && <div className="flex flex-col gap-6 lg:col-span-4 lg:row-span-2">{reward}</div>}
         <AppPanel title={RESULT_WORDS.theGame} icon="leaderboard" flush className="lg:col-span-4">
-          <AppBoard entries={rows.map((entry) => pointsEntry(entry, entry === own))} />
+          <AppBoard rows={BOARD_ROWS[layout]} entries={entries.map((entry) => pointsEntry(entry, entry === own))} />
         </AppPanel>
         {own && (
           <AppPanel title={RESULT_WORDS.yourPoints} icon="star" flush className="lg:col-span-4">

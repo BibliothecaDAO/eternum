@@ -727,6 +727,12 @@
 /* ── Board: players in columns, every row on the board's one grid (owner, 2 November 2026: "we must align vertically
    the column"). Each row is a subgrid of it, so a column is as wide as its widest value on any row and stands at one x
    down the board; the name takes what is left and gives way. ── */
+/* Every board shows every place, in a scroll area its caller's count of rows tall (today's height). */
+.app-board-scroll {
+  --app-board-row: 56px;
+  max-height: calc(var(--app-board-rows) * var(--app-board-row));
+  overflow-y: auto;
+}
 .app-board {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) repeat(var(--app-board-figures), auto);
@@ -742,7 +748,7 @@
   box-shadow: inset 0 1px 0 color-mix(in srgb, var(--app-line) 70%, transparent);
 }
 .app-board__row {
-  min-height: 56px;
+  min-height: var(--app-board-row);
   align-items: center;
   border-left: 3px solid transparent;
   padding: theme(spacing.2) theme(spacing.4);
@@ -755,6 +761,15 @@ button.app-board__row:is(:hover, [data-state="hover"]) {
 .app-board__row[data-own] {
   border-left-color: rgb(var(--app-accent));
   background: var(--app-chosen);
+}
+/* The player's own row stays in sight: at the area's foot while its place is below the view, at its top once scrolled
+   past, on the panel's ground, so no row shows through it. */
+.app-board__item[data-own] {
+  position: sticky;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  background: var(--app-surface);
 }
 .app-board__lead {
   display: flex;

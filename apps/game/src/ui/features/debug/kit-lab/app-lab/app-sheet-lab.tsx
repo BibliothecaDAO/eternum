@@ -505,36 +505,48 @@ const RowSection = () => (
   />
 );
 
-/** A board's rows, as uneven as a live board's figures, so its columns are seen to align. */
-const BOARD_ENTRIES: AppBoardEntry[] = [
-  { name: "Ysabeau", portrait: "/images/avatars/02.png", rank: 1, sites: "148", lords: "650" },
-  { name: "Aldric", portrait: "/images/avatars/03.png", rank: 2, sites: "132", lords: "2,900" },
-  { name: "Tybalt", portrait: "/images/avatars/04.png", rank: 3, sites: "121", lords: "0" },
-  { name: PLAYER.name, portrait: PLAYER.portrait, rank: 12, sites: "88", lords: "1,500", own: true },
-].map(({ name, portrait, rank, sites, lords, own }) => ({
-  key: name,
-  own,
-  onClick: () => undefined,
-  lead: (
-    <>
-      <AppRank rank={rank} />
-      <AppPortrait name={name} size="sm" src={portrait} own={own} />
-    </>
-  ),
-  name: own ? `${name} · You` : name,
-  figures: [
-    { icon: "explore", value: sites },
-    { icon: "lords", value: lords, tone: "gold" },
-  ],
-}));
+/** The board's named players, as uneven as a live board's figures, so its columns are seen to align. */
+const BOARD_NAMED = [
+  { name: "Ysabeau", portrait: "/images/avatars/02.png", sites: "148", lords: "650" },
+  { name: "Aldric", portrait: "/images/avatars/03.png", sites: "132", lords: "2,900" },
+  { name: "Tybalt", portrait: "/images/avatars/04.png", sites: "121", lords: "0" },
+];
+
+/** How many players the lab's board holds, the player twelfth: more than its scroll area shows. */
+const BOARD_PLAYERS = 40;
+const BOARD_OWN_RANK = 12;
+
+/** A board of many players: the named three, the player, and the rest as the field. */
+const BOARD_ENTRIES: AppBoardEntry[] = Array.from({ length: BOARD_PLAYERS }, (_, index) => {
+  const rank = index + 1;
+  const own = rank === BOARD_OWN_RANK;
+  const named = BOARD_NAMED[index];
+  const name = own ? PLAYER.name : (named?.name ?? `Lord ${rank}`);
+  return {
+    key: name,
+    own,
+    onClick: () => undefined,
+    lead: (
+      <>
+        <AppRank rank={rank} />
+        <AppPortrait name={name} size="sm" src={own ? PLAYER.portrait : named?.portrait} own={own} />
+      </>
+    ),
+    name: own ? `${name} · You` : name,
+    figures: [
+      { icon: "explore", value: named?.sites ?? String(120 - rank * 2) },
+      { icon: "lords", value: named?.lords ?? "0", tone: "gold" },
+    ],
+  };
+});
 
 const BoardSection = () => (
   <Element
     name="Board"
-    rule="Players in columns: rank, name, then each figure in a column as wide as its widest value, icon at its left and value right-aligned, one line down the board at any width. A long name gives way; the player's own row lit."
+    rule="Players in columns: rank, name, then each figure in a column as wide as its widest value, icon at its left and value right-aligned, one line down the board at any width. A long name gives way. Every place stands on it, in a scroll area of the caller's rows; the player's own row lit, waiting at the foot while its place is below, and pressed there it brings its place into view."
     sheet={
       <div className="overflow-hidden rounded-[var(--app-radius-panel)] border border-app-line bg-app-surface">
-        <AppBoard entries={BOARD_ENTRIES} />
+        <AppBoard entries={BOARD_ENTRIES} rows={6} />
       </div>
     }
   />

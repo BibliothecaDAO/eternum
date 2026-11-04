@@ -90,7 +90,6 @@ describe("the Season page's header", () => {
           rank={12}
           {...props}
           rows={[]}
-          pinned={undefined}
           state="ready"
           onRetry={() => undefined}
           onOpen={() => undefined}

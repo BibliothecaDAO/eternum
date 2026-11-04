@@ -21,6 +21,7 @@ import { LeaderboardEffectsOverlay } from "./leaderboard-effects";
 import type { MmrForecast } from "./mmr-forecast";
 import { describeHyperstructureHold, type VictoryPointGrants } from "@/ui/shared/lib/victory-point-grants";
 import { HudIconButton, HudTableHead, HudTableRow } from "@/ui/design-system/kit/hud-elements";
+import { revealOwnPlace } from "@/ui/design-system/kit/own-place";
 import { PlayerEffect, useLeaderboardEffects } from "./use-leaderboard-effects";
 
 const ROW_HEIGHT = 44; // Approximate row height in pixels
@@ -227,6 +228,13 @@ export const PlayerList = ({
     viewPlayerInfo(ContractAddress(normalized));
   };
 
+  // The player's own row, waiting at the foot, first brings its place into view (every board's one rule).
+  const pressRow = (player: PlayerCustom) => {
+    const row = rowRefs.current.get(String(player.address).toLowerCase());
+    if (player.isUser && row && revealOwnPlace(row)) return;
+    handleSelectPlayer(player.address);
+  };
+
   // Register row ref callback
   const registerRowRef = useCallback(
     (address: string, el: HTMLDivElement | null) => {
@@ -254,7 +262,7 @@ export const PlayerList = ({
               <PlayerRow
                 key={normalizedAddress}
                 player={player}
-                onSelect={() => handleSelectPlayer(player.address)}
+                onSelect={() => pressRow(player)}
                 whitelistPlayer={whitelistPlayer}
                 isLoading={isLoading}
                 showTribeDetails={showTribeDetails}
@@ -432,13 +440,14 @@ const PlayerRow = ({
   );
 
   return (
-    // The row's frame carries what the table row does not: the player's own row lit, and a rank change's glow.
+    // The row's frame carries what the table row does not: the player's own row lit and waiting at the foot while its
+    // place is below the view, and a rank change's glow.
     <div
       ref={registerRef}
       data-player-address={String(player.address)}
       className={clsx(
-        "relative mb-1 flex w-full items-center rounded-md",
-        player.isUser && "bg-hud-hover",
+        "mb-1 flex w-full items-center rounded-md",
+        player.isUser ? "ui-board-own" : "relative",
         hasRankUp && "animate-row-glow-up",
         hasRankDown && "animate-row-glow-down",
       )}

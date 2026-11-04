@@ -17,7 +17,7 @@ import { RowThumb } from "@/ui/design-system/kit/list-row";
 import { PlayerName } from "@/ui/design-system/kit/player-name";
 import { DAY, PLAY_WORDS, PRIZE_UNHELD, SEASON_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { seasonWinner } from "@/ui/features/frontier/board/season-pool";
-import { boardRows, findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
+import { findOwnEntry, wholeLords } from "@/ui/features/frontier/board/standings";
 
 import { useLayout } from "../frame/layout";
 import { openedFrom } from "../frame/opened-from";
@@ -42,8 +42,8 @@ import { SeasonPodium } from "./season-podium";
 
 type SeasonView = "frontier" | "blitz";
 
-/** How many of the board's rows a layout shows before the player's own row is pinned under them. */
-const ROWS_SHOWN = { phone: 12, desktop: 10 } as const;
+/** How many rows tall each board's scroll area stands, by layout: every place is on it, the rest a scroll away. */
+const BOARD_ROWS = { phone: 12, desktop: 10 } as const;
 
 /**
  * Season (the owner's pick, A · Launcher): where the player stands this season, in figures at the top (their place on
@@ -69,8 +69,8 @@ export const SeasonPage = () => {
 
 const DesktopBoards = () => (
   <div className="grid grid-cols-2 items-start gap-6">
-    <FrontierPanel rowsShown={ROWS_SHOWN.desktop} />
-    <BlitzBoard />
+    <FrontierPanel rows={BOARD_ROWS.desktop} />
+    <BlitzBoard rows={BOARD_ROWS.desktop} />
   </div>
 );
 
@@ -88,7 +88,7 @@ const PhoneBoards = () => {
           { key: "blitz", label: ageOf("blitz").name },
         ]}
       >
-        {view === "frontier" ? <FrontierPanel rowsShown={ROWS_SHOWN.phone} /> : <BlitzBoard />}
+        {view === "frontier" ? <FrontierPanel rows={BOARD_ROWS.phone} /> : <BlitzBoard rows={BOARD_ROWS.phone} />}
       </AppTabs>
     </>
   );
@@ -155,7 +155,7 @@ const Standing = () => {
 };
 
 /** Frontier's board under Frontier's painting, with its season and day, or the day it ended; the seasons past under it. */
-const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
+const FrontierPanel = ({ rows }: { rows: number }) => {
   const { season, past } = useSeason();
   const frontier = ageOf("frontier");
   return (
@@ -168,7 +168,7 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
           cue={season && (isGameOver(season) ? <SeasonEnded season={season} /> : <FrontierDay season={season} />)}
           flush
         >
-          <FrontierBoard rowsShown={rowsShown} />
+          <FrontierBoard rows={rows} />
         </AppPanel>
       </div>
       {past.length > 0 && <PastSeasons seasons={past} />}
@@ -179,8 +179,8 @@ const FrontierPanel = ({ rowsShown }: { rowsShown: number }) => {
 /** An ended season and the day it ended, "Playtest · Ended 31 Oct", on the calendar. */
 const SeasonEnded = ({ season }: { season: DirectoryGame }) => <AppChip icon="calendar">{seasonEnded(season)}</AppChip>;
 
-/** Frontier's board: its first rows, the player's own lit in place, or pinned under them when it ranks below. */
-const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
+/** Frontier's board: its podium, then every realm's row, the player's own lit (AppBoard's one rule). */
+const FrontierBoard = ({ rows }: { rows: number }) => {
   const { season, failure } = useSeason();
   const { data: player } = useRealmsPlayer();
   const board = useLeaderboard(season ? gameRefOf(season) : null);
@@ -188,8 +188,9 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
   if (failed) return <ServiceFailure service="season" error={failed.error} retry={() => void failed.refetch()} />;
   if (!season || board.isPending) return <Loading />;
   const frontier = board.data?.mode === "frontier" ? board.data : undefined;
-  const rows = frontier ? boardRows(frontier.entries, player, rowsShown) : [];
-  if (rows.length === 0)
+  const entries = frontier?.entries ?? [];
+  const own = findOwnEntry(entries, player);
+  if (entries.length === 0)
     return (
       <AppEmpty
         icon="leaderboard"
@@ -203,14 +204,8 @@ const FrontierBoard = ({ rowsShown }: { rowsShown: number }) => {
     );
   return (
     <div>
-      {frontier && (
-        <SeasonPodium
-          board={frontier}
-          own={findOwnEntry(frontier.entries, player)?.address}
-          over={isGameOver(season)}
-        />
-      )}
-      <FrontierRows rows={rows} />
+      {frontier && <SeasonPodium board={frontier} own={own?.address} over={isGameOver(season)} />}
+      <FrontierRows entries={entries} own={own} rows={rows} />
     </div>
   );
 };

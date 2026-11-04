@@ -13,6 +13,7 @@ const reads = vi.hoisted(() => ({
   board: {} as unknown,
   settled: {} as unknown,
   boards: {} as Record<number, unknown>,
+  player: null as string | null,
 }));
 // Identity names the past seasons' players; any other ask stays unanswered, its name waiting.
 vi.hoisted(() =>
@@ -48,7 +49,7 @@ vi.mock("../herald", async (importOriginal) => {
       return archived ? read : ((game && reads.boards[game.gameId]) ?? reads.board);
     },
     useSettledGames: () => reads.settled,
-    useRealmsPlayer: () => ({ data: null }),
+    useRealmsPlayer: () => ({ data: reads.player }),
   };
 });
 afterEach(() => {
@@ -56,6 +57,7 @@ afterEach(() => {
   reads.board = BOARD_WAITING;
   reads.settled = NO_HISTORY;
   reads.boards = {};
+  reads.player = null;
 });
 reads.directory = DIRECTORY_DOWN;
 reads.board = BOARD_WAITING;
@@ -182,6 +184,34 @@ it("shows the season's three prizes over Frontier's board, each place's holder, 
   }
 });
 
+it.each([
+  [390, "12"],
+  [1440, "10"],
+])(
+  "at %i px stands every one of 87 realms on Frontier's board, in a scroll %s rows tall, the player's own lit in its place",
+  async (width, rowsTall) => {
+    reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
+    const field = Array.from({ length: 87 }, (_, index) =>
+      entry(`0x${(0xa00 + index).toString(16)}`, index + 1, 90 - index),
+    );
+    reads.board = { data: { mode: "frontier", entries: field, prize: null }, isError: false, isPending: false };
+    reads.player = field[59]!.address;
+    const { container, unmount } = await mount(width);
+    try {
+      const scroll = container.querySelector<HTMLElement>('[data-age="frontier"] .app-board-scroll')!;
+      expect(scroll.style.getPropertyValue("--app-board-rows")).toBe(rowsTall);
+      const rows = [...scroll.querySelectorAll(".app-board__item")];
+      expect(rows.map((row) => row.querySelector(".app-rank")?.textContent)).toEqual(
+        field.map(({ rank }) => String(rank)),
+      );
+      // The one row the stylesheet holds at the foot while its place is below: the player's, in its place.
+      expect(rows.flatMap((row, index) => (row.hasAttribute("data-own") ? [index + 1] : []))).toEqual([60]);
+    } finally {
+      await unmount();
+    }
+  },
+);
+
 it("says no prize is published yet, its medals standing with no amount", async () => {
   reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
   reads.board = {
@@ -244,12 +274,9 @@ const siteCounts = (panel: Element) =>
     (row) => row.querySelector(".app-board__figure")?.textContent,
   );
 
-it.each([
-  [390, 12],
-  [1440, 10],
-])(
+it.each([390, 1440])(
   "with nothing listed or settled, shows prod's archived Playtest as it ended, from its file, at %ipx",
-  async (width, shown) => {
+  async (width) => {
     reads.directory = { data: { games: [] }, isError: false, isPending: false };
     const { container, unmount } = await mount(width);
     try {
@@ -257,7 +284,7 @@ it.each([
       expect(frontier.querySelector(".app-panel__cue")?.textContent).toBe("Playtest · Ended 31 Oct");
       expect(container.textContent).not.toMatch(/Season \d/);
       expect(frontier.textContent).not.toContain("No season running");
-      // Prod's final board: Volcanic 166, djizus 136, Canzi 114, then the rest to the layout's count.
+      // Prod's final board: Volcanic 166, djizus 136, Canzi 114, then the rest, all 45 realms.
       const counts = siteCounts(frontier);
       expect(counts.slice(0, 4)).toEqual([
         "166 sites cleared",
@@ -265,7 +292,7 @@ it.each([
         "114 sites cleared",
         "59 sites cleared",
       ]);
-      expect(counts).toHaveLength(shown);
+      expect(counts).toHaveLength(45);
       // The Playtest had no prize pool: no podium saying one is still to come.
       expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
       // The season shown is not listed again as past.
