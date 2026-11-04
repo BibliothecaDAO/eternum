@@ -1,6 +1,7 @@
 use snforge_std::signature::KeyPairTrait;
 use snforge_std::signature::stark_curve::{StarkCurveKeyPair, StarkCurveKeyPairImpl, StarkCurveSignerImpl};
 use snforge_std::{start_cheat_block_timestamp, start_cheat_caller_address, start_cheat_chain_id};
+use world_test_support::tests::state::ResourceObservationTrait;
 use crate::deposits::{DepositSource, LordsDeposit, SpendLords, authorization_hash, deposit_hash};
 use crate::entry::{
     ILedgerOperatorDispatcher, ILedgerOperatorDispatcherTrait, ILedgerOperatorSafeDispatcher,
@@ -21,8 +22,29 @@ fn sign(
 #[test]
 #[feature("safe_dispatcher")]
 fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
+    use crate::registrar::{CreateGameParams, IRegistrarDispatcherTrait};
     let (d, game_id, army) = super::registrar::setup_frontier_chests();
     let realm = GameState { contract_address: d.games }.resolved_explorer(army).unwrap().owner;
+    let other_game = super::registrar::registry(d)
+        .create_game(
+            CreateGameParams {
+                name: 'other-deposits',
+                dev_mode_on: true,
+                end_grace_seconds: 0,
+                duration_seconds: 2 * super::registrar::BAG_SECONDS,
+                ..super::registrar::params(false),
+            },
+        );
+    assert!(other_game != game_id);
+    super::play_fixture::reserve_fixture_homes(d.games, other_game, d.actor);
+    assert!(
+        super::registrar::execute_in_game(
+            d,
+            other_game,
+            crate::commands::Command::SettleSeason(crate::realms::SettleSeason { selected_realm: Some(1) }),
+            350,
+        ),
+    );
     let source = DepositSource {
         chain: 'SN_TEST', ledger: 'ledger'.try_into().unwrap(), signer: key().public_key, epoch: 0,
     };
@@ -33,6 +55,7 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     start_cheat_chain_id(d.games, 'shard');
     start_cheat_block_timestamp(d.games, 362);
     entry.configure_deposits(game_id, source);
+    entry.configure_deposits(other_game, source);
     let payment = LordsDeposit {
         id: 1,
         account: d.actor,
@@ -47,7 +70,23 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     entry.deliver_deposit(game_id, payment, r, s, false);
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
     assert!(safe.deliver_deposit(game_id, LordsDeposit { amount: 41, ..payment }, r, s, false).is_err());
-    assert!(safe.deliver_deposit(game_id + 1, payment, r, s, false).is_err());
+    let mut signature_error = array![core::byte_array::BYTE_ARRAY_MAGIC];
+    let signature_message: ByteArray = "invalid deposit signature";
+    signature_message.serialize(ref signature_error);
+    signature_error.append('ENTRYPOINT_FAILED');
+    signature_error.append('ENTRYPOINT_FAILED');
+    assert_eq!(safe.deliver_deposit(other_game, payment, r, s, false).unwrap_err(), signature_error);
+    assert!(entry.deposit_receipt(other_game, payment.id).is_none());
+    assert_eq!(entry.spend_lords(other_game, d.actor), SpendLords { available: 0, consumed: 0, swept: 0 });
+    let (other_r, other_s) = sign(source, d.games, other_game, payment, false);
+    entry.deliver_deposit(other_game, payment, other_r, other_s, false);
+    entry.deliver_deposit(other_game, payment, other_r, other_s, false);
+    assert_eq!(entry.spend_lords(other_game, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
+    assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
+    assert_eq!(
+        entry.deposit_receipt(other_game, payment.id).unwrap().commitment,
+        deposit_hash(source, 'shard', d.games, other_game, payment),
+    );
     let (r, s) = sign(source, d.games, game_id, payment, true);
     assert!(safe.deliver_deposit(game_id, payment, r, s, true).is_err());
     let cancelled = LordsDeposit { id: 2, ..payment };
@@ -78,6 +117,7 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
     let (r, s) = sign(rotated, d.games, game_id, late, true);
     entry.deliver_deposit(game_id, late, r, s, true);
     assert_eq!(entry.spend_lords(game_id, d.actor), swept);
+    assert_eq!(entry.spend_lords(other_game, d.actor), SpendLords { available: 40, consumed: 0, swept: 0 });
 }
 
 #[test]
