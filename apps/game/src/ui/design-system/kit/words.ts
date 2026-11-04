@@ -903,17 +903,20 @@ export const REFERRAL_WORDS = {
   compact: {
     promise: {
       free: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first who plays gets you one.`,
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first counted friend gets you one.`,
       ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
       devcon: (oneIn: number) =>
-        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend makes yours golden.`,
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend who counts makes yours golden.`,
       golden: "Your realm is golden. Each friend still gets a Devcon realm.",
       held: "Each friend gets a Devcon realm. Your home earns nothing more.",
     },
     pending: "Golden earned: waiting for the game to confirm it.",
-    linkRule: (at: number) => `At ${at}, your link turns golden for everyone.`,
+    /** What counts a friend, said where the slots count them: the rule the statuses below name the next step of. */
+    linkRule: (at: number) =>
+      `Friends count once they found a realm and clear a site. At ${at}, your link turns golden.`,
     linkGolden: "Your link is golden: every friend on it too.",
-    status: { signed: "Signed up", founded: "Founded", excluded: "Not counted" },
+    /** Each friend's next step to count, or why they never will. */
+    status: { signed: "Not founded yet", founded: "No site cleared yet", excluded: "Not counted" },
     excluded: "Same email or device as another player",
   },
 } as const;

@@ -204,7 +204,9 @@ it("draws a phone's panel compact: the link and its icon Copy on one row, the li
       [null, "founded"],
     ]),
   );
-  expect(text()).toContain("Each friend gets a Devcon realm, 1 in 10 golden. A golden friend makes yours golden.");
+  expect(text()).toContain(
+    "Each friend gets a Devcon realm, 1 in 10 golden. A golden friend who counts makes yours golden.",
+  );
   // No milestone boxes, no worded Copy: an icon button named Copy beside the address.
   expect(text()).not.toContain("A golden friend1 in 10");
   const copy = document.querySelector<HTMLButtonElement>('button[aria-label="Copy"]')!;
@@ -213,14 +215,14 @@ it("draws a phone's panel compact: the link and its icon Copy on one row, the li
   // Ten slots, two filled, the golden link's mark at the end and its rule in one line.
   const slots = document.querySelector('[role="img"][aria-label="2 of 10 friends"]')!;
   expect(slots.querySelectorAll(":scope > span.rounded")).toHaveLength(10);
-  expect(text()).toContain("At 10, your link turns golden for everyone.");
+  expect(text()).toContain("Friends count once they found a realm and clear a site. At 10, your link turns golden.");
   // One row per friend: a second line only for the friend not counted.
   const rows = [...document.querySelectorAll("li")];
   expect(rows.map((row) => row.textContent)).toEqual([
     "CorvinCounted",
     "IsoldeGoldenCounted",
     "TamsinNot countedSame email or device as another player",
-    "A friendFounded",
+    "A friendNo site cleared yet",
   ]);
   expect(rows[0]!.getAttribute("title")).toBe("Founded and cleared a site");
 
@@ -229,6 +231,25 @@ it("draws a phone's panel compact: the link and its icon Copy on one row, the li
   await act(async () => copy.click());
   expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/join/devcon/r/7KQ2MX4D`);
   expect(document.querySelector('button[aria-label="Copied"]')).not.toBeNull();
+});
+
+it("says on a phone, in sight, what each friend still has to do to count, and what counting earns", async () => {
+  setViewportWidth(390);
+  await show(
+    answer("free", [
+      ["Corvin", "founded"],
+      ["Isolde", "signed", "golden"],
+      ["Tamsin", "counted"],
+    ]),
+  );
+  // The rule and the reward, visible; each friend's remaining step on their own row, never only in a hover title.
+  expect(text()).toContain("Your first counted friend gets you one.");
+  expect(text()).toContain("Friends count once they found a realm and clear a site.");
+  expect([...document.querySelectorAll("li")].map((row) => row.textContent)).toEqual([
+    "CorvinNo site cleared yet",
+    "IsoldeGoldenNot founded yet",
+    "TamsinCounted",
+  ]);
 });
 
 it("says when the link could not be loaded", async () => {
