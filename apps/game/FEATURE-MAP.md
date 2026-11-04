@@ -324,8 +324,8 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   chest's **Open** is the page's gold button; **Continue** stands beside it in outline. A reader who did not play sees
   the game (by its name and date, else its number) and the board, and, signed in, that they had no seat.
 - **A season's name** is one rule (`seasonTitle`, `src/shell/season.ts`), read by every surface that shows one (the
-  Season tab's clock and calendar chips and Past seasons, the recap's header, its deck's foot and Share's line, and so
-  Results): an archived season goes by its archive entry's own name, with no number (prod's October season is the
+  Season tab's clock and calendar chips and Past seasons, the recap's header, its deck's foot and the X post's line, and
+  so Results): an archived season goes by its archive entry's own name, with no number (prod's October season is the
   **Playtest**); any other by the number the directory serves ("Season 0" for Devcon, "Season 1" from Nov 9).
 - **A Frontier season's end** is one recap, the same in the game and on its Results
   (`src/shell/season-tab/season-recap.tsx`; the owner's pick B, 1 November 2026: four cards, Wrapped style). It shows
@@ -339,8 +339,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   - **Your sites:** how many you cleared, each kind with its painting, and your depth once through the spire.
   - **Your haul:** chests, LORDS, Essence and Labor.
 
-  Under the cards is a foot with Frontier's lockup, the season and the site's address. Last come the page's steps, with
-  **Share my season** as the gold one.
+  Under the cards is a foot with Frontier's lockup, the season and the site's address. Last come the page's steps in one
+  row, ending with the two steps to post: **1 Copy image**, then **2 Post on X**, the gold one, under the line "Copy the
+  image, then paste it in your post on X."
   - **A desktop** sees the four cards side by side, flipping in one after another (none under reduced motion). Over the
     HUD the cards take the height the season and the steps leave, so the whole recap, its steps included, stands on one
     screen down to 1280 × 720, LORDS to withdraw or not; they shrink no further than their smallest words (19 px in the
@@ -348,24 +349,32 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
     the page scrolls.
   - **A phone** steps through them as a story: a strip of four marks on top, a tap at the right or a swipe left for the
     next card, a tap at the left or a swipe right for the one before.
-  - **In the game,** the recap covers the HUD once the season is over, with **Season** and **Exit** and the realm's
-    LORDS still to withdraw, which a desktop shows beside the season's heading and a phone above its steps. It is drawn
-    at the app's size, never the desktop HUD's zoom. A phone holds the steps at the screen's foot. Once the season's end
-    has come, no day's end plays.
+  - **In the game,** the recap covers the HUD once the season is over, with one **Exit** (to Play) before the two steps
+    to post, and the realm's LORDS still to withdraw, which a desktop shows beside the season's heading and a phone
+    above its steps. A phone draws Exit as its icon and the two steps by their words and numbers, so the row fits its
+    width. It is drawn at the app's size, never the desktop HUD's zoom. A phone holds the steps at the screen's foot.
+    Once the season's end has come, no day's end plays.
+  - **A Devcon realm's owner, in the Devcon season** (Season 0, which ends on Diwali;
+    `src/shell/season-tab/festival.tsx`), is greeted before the recap: painted fireworks over the season (played once,
+    about 16 s; still under reduced motion), "Thanks for playing", "Happy Diwali! Go enjoy it with the people you
+    love.", their place with their Devcon home, and the Season 1 ticket card ("For Devcon realm owners · You get a
+    special Season 1 ticket · With a special realm · Season 1 · Devcon · It will be on this account. Nothing to do."),
+    with painted diyas along its foot. **See my season** opens the recap. A golden Devcon home's owner sees the same
+    card; the home is read from its CampaignHome row (`useCampaignMark`). Every other player (a free home, a held Realm)
+    and every other season meets the recap at once.
   - **On Results** (`/results/:chainId-:gameId` of a Frontier season), the steps are **Season**, then **See the end
-    map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline beside
-    Share.
-  - **A reader with no realm on the board** sees the season and the podium card alone: no deck and no Share, so Continue
-    is the gold step.
-  - **Share my season** makes the deck on screen into a PNG at its own size (modern-screenshot, loaded when Share is
-    pressed): the four cards side by side at 1200 × 675 from a desktop, two by two at 1080 × 1350 from a phone. The
-    phone's story is a view over that same deck, so the image holds all four cards. Where the device shares images (a
-    phone), it opens the share sheet with the image, the line ("Playtest · #3 of 45 realms") and the Results address.
-    Otherwise it saves `my-season.png` and the button reads "Image saved". An image that cannot be made says "The image
-    could not be made.", and Share stays.
-  - **Copy image** is a quiet button beside Share, on a desktop whose clipboard takes a PNG (`ClipboardItem` supporting
-    `image/png`). It puts the same deck image on the clipboard to paste, and then reads "Image copied". It fails as
-    Share does, with Copy image kept. A phone, or a browser whose clipboard takes no PNG, has no Copy image.
+    map** and **Withdraw** while its shard stands, then **Continue** when not opened from a list, in outline before the
+    two steps to post.
+  - **A reader with no realm on the board** sees the season and the podium card alone: no deck and no steps to post, so
+    Continue is the gold step (over the HUD, Exit stands alone).
+  - **1 Copy image** makes the deck on screen into a PNG at its own size (modern-screenshot, loaded on the press): the
+    four cards side by side at 1200 × 675 from a desktop, two by two at 1080 × 1350 from a phone (the phone's story is a
+    view over that same deck, so the image holds all four cards). It puts the image on the clipboard and reads "Image
+    copied". Where the clipboard takes no PNG (`ClipboardItem` not supporting `image/png`), the step is **1 Save
+    image**: it saves `my-season.png`, reads "Image saved", and the line says to add the image to the post. An image
+    that cannot be made says "The image could not be made.", and the step stays.
+  - **2 Post on X** opens X's post (`x.com/intent/tweet`, `src/utils/x-post.ts`) in a new tab with the season's line
+    ("Playtest · #3 of 45 realms") and its Results address; the player pastes the image there.
   - **Lab:**
     - `/lab/kit/hud/season-over`: the game's cover over prod's Playtest, read by its third place;
       `/lab/kit/hud/season-over-strong` shows the other ending.
@@ -375,9 +384,13 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
       of one place (the player alone, paid) and of two.
     - `/lab/app/home/results/0x50524f44554354494f4e5f31386530376435323330633539393933-1`: the Playtest from its archive,
       for a reader with no realm in it.
+    - `/lab/app/season-over/season-end-devcon/greeting/devcon` and `…/greeting/golden`: the Devcon greeting
+      (`?frame=<s>` holds the fireworks at that second); `…/season-end-devcon/recap/devcon` the recap See my season
+      opens.
     - `pnpm --dir apps/game prove:app <base-url> <new-dir> recap` shoots the cover and the Results at 1440 × 900, 1366 ×
-      768, 1280 × 720 and on a phone (each card of its story), presses Share, and checks the one-screen fit, the deck's
-      smallest words, nothing cut by a card, the podium's lines and columns, and the image's size.
+      768, 1280 × 720 and on a phone (each card of its story), presses 1 Copy image and 2 Post on X, and checks the
+      one-screen fit, the deck's smallest words, nothing cut by a card, the podium's lines and columns, the copied
+      image's size and the post's address.
 
 - **Holdings** (You, the foot of your own card): **Realms**, how many your linked wallet holds, opens their sheet (each
   by number and name, **Market**; "cannot be read right now" with **Try again** when the index fails); your **Devcon**

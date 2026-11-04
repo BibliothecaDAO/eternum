@@ -629,18 +629,39 @@ export const RECAP_WORDS = {
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  share: "Share my season",
-  /** While the card is made into an image. */
-  making: "Making the image",
-  /** Share, once the image is saved on a device with no share sheet for images. */
-  saved: "Image saved",
-  /** Beside Share on a desktop whose clipboard takes images: the same image, to paste. */
+  /**
+   * Sharing a season is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the
+   * clipboard takes none), then post, and paste it in. The two steps are numbered, and the hint says the order.
+   */
   copy: "Copy image",
   copied: "Image copied",
+  save: "Save image",
+  saved: "Image saved",
+  post: "Post on X",
+  copyHint: "Copy the image, then paste it in your post on X.",
+  saveHint: "Save the image, then add it to your post on X.",
+  /** While the card is made into an image. */
+  making: "Making the image",
   failed: "The image could not be made.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
+
+/**
+ * Season 0's end, the weekend of Diwali, for a Devcon realm's owner (every other player meets the season's usual end):
+ * thanks, the festival, and the Season 1 ticket the owner promised (11-04: a special ticket with a special realm, on the
+ * same account; no tier is named). Plain words for players who read English as a second language.
+ */
+export const FESTIVAL_WORDS = {
+  thanks: "Thanks for playing",
+  enjoy: "Happy Diwali! Go enjoy it with the people you love.",
+  ticketFor: "For Devcon realm owners",
+  ticketTitle: "You get a special Season 1 ticket",
+  ticketLine: "With a special realm",
+  ticketStub: "Season 1 · Devcon",
+  ticketHow: "It will be on this account. Nothing to do.",
+  seeSeason: "See my season",
+} as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
