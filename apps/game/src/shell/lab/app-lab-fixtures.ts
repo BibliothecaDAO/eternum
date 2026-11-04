@@ -474,7 +474,27 @@ const RIVAL_SITES = [148, 132, 127, 121, 116, 112, 108, 103, 99, 96, 91];
 /** Rivals' LORDS, as uneven as prod's Playtest board (none to four figures), so its columns are seen to align. */
 const RIVAL_LORDS = [650, 2900, 450, 0, 50, 600, 500, 100, 1000, 0, 25];
 
-/** Frontier's board: eleven rivals (one unnamed) and the player twelfth with 88 sites, 31 chests and 1,500 LORDS. */
+/**
+ * How many realms the lab's season holds, as prod's live season on 4 November 2026, and the player's place among them.
+ */
+const SEASON_REALMS = 87;
+const OWN_SEASON_PLACE = 60;
+
+/**
+ * The field below the painted rivals, each a site behind the one before, none with LORDS yet; the player stands among
+ * them.
+ */
+const fieldRivals = Array.from({ length: SEASON_REALMS - RIVAL_SITES.length - 1 }, (_, index) => ({
+  address: rival(RIVAL_SITES.length + index),
+  sites: 90 - index,
+  chests: 20 - Math.floor(index / 4),
+  lords: 0,
+}));
+
+/**
+ * Frontier's board: 87 realms, the eleven painted rivals (one unnamed) first and the player 60th with 42 sites, 9
+ * chests and 1,500 LORDS.
+ */
 export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
   game_id: "1",
   mode: "frontier",
@@ -485,7 +505,9 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
       chests: 40 - index,
       lords: RIVAL_LORDS[index]!,
     })),
-    { address: LAB_PLAYER, sites: 88, chests: 31, lords: 1500 },
+    ...fieldRivals.slice(0, OWN_SEASON_PLACE - RIVAL_SITES.length - 1),
+    { address: LAB_PLAYER, sites: 42, chests: 9, lords: 1500 },
+    ...fieldRivals.slice(OWN_SEASON_PLACE - RIVAL_SITES.length - 1),
   ].map(({ address, sites, chests, lords }, index) => ({
     address,
     structure_id: String(index + 1),
@@ -495,7 +517,7 @@ export const LAB_FRONTIER_BOARD: HeraldFrontierLeaderboard = {
     chests_earned: chests,
     rewards: { lords: String(lords), essence: "0", labor: "0" },
     deepest_depth: 2,
-    level: Math.min(3, Math.floor((12 - index) / 4)),
+    level: Math.max(0, Math.min(3, Math.floor((12 - index) / 4))),
     order: (index % 16) + 1,
   })),
   // The dev pool: 300 LORDS among the top 3, the winners not posted while the season runs.
@@ -525,9 +547,11 @@ export const LAB_FRONTIER_FINAL_BOARD: HeraldFrontierLeaderboard = {
  * than three places.
  */
 const shortFinalBoard = (rivals: number, lords: string[]): HeraldFrontierLeaderboard => {
-  const entries = [...LAB_FRONTIER_BOARD.entries.slice(0, rivals), LAB_FRONTIER_BOARD.entries.at(-1)!].map(
-    (entry, index) => ({ ...entry, rank: index + 1 }),
-  );
+  const player = LAB_FRONTIER_BOARD.entries.find((entry) => entry.address === LAB_PLAYER)!;
+  const entries = [...LAB_FRONTIER_BOARD.entries.slice(0, rivals), player].map((entry, index) => ({
+    ...entry,
+    rank: index + 1,
+  }));
   const awards = entries.map(({ rank, address }, index) => ({ rank, address, lords: lords[index]! }));
   return {
     ...LAB_FRONTIER_FINAL_BOARD,
@@ -616,36 +640,47 @@ export const LAB_FINISHED_BLITZ = {
   shardUrl: "https://lab",
 };
 
+/** The lab's Blitz rating: 120 rated wallets, the player 41st. */
+const RATED_WALLETS = 120;
+const OWN_RATING_PLACE = 41;
+
 /**
- * The Blitz rating's top six and the player 41st of 1,240 (/api/ratings/top): each row's L2 owner with the Realms
- * profile behind it; the fourth wallet is linked to no Realms identity and the sixth chose no name, so both read as
- * their addresses.
+ * The Blitz rating's whole board (/api/ratings/top): each row's L2 owner with the Realms profile behind it, the player
+ * 41st of 120. Of the leading six, the fourth wallet is linked to no Realms identity and the sixth chose no name, so
+ * both read as their addresses; the field below them is named by number.
  */
-export const LAB_RATING_TOP = {
-  block_number: 812_345,
-  block_hash: "0x5ea1",
-  total: 1240,
-  entries: ["2480", "2210", "2050", "1960", "1880", "1820"].map((rating, index) => ({
-    rank: index + 1,
-    player: `0x0${(0xe000 + index).toString(16)}${"7c4b".repeat(14)}${(0x9a10 + index * 0x111).toString(16)}`,
-    rating,
-    profile:
-      index === 3
-        ? null
-        : {
-            realmsId: `0x${(0x200 + index).toString(16)}`,
-            name: index === 5 ? null : NAMES[index],
-            portrait: `0${index + 1}`,
-          },
-  })),
-  self: {
+export const LAB_RATING_TOP = (() => {
+  const self = {
     status: "rated" as const,
     player: LAB_WALLET,
     rating: "1744",
-    rank: 41,
+    rank: OWN_RATING_PLACE,
     profile: { realmsId: REALMS_ID, name: LAB_SESSION.user.name, portrait: LAB_SESSION.user.image },
-  },
-};
+  };
+  const entries = Array.from({ length: RATED_WALLETS }, (_, index) => {
+    const rank = index + 1;
+    if (rank === OWN_RATING_PLACE) return { rank, player: self.player, rating: self.rating, profile: self.profile };
+    return {
+      rank,
+      player: `0x0${(0xe000 + index).toString(16)}${"7c4b".repeat(14)}${(0x9a10 + index * 0x111).toString(16).slice(-4)}`,
+      rating: String(2480 - index * 18),
+      profile: ratedProfile(index),
+    };
+  });
+  return { block_number: 812_345, block_hash: "0x5ea1", entries, self };
+})();
+
+/**
+ * A rated wallet's profile: the leading six as named, the fourth unlinked and the sixth unnamed; the field by number.
+ */
+function ratedProfile(index: number) {
+  if (index === 3) return null;
+  return {
+    realmsId: `0x${(0x200 + index).toString(16)}`,
+    name: index === 5 ? null : (NAMES[index] ?? `Rider ${index + 1}`),
+    portrait: `0${(index % 9) + 1}`,
+  };
+}
 
 /** The 16:30 lobby's seated players' names (their gameplay accounts resolve like any player's). */
 const SEAT_NAMES = ["Ysabeau", "Aldric", "Corwin", "Tybalt", "Isolde", "Brannoc", "Caradoc", "Gwenllian", "Osric"];

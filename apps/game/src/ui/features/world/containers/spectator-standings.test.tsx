@@ -12,7 +12,7 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
     ]),
   }),
 }));
-// The other player's realm is the structure selected on the map.
+// The other player's realm.
 vi.mock("@/hooks/use-fact-view", () => ({
   useFactView: () => [{ entity_id: 9n, owner: 0xc1n, base: { category: 1 } }],
 }));
@@ -36,17 +36,15 @@ vi.mock("@/hooks/context/game-context", async () => {
 vi.mock("@/play/navigation/open-place", () => ({ openOnMap: () => {} }));
 vi.mock("./top-header/game-clock", () => ({ useGameFinished: () => true }));
 
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { overrideSpectateIntent } from "@/utils/spectator-session";
 import { configManager } from "@bibliothecadao/eternum";
 import { hash } from "starknet";
 
 import { SpectatorStandingsBody } from "./spectator-standings";
 
-it("lights only the watching player's row in a tie, as Results does, whatever is selected", async () => {
+it("lights only the watching player's row in a tie, as Results does", async () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   vi.spyOn(configManager, "getActiveGameId").mockReturnValue(1);
-  useUIStore.setState({ structureEntityId: 9 });
   const container = document.createElement("div");
   const root = createRoot(container);
   await act(async () => root.render(<SpectatorStandingsBody />));

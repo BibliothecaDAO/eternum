@@ -10,7 +10,8 @@
  *
  *   pnpm --dir apps/game prove:app <base-url> <out-dir> [pages|account|doorway|sheet|end-map|qa1|recap|boards|phone] [--state <signed-in.json>]
  *
- * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES).
+ * `boards` measures every board's columns, row by row, on Season and Results, desktop and phone (BOARD_PAGES), and its
+ * scroll: every place in an area its rows tall, the player's own row waiting at its foot while its place is below.
  *
  * `phone` plays every surface that had a Back link or a row arrow, Frontier's Season board and its Chat while typing as a
  * phone: touch, a safe area, drags, the system back and the on-screen keyboard (prove-app-phone.mjs).
@@ -990,10 +991,14 @@ const recapRecords = async (b, baseUrl, out) => {
 /** A Blitz's Results board, by its panel's title: on a phone it stands below the outcome and the chest. */
 const RESULT_BOARD = "The game";
 
-/** Marks the panel titled `title` for its own still. */
-const markPanel = (title) => `[...document.querySelectorAll(".app-panel")]
-  .find((panel) => panel.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)})
-  ?.setAttribute("data-proof-still", ${JSON.stringify(title)})`;
+/** Marks the panel titled `title` for its own still; says whether it found one. */
+const markPanel = (title) => `(() => {
+  const panel = [...document.querySelectorAll(".app-panel")].find(
+    (each) => each.querySelector("h2")?.innerText.trim() === ${JSON.stringify(title)},
+  );
+  panel?.setAttribute("data-proof-still", ${JSON.stringify(title)});
+  return panel !== undefined;
+})()`;
 
 /**
  * The boards (AppBoard), each measured row by row: every column (the lead, the name and each figure) must stand at one x
@@ -1054,8 +1059,29 @@ const boardMeasure = `(() => {
     }
     return true;
   };
+  // The board's scroll area, and where the player's own row stands against its place (right under the row before it).
+  const scrollOf = (board) => {
+    const area = board.closest(".app-board-scroll");
+    const box = area.getBoundingClientRect();
+    const own = board.querySelector(".app-board__item[data-own]");
+    const before = own?.previousElementSibling;
+    const place = own && (before ? before.getBoundingClientRect().bottom : board.getBoundingClientRect().top);
+    const at = own?.getBoundingClientRect();
+    return {
+      rowsTall: Number(area.style.getPropertyValue("--app-board-rows")),
+      rowPx: parseFloat(getComputedStyle(area).getPropertyValue("--app-board-row")),
+      height: Math.round(box.height * 10) / 10,
+      overflows: area.scrollHeight > area.clientHeight + 1,
+      own: at && {
+        placeBelow: place + at.height > box.bottom + 0.5,
+        atFoot: Math.abs(at.bottom - box.bottom) < 1.5,
+        inPlace: Math.abs(at.top - place) < 1.5,
+      },
+    };
+  };
   return [...document.querySelectorAll(".app-board")].map((board) => ({
     board: board.closest(".app-panel")?.querySelector("h2")?.innerText.trim() ?? null,
+    scroll: scrollOf(board),
     rows: [...board.querySelectorAll(".app-board__row")].map((row) => {
       const name = row.querySelector(".app-board__name");
       return {
@@ -1105,7 +1131,21 @@ const boardChecks = (b) => {
         return first && row.name.right > first.left;
       });
       const unclean = board.rows.filter((row) => !row.name.cutCleanly);
+      const { scroll } = board;
       return [
+        {
+          check: `${board.board}: every place in a scroll ${scroll.rowsTall} rows tall, scrolling past them`,
+          ok:
+            scroll.height <= scroll.rowsTall * scroll.rowPx + 0.5 &&
+            (board.rows.length <= scroll.rowsTall || scroll.overflows),
+          rows: board.rows.length,
+          scroll,
+        },
+        {
+          check: `${board.board}: the player's own row waits at the foot while its place is below, else stands in it`,
+          ok: !scroll.own || (scroll.own.placeBelow ? scroll.own.atFoot : scroll.own.inPlace),
+          own: scroll.own,
+        },
         {
           check: `${board.board}: every column stands at one x on every row, each value ending on one line`,
           ok: columns.every((column) => column.left <= 0.5 && column.right <= 0.5 && column.value <= 0.5),

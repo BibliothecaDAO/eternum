@@ -503,6 +503,7 @@ const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[]
   }));
 };
 const SEASON_COMMON_CHEST = { lords: 24 };
+/** The player's row, twelfth, then the rest of an 87-realm season: the board holds every place. */
 const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
@@ -514,6 +515,21 @@ const OWN_ROW: SeasonListRow = {
   lords: 192,
   own: true,
 };
+const SEASON_FIELD: SeasonListRow[] = Array.from({ length: 75 }, (_, index) => {
+  const rank = index + 13;
+  return {
+    key: `lord-${rank}`,
+    rank,
+    order: (rank % 16) + 1,
+    realm: { level: 0, depth: 0 },
+    name: `Lord ${rank}`,
+    label: `Lord ${rank}`,
+    sitesCleared: Math.max(0, 87 - index),
+    lords: 0,
+    own: false,
+  };
+});
+const SEASON_BOARD = [...SEASON_ROWS, OWN_ROW, ...SEASON_FIELD];
 
 /**
  * What Next up reads on the lab's realm: barracks built, troops at home, the preset's numbers. Each state adds its
@@ -1352,8 +1368,7 @@ export const HudLab = () => {
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 podium={labPodium(lab.season)}
-                rows={SEASON_ROWS}
-                pinned={OWN_ROW}
+                rows={SEASON_BOARD}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={() => setDetailShut(false)}

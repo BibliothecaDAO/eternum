@@ -8,7 +8,7 @@ const top = vi.hoisted(() => ({ current: {} as Record<string, unknown>, askedFor
 const payout = vi.hoisted(() => ({ current: "0xc" as string | null }));
 vi.mock("../ratings", async (actual) => ({
   ...(await actual<typeof import("../ratings")>()),
-  useRatingTop: (_limit: number, wallet: string | null) => {
+  useRatingTop: (wallet: string | null) => {
     top.askedFor = wallet;
     return top.current;
   },
@@ -40,7 +40,6 @@ const answered = (self: unknown) => ({
   data: {
     block_number: 1,
     block_hash: "0x1",
-    total: 3,
     // As /api/ratings/top answers since fae7dbea5fe: each row's owner with the Realms profile behind it, or null.
     entries: [
       { rank: 1, player: "0xa", rating: "2480.75", profile: { realmsId: "0x10", name: "Ysabeau", portrait: "01" } },
@@ -65,7 +64,7 @@ const mount = async () => {
     root.render(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <BlitzBoard />
+          <BlitzBoard rows={10} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),
@@ -115,7 +114,7 @@ it("names Ratings when the read fails", async () => {
 
 it("says no one has a rating yet when the board holds no one, rather than an empty panel", async () => {
   const empty = answered(null);
-  top.current = { ...empty, data: { ...empty.data, total: 0, entries: [] } };
+  top.current = { ...empty, data: { ...empty.data, entries: [] } };
   const container = await mount();
   expect(container.textContent).toContain("No ratings yet");
   expect(rows(container)).toEqual([]);

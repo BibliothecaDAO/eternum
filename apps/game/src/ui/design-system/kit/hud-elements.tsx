@@ -28,6 +28,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import {
   CLOSE,
@@ -1143,10 +1144,12 @@ export const HudRow = ({
 };
 
 /**
- * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up), with
- * the list row's hover and the chosen one's bar. With `onClick` it is a button, so Enter and Space choose it; `disabled`
- * when it leads nowhere, `title` its hover. Without it the row is only read (a reference table in a role="table"): no
- * hover, no cursor.
+ * One row of a table (the leaderboard): its columns on the caller's grid, `cols` (and `colsWide` from a tablet up),
+ * with the list row's hover and the chosen one's bar. With `onClick` it is a button, so Enter and Space choose it;
+ * `disabled` when it leads nowhere, `title` its hover. Without it the row is only read (a reference table in a
+ * role="table"): no hover, no cursor. The player's own row on a board (`own`) is lit as chosen and waits at the foot of
+ * the board's scroll area while its place is below the view; pressed there, it brings its place into view
+ * (revealOwnPlace).
  */
 export const HudTableRow = ({
   cols,
@@ -1154,6 +1157,7 @@ export const HudTableRow = ({
   label,
   title,
   selected = false,
+  own = false,
   disabled = false,
   state,
   onClick,
@@ -1164,38 +1168,36 @@ export const HudTableRow = ({
   label: string;
   title?: string;
   selected?: boolean;
+  own?: boolean;
   disabled?: boolean;
   state?: string;
   onClick?: () => void;
   children: ReactNode;
-}) =>
-  onClick ? (
-    <button
-      type="button"
-      className="ui-table-row"
-      aria-label={label}
-      title={title}
-      aria-current={selected || undefined}
-      disabled={disabled}
-      data-state={state}
-      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-      onClick={onClick}
-    >
+}) => {
+  const shape = {
+    className: "ui-table-row",
+    "aria-label": label,
+    title,
+    "aria-current": selected || own || undefined,
+    "data-own": own || undefined,
+    "data-state": state,
+    style: { "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties,
+  };
+  if (!onClick)
+    return (
+      <div role="row" {...shape}>
+        {children}
+      </div>
+    );
+  const press = (event: React.MouseEvent<HTMLButtonElement>) => {
+    if (!(own && revealOwnPlace(event.currentTarget))) onClick();
+  };
+  return (
+    <button type="button" disabled={disabled} onClick={press} {...shape}>
       {children}
     </button>
-  ) : (
-    <div
-      className="ui-table-row"
-      role="row"
-      aria-label={label}
-      title={title}
-      aria-current={selected || undefined}
-      data-state={state}
-      style={{ "--cols": cols, "--cols-wide": colsWide ?? cols } as React.CSSProperties}
-    >
-      {children}
-    </div>
   );
+};
 
 /** A table's header: its column names on the same grid as its rows, staying over them as they scroll. */
 export const HudTableHead = ({

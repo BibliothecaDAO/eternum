@@ -3,7 +3,6 @@ import { Position, configManager, structureMapPosition } from "@bibliothecadao/e
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { StructureType, formatExact } from "@bibliothecadao/types";
 import { openOnMap } from "@/play/navigation/open-place";
-import { useUIStore } from "@/hooks/store/use-ui-store";
 import { useGame } from "@/hooks/context/game-context";
 import { useFactView } from "@/hooks/use-fact-view";
 import { PlayerSeatMark } from "@/hooks/use-watched-side";
@@ -41,10 +40,8 @@ function StandingsRows() {
   } = useGame();
   // Names are read as each row draws, and the rows draw again when one lands.
   const names = usePlayerNames();
-  const selectedId = useUIStore((state) => state.structureEntityId);
-  const selectedOwner = structures.find((structure) => structure.entity_id === BigInt(selectedId))?.owner;
   const viewer = useRealmsPlayer().data;
-  const rows = selectSpectatorStandings(standings, { viewer, selected: selectedOwner });
+  const rows = selectSpectatorStandings(standings, viewer);
   const finished = useGameFinished();
 
   return (
@@ -67,7 +64,7 @@ function StandingsRows() {
             cols={STANDINGS_COLS}
             label={`${shown}: ${formatExact(Math.floor(row.totalPoints))} points`}
             title={capital ? `Fly to ${name}'s capital` : "No surviving realm"}
-            selected={row.own}
+            own={row.own}
             disabled={!capital}
             onClick={() => {
               const site = capital && structureMapPosition(store, capital);

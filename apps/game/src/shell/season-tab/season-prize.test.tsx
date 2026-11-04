@@ -111,7 +111,7 @@ const mount = async (seed?: (client: QueryClient) => void) => {
   await act(async () =>
     root.render(
       <QueryClientProvider client={client}>
-        <BlitzBoard />
+        <BlitzBoard rows={10} />
       </QueryClientProvider>,
     ),
   );
