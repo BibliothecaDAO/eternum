@@ -40,14 +40,28 @@ afterEach(async () => {
   vi.unstubAllGlobals();
 });
 
+type Listed = [string | null, CampaignReferral["friends"][number]["state"], "golden"?];
 const answer = (
   home: CampaignReferral["home"],
-  friends: [string | null, CampaignReferral["friends"][number]["state"]][],
-  earned: Partial<CampaignReferral["earned"]> = {},
+  friends: Listed[],
+  {
+    tier = home === "free" || home === "held" ? null : "regular",
+    goldenPending = false,
+    linkGolden = false,
+    earned = {},
+  }: {
+    tier?: CampaignReferral["tier"];
+    goldenPending?: boolean;
+    linkGolden?: boolean;
+    earned?: Partial<CampaignReferral["earned"]>;
+  } = {},
 ): CampaignReferral => ({
   code: "7KQ2MX4D",
   home,
-  friends: friends.map(([name, state]) => ({ name, state })),
+  tier,
+  goldenPending,
+  link: { counted: friends.filter(([, state]) => state === "counted").length, golden: linkGolden },
+  friends: friends.map(([name, state, golden]) => ({ name, state, golden: golden === "golden" })),
   earned: { ticket: false, golden: false, ...earned },
 });
 const show = async (referral: CampaignReferral | Error) => {
@@ -72,16 +86,16 @@ it("shows a free home's link, what each friend gets and earns it, and each frien
   await show(
     answer("free", [
       ["Corvin", "founded"],
-      [null, "signed"],
+      [null, "signed", "golden"],
     ]),
   );
   expect(text()).toContain("Invite friends");
   expect(text()).toContain(`${window.location.host}/join/devcon/r/7KQ2MX4D`);
-  expect(text()).toContain("you get a Devcon realm for your home too");
-  expect(text()).toContain("Your Devcon realm");
+  expect(text()).toContain("1 in 10 of them golden");
+  expect(text()).toContain("you get a Devcon realm too");
+  expect(text()).toContain("0 of 10 friends");
   expect(text()).toContain("CorvinFounded, clearing a first site");
-  expect(text()).toContain("A friendSigned up, not founded yet");
-  expect(text()).not.toMatch(/to golden/);
+  expect(text()).toContain("A friendSigned up, not founded yetGolden");
   expect(dialog()).toBeNull();
 
   const writeText = vi.fn(async () => undefined);
@@ -93,27 +107,55 @@ it("shows a free home's link, what each friend gets and earns it, and each frien
   expect(text()).toContain("Copied");
 });
 
-it("counts a Devcon home's friends toward golden, and promises a held Realm's nothing more", async () => {
+it("shows a Devcon home both ways to golden, a friend who is not counted, and promises a held Realm nothing", async () => {
   await show(
     answer("devcon", [
       ["Corvin", "counted"],
-      ["Isolde", "counted"],
+      ["Isolde", "excluded"],
       ["Tamsin", "founded"],
     ]),
   );
-  expect(text()).toContain("2 of 3 to golden");
-  expect(text()).toContain("When 3 friends have founded a realm and cleared a site, your Devcon realm turns golden.");
-  expect(text()).toContain("Golden realm");
+  expect(text()).toContain("A golden friend who founds a realm and clears a site turns your realm golden.");
+  expect(text()).toContain("A golden friend1 in 10 tickets, once that friend counts");
+  expect(text()).toContain("A golden linkat 10 friends: you and every friend · 1 of 10 friends");
+  expect(text()).toContain("IsoldeSame email or device as another player, so not countedNot counted");
 
   await act(async () => root.unmount());
   root = createRoot(host);
   client = new QueryClient();
-  await show(answer("held", [["Corvin", "counted"]]));
-  expect(text()).toContain("there is nothing more to earn");
-  expect(text()).not.toMatch(/to golden|Your Devcon realm/);
+  await show(answer("held", [["Corvin", "counted", "golden"]]));
+  expect(text()).toContain("it earns nothing more");
+  expect(text()).not.toMatch(/A golden friend1 in|Your Devcon realm/);
 });
 
-it("says once what friends earned, and asks again for the account's ticket", async () => {
+it("says golden earned but not confirmed honestly, and says golden once only once the game shows it", async () => {
+  const pending = answer("devcon", [["Corvin", "counted", "golden"]], {
+    tier: "golden",
+    goldenPending: true,
+    earned: { ticket: true, golden: true },
+  });
+  await show(pending);
+  expect(text()).toContain("Golden earned. Your realm turns golden once the game confirms it");
+  expect(text()).not.toContain("Your realm is golden");
+  expect(dialog()).toBeNull();
+
+  // Pending said nothing, so the golden moment is still owed once the board shows the realm golden.
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  client = new QueryClient();
+  await show({ ...pending, home: "golden", goldenPending: false });
+  expect(text()).toContain("Your realm is golden.");
+  expect(dialog()).toBe("A golden friend counted");
+  expect(text()).toContain("Your Devcon realm is golden from your next daily claim.");
+  await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
+  await act(async () => root.unmount());
+  root = createRoot(host);
+  client = new QueryClient();
+  await show({ ...pending, home: "golden", goldenPending: false });
+  expect(dialog()).toBeNull();
+});
+
+it("says once a ticket friends earned, golden when the link went golden, and asks again for the account's ticket", async () => {
   client.setQueryData(["campaign-ticket", "0xa1", "devcon-2026"], null);
   await show(
     answer("devcon", [
@@ -128,24 +170,26 @@ it("says once what friends earned, and asks again for the account's ticket", asy
   await act(async () => root.unmount());
   root = createRoot(host);
   client.setQueryData(["campaign-ticket", "0xa1", "devcon-2026"], null);
-  await show(answer("devcon", [["Corvin", "counted"]], { ticket: true }));
+  await show(answer("ticket", [["Corvin", "counted"]], { earned: { ticket: true } }));
   expect(dialog()).toBe("Corvin counted: your Devcon realm");
   expect(client.getQueryState(["campaign-ticket", "0xa1", "devcon-2026"])?.isInvalidated).toBe(true);
   await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
   expect(dialog()).toBeNull();
 
-  // Golden over the ticket, once; a later visit says neither again.
+  // A golden ticket still to add says golden, with the link's own title.
   await act(async () => root.unmount());
   root = createRoot(host);
   client = new QueryClient();
-  await show(answer("golden", [["Corvin", "counted"]], { ticket: true, golden: true }));
-  expect(dialog()).toBe("3 friends counted: your realm turns golden");
-  await act(async () => document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true })));
-  await act(async () => root.unmount());
-  root = createRoot(host);
-  client = new QueryClient();
-  await show(answer("golden", [["Corvin", "counted"]], { ticket: true, golden: true }));
-  expect(dialog()).toBeNull();
+  await show(
+    answer("ticket", [["Corvin", "counted", "golden"]], {
+      tier: "golden",
+      linkGolden: true,
+      earned: { ticket: true, golden: true },
+    }),
+  );
+  expect(dialog()).toBe("Your link went golden");
+  expect(text()).toContain("Golden link");
+  expect(text()).toContain("Your Devcon ticket is golden. Add it to your home from its daily claim.");
 });
 
 it("says when the link could not be loaded", async () => {

@@ -20,7 +20,10 @@ export const DEVCON = {
   /** The address a friend's referral link opens, with the inviter's code after it. */
   referralPath: (code: string) => `${CAMPAIGNS[CAMPAIGN].link}/r/${code}`,
   closesAt: CAMPAIGNS[CAMPAIGN].redeemUntil,
-  goldenAt: CAMPAIGNS[CAMPAIGN].referral.goldenAt,
+  /** A friend's ticket is golden 1 time in this many. */
+  goldenOneIn: Math.round(1 / CAMPAIGNS[CAMPAIGN].referral.goldenOdds),
+  /** Counted friends that turn the inviter's link golden. */
+  goldenLinkAt: CAMPAIGNS[CAMPAIGN].referral.goldenLinkAt,
   claim: (golden: boolean) => campaignHomeClaim(DEVCON_LABOR_RULES, golden),
 } as const;
 

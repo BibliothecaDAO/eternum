@@ -849,43 +849,56 @@ export const JOIN_WORDS = {
 /** Invite friends, on You: the referral link, its friends' progress, and what they earn the inviter. */
 export const REFERRAL_WORDS = {
   title: "Invite friends",
-  /** What the inviter's friends can still earn them, by their home. */
+  /** What the inviter's friends get and can still earn them, by their home. */
   promise: {
-    free: "Each friend who signs up through your link gets a Devcon realm. When a friend founds a realm and clears a site, you get a Devcon realm for your home too.",
-    devcon: (goldenAt: number) =>
-      `Each friend who signs up through your link gets a Devcon realm. When ${goldenAt} friends have founded a realm and cleared a site, your Devcon realm turns golden.`,
-    golden: "Each friend who signs up through your link gets a Devcon realm. Your realm is golden already.",
-    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so there is nothing more to earn.",
+    free: (oneIn: number) =>
+      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. When a friend founds a realm and clears a site, you get a Devcon realm too.`,
+    ticket: "Your friends earned you a Devcon ticket. Add it to your home from its daily claim.",
+    devcon: (oneIn: number) =>
+      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. A golden friend who founds a realm and clears a site turns your realm golden.`,
+    golden: "Your realm is golden. Each friend who signs up through your link still gets a Devcon realm.",
+    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so it earns nothing more.",
   },
+  /** Golden earned on a Devcon home the game has not confirmed yet: nothing is promised for a claim before it is. */
+  pending: "Golden earned. Your realm turns golden once the game confirms it; until then it claims as it does now.",
   copy: "Copy",
   copied: "Copied",
   share: "Share",
   shareText: "A Devcon realm for you in Realms: Frontier",
-  toGolden: (counted: number, of: number) => `${counted} of ${of} to golden`,
+  /** The link's way to golden, counted friends of the number that turns it. */
+  toGoldenLink: (counted: number, of: number) => `${counted} of ${of} friends`,
+  goldenLinkChip: "Golden link",
   forEachFriend: "A Devcon realm",
   forEachFriendDetail: "for each friend",
   yourRealm: "Your Devcon realm",
   yourRealmDetail: "when a friend founds and clears a site",
-  friendStep: (index: number) => `Friend ${index}`,
-  goldenRealm: "Golden realm",
+  goldenFriend: "A golden friend",
+  goldenFriendDetail: (oneIn: number) => `1 in ${oneIn} tickets, once that friend counts`,
+  goldenLink: "A golden link",
+  goldenLinkDetail: (of: number) => `at ${of} friends: you and every friend`,
   friend: {
     signed: "Signed up, not founded yet",
     founded: "Founded, clearing a first site",
     counted: "Founded and cleared a site",
+    excluded: "Same email or device as another player, so not counted",
   },
   /** A friend whose name is not chosen yet. */
   unnamed: "A friend",
   counted: "Counted",
   waiting: "Waiting",
-  stepCounted: "counted",
-  stepWaiting: "founds and clears a site",
+  notCounted: "Not counted",
+  golden: "Golden",
   unreadable: "Your invite link could not be loaded.",
   ticketTitle: (name: string | null) => `${name ?? "A friend"} counted: your Devcon realm`,
   ticketBody: "Your friend founded a realm and cleared a site. Add this ticket to your home from its daily claim.",
   ticketAction: "Add it to my home",
-  goldenTitle: (goldenAt: number) => `${goldenAt} friends counted: your realm turns golden`,
-  goldenBody: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
-  goldenAction: "Open my realm",
+  /** Golden said once the realm is golden on the board, or the golden ticket waits to be added to a home. */
+  goldenTitle: (linkGolden: boolean) => (linkGolden ? "Your link went golden" : "A golden friend counted"),
+  goldenBody: {
+    ticket: "Your Devcon ticket is golden. Add it to your home from its daily claim.",
+    golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
+  },
+  goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */

@@ -16,8 +16,9 @@ type Friend = CampaignReferral["friends"][number];
 
 /**
  * Invite friends, on the player's own page while Devcon still gives tickets: their link to share, what friends who sign
- * up through it get and earn them, and each friend's progress. Once friends earn the inviter a ticket or golden, it
- * says so once, over the page.
+ * up through it get and earn them, the two ways to golden (a golden friend who counts, or the link at its count), and
+ * each friend's progress. Golden earned on a home the game has not confirmed yet says so, and promises no claim. Once
+ * friends earn the inviter a ticket or golden that is theirs to use, it says so once, over the page.
  */
 export const InvitePanel = () => {
   const { open, referral } = useCampaignReferral(DEVCON.campaign);
@@ -29,25 +30,30 @@ export const InvitePanel = () => {
       </AppPanel>
     );
   if (!referral.data) return null;
-  const { home, friends, code } = referral.data;
-  const counted = friends.filter((friend) => friend.state === "counted").length;
+  const { home, friends, code, link, goldenPending } = referral.data;
   return (
     <AppPanel
       title={REFERRAL_WORDS.title}
       icon="people"
       cue={
-        home === "devcon" ? (
-          <AppChip tone="gold">{REFERRAL_WORDS.toGolden(counted, DEVCON.goldenAt)}</AppChip>
-        ) : undefined
+        <AppChip tone="gold" icon={link.golden ? "devcon-golden-realm-0" : undefined}>
+          {link.golden ? REFERRAL_WORDS.goldenLinkChip : REFERRAL_WORDS.toGoldenLink(link.counted, DEVCON.goldenLinkAt)}
+        </AppChip>
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-app-ink">
-          {home === "devcon" ? REFERRAL_WORDS.promise.devcon(DEVCON.goldenAt) : REFERRAL_WORDS.promise[home]}
-        </p>
+        <p className="text-app-ink">{promiseOf(home)}</p>
+        {goldenPending && (
+          <p className="flex items-center gap-2 text-app-ink">
+            <Icon name="hourglass" size={20} />
+            {REFERRAL_WORDS.pending}
+          </p>
+        )}
         <LinkRow code={code} />
-        {home === "free" && <TicketProgress counted={counted} />}
-        {home === "devcon" && <GoldenProgress counted={counted} />}
+        {home === "free" && <TicketProgress counted={link.counted} />}
+        {(home === "ticket" || home === "devcon") && !goldenPending && referral.data.tier !== "golden" && (
+          <GoldenWays referral={referral.data} />
+        )}
         {friends.length > 0 && (
           <div className="flex flex-col">
             {friends.map((friend, index) => (
@@ -108,21 +114,29 @@ const TicketProgress = ({ counted }: { counted: number }) => (
   </div>
 );
 
-/** A Devcon home's steps to golden, one per friend counted. */
-const GoldenProgress = ({ counted }: { counted: number }) => (
-  <div className="grid grid-cols-3 gap-2">
-    {Array.from({ length: DEVCON.goldenAt }, (_, index) => {
-      const last = index === DEVCON.goldenAt - 1;
-      return (
-        <Milestone
-          key={index}
-          icon={last ? "devcon-golden-realm-0" : "check"}
-          reached={index < counted}
-          title={last ? REFERRAL_WORDS.goldenRealm : REFERRAL_WORDS.friendStep(index + 1)}
-          detail={index < counted ? REFERRAL_WORDS.stepCounted : REFERRAL_WORDS.stepWaiting}
-        />
-      );
-    })}
+const promiseOf = (home: CampaignReferral["home"]) => {
+  if (home === "free" || home === "devcon") return REFERRAL_WORDS.promise[home](DEVCON.goldenOneIn);
+  return REFERRAL_WORDS.promise[home];
+};
+
+/** A regular ticket's two ways to golden: a golden friend who counts, or the link at its count of friends. */
+const GoldenWays = ({ referral }: { referral: CampaignReferral }) => (
+  <div className="grid grid-cols-2 gap-2">
+    <Milestone
+      icon="devcon-golden-realm-0"
+      reached={referral.friends.some((friend) => friend.golden && friend.state === "counted")}
+      title={REFERRAL_WORDS.goldenFriend}
+      detail={REFERRAL_WORDS.goldenFriendDetail(DEVCON.goldenOneIn)}
+    />
+    <Milestone
+      icon="devcon-golden-realm-0"
+      reached={referral.link.golden}
+      title={REFERRAL_WORDS.goldenLink}
+      detail={`${REFERRAL_WORDS.goldenLinkDetail(DEVCON.goldenLinkAt)} · ${REFERRAL_WORDS.toGoldenLink(
+        referral.link.counted,
+        DEVCON.goldenLinkAt,
+      )}`}
+    />
   </div>
 );
 
@@ -156,27 +170,36 @@ const FriendRow = ({ friend }: { friend: Friend }) => {
       title={name}
       detail={REFERRAL_WORDS.friend[friend.state]}
       trail={
-        friend.state === "counted" ? (
-          <AppChip tone="good" icon="check">
-            {REFERRAL_WORDS.counted}
-          </AppChip>
-        ) : (
-          <AppChip>{REFERRAL_WORDS.waiting}</AppChip>
-        )
+        <span className="flex items-center gap-1">
+          {friend.golden && <AppChip tone="gold">{REFERRAL_WORDS.golden}</AppChip>}
+          <FriendChip state={friend.state} />
+        </span>
       }
     />
   );
 };
 
+const FriendChip = ({ state }: { state: Friend["state"] }) => {
+  if (state === "counted")
+    return (
+      <AppChip tone="good" icon="check">
+        {REFERRAL_WORDS.counted}
+      </AppChip>
+    );
+  return <AppChip>{state === "excluded" ? REFERRAL_WORDS.notCounted : REFERRAL_WORDS.waiting}</AppChip>;
+};
+
 /**
- * What friends earned the inviter, said once per account and reward on this device: golden over a ticket when both are
- * new. The identity service stays the record; this device only remembers having said it.
+ * What friends earned the inviter, once it is theirs to use: golden once the board shows the realm golden or the golden
+ * ticket waits to be added, a ticket while it waits to be added. Golden still pending says nothing here, so it is said
+ * once it lands. Said once per account and reward on this device: golden over a ticket when both are new. The identity
+ * service stays the record; this device only remembers having said it.
  */
 const RewardMoment = ({ referral }: { referral: CampaignReferral }) => {
   const { session } = useIdentitySession();
   const entry = useDevconEntry();
   const account = session?.user.realmsId ?? "";
-  const reward = referral.earned.golden ? "golden" : referral.earned.ticket ? "ticket" : null;
+  const reward = rewardToSay(referral);
   const [closed, setClosed] = useState<typeof reward>(null);
   if (reward === null || closed === reward || wasSaid(account, reward)) return null;
   const close = () => {
@@ -185,24 +208,34 @@ const RewardMoment = ({ referral }: { referral: CampaignReferral }) => {
     setClosed(reward);
   };
   const firstCounted = referral.friends.find((friend) => friend.state === "counted")?.name ?? null;
+  const where = referral.home === "golden" ? "golden" : "ticket";
   return (
     <AppDialog
       title={
-        reward === "golden" ? REFERRAL_WORDS.goldenTitle(DEVCON.goldenAt) : REFERRAL_WORDS.ticketTitle(firstCounted)
+        reward === "golden"
+          ? REFERRAL_WORDS.goldenTitle(referral.link.golden)
+          : REFERRAL_WORDS.ticketTitle(firstCounted)
       }
       onClose={close}
       actions={
         <AppButton kind="primary" icon="play" to={entry ?? "/"} onClick={close}>
-          {reward === "golden" ? REFERRAL_WORDS.goldenAction : REFERRAL_WORDS.ticketAction}
+          {reward === "golden" ? REFERRAL_WORDS.goldenAction[where] : REFERRAL_WORDS.ticketAction}
         </AppButton>
       }
     >
       <div className="flex flex-col items-center gap-3 text-center">
         <DevconTicket tier={reward === "golden" ? "golden" : "regular"} />
-        <p>{reward === "golden" ? REFERRAL_WORDS.goldenBody : REFERRAL_WORDS.ticketBody}</p>
+        <p>{reward === "golden" ? REFERRAL_WORDS.goldenBody[where] : REFERRAL_WORDS.ticketBody}</p>
       </div>
     </AppDialog>
   );
+};
+
+/** The reward the inviter can use now: golden on the board or on a ticket to add, or a ticket to add; else none. */
+const rewardToSay = ({ earned, home, tier }: CampaignReferral): "golden" | "ticket" | null => {
+  if (earned.golden && (home === "golden" || (home === "ticket" && tier === "golden"))) return "golden";
+  if (earned.ticket && home === "ticket") return "ticket";
+  return null;
 };
 
 const saidKey = (account: string, reward: "ticket" | "golden") =>
