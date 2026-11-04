@@ -65,7 +65,10 @@ interface Season {
   usdLeft: number;
   endsAt: number;
   rules: LaborRuleAmounts;
+  /** Each player address's latest confirmed action (Herald's history), in seconds; caught up before each send. */
   lastAction: Map<string, number>;
+  /** The newest block whose events lastAction holds. */
+  historyBlock: number;
   seasonPlayers: Set<string>;
 }
 
@@ -92,12 +95,7 @@ async function readSeason(): Promise<Season> {
   const prize = Number(BigInt(model("FrontierPrize")[0].pool));
   const left = Number(BigInt(budget.pool_left));
   const lastAction = new Map<string, number>();
-  for (const event of history) {
-    const owner = event.value?.owner;
-    if (!owner) continue;
-    const at = Number(BigInt(event.value.timestamp));
-    lastAction.set(norm(owner), Math.max(lastAction.get(norm(owner)) ?? 0, at));
-  }
+  const historyBlock = noteActions(lastAction, history, 0);
   return {
     players: Number(game.player_count),
     pool: Number(BigInt(budget.pool)) + prize,
@@ -108,6 +106,7 @@ async function readSeason(): Promise<Season> {
     endsAt: Number(game.clock.end_at),
     rules: model("LaborRules")[0] as LaborRuleAmounts,
     lastAction,
+    historyBlock,
     seasonPlayers: new Set(model("PlayerEntry").map((entry: Row) => norm(entry.owner))),
   };
 }
@@ -121,6 +120,39 @@ async function readHistory(): Promise<Row[]> {
   }
 }
 
+/** Folds history events newer than `afterBlock` into each owner's latest action; returns the newest block seen. */
+function noteActions(lastAction: Map<string, number>, events: readonly Row[], afterBlock: number): number {
+  let newest = afterBlock;
+  for (const event of events) {
+    if (Number(event.block_number) <= afterBlock) continue;
+    newest = Math.max(newest, Number(event.block_number));
+    const owner = event.value?.owner;
+    if (!owner) continue;
+    const at = Number(BigInt(event.value.timestamp));
+    lastAction.set(norm(owner), Math.max(lastAction.get(norm(owner)) ?? 0, at));
+  }
+  return newest;
+}
+
+/**
+ * Reads the confirmed actions since the season was read: Herald's history is newest first, so the pages from the top
+ * until one reaches a block already held. One small read before each send.
+ */
+async function catchUpActivity(season: Season) {
+  const fresh: Row[] = [];
+  for (let offset = 0; ; offset += 500) {
+    const page = await herald(`/games/${GAME}/history?limit=500&offset=${offset}`);
+    fresh.push(...(page.items as Row[]));
+    const reachedHeld = (page.items as Row[]).some((event) => Number(event.block_number) <= season.historyBlock);
+    if (reachedHeld || offset + 500 >= page.total) break;
+  }
+  season.historyBlock = noteActions(season.lastAction, fresh, season.historyBlock);
+}
+
+/** An account's latest confirmed Season 0 action over the addresses it owns, in seconds; 0 for none. */
+const latestAction = (season: Season, addresses: readonly string[]) =>
+  Math.max(0, ...addresses.map((address) => season.lastAction.get(address) ?? 0));
+
 async function readLordsPrice(): Promise<number> {
   const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd");
   if (!response.ok) throw new Error(`CoinGecko: ${response.status}`);
@@ -131,14 +163,28 @@ async function readLordsPrice(): Promise<number> {
 
 // ---- Who gets which variant (counts only leave this file) -----------------------------------------------------------
 
-/** A campaign account with its email address, read only by a send. */
-type Recipient = Account & { email: string };
+/** A campaign account with the player addresses it owns, in memory only. */
+type Reached = Account & { addresses: readonly string[] };
+/** The same with its email address, read only by a send. */
+type Recipient = Reached & { email: string };
+
+/**
+ * Whether the environment's D1 has migration 0025 (the opt-out column and the send record). Before it, nobody can
+ * have stopped news emails or been sent this campaign, so a dry run reads none; a send needs it and fails without.
+ */
+const hasNewsEmailSchema = (target: Target) =>
+  d1(target, `SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'news_email_sends'`).length > 0;
 
 /** Every account with a verified email, as comeback-campaign.ts decides on them; addresses only when asked for. */
-function readAccounts(target: Target, season: Season, withEmail: boolean): (Account & { email?: string })[] {
+function readAccounts(
+  target: Target,
+  season: Season,
+  withEmail: boolean,
+  newsSchema = true,
+): (Reached & { email?: string })[] {
   const users = d1(
     target,
-    `SELECT u.realmsId, u.newsEmailOptOutAt, ${withEmail ? "u.email, " : ""}EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
+    `SELECT u.realmsId, ${newsSchema ? "u.newsEmailOptOutAt" : "NULL AS newsEmailOptOutAt"}, ${withEmail ? "u.email, " : ""}EXISTS (SELECT 1 FROM account a WHERE a.userId = u.id AND a.providerId = 'discord') AS discord FROM "user" u WHERE u.emailVerified = 1 AND u.realmsId IS NOT NULL`,
   );
   const tickets = new Map(
     d1(target, `SELECT owner, tier FROM campaign_tickets WHERE campaign = '${TICKETS}'`).map((row) => [
@@ -158,7 +204,8 @@ function readAccounts(target: Target, season: Season, withEmail: boolean): (Acco
       ticket: tickets.get(user.realmsId) ?? null,
       playtester: owned.some((address) => playtesters.has(address)),
       inSeason: owned.some((address) => season.seasonPlayers.has(address)),
-      lastAction: Math.max(0, ...owned.map((address) => season.lastAction.get(address) ?? 0)),
+      lastAction: latestAction(season, owned),
+      addresses: owned,
       optedOut: user.newsEmailOptOutAt != null,
       ...(withEmail ? { email: String(user.email) } : {}),
     };
@@ -483,22 +530,35 @@ function figures(s: Season) {
   };
 }
 
-const todayStart = () => Math.floor(Date.now() / 86_400_000) * 86_400;
+/** Players who acted in the last 24 hours, as of this moment, have come back: the email is not for them. */
+const activeSince = () => Math.floor(Date.now() / 1000) - 24 * 60 * 60;
 
 async function dryRun(target: Target) {
   const season = await readSeason();
-  const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`);
+  const since = activeSince();
+  const newsSchema = hasNewsEmailSchema(target);
+  const record = newsSchema
+    ? d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`)
+    : [];
   const reserved = new Set(record.map((row) => row.realmsId));
   /** Reserved by a run that never marked them sent: check them against Resend's log before anything else. */
   const unresolved = record.filter((row) => row.status === "reserved").length;
   const counts = Object.fromEntries(
-    (["D", "N", "P"] as const).map((key) => [key, { email: 0, discord: 0, golden: 0, alreadyReserved: 0 }]),
+    (["D", "N", "P"] as const).map((key) => [
+      key,
+      { email: 0, discord: 0, golden: 0, alreadyReserved: 0, cameBack: 0 },
+    ]),
   );
   let optedOut = 0;
-  for (const account of readAccounts(target, season, false)) {
+  for (const account of readAccounts(target, season, false, newsSchema)) {
     if (account.optedOut) optedOut++;
-    const key = variantOf(account, todayStart());
-    if (!key) continue;
+    const key = variantOf(account, since);
+    // Who the email would be for had they not acted in the last 24 hours: the players it now leaves out.
+    const away = variantOf({ ...account, lastAction: 0 }, since);
+    if (!key) {
+      if (away) counts[away]!.cameBack++;
+      continue;
+    }
     if (reserved.has(account.realmsId)) counts[key]!.alreadyReserved++;
     else counts[key]![account.discord ? "discord" : "email"]++;
     if (account.ticket === "golden") counts[key]!.golden++;
@@ -507,7 +567,9 @@ async function dryRun(target: Target) {
     JSON.stringify(
       {
         readAt: new Date().toISOString(),
-        todayStartUtc: new Date(todayStart() * 1000).toISOString(),
+        activeSinceUtc: new Date(since * 1000).toISOString(),
+        heraldBlock: season.historyBlock,
+        newsEmailSchema: newsSchema,
         figures: figures(season),
         recipients: counts,
         unresolved,
@@ -586,13 +648,16 @@ async function test(target: Target, to: string) {
  */
 async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
-  const today = todayStart();
   const deliveries = (readAccounts(target, season, true) as Recipient[]).flatMap((account) => {
-    const variant = variantOf(account, today);
+    const variant = variantOf(account, activeSince());
     return variant && variants.includes(variant) && (withDiscord || !account.discord) ? [{ ...account, variant }] : [];
   });
   const counts = await sendCampaign({
     deliveries,
+    stillAway: async (delivery) => {
+      await catchUpActivity(season);
+      return latestAction(season, delivery.addresses) < activeSince();
+    },
     reserve: async (delivery) => reserveSend(target, delivery),
     send: async (delivery): Promise<Handoff> => {
       const reader = {

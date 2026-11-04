@@ -19,15 +19,15 @@ export interface Account {
 
 /**
  * Each account in at most one variant, D before N before P; none for an account that stopped news emails:
- * - D: holds a Devcon ticket, founded in Season 0, no action yet today (UTC).
+ * - D: holds a Devcon ticket, founded in Season 0, no action since `activeSince` (24 hours before the send).
  * - N: holds a Devcon ticket, never founded.
- * - P: owns an address on the playtest's final board, holds no ticket, no Season 0 action yet today (UTC).
+ * - P: owns an address on the playtest's final board, holds no ticket, no Season 0 action since `activeSince`.
  */
-export function variantOf(account: Account, todayStart: number): VariantKey | null {
+export function variantOf(account: Account, activeSince: number): VariantKey | null {
   if (account.optedOut) return null;
-  if (account.ticket && account.inSeason) return account.lastAction < todayStart ? "D" : null;
-  if (account.ticket) return "N";
-  if (account.playtester && account.lastAction < todayStart) return "P";
+  if (account.ticket && account.inSeason) return account.lastAction < activeSince ? "D" : null;
+  if (account.ticket) return account.lastAction < activeSince ? "N" : null;
+  if (account.playtester && account.lastAction < activeSince) return "P";
   return null;
 }
 
@@ -44,6 +44,8 @@ export type Handoff = { kind: "accepted"; id: string | null } | { kind: "refused
 
 export interface CampaignSend<T extends Delivery> {
   deliveries: readonly T[];
+  /** Whether the player is still away, from the latest confirmed activity: one who acted since the run began is not. */
+  stillAway: (delivery: T) => Promise<boolean>;
   /**
    * Writes the account into the campaign's send record, in one statement that also checks it has not stopped news
    * emails: before the provider hears of it, so no interrupted or parallel run can send it again.
@@ -65,8 +67,12 @@ export interface CampaignSend<T extends Delivery> {
  * record as an unresolved attempt for a person to check against the provider's log.
  */
 export async function sendCampaign<T extends Delivery>(run: CampaignSend<T>) {
-  const counts = { sent: 0, alreadyReserved: 0, optedOut: 0, refused: 0, unknown: 0 };
+  const counts = { sent: 0, cameBack: 0, alreadyReserved: 0, optedOut: 0, refused: 0, unknown: 0 };
   for (const delivery of run.deliveries) {
+    if (!(await run.stillAway(delivery))) {
+      counts.cameBack++;
+      continue;
+    }
     const reservation = await run.reserve(delivery);
     if (reservation === "taken") {
       counts.alreadyReserved++;
