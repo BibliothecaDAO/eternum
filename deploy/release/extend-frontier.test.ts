@@ -1,6 +1,6 @@
 import { expect, test, mock } from "bun:test";
 import approved from "../../config/source/frontier/extension.json";
-import { extensionCalls, reconcileCalendar } from "./extend-frontier";
+import { extensionCalls, extensionPlan, reconcileCalendar } from "./extend-frontier";
 const proof = {
   chainId: approved.chainId,
   gameId: 1,
@@ -29,14 +29,18 @@ test("prepares the atomic admin upgrade and extension, never a funding or Blitz 
 test("reconciliation sends nothing until both clocks agree and safely retries a lost response", async () => {
   const dates = {
     phase: "frontier",
-    presetId: 5,
+    presetId: approved.presetId,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
   let applied = false;
   const network = mock(async (_url: unknown, init?: RequestInit) => {
     if (init?.method === "PUT") {
-      expect(JSON.parse(String(init.body))).toEqual({ presetId: 5, startsAt: dates.startsAt, endsAt: dates.endsAt });
+      expect(JSON.parse(String(init.body))).toEqual({
+        presetId: approved.presetId,
+        startsAt: dates.startsAt,
+        endsAt: dates.endsAt,
+      });
       if (!applied) {
         applied = true;
         throw new Error("response lost");
@@ -75,7 +79,7 @@ test("refuses an unapproved target or missing operator token before any calendar
 test("requires a matching fresh calendar readback after an acknowledged write", async () => {
   const dates = {
     phase: "frontier",
-    presetId: 5,
+    presetId: approved.presetId,
     startsAt: new Date(approved.start * 1000).toISOString(),
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
@@ -100,10 +104,25 @@ test.each(["write", "readback"])("extension reconciliation refuses a different p
     endsAt: new Date(approved.end * 1000).toISOString(),
   };
   const network = mock(async (_url: unknown, init?: RequestInit) => {
-    if (init?.method === "PUT") return Response.json({ ...dates, presetId: stage === "write" ? 6 : dates.presetId });
-    return Response.json({ phases: [{ ...dates, presetId: 6 }] });
+    if (init?.method === "PUT")
+      return Response.json({ ...dates, presetId: stage === "write" ? approved.presetId + 1 : dates.presetId });
+    return Response.json({ phases: [{ ...dates, presetId: approved.presetId + 1 }] });
   }) as unknown as typeof fetch;
   await expect(reconcileCalendar(confirmed, "https://play.realms.party", "operator", network)).rejects.toThrow(
     stage === "write" ? "Calendar write did not confirm" : "Calendar readback differs",
   );
+});
+
+test("prepares the reviewed multicall before cutover without offering executable calls", () => {
+  const before = { ...proof, worldEnd: approved.oldEnd, release: approved.release - 1 };
+  const plan = extensionPlan(before, approved.previousLedgerClass, "0x2");
+  expect(plan.readyForSignature).toBe(false);
+  expect(plan.calls).toEqual([]);
+  expect(plan.preparedCalls).toEqual(extensionCalls(proof, approved.previousLedgerClass, "0x2"));
+  expect(extensionPlan(proof, approved.previousLedgerClass, "0x2")).toEqual({
+    readyForSignature: true,
+    calls: plan.preparedCalls,
+    preparedCalls: plan.preparedCalls,
+  });
+  expect(() => extensionPlan(before, "0xdead", "0x2")).toThrow("unreviewed predecessor");
 });

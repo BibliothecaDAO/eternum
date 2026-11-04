@@ -2568,26 +2568,36 @@ fn preview_rejects_settled_registration() {
 fn extension_fixture(start: u64, end: u64, seed: felt252, pool: u256) -> Fixture {
     use game_ledger::approved_frontier_extension as approved;
     let fixture = deploy_fixture(default_preset());
-    fund_and_approve_player(@fixture, ADMIN(), pool);
+    let funding = (pool * 10000 + 6999) / 7000;
+    fund_and_approve_player(@fixture, ADMIN(), funding);
     start_cheat_caller_address(fixture.ledger_address, ADMIN());
     fixture
         .ledger
         .register_preset(
             approved::PRESET_ID,
             Preset {
-                day_unit_seconds: approved::DAY_UNIT, claim_window_seconds: approved::CLAIM_WINDOW, ..default_preset(),
+                day_unit_seconds: approved::DAY_UNIT,
+                claim_window_seconds: approved::CLAIM_WINDOW,
+                frontier_chest_bps: 7000,
+                frontier_top_n: 3,
+                ..default_preset(),
             },
             test_bands(),
             test_items(),
         );
     start_cheat_block_timestamp(fixture.ledger_address, start);
-    fixture.ledger.fund_frontier(approved::CHAIN_ID, 1, approved::PRESET_ID, start, end, seed, pool);
+    fixture.ledger.fund_frontier(approved::CHAIN_ID, 1, approved::PRESET_ID, start, end, seed, funding);
     fixture
 }
 
 fn approved_extension_fixture() -> Fixture {
     use game_ledger::approved_frontier_extension as approved;
-    extension_fixture(approved::START, approved::OLD_END, approved::SEED, 1000000 * 1000000000000000000)
+    extension_fixture(
+        approved::START,
+        approved::OLD_END,
+        approved::SEED,
+        Into::<u128, u256>::into(approved::POOL_LORDS) * 1000000000000000000,
+    )
 }
 
 #[test]
@@ -2605,7 +2615,11 @@ fn frontier_extension_preserves_custody_blitz_reports_and_retry_after_upgrade() 
     fixture.ledger.extend_frontier(approved::CHAIN_ID, 1);
     let after = fixture.ledger.get_frontier(approved::CHAIN_ID, 1);
     assert!(after.end == approved::END && after.start == before.start && after.seed == before.seed);
-    assert!(after.pool == before.pool && after.paid == before.paid && !after.closed);
+    let mut expected_season = array![];
+    game_ledger::types::FrontierSeason { end: approved::END, ..before }.serialize(ref expected_season);
+    let mut actual_season = array![];
+    after.serialize(ref actual_season);
+    assert!(actual_season.span() == expected_season.span());
     assert!(after.preset_id == before.preset_id && fixture.lords.balance_of(fixture.ledger_address) == held);
     let mut original_blitz = array![];
     blitz.serialize(ref original_blitz);
@@ -2693,7 +2707,7 @@ fn frontier_extension_refuses_changed_funded_identity() {
             } else {
                 0
             },
-            1000000 * 1000000000000000000 + if case == 3 {
+            Into::<u128, u256>::into(approved::POOL_LORDS) * 1000000000000000000 + if case == 3 {
                 1
             } else {
                 0

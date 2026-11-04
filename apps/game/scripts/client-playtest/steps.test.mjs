@@ -1014,3 +1014,16 @@ it.each(["reinforce-army", "delete-rehearsal-army"])(
     expect(browser.click).not.toHaveBeenCalled();
   },
 );
+
+it("requires a real regular-to-golden transition and confirmed claim in the upgrade rehearsal", () => {
+  const verify = STEP_SETS["home-upgrade"].steps.find((step) => step.name === "upgrade-campaign-home").verify;
+  const played = { before: { tier: "regular" }, upgraded: { tier: "golden" }, claimed: true, after: { claimed: true } };
+  expect(verify({ played })).toEqual(expect.objectContaining({ status: "completed" }));
+  for (const bad of [
+    { ...played, claimed: false },
+    { ...played, upgraded: { tier: "regular" } },
+    { ...played, after: { claimed: false } },
+  ]) {
+    expect(verify({ played: bad })).toEqual(expect.objectContaining({ status: "failed" }));
+  }
+});
