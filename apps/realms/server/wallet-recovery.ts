@@ -231,11 +231,12 @@ const settleAttempt = async (services: RecoveryServices, attempt: RecoveryAttemp
 };
 
 /**
- * With no escape standing at that block, the attempt is over when its escape expired, or its execution ran (nonce
- * spent: started, then canceled) or never can (the block is past its window, nonce unspent).
+ * With no escape of its own standing at that block, the attempt is over only on evidence about its own execution: it
+ * ran (nonce spent: started, then canceled or expired) or never can (the block is past its window, nonce unspent). An
+ * expired escape alone proves nothing of this attempt: it may be an older one, with this start still to land.
  */
 const isProvenOver = (state: AttemptState, executeBefore: number | null) =>
-  state.escape.status === "expired" || state.nonceSpent || (executeBefore !== null && state.time >= executeBefore);
+  state.nonceSpent || (executeBefore !== null && state.time >= executeBefore);
 
 /** The escape's finish: the exact call, the guardian alone, the sponsor paying. */
 const finishEscape = async (services: RecoveryServices, row: DefaultWalletRow) => {

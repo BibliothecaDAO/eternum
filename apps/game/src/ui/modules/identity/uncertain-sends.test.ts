@@ -24,7 +24,7 @@ const chain = (options: { nonceValid?: boolean | "undeployed"; now?: number; rec
       if (options.nonceValid === "undeployed") throw notFound(20, "Contract not found");
       return [options.nonceValid === false ? "0x0" : "0x1"];
     }),
-    getBlock: vi.fn(async () => ({ timestamp: options.now ?? 1_000 })),
+    getBlockWithTxHashes: vi.fn(async () => ({ block_number: 1, timestamp: options.now ?? 1_000 })),
     getTransactionReceipt: vi.fn(async () => {
       if (!options.receipt || options.receipt === "missing") throw notFound(29, "Transaction hash not found");
       return options.receipt;
@@ -76,4 +76,25 @@ it("holds a connected wallet's send whose hash was never kept as pending, never 
   const intent = (at: number): UncertainSend => ({ via: "wallet", owner: WALLET, calls: "[]", hash: null, at });
   expect(await standingOf(chain({}), intent(Date.now()))).toEqual({ kind: "pending" });
   expect(await standingOf(chain({}), intent(Date.now() - 48 * 60 * 60 * 1000))).toEqual({ kind: "pending" });
+});
+
+it("reads a default wallet's nonce and deadline at one block: a send landing at its deadline never reads as failed", async () => {
+  // Block 100 at 1,998: nonce unspent. The transfer lands at block 101 (1,999); block 102 is at 2,001, past its window.
+  let head = 100;
+  const seenAt: unknown[] = [];
+  const advancing = {
+    getBlockWithTxHashes: async () => ({ block_number: head, timestamp: head === 100 ? 1_998 : 2_001 }),
+    callContract: async (_call: unknown, block: unknown) => {
+      seenAt.push(block);
+      const at = typeof block === "number" ? block : 102;
+      head = 102;
+      return [at >= 101 ? "0x0" : "0x1"];
+    },
+    getTransactionReceipt: async () => Promise.reject(notFound(29, "Transaction hash not found")),
+  } as unknown as ProviderInterface;
+  // Pinned to block 100: unspent with its window still open, so pending: never "failed", never a new payment.
+  expect(await standingOf(advancing, passkeySend())).toEqual({ kind: "pending" });
+  expect(seenAt).toEqual([100]);
+  // Asked again once the chain has moved: block 102, the nonce spent there, so the transfer landed.
+  expect(await standingOf(advancing, passkeySend())).toEqual({ kind: "landed" });
 });

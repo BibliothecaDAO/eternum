@@ -258,9 +258,9 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
   }
 });
 
-it("on re-entry with a connected wallet's send it never heard back from, offers no new transfer until the player says it did not go", async () => {
+it("on re-entry with a connected wallet's send it never heard back from, opens no wallet and offers no new transfer", async () => {
   const uncertain = await import("@/ui/modules/identity/uncertain-sends");
-  const standing = vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
+  vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
   const braavos = installWallet("braavos", { account: LINKED });
   // Accepted by the wallet a day ago, the page closed before its hash was kept.
   uncertain.rememberUncertain({
@@ -272,16 +272,17 @@ it("on re-entry with a connected wallet's send it never heard back from, offers 
   });
   try {
     const { container, landed } = await openSend();
-    await settled(() => expect(container.textContent).toContain("Check your wallet's activity"));
-    expect(buttonsOf(container)).toEqual(["Check again", "It did not go through"]);
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    // Only asking the chain again: no release, no wallet, nothing new sent while the record stands.
+    expect(buttonsOf(container)).toEqual(["Check again"]);
+    await press(container, "Check again");
+    await settled(() => expect(buttonsOf(container)).toEqual(["Check again"]));
     expect(braavos.connections()).toEqual([]);
-    standing.mockClear();
-    await press(container, "It did not go through");
-    // Released by the player's word: the wallet is opened for the send as usual.
-    await settled(() => expect(landed).toHaveBeenCalledOnce());
-    expect(braavos.transactions()).toHaveLength(1);
-    expect(uncertain.uncertainSendOf(LINKED)).toBeUndefined();
+    expect(braavos.transactions()).toEqual([]);
+    expect(landed).not.toHaveBeenCalled();
+    expect(uncertain.uncertainSendOf(LINKED)).toBeDefined();
   } finally {
+    uncertain.forgetUncertain(LINKED);
     vi.restoreAllMocks();
   }
 });

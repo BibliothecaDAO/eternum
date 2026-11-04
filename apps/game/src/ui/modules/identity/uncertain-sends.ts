@@ -58,19 +58,20 @@ export const standingOf = async (provider: ProviderInterface, send: UncertainSen
   send.via === "passkey" ? passkeyStanding(provider, send) : walletStanding(provider, send);
 
 /**
- * A default wallet's execution ran if its nonce is spent (a revert leaves it unspent); unspent past its time window,
- * it never can; a receipt that reverted says why.
+ * A default wallet's execution, settled at one block: it ran if its nonce is spent there (a revert leaves it unspent);
+ * unspent there with that block past its window, it never can. One block for both, so a send landing between two
+ * reads can never read as "unspent, and too late". A receipt that reverted says why.
  */
 const passkeyStanding = async (
   provider: ProviderInterface,
   send: Extract<UncertainSend, { via: "passkey" }>,
 ): Promise<SendStanding> => {
   const message = send.execution.message as { Nonce: string; "Execute Before": string | number };
-  if (await nonceSpent(provider, send.owner, message.Nonce)) return { kind: "landed" };
+  const block = (await provider.getBlockWithTxHashes("latest")) as { block_number: number; timestamp: number };
+  if (await nonceSpentAt(provider, send.owner, message.Nonce, block.block_number)) return { kind: "landed" };
   const reverted = send.hash ? await revertOf(provider, send.hash) : null;
   if (reverted !== null) return { kind: "failed", reason: reverted };
-  const now = (await provider.getBlock("latest")).timestamp;
-  return now >= Number(message["Execute Before"]) ? { kind: "failed", reason: null } : { kind: "pending" };
+  return block.timestamp >= Number(message["Execute Before"]) ? { kind: "failed", reason: null } : { kind: "pending" };
 };
 
 /**
@@ -91,14 +92,14 @@ const walletStanding = async (
   }
 };
 
-/** `is_valid_outside_execution_nonce` is false once spent; a wallet not deployed yet has spent none. */
-const nonceSpent = async (provider: ProviderInterface, wallet: string, nonce: string) => {
+/** `is_valid_outside_execution_nonce` at `block` is false once spent; a wallet not deployed yet has spent none. */
+const nonceSpentAt = async (provider: ProviderInterface, wallet: string, nonce: string, block: number) => {
   try {
     const [valid] = await provider.callContract(
       { contractAddress: wallet, entrypoint: "is_valid_outside_execution_nonce", calldata: [nonce] },
-      "latest",
+      block,
     );
-    return BigInt(valid!) === 0n;
+    return valid !== undefined && BigInt(valid) === 0n;
   } catch (error) {
     if (error instanceof RpcError && error.isType("CONTRACT_NOT_FOUND")) return false;
     throw error;

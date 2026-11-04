@@ -2609,6 +2609,28 @@ describe("default wallet", () => {
       resetSponsor();
     });
 
+    it("keeps a start made after an older expired escape until its own nonce or window settles it", async () => {
+      resetSponsor();
+      const expired = { status: "expired" as const, readyAt: 1, newOwner: "0xold" };
+      // An older escape expired; this start's answer was lost, so it may still land.
+      readEscape.mockResolvedValueOnce(expired);
+      const later = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await later.answer.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      await finishWith(later.wallet.address, { escape: expired, owner: false, nonceSpent: false, chainTime: 1_000 });
+      expect(await recoveryRow(later.realmsId)).not.toBeNull();
+      // Its window closed with its nonce unspent: it never can run.
+      await finishWith(later.wallet.address, {
+        escape: expired,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(later.realmsId)).toBeNull();
+      resetSponsor();
+    });
+
     it("forgets the passkey and its email when the sponsor refuses the start", async () => {
       resetSponsor();
       const refused = await startedRecovery(async () => {

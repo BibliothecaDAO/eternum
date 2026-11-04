@@ -1089,9 +1089,6 @@ export const VALUE_WORDS = {
   checkAgain: "Check again",
   sendAgain: "Send it again",
   lastSendFailed: "Your last send did not go through.",
-  /** A connected wallet's send the chain has not seen: only the player's wallet can say whether it went. */
-  checkWalletFirst: "Check your wallet's activity. If it went through, sending again pays twice.",
-  didNotGo: "It did not go through",
   refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",
