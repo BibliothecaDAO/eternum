@@ -20,8 +20,6 @@ export interface RealmEntryClaim {
   account: string;
   /** Set only by the authenticated flyer-recovery route, never from a player request. */
   recoverFlyer?: true;
-  /** Set only by the authenticated campaign-upgrade route after identity awards a golden ticket. */
-  upgradeCampaign?: true;
 }
 /** The source a Frontier home claims from: a held Realm, a campaign's ticket, or none (a free home). */
 export type HomeSource = { realmId: number } | { campaign: string; tier: TicketTier } | Record<string, never>;
@@ -83,14 +81,13 @@ const CAMPAIGN_KIND = 3;
 const CAMPAIGN_TIERS: Record<TicketTier, number> = { regular: 1, golden: 2 };
 
 /**
- * A Frontier home's source: the held Realm the
+ * A Frontier home's source, immutable once registered: the held Realm the
  * player names (ownership proved here), else the campaign ticket identity holds for this game's preset, else none.
- * An exact retry answers the registered source without another write. Only an attested Devcon golden upgrade changes tier.
+ * An exact retry answers the registered source without another write; a different source is refused.
  */
 export async function registerHomeSource(target: RealmEntryTarget, claim: RealmEntryClaim): Promise<HomeSource> {
   const entry = await openEntry(target, claim);
   const previous = readEntitlement(entry.snapshot, claim.account);
-  if (claim.upgradeCampaign) return upgradeCampaignHome(target, claim, entry, previous);
   const { realmId } = claim;
   if (realmId !== null)
     return previous ? matchingEntry(previous, realmId) : registerHeldRealm(target, { ...claim, realmId }, entry);
@@ -107,60 +104,6 @@ export async function registerHomeSource(target: RealmEntryTarget, claim: RealmE
   return writeEntry(entry, claim, entitlement);
 }
 
-async function upgradeCampaignHome(
-  target: RealmEntryTarget,
-  claim: RealmEntryClaim,
-  entry: OpenEntry,
-  previous: Entitlement | undefined,
-): Promise<HomeSource> {
-  if (Number(singleRow(entry.snapshot, "GameRelease").release_id) < 8)
-    throw new PlayerRequestError(409, "upgrade_requires_release_8");
-  const presetId = Number(singleRow(entry.snapshot, "GameRegistry").preset_id);
-  const ticket = await target.identity.campaignTicket(claim.realmsId, presetId);
-  if (ticket?.campaign !== "devcon-2026" || ticket.tier !== "golden")
-    throw new PlayerRequestError(409, "upgrade_ticket_missing");
-  if (claim.realmId !== null || claim.recoverFlyer || !hasEntered(entry.snapshot, claim.account) || !previous)
-    throw new PlayerRequestError(409, "upgrade_requires_founded_devcon_home");
-  if (!isDevconUpgradeSource(previous)) throw new PlayerRequestError(409, "conflicting_entry_entitlement");
-  requireOwnedCampaignHome(entry.snapshot, claim.account, previous);
-  if (previous.metadata_2 === BigInt(CAMPAIGN_TIERS.golden)) return sourceOf(previous);
-  return writeEntry(entry, claim, {
-    ...campaignEntitlement(ticket, false),
-    metadata_3: shortString.encodeShortString("devcon-upgrade"),
-  });
-}
-
-function isDevconUpgradeSource(previous: Entitlement): boolean {
-  const recovery = BigInt(shortString.encodeShortString("devcon-recovery"));
-  const upgrade = BigInt(shortString.encodeShortString("devcon-upgrade"));
-  return (
-    previous.pass_kind === BigInt(CAMPAIGN_KIND) &&
-    previous.realm_id === 0n &&
-    previous.metadata_1 === BigInt(shortString.encodeShortString("devcon-2026")) &&
-    Object.values(CAMPAIGN_TIERS).map(BigInt).includes(previous.metadata_2) &&
-    [0n, recovery, upgrade].includes(previous.metadata_3) &&
-    !(previous.metadata_2 === BigInt(CAMPAIGN_TIERS.regular) && previous.metadata_3 === upgrade)
-  );
-}
-
-function requireOwnedCampaignHome(snapshot: ConfirmedSnapshot, account: string, entitlement: Entitlement) {
-  const structures = snapshot.models.find((model) => model.model === "Structure")!.rows;
-  const homes = snapshot.models
-    .find((model) => model.model === "CampaignHome")!
-    .rows.filter(({ value }) =>
-      structures.some(
-        ({ value: structure }) =>
-          sameFelt(String(structure.entity_id), String(value.home)) && sameFelt(String(structure.owner), account),
-      ),
-    );
-  if (
-    homes.length !== 1 ||
-    BigInt(String(homes[0]!.value.campaign_id)) !== entitlement.metadata_1 ||
-    BigInt(String(homes[0]!.value.tier)) !== entitlement.metadata_2
-  )
-    throw new PlayerRequestError(409, "upgrade_requires_founded_devcon_home");
-}
-
 /** Recovery can finish after the player attached the drawn ticket, but cannot replace their source. */
 function recoveredEntry(
   entry: OpenEntry,
@@ -175,8 +118,7 @@ function recoveredEntry(
   if (
     previous.pass_kind !== BigInt(CAMPAIGN_KIND) ||
     previous.metadata_1 !== BigInt(entitlement.metadata_1) ||
-    previous.metadata_2 !== BigInt(entitlement.metadata_2) ||
-    previous.metadata_3 === BigInt(shortString.encodeShortString("devcon-upgrade"))
+    previous.metadata_2 !== BigInt(entitlement.metadata_2)
   )
     throw new PlayerRequestError(409, "conflicting_entry_entitlement");
   return previous.metadata_3 === BigInt(entitlement.metadata_3);
@@ -194,7 +136,6 @@ async function openEntry(target: RealmEntryTarget, claim: RealmEntryClaim) {
     "PlayerEntry",
     "EntryEntitlement",
     "SettledRealm",
-    ...(claim.upgradeCampaign ? ["CampaignHome", "Structure"] : []),
   ]);
   await requireOpenFrontier(target.connection, snapshot);
   const operator = new ShardOperator({

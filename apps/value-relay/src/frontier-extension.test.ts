@@ -131,7 +131,7 @@ it("confirms both clocks and funding at explicit confirmed heads", async () => {
     ledgerEnd: approved.end,
     worldBlock: 90,
     ledgerBlock: 100,
-    release: approved.release,
+    release: 4,
     pool: String(ledgerPool),
     paid: String(91n * 10n ** 18n),
   });
@@ -152,7 +152,7 @@ it.each(["projection", "seed", "pool", "closed", "release", "expired", "l2chain"
     if (kind === "seed") ledgerSeed = "0x1";
     if (kind === "pool") ledgerPool -= 1n;
     if (kind === "closed") closed = true;
-    if (kind === "release") release = approved.release - 1;
+    if (kind === "release") release = 3;
     if (kind === "expired") rpc.now = approved.end;
     if (kind === "l2chain") rpc.l2chain = "0x1";
     if (kind === "provisional") preconfirmed = 101;

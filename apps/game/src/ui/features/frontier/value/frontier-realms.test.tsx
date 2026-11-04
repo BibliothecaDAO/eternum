@@ -531,35 +531,3 @@ it("shows the days around today: each claimed ticked, a missed one struck, none 
     await act(async () => root.unmount());
   }
 });
-
-it("shows a confirmed golden upgrade without reopening today's paid claim", async () => {
-  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-  const send = vi.fn();
-  vi.stubGlobal("fetch", send);
-  const host = document.createElement("div");
-  const root = createRoot(host);
-  const show = () => act(async () => root.render(<Sheet />));
-  try {
-    facts.held = false;
-    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
-    facts.claimedDay = 0n;
-    await show();
-    expect(amounts(host)).toEqual(["labor 1,000", "essence 1,000"]);
-    expect(todayState(host)).toBe("claimed");
-    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
-    await show();
-    expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Golden Devcon");
-    expect(amounts(host)).toEqual(["labor 2,000", "essence 2,000"]);
-    expect(todayState(host)).toBe("claimed");
-    expect([...host.querySelectorAll("button")].some((button) => button.textContent?.startsWith("Claim "))).toBe(false);
-    expect(send).not.toHaveBeenCalled();
-    facts.now = startOfDay(1);
-    await show();
-    expect(strip(host).slice(0, 2)).toEqual(["1:claimed", "2*:open"]);
-    expect(
-      [...host.querySelectorAll("button")].some((button) => button.textContent === "Claim 2,000 Labor · 2,000 Essence"),
-    ).toBe(true);
-  } finally {
-    await act(async () => root.unmount());
-  }
-});
