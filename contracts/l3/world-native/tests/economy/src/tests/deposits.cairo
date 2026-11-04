@@ -192,7 +192,9 @@ fn principal_only_sweep_needs_no_published_reward_budget() {
 }
 
 #[test]
-fn mixed_sweep_debits_both_balances_with_distinct_receipts() {
+#[feature("safe_dispatcher")]
+fn mixed_sweep_keeps_earned_release_pinned_until_applied() {
+    use super::{IReleasesDispatcher, IReleasesDispatcherTrait};
     use crate::resources::{
         IResourceOperationsDispatcher, IResourceOperationsDispatcherTrait, ResourceKey, ResourceSlot,
     };
@@ -230,6 +232,20 @@ fn mixed_sweep_debits_both_balances_with_distinct_receipts() {
     };
     let (r, s) = sign(source, d.games, game_id, payment, false);
     entry.deliver_deposit(game_id, payment, r, s, false);
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let original = releases.release(1);
+    releases
+        .register_release(
+            2,
+            crate::logic::release::Release {
+                classes: games_storage::release::LogicClasses {
+                    prizes: super::declare_logic("ChangedEarnedSweepPrizesFixture"), ..original.classes,
+                },
+                ..original,
+            },
+        );
+    assert_eq!(releases.current_release(), 2);
+    assert_eq!(releases.game_release(game_id), 1);
     let budget = snforge_std::interact_with_state(d.games, || crate::logic::lords_budget::budget(game_id));
     start_cheat_block_timestamp(d.games, context.game.unbox().end_at);
     snforge_std::start_cheat_transaction_hash(d.games, 88203);
@@ -250,6 +266,18 @@ fn mixed_sweep_debits_both_balances_with_distinct_receipts() {
     assert!(
         snforge_std::interact_with_state(
             d.games, || crate::state::read().relics.lords_withdrawals.read(88204).is_none(),
+        ),
+    );
+    releases.apply_release(game_id, 2);
+    assert_eq!(releases.game_release(game_id), 2);
+    snforge_std::start_cheat_transaction_hash(d.games, 88205);
+    let safe = ILedgerOperatorSafeDispatcher { contract_address: d.games };
+    assert_eq!(safe.sweep_lords(game_id, home).unwrap_err(), array!['earned release 2']);
+    assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 0, consumed: 0, swept: 40 });
+    assert_eq!(entry.principal_withdrawal(game_id, d.actor).unwrap().amount, 40);
+    assert!(
+        snforge_std::interact_with_state(
+            d.games, || crate::state::read().relics.lords_withdrawals.read(88205).is_none(),
         ),
     );
 }

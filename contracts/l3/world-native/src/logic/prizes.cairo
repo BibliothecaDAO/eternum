@@ -34,6 +34,8 @@ pub mod PrizesLogic {
     component!(path: LordsState, storage: relics, event: RelicEvent);
     #[abi(embed_v0)]
     impl Lords = LordsState::LordsImpl<ContractState>;
+    #[abi(embed_v0)]
+    impl EarnedLordsSweep = LordsState::EarnedLordsSweepImpl<ContractState>;
     impl LordsInternal = LordsState::InternalImpl<ContractState>;
     #[storage]
     #[allow(starknet::colliding_storage_paths)]

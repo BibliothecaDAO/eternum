@@ -48,6 +48,42 @@ pub mod FailingReleaseMigrationFixture {
         }
     }
 }
+#[starknet::contract]
+pub mod ChangedEarnedSweepPrizesFixture {
+    use crate::logic::entry::EntryAdministration;
+    use crate::logic::release::ReleaseState;
+
+    component!(path: ReleaseState, storage: release, event: ReleaseEvent);
+    impl ReleaseInternal = ReleaseState::InternalImpl<ContractState>;
+    component!(path: EntryAdministration, storage: administration, event: AdministrationEvent);
+    #[abi(embed_v0)]
+    impl Administration = EntryAdministration::LedgerOperatorImpl<ContractState>;
+    impl AdministrationInternal = EntryAdministration::InternalImpl<ContractState>;
+
+    #[storage]
+    #[allow(starknet::colliding_storage_paths)]
+    struct Storage {
+        #[substorage(v0)]
+        release: ReleaseState::Storage,
+        #[substorage(v0)]
+        administration: EntryAdministration::Storage,
+    }
+    #[event]
+    #[derive(Drop, starknet::Event)]
+    enum Event {
+        ReleaseEvent: ReleaseState::Event,
+        AdministrationEvent: EntryAdministration::Event,
+    }
+    #[abi(embed_v0)]
+    impl EarnedSweep of crate::relics::IEarnedLordsSweep<ContractState> {
+        fn sweep_earned_lords(
+            ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
+        ) {
+            panic_with_felt252('earned release 2');
+        }
+    }
+}
+
 pub fn populated_facts(
     d: super::Deployment, game_id: u32, homes: Span<ResourceKey>, armies: Span<ExplorerKey>,
 ) -> Array<felt252> {

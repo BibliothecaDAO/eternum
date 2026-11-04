@@ -96,6 +96,34 @@ pub mod LordsState {
         }
     }
 
+    #[embeddable_as(EarnedLordsSweepImpl)]
+    pub impl EarnedLordsSweep<
+        TContractState,
+        +HasComponent<TContractState>,
+        impl Life: ReleaseState::HasComponent<TContractState>,
+        +Drop<TContractState>,
+    > of crate::relics::IEarnedLordsSweep<ComponentState<TContractState>> {
+        fn sweep_earned_lords(
+            ref self: ComponentState<TContractState>,
+            game_id: u32,
+            structure_id: u64,
+            context: crate::commands::ActionContext,
+        ) {
+            crate::logic::entry::assert_ledger_operator();
+            let context = crate::commands::execution_context(game_id, context);
+            let realm = ResourceKey { game_id, entity_id: structure_id };
+            let record = crate::logic::structures::record(realm);
+            assert!(record.base.category == crate::taxonomy::REALM_CATEGORY, "withdrawal requires a realm");
+            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
+            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
+            if balance == 0 {
+                return;
+            }
+            assert!(crate::logic::lords_budget::budget(game_id).is_some(), "Frontier pool not published");
+            self.withdraw_realm_lords(realm, record.owner, balance / crate::rules::RESOURCE_PRECISION, context);
+        }
+    }
+
     #[generate_trait]
     pub impl InternalImpl<
         TContractState,
@@ -103,21 +131,6 @@ pub mod LordsState {
         impl Life: ReleaseState::HasComponent<TContractState>,
         +Drop<TContractState>,
     > of InternalTrait<TContractState> {
-        fn sweep_earned(
-            ref self: ComponentState<TContractState>,
-            realm: ResourceKey,
-            account: ContractAddress,
-            context: ExecutionContext,
-        ) {
-            let balance = crate::logic::resources::balance(realm, crate::resources::LORDS);
-            assert!(balance % crate::rules::RESOURCE_PRECISION == 0, "fractional realm LORDS");
-            if balance == 0 {
-                return;
-            }
-            assert!(crate::logic::lords_budget::budget(realm.game_id).is_some(), "Frontier pool not published");
-            self.withdraw_realm_lords(realm, account, balance / crate::rules::RESOURCE_PRECISION, context);
-        }
-
         fn withdraw_realm_lords(
             ref self: ComponentState<TContractState>,
             realm: ResourceKey,
