@@ -1,0 +1,20 @@
+{
+  "mineral": {
+    "title": "A · Mineral descent",
+    "summary": "Ash shelves, cold crystal, then a fractured abyss. Strongest distinction at a glance.",
+    "depths": {
+      "1": { "title": "Ash shelves", "stone": "#827d8e", "shadow": "#302c42", "energy": "#b999f4", "scale": 0.7, "veins": 0.06, "shape": "shelf", "height": 0.24, "density": 0.18 },
+      "2": { "title": "Crystal night", "stone": "#386b84", "shadow": "#152936", "energy": "#b4e6fa", "scale": 1.3, "veins": 0.1, "shape": "crystal", "height": 0.8, "density": 0.13 },
+      "3": { "title": "Fractured abyss", "stone": "#393044", "shadow": "#140c23", "energy": "#e584ff", "scale": 0.4, "veins": 0.18, "shape": "column", "height": 0.62, "density": 0.16 }
+    }
+  },
+  "violet": {
+    "title": "B · Violet descent",
+    "summary": "A restrained purple family: weathered slate, pale amethyst, then obsidian pillars.",
+    "depths": {
+      "1": { "title": "Weathered slate", "stone": "#645271", "shadow": "#2b2336", "energy": "#aa76dc", "scale": 0.9, "veins": 0.04, "shape": "shelf", "height": 0.2, "density": 0.18 },
+      "2": { "title": "Pale amethyst", "stone": "#9384a8", "shadow": "#3c3357", "energy": "#d4b9ff", "scale": 1.4, "veins": 0.06, "shape": "crystal", "height": 0.55, "density": 0.14 },
+      "3": { "title": "Obsidian heart", "stone": "#372539", "shadow": "#160d1d", "energy": "#ff8edb", "scale": 0.55, "veins": 0.14, "shape": "column", "height": 0.8, "density": 0.12 }
+    }
+  }
+}

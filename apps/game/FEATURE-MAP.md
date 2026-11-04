@@ -1163,3 +1163,19 @@ Skill points and the 0–V scale: the army panel shows lifetime XP, five point c
 Training construction includes I; research raises it through V. Preview `/lab/kit/hud/selected`, click **Level up**,
 choose an attribute or **Stamina**; `/lab/kit/hud/research` shows both research sides. Native command tests cover
 awarding and spending, while the browser capture records the shared controls at desktop and phone sizes.
+
+## Ethereal depth studies
+
+Art → Terrain → Ethereal depths (`/lab/ethereal-depths`). Set selects the current surface or one of two proposed
+families; Depth selects I–III. Every view keeps the same camera, shipped Spire and articulated knight. This is a
+presentation study only; it does not change live depth routing or the surface map.
+
+Reproduce the desktop and phone stills and the comparison page with one command from the repository root:
+
+```sh
+pnpm --dir apps/game prove:ethereal-depths --port 4197 --out .context/ethereal-depths
+```
+
+The command owns its dev server and browser, opens each lab address, checks both scale labels are in frame, captures the
+view and renderer state, and leaves each WebGL page immediately. `captures.json` and `client.log` retain evidence;
+`index.html` compares each depth against the current look. One set/depth table owns the preview and gallery content.
