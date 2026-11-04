@@ -3,13 +3,14 @@ import skins from "@/three/structures/realm-skins.json";
 import type { RealmSkin } from "@/three/structures/realm-skins";
 import { iconDefinition, type IconMeaning } from "./icon-meaning";
 import paintings from "./home-icons.json";
+import { REALM } from "./kit/words";
 
 export type HomeKind = "realm" | "wonder" | RealmSkin;
 
 /** Every home kind has a distinct painting at every age; board captures read the same catalog. */
 const icons = paintings satisfies Record<HomeKind, Record<RealmLevels, string>>;
 export const HOME_KINDS = {
-  realm: { label: "Realm", icons: icons.realm },
+  realm: { label: REALM, icons: icons.realm },
   wonder: { label: "Wonder", icons: icons.wonder },
   devcon: { label: skins.devcon.label, icons: icons.devcon },
   "devcon-golden": { label: skins["devcon-golden"].label, icons: icons["devcon-golden"] },
