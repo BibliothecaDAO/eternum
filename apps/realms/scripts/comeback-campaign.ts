@@ -1,3 +1,5 @@
+import { dayOf, type SeasonCalendar } from "../../../packages/core/src/utils/days";
+
 /**
  * Who gets the Devcon Season 0 comeback email, and the send itself: the parts of scripts/comeback-email.ts that decide
  * and that must be safe to run twice, kept apart from its reads and its Resend calls so they can be tested.
@@ -29,6 +31,105 @@ export function variantOf(account: Account, activeSince: number): VariantKey | n
   if (account.ticket) return account.lastAction < activeSince ? "N" : null;
   if (account.playtester && account.lastAction < activeSince) return "P";
   return null;
+}
+
+/** One confirmed event as Herald's history serves it (newest first). */
+export interface HistoryEvent {
+  model: string;
+  block_number: number | string;
+  value: Record<string, unknown>;
+}
+
+/** One daily claim as the snapshot's LaborGrant rows hold it: a home's claim on a Frontier day, by its account. */
+export interface LaborGrant {
+  account: string;
+  day: string | number;
+}
+
+/**
+ * The player each confirmed history kind names as the one who acted. A kind missing here stops the run, so an action
+ * the reader cannot attribute never passes for an absence.
+ */
+const ACTOR_OF: Record<string, (value: Record<string, unknown>) => unknown> = {
+  StoryEvent: (value) => value.owner,
+  // attacker_owner is the attacking army's structure id; the player is the attacker's own field.
+  BattleEvent: (value) => (value.attacker as { player?: unknown } | undefined)?.player,
+  GameplayRejected: (value) => value.actor,
+  BatchProgress: (value) => value.actor,
+};
+
+const address = (value: unknown) => `0x${BigInt(String(value)).toString(16)}`;
+
+/**
+ * Each player address's latest confirmed action, in seconds, from Herald's history and the season's daily claims.
+ * Every time is the latest the action can have happened, so a player who may have come back counts as back:
+ * - an event with a timestamp: that timestamp;
+ * - an event without one (a rejected command, a batch step): the earliest timestamp of any later block, else now;
+ * - a claim: the end of its Frontier day, else now.
+ * Research writes no event and no time anywhere confirmed, so a player whose only action was research is not seen.
+ */
+export class Activity {
+  private readonly latest = new Map<string, number>();
+  /** Blocks with a known timestamp, as [block, seconds], kept in block order. */
+  private readonly blockTimes: [number, number][] = [];
+  /** The newest block whose history this holds. */
+  heldBlock = 0;
+
+  constructor(
+    private readonly calendar: SeasonCalendar,
+    private readonly now: () => number = () => Math.floor(Date.now() / 1000),
+  ) {}
+
+  /** Folds history events newer than the held block; older ones are already in. */
+  noteHistory(events: readonly HistoryEvent[]) {
+    const fresh = events.filter((event) => Number(event.block_number) > this.heldBlock);
+    for (const event of fresh)
+      if (event.value.timestamp != null)
+        this.blockTimes.push([Number(event.block_number), Number(BigInt(String(event.value.timestamp)))]);
+    this.blockTimes.sort((a, b) => a[0] - b[0]);
+    for (const event of fresh) {
+      const actorOf = ACTOR_OF[event.model];
+      if (!actorOf) throw new Error(`unattributed history kind: ${event.model}`);
+      const actor = actorOf(event.value);
+      if (actor == null) throw new Error(`a ${event.model} event without its actor`);
+      const at =
+        event.value.timestamp != null
+          ? Number(BigInt(String(event.value.timestamp)))
+          : this.latestTimeOf(Number(event.block_number));
+      this.note(address(actor), at);
+      this.heldBlock = Math.max(this.heldBlock, Number(event.block_number));
+    }
+  }
+
+  /** Folds the season's daily claims, each at the end of its Frontier day. */
+  noteClaims(grants: readonly LaborGrant[]) {
+    for (const grant of grants) this.note(address(grant.account), this.dayEnd(Number(BigInt(String(grant.day)))));
+  }
+
+  /** An account's latest confirmed action over the addresses it owns; 0 for none. */
+  latestOf(addresses: readonly string[]) {
+    return Math.max(0, ...addresses.map((owned) => this.latest.get(address(owned)) ?? 0));
+  }
+
+  private note(owner: string, at: number) {
+    this.latest.set(owner, Math.max(this.latest.get(owner) ?? 0, at));
+  }
+
+  /** The earliest known timestamp at or after a block: no block after it can be older. */
+  private latestTimeOf(block: number) {
+    const later = this.blockTimes.find(([known]) => known >= block);
+    return later ? later[1] : this.now();
+  }
+
+  private dayEnd(index: number) {
+    for (let at = this.calendar.startMainAt; at < this.calendar.endAt; ) {
+      const day = dayOf(this.calendar, at);
+      if (!day) break;
+      if (day.index === index) return Math.min(day.end, this.now());
+      at = day.end;
+    }
+    return this.now();
+  }
 }
 
 export interface Delivery {

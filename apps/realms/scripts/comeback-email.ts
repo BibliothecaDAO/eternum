@@ -20,8 +20,11 @@ import { sendEmail, type Email } from "../../../packages/notifications/src/email
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
+  Activity,
   sendCampaign,
   sendRecord,
+  type HistoryEvent,
+  type LaborGrant,
   variantOf,
   wranglerFailure,
   type Account,
@@ -65,10 +68,10 @@ interface Season {
   usdLeft: number;
   endsAt: number;
   rules: LaborRuleAmounts;
-  /** Each player address's latest confirmed action (Herald's history), in seconds; caught up before each send. */
-  lastAction: Map<string, number>;
-  /** The newest block whose events lastAction holds. */
-  historyBlock: number;
+  /** Each player's latest confirmed action (Herald's history and daily claims); caught up before each send. */
+  activity: Activity;
+  /** The block the snapshot was read at: every confirmed action up to it is in `activity`. */
+  confirmedBlock: number;
   seasonPlayers: Set<string>;
 }
 
@@ -94,8 +97,14 @@ async function readSeason(): Promise<Season> {
   const budget = model("LordsBudget")[0];
   const prize = Number(BigInt(model("FrontierPrize")[0].pool));
   const left = Number(BigInt(budget.pool_left));
-  const lastAction = new Map<string, number>();
-  const historyBlock = noteActions(lastAction, history, 0);
+  const activity = new Activity({
+    seed: BigInt(game.expedition.seed),
+    startMainAt: Number(game.clock.start_main_at),
+    endAt: Number(game.clock.end_at),
+    dayUnitSeconds: Number(game.expedition.day_unit_seconds),
+  });
+  activity.noteHistory(history as HistoryEvent[]);
+  activity.noteClaims(model("LaborGrant") as LaborGrant[]);
   return {
     players: Number(game.player_count),
     pool: Number(BigInt(budget.pool)) + prize,
@@ -105,8 +114,8 @@ async function readSeason(): Promise<Season> {
     usdLeft: left * price,
     endsAt: Number(game.clock.end_at),
     rules: model("LaborRules")[0] as LaborRuleAmounts,
-    lastAction,
-    historyBlock,
+    activity,
+    confirmedBlock: Number(snapshot.confirmed_block),
     seasonPlayers: new Set(model("PlayerEntry").map((entry: Row) => norm(entry.owner))),
   };
 }
@@ -120,38 +129,23 @@ async function readHistory(): Promise<Row[]> {
   }
 }
 
-/** Folds history events newer than `afterBlock` into each owner's latest action; returns the newest block seen. */
-function noteActions(lastAction: Map<string, number>, events: readonly Row[], afterBlock: number): number {
-  let newest = afterBlock;
-  for (const event of events) {
-    if (Number(event.block_number) <= afterBlock) continue;
-    newest = Math.max(newest, Number(event.block_number));
-    const owner = event.value?.owner;
-    if (!owner) continue;
-    const at = Number(BigInt(event.value.timestamp));
-    lastAction.set(norm(owner), Math.max(lastAction.get(norm(owner)) ?? 0, at));
-  }
-  return newest;
-}
-
 /**
- * Reads the confirmed actions since the season was read: Herald's history is newest first, so the pages from the top
- * until one reaches a block already held. One small read before each send.
+ * Reads the confirmed activity since the season was read: the daily claims again (one small snapshot read, which also
+ * names its confirmed block), then Herald's history, newest first, until a page reaches a block already held.
  */
 async function catchUpActivity(season: Season) {
+  const claims = await herald(`/games/${GAME}/snapshot?models=LaborGrant`);
   const fresh: Row[] = [];
   for (let offset = 0; ; offset += 500) {
     const page = await herald(`/games/${GAME}/history?limit=500&offset=${offset}`);
     fresh.push(...(page.items as Row[]));
-    const reachedHeld = (page.items as Row[]).some((event) => Number(event.block_number) <= season.historyBlock);
+    const reachedHeld = (page.items as Row[]).some((event) => Number(event.block_number) <= season.activity.heldBlock);
     if (reachedHeld || offset + 500 >= page.total) break;
   }
-  season.historyBlock = noteActions(season.lastAction, fresh, season.historyBlock);
+  season.activity.noteHistory(fresh as HistoryEvent[]);
+  season.activity.noteClaims((claims.models as Row[])[0]?.rows.map((row: Row) => row.value) ?? []);
+  season.confirmedBlock = Number(claims.confirmed_block);
 }
-
-/** An account's latest confirmed Season 0 action over the addresses it owns, in seconds; 0 for none. */
-const latestAction = (season: Season, addresses: readonly string[]) =>
-  Math.max(0, ...addresses.map((address) => season.lastAction.get(address) ?? 0));
 
 async function readLordsPrice(): Promise<number> {
   const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=lords&vs_currencies=usd");
@@ -204,7 +198,7 @@ function readAccounts(
       ticket: tickets.get(user.realmsId) ?? null,
       playtester: owned.some((address) => playtesters.has(address)),
       inSeason: owned.some((address) => season.seasonPlayers.has(address)),
-      lastAction: latestAction(season, owned),
+      lastAction: season.activity.latestOf(owned),
       addresses: owned,
       optedOut: user.newsEmailOptOutAt != null,
       ...(withEmail ? { email: String(user.email) } : {}),
@@ -568,7 +562,8 @@ async function dryRun(target: Target) {
       {
         readAt: new Date().toISOString(),
         activeSinceUtc: new Date(since * 1000).toISOString(),
-        heraldBlock: season.historyBlock,
+        confirmedBlock: season.confirmedBlock,
+        historyBlock: season.activity.heldBlock,
         newsEmailSchema: newsSchema,
         figures: figures(season),
         recipients: counts,
@@ -656,7 +651,7 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
     deliveries,
     stillAway: async (delivery) => {
       await catchUpActivity(season);
-      return latestAction(season, delivery.addresses) < activeSince();
+      return season.activity.latestOf(delivery.addresses) < activeSince();
     },
     reserve: async (delivery) => reserveSend(target, delivery),
     send: async (delivery): Promise<Handoff> => {
