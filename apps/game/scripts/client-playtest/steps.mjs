@@ -2515,7 +2515,8 @@ async function openASiteCard(browser) {
   browser.press("Escape");
   const offered = [];
   for (const [dx, dy] of NEIGHBOUR_RING) {
-    if (!browser.observe().selection?.army) await pickTheSpireArmy({ browser });
+    // A dock with no button for the army (folded under another surface) leaves the card unreached, never a failure.
+    if (!browser.observe().selection?.army) await pickTheSpireArmy({ browser }).catch(() => null);
     const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
     if (!armyAt) return { card: null, offered };
     browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
