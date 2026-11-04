@@ -6,6 +6,7 @@ import {
   type GameActions,
   getBalance,
   getTroopResourceId,
+  canPayTroopRaise,
   readTroopRaiseCost,
   realmLearned,
   researchTier,
@@ -46,8 +47,8 @@ export interface SlotStart {
 
 /**
  * What Deploy needs, read from facts with no UI of its own: the open slots and the bar each would start an army on,
- * the troops at home, the wheat each troop costs and the wheat the realm holds. Troops are one count; the troop
- * resource they are drawn from is the realm's own, never shown.
+ * the troops at home and what raising them costs. Troops are one count; the troop resource they are drawn from is the
+ * realm's own, never shown.
  */
 interface DeployPlan {
   /** Today's open slots, in slot order, for the player to choose from. */
@@ -55,13 +56,23 @@ interface DeployPlan {
 
   /** The troops at home the next army draws from; null when the realm holds none. */
   troops: { type: TroopType; tier: TroopTier; atHome: number; cap: number } | null;
-  /** Whole wheat a troop costs to deploy (0 where deploying costs nothing). */
-  wheatPerTroop: number;
-  /** Whole wheat the realm holds. */
-  wheat: number;
+  /** What raising the troops at home costs; null when the realm holds none. */
+  raise: TroopRaise | null;
 }
 
-const PRECISION = BigInt(RESOURCE_PRECISION);
+/**
+ * What raising troops costs a realm, a new army's or an army's beside it, priced as the contract's raise_troops prices
+ * the whole batch (readTroopRaiseCost): Rations' cut counted on the batch, never one troop's price rounded and
+ * multiplied.
+ */
+export interface TroopRaise {
+  /** The wheat the realm holds, exact. */
+  wheat: number;
+  /** The wheat a batch of `count` troops costs, exact. */
+  wheatFor: (count: number) => number;
+  /** The most troops, up to the most that could go, whose raise the realm can pay. */
+  paysFor: number;
+}
 
 /**
  * The realm's deploy today; unknown while any slot, troop or wheat balance, or the realm's research, is. Troops at home
@@ -76,22 +87,18 @@ export const readDeployPlan = (
   const { defaultTick } = clock;
   const allowed = realm.base.troop_max_explorer_count;
   const open = openArmySlots(store, { game_id: realm.game_id, entity_id: realm.entity_id, allowedSlots: allowed });
-  const wheat = getBalance(safeInteger(realm.entity_id), ResourcesIds.Wheat, defaultTick, store).balance;
   // A troop's price waits on the realm's research: the Barracks' Rations lowers it.
   const learned = realmLearned(store, realm.game_id, realm.entity_id);
-  if (!open || wheat === undefined || learned === undefined) return undefined;
+  if (!open || learned === undefined) return undefined;
   const troops = readTroopsAtHome(store, realm, rules, clock);
   if (troops === undefined) return undefined;
+  const raise = troops && readTroopRaise(store, realm, troops, Math.min(troops.atHome, troops.cap), defaultTick);
+  if (raise === undefined) return undefined;
   // A new army's Logistics starts at its realm's Supply yard tier, which raises the bar a fresh slot starts full at.
   const trained = researchTier(learned, research.ROW_SUPPLY_YARD);
   const perExplore = exploreStaminaOf(store, realm.game_id);
   const starts = open.map((slot) => slotStart(slot, troops, trained, clock.defaultTick, perExplore));
-  return {
-    open: starts,
-    troops,
-    wheatPerTroop: troops ? wheatToRaise(store, realm, troops, 1, defaultTick) : 0,
-    wheat: Number(BigInt(wheat) / PRECISION),
-  };
+  return { open: starts, troops, raise };
 };
 
 /** One open slot's start, through the core's one rule for it (musterStamina), on the dock's clock. */
@@ -141,30 +148,39 @@ const readTroopsAtHome = (
   return null;
 };
 
-/**
- * Whole wheat to raise `count` troops into a new army or one beside the realm, as the contract's raise charges either
- * (rounded up).
- */
-export const wheatToRaise = (
+/** What raising up to `most` troops of a kind costs the realm today; unknown while a balance it pays from is. */
+export const readTroopRaise = (
   store: NativeFactStore,
   realm: NativeRows["Structure"],
   troops: { type: TroopType; tier: TroopTier },
-  count: number,
+  most: number,
   defaultTick: number,
-): number => {
-  const costs = readTroopRaiseCost(
-    store,
-    realm.game_id,
-    safeInteger(realm.entity_id),
-    getTroopResourceId(troops.type, troops.tier),
-    count,
-    defaultTick,
-  );
-  const wheat = costs?.find(({ resource }) => resource === ResourcesIds.Wheat)?.amount ?? 0n;
-  return Math.ceil(Number(wheat) / RESOURCE_PRECISION);
+): TroopRaise | undefined => {
+  const realmId = safeInteger(realm.entity_id);
+  const troop = getTroopResourceId(troops.type, troops.tier);
+  const priceOf = (count: number) => readTroopRaiseCost(store, realm.game_id, realmId, troop, count, defaultTick);
+  const wheat = getBalance(realmId, ResourcesIds.Wheat, defaultTick, store).balance;
+  if (wheat === undefined || priceOf(0) === undefined) return undefined;
+  const wheatOf = (count: number) => priceOf(count)?.find(({ resource }) => resource === ResourcesIds.Wheat)?.amount;
+  return {
+    wheat: Number(wheat) / RESOURCE_PRECISION,
+    wheatFor: (count) => Number(wheatOf(count) ?? 0n) / RESOURCE_PRECISION,
+    paysFor: mostThatPays(most, (count) => canPayTroopRaise(priceOf(count))),
+  };
 };
 
-/** How many troops could go by what is home and fits, how many the wheat pays for, and the fewer of the two. */
+/** The largest count from 0 to `most` that `pays`, which pays for every count below one it pays for. */
+const mostThatPays = (most: number, pays: (count: number) => boolean): number => {
+  let [low, high] = [0, Math.max(0, most)];
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (pays(middle)) low = middle;
+    else high = middle - 1;
+  }
+  return low;
+};
+
+/** How many troops could go by what is home and fits, how many their raise pays for, and the fewer of the two. */
 export interface TroopRange {
   troopsMax: number;
   wheatMax: number;
@@ -173,12 +189,14 @@ export interface TroopRange {
 
 /** The most one army can take: the troops at home, the castle's cap and the wheat, whichever runs out first. */
 export const deployRange = (plan: DeployPlan): TroopRange =>
-  plan.troops ? troopRange(Math.min(plan.troops.atHome, plan.troops.cap), plan) : { troopsMax: 0, wheatMax: 0, max: 0 };
+  plan.troops && plan.raise
+    ? troopRange(Math.min(plan.troops.atHome, plan.troops.cap), plan.raise)
+    : { troopsMax: 0, wheatMax: 0, max: 0 };
 
-/** The troops that could go, held to what the realm's wheat pays for at its price per troop. */
-export const troopRange = (troopsMax: number, wheat: { wheatPerTroop: number; wheat: number }): TroopRange => {
-  const wheatMax = wheat.wheatPerTroop > 0 ? Math.floor(wheat.wheat / wheat.wheatPerTroop) : troopsMax;
-  return { troopsMax, wheatMax, max: Math.min(troopsMax, wheatMax) };
+/** The troops that could go, held to what their raise pays for. */
+export const troopRange = (troopsMax: number, raise: TroopRaise): TroopRange => {
+  const wheatMax = Math.min(troopsMax, raise.paysFor);
+  return { troopsMax, wheatMax, max: wheatMax };
 };
 
 /**
@@ -193,7 +211,7 @@ export const wheatStopsAt = (range: TroopRange, count: number): { troops: number
 /** The army a count makes: the whole troops that go and what they cost in wheat. */
 export const previewDeploy = (plan: DeployPlan, count: number): { count: number; wheatCost: number } => {
   const whole = Math.max(0, Math.min(Math.floor(count), deployRange(plan).max));
-  return { count: whole, wheatCost: whole * plan.wheatPerTroop };
+  return { count: whole, wheatCost: plan.raise?.wheatFor(whole) ?? 0 };
 };
 
 /**

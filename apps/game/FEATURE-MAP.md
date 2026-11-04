@@ -735,7 +735,8 @@ each step downloads; add `--network 20,40` for a player's connection.
 
 `/lab/game?scenario=reinforce` stands the spire's 1,498 knights on a tile beside home, with 420 knights and 1,000 wheat
 at home: select the realm, right-click the army, **Max**, **Reinforce**; the lab's chain answers RecruitExplorer as the
-contract does, and the army reads 1,918 (`--steps lab-reinforce`, desktop and `--viewport 390x844`).
+contract does, and the army reads 1,918 (`--steps lab-reinforce`; with `--viewport 390x844` a finger taps the realm and
+holds the army).
 
 `/lab/game?scenario=merge-loses-xp` and `merge-keeps-tapped` stand the realm's two armies side by side (1,498 and 2,517
 knights): pick the spire's army, right-click the other for **Transfer troops**, **Merge into …**; the merge keeps the

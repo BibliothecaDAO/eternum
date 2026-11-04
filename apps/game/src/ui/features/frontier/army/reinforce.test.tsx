@@ -75,7 +75,7 @@ const armyBesideHome = () => {
     key = next;
   };
   moveTo(beside);
-  const holdWheat = (whole: number) =>
+  const holdWheat = (wheat: number) =>
     store.applyFacts([
       {
         model: "ResourceBalance",
@@ -84,7 +84,7 @@ const armyBesideHome = () => {
           game_id: 1,
           entity_id: 7,
           resource_type: ResourcesIds.Wheat,
-          balance: String(BigInt(whole) * BigInt(RESOURCE_PRECISION)),
+          balance: String(Math.round(wheat * RESOURCE_PRECISION)),
         },
       },
     ] as never);
@@ -140,7 +140,48 @@ it("opens on the army beside the realm at no troops, and raises the most it can 
     amount: 420 * RESOURCE_PRECISION,
     home_direction: getDirectionBetweenAdjacentHexes(fixture.beside, fixture.home),
   });
-  expect(close).toHaveBeenCalledOnce();
+  // The HUD hands the panel to the army once the troops land (useOrderSettledReturnsToTheArmy); the sheet closes nothing.
+  expect(close).not.toHaveBeenCalled();
+});
+
+/** One Rations pick on the Barracks row, a quarter wheat off each troop's 2: a knight raises for 1.75 wheat. */
+const withOneRations = (fixture: ReturnType<typeof armyBesideHome>) => {
+  const board = fixture.store.require("BoardRules", { game_id: 1 });
+  fixture.store.applyFacts([
+    { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
+    {
+      model: "RealmKnowledge",
+      key: "0xd",
+      value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
+    },
+  ] as never);
+};
+
+it.each([
+  ["seven Wheat raises four troops at 1.75 each", 7, "600 → 604", "7 Wheat"],
+  ["three and a half Wheat raises two", 3.5, "600 → 602", null],
+])("prices Max on the whole batch with Rations: %s", async (_case, wheat, after, price) => {
+  const fixture = armyBesideHome();
+  withOneRations(fixture);
+  fixture.holdWheat(wheat);
+  render(fixture);
+  await press("Max");
+  expect(troops()).toBe(after);
+  if (price) expect(host.textContent).toContain(price);
+});
+
+it("leaves a newer pick alone when the troops land after it", async () => {
+  const fixture = armyBesideHome();
+  const { add, close } = render(fixture);
+  let land!: (sent: unknown) => void;
+  add.mockImplementation(() => new Promise((resolve) => (land = resolve)));
+  close.mockImplementation(() => useUIStore.getState().closeSelectedTile());
+  await press("Max");
+  await press("Reinforce");
+  const newer = { kind: "hex" as const, hex: { col: 99, row: 98 } };
+  act(() => useUIStore.getState().selectOnMap(newer));
+  await act(async () => land({ transaction_hash: "0x1" }));
+  expect(useUIStore.getState().mapSelection).toEqual(newer);
 });
 
 it("stops Max where the wheat runs out, and says so in one line", async () => {

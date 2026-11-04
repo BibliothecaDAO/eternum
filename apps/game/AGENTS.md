@@ -167,7 +167,8 @@ through **Transfer troops**, under with and without lost XP (the target always s
 more), or with the owner's army after its fight standing on the camp it cleared: each army's tile, found under its
 token, hovered with nothing selected must open that army's plate, and an emptied tile none), `--steps lab-reinforce`
 (`/lab/game?scenario=reinforce`, the army beside home: the realm selected from its tile, the army right-clicked for
-**Reinforce**, Max and Reinforce sent, the army's token reading more troops once the chain's RecruitExplorer applies),
+**Reinforce** (at a phone's width a finger taps the realm and holds the army, through DevTools' touch input), Max and
+Reinforce sent; the chain's RecruitExplorer answer must leave the army at 1,918, no knights and 160 wheat at home),
 `--steps lab-visit` (`/lab/game?scenario=visit`, the painted Kingdom's game with a neighbour's Kingdom on the Season
 board, built in another order: Visit from the board, Leave, and Visit and Leave again, each arrival failing on another
 realm drawn, a building laid out without its model attached, shown and loaded, or a HUD panel past the screen's edge;

@@ -32,5 +32,5 @@ it("raises the troops into the army beside home, its realm paying them from its 
   const after = readReinforcePlan(chain, realm, SPIRE_ARMY, game.startsAt)!;
   expect(chain.require("ExplorerTroops", ARMY).troops.count).toBe(1_598n * PRECISION);
   expect(after.stock).toBe(before.stock - 100);
-  expect(after.wheat).toBe(before.wheat - 100 * before.wheatPerTroop);
+  expect(after.raise.wheat).toBe(before.raise.wheat - before.raise.wheatFor(100));
 });

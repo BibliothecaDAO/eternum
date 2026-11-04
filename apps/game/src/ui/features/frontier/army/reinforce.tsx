@@ -83,7 +83,10 @@ export const ReinforceSheet = ({
   const wheatStop = wheatStopsAt(range, shown);
   const sending = useInFlight("army", army.explorerId) !== undefined;
 
-  /** The sheet stays until the troops are in, its button carrying the wait; a refusal says why. */
+  /**
+   * The sheet stays until the order settles, its button carrying the wait; a refusal says why. The HUD then hands the
+   * panel to the army while this pick still stands (useOrderSettledReturnsToTheArmy), and leaves a newer pick alone.
+   */
   const reinforce = async () => {
     const signer = account.account;
     // Where the army stands is read again as it is sent: one that has moved off the realm's side sends nothing.
@@ -98,7 +101,6 @@ export const ReinforceSheet = ({
           home_direction,
         }),
       );
-      onClose();
     } catch (error) {
       toast.failed(error, REINFORCE.failed);
     }
@@ -124,7 +126,7 @@ export const ReinforceSheet = ({
       )}
       {plan && <ReinforceLimit plan={plan} wheatStop={wheatStop} />}
       {plan && range.max > 0 && (
-        <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: shown * plan.wheatPerTroop }])} />}>
+        <HudWindowFoot note={<HudCost line={costLine([{ of: "wheat", amount: plan.raise.wheatFor(shown) }])} />}>
           <HudButton
             kind="primary"
             icon="military"
@@ -147,7 +149,13 @@ const ReinforceLimit = ({ plan, wheatStop }: { plan: ReinforcePlan; wheatStop: R
   if (!wheatStop) return null;
   const line =
     wheatStop.troops === 0
-      ? shortfallLine({ kind: "short", of: "wheat", held: plan.wheat, need: plan.wheatPerTroop, wait: undefined })
+      ? shortfallLine({
+          kind: "short",
+          of: "wheat",
+          held: plan.raise.wheat,
+          need: plan.raise.wheatFor(1),
+          wait: undefined,
+        })
       : wheatForOnly(formatExact(wheatStop.troops), formatExact(wheatStop.of));
   return <HudNotice tone="bad" icon="wheat" line={line} />;
 };

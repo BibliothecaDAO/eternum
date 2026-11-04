@@ -20,7 +20,7 @@ import {
   judgeAfterDoorway,
 } from "./evidence.mjs";
 import { watchReleaseMove } from "./stale-release.mjs";
-import { openOrderSendGate, VIEWPORT } from "./browser-session.mjs";
+import { openOrderSendGate, touchAt, VIEWPORT } from "./browser-session.mjs";
 import { ENTRY_BUTTON, findHomeCardEntry } from "./player-entry.mjs";
 import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
@@ -3170,9 +3170,16 @@ function labMergeSteps(confirm) {
   ];
 }
 
-/** Realm 7, the lab's player realm, and the troops its army holds before it is reinforced. */
+/** Realm 7, the lab's player realm, the troops its army holds before it is reinforced, and what Max then leaves. */
 const LAB_REALM = 7;
 const ARMY_BEFORE_REINFORCE = 1_498;
+const AT_THE_CHAIN = 1_000_000_000n;
+/** All 420 knights at home go, for 840 of the 1,000 wheat: the army, the knights' stock (26) and the wheat (35) after. */
+const REINFORCED = {
+  troops: String(1_918n * AT_THE_CHAIN),
+  26: "0",
+  35: String(160n * AT_THE_CHAIN),
+};
 /** How far below its token a realm's tile may lie at the map's zoom: the realm's token stands lower than an army's. */
 const REALM_TILE_BELOW_TOKEN_PX = [70, 50, 90];
 const REINFORCE_STATE = `JSON.stringify({
@@ -3182,6 +3189,11 @@ const REINFORCE_STATE = `JSON.stringify({
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
   armyToken: document.querySelector('.mp-at[data-key="army:${PICKED_ARMY}"]')?.textContent ?? null,
   structure: window.__eternumMapSelection?.structure?.id ?? null,
+  // The chain's answer to the reinforcement: the army's troops and each balance the realm paid from, as they stand after.
+  answered: Object.fromEntries((window.__labChain?.sent ?? [])
+    .filter(({ command }) => command.kind === "ManageTroops")
+    .flatMap(({ answered }) => answered)
+    .map(({ model, value }) => model === "ExplorerTroops" ? ["troops", String(value.troops.count)] : [String(value?.resource_type), String(value?.balance)])),
 })`;
 const REALM_TOKEN = `JSON.stringify((() => {
   const slot = document.querySelector('.mp-at[data-key="structure:${LAB_REALM}"]');
@@ -3193,9 +3205,9 @@ const REALM_TOKEN = `JSON.stringify((() => {
 /**
  * Reinforcing as Blitz does (owner, 4 November 2026: "right click from the realm to the army opens the reinforcement"):
  * on the lab's reinforce game (src/lab/game/reinforce-scenario.ts) the realm is selected from its tile, the army beside
- * it right-clicked for the Reinforce sheet, Max pressed and Reinforce sent; the chain's RecruitExplorer answer leaves
- * the army's token reading the troops added. A phone's hold is a right-click with a touch: this list right-clicks with
- * the mouse on both sizes, as the merge's does.
+ * it right-clicked for the Reinforce sheet (a phone's finger taps the realm and holds the army, through DevTools' touch
+ * input), Max pressed and Reinforce sent; the chain's RecruitExplorer answer leaves the army 420 knights stronger and
+ * the realm with no knights and 160 wheat, and the army's token reads it.
  */
 const LAB_REINFORCE_STEPS = [
   { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
@@ -3204,15 +3216,21 @@ const LAB_REINFORCE_STEPS = [
   { name: "reinforce", play: reinforceWithMax, settleMs: 1_000, verify: armyReinforced },
 ];
 
+/** A tap's finger and a hold's, as the map's gesture recognizer tells them apart (its long press is 500 ms). */
+const TAP_MS = 80;
+const HOLD_MS = 800;
+
 /** Taps under the realm's token until the map has the realm selected. */
-async function selectTheRealm({ browser }) {
+async function selectTheRealm({ browser, devTools }) {
   browser.hover(POINTER_PARKED);
   await sleep(HOVER_SETTLE_MS);
   const token = browser.read(REALM_TOKEN);
   if (!token) return { token, tapped: null };
   for (const below of REALM_TILE_BELOW_TOKEN_PX) {
     const tapped = [token[0], token[1] + below];
-    browser.tap(tapped);
+    // A phone plays with a finger, a desktop with the mouse.
+    if (!onADesktop()) await touchAt(devTools, tapped, TAP_MS);
+    else browser.tap(tapped);
     await sleep(HOVER_SETTLE_MS);
     if (browser.read(REINFORCE_STATE).structure === LAB_REALM) return { token, tapped };
   }
@@ -3224,13 +3242,14 @@ function realmSelected({ played }) {
   return played.tapped ? completed(played) : failed("no tap under the realm's token selected it", played);
 }
 
-/** Right-clicks the army's tile, found under its token, with the realm selected. */
-async function openTheReinforcement({ browser }) {
-  browser.hover(POINTER_PARKED);
+/** Right-clicks (a phone holds) the army's tile, found under its token, with the realm selected. */
+async function openTheReinforcement({ browser, devTools }) {
+  if (onADesktop()) browser.hover(POINTER_PARKED);
   await sleep(HOVER_SETTLE_MS);
   const army = browser.read(ARMY_TILES)[PICKED_ARMY];
   if (!army) return { army: null, state: null };
-  browser.rightClick(army);
+  if (!onADesktop()) await touchAt(devTools, army, HOLD_MS);
+  else browser.rightClick(army);
   const state = await readUntil(
     () => browser.read(REINFORCE_STATE),
     (shown) => shown.sheet !== null,
@@ -3269,6 +3288,8 @@ function armyReinforced({ played }) {
   if (!(troops > ARMY_BEFORE_REINFORCE))
     return failed(`the army's token reads ${after.armyToken} after the reinforcement`, played);
   if (after.sheet?.startsWith("Reinforce")) return failed("the Reinforce sheet stays open after the answer", played);
+  if (JSON.stringify(after.answered) !== JSON.stringify(REINFORCED))
+    return failed(`the chain left ${JSON.stringify(after.answered)}, not ${JSON.stringify(REINFORCED)}`, played);
   return completed({ chosen: played.chosen, sent: after.sent, troops, panel: after.sheet });
 }
 

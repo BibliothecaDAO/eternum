@@ -5,6 +5,29 @@ import rowFixture from "../../../../../../../contracts/l3/world-native/schema/fi
 import { frontierDay } from "./deploy-fixture";
 import { deployArmy, deployDirection, deployRange, previewDeploy, readDeployPlan } from "./deploy-plan";
 
+/** The realm's wheat set to this much, at the chain's precision. */
+const holdWheat = (store: Parameters<typeof readDeployPlan>[0], wheat: number) =>
+  store.applyFacts([
+    {
+      model: "ResourceBalance",
+      key: "0xc",
+      value: { game_id: 1, entity_id: 7, resource_type: 35, balance: String(Math.round(wheat * 1_000_000_000)) },
+    },
+  ] as never);
+
+/** One Rations pick on the Barracks row, a quarter wheat off each troop's 2: a knight raises for 1.75 wheat. */
+const withOneRations = (store: Parameters<typeof readDeployPlan>[0]) => {
+  const board = store.require("BoardRules", { game_id: 1 });
+  store.applyFacts([
+    { model: "BoardRules", key: "0xa", value: { ...board, ration_step: "250000000" } },
+    {
+      model: "RealmKnowledge",
+      key: "0xd",
+      value: { game_id: 1, structure_id: 7, learned: String((1n << 14n) | (1n << 17n)) },
+    },
+  ] as never);
+};
+
 /** The deploy plan at the fixture's moment: t=350, default tick 3. */
 const planOf = (store: Parameters<typeof readDeployPlan>[0], row: Parameters<typeof readDeployPlan>[1]) =>
   readDeployPlan(store, row, readExpeditionRules(store, 1)!, { now: 350, defaultTick: 3 });
@@ -26,30 +49,35 @@ describe("Frontier's deploy", () => {
       start: { current: 150, max: 150, perExplore: 30 },
     });
     expect(plan.troops).toMatchObject({ type: TroopType.Knight, tier: TroopTier.T1, atHome: 420 });
-    expect(plan.wheatPerTroop).toBe(2);
-    expect(plan.wheat).toBe(1_000);
+    expect(plan.raise!.wheatFor(1)).toBe(2);
+    expect(plan.raise!.wheat).toBe(1_000);
   });
 
   it("caps the count at the troops at home, the castle's cap or the wheat, whichever comes first", () => {
     const { store, row } = frontierDay();
     const plan = planOf(store, row)!;
-    expect(deployRange({ ...plan, troops: { ...plan.troops!, cap: 10_000 } })).toEqual({
-      troopsMax: 420,
-      wheatMax: 500,
-      max: 420,
-    });
+    expect(deployRange(plan)).toMatchObject({ troopsMax: Math.min(420, plan.troops!.cap) });
     expect(deployRange({ ...plan, troops: { ...plan.troops!, cap: 300 } }).max).toBe(300);
-    expect(deployRange({ ...plan, wheat: 100 })).toMatchObject({ wheatMax: 50, max: 50 });
+    holdWheat(store, 100);
+    expect(deployRange(planOf(store, row)!)).toMatchObject({ wheatMax: 50, max: 50 });
     expect(deployRange({ ...plan, troops: null }).max).toBe(0);
+  });
+
+  it("prices the whole batch with Rations' cut, from the wheat held to the unit: never one troop's price rounded", () => {
+    const { store, row } = frontierDay();
+    withOneRations(store);
+    holdWheat(store, 7);
+    const plan = planOf(store, row)!;
+    expect(deployRange(plan)).toMatchObject({ wheatMax: 4, max: 4 });
+    expect(plan.raise!.wheatFor(4)).toBe(7);
+    holdWheat(store, 3.5);
+    expect(deployRange(planOf(store, row)!).max).toBe(2);
   });
 
   it("previews the whole troops a count sends and the wheat they cost", () => {
     const { store, row } = frontierDay();
-    const plan = { ...planOf(store, row)!, wheat: 1_000 };
-    expect(previewDeploy({ ...plan, troops: { ...plan.troops!, cap: 10_000 } }, 120.7)).toEqual({
-      count: 120,
-      wheatCost: 240,
-    });
+    const plan = planOf(store, row)!;
+    expect(previewDeploy(plan, 120.7)).toEqual({ count: 120, wheatCost: 240 });
   });
 
   it("counts Homecoming's return from an army whose day has ended among the troops this deploy finds", () => {

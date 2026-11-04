@@ -10,24 +10,22 @@ import {
   type Direction,
   getDirectionBetweenAdjacentHexes,
   RESOURCE_PRECISION,
-  ResourcesIds,
   type TroopTier,
   type TroopType,
 } from "@bibliothecadao/types";
 
-import { troopRange, type TroopRange, wheatToRaise } from "../deploy/deploy-plan";
+import { readTroopRaise, troopRange, type TroopRaise, type TroopRange } from "../deploy/deploy-plan";
 
 /**
  * What reinforcing an army from its realm needs, read from facts with no UI of its own: the troops it holds and the
  * most it may hold, the realm's stock of its own troop (the contract's recruit_explorer draws that stock and no other,
- * and credits no Homecoming), and the wheat each troop costs to raise against the wheat the realm holds.
+ * and credits no Homecoming), and what raising them costs, priced as Deploy prices it.
  */
 export interface ReinforcePlan {
   current: number;
   cap: number;
   stock: number;
-  wheatPerTroop: number;
-  wheat: number;
+  raise: TroopRaise;
 }
 
 const PRECISION = BigInt(RESOURCE_PRECISION);
@@ -44,21 +42,21 @@ export const readReinforcePlan = (
   if (!army || realmLearned(store, realm.game_id, realm.entity_id) === undefined) return undefined;
   const troops = { type: army.troops.category as TroopType, tier: army.troops.tier as TroopTier };
   const realmId = safeInteger(realm.entity_id);
-  const stock = getBalance(realmId, getTroopResourceId(troops.type, troops.tier), defaultTick, store).balance;
-  const wheat = getBalance(realmId, ResourcesIds.Wheat, defaultTick, store).balance;
-  if (stock === undefined || wheat === undefined) return undefined;
-  return {
-    current: Number(army.troops.count / PRECISION),
-    cap: configManager.getMaxArmySize(realm.base.level, troops.tier),
-    stock: Number(BigInt(stock) / PRECISION),
-    wheatPerTroop: wheatToRaise(store, realm, troops, 1, defaultTick),
-    wheat: Number(BigInt(wheat) / PRECISION),
-  };
+  const held = getBalance(realmId, getTroopResourceId(troops.type, troops.tier), defaultTick, store).balance;
+  if (held === undefined) return undefined;
+  const current = Number(army.troops.count / PRECISION);
+  const cap = configManager.getMaxArmySize(realm.base.level, troops.tier);
+  const stock = Number(BigInt(held) / PRECISION);
+  const raise = readTroopRaise(store, realm, troops, roomFor({ current, cap, stock }), defaultTick);
+  return raise && { current, cap, stock, raise };
 };
 
 /** The most the army can take: the realm's stock, the room under its cap and the wheat, whichever runs out first. */
-export const reinforceRange = (plan: ReinforcePlan): TroopRange =>
-  troopRange(Math.max(0, Math.min(plan.stock, plan.cap - plan.current)), plan);
+export const reinforceRange = (plan: ReinforcePlan): TroopRange => troopRange(roomFor(plan), plan.raise);
+
+/** The troops that could go before the wheat: the realm's stock, within the room under the army's cap. */
+const roomFor = ({ current, cap, stock }: Pick<ReinforcePlan, "current" | "cap" | "stock">): number =>
+  Math.max(0, Math.min(stock, cap - current));
 
 /**
  * Where the army stands against its realm's home today: the direction from it to the home when it stands on a tile
