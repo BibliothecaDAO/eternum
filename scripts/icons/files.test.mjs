@@ -6,6 +6,7 @@ import { join } from "node:path";
 import test from "node:test";
 import sharp from "sharp";
 import { validateIconFiles } from "./files.mjs";
+import { normalizeMaster, deliverIcon } from "./normalize.mjs";
 
 test("realm icon comparisons show renders of the current level models", async () => {
   const game = new URL("../../apps/game/", import.meta.url);
@@ -31,7 +32,7 @@ test("realm icon comparisons show renders of the current level models", async ()
   }
 });
 
-test("the build file check rejects missing masters and exports", async () => {
+test("the build file check rejects missing masters, missing exports and a delivery that differs from its master", async () => {
   const root = await mkdtemp(join(tmpdir(), "facets-files-"));
   const icons = [{ id: "production" }];
   try {
@@ -41,15 +42,17 @@ test("the build file check rejects missing masters and exports", async () => {
       '<svg width="100" height="100"><rect x="5" y="5" width="90" height="90" fill="red"/></svg>',
     );
     await sharp(artwork).png().toFile(join(root, "masters/production.png"));
+    const master = await normalizeMaster(join(root, "masters/production.png"));
     for (const size of [64, 128, 256]) {
       await assert.rejects(validateIconFiles(icons, root, root), new RegExp(`${size}/production.webp`));
       await mkdir(join(root, String(size)));
-      await sharp(artwork)
-        .resize(size, size)
-        .webp()
-        .toFile(join(root, String(size), "production.webp"));
+      await writeFile(join(root, String(size), "production.webp"), await deliverIcon(master, size, "production"));
     }
     await assert.doesNotReject(validateIconFiles(icons, root, root));
+    const delivered = await readFile(join(root, "128/production.webp"));
+    await writeFile(join(root, "128/production.webp"), await sharp(delivered).webp({ quality: 60 }).toBuffer());
+    await assert.rejects(validateIconFiles(icons, root, root), /Stale production delivery: .*128\/production.webp/);
+    await writeFile(join(root, "128/production.webp"), delivered);
     await writeFile(join(root, "64/production.webp"), "not an image");
     await assert.rejects(validateIconFiles(icons, root, root), /unsupported image format/);
   } finally {

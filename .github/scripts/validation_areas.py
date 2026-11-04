@@ -9,6 +9,8 @@ import fnmatch
 
 # A change to any of these runs every area: every area's checks install from them.
 SHARED = ["package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", ".npmrc"]
+# The checkout of every job that reads no media: a change to it runs each of them.
+MEDIA_FREE_CHECKOUT = ".github/actions/checkout-without-media/**"
 # CI files the static job owns. Static runs on every run, so a change to one selects no further area: static tests the
 # scripts and this map, and the deploy and publish workflows run only when dispatched, pushed to next or tagged.
 STATIC = [
@@ -16,6 +18,7 @@ STATIC = [
     ".github/workflows/static.yml",
     ".github/scripts/**",
     ".github/ISSUE_TEMPLATE/**",
+    MEDIA_FREE_CHECKOUT,
 ]
 # The payout relay's, co-signer's and monitor's readers, which apps/herald/src/value-readers.test.ts drives against Herald.
 VALUE_READERS = [
@@ -71,6 +74,7 @@ AREAS = {
     ],
     "herald": [
         ".github/workflows/test-herald.yml",
+        MEDIA_FREE_CHECKOUT,
         # deployment.bun.test.ts imports these through a spawned Python interpreter.
         "deploy/athanor/scripts/directory.py",
         "deploy/athanor/scripts/service_requests.py",
@@ -92,6 +96,7 @@ AREAS = {
     "services": [
         "contracts/l3/player-account/class-hash.json",
         ".github/workflows/test-services.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/launch-service/**",
         "apps/admin/**",
         "apps/realms/**",
@@ -116,6 +121,7 @@ AREAS = {
     ],
     "portal": [
         ".github/workflows/test-portal.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/web/**",
         "packages/db/**",
         "packages/chain/**",
@@ -127,6 +133,7 @@ AREAS = {
         "contracts/l2/ledger/**",
         "contracts/l2/collectibles/**",
         ".github/workflows/test-native.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/herald/src/**",
         "apps/launch-service/src/**",
         "apps/launch-service/migrations/**",
@@ -157,6 +164,7 @@ AREAS = {
     ],
     "runtime": [
         ".github/workflows/test-agent-runtime.yml",
+        MEDIA_FREE_CHECKOUT,
         "apps/agent-runner/**",
         "apps/launch-service/**",
         "apps/herald/src/native/schema.ts",
@@ -197,23 +205,27 @@ AREAS = {
     ],
     "amm": [
         ".github/workflows/test-ammv2.yml",
+        MEDIA_FREE_CHECKOUT,
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/ammv2/**"
     ],
     "collectibles": [
         ".tool-versions",
         ".github/workflows/test-collectibles.yml",
+        MEDIA_FREE_CHECKOUT,
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/collectibles/**"
     ],
     "mmr": [
         ".tool-versions",
         ".github/workflows/test-mmr.yml",
+        MEDIA_FREE_CHECKOUT,
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/mmr/**"
     ],
     "season_pass": [
         ".github/workflows/test-season-pass.yml",
+        MEDIA_FREE_CHECKOUT,
         ".github/actions/fetch-cairo-dependencies/**",
         "contracts/l2/season_pass/**"
     ],
@@ -246,6 +258,7 @@ AREAS = {
     ],
     "contract_scripts": [
         ".github/workflows/test-contract-scripts.yml",
+        MEDIA_FREE_CHECKOUT,
         "contracts/scripts-runtime/**",
         "packages/chain/chain-guard.js",
         "packages/chain/shard-manifest.js"

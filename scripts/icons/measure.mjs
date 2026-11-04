@@ -3,6 +3,7 @@ import { resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { DELIVERY_WEBP } from "./normalize.mjs";
 
 const repo = fileURLToPath(new URL("../../", import.meta.url));
 if (!process.argv[2]) throw new Error("Pass a new evidence directory.");
@@ -30,7 +31,7 @@ for (const size of [64, 128, 256]) {
         top: Math.floor(index / columns) * size,
       })),
     )
-    .webp({ quality: 90, alphaQuality: 100, effort: 6 })
+    .webp(DELIVERY_WEBP)
     .toBuffer();
   await writeFile(`${out}/atlas-${size}.webp`, atlas);
   rows.push({

@@ -11,6 +11,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v4

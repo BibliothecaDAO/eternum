@@ -4,6 +4,10 @@ import wasm from "vite-plugin-wasm";
 import { defineConfig } from "vitest/config";
 import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 
+function workerCap(cap: string | undefined) {
+  return cap ? { maxWorkers: Number(cap), minWorkers: 1 } : {};
+}
+
 export default defineConfig({
   plugins: [react(), wasm()],
   test: {
@@ -14,6 +18,9 @@ export default defineConfig({
       VITE_PUBLIC_L2_RPC_URL: "https://identity-rpc.realms.test",
     },
     globals: true,
+    // The shared machine caps test workers with VITEST_MAX_WORKERS, which vitest 2 does not read (only
+    // VITEST_MAX_FORKS/THREADS), so local runs took every core but one. Unset, as on CI, vitest keeps its default.
+    ...workerCap(process.env.VITEST_MAX_WORKERS),
     environment: "jsdom",
     environmentMatchGlobs: [
       ["src/three/**/*.test.ts", "node"],

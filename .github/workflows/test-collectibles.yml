@@ -8,6 +8,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/actions
+      - uses: ./.github/actions/checkout-without-media
       - uses: software-mansion/setup-scarb@v1
         with:
           tool-versions: .tool-versions
