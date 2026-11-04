@@ -9,16 +9,19 @@ interface FollowArmyCrossingInput {
   /** Whether the army passed through a spire between the two places (isArmyCrossing). */
   isCrossing(from: WorldSpatialHex, to: WorldSpatialHex): boolean;
   setLayer(alt: boolean): void;
-  lookAt(hexCoords: WorldSpatialHex): void;
+  /**
+   * The view passes from the army's old tile to its arrival through the spire, left drawn there (viewThroughSpire):
+   * true once it lands, false when a newer view or the map's exit cut it short.
+   */
+  lookThrough(from: WorldSpatialHex, to: WorldSpatialHex): Promise<boolean>;
   finishMovement(entityId: ID): void;
-  refresh(): Promise<unknown>;
   select(entityId: ID): void;
 }
 
 /**
  * The view follows the selected army through a spire, onto the other layer or into the Ethereal layer a region away:
- * the layer switches and the camera stands on its arrival, with no walk between. Follows projection state, including a
- * rollback, without overriding a later manual selection.
+ * the layer switches and the view passes to its arrival, with no walk between (a dive through the spire). Follows
+ * projection state, including a rollback, without overriding a later manual selection.
  */
 export async function followArmyCrossing(input: FollowArmyCrossingInput): Promise<void> {
   if (!input.isSceneActive()) return;
@@ -27,12 +30,12 @@ export async function followArmyCrossing(input: FollowArmyCrossingInput): Promis
     ({ entityId, previous, current }) =>
       entityId === selectedId && previous && current && input.isCrossing(previous.hexCoords, current.hexCoords),
   );
-  if (!crossing?.current) return;
+  if (!crossing?.current || !crossing.previous) return;
   const { entityId, hexCoords } = crossing.current;
   input.finishMovement(entityId);
   input.setLayer(hexCoords.alt);
-  input.lookAt(hexCoords);
-  await input.refresh();
-  if (!input.isSceneActive() || input.getLayer() !== hexCoords.alt || input.getSelectedId() !== entityId) return;
+  const landed = await input.lookThrough(crossing.previous.hexCoords, hexCoords);
+  if (!landed || !input.isSceneActive() || input.getLayer() !== hexCoords.alt || input.getSelectedId() !== entityId)
+    return;
   input.select(entityId);
 }

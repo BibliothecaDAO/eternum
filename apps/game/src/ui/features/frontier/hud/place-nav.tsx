@@ -1,7 +1,7 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { HudPanel } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel, type MenuItem, useHudList } from "@/ui/design-system/kit/hud-elements";
 import { useSideways } from "@/shell/frame/layout";
 
 import { CHAT, EVENTS_WORDS, MENU, REALM, RESEARCH, WORLD } from "@/ui/design-system/kit/words";
@@ -23,7 +23,8 @@ const DOTS: Record<Dot, string> = {
  * it was read), Chat and Menu, an icon and one word each, at the foot of every nav page, or down the left edge of a
  * phone held sideways. The switch shows where it takes the player, World on the realm and Realm on the map (owner, 26
  * October: "the toggle (button) should switch realms/world icon otherwise its not a toggle"), so it is never lit; each
- * other slot opens its place over the map and a second press closes it, and the lit slot is what is open.
+ * other slot opens its place over the map and a second press closes it, and the lit slot is what is open. Given views
+ * (on the map, once the realm has an Ethereal layer), the switch names the view shown and opens the list of them.
  */
 export const PlaceNav = ({
   place,
@@ -31,6 +32,7 @@ export const PlaceNav = ({
   onGo,
   realmDot,
   realmIcon = "realm",
+  views,
   researchDot,
   events,
   unread,
@@ -41,6 +43,8 @@ export const PlaceNav = ({
   onGo: (place: Place) => void;
   realmDot?: Dot;
   realmIcon?: IconMeaning;
+  /** The view shown and the list of views the switch opens in its place; none keeps the Realm / World switch. */
+  views?: { icon: IconMeaning; word: string; items: readonly MenuItem[] } | null;
   /** Whether Research has a node to buy; none leaves the slot out, for a player with no realm to research. */
   researchDot?: boolean;
   /** Events arrived since the Feed was last read. */
@@ -66,9 +70,10 @@ export const PlaceNav = ({
         <Slot
           switchTo={onRealm ? "world" : "realm"}
           lit={false}
-          icon={onRealm ? "map" : realmIcon}
-          word={onRealm ? WORLD : REALM}
+          icon={views?.icon ?? (onRealm ? "map" : realmIcon)}
+          word={views?.word ?? (onRealm ? WORLD : REALM)}
           badge={realmDot && <i className={cn("size-2 rounded-full", DOTS[realmDot])} />}
+          menu={views?.items}
           onClick={() => onGo("realm")}
         />
         {researchDot !== undefined &&
@@ -87,6 +92,7 @@ const Slot = ({
   icon,
   word,
   badge,
+  menu,
   onClick,
 }: {
   /** The Realm / World switch's destination, for what reads where the player is (the playtest); none for a place. */
@@ -95,23 +101,31 @@ const Slot = ({
   icon: IconMeaning;
   word: string;
   badge: ReactNode;
+  /** The choices a press opens (useHudList), in place of the slot's own press. */
+  menu?: readonly MenuItem[];
   onClick: () => void;
-}) => (
-  <button
-    type="button"
-    aria-current={lit ? "page" : undefined}
-    data-switch={switchTo}
-    onClick={onClick}
-    className={cn(
-      "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
-      "border-b-2",
-      lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
-    )}
-  >
-    <span className="flex items-center gap-0.5 text-hud-gold">
-      <SemanticIcon name={icon} size={22} />
-      {badge}
-    </span>
-    <span>{word}</span>
-  </button>
-);
+}) => {
+  const { triggerProps, list } = useHudList(word);
+  return (
+    <>
+      <button
+        {...(menu ? triggerProps : { onClick })}
+        type="button"
+        aria-current={lit ? "page" : undefined}
+        data-switch={switchTo}
+        className={cn(
+          "flex min-h-11 min-w-11 flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-1 text-hud-strong",
+          "border-b-2",
+          lit ? "border-hud-gold bg-hud-divider text-hud-gold" : "border-transparent text-hud-muted",
+        )}
+      >
+        <span className="flex items-center gap-0.5 text-hud-gold">
+          <SemanticIcon name={icon} size={22} />
+          {badge}
+        </span>
+        <span>{word}</span>
+      </button>
+      {menu && list(menu)}
+    </>
+  );
+};

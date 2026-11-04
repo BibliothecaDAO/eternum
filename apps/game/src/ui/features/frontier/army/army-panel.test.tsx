@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act } from "react";
+import { act, type ComponentProps } from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { learnResearch } from "@bibliothecadao/eternum";
@@ -9,7 +9,15 @@ import bindings from "../../../../../../../contracts/l3/world-native/schema/bind
 
 import { EARLY_ARMY, VETERAN_ARMY } from "../research/progression-fixture";
 import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
-import { ArmyDetail } from "./army-panel";
+import { ArmyDetail, useArmyStep } from "./army-panel";
+
+/** The detail with its step held as the army's sheet holds it, opened on the choices with `choosing`. */
+const Detail = ({
+  choosing = false,
+  ...props
+}: Omit<ComponentProps<typeof ArmyDetail>, "step"> & { choosing?: boolean }) => (
+  <ArmyDetail {...props} step={useArmyStep(props.army.available, choosing)} />
+);
 
 let host: HTMLDivElement;
 let root: Root;
@@ -28,9 +36,7 @@ afterEach(() => {
 
 /** The panel's level-ups for an army, with one attribute chosen: the foot's line under the verb. */
 const footFor = (army: ArmyDetailFacts, attribute: string) => {
-  act(() =>
-    root.render(<ArmyDetail army={readArmyDetail(army)} sending={false} choosing onLevelUp={() => undefined} />),
-  );
+  act(() => root.render(<Detail army={readArmyDetail(army)} sending={false} choosing onLevelUp={() => undefined} />));
   act(() => host.querySelector<HTMLButtonElement>(`[data-attribute="${attribute}"]`)!.click());
   return host.textContent;
 };
@@ -66,7 +72,7 @@ it("uses the lowest fitting point and clamps its refill to the new Logistics max
 it("spends the selected point on Stamina, doubles its refill and prevents wasting it on a full bar", () => {
   const spent = vi.fn();
   const army = { ...EARLY_ARMY, points: [1, 0, 1, 0, 0], stamina: { current: 30, max: 120, perExplore: 20 } };
-  act(() => root.render(<ArmyDetail army={readArmyDetail(army)} sending={false} choosing onLevelUp={spent} />));
+  act(() => root.render(<Detail army={readArmyDetail(army)} sending={false} choosing onLevelUp={spent} />));
   act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
   act(() => host.querySelector<HTMLButtonElement>('[aria-label="Spend III point"]')!.click());
   const refill = () => [...host.querySelectorAll("button")].find((button) => button.textContent === "Refill")!;
@@ -75,7 +81,7 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   expect(spent).toHaveBeenCalledWith({ kind: "Stamina", value: 3 });
   act(() =>
     root.render(
-      <ArmyDetail
+      <Detail
         army={readArmyDetail({ ...army, stamina: { ...army.stamina, current: 120 } })}
         sending={false}
         choosing
@@ -90,22 +96,32 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it("shows empty sockets and the inventory beside a cumulative XP milestone", () => {
-  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+it("shows empty sockets and the XP milestone, and no point while none is held", () => {
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
-  expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("I0II0III0IV0V0");
+  expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
   expect(host.textContent).toContain("12 / 75 XP");
 });
 
+it("shows only the ranks of the points held, beside Level up", () => {
+  act(() => root.render(<Detail army={readArmyDetail(VETERAN_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  const points = host.querySelector('[aria-label="Skill points"]')!;
+  expect([...points.children].map((point) => point.getAttribute("aria-label"))).toEqual([
+    "I points: 1",
+    "III points: 1",
+  ]);
+  expect(points.nextElementSibling?.textContent).toBe("Level up");
+});
+
 it("says on an attribute's hover what its next rank gives, the rank as the tooltip's gem", () => {
-  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   const battle = host.querySelector('button[aria-label^="Battle"]')!;
   expect(battle.getAttribute("data-tip")).toBe("I: 0% → +10% damage");
   expect(JSON.parse(battle.getAttribute("data-tip-ranks")!)).toEqual([{ rank: 1 }, ": 0% → +10% damage"]);
 });
 
 it("reads on its first step when the stamina is full again and what each tile explored sends home", () => {
-  act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={() => undefined} />));
+  act(() => root.render(<Detail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={() => undefined} />));
   const stats = host.querySelector('[data-army-step="stats"]')!;
   expect(stats.textContent).toContain("Full in 4h");
   expect(stats.textContent).toContain("+75 a tile");
@@ -113,7 +129,7 @@ it("reads on its first step when the stamina is full again and what each tile ex
   // A full army in a game whose reveals pay nothing reads neither.
   act(() =>
     root.render(
-      <ArmyDetail
+      <Detail
         army={readArmyDetail({
           ...EARLY_ARMY,
           stamina: { current: 120, max: 120, perExplore: 20 },
@@ -134,7 +150,7 @@ it("reads its stamina on one line: 18/140, a bar of one segment per explore's 20
   const army = { ...EARLY_ARMY, stamina: { current: 18, max: 140, perExplore: 20 } };
   act(() =>
     root.render(
-      <ArmyDetail
+      <Detail
         army={readArmyDetail(army)}
         refill={<button type="button">Refill</button>}
         sending={false}
@@ -161,7 +177,7 @@ const variants = (name: string) =>
 it("offers and submits every skill-point use and Scouting kind in the generated command catalog", () => {
   const spent = vi.fn();
   const army = readArmyDetail({ ...VETERAN_ARMY, points: [1, 1, 1, 1, 1] });
-  act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
+  act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
   const uses = variants("SkillPointUse");
   expect([...host.querySelectorAll("[data-attribute]")].map((button) => button.getAttribute("data-attribute"))).toEqual(
     uses.map(({ name }) => name.toLowerCase()),
@@ -202,7 +218,7 @@ it.each([0n, learnResearch(0n, research.ROW_SHRINE, 0), learnResearch(0n, resear
   (learned) => {
     const spent = vi.fn();
     const army = readArmyDetail({ ...EARLY_ARMY, learned, points: [1, 0, 0, 0, 0] });
-    act(() => root.render(<ArmyDetail army={army} sending={false} choosing onLevelUp={spent} />));
+    act(() => root.render(<Detail army={army} sending={false} choosing onLevelUp={spent} />));
     act(() => host.querySelector<HTMLButtonElement>('[data-attribute="scouting"]')!.click());
     expect(host.querySelector('[data-scout-kind="beasts"]')).toBeNull();
     const button = host.querySelector<HTMLButtonElement>('[data-scout-kind="sanctuaries"]');

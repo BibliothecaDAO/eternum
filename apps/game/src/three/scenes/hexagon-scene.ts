@@ -64,6 +64,7 @@ import { openMapArea } from "../utils/labels/hud-clearance";
 import { WORLD_HEX_SPACE, type HexSpace } from "../utils/utils";
 import { SceneShortcutManager } from "../utils/shortcuts";
 import { CameraView } from "./camera-view";
+import { endCameraMove, startCameraMove, stopCameraMove } from "./camera-moves";
 import {
   createCameraTransitionState,
   publishCameraTransitionFrame,
@@ -81,12 +82,6 @@ export interface SceneSetupContext {
   isCurrent: () => boolean;
 }
 
-/**
- * The move under way on each shared camera (keyed by its controls), whichever scene started it: the next writer of the
- * camera, an animation or a placement, stops it through it, so two scenes never drive one camera at once.
- */
-const cameraMoves = new WeakMap<object, () => void>();
-
 export abstract class HexagonScene {
   protected animationsPaused = false;
   private frozenCycleProgress = 0;
@@ -103,7 +98,7 @@ export abstract class HexagonScene {
   protected shortcutManager!: SceneShortcutManager;
   protected interactiveHexManager!: InteractiveHexManager;
   protected worldUpdateListener!: WorldUpdateListener;
-  protected cameraOwnedByFlight = false;
+  private cameraHolds = 0;
   protected highlightHexManager!: HighlightHexManager;
   protected locationManager!: LocationManager;
   protected visibilityManager!: CentralizedVisibilityManager;
@@ -363,12 +358,28 @@ export abstract class HexagonScene {
   }
 
   /**
-   * While a scene flight animates this scene's camera, the flight is the camera's only writer: the scene's own
-   * camera-driven work (zoom smoothing, refresh planning) stands down until the flight hands the camera back.
+   * While a flight animates this scene's camera (a scene flight, a dive through a spire), the flight is the camera's
+   * only writer: the scene's own camera-driven work (zoom smoothing, refresh planning) stands down until every flight
+   * holding the camera has handed it back through the returned call, each its own hold.
    */
-  public setCameraOwnedByFlight(owned: boolean): void {
-    this.cameraOwnedByFlight = owned;
+  public holdCamera(): () => void {
+    this.cameraHolds += 1;
+    if (this.cameraHolds === 1) this.onCameraHeld(true);
+    let held = true;
+    return () => {
+      if (!held) return;
+      held = false;
+      this.cameraHolds -= 1;
+      if (this.cameraHolds === 0) this.onCameraHeld(false);
+    };
   }
+
+  protected get cameraOwnedByFlight(): boolean {
+    return this.cameraHolds > 0;
+  }
+
+  /** The camera passes into a flight's hands, or back from the last one. */
+  protected onCameraHeld(_held: boolean): void {}
 
   public deactivateInputSurface(): void {
     this.inputManager.deactivate();
@@ -839,7 +850,7 @@ export abstract class HexagonScene {
     if (transitionStart.cancelledToken !== null) {
       incrementWorldmapRenderCounter("zoomTransitionsCancelled");
     }
-    this.stopCameraMove();
+    this.takeCamera();
 
     const duration = transitionDuration || 2;
     const transitionToken = this.cameraTransitionState.activeToken;
@@ -857,7 +868,7 @@ export abstract class HexagonScene {
         this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
         this.cameraTransitionTimeline = null;
         this.setCameraTransitionStatus("idle");
-        if (cameraMoves.get(this.controls) === cancel) cameraMoves.delete(this.controls);
+        endCameraMove(this.controls, cancel);
         onFinish?.();
       },
     });
@@ -894,7 +905,7 @@ export abstract class HexagonScene {
       this.cameraTransitionState = resolveCameraTransitionCompletion(this.cameraTransitionState, transitionToken);
       this.setCameraTransitionStatus("idle");
     };
-    cameraMoves.set(this.controls, cancel);
+    startCameraMove(this.controls, cancel);
     return cancel;
   }
 
@@ -904,16 +915,18 @@ export abstract class HexagonScene {
    * transition closed, so it cannot carry the camera on past this pose.
    */
   protected placeCamera(position: Vector3, target: Vector3): void {
-    this.stopCameraMove();
+    this.takeCamera();
     this.controls.target.copy(target);
     this.controls.object.position.copy(position);
     this.notifyControlsChanged();
   }
 
-  /** Stops the shared camera's move under way, through the cancel of the scene that started it, and any stray tween. */
-  private stopCameraMove(): void {
-    cameraMoves.get(this.controls)?.();
-    cameraMoves.delete(this.controls);
+  /**
+   * Takes the shared camera for a write: its move under way stops, through the cancel of whoever started it (a claim's
+   * holder included), and any stray tween.
+   */
+  private takeCamera(): void {
+    stopCameraMove(this.controls);
     this.cameraTransitionTimeline?.kill();
     this.cameraTransitionTimeline = null;
     gsap.killTweensOf(this.controls.object.position);

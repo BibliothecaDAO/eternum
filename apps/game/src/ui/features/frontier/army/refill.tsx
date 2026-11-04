@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { formatExact, formatShort, formatShortChange, LORDS } from "@bibliothecadao/types";
+import { formatExact, formatHeldAgainst, formatShortChange, LORDS } from "@bibliothecadao/types";
 import { HudButton, HudChip, HudSheet, HudSlider } from "@/ui/design-system/kit/hud-elements";
-import { CANCEL, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
+import { CANCEL, needsHave, REFILL, REFILLING, STAMINA } from "@/ui/design-system/kit/words";
 
 /** Every refill control requires enough LORDS to buy at least one whole stamina point. */
 const refillOutOfReach = (held: number | undefined): boolean => held === undefined || held < 1;
@@ -26,8 +26,13 @@ export const RefillButton = ({
   </HudButton>
 );
 
-/** The army card's compact refill opens the same partial purchase as the order bar. */
-export const RefillChip = ({
+/**
+ * The army panel's refill, over "Full in": the other way to a full bar, said in full on two lines, "Refill" over
+ * "123 LORDS", with the LORDS mark (the owner, 4 November: "its either full or pay"). Its price fills the whole bar; the
+ * confirm it opens buys part of it. Short of one LORDS it is red and takes no press, its hover saying what it needs
+ * and what the realm holds.
+ */
+export const RefillPrice = ({
   price,
   held,
   refilling = false,
@@ -37,16 +42,30 @@ export const RefillChip = ({
   held: number | undefined;
   refilling?: boolean;
   onRefill: () => void;
-}) => (
-  <HudChip
-    icons={["stamina", "lords"]}
-    label={REFILL}
-    disabled={refillOutOfReach(held) || refilling}
-    onPress={onRefill}
-  >
-    {refilling ? REFILLING : held === undefined ? "—" : formatShort(Math.min(price, Math.floor(held)))}
-  </HudChip>
-);
+}) => {
+  const short = refillOutOfReach(held);
+  const pair = formatHeldAgainst(held, price);
+  const holds = needsHave(pair.need, LORDS, pair.held);
+  return (
+    <HudButton
+      kind="secondary"
+      icon="lords"
+      tone={short ? "bad" : undefined}
+      disabled={short}
+      busy={refilling ? REFILLING : undefined}
+      title={short ? holds : undefined}
+      aria-label={`${REFILL} ${STAMINA} · ${pair.need} ${LORDS}${short ? ` · ${holds}` : ""}`}
+      onClick={onRefill}
+    >
+      <span className="flex flex-col items-start text-hud-label leading-tight">
+        <span>{REFILL}</span>
+        <span className="tabular-nums">
+          {pair.need} {LORDS}
+        </span>
+      </span>
+    </HudButton>
+  );
+};
 
 /**
  * A phone's picked army's stamina as its refill, one button over Level up (the owner, 27 October): "14/140", a press

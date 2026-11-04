@@ -1018,17 +1018,21 @@ describe("Devcon delivery through the game", () => {
   });
 });
 
-// A failed preparation must never reinforce or delete some other army left selected on the map.
-it.each(["reinforce-army", "delete-rehearsal-army"])(
-  "%s refuses to act before the rehearsal army is identified",
-  async (name) => {
-    const step = STEP_SETS["army-management"].steps.find((step) => step.name === name);
-    const browser = { observe: () => ({ selection: { army: { id: 99 } } }), tap: vi.fn(), click: vi.fn() };
-    expect(await step.play({ browser })).toEqual({ armyId: undefined, selected: false });
-    expect(browser.tap).not.toHaveBeenCalled();
-    expect(browser.click).not.toHaveBeenCalled();
-  },
-);
+// A failed preparation must never delete some other army left selected on the map.
+it("delete-rehearsal-army refuses to act before the rehearsal army is identified", async () => {
+  const step = STEP_SETS["army-management"].steps.find((step) => step.name === "delete-rehearsal-army");
+  const browser = { observe: () => ({ selection: { army: { id: 99 } } }), tap: vi.fn(), click: vi.fn() };
+  expect(await step.play({ browser })).toEqual({ armyId: undefined, selected: false });
+  expect(browser.tap).not.toHaveBeenCalled();
+  expect(browser.click).not.toHaveBeenCalled();
+});
+
+it("has no Reinforce in the army-management rehearsal: deploy, then delete", () => {
+  expect(STEP_SETS["army-management"].steps.map(({ name }) => name).slice(-2)).toEqual([
+    "deploy-rehearsal-army",
+    "delete-rehearsal-army",
+  ]);
+});
 
 it("requires a real regular-to-golden transition and confirmed claim in the upgrade rehearsal", () => {
   const verify = STEP_SETS["home-upgrade"].steps.find((step) => step.name === "upgrade-campaign-home").verify;

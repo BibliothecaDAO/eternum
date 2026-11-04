@@ -22,9 +22,8 @@ function setup() {
     setLayer: vi.fn((value: boolean) => {
       alt = value;
     }),
-    lookAt: vi.fn(),
+    lookThrough: vi.fn().mockResolvedValue(true),
     finishMovement: vi.fn(),
-    refresh: vi.fn().mockResolvedValue(undefined),
     select: vi.fn(),
   };
   return {
@@ -36,12 +35,12 @@ function setup() {
 }
 
 describe("following an army through a spire", () => {
-  it("switches on the projection crossing and selects only after the new layer renders", async () => {
+  it("switches on the projection crossing and selects only once the view has passed into the new layer", async () => {
     const { input } = setup();
-    let finish!: () => void;
-    input.refresh.mockImplementation(
+    let finish!: (landed: boolean) => void;
+    input.lookThrough.mockImplementation(
       () =>
-        new Promise<void>((resolve) => {
+        new Promise<boolean>((resolve) => {
           finish = resolve;
         }),
     );
@@ -49,7 +48,7 @@ describe("following an army through a spire", () => {
     expect(input.setLayer).toHaveBeenCalledWith(true);
     expect(input.finishMovement).toHaveBeenCalledWith(7);
     expect(input.select).not.toHaveBeenCalled();
-    finish();
+    finish(true);
     await pending;
     expect(input.select).toHaveBeenCalledWith(7);
     input.changes = input.changes.map((change) => ({
@@ -57,12 +56,12 @@ describe("following an army through a spire", () => {
       previous: change.current,
       current: { ...change.current!, hexCoords: { ...change.current!.hexCoords, alt: false } },
     }));
-    input.refresh.mockResolvedValue(undefined);
+    input.lookThrough.mockResolvedValue(true);
     await followArmyCrossing(input);
     expect(input.setLayer).toHaveBeenLastCalledWith(false);
   });
 
-  it("switches the view into the Ethereal layer a region down, the camera on the army's arrival", async () => {
+  it("passes the view through the spire from the army's old tile to its arrival a region down", async () => {
     const { input } = setup();
     // enter_depth: the same layer, a region down the map.
     input.changes = [
@@ -75,7 +74,10 @@ describe("following an army through a spire", () => {
     await followArmyCrossing(input);
     expect(input.finishMovement).toHaveBeenCalledWith(7);
     expect(input.setLayer).toHaveBeenCalledWith(false);
-    expect(input.lookAt).toHaveBeenCalledWith({ alt: false, col: 100, row: 111 });
+    expect(input.lookThrough).toHaveBeenCalledWith(
+      { alt: false, col: 100, row: 101 },
+      { alt: false, col: 100, row: 111 },
+    );
     expect(input.select).toHaveBeenCalledWith(7);
   });
 
@@ -91,7 +93,7 @@ describe("following an army through a spire", () => {
     await followArmyCrossing(input);
     expect(input.finishMovement).not.toHaveBeenCalled();
     expect(input.setLayer).not.toHaveBeenCalled();
-    expect(input.lookAt).not.toHaveBeenCalled();
+    expect(input.lookThrough).not.toHaveBeenCalled();
   });
 
   it("does not follow an unselected army", async () => {
@@ -101,12 +103,21 @@ describe("following an army through a spire", () => {
     expect(input.setLayer).not.toHaveBeenCalled();
   });
 
-  it("preserves a manual selection made while the new layer loads", async () => {
+  it("preserves a manual selection made while the view passes into the new layer", async () => {
     const { input, selectOther } = setup();
-    input.refresh.mockImplementation(async () => {
+    input.lookThrough.mockImplementation(async () => {
       selectOther();
+      return true;
     });
     await followArmyCrossing(input);
+    expect(input.select).not.toHaveBeenCalled();
+  });
+
+  it("leaves the newer view alone when it cut the pass short", async () => {
+    const { input } = setup();
+    input.lookThrough.mockResolvedValue(false);
+    await followArmyCrossing(input);
+    expect(input.setLayer).toHaveBeenCalledWith(true);
     expect(input.select).not.toHaveBeenCalled();
   });
 });

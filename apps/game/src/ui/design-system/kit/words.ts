@@ -1563,22 +1563,10 @@ export const ARMY_DETAIL = {
   legendary: (attribute: string) => `${attribute} is legendary`,
 } as const;
 
-/** Managing the picked army: stock reinforcement and permanent deletion. */
+/** Deleting the picked army, for good. */
 export const ARMY_MANAGEMENT = {
-  reinforce: "Reinforce",
-  reinforcing: "Reinforcing…",
   remove: "Delete",
-  cancel: "Cancel",
-  amount: "Troops to add",
-  after: "Troops after reinforcement",
-  cost: "Reinforcement cost",
-  homeOnly: "Reinforce beside your home on today's surface map.",
-  full: "This army is at its size limit.",
-  noStock: "No matching troops at home.",
-  chooseAmount: "Choose how many troops to add.",
-  shortCost: "Your realm cannot pay this raising cost.",
   confirmDelete: "Delete this army?",
   loss: "Its troops, skills, XP and carried resources are lost. Its slot keeps its stamina.",
-  reinforceFailed: "The army could not be reinforced.",
   deleteFailed: "The army could not be deleted.",
 } as const;

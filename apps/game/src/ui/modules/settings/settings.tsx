@@ -30,6 +30,7 @@ import { ContractAddress, formatExact } from "@bibliothecadao/types";
 
 import { useState } from "react";
 import { shortAddress } from "@/ui/design-system/kit/address";
+import { HowToPlayRow, useHowToPlay } from "../how-to-play";
 import { AppSettings } from "./app-settings";
 import { SettingsSection } from "./settings-section";
 import { KeyboardShortcuts } from "./keyboard-shortcuts";
@@ -40,12 +41,14 @@ export const SETTINGS_POPOVER_ID = "settings";
 const effectsCategories = Object.values(AudioCategory).filter((category) => category !== AudioCategory.MUSIC);
 
 /**
- * Player settings first; installing the app and the keys, rarely touched, come last before the session. The keys are
+ * Player settings first; installing the app and the keys, rarely touched, then How to play (the game's guide on the
+ * docs site, in a new tab, the one help Blitz's HUD offers) come last before the session. The keys are
  * one row whose Show opens their list in Settings' place, so Settings stays one short page; closing Settings closes it. A row a device cannot use
  * (Haptics where nothing vibrates, the keys on a touch-first device) is not drawn there.
  */
 export const SettingsPanel = () => {
   const [shortcuts, setShortcuts] = useState(false);
+  const guide = useHowToPlay();
   if (shortcuts) return <KeyboardShortcuts />;
   return (
     <div className="flex flex-col gap-4 p-1">
@@ -59,6 +62,7 @@ export const SettingsPanel = () => {
         <NotificationSettings />
       </SettingsSection>
       <AppSettings onShowKeys={() => setShortcuts(true)} />
+      <HowToPlayRow guide={guide} />
       <SessionActions />
     </div>
   );

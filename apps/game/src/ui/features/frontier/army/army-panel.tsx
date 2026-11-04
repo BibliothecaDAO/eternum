@@ -21,37 +21,53 @@ import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-de
 
 import { pointChoices, scoutingChoices } from "../progression-choices";
 
+/** Where an army's panel stands: its status, or its level-up choices. */
+interface ArmyStep {
+  choosing: boolean;
+  choose: (choosing: boolean) => void;
+}
+
 /**
- * An army's detail (the owner's picks, 20 and 22 October), in two steps in one place. First its status, beside its
- * portrait in two rows: its troops, what each tile explored sends home and the refill, then its stamina line; its four attributes
- * as tiles (each its tier and what it gives, a press
- * opening its level-up); its XP with how XP is earned on its hover, and Level up: the primary once a held point fits a level,
- * else a way to see the next ranks. Level up turns the same place to the four choices, each with what it gives next
- * and its point, Scouting's kind, and the verb; the sheet's cross closes it, and the army opens again on its status (no
- * Back: the owner's pick A, 2 November 2026). Once the army's last point is spent the choices have nothing left to buy,
- * so the place returns to the status.
+ * The step an army's panel stands on, held by whoever draws its frame, so the frame's head (the army's trash) and the
+ * panel read one step. It opens on the choices when asked (a phone's Level up beside the picked army), and returns to
+ * the status once the army's last point is spent.
+ */
+export const useArmyStep = (available: number, choosing = false): ArmyStep => {
+  const [open, setOpen] = useState(choosing);
+  const [held, setHeld] = useState(available);
+  if (held !== available) {
+    setHeld(available);
+    if (available === 0) setOpen(false);
+  }
+  return { choosing: open, choose: setOpen };
+};
+
+/**
+ * An army's detail (the owner's picks, 20 and 22 October; its layout B', 4 November), in two steps in one place. First
+ * its status, beside its portrait in two rows: its troops and what each tile explored sends home, then its stamina line,
+ * the two ways to a full bar at its right end, the refill's price over when it is full; its four attributes as a 2×2
+ * list (each its tier and what it gives, a press opening its level-up); its XP, the points it holds and Level up: the
+ * primary once a held point fits a level, else a way to see the next ranks. Level up turns the same place to the four
+ * choices, each with what it gives next and its point, Scouting's kind, and the verb; the sheet's cross closes it, and
+ * the army opens again on its status (no Back: the owner's pick A, 2 November 2026). Once the army's last point is spent
+ * the choices have nothing left to buy, so the place returns to the status.
  */
 export const ArmyDetail = ({
   army,
   refill,
   sending,
-  choosing = false,
+  step,
   onLevelUp,
 }: {
   army: ArmyView;
-  /** The refill's control, at the end of the chips' row, so the stamina line keeps its width. */
+  /** The refill's control, at the chips' row's end over "Full in" (pay or wait); the stamina line keeps its width. */
   refill?: ReactNode;
   sending: boolean;
-  /** Opens on the choices: the picked army's Level up on a phone, and the lab's second step. */
-  choosing?: boolean;
+  /** The step it stands on, held by whoever draws its frame (useArmyStep), so the frame's head shows what fits it. */
+  step: ArmyStep;
   onLevelUp: (choice: SkillPointChoice) => unknown;
 }) => {
-  const [open, setOpen] = useState(choosing);
-  const [held, setHeld] = useState(army.available);
-  if (held !== army.available) {
-    setHeld(army.available);
-    if (army.available === 0) setOpen(false);
-  }
+  const { choosing: open, choose: setOpen } = step;
   const [chosen, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
   const [kind, setKind] = useState<ScoutKind>("camp");
   const [staminaRank, setStaminaRank] = useState<SkillPointRank>(army.staminaPoints[0]?.rank ?? 1);
@@ -156,9 +172,9 @@ export const ArmyDetail = ({
           <StaminaLine stamina={army.stamina} secondsToFull={army.secondsToFull} />
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 gap-1.5">
         {army.attributes.map((attribute) => (
-          <AttributeTile key={attribute.key} attribute={attribute} onOpen={() => choose(attribute.key)} />
+          <AttributeRow key={attribute.key} attribute={attribute} onOpen={() => choose(attribute.key)} />
         ))}
       </div>
       <XpBlock army={army} onLevelUp={() => setOpen(true)} />
@@ -198,10 +214,10 @@ const StaminaLine = ({ stamina, secondsToFull }: Pick<ArmyView, "stamina" | "sec
 );
 
 /**
- * An attribute as a tile: its mark filling the frame, its name, its tier and what it gives; its hover says what
- * its next tier gives and costs, and a press opens its level-up.
+ * An attribute as a row half the sheet wide: its mark, its name and tier over what it gives; its hover says what its
+ * next tier gives and costs, and a press opens its level-up.
  */
-const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
+const AttributeRow = ({ attribute, onOpen }: { attribute: AttributeView; onOpen: () => void }) => (
   <button
     type="button"
     aria-label={`${attribute.name} ${attribute.now}`}
@@ -211,12 +227,16 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
         : ARMY_DETAIL.legendary(attribute.name),
     )}
     onClick={onOpen}
-    className="flex min-w-0 flex-col items-center gap-1 rounded-md border border-hud-line bg-hud-well px-1 py-2 hover:bg-hud-hover"
+    className="flex min-w-0 items-center gap-2 rounded-md border border-hud-line bg-hud-well px-2 py-1.5 text-left hover:bg-hud-hover"
   >
-    <Icon name={attribute.mark} size={40} />
-    <span className="text-hud-label text-hud-ink">{attribute.name}</span>
-    <HudTier tier={attribute.level} />
-    <span className="text-center text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
+    <Icon name={attribute.mark} size={32} />
+    <span className="flex min-w-0 flex-col">
+      <span className="flex items-center gap-1 text-hud-label text-hud-ink">
+        {attribute.name}
+        <HudTier tier={attribute.level} />
+      </span>
+      <span className="truncate text-hud-label tabular-nums text-hud-good">{attribute.now}</span>
+    </span>
   </button>
 );
 
@@ -230,26 +250,33 @@ const XpLine = ({ army }: { army: ArmyView }) => (
   </span>
 );
 
+/** The XP toward the next point, the points held beside Level up (only the ranks held), and the XP's meter. */
 const XpBlock = ({ army, onLevelUp }: { army: ArmyView; onLevelUp: () => void }) => (
   <div className="flex flex-col gap-2">
-    <div className="flex items-center justify-between gap-2">
-      <div className="flex gap-2" role="group" aria-label="Skill points">
-        {SKILL_POINT_RANKS.map((rank) => (
-          <span
-            key={rank}
-            className="flex items-center gap-0.5 text-hud-label tabular-nums"
-            aria-label={`${tierNumeral(rank)} points: ${army.points[rank - 1]}`}
-          >
-            <HudTier tier={rank} />
-            <span>{army.points[rank - 1]}</span>
-          </span>
-        ))}
-      </div>
-      <LevelUpButton affordable={army.available > 0} onPress={onLevelUp} />
+    <div className="flex items-center gap-2">
+      <XpLine army={army} />
+      <span className="ml-auto flex items-center gap-2">
+        <HeldPoints points={army.points} />
+        <LevelUpButton affordable={army.available > 0} onPress={onLevelUp} />
+      </span>
     </div>
-    <XpLine army={army} />
     <HudMeter share={army.goal.share} label={XP} />
   </div>
+);
+
+/** The skill points held, only the ranks held: nothing at all while none is. */
+const HeldPoints = ({ points }: { points: readonly number[] }) => (
+  <span className="flex items-center gap-2" role="group" aria-label="Skill points">
+    {SKILL_POINT_RANKS.filter((rank) => points[rank - 1]! > 0).map((rank) => (
+      <span
+        key={rank}
+        className="flex items-center gap-0.5 text-hud-label tabular-nums text-hud-ink"
+        aria-label={`${tierNumeral(rank)} points: ${points[rank - 1]}`}
+      >
+        <HudTier tier={rank} />×{points[rank - 1]}
+      </span>
+    ))}
+  </span>
 );
 
 /**
