@@ -50,3 +50,17 @@ it("sends a plain-text email as plain text alone", async () => {
     text: "t",
   });
 });
+
+it("passes a news email's unsubscribe headers to Resend as they are", async () => {
+  const network = resend();
+  const unsubscribe = {
+    "List-Unsubscribe": "<https://play.realms.party/api/email/opt-out?u=0x1&t=sig>",
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
+  await sendEmail(
+    "test-key",
+    { sender: "Realms", to: "lord@realms.test", subject: "News", text: "words", headers: unsubscribe },
+    network,
+  );
+  expect(request(network).body.headers).toEqual(unsubscribe);
+});

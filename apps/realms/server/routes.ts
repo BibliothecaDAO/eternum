@@ -19,6 +19,7 @@ import { handleBuildOrders } from "./build-orders";
 import { hasCampaignHomeSource } from "./campaign-entry";
 import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
+import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
@@ -35,8 +36,8 @@ interface WorkerPlatform {
 }
 
 /**
- * Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings, build orders,
- * campaign tickets and the directory.
+ * Every /api route: identity under /api/auth, a news email's stop link, then devices, profiles, chat, notification
+ * settings, build orders, campaign tickets and the directory.
  */
 export const routeIdentityRequest = async (
   request: Request,
@@ -65,6 +66,9 @@ export const routeIdentityRequest = async (
     return claimDiscordHandoff(request, env);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
+  // A news email's stop link: its signature is its authority, and a mail client's one-click POST carries no Origin.
+  if (pathname === NEWS_EMAIL_OPT_OUT_PATH && (request.method === "GET" || request.method === "POST"))
+    return handleNewsEmailOptOut(request, env);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
   }

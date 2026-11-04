@@ -4,7 +4,8 @@ import type { HeraldFrontierLeaderboard, HeraldGameDirectoryEntry } from "@bibli
 import { SEASON_WORDS } from "@/ui/design-system/kit/words";
 
 import type { DirectoryGame } from "../../herald";
-import playtest from "./playtest.json";
+// The archive lives in packages/core, so the identity side reads the same board (apps/realms/scripts/comeback-email.ts).
+import playtest from "../../../../../../packages/core/src/sync/season-archives/playtest.json";
 
 /**
  * A season whose shard is gone, kept as its Herald served it after the end: the game's directory entry and its final
