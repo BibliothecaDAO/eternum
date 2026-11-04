@@ -442,8 +442,8 @@ describe("the build sheet", () => {
     ).not.toBeNull();
     expect(band(sheet, "Farm").getAttribute("data-tone")).toBe("bad");
     expect(band(sheet, "Farm").textContent).toMatch(/\d+[mhd]$/);
-    // Training names its purchase count instead of a building rarity.
-    expect(band(sheet, "War hall").textContent).toBe("2 research");
+    // Training names its purchases against the gate instead of a building rarity.
+    expect(band(sheet, "War hall").textContent).toBe("0/2 research");
     sheet.close();
 
     // Labor for all; the population full: a building that takes some says so in amber, the Hut stands ready.
@@ -560,7 +560,7 @@ describe("the build sheet", () => {
     render();
     act(() => card("War hall").click());
     // Training needs two Barracks purchases; no Barracks stands yet.
-    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 2 Barracks research purchases");
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 2 more Barracks research purchases (0/2)");
     expect(gold().textContent).toMatch(/^Build Barracks/);
     act(() => gold().click());
     expect(card("Barracks").getAttribute("aria-pressed")).toBe("true");
@@ -578,6 +578,16 @@ describe("the build sheet", () => {
     expect(gold().textContent).toBe("Research");
     act(() => gold().click());
     expect(onResearch).toHaveBeenCalledOnce();
+
+    // The owner's realm on prod (4 November): Drill I bought, so the lock counts it and asks for one more.
+    store.applyFacts([
+      fact("0x77", "RealmKnowledge", { game_id: 1, structure_id: 7, learned: String(1n << 14n) }),
+    ] as never);
+    render();
+    act(() => card("War hall").click());
+    expect(host.querySelector('[role="status"]')!.textContent).toBe("Needs 1 more Barracks research purchase (1/2)");
+    expect(card("War hall").closest(".ui-card")!.querySelector(".ui-chip")!.textContent).toBe("1/2 research");
+    expect(gold().textContent).toBe("Research");
     act(() => root.unmount());
     host.remove();
   });

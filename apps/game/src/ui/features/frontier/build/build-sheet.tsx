@@ -184,7 +184,7 @@ export const BuildSheet = ({
       .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
   const refusal = (): Refusal | undefined => {
     if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
-    if (option.standing !== "open") return gateRefusal(option.standing.gate);
+    if (option.standing !== "open") return gateRefusal(option.standing);
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
@@ -230,8 +230,8 @@ export const BuildSheet = ({
    * A training building waits for the Barracks purchases (the contract's assert_board_category): Research raises it
    * once a Barracks stands, and until one does the fix is to build it.
    */
-  const gateRefusal = (gate: number): Refusal => {
-    const reason = { kind: "failed", line: needsResearchPurchases(BARRACKS, gate) } as const;
+  const gateRefusal = ({ gate, bought }: { gate: number; bought: number }): Refusal => {
+    const reason = { kind: "failed", line: needsResearchPurchases(BARRACKS, bought, gate) } as const;
     if (getBuildingQuantity(realmId, BuildingType.ResourceKnightT1, setup.store) === 0)
       return {
         reason,
@@ -309,7 +309,7 @@ const buildTile = (option: BuildOption, holdings: Holdings): BuildTile => ({
 const standingOf = (option: BuildOption, { held, perHour, free }: Holdings): BuildTile["standing"] => {
   if (option.standing === "built") return { kind: "built" };
   // Training counts purchases across both Barracks sides.
-  if (option.standing !== "open") return { kind: "locked", purchases: option.standing.gate };
+  if (option.standing !== "open") return { kind: "locked", ...option.standing };
   const missing = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   const short: Extract<BuildTile["standing"], { kind: "price" }>["short"] = missing
     ? {

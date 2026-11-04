@@ -287,9 +287,16 @@ export const heldAgainstNeed = (held: number | undefined, need: number): string 
   const pair = formatHeldAgainst(held, need);
   return `${pair.held} / ${pair.need}`;
 };
-/** Training counts purchases across both sides, including one on each. */
-export const needsResearchPurchases = (building: string, count: number) =>
-  `Needs ${count} ${building} research purchases`;
+/**
+ * A training building's gate with the purchases bought toward it, on either Barracks side: "1/2". The count shows so a
+ * first purchase visibly counts: a realm one purchase short read "2 research" before and after it.
+ */
+export const purchasesOfGate = (bought: number, gate: number) => `${Math.min(bought, gate)}/${gate}`;
+/** What a locked training building still waits for: "Needs 1 more Barracks research purchase (1/2)". */
+export const needsResearchPurchases = (building: string, bought: number, gate: number) => {
+  const left = gate - bought;
+  return `Needs ${left} more ${building} research ${left === 1 ? "purchase" : "purchases"} (${purchasesOfGate(bought, gate)})`;
+};
 /** A training building already standing: a realm holds one of each. */
 export const ONE_A_REALM = "Built. A realm holds one.";
 /** The arrow beside a price that has risen (a screen reader's words). */
