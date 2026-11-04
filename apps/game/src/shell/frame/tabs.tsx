@@ -41,7 +41,7 @@ const CHAT_TAB: Place = { to: "/chat", word: CHAT_WORDS.chat, icon: "chat", matc
  * the account, and what is read now and then: What's new and Realms' marketplace.
  * The legal pages, read from the footer, are none of these places: no tab is current there (qa-app-1 P3-3).
  */
-const TABS: readonly Place[] = [
+export const TABS: readonly Place[] = [
   { to: "/", word: WORDS.play, icon: "play", matches: ["/", "/blitz"] },
   { to: "/season", word: WORDS.season, icon: "leaderboard", matches: ["/season", "/p/"] },
   CHAT_TAB,

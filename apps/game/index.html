@@ -88,9 +88,54 @@
           visibility 360ms ease;
       }
 
+      #boot-shell > div {
+        display: grid;
+        justify-items: center;
+        gap: 28px;
+      }
+
       #boot-shell img {
         width: min(60vw, 240px);
         height: auto;
+      }
+
+      /* The page's code still on its way (12 s on a slow link): a bar that moves under the mark, so the first screen never
+         reads as frozen; the doorway's own bar, with its share, follows it. */
+      #boot-shell i {
+        position: relative;
+        display: block;
+        width: min(48vw, 192px);
+        height: 4px;
+        overflow: hidden;
+        border-radius: 2px;
+        background: var(--plate2);
+      }
+
+      #boot-shell i::after {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 40%;
+        border-radius: 2px;
+        background: var(--gold);
+        animation: boot-shell-bar 1.4s ease-in-out infinite;
+      }
+
+      @keyframes boot-shell-bar {
+        from {
+          transform: translateX(-100%);
+        }
+        to {
+          transform: translateX(250%);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #boot-shell i::after {
+          animation: none;
+          width: 100%;
+          opacity: 0.5;
+        }
       }
 
       html[data-boot-state="app-loading"] #boot-shell,
@@ -111,7 +156,10 @@
       }
     </script>
     <div id="boot-shell" aria-hidden="true">
-      <img src="/images/logos/realms-lettered.webp" alt="" />
+      <div>
+        <img src="/images/logos/realms-lettered.webp" alt="" />
+        <i></i>
+      </div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

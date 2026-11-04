@@ -56,6 +56,7 @@ import {
   type FrameBudgetWorkLane,
   type FrameBudgetWorkScheduler,
 } from "../frame-budget-work-queue";
+import { afterWorldInteractive, isWorldInteractive } from "@/game-entry/world-interactive";
 
 const MAX_INSTANCES = 1000;
 
@@ -253,11 +254,22 @@ export class ChestManager {
 
   private prepareModel(): Promise<void> {
     if (this.chestModel || this.isDestroyed) return Promise.resolve();
+    // A chest is rare on the first screen: its model loads once the first view is up, then the chunk draws again.
+    if (!isWorldInteractive()) {
+      afterWorldInteractive(() => void this.redrawOnceModelLoads());
+      return Promise.resolve();
+    }
     // Chest geometry and effects belong to the noncritical chunk stage. Eager
     // compilation competes with the structures that gate the first visible map.
     return (this.modelLoadPromise ??= this.loadModel().finally(() => {
       this.modelLoadPromise = undefined;
     }));
+  }
+
+  private async redrawOnceModelLoads(): Promise<void> {
+    await this.prepareModel();
+    if (!this.isDestroyed && isCommittedManagerChunk(this.currentChunkKey))
+      await this.updateChunk(this.currentChunkKey, { force: true });
   }
 
   private async loadModel(): Promise<void> {

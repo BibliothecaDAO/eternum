@@ -15,6 +15,7 @@ import type { SpireModel } from "../structures/spire-model";
 import { FLAT_TERRAIN_SURFACE, placePositionOnTerrain, type TerrainSurface } from "../terrain/terrain-surface";
 import { getWorldPositionForHex } from "../utils";
 import { gltfLoader } from "../utils/utils";
+import { afterWorldInteractive } from "@/game-entry/world-interactive";
 
 /** Spires stood on the surface by a rule rather than a tile: a Frontier realm's spire, lit by depth research. */
 export interface RuleSpires {
@@ -204,7 +205,11 @@ export class SpireManager {
     this.model?.setCount(0);
     if (!tiles.length) return;
     if (!this.model || tiles.length > this.capacity) {
-      if (!this.loading) this.startModelLoad(tiles.length);
+      // The Spire's model loads once the first view is up, then stands: it is rarely on the first screen.
+      if (!this.loading)
+        afterWorldInteractive(() => {
+          if (!this.loading && !this.destroyed) this.startModelLoad(tiles.length);
+        });
       return;
     }
     tiles.forEach((tile, index) => this.placeSpire(tile, index));

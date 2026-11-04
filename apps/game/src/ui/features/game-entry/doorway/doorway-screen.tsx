@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 
 import { useLayout } from "@/shell/frame/layout";
 import { PageFrame } from "@/shell/frame/page-frame";
-import type { Painting } from "@/ui/design-system/kit/paintings";
+import { gamePainting, modeLabel } from "@/shell/game-links";
+import type { DirectoryGame } from "@/shell/herald";
 import { DEVICES_PATH } from "@/shell/profile/settings-route";
 import { AppButton, AppNotice, AppPanel } from "@/ui/design-system/kit/app-elements";
 import { TRY_AGAIN, DOORWAY_WORDS, WORDS } from "@/ui/design-system/kit/words";
 
 import type { DoorwayView } from "./doorway-view";
-import { StepTrack } from "./step-track";
+import { ComingUp, EntryProgress } from "./entry-progress";
 
 /** The realm coming through the doorway, as much of it as is known yet. */
 export interface DoorwayRealm {
@@ -18,29 +19,29 @@ export interface DoorwayRealm {
 }
 
 /**
- * The doorway (spec 07): the realm rising under its Order's emblem, and the steps (account → realm → map → play)
- * continuing by themselves, on the app's frame with Back to the app on every step, over the mode's painting: on desktop
- * one plate, on a phone the steps in the middle of the screen. It holds only for the one thing the
- * player must do, whose words come from their owners: sign in, try again, Devices, Watch or Results.
+ * The doorway (spec 07): the realm rising under its Order's emblem, and one bar across the steps (account → realm →
+ * map → play) continuing by themselves, with what a Frontier player's first minutes hold while their map loads, on the
+ * app's frame over the mode's painting: on desktop one plate, on a phone the middle of the screen. It holds only for the one
+ * thing the player must do, whose words come from their owners: sign in, try again, Devices, Watch or Results; a step
+ * that asks the player to choose (the Realm step's homes) stands in the bar's place, its verb under the thumb on a phone.
  */
 export const DoorwayScreen = ({
   view,
   realm,
-  title,
-  painting,
+  game,
   onRetry,
   onOpenRealm,
   onSignIn,
   onSpectate,
   results,
+  asking = false,
+  verb,
   children,
 }: {
   view: DoorwayView;
   realm: DoorwayRealm | null;
-  /** The mode being entered, beside Back, once it is known. */
-  title?: string;
-  /** The mode's painting behind the desktop's doorway, once the mode is known. */
-  painting?: Painting;
+  /** The game being entered, once the directory has it: its mode names the page, paints it and picks its advice. */
+  game?: Pick<DirectoryGame, "mode" | "preset_id">;
   onRetry: () => void;
   /** Opens the realm view without the map, when the map could not be drawn. */
   onOpenRealm?: () => void;
@@ -48,10 +49,18 @@ export const DoorwayScreen = ({
   onSpectate?: () => void;
   /** The finished game's Results page, where an ended game's doorway leads. */
   results?: string;
+  /** The step asks the player to choose (the Realm step's homes): what they choose from stands in the bar's place. */
+  asking?: boolean;
+  /** The asking step's one verb: in the foot row on a phone, under what it acts on on a desktop. */
+  verb?: ReactNode;
   /** A mode's own control at the realm step, kept inside the doorway's frame. */
   children?: ReactNode;
 }) => {
   const desktop = useLayout() === "desktop";
+  const player = view.steps.some(({ step }) => step === "account");
+  const loadingMap = view.steps.some(({ step, state }) => (step === "map" || step === "play") && state === "running");
+  const progress = !asking && <EntryProgress view={view} />;
+  const comingUp = game?.mode === "frontier" && player && loadingMap && view.blocker === null && <ComingUp />;
   const hold = (
     <Hold
       view={view}
@@ -65,24 +74,32 @@ export const DoorwayScreen = ({
   return (
     // The shell's surface from the window's edge, so the ground behind the frame is the shell's too.
     <div data-surface="shell" className="fixed inset-0 z-50 overflow-y-auto bg-app-ground">
-      <PageFrame title={title} painting={painting} stage>
+      <PageFrame
+        title={game ? modeLabel(game) : undefined}
+        painting={game ? gamePainting(game) : undefined}
+        stage
+        foot={desktop ? undefined : verb}
+      >
         {desktop ? (
-          <div className="flex min-h-[calc(100vh-12rem)] items-center justify-center">
+          <div className="flex min-h-[calc(100dvh-12rem)] items-center justify-center">
             <AppPanel className="w-column">
               <div className="flex flex-col items-stretch gap-5">
                 {realm && <RealmRising realm={realm} />}
-                <StepTrack steps={view.steps} />
+                {progress}
                 {hold}
                 {children}
+                {verb}
+                {comingUp}
               </div>
             </AppPanel>
           </div>
         ) : (
-          <div className="mx-auto flex min-h-[calc(100dvh-5rem)] w-full max-w-doorway flex-col items-center justify-center gap-6 py-6">
+          <div className="mx-auto flex min-h-full w-full max-w-doorway flex-col items-center justify-center gap-5 py-4">
             {realm && <RealmRising realm={realm} />}
-            <StepTrack steps={view.steps} />
+            {progress}
             {hold}
             {children}
+            {comingUp}
           </div>
         )}
       </PageFrame>

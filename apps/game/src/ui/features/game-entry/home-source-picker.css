@@ -212,3 +212,38 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* A short phone (a browser's toolbars showing): the chosen home's art stands beside its words, so the step and its
+   verb fit one screen. */
+@media (max-width: 640px) and (max-height: 760px) {
+  .home-picker__featured {
+    grid-template-columns: 6.5rem minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+  .home-picker__featured .home-art {
+    height: 6.5rem;
+  }
+  .home-picker__choice .home-art {
+    height: 3.75rem;
+  }
+}
+@media (max-width: 640px) and (max-height: 640px) {
+  .home-picker {
+    gap: 0.5rem;
+    margin-bottom: 0;
+  }
+  .home-picker__featured {
+    grid-template-columns: 5rem minmax(0, 1fr);
+    padding: 0.5rem;
+  }
+  .home-picker__featured .home-art {
+    height: 5rem;
+  }
+  .home-picker__about h3 {
+    font-size: var(--hud-text-title);
+    line-height: var(--hud-leading-title);
+  }
+  .home-picker__choice .home-art {
+    height: 3rem;
+  }
+}

@@ -4518,7 +4518,7 @@ export const STEP_SETS = {
           );
           extraScreenshot("source-choice");
           if (tier !== "regular") return { tier, founded: false };
-          browser.click("Found your realm");
+          browser.click("Create your realm");
           return { tier, founded: true };
         },
         settleMs: 5_000,

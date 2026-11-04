@@ -108,4 +108,21 @@ describe("the doorway", () => {
         .spectating,
     ).toBe("results");
   });
+
+  it("fills one bar across the track, the map's span following its model loads", () => {
+    const boot = (phase: Parameters<typeof doorwayView>[0]["phase"], modelShare?: number) =>
+      doorwayView({ source: "boot", phase: phase as never, audience: "player", modelShare }).percent;
+    expect(doorwayView({ source: "entry", phase: "loading", audience: "player", signedIn: true }).percent).toBe(0);
+    expect(doorwayView({ source: "entry", phase: "settlement", audience: "player", signedIn: true }).percent).toBe(10);
+    expect(boot("select_world")).toBe(25);
+    expect(boot("wait_worldmap_ready", 0)).toBe(46);
+    expect(boot("wait_worldmap_ready", 0.5)).toBe(71);
+    expect(boot("wait_worldmap_ready", 1)).toBe(95);
+    expect(boot("handoff_scene")).toBe(95);
+    expect(boot("ready")).toBe(100);
+    // A spectator's bar is the map and play alone.
+    expect(
+      doorwayView({ source: "boot", phase: "wait_worldmap_ready", audience: "spectator", modelShare: 1 }).percent,
+    ).toBe(93);
+  });
 });

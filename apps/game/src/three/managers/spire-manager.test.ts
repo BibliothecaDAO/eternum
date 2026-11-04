@@ -32,6 +32,10 @@ vi.mock("../structures/spire-model", () => ({
 
 import { endgameFrame } from "../effects/endgame/sequence";
 import { SpireManager } from "./spire-manager";
+import { markWorldInteractive } from "@/game-entry/world-interactive";
+
+// These spires stand in a game whose first view is up: their models load at once.
+markWorldInteractive();
 
 const tile = (col: number, occupierType: number) => ({ hexCoords: { col, row: 0 }, occupierType });
 

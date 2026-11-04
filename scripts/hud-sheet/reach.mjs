@@ -86,7 +86,6 @@ const AREAS = {
   "F. Shared surfaces": [
     "ui/modules/settings",
     "ui/modules/boot-loader",
-    "ui/modules/loading-screen.tsx",
     "ui/modules/loading-oroborus.tsx",
     "ui/modules/construction-gate.tsx",
     "ui/modules/entity-details/realm/realm-details.tsx",

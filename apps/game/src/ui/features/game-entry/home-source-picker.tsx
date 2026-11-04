@@ -456,6 +456,15 @@ interface HomeSources {
 }
 
 /**
+ * Whether the account has nothing to choose at the Realm step: every read answered and no Realm held, so its home is
+ * its ticket or a free one. Entry then creates the realm without asking (the owner's flow F3, 4 November 2026).
+ */
+export function useNothingToChoose(presetId: number): boolean {
+  const sources = useHomeSources(presetId);
+  return sources.ready && sources.realms.length === 0 && !sources.realmsUnreadable && !sources.ticketUnreadable;
+}
+
+/**
  * The account's sources from the holdings reads every screen shares (useHeldRealms, useHeldTicket). The step is ready
  * once both have answered: a failed read (Realms or ticket) is not an answer, so the step waits on its Try again rather
  * than offering a free home or a lesser default without it.
