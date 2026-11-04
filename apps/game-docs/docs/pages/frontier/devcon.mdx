@@ -44,9 +44,9 @@ Your home claims Labor and Essence once every game day: press **Realm Labor** be
 | A Realm you hold | {DEVCON.claim.realm}        | None                          |
 | A free home      | None                        | None                          |
 
-Every flyer looks the same. Some hold a golden ticket, revealed only when the ticket is opened. A ticket also turns
-golden when {DEVCON.goldenAt} of your friends count ([Invite friends](#invite-friends)). Devcon and golden realms have
-their own look on the map and on the Season board.
+Every flyer looks the same. Some hold a golden ticket, revealed only when the ticket is opened. Friends can turn a
+ticket golden too ([Invite friends](#invite-friends)). Devcon and golden realms have their own look on the map and on
+the Season board.
 
 <Shot frame="phone" name="devcon/golden" caption="A golden ticket opened." />
 
@@ -54,20 +54,24 @@ their own look on the map and on the Season board.
 
 ## Invite friends
 
-On **You**, share your invite link. Each friend who signs up through it gets a regular Devcon ticket.
+On **You**, share your invite link. Each friend who signs up through it gets a Devcon ticket, and 1 in
+{DEVCON.goldenOneIn} of those tickets is golden.
 
-A friend counts once they found a realm and clear a site. What counted friends give you depends on your home:
+A friend counts once they found a realm and clear a site. One person counts once: a friend who signs in with the same
+email inbox or on the same device as you, or as a friend already counted, does not count. What counted friends give you
+depends on your home:
 
-| Your home                      | What counted friends give you                                  |
-| ------------------------------ | -------------------------------------------------------------- |
-| A free home, or none yet       | A Devcon ticket at the first; then golden at {DEVCON.goldenAt} |
-| A Devcon home                  | Golden at {DEVCON.goldenAt}, from your next daily claim        |
-| A golden home, or a held Realm | Nothing more; your friends still get their tickets             |
+| Your home                | What counted friends give you                                                             |
+| ------------------------ | ----------------------------------------------------------------------------------------- |
+| A free home, or none yet | A Devcon ticket at the first; golden instead if that friend's ticket is golden            |
+| A Devcon home            | Golden, from your next daily claim once the game confirms it, when a golden friend counts |
+| A golden home            | Nothing more                                                                              |
+| A held Realm             | Nothing; your friends still get their tickets                                             |
 
-Every counted friend counts toward golden, the first one included. A ticket your friends earn is added to a free home
-when you next enter the game: **Choose a daily claim**, then **Add this daily claim**. A friend counts once, for the
-first link they used, and your own link gives you nothing. Friends count until the season ends, {DEVCON.ends.ist}
-({DEVCON.ends.utc}).
+At {DEVCON.goldenLinkAt} counted friends your link goes golden: you, every friend who used it, before and after, and
+every ticket it gives from then on. A ticket your friends earn is added to a free home when you next enter the game:
+**Choose a daily claim**, then **Add this daily claim**. A friend counts once, for the first link they used, and your
+own link gives you nothing. Friends count until the season ends, {DEVCON.ends.ist} ({DEVCON.ends.utc}).
 
 ## The LORDS
 

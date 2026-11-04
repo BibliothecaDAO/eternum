@@ -9,7 +9,8 @@ import { LONG_DAY_UNITS, SHORT_DAY_UNITS } from "./frontier";
 
 /**
  * The Devcon season as its page states it: the Devcon preset (preset 6, Frontier at Devcon's speed), the campaign its
- * flyers and invite links open (its season's start and end, and the friends that turn a ticket golden), and the
+ * flyers and invite links open (its season's start and end, a friend's golden odds and the friends that turn a link
+ * golden), and the
  * ledger's prize curve. Only the pool is set at launch rather than in code; it is the one value written here.
  */
 const campaign = CAMPAIGNS["devcon-2026"];
@@ -51,7 +52,8 @@ export const DEVCON = {
   leaderboardPool: n(leaderboardPool),
   places: chests.topN,
   prizes: prizeShares(BigInt(leaderboardPool), chests.topN).map((share) => n(Number(share))),
-  goldenAt: campaign.referral.goldenAt,
+  goldenOneIn: Math.round(1 / campaign.referral.goldenOdds),
+  goldenLinkAt: campaign.referral.goldenLinkAt,
   claim: { ticket: claimOf(false), golden: claimOf(true), realm: n(Number(rules.amount)) },
   day: { shortestHours: hoursOf(SHORT_DAY_UNITS), longestHours: hoursOf(LONG_DAY_UNITS) },
   speed: n(frontierDevconPreset.clockScale.activity),
