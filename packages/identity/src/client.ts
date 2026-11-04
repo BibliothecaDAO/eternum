@@ -103,6 +103,26 @@ const pushConfigurationSchema = Schema.Union([
   }),
 ]);
 const acknowledgementSchema = Schema.Record(Schema.String, Schema.Unknown);
+/** The account's default wallet: its address and the passkey that owns it, made on `origin` for `rpId`. */
+const defaultWalletSchema = Schema.Struct({
+  address: Schema.String,
+  credentialId: Schema.String,
+  publicKeyX: Schema.String,
+  origin: Schema.String,
+  rpId: Schema.String,
+});
+export type DefaultWallet = typeof defaultWalletSchema.Type;
+/** A passkey just made in the browser: its credential id and its public key (SubjectPublicKeyInfo), base64url. */
+export interface NewPasskey {
+  credentialId: string;
+  publicKey: string;
+}
+/** One call a default wallet makes, as the sponsor builds it. */
+export interface WalletCallRequest {
+  contractAddress: string;
+  entrypoint: string;
+  calldata: string[];
+}
 /** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
 const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
 export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
@@ -305,6 +325,51 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     return approved.signature;
   };
 
+  /** The account's default wallet, null while it has none. */
+  const readDefaultWallet = async (): Promise<DefaultWallet | null> =>
+    (
+      await readJson(
+        await request("/auth/wallet/default", { method: "GET", cache: "no-store" }),
+        decode(Schema.Struct({ wallet: Schema.NullOr(defaultWalletSchema) })),
+      )
+    ).wallet;
+  /**
+   * Makes the account's default wallet from a new passkey (or keeps the one it has) and writes it as the payout wallet:
+   * on a fresh sign-in at once, else with an emailed code (`CODE_REQUIRED` asks for one).
+   */
+  const createDefaultWallet = async (input: { passkey?: NewPasskey; code?: string }): Promise<DefaultWallet> =>
+    (
+      await readJson(
+        await request("/auth/wallet/default", {
+          method: "POST",
+          body: JSON.stringify({
+            ...(input.passkey ? { passkey: input.passkey } : {}),
+            ...(input.code ? { otp: input.code } : {}),
+          }),
+        }),
+        decode(Schema.Struct({ wallet: defaultWalletSchema })),
+      )
+    ).wallet;
+  /** The sponsored outside execution of these calls, as SNIP-12 typed data for the passkey to sign. */
+  const buildDefaultWalletCall = async (calls: WalletCallRequest[]): Promise<Record<string, unknown>> =>
+    (
+      await readJson(
+        await request("/auth/wallet/default/build", { method: "POST", body: JSON.stringify({ calls }) }),
+        decode(Schema.Struct({ typedData: Schema.Record(Schema.String, Schema.Unknown) })),
+      )
+    ).typedData;
+  /** Sends the signed execution through the sponsor; its transaction hash. */
+  const executeDefaultWalletCall = async (typedData: Record<string, unknown>, ownerSignature: string[]) =>
+    (
+      await readJson(
+        await request("/auth/wallet/default/execute", {
+          method: "POST",
+          body: JSON.stringify({ typedData, ownerSignature }),
+        }),
+        decode(Schema.Struct({ transactionHash: Schema.String })),
+      )
+    ).transactionHash;
+
   const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
     readJson(
       await request("/notifications/preferences", { method: "GET", cache: "no-store" }),
@@ -389,6 +454,10 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     claimDiscordHandoff,
     discordSignInUrl,
     approveDeviceChange,
+    readDefaultWallet,
+    createDefaultWallet,
+    buildDefaultWalletCall,
+    executeDefaultWalletCall,
     signOut,
     updateUser,
     getNotificationPreferences,

@@ -1,4 +1,4 @@
-import { environmentL2 } from "@realms-world/chain";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
 import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -12,7 +12,7 @@ import {
 } from "@realms-world/identity";
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
-import { byteArray, CallData, ec, hash, typedData, type TypedData } from "starknet";
+import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
 import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 
@@ -21,6 +21,10 @@ import { deliverWalletNotices } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
+import type { Sponsor } from "./sponsor";
+import { SPONSORED_CALLS_PER_DAY } from "./default-wallet-plugin";
+import { defaultWalletDeployment } from "@realms-world/identity/wallet";
+import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
 import { campaignCodeHash } from "./campaigns";
@@ -52,6 +56,14 @@ const fetchShard = (async (input: RequestInfo | URL, init?: RequestInit) => {
 }) as typeof fetch;
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
+
+/** The default wallets' sponsor, as AVNU answers: it builds what it is asked and submits what it is given. */
+const sponsor = {
+  build: vi.fn<Sponsor["build"]>(),
+  execute: vi.fn<Sponsor["execute"]>(),
+};
+/** Whether the chain holds a contract at an address; default wallets start undeployed. */
+const isDeployed = vi.fn(async (_address: string) => false);
 
 /** The email provider's inbox: the last sign-in code sent to each address. */
 const sentCodes = new Map<string, string>();
@@ -135,6 +147,8 @@ beforeAll(async () => {
     verifyWalletSignature: verifyAsWallet,
     sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
+    sponsor,
+    isDeployed: (address) => isDeployed(address),
   });
 }, 60_000);
 
@@ -1976,5 +1990,239 @@ describe("the account's own arithmetic", () => {
     expect(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, ec.starkCurve.getStarkKey(GUARDIAN_KEY))).toBe(
       "0x3b5a624d64098f9369e61f21d89fc5a0bf2bd3137e7123f53234db67c8af69",
     );
+  });
+});
+
+describe("default wallet", () => {
+  /** A passkey as the browser makes it: its id and its P-256 public key as a SubjectPublicKeyInfo, base64url. */
+  const makePasskey = () => {
+    const { publicKey } = generateKeyPairSync("ec", { namedCurve: "P-256" });
+    return {
+      credentialId: Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("base64url"),
+      publicKey: Buffer.from(publicKey.export({ format: "der", type: "spki" })).toString("base64url"),
+      x: `0x${Buffer.from(publicKey.export({ format: "jwk" }).x!, "base64url").toString("hex")}`,
+    };
+  };
+  const newPlayer = async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, `wallet-${crypto.randomUUID()}@realms.test`);
+    return browser;
+  };
+  const create = (browser: ReturnType<typeof createBrowser>, body: Record<string, unknown>) =>
+    browser.request("/api/auth/wallet/default", { body });
+  const withWallet = async () => {
+    const browser = await newPlayer();
+    const passkey = makePasskey();
+    const created = await create(browser, {
+      passkey: { credentialId: passkey.credentialId, publicKey: passkey.publicKey },
+    });
+    expect(created.status).toBe(200);
+    const { wallet } = (await created.json()) as { wallet: { address: string } };
+    return { browser, passkey, wallet };
+  };
+  const LORDS = "0x124aeb495b947201f5fac96fd1138e326ad86195b98df6dec9009158a533b49";
+  const transfer = { contractAddress: LORDS, entrypoint: "transfer", calldata: ["0x5", "0x64", "0x0"] };
+  const executionFor = (calls = [transfer]) =>
+    outsideExecution.getTypedData(
+      encodeChainName(environmentL2(env.ENVIRONMENT).chain),
+      { caller: "0x414e595f43414c4c4552", execute_after: 1, execute_before: 1_900_000_000 },
+      "0x99",
+      calls,
+      "2",
+    );
+
+  it("is made from the player's passkey at the Ready 0.5 address and written as the payout wallet", async () => {
+    notices.mockClear();
+    const { browser, passkey, wallet } = await withWallet();
+    const { user } = (await browser.session())!;
+    const expected = defaultWalletDeployment(
+      { origin: ORIGIN, rpId: new URL(ORIGIN).hostname, publicKeyX: passkey.x },
+      await env.GUARDIAN.publicKey(),
+      user.realmsId,
+    );
+    expect(wallet.address).toBe(expected.address);
+    expect(user.address).toBe(expected.address);
+    expect(notices).toHaveBeenCalledWith(user.email, expected.address, expect.any(String));
+    const history = await env.DB.prepare(
+      "SELECT wallet FROM wallet_link_history WHERE account = ? AND replaced_at IS NULL",
+    )
+      .bind(user.realmsId)
+      .first<{ wallet: string }>();
+    expect(history?.wallet).toBe(expected.address);
+    const read = (await (await browser.request("/api/auth/wallet/default")).json()) as { wallet: unknown };
+    expect(read.wallet).toEqual({
+      address: expected.address,
+      credentialId: passkey.credentialId,
+      publicKeyX: passkey.x,
+      origin: ORIGIN,
+      rpId: new URL(ORIGIN).hostname,
+    });
+  });
+
+  it("answers a retry, even with another passkey, with the first wallet", async () => {
+    const { browser, wallet } = await withWallet();
+    const again = makePasskey();
+    const retried = await create(browser, {
+      passkey: { credentialId: again.credentialId, publicKey: again.publicKey },
+    });
+    expect(((await retried.json()) as { wallet: { address: string } }).wallet.address).toBe(wallet.address);
+  });
+
+  /** Ages the browser's session past the minutes a sign-in vouches for a first wallet. */
+  const ageSignIn = async (browser: ReturnType<typeof createBrowser>) => {
+    const { user } = (await browser.session())!;
+    await env.DB.prepare(`UPDATE session SET "createdAt" = ? WHERE "userId" = ?`)
+      .bind(new Date(Date.now() - 11 * 60 * 1000).toISOString(), user.id)
+      .run();
+  };
+  const passkeyBody = (passkey: ReturnType<typeof makePasskey>) => ({
+    credentialId: passkey.credentialId,
+    publicKey: passkey.publicKey,
+  });
+
+  it("takes an emailed code once the sign-in is more than minutes old, as any wallet change does", async () => {
+    const browser = await newPlayer();
+    await ageSignIn(browser);
+    const passkey = makePasskey();
+    const stale = await create(browser, { passkey: passkeyBody(passkey) });
+    expect(stale.status).toBe(403);
+    expect(((await stale.json()) as { message: string }).message).toBe("CODE_REQUIRED");
+    expect((await browser.session())!.user.address ?? null).toBeNull();
+    const linked = await create(browser, { passkey: passkeyBody(passkey), otp: await walletCode(browser) });
+    expect(linked.status).toBe(200);
+    const { wallet } = (await linked.json()) as { wallet: { address: string; publicKeyX: string } };
+    expect(wallet.publicKeyX).toBe(passkey.x);
+    expect((await browser.session())!.user.address).toBe(wallet.address);
+  });
+
+  it("keeps nothing of a passkey refused for want of a code, so a stolen session cannot plant one", async () => {
+    const browser = await newPlayer();
+    await ageSignIn(browser);
+    // Someone holding the session cookie, but not the inbox, offers their own passkey.
+    const planted = await create(browser, { passkey: passkeyBody(makePasskey()) });
+    expect(planted.status).toBe(403);
+    expect(
+      ((await (await browser.request("/api/auth/wallet/default")).json()) as { wallet: unknown }).wallet,
+    ).toBeNull();
+    // The owner, with the code, makes the wallet from their own passkey.
+    const owner = makePasskey();
+    const made = await create(browser, { passkey: passkeyBody(owner), otp: await walletCode(browser) });
+    expect(((await made.json()) as { wallet: { publicKeyX: string } }).wallet.publicKeyX).toBe(owner.x);
+  });
+
+  it("never replaces a linked wallet without a code", async () => {
+    const browser = createBrowser();
+    await signInWithCode(browser, `linked-${crypto.randomUUID()}@realms.test`);
+    const linked = createWallet();
+    expect((await proveWallet(browser, linked, "link")).status).toBe(200);
+    const passkey = makePasskey();
+    const refused = await create(browser, {
+      passkey: { credentialId: passkey.credentialId, publicKey: passkey.publicKey },
+    });
+    expect(refused.status).toBe(400);
+    expect(((await refused.json()) as { message: string }).message).toBe("WALLET_ALREADY_LINKED");
+    expect(BigInt((await browser.session())!.user.address!)).toBe(BigInt(linked));
+  });
+
+  it("refuses a public key that is not P-256", async () => {
+    const browser = await newPlayer();
+    const refused = await create(browser, { passkey: { credentialId: "abc", publicKey: "AAAA" } });
+    expect(((await refused.json()) as { message: string }).message).toBe("PASSKEY_INVALID");
+  });
+
+  it("asks the sponsor to deploy the wallet with its first call", async () => {
+    const { browser, passkey, wallet } = await withWallet();
+    const { user } = (await browser.session())!;
+    sponsor.build.mockResolvedValueOnce(executionFor() as never);
+    const built = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(built.status).toBe(200);
+    expect(sponsor.build).toHaveBeenLastCalledWith(
+      wallet.address,
+      [transfer],
+      defaultWalletDeployment(
+        { origin: ORIGIN, rpId: new URL(ORIGIN).hostname, publicKeyX: passkey.x },
+        await env.GUARDIAN.publicKey(),
+        user.realmsId,
+      ),
+    );
+    isDeployed.mockResolvedValueOnce(true);
+    sponsor.build.mockResolvedValueOnce(executionFor() as never);
+    await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(sponsor.build).toHaveBeenLastCalledWith(wallet.address, [transfer], null);
+  });
+
+  it("refuses to build a call to the wallet itself", async () => {
+    const { browser, wallet } = await withWallet();
+    const selfCall = { contractAddress: wallet.address, entrypoint: "trigger_escape_guardian", calldata: ["0x1"] };
+    const refused = await browser.request("/api/auth/wallet/default/build", { body: { calls: [selfCall] } });
+    expect(((await refused.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
+  });
+
+  it("submits the passkey's signature with the guardian's over the execution's hash, within the daily cap", async () => {
+    const { browser, wallet } = await withWallet();
+    const execution = executionFor();
+    const ownerSignature = ["0x4", "0x1", "0x2"];
+    sponsor.execute.mockResolvedValue("0xabc");
+    const sent = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature },
+    });
+    expect(await sent.json()).toEqual({ transactionHash: "0xabc" });
+    const [address, submitted, signature] = sponsor.execute.mock.lastCall!;
+    expect(address).toBe(wallet.address);
+    expect(submitted).toEqual(execution);
+    const guardian = await env.GUARDIAN.publicKey();
+    expect(signature.slice(0, 6).map(BigInt)).toEqual([2n, 4n, 1n, 2n, 0n, BigInt(guardian)]);
+    const digest = typedData.getMessageHash(execution, wallet.address);
+    const [r, s] = signature.slice(6).map(BigInt);
+    expect(
+      ec.starkCurve.verify(new ec.starkCurve.Signature(r!, s!), digest, ec.starkCurve.getPublicKey(GUARDIAN_KEY)),
+    ).toBe(true);
+    for (let call = 1; call < SPONSORED_CALLS_PER_DAY; call += 1)
+      await browser.request("/api/auth/wallet/default/execute", { body: { typedData: execution, ownerSignature } });
+    const capped = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature },
+    });
+    expect(capped.status).toBe(429);
+    expect(sponsor.execute).toHaveBeenCalledTimes(SPONSORED_CALLS_PER_DAY);
+    sponsor.execute.mockReset();
+  });
+
+  it("gives the day's call back when the sponsor refuses it", async () => {
+    const { browser } = await withWallet();
+    sponsor.execute.mockRejectedValueOnce(new Error("invalid signature"));
+    const refused = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: executionFor(), ownerSignature: ["0x4"] },
+    });
+    expect(refused.status).toBe(502);
+    const { user } = (await browser.session())!;
+    const used = await env.DB.prepare("SELECT calls FROM wallet_sponsored_calls WHERE realms_id = ?")
+      .bind(user.realmsId)
+      .first<{ calls: number }>();
+    expect(used?.calls).toBe(0);
+    sponsor.execute.mockReset();
+  });
+
+  it("co-signs only an outside execution for this chain", async () => {
+    const { browser } = await withWallet();
+    const other = { ...executionFor(), domain: { ...executionFor().domain, chainId: "0x534e5f5345504f4c4941" } };
+    const refused = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: other, ownerSignature: ["0x4"] },
+    });
+    expect(((await refused.json()) as { message: string }).message).toBe("NOT_AN_OUTSIDE_EXECUTION");
+  });
+
+  it("counts, for the operator, the accounts still without a payout wallet", async () => {
+    await newPlayer();
+    const counts = (await (
+      await createBrowser().request("/api/operator/wallets", { token: OPERATOR_TOKEN })
+    ).json()) as { accounts: number; withoutWallet: number; paidToDefaultWallet: number; paidToLinkedWallet: number };
+    const expected = await env.DB.prepare(
+      `SELECT COUNT(*) AS n FROM "user" WHERE "emailVerified" = 1 AND address IS NULL`,
+    ).first<{ n: number }>();
+    expect(counts.withoutWallet).toBe(expected!.n);
+    expect(counts.withoutWallet).toBeGreaterThan(0);
+    expect(counts.paidToDefaultWallet).toBeGreaterThan(0);
+    expect(counts.accounts).toBe(counts.withoutWallet + counts.paidToDefaultWallet + counts.paidToLinkedWallet);
+    expect((await createBrowser().request("/api/operator/wallets")).status).toBe(401);
   });
 });

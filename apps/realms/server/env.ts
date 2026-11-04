@@ -7,7 +7,8 @@ import type { Guardian } from "@realms-world/guardian";
  * The identity Worker's environment. Plain values are decoded loudly, so a misconfigured deployment fails on its first
  * request instead of answering with defaults. Secrets (`BETTER_AUTH_SECRET`, `L2_RPC_URL`,
  * `OPERATOR_TOKEN`, the `WEB_PUSH_VAPID_*` keys, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `RESEND_API_KEY`) are set
- * per environment and never committed.
+ * per environment and never committed. `AVNU_PAYMASTER_API_KEY` is the sponsor's key for default wallets' gas; without it
+ * a default wallet still receives, and sending from it is refused with SPONSOR_UNAVAILABLE.
  */
 const IdentityVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
@@ -28,6 +29,8 @@ const IdentityVars = Schema.Struct({
   /** The environment's VAPID key pair (base64url) and contact, which sign every web push. */
   WEB_PUSH_VAPID_PUBLIC_KEY: Schema.NonEmptyString,
   WEB_PUSH_VAPID_PRIVATE_KEY: Schema.NonEmptyString,
+  /** AVNU's paymaster key: it sponsors default wallets' deploys and calls (server/sponsor.ts). */
+  AVNU_PAYMASTER_API_KEY: Schema.optional(Schema.NonEmptyString),
 });
 
 export interface IdentityEnv extends Schema.Schema.Type<typeof IdentityVars> {

@@ -8,6 +8,12 @@ interface WalletChangeServices {
   sendNotice(email: string, address: string | null, id: string): Promise<void>;
 }
 
+/**
+ * Rows that belong to the new wallet and must be written only if the change is: run in the change's own transaction,
+ * after the account row, so each can require that the account now holds the wallet.
+ */
+type WithChange = D1PreparedStatement[];
+
 /** Consume the sign-in code in the same transaction that changes the wallet and queues its notice. */
 export const changeWallet = (
   services: WalletChangeServices,
@@ -15,6 +21,7 @@ export const changeWallet = (
   user: User,
   address: string | null,
   otp: string,
+  withChange: WithChange = [],
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
@@ -24,32 +31,62 @@ export const changeWallet = (
       );
       if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
       yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });
-      const id = crypto.randomUUID();
-      const result = yield* Effect.tryPromise({
-        try: () => writeWalletChange(services.db, user, address, verification, id),
-        catch: () => new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" }),
-      });
-      if (result[0]!.meta.changes !== 1)
-        return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
-      // Delivery may retry, using the notice id as the provider's idempotency key.
-      yield* deliverWalletNotices(services.db, services.sendNotice);
+      yield* writeAndNotify(services, user, address, { kind: "code", verification }, "INVALID_OTP", withChange);
     }),
   );
+
+/**
+ * An account's first payout wallet, vouched for by a sign-in made minutes ago instead of a new code: written only while
+ * the account has none, so it never replaces one.
+ */
+export const linkFirstWallet = (services: WalletChangeServices, user: User, address: string, withChange: WithChange) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
+      yield* writeAndNotify(services, user, address, { kind: "first" }, "WALLET_ALREADY_LINKED", withChange);
+    }),
+  );
+
+/** What lets a wallet write through: a code still unspent, consumed by the write, or the account having no wallet. */
+type WalletWriteGuard = { kind: "code"; verification: { id: string; value: string } } | { kind: "first" };
+
+const writeAndNotify = (
+  services: WalletChangeServices,
+  user: User,
+  address: string | null,
+  guard: WalletWriteGuard,
+  refusal: string,
+  withChange: WithChange,
+) =>
+  Effect.gen(function* () {
+    const id = crypto.randomUUID();
+    const result = yield* Effect.tryPromise({
+      try: () => writeWalletChange(services.db, user, address, guard, id, withChange),
+      catch: () => new APIError("CONFLICT", { message: "WALLET_LINKED_ELSEWHERE" }),
+    });
+    if (result[0]!.meta.changes !== 1) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: refusal }));
+    // Delivery may retry, using the notice id as the provider's idempotency key.
+    yield* deliverWalletNotices(services.db, services.sendNotice);
+  });
 
 const writeWalletChange = (
   db: D1Database,
   user: User,
   address: string | null,
-  verification: { id: string; value: string },
+  guard: WalletWriteGuard,
   id: string,
+  withChange: WithChange,
 ) =>
   db.batch([
     db
       .prepare(
-        `UPDATE "user" SET "walletLinkedAt" = CASE WHEN ?1 IS NULL THEN NULL WHEN "address" = ?1 THEN "walletLinkedAt" ELSE CAST(unixepoch('subsec') * 1000 AS INTEGER) END, "address" = ?1, "updatedAt" = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE "id" = ?2 AND EXISTS (
-      SELECT 1 FROM verification WHERE id = ?3 AND value = ?4 AND julianday(expiresAt) > julianday('now'))`,
+        `UPDATE "user" SET "walletLinkedAt" = CASE WHEN ?1 IS NULL THEN NULL WHEN "address" = ?1 THEN "walletLinkedAt" ELSE CAST(unixepoch('subsec') * 1000 AS INTEGER) END, "address" = ?1, "updatedAt" = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE "id" = ?2 AND ${
+          guard.kind === "code"
+            ? `EXISTS (SELECT 1 FROM verification WHERE id = ?3 AND value = ?4 AND julianday(expiresAt) > julianday('now'))`
+            : `"address" IS NULL`
+        }`,
       )
-      .bind(address, user.id, verification.id, verification.value),
+      .bind(address, user.id, ...(guard.kind === "code" ? [guard.verification.id, guard.verification.value] : [])),
     db
       .prepare(`INSERT INTO wallet_change_notices (id, email, address) SELECT ?, ?, ? WHERE changes() = 1`)
       .bind(id, user.email, address),
@@ -68,7 +105,14 @@ const writeWalletChange = (
       AND NOT EXISTS(SELECT 1 FROM wallet_link_history WHERE account="user"."realmsId" AND replaced_at IS NULL)`,
       )
       .bind(user.id, id),
-    db.prepare("DELETE FROM verification WHERE id = ? AND value = ?").bind(verification.id, verification.value),
+    ...withChange,
+    ...(guard.kind === "code"
+      ? [
+          db
+            .prepare("DELETE FROM verification WHERE id = ? AND value = ?")
+            .bind(guard.verification.id, guard.verification.value),
+        ]
+      : []),
   ]);
 
 /** Pending security notices survive a failed provider request or a Worker restart. */

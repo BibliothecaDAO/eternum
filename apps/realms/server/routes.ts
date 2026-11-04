@@ -25,6 +25,7 @@ import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
 import { handleAccountsHealth, handleChatHealth } from "./health";
 import { handlePushSubscriptions } from "./push-notifications";
+import { handleWalletCounts } from "./wallet-counts";
 
 /** What the Worker reaches outside its bindings: the colo cache and the shards' Heralds. */
 interface WorkerPlatform {
@@ -128,6 +129,10 @@ export const routeIdentityRequest = async (
   }
   if (pathname === "/api/operator/payout-identity" && request.method === "GET")
     return handlePayoutIdentity(request, env);
+  if (pathname === "/api/operator/wallets" && request.method === "GET") {
+    if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
+    return handleWalletCounts(env.DB);
+  }
   if (pathname === "/api/directory/shards" && request.method === "GET") {
     if (!(await isOperator(env, request))) return json({ error: "unauthorized" }, 401);
     return json({ shards: await registeredShards(env.DB) });

@@ -4,12 +4,14 @@ import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
 import { AppButton } from "@/ui/design-system/kit/app-elements";
 
-import type { SignInOptions } from "@realms-world/identity";
+import { isSameStarknetAddress, type DefaultWallet, type SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
 import type { Connector } from "@starknet-react/core";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
-import type { AccountInterface, Call, ProviderInterface } from "starknet";
+import { useDefaultWallet } from "@/hooks/context/default-wallet";
+import { l2Provider } from "@/runtime/l2-rpc";
+import type { AccountInterface, Call, ProviderInterface, TypedData } from "starknet";
 
 import { Loading } from "@/shell/loading";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
@@ -18,7 +20,13 @@ import { failureSentence, WrongNetworkError } from "@/ui/modules/identity/identi
 import { assertWalletOnL2 } from "@/ui/modules/identity/l2-wallet";
 import { connectorHolding, rememberOpened } from "@/ui/modules/identity/wallet-holder";
 import { walletProofForAccount } from "@/ui/modules/identity/wallet-proof";
-import { sendFromWallet, type WalletSendOutcome, WrongWalletError } from "@/ui/modules/identity/wallet-send";
+import {
+  prepareDefaultWalletSend,
+  sendFromDefaultWallet,
+  sendFromWallet,
+  type WalletSendOutcome,
+  WrongWalletError,
+} from "@/ui/modules/identity/wallet-send";
 
 /**
  * The wallets a Realms account links, in the order the picker lists them, each as the player knows it. A wallet whose
@@ -35,17 +43,17 @@ const WALLET_CHOICES = [
  * The only surface with wallet connectors, loaded as its own chunk when a signed-in player links a wallet or pays from
  * it. Nothing else loads a wallet, so signing in never starts one.
  */
-export const WalletPicker = (props: { only?: readonly WalletId[]; onProof: (proof: SignInOptions) => void }) => (
+export const WalletPicker = (props: { onProof: (proof: SignInOptions) => void }) => (
   <StarknetProvider>
     <ProofRows {...props} />
   </StarknetProvider>
 );
 
-const ProofRows = ({ only, onProof }: { only?: readonly WalletId[]; onProof: (proof: SignInOptions) => void }) => {
+const ProofRows = ({ onProof }: { onProof: (proof: SignInOptions) => void }) => {
   const wallet = useWalletAction("link", async (account, connectorId, provider) =>
     onProof(await walletProofForAccount(account, provider, connectorId)),
   );
-  return <WalletRows only={only} wallet={wallet} />;
+  return <WalletRows wallet={wallet} />;
 };
 
 /**
@@ -54,13 +62,76 @@ const ProofRows = ({ only, onProof }: { only?: readonly WalletId[]; onProof: (pr
  * holds `owner` in this browser is prompted at once, and any other account it answers with is refused, naming `owner`.
  * Only a wallet this browser has never opened is asked for, from the rows, once. A wallet with no STRK for the fee is
  * offered the swap instead; a sent call shows Confirming until its receipt lands, then `onLanded` (the panel reads the
- * ledger again), or the ledger's reason when it reverted.
+ * ledger again), or the ledger's reason when it reverted. When `owner` is the account's default wallet, its passkey
+ * signs instead and the sponsor pays: no wallet opens and no STRK is needed.
  */
-export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => (
-  <StarknetProvider>
-    <OwnerSend {...props} />
-  </StarknetProvider>
-);
+export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => {
+  const defaultWallet = useDefaultWallet();
+  if (defaultWallet === undefined) return <Loading />;
+  if (defaultWallet && isSameStarknetAddress(defaultWallet.address, props.owner))
+    return <PasskeySend wallet={defaultWallet} calls={props.calls} onLanded={props.onLanded} />;
+  return (
+    <StarknetProvider>
+      <OwnerSend {...props} />
+    </StarknetProvider>
+  );
+};
+
+/** A prepared send is resent once it is this old, before the sponsor's time window can close on it. */
+const PREPARED_FOR_MS = 60_000;
+
+/**
+ * The default wallet's send: prepared as it opens (the sponsor builds it, this page checks it), then one tap on
+ * Confirm opens the passkey and sends. A press after the preparation went stale prepares again first.
+ */
+const PasskeySend = ({ wallet, calls, onLanded }: { wallet: DefaultWallet; calls: Call[]; onLanded: () => void }) => {
+  const prepared = useRef<{ execution: Promise<TypedData>; at: number } | null>(null);
+  const [state, setState] = useState<{ kind: "ready" | "signing" | "confirming" } | { kind: "failed"; line: string }>({
+    kind: "ready",
+  });
+  // Callers build their calls on each render; the send is prepared again only when what they ask for changes.
+  const asked = JSON.stringify(calls);
+  const prepare = useCallback(() => {
+    prepared.current = { execution: prepareDefaultWalletSend(JSON.parse(asked) as Call[]), at: Date.now() };
+    prepared.current.execution.catch(() => {});
+  }, [asked]);
+  useEffect(() => {
+    prepare();
+  }, [prepare]);
+  const confirm = async () => {
+    if (!prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS) prepare();
+    setState({ kind: "signing" });
+    try {
+      const sent = await sendFromDefaultWallet(wallet, await prepared.current!.execution, l2Provider(), () =>
+        setState({ kind: "confirming" }),
+      );
+      if (sent.kind === "landed") return onLanded();
+      setState({ kind: "failed", line: sent.kind === "refused" ? sent.reason : VALUE_WORDS.refused });
+    } catch (cause) {
+      setState({ kind: "failed", line: failureSentence("send", cause) });
+    }
+    prepared.current = null;
+  };
+  return (
+    <div className="flex w-full flex-col gap-2.5">
+      {state.kind === "failed" && <span className="text-app-label text-app-bad">{state.line}</span>}
+      <AppButton
+        kind="primary"
+        icon="lock"
+        busy={
+          state.kind === "signing"
+            ? WALLET_WORDS.confirmPasskey
+            : state.kind === "confirming"
+              ? VALUE_WORDS.confirming
+              : undefined
+        }
+        onClick={() => void confirm()}
+      >
+        {WALLET_WORDS.confirmPasskey}
+      </AppButton>
+    </div>
+  );
+};
 
 const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
   const { connectors } = useConnect();
@@ -119,8 +190,6 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
   );
 };
 
-type WalletId = (typeof WALLET_CHOICES)[number]["id"];
-
 /** The opened wallet's account, connected on the build's L2, with its connector's id and the L2 provider. */
 type OnAccount = (account: AccountInterface, connectorId: string, provider: ProviderInterface) => Promise<void>;
 
@@ -168,16 +237,9 @@ const useWalletAction = (failure: "link" | "pay", onAccount: OnAccount) => {
 const walletFailureLine = (failure: "link" | "pay", cause: unknown) =>
   cause instanceof WrongWalletError ? WALLET_WORDS.wrongWallet(shortAddress(cause.owner)) : failureLine(failure, cause);
 
-const WalletRows = ({
-  only,
-  wallet,
-}: {
-  /** The wallets offered; all of them when absent. */
-  only?: readonly WalletId[];
-  wallet: ReturnType<typeof useWalletAction>;
-}) => {
+const WalletRows = ({ wallet }: { wallet: ReturnType<typeof useWalletAction> }) => {
   const { connectors } = useConnect();
-  const rows = WALLET_CHOICES.filter((choice) => !only || only.includes(choice.id)).flatMap((choice) => {
+  const rows = WALLET_CHOICES.flatMap((choice) => {
     const connector = connectors.find((candidate) => candidate.id === choice.id);
     return connector?.available() ? [{ choice, connector }] : [];
   });

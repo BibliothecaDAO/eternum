@@ -2,8 +2,11 @@
 
 The guardian approves device changes on Realms accounts: it signs
 `poseidon('REALMS_DEVICE_CHANGE', chain_id, account, action, device_key, counter)` for the identity Worker and exposes
-no public signing operation. Its private key is its only secret. The config ships without routes or a workers.dev
-address; identity signs through the `GUARDIAN` service binding. Health is read through identity at `/api/guardian`.
+no public signing operation. It also co-signs a default wallet's outside execution (a Ready 0.5 account owned by the
+player's passkey, with this key as its guardian): it rebuilds the SNIP-12 message from the execution's fields and
+refuses any call to the wallet itself, so it never helps change a wallet's owner or start an escape. Its private key is
+its only secret. The config ships without routes or a workers.dev address; identity signs through the `GUARDIAN` service
+binding. Health is read through identity at `/api/guardian`.
 
 The owner-operated deployment script creates and persists `GUARDIAN_PRIVATE_KEY` once per environment and installs it as
 a Worker secret. It must preserve an existing key: replacing it changes the account authority. Neither the key nor its

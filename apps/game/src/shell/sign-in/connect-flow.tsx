@@ -1,4 +1,4 @@
-import { SIGN_IN_WORDS, WORDS } from "@/ui/design-system/kit/words";
+import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -9,6 +9,7 @@ import {
   useIdentitySession,
   useIdentitySessionStore,
 } from "@/hooks/context/identity-session";
+import { payoutAddressOf } from "@/hooks/context/payout-wallet";
 import { failureSentence, type IdentityAction } from "@/ui/modules/identity/identity-failures";
 
 import { returnPathOf } from "../return-path";
@@ -18,6 +19,7 @@ import { ShellWindow } from "../frame/shell-window";
 import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart, type DiscordPending } from "./discord-pending";
 import { HandoffStep } from "./handoff-step";
 import { ProfileStep } from "./profile-step";
+import { PayoutWalletPanel } from "../profile/payout-wallet-panel";
 import { StartStep } from "./start-step";
 
 /**
@@ -33,7 +35,7 @@ import { StartStep } from "./start-step";
  */
 export const ConnectFlow = () => {
   const { status, session } = useIdentitySession();
-  const { request, nameDismissed, close } = useConnectStore();
+  const { request, nameDismissed, walletDismissed, close, dismissWallet } = useConnectStore();
   const returned = useReturnedFailure();
   const refresh = useIdentitySessionStore((state) => state.refresh);
   const named = session !== null && identityUsername(session) !== null;
@@ -48,7 +50,15 @@ export const ConnectFlow = () => {
   }, [returned.line, endPending]);
   useGoOnOnceNamed(named, pending, endPending);
 
-  if (status === "loading" || named) return null;
+  if (status === "loading") return null;
+  if (named) {
+    if (walletDismissed || payoutAddressOf(session.user) !== null) return null;
+    return (
+      <ShellWindow title={WALLET_WORDS.yourWallet} onClose={dismissWallet}>
+        <PayoutWalletPanel wallet={null} email={session.user.email} onChanged={() => void refresh()} />
+      </ShellWindow>
+    );
+  }
   if (session) {
     if (nameDismissed && !request) return null;
     return (

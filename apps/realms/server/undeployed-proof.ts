@@ -1,11 +1,12 @@
 import type { SiwsTypedData, WalletDeployment } from "@realms-world/identity";
+import { READY_ACCOUNT_CLASS_HASH } from "@realms-world/identity/wallet";
 import { ec, hash, typedData, type TypedData } from "starknet";
 
 // Published Ready Account 0.4.0/0.5.0 and Braavos Base Account 1.2.0 only.
 // Constructor decoding is specific to these classes; unrecognized account/signer types require deployment.
 const ACCOUNT_CLASSES = new Map([
   [felt("0x036078334509b514626504edc9fb252328d1a240e4e948bef8d0c08dff45927f"), "ready"],
-  [felt("0x073414441639dcd11d1846f287650a00c60c416b9d3ba45d31c651672125b2c2"), "ready"],
+  [felt(READY_ACCOUNT_CLASS_HASH), "ready"],
   [felt("0x03d16c7a9a60b0593bd202f660a28c5d76e0403601d9ccc7e4fa253b6a70c201"), "braavos"],
 ]);
 

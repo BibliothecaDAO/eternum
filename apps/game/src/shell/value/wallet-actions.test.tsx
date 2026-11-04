@@ -164,3 +164,39 @@ it("leaves Try again live while the linked wallet never answers, and prompts it 
   expect(ready.transactions()).toEqual([]);
   expect(landed).not.toHaveBeenCalled();
 });
+
+it("confirms with the passkey when the paying wallet is the account's Realms wallet, opening no wallet", async () => {
+  const { useIdentitySessionStore, identityClient } = await import("@/hooks/context/identity-session");
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const prepared = { primaryType: "OutsideExecution" } as never;
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend").mockResolvedValue(prepared);
+  const sendFromDefault = vi.spyOn(send, "sendFromDefaultWallet").mockResolvedValue({ kind: "landed" });
+  const realmsWallet = {
+    address: LINKED,
+    credentialId: "c",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(realmsWallet);
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x9", name: "Ysolde", email: "you@mail.test", address: LINKED },
+    },
+  });
+  const braavos = installWallet("braavos", { account: LINKED });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(buttonsOf(container)).toEqual(["Confirm with your passkey"]));
+    expect(prepare).toHaveBeenCalledWith(CALLS);
+    await press(container, "Confirm with your passkey");
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(sendFromDefault).toHaveBeenCalledWith(realmsWallet, prepared, expect.anything(), expect.any(Function));
+    expect(braavos.connections()).toEqual([]);
+  } finally {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.restoreAllMocks();
+  }
+});

@@ -390,6 +390,16 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   setting one of their rows (`AppPanel`, `AppSetting`, `ui/design-system/kit/app-elements.tsx`); the name is edited in
   its row, Portrait and Payout wallet open in the app's sheet, and a destructive step (sign out, remove a device) asks
   first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
+- **Your wallet** (the Connect window, any page): a signed-in, named account with no payout wallet meets it, a new
+  account right after its name, an older one at each visit until it has one or closes it (closed for that visit).
+  **Create my wallet** makes a passkey (face, fingerprint or screen lock) that owns the account's Realms wallet, a Ready
+  0.5 account with the Realms guardian, and writes it as the payout wallet; a sign-in older than ten minutes is asked
+  for the emailed code first. **I have a wallet** links one as before. The same two choices open from Settings, **Payout
+  wallet** with none linked (`shell/profile/payout-wallet-panel.tsx`).
+- **Realms wallet** (Settings, **Payout wallet**): its LORDS and **Send** (address and amount, all of it offered;
+  **Review**, then **Confirm with your passkey**; the sponsor pays the fee, three sends a day). It stays listed with
+  Send when another wallet is linked. Every paid action whose wallet is the Realms wallet (Blitz entry, chest, prize)
+  confirms with the passkey instead of opening a wallet (`shell/value/wallet-actions.tsx`, `WalletSign`).
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full

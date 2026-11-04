@@ -1,5 +1,5 @@
-import { environmentL2 } from "@realms-world/chain";
-import { betterAuth } from "better-auth";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { betterAuth, type AuthContext } from "better-auth";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
 import {
@@ -18,20 +18,33 @@ import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { resendWalletNotices } from "./wallet-notices";
 import { siws } from "./siws-plugin";
-import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
+import { defaultWallet } from "./default-wallet-plugin";
+import { identityL2Configuration, identityProvider } from "./l2";
+import { avnuSponsor, type Sponsor } from "./sponsor";
+import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
-/** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
+/**
+ * What the identity service reaches outside its database: the environment L2 for wallet signatures and deployments,
+ * the email provider, and the sponsor of default wallets' gas.
+ */
 interface IdentityServices {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
   sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
+  sponsor: Sponsor | null;
+  isDeployed: (address: string) => Promise<boolean>;
 }
 
-const identityServicesOf = (
-  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "RESEND_API_KEY" | "BASE_URL">,
-): IdentityServices => ({
+type IdentityServiceEnv = Pick<
+  IdentityEnv,
+  "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "RESEND_API_KEY" | "BASE_URL" | "AVNU_PAYMASTER_API_KEY"
+>;
+
+const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY, env.BASE_URL),
+  sponsor: env.AVNU_PAYMASTER_API_KEY ? avnuSponsor(env.AVNU_PAYMASTER_API_KEY) : null,
+  isDeployed: async (address) => !(await isUndeployedWallet(identityProvider(env), address)),
 });
 
 /**
@@ -77,9 +90,14 @@ export const createIdentityAuth = (
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
+    | "AVNU_PAYMASTER_API_KEY"
+    | "GUARDIAN"
   >,
   services: IdentityServices = identityServicesOf(env),
 ) => {
+  const sendWalletNotice = services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL);
+  const checkCode = (context: AuthContext, email: string, otp: string) =>
+    emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } });
   const emailCodes = emailOTP({
     otpLength: SIGN_IN_CODE_LENGTH,
     expiresIn: SIGN_IN_CODE_SECONDS,
@@ -138,9 +156,18 @@ export const createIdentityAuth = (
         chainId: environmentL2(env.ENVIRONMENT).chain,
         verifySignature: services.verifyWalletSignature,
         db: env.DB,
-        checkCode: (context, email, otp) =>
-          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
-        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL),
+        checkCode,
+        sendNotice: sendWalletNotice,
+      }),
+      defaultWallet({
+        origin: env.BASE_URL,
+        chainId: encodeChainName(identityL2Configuration(env).chainId),
+        db: env.DB,
+        guardian: env.GUARDIAN,
+        sponsor: services.sponsor,
+        isDeployed: services.isDeployed,
+        checkCode,
+        sendNotice: sendWalletNotice,
       }),
     ],
   });
