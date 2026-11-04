@@ -32,6 +32,7 @@ const pointer = new PointerOrderTip(
       staminaWait: undefined,
       staminaHeld: 9,
       site: undefined,
+      byRealm: false,
     });
     return tip && tile.at && { ...tip, at: tile.at };
   },

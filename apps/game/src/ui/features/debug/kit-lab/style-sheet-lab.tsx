@@ -839,6 +839,7 @@ const ORDER_LINES = [
     staminaWait: undefined,
     staminaHeld: undefined,
     site: undefined,
+    byRealm: false,
     ...order,
   });
   return tip ? [tip] : [];

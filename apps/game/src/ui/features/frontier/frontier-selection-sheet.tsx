@@ -15,6 +15,7 @@ import { TileCard, useSelectedTarget } from "./sites/tile-card";
 import { SpireCard, useSelectedTileObject } from "./sites/tile-object-cards";
 import { CastleUpgrade, useKeepSelected } from "./upgrade/castle-upgrade";
 import { TransferTroopsSheet, useSelectedTransfer } from "./army/transfer-troops";
+import { ReinforceSheet, useSelectedReinforcement } from "./army/reinforce";
 import { BuildingCard } from "./building/building-card";
 import { useTappedBuilding } from "./research/selected-building";
 
@@ -22,7 +23,7 @@ import { useTappedBuilding } from "./research/selected-building";
  * What the player tapped, as its Frontier card, with its key: which card it is and for which tile, so the HUD's one
  * panel (useOnePanel) knows when a card opens; null when the selection opens none. An open plot of the player's realm
  * opens the build sheet, the keep its card, a standing building its own card (read-only for a visitor), an adjacent
- * friendly army its troop transfer, a standing site or enemy army its tile card, a Shrine or Well its use card, and a
+ * friendly army its troop transfer, the realm's army beside it (the realm acting on its tile) its reinforcement, a standing site or enemy army its tile card, a Shrine or Well its use card, and a
  * spire or reward chest its own card. Cleared sites and opened
  * chests keep their receipts on the tile.
  * A cleared site shows its receipt when the player selects its tile (owner, 27 October 2026: "this stays of course"),
@@ -59,6 +60,7 @@ export const useSelectionCard = ({
   const building = useTappedBuilding(realm);
   const spire = useSelectedSpire();
   const transfer = useSelectedTransfer(realm);
+  const reinforcing = useSelectedReinforcement(realm);
   const closeSelectedTile = useUIStore((state) => state.closeSelectedTile);
   const setSelectedBuildingHex = useUIStore((state) => state.setSelectedBuildingHex);
   const armyWhereItStands = useUIStore(
@@ -71,6 +73,8 @@ export const useSelectionCard = ({
   const at = `${selectedHex?.col},${selectedHex?.row}:${selectedBuildingHex?.innerCol},${selectedBuildingHex?.innerRow}`;
   const card = (kind: string, sheet: ReactNode) => ({ key: `${kind}@${at}`, sheet });
   if (realm && transfer) return card("transfer", <TransferTroopsSheet realm={realm} pair={transfer} onClose={close} />);
+  if (realm && reinforcing)
+    return card("reinforce", <ReinforceSheet realm={realm} army={reinforcing} onClose={close} />);
   if (realm && openPlot)
     return card(
       "plot",

@@ -29,6 +29,7 @@ import { farPlaceScenario } from "./far-place-scenario";
 import { researchScenario } from "./research-scenario";
 import { settleScenario } from "./settle-scenario";
 import { upkeepScenario } from "./upkeep-scenario";
+import { reinforceScenario } from "./reinforce-scenario";
 
 /** The games the lab plays, by name: each a fixture and the chain's answers to the commands it proves. */
 export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
@@ -43,6 +44,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "realm-height": realmHeightScenario,
   "merge-loses-xp": mergeScenario("picked"),
   "merge-keeps-tapped": mergeScenario("tapped"),
+  reinforce: reinforceScenario,
   "after-battle": afterBattleScenario,
   "point-spent": pointSpentScenario,
   "low-stamina": lowStaminaScenario,

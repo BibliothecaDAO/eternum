@@ -164,7 +164,8 @@ const samePick = (before: Pick, after: MapSelectionIntent): boolean => {
   if (after === null || after.kind !== before.kind) return false;
   if (before.kind === "army" && after.kind === "army")
     return before.entityId === after.entityId && sameTile(before.tile, after.tile);
-  if (before.kind === "structure" && after.kind === "structure") return before.entityId === after.entityId;
+  if (before.kind === "structure" && after.kind === "structure")
+    return before.entityId === after.entityId && sameTile(before.tile ?? null, after.tile ?? null);
   return before.kind === "hex" && after.kind === "hex" && sameHex(before.hex, after.hex);
 };
 

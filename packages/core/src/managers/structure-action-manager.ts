@@ -70,7 +70,7 @@ export class StructureActionManager {
         const biome = exploredHexes.get(col - this.FELT_CENTER)?.get(row - this.FELT_CENTER);
 
         if (!isArmyMine) continue;
-        if (configManager.helpTransfers(true).length === 0) continue;
+        if (configManager.helpTransfers("from-structure").length === 0) continue;
 
         const path: ActionPath[] = [
           { hex: { col: position.col, row: position.row }, actionType: ActionType.Move },

@@ -5,11 +5,12 @@ import type { HexPosition, ID } from "@bibliothecadao/types";
  * is selected by identity, so the tile it stands on is always where it is now; a plain hex is a tile of terrain.
  *
  * An army names the tile it shows: its own ("own", following it), a tile it acts on (an attack's target card), or none
- * (selected from a HUD surface that opens no tile card).
+ * (selected from a HUD surface that opens no tile card). A structure shows its own tile, or a tile it acts on (a
+ * Frontier realm reinforcing its army there).
  */
 export type MapSelectionIntent =
   | { kind: "army"; entityId: ID; tile: "own" | HexPosition | null }
-  | { kind: "structure"; entityId: ID }
+  | { kind: "structure"; entityId: ID; tile?: HexPosition }
   | { kind: "hex"; hex: HexPosition }
   | null;
 
@@ -44,6 +45,8 @@ export function deriveMapSelection(intent: MapSelectionIntent, layer: boolean): 
   if (intent.kind === "hex") return { selectedEntityId: null, selectedHex: intent.hex };
   if (intent.kind === "army" && intent.tile !== "own")
     return { selectedEntityId: intent.entityId, selectedHex: intent.tile };
+  if (intent.kind === "structure" && intent.tile)
+    return { selectedEntityId: intent.entityId, selectedHex: intent.tile };
   const at = positions?.[intent.kind](intent.entityId);
   return {
     selectedEntityId: intent.entityId,
@@ -51,8 +54,12 @@ export function deriveMapSelection(intent: MapSelectionIntent, layer: boolean): 
   };
 }
 
-/** The intent with its tile card closed: a tile or structure is deselected, an army stays selected with no tile. */
+/**
+ * The intent with its tile card closed: a tile or structure is deselected, an army stays selected with no tile, and a
+ * structure acting on a tile stays selected on its own.
+ */
 export function withoutSelectedTile(intent: MapSelectionIntent): MapSelectionIntent {
+  if (intent?.kind === "structure" && intent.tile) return { kind: "structure", entityId: intent.entityId };
   if (!intent || intent.kind !== "army") return null;
   return intent.tile === null ? intent : { ...intent, tile: null };
 }

@@ -526,6 +526,13 @@ export const TRANSFER_TROOPS = {
   failed: "The troops could not be moved.",
   changed: "The armies' troops changed",
 } as const;
+/** Troops raised from the realm's stock into its army beside it (the realm selected, the army right-clicked). */
+export const REINFORCE = {
+  verb: "Reinforce",
+  title: (army: string) => `Reinforce ${army}`,
+  sending: "Reinforcing…",
+  failed: "The army could not be reinforced.",
+} as const;
 /** A realm's armies, as a list's name. */
 export const ARMIES = "Armies";
 /** The day-done card's count of the armies that ended with the day. */
