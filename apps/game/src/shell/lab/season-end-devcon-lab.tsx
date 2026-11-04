@@ -13,6 +13,7 @@ import { ARCHIVED_SEASONS, archivedSeason } from "../season-tab/archive/archive"
 import { SeasonGreeting } from "../season-tab/festival";
 import { SeasonOverRecap } from "../season-tab/season-over";
 import { prizeOf } from "../season-tab/season-recap";
+import { LAB_DEVCON_SEASON_0 } from "./app-lab-fixtures";
 
 /**
  * Season 0's end on Diwali, the owner's pick page's stills (/lab/app/<screen>/season-end-devcon/<step>/<who>): a Devcon
@@ -34,12 +35,6 @@ const MARKS: Record<Who, CampaignMark> = {
 const SEASON_REF = { chainId: ARCHIVED_SEASONS[0]!.chainId, gameId: ARCHIVED_SEASONS[0]!.game_id };
 const BOARD = archivedSeason(SEASON_REF)!.board;
 const VIEWER = "0x648174392d94df37bc7d59c3abf22116d20df16ddf0e380c5ff79aff86738c4";
-const SEASON_0 = {
-  ...ARCHIVED_SEASONS[0]!,
-  game_id: 990,
-  season_number: 0,
-  clock: { ...ARCHIVED_SEASONS[0]!.clock, end_at: Date.UTC(2026, 10, 6, 18) / 1000 },
-};
 
 export const LabSeasonEndDevcon = () => {
   const { step, who } = useParams() as { step: Step; who: Who };
@@ -51,7 +46,7 @@ export const LabSeasonEndDevcon = () => {
     return (
       <SeasonGreeting
         cut={cut}
-        season={seasonEnded(SEASON_0)}
+        season={seasonEnded(LAB_DEVCON_SEASON_0)}
         mark={MARKS[who]}
         rank={own.rank}
         field={BOARD.entries.length}
@@ -67,7 +62,7 @@ export const LabSeasonEndDevcon = () => {
   return (
     <SeasonOverRecap
       gameRef={SEASON_REF}
-      game={SEASON_0}
+      game={LAB_DEVCON_SEASON_0}
       board={BOARD}
       viewer={VIEWER}
       ending="lifted"

@@ -606,6 +606,14 @@ const SEASON_ONE_NAMES = [
 const [SEASON_ONE] = ARCHIVED_SEASONS;
 const SEASON_ONE_ENTRIES = archivedSeason({ chainId: SEASON_ONE!.chainId, gameId: SEASON_ONE!.game_id })!.board.entries;
 
+/** Devcon's Season 0 as the directory lists it once over (Fri 6 Nov 18:00Z), drawn over prod's Playtest board. */
+export const LAB_DEVCON_SEASON_0 = {
+  ...SEASON_ONE!,
+  game_id: 990,
+  season_number: 0,
+  clock: { ...SEASON_ONE!.clock, end_at: Date.UTC(2026, 10, 6, 18) / 1000 },
+};
+
 /** The board before any prize pool is published (the Season tab's podium says so). */
 export const LAB_FRONTIER_UNPUBLISHED_BOARD: HeraldFrontierLeaderboard = { ...LAB_FRONTIER_BOARD, prize: null };
 
