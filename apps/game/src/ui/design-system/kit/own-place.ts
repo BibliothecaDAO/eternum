@@ -17,7 +17,7 @@ export const revealOwnPlace = (row: HTMLElement): boolean => {
   const top = area.scrollTop + head;
   const height = area.clientHeight - head;
   if (place >= top && place + row.offsetHeight <= top + height) return false;
-  area.scrollTo({ top: place - head - (height - row.offsetHeight) / 2, behavior: "smooth" });
+  area.scrollTo({ top: Math.max(0, place - head - (height - row.offsetHeight) / 2), behavior: "smooth" });
   return true;
 };
 
@@ -30,11 +30,14 @@ const scrollAreaOf = (row: HTMLElement): HTMLElement | null => {
 };
 
 /**
- * Where the row's place starts in its area's content: right under the row before it (or its list's top), wherever the
- * row itself stands while it waits at the foot.
+ * Where the row's place starts in its area's content, wherever the row itself stands while it waits: the row read
+ * where the flow puts it, unstuck for that one read (no frame is drawn between), so margins, gaps and what sticks
+ * before it, as a table's head does, count as the layout counts them.
  */
 const placeOf = (row: HTMLElement, area: HTMLElement): number => {
-  const before = row.previousElementSibling;
-  const top = before ? before.getBoundingClientRect().bottom : row.parentElement!.getBoundingClientRect().top;
+  const sticky = row.style.position;
+  row.style.position = "static";
+  const top = row.getBoundingClientRect().top;
+  row.style.position = sticky;
   return top - area.getBoundingClientRect().top + area.scrollTop;
 };

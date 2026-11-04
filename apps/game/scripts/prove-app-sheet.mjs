@@ -1210,12 +1210,23 @@ const OWN_ROW_BOARDS = [
     row: ".ui-table-row[data-own]",
     opens: `document.querySelector(".ui-table-row") === null && document.body.innerText.includes("Visit")`,
   },
+  {
+    // The same with the player first, right under the column names: home is the scroll's top.
+    name: "hud-season-first",
+    path: "/lab/kit/hud/season-detail-first?capture=1",
+    first: 'button[aria-label="Close"]',
+    row: ".ui-table-row[data-own]",
+    opens: `document.querySelector(".ui-table-row") === null && document.body.innerText.includes("Visit")`,
+  },
 ];
 
 /** What a board's own row pressed in its place leads to: its row's action, or, for a row that opens nothing, the row still there. */
 const pressedInPlace = (board) => board.opens ?? `document.querySelector(${JSON.stringify(board.row)}) !== null`;
 
-/** Where a board's own row stands in its scroll area against its place (right under the row before it). */
+/**
+ * Where a board's own row stands in its scroll area against its place: the row read where the flow puts it, unstuck
+ * for that one read, as own-place.ts reads it.
+ */
 const ownRowAt = (row) => `(() => {
   const row = document.querySelector(${JSON.stringify(row)});
   if (!row) return null;
@@ -1225,8 +1236,9 @@ const ownRowAt = (row) => `(() => {
   const box = area.getBoundingClientRect();
   const head = parseFloat(getComputedStyle(pinned).getPropertyValue("--ui-table-head")) || 0;
   const at = pinned.getBoundingClientRect();
-  const before = pinned.previousElementSibling;
-  const place = before ? before.getBoundingClientRect().bottom : pinned.parentElement.getBoundingClientRect().top;
+  pinned.style.position = "static";
+  const place = pinned.getBoundingClientRect().top;
+  pinned.style.position = "";
   const near = (left, right) => Math.abs(left - right) < 1.5;
   return {
     placeBelow: place + at.height > box.bottom + 0.5,
@@ -1235,6 +1247,7 @@ const ownRowAt = (row) => `(() => {
     atTop: near(at.top, box.top + head),
     inPlace: near(at.top, place),
     middle: Math.abs((at.top + at.bottom) / 2 - (box.top + head + box.bottom) / 2) < at.height,
+    scrollEdge: area.scrollTop < 1 || area.scrollTop + area.clientHeight >= area.scrollHeight - 1,
   };
 })()`;
 
@@ -1293,8 +1306,14 @@ const ownRowRecord = async (b, baseUrl, out, board, desktop) => {
   await pressWhere(b, record, board.row);
   const found = b.evaluate(ownRowAt(board.row));
   record.checks.push({
-    check: "pressed there, its place comes to the middle of the scroll and nothing opens",
-    ok: found?.inPlace === true && found.middle && (board.opens === null || b.evaluate(board.opens) === false),
+    check:
+      "pressed there, its place comes to the middle of the scroll (or its edge, for first place) and nothing opens",
+    ok:
+      found?.inPlace === true &&
+      (found.middle || found.scrollEdge) &&
+      !found.placeAbove &&
+      !found.placeBelow &&
+      (board.opens === null || b.evaluate(board.opens) === false),
     found,
   });
   b.run("screenshot", join(out, `${name}-found.png`));

@@ -4,7 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, expect, it, vi } from "vitest";
 
 import { AppBoard, type AppBoardEntry } from "./app-elements";
-import { HudTableRow } from "./hud-elements";
+import { HudTableHead, HudTableRow } from "./hud-elements";
 
 /** A board of 300 players, the player 200th: far more than its scroll area shows. */
 const opened = vi.fn();
@@ -162,4 +162,63 @@ it("lets the player's row find its place when its own action leads nowhere, and 
   act(() => shown.own.click());
   expect(shown.area.scrollTo).not.toHaveBeenCalled();
   expect(shown.open).not.toHaveBeenCalled();
+});
+
+/**
+ * First place on a HUD table: the head (40 px, sticky, as the stylesheet makes it) and then the player's row, in a 400
+ * px area that holds them directly, as the standings' panel does, scrolled to `scrollTop`.
+ */
+const firstPlace = (scrollTop: number) => {
+  const open = vi.fn();
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  act(() =>
+    root.render(
+      <div style={{ overflowY: "auto" }}>
+        <HudTableHead cols="1fr">
+          <span>Player</span>
+        </HudTableHead>
+        {Array.from({ length: 40 }, (_, index) => (
+          <HudTableRow key={index} cols="1fr" label={`#${index + 1}`} own={index === 0} onClick={() => open(index + 1)}>
+            {index + 1}
+          </HudTableRow>
+        ))}
+      </div>,
+    ),
+  );
+  const area = host.firstElementChild as HTMLElement;
+  Object.defineProperties(area, {
+    scrollTop: { configurable: true, value: scrollTop },
+    clientHeight: { configurable: true, value: 400 },
+  });
+  area.scrollTo = vi.fn() as unknown as typeof area.scrollTo;
+  area.getBoundingClientRect = () => ({ top: 0 }) as DOMRect;
+  // The head sticks at the area's top, drawn there however far the content scrolled; in the flow it still takes its
+  // 40 px above the first row.
+  const [head, ...rows] = [...area.children] as HTMLElement[];
+  head!.getBoundingClientRect = () => ({ top: 0, bottom: 40 }) as DOMRect;
+  rows.forEach((row, index) => {
+    row.style.setProperty("--ui-table-head", "40px");
+    Object.defineProperty(row, "offsetHeight", { configurable: true, value: 40 });
+    // In the flow every row scrolls with the content; the player's row, sticky, waits under the head while scrolled
+    // past, and is read where the flow puts it only unstuck.
+    const flow = 40 + index * 40 - scrollTop;
+    const stuck = index === 0 ? Math.max(40, flow) : flow;
+    row.getBoundingClientRect = () => {
+      const top = row.style.position === "static" ? flow : stuck;
+      return { top, bottom: top + 40 } as DOMRect;
+    };
+  });
+  return { area, open, own: rows[0] as HTMLButtonElement };
+};
+
+it("brings first place home when the player's row is pressed under the head, scrolled past it", () => {
+  const past = firstPlace(1200);
+  act(() => past.own.click());
+  expect(past.area.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: "smooth" });
+  expect(past.open).not.toHaveBeenCalled();
+  // At home, first place shows under the head: the press is the row's own.
+  const home = firstPlace(0);
+  act(() => home.own.click());
+  expect(home.area.scrollTo).not.toHaveBeenCalled();
+  expect(home.open).toHaveBeenCalledWith(1);
 });
