@@ -357,3 +357,32 @@ it("commits day ranks with history, deduplicates replay and recovers them after 
     await admin.end();
   }
 });
+
+it("persists immutable prize evidence, resumes identical capture, and rolls back history on conflicting capture", async () => {
+  const admin = new Pool({ connectionString: databaseUrl });
+  const namespace = `prize_board_${randomUUID().replaceAll("-", "")}`;
+  await admin.query(`CREATE SCHEMA ${namespace}`);
+  const url = new URL(databaseUrl!);
+  url.searchParams.set("options", `-c search_path=${namespace}`);
+  let store = new HistoryStore(url.toString(), "0x1", "0x123", createNativeHistoryCodec(nativeSchema));
+  const frozen = { game_id: "1", cutoff: 1000, confirmed_block: 10, block_hash: "0xabc", entries: [] };
+  try {
+    await store.initialize();
+    await store.appendEvents([], 11, [], [frozen]);
+    await store.close();
+    store = new HistoryStore(url.toString(), "0x1", "0x123", createNativeHistoryCodec(nativeSchema));
+    await store.initialize();
+    expect(await store.frontierPrizeBoard("1", 1000)).toEqual(frozen);
+    expect(await store.frontierPrizeBoard("2", 1000)).toBeNull();
+    await store.appendEvents([], 11, [], [frozen]);
+    await expect(store.appendEvents([], 12, [], [{ ...frozen, block_hash: "0xbad" }])).rejects.toThrow(
+      "Conflicting frozen",
+    );
+    expect(await store.historyProgress()).toBe(11);
+    expect(await store.frontierPrizeBoard("1", 1000)).toEqual(frozen);
+  } finally {
+    await store.close();
+    await admin.query(`DROP SCHEMA ${namespace} CASCADE`);
+    await admin.end();
+  }
+});

@@ -105,7 +105,12 @@ export const visitScenario = (): LabScenario => {
   game.store.applyFacts(facts as never);
   return {
     ...game,
-    board: [boardEntry(game.player, 7, 1), boardEntry(NEIGHBOUR, NEIGHBOUR_REALM, 2)],
+    board: {
+      game_id: "1",
+      mode: "frontier",
+      prize: null,
+      entries: [boardEntry(game.player, 7, 1), boardEntry(NEIGHBOUR, NEIGHBOUR_REALM, 2)],
+    },
   };
 };
 

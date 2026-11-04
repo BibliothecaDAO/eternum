@@ -9,7 +9,7 @@ import { homeDailyClaim, dayOf, readExpeditionRules, ResourceManager } from "@bi
 import { NativeFactStore, ordinaryHash, type PlayFrame } from "@bibliothecadao/eternum/game-client";
 import {
   deriveGameSyncScope,
-  type HeraldFrontierLeaderboardEntry,
+  type HeraldFrontierLeaderboard,
   type HeraldHistoryEvent,
   rowInGameSyncScope,
   scopeInputKeys,
@@ -70,7 +70,7 @@ export interface LabScenario {
   /** The lab second before which Herald's history holds its answers back (a slow Herald); none: it answers at once. */
   historyAnswersAt?: number;
   /** The season board's realms, as Herald ranks them; none: the board cannot be read, as an offline shard's. */
-  board?: HeraldFrontierLeaderboardEntry[];
+  board?: HeraldFrontierLeaderboard;
   /** What the player's device holds as the game starts (its storage); set once at the start, never on a reload. */
   startDevice?: () => void;
   /** The payout wallet the player's account has linked, used by withdrawals; none: the lab player has none. */
@@ -464,8 +464,7 @@ const answerHeraldRead = (
     const held = chain.get("ExpeditionSite", { game_id: LAB_GAME.gameId, entity_id: id });
     return held ? wire(held) : (scenario.farSites?.find((row) => Number(row.entity_id) === id) ?? NOT_FOUND);
   }
-  if (url.pathname === `${game}/leaderboard` && scenario.board)
-    return { game_id: String(LAB_GAME.gameId), mode: "frontier", entries: scenario.board };
+  if (url.pathname === `${game}/leaderboard` && scenario.board) return scenario.board;
   const ranks = url.pathname.match(new RegExp(`^${game}/days/(\\d+)/ranks$`));
   if (ranks) {
     const rules = readExpeditionRules(chain, LAB_GAME.gameId);

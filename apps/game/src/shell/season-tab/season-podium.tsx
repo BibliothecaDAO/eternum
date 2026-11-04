@@ -1,3 +1,4 @@
+import { frontierCompetitionPhase } from "@bibliothecadao/eternum/game-sync";
 import { formatExact } from "@bibliothecadao/types";
 import type { HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
 
@@ -25,6 +26,7 @@ export const SeasonPodium = ({
   /** Whether the season has ended, when a pool not published never will be. */
   over: boolean;
 }) => {
+  if (frontierCompetitionPhase(board) !== "live") return null;
   const podium = seasonPodium(board);
   if (podium?.length === 0 || (podium === null && over)) return null;
   const places: PodiumPlace[] = podium ?? [1, 2, 3].map((place) => ({ place, lords: Number.NaN, holder: "open" }));

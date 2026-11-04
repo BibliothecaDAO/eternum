@@ -139,6 +139,7 @@ const main = async (): Promise<void> => {
     worldAddress: registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
+    confirmedTimestamp: () => live.confirmedTimestamp,
     decodedModelCount: registry.bySelector.size,
     fold: {
       modelRows: (model) => live.modelRows(model),

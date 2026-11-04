@@ -3921,6 +3921,42 @@ function devconArtShown(scene) {
   };
 }
 
+const podiumCutoffSteps = [
+  {
+    name: "frozen-season-in-game",
+    play: async ({ browser }) => {
+      if (!onADesktop()) {
+        browser.click(HUD_WORDS.menu);
+        await sleep(500);
+      }
+      browser.click(HUD_WORDS.season);
+      await sleep(2_000);
+      return browser.read(
+        `JSON.stringify({ text: document.querySelector('section[aria-label="Season"]')?.textContent, race: !!document.querySelector('[aria-label="Season prizes"]') })`,
+      );
+    },
+    verify: ({ played }) =>
+      played.text?.includes("Final results") && played.text.includes("Competition ended") && !played.race
+        ? completed(played)
+        : failed("The in-game Season must show frozen results without an active podium", played),
+  },
+  {
+    name: "frozen-season-page",
+    play: async ({ browser }) => {
+      const origin = browser.read("JSON.stringify(window.location.origin)");
+      browser.run(["open", `${origin}/lab/app/season-cutoff/season`]);
+      await sleep(3_000);
+      return browser.read(
+        `JSON.stringify({ text: document.body.textContent, race: !!document.querySelector('[aria-label="Season prizes"]'), results: !!document.querySelector('[aria-label="Final results"]') })`,
+      );
+    },
+    verify: ({ played }) =>
+      played.results && played.text.includes("Map farming continues") && !played.race
+        ? completed(played)
+        : failed("The Season page must retain farming and final results without a prize race", played),
+  },
+];
+
 const devconSeasonStep = {
   name: "devcon-season",
   play: async ({ browser }) => {
@@ -4298,6 +4334,7 @@ export const STEP_SETS = {
     devOverlays: true,
   },
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
+  "lab-podium-cutoff": { game: { ...LAB_SPIRE, lab: "podium-cutoff" }, steps: podiumCutoffSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
   "lab-merge-loses-xp": {

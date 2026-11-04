@@ -25,6 +25,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
   worldAddress: "0x123",
   confirmedBlock: () => 12,
   chainTimestamp: () => 100,
+  confirmedTimestamp: () => 100,
   decodedModelCount: 50,
   fold: {
     structurePosition: () => undefined,
@@ -72,6 +73,7 @@ const httpState: Parameters<typeof createHeraldRequestHandler>[0] = {
     snapshot: () => snapshot,
   },
   history: {
+    frontierPrizeBoard: async () => null,
     frontierDayRanks: async () => null,
     frontierHistory: async () => [],
     queryStoryCursor: async () => ({
@@ -214,11 +216,13 @@ it("passes a battle-only history filter to the store before pagination", async (
     worldAddress: "0x123",
     confirmedBlock: () => 12,
     chainTimestamp: () => 100,
+    confirmedTimestamp: () => 100,
     decodedModelCount: 0,
     fold: { ...httpState.fold, modelRows: () => [], snapshot: () => snapshot },
     undecodableEventCount: () => 0,
     nodeHealth: () => null,
     history: {
+      frontierPrizeBoard: async () => null,
       frontierDayRanks: async () => null,
       frontierHistory: async () => [],
       queryStoryCursor: async () => ({
@@ -451,7 +455,10 @@ it("serves Frontier history at one confirmed head, caches successes only and kee
     ...httpState,
     confirmedBlock: () => head,
     fold: { ...httpState.fold, modelRows },
-    history: { ...httpState.history!, frontierHistory },
+    history: {
+      ...httpState.history!,
+      frontierHistory,
+    },
     undecodableEventCount: () => 0,
     nodeHealth: () => null,
   });
@@ -498,7 +505,10 @@ it("serves immutable per-day ranks, with explicit unavailable and unclosed respo
     ...httpState,
     undecodableEventCount: () => 0,
     nodeHealth: () => null,
-    history: { ...httpState.history!, frontierDayRanks },
+    history: {
+      ...httpState.history!,
+      frontierDayRanks,
+    },
   });
   const request = (day: string) => handler(new Request(`http://localhost/games/1/days/${day}/ranks`));
   expect(await (await request("0")).json()).toEqual(ranks);
@@ -547,4 +557,54 @@ it("lets browsers read request timings only on a dev chain", async () => {
       expect([chain, request.url, response.headers.get("timing-allow-origin")]).toEqual([chain, request.url, allowed]);
     }
   }
+});
+
+it("stops the race at confirmed cutoff, never serves live farming as final, and keeps award status current", async () => {
+  const { SEASON_ZERO_COMPETITION: policy } = await import("@bibliothecadao/eternum/game-sync");
+  let head = 20;
+  let timestamp = policy.cutoff - 1;
+  const frozen = { game_id: "1", cutoff: policy.cutoff, confirmed_block: 20, block_hash: "0x20", entries: [] };
+  const frontierPrizeBoard = vi
+    .fn<NonNullable<typeof httpState.history>["frontierPrizeBoard"]>()
+    .mockResolvedValue(null);
+  const read = createHeraldRequestHandler({
+    ...httpState,
+    chain: policy.chainId,
+    confirmedBlock: () => head,
+    confirmedTimestamp: () => timestamp,
+    chainTimestamp: () => policy.cutoff + 100,
+    undecodableEventCount: () => 0,
+    history: { ...httpState.history!, frontierHistory: async () => [], frontierPrizeBoard },
+    fold: {
+      ...httpState.fold,
+      modelRows: (model) => {
+        if (model === "GameRegistry")
+          return [
+            {
+              key: "1",
+              value: { game_id: 1, preset_id: policy.presetId, start_main_at: policy.start, seed: policy.seed },
+            },
+          ];
+        if (model === "SliceRules") return [{ key: "1", value: { game_id: 1, day_unit_seconds: 7200 } }];
+        if (model === "FrontierPrize")
+          return [{ key: "1", value: { game_id: 1, pool: 90000, count: head < 23 ? null : 0 } }];
+        if (model === "ChestRules") return [{ key: "1", value: { game_id: 1, top_n: 3 } }];
+        return [];
+      },
+    },
+  });
+  const board = async () => (await read(new Request("http://herald/games/1/leaderboard"))).json();
+  expect(await board()).toMatchObject({ competition: { status: "live", cutoff: policy.cutoff } });
+  timestamp = policy.cutoff;
+  head++;
+  expect(await board()).toMatchObject({ competition: { status: "confirming" }, entries: [] });
+  frontierPrizeBoard.mockResolvedValue(frozen);
+  head++;
+  expect(await board()).toMatchObject({
+    competition: { status: "final", confirmed_block: 20, block_hash: "0x20" },
+    entries: [],
+    prize: { count: null },
+  });
+  head++;
+  expect(await board()).toMatchObject({ competition: { status: "final" }, prize: { count: 0 } });
 });

@@ -166,6 +166,11 @@ export interface HeraldFrontierLeaderboardEntry {
 export interface HeraldFrontierLeaderboard {
   game_id: string;
   mode: "frontier";
+  /** Historical competition result; gameplay and prize award status keep their own clocks. */
+  competition?: { confirmed_at: number } & (
+    | { status: "live" | "confirming"; cutoff: number }
+    | ({ status: "final" } & Omit<HeraldFrontierPrizeBoard, "entries" | "game_id">)
+  );
   entries: HeraldFrontierLeaderboardEntry[];
   /**
    * The season's top prizes, as the game holds them (FrontierPrize, ChestRules, LordsWithdrawal): the prize pool in whole
@@ -179,7 +184,7 @@ export interface HeraldFrontierPrize {
   pool: string;
   top_n: number;
   count: number | null;
-  /** The places paid so far, by rank: who the ledger paid and its whole LORDS. A fixed place awaiting its award has none. */
+  /** Confirmed L3 awards by rank and whole LORDS. These obligations do not establish whether L2 has paid them. */
   awards: HeraldFrontierAward[];
 }
 
@@ -196,6 +201,15 @@ export interface HeraldFrontierDayRanks {
   ends_at: number;
   confirmed_block: number;
   entries: { address: string; structure_id: string; rank: number }[];
+}
+
+/** Complete confirmed standings immediately before an arbitrary competition cutoff. */
+export interface HeraldFrontierPrizeBoard {
+  game_id: string;
+  cutoff: number;
+  confirmed_block: number;
+  block_hash: string;
+  entries: HeraldFrontierLeaderboardEntry[];
 }
 
 export type HeraldGameLeaderboard = HeraldLeaderboard | HeraldFrontierLeaderboard;

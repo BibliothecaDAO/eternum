@@ -1,3 +1,4 @@
+import { LAB_FRONTIER_FROZEN_BOARD } from "@/shell/lab/app-lab-fixtures";
 import { REALM_SKIN_MODELS } from "@/three/structures/realm-skins";
 import { campaignScenario, devconSeasonScenario, fullLaborCampaignScenario } from "./campaign-scenario";
 import { dayEndScenario } from "./day-end-scenario";
@@ -78,6 +79,7 @@ export const LAB_SCENARIOS: Partial<Record<string, () => LabScenario>> = {
   "devcon-golden": campaignScenario("golden"),
   "devcon-golden-full": fullLaborCampaignScenario,
   "devcon-season": devconSeasonScenario,
+  "podium-cutoff": () => ({ ...spireScenario(), board: LAB_FRONTIER_FROZEN_BOARD }),
 };
 
 /** The lab game this tab plays: its scenario and the wall time its chain's clock started at. */

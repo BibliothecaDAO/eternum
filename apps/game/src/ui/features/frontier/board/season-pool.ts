@@ -4,6 +4,7 @@ import {
   prizeShares,
   type HeraldFrontierLeaderboardEntry,
   type HeraldFrontierPrize,
+  type HeraldFrontierLeaderboard,
 } from "@bibliothecadao/eternum/game-sync";
 
 import type { SeasonPoolFigures } from "./season-list";
@@ -99,10 +100,21 @@ export type PodiumPlace = { place: number; lords: number; holder: PodiumHolder }
  */
 export const seasonPodium = (board: {
   prize: HeraldFrontierPrize | null;
+  competition?: HeraldFrontierLeaderboard["competition"];
   entries: readonly Pick<HeraldFrontierLeaderboardEntry, "address" | "sites_cleared">[];
 }): PodiumPlace[] | null => {
   const { prize } = board;
   if (!prize) return null;
+  if (board.competition?.status === "confirming") return [];
+  if (board.competition?.status === "final") {
+    const holders = frontierPrizeHolders(board.entries, prize.top_n);
+    if (!holders.length) return [];
+    return prizeShares(BigInt(prize.pool), holders.length).map((lords, index) => ({
+      place: index + 1,
+      lords: Number(lords),
+      holder: { address: holders[index]!.address },
+    }));
+  }
   const places = prize.count ?? prize.top_n;
   if (places === 0) return [];
   const shares = prizeShares(BigInt(prize.pool), places);

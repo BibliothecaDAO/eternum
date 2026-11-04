@@ -6,6 +6,7 @@ const calls = vi.hoisted(() => ({
   header: vi.fn(),
   snapshot: vi.fn(),
   games: vi.fn(),
+  terms: vi.fn(),
 }));
 vi.mock("@realms-world/value-ledger", () => ({ rpcAt: vi.fn(), readFrontierFunding: calls.funding }));
 vi.mock("@realms-world/value-ledger/shard", () => ({
@@ -21,15 +22,7 @@ vi.mock("./shard-rpc", async (original) => ({
 }));
 vi.mock("./frontier-games", () => ({
   readFrontierGames: calls.games,
-  frontierTerms: () => ({
-    start: 10,
-    end: 100,
-    seed: "0x1",
-    dayUnit: 5,
-    claimWindow: 604800,
-    chestPoolBps: 7000,
-    topN: 3,
-  }),
+  frontierTerms: calls.terms,
 }));
 vi.mock("./shard-snapshot", async (original) => ({
   ...(await original<typeof import("./shard-snapshot")>()),
@@ -65,6 +58,16 @@ const board = (addresses = ["0x8", "0x2", "0x5", "0x1"], block = "10", sites: nu
   );
 beforeEach(() => {
   vi.clearAllMocks();
+  calls.terms.mockReturnValue({
+    presetId: 6,
+    start: 10,
+    end: 100,
+    seed: "0x1",
+    dayUnit: 5,
+    claimWindow: 604800,
+    chestPoolBps: 7000,
+    topN: 3,
+  });
   calls.games.mockResolvedValue({ confirmedBlock: 10, games: [{ game_id: 7, clock: { end_at: 100 } }] });
   calls.header.mockResolvedValue({ timestamp: 100 });
   calls.snapshot.mockResolvedValue(snapshot());
@@ -228,4 +231,61 @@ it("does not award new prizes after the ledger has carried the expired reserve",
   calls.funding.mockResolvedValue({ closed: true, claimDeadline: 604900, prizePool: String(300n * 10n ** 18n) });
   await run();
   expect(calls.admin).not.toHaveBeenCalled();
+});
+
+it("waits for Nov 13, then posts only the Nov 6 result with adjacent confirmed boundary proof", async () => {
+  const { SEASON_ZERO_COMPETITION: policy } = await import("@bibliothecadao/eternum/game-sync");
+  const end = policy.cutoff + 7 * 86400;
+  const prod = { ...target, chainId: policy.chainId };
+  const runProd = () =>
+    awardFrontierPrizes(prod, "https://herald.test", { rpcUrl: "https://ledger.test", address: "0x30" });
+  calls.games.mockResolvedValue({ confirmedBlock: 100, games: [{ game_id: 1, clock: { end_at: end } }] });
+  calls.snapshot.mockResolvedValue({ ...snapshot(), game_id: "1", confirmed_block: 100 });
+  calls.terms.mockReturnValue({ ...policy, end, dayUnit: 7200, claimWindow: 604800, chestPoolBps: 7000, topN: 3 });
+  let now: number = policy.cutoff;
+  calls.header.mockImplementation(async (height: number | "latest") => {
+    if (height === 20) return { timestamp: policy.cutoff - 1, block_hash: "0x20" };
+    if (height === 21) return { timestamp: policy.cutoff, block_hash: "0x21", parent_hash: "0x20" };
+    return { timestamp: now, block_hash: "0x100" };
+  });
+  const frozen = {
+    game_id: "1",
+    mode: "frontier",
+    entries: [
+      { address: "0xa", sites_cleared: { total: 2 } },
+      { address: "0xb", sites_cleared: { total: 0 } },
+    ],
+    competition: { status: "final", cutoff: policy.cutoff, confirmed_block: 20, block_hash: "0x20", confirmed_at: end },
+  };
+  const serve = (body: unknown) =>
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => Response.json(body, { headers: { "X-Confirmed-Block": "100" } })),
+    );
+  serve(frozen);
+  await runProd();
+  expect(calls.admin).not.toHaveBeenCalled();
+  expect(fetch).not.toHaveBeenCalled();
+  now = end;
+  for (const competition of [
+    undefined,
+    { ...frozen.competition, status: "live" },
+    { ...frozen.competition, status: "confirming" },
+    { ...frozen.competition, cutoff: policy.cutoff + 1 },
+    { ...frozen.competition, confirmed_block: 100 },
+  ]) {
+    serve({ ...frozen, competition });
+    await expect(runProd()).rejects.toThrow("frontier_prize_board_not_frozen");
+    expect(calls.admin).not.toHaveBeenCalled();
+  }
+  serve({ ...frozen, competition: { ...frozen.competition, block_hash: "0xbad" } });
+  await expect(runProd()).rejects.toThrow("frontier_prize_boundary_differs");
+  serve({ ...frozen, competition: { ...frozen.competition, confirmed_block: 21 } });
+  await expect(runProd()).rejects.toThrow("frontier_prize_boundary_differs");
+  serve(frozen);
+  await runProd();
+  expect(calls.admin.mock.calls).toEqual([
+    ["post_frontier_top", { game_id: 1, winners: ["0xa"] }],
+    ["award_frontier_prize", { game_id: 1, rank: 1 }],
+  ]);
 });

@@ -114,6 +114,7 @@ async function endedSeason() {
     worldAddress: shard.gamesAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
+    confirmedTimestamp: () => live.chainTimestamp,
     decodedModelCount: 0,
     fold: {
       modelRows: (model) => live.modelRows(model),

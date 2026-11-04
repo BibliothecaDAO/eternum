@@ -1,5 +1,5 @@
 import type { NodeHealth } from "./node-health";
-import { buildFrontierLeaderboard } from "./native/frontier-leaderboard";
+import { readFrontierCompetitionBoard } from "./native/frontier-competition";
 import type { HeraldGameLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { required, number } from "./native/values";
 import { parseStoryHistoryCursor } from "@bibliothecadao/eternum/game-sync";
@@ -44,11 +44,18 @@ interface HeraldHttpState {
   worldAddress: string;
   confirmedBlock: () => number;
   chainTimestamp: () => number;
+  confirmedTimestamp: () => number | null;
   decodedModelCount: number;
   fold: SnapshotSource;
   history?: Pick<
     HistoryStore,
-    "queryStoryCursor" | "queryEvents" | "reviewSnapshot" | "activity" | "frontierHistory" | "frontierDayRanks"
+    | "queryStoryCursor"
+    | "queryEvents"
+    | "reviewSnapshot"
+    | "activity"
+    | "frontierHistory"
+    | "frontierDayRanks"
+    | "frontierPrizeBoard"
   >;
   undecodableEventCount: () => number;
   /** The node's last memory sample (node-health.ts); null while none can be read. */
@@ -294,15 +301,14 @@ function cachedLeaderboard(state: HeraldHttpState, build: WorldReadModels["leade
     let response: HeraldGameLeaderboard;
     if (number(rules.day_unit_seconds) > 0) {
       if (!state.history || state.undecodableEventCount() > 0) throw new Error("Frontier history unavailable");
-      // Capture current facts before awaiting SQL, so a newer head cannot mix into this board.
-      const facts = new Map(
-        ["GameRegistry", "Structure", "CampaignHome", "FrontierPrize", "ChestRules", "LordsWithdrawal"].map((model) => [
-          model,
-          state.fold.modelRows(model),
-        ]),
-      );
-      const history = await state.history.frontierHistory(gameId, head);
-      response = buildFrontierLeaderboard((model) => facts.get(model) ?? [], gameId, history);
+      response = await readFrontierCompetitionBoard({
+        chain: state.chain,
+        gameId,
+        head,
+        confirmedAt: state.confirmedTimestamp(),
+        modelRows: (model) => state.fold.modelRows(model),
+        history: state.history,
+      });
     } else {
       response = build(state.fold.modelRows, gameId, timestamp, state.history?.activity(gameId) ?? null);
     }

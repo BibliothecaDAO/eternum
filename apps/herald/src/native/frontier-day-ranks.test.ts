@@ -161,6 +161,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
   const history = { frontierHistory: vi.fn(async () => []), appendEvents: vi.fn(async () => {}) };
   const restored = WorldFold.restore(decoder.registry, fold.checkpoint());
   const input = {
+    chain: "0x123",
     fold: restored,
     rpc: {
       getBlockHeader: async (number: number) => {
@@ -187,6 +188,7 @@ it("replays a checkpoint before closure, excluding changes at the boundary and r
     ],
     12,
     replay.frontierDays,
+    [],
   );
   const uncommitted = WorldFold.restore(decoder.registry, fold.checkpoint());
   const beforeHistoryFailure = uncommitted.checkpoint();

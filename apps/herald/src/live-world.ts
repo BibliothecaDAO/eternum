@@ -146,6 +146,10 @@ export class LiveWorld {
     return this.confirmedBlockValue;
   }
 
+  public get confirmedTimestamp(): number | null {
+    return this.confirmedHeadTimestamp;
+  }
+
   public get chainTimestamp(): number {
     return this.lastClockTimestamp;
   }
@@ -522,6 +526,7 @@ export class LiveWorld {
 
   private async applyConfirmedThrough(target: number) {
     const replayInput = {
+      chain: this.input.chain,
       fold: this.confirmedFold,
       rpc: this.input.rpc,
       fromBlock: this.confirmedBlockValue + 1,
@@ -537,6 +542,7 @@ export class LiveWorld {
           this.confirmedHeadTimestamp ?? undefined,
         )
       : { ...(await this.native.replay(replayInput)), frontierDays: [] };
+    this.confirmedHeadTimestamp = result.timestamp ?? this.confirmedHeadTimestamp;
     this.confirmedBlockValue = result.throughBlock;
     return result;
   }

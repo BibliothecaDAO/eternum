@@ -49,6 +49,7 @@ describe("native confirmed replay and transaction delivery", () => {
         worldAddress: decoder.registry.worldAddress,
         confirmedBlock: () => 13,
         chainTimestamp: () => 2160,
+        confirmedTimestamp: () => 2160,
         decodedModelCount: decoder.registry.bySelector.size,
         fold: {
           modelRows: (name) => world.modelRows(name),
@@ -194,7 +195,12 @@ it("rebuilds state and history from genesis in one replay when history lags the 
     load: vi.fn(async () => ({ fold: stale, confirmedBlock: 12 })),
     save: vi.fn(),
   };
-  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 11) };
+  const history = {
+    frontierPrizeBoard: async () => null,
+    frontierHistory: async () => [],
+    appendEvents: vi.fn(),
+    historyProgress: vi.fn(async () => 11),
+  };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(rpc.readBlock).toHaveBeenCalledTimes(4);
   expect(loaded.fold).not.toBe(stale);
@@ -262,7 +268,12 @@ it("halts a confirmed rejection at the last checkpoint without killing receipt s
     load: vi.fn(async () => ({ fold, confirmedBlock: 9 })),
     save: vi.fn(),
   };
-  const history = { frontierHistory: async () => [], appendEvents: vi.fn(), historyProgress: vi.fn(async () => 9) };
+  const history = {
+    frontierPrizeBoard: async () => null,
+    frontierHistory: async () => [],
+    appendEvents: vi.fn(),
+    historyProgress: vi.fn(async () => 9),
+  };
   const loaded = await loadNativeWorld({ chain: "madara", checkpointStore, history, native, rpc });
   expect(loaded.confirmedBlock).toBe(9);
   expect(loaded.fold.checkpoint()).toEqual(before);
@@ -312,6 +323,7 @@ it("halts a live confirmed fold atomically while leaving the process available",
     worldAddress: decoder.registry.worldAddress,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
+    confirmedTimestamp: () => live.chainTimestamp,
     decodedModelCount: decoder.registry.bySelector.size,
     fold: {
       modelRows: (model) => fold.modelRows(model),
@@ -400,6 +412,7 @@ it("retains only one 64-block cold-replay window and no receipts, checkpointing 
     },
   };
   const history = {
+    frontierPrizeBoard: async () => null,
     frontierHistory: async () => [],
     historyProgress: async () => null,
     appendEvents: async (events: readonly unknown[], head?: number) => {
@@ -439,6 +452,7 @@ it("keeps a completed startup window when the next window rejects a receipt and 
     },
   };
   const history = {
+    frontierPrizeBoard: async () => null,
     frontierHistory: async () => [],
     historyProgress: async () => historyThrough,
     appendEvents: async (_events: readonly unknown[], head?: number) => {
@@ -536,6 +550,7 @@ it("checkpoints budgeted cold replay before fetching the following block", async
       },
     },
     history: {
+      frontierPrizeBoard: async () => null,
       frontierHistory: async () => [],
       historyProgress: async () => null,
       appendEvents: async (_events, through) => {

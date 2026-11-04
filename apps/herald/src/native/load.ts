@@ -1,3 +1,4 @@
+import { competitionOf } from "./frontier-competition";
 import type { CheckpointStore } from "../checkpoint-store";
 import type { HistoryStore } from "../history-store";
 import type { MadaraRpc } from "../madara-rpc";
@@ -12,7 +13,7 @@ const REPLAY_WINDOW_BLOCKS = 64;
 export async function loadNativeWorld(input: {
   chain: string;
   checkpointStore: Pick<CheckpointStore, "initialize" | "load" | "save">;
-  history: Pick<HistoryStore, "appendEvents" | "historyProgress" | "frontierHistory">;
+  history: Pick<HistoryStore, "appendEvents" | "historyProgress" | "frontierHistory" | "frontierPrizeBoard">;
   rpc: MadaraRpc;
   native: NativeIngestion;
 }) {
@@ -57,6 +58,7 @@ async function replayWindow(
 ) {
   const replay = await replayWithFrontierDays(input.native, input.history, {
     fold,
+    chain: input.chain,
     rpc: input.rpc,
     fromBlock,
     toBlock,
@@ -71,5 +73,13 @@ async function resumableCheckpoint(input: Parameters<typeof loadNativeWorld>[0])
   const checkpoint = await input.checkpointStore.load(input.chain, input.native.decoder.registry);
   if (!checkpoint) return undefined;
   const historyThrough = (await input.history.historyProgress(true)) ?? -1;
-  return historyThrough >= checkpoint.confirmedBlock ? checkpoint : undefined;
+  if (historyThrough < checkpoint.confirmedBlock) return undefined;
+  const competitions = competitionOf(input.chain, (model) => checkpoint.fold.modelRows(model));
+  if (competitions.length) {
+    const header = await input.rpc.getBlockHeader(checkpoint.confirmedBlock);
+    for (const { game_id, cutoff } of competitions) {
+      if (header.timestamp >= cutoff && !(await input.history.frontierPrizeBoard(game_id, cutoff))) return undefined;
+    }
+  }
+  return checkpoint;
 }

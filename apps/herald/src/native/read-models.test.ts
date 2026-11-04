@@ -751,6 +751,7 @@ describe("the player directory over HTTP", () => {
       worldAddress: manifest.world.address,
       confirmedBlock: () => 13,
       chainTimestamp: () => 30,
+      confirmedTimestamp: () => 30,
       decodedModelCount: 50,
       // The fold's directory reads, as server.ts wires them; the directory reads no snapshot.
       fold: {

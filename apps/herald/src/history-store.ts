@@ -13,6 +13,7 @@ import type {
   HeraldHistoryPage,
   HeraldHistoryEvent,
   HeraldFrontierDayRanks,
+  HeraldFrontierPrizeBoard,
 } from "@bibliothecadao/eternum/game-sync";
 
 import { normalizeFelt, toJsonValue } from "./model-registry";
@@ -166,6 +167,15 @@ export class HistoryStore {
         PRIMARY KEY (chain, world_address, game_id, day_index)
       );
 
+      CREATE TABLE IF NOT EXISTS herald_frontier_prize_boards (
+        chain TEXT NOT NULL,
+        world_address TEXT NOT NULL,
+        game_id NUMERIC NOT NULL,
+        cutoff BIGINT NOT NULL,
+        board JSONB NOT NULL,
+        PRIMARY KEY (chain, world_address, game_id, cutoff)
+      );
+
       DROP TABLE IF EXISTS herald_game_transactions;
 
       CREATE TABLE IF NOT EXISTS herald_game_review_snapshots (
@@ -193,12 +203,14 @@ export class HistoryStore {
     events: readonly DecodedWorldEvent[],
     completeThroughBlock?: number,
     frontierDays?: readonly HeraldFrontierDayRanks[],
+    prizeBoards?: readonly HeraldFrontierPrizeBoard[],
   ): Promise<void> {
     const rows = events.flatMap((event) => {
       const stored = storedHistoryEvent(event, this.codec);
       return stored ? [stored] : [];
     });
-    if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length) return;
+    if (rows.length === 0 && completeThroughBlock === undefined && !frontierDays?.length && !prizeBoards?.length)
+      return;
 
     const client = await this.pool.connect();
     let registrations: Array<{ gameId: string; points: PointsRegistration }> = [];
@@ -206,6 +218,7 @@ export class HistoryStore {
       await client.query("BEGIN");
       registrations = await this.insertNewHistory(client, rows);
       await this.insertFrontierDays(client, frontierDays ?? []);
+      await this.insertPrizeBoards(client, prizeBoards ?? []);
       if (completeThroughBlock !== undefined) {
         await this.advanceHistoryProgress(client, completeThroughBlock);
         if (frontierDays !== undefined) await this.advanceFrontierRanksProgress(client, completeThroughBlock);
@@ -217,6 +230,27 @@ export class HistoryStore {
       throw error;
     } finally {
       client.release();
+    }
+  }
+
+  public async frontierPrizeBoard(gameId: string, cutoff: number): Promise<HeraldFrontierPrizeBoard | null> {
+    const result = await this.pool.query<{ board: HeraldFrontierPrizeBoard }>(
+      `SELECT board FROM herald_frontier_prize_boards WHERE chain = $1 AND world_address = $2 AND game_id = $3 AND cutoff = $4`,
+      [this.chain, this.worldAddress, gameId, cutoff],
+    );
+    return result.rows[0]?.board ?? null;
+  }
+
+  private async insertPrizeBoards(client: PoolClient, boards: readonly HeraldFrontierPrizeBoard[]) {
+    for (const board of boards) {
+      const result = await client.query(
+        `INSERT INTO herald_frontier_prize_boards (chain, world_address, game_id, cutoff, board)
+         VALUES ($1, $2, $3, $4, $5::jsonb)
+         ON CONFLICT (chain, world_address, game_id, cutoff) DO UPDATE SET board = EXCLUDED.board
+         WHERE herald_frontier_prize_boards.board = EXCLUDED.board RETURNING game_id`,
+        [this.chain, this.worldAddress, board.game_id, board.cutoff, JSON.stringify(board)],
+      );
+      if (result.rowCount !== 1) throw new Error("Conflicting frozen Frontier prize board");
     }
   }
 

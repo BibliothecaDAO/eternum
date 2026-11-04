@@ -1,3 +1,5 @@
+import { competitionOf } from "./frontier-competition";
+import type { HeraldFrontierPrizeBoard } from "@bibliothecadao/eternum/game-sync";
 import type { MadaraRpc } from "../madara-rpc";
 import { isCheckGame } from "../game-directory";
 import { dayOf } from "@bibliothecadao/eternum/expeditions";
@@ -5,7 +7,7 @@ import type { HeraldFrontierDayRanks, HeraldHistoryEvent } from "@bibliothecadao
 import { buildFrontierLeaderboard } from "./frontier-leaderboard";
 import { integer, number, required } from "./values";
 import { historyEventOf, type HistoryStore } from "../history-store";
-import type { FoldRow } from "../types";
+import type { RpcHead, FoldRow } from "../types";
 import type { NativeIngestion } from "./ingestion";
 import { frontierRewardOf } from "./frontier-rewards";
 
@@ -68,10 +70,13 @@ export async function replayWithFrontierDays(
   history: Pick<HistoryStore, "frontierHistory" | "appendEvents">,
   input: Omit<Parameters<NativeIngestion["replay"]>[0], "rpc"> & {
     rpc: Pick<MadaraRpc, "readBlock" | "getBlockHeader">;
+    chain: string;
   },
   confirmedTimestamp?: number,
 ) {
   const frontierDays: HeraldFrontierDayRanks[] = [];
+  const prizeBoards: HeraldFrontierPrizeBoard[] = [];
+  const chain = input.chain;
   const previousHistory = new Map<string, HeraldHistoryEvent[]>();
   const publicGames = new Set(
     input.fold
@@ -97,12 +102,11 @@ export async function replayWithFrontierDays(
         block.timestamp,
         block.block_number - 1,
       );
-      if (boundaries.length) {
-        const stories = events.flatMap((event) => {
-          const item = historyEventOf(event);
-          return item && frontierRewardOf(item) ? [item] : [];
-        });
-        for (const gameId of new Set(boundaries.map((day) => day.game_id))) {
+      const competitions = competitionOf(chain, (model) => fold.modelRows(model)).filter(
+        ({ cutoff }) => previousTimestamp < cutoff && cutoff <= block.timestamp,
+      );
+      if (boundaries.length || competitions.length) {
+        for (const gameId of new Set([...boundaries, ...competitions].map((day) => day.game_id))) {
           if (!previousHistory.has(gameId)) {
             previousHistory.set(
               gameId,
@@ -112,15 +116,20 @@ export async function replayWithFrontierDays(
             );
           }
         }
-        frontierDays.push(
-          ...closingFrontierDays(
-            (model) => fold.modelRows(model),
-            previousTimestamp,
-            block.timestamp,
-            block.block_number - 1,
-            [...previousHistory.values()].flat().concat(stories),
-          ),
+        const completeHistory = [...previousHistory.values()].flat().concat(
+          events.flatMap((event) => {
+            const item = historyEventOf(event);
+            return item && frontierRewardOf(item) ? [item] : [];
+          }),
         );
+        const read = (model: string) => fold.modelRows(model);
+        frontierDays.push(
+          ...closingFrontierDays(read, previousTimestamp, block.timestamp, block.block_number - 1, completeHistory),
+        );
+        if (competitions.length) {
+          const previous = await input.rpc.getBlockHeader(block.block_number - 1);
+          prizeBoards.push(...capturePrizeBoards(read, competitions, completeHistory, previous));
+        }
       }
       previousTimestamp = block.timestamp;
     },
@@ -129,7 +138,31 @@ export async function replayWithFrontierDays(
         events.filter((event) => event.kind === "event"),
         throughBlock,
         frontierDays,
+        prizeBoards,
       ),
   });
-  return { ...replay, frontierDays };
+  return { ...replay, frontierDays, prizeBoards };
+}
+
+function capturePrizeBoards(
+  read: (model: string) => FoldRow[],
+  competitions: { game_id: string; cutoff: number }[],
+  history: HeraldHistoryEvent[],
+  previous: RpcHead,
+): HeraldFrontierPrizeBoard[] {
+  return competitions.map((competition) => {
+    if (!previous.block_hash || previous.timestamp >= competition.cutoff)
+      throw new Error("Competition boundary header unavailable");
+    const board = buildFrontierLeaderboard(
+      read,
+      competition.game_id,
+      history.filter((event) => integer(event.game_id) === integer(competition.game_id)),
+    );
+    return {
+      ...competition,
+      confirmed_block: previous.block_number,
+      block_hash: previous.block_hash,
+      entries: board.entries,
+    };
+  });
 }

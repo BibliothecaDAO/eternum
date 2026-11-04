@@ -24,6 +24,7 @@ import {
   LAB_CHAIN,
   LAB_FINISHED_BLITZ,
   LAB_FRONTIER_BOARD,
+  LAB_FRONTIER_FROZEN_BOARD,
   LAB_FIELD_MIN,
   LAB_FINAL_BOARDS,
   LAB_FRONTIER_FINAL_BOARD,
@@ -166,7 +167,11 @@ const createLabClient = (screen: LabScreen, field: number | null) => {
   if (field === null)
     client.setQueryData(
       ["shell", "leaderboard", LAB_CHAIN, 1],
-      screen === "season-unpublished" ? LAB_FRONTIER_UNPUBLISHED_BOARD : LAB_FRONTIER_BOARD,
+      screen === "season-cutoff"
+        ? LAB_FRONTIER_FROZEN_BOARD
+        : screen === "season-unpublished"
+          ? LAB_FRONTIER_UNPUBLISHED_BOARD
+          : LAB_FRONTIER_BOARD,
     );
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 3], LAB_FINAL_BOARDS[screen] ?? LAB_FRONTIER_FINAL_BOARD);
   client.setQueryData(["shell", "leaderboard", LAB_CHAIN, 7], LAB_BLITZ_BOARD);

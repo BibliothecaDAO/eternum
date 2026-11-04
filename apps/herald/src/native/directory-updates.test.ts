@@ -91,6 +91,7 @@ it("an army move does not notify directory clients; structure moves and empty-bl
     worldAddress: manifest.world.address,
     confirmedBlock: () => live.confirmedBlock,
     chainTimestamp: () => live.chainTimestamp,
+    confirmedTimestamp: () => live.chainTimestamp,
     decodedModelCount: decoder.registry.bySelector.size,
     fold: {
       modelRows: (model) => fold.modelRows(model),

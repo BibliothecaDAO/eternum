@@ -72,6 +72,7 @@ export const SeasonList = ({
   onOpen,
   onClose,
   ends,
+  competition,
 }: {
   /** The player's rank; null for a player without a realm on the list, undefined while it loads. */
   rank: number | null | undefined;
@@ -88,6 +89,7 @@ export const SeasonList = ({
   onClose: () => void;
   /** When the season ends, and today against its last day while it runs; undefined until the game is known. */
   ends?: { at: number; day?: number; lastDay?: number };
+  competition?: ReactNode;
 }) => {
   const phone = useLayout() === "phone";
   return (
@@ -99,7 +101,7 @@ export const SeasonList = ({
       bodyClassName="gap-1"
     >
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-        {ends && <SeasonEnds {...ends} />}
+        {competition ?? (ends && <SeasonEnds {...ends} />)}
         {podium !== undefined && (phone ? <FoldedPodium podium={podium} /> : <SeasonPodium podium={podium} />)}
         {state === "failed" ? (
           <Failed onRetry={onRetry} />

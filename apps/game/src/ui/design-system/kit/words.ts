@@ -1566,3 +1566,21 @@ export const ARMY_MANAGEMENT = {
   reinforceFailed: "The army could not be reinforced.",
   deleteFailed: "The army could not be deleted.",
 } as const;
+
+export const COMPETITION_WORDS = {
+  race: "Prize competition",
+  final: "Final results",
+  confirming: "Final results are being confirmed",
+} as const;
+const competitionDate = (at: number) =>
+  new Date(at * 1000).toLocaleString("en-GB", {
+    day: "numeric",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }) + " UTC";
+export const competitionCloses = (at: number) => `Prize competition ends ${competitionDate(at)}`;
+export const competitionClosed = (at: number) => `Competition ended ${competitionDate(at)}`;
+export const farmingUntil = (at: number) => `Map farming continues until ${competitionDate(at)}`;
+export const prizesAfter = (at: number) => `Prize payouts open after ${competitionDate(at)}`;

@@ -1,3 +1,4 @@
+import { SEASON_ZERO_COMPETITION } from "@bibliothecadao/eternum/game-sync";
 import type { HeraldFrontierLeaderboard, HeraldLeaderboard } from "@bibliothecadao/eternum/game-sync";
 import { StructureType } from "@bibliothecadao/types";
 import { uint256 } from "starknet";
@@ -202,6 +203,7 @@ const openEternum = game({
 /** One state per screen the painted pass draws. */
 export const LAB_SCREENS = {
   "first-visit": { signedIn: false, games: [frontier(false), liveBlitz(false), eternum] },
+  "season-cutoff": { signedIn: true, games: [frontier(true)] },
   home: { signedIn: true, games: [frontier(true), liveBlitz(false), eternum] },
   // Play for a player with the longest name an account takes (packages/identity account-rules), with the install
   // notice: the desktop bar must hold both at its narrowest width.
@@ -428,6 +430,7 @@ const QUIET_BLITZ_SCREENS: readonly LabScreen[] = [
 
 /** The screens whose player has no finished game to open. */
 export const LAB_NO_HISTORY_SCREENS: readonly LabScreen[] = [
+  "season-cutoff",
   "no-games",
   "no-blitz",
   "blitz-next",
@@ -545,6 +548,18 @@ export const labFrontierBoard = (realms: number, read = 0): HeraldFrontierLeader
 
 /** Frontier's painted board: 87 realms, the player 60th. */
 export const LAB_FRONTIER_BOARD = labFrontierBoard(SEASON_REALMS);
+
+export const LAB_FRONTIER_FROZEN_BOARD: HeraldFrontierLeaderboard = {
+  ...LAB_FRONTIER_BOARD,
+  prize: { pool: "90000", top_n: 3, count: null, awards: [] },
+  competition: {
+    status: "final",
+    cutoff: SEASON_ZERO_COMPETITION.cutoff,
+    confirmed_at: SEASON_ZERO_COMPETITION.cutoff + 1,
+    confirmed_block: 20,
+    block_hash: "0x20",
+  },
+};
 
 /**
  * The same board once the season is over and its three winners are fixed (the Results' podium): first and second paid,

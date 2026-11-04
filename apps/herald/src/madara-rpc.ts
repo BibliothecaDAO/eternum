@@ -85,8 +85,8 @@ export class MadaraRpc {
   /** Clock-only consumers do not read events or transactions. */
   public getBlockHeader(block: number | "pre_confirmed"): Promise<RpcHead> {
     return this.retryBlockRead(block, async () => {
-      const { block_number, timestamp } = await this.readHeader(block);
-      return { block_number, timestamp };
+      const { block_number, timestamp, block_hash } = await this.readHeader(block);
+      return { block_number, timestamp, ...(block_hash ? { block_hash } : {}) };
     });
   }
 

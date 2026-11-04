@@ -48,7 +48,7 @@ export function buildFrontierLeaderboard(
  * top_n, and the award receipts (LordsWithdrawal rows with a prize rank), which name who each paid place went to. None
  * while the pool is not published (no row, or a zero pool) or the chest rules are unknown.
  */
-function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): HeraldFrontierPrize | null {
+export function prizeOf(modelRows: (model: string) => FoldRow[], gameId: string): HeraldFrontierPrize | null {
   const prize = gameRows(modelRows("FrontierPrize"), gameId)[0];
   const chests = gameRows(modelRows("ChestRules"), gameId)[0];
   if (!prize || !chests || integer(prize.pool) === 0n) return null;

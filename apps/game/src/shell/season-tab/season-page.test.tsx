@@ -75,19 +75,22 @@ const mount = async (width: number) => {
   setViewportWidth(width);
   const container = document.createElement("div");
   const root = createRoot(container);
-  await act(async () =>
-    root.render(
-      <QueryClientProvider client={new QueryClient()}>
-        <MemoryRouter initialEntries={["/season"]}>
-          <Routes>
-            <Route path="/season" element={<SeasonPage />} />
-            <Route path="/results/:id" element={<Opened />} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>,
-    ),
-  );
-  return { container, unmount: () => act(async () => root.unmount()) };
+  const client = new QueryClient();
+  const rerender = () =>
+    act(async () =>
+      root.render(
+        <QueryClientProvider client={client}>
+          <MemoryRouter initialEntries={["/season"]}>
+            <Routes>
+              <Route path="/season" element={<SeasonPage />} />
+              <Route path="/results/:id" element={<Opened />} />
+            </Routes>
+          </MemoryRouter>
+        </QueryClientProvider>,
+      ),
+    );
+  await rerender();
+  return { container, rerender, unmount: () => act(async () => root.unmount()) };
 };
 
 it("says Season did not answer in the glossary's words, with Try again, and the switch still works", async () => {
@@ -412,3 +415,100 @@ it.each([390, 1440])(
     expect(await pastRow(fixed(0, []))).toEqual(["Season 2", "Ended 20 Nov", undefined, undefined]);
   },
 );
+
+it.each([390, 1440])(
+  "keeps farming open after cutoff with fixed final results and no active podium or standing at %i px",
+  async (width) => {
+    reads.directory = {
+      data: { games: [{ ...FRONTIER, clock: { ...FRONTIER.clock, end_at: 1794592800 } }] },
+      isError: false,
+      isPending: false,
+    };
+    reads.player = "0x4c21";
+    reads.board = {
+      data: {
+        mode: "frontier",
+        game_id: "1",
+        entries: [entry("0x4c21", 1, 5), entry("0x510f", 2, 2)],
+        prize: { pool: "90000", top_n: 3, count: null, awards: [] },
+        competition: {
+          status: "final",
+          cutoff: 1793988000,
+          confirmed_at: 1793988001,
+          confirmed_block: 20,
+          block_hash: "0x20",
+        },
+      },
+      isError: false,
+      isPending: false,
+    };
+    const { container, unmount } = await mount(width);
+    try {
+      expect(container.textContent).toContain("Final results");
+      expect(container.textContent).toContain("Competition ended 6 Nov, 18:00 UTC");
+      expect(container.textContent).toContain("Map farming continues until 13 Nov, 18:00 UTC");
+      expect(container.textContent).toContain("Prize payouts open after 13 Nov, 18:00 UTC");
+      expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
+      expect(container.querySelectorAll(".app-figure")).toHaveLength(0);
+      const results = container.querySelector('[aria-label="Final results"]')!;
+      expect(results.textContent).toContain("60,000");
+      expect(results.textContent).toContain("30,000");
+      expect(results.textContent).not.toContain("Paid");
+      expect([...container.querySelectorAll("button")].some((b) => b.textContent === "Play")).toBe(true);
+    } finally {
+      await unmount();
+    }
+  },
+);
+
+it("does not substitute later farming winners while the frozen result is unavailable", async () => {
+  reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
+  reads.board = {
+    data: {
+      mode: "frontier",
+      game_id: "1",
+      entries: [],
+      prize: null,
+      competition: { status: "confirming", cutoff: 1793988000, confirmed_at: 1793988000 },
+    },
+    isError: false,
+    isPending: false,
+  };
+  const { container, unmount } = await mount(390);
+  try {
+    expect(container.textContent).toContain("Final results are being confirmed");
+    expect(container.textContent).not.toContain("No realm yet");
+    expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
+  } finally {
+    await unmount();
+  }
+});
+
+it("replaces the already-open shell race with confirming and then the durable final podium", async () => {
+  reads.directory = { data: { games: [FRONTIER] }, isError: false, isPending: false };
+  const data = {
+    mode: "frontier",
+    game_id: "1",
+    entries: [entry("0x4c21", 1, 5)],
+    prize: { pool: "90000", top_n: 3, count: null, awards: [] },
+    competition: { status: "live", cutoff: 100, confirmed_at: 99 },
+  };
+  reads.board = { data, isError: false, isPending: false };
+  const { container, rerender, unmount } = await mount(1440);
+  try {
+    expect(container.querySelector('[aria-label="Season prizes"]')).not.toBeNull();
+    data.competition = { status: "confirming", cutoff: 100, confirmed_at: 100 };
+    data.entries = [];
+    await rerender();
+    expect(container.textContent).toContain("Final results are being confirmed");
+    expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
+    data.competition = { status: "final", cutoff: 100, confirmed_at: 101 };
+    data.entries = [entry("0x4c21", 1, 5)];
+    await rerender();
+    expect(container.textContent).not.toContain("Final results are being confirmed");
+    expect(container.querySelector('[aria-label="Final results"]')?.textContent).toContain("90,000");
+    expect(container.querySelector('[aria-label="Season prizes"]')).toBeNull();
+  } finally {
+    await unmount();
+  }
+});

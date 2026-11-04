@@ -1,4 +1,8 @@
-import { frontierPrizeHolders, type HeraldFrontierLeaderboard } from "@bibliothecadao/eternum/game-sync";
+import {
+  frontierCompetitionCutoff,
+  frontierPrizeHolders,
+  type HeraldFrontierLeaderboard,
+} from "@bibliothecadao/eternum/game-sync";
 import { rpcAt, readFrontierFunding } from "@realms-world/value-ledger";
 import { ShardOperator, type ShardTarget } from "@realms-world/value-ledger/shard";
 import { frontierTerms, readFrontierGames } from "./frontier-games";
@@ -58,7 +62,9 @@ async function awardGamePrizes(
   if (uint(String(prize.pool), 128) !== BigInt(funding.prizePool) / 10n ** 18n)
     throw new Error("frontier_prize_differs_from_ledger");
   // A posted list is fixed on the ledger with its count: resume its awards, never derive the winners again.
-  const places = count ?? (await postWinners(reader, heraldUrl, gameId, terms, snapshot.confirmed_block, operator));
+  const cutoff = frontierCompetitionCutoff(target.chainId, gameId, terms);
+  const places =
+    count ?? (await postWinners(reader, heraldUrl, gameId, terms, snapshot.confirmed_block, operator, cutoff));
   for (let rank = 1; rank <= places; rank++) await operator.admin("award_frontier_prize", { game_id: gameId, rank });
 }
 
@@ -70,8 +76,9 @@ async function postWinners(
   terms: { end: number; topN: number },
   minimumBlock: number,
   operator: ShardOperator,
+  cutoff: number | undefined,
 ) {
-  const winners = await finalWinners(reader, heraldUrl, gameId, terms.end, terms.topN, minimumBlock);
+  const winners = await finalWinners(reader, heraldUrl, gameId, terms.end, terms.topN, minimumBlock, cutoff);
   await operator.admin("post_frontier_top", { game_id: gameId, winners });
   return winners.length;
 }
@@ -83,6 +90,7 @@ async function finalWinners(
   end: number,
   topN: number,
   minimumBlock: number,
+  cutoff: number | undefined,
 ) {
   const url = new URL(`/games/${gameId}/leaderboard`, heraldUrl);
   if (url.protocol !== "https:" || url.username || url.password) throw new Error("invalid_herald_url");
@@ -96,9 +104,32 @@ async function finalWinners(
   const board = (await response.json()) as HeraldFrontierLeaderboard;
   if (board.mode !== "frontier" || BigInt(board.game_id) !== BigInt(gameId) || !Array.isArray(board.entries))
     throw new Error("frontier_final_board_differs");
+  if (cutoff !== undefined) await verifyFrozenBoard(reader, board, cutoff, height);
   const addresses = board.entries.map((entry) => felt(entry.address));
   if (new Set(addresses).size !== addresses.length || addresses.some((address) => BigInt(address) === 0n))
     throw new Error("frontier_final_board_duplicates");
   // Only a player who cleared a site is paid; with none, an empty list is posted and nothing is awarded.
   return frontierPrizeHolders(board.entries, topN).map((entry) => felt(entry.address));
+}
+
+/** Prove the archived boundary against adjacent confirmed RPC headers, while the current head proves payment is due. */
+async function verifyFrozenBoard(reader: ShardReader, board: HeraldFrontierLeaderboard, cutoff: number, head: number) {
+  const proof = board.competition;
+  if (
+    proof?.status !== "final" ||
+    proof.cutoff !== cutoff ||
+    !Number.isSafeInteger(proof.confirmed_block) ||
+    proof.confirmed_block < 0 ||
+    proof.confirmed_block >= head
+  )
+    throw new Error("frontier_prize_board_not_frozen");
+  const before = await reader.header(proof.confirmed_block);
+  const after = await reader.header(proof.confirmed_block + 1);
+  if (
+    before.timestamp >= cutoff ||
+    after.timestamp < cutoff ||
+    felt(before.block_hash) !== felt(proof.block_hash) ||
+    felt(after.parent_hash) !== felt(before.block_hash)
+  )
+    throw new Error("frontier_prize_boundary_differs");
 }

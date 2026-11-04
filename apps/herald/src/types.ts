@@ -68,6 +68,7 @@ export interface RpcBlockWithReceipts {
 }
 
 export interface RpcHead {
+  block_hash?: string;
   block_number: number;
   timestamp: number;
 }

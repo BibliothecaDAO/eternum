@@ -1182,3 +1182,13 @@ Skill points and the 0–V scale: the army panel shows lifetime XP, five point c
 Training construction includes I; research raises it through V. Preview `/lab/kit/hud/selected`, click **Level up**,
 choose an attribute or **Stamina**; `/lab/kit/hud/research` shows both research sides. Native command tests cover
 awarding and spending, while the browser capture records the shared controls at desktop and phone sizes.
+
+### Season 0 final podium
+
+Season → Frontier and in-game Season show the Nov 6, 18:00 UTC competition cutoff separately from the farming end. After
+the cutoff, **Final results** contains the frozen prize places; the active podium and HUD rank cue disappear. If Herald
+is still confirming the boundary, the result says so and shows no provisional winners. Payouts open after Nov 13, 18:00
+UTC; final results do not mean paid. Map play, daily claims and withdrawals retain their normal paths. Reproduce with
+`/lab/game?scenario=podium-cutoff` → Season and `/lab/app/season-cutoff/season`;
+`pnpm --dir apps/game playtest --steps lab-podium-cutoff --port <port>` captures both surfaces (repeat at
+`--viewport 390x844`).

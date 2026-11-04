@@ -1,3 +1,5 @@
+import { frontierCompetitionPhase } from "@bibliothecadao/eternum/game-sync";
+import { CompetitionResult } from "@/ui/features/frontier/board/competition-result";
 import { formatAmount, formatDate } from "@bibliothecadao/types";
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -133,7 +135,7 @@ const Standing = () => {
   const board = useLeaderboard(season ? gameRefOf(season) : null);
   const entries = board.data?.mode === "frontier" ? board.data.entries : [];
   const own = findOwnEntry(entries, player);
-  if (!own) return null;
+  if (!own || (board.data?.mode === "frontier" && frontierCompetitionPhase(board.data) !== "live")) return null;
   return (
     <AppPanel>
       <div className="flex flex-wrap items-center gap-x-12 gap-y-4">
@@ -190,6 +192,18 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
   const frontier = board.data?.mode === "frontier" ? board.data : undefined;
   const entries = frontier?.entries ?? [];
   const own = findOwnEntry(entries, player);
+  if (frontier && frontierCompetitionPhase(frontier) !== "live")
+    return (
+      <div>
+        <CompetitionResult board={frontier} endAt={season.clock.end_at} />
+        <FrontierRows entries={entries} own={own} rows={rows} />
+        {!isGameOver(season) && (
+          <AppButton kind="secondary" icon="play" to="/">
+            {WORDS.play}
+          </AppButton>
+        )}
+      </div>
+    );
   if (entries.length === 0)
     return (
       <AppEmpty
@@ -204,6 +218,7 @@ const FrontierBoard = ({ rows }: { rows: number }) => {
     );
   return (
     <div>
+      {frontier?.competition && <CompetitionResult board={frontier} endAt={season.clock.end_at} />}
       {frontier && <SeasonPodium board={frontier} own={own?.address} over={isGameOver(season)} />}
       <FrontierRows entries={entries} own={own} rows={rows} />
     </div>

@@ -2,6 +2,7 @@ import { realmSkinOf } from "@/three/structures/realm-skins";
 import { useGame } from "@/hooks/context/game-context";
 import { useNowSeconds } from "@/hooks/helpers/use-block-timestamp";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type PlayerNames, usePlayerDisplayName, usePlayerNames } from "@/hooks/use-player-profile";
 import { getActiveGame } from "@/runtime/world";
@@ -10,6 +11,8 @@ import { PlayerSeatMark } from "@/hooks/use-watched-side";
 import { LordName } from "./realm-marks";
 import { configManager, dayOf, type ExpeditionRules } from "@bibliothecadao/eternum";
 import { fetchHeraldLeaderboard, requireShard, safeInteger } from "@bibliothecadao/eternum/game-client";
+import { frontierCompetitionPhase } from "@bibliothecadao/eternum/game-sync";
+import { CompetitionResult } from "./competition-result";
 import type { HeraldFrontierLeaderboard, HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
@@ -68,11 +71,20 @@ const useSeasonPodium = (own: string | undefined): SeasonPodiumPlace[] | null | 
   );
 };
 
+/** Only confirmed heads end competition; the pre-confirmed map clock may run ahead. */
+const useCompetitionTime = () =>
+  useChainTimeStore((state) =>
+    state.executionFloorMs === null ? undefined : Math.floor(state.executionFloorMs / 1000),
+  );
+
 export const useSeasonViewer = () => useAccountStore((state) => state.account?.address ?? null);
 
 /** The player's season rank as the Menu's Season row shows it: "—" while unknown, none for a viewer without a realm. */
 export const useSeasonRank = (): string => {
-  const rank = ownRank(useSeasonBoard().data, useSeasonViewer());
+  const board = useFrontierBoard((board) => board);
+  const confirmedAt = useCompetitionTime();
+  const rank = ownRank(board.data?.entries, useSeasonViewer());
+  if (frontierCompetitionPhase(board.data, confirmedAt) !== "live") return "";
   return rank === undefined ? "—" : rank === null ? "" : `#${rank}`;
 };
 
@@ -89,14 +101,16 @@ export const FrontierSeason = ({
   onVisited: () => void;
   onClose: () => void;
 }) => {
-  const board = useSeasonBoard();
+  const board = useFrontierBoard((board) => board);
   const viewer = useSeasonViewer();
   const { pool, chest } = useSeasonLords(rules);
   const [opened, setOpened] = useState<string | null>(null);
   const now = useNowSeconds();
-  const entries = board.data ?? [];
+  const confirmedAt = useCompetitionTime();
+  const phase = frontierCompetitionPhase(board.data, confirmedAt);
+  const entries = phase === "confirming" ? [] : (board.data?.entries ?? []);
   const own = findOwnEntry(entries, viewer);
-  const rows = useSeasonListRows(board.data);
+  const rows = useSeasonListRows(entries);
   const podium = useSeasonPodium(own?.address);
   const chosen = entries.find((entry) => entry.address === opened);
   const visit = (entry: Entry) => {
@@ -114,10 +128,15 @@ export const FrontierSeason = ({
     );
   return (
     <SeasonList
-      rank={ownRank(board.data, viewer)}
+      rank={phase === "live" ? ownRank(board.data?.entries, viewer) : null}
       chest={chest}
       pool={pool}
-      podium={podium}
+      podium={phase === "live" ? podium : undefined}
+      competition={
+        board.data?.competition && (
+          <CompetitionResult board={board.data} endAt={rules.endAt} confirmedAt={confirmedAt} />
+        )
+      }
       rows={rows}
       state={board.isError ? "failed" : board.isPending ? "loading" : "ready"}
       onRetry={() => void board.refetch()}
