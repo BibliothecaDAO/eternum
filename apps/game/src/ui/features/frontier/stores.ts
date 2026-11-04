@@ -17,7 +17,7 @@ type Store = {
 
 /**
  * Frontier's stores, in the strip's order: the one table every surface reads (the strip, the realm panel, the store
- * cards, Next up, the build sheet and the makers' lines). Each holds a resource, drawn and named as that resource; the
+ * cards, the build sheet and the makers' lines). Each holds a resource, drawn and named as that resource; the
  * three a building makes name its research row and where they are spent when full. Essence has no building and no
  * limit.
  */

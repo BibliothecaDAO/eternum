@@ -1,5 +1,6 @@
 import meanings from "../../../asset-sources/facets/semantic-map.json";
 import resources from "../../../asset-sources/facets/resources.json";
+import festival from "../../../asset-sources/festival/manifest.json";
 import type { ResourcesIds } from "@bibliothecadao/types";
 
 /**
@@ -29,6 +30,27 @@ export const AGE_LOCKUP = {
  * SHA-256 (src/brand/brand.test.ts), so a new image is a new address and an unfurl a service has cached refreshes.
  */
 export const LINK_PREVIEW = "/images/covers/link-preview-54d58004.png";
+
+/** A painted sheet of an effect's frames, read row-major (asset-sources/festival/README.md). */
+export type Sprite = { url: string; columns: number; frames: number; fps: number; posterFrame: number };
+
+const festivalSprite = (id: string): Sprite => {
+  const item = festival.items.find((each) => each.id === id);
+  if (!item) throw new Error(`No Diwali sprite ${id} in asset-sources/festival/manifest.json`);
+  const { sheet, columns, frames, fps, posterFrame } = item;
+  return { url: `/images/festival/${sheet}`, columns, frames, fps, posterFrame };
+};
+
+/** Diwali's painted effects for Season 0's end: a firework of each colour, and the diya. */
+export const DIWALI_SPRITES = {
+  fireworks: {
+    gold: festivalSprite("firework-gold"),
+    saffron: festivalSprite("firework-saffron"),
+    pink: festivalSprite("firework-pink"),
+    teal: festivalSprite("firework-teal"),
+  },
+  diya: festivalSprite("diya"),
+} as const;
 
 export type IconMeaning = keyof typeof meanings;
 export type IconPixels = 64 | 128 | 256;

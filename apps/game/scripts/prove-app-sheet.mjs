@@ -30,7 +30,6 @@
  * `end-map` runs on the live stack the client is served against, alone: the newest finished game's Results, its "See
  * the end map" pressed, and the map it opens held until its scene is ready, watched and never played.
  */
-import { readFileSync } from "node:fs";
 import { loadavg } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -816,8 +815,8 @@ const QA1_PHONE_CASES = [
  * place, then with LORDS still to withdraw, a payout wallet linked or not) and on Results with a podium of one, two and
  * three places, at three laptop sizes and on a phone (each card of its story shot in turn). Over the HUD on each laptop
  * the whole recap, its steps included, stands on one screen; no word in the deck reads under the app's 14 px; each podium place has its numeral, portrait and name on one line and its counts under the name, in
- * columns shared from place to place, and the places stand centred in their card; Share saves the deck at the size it
- * is shared.
+ * columns shared from place to place, and the places stand centred in their card; 1 Copy image hands over the deck at
+ * the size it is shared, and 2 Post on X opens X's post with the season's line and its Results.
  */
 const RECAP_PAGES = {
   cover: "/lab/kit/hud/season-over",
@@ -926,30 +925,58 @@ const storyCardShown = `(() => {
   return { card: frame.dataset.card, left: Math.round(card.left - edge.left), right: Math.round(card.right - edge.right) };
 })()`;
 
-/** The PNG Share saved, by its header's width and height. */
-const pngSize = (file) => {
-  const header = readFileSync(file);
-  return `${header.readUInt32BE(16)}x${header.readUInt32BE(20)}`;
-};
+/**
+ * Where the two steps to post leave the page, recorded as they leave it: the PNG Copy image hands the clipboard (its
+ * size), and the address Post on X asks a new tab for. The browser's clipboard and tab are the boundary; the deck is
+ * drawn, made into its image and handed over by the app itself.
+ */
+const POST_BOUNDARY = `(() => {
+  window.__proofPost = { copied: null, opened: null };
+  navigator.clipboard.write = async ([item]) => {
+    const image = await createImageBitmap(await item.getType("image/png"));
+    window.__proofPost.copied = image.width + "x" + image.height;
+  };
+  window.open = (url) => {
+    window.__proofPost.opened = String(url);
+    return null;
+  };
+  return true;
+})()`;
 
-/** Share pressed as a player presses it, scrolled to first: the PNG it saves, at the size its cut is shared. */
-const sharedImageCheck = (b, png, cut) => {
-  const check = "Share saves the deck at the size it is shared";
-  const share = '.season-recap__steps button[data-kind="primary"]';
-  try {
-    b.run("scrollintoview", share);
-    b.run("download", share, png);
-    return { check, ok: pngSize(png) === SHARED_SIZE[cut], size: pngSize(png) };
-  } catch (error) {
-    return {
-      check,
-      ok: false,
-      error:
-        String(error.message)
-          .split("\n")
-          .find((line) => line.includes("✗")) ?? "no image",
-    };
-  }
+/** The X post's address, read: X's intent, its line and the Results address it carries. */
+const postSaid = `(() => {
+  const opened = window.__proofPost.opened && new URL(window.__proofPost.opened);
+  return opened && { at: opened.origin + opened.pathname, text: opened.searchParams.get("text"), url: opened.searchParams.get("url") };
+})()`;
+
+/** The two steps to post, pressed as a player presses them: 1 Copy image, then 2 Post on X. */
+const postStepChecks = async (b, cut) => {
+  const step = (kind) => `.season-recap__steps button[data-kind="${kind}"]:has(.season-recap__step-number)`;
+  b.evaluate(POST_BOUNDARY);
+  const copyRefused = clickAsPlayer(b, step("secondary"));
+  await waitFor(b, "window.__proofPost.copied !== null", READY_MS);
+  const copied = b.evaluate("window.__proofPost.copied");
+  const postRefused = clickAsPlayer(b, step("primary"));
+  await waitFor(b, "window.__proofPost.opened !== null", READY_MS);
+  const post = b.evaluate(postSaid);
+  return [
+    {
+      check: "1 Copy image hands the clipboard the deck at the size it is shared",
+      ok: !copyRefused && copied === SHARED_SIZE[cut],
+      copied,
+      refused: copyRefused,
+    },
+    {
+      check: "2 Post on X opens X's post with the season's line and its Results",
+      ok:
+        !postRefused &&
+        post?.at === "https://x.com/intent/tweet" &&
+        Boolean(post.text) &&
+        /\/results\//.test(post.url ?? ""),
+      post,
+      refused: postRefused,
+    },
+  ];
 };
 
 const shootRecap = async (b, baseUrl, out, name, path) => {
@@ -982,7 +1009,7 @@ const shootRecap = async (b, baseUrl, out, name, path) => {
       shownWhole,
     });
   }
-  record.checks.push(sharedImageCheck(b, join(out, `${name}.share.png`), drawn.cut));
+  record.checks.push(...(await postStepChecks(b, drawn.cut)));
   return record;
 };
 

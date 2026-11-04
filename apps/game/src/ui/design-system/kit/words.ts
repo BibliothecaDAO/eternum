@@ -74,6 +74,25 @@ export const tomorrowLasts = (seconds: number | undefined): ClockPhrase => ({
 export const phraseText = ({ words, reading, readingFirst }: ClockPhrase): string =>
   readingFirst ? `${reading} ${words}` : `${words} ${reading}`;
 
+/**
+ * The day's end, before it comes (Devcon feedback, 4 November 2026: players did not know the day was ending or what it
+ * takes): the last hour's line, which opens Today, and Today's block of what goes and what can still be done. What goes
+ * is the contract's: each day is its own map, and an army lives only on its day's map (expeditions.cairo).
+ */
+export const DAY_END = {
+  endsIn: (day: number | undefined, secondsLeft: number | undefined) =>
+    `${DAY} ${day ?? "—"} ends in ${dayLength(secondsLeft)}`,
+  toDo: (count: number) => `${count} left to do`,
+  open: "Open",
+  goes: "At day end, today's map, its armies and chests go",
+  claim: "Claim today's Labor",
+  claimVerb: "Claim",
+  site: (name: string) => `Clear today's ${name}`,
+  siteVerb: "Show",
+  explore: "Your army can explore",
+  exploreVerb: "Select",
+} as const;
+
 /** ClockChip's prefix words: a moment that begins something, or one that ends it. */
 export const CLOCK_WORDS = {
   starts: "Starts",
@@ -160,6 +179,17 @@ export const SEASON = "Season";
 export const RANK = "Rank";
 export const SITES = "Sites";
 export const SITES_CLEARED = "Sites cleared";
+/**
+ * How the Season board ranks, said where players look (owner, 4 November 2026: "ppl have asked how to increase sites in the
+ * leaderboard"): Herald ranks by sites cleared, then deepest depth (frontier-leaderboard.ts compareStandings), and every
+ * guarded site an army clears counts one (creditSiteClear). The Sites column's tip, the board's line while the player is
+ * off the podium, and a site card's "+1 site".
+ */
+export const SEASON_CLIMB = {
+  rule: "Ranked by sites cleared, then deepest depth",
+  climb: "Clear sites with your armies to climb",
+  plusOne: "+1 site",
+} as const;
 export const LORDS_EARNED = "LORDS earned";
 export const SETTINGS = "Settings";
 /** Settings' row for the keys, and the list it opens in Settings' place. */
@@ -407,10 +437,8 @@ export const UPGRADE = "Upgrade";
 
 /** The realm: its castle and levels, its buildings, and the row that counts a full realm's common buildings. */
 export const CASTLE = "Castle";
-export const FARM = buildingName(BuildingType.ResourceWheat, true);
-export const WORKSHOP = buildingName(BuildingType.ResourceLabor, true);
 export const BARRACKS = buildingName(BuildingType.ResourceKnightT1, true);
-export const HUT = buildingName(BuildingType.WorkersHut, true);
+const HUT = buildingName(BuildingType.WorkersHut, true);
 export const TRAINING_BUILDINGS = [
   buildingName(BuildingType.WarHall, true),
   buildingName(BuildingType.SupplyYard, true),
@@ -497,6 +525,17 @@ export const wheatForOnly = (troops: string, of: string) => `${WHEAT} for only $
 export const GET_WHEAT = `Get ${WHEAT}`;
 export const DEPLOYING = "Deploying…";
 export const BUILD = "Build";
+/**
+ * Build pressed on a building the realm has no free population for (Devcon feedback, 4 November 2026: the sheet
+ * swapped the player's pick to a Hut with no word): the ask, with the Hut on the same plot as a choice, never as a swap.
+ * When the Hut itself cannot be paid yet, the choice picks it, so its price and wait show.
+ */
+export const ROOM_ASK = {
+  question: "Population full",
+  buildHut: `${BUILD} a ${HUT} here`,
+  chooseHut: `Choose the ${HUT}`,
+  another: "Choose another",
+} as const;
 
 /** Default army names: "Army" and its place. */
 export const ARMY = "Army";
@@ -598,18 +637,39 @@ export const RECAP_WORDS = {
   cards: "Your season's cards",
   next: "Next card",
   previous: "Previous card",
-  share: "Share my season",
-  /** While the card is made into an image. */
-  making: "Making the image",
-  /** Share, once the image is saved on a device with no share sheet for images. */
-  saved: "Image saved",
-  /** Beside Share on a desktop whose clipboard takes images: the same image, to paste. */
+  /**
+   * Sharing a season is a post on X with its image (owner, 4 November 2026): copy the image (save it, where the
+   * clipboard takes none), then post, and paste it in. The two steps are numbered, and the hint says the order.
+   */
   copy: "Copy image",
   copied: "Image copied",
+  save: "Save image",
+  saved: "Image saved",
+  post: "Post on X",
+  copyHint: "Copy the image, then paste it in your post on X.",
+  saveHint: "Save the image, then add it to your post on X.",
+  /** While the card is made into an image. */
+  making: "Making the image",
   failed: "The image could not be made.",
 } as const;
 /** A season's end, told one of two ways (story): the mist lifted, or it grew too strong. */
 export const SEASON_ENDINGS = { lifted: "The mist lifted", strong: "The mist grew too strong" } as const;
+
+/**
+ * Season 0's end, the weekend of Diwali, for a Devcon realm's owner (every other player meets the season's usual end):
+ * thanks, the festival, and the Season 1 ticket the owner promised (11-04: a special ticket with a special realm, on the
+ * same account; no tier is named). Plain words for players who read English as a second language.
+ */
+export const FESTIVAL_WORDS = {
+  thanks: "Thanks for playing",
+  enjoy: "Happy Diwali! Go enjoy it with the people you love.",
+  ticketFor: "For Devcon realm owners",
+  ticketTitle: "You get a special Season 1 ticket",
+  ticketLine: "With a special realm",
+  ticketStub: "Season 1 · Devcon",
+  ticketHow: "It will be on this account. Nothing to do.",
+  seeSeason: "See my season",
+} as const;
 export const SEASON_ERROR = "Season did not answer.";
 export const TODAY_ERROR = "Today did not answer.";
 /** A day's totals the player's history cannot give: the read keeps only the newest stories, or did not answer. */
@@ -838,7 +898,7 @@ export const JOIN_WORDS = {
   stub: "Devcon · Mumbai",
   golden: "Golden ticket",
   goldenLine: "A golden realm waits",
-  goldenStub: (count: number) => `One of ${count} at Devcon`,
+  goldenStub: "Golden · Devcon · Mumbai",
   laborEachDay: (amount: number) => `${formatExact(amount)} Labor ${EACH_DAY}`,
   essenceEachDay: (amount: number) => `${formatExact(amount)} Essence ${EACH_DAY}`,
   continue: "Continue",
@@ -847,6 +907,87 @@ export const JOIN_WORDS = {
   founded: "Your realm already has a daily claim. Give this flyer to a friend.",
   noTicket: "This link holds no ticket. Scan the QR on your Devcon flyer.",
   failed: "Your ticket could not be opened.",
+  /** Over a friend's referral link: who sent it, by their chosen name. */
+  sentYou: (name: string | null) => `${name ?? "A friend"} sent you a Devcon realm`,
+  /** Under the sealed ticket: the season's end, in the event's clock. */
+  openUntil: (moment: string) => `Open it until ${moment}.`,
+  selfReferral: "This is your own invite link. Share it with a friend.",
+  referralUnknown: "This invite link holds no ticket.",
+} as const;
+
+/** Invite friends, on You: the referral link, its friends' progress, and what they earn the inviter. */
+export const REFERRAL_WORDS = {
+  title: "Invite friends",
+  /** What the inviter's friends get and can still earn them, by their home. */
+  promise: {
+    free: (oneIn: number) =>
+      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. When a friend founds a realm and clears a site, you get a Devcon realm too.`,
+    ticket: "Your friends earned you a Devcon ticket. Add it to your home from its daily claim.",
+    devcon: (oneIn: number) =>
+      `Each friend who signs up through your link gets a Devcon realm, 1 in ${oneIn} of them golden. A golden friend who founds a realm and clears a site turns your realm golden.`,
+    golden: "Your realm is golden. Each friend who signs up through your link still gets a Devcon realm.",
+    held: "Each friend who signs up through your link gets a Devcon realm. Your home already has its daily claim, so it earns nothing more.",
+  },
+  /** Golden earned on a Devcon home the game has not confirmed yet: nothing is promised for a claim before it is. */
+  pending: "Golden earned. Your realm turns golden once the game confirms it; until then it claims as it does now.",
+  copy: "Copy",
+  copied: "Copied",
+  share: "Share",
+  shareText: "A Devcon realm for you in Realms: Frontier",
+  /** The link's way to golden, counted friends of the number that turns it. */
+  toGoldenLink: (counted: number, of: number) => `${counted} of ${of} friends`,
+  goldenLinkChip: "Golden link",
+  forEachFriend: "A Devcon realm",
+  forEachFriendDetail: "for each friend",
+  yourRealm: "Your Devcon realm",
+  yourRealmDetail: "when a friend founds and clears a site",
+  goldenFriend: "A golden friend",
+  goldenFriendDetail: (oneIn: number) => `1 in ${oneIn} tickets, once that friend counts`,
+  goldenLink: "A golden link",
+  goldenLinkDetail: (of: number) => `at ${of} friends: you and every friend`,
+  friend: {
+    signed: "Signed up, not founded yet",
+    founded: "Founded, clearing a first site",
+    counted: "Founded and cleared a site",
+    excluded: "Same email or device as another player, so not counted",
+  },
+  /** A friend whose name is not chosen yet. */
+  unnamed: "A friend",
+  counted: "Counted",
+  waiting: "Waiting",
+  notCounted: "Not counted",
+  golden: "Golden",
+  unreadable: "Your invite link could not be loaded.",
+  ticketTitle: (name: string | null) => `${name ?? "A friend"} counted: your Devcon realm`,
+  ticketBody: "Your friend founded a realm and cleared a site. Add this ticket to your home from its daily claim.",
+  ticketAction: "Add it to my home",
+  /** Golden said once the realm is golden on the board, or the golden ticket waits to be added to a home. */
+  goldenTitle: (linkGolden: boolean) => (linkGolden ? "Your link went golden" : "A golden friend counted"),
+  goldenBody: {
+    ticket: "Your Devcon ticket is golden. Add it to your home from its daily claim.",
+    golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
+  },
+  goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
+  /** A phone's compact panel: the same facts in a line each. */
+  compact: {
+    promise: {
+      free: (oneIn: number) =>
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first counted friend gets you one.`,
+      ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
+      devcon: (oneIn: number) =>
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend who counts makes yours golden.`,
+      golden: "Your realm is golden. Each friend still gets a Devcon realm.",
+      held: "Each friend gets a Devcon realm. Your home earns nothing more.",
+    },
+    pending: "Golden earned: waiting for the game to confirm it.",
+    /** What counts a friend, said where the slots count them: the rule the statuses below name the next step of. */
+    linkRule: (at: number) =>
+      `Friends count once they found a realm and clear a site. At ${at}, your link turns golden.`,
+    linkGolden: "Your link is golden: every friend on it too.",
+    /** Each friend's next step to count, or why they never will. */
+    status: { signed: "Not founded yet", founded: "No site cleared yet", excluded: "Not counted" },
+    excluded: "Same email or device as another player",
+  },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */

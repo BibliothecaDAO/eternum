@@ -97,7 +97,7 @@ it("offers no way in to a reader who held no realm in that season", async () => 
   expect(button("Withdraw")).toBeUndefined();
 });
 
-it("has no Back: opened from a list, no Continue either; opened from Play, Continue, Share leading for a player with a card", async () => {
+it("has no Back: opened from a list, no Continue either; opened from Play, Continue, Post on X leading for a player with a card", async () => {
   const fromList = await open();
   expect(fromList.container.querySelector('[data-role="back"]')).toBeNull();
   expect(fromList.button("Continue")).toBeUndefined();
@@ -105,7 +105,7 @@ it("has no Back: opened from a list, no Continue either; opened from Play, Conti
 
   const fromPlay = await open("/results/0x52-3");
   expect(fromPlay.container.querySelector('[data-role="back"]')).toBeNull();
-  expect([fromPlay.button("Continue")!.dataset.kind, fromPlay.button("Share my season")!.dataset.kind]).toEqual([
+  expect([fromPlay.button("Continue")!.dataset.kind, fromPlay.button("Post on X")!.dataset.kind]).toEqual([
     "secondary",
     "primary",
   ]);
@@ -114,7 +114,7 @@ it("has no Back: opened from a list, no Continue either; opened from Play, Conti
   // A reader with no realm that season has no card to share: Continue is the gold step.
   player.current = "0xc0ffee";
   const reader = await open("/results/0x52-3");
-  expect([reader.button("Continue")!.dataset.kind, reader.button("Share my season")]).toEqual(["primary", undefined]);
+  expect([reader.button("Continue")!.dataset.kind, reader.button("Post on X")]).toEqual(["primary", undefined]);
 });
 
 it("names a finished season's winners by the ledger's receipts, split over the places fixed, one still being awarded", async () => {

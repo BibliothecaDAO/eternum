@@ -3,7 +3,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, relative } from "node:path";
 
-import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, HUD_LAYOUT_EXPRESSION, MAP_SHARE_EXPRESSION } from "./hud-layout.mjs";
 
 const AGENT_BROWSER_RETRIES = 2;
 const AGENT_BROWSER_RETRY_DELAY_MS = 2_000;
@@ -121,6 +121,7 @@ export function createBrowserSession(session, { executablePath, headed, profile 
     orderBar: () => read(ORDER_BAR_EXPRESSION),
     armies: () => read(ARMIES_EXPRESSION),
     hudLayout: () => read(HUD_LAYOUT_EXPRESSION),
+    mapShare: () => read(MAP_SHARE_EXPRESSION),
     close: () => run(["close"], { allowFailure: true }),
   };
 }
@@ -134,7 +135,8 @@ const withoutNpmNoise = (output) =>
     .trim();
 
 /** A point at an offset from the screen's centre, where selecting an army puts it. */
-const screenPoint = ([dx, dy]) => [VIEWPORT.width / 2 + dx, VIEWPORT.height / 2 + dy];
+/** A point given from the page's centre, in whole pixels: agent-browser's mouse takes no fraction (an odd size's centre). */
+export const screenPoint = ([dx, dy]) => [Math.round(VIEWPORT.width / 2 + dx), Math.round(VIEWPORT.height / 2 + dy)];
 
 /**
  * The centre of a phone's place-bar slot, found by its word: a count of what is unread stands beside the word in the

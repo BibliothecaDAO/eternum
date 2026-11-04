@@ -63,8 +63,8 @@ import { useSelectionCard } from "./frontier-selection-sheet";
 import { useOnePanel } from "./hud/one-panel";
 
 /** The selection's card as the HUD draws it. */
-const FrontierSelectionSheet = (props: Omit<Parameters<typeof useSelectionCard>[0], "asked">) =>
-  useSelectionCard({ asked: null, ...props })?.sheet ?? null;
+const FrontierSelectionSheet = (props: Parameters<typeof useSelectionCard>[0]) =>
+  useSelectionCard(props)?.sheet ?? null;
 
 afterEach(() => setBlockTimestampSource(null));
 
@@ -370,7 +370,7 @@ it("stands Research alone over the spire card, and shows the next selection's ca
   const realm = store.require("Structure", { game_id: 1, entity_id: 7 });
   /** The HUD's card and surface, both through the one panel; Research and its close as their buttons. */
   const Hud = () => {
-    const card = useSelectionCard({ realm, asked: null, onResearch: () => undefined });
+    const card = useSelectionCard({ realm, onResearch: () => undefined });
     const { surface, openSurface, showsCard } = useOnePanel(card?.key ?? null);
     return (
       <>

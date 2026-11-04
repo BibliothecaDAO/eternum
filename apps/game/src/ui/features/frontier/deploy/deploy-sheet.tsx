@@ -50,7 +50,7 @@ export const DeploySheet = ({
   const { center, ring } = useDeployRing(realm);
   const ordered = useUIStore((state) => state.pendingMilitaryAction?.direction ?? null);
   const direction = deployDirection(ring, ordered);
-  // The slot pressed, else (opened from the map, Next up or a store) the first open one; a slot pressed that an army
+  // The slot pressed, else (opened from the map or a store) the first open one; a slot pressed that an army
   // has since filled leaves none, never another the player did not choose.
   const pickedSlot = useUIStore((state) => state.pendingMilitaryAction?.slot);
   const start = pickedSlot === undefined ? plan?.open[0] : plan?.open.find((slot) => slot.slot === pickedSlot);

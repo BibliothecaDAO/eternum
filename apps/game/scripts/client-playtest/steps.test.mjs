@@ -6,6 +6,8 @@ import { describe, expect, it, vi } from "vitest";
 import { WORLDMAP_CAMERA_ZOOM } from "../../src/three/scenes/worldmap-camera-view-profile";
 import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
+import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
+import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
 import { CHAT, CLOSE, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
@@ -1045,4 +1047,21 @@ it("requires a real regular-to-golden transition and confirmed claim in the upgr
   ]) {
     expect(verify({ played: bad })).toEqual(expect.objectContaining({ status: "failed" }));
   }
+});
+
+describe("lab-hud-devices", () => {
+  const steps = STEP_SETS["lab-hud-devices"].steps;
+  const share = (map) => ({ played: { share: { canvas: true, map } } });
+
+  it("holds the map to the least share the phone panel's cap keeps", () => {
+    expect(MAP_LEAST_SHARE).toBe(HUD_MAP_LEAST_SHARE);
+  });
+
+  it("fails a state that leaves the map under its least share, and reads Chat's without holding it", () => {
+    const menu = steps.find((step) => step.name === "menu").verify;
+    expect(menu(share(39.9)).status).toBe("failed");
+    expect(menu(share(40)).status).toBe("completed");
+    expect(steps.find((step) => step.name === "chat").verify(share(8.6)).status).toBe("completed");
+    expect(menu({ played: { share: { canvas: false, map: 0 } } }).status).toBe("blocked");
+  });
 });
