@@ -1,5 +1,5 @@
 use snforge_std::{start_cheat_block_timestamp, start_cheat_chain_id};
-use starknet::storage::{StorageMapWriteAccess, StoragePathEntry, StoragePointerWriteAccess};
+use starknet::storage::{StoragePathEntry, StoragePointerWriteAccess};
 use world_test_support::tests::releases::*;
 use crate::approved_frontier_extension as approved;
 
@@ -8,7 +8,7 @@ fn setup() -> super::Deployment {
     let registrar = IRegistrarDispatcher { contract_address: d.games };
     let releases = IReleasesDispatcher { contract_address: d.games };
     start_cheat_caller_address(d.games, authority());
-    let (_, preset) = super::preset_projection::current_definition("frontier");
+    let (_, preset) = super::preset_projection::current_definition("devcon");
     registrar.register_preset(approved::PRESET_ID, preset);
     let params = CreateGameParams {
         name: approved::NAME,
@@ -25,13 +25,13 @@ fn setup() -> super::Deployment {
     super::registrar::publish_test_pool(d, 1, approved::POOL_LORDS, approved::START + 1);
     start_cheat_caller_address(d.games, authority());
     let release = releases.release(1);
-    releases.register_release(2, release);
-    releases.register_release(3, release);
-    for id in 1_u32..3 {
-        releases.apply_release(id, 2);
-        releases.apply_release(id, 3);
+    for release_id in 2..approved::RELEASE {
+        releases.register_release(release_id, release);
+        for game_id in 1_u32..3 {
+            releases.apply_release(game_id, release_id);
+        }
     }
-    releases.register_release(4, Release { migration: declare_logic("ReleaseMigration"), ..release });
+    releases.register_release(approved::RELEASE, Release { migration: declare_logic("ReleaseMigration"), ..release });
     start_cheat_chain_id(d.games, approved::CHAIN_ID);
     start_cheat_block_timestamp(d.games, approved::OLD_END - 3600);
     d
@@ -57,7 +57,7 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     let before_budget = budget(d);
     let before_rules = games.rules(1);
     let mut events = spy_events();
-    releases.apply_release(1, 4);
+    releases.apply_release(1, approved::RELEASE);
     assert_eq!(game(d), crate::game::GameRegistry { end_at: approved::END, ..before });
     assert_eq!(budget(d), before_budget);
     assert_eq!(games.rules(1), before_rules);
@@ -72,14 +72,14 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     expected.append_span(values.span());
     assert_eq!(row.data.span(), expected.span());
     let mut repeated = spy_events();
-    releases.apply_release(1, 4);
+    releases.apply_release(1, approved::RELEASE);
     assert!(repeated.get_events().emitted_by(d.games).events.is_empty());
-    assert_eq!(releases.game_release(1), 4);
+    assert_eq!(releases.game_release(1), approved::RELEASE);
     assert_eq!(crate::game::status_at(game(d), approved::OLD_END), crate::game::GameStatus::Live);
     assert_eq!(crate::game::status_at(game(d), approved::END - 1), crate::game::GameStatus::Live);
     assert_eq!(crate::game::status_at(game(d), approved::END), crate::game::GameStatus::Ended);
     let final_day = crate::days::day_of(game(d), approved::DAY_UNIT, approved::END - 1);
-    assert_eq!(final_day.index, 14);
+    assert_eq!(final_day.index, 31);
     assert_eq!(final_day.end, approved::END);
     crate::relics::assert_claim_window(
         game(d), super::lords_budget::rules(), approved::END + approved::CLAIM_WINDOW.into() - 3601,
@@ -91,9 +91,9 @@ fn approved_extension_changes_only_end_emits_row_and_retries_without_events() {
     assert!(game(d).settled);
     let ended = game(d);
     start_cheat_caller_address(d.games, authority());
-    releases.register_release(5, releases.release(4));
-    releases.apply_release(1, 5);
-    assert_eq!(releases.game_release(1), 5);
+    releases.register_release(approved::RELEASE + 1, releases.release(approved::RELEASE));
+    releases.apply_release(1, approved::RELEASE + 1);
+    assert_eq!(releases.game_release(1), approved::RELEASE + 1);
     assert_eq!(game(d), ended);
 }
 
@@ -104,10 +104,10 @@ fn unrelated_chain_and_game_keep_their_original_end() {
     let releases = IReleasesDispatcher { contract_address: d.games };
     let before = game(d);
     let other = games.game(2);
-    releases.apply_release(2, 4);
+    releases.apply_release(2, approved::RELEASE);
     assert_eq!(games.game(2), other);
     start_cheat_chain_id(d.games, 'DEV');
-    releases.apply_release(1, 4);
+    releases.apply_release(1, approved::RELEASE);
     assert_eq!(game(d), before);
 }
 
@@ -185,8 +185,8 @@ fn extension_refuses_wrong_identity_lifecycle_authority_and_insolvent_unlock(cas
     let before = game(d);
     let before_budget = interact_with_state(d.games, || crate::logic::lords_budget::budget(1));
     let safe = IReleasesSafeDispatcher { contract_address: d.games };
-    assert!(safe.apply_release(1, 4).is_err());
-    assert_eq!(IReleasesDispatcher { contract_address: d.games }.game_release(1), 3);
+    assert!(safe.apply_release(1, approved::RELEASE).is_err());
+    assert_eq!(IReleasesDispatcher { contract_address: d.games }.game_release(1), approved::RELEASE - 1);
     assert_eq!(game(d), before);
     assert_eq!(interact_with_state(d.games, || crate::logic::lords_budget::budget(1)), before_budget);
 }
@@ -205,7 +205,7 @@ fn extension_keeps_current_chest_holds_but_excludes_expired_holds(expired: bool)
         }, open: approved::POOL_LORDS, ..budget(d),
     };
     store_budget(d, value);
-    let result = IReleasesSafeDispatcher { contract_address: d.games }.apply_release(1, 4);
+    let result = IReleasesSafeDispatcher { contract_address: d.games }.apply_release(1, approved::RELEASE);
     assert_eq!(result.is_ok(), expired);
     assert_eq!(game(d).end_at, if expired {
         approved::END
