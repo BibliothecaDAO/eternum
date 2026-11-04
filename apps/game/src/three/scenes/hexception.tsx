@@ -140,7 +140,7 @@ import {
   resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
-import { askedPlot } from "./hexception-asked-plot";
+import { firstBuildPlot } from "./hexception-first-build-plot";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   AnimationClip,
@@ -213,7 +213,7 @@ const BIOME_MATRIX_KEYS = [
   "Empty",
 ] as const;
 
-/** A plot lit for a building: where it may stand, the new ring's plots, or the one Next up marks. */
+/** A plot lit for a building: where it may stand, the new ring's plots, or the one lit for the first build. */
 const plotHighlight = (hex: HexPosition) => ({
   hex: { col: hex.col, row: hex.row },
   actionType: ActionType.Build,
@@ -401,7 +401,7 @@ export default class HexceptionScene extends HexagonScene {
 
     this.storeUnsubscribes.push(
       useUIStore.subscribe(
-        (state) => state.askedBuilding,
+        (state) => state.firstBuild,
         () => {
           if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
         },
@@ -594,9 +594,9 @@ export default class HexceptionScene extends HexagonScene {
     }, NEW_RING_LIT_MS);
   }
 
-  /** At rest the board marks one plot, for the building Next up asks the player to build here; else none. */
+  /** At rest the board lights one plot, for the realm's first build; else none. */
   private renderRestingHighlights(): void {
-    const plot = useUIStore.getState().askedBuilding === null ? null : askedPlot(this.highlights);
+    const plot = useUIStore.getState().firstBuild === null ? null : firstBuildPlot(this.highlights);
     this.highlightHexManager.highlightHexes(plot ? [plotHighlight(plot)] : []);
   }
 

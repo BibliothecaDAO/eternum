@@ -6,9 +6,9 @@ type PreviewBuilding = { type: BuildingType | StructureType; resource?: Resource
 export interface BuildModeStore {
   previewBuilding: PreviewBuilding | null;
   setPreviewBuilding: (previewBuilding: PreviewBuilding | null) => void;
-  /** The building Next up asks the player to build in their own realm: the local view marks an open plot for it. */
-  askedBuilding: BuildingType | null;
-  setAskedBuilding: (askedBuilding: BuildingType | null) => void;
+  /** The player's own realm's first build (first-build.ts): the local view lights an open plot for it. */
+  firstBuild: BuildingType | null;
+  setFirstBuild: (firstBuild: BuildingType | null) => void;
   existingBuildings: { col: number; row: number; type: BuildingType; entity?: string; resource?: ResourcesIds }[];
   setExistingBuildings: (
     existingBuildings: { col: number; row: number; type: BuildingType; entity?: string; resource?: ResourcesIds }[],
@@ -19,8 +19,8 @@ export const createBuildModeStoreSlice = (set: (partial: Partial<BuildModeStore>
   setPreviewBuilding: (previewBuilding: PreviewBuilding | null) => {
     set({ previewBuilding });
   },
-  askedBuilding: null,
-  setAskedBuilding: (askedBuilding: BuildingType | null) => set({ askedBuilding }),
+  firstBuild: null,
+  setFirstBuild: (firstBuild: BuildingType | null) => set({ firstBuild }),
   existingBuildings: [{ col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1], type: BuildingType.ResourceLabor }],
   setExistingBuildings: (
     existingBuildings: { col: number; row: number; type: BuildingType; entity?: string; resource?: ResourcesIds }[],

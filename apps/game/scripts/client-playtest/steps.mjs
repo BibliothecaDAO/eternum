@@ -26,7 +26,7 @@ import { judgeClickToResult, measureClickToResult } from "./click-latency.mjs";
 import { proveResultOnScreen, startResultCapture } from "./result-capture.mjs";
 import { measureFrameChanges, recordFrames } from "./frames.mjs";
 import { againstTheirThings, judgePlates, PLATES_EXPRESSION } from "./plates.mjs";
-import { DESKTOP_MIN_WIDTH, judgeHudLayout } from "./hud-layout.mjs";
+import { DESKTOP_MIN_WIDTH, judgeHudLayout, MAP_LEAST_SHARE } from "./hud-layout.mjs";
 
 /**
  * The playtest's steps. Each plays through the controls a player uses, then checks what a player would see, and is
@@ -2418,6 +2418,113 @@ const LAB_SPIRE_STEPS = [
   { name: "enter-depth", play: enterEtherealII, settleMs: 0, verify: armyEnteredEtherealII },
 ];
 
+/**
+ * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
+ * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
+ * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
+ * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
+ * state is blocked, never read as the map's. Run it at each device's size with --viewport.
+ */
+const HUD_DEVICE_STEPS = [
+  { name: "map", play: readTheMapShare, settleMs: 3_000, verify: mapShareRead },
+  {
+    name: "army",
+    play: async (context) => ({ ...(await pickTheSpireArmy(context)), ...readTheMapShare(context) }),
+    settleMs: 1_500,
+    verify: (context) => (context.played.army ? mapShareRead(context) : blocked("no army picked", context.played)),
+  },
+  {
+    name: "army-panel",
+    play: async ({ browser }) => ({ panel: await openThePickedArmysPanel(browser), ...readTheMapShare({ browser }) }),
+    settleMs: 0,
+    verify: (context) => (context.played.panel ? mapShareRead(context) : blocked("no army panel", context.played)),
+  },
+  {
+    name: "site-card",
+    play: async ({ browser }) => ({ ...(await openASiteCard(browser)), ...readTheMapShare({ browser }) }),
+    settleMs: 0,
+    verify: (context) => (context.played.card ? mapShareRead(context) : blocked("no site card", context.played)),
+  },
+  {
+    name: "chat",
+    play: async ({ browser }) => {
+      browser.press("Escape");
+      await sleep(HOVER_SETTLE_MS);
+      browser.tapPlace("Chat");
+      await sleep(SHEET_WAIT_MS);
+      return readTheMapShare({ browser });
+    },
+    settleMs: 0,
+    verify: mapShareReadUnheld,
+  },
+  {
+    name: "menu",
+    play: async ({ browser }) => {
+      browser.tapPlace("Menu");
+      await sleep(SHEET_WAIT_MS);
+      return readTheMapShare({ browser });
+    },
+    settleMs: 0,
+    verify: mapShareRead,
+  },
+];
+
+function readTheMapShare({ browser }) {
+  return { share: browser.mapShare() };
+}
+
+/** The share read, and the map keeping at least MAP_LEAST_SHARE of the page. */
+function mapShareRead({ played }) {
+  if (!played.share?.canvas) return blocked("the map's canvas is not on the page", played);
+  if (played.share.map < MAP_LEAST_SHARE)
+    return failed(`the map shows ${played.share.map}% of the page, under ${MAP_LEAST_SHARE}%`, played);
+  return completed(played);
+}
+
+/** Chat's share, read but not held to the least: Chat fills the band by the owner's call (3 November). */
+function mapShareReadUnheld({ played }) {
+  return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
+}
+
+/** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
+async function openThePickedArmysPanel(browser) {
+  const open = browser.read(SHEET_NAME);
+  if (/^Army \d+$/.test(open ?? "")) return open;
+  const details = browser.read(buttonLabelled("^Army \\d+(: details)?$"));
+  if (!details) return null;
+  browser.tap(details.offset);
+  return readUntil(
+    () => browser.read(SHEET_NAME),
+    (name) => /^Army \d+$/.test(name ?? ""),
+    SHEET_WAIT_MS,
+  );
+}
+
+/**
+ * Taps the tiles round the picked army until one opens a map card (the sites game's Well or Shrine, else the card of
+ * the tile tapped), re-picking the army between taps; the cards each tap opened are kept.
+ */
+async function openASiteCard(browser) {
+  browser.press("Escape");
+  const offered = [];
+  for (const [dx, dy] of NEIGHBOUR_RING) {
+    // A dock with no button for the army (folded under another surface) leaves the card unreached, never a failure.
+    if (!browser.observe().selection?.army) await pickTheSpireArmy({ browser }).catch(() => null);
+    const armyAt = armyOnScreen(browser, browser.observe().selection?.army?.id);
+    if (!armyAt) return { card: null, offered };
+    browser.tap([armyAt[0] + dx, armyAt[1] + dy]);
+    const sheet = await readUntil(
+      () => browser.read(SHEET_NAME),
+      (name) => name !== null,
+      SHEET_WAIT_MS,
+    );
+    offered.push(sheet);
+    if (sheet !== null && !/^Army \d+$/.test(sheet)) return { card: sheet, offered };
+    if (sheet !== null) browser.press("Escape");
+  }
+  return { card: null, offered };
+}
+
 /** Each proof starts on the surface and uses the same Spire entry as a Frontier player. */
 function etherealDepthSteps(depth) {
   const label = `Ethereal ${"I".repeat(depth)}`;
@@ -4613,6 +4720,7 @@ export const STEP_SETS = {
   "lab-actions-fight": { game: labSpireGame("fight"), steps: FIGHT_ACTION_STEPS },
   "lab-actions-fight-lost": { game: labSpireGame("fight-lost"), steps: FIGHT_LOST_STEPS },
   "lab-actions-sites": { game: labSpireGame("sites"), steps: SITE_ACTION_STEPS },
+  "lab-hud-devices": { game: labSpireGame("sites"), steps: HUD_DEVICE_STEPS },
   "lab-after-battle": { game: labSpireGame("after-battle"), steps: LAB_AFTER_BATTLE_STEPS },
   "lab-visit": { game: labSpireGame("visit"), steps: LAB_VISIT_STEPS, devOverlays: true },
   "lab-reenter": { game: LAB_FROM_HOME, steps: labReenterSteps() },

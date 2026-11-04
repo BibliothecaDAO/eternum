@@ -21,6 +21,7 @@ import {
 } from "@/ui/design-system/kit/words";
 import { Icon } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
+import type { ReactNode } from "react";
 
 import type { DayClock } from "../hud/day-clock";
 import { STORE_TONES } from "../hud/status-strip";
@@ -33,7 +34,7 @@ export type LogLine = { id: string; at: number; text: RankedWords | string };
 
 /**
  * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
- * lasts; the strip keeps only the dial), the day's totals, the armies with a tier to buy, the day's log newest first,
+ * lasts; the strip keeps only the dial), on today's page what the day's end takes and what is left to do, the day's totals, the armies with a tier to buy, the day's log newest first,
  * and the stepper to earlier days. When the log did not answer, its
  * card says so, with Try again; when the history no longer reaches back to the day's start, it says so above the log.
  */
@@ -43,6 +44,7 @@ export const TodaySheet = ({
   today,
   clock,
   totals,
+  dayEnd,
   armiesToUpgrade,
   lines,
   history,
@@ -60,6 +62,8 @@ export const TodaySheet = ({
   /** Today's clock, shown under the title while the day shown is today. */
   clock: DayClock;
   totals: DayTotals;
+  /** What the day's end takes and what is left to do (DayEndBlock), shown on today's page only. */
+  dayEnd?: ReactNode;
   /** Armies with an attribute tier their XP can buy; absent until the army's XP is read. */
   armiesToUpgrade?: number;
   lines: readonly LogLine[];
@@ -81,6 +85,7 @@ export const TodaySheet = ({
     <HudSheet label={TODAY} onClose={onClose}>
       <span className="text-hud-title">{title}</span>
       {today && <DayClockLine clock={clock} />}
+      {today && dayEnd}
       <DayTotalsGrid totals={totals} />
       {armiesToUpgrade !== undefined && armiesToUpgrade > 0 && (
         <HudRow lead={<Icon name="picks" size={22} />} title={formatAmount(armiesToUpgrade)} onClick={onArmies} />

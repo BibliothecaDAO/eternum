@@ -63,6 +63,7 @@ export const appRoutes = (
       <Route path="blitz/:id" element={<BlitzLobbyPage />} />
       <Route path="join/devcon" element={<JoinDevconPage />} />
       <Route path="join/devcon/:code" element={<JoinDevconPage />} />
+      <Route path="join/devcon/r/:referral" element={<JoinDevconPage />} />
       <Route path="season" element={<SeasonPage />} />
       <Route path="results/:id" element={<ResultsPage />} />
       <Route path="profile" element={<ProfilePage />} />

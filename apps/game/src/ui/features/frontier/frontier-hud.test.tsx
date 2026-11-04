@@ -888,16 +888,16 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   Reflect.deleteProperty(navigator, "serviceWorker");
 });
 
-it("marks a plot on the player's own board for what Next up asks, and none on a realm they visit", async () => {
+it("lights a plot on the player's own board for its first build, the Barracks, and none on a realm they visit", async () => {
   await renderHud();
-  const own = useUIStore.getState().askedBuilding;
+  const own = useUIStore.getState().firstBuild;
   try {
     await renderVisit();
-    expect(useUIStore.getState().askedBuilding).toBeNull();
+    expect(useUIStore.getState().firstBuild).toBeNull();
   } finally {
     visiting.visit = null;
   }
   await renderHud();
-  expect(useUIStore.getState().askedBuilding).toBe(own);
-  expect(own).not.toBeNull();
+  expect(useUIStore.getState().firstBuild).toBe(own);
+  expect(own).toBe(BuildingType.ResourceKnightT1);
 });

@@ -70,44 +70,6 @@ describe("the build sheet", () => {
     host.remove();
   });
 
-  it("opens on the building Next up asks for and stands it on the plot, until the player picks another", async () => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const { store, realm } = realmBoard();
-    const plot = { col: 11, row: 10 };
-    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
-    installActiveGameClient({
-      connect() {},
-      disconnect() {},
-      dispose() {},
-      actions: { placeBuilding },
-      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
-    } as unknown as GameClient);
-    const host = document.createElement("div");
-    document.body.append(host);
-    const root = createRoot(host);
-    act(() =>
-      root.render(
-        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
-          <BuildSheet realm={realm} plot={plot} asked={BuildingType.ResourceKnightT1} onClose={() => undefined} />
-        </GameProvider>,
-      ),
-    );
-    const pressed = () =>
-      [...host.querySelectorAll<HTMLButtonElement>('.ui-card__choose[aria-pressed="true"]')].map(
-        (card) => card.querySelector(".ui-card__title")?.textContent,
-      );
-    expect(pressed()).toEqual(["Barracks"]);
-    expect(useUIStore.getState().previewBuilding).toEqual({ type: BuildingType.ResourceKnightT1, plot });
-    // The player's own pick then holds over Next up's.
-    const farm = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find(
-      (card) => card.querySelector(".ui-card__title")?.textContent === "Farm",
-    )!;
-    act(() => farm.click());
-    expect(pressed()).toEqual(["Farm"]);
-    act(() => root.unmount());
-    host.remove();
-  });
-
   /** A build sheet whose build is sent and whose outcome the test settles, beside the HUD's ghost of builds in flight. */
   const buildInFlight = () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
@@ -324,6 +286,25 @@ describe("the build sheet", () => {
     return { host, card, button, close };
   };
 
+  it("opens on the realm's first build while it has none, else on the first building, and keeps a pick over either", () => {
+    const { store, realm } = realmBoard();
+    labor(store, 10_000n);
+    const pressedOn = (sheet: ReturnType<typeof open>) =>
+      [...sheet.host.querySelectorAll('.ui-card__choose[aria-pressed="true"]')].map(
+        (card) => card.querySelector(".ui-card__title")?.textContent,
+      );
+    useUIStore.setState({ firstBuild: BuildingType.ResourceKnightT1 });
+    const first = open(store, realm);
+    expect(pressedOn(first)).toEqual(["Barracks"]);
+    act(() => first.card("Farm").click());
+    expect(pressedOn(first)).toEqual(["Farm"]);
+    first.close();
+    useUIStore.setState({ firstBuild: null });
+    const later = open(store, realm);
+    expect(pressedOn(later)).toEqual(["Farm"]);
+    later.close();
+  });
+
   it("keeps the realm's population in its head, used of all it can hold", () => {
     const { store, realm } = realmBoard();
     const total = 6 + configManager.getBasePopulationCapacity();
@@ -356,25 +337,66 @@ describe("the build sheet", () => {
     sheet.close();
   });
 
-  it("says what a building needs of the population that is free, and Build Hut on the gold button chooses the Hut", () => {
+  /** The realm full: every person housed, Labor enough for any building, and the build actions recorded. */
+  const fullRealm = () => {
     const { store, realm } = realmBoard();
     labor(store, 50_000n);
     const total = 6 + configManager.getBasePopulationCapacity();
-    population(store, total - 1);
-    const sheet = open(store, realm);
-    act(() => sheet.card("Barracks").click());
-    const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
-    expect(sheet.host.querySelector('[role="status"]')!.textContent).toBe(`Needs ${cost} population, 1 free`);
-    expect(sheet.button("Build")!.textContent).toContain("Build Hut");
-    // Why, and the way past it, stand together in the foot, in view however many cards the body holds.
-    expect(sheet.button("Build Hut")!.closest(".ui-window__foot")).not.toBeNull();
-    expect(sheet.host.querySelector('.ui-window__foot [role="status"]')!.textContent).toBe(
-      `Needs ${cost} population, 1 free`,
+    population(store, total);
+    const placeBuilding = vi.fn(() => Promise.resolve({ transaction_hash: "0x1" }));
+    installActiveGameClient({
+      connect() {},
+      disconnect() {},
+      dispose() {},
+      actions: { placeBuilding },
+      waitForAction: () => Promise.resolve({ hash: "0x1", block: 9, status: "SUCCEEDED" }),
+    } as unknown as GameClient);
+    return { sheet: open(store, realm), total, placeBuilding };
+  };
+  const pressed = (sheet: ReturnType<typeof open>) =>
+    [...sheet.host.querySelectorAll<HTMLButtonElement>('.ui-card__choose[aria-pressed="true"]')].map(
+      (card) => card.querySelector(".ui-card__title")?.textContent,
     );
-    act(() => sheet.button("Build Hut")!.click());
-    expect(sheet.card("Hut").getAttribute("aria-pressed")).toBe("true");
-    // A Hut takes no population: it is the fix, and Build stands under it.
-    expect(sheet.host.querySelector('[role="status"]')).toBeNull();
+
+  it("keeps the player's pick with no free population, and Build asks, offering the Hut on this plot", () => {
+    const { sheet, total, placeBuilding } = fullRealm();
+    act(() => sheet.card("Barracks").click());
+    // The pick stands and Build is offered: nothing is chosen for the player, nothing refuses yet.
+    expect(pressed(sheet)).toEqual(["Barracks"]);
+    expect(sheet.button("Build")!.textContent).toBe("Build");
+    act(() => sheet.button("Build")!.click());
+    const ask = sheet.host.querySelector('[role="alertdialog"]')!;
+    expect(ask.getAttribute("aria-label")).toBe("Population full");
+    const cost = configManager.getBuildingCategoryConfig(BuildingType.ResourceKnightT1).population_cost;
+    expect(ask.querySelector(`[aria-label="population ${total}/${total}"]`)).not.toBeNull();
+    expect(ask.querySelector(`[aria-label="Barracks population ${cost}"]`)).not.toBeNull();
+    expect(ask.querySelector('[aria-label^="Hut population +"]')).not.toBeNull();
+    // The ask stands where the grid stood; nothing was sent by pressing Build.
+    expect(sheet.host.querySelector(".ui-card__choose")).toBeNull();
+    expect(placeBuilding).not.toHaveBeenCalled();
+    sheet.close();
+  });
+
+  it("builds the Hut on the same plot from the ask, in one press", async () => {
+    const { sheet, placeBuilding } = fullRealm();
+    act(() => sheet.card("Barracks").click());
+    act(() => sheet.button("Build")!.click());
+    await act(async () => sheet.button("Build a Hut here")!.click());
+    expect(placeBuilding).toHaveBeenCalledOnce();
+    expect(placeBuilding).toHaveBeenCalledWith(
+      expect.objectContaining({ structureId: 7, buildingType: BuildingType.WorkersHut, hex: { col: 11, row: 10 } }),
+    );
+    sheet.close();
+  });
+
+  it("goes back to the grid on Choose another, the player's pick still chosen and nothing sent", () => {
+    const { sheet, placeBuilding } = fullRealm();
+    act(() => sheet.card("Barracks").click());
+    act(() => sheet.button("Build")!.click());
+    act(() => sheet.button("Choose another")!.click());
+    expect(sheet.host.querySelector('[role="alertdialog"]')).toBeNull();
+    expect(pressed(sheet)).toEqual(["Barracks"]);
+    expect(placeBuilding).not.toHaveBeenCalled();
     sheet.close();
   });
 

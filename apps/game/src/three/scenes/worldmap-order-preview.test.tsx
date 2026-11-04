@@ -154,8 +154,7 @@ it("on a Blitz phone, a tap on a tile the army can explore opens the order there
   expect(usePopoverStore.getState().surface).toBeNull();
 });
 
-// Owner, 27 October 2026: "Yes double tapping to explore on mobile"; Next up teaches it ("Double-tap a tile beside your
-// army", frontier-coach.ts).
+// Owner, 27 October 2026: "Yes double tapping to explore on mobile".
 it("on a Frontier phone, a double tap on a tile beside the army explores it: the first tap pins it for the HUD's bar alone", () => {
   screen(false);
   const { scene, sent, pinned, facts } = worldMap(true);

@@ -14,18 +14,20 @@ import {
   HudTableRow,
 } from "@/ui/design-system/kit/hud-elements";
 
+import { TARGET_MARKS } from "../sites/site-marks";
 import { RealmBadge } from "./realm-marks";
+import { SITE_KINDS } from "./season-detail";
 import {
   LORDS_EARNED,
   POOL_NOT_PUBLISHED,
   RANK,
   REALM,
   SEASON,
+  SEASON_CLIMB,
   SEASON_ERROR,
   SEASON_PRIZES,
   PRIZE_UNHELD,
   SITES,
-  SITES_CLEARED,
   TRY_AGAIN,
   commonChestPays,
   dayOfSeason,
@@ -105,6 +107,7 @@ export const SeasonList = ({
           <Failed onRetry={onRetry} />
         ) : (
           <>
+            {state === "ready" && climbs(rows) && <ClimbLine />}
             <BoardHead />
             {state === "loading" ? (
               <HudSkeleton rows={SKELETON_ROWS} />
@@ -147,16 +150,40 @@ const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) =>
   </HudTableRow>
 );
 
+/** The player has a row and stands off the podium, or has cleared nothing yet: the board says how to climb. */
+const climbs = (rows: readonly SeasonListRow[]): boolean => {
+  const own = rows.find((row) => row.own);
+  return own !== undefined && (own.rank > PODIUM_PLACES || own.sitesCleared === 0);
+};
+const PODIUM_PLACES = 3;
+
+/** How to climb, over the board: clear sites with the armies, each kind by its painting and Frontier name. */
+const ClimbLine = () => (
+  <div data-climb className="flex shrink-0 flex-col gap-1 py-1 text-hud-body text-hud-ink">
+    <span className="flex items-center gap-1.5">
+      <SemanticIcon name="flag" size={20} />
+      {SEASON_CLIMB.climb}
+    </span>
+    <span className="flex flex-wrap gap-1.5 pl-6">
+      {SITE_KINDS.map((kind) => (
+        <HudChip key={kind} icons={[TARGET_MARKS[kind].icon]}>
+          {TARGET_MARKS[kind].word}
+        </HudChip>
+      ))}
+    </span>
+  </div>
+);
+
 /**
  * Each column's name over it, as Blitz's standings name theirs: Rank, the realm (its rank and depth, and name), Sites cleared
- * (what ranks) and LORDS. The number columns' full names are on their heads' tooltip. It stays on top while the rows
+ * (what ranks) and LORDS. Sites' tooltip says how the board ranks; LORDS' gives its full name. It stays on top while the rows
  * scroll under it.
  */
 const BoardHead = () => (
   <HudTableHead cols={COLS}>
     <span className="text-center">{RANK}</span>
     <span className="col-span-2">{REALM}</span>
-    <span className="text-right" data-tip={SITES_CLEARED}>
+    <span className="text-right" data-tip={SEASON_CLIMB.rule}>
       {SITES}
     </span>
     <span className="text-right" data-tip={LORDS_EARNED}>

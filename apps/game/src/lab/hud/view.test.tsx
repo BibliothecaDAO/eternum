@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes, useLocation } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 vi.mock("@/ui/features/debug/kit-lab/hud-lab", () => ({
-  HUD_LAB_STATES: ["idle", "selected", "site-camp", "fight-goes-on", "deploy", "season", "next-up-rest"],
+  HUD_LAB_STATES: ["idle", "selected", "site-camp", "fight-goes-on", "deploy", "season", "last-hour"],
 }));
 vi.mock("@/ui/features/debug/kit-lab/unified-hud-lab", () => ({
   UNIFIED_VIEWS: [
@@ -86,7 +86,6 @@ it("draws Frontier's HUD as the game mounts it on a desktop and a phone, side by
     "Deploy",
     "Realm & build",
     "Research",
-    "Next up",
     "The day",
     "Season & purse",
     "Map & army",

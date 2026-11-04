@@ -28,7 +28,6 @@ export const FrontierDesktop = ({
   worldTab,
   realm,
   armies,
-  nextUp,
   page,
   foot,
   places,
@@ -42,7 +41,6 @@ export const FrontierDesktop = ({
   worldTab?: WorldTab;
   realm?: ReactNode;
   armies?: ReactNode;
-  nextUp?: ReactNode;
   /** A nav page (the Feed, Research, the Season's board): it stands in the rail's panel. */
   page?: ReactNode;
   /** Over the places: notices, the selected army's state, a visit's Leave. */
@@ -60,7 +58,7 @@ export const FrontierDesktop = ({
         <div className="flex shrink-0 flex-col">{armies}</div>
         <HudMinimap className="mt-auto min-h-hud-minimap w-full shrink" />
       </HudColumn>
-      <FrontierRail nextUp={nextUp} page={page} onPanel={setPanel} />
+      <FrontierRail page={page} onPanel={setPanel} />
       <HudFoot>
         <div className="pointer-events-none flex flex-col items-center gap-2">
           {foot}
@@ -74,16 +72,14 @@ export const FrontierDesktop = ({
 
 /**
  * Frontier's right rail on a desktop, the one home for everything (the owner, 22 October: "The right rail being home
- * for everything is perfect"): Next up on top, then the open panel (a nav page such as the Feed, or any sheet the HUD
- * opens: Build, an army, a site, Today), which stands in the rail; with none open, nothing. The client's own notices (a refused order, a warning, the game clock's milestones) stand under
- * Next up whatever is open, as they stood atop Events. Chat stands at its foot.
+ * for everything is perfect"): the client's own notices (a refused order, a warning, the game clock's milestones) on top
+ * whatever is open, as they stood atop Events, then the open panel (a nav page such as the Feed, or any sheet the HUD
+ * opens: Build, an army, a site, Today), which stands in the rail; with none open, nothing. Chat stands at its foot.
  */
 const FrontierRail = ({
-  nextUp,
   page,
   onPanel,
 }: {
-  nextUp?: ReactNode;
   page?: ReactNode;
   /** The panel's place, where the HUD's sheets stand. */
   onPanel: (panel: HTMLElement | null) => void;
@@ -97,7 +93,6 @@ const FrontierRail = ({
       data-frontier-rail
       className="pointer-events-none fixed bottom-hud-base right-3 top-hud-header z-hud-rail flex flex-col gap-2"
     >
-      {nextUp && <div className="shrink-0">{nextUp}</div>}
       <div aria-label="Notices" className="ui ui-panel pointer-events-auto shrink-0 px-3 py-2 empty:hidden">
         <FeedToasts />
       </div>

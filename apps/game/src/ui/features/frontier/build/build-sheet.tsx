@@ -15,13 +15,13 @@ import {
   BARRACKS,
   type Rank,
   BUILD,
-  HUT,
   makes,
   needsResearchPurchases,
   ONE_A_REALM,
   POPULATION,
   priceRaised,
   RESEARCH,
+  ROOM_ASK,
   startsNewArmies,
   type RankedWords,
   takesPopulation,
@@ -59,7 +59,7 @@ import { realmPerHour, secondsUntilHeld } from "../hud/army-order";
 import { ATTRIBUTE_MARKS } from "../research/research-tree";
 import { FRONTIER_STORES, madeStore, STORE_KINDS } from "../stores";
 import { type BuildOption, readBuildOptions } from "./build-options";
-import { type BuildTile, BuildView } from "./build-view";
+import { type BuildTile, BuildView, type RoomAskChoices } from "./build-view";
 import { buildingIcon, buildingName } from "./building-names";
 
 const BUILD_MODELS = [
@@ -101,19 +101,18 @@ export const useOpenPlot = (realm: NativeRows["Structure"] | null): HexPosition 
 /**
  * The build sheet over the game's facts: the buildings the plot can hold at the realm's researched tier, the chosen
  * one standing on the plot as a ghost, its gains, and Build, or the price the realm cannot pay yet with its wait. It
- * opens on the building Next up asks for, else the first.
+ * opens on the realm's first build while it has none (first-build.ts), else on the first building, and keeps the
+ * player's pick: with no free population, Build asks (RoomAsk) and offers the
+ * Hut on this plot, never picking it for the player.
  */
 export const BuildSheet = ({
   realm,
   plot,
-  asked = null,
   onResearch,
   onClose,
 }: {
   realm: NativeRows["Structure"];
   plot: HexPosition;
-  /** The building Next up asks for (useNextUpBuilding): the one chosen until the player picks another. */
-  asked?: BuildingType | null;
   /** Opens Research, where two Barracks purchases unlock training buildings. */
   onResearch?: () => void;
   onClose: () => void;
@@ -129,10 +128,13 @@ export const BuildSheet = ({
     [realm, facts, tick, useSimpleCost],
   );
   const [picked, setPicked] = useState<BuildingType | null>(null);
+  // Build pressed on the pick with no free population: the ask stands until the player answers or picks again.
+  const [asking, setAsking] = useState(false);
   const [scoutingKind, setScoutingKind] = useState<ScoutingSide>(nativeResearchConstants.KIND_RIFTS);
   const indexOf = (category: BuildingType | null) =>
     options?.findIndex((candidate) => candidate.category === category) ?? -1;
-  const chosen = [indexOf(picked), indexOf(asked)].find((index) => index >= 0) ?? 0;
+  const firstBuild = useUIStore((state) => state.firstBuild);
+  const chosen = Math.max(indexOf(picked ?? firstBuild), 0);
   const option = options?.[chosen];
   const sending = useInFlight("plot", plotKey(realmId, plot)) !== undefined;
   const mode = useGameModeConfig();
@@ -151,8 +153,8 @@ export const BuildSheet = ({
    * The sheet closes as the building leaves, if it still shows this plot; its ghost stays on the plot until the
    * build's own outcome.
    */
-  const build = async () => {
-    if (option.category === BuildingType.ScoutsLodge) {
+  const build = async (category: BuildingType = option.category) => {
+    if (category === BuildingType.ScoutsLodge) {
       const learned = realmLearned(setup.store, realm.game_id, realm.entity_id);
       if (learned === undefined) return;
       const needsChoice = researchTier(learned, nativeResearchConstants.ROW_SCOUTS_LODGE) === 0;
@@ -163,10 +165,10 @@ export const BuildSheet = ({
     try {
       await sendBuilding({
         realmId,
-        type: option.category,
+        type: category,
         plot,
         useSimpleCost,
-        scoutingKind: option.category === BuildingType.ScoutsLodge ? scoutingKind : undefined,
+        scoutingKind: category === BuildingType.ScoutsLodge ? scoutingKind : undefined,
         from: { isOpen: stillShowing, close: onClose },
       });
     } catch (error) {
@@ -177,25 +179,31 @@ export const BuildSheet = ({
   const held = (resource: number) =>
     knownAmount(getBalance(safeInteger(realm.entity_id), resource, tick, setup.store).balance);
   const population = readRealmPopulation(setup.store, realmId);
-  const choose = (category: BuildingType) => setPicked(category);
+  const choose = (category: BuildingType) => {
+    setPicked(category);
+    setAsking(false);
+  };
   const priceOf = (category: BuildingType) =>
     options
       .find((candidate) => candidate.category === category)!
       .cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }));
-  const refusal = (): Refusal | undefined => {
-    if (option.standing === "built") return { reason: { kind: "failed", line: ONE_A_REALM } };
-    if (option.standing !== "open") return gateRefusal(option.standing);
+  /** Where the chosen building stands: open, refused with its reason, or open but for free population. */
+  const standing = (): { refusal?: Refusal; noRoom?: true } => {
+    if (option.standing === "built") return { refusal: { reason: { kind: "failed", line: ONE_A_REALM } } };
+    if (option.standing !== "open") return { refusal: gateRefusal(option.standing) };
     const shortCost = option.cost.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
     if (shortCost) {
       const have = held(shortCost.resource);
       const perHour = realmPerHour(setup.store, realmId, shortCost.resource, tick);
       return {
-        reason: {
-          kind: "short",
-          of: priceKind(shortCost.resource),
-          held: have,
-          need: shortCost.amount,
-          wait: secondsUntilHeld(have, shortCost.amount, perHour),
+        refusal: {
+          reason: {
+            kind: "short",
+            of: priceKind(shortCost.resource),
+            held: have,
+            need: shortCost.amount,
+            wait: secondsUntilHeld(have, shortCost.amount, perHour),
+          },
         },
       };
     }
@@ -208,23 +216,10 @@ export const BuildSheet = ({
       mode,
       targetSpot: plot,
     });
-    if (verdict.canSubmit) return undefined;
+    if (verdict.canSubmit) return {};
     if (verdict.code !== "insufficient_population" && verdict.code !== "insufficient_capacity")
-      return { reason: { kind: "failed", line: verdict.reason ?? "" } };
-    return {
-      reason: {
-        kind: "short",
-        of: "population",
-        counted: "free",
-        held: population && population.total - population.used,
-        need: option.populationCost,
-      },
-      fix: {
-        word: `${BUILD} ${HUT}`,
-        prices: priceOf(BuildingType.WorkersHut),
-        onFix: () => choose(BuildingType.WorkersHut),
-      },
-    };
+      return { refusal: { reason: { kind: "failed", line: verdict.reason ?? "" } } };
+    return { noRoom: true };
   };
   /**
    * A training building waits for the Barracks purchases (the contract's assert_board_category): Research raises it
@@ -243,16 +238,29 @@ export const BuildSheet = ({
       };
     return { reason, fix: onResearch && { icon: "research", word: RESEARCH, onFix: onResearch } };
   };
+  const holdings: Holdings = {
+    held,
+    perHour: (resource) => realmPerHour(setup.store, realmId, resource, tick),
+    free: population && population.total - population.used,
+  };
+  const now = standing();
+  /** The ask's choices while it stands: the Hut built on this plot when the realm can pay it, else picked to show its wait. */
+  const roomAsk = (): RoomAskChoices | undefined => {
+    const hut = options.find(({ category }) => category === BuildingType.WorkersHut);
+    if (!asking || !now.noRoom || !hut) return undefined;
+    const payable =
+      hut.standing === "open" && hut.cost.every(({ resource, amount }) => (held(resource) ?? 0) >= amount);
+    return {
+      hut: buildTile(hut, holdings),
+      hutVerb: payable ? ROOM_ASK.buildHut : ROOM_ASK.chooseHut,
+      onHut: payable ? () => build(BuildingType.WorkersHut) : () => choose(BuildingType.WorkersHut),
+      onAnother: () => setAsking(false),
+    };
+  };
   return (
     <BuildView
       population={population}
-      tiles={options.map((candidate) =>
-        buildTile(candidate, {
-          held,
-          perHour: (resource) => realmPerHour(setup.store, realmId, resource, tick),
-          free: population && population.total - population.used,
-        }),
-      )}
+      tiles={options.map((candidate) => buildTile(candidate, holdings))}
       scouting={
         option.category === BuildingType.ScoutsLodge &&
         researchTier(
@@ -267,12 +275,13 @@ export const BuildSheet = ({
           : undefined
       }
       chosen={chosen}
-      onChoose={(index) => setPicked(options[index]!.category)}
+      onChoose={(index) => choose(options[index]!.category)}
       prices={option.cost.map(({ resource, amount }) => ({ of: priceKind(resource), amount }))}
-      refusal={refusal()}
+      refusal={now.refusal}
       sending={sending}
-      onBuild={() => void build()}
+      onBuild={() => (now.noRoom ? setAsking(true) : void build())}
       onClose={onClose}
+      ask={roomAsk()}
     />
   );
 };
