@@ -5,8 +5,17 @@ import { useIdentitySession } from "@/hooks/context/identity-session";
 import { useCampaignReferral } from "@/hooks/use-referral";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
-import { AppButton, AppChip, AppDialog, AppPanel, AppPortrait, AppRow } from "@/ui/design-system/kit/app-elements";
+import {
+  AppButton,
+  AppChip,
+  AppDialog,
+  AppIconButton,
+  AppPanel,
+  AppPortrait,
+  AppRow,
+} from "@/ui/design-system/kit/app-elements";
 import { REFERRAL_WORDS } from "@/ui/design-system/kit/words";
+import { useLayout } from "@/shell/frame/layout";
 
 import { DEVCON } from "../join/devcon";
 import { useDevconEntry } from "../join/devcon-entry";
@@ -22,6 +31,7 @@ type Friend = CampaignReferral["friends"][number];
  */
 export const InvitePanel = () => {
   const { open, referral } = useCampaignReferral(DEVCON.campaign);
+  const phone = useLayout() === "phone";
   if (!open) return null;
   if (referral.isError)
     return (
@@ -34,6 +44,7 @@ export const InvitePanel = () => {
   return (
     <AppPanel
       title={REFERRAL_WORDS.title}
+      label={REFERRAL_WORDS.title}
       icon="people"
       cue={
         <AppChip tone="gold" icon={link.golden ? "devcon-golden-realm-0" : undefined}>
@@ -41,43 +52,160 @@ export const InvitePanel = () => {
         </AppChip>
       }
     >
-      <div className="flex flex-col gap-4">
-        <p className="text-app-ink">{promiseOf(home)}</p>
-        {goldenPending && (
-          <p className="flex items-center gap-2 text-app-ink">
-            <Icon name="hourglass" size={20} />
-            {REFERRAL_WORDS.pending}
-          </p>
-        )}
-        <LinkRow code={code} />
-        {home === "free" && <TicketProgress counted={link.counted} />}
-        {(home === "ticket" || home === "devcon") && !goldenPending && referral.data.tier !== "golden" && (
-          <GoldenWays referral={referral.data} />
-        )}
-        {friends.length > 0 && (
-          <div className="flex flex-col">
-            {friends.map((friend, index) => (
-              <FriendRow key={index} friend={friend} />
-            ))}
-          </div>
-        )}
-      </div>
+      {phone ? (
+        <CompactBody referral={referral.data} />
+      ) : (
+        <div className="flex flex-col gap-4">
+          <p className="text-app-ink">{promiseOf(home)}</p>
+          {goldenPending && (
+            <p className="flex items-center gap-2 text-app-ink">
+              <Icon name="hourglass" size={20} />
+              {REFERRAL_WORDS.pending}
+            </p>
+          )}
+          <LinkRow code={code} />
+          {home === "free" && <TicketProgress counted={link.counted} />}
+          {(home === "ticket" || home === "devcon") && !goldenPending && referral.data.tier !== "golden" && (
+            <GoldenWays referral={referral.data} />
+          )}
+          {friends.length > 0 && (
+            <div className="flex flex-col">
+              {friends.map((friend, index) => (
+                <FriendRow key={index} friend={friend} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       <RewardMoment referral={referral.data} />
     </AppPanel>
   );
 };
 
-/** The link a friend opens, with Share where the device shares and Copy everywhere. */
-const LinkRow = ({ code }: { code: string }) => {
+/**
+ * A phone's Invite friends, compact (owner, 4 November: "way more compact on mobile"): the promise in a line, the link
+ * and its icon-only Copy (and Share) on one row, the link's way to golden as one row of slots ending in the golden
+ * link's mark, and each friend as one dense row; a second line only where a status needs it.
+ */
+const CompactBody = ({ referral }: { referral: CampaignReferral }) => (
+  <div className="flex flex-col gap-3">
+    <p className="text-sm text-app-ink">{compactPromiseOf(referral.home)}</p>
+    {referral.goldenPending && (
+      <p className="flex items-center gap-2 text-sm text-app-ink">
+        <Icon name="hourglass" size={18} />
+        {REFERRAL_WORDS.compact.pending}
+      </p>
+    )}
+    <CompactLink code={referral.code} />
+    <LinkSlots counted={referral.link.counted} golden={referral.link.golden} />
+    {referral.friends.length > 0 && (
+      <ul className="flex flex-col divide-y divide-[var(--app-line)]">
+        {referral.friends.map((friend, index) => (
+          <CompactFriend key={index} friend={friend} />
+        ))}
+      </ul>
+    )}
+  </div>
+);
+
+/** The link on one row: its address, Copy as its icon, and Share where the device shares. */
+const CompactLink = ({ code }: { code: string }) => {
+  const { url, copied, copy, share } = useShareLink(code);
+  return (
+    <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-black/25 py-1 pl-3 pr-1">
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-app-ink">{url.replace(/^https?:\/\//, "")}</span>
+      <AppIconButton
+        icon={copied ? "check" : "copy"}
+        label={copied ? REFERRAL_WORDS.copied : REFERRAL_WORDS.copy}
+        kind="secondary"
+        onClick={copy}
+      />
+      {share && <AppIconButton icon="share" label={REFERRAL_WORDS.share} kind="secondary" onClick={share} />}
+    </div>
+  );
+};
+
+/** The link's counted friends as one row of slots, the golden link's mark at its end, with its rule in a line. */
+const LinkSlots = ({ counted, golden }: { counted: number; golden: boolean }) => (
+  <div className="flex flex-col gap-1">
+    <div
+      className="flex items-center gap-1"
+      role="img"
+      aria-label={REFERRAL_WORDS.toGoldenLink(counted, DEVCON.goldenLinkAt)}
+    >
+      {Array.from({ length: DEVCON.goldenLinkAt }, (_, index) => (
+        <span
+          key={index}
+          className={`grid h-5 min-w-0 flex-1 place-items-center rounded border ${
+            index < counted || golden
+              ? "border-[rgb(var(--app-gold))] bg-[rgb(var(--app-gold))/0.25]"
+              : "border-[var(--app-line)]"
+          }`}
+        >
+          {(index < counted || golden) && <Icon name="check" size={12} />}
+        </span>
+      ))}
+      <span className={golden ? "" : "opacity-50"}>
+        <Icon name="devcon-golden-realm-0" size={28} />
+      </span>
+    </div>
+    <span className="text-xs text-app-ink opacity-75">
+      {golden ? REFERRAL_WORDS.compact.linkGolden : REFERRAL_WORDS.compact.linkRule(DEVCON.goldenLinkAt)}
+    </span>
+  </div>
+);
+
+/** A friend in one row: their name, a golden ticket's mark and their status; the reason under it only when not counted. */
+const CompactFriend = ({ friend }: { friend: Friend }) => {
+  const name = friend.name ?? REFERRAL_WORDS.unnamed;
+  return (
+    <li className="flex flex-col py-1.5" title={REFERRAL_WORDS.friend[friend.state]}>
+      <span className="flex items-center gap-2">
+        <span className="min-w-0 flex-1 truncate font-semibold text-app-ink">{name}</span>
+        {friend.golden && (
+          <span title={REFERRAL_WORDS.golden} className="shrink-0">
+            <Icon name="devcon-golden-realm-0" size={22} />
+            <span className="sr-only">{REFERRAL_WORDS.golden}</span>
+          </span>
+        )}
+        <CompactStatus state={friend.state} />
+      </span>
+      {friend.state === "excluded" && (
+        <span className="text-xs text-app-ink opacity-75">{REFERRAL_WORDS.compact.excluded}</span>
+      )}
+    </li>
+  );
+};
+
+const CompactStatus = ({ state }: { state: Friend["state"] }) =>
+  state === "counted" ? (
+    <AppChip tone="good" icon="check">
+      {REFERRAL_WORDS.counted}
+    </AppChip>
+  ) : (
+    <AppChip>{REFERRAL_WORDS.compact.status[state]}</AppChip>
+  );
+
+/** The friend's address for this link, and Copy and Share as the device offers them. */
+const useShareLink = (code: string) => {
   const url = `${window.location.origin}${DEVCON.referralPath(code)}`;
   const [copied, setCopied] = useState(false);
-  const canShare = typeof navigator.share === "function";
   const copy = () =>
     void navigator.clipboard
       .writeText(url)
       .then(() => setCopied(true))
       .catch(() => undefined);
-  const share = () => void navigator.share({ text: REFERRAL_WORDS.shareText, url }).catch(() => undefined);
+  const share =
+    typeof navigator.share === "function"
+      ? () => void navigator.share({ text: REFERRAL_WORDS.shareText, url }).catch(() => undefined)
+      : null;
+  return { url, copied, copy, share };
+};
+
+/** The link a friend opens, with Share where the device shares and Copy everywhere. */
+const LinkRow = ({ code }: { code: string }) => {
+  const { url, copied, copy, share } = useShareLink(code);
+  const canShare = share !== null;
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-lg border border-white/15 bg-black/25 px-3 py-2">
       <span className="flex min-w-0 basis-full items-center gap-2 sm:basis-auto sm:flex-1">
@@ -88,7 +216,7 @@ const LinkRow = ({ code }: { code: string }) => {
         {copied ? REFERRAL_WORDS.copied : REFERRAL_WORDS.copy}
       </AppButton>
       {canShare && (
-        <AppButton kind="primary" icon="share" onClick={share}>
+        <AppButton kind="primary" icon="share" onClick={share ?? undefined}>
           {REFERRAL_WORDS.share}
         </AppButton>
       )}
@@ -113,6 +241,11 @@ const TicketProgress = ({ counted }: { counted: number }) => (
     />
   </div>
 );
+
+const compactPromiseOf = (home: CampaignReferral["home"]) => {
+  if (home === "free" || home === "devcon") return REFERRAL_WORDS.compact.promise[home](DEVCON.goldenOneIn);
+  return REFERRAL_WORDS.compact.promise[home];
+};
 
 const promiseOf = (home: CampaignReferral["home"]) => {
   if (home === "free" || home === "devcon") return REFERRAL_WORDS.promise[home](DEVCON.goldenOneIn);

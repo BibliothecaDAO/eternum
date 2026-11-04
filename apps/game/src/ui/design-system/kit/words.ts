@@ -899,6 +899,23 @@ export const REFERRAL_WORDS = {
     golden: "Your Devcon realm is golden from your next daily claim. Days you already claimed stay as they were.",
   },
   goldenAction: { ticket: "Add it to my home", golden: "Open my realm" },
+  /** A phone's compact panel: the same facts in a line each. */
+  compact: {
+    promise: {
+      free: (oneIn: number) =>
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. Your first who plays gets you one.`,
+      ticket: "Friends earned you a Devcon ticket: add it from your daily claim.",
+      devcon: (oneIn: number) =>
+        `Each friend gets a Devcon realm, 1 in ${oneIn} golden. A golden friend makes yours golden.`,
+      golden: "Your realm is golden. Each friend still gets a Devcon realm.",
+      held: "Each friend gets a Devcon realm. Your home earns nothing more.",
+    },
+    pending: "Golden earned: waiting for the game to confirm it.",
+    linkRule: (at: number) => `At ${at}, your link turns golden for everyone.`,
+    linkGolden: "Your link is golden: every friend on it too.",
+    status: { signed: "Signed up", founded: "Founded", excluded: "Not counted" },
+    excluded: "Same email or device as another player",
+  },
 } as const;
 
 /** Blitz's rows and lobby: the steps on Join, the seat's cost, and what stands where an action cannot. */

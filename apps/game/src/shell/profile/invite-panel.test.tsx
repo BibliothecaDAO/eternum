@@ -19,6 +19,7 @@ vi.mock("../herald", async (original) => ({
 import type { CampaignReferral } from "@realms-world/identity";
 import { MemoryRouter } from "react-router-dom";
 
+import { setViewportWidth } from "../frame/test-viewport";
 import { InvitePanel } from "./invite-panel";
 
 let host: HTMLDivElement;
@@ -27,6 +28,7 @@ let client: QueryClient;
 beforeEach(() => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
   localStorage.clear();
+  setViewportWidth(1440);
   service.campaignReferral.mockReset();
   client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   host = document.createElement("div");
@@ -190,6 +192,43 @@ it("says once a ticket friends earned, golden when the link went golden, and ask
   expect(dialog()).toBe("Your link went golden");
   expect(text()).toContain("Golden link");
   expect(text()).toContain("Your Devcon ticket is golden. Add it to your home from its daily claim.");
+});
+
+it("draws a phone's panel compact: the link and its icon Copy on one row, the link's slots, one row per friend", async () => {
+  setViewportWidth(390);
+  await show(
+    answer("devcon", [
+      ["Corvin", "counted"],
+      ["Isolde", "counted", "golden"],
+      ["Tamsin", "excluded"],
+      [null, "founded"],
+    ]),
+  );
+  expect(text()).toContain("Each friend gets a Devcon realm, 1 in 10 golden. A golden friend makes yours golden.");
+  // No milestone boxes, no worded Copy: an icon button named Copy beside the address.
+  expect(text()).not.toContain("A golden friend1 in 10");
+  const copy = document.querySelector<HTMLButtonElement>('button[aria-label="Copy"]')!;
+  expect(copy.textContent).toBe("");
+  expect(copy.parentElement!.textContent).toContain(`${window.location.host}/join/devcon/r/7KQ2MX4D`);
+  // Ten slots, two filled, the golden link's mark at the end and its rule in one line.
+  const slots = document.querySelector('[role="img"][aria-label="2 of 10 friends"]')!;
+  expect(slots.querySelectorAll(":scope > span.rounded")).toHaveLength(10);
+  expect(text()).toContain("At 10, your link turns golden for everyone.");
+  // One row per friend: a second line only for the friend not counted.
+  const rows = [...document.querySelectorAll("li")];
+  expect(rows.map((row) => row.textContent)).toEqual([
+    "CorvinCounted",
+    "IsoldeGoldenCounted",
+    "TamsinNot countedSame email or device as another player",
+    "A friendFounded",
+  ]);
+  expect(rows[0]!.getAttribute("title")).toBe("Founded and cleared a site");
+
+  const writeText = vi.fn(async () => undefined);
+  vi.stubGlobal("navigator", { ...navigator, clipboard: { writeText } });
+  await act(async () => copy.click());
+  expect(writeText).toHaveBeenCalledWith(`${window.location.origin}/join/devcon/r/7KQ2MX4D`);
+  expect(document.querySelector('button[aria-label="Copied"]')).not.toBeNull();
 });
 
 it("says when the link could not be loaded", async () => {
