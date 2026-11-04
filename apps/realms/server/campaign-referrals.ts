@@ -1,4 +1,4 @@
-import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
+import { CAMPAIGNS, isCampaignKey, type CampaignKey, type TicketTier } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import type { CampaignStanding, HomeSource } from "./campaign-entry";
@@ -20,9 +20,22 @@ export interface ReferralWorld {
   upgradeHome: (home: { chainId: string; gameId: number; realmsId: string }) => Promise<Response>;
 }
 
-/** What the inviter's friends can still earn them: a ticket, golden, or nothing more. */
-type InviterHome = "free" | "devcon" | "golden" | "held";
-type FriendState = "signed" | "founded" | "counted";
+type Board = Map<string, CampaignStanding>;
+
+/**
+ * The account's home as its friends' rewards see it: no ticket yet (free), a ticket not on a home yet (ticket), a
+ * founded Devcon home the board shows regular (devcon) or golden (golden), or a home whose claim comes from elsewhere
+ * (held), which friends earn nothing for.
+ */
+type InviterHome = "free" | "ticket" | "devcon" | "golden" | "held";
+/** A friend who shares a mailbox or device with the inviter or a counted friend is excluded: one person counts once. */
+type FriendState = "signed" | "founded" | "counted" | "excluded";
+
+/** The tier a link draws for a friend's ticket: golden at the campaign's odds, from the Worker's own randomness. */
+export const drawFriendTier = (campaign: CampaignKey): TicketTier =>
+  crypto.getRandomValues(new Uint32Array(1))[0]! / 2 ** 32 < CAMPAIGNS[campaign].referral.goldenOdds
+    ? "golden"
+    : "regular";
 
 /**
  * GET /api/campaigns/referral?campaign=: the signed-in account's referral link, its friends and what they earned it,
@@ -51,106 +64,157 @@ export async function handleCampaignReferrer(db: D1Database, url: URL, code: str
 }
 
 async function referralAnswer(world: ReferralWorld, campaign: CampaignKey, inviter: string) {
-  const { friends, board, ticket } = await settleReferrals(world, campaign, inviter, nowSeconds());
+  const settled = await settleReferrals(world, campaign, inviter, nowSeconds());
   const referrer = await createCampaignReferralStore(world.db).referrerFor(campaign, inviter);
-  const home = ticket?.tier === "golden" ? "golden" : await inviterHome(world, campaign, inviter, ticket !== null);
-  if (home === null) return json({ error: "campaigns_unavailable" }, 503);
+  const source = await world.homeSource(inviter, CAMPAIGNS[campaign].presets);
+  if (source === null) return json({ error: "campaigns_unavailable" }, 503);
+  const standing = settled.board?.get(accountKey(await world.accountOf(inviter)));
+  const home = inviterHome(source, settled.ticket?.tier ?? null, standing);
   return json({
     code: referrer.code,
     home,
+    tier: settled.ticket?.tier ?? null,
+    // Earned golden whose upgrade the board does not show yet: honest until it does, never claimed as done.
+    goldenPending: home === "devcon" && settled.ticket?.tier === "golden",
+    link: {
+      counted: settled.friends.filter((friend) => friend.countedAt !== null).length,
+      golden: referrer.goldenLinkAt !== null,
+    },
     friends: await Promise.all(
-      friends.map(async (friend) => ({ name: friend.name, state: await friendState(world, friend, board) })),
+      settled.friends.map(async (friend) => ({
+        name: friend.name,
+        state: await friendState(world, friend, settled),
+        golden: friend.tier === "golden",
+      })),
     ),
     earned: { ticket: referrer.ticketEarnedAt !== null, golden: referrer.goldenEarnedAt !== null },
   });
 }
 
-async function inviterHome(
-  world: ReferralWorld,
-  campaign: CampaignKey,
-  inviter: string,
-  holdsTicket: boolean,
-): Promise<InviterHome | null> {
-  const source = await world.homeSource(inviter, CAMPAIGNS[campaign].presets);
-  if (source === null) return null;
-  if (source === "realm" || (source === "campaign" && !holdsTicket)) return "held";
-  return holdsTicket ? "devcon" : "free";
-}
+const inviterHome = (
+  source: HomeSource,
+  tier: TicketTier | null,
+  standing: CampaignStanding | undefined,
+): InviterHome => {
+  if (source === "realm" || (source === "campaign" && tier === null)) return "held";
+  if (source === "none") return tier === null ? "free" : "ticket";
+  return standing?.tier === 2 ? "golden" : "devcon";
+};
 
 async function friendState(
   world: ReferralWorld,
   friend: ReferredFriend,
-  board: Map<string, CampaignStanding> | null,
+  { board, excluded }: { board: Board | null; excluded: Set<string> },
 ): Promise<FriendState> {
   if (friend.countedAt !== null) return "counted";
+  if (excluded.has(friend.friend)) return "excluded";
   return board?.has(accountKey(await world.accountOf(friend.friend))) ? "founded" : "signed";
 }
 
 /**
- * Counts the inviter's friends who stand on the season board with a site cleared, then pays what they earned: a
- * regular ticket for a free home at the first, and golden at the campaign's count, applied onchain once the home is a
- * founded Devcon home. Every step is safe to repeat, so any read may settle, and a step that cannot be told now (a board
- * or a shard that cannot say, a relay that refuses for now) waits for the next read. Nothing settles after the season.
+ * Settles what the account's friends earned it, then the account's own golden home. Friends count once the season
+ * board shows them founded with a site cleared, each with their own mailbox and device. The first counted friend gives
+ * a home with no ticket a regular one; a golden friend who counts, or the link's `goldenLinkAt`th counted friend, turns
+ * the inviter golden, and the latter turns the link golden for every friend on it. A golden ticket on a founded home the
+ * board still shows regular asks the relay to upgrade it, whether friends or the link earned it. Every step is safe to
+ * repeat, so any read may settle; a step that cannot be told now waits for the next read. Nothing settles after the
+ * season.
  */
-export async function settleReferrals(world: ReferralWorld, campaign: CampaignKey, inviter: string, now: number) {
+export async function settleReferrals(world: ReferralWorld, campaign: CampaignKey, account: string, now: number) {
   const referrals = createCampaignReferralStore(world.db);
   const tickets = createCampaignTicketStore(world.db);
-  const friends = await referrals.friendsOf(campaign, inviter);
-  const ticket = await tickets.ticketOf(campaign, inviter);
-  if (friends.length === 0 || now >= CAMPAIGNS[campaign].redeemUntil) return { friends, board: null, ticket };
+  let friends = await referrals.friendsOf(campaign, account);
+  let ticket = await tickets.ticketOf(campaign, account);
+  const unsettled = { friends, board: null, ticket, excluded: new Set<string>() };
+  if (now >= CAMPAIGNS[campaign].redeemUntil || (friends.length === 0 && ticket?.tier !== "golden")) return unsettled;
   const board = await world.standings(CAMPAIGNS[campaign].presets);
-  if (board === null) return { friends, board, ticket };
-  const counted = await countFriends(world, campaign, friends, board, now);
-  const rewarded = await rewardInviter(world, campaign, inviter, counted, now);
-  if (rewarded?.tier === "golden") await applyGolden(world, inviter, board);
-  return { friends: await referrals.friendsOf(campaign, inviter), board, ticket: rewarded };
+  if (board === null) return unsettled;
+  let excluded = new Set<string>();
+  if (friends.length > 0) {
+    excluded = await countFriends(world, campaign, account, friends, board, now);
+    ticket = await rewardInviter(world, campaign, account, await referrals.friendsOf(campaign, account), now);
+    // Read again: the golden link may just have turned every friend's ticket golden.
+    friends = await referrals.friendsOf(campaign, account);
+  }
+  if (ticket?.tier === "golden") await applyGolden(world, account, board);
+  return { friends, board, ticket, excluded };
 }
 
+/**
+ * Counts each friend the board shows with a site cleared whose mailbox and device are their own: neither the
+ * inviter's nor a counted friend's. Friends counted before keep their count and claim their identity first; the rest
+ * are taken oldest first. A friend whose device is not known yet waits for it. Answers the friends excluded as
+ * someone else's.
+ */
 async function countFriends(
   world: ReferralWorld,
   campaign: CampaignKey,
+  inviter: string,
   friends: ReferredFriend[],
-  board: Map<string, CampaignStanding>,
+  board: Board,
   now: number,
 ) {
-  const cleared = await Promise.all(
-    friends
-      .filter((friend) => friend.countedAt === null)
-      .map(async (friend) => ({
-        friend: friend.friend,
-        cleared: (board.get(accountKey(await world.accountOf(friend.friend)))?.sitesCleared ?? 0) >= 1,
-      })),
-  );
-  const newlyCounted = cleared.filter((row) => row.cleared).map((row) => row.friend);
-  await createCampaignReferralStore(world.db).markCounted(campaign, newlyCounted, now);
-  return friends.filter((friend) => friend.countedAt !== null).length + newlyCounted.length;
+  const referrals = createCampaignReferralStore(world.db);
+  const own = await referrals.identityOf(inviter);
+  const mailboxes = new Set<string | null>([own.mailbox, ...friends.filter(isCounted).map((friend) => friend.mailbox)]);
+  const devices = new Set<string | null>([
+    ...own.devices,
+    ...friends.filter(isCounted).map((friend) => friend.deviceKey),
+  ]);
+  const excluded = new Set<string>();
+  const newlyCounted: { friend: string; deviceKey: string }[] = [];
+  for (const friend of friends.filter((candidate) => !isCounted(candidate))) {
+    if (!(await hasClearedSite(world, friend, board))) continue;
+    const deviceKey = friend.deviceKey ?? (await referrals.identityOf(friend.friend)).devices[0];
+    if (deviceKey === undefined) continue;
+    if (mailboxes.has(friend.mailbox) || devices.has(deviceKey)) {
+      excluded.add(friend.friend);
+      continue;
+    }
+    mailboxes.add(friend.mailbox);
+    devices.add(deviceKey);
+    newlyCounted.push({ friend: friend.friend, deviceKey });
+  }
+  await referrals.markCounted(campaign, newlyCounted, now);
+  return excluded;
 }
 
-/** The inviter's ticket after paying what `counted` friends earned; a held-Realm home earns nothing. */
+const isCounted = (friend: ReferredFriend) => friend.countedAt !== null;
+
+const hasClearedSite = async (world: ReferralWorld, friend: ReferredFriend, board: Board) =>
+  (board.get(accountKey(await world.accountOf(friend.friend)))?.sitesCleared ?? 0) >= 1;
+
+/**
+ * The inviter's ticket after paying what its counted friends earned, each grant one transaction with its mark: the
+ * link gone golden for its friends, then the inviter's own ticket, regular or golden, or its promotion. A held-Realm
+ * home earns its inviter nothing; its friends still take the golden link.
+ */
 async function rewardInviter(
   world: ReferralWorld,
   campaign: CampaignKey,
   inviter: string,
-  counted: number,
+  friends: ReferredFriend[],
   now: number,
 ) {
   const referrals = createCampaignReferralStore(world.db);
   const tickets = createCampaignTicketStore(world.db);
-  let ticket = await tickets.ticketOf(campaign, inviter);
-  const earnsTicket = counted >= 1 && ticket === null;
-  const earnsGolden = counted >= CAMPAIGNS[campaign].referral.goldenAt && ticket?.tier !== "golden";
-  if (!earnsTicket && !earnsGolden) return ticket;
-  const source = await world.homeSource(inviter, CAMPAIGNS[campaign].presets);
-  if (earnsTicket && source === "none") {
-    const { ticket: given, given: isNew } = await tickets.give(campaign, inviter, now);
-    if (isNew) await referrals.markEarned(campaign, inviter, "ticket", now);
-    ticket = given;
-  }
-  if (earnsGolden && ticket?.tier === "regular" && (source === "none" || source === "campaign")) {
-    if (await tickets.promote(campaign, inviter)) await referrals.markEarned(campaign, inviter, "golden", now);
-    ticket = await tickets.ticketOf(campaign, inviter);
-  }
-  return ticket;
+  const ticket = await tickets.ticketOf(campaign, inviter);
+  const counted = friends.filter(isCounted);
+  if (counted.length === 0) return ticket;
+  const { referral } = CAMPAIGNS[campaign];
+  const linkGolden = counted.length >= referral.goldenLinkAt;
+  const goldenEarned = linkGolden || counted.some((friend) => friend.tier === "golden");
+  const { goldenLinkAt } = await referrals.referrerFor(campaign, inviter);
+  const grants: D1PreparedStatement[] =
+    linkGolden && goldenLinkAt === null ? referrals.goldLink(campaign, inviter, now) : [];
+  const owesInviter = ticket === null || (goldenEarned && ticket.tier === "regular");
+  const source = owesInviter ? await world.homeSource(inviter, CAMPAIGNS[campaign].presets) : null;
+  if (ticket === null && source === "none")
+    grants.push(...referrals.giveInviterTicket(campaign, inviter, goldenEarned ? "golden" : "regular", now));
+  if (ticket?.tier === "regular" && goldenEarned && (source === "none" || source === "campaign"))
+    grants.push(...referrals.promoteInviter(campaign, inviter, now));
+  await referrals.grant(grants);
+  return tickets.ticketOf(campaign, inviter);
 }
 
 /**
@@ -158,11 +222,11 @@ async function rewardInviter(
  * unreachable relay leaves it for the next read. A home not founded yet, or founded without a ticket, takes the golden
  * ticket's tier when it founds or attaches it, with no call.
  */
-async function applyGolden(world: ReferralWorld, inviter: string, board: Map<string, CampaignStanding>) {
-  const home = board.get(accountKey(await world.accountOf(inviter)));
+async function applyGolden(world: ReferralWorld, account: string, board: Board) {
+  const home = board.get(accountKey(await world.accountOf(account)));
   if (home?.tier !== 1) return;
   const response = await world
-    .upgradeHome({ chainId: home.chainId, gameId: home.gameId, realmsId: inviter })
+    .upgradeHome({ chainId: home.chainId, gameId: home.gameId, realmsId: account })
     .catch(() => json({ error: "value_relay_unreachable" }, 503));
   if (response.ok) return;
   const { error } = (await response.json().catch(() => ({}))) as { error?: string };

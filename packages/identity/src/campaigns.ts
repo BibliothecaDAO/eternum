@@ -3,8 +3,8 @@
  * Realm they hold. Each printed code is good for one account; the identity Worker keeps the codes hashed with the tier
  * each gives (apps/realms/server/campaigns.ts), so only it knows which are golden. A code every flyer shares draws one of
  * the unspent printed codes at random for each account that brings it, and a regular ticket once none is left. A friend's
- * referral link gives a regular ticket, with no printed code, and its inviter earns a ticket, then golden, as friends
- * found and clear a site. An account holds one ticket per campaign, and the relay registers it onchain, under the
+ * referral link gives a ticket with no printed code, golden by chance, and its inviter earns a ticket, then golden, as
+ * friends found and clear a site. An account holds one ticket per campaign, and the relay registers it onchain, under the
  * campaign's key as a short string, when that account founds its home in one of the campaign's games. Nothing else gives
  * a ticket: posters and promotion link to the game itself, where any account founds an ordinary home.
  *
@@ -25,8 +25,12 @@ export const CAMPAIGNS = {
     redeemUntil: Date.UTC(2026, 10, 6, 18, 0) / 1000,
     /** How many of its printed flyers are golden: the flyer print run's count, read by the code generator only. */
     printedGolden: 15,
-    /** Counted friends (founded a realm and cleared a site) that turn an inviter's Devcon ticket golden. */
-    referral: { goldenAt: 3 },
+    /**
+     * Golden through friends: each friend's ticket is golden at these odds, drawn as the link gives it, and a golden
+     * friend who counts (founded a realm, cleared a site) turns the inviter golden; at `goldenLinkAt` counted friends the
+     * link goes golden: the inviter, every friend on it and every later ticket from it.
+     */
+    referral: { goldenOdds: 0.1, goldenLinkAt: 10 },
   },
 } as const satisfies Record<string, Campaign>;
 
@@ -37,7 +41,7 @@ interface Campaign {
   startsAt: number;
   redeemUntil: number;
   printedGolden: number;
-  referral: { goldenAt: number };
+  referral: { goldenOdds: number; goldenLinkAt: number };
 }
 
 export type CampaignKey = keyof typeof CAMPAIGNS;

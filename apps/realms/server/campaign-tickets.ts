@@ -2,7 +2,8 @@ import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
 import { CampaignTicketStore } from "./campaign-ticket-store";
-import { createCampaignReferralStore } from "./campaign-referral-store";
+import { createCampaignReferralStore, mailboxOf } from "./campaign-referral-store";
+import { drawFriendTier } from "./campaign-referrals";
 import { CAMPAIGNS, isCampaignKey, type CampaignKey } from "@realms-world/identity";
 
 import { campaignCodeHash, readCampaignCode } from "./campaigns";
@@ -13,8 +14,8 @@ const REDEEM_BYTES = 1024;
 /**
  * POST /api/campaigns/redeem: the signed-in account takes its ticket to a campaign from the code its flyer carried, or
  * from a friend's referral link: a printed flyer's own ticket; for a code every flyer shares, one of the campaign's
- * unspent printed tickets drawn at random, or a regular one once none is left; for a referral link, a regular ticket,
- * recording the friend for their inviter. It answers the ticket's tier, to this account only; repeating it answers the
+ * unspent printed tickets drawn at random, or a regular one once none is left; for a referral link, a ticket golden by
+ * the campaign's odds (always, once the link is golden), recording the friend for their inviter. It answers the ticket's tier, to this account only; repeating it answers the
  * same ticket, so a reload or a retry never shows another outcome, with a code or without. Without a code it first
  * settles what the account's own friends earned it, so a ticket they earned is there to found or attach with. A code
  * another account already took, or one no flyer carries, gives none; an account whose home already has a source in the
@@ -124,7 +125,13 @@ function redeemTicket(
     if (asked.kind === "held") return json({ error: "invalid_redemption" }, 400);
     return yield* asked.kind === "flyer"
       ? openFlyerTicket(realmsId, { campaign: asked.campaign, code: asked.code }, now, hasSource)
-      : openReferralTicket(db, realmsId, { campaign: asked.campaign, referral: asked.code }, now, hasSource);
+      : openReferralTicket(
+          db,
+          { realmsId, email: session.user.email, sessionId: session.session.id },
+          { campaign: asked.campaign, referral: asked.code },
+          now,
+          hasSource,
+        );
   });
 }
 
@@ -154,13 +161,13 @@ function openFlyerTicket(
 }
 
 /**
- * A friend's regular ticket from their inviter's referral link, given whatever the printed codes, and recorded for the
- * inviter only when this link gave it. Refused for the inviter's own link, and, as a flyer is, while the account
- * already has a home source in the campaign's running game.
+ * A friend's ticket from their inviter's referral link, given whatever the printed codes, and recorded for the inviter
+ * in the same write, with the mailbox and device the friend took it with, only when this link gave it. Refused for the
+ * inviter's own link, and, as a flyer is, while the account already has a home source in the campaign's running game.
  */
 function openReferralTicket(
   db: D1Database,
-  realmsId: string,
+  friend: { realmsId: string; email: string; sessionId: string },
   { campaign, referral }: { campaign: CampaignKey; referral: string },
   now: number,
   hasSource: CampaignHomeSource,
@@ -169,11 +176,16 @@ function openReferralTicket(
     const referrals = createCampaignReferralStore(db);
     const inviter = yield* campaignStorage(() => referrals.inviterOf(campaign, referral));
     if (!inviter) return json({ error: "referral_unknown" }, 404);
-    if (inviter.referrer === realmsId) return json({ error: "self_referral" }, 409);
-    const refusal = yield* sourceRefusal(realmsId, campaign, hasSource);
+    if (inviter.referrer === friend.realmsId) return json({ error: "self_referral" }, 409);
+    const refusal = yield* sourceRefusal(friend.realmsId, campaign, hasSource);
     if (refusal) return refusal;
-    const { ticket, given } = yield* (yield* CampaignTicketStore).giveFriend(campaign, realmsId, now);
-    if (given) yield* campaignStorage(() => referrals.record(campaign, realmsId, inviter.referrer, now));
+    const deviceKey = yield* campaignStorage(() => referrals.deviceOfSession(friend.sessionId));
+    const identity = { realmsId: friend.realmsId, mailbox: mailboxOf(friend.email), deviceKey };
+    const given = yield* campaignStorage(() =>
+      referrals.giveFriendTicket(campaign, identity, inviter.referrer, drawFriendTier(campaign), now),
+    );
+    const ticket = given ?? (yield* (yield* CampaignTicketStore).read(campaign, friend.realmsId));
+    if (!ticket) return json({ error: "campaigns_unavailable" }, 503);
     return json({ campaign: ticket.campaign, tier: ticket.tier });
   });
 }

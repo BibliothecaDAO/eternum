@@ -1384,13 +1384,25 @@ describe("identity Worker", () => {
     /** Homes founded in the referral shard's Devcon game, by account: their source and the season board's view of them. */
     const founded = new Map<string, { source: "free" | "realm" | "campaign"; sites: number; tier: number | null }>();
     let boardAnswers = true;
+    /** The next tiers referral links draw, oldest first; regular once none is queued. */
+    const draws: ("regular" | "golden")[] = [];
+    const getRandomValues = crypto.getRandomValues.bind(crypto);
 
     beforeAll(async () => {
       await env.DB.prepare(`INSERT INTO shards (url, chainId, status, addedAt) VALUES (?, '0xd5', 'active', ?)`)
         .bind(shard, Date.now())
         .run();
+      // A link's draw reads one 32-bit value; everything else keeps its own randomness.
+      vi.spyOn(crypto, "getRandomValues").mockImplementation(<T extends ArrayBufferView | null>(array: T): T => {
+        if (array instanceof Uint32Array && array.length === 1) {
+          array[0] = draws.shift() === "golden" ? 0 : 0xffffffff;
+          return array;
+        }
+        return getRandomValues(array as never) as T;
+      });
     });
     afterAll(async () => {
+      vi.mocked(crypto.getRandomValues).mockRestore();
       await env.DB.prepare("UPDATE shards SET status = 'retired' WHERE url = ?").bind(shard).run();
     });
 
@@ -1447,12 +1459,27 @@ describe("identity Worker", () => {
       });
     };
 
-    const player = async (name: string) => {
+    let devices = 0;
+    /**
+     * A signed-in player. By default each signs in with their own mailbox and on their own device, as the guardian
+     * records it for the session; `email` and `device` make one share another's, and `device: null` approves none yet.
+     */
+    const player = async (name: string, { email, device }: { email?: string; device?: string | null } = {}) => {
       const browser = createBrowser();
-      await signInWithCode(browser, `${name}@realms.test`);
-      const realmsId = (await browser.session())!.user.realmsId;
+      await signInWithCode(browser, email ?? `${name}@realms.test`);
+      const session = (await browser.session())!;
+      const realmsId = session.user.realmsId;
       await heraldsAnswerFor(realmsId, { [shard]: false });
       const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
+      const onDevice = async (deviceKey: string) =>
+        void (await env.DB.prepare(
+          `INSERT INTO "device_sessions" ("realmsId", "deviceKey", "sessionId")
+           SELECT ?, ?, "id" FROM "session" WHERE "userId" = ? ORDER BY "createdAt" DESC LIMIT 1`,
+        )
+          .bind(realmsId, deviceKey, session.user.id)
+          .run());
+      const own = device === undefined ? `0x${(0xd0000 + ++devices).toString(16)}` : device;
+      if (own !== null) await onDevice(own);
       const call = async (path: string, body?: unknown) => {
         await publishHeralds();
         const response = await browser.request(path, body === undefined ? {} : { body });
@@ -1461,6 +1488,8 @@ describe("identity Worker", () => {
       return {
         browser,
         realmsId,
+        device: own,
+        onDevice,
         redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
         referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
         code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
@@ -1471,23 +1500,57 @@ describe("identity Worker", () => {
     };
     type Player = Awaited<ReturnType<typeof player>>;
     const ticket = (tier: string) => [200, { campaign, tier }];
-    const answer = (home: string, friends: string[], earned: { ticket?: boolean; golden?: boolean } = {}) => ({
-      code: expect.stringMatching(/^[A-HJ-NP-Z2-9]{8}$/),
-      home,
-      friends: friends.map((state) => ({ name: null, state })),
-      earned: { ticket: false, golden: false, ...earned },
-    });
-    /** Friends that each take a ticket through the inviter's link, found a Devcon home and clear a site. */
-    const countedFriends = async (inviter: Player, names: string[]) => {
+    /** A friend as the inviter's panel lists them: their state, and whether their ticket is golden. */
+    type Listed = string | { state: string; golden: true };
+    const answer = (
+      home: string,
+      friends: Listed[],
+      {
+        tier = null,
+        goldenPending = false,
+        linkGolden = false,
+        earned = {},
+      }: {
+        tier?: string | null;
+        goldenPending?: boolean;
+        linkGolden?: boolean;
+        earned?: { ticket?: boolean; golden?: boolean };
+      } = {},
+    ) => {
+      const listed = friends.map((friend) =>
+        typeof friend === "string" ? { name: null, state: friend, golden: false } : { name: null, ...friend },
+      );
+      return {
+        code: expect.stringMatching(/^[A-HJ-NP-Z2-9]{8}$/),
+        home,
+        tier,
+        goldenPending,
+        link: { counted: listed.filter(({ state }) => state === "counted").length, golden: linkGolden },
+        friends: listed,
+        earned: { ticket: false, golden: false, ...earned },
+      };
+    };
+    /** Friends that each take a ticket through the inviter's link, at the tier drawn, found a Devcon home and clear a site. */
+    const countedFriends = async (inviter: Player, names: string[], tier: "regular" | "golden" = "regular") => {
       const code = await inviter.code();
+      const friends: Player[] = [];
       for (const name of names) {
         const friend = await player(name);
-        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
-        friend.found("campaign", 1);
+        draws.push(tier);
+        expect(await friend.redeem({ referral: code })).toEqual(ticket(tier));
+        friend.found("campaign", 1, tier === "golden" ? 2 : 1);
+        friends.push(friend);
       }
+      return friends;
     };
+    const referralRows = async (friend: Player) =>
+      (
+        await env.DB.prepare('SELECT "referrer" FROM "campaign_referrals" WHERE "friend" = ?')
+          .bind(friend.realmsId)
+          .all<{ referrer: string }>()
+      ).results.map(({ referrer }) => referrer);
 
-    it("gives a friend a regular ticket from their inviter's link, from no printed code, and records them once", async () => {
+    it("gives a friend a ticket from their inviter's link, from no printed code, and records them once", async () => {
       const inviter = await player("ref-inviter");
       const [status, first] = await inviter.referral();
       expect([status, first]).toEqual([200, answer("free", [])]);
@@ -1500,6 +1563,7 @@ describe("identity Worker", () => {
         .bind(friend.realmsId)
         .first<{ code_hash: string | null }>();
       expect(given).toEqual({ code_hash: null });
+      expect(await referralRows(friend)).toEqual([inviter.realmsId]);
       expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
 
       // The inviter's own link, a second link for a friend already holding a ticket, a friend whose home has a source,
@@ -1508,6 +1572,7 @@ describe("identity Worker", () => {
       const other = await player("ref-other");
       expect(await friend.redeem({ referral: await other.code() })).toEqual(ticket("regular"));
       expect((await other.referral())[1]).toEqual(answer("free", []));
+      expect(await referralRows(friend)).toEqual([inviter.realmsId]);
       const held = await player("ref-held-friend");
       held.found("realm");
       expect(await held.redeem({ referral: first.code })).toEqual([409, { error: "realm_founded" }]);
@@ -1519,6 +1584,30 @@ describe("identity Worker", () => {
       expect((await inviter.referral())[1]).toEqual(answer("free", ["signed"]));
       const signedOut = await createBrowser().request(`/api/campaigns/referral?campaign=${campaign}`);
       expect(signedOut.status).toBe(401);
+    });
+
+    it("gives one ticket and records one inviter when two links, or a link and a flyer, race for one friend", async () => {
+      const [first, second] = [await player("ref-race-a"), await player("ref-race-b")];
+      const [a, b] = [await first.code(), await second.code()];
+      const friend = await player("ref-race-friend");
+      const [one, two] = await Promise.all([friend.redeem({ referral: a }), friend.redeem({ referral: b })]);
+      expect(one).toEqual(ticket("regular"));
+      expect(two).toEqual(ticket("regular"));
+      expect(await referralRows(friend)).toHaveLength(1);
+      expect([first.realmsId, second.realmsId]).toContain((await referralRows(friend))[0]);
+
+      const flyer = await player("ref-race-flyer");
+      await env.DB.prepare(`INSERT INTO "campaign_codes" ("campaign", "code_hash", "tier") VALUES (?, ?, 'regular')`)
+        .bind(campaign, await campaignCodeHash(campaign, "R4CE7FLY"))
+        .run();
+      const [byFlyer, byLink] = await Promise.all([flyer.redeem({ code: "R4CE7FLY" }), flyer.redeem({ referral: a })]);
+      expect(byFlyer).toEqual(ticket("regular"));
+      expect(byLink).toEqual(ticket("regular"));
+      const won = await env.DB.prepare('SELECT "code_hash" FROM "campaign_tickets" WHERE "owner" = ?')
+        .bind(flyer.realmsId)
+        .first<{ code_hash: string | null }>();
+      // The link records its friend only when its own write gave the ticket.
+      expect(await referralRows(flyer)).toEqual(won!.code_hash === null ? [first.realmsId] : []);
     });
 
     it("names the inviter to a friend's landing by their chosen name only", async () => {
@@ -1564,7 +1653,7 @@ describe("identity Worker", () => {
       }
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
       const [one, two] = await Promise.all([inviter.referral(), inviter.referral()]);
-      expect(one[1]).toEqual(answer("devcon", ["counted"], { ticket: true }));
+      expect(one[1]).toEqual(answer("ticket", ["counted"], { tier: "regular", earned: { ticket: true } }));
       expect(two[1]).toEqual(one[1]);
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "regular" });
       expect(await inviter.redeem()).toEqual(ticket("regular"));
@@ -1578,52 +1667,156 @@ describe("identity Worker", () => {
       expect(await inviter.redeem()).toEqual(ticket("regular"));
     });
 
+    it("counts one person once: a friend sharing a mailbox or device with the inviter or a counted friend is excluded", async () => {
+      const inviter = await player("ref-alts", { email: "Ref.Alts@gmail.com" });
+      inviter.found("free");
+      const code = await inviter.code();
+      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+        const friend = await player(name, options);
+        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
+        friend.found("campaign", 1);
+        return friend;
+      };
+      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own device: neither counts.
+      await join("ref-alts-mail", { email: "refalts+two@googlemail.com" });
+      await join("ref-alts-device", { device: inviter.device });
+      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded", "excluded"]));
+      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
+      // A friend of their own counts; another on that friend's device does not; one with no device yet waits for it.
+      const real = await join("ref-alts-real", {});
+      await join("ref-alts-copy", { device: real.device });
+      const later = await join("ref-alts-later", { device: null });
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", ["excluded", "excluded", "counted", "excluded", "founded"], {
+          tier: "regular",
+          earned: { ticket: true },
+        }),
+      );
+      await later.onDevice("0xfeed");
+      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
+        "excluded",
+        "excluded",
+        "counted",
+        "excluded",
+        "counted",
+      ]);
+    });
+
     it("gives a held-Realm inviter nothing, while their friends still get tickets", async () => {
       const inviter = await player("ref-held-inviter");
       inviter.found("realm");
-      await countedFriends(inviter, ["ref-held-a", "ref-held-b", "ref-held-c"]);
-      expect((await inviter.referral())[1]).toEqual(answer("held", ["counted", "counted", "counted"]));
+      await countedFriends(inviter, ["ref-held-a", "ref-held-b"]);
+      await countedFriends(inviter, ["ref-held-c"], "golden");
+      expect((await inviter.referral())[1]).toEqual(
+        answer("held", ["counted", "counted", { state: "counted", golden: true }]),
+      );
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
       expect(relay).not.toHaveBeenCalled();
     });
 
-    it("turns a Devcon home golden at three counted friends, every friend counting, and asks the relay until it is", async () => {
-      const inviter = await player("ref-golden");
+    it("draws a friend's ticket golden by chance, and a golden friend who counts gives a free home a golden ticket", async () => {
+      const inviter = await player("ref-drop-free");
       inviter.found("free");
-      await countedFriends(inviter, ["ref-golden-a"]);
-      expect((await inviter.referral())[1]).toEqual(answer("devcon", ["counted"], { ticket: true }));
+      const code = await inviter.code();
+      const friend = await player("ref-drop-friend");
+      draws.push("golden");
+      expect(await friend.redeem({ referral: code })).toEqual(ticket("golden"));
+      expect(await friend.redeem()).toEqual(ticket("golden"));
+      expect((await inviter.referral())[1]).toEqual(answer("free", [{ state: "signed", golden: true }]));
+      friend.found("campaign", 1, 2);
+      relay.mockClear();
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", [{ state: "counted", golden: true }], {
+          tier: "golden",
+          earned: { ticket: true, golden: true },
+        }),
+      );
+      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
+      expect(relay).not.toHaveBeenCalled();
+    });
+
+    it("upgrades a regular Devcon home through the relay, and says golden only once the board shows it", async () => {
+      const inviter = await player("ref-drop-home");
+      inviter.found("free");
+      await countedFriends(inviter, ["ref-drop-home-a"]);
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", ["counted"], { tier: "regular", earned: { ticket: true } }),
+      );
       // The inviter adds the earned ticket to their free home: the board shows a regular Devcon home.
       inviter.found("campaign", 0, 1);
-      await countedFriends(inviter, ["ref-golden-b", "ref-golden-c"]);
+      expect((await inviter.referral())[1]).toEqual(
+        answer("devcon", ["counted"], { tier: "regular", earned: { ticket: true } }),
+      );
+      await countedFriends(inviter, ["ref-drop-home-b"], "golden");
       relay.mockClear();
       relay.mockResolvedValueOnce(Response.json({ error: "upgrade_requires_release_8" }, { status: 409 }));
-      const golden = answer("golden", ["counted", "counted", "counted"], { ticket: true, golden: true });
-      expect((await inviter.referral())[1]).toEqual(golden);
+      const pending = answer("devcon", ["counted", { state: "counted", golden: true }], {
+        tier: "golden",
+        goldenPending: true,
+        earned: { ticket: true, golden: true },
+      });
+      expect((await inviter.referral())[1]).toEqual(pending);
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
       expect(relay).toHaveBeenCalledTimes(1);
       const [url, init] = relay.mock.calls[0]!;
       expect(new URL(String(url)).pathname).toBe("/api/value/operator/campaign-upgrade");
       expect(new Headers(init!.headers).get("authorization")).toBe(`Bearer ${OPERATOR_TOKEN}`);
       expect(JSON.parse(String(init!.body))).toEqual({ chainId: "0xd5", gameId: 41, realmsId: inviter.realmsId });
-      // Refused for now, or unreachable: the next read asks again. Once the board shows the home golden, no read asks.
+      // Refused, unreachable, or accepted but not on the board yet: still pending, and the next read asks again.
       relay.mockRejectedValueOnce(new Error("relay unreachable"));
-      expect((await inviter.referral())[1]).toEqual(golden);
-      expect((await inviter.referral())[1]).toEqual(golden);
+      expect((await inviter.referral())[1]).toEqual(pending);
+      expect((await inviter.referral())[1]).toEqual(pending);
       expect(relay).toHaveBeenCalledTimes(3);
+      // Once the board shows the home golden, it is golden and no read asks.
       inviter.found("campaign", 0, 2);
+      const golden = { ...pending, home: "golden", goldenPending: false };
       expect((await inviter.referral())[1]).toEqual(golden);
       expect(await inviter.redeem()).toEqual(ticket("golden"));
       expect(relay).toHaveBeenCalledTimes(3);
     });
 
-    it("gives an inviter not yet founded a golden ticket at three counted friends, with no relay call", async () => {
-      const inviter = await player("ref-unfounded");
-      await countedFriends(inviter, ["ref-unfounded-a", "ref-unfounded-b", "ref-unfounded-c"]);
+    it("turns the link golden at ten counted friends: the inviter, every friend before and after, each home upgraded on its own read", async () => {
+      const inviter = await player("ref-link");
+      inviter.found("campaign", 0, 1);
+      await env.DB.prepare(
+        `INSERT INTO "campaign_tickets" ("campaign", "owner", "code_hash", "tier", "redeemed_at") VALUES (?, ?, NULL, 'regular', 1)`,
+      )
+        .bind(campaign, inviter.realmsId)
+        .run();
+      const code = await inviter.code();
+      const early = await player("ref-link-signed");
+      expect(await early.redeem({ referral: code })).toEqual(ticket("regular"));
+      const names = Array.from({ length: CAMPAIGNS[campaign].referral.goldenLinkAt - 1 }, (_, i) => `ref-link-${i}`);
+      const friends = await countedFriends(inviter, names);
+      const nine = (await inviter.referral())[1];
+      expect(nine.link).toEqual({ counted: 9, golden: false });
+      expect(nine.tier).toBe("regular");
+      const [last] = await countedFriends(inviter, ["ref-link-tenth"]);
       relay.mockClear();
-      const golden = answer("golden", ["counted", "counted", "counted"], { ticket: true, golden: true });
-      expect((await inviter.referral())[1]).toEqual(golden);
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toEqual({ campaign, tier: "golden" });
-      expect(relay).not.toHaveBeenCalled();
+      const linked = (await inviter.referral())[1];
+      expect(linked).toMatchObject({
+        home: "devcon",
+        tier: "golden",
+        goldenPending: true,
+        link: { counted: 10, golden: true },
+        earned: { golden: true },
+      });
+      expect(linked.friends.every(({ golden }: { golden: boolean }) => golden)).toBe(true);
+      expect(relay).toHaveBeenCalledTimes(1);
+      // Every friend's ticket is golden, counted or not; a founded friend's home upgrades on that friend's own read.
+      for (const friend of [early, last!, ...friends])
+        expect(await campaignTicketFor(env.DB, friend.realmsId, 6)).toEqual({ campaign, tier: "golden" });
+      relay.mockClear();
+      expect(await last!.redeem()).toEqual(ticket("golden"));
+      expect(relay).toHaveBeenCalledTimes(1);
+      expect(JSON.parse(String(relay.mock.calls[0]![1]!.body))).toEqual({
+        chainId: "0xd5",
+        gameId: 41,
+        realmsId: last!.realmsId,
+      });
+      // A ticket the link gives later is golden, whatever the draw.
+      const later = await player("ref-link-later");
+      expect(await later.redeem({ referral: code })).toEqual(ticket("golden"));
     });
 
     it("gives no referral ticket and counts no friend after the season", async () => {

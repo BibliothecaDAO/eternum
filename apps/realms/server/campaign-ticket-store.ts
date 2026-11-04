@@ -80,7 +80,7 @@ export function createCampaignTicketStore(db: D1Database) {
       .bind(owner, now, campaign)
       .first<CampaignTicket>();
 
-  /** A regular ticket from no printed code: a friend's link, an inviter's reward, or a draw once the printed codes are spent. */
+  /** A regular ticket from no printed code: a draw once the printed codes are spent. */
   const insertGivenTicket = (campaign: CampaignKey, owner: string, now: number) =>
     db
       .prepare(
@@ -97,25 +97,6 @@ export function createCampaignTicketStore(db: D1Database) {
     if (!ticket) throw new Error("campaign_ticket_missing");
     return ticket;
   };
-
-  /**
-   * The account's regular ticket, given whatever the printed codes: `given` is false when it already held one, which is
-   * answered instead. Safe to repeat.
-   */
-  const give = async (campaign: CampaignKey, owner: string, now: number) => {
-    const given = await insertGivenTicket(campaign, owner, now);
-    return { ticket: given ?? (await heldTicket(campaign, owner)), given: given !== null };
-  };
-
-  /** Turns the account's regular ticket golden; false when it holds none, or it is golden already. Safe to repeat. */
-  const promote = async (campaign: CampaignKey, owner: string) =>
-    (await db
-      .prepare(
-        `UPDATE "campaign_tickets" SET "tier" = 'golden'
-         WHERE "campaign" = ? AND "owner" = ? AND "tier" = 'regular' RETURNING "owner"`,
-      )
-      .bind(campaign, owner)
-      .first()) !== null;
 
   const read = (campaign: CampaignKey, owner: string) =>
     Effect.tryPromise({
@@ -148,17 +129,12 @@ export function createCampaignTicketStore(db: D1Database) {
   const draw = (campaign: CampaignKey, owner: string, now: number) =>
     Effect.tryPromise({
       try: async (): Promise<CampaignTicket> =>
-        (await insertDrawnTicket(campaign, owner, now)) ?? (await give(campaign, owner, now)).ticket,
+        (await insertDrawnTicket(campaign, owner, now)) ??
+        (await insertGivenTicket(campaign, owner, now)) ??
+        (await heldTicket(campaign, owner)),
       catch: (cause) => new CampaignStorageError({ cause }),
     });
-
-  /** A friend's ticket from a referral link: regular, from no printed code; `given` is false when one was held. */
-  const giveFriend = (campaign: CampaignKey, owner: string, now: number) =>
-    Effect.tryPromise({
-      try: () => give(campaign, owner, now),
-      catch: (cause) => new CampaignStorageError({ cause }),
-    });
-  return { ticketOf, read, source, redeem, draw, giveFriend, give, promote };
+  return { ticketOf, read, source, redeem, draw };
 }
 
 class CampaignStorageError extends Data.TaggedError("CampaignStorageError")<{ readonly cause: unknown }> {}

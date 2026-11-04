@@ -119,11 +119,23 @@ export type CampaignOpening = { code: string } | { referral: string };
  * (a ticket for a free home, golden for a Devcon one, nothing more), each friend's public name and progress, and what
  * they earned it so far.
  */
+/**
+ * The inviter's referral link as identity settles it. `home`: no ticket (free), a ticket not on a home yet (ticket), a
+ * founded Devcon home the confirmed board shows regular (devcon) or golden (golden), or a claim from elsewhere (held).
+ * `goldenPending`: golden earned on a Devcon home the board does not show golden yet.
+ */
 const campaignReferralSchema = Schema.Struct({
   code: Schema.String,
-  home: Schema.Literals(["free", "devcon", "golden", "held"]),
+  home: Schema.Literals(["free", "ticket", "devcon", "golden", "held"]),
+  tier: Schema.NullOr(Schema.Literals(TICKET_TIERS)),
+  goldenPending: Schema.Boolean,
+  link: Schema.Struct({ counted: Schema.Number, golden: Schema.Boolean }),
   friends: Schema.Array(
-    Schema.Struct({ name: Schema.NullOr(Schema.String), state: Schema.Literals(["signed", "founded", "counted"]) }),
+    Schema.Struct({
+      name: Schema.NullOr(Schema.String),
+      state: Schema.Literals(["signed", "founded", "counted", "excluded"]),
+      golden: Schema.Boolean,
+    }),
   ),
   earned: Schema.Struct({ ticket: Schema.Boolean, golden: Schema.Boolean }),
 });
