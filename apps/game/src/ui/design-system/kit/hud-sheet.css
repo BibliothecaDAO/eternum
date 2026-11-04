@@ -1053,7 +1053,7 @@ span.ui-row__choose {
   display: none;
 }
 /* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
-@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+@media (orientation: landscape) and (max-width: 1023px) {
   .ui-sheet {
     inset-inline: auto;
     right: max(env(safe-area-inset-right), theme(spacing.2));

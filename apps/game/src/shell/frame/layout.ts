@@ -27,7 +27,7 @@ export const useLayout = (): Layout => useSyncExternalStore(subscribe, currentLa
  * a column at the other (owner, 22 October 2026: mobile direction A, sideways as C). Its CSS twin is the same query in
  * hud-sheet.css.
  */
-const SIDEWAYS_QUERY = "(orientation: landscape) and (max-height: 520px)";
+const SIDEWAYS_QUERY = "(orientation: landscape) and (max-width: 1023px)";
 
 const subscribeSideways = (onChange: () => void) => {
   const query = window.matchMedia(SIDEWAYS_QUERY);
