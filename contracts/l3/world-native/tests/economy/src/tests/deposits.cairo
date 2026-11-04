@@ -272,7 +272,11 @@ fn mixed_sweep_keeps_earned_release_pinned_until_applied() {
     assert_eq!(releases.game_release(game_id), 2);
     snforge_std::start_cheat_transaction_hash(d.games, 88205);
     let safe = ILedgerOperatorSafeDispatcher { contract_address: d.games };
-    assert_eq!(safe.sweep_lords(game_id, home).unwrap_err(), array!['earned release 2']);
+    // Earned library, administration library, then the Games contract each frame the failure.
+    assert_eq!(
+        safe.sweep_lords(game_id, home).unwrap_err(),
+        array!['earned release 2', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED', 'ENTRYPOINT_FAILED'],
+    );
     assert_eq!(entry.spend_lords(game_id, d.actor), SpendLords { available: 0, consumed: 0, swept: 40 });
     assert_eq!(entry.principal_withdrawal(game_id, d.actor).unwrap().amount, 40);
     assert!(
