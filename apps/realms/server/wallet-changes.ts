@@ -2,10 +2,21 @@ import type { AuthContext, User } from "better-auth";
 import { APIError } from "better-auth/api";
 import { Effect } from "effect";
 
+/** What a security notice is about: the payout wallet changed, or a recovery of the default wallet started. */
+type WalletNoticeKind = "payout" | "recovery";
+
+/** Sends one queued notice; its id is the provider's idempotency key, so a retry sends it once. */
+export type SendWalletNotice = (
+  email: string,
+  address: string | null,
+  id: string,
+  kind: WalletNoticeKind,
+) => Promise<void>;
+
 interface WalletChangeServices {
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
-  sendNotice(email: string, address: string | null, id: string): Promise<void>;
+  sendNotice: SendWalletNotice;
 }
 
 /**
@@ -25,15 +36,41 @@ export const changeWallet = (
 ) =>
   Effect.runPromise(
     Effect.gen(function* () {
-      if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
-      const verification = yield* Effect.promise(() =>
-        context.internalAdapter.findVerificationValue(`sign-in-otp-${user.email.toLowerCase()}`),
-      );
-      if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
-      yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });
+      const verification = yield* checkedCode(services, context, user, otp);
       yield* writeAndNotify(services, user, address, { kind: "code", verification }, "INVALID_OTP", withChange);
     }),
   );
+
+/**
+ * Spends the account's emailed code on a step that writes no wallet (a recovery's start): checked as a wallet change
+ * checks it, then deleted, so it vouches for one step only.
+ */
+export const spendSignInCode = (services: WalletChangeServices, context: AuthContext, user: User, otp: string) =>
+  Effect.runPromise(
+    Effect.gen(function* () {
+      const verification = yield* checkedCode(services, context, user, otp);
+      const deleted = yield* Effect.promise(() =>
+        services.db
+          .prepare("DELETE FROM verification WHERE id = ? AND value = ?")
+          .bind(verification.id, verification.value)
+          .run(),
+      );
+      if (deleted.meta.changes !== 1)
+        return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
+    }),
+  );
+
+/** The account's unspent emailed code, if `otp` is it; a verified email is required. */
+const checkedCode = (services: WalletChangeServices, context: AuthContext, user: User, otp: string) =>
+  Effect.gen(function* () {
+    if (!user.emailVerified) return yield* Effect.fail(new APIError("FORBIDDEN", { message: "email_not_verified" }));
+    const verification = yield* Effect.promise(() =>
+      context.internalAdapter.findVerificationValue(`sign-in-otp-${user.email.toLowerCase()}`),
+    );
+    if (!verification) return yield* Effect.fail(new APIError("BAD_REQUEST", { message: "INVALID_OTP" }));
+    yield* Effect.tryPromise({ try: () => services.checkCode(context, user.email, otp), catch: (error) => error });
+    return verification;
+  });
 
 /**
  * An account's first payout wallet, vouched for by a sign-in made minutes ago instead of a new code: written only while
@@ -120,12 +157,12 @@ export const deliverWalletNotices = (db: D1Database, send: WalletChangeServices[
   Effect.gen(function* () {
     const { results } = yield* Effect.promise(() =>
       db
-        .prepare("SELECT id, email, address FROM wallet_change_notices ORDER BY rowid LIMIT 50")
-        .all<{ id: string; email: string; address: string | null }>(),
+        .prepare("SELECT id, email, address, kind FROM wallet_change_notices ORDER BY rowid LIMIT 50")
+        .all<{ id: string; email: string; address: string | null; kind: WalletNoticeKind }>(),
     );
     for (const notice of results) {
       yield* Effect.tryPromise({
-        try: () => send(notice.email, notice.address, notice.id),
+        try: () => send(notice.email, notice.address, notice.id, notice.kind),
         catch: () => new Error("wallet_notice_delivery_failed"),
       }).pipe(
         Effect.flatMap(() =>

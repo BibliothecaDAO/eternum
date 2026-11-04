@@ -1,14 +1,25 @@
-import type { WalletExecution } from "@realms-world/guardian";
 import { SIGN_IN_CODE_LENGTH } from "@realms-world/identity";
-import { defaultWalletDeployment, defaultWalletSignature, passkeyPublicKeyX } from "@realms-world/identity/wallet";
+import { Effect } from "effect";
+import {
+  defaultWalletDeployment,
+  defaultWalletSignature,
+  passkeyPublicKeyX,
+  WALLET_RECOVERY,
+} from "@realms-world/identity/wallet";
 import type { AuthContext, BetterAuthPlugin, Session, User } from "better-auth";
 import { APIError, createAuthEndpoint, sessionMiddleware } from "better-auth/api";
-import { shortString } from "starknet";
+import { hash } from "starknet";
 import { z } from "zod";
 
+import { readDefaultWallet, walletDeploymentOf } from "./default-wallets";
+import type { DefaultWalletRow } from "./default-wallets";
 import type { IdentityEnv } from "./env";
-import type { Sponsor, SponsoredExecution, WalletDeployment } from "./sponsor";
-import { changeWallet, linkFirstWallet } from "./wallet-changes";
+import { SponsorRefusedError, walletExecutionOf } from "./sponsor";
+import type { Sponsor, SponsoredExecution } from "./sponsor";
+import { changeWallet, deliverWalletNotices, linkFirstWallet, spendSignInCode } from "./wallet-changes";
+import type { SendWalletNotice } from "./wallet-changes";
+import { RecoveryNotSentError, RecoveryUnderWayError, startRecovery } from "./wallet-recovery";
+import type { WalletEscape } from "@realms-world/identity/wallet";
 
 interface DefaultWalletOptions {
   /** The app's origin: passkeys are made on it, and the wallet's signer names it. */
@@ -17,11 +28,12 @@ interface DefaultWalletOptions {
   chainId: string;
   db: D1Database;
   guardian: Pick<IdentityEnv["GUARDIAN"], "publicKey" | "signWalletExecution">;
-  /** Null while the environment has no sponsor key: sending is refused, loudly, and nothing else changes. */
+  /** Null while the environment has no sponsor key: sending and recovery are refused, loudly; receiving still works. */
   sponsor: Sponsor | null;
   isDeployed(address: string): Promise<boolean>;
+  readEscape(address: string): Promise<WalletEscape>;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
-  sendNotice(email: string, address: string | null, id: string): Promise<void>;
+  sendNotice: SendWalletNotice;
 }
 
 /** Sponsored calls a default wallet makes a UTC day: each costs about 0.8 STRK (reports/default-wallet-2.md). */
@@ -30,15 +42,10 @@ export const SPONSORED_CALLS_PER_DAY = 3;
 const FRESH_SIGN_IN_MS = 10 * 60 * 1000;
 
 const base64Url = z.string().regex(/^[A-Za-z0-9_-]+$/);
-const CreateBody = z
-  .object({
-    passkey: z
-      .object({ credentialId: base64Url.max(1400), publicKey: base64Url.max(200) })
-      .strict()
-      .optional(),
-    otp: z.string().length(SIGN_IN_CODE_LENGTH).regex(/^\d+$/).optional(),
-  })
-  .strict();
+const Passkey = z.object({ credentialId: base64Url.max(1400), publicKey: base64Url.max(200) }).strict();
+const EmailCode = z.string().length(SIGN_IN_CODE_LENGTH).regex(/^\d+$/);
+const CreateBody = z.object({ passkey: Passkey.optional(), otp: EmailCode.optional() }).strict();
+const RecoveryBody = z.object({ passkey: Passkey, otp: EmailCode }).strict();
 const Felt = z.string().regex(/^0x[0-9a-fA-F]{1,64}$/);
 const BuildBody = z
   .object({
@@ -58,15 +65,7 @@ interface SignedInContext {
   context: AuthContext & { session: { session: Session; user: User & { realmsId?: string } } };
 }
 
-/** The default wallet as the client needs it to sign: its address and the passkey that owns it. */
-interface DefaultWalletRow {
-  address: string;
-  credential_id: string;
-  public_key_x: string;
-  origin: string;
-  rp_id: string;
-}
-
+/** The default wallet as the client needs it to sign: its address and the passkey that owns it now. */
 const viewOf = (row: DefaultWalletRow) => ({
   address: row.address,
   credentialId: row.credential_id,
@@ -75,11 +74,15 @@ const viewOf = (row: DefaultWalletRow) => ({
   rpId: row.rp_id,
 });
 
+const CANCEL_SELECTOR = BigInt(hash.getSelectorFromName(WALLET_RECOVERY.cancel));
+
 /**
  * The default wallet: a Ready 0.5 account owned by a passkey the player makes on this app, with the Realms guardian as
  * its guardian. Making it writes it as the account's payout wallet through the same rows a linked wallet uses. Sending
  * from it goes through the sponsor: the sponsor builds the outside execution, the passkey signs it in the browser, the
- * guardian co-signs it here (never a call to the wallet itself), and the sponsor submits it, within a daily cap.
+ * guardian co-signs it here, and the sponsor submits it, within a daily cap. A call to the wallet itself is refused,
+ * but for a recovery's cancel, which the owner's passkey signs; a lost passkey's recovery starts here with the emailed
+ * code (wallet-recovery.ts).
  */
 export const defaultWallet = (options: DefaultWalletOptions) => {
   const { origin, hostname: rpId } = new URL(options.origin);
@@ -89,13 +92,8 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
     if (!id) throw new APIError("INTERNAL_SERVER_ERROR", { message: "account_identity_missing" });
     return id;
   };
-  const read = (realmsId: string) =>
-    options.db
-      .prepare(`SELECT address, credential_id, public_key_x, origin, rp_id FROM default_wallets WHERE realms_id = ?`)
-      .bind(realmsId)
-      .first<DefaultWalletRow>();
   const requireWallet = async (ctx: SignedInContext) => {
-    const row = await read(realmsIdOf(ctx));
+    const row = await readDefaultWallet(options.db, realmsIdOf(ctx));
     if (!row) throw new APIError("NOT_FOUND", { message: "NO_DEFAULT_WALLET" });
     return row;
   };
@@ -104,29 +102,48 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
     console.error("default_wallet_sponsor_unavailable");
     throw new APIError("SERVICE_UNAVAILABLE", { message: "SPONSOR_UNAVAILABLE" });
   };
+  const pendingDeployment = async (row: DefaultWalletRow) =>
+    (await options.isDeployed(row.address)) ? null : walletDeploymentOf(row, await options.guardian.publicKey());
 
   /**
    * The account's wallet: the one it made before, or the one this passkey would make, with the row that records it. A
    * row is written only with the payout link (linkAsPayout), so a passkey refused there leaves nothing behind for a
    * later link to pick up.
    */
-  const walletFor = async (realmsId: string, passkey: z.infer<typeof CreateBody>["passkey"]) => {
-    const existing = await read(realmsId);
+  const walletFor = async (realmsId: string, passkey: z.infer<typeof Passkey> | undefined) => {
+    const existing = await readDefaultWallet(options.db, realmsId);
     if (existing) return { row: existing, record: [] };
     if (!passkey) throw new APIError("BAD_REQUEST", { message: "PASSKEY_REQUIRED" });
     const owner = { origin, rpId, publicKeyX: publicKeyXOf(passkey.publicKey) };
     const { address } = defaultWalletDeployment(owner, await options.guardian.publicKey(), realmsId);
-    const row = { address, credential_id: passkey.credentialId, public_key_x: owner.publicKeyX, origin, rp_id: rpId };
-    return { row, record: [recordWallet(realmsId, row)] };
+    const row: DefaultWalletRow = {
+      realms_id: realmsId,
+      address,
+      deploy_key_x: owner.publicKeyX,
+      credential_id: passkey.credentialId,
+      public_key_x: owner.publicKeyX,
+      origin,
+      rp_id: rpId,
+    };
+    return { row, record: [recordWallet(row)] };
   };
   /** The wallet's row, kept only once the account's payout wallet is this address, in the same transaction. */
-  const recordWallet = (realmsId: string, row: DefaultWalletRow) =>
+  const recordWallet = (row: DefaultWalletRow) =>
     options.db
       .prepare(
-        `INSERT INTO default_wallets (realms_id, address, credential_id, public_key_x, origin, rp_id, created_at)
-         SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7 WHERE EXISTS (SELECT 1 FROM "user" WHERE "realmsId" = ?1 AND address = ?2)`,
+        `INSERT INTO default_wallets (realms_id, address, deploy_key_x, credential_id, public_key_x, origin, rp_id, created_at)
+         SELECT ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8 WHERE EXISTS (SELECT 1 FROM "user" WHERE "realmsId" = ?1 AND address = ?2)`,
       )
-      .bind(realmsId, row.address, row.credential_id, row.public_key_x, row.origin, row.rp_id, Date.now());
+      .bind(
+        row.realms_id,
+        row.address,
+        row.deploy_key_x,
+        row.credential_id,
+        row.public_key_x,
+        row.origin,
+        row.rp_id,
+        Date.now(),
+      );
 
   /**
    * The wallet as the account's payout wallet, its row with it: a first wallet on a fresh sign-in, else with an emailed
@@ -146,15 +163,24 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
     await linkFirstWallet(options, user, address, record);
   };
 
-  /** The deployment the sponsor must make first, while the wallet has never been deployed. */
-  const pendingDeployment = async (realmsId: string, row: DefaultWalletRow): Promise<WalletDeployment | null> =>
-    (await options.isDeployed(row.address))
-      ? null
-      : defaultWalletDeployment(
-          { origin: row.origin, rpId: row.rp_id, publicKeyX: row.public_key_x },
-          await options.guardian.publicKey(),
-          realmsId,
-        );
+  /** A call to the wallet itself is refused, but a recovery's cancel alone, which the owner's passkey signs. */
+  const refuseSelfCalls = (row: DefaultWalletRow, calls: { to: string; selector: string }[]) => {
+    const selfCalls = calls.filter((call) => BigInt(call.to) === BigInt(row.address));
+    const [only] = calls;
+    const isCancel = calls.length === 1 && selfCalls.length === 1 && BigInt(only?.selector ?? 0) === CANCEL_SELECTOR;
+    if (selfCalls.length > 0 && !isCancel) throw new APIError("FORBIDDEN", { message: "WALLET_SELF_CALL" });
+  };
+
+  /** The account's signature: the owner's passkey, then the guardian's co-signature over the same execution. */
+  const cosigned = async (
+    row: DefaultWalletRow,
+    execution: NonNullable<ReturnType<typeof walletExecutionOf>>,
+    ownerSignature: string[],
+  ) =>
+    defaultWalletSignature(ownerSignature, {
+      publicKey: await options.guardian.publicKey(),
+      ...(await options.guardian.signWalletExecution(options.chainId, row.address, execution)),
+    });
 
   return {
     id: "default-wallet",
@@ -163,7 +189,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
         "/wallet/default",
         { method: "GET", use: [sessionMiddleware] },
         async (ctx) => {
-          const row = await read(realmsIdOf(ctx));
+          const row = await readDefaultWallet(options.db, realmsIdOf(ctx));
           return ctx.json({ wallet: row ? viewOf(row) : null });
         },
       ),
@@ -182,12 +208,18 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
         async (ctx) => {
           const row = await requireWallet(ctx);
           const sponsor = requireSponsor();
-          if (ctx.body.calls.some((call) => BigInt(call.contractAddress) === BigInt(row.address)))
-            throw new APIError("FORBIDDEN", { message: "WALLET_SELF_CALL" });
+          refuseSelfCalls(
+            row,
+            ctx.body.calls.map((call) => ({
+              to: call.contractAddress,
+              selector: hash.getSelectorFromName(call.entrypoint),
+            })),
+          );
           if ((await sponsoredToday(options.db, realmsIdOf(ctx))) >= SPONSORED_CALLS_PER_DAY)
             throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
-          const deployment = await pendingDeployment(realmsIdOf(ctx), row);
-          return ctx.json({ typedData: await sponsor.build(row.address, ctx.body.calls, deployment) });
+          return ctx.json({
+            typedData: await sponsor.build(row.address, ctx.body.calls, await pendingDeployment(row)),
+          });
         },
       ),
       executeDefaultWalletCall: createAuthEndpoint(
@@ -199,20 +231,47 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
           const sponsor = requireSponsor();
           const typedData = ctx.body.typedData as unknown as SponsoredExecution;
           const execution = walletExecutionOf(typedData, options.chainId);
-          if (!(await reserveSponsoredCall(options.db, realmsId)))
+          if (!execution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
+          refuseSelfCalls(row, execution.calls);
+          if (!(await reserveExecution(options.db, realmsId, execution.nonce)))
             throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
+          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch(async (error: unknown) => {
+            await releaseExecution(options.db, realmsId, execution.nonce);
+            throw refused("default_wallet_cosign_failed", error);
+          });
           try {
-            const guardian = await options.guardian.signWalletExecution(options.chainId, row.address, execution);
-            const signature = defaultWalletSignature(ctx.body.ownerSignature, {
-              publicKey: await options.guardian.publicKey(),
-              ...guardian,
+            return ctx.json({
+              transactionHash: await sponsor.execute(row.address, typedData, signature, await pendingDeployment(row)),
             });
-            const deployment = await pendingDeployment(realmsId, row);
-            return ctx.json({ transactionHash: await sponsor.execute(row.address, typedData, signature, deployment) });
           } catch (error) {
-            await releaseSponsoredCall(options.db, realmsId);
-            console.error("default_wallet_execute_failed", { error: error instanceof Error ? error.message : error });
-            throw new APIError("BAD_GATEWAY", { message: "SPONSOR_REFUSED" });
+            if (!(error instanceof SponsorRefusedError)) throw uncertain(error);
+            await releaseExecution(options.db, realmsId, execution.nonce);
+            throw refused("default_wallet_execute_refused", error);
+          }
+        },
+      ),
+      startWalletRecovery: createAuthEndpoint(
+        "/wallet/default/recovery",
+        { method: "POST", body: RecoveryBody, use: [sessionMiddleware] },
+        async (ctx) => {
+          const row = await requireWallet(ctx);
+          const sponsor = requireSponsor();
+          const passkey = {
+            credentialId: ctx.body.passkey.credentialId,
+            publicKeyX: publicKeyXOf(ctx.body.passkey.publicKey),
+          };
+          const { user } = ctx.context.session;
+          const spendCode = () => spendSignInCode(options, ctx.context, user, ctx.body.otp);
+          try {
+            const transactionHash = await startRecovery({ ...options, sponsor }, row, passkey, user.email, spendCode);
+            await Effect.runPromise(deliverWalletNotices(options.db, options.sendNotice));
+            return ctx.json({ transactionHash });
+          } catch (error) {
+            if (error instanceof RecoveryUnderWayError)
+              throw new APIError("CONFLICT", { message: "RECOVERY_UNDER_WAY" });
+            if (error instanceof APIError) throw error;
+            if (error instanceof RecoveryNotSentError) throw refused("wallet_recovery_start_refused", error);
+            throw uncertain(error);
           }
         },
       ),
@@ -230,41 +289,20 @@ const publicKeyXOf = (spki: string): string => {
   }
 };
 
-/**
- * The outside execution the sponsor built, read field by field: only a SNIP-9 v2 execution for this chain. The
- * guardian rebuilds its message from these fields, so it co-signs exactly what was read here.
- */
-const walletExecutionOf = (typedData: SponsoredExecution, chainId: string): WalletExecution => {
-  // A caller's JSON: any field may be missing.
-  const { domain, message, primaryType } = typedData as unknown as {
-    domain?: Record<string, unknown>;
-    message?: Record<string, unknown>;
-    primaryType?: string;
-  };
-  const isExecution =
-    primaryType === "OutsideExecution" &&
-    domain?.name === "Account.execute_from_outside" &&
-    String(domain.version) === "2" &&
-    feltOf(domain.chainId) === BigInt(chainId) &&
-    Array.isArray(message?.Calls);
-  if (!isExecution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
-  return {
-    caller: String(message.Caller),
-    nonce: String(message.Nonce),
-    executeAfter: String(message["Execute After"]),
-    executeBefore: String(message["Execute Before"]),
-    calls: (message.Calls as Record<string, unknown>[]).map((call) => ({
-      to: String(call.To),
-      selector: String(call.Selector),
-      calldata: (call.Calldata as unknown[]).map(String),
-    })),
-  };
+/** Proven never sent: nothing reached the chain, and the day's call was given back. */
+const refused = (event: string, error: unknown) => {
+  console.error(event, { error: error instanceof Error ? error.message : error });
+  return new APIError("BAD_GATEWAY", { message: "SPONSOR_REFUSED" });
 };
 
-/** A domain chain id, which SNIP-12 allows as a short string ("SN_MAIN") or its felt. */
-const feltOf = (value: unknown): bigint | null => {
-  if (typeof value !== "string") return null;
-  return BigInt(/^0x[0-9a-fA-F]+$/.test(value) ? value : shortString.encodeShortString(value));
+/**
+ * Perhaps sent: the sponsor's answer was lost. The day's call stays spent, and the caller keeps the same signed
+ * execution: resubmitted, its nonce lets it run at most once, and the wallet's `is_valid_outside_execution_nonce` tells
+ * whether it ran.
+ */
+const uncertain = (error: unknown) => {
+  console.error("default_wallet_execute_uncertain", { error: error instanceof Error ? error.message : error });
+  return new APIError("SERVICE_UNAVAILABLE", { message: "SEND_UNCERTAIN" });
 };
 
 const today = () => new Date().toISOString().slice(0, 10);
@@ -272,26 +310,28 @@ const today = () => new Date().toISOString().slice(0, 10);
 const sponsoredToday = async (db: D1Database, realmsId: string) =>
   (
     await db
-      .prepare(`SELECT calls FROM wallet_sponsored_calls WHERE realms_id = ? AND day = ?`)
+      .prepare(`SELECT COUNT(*) AS calls FROM sponsored_executions WHERE realms_id = ? AND day = ?`)
       .bind(realmsId, today())
       .first<{ calls: number }>()
   )?.calls ?? 0;
 
-/** Takes one of today's sponsored calls, or none when the cap is spent; atomic, so two tabs cannot both take the last. */
-const reserveSponsoredCall = async (db: D1Database, realmsId: string) =>
-  (
-    await db
+/**
+ * Takes one of today's sponsored calls for this execution, or answers it already holds one (a resubmission of the same
+ * nonce); none when the cap is spent. One batch, so two tabs cannot both take the last.
+ */
+const reserveExecution = async (db: D1Database, realmsId: string, nonce: string) => {
+  const [, held] = await db.batch([
+    db
       .prepare(
-        `INSERT INTO wallet_sponsored_calls (realms_id, day, calls) VALUES (?1, ?2, 1)
-         ON CONFLICT (realms_id, day) DO UPDATE SET calls = calls + 1 WHERE calls < ?3`,
+        `INSERT OR IGNORE INTO sponsored_executions (realms_id, nonce, day)
+         SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM sponsored_executions WHERE realms_id = ?1 AND day = ?3) < ?4`,
       )
-      .bind(realmsId, today(), SPONSORED_CALLS_PER_DAY)
-      .run()
-  ).meta.changes === 1;
+      .bind(realmsId, nonce, today(), SPONSORED_CALLS_PER_DAY),
+    db.prepare(`SELECT 1 AS held FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce),
+  ]);
+  return held?.results.length === 1;
+};
 
-/** Gives back a call the sponsor did not submit. */
-const releaseSponsoredCall = (db: D1Database, realmsId: string) =>
-  db
-    .prepare(`UPDATE wallet_sponsored_calls SET calls = calls - 1 WHERE realms_id = ? AND day = ? AND calls > 0`)
-    .bind(realmsId, today())
-    .run();
+/** Gives back the call of an execution proven never sent. */
+const releaseExecution = (db: D1Database, realmsId: string, nonce: string) =>
+  db.prepare(`DELETE FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce).run();

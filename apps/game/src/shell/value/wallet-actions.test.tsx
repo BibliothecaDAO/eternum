@@ -193,8 +193,65 @@ it("confirms with the passkey when the paying wallet is the account's Realms wal
     expect(prepare).toHaveBeenCalledWith(CALLS);
     await press(container, "Confirm with your passkey");
     await settled(() => expect(landed).toHaveBeenCalledOnce());
-    expect(sendFromDefault).toHaveBeenCalledWith(realmsWallet, prepared, expect.anything(), expect.any(Function));
+    expect(sendFromDefault).toHaveBeenCalledWith(
+      realmsWallet,
+      prepared,
+      JSON.stringify(CALLS),
+      expect.anything(),
+      expect.any(Function),
+    );
     expect(braavos.connections()).toEqual([]);
+  } finally {
+    useIdentitySessionStore.setState({ status: "anonymous", session: null });
+    vi.restoreAllMocks();
+  }
+});
+
+it("on re-entry with a send still uncertain, sends nothing new, and ends it once the chain says it landed", async () => {
+  const { useIdentitySessionStore, identityClient } = await import("@/hooks/context/identity-session");
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  const realmsWallet = {
+    address: LINKED,
+    credentialId: "c",
+    publicKeyX: "0x1",
+    origin: "https://realms.test",
+    rpId: "realms.test",
+  };
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(realmsWallet);
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend");
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall");
+  const standing = vi
+    .spyOn(uncertain, "standingOf")
+    .mockResolvedValueOnce({ kind: "pending" })
+    .mockResolvedValueOnce({ kind: "landed" });
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x9", name: "Ysolde", email: "you@mail.test", address: LINKED },
+    },
+  });
+  // The same send as this one was handed to the sponsor before the page closed; its answer was lost.
+  uncertain.rememberUncertain({
+    via: "passkey",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    execution: { message: { Nonce: "0x77", "Execute Before": 2_000 } } as never,
+    ownerSignature: ["0x4"],
+    hash: null,
+    at: Date.now(),
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    expect(buttonsOf(container)).toEqual(["Check again", "Send it again"]);
+    expect(prepare).not.toHaveBeenCalled();
+    await press(container, "Check again");
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(standing).toHaveBeenCalledTimes(2);
+    expect(execute).not.toHaveBeenCalled();
+    expect(uncertain.uncertainSendOf(LINKED)).toBeUndefined();
   } finally {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.restoreAllMocks();

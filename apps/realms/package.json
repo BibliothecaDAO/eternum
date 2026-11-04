@@ -10,7 +10,8 @@
     "campaign-shared-code": "tsx scripts/campaign-shared-code.ts",
     "campaign-founded-homes": "tsx scripts/campaign-founded-homes.ts",
     "comeback-email": "bun scripts/comeback-email.ts",
-    "default-wallet-simulation": "bun scripts/default-wallet-simulation.ts"
+    "default-wallet-simulation": "bun scripts/default-wallet-simulation.ts",
+    "default-wallet-recovery-rehearsal": "bun scripts/default-wallet-recovery-rehearsal.ts"
   },
   "dependencies": {
     "@block65/webcrypto-web-push": "2.0.0",

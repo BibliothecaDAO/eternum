@@ -17,34 +17,51 @@ import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { resendWalletNotices } from "./wallet-notices";
+import type { SendWalletNotice } from "./wallet-changes";
 import { siws } from "./siws-plugin";
 import { defaultWallet } from "./default-wallet-plugin";
 import { identityL2Configuration, identityProvider } from "./l2";
 import { avnuSponsor, type Sponsor } from "./sponsor";
+import { readIsOwner, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
 import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 /**
  * What the identity service reaches outside its database: the environment L2 for wallet signatures and deployments,
  * the email provider, and the sponsor of default wallets' gas.
  */
-interface IdentityServices {
+interface IdentityServices extends Pick<WalletChainServices, "sponsor" | "isDeployed" | "readEscape"> {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
-  sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
-  sponsor: Sponsor | null;
-  isDeployed: (address: string) => Promise<boolean>;
+  sendWalletNotice?: SendWalletNotice;
 }
 
-type IdentityServiceEnv = Pick<
+type WalletChainEnv = Pick<
   IdentityEnv,
-  "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "RESEND_API_KEY" | "BASE_URL" | "AVNU_PAYMASTER_API_KEY"
+  "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "AVNU_PAYMASTER_API_KEY"
 >;
+type IdentityServiceEnv = WalletChainEnv & Pick<IdentityEnv, "RESEND_API_KEY" | "BASE_URL">;
+
+/** What default wallets need of the chain: its sponsor (none without a key), and reads of a wallet's state. */
+type WalletChainServices = Pick<RecoveryServices, "isDeployed" | "readEscape" | "isOwner" | "succeeded"> & {
+  sponsor: Sponsor | null;
+};
+
+export const walletChainServicesOf = (env: WalletChainEnv): WalletChainServices => {
+  const provider = () => identityProvider(env);
+  return {
+    sponsor: env.AVNU_PAYMASTER_API_KEY ? avnuSponsor(env.AVNU_PAYMASTER_API_KEY) : null,
+    isDeployed: async (address) => !(await isUndeployedWallet(provider(), address)),
+    readEscape: (address) => readWalletEscape(provider(), address),
+    isOwner: (address, owner) => readIsOwner(provider(), address, owner),
+    succeeded: async (transactionHash) =>
+      (await provider().waitForTransaction(transactionHash, { retryInterval: 2_000 })).isSuccess(),
+  };
+};
 
 const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY, env.BASE_URL),
-  sponsor: env.AVNU_PAYMASTER_API_KEY ? avnuSponsor(env.AVNU_PAYMASTER_API_KEY) : null,
-  isDeployed: async (address) => !(await isUndeployedWallet(identityProvider(env), address)),
+  ...walletChainServicesOf(env),
 });
 
 /**
@@ -166,6 +183,7 @@ export const createIdentityAuth = (
         guardian: env.GUARDIAN,
         sponsor: services.sponsor,
         isDeployed: services.isDeployed,
+        readEscape: services.readEscape,
         checkCode,
         sendNotice: sendWalletNotice,
       }),

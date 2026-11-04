@@ -8,10 +8,13 @@ vi.mock("./passkey", () => ({ signWithPasskey: passkey.sign }));
 import { identityClient } from "@/hooks/context/identity-session";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
+import { IdentityRequestError } from "@realms-world/identity";
+import { forgetUncertain, uncertainSendOf } from "./uncertain-sends";
 import {
   prepareDefaultWalletSend,
   sendFromDefaultWallet,
   sendFromWallet,
+  submitSigned,
   UnexpectedExecutionError,
   WrongWalletError,
 } from "./wallet-send";
@@ -75,7 +78,8 @@ it("says the network did not confirm a send whose receipt could not be read, nev
   vi.spyOn(console, "error").mockImplementation(() => {});
   const { account } = wallet();
   const outcome = await sendFromWallet(account, "0x4a1", CALLS, chain(1n, Promise.reject(new Error("503"))), vi.fn());
-  expect(outcome).toEqual({ kind: "refused", reason: "The network has not confirmed it yet" });
+  // Unconfirmed, never refused: a refused send would offer Try again, a second payment.
+  expect(outcome).toEqual({ kind: "unconfirmed" });
 });
 
 const TRANSFER = { contractAddress: "0x124aeb", entrypoint: "transfer", calldata: ["0x5", "100", "0"] };
@@ -118,9 +122,11 @@ it("signs the prepared execution's hash with the passkey, sends it through the s
   const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
   const signed = vi.fn();
   const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
-  await expect(sendFromDefaultWallet(WALLET, execution as unknown as TypedData, provider, signed)).resolves.toEqual({
-    kind: "landed",
-  });
+  await expect(
+    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, "[]", provider, signed),
+  ).resolves.toEqual({ kind: "landed" });
+  // Landed: nothing is left uncertain.
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
   expect(passkey.sign).toHaveBeenCalledWith(
     WALLET,
     typedData.getMessageHash(execution as unknown as TypedData, WALLET.address),
@@ -130,4 +136,66 @@ it("signs the prepared execution's hash with the passkey, sends it through the s
   // The sponsor pays: no STRK is read.
   expect(provider.callContract).not.toHaveBeenCalled();
   expect(provider.waitForTransaction).toHaveBeenCalledWith("0xtx", expect.anything());
+});
+
+it("keeps a send whose sponsor answer was lost, and sends again only the same signed execution", async () => {
+  forgetUncertain(WALLET.address);
+  const execution = built();
+  passkey.sign.mockClear();
+  const execute = vi
+    .spyOn(identityClient, "executeDefaultWalletCall")
+    .mockRejectedValueOnce(new IdentityRequestError(503, "SEND_UNCERTAIN"))
+    .mockResolvedValueOnce("0xsame");
+  const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
+  await expect(
+    sendFromDefaultWallet(WALLET, execution as unknown as TypedData, '["transfer"]', provider, vi.fn()),
+  ).resolves.toEqual({ kind: "unconfirmed" });
+  const kept = uncertainSendOf(WALLET.address);
+  expect(kept).toMatchObject({
+    via: "passkey",
+    calls: '["transfer"]',
+    execution,
+    ownerSignature: ["0x4", "0x9"],
+    hash: null,
+  });
+  // Re-entry sends the very same execution and signature: one nonce, so at most one transfer, and no new passkey prompt.
+  await expect(submitSigned(kept as Extract<typeof kept, { via: "passkey" }>, provider, vi.fn())).resolves.toEqual({
+    kind: "landed",
+  });
+  expect(execute.mock.calls).toEqual([
+    [execution, ["0x4", "0x9"]],
+    [execution, ["0x4", "0x9"]],
+  ]);
+  expect(passkey.sign).toHaveBeenCalledTimes(1);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+  execute.mockRestore();
+});
+
+it("forgets a send the sponsor refused, proven never sent", async () => {
+  forgetUncertain(WALLET.address);
+  const execute = vi
+    .spyOn(identityClient, "executeDefaultWalletCall")
+    .mockRejectedValueOnce(new IdentityRequestError(502, "SPONSOR_REFUSED"));
+  await expect(
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn()),
+  ).rejects.toBeInstanceOf(IdentityRequestError);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+  execute.mockRestore();
+});
+
+it("never calls a send refused when its receipt cannot be read: it stays on its way, with its transaction", async () => {
+  forgetUncertain(WALLET.address);
+  forgetUncertain("0x4a1");
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
+  const lostReceipt = () => chain(1n, Promise.reject(new Error("timeout")));
+  await expect(
+    sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", lostReceipt(), vi.fn()),
+  ).resolves.toEqual({ kind: "unconfirmed" });
+  expect(uncertainSendOf(WALLET.address)).toMatchObject({ via: "passkey", hash: "0xtx" });
+  const { account } = wallet();
+  await expect(sendFromWallet(account, "0x4a1", CALLS, lostReceipt(), vi.fn())).resolves.toEqual({
+    kind: "unconfirmed",
+  });
+  expect(uncertainSendOf("0x4a1")).toMatchObject({ via: "wallet", hash: "0xtx", calls: JSON.stringify(CALLS) });
+  execute.mockRestore();
 });

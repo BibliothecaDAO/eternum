@@ -19,11 +19,11 @@ const hasWebAuthn = () => typeof window !== "undefined" && "PublicKeyCredential"
  * kept by the device's password manager so it syncs to the player's other devices, and opened with their face,
  * fingerprint or screen lock every time.
  */
-export const createPasskey = async (account: {
-  realmsId: string;
-  email: string;
-  name: string;
-}): Promise<NewPasskey> => {
+export const createPasskey = async (
+  account: { realmsId: string; email: string; name: string },
+  /** A recovery's: the passkey it replaces, which this device must not hold (it would be overwritten, not recovered). */
+  replacing?: string,
+): Promise<NewPasskey> => {
   if (!hasWebAuthn()) throw new PasskeyUnavailableError("passkey_unsupported");
   const credential = (await navigator.credentials.create({
     publicKey: {
@@ -38,6 +38,7 @@ export const createPasskey = async (account: {
       pubKeyCredParams: [{ type: "public-key", alg: -7 }],
       authenticatorSelection: { residentKey: "required", userVerification: "required" },
       attestation: "none",
+      ...(replacing ? { excludeCredentials: [{ type: "public-key" as const, id: fromBase64Url(replacing) }] } : {}),
     },
   })) as PublicKeyCredential | null;
   const publicKey = (credential?.response as AuthenticatorAttestationResponse | undefined)?.getPublicKey();

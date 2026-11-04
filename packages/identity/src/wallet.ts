@@ -75,8 +75,25 @@ const webauthnSignerFelts = (owner: PasskeyOwner): bigint[] => [
 /**
  * The account's constructor calldata: `Signer::Webauthn(passkey)`, then `Option::Some(Signer::Starknet(guardian))`.
  */
-export const defaultWalletCalldata = (owner: PasskeyOwner, guardianPublicKey: string): string[] =>
-  [SIGNER_WEBAUTHN, ...webauthnSignerFelts(owner), OPTION_SOME, SIGNER_STARKNET, BigInt(guardianPublicKey)].map(toHex);
+export const defaultWalletCalldata = (owner: PasskeyOwner, guardianPublicKey: string): string[] => [
+  ...passkeySigner(owner),
+  ...[OPTION_SOME, SIGNER_STARKNET, BigInt(guardianPublicKey)].map(toHex),
+];
+
+/** `Signer::Webauthn(passkey)`, serialized: the constructor's owner, and the new owner a recovery names. */
+export const passkeySigner = (owner: PasskeyOwner): string[] =>
+  [SIGNER_WEBAUTHN, ...webauthnSignerFelts(owner)].map(toHex);
+
+/**
+ * The wallet's own entrypoints the Realms guardian takes part in, the owner escape that recovers a lost passkey: its
+ * start and its finish, which the guardian signs alone, and its cancel, which the owner signs with the guardian. Every
+ * other call to the wallet itself the guardian refuses.
+ */
+export const WALLET_RECOVERY = {
+  start: "trigger_escape_owner",
+  finish: "escape_owner",
+  cancel: "cancel_escape",
+} as const;
 
 /**
  * The account's deployment, salted with the Realms id so one account's wallet is never another's even if a key
@@ -148,6 +165,29 @@ export const passkeyOwnerSignature = (owner: PasskeyOwner, hash: string, asserti
     yParity,
   ].map(toHex);
 };
+
+/** Where the wallet's owner escape stands (`EscapeStatus`): none, waiting out its 7 days, ready to finish, or expired. */
+type EscapeStatus = "none" | "waiting" | "ready" | "expired";
+export interface WalletEscape {
+  status: EscapeStatus;
+  /** Unix seconds from which it can be finished; null with no escape. */
+  readyAt: number | null;
+}
+
+const ESCAPE_STATUSES: EscapeStatus[] = ["none", "waiting", "ready", "expired"];
+
+/** `get_escape_and_status()`'s answer, (Escape { ready_at, escape_type, new_signer }, EscapeStatus), as a WalletEscape. */
+export const walletEscapeOf = (result: readonly string[]): WalletEscape => {
+  const status = ESCAPE_STATUSES[Number(BigInt(result.at(-1) ?? "-1"))];
+  if (!status) throw new Error("unknown_escape_status");
+  return { status, readyAt: status === "none" ? null : Number(BigInt(result[0]!)) };
+};
+
+/** The guardian's signature alone, as an escape's start and finish take it: its `r` and `s` (`parse_single_guardian_signature`). */
+export const guardianAloneSignature = (guardian: Pick<GuardianSignature, "r" | "s">): string[] => [
+  guardian.r,
+  guardian.s,
+];
 
 /** The account's signature: the owner's, then the guardian's `SignerSignature::Starknet`. */
 export const defaultWalletSignature = (ownerSignature: string[], guardian: GuardianSignature): string[] =>

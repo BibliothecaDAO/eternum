@@ -19,24 +19,34 @@ import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { failureSentence } from "@/ui/modules/identity/identity-failures";
 import { createPasskey } from "@/ui/modules/identity/passkey";
 
+import { l2Provider } from "@/runtime/l2-rpc";
+
 import { Loading } from "../loading";
+import { WalletUnread } from "@/shell/value/wallet-unread";
 import { RealmsWalletFunds } from "./realms-wallet-funds";
+import { RealmsWalletRecovery, RecoverStart } from "./realms-wallet-recovery";
 
 const WalletPicker = lazy(() =>
   import("@/shell/value/wallet-actions").then((module) => ({ default: module.WalletPicker })),
 );
 
 /**
- * A wallet change waiting for its code: linking the wallet just proven, unlinking, or making the account's default
- * wallet its payout wallet (a sign-in minutes old needs none: CreateWallet).
+ * A wallet change waiting for its code: linking the wallet just proven, unlinking, making the account's default wallet
+ * its payout wallet (a sign-in minutes old needs none: CreateWallet), or starting its recovery with a new passkey.
  */
 type Change =
   | { kind: "link"; proof: SignInOptions }
   | { kind: "unlink" }
   /** The passkey just made, which the server keeps only once the code lets the wallet in; none when it has one. */
-  | { kind: "default"; passkey: NewPasskey | undefined };
+  | { kind: "default"; passkey: NewPasskey | undefined }
+  | { kind: "recover"; passkey: NewPasskey };
 
-type Step = { kind: "linked" } | { kind: "choose" } | { kind: "pick" } | { kind: "code"; change: Change };
+type Step =
+  | { kind: "linked" }
+  | { kind: "choose" }
+  | { kind: "pick" }
+  | { kind: "recover" }
+  | { kind: "code"; change: Change };
 
 /**
  * The payout wallet (design 3): linking or replacing takes the new wallet's signature and a 6-digit code sent to the
@@ -56,39 +66,54 @@ export const PayoutWalletPanel = ({
   onChanged: () => void;
 }) => {
   const [step, setStep] = useState<Step>(wallet === null ? { kind: "choose" } : { kind: "linked" });
-  const defaultWallet = useDefaultWallet();
+  const { wallet: defaultWallet, failed: walletUnread, retry: readWalletAgain } = useDefaultWallet();
   const isDefault = wallet !== null && !!defaultWallet && isSameStarknetAddress(wallet, defaultWallet.address);
   const changed = () => {
     setStep({ kind: "linked" });
     onChanged();
+  };
+  const recover = () => setStep({ kind: "recover" });
+  const body = () => {
+    if (step.kind === "recover" && defaultWallet)
+      return (
+        <RecoverStart
+          replacing={defaultWallet.credentialId}
+          onPasskey={(passkey) => setStep({ kind: "code", change: { kind: "recover", passkey } })}
+          onCancel={() => setStep(wallet === null ? { kind: "choose" } : { kind: "linked" })}
+        />
+      );
+    if (step.kind === "linked" && wallet !== null)
+      return (
+        <Linked
+          address={wallet}
+          isDefault={isDefault}
+          onReplace={() => setStep({ kind: "choose" })}
+          onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
+          onRecover={recover}
+        />
+      );
+    return <Linking step={step} email={email} onStep={setStep} onChanged={changed} />;
   };
   return (
     <div className="flex flex-col gap-4">
       {step.kind === "code" && step.change.kind === "unlink" && (
         <p className="text-app-heading text-app-ink">{WALLET_WORDS.unlinkTitle}</p>
       )}
-      {step.kind === "linked" && wallet !== null ? (
-        <Linked
-          address={wallet}
-          isDefault={isDefault}
-          onReplace={() => setStep({ kind: "choose" })}
-          onUnlink={() => setStep({ kind: "code", change: { kind: "unlink" } })}
-        />
-      ) : (
-        <Linking step={step} email={email} onStep={setStep} onChanged={changed} />
-      )}
+      {walletUnread && <WalletUnread onRetry={readWalletAgain} />}
+      {body()}
       {defaultWallet && !isDefault && (step.kind === "linked" || step.kind === "choose") && (
-        <RealmsWallet address={defaultWallet.address} />
+        <RealmsWallet address={defaultWallet.address} onRecover={recover} />
       )}
     </div>
   );
 };
 
-/** The Realms wallet while payouts go elsewhere: it keeps what it holds, and its Send. */
-const RealmsWallet = ({ address }: { address: string }) => (
+/** The Realms wallet while payouts go elsewhere: it keeps what it holds, its Send and its recovery. */
+const RealmsWallet = ({ address, onRecover }: { address: string; onRecover: () => void }) => (
   <>
     <WalletCard address={address} name={WALLET_WORDS.realmsWallet} chip={null} />
     <RealmsWalletFunds address={address} />
+    <RealmsWalletRecovery address={address} onRecover={onRecover} />
   </>
 );
 
@@ -151,10 +176,12 @@ const CreateWallet = ({
   onCodeNeeded: (passkey: NewPasskey | undefined) => void;
 }) => {
   const session = useIdentitySessionStore((state) => state.session);
-  const existing = useDefaultWallet();
+  const { wallet: existing } = useDefaultWallet();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   if (!session) return null;
+  // Until the account's wallet is known, no passkey is made: one that already has a wallet would get a useless one.
+  const unknown = existing === undefined;
   const { realmsId, email } = session.user;
   const create = async () => {
     setBusy(true);
@@ -175,13 +202,25 @@ const CreateWallet = ({
   };
   return (
     <div className="flex flex-col gap-2.5">
-      <AppButton kind="primary" icon="lock" busy={busy ? WALLET_WORDS.confirmPasskey : undefined} onClick={create}>
+      <AppButton
+        kind="primary"
+        icon="lock"
+        disabled={unknown}
+        busy={busy ? WALLET_WORDS.confirmPasskey : undefined}
+        onClick={create}
+      >
         {WALLET_WORDS.createWallet}
       </AppButton>
       <p className="text-app-body text-app-muted">{WALLET_WORDS.createLine}</p>
       {error && <p className="text-app-body text-app-bad">{error}</p>}
     </div>
   );
+};
+
+/** The recovery started with this code, held until its escape is on chain, so the wallet shows it under way at once. */
+const startRecovery = async (code: string, passkey: NewPasskey) => {
+  const started = await identityClient.startWalletRecovery({ passkey, code });
+  await l2Provider().waitForTransaction(started, { retryInterval: 1_000 });
 };
 
 /** The account's default wallet written as its payout wallet with this code; every surface shows it at once. */
@@ -222,6 +261,7 @@ const CodeStep = ({ change, email, onDone }: { change: Change; email: string; on
     try {
       if (change.kind === "link") await identityClient.linkWallet({ ...change.proof, code: entered });
       else if (change.kind === "unlink") await identityClient.unlinkWallet(entered);
+      else if (change.kind === "recover") await startRecovery(entered, change.passkey);
       else await writeDefaultWallet(entered, change.passkey);
       onDone();
     } catch (cause) {
@@ -271,12 +311,14 @@ const Linked = ({
   isDefault,
   onReplace,
   onUnlink,
+  onRecover,
 }: {
   address: string;
   /** The account's own default wallet, which the player knows by name rather than by address. */
   isDefault: boolean;
   onReplace: () => void;
   onUnlink: () => void;
+  onRecover: () => void;
 }) => {
   const [sending, setSending] = useState(false);
   return (
@@ -290,6 +332,7 @@ const Linked = ({
       {isDefault && <RealmsWalletFunds address={address} onSending={setSending} />}
       {!sending && (
         <>
+          {isDefault && <RealmsWalletRecovery address={address} onRecover={onRecover} />}
           <PrizesGoHere />
           <div className="grid grid-cols-2 gap-3">
             <AppButton kind="secondary" icon="refresh" onClick={onReplace}>

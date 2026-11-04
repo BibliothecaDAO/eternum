@@ -2,7 +2,7 @@ import { VALUE_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppButton } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppNotice } from "@/ui/design-system/kit/app-elements";
 
 import { isSameStarknetAddress, type DefaultWallet, type SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
@@ -15,15 +15,23 @@ import type { AccountInterface, Call, ProviderInterface, TypedData } from "stark
 
 import { Loading } from "@/shell/loading";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
+import { WalletUnread } from "@/shell/value/wallet-unread";
 
 import { failureSentence, WrongNetworkError } from "@/ui/modules/identity/identity-failures";
 import { assertWalletOnL2 } from "@/ui/modules/identity/l2-wallet";
 import { connectorHolding, rememberOpened } from "@/ui/modules/identity/wallet-holder";
 import { walletProofForAccount } from "@/ui/modules/identity/wallet-proof";
 import {
+  forgetUncertain,
+  standingOf,
+  uncertainSendOf,
+  type UncertainSend,
+} from "@/ui/modules/identity/uncertain-sends";
+import {
   prepareDefaultWalletSend,
   sendFromDefaultWallet,
   sendFromWallet,
+  submitSigned,
   type WalletSendOutcome,
   WrongWalletError,
 } from "@/ui/modules/identity/wallet-send";
@@ -66,14 +74,117 @@ const ProofRows = ({ onProof }: { onProof: (proof: SignInOptions) => void }) => 
  * signs instead and the sponsor pays: no wallet opens and no STRK is needed.
  */
 export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => {
-  const defaultWallet = useDefaultWallet();
-  if (defaultWallet === undefined) return <Loading />;
-  if (defaultWallet && isSameStarknetAddress(defaultWallet.address, props.owner))
-    return <PasskeySend wallet={defaultWallet} calls={props.calls} onLanded={props.onLanded} />;
+  const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
+  const uncertain = useUncertainSend(props.owner, JSON.stringify(props.calls), props.onLanded);
+  if (defaultWallet === undefined) return failed ? <WalletUnread onRetry={retry} /> : <Loading />;
+  if (uncertain.state.kind === "checking") return <Loading />;
+  if (uncertain.state.kind === "pending") return <OnItsWay uncertain={uncertain} onLanded={props.onLanded} />;
+  const lastFailed = uncertain.state.lastFailed;
+  const send =
+    defaultWallet && isSameStarknetAddress(defaultWallet.address, props.owner) ? (
+      <PasskeySend
+        wallet={defaultWallet}
+        calls={props.calls}
+        onLanded={props.onLanded}
+        onUnconfirmed={uncertain.check}
+      />
+    ) : (
+      <StarknetProvider>
+        <OwnerSend {...props} onUnconfirmed={uncertain.check} />
+      </StarknetProvider>
+    );
   return (
-    <StarknetProvider>
-      <OwnerSend {...props} />
-    </StarknetProvider>
+    <>
+      {lastFailed && <span className="text-app-label text-app-bad">{VALUE_WORDS.lastSendFailed}</span>}
+      {send}
+    </>
+  );
+};
+
+/**
+ * The wallet's uncertain send (uncertain-sends.ts), if any, asked of the chain before anything new is sent from it:
+ * landed (the same send: done), failed or never sendable (forgotten, a new send may go), or still pending.
+ */
+const useUncertainSend = (owner: string, asked: string, onLanded: () => void) => {
+  const [state, setState] = useState<
+    { kind: "checking" } | { kind: "clear"; lastFailed: boolean } | { kind: "pending"; send: UncertainSend }
+  >(() => (uncertainSendOf(owner) ? { kind: "checking" } : { kind: "clear", lastFailed: false }));
+  const latest = useLatest({ asked, onLanded });
+  /** Asks the chain where the send stands, and shows its answer once it comes. */
+  const ask = useCallback(() => {
+    const send = uncertainSendOf(owner);
+    return (send ? standingOf(l2Provider(), send) : Promise.resolve(null)).then(
+      (standing) => {
+        if (!send || !standing) return setState({ kind: "clear", lastFailed: false });
+        if (standing.kind === "pending") return setState({ kind: "pending", send });
+        forgetUncertain(owner);
+        if (standing.kind === "landed" && send.calls === latest.current.asked) return latest.current.onLanded();
+        setState({ kind: "clear", lastFailed: standing.kind === "failed" });
+      },
+      (error: unknown) => {
+        console.error("uncertain_send_check_failed", error);
+        setState(send ? { kind: "pending", send } : { kind: "clear", lastFailed: false });
+      },
+    );
+  }, [latest, owner]);
+  /** Check again: the wait shows, then the chain's answer. */
+  const check = useCallback(() => {
+    setState({ kind: "checking" });
+    return ask();
+  }, [ask]);
+  // The first check on open: the state already starts as checking when there is a send to ask about.
+  useEffect(() => {
+    if (uncertainSendOf(owner)) void ask();
+  }, [ask, owner]);
+  return { state, check };
+};
+
+/**
+ * The last send's answer was lost: Check again asks the chain; a default wallet's signed execution can be sent again
+ * as it is (its nonce lets it run once), and nothing new is offered until it is settled.
+ */
+const OnItsWay = ({
+  uncertain,
+  onLanded,
+}: {
+  uncertain: ReturnType<typeof useUncertainSend>;
+  onLanded: () => void;
+}) => {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const send = uncertain.state.kind === "pending" ? uncertain.state.send : null;
+  const again = async () => {
+    if (send?.via !== "passkey") return;
+    setBusy(true);
+    setError(null);
+    try {
+      const sent = await submitSigned(send, l2Provider(), () => {});
+      if (sent.kind === "landed") return onLanded();
+    } catch (cause) {
+      setError(failureSentence("send", cause));
+    } finally {
+      setBusy(false);
+    }
+    await uncertain.check();
+  };
+  return (
+    <div className="flex w-full flex-col gap-2.5">
+      <AppNotice line={VALUE_WORDS.onItsWay} />
+      {error && <span className="text-app-label text-app-bad">{error}</span>}
+      <AppButton kind="secondary" icon="refresh" disabled={busy} onClick={() => void uncertain.check()}>
+        {VALUE_WORDS.checkAgain}
+      </AppButton>
+      {send?.via === "passkey" && (
+        <AppButton
+          kind="quiet"
+          icon="lock"
+          busy={busy ? VALUE_WORDS.confirming : undefined}
+          onClick={() => void again()}
+        >
+          {VALUE_WORDS.sendAgain}
+        </AppButton>
+      )}
+    </div>
   );
 };
 
@@ -84,7 +195,17 @@ const PREPARED_FOR_MS = 60_000;
  * The default wallet's send: prepared as it opens (the sponsor builds it, this page checks it), then one tap on
  * Confirm opens the passkey and sends. A press after the preparation went stale prepares again first.
  */
-const PasskeySend = ({ wallet, calls, onLanded }: { wallet: DefaultWallet; calls: Call[]; onLanded: () => void }) => {
+const PasskeySend = ({
+  wallet,
+  calls,
+  onLanded,
+  onUnconfirmed,
+}: {
+  wallet: DefaultWallet;
+  calls: Call[];
+  onLanded: () => void;
+  onUnconfirmed: () => void;
+}) => {
   const prepared = useRef<{ execution: Promise<TypedData>; at: number } | null>(null);
   const [state, setState] = useState<{ kind: "ready" | "signing" | "confirming" } | { kind: "failed"; line: string }>({
     kind: "ready",
@@ -102,10 +223,11 @@ const PasskeySend = ({ wallet, calls, onLanded }: { wallet: DefaultWallet; calls
     if (!prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS) prepare();
     setState({ kind: "signing" });
     try {
-      const sent = await sendFromDefaultWallet(wallet, await prepared.current!.execution, l2Provider(), () =>
+      const sent = await sendFromDefaultWallet(wallet, await prepared.current!.execution, asked, l2Provider(), () =>
         setState({ kind: "confirming" }),
       );
       if (sent.kind === "landed") return onLanded();
+      if (sent.kind === "unconfirmed") return onUnconfirmed();
       setState({ kind: "failed", line: sent.kind === "refused" ? sent.reason : VALUE_WORDS.refused });
     } catch (cause) {
       setState({ kind: "failed", line: failureSentence("send", cause) });
@@ -133,7 +255,17 @@ const PasskeySend = ({ wallet, calls, onLanded }: { wallet: DefaultWallet; calls
   );
 };
 
-const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; onLanded: () => void }) => {
+const OwnerSend = ({
+  owner,
+  calls,
+  onLanded,
+  onUnconfirmed,
+}: {
+  owner: string;
+  calls: Call[];
+  onLanded: () => void;
+  onUnconfirmed: () => void;
+}) => {
   const { connectors } = useConnect();
   const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
   /** The connector holding `owner`: undefined while it is looked for, null when this browser has never opened it. */
@@ -142,6 +274,7 @@ const OwnerSend = ({ owner, calls, onLanded }: { owner: string; calls: Call[]; o
     setOutcome(undefined);
     const sent = await sendFromWallet(account, owner, calls, provider, () => setOutcome({ kind: "confirming" }));
     if (sent.kind === "landed") onLanded();
+    else if (sent.kind === "unconfirmed") onUnconfirmed();
     else setOutcome(sent);
   };
   const wallet = useWalletAction("pay", send);

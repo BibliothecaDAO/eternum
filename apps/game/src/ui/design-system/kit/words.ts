@@ -1053,6 +1053,14 @@ export const WALLET_WORDS = {
   sent: "Sent",
   notAnAddress: "Not a Starknet address",
   notAnAmount: "Enter an amount up to what your wallet holds",
+  walletUnread: "Your Realms wallet could not be read.",
+  lostPasskey: "Lost your passkey?",
+  recoverTitle: "Recover your wallet",
+  recoverLine:
+    "Make a new passkey on this device. In 7 days it takes over your Realms wallet; until then, the passkey you have now can cancel. We email you when it starts.",
+  makeNewPasskey: "Make a new passkey",
+  recoveryUnderWay: (date: string) => `Recovery under way: a new passkey takes over this wallet on ${date}.`,
+  cancelRecovery: "Not you? Cancel it",
   codeSentTo: "Code sent to",
   sending: "Sending…",
   newCode: "New code",
@@ -1076,7 +1084,11 @@ export const WALLET_WORDS = {
 /** What every value screen shares: a fee the payout wallet cannot pay yet. */
 export const VALUE_WORDS = {
   confirming: "Confirming…",
-  unconfirmed: "The network has not confirmed it yet",
+  /** A send whose answer was lost: it may still land, and nothing new is sent until the chain says. */
+  onItsWay: "Your last send is on its way: the network has not confirmed it yet.",
+  checkAgain: "Check again",
+  sendAgain: "Send it again",
+  lastSendFailed: "Your last send did not go through.",
   refused: "The ledger refused it.",
   noStrk: "No STRK for the fee",
   swapOnAvnu: "Swap on AVNU",

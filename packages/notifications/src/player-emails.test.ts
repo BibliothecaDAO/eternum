@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { payoutWalletEmail, signInCodeEmail } from "./player-emails";
+import { payoutWalletEmail, signInCodeEmail, walletRecoveryEmail } from "./player-emails";
 import type { Email } from "./email";
 
 const APP = "https://play.realms.test";
@@ -82,6 +82,25 @@ describe("the payout wallet email", () => {
     });
     expect(email.html).toContain('alt="Realms: Payout wallet unlinked"');
     expect(email.images![0]!.filename).toBe("wallet-unlinked.jpg");
+    expectSelfContained(email);
+  });
+});
+
+describe("the wallet recovery email", () => {
+  it("names the wallet, the week, and how to cancel, once per notice", () => {
+    const email = walletRecoveryEmail({
+      to: "lord@realms.test",
+      wallet: WALLET,
+      appUrl: APP,
+      idempotencyKey: "notice-3",
+    });
+    expect(email).toMatchObject({
+      subject: "A recovery of your Realms wallet started",
+      idempotencyKey: "notice-3",
+      text: `A new passkey takes over your Realms wallet ${WALLET} in 7 days. If you did not start it, open Realms, Settings, Payout wallet, and cancel it with your passkey.`,
+    });
+    expect(email.html).toContain(`>${WALLET}</td>`);
+    expect(email.html).toContain('alt="Realms: Wallet recovery started"');
     expectSelfContained(email);
   });
 });

@@ -40,9 +40,25 @@ describe("guardian co-signature on a default wallet", () => {
     );
   });
 
-  it("refuses a call to the wallet itself, which is how an escape or an owner change is made", async () => {
-    await expect(createGuardian(KEY).signWalletExecution(CHAIN, WALLET, execution(WALLET))).rejects.toThrow(
-      WalletSelfCallError,
-    );
+  const selfCall = (entrypoint: string, extra: WalletExecution["calls"] = []): WalletExecution => ({
+    ...execution(LORDS),
+    calls: [{ to: WALLET, selector: hash.getSelectorFromName(entrypoint), calldata: [] }, ...extra],
+  });
+
+  it("refuses every other call to the wallet itself: owner, guardian and upgrade changes", async () => {
+    for (const entrypoint of ["transfer", "change_owners", "change_guardians", "trigger_escape_guardian", "upgrade"])
+      await expect(createGuardian(KEY).signWalletExecution(CHAIN, WALLET, selfCall(entrypoint))).rejects.toThrow(
+        WalletSelfCallError,
+      );
+  });
+
+  it("takes part in a recovery step only when it is the execution's one call", async () => {
+    const guardian = createGuardian(KEY);
+    for (const entrypoint of ["trigger_escape_owner", "escape_owner", "cancel_escape"]) {
+      await expect(guardian.signWalletExecution(CHAIN, WALLET, selfCall(entrypoint))).resolves.toHaveProperty("r");
+      await expect(
+        guardian.signWalletExecution(CHAIN, WALLET, selfCall(entrypoint, execution(LORDS).calls)),
+      ).rejects.toThrow(WalletSelfCallError);
+    }
   });
 });

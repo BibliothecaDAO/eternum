@@ -12,12 +12,21 @@ import {
 } from "starknet";
 
 import { identityClient } from "@/hooks/context/identity-session";
+import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 import { signWithPasskey } from "./passkey";
+import { forgetUncertain, rememberUncertain, type UncertainSend } from "./uncertain-sends";
 
-/** What a wallet's send came to: landed, refused by the ledger with its reason, or not sent for lack of STRK. */
-export type WalletSendOutcome = { kind: "landed" } | { kind: "refused"; reason: string } | { kind: "no-strk" };
+/**
+ * What a wallet's send came to: landed, refused by the ledger with its reason, not sent for lack of STRK, or unconfirmed:
+ * handed over with its answer lost, kept as an uncertain send (uncertain-sends.ts) until the chain says.
+ */
+export type WalletSendOutcome =
+  | { kind: "landed" }
+  | { kind: "refused"; reason: string }
+  | { kind: "no-strk" }
+  | { kind: "unconfirmed" };
 
 /** The connected wallet is not the one the call must come from. */
 export class WrongWalletError extends Error {
@@ -41,8 +50,9 @@ export const sendFromWallet = async (
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
   if ((await feeBalanceOf(provider, account.address)) === 0n) return { kind: "no-strk" };
   const { transaction_hash: sent } = await account.execute(calls);
+  rememberUncertain({ via: "wallet", owner, calls: JSON.stringify(calls), hash: sent, at: Date.now() });
   onSigned();
-  return landedOrRefused(provider, sent);
+  return settled(owner, await landedOrRefused(provider, sent));
 };
 
 /** The sponsor built something other than these calls on this chain: nothing is signed. */
@@ -72,16 +82,60 @@ export const prepareDefaultWalletSend = async (calls: Call[]): Promise<TypedData
 export const sendFromDefaultWallet = async (
   wallet: DefaultWallet,
   prepared: TypedData,
+  calls: string,
   provider: ProviderInterface,
   onSigned: () => void,
 ): Promise<WalletSendOutcome> => {
   const ownerSignature = await signWithPasskey(wallet, typedData.getMessageHash(prepared, wallet.address));
-  const sent = await identityClient.executeDefaultWalletCall(
-    prepared as unknown as Record<string, unknown>,
+  const send = {
+    via: "passkey",
+    owner: wallet.address,
+    calls,
+    execution: prepared,
     ownerSignature,
-  );
+    hash: null,
+    at: Date.now(),
+  } as const;
+  return submitSigned(send, provider, onSigned);
+};
+
+/**
+ * Submits a default wallet's signed execution, the first time or again after its answer was lost: kept as uncertain
+ * before it leaves, forgotten once the sponsor refuses it or its receipt lands, kept while its outcome is unknown.
+ */
+export const submitSigned = async (
+  send: Extract<UncertainSend, { via: "passkey" }>,
+  provider: ProviderInterface,
+  onSigned: () => void,
+): Promise<WalletSendOutcome> => {
+  rememberUncertain(send);
+  let sent: string;
+  try {
+    sent = await identityClient.executeDefaultWalletCall(
+      send.execution as unknown as Record<string, unknown>,
+      send.ownerSignature,
+    );
+  } catch (error) {
+    if (!isProvenNotSent(error)) return { kind: "unconfirmed" };
+    forgetUncertain(send.owner);
+    throw error;
+  }
+  rememberUncertain({ ...send, hash: sent });
   onSigned();
-  return landedOrRefused(provider, sent);
+  return settled(send.owner, await landedOrRefused(provider, sent));
+};
+
+/**
+ * The identity Worker answered that nothing reached the chain: a refusal before the sponsor (4xx) or the sponsor's own
+ * (SPONSOR_REFUSED). A lost answer, SEND_UNCERTAIN or any other failure may have been sent.
+ */
+const isProvenNotSent = (error: unknown) =>
+  error instanceof IdentityRequestError && (error.status < 500 || error.code === "SPONSOR_REFUSED");
+
+/** A known outcome ends the uncertain send; an unconfirmed one keeps it. */
+const settled = (owner: string, outcome: WalletSendOutcome) => {
+  if (outcome.kind !== "unconfirmed") forgetUncertain(owner);
+  return outcome;
 };
 
 /** An outside execution (SNIP-9 v2) on this build's chain whose calls are exactly these, in order. */
@@ -114,13 +168,14 @@ const buildsExactly = (
 };
 
 /** Held until the transaction's receipt lands: a revert answered with the ledger's own reason. */
+/** Held until the receipt lands; a lost receipt read is unconfirmed, never refused, so nothing is sent again. */
 const landedOrRefused = async (provider: ProviderInterface, sent: string): Promise<WalletSendOutcome> => {
   try {
     const receipt = await provider.waitForTransaction(sent, { retryInterval: RECEIPT_POLL_MS });
     return receipt.isReverted() ? { kind: "refused", reason: refusalOf(receipt) } : { kind: "landed" };
   } catch (error) {
     console.error("l2_send_unconfirmed", { hash: sent, error: error instanceof Error ? error.message : error });
-    return { kind: "refused", reason: VALUE_WORDS.unconfirmed };
+    return { kind: "unconfirmed" };
   }
 };
 

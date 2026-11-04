@@ -370,6 +370,21 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
       )
     ).transactionHash;
 
+  /**
+   * Starts a lost passkey's recovery of the default wallet: `passkey`, just made on this device, owns it 7 days from
+   * now unless the passkey that owns it today cancels. Takes the account's emailed code; the escape's transaction hash.
+   */
+  const startWalletRecovery = async (input: { passkey: NewPasskey; code: string }) =>
+    (
+      await readJson(
+        await request("/auth/wallet/default/recovery", {
+          method: "POST",
+          body: JSON.stringify({ passkey: input.passkey, otp: input.code }),
+        }),
+        decode(Schema.Struct({ transactionHash: Schema.String })),
+      )
+    ).transactionHash;
+
   const getNotificationPreferences = async (): Promise<NotificationPreferences> =>
     readJson(
       await request("/notifications/preferences", { method: "GET", cache: "no-store" }),
@@ -458,6 +473,7 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
     createDefaultWallet,
     buildDefaultWalletCall,
     executeDefaultWalletCall,
+    startWalletRecovery,
     signOut,
     updateUser,
     getNotificationPreferences,

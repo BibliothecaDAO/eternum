@@ -12,7 +12,8 @@ export type IdentityAction =
   | "unlink"
   | "portrait"
   | "wallet"
-  | "send";
+  | "send"
+  | "recover";
 
 export class WrongNetworkError extends Error {}
 
@@ -38,6 +39,9 @@ const NAMED_REFUSALS: Record<string, string> = {
   SPONSOR_UNAVAILABLE: "Sending opens soon. Your LORDS stay safe in your wallet.",
   SPONSOR_CAP_REACHED: "Today's free sends are used. Try again tomorrow.",
   SPONSOR_REFUSED: "The network did not take it. Try again.",
+  RECOVERY_UNDER_WAY: "A recovery is already under way on this wallet.",
+  // Never "not sent": the sponsor's answer was lost, and it may have gone through.
+  SEND_UNCERTAIN: "The network did not answer, so it may have gone through. Open this again in a minute to see.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
@@ -50,6 +54,7 @@ const FALLBACK: Record<IdentityAction, string> = {
   portrait: "The portrait was not saved. Try again.",
   wallet: "Your wallet was not made. Try again.",
   send: "Nothing was sent. Try again.",
+  recover: "The recovery did not start. Try again.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */
@@ -60,6 +65,9 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
   if (cause instanceof PasskeyUnavailableError)
     return "This browser cannot use passkeys here. Open the game in your phone's or computer's main browser.";
+  // Asked to make a passkey this device already holds (a recovery's excludeCredentials).
+  if ((cause as { name?: unknown } | null)?.name === "InvalidStateError")
+    return "This device still has your passkey: nothing to recover. Use it to send or to cancel a recovery.";
   // The browser's own refusal: the player closed the passkey sheet, or it timed out.
   if ((cause as { name?: unknown } | null)?.name === "NotAllowedError") return "The passkey was not used. Try again.";
   return FALLBACK[action];
