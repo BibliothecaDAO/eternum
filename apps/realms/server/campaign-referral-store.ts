@@ -19,6 +19,12 @@ export interface Referrer {
   goldenLinkAt: number | null;
 }
 
+/** Who an account is to the one-person check: its mailbox, null when unknown, and its approved devices. */
+export interface Identity {
+  mailbox: string | null;
+  devices: string[];
+}
+
 interface CampaignTicket {
   campaign: CampaignKey;
   owner: string;
@@ -135,11 +141,14 @@ export function createCampaignReferralStore(db: D1Database) {
       name: profileOfIdentityUser({ id, name, image }).name,
     }));
 
-  /** The account's mailbox and the device keys it signs in with now: who it is to the anti-alt check. */
-  const identityOf = async (realmsId: string) => {
+  /**
+   * The account's mailbox and every device key the guardian ever approved for it, signed in or not: who it is to the
+   * one-person check.
+   */
+  const identityOf = async (realmsId: string): Promise<Identity> => {
     const [user, devices] = await db.batch<{ email?: string; deviceKey?: string }>([
       db.prepare('SELECT "email" FROM "user" WHERE "realmsId" = ?').bind(realmsId),
-      db.prepare('SELECT DISTINCT "deviceKey" FROM "device_sessions" WHERE "realmsId" = ?').bind(realmsId),
+      db.prepare('SELECT "deviceKey" FROM "account_devices" WHERE "realmsId" = ? ORDER BY "deviceKey"').bind(realmsId),
     ]);
     const email = user?.results[0]?.email;
     return {
@@ -157,17 +166,42 @@ export function createCampaignReferralStore(db: D1Database) {
         .first<{ deviceKey: string }>()
     )?.deviceKey ?? null;
 
-  /** Counts friends for their inviter, keeping the device each counted on; a friend once counted stays counted. */
-  const markCounted = async (campaign: CampaignKey, friends: { friend: string; deviceKey: string }[], now: number) => {
+  /**
+   * Counts friends for their inviter, keeping the device each counted on; a friend once counted stays counted. The
+   * write itself refuses a friend whose mailbox or device is the inviter's or a counted friend's on the link, so reads
+   * that race, each deciding from its own snapshot, still count one person once.
+   */
+  const markCounted = async (
+    campaign: CampaignKey,
+    inviter: string,
+    own: Identity,
+    friends: { friend: string; deviceKey: string }[],
+    now: number,
+  ) => {
     if (friends.length === 0) return;
     await db.batch(
       friends.map(({ friend, deviceKey }) =>
         db
           .prepare(
-            `UPDATE "campaign_referrals" SET "counted_at" = ?, "device_key" = coalesce("device_key", ?)
-             WHERE "campaign" = ? AND "friend" = ? AND "counted_at" IS NULL`,
+            `UPDATE "campaign_referrals" AS f SET "counted_at" = ?, "device_key" = coalesce(f."device_key", ?)
+             WHERE f."campaign" = ? AND f."friend" = ? AND f."referrer" = ? AND f."counted_at" IS NULL
+               AND f."mailbox" IS NOT ? AND coalesce(f."device_key", ?) NOT IN (SELECT "value" FROM json_each(?))
+               AND NOT EXISTS (SELECT 1 FROM "campaign_referrals" AS o
+                               WHERE o."campaign" = f."campaign" AND o."referrer" = f."referrer"
+                                 AND o."counted_at" IS NOT NULL
+                                 AND (o."mailbox" = f."mailbox" OR o."device_key" = coalesce(f."device_key", ?)))`,
           )
-          .bind(now, deviceKey, campaign, friend),
+          .bind(
+            now,
+            deviceKey,
+            campaign,
+            friend,
+            inviter,
+            own.mailbox,
+            deviceKey,
+            JSON.stringify(own.devices),
+            deviceKey,
+          ),
       ),
     );
   };

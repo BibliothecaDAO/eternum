@@ -141,10 +141,11 @@ export async function settleReferrals(world: ReferralWorld, campaign: CampaignKe
 }
 
 /**
- * Counts each friend the board shows with a site cleared whose mailbox and device are their own: neither the
- * inviter's nor a counted friend's. Friends counted before keep their count and claim their identity first; the rest
- * are taken oldest first. A friend whose device is not known yet waits for it. Answers the friends excluded as
- * someone else's.
+ * Counts each friend the board shows with a site cleared whose mailbox and devices are their own: neither the
+ * inviter's nor a counted friend's, every device the guardian ever approved for either counting, signed in or not.
+ * Friends counted before keep their count and claim their identity first; the rest are taken oldest first. A friend
+ * with no device known yet waits for one: an unknown device proves nothing. The counting write checks again, so racing
+ * reads count one person once. Answers the friends excluded as someone else's.
  */
 async function countFriends(
   world: ReferralWorld,
@@ -165,17 +166,18 @@ async function countFriends(
   const newlyCounted: { friend: string; deviceKey: string }[] = [];
   for (const friend of friends.filter((candidate) => !isCounted(candidate))) {
     if (!(await hasClearedSite(world, friend, board))) continue;
-    const deviceKey = friend.deviceKey ?? (await referrals.identityOf(friend.friend)).devices[0];
-    if (deviceKey === undefined) continue;
-    if (mailboxes.has(friend.mailbox) || devices.has(deviceKey)) {
+    const known = (await referrals.identityOf(friend.friend)).devices;
+    const friendDevices = [...new Set(friend.deviceKey === null ? known : [friend.deviceKey, ...known])];
+    if (friendDevices.length === 0) continue;
+    if (mailboxes.has(friend.mailbox) || friendDevices.some((device) => devices.has(device))) {
       excluded.add(friend.friend);
       continue;
     }
     mailboxes.add(friend.mailbox);
-    devices.add(deviceKey);
-    newlyCounted.push({ friend: friend.friend, deviceKey });
+    friendDevices.forEach((device) => devices.add(device));
+    newlyCounted.push({ friend: friend.friend, deviceKey: friendDevices[0]! });
   }
-  await referrals.markCounted(campaign, newlyCounted, now);
+  await referrals.markCounted(campaign, inviter, own, newlyCounted, now);
   return excluded;
 }
 

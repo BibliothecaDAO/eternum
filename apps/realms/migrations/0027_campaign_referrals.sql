@@ -25,3 +25,20 @@ create table "campaign_referrals" (
   primary key ("campaign", "friend")
 );
 create index "campaign_referrals_referrer" on "campaign_referrals" ("campaign", "referrer");
+-- One person counts once on a link: no two counted friends share a mailbox or a device. Settlement checks this in the
+-- write that counts a friend; these keep it true whatever reads race.
+create unique index "campaign_referrals_counted_mailbox" on "campaign_referrals" ("campaign", "referrer", "mailbox")
+  where "counted_at" is not null;
+create unique index "campaign_referrals_counted_device" on "campaign_referrals" ("campaign", "referrer", "device_key")
+  where "counted_at" is not null;
+-- Every device key the guardian approved for an account, kept after sign-out: "device_sessions" rows go with their
+-- session, and a referral's one-person check must still know the account's devices then. Filled from the approvals and
+-- revocations already recorded.
+create table "account_devices" (
+  "realmsId" text not null references "user" ("realmsId") on delete cascade,
+  "deviceKey" text not null,
+  primary key ("realmsId", "deviceKey")
+);
+insert into "account_devices" ("realmsId", "deviceKey")
+  select "realmsId", "deviceKey" from "device_sessions"
+  union select "realmsId", "deviceKey" from "revoked_devices";

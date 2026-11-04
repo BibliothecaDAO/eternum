@@ -26,6 +26,7 @@ import { routeIdentityRequest } from "./routes";
 import { campaignCodeHash } from "./campaigns";
 import { CAMPAIGNS } from "@realms-world/identity";
 import { campaignTicketFor } from "./campaign-ticket-store";
+import { createCampaignReferralStore } from "./campaign-referral-store";
 import { accountKey } from "./campaign-entry";
 import { ORIGIN } from "./workerd-harness";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
@@ -1461,23 +1462,21 @@ describe("identity Worker", () => {
 
     let devices = 0;
     /**
-     * A signed-in player. By default each signs in with their own mailbox and on their own device, as the guardian
-     * records it for the session; `email` and `device` make one share another's, and `device: null` approves none yet.
+     * A signed-in player. By default each signs in with their own mailbox and on their own device, approved by the
+     * guardian through /api/devices as the client asks; `email` and `device` make one share another's, and
+     * `device: null` approves none yet.
      */
     const player = async (name: string, { email, device }: { email?: string; device?: string | null } = {}) => {
       const browser = createBrowser();
       await signInWithCode(browser, email ?? `${name}@realms.test`);
-      const session = (await browser.session())!;
-      const realmsId = session.user.realmsId;
+      const realmsId = (await browser.session())!.user.realmsId;
       await heraldsAnswerFor(realmsId, { [shard]: false });
       const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
-      const onDevice = async (deviceKey: string) =>
-        void (await env.DB.prepare(
-          `INSERT INTO "device_sessions" ("realmsId", "deviceKey", "sessionId")
-           SELECT ?, ?, "id" FROM "session" WHERE "userId" = ? ORDER BY "createdAt" DESC LIMIT 1`,
-        )
-          .bind(realmsId, deviceKey, session.user.id)
-          .run());
+      let counter = 0;
+      const onDevice = async (deviceKey: string) => {
+        const change = { ...deviceChangeFor(realmsId, { counter: ++counter }), chainId: "0xd5", deviceKey };
+        expect((await browser.request("/api/devices", { body: change })).status).toBe(200);
+      };
       const own = device === undefined ? `0x${(0xd0000 + ++devices).toString(16)}` : device;
       if (own !== null) await onDevice(own);
       const call = async (path: string, body?: unknown) => {
@@ -1490,6 +1489,9 @@ describe("identity Worker", () => {
         realmsId,
         device: own,
         onDevice,
+        /** Signs out, as the client does: the session and its device rows go. */
+        signOut: async () => expect((await browser.request("/api/auth/sign-out", { body: {} })).status).toBe(200),
+        signIn: () => signInWithCode(browser, email ?? `${name}@realms.test`),
         redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
         referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
         code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
@@ -1700,6 +1702,95 @@ describe("identity Worker", () => {
         "excluded",
         "counted",
       ]);
+    });
+
+    it("keeps excluding a friend on the inviter's device after the inviter signs out and back in", async () => {
+      const inviter = await player("ref-signout", { device: "0xa11ce" });
+      inviter.found("free");
+      const code = await inviter.code();
+      const twin = await player("ref-signout-twin", { device: "0xa11ce" });
+      expect(await twin.redeem({ referral: code })).toEqual(ticket("regular"));
+      twin.found("campaign", 1);
+      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
+      // Sign-out deletes the inviter's session and with it every device_sessions row; signing back in registers none.
+      await inviter.signOut();
+      await inviter.signIn();
+      const rows = await env.DB.prepare('SELECT COUNT(*) AS n FROM "device_sessions" WHERE "realmsId" = ?')
+        .bind(inviter.realmsId)
+        .first<{ n: number }>();
+      expect(rows).toEqual({ n: 0 });
+      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
+      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
+      // The same for a friend who approved a counted friend's device and signed out before counting.
+      const real = await player("ref-signout-real");
+      expect(await real.redeem({ referral: code })).toEqual(ticket("regular"));
+      real.found("campaign", 1);
+      const borrower = await player("ref-signout-borrow", { device: null });
+      expect(await borrower.redeem({ referral: code })).toEqual(ticket("regular"));
+      await borrower.onDevice(real.device!);
+      await borrower.signOut();
+      borrower.found("campaign", 1);
+      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
+        "excluded",
+        "counted",
+        "excluded",
+      ]);
+    });
+
+    it("counts one person once when settlements race, each deciding from its own snapshot", async () => {
+      const inviter = await player("ref-racing");
+      inviter.found("free");
+      const code = await inviter.code();
+      const own = { mailbox: "ref-racing@realms.test", devices: [inviter.device!] };
+      const store = createCampaignReferralStore(env.DB);
+      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+        const friend = await player(name, options);
+        expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
+        friend.found("campaign", 1);
+        return friend;
+      };
+      // Shared device: an older read decided to count the later friend, a newer one the earlier; both writes land.
+      const first = await join("ref-racing-a", { device: "0xdef" });
+      const second = await join("ref-racing-b", { device: "0xdef" });
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, deviceKey: "0xdef" }], 1);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, deviceKey: "0xdef" }], 2);
+      // Shared mailbox: the same race between two aliases of one inbox, on their own devices.
+      const third = await join("ref-racing-c", { email: "racer@gmail.com" });
+      const fourth = await join("ref-racing-d", { email: "ra.cer+alt@gmail.com" });
+      await store.markCounted(
+        campaign,
+        inviter.realmsId,
+        own,
+        [{ friend: fourth.realmsId, deviceKey: fourth.device! }],
+        3,
+      );
+      await store.markCounted(
+        campaign,
+        inviter.realmsId,
+        own,
+        [{ friend: third.realmsId, deviceKey: third.device! }],
+        4,
+      );
+      const counted = await env.DB.prepare(
+        `SELECT "friend" FROM "campaign_referrals" WHERE "referrer" = ? AND "counted_at" IS NOT NULL ORDER BY "counted_at"`,
+      )
+        .bind(inviter.realmsId)
+        .all<{ friend: string }>();
+      expect(counted.results.map(({ friend }) => friend)).toEqual([second.realmsId, fourth.realmsId]);
+      // A settling read keeps that: two counted, the others excluded, and one ticket for the inviter.
+      expect((await inviter.referral())[1]).toEqual(
+        answer("ticket", ["excluded", "counted", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
+      );
+      // Nor does a write for the inviter's own mailbox or device count anyone.
+      const self = await join("ref-racing-self", { device: inviter.device });
+      await store.markCounted(
+        campaign,
+        inviter.realmsId,
+        own,
+        [{ friend: self.realmsId, deviceKey: inviter.device! }],
+        5,
+      );
+      expect((await inviter.referral())[1].link.counted).toBe(2);
     });
 
     it("gives a held-Realm inviter nothing, while their friends still get tickets", async () => {
