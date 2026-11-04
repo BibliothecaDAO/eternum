@@ -1,5 +1,5 @@
 import type { RankedWords } from "@bibliothecadao/types";
-import { realmSkinIcon } from "../structures/realm-skins";
+import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 
 import type { CSSProperties } from "react";
 import type { FrontierSpecies } from "../structures/frontier-beast";
@@ -171,6 +171,8 @@ export const buildStructurePlate = (
     | "incomingTroopArrivals"
     | "frontierBeast"
     | "realmSkin"
+    | "level"
+    | "hasWonder"
     | "battleTimerLeft"
   > & { watched?: SeatSide | null },
   nowSeconds = 0,
@@ -207,8 +209,8 @@ export const buildStructurePlate = (
       ? beastMeaning(structure.frontierBeast.beast)
       : structure.structureType === StructureType.Mine && structure.mineKind !== undefined
         ? mineMeaning(structure.mineKind)
-        : structure.realmSkin
-          ? realmSkinIcon(structure.realmSkin)
+        : structure.structureType === StructureType.Realm
+          ? realmMeaning(structure.level, structure.realmSkin, structure.hasWonder)
           : structureMeaning(structure.structureType),
     guards,
     ...(inBattle(structure.battleTimerLeft) ? { inBattle: true } : {}),

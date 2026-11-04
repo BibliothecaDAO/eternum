@@ -1,5 +1,5 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
-import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon } from "@/ui/design-system/icon";
 import { rankStep } from "@/ui/design-system/kit/words";
 import { rankName } from "@bibliothecadao/types";
@@ -9,14 +9,14 @@ import { rankName } from "@bibliothecadao/types";
  * first to the highest, the ones reached lit and the ones to come dimmed. It is the realm's rank, never a tier: the
  * tier gems mean tiers.
  */
-export const RankSteps = ({ level, highest }: { level: number; highest: number }) => {
+export const RankSteps = ({ level, highest, kind = "realm" }: { level: number; highest: number; kind?: HomeKind }) => {
   const ranks = Array.from({ length: highest + 1 }, (_, rank) => rank);
   const line = rankStep(rankName(level), level + 1, ranks.length);
   return (
     <span role="img" aria-label={line} data-tip={line} className="inline-flex shrink-0 items-center gap-0.5">
       {ranks.map((rank) => (
         <span key={rank} className={cn("inline-flex", rank > level && "opacity-30 grayscale")}>
-          <Icon name={realmMeaning(rank)} size={20} />
+          <Icon name={homeIcon(kind, rank)} size={20} />
         </span>
       ))}
     </span>

@@ -3,7 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { canonicalRealm } from "@bibliothecadao/eternum";
 
 import { useHeldRealms, useHeldTicket, type HeldTicket } from "@/hooks/use-holdings";
-import { realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
 import { Icon } from "@/ui/design-system/icon";
 import type { IconMeaning } from "@/ui/design-system/icon-meaning";
 import { AppButton, AppEmpty } from "@/ui/design-system/kit/app-elements";
@@ -61,7 +61,7 @@ export const HoldingsStrip = () => {
         )}
         {(ticket.state === "held" || ticket.state === "unreadable") && (
           <Holding
-            icon={realmSkinIcon(golden ? "devcon-golden" : "devcon")}
+            icon={homeIcon(golden ? "devcon-golden" : "devcon", 0)}
             count={ticket.state === "held" ? DEVCON_NAME : PROFILE_WORDS.unknownCount}
             label={golden ? JOIN_WORDS.golden : PROFILE_WORDS.ticket}
             onPress={() => setSheet("ticket")}
@@ -115,7 +115,7 @@ const TicketSheet = ({
         </div>
       ) : (
         <AppEmpty
-          icon={realmSkinIcon("devcon")}
+          icon={homeIcon("devcon", 0)}
           line={TICKET_UNREADABLE}
           action={
             <AppButton kind="secondary" onClick={ticket.retry}>

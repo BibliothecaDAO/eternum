@@ -89,7 +89,7 @@ const home = {
   game_id: 3,
   entity_id: 412n,
   owner: 0xaccn,
-  base: { created_at: 360 },
+  base: { created_at: 360, level: 0 },
   metadata: { realm_id: 711 },
 } as unknown as NativeRows["Structure"];
 const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, endAt: 360 + 21 * 20 * 7200, spacing: 50 };
@@ -207,7 +207,7 @@ it("shows each campaign tier's pavilion, its daily Labor and Essence, and claims
     facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Golden Devcon");
-    expect(host.querySelector('.home-art[data-tier="golden"] img[src$="/devcon-golden-realm.webp"]')).not.toBeNull();
+    expect(host.querySelector('.home-art[data-tier="golden"] img[src$="/devcon-golden-realm-0.webp"]')).not.toBeNull();
     expect(amounts(host)).toEqual(["labor 2,000", "essence 2,000"]);
     expect(host.querySelector(".realm-labor__amounts")?.textContent).toContain("each day");
     expect(buttons()).toContain("Claim 2,000 Labor · 2,000 Essence");
@@ -223,7 +223,7 @@ it("shows each campaign tier's pavilion, its daily Labor and Essence, and claims
     facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
     expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Devcon");
-    expect(host.querySelector('.home-art[data-tier="regular"] img[src$="/devcon-realm.webp"]')).not.toBeNull();
+    expect(host.querySelector('.home-art[data-tier="regular"] img[src$="/devcon-realm-0.webp"]')).not.toBeNull();
     expect(amounts(host)).toEqual(["labor 1,000", "essence 1,000"]);
     expect(buttons()).toContain("Claim 1,000 Labor · 1,000 Essence");
   } finally {

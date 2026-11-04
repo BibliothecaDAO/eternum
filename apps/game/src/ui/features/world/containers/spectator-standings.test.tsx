@@ -14,7 +14,15 @@ vi.mock("@/ui/features/social/player/use-in-game-leaderboard", () => ({
 }));
 // The other player's realm is the structure selected on the map.
 vi.mock("@/hooks/use-fact-view", () => ({
-  useFactView: () => [{ entity_id: 9n, owner: 0xc1n, base: { category: 1 } }],
+  useFactView: () => [
+    {
+      entity_id: 9n,
+      owner: 0xc1n,
+      game_id: 1,
+      base: { category: 1, level: 2 },
+      metadata: { has_wonder: true, deepest_depth: 0 },
+    },
+  ],
 }));
 // The one name rule, as identity answered: 0xc1 claimed "clientlane".
 const NAMES = vi.hoisted(() => ({
@@ -52,6 +60,8 @@ it("lights only the watching player's row in a tie, as Results does, whatever is
   await act(async () => root.render(<SpectatorStandingsBody />));
   try {
     const rows = [...container.querySelectorAll<HTMLButtonElement>("button.ui-table-row")];
+    expect(rows[0].querySelector('[data-icon="wonder-realm-2"]')).not.toBeNull();
+    expect(rows[1].querySelector('[data-icon^="wonder-realm-"]')).toBeNull();
     const read = rows.map((row) => [
       row.firstElementChild?.textContent,
       row.getAttribute("aria-label"),

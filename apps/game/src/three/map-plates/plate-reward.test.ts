@@ -18,6 +18,7 @@ const structureOf = (structureType: StructureType, owner = 0n) => ({
   level: 0,
   isMine: owner !== 0n,
   isAlly: false,
+  hasWonder: false,
   owner: { address: owner, ownerName: "", guildName: "" },
   guardArmies: [],
   incomingTroopArrivals: [],

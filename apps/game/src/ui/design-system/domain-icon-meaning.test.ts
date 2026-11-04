@@ -102,3 +102,20 @@ it("keeps the research painting for historical tier purchases and current skill-
   expect(storyMeaning("TierBought")).toBe("research");
   expect(storyMeaning("SkillPointSpent")).toBe("research");
 });
+
+it("reads native Wonder identity at each level, keeping free and ordinary held Realms in the Realm family", () => {
+  const { store, structure } = campBeside();
+  for (const level of [0, 1, 2, 3]) {
+    for (const realm_id of [0, 711]) {
+      const home = {
+        ...structure,
+        base: { ...structure.base, category: StructureType.Realm, level },
+        metadata: { ...structure.metadata, realm_id, has_wonder: false },
+      };
+      expect(readStructureMeaning(store, home)).toBe(`realm-${level}`);
+      expect(readStructureMeaning(store, { ...home, metadata: { ...home.metadata, has_wonder: true } })).toBe(
+        `wonder-realm-${level}`,
+      );
+    }
+  }
+});

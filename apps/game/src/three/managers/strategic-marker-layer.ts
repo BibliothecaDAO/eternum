@@ -1,4 +1,5 @@
-import { REALM_SKINS, realmSkinIcon, type RealmSkin } from "../structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKINS, type RealmSkin } from "../structures/realm-skins";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
@@ -62,7 +63,7 @@ const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKi
   realm: iconUrl(structureMeaning(StructureType.Realm)),
   village: iconUrl(structureMeaning(StructureType.Village)),
   ...(Object.fromEntries(
-    Object.keys(REALM_SKINS).map((skin) => [skin, iconUrl(realmSkinIcon(skin as RealmSkin))]),
+    Object.keys(REALM_SKINS).map((skin) => [skin, iconUrl(homeIcon(skin as RealmSkin, 0))]),
   ) as Record<RealmSkin, string>),
 };
 const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");

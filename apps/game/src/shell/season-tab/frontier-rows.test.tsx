@@ -14,6 +14,10 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
     address: "0x5eed",
     rank: 1,
     order: 1,
+    level: 0,
+    deepest_depth: 0,
+    campaign: null,
+    has_wonder: true,
     sites_cleared: { total: 12 },
     rewards: { lords: "340" },
   } as unknown as HeraldFrontierLeaderboardEntry;
@@ -27,6 +31,8 @@ it("says what each of a board row's counts is, on hover and to a screen reader, 
     ),
   );
   try {
+    expect(container.querySelector('[data-icon="wonder-realm-0"]')).not.toBeNull();
+    expect(container.querySelector('[role="img"][aria-label="Wonder · Settlement"]')).not.toBeNull();
     const figures = [...container.querySelectorAll<HTMLElement>(".app-board__figure")];
     expect(figures.map((figure) => [figure.textContent, figure.title])).toEqual([
       ["12 sites cleared", "sites cleared"],

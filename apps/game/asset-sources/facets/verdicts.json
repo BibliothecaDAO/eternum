@@ -129,7 +129,7 @@
   },
   "faceted/map-village": {
     "verdict": "beats shipped",
-    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12\u201316 px."
+    "reason": "Paired red roofs distinguish village from the pale realm towers. The compact painted houses retain material at 32 px and roof colour at 12–16 px."
   },
   "faceted/map-mine": {
     "verdict": "beats shipped",
@@ -1016,12 +1016,52 @@
     "verdict": "beats shipped",
     "reason": "Distinct painted portrait matches the selected creature silhouette and fills its HUD frame."
   },
-  "faceted/devcon-realm": {
+  "faceted/devcon-realm-0": {
     "verdict": "equal",
-    "reason": "Approved Devcon pavilion painting, regular and golden, compared beside the shipped realm icon at 64, 128 and 256 pixels."
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
   },
-  "faceted/devcon-golden-realm": {
+  "faceted/devcon-realm-1": {
     "verdict": "equal",
-    "reason": "Approved Devcon pavilion painting, regular and golden, compared beside the shipped realm icon at 64, 128 and 256 pixels."
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-realm-2": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-realm-3": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/wonder-realm-0": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/wonder-realm-1": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/wonder-realm-2": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-golden-realm-0": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-golden-realm-1": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-golden-realm-2": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/devcon-golden-realm-3": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+  },
+  "faceted/wonder-realm-3": {
+    "verdict": "equal",
+    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
   }
 }

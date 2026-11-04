@@ -1,4 +1,7 @@
+import { readRealmSkin } from "@/three/structures/realm-skins";
+import { RealmBadge } from "@/ui/features/frontier/board/realm-marks";
 import { useMemo } from "react";
+import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { Position, configManager, structureMapPosition } from "@bibliothecadao/eternum";
 import { safeInteger } from "@bibliothecadao/eternum/game-client";
 import { StructureType, formatExact } from "@bibliothecadao/types";
@@ -25,6 +28,7 @@ export function SpectatorStandingsBody() {
 }
 
 function StandingsRows() {
+  useNativeRevision(["CampaignHome"]);
   const { standingsByAddress } = useInGameLeaderboard();
   const standings = useMemo(
     () =>
@@ -77,6 +81,14 @@ function StandingsRows() {
           >
             <span>{row.rank}</span>
             <span className="flex min-w-0 items-center gap-1.5 text-left">
+              {capital && (
+                <RealmBadge
+                  level={capital.base.level}
+                  depth={capital.metadata.deepest_depth}
+                  skin={readRealmSkin(store, capital)}
+                  hasWonder={capital.metadata.has_wonder}
+                />
+              )}
               <PlayerSeatMark account={address} name={name} />
               <span className="truncate">{shown}</span>
             </span>

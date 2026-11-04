@@ -9,55 +9,55 @@
   "icons": [
     {
       "id": "knight-t1",
-      "label": "Knight \u00b7 T1",
+      "label": "Knight · T1",
       "family": "Troops",
       "prompt": "prompts/knight-t1.txt"
     },
     {
       "id": "knight-t2",
-      "label": "Knight \u00b7 T2",
+      "label": "Knight · T2",
       "family": "Troops",
       "prompt": "prompts/knight-t2.txt"
     },
     {
       "id": "knight-t3",
-      "label": "Knight \u00b7 T3",
+      "label": "Knight · T3",
       "family": "Troops",
       "prompt": "prompts/knight-t3.txt"
     },
     {
       "id": "crossbowman-t1",
-      "label": "Crossbowman \u00b7 T1",
+      "label": "Crossbowman · T1",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t1.txt"
     },
     {
       "id": "crossbowman-t2",
-      "label": "Crossbowman \u00b7 T2",
+      "label": "Crossbowman · T2",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t2.txt"
     },
     {
       "id": "crossbowman-t3",
-      "label": "Crossbowman \u00b7 T3",
+      "label": "Crossbowman · T3",
       "family": "Troops",
       "prompt": "prompts/crossbowman-t3.txt"
     },
     {
       "id": "paladin-t1",
-      "label": "Paladin \u00b7 T1",
+      "label": "Paladin · T1",
       "family": "Troops",
       "prompt": "prompts/paladin-t1.txt"
     },
     {
       "id": "paladin-t2",
-      "label": "Paladin \u00b7 T2",
+      "label": "Paladin · T2",
       "family": "Troops",
       "prompt": "prompts/paladin-t2.txt"
     },
     {
       "id": "paladin-t3",
-      "label": "Paladin \u00b7 T3",
+      "label": "Paladin · T3",
       "family": "Troops",
       "prompt": "prompts/paladin-t3.txt"
     },
@@ -135,7 +135,7 @@
     },
     {
       "id": "realm",
-      "label": "Realm \u00b7 level 2",
+      "label": "Realm · level 2",
       "family": "Structures",
       "prompt": "prompts/realm.txt"
     },
@@ -3239,21 +3239,123 @@
       }
     },
     {
-      "id": "devcon-realm",
-      "label": "Devcon realm",
+      "id": "devcon-realm-0",
+      "label": "Devcon · Settlement",
       "family": "Structures",
+      "prompt": "prompts/devcon-realm-0.txt",
       "source": {
         "kind": "painted",
-        "sha256": "5d917204967d62d7f328f6c632b3504a497df166019be4aee5be8b06f015584f"
+        "sha256": "c3a2f31f78234fd8544f487989798f84dea2f3c0e530ac7d4ea0a874b975ea1f"
       }
     },
     {
-      "id": "devcon-golden-realm",
-      "label": "Golden Devcon realm",
+      "id": "devcon-realm-1",
+      "label": "Devcon · City",
       "family": "Structures",
+      "prompt": "prompts/devcon-realm-1.txt",
       "source": {
         "kind": "painted",
-        "sha256": "3de36fee0b99be093590967447a9a275daf98b03405af56c3c96ff2aac4cc8eb"
+        "sha256": "69b7867fdecf9542981391d16d7c00945f1f96f147bfc32bd4742e5dcf526687"
+      }
+    },
+    {
+      "id": "devcon-realm-2",
+      "label": "Devcon · Kingdom",
+      "family": "Structures",
+      "prompt": "prompts/devcon-realm-2.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "bfeef88dc9557d1b2d62c786157956efe1c595a91c2495f4b094e012fb4073aa"
+      }
+    },
+    {
+      "id": "devcon-realm-3",
+      "label": "Devcon · Empire",
+      "family": "Structures",
+      "prompt": "prompts/devcon-realm-3.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "abb5811b12d17aadce92738128acf174ea2859dfe1c584d2c59c84122b0a409d"
+      }
+    },
+    {
+      "id": "wonder-realm-0",
+      "label": "Wonder · Settlement",
+      "family": "Structures",
+      "prompt": "prompts/wonder-realm-0.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "f2caa33ed016c588568b7bc42904b8a0c168acc4601294e3738784ea33cd2e5c"
+      }
+    },
+    {
+      "id": "wonder-realm-1",
+      "label": "Wonder · City",
+      "family": "Structures",
+      "prompt": "prompts/wonder-realm-1.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "902da5ff81a191b2ed26f1a6ea086921d56f616fb1263ddf7eeb6729553096f3"
+      }
+    },
+    {
+      "id": "wonder-realm-2",
+      "label": "Wonder · Kingdom",
+      "family": "Structures",
+      "prompt": "prompts/wonder-realm-2.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "cc475bc0bedbef5d7cae8a36c2d9d681078f0869eddf87515ea9081a7ce6c745"
+      }
+    },
+    {
+      "id": "devcon-golden-realm-0",
+      "label": "Golden Devcon · Settlement",
+      "family": "Structures",
+      "prompt": "prompts/devcon-golden-realm-0.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "c3cb59eb64b140e8ab1f30480daeb7e2c65992234994b55ba8969f0ca7876a16"
+      }
+    },
+    {
+      "id": "devcon-golden-realm-1",
+      "label": "Golden Devcon · City",
+      "family": "Structures",
+      "prompt": "prompts/devcon-golden-realm-1.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "6ce60282acf73a603decb4cf71985d6f500d2d529baee0c556005eadf1a9ad38"
+      }
+    },
+    {
+      "id": "devcon-golden-realm-2",
+      "label": "Golden Devcon · Kingdom",
+      "family": "Structures",
+      "prompt": "prompts/devcon-golden-realm-2.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "b8ef703ba3002c98f9159c03c15252b4a6c28adf6bc78c13ff7bf17a69786f28"
+      }
+    },
+    {
+      "id": "devcon-golden-realm-3",
+      "label": "Golden Devcon · Empire",
+      "family": "Structures",
+      "prompt": "prompts/devcon-golden-realm-3.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "b9f0f3fab3ff1042d4315ad23c5ed32cf4d4741addf387fc7391b9e02af879e7"
+      }
+    },
+    {
+      "id": "wonder-realm-3",
+      "label": "Wonder · Empire",
+      "family": "Structures",
+      "prompt": "prompts/wonder-realm-3.txt",
+      "source": {
+        "kind": "painted",
+        "sha256": "0842e41267731638afa52e6be4dcc22552de5bd83e0434c9e4ff74e2dae84d5f"
       }
     }
   ]

@@ -1,4 +1,5 @@
-import { readRealmSkin, realmSkinIcon, type RealmSkin } from "@/three/structures/realm-skins";
+import { homeIcon, homeKind } from "./home-icons";
+import { readRealmSkin, type RealmSkin } from "@/three/structures/realm-skins";
 import type { FrontierSpecies } from "@/three/structures/frontier-beast";
 import { BuildingType, getProducedResource, StructureType, type StructureNamingMode } from "@bibliothecadao/types";
 import { frontierBeast, isGuardedSite, nativeGameModeOf, readFrontierBeast } from "@bibliothecadao/eternum";
@@ -88,7 +89,8 @@ export function readStructureMeaning(
   structure: NativeRows["Structure"],
 ): IconMeaning {
   const category = structure.base.category;
-  if (category === StructureType.Realm) return realmMeaning(structure.base.level, readRealmSkin(store, structure));
+  if (category === StructureType.Realm)
+    return realmMeaning(structure.base.level, readRealmSkin(store, structure), structure.metadata.has_wonder);
   if (!isGuardedSite(category)) return structureMeaning(category);
   const mode = nativeGameModeOf(store.require("GameRegistry", { game_id: structure.game_id }).preset_id);
   const guard =
@@ -103,14 +105,12 @@ export function mineMeaning(kind: number): IconMeaning {
   if (kind === 2) return "mine";
   throw new Error(`Unknown mine icon: ${kind}`);
 }
-export function realmMeaning(level: number, skin?: RealmSkin): IconMeaning {
-  const meaning = (["realm-0", "realm-1", "realm-2", "realm-3"] as const)[level];
-  if (!meaning) throw new Error(`Unknown realm level: ${level}`);
-  return skin ? realmSkinIcon(skin) : meaning;
+export function realmMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
+  return homeIcon(homeKind(skin, hasWonder), level);
 }
 
-export function realmMarkerMeaning(level: number, skin?: RealmSkin): IconMeaning {
-  if (skin) return realmMeaning(level, skin);
+export function realmMarkerMeaning(level: number, skin?: RealmSkin, hasWonder = false): IconMeaning {
+  if (skin || hasWonder) return realmMeaning(level, skin, hasWonder);
   return `map-${realmMeaning(level)}` as IconMeaning;
 }
 

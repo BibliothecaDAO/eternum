@@ -80,20 +80,23 @@ function settledPlayers(structures: Row[], campaignHomes: Row[]): Map<string, St
   const players = new Map<string, Standing>();
   for (const structure of structures) {
     if (!isRealmCategory(number(record(structure.base).category))) continue;
+    const metadata = record(structure.metadata);
+    if (typeof metadata.has_wonder !== "boolean") throw new Error("Settled realm is missing its Wonder identity");
     const owner = address(structure.owner);
     if (players.has(owner)) throw new Error("Frontier player has multiple settled realms");
     players.set(owner, {
       entry: {
         address: owner,
         structure_id: integer(structure.entity_id).toString(),
+        has_wonder: metadata.has_wonder,
         campaign: campaigns.get(integer(structure.entity_id)) ?? null,
         rank: 0,
         sites_cleared: { total: 0, camps: 0, rifts: 0, ruins: 0, beasts: 0 },
         chests_earned: 0,
         rewards: { lords: "0", essence: "0", labor: "0" },
-        deepest_depth: number(record(structure.metadata).deepest_depth),
+        deepest_depth: number(metadata.deepest_depth),
         level: number(record(structure.base).level),
-        order: number(record(structure.metadata).order),
+        order: number(metadata.order),
       },
     });
   }

@@ -1,0 +1,26 @@
+{
+  "realm": {
+    "0": "realm-0",
+    "1": "realm-1",
+    "2": "realm-2",
+    "3": "realm-3"
+  },
+  "wonder": {
+    "0": "wonder-realm-0",
+    "1": "wonder-realm-1",
+    "2": "wonder-realm-2",
+    "3": "wonder-realm-3"
+  },
+  "devcon": {
+    "0": "devcon-realm-0",
+    "1": "devcon-realm-1",
+    "2": "devcon-realm-2",
+    "3": "devcon-realm-3"
+  },
+  "devcon-golden": {
+    "0": "devcon-golden-realm-0",
+    "1": "devcon-golden-realm-1",
+    "2": "devcon-golden-realm-2",
+    "3": "devcon-golden-realm-3"
+  }
+}

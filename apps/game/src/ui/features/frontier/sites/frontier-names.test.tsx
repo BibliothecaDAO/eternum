@@ -44,6 +44,8 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
   const identity = { ...beast, art: "beast-troll" as const, combatClass: "Knight" as const };
   const plate = buildStructurePlate({
     entityId: SITE,
+    level: 0,
+    hasWonder: false,
     structureName: "",
     structureType: StructureType.Camp,
     isMine: false,
