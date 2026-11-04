@@ -1,6 +1,7 @@
 import type { GameModeId } from "@/config/game-modes";
 import { createContext, ReactNode, useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { useLocation } from "react-router-dom";
+import { useWorldInteractive } from "@/game-entry/world-interactive";
 import { MatchedRoutePlaylist, matchRoutePlaylist } from "../config/route-tracks";
 import { useAudio } from "../hooks/useAudio";
 import { formatTrackDisplayName } from "../shared/track-display";
@@ -99,10 +100,13 @@ export const MusicRouterProvider = ({
     };
   }, []);
 
+  const worldInteractive = useWorldInteractive();
   useEffect(() => {
     const pendingTrackId = state.pendingTrackId;
     if (!pendingTrackId) return;
     if (!isReady) return;
+    // Music waits for the first view: its files would take a slow link's share from the map's.
+    if (!worldInteractive) return;
     if (audioState?.muted) return;
 
     let cancelled = false;
@@ -166,7 +170,16 @@ export const MusicRouterProvider = ({
     return () => {
       cancelled = true;
     };
-  }, [audioState?.muted, ensureReady, fadeOutAndStopMusic, isReady, play, state.currentTrackId, state.pendingTrackId]);
+  }, [
+    audioState?.muted,
+    ensureReady,
+    fadeOutAndStopMusic,
+    isReady,
+    play,
+    state.currentTrackId,
+    state.pendingTrackId,
+    worldInteractive,
+  ]);
 
   const skip = useCallback(() => {
     if (!state.playlist.length) return;

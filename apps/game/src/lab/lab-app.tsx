@@ -1,9 +1,10 @@
-import { Suspense, useEffect, useRef } from "react";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Link, matchPath, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { SceneRoute } from "../scene-route";
 import { useBootDocumentState } from "../ui/modules/boot-loader";
 import "./lab-app.css";
 import { type Device, type LabPage, type LabRoom, type LabView, type Mode, ROOMS } from "./rooms";
+import { markWorldInteractive } from "@/game-entry/world-interactive";
 
 const MODE_NAMES: Record<Mode, string> = { blitz: "Blitz", frontier: "Frontier", eternum: "Eternum" };
 /** The Game switch lists the ages in their order, whichever a page draws first. */
@@ -34,6 +35,8 @@ const LoadingTool = () => (
 /** One bootstrap owns the viewport and boot shell; changing pages unmounts the previous renderer before loading another. */
 export function LabApp() {
   useBootDocumentState("app-ready", "lab_ready");
+  // The lab has no opening: its scenes load what they draw at once.
+  useState(markWorldInteractive);
   return (
     <SceneRoute fallback={<LoadingTool />}>
       <LabRooms />

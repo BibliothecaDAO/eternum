@@ -6,6 +6,7 @@ import { useGameModeConfig } from "@/config/game-modes/use-game-mode-config";
 import { useCurrentArmiesTick, useCurrentBlockTimestamp } from "@/hooks/helpers/use-block-timestamp";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { resolveDayCycleProgress, resolveDebuggableCycleProgress } from "@/utils/cycle-progress";
+import { isWorldInteractive } from "@/game-entry/world-interactive";
 
 /** Keep atmosphere and audio running independently of the header's presentation. */
 export function GameCycleEffects() {
@@ -21,7 +22,8 @@ export function GameCycleEffects() {
     setProgress(resolveDebuggableCycleProgress(resolveDayCycleProgress(now, duration), override));
   }, [now, duration, override, setProgress]);
   useEffect(() => {
-    if (previousTick.current > 0 && tick > previousTick.current) playGong();
+    // The tick jumps once as the game's data first arrives: no gong, and no gong file, before the first view is up.
+    if (previousTick.current > 0 && tick > previousTick.current && isWorldInteractive()) playGong();
     previousTick.current = tick;
   }, [tick, playGong]);
   return null;
