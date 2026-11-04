@@ -25,7 +25,7 @@ import { SponsorRefusedError, type Sponsor } from "./sponsor";
 import { finishRecoveries } from "./wallet-recovery";
 import type { WalletEscape } from "@realms-world/identity/wallet";
 import { SPONSORED_CALLS_PER_DAY } from "./default-wallet-plugin";
-import { defaultWalletDeployment, passkeySigner } from "@realms-world/identity/wallet";
+import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@realms-world/identity/wallet";
 import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
 import { routeIdentityRequest } from "./routes";
@@ -67,7 +67,9 @@ const sponsor = {
 /** Whether the chain holds a contract at an address; default wallets start undeployed. */
 const isDeployed = vi.fn(async (_address: string) => false);
 /** A wallet's owner escape as the chain answers; none unless a test starts one. */
-const readEscape = vi.fn(async (_address: string): Promise<WalletEscape> => ({ status: "none", readyAt: null }));
+const readEscape = vi.fn(
+  async (_address: string): Promise<WalletEscape> => ({ status: "none", readyAt: null, newOwner: null }),
+);
 
 /** The email provider's inbox: the last sign-in code sent to each address. */
 const sentCodes = new Map<string, string>();
@@ -2240,6 +2242,23 @@ describe("default wallet", () => {
     sponsor.execute.mockReset();
   });
 
+  it("keeps an uncertain execution's call when a later resubmission of it is refused", async () => {
+    const { browser } = await withWallet();
+    const execution = executionFor([transfer], "0x78");
+    sponsor.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
+    await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature: ["0x4"] },
+    });
+    sponsor.execute.mockRejectedValueOnce(new SponsorRefusedError("duplicated outside nonce"));
+    const refused = await browser.request("/api/auth/wallet/default/execute", {
+      body: { typedData: execution, ownerSignature: ["0x4"] },
+    });
+    expect(refused.status).toBe(502);
+    // The refusal is of this request; the first may still have run.
+    expect(await sponsoredToday(browser)).toBe(1);
+    sponsor.execute.mockReset();
+  });
+
   it("co-signs only an outside execution for this chain", async () => {
     const { browser } = await withWallet();
     const other = { ...executionFor(), domain: { ...executionFor().domain, chainId: "0x534e5f5345504f4c4941" } };
@@ -2250,42 +2269,62 @@ describe("default wallet", () => {
   });
 
   describe("recovery", () => {
+    const rpId = new URL(ORIGIN).hostname;
     const recover = async (
       browser: ReturnType<typeof createBrowser>,
       passkey: ReturnType<typeof makePasskey>,
       otp: string,
     ) => browser.request("/api/auth/wallet/default/recovery", { body: { passkey: passkeyBody(passkey), otp } });
     const recoveryRow = (realmsId: string) =>
-      env.DB.prepare("SELECT credential_id, public_key_x FROM wallet_recoveries WHERE realms_id = ?")
+      env.DB.prepare("SELECT attempt, credential_id, public_key_x, nonce FROM wallet_recoveries WHERE realms_id = ?")
         .bind(realmsId)
-        .first<{ credential_id: string; public_key_x: string }>();
+        .first<{ attempt: string; credential_id: string; public_key_x: string; nonce: string | null }>();
     const walletRow = (realmsId: string) =>
       env.DB.prepare("SELECT credential_id, public_key_x, deploy_key_x FROM default_wallets WHERE realms_id = ?")
         .bind(realmsId)
         .first<{ credential_id: string; public_key_x: string; deploy_key_x: string }>();
-
-    it("starts with the emailed code: the guardian alone signs the escape naming the new passkey, and the email is told", async () => {
+    const recoveryNotices = (address: string) =>
+      env.DB.prepare("SELECT id FROM wallet_change_notices WHERE kind = 'recovery' AND address = ?")
+        .bind(address)
+        .all<{ id: string }>();
+    /** The escape's start as the player asked it: trigger_escape_owner naming the passkey just made. */
+    const escapeStart = (wallet: string, passkey: ReturnType<typeof makePasskey>) => ({
+      contractAddress: wallet,
+      entrypoint: "trigger_escape_owner",
+      calldata: passkeySigner({ origin: ORIGIN, rpId, publicKeyX: passkey.x }),
+    });
+    const escapeFinish = (wallet: string) => ({ contractAddress: wallet, entrypoint: "escape_owner", calldata: [] });
+    const guidOf = (passkey: ReturnType<typeof makePasskey>) =>
+      passkeySignerGuid({ origin: ORIGIN, rpId, publicKeyX: passkey.x });
+    const resetSponsor = () => {
+      sponsor.build.mockReset();
+      sponsor.execute.mockReset();
+      notices.mockClear();
+    };
+    /** A wallet with a recovery started naming `lost`, its execution recorded; the sponsor's answer as `execute` says. */
+    const startedRecovery = async (execute: () => Promise<string> = async () => "0xescape") => {
       const { browser, passkey, wallet } = await withWallet();
       const { user } = (await browser.session())!;
       const lost = makePasskey();
-      const start = executionFor([
-        { contractAddress: wallet.address, entrypoint: "trigger_escape_owner", calldata: [] },
-      ]);
+      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(wallet.address, lost)], "0xe5") as never);
+      sponsor.execute.mockImplementationOnce(execute);
+      const answer = await recover(browser, lost, await walletCode(browser));
+      return { browser, realmsId: user.realmsId, passkey, lost, wallet, answer };
+    };
+
+    it("starts with the emailed code: the guardian alone signs the exact escape naming the new passkey, and the email is told", async () => {
+      resetSponsor();
+      const { browser, passkey, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      const lost = makePasskey();
+      const start = executionFor([escapeStart(wallet.address, lost)], "0xe1");
       sponsor.build.mockResolvedValueOnce(start as never);
       sponsor.execute.mockResolvedValueOnce("0xescape");
-      notices.mockClear();
       expect((await recover(browser, lost, "000000")).status).toBe(400);
       expect(sponsor.execute).not.toHaveBeenCalled();
       const started = await recover(browser, lost, await walletCode(browser));
       expect(await started.json()).toEqual({ transactionHash: "0xescape" });
-      const [, calls] = sponsor.build.mock.lastCall!;
-      expect(calls).toEqual([
-        {
-          contractAddress: wallet.address,
-          entrypoint: "trigger_escape_owner",
-          calldata: passkeySigner({ origin: ORIGIN, rpId: new URL(ORIGIN).hostname, publicKeyX: lost.x }),
-        },
-      ]);
+      expect(sponsor.build.mock.lastCall![1]).toEqual([escapeStart(wallet.address, lost)]);
       const [, , signature] = sponsor.execute.mock.lastCall!;
       expect(signature).toHaveLength(2);
       const digest = typedData.getMessageHash(start, wallet.address);
@@ -2296,48 +2335,74 @@ describe("default wallet", () => {
           ec.starkCurve.getPublicKey(GUARDIAN_KEY),
         ),
       ).toBe(true);
-      expect(await recoveryRow(user.realmsId)).toEqual({ credential_id: lost.credentialId, public_key_x: lost.x });
+      expect(await recoveryRow(user.realmsId)).toMatchObject({
+        credential_id: lost.credentialId,
+        public_key_x: lost.x,
+        nonce: "0xe1",
+      });
       expect(notices).toHaveBeenCalledWith(user.email, wallet.address, expect.any(String), "recovery");
       // The wallet keeps its owner until the 7 days are up.
       expect((await walletRow(user.realmsId))?.public_key_x).toBe(passkey.x);
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+      resetSponsor();
     });
 
-    it("keeps the new passkey when the start's answer is lost, and forgets it when the sponsor refuses", async () => {
-      const lostStart = await withWallet();
-      const lostId = (await lostStart.browser.session())!.user.realmsId;
-      sponsor.build.mockResolvedValueOnce(executionFor() as never);
-      sponsor.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
-      const lost = await recover(lostStart.browser, makePasskey(), await walletCode(lostStart.browser));
-      expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
-      // The escape may stand: the cron finishes it, or forgets it once the chain shows none.
-      expect(await recoveryRow(lostId)).not.toBeNull();
-      const refusedStart = await withWallet();
-      const refusedId = (await refusedStart.browser.session())!.user.realmsId;
-      sponsor.build.mockResolvedValueOnce(executionFor() as never);
-      sponsor.execute.mockRejectedValueOnce(new SponsorRefusedError("refused"));
-      const refused = await recover(refusedStart.browser, makePasskey(), await walletCode(refusedStart.browser));
-      expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
-      expect(await recoveryRow(refusedId)).toBeNull();
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+    it("signs nothing a sponsor substitutes: another new owner, target, entrypoint, or an extra call", async () => {
+      const { browser, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      const asked = makePasskey();
+      const asWanted = escapeStart(wallet.address, asked);
+      const substitutes = [
+        [escapeStart(wallet.address, makePasskey())],
+        [{ ...asWanted, contractAddress: "0x1234" }],
+        [{ ...asWanted, entrypoint: "trigger_escape_guardian" }],
+        [asWanted, transfer],
+      ];
+      for (const calls of substitutes) {
+        resetSponsor();
+        sponsor.build.mockResolvedValueOnce(executionFor(calls) as never);
+        const refused = await recover(browser, asked, await walletCode(browser));
+        expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
+        expect(sponsor.execute).not.toHaveBeenCalled();
+        expect(await recoveryRow(user.realmsId)).toBeNull();
+        expect((await recoveryNotices(wallet.address)).results).toEqual([]);
+      }
+      resetSponsor();
     });
 
-    it("waits for a recovery under way to end before another, and keeps the code unspent", async () => {
-      const { browser } = await withWallet();
-      readEscape.mockResolvedValueOnce({ status: "waiting", readyAt: 1_900_000_000 });
-      const code = await walletCode(browser);
-      const refused = await recover(browser, makePasskey(), code);
-      expect(((await refused.json()) as { message: string }).message).toBe("RECOVERY_UNDER_WAY");
-      sponsor.build.mockResolvedValueOnce(executionFor() as never);
-      sponsor.execute.mockResolvedValueOnce("0xescape");
-      expect((await recover(browser, makePasskey(), code)).status).toBe(200);
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+    it("refuses a second start while the first is unsettled, even before the chain shows it, and keeps the first", async () => {
+      resetSponsor();
+      // The first start's answer is lost: its escape may land later.
+      const first = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await first.answer.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      const kept = await recoveryRow(first.realmsId);
+      expect(kept).toMatchObject({ credential_id: first.lost.credentialId, nonce: "0xe5" });
+      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(first.wallet.address, makePasskey())]) as never);
+      const second = await recover(first.browser, makePasskey(), await walletCode(first.browser));
+      expect(((await second.json()) as { message: string }).message).toBe("RECOVERY_UNDER_WAY");
+      expect(await recoveryRow(first.realmsId)).toEqual(kept);
+      resetSponsor();
+    });
+
+    it("keeps the warning email of a start whose answer was lost, deliverable once", async () => {
+      resetSponsor();
+      const lost = await startedRecovery(async () => {
+        throw new TypeError("connection reset");
+      });
+      const queued = (await recoveryNotices(lost.wallet.address)).results;
+      expect(queued).toHaveLength(1);
+      const sent = vi.fn<SendWalletNotice>(async () => {});
+      await Effect.runPromise(deliverWalletNotices(env.DB, sent));
+      await Effect.runPromise(deliverWalletNotices(env.DB, sent));
+      expect(
+        sent.mock.calls.filter(([, address, , kind]) => address === lost.wallet.address && kind === "recovery"),
+      ).toEqual([[expect.any(String), lost.wallet.address, queued[0]!.id, "recovery"]]);
+      resetSponsor();
     });
 
     it("never lets the send path start an escape, and lets the owner's passkey cancel one", async () => {
+      resetSponsor();
       const { browser, wallet } = await withWallet();
       const start = { contractAddress: wallet.address, entrypoint: "trigger_escape_owner", calldata: ["0x1"] };
       const startBuild = await browser.request("/api/auth/wallet/default/build", { body: { calls: [start] } });
@@ -2356,69 +2421,111 @@ describe("default wallet", () => {
       expect(await canceled.json()).toEqual({ transactionHash: "0xcancel" });
       // The cancel carries the owner's signature and the guardian's: two signers.
       expect(BigInt(sponsor.execute.mock.lastCall![2][0]!)).toBe(2n);
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+      resetSponsor();
     });
 
-    /** The cron's pass, its chain answering as `chain` says, an hour and more after the recovery started. */
-    const finishWith = (chain: { escape: WalletEscape; owner: boolean; succeeded?: boolean }) => {
-      sponsor.build.mockResolvedValue(executionFor() as never);
+    /** The cron's pass, the chain answering as `chain` says. */
+    const finishWith = (
+      wallet: string,
+      chain: {
+        escape: WalletEscape;
+        owner: boolean;
+        succeeded?: boolean;
+        nonceSpent?: boolean;
+        chainTime?: number;
+      },
+    ) => {
+      sponsor.build.mockResolvedValue(executionFor([escapeFinish(wallet)], "0xf1") as never);
       sponsor.execute.mockResolvedValue("0xfinish");
-      return finishRecoveries(
-        {
-          db: env.DB,
-          sponsor,
-          guardian: env.GUARDIAN,
-          chainId: encodeChainName(environmentL2(env.ENVIRONMENT).chain),
-          isDeployed: async () => true,
-          readEscape: async () => chain.escape,
-          isOwner: async () => chain.owner,
-          succeeded: async () => chain.succeeded ?? true,
-        },
-        Date.now() + 2 * 60 * 60 * 1000,
-      );
-    };
-    const startedRecovery = async () => {
-      const { browser, passkey, wallet } = await withWallet();
-      const { user } = (await browser.session())!;
-      const lost = makePasskey();
-      sponsor.build.mockResolvedValueOnce(executionFor() as never);
-      sponsor.execute.mockResolvedValueOnce("0xescape");
-      expect((await recover(browser, lost, await walletCode(browser))).status).toBe(200);
-      return { realmsId: user.realmsId, passkey, lost, wallet };
+      return finishRecoveries({
+        db: env.DB,
+        sponsor,
+        guardian: env.GUARDIAN,
+        chainId: encodeChainName(environmentL2(env.ENVIRONMENT).chain),
+        isDeployed: async () => true,
+        readEscape: async () => chain.escape,
+        isOwner: async () => chain.owner,
+        isNonceSpent: async () => chain.nonceSpent ?? false,
+        chainTime: async () => chain.chainTime ?? 1_000,
+        succeeded: async () => chain.succeeded ?? true,
+      });
     };
 
-    it("finishes a ready escape on the cron and hands the wallet to the new passkey, keeping its address", async () => {
+    it("finishes a ready escape naming the saved passkey and hands the wallet to it, keeping its address", async () => {
+      resetSponsor();
       const { realmsId, passkey, lost, wallet } = await startedRecovery();
-      await finishWith({ escape: { status: "ready", readyAt: 1 }, owner: true });
-      const [address, calls] = sponsor.build.mock.lastCall!;
-      expect(address).toBe(wallet.address);
-      expect(calls).toEqual([{ contractAddress: wallet.address, entrypoint: "escape_owner", calldata: [] }]);
+      resetSponsor();
+      await finishWith(wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(lost) },
+        owner: true,
+      });
+      expect(sponsor.build.mock.lastCall).toEqual([wallet.address, [escapeFinish(wallet.address)], null]);
       expect(await walletRow(realmsId)).toEqual({
         credential_id: lost.credentialId,
         public_key_x: lost.x,
         deploy_key_x: passkey.x,
       });
       expect(await recoveryRow(realmsId)).toBeNull();
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+      resetSponsor();
     });
 
-    it("forgets a canceled or expired recovery, keeps one still waiting, and adopts a finish cut short", async () => {
-      const waiting = await startedRecovery();
-      await finishWith({ escape: { status: "waiting", readyAt: 1_900_000_000 }, owner: false });
-      expect(await recoveryRow(waiting.realmsId)).not.toBeNull();
-      await finishWith({ escape: { status: "none", readyAt: null }, owner: false });
-      expect(await recoveryRow(waiting.realmsId)).toBeNull();
-      expect((await walletRow(waiting.realmsId))?.public_key_x).toBe(waiting.passkey.x);
+    it("never finishes an escape that names another owner", async () => {
+      resetSponsor();
+      const { realmsId, passkey, wallet } = await startedRecovery();
+      resetSponsor();
+      await finishWith(wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(makePasskey()) },
+        owner: false,
+      });
+      expect(sponsor.build).not.toHaveBeenCalled();
+      expect(sponsor.execute).not.toHaveBeenCalled();
+      expect((await walletRow(realmsId))?.public_key_x).toBe(passkey.x);
+      expect(await recoveryRow(realmsId)).not.toBeNull();
+      resetSponsor();
+    });
+
+    it("forgets an attempt only once the chain proves it over, and adopts a finish cut short", async () => {
+      resetSponsor();
+      const none = { status: "none" as const, readyAt: null, newOwner: null };
+      const delayed = await startedRecovery();
+      // Not on chain yet, its nonce unspent and its window open: it may still land.
+      await finishWith(delayed.wallet.address, { escape: none, owner: false, nonceSpent: false, chainTime: 1_000 });
+      expect(await recoveryRow(delayed.realmsId)).not.toBeNull();
+      // Its window closed with the nonce unspent: it never can run.
+      await finishWith(delayed.wallet.address, {
+        escape: none,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(delayed.realmsId)).toBeNull();
+      const canceled = await startedRecovery();
+      // It ran (nonce spent) and no escape stands: canceled.
+      await finishWith(canceled.wallet.address, { escape: none, owner: false, nonceSpent: true });
+      expect(await recoveryRow(canceled.realmsId)).toBeNull();
+      expect((await walletRow(canceled.realmsId))?.public_key_x).toBe(canceled.passkey.x);
       const cutShort = await startedRecovery();
-      await finishWith({ escape: { status: "none", readyAt: null }, owner: true });
+      await finishWith(cutShort.wallet.address, { escape: none, owner: true });
       expect((await walletRow(cutShort.realmsId))?.public_key_x).toBe(cutShort.lost.x);
       const unconfirmed = await startedRecovery();
-      await finishWith({ escape: { status: "ready", readyAt: 1 }, owner: false, succeeded: false });
+      await finishWith(unconfirmed.wallet.address, {
+        escape: { status: "ready", readyAt: 1, newOwner: guidOf(unconfirmed.lost) },
+        owner: false,
+        succeeded: false,
+      });
       expect(await recoveryRow(unconfirmed.realmsId)).not.toBeNull();
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+      resetSponsor();
+    });
+
+    it("forgets the passkey and its email when the sponsor refuses the start", async () => {
+      resetSponsor();
+      const refused = await startedRecovery(async () => {
+        throw new SponsorRefusedError("refused");
+      });
+      expect(((await refused.answer.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
+      expect(await recoveryRow(refused.realmsId)).toBeNull();
+      expect((await recoveryNotices(refused.wallet.address)).results).toEqual([]);
+      resetSponsor();
     });
   });
 

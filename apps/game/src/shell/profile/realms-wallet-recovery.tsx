@@ -116,7 +116,7 @@ const useWalletEscape = (address: string) => {
       .then((result) => setValue(walletEscapeOf(result)))
       .catch((error: unknown) => {
         if (error instanceof RpcError && error.isType("CONTRACT_NOT_FOUND"))
-          setValue({ status: "none", readyAt: null });
+          setValue({ status: "none", readyAt: null, newOwner: null });
         else console.error("wallet_escape_read_failed", error);
       });
   }, [address]);

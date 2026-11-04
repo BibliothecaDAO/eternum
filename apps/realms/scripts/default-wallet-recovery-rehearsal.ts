@@ -34,6 +34,7 @@ import {
   defaultWalletSignature,
   passkeyChallenge,
   passkeyOwnerSignature,
+  passkeySignerGuid,
   type PasskeyOwner,
 } from "@realms-world/identity/wallet";
 
@@ -41,7 +42,13 @@ import { readDefaultWallet } from "../server/default-wallets";
 import type { Sponsor, SponsoredExecution } from "../server/sponsor";
 import { walletExecutionOf } from "../server/sponsor";
 import { isUndeployedWallet } from "../server/wallet-signature";
-import { finishRecoveries, readIsOwner, readWalletEscape, startRecovery } from "../server/wallet-recovery";
+import {
+  finishRecoveries,
+  readIsOwner,
+  readNonceSpent,
+  readWalletEscape,
+  startRecovery,
+} from "../server/wallet-recovery";
 
 const ORIGIN = "https://play.realms.party";
 const RP_ID = "play.realms.party";
@@ -66,6 +73,8 @@ const main = async () => {
     isDeployed: async (address: string) => !(await isUndeployedWallet(provider, address)),
     readEscape: (address: string) => readWalletEscape(provider, address),
     isOwner: (address: string, owner: PasskeyOwner) => readIsOwner(provider, address, owner),
+    isNonceSpent: (address: string, nonce: string) => readNonceSpent(provider, address, nonce),
+    chainTime: async () => (await provider.getBlockWithTxHashes("latest")).timestamp,
     succeeded: async (hash: string) => {
       const receipt = await provider.waitForTransaction(hash);
       if (!receipt.isSuccess()) console.log("reverted:", (receipt.value as { revert_reason?: string }).revert_reason);
@@ -127,8 +136,11 @@ const main = async () => {
       .prepare(`SELECT kind, address FROM wallet_change_notices`)
       .first<{ kind: string; address: string }>();
     check(
-      "2. a recovery naming B starts: the escape waits, the email is told",
-      waiting.status === "waiting" && notice?.kind === "recovery" && notice.address === wallet,
+      "2. a recovery naming B starts: the escape waits, names B's passkey GUID exactly, the email is told",
+      waiting.status === "waiting" &&
+        waiting.newOwner === passkeySignerGuid(b.owner) &&
+        notice?.kind === "recovery" &&
+        notice.address === wallet,
     );
 
     const refused = await recoverWithB().then(

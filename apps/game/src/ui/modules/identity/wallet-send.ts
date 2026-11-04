@@ -2,7 +2,6 @@ import { VALUE_WORDS } from "@/ui/design-system/kit/words";
 import { isSameStarknetAddress, type DefaultWallet } from "@realms-world/identity";
 import {
   CallData,
-  hash,
   shortString,
   typedData,
   type AccountInterface,
@@ -14,6 +13,8 @@ import {
 import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
+
+import { callsMatch, type AskedCall } from "@realms-world/identity/wallet";
 
 import { signWithPasskey } from "./passkey";
 import { forgetUncertain, rememberUncertain, type UncertainSend } from "./uncertain-sends";
@@ -49,8 +50,18 @@ export const sendFromWallet = async (
 ): Promise<WalletSendOutcome> => {
   if (!isSameStarknetAddress(account.address, owner)) throw new WrongWalletError(owner);
   if ((await feeBalanceOf(provider, account.address)) === 0n) return { kind: "no-strk" };
-  const { transaction_hash: sent } = await account.execute(calls);
-  rememberUncertain({ via: "wallet", owner, calls: JSON.stringify(calls), hash: sent, at: Date.now() });
+  // Kept before the wallet opens: nothing is sent if this browser cannot keep it.
+  const intent = { via: "wallet", owner, calls: JSON.stringify(calls), hash: null, at: Date.now() } as const;
+  rememberUncertain(intent);
+  let sent: string;
+  try {
+    ({ transaction_hash: sent } = await account.execute(calls));
+  } catch (error) {
+    // The wallet answered with a refusal (declined, or failed before sending): nothing went.
+    forgetUncertain(owner);
+    throw error;
+  }
+  rememberUncertain({ ...intent, hash: sent });
   onSigned();
   return settled(owner, await landedOrRefused(provider, sent));
 };
@@ -96,17 +107,20 @@ export const sendFromDefaultWallet = async (
     hash: null,
     at: Date.now(),
   } as const;
-  return submitSigned(send, provider, onSigned);
+  return submitSigned(send, provider, onSigned, "first");
 };
 
 /**
- * Submits a default wallet's signed execution, the first time or again after its answer was lost: kept as uncertain
- * before it leaves, forgotten once the sponsor refuses it or its receipt lands, kept while its outcome is unknown.
+ * Submits a default wallet's signed execution, the first time or again after its answer was lost. It is kept as
+ * uncertain before it leaves (nothing leaves if this browser cannot keep it), forgotten once its receipt lands, and
+ * kept while its outcome is unknown. A refusal settles only a first submission: a resubmission's refusal says nothing
+ * of the earlier one, which may still have run, so it stays uncertain for the chain to settle.
  */
 export const submitSigned = async (
   send: Extract<UncertainSend, { via: "passkey" }>,
   provider: ProviderInterface,
   onSigned: () => void,
+  submission: "first" | "again",
 ): Promise<WalletSendOutcome> => {
   rememberUncertain(send);
   let sent: string;
@@ -117,7 +131,7 @@ export const submitSigned = async (
     );
   } catch (error) {
     if (!isProvenNotSent(error)) return { kind: "unconfirmed" };
-    forgetUncertain(send.owner);
+    if (submission === "first") forgetUncertain(send.owner);
     throw error;
   }
   rememberUncertain({ ...send, hash: sent });
@@ -138,32 +152,23 @@ const settled = (owner: string, outcome: WalletSendOutcome) => {
   return outcome;
 };
 
-/** An outside execution (SNIP-9 v2) on this build's chain whose calls are exactly these, in order. */
-const buildsExactly = (
-  built: TypedData,
-  calls: { contractAddress: string; entrypoint: string; calldata: string[] }[],
-) => {
+/** An outside execution (SNIP-9 v2) on this build's chain whose calls are exactly these (callsMatch, the one rule). */
+const buildsExactly = (built: TypedData, calls: AskedCall[]) => {
   const message = built.message as { Calls?: { To: string; Selector: string; Calldata: string[] }[] };
   const domain = built.domain as { name?: string; version?: unknown; chainId?: unknown };
   const chainId = typeof domain.chainId === "string" ? domain.chainId : "";
   const onThisChain =
     BigInt(/^0x/.test(chainId) ? chainId : shortString.encodeShortString(chainId || "0")) === BigInt(L2_CHAIN.id);
-  const same = (a: string, b: string) => BigInt(a) === BigInt(b);
   return (
     built.primaryType === "OutsideExecution" &&
     domain.name === "Account.execute_from_outside" &&
     String(domain.version) === "2" &&
     onThisChain &&
-    message.Calls?.length === calls.length &&
-    message.Calls.every((call, index) => {
-      const asked = calls[index]!;
-      return (
-        same(call.To, asked.contractAddress) &&
-        same(call.Selector, hash.getSelectorFromName(asked.entrypoint)) &&
-        call.Calldata.length === asked.calldata.length &&
-        call.Calldata.every((felt, at) => same(felt, asked.calldata[at]!))
-      );
-    })
+    Array.isArray(message.Calls) &&
+    callsMatch(
+      message.Calls.map((call) => ({ to: call.To, selector: call.Selector, calldata: call.Calldata })),
+      calls,
+    )
   );
 };
 

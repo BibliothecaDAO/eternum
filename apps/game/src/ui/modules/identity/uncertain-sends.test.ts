@@ -72,3 +72,12 @@ it("reads a connected wallet's send by its receipt, and calls it dropped after a
     reason: null,
   });
 });
+
+it("holds a connected wallet's send kept before its transaction existed as pending, then dropped after an hour", async () => {
+  const intent = (at: number): UncertainSend => ({ via: "wallet", owner: WALLET, calls: "[]", hash: null, at });
+  expect(await standingOf(chain({}), intent(Date.now()))).toEqual({ kind: "pending" });
+  expect(await standingOf(chain({}), intent(Date.now() - 2 * 60 * 60 * 1000))).toEqual({
+    kind: "failed",
+    reason: null,
+  });
+});

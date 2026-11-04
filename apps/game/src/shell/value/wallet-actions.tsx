@@ -158,7 +158,7 @@ const OnItsWay = ({
     setBusy(true);
     setError(null);
     try {
-      const sent = await submitSigned(send, l2Provider(), () => {});
+      const sent = await submitSigned(send, l2Provider(), () => {}, "again");
       if (sent.kind === "landed") return onLanded();
     } catch (cause) {
       setError(failureSentence("send", cause));

@@ -1,6 +1,7 @@
 import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 import { PasskeyUnavailableError } from "./passkey";
+import { UncertainSendNotKeptError } from "./uncertain-sends";
 
 /** What the player asked for; each names its own failure. */
 export type IdentityAction =
@@ -63,6 +64,8 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   const code = cause instanceof IdentityRequestError ? cause.code : undefined;
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
   if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
+  if (cause instanceof UncertainSendNotKeptError)
+    return "This browser could not keep a record of the send, so nothing was sent. Free some space, or leave private browsing.";
   if (cause instanceof PasskeyUnavailableError)
     return "This browser cannot use passkeys here. Open the game in your phone's or computer's main browser.";
   // Asked to make a passkey this device already holds (a recovery's excludeCredentials).

@@ -18,7 +18,11 @@ export type UncertainSend =
       hash: string | null;
       at: number;
     }
-  | { via: "wallet"; owner: string; calls: string; hash: string; at: number };
+  /** A connected wallet's: kept before the wallet opens (no hash yet), then with the transaction it answered. */
+  | { via: "wallet"; owner: string; calls: string; hash: string | null; at: number };
+
+/** This browser could not keep the record: nothing is sent, because a lost answer could then never be settled. */
+export class UncertainSendNotKeptError extends Error {}
 
 /** Where an uncertain send stands: it ran, it never will (with why, if the chain says), or it may still. */
 type SendStanding = { kind: "landed" } | { kind: "failed"; reason: string | null } | { kind: "pending" };
@@ -37,8 +41,8 @@ const readAll = (): UncertainSend[] => {
 const writeAll = (sends: UncertainSend[]) => {
   try {
     localStorage.setItem(KEY, JSON.stringify(sends));
-  } catch {
-    // A browser that keeps nothing loses the record on reload; the chain still runs the execution at most once.
+  } catch (error) {
+    throw new UncertainSendNotKeptError(error instanceof Error ? error.message : String(error));
   }
 };
 
@@ -71,11 +75,13 @@ const passkeyStanding = async (
   return now >= Number(message["Execute Before"]) ? { kind: "failed", reason: null } : { kind: "pending" };
 };
 
-/** A connected wallet's transaction: its receipt, or nothing heard of it for an hour (dropped). */
+/** A connected wallet's transaction: its receipt, or nothing heard of it for an hour (dropped, or never sent). */
 const walletStanding = async (
   provider: ProviderInterface,
   send: Extract<UncertainSend, { via: "wallet" }>,
 ): Promise<SendStanding> => {
+  if (send.hash === null)
+    return Date.now() - send.at > DROPPED_MS ? { kind: "failed", reason: null } : { kind: "pending" };
   try {
     const receipt = await provider.getTransactionReceipt(send.hash);
     return receipt.isSuccess() ? { kind: "landed" } : { kind: "failed", reason: reasonOf(receipt) };

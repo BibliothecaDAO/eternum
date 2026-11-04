@@ -233,10 +233,13 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
           const execution = walletExecutionOf(typedData, options.chainId);
           if (!execution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
           refuseSelfCalls(row, execution.calls);
-          if (!(await reserveExecution(options.db, realmsId, execution.nonce)))
-            throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
+          const reservation = await reserveExecution(options.db, realmsId, execution.nonce);
+          if (reservation === "capped") throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
+          // Only the request that took the call may give it back: a resubmission's refusal says nothing of the first.
+          const giveBack = () =>
+            reservation === "taken" ? releaseExecution(options.db, realmsId, execution.nonce) : Promise.resolve();
           const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch(async (error: unknown) => {
-            await releaseExecution(options.db, realmsId, execution.nonce);
+            await giveBack();
             throw refused("default_wallet_cosign_failed", error);
           });
           try {
@@ -245,7 +248,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
             });
           } catch (error) {
             if (!(error instanceof SponsorRefusedError)) throw uncertain(error);
-            await releaseExecution(options.db, realmsId, execution.nonce);
+            await giveBack();
             throw refused("default_wallet_execute_refused", error);
           }
         },
@@ -316,11 +319,15 @@ const sponsoredToday = async (db: D1Database, realmsId: string) =>
   )?.calls ?? 0;
 
 /**
- * Takes one of today's sponsored calls for this execution, or answers it already holds one (a resubmission of the same
- * nonce); none when the cap is spent. One batch, so two tabs cannot both take the last.
+ * Takes one of today's sponsored calls for this execution ("taken"), or finds it already held by an earlier submission
+ * of the same nonce ("held"), or none is left ("capped"). One batch, so two tabs cannot both take the last.
  */
-const reserveExecution = async (db: D1Database, realmsId: string, nonce: string) => {
-  const [, held] = await db.batch([
+const reserveExecution = async (
+  db: D1Database,
+  realmsId: string,
+  nonce: string,
+): Promise<"taken" | "held" | "capped"> => {
+  const [taken, held] = await db.batch([
     db
       .prepare(
         `INSERT OR IGNORE INTO sponsored_executions (realms_id, nonce, day)
@@ -329,7 +336,8 @@ const reserveExecution = async (db: D1Database, realmsId: string, nonce: string)
       .bind(realmsId, nonce, today(), SPONSORED_CALLS_PER_DAY),
     db.prepare(`SELECT 1 AS held FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce),
   ]);
-  return held?.results.length === 1;
+  if (taken?.meta.changes === 1) return "taken";
+  return held?.results.length === 1 ? "held" : "capped";
 };
 
 /** Gives back the call of an execution proven never sent. */

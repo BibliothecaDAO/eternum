@@ -22,14 +22,19 @@ CREATE TABLE sponsored_executions (
   PRIMARY KEY (realms_id, nonce)
 );
 
--- A lost passkey's recovery under way: the new passkey the wallet's owner escape names (server/wallet-recovery.ts).
--- Whether the escape still stands, and when it is ready, is the wallet's own answer on chain; this row only remembers
--- the passkey, which the chain keeps as a hash.
+-- A lost passkey's recovery, one attempt per account at a time (server/wallet-recovery.ts): reserved before anything is
+-- built, it keeps the new passkey (the chain stores only its GUID) and the escape's execution: its outside nonce and
+-- window, to prove later whether it ran, and its transaction once the sponsor answers. Whether an escape stands is the
+-- wallet's own answer on chain.
 CREATE TABLE wallet_recoveries (
   realms_id TEXT PRIMARY KEY,
+  attempt TEXT NOT NULL,
   credential_id TEXT NOT NULL,
   public_key_x TEXT NOT NULL,
-  started_at INTEGER NOT NULL
+  started_at INTEGER NOT NULL,
+  nonce TEXT,
+  execute_before INTEGER,
+  transaction_hash TEXT
 );
 
 -- A notice is about the payout wallet (as before) or about a recovery of the default wallet.

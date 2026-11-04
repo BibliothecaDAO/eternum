@@ -1,5 +1,6 @@
 import { p256 } from "@noble/curves/nist";
 import { sha256 } from "@noble/hashes/sha2";
+import { keccak, poseidonHashMany } from "@scure/starknet";
 import { counterfactualAddress } from "./account";
 
 /**
@@ -47,6 +48,8 @@ interface PasskeyAssertion {
 /** A passkey answer the account would refuse, named so the caller can say why. */
 export class PasskeyAssertionError extends Error {}
 
+/** The short string 'Webauthn Signer' (`signer_signature.cairo`), the first felt of a passkey signer's GUID. */
+const WEBAUTHN_SIGNER_TYPE = BigInt(`0x${[..."Webauthn Signer"].map((c) => c.charCodeAt(0).toString(16)).join("")}`);
 const SIGNER_STARKNET = 0n;
 const SIGNER_WEBAUTHN = 4n;
 const OPTION_SOME = 0n;
@@ -166,22 +169,68 @@ export const passkeyOwnerSignature = (owner: PasskeyOwner, hash: string, asserti
   ].map(toHex);
 };
 
+/** A call as a surface asks it: its target, its entrypoint by name, its calldata as felts. */
+export interface AskedCall {
+  contractAddress: string;
+  entrypoint: string;
+  calldata: readonly string[];
+}
+
+/** One call of an outside execution as it was built: its target, selector and calldata. */
+export interface BuiltCall {
+  to: string;
+  selector: string;
+  calldata: readonly string[];
+}
+
+/**
+ * The one rule that an outside execution makes exactly the asked calls, in order: same targets, selectors and calldata,
+ * none more and none fewer. The page checks a send against it before the passkey signs; the identity Worker checks a
+ * recovery step against it before the guardian signs, so neither signs what a sponsor substituted.
+ */
+export const callsMatch = (built: readonly BuiltCall[], asked: readonly AskedCall[]): boolean =>
+  built.length === asked.length &&
+  built.every((call, index) => {
+    const wanted = asked[index]!;
+    return (
+      BigInt(call.to) === BigInt(wanted.contractAddress) &&
+      BigInt(call.selector) === keccak(utf8(wanted.entrypoint)) &&
+      call.calldata.length === wanted.calldata.length &&
+      call.calldata.every((felt, at) => BigInt(felt) === BigInt(wanted.calldata[at]!))
+    );
+  });
+
 /** Where the wallet's owner escape stands (`EscapeStatus`): none, waiting out its 7 days, ready to finish, or expired. */
 type EscapeStatus = "none" | "waiting" | "ready" | "expired";
 export interface WalletEscape {
   status: EscapeStatus;
   /** Unix seconds from which it can be finished; null with no escape. */
   readyAt: number | null;
+  /** The signer the escape hands the wallet to, as the account stores it (a passkey's GUID); null with none. */
+  newOwner: string | null;
 }
 
 const ESCAPE_STATUSES: EscapeStatus[] = ["none", "waiting", "ready", "expired"];
 
-/** `get_escape_and_status()`'s answer, (Escape { ready_at, escape_type, new_signer }, EscapeStatus), as a WalletEscape. */
+/**
+ * `get_escape_and_status()`'s answer as a WalletEscape: Escape { ready_at, escape_type, new_signer:
+ * Option<SignerStorageValue { stored_value, signer_type }> }, then EscapeStatus.
+ */
 export const walletEscapeOf = (result: readonly string[]): WalletEscape => {
   const status = ESCAPE_STATUSES[Number(BigInt(result.at(-1) ?? "-1"))];
   if (!status) throw new Error("unknown_escape_status");
-  return { status, readyAt: status === "none" ? null : Number(BigInt(result[0]!)) };
+  if (status === "none") return { status, readyAt: null, newOwner: null };
+  const hasNewOwner = BigInt(result[2] ?? "1") === OPTION_SOME && result.length === 6;
+  return {
+    status,
+    readyAt: Number(BigInt(result[0]!)),
+    newOwner: hasNewOwner ? toHex(BigInt(result[3]!)) : null,
+  };
 };
+
+/** `Signer::Webauthn(passkey).into_guid()`: how the account stores a passkey owner, and names an escape's new owner. */
+export const passkeySignerGuid = (owner: PasskeyOwner): string =>
+  toHex(poseidonHashMany([WEBAUTHN_SIGNER_TYPE, ...webauthnSignerFelts(owner)]));
 
 /** The guardian's signature alone, as an escape's start and finish take it: its `r` and `s` (`parse_single_guardian_signature`). */
 export const guardianAloneSignature = (guardian: Pick<GuardianSignature, "r" | "s">): string[] => [

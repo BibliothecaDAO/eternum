@@ -4,6 +4,9 @@ import { ec, hash as starknetHash } from "starknet";
 import { describe, expect, it } from "vitest";
 
 import {
+  callsMatch,
+  passkeySignerGuid,
+  walletEscapeOf,
   READY_ACCOUNT_CLASS_HASH,
   defaultWalletCalldata,
   defaultWalletDeployment,
@@ -205,5 +208,57 @@ describe("default wallet signature", () => {
       signature.r,
       signature.s,
     ]);
+  });
+});
+
+describe("calls match", () => {
+  const asked = { contractAddress: "0x124", entrypoint: "transfer", calldata: ["0x5", "100", "0"] };
+  const built = {
+    to: "0x0124",
+    selector: starknetHash.getSelectorFromName("transfer"),
+    calldata: ["5", "0x64", "0x0"],
+  };
+
+  it("holds for the same targets, selectors and calldata, whatever their felt spelling", () => {
+    expect(callsMatch([built], [asked])).toBe(true);
+  });
+
+  it.each([
+    ["another target", [{ ...built, to: "0x125" }]],
+    ["another entrypoint", [{ ...built, selector: starknetHash.getSelectorFromName("approve") }]],
+    ["other calldata", [{ ...built, calldata: ["0x6", "0x64", "0x0"] }]],
+    ["more calldata", [{ ...built, calldata: [...built.calldata, "0x0"] }]],
+    ["an extra call", [built, built]],
+    ["no call", []],
+  ])("fails for %s", (_, calls) => {
+    expect(callsMatch(calls, [asked])).toBe(false);
+  });
+});
+
+describe("passkey signer GUID and escape", () => {
+  it("is Poseidon over 'Webauthn Signer', the origin bytes, the relying party hash and the key (signer_signature.cairo)", () => {
+    const owner = { origin: "https://a.b", rpId: "a.b", publicKeyX: "0x1234" };
+    const rpIdHash = BigInt(`0x${Buffer.from(sha256(utf8("a.b"))).toString("hex")}`);
+    const low = (value: bigint) => value & ((1n << 128n) - 1n);
+    const expected = starknetHash.computePoseidonHashOnElements([
+      BigInt(`0x${Buffer.from("Webauthn Signer").toString("hex")}`),
+      11n,
+      ...[...utf8("https://a.b")].map(BigInt),
+      low(rpIdHash),
+      rpIdHash >> 128n,
+      0x1234n,
+      0n,
+    ]);
+    expect(BigInt(passkeySignerGuid(owner))).toBe(BigInt(expected));
+  });
+
+  it("reads an escape's new owner from get_escape_and_status, and none without an escape", () => {
+    // Escape { ready_at, escape_type: Owner, new_signer: Some(SignerStorageValue { stored_value, signer_type: 4 }) }, Waiting.
+    expect(walletEscapeOf(["0x6a000000", "0x2", "0x0", "0xabc", "0x4", "0x1"])).toEqual({
+      status: "waiting",
+      readyAt: 0x6a000000,
+      newOwner: "0xabc",
+    });
+    expect(walletEscapeOf(["0x0", "0x0", "0x1", "0x0"])).toEqual({ status: "none", readyAt: null, newOwner: null });
   });
 });
