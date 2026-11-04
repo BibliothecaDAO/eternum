@@ -113,6 +113,9 @@ export const rules = (colors, steps) => [
   // The browser draws a native select in its own colours, whatever the HUD's CSS says: the sheet's HudSelect replaces
   // it. No count allows one.
   { rule: "raw <select>: use HudSelect", pattern: /<select(?![\w-])/g, refused: true },
+  // A native input takes the browser's white field and pale text, not the sheet's well: HudField, AmountInput or
+  // HudNumberField draw it. Counted, so the files that still hold one are moved one at a time.
+  { rule: "raw <input>: use HudField", pattern: /<input(?![\w-])/g },
 ];
 
 /** Every refused value in one file's source, with its line; `refused` when no allowlist count can let it through. */

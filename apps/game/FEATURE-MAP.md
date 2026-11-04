@@ -1244,7 +1244,14 @@ Unused deposits return to the linked wallet through the existing season-end swee
 the original paying wallet.
 
 `pnpm --dir apps/game playtest --steps lab-spend-lords --iterations 1 --out <evidence>` drives the real refill and purse
-against a native-fact fixture. On the reviewed dev rehearsal season, use the existing command with
+against a native-fact fixture whose deposit source is the build's own L2 ledger. `--steps lab-deposit-amount` (play it
+at `--viewport 390x844` too) proves the amount the wallet will sign on the same fixture: the HUD field read at rest
+(accessible name, numeric input mode, contrast against its well of at least 4.5), tapped and typed with real keys (25),
+the deposit begun with Tab then Enter on a desktop or a tap on a phone, then the page loaded again with that amount
+restored, locked and offered as **Retry payment**, never **Edit or cancel deposit**. The run's test profile holds no
+wallet, so nothing is signed. The phone run is Chrome's device emulation: numeric input mode and real browser key events
+injected after a real tap; a physical OS keyboard is not exercised. On the reviewed dev rehearsal season, use the
+existing command with
 `--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --headed --renderer-modes webgpu-auto --iterations 1`.
 Prepare the linked test wallet in the player's persistent profile with 20 devLords plus STRK for both deposits; approve
 each of the two wallet prompts within ten minutes, or cancel with Ctrl-C. A missing wallet is reported.

@@ -913,6 +913,152 @@ function purchasedRefillSteps() {
   ];
 }
 
+/**
+ * The purse's deposit amount as a player meets it, on the lab's spend-lords game: the HUD field read at rest, typed
+ * into with real keys after a tap on it, a deposit begun (a desktop's Tab then Enter, a phone's tap), and the same page
+ * loaded again with that begun deposit restored as the exact, locked amount offered only as Retry, never Edit or cancel.
+ * The run's test profile holds no wallet, so the deposit is begun and saved but never signed. A phone is Chrome's device
+ * emulation: the field's numeric input mode and real browser key events injected after a real tap; a physical OS
+ * keyboard is not exercised.
+ */
+const DEPOSIT_AMOUNT_STEPS = [
+  {
+    name: "deposit-amount-at-rest",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      await openDepositPurse(browser);
+      return browser.read(DEPOSIT_FIELD);
+    },
+    verify: ({ played }) => judgeDepositField(played, { value: "10", locked: false }),
+  },
+  {
+    name: "deposit-amount-typed",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      const before = browser.read(DEPOSIT_FIELD);
+      if (!before) return { field: null };
+      browser.tap(before.offset);
+      for (let index = 0; index < before.value.length; index += 1) browser.press("Backspace");
+      browser.press("2");
+      browser.press("5");
+      return { viewportBefore: before.viewport, ...browser.read(DEPOSIT_FIELD) };
+    },
+    verify: ({ played }) =>
+      played.focused === true
+        ? judgeDepositField(played, { value: "25", locked: false })
+        : failed("The tap did not focus the amount", played),
+  },
+  {
+    name: "deposit-amount-begun",
+    settleMs: 0,
+    play: async ({ browser }) => {
+      const button = browser.read(sheetButton("^Deposit LORDS$"));
+      if (!button) return { blocked: "No Deposit LORDS button" };
+      const [dx, dy] = button.offset;
+      const underTap = browser.read(
+        `JSON.stringify(document.elementFromPoint(innerWidth / 2 + ${dx}, innerHeight / 2 + ${dy})?.closest("button")?.textContent.trim() ?? null)`,
+      );
+      if (browser.read("matchMedia('(pointer: coarse)').matches")) {
+        if (underTap !== "Deposit LORDS")
+          return { blocked: `The tap point holds ${underTap}, not Deposit LORDS`, button };
+        browser.tap(button.offset);
+      } else {
+        browser.press("Tab");
+        const focused = browser.read("JSON.stringify(document.activeElement?.textContent?.trim() ?? null)");
+        if (focused !== "Deposit LORDS")
+          return { blocked: `Tab from the amount reached ${focused}, not Deposit LORDS` };
+        browser.press("Enter");
+      }
+      const field = await readUntil(
+        () => browser.read(DEPOSIT_FIELD),
+        (state) => state?.disabled === true && state.edit,
+        SHEET_WAIT_MS,
+      );
+      return field ?? { field: null };
+    },
+    verify: ({ played }) =>
+      played.blocked
+        ? failed(played.blocked, played)
+        : played.edit
+          ? judgeDepositField(played, { value: "25", locked: true })
+          : failed("A begun deposit without a wallet must offer Edit or cancel", played),
+  },
+  {
+    name: "deposit-amount-restored",
+    settleMs: 0,
+    play: async (context) => {
+      const reloaded = await reloadOn("Map", "map", "spend-lords")(context);
+      await openDepositPurse(context.browser);
+      return { reloaded: reloaded.reloaded, ...context.browser.read(DEPOSIT_FIELD) };
+    },
+    verify: ({ played }) =>
+      !played.reloaded
+        ? failed("The page did not load again", played)
+        : played.retry && played.uncertain && !played.deposit && !played.edit
+          ? judgeDepositField(played, { value: "25", locked: true })
+          : failed(
+              "A restored deposit must offer Retry payment, not Edit or cancel, and say its status is uncertain",
+              played,
+            ),
+  },
+];
+
+/** The amount the purse will sign: its HUD field, what it holds, how it reads against its well, and what it offers. */
+const DEPOSIT_FIELD = `JSON.stringify((() => {
+  const sheet = document.querySelector('[data-kit-sheet][aria-label="LORDS"]');
+  const input = sheet?.querySelector('input[aria-label="Whole LORDS to deposit"]');
+  if (!input) return null;
+  const field = input.closest(".ui-field");
+  const rgb = (color) => color.match(/[\\d.]+/g).slice(0, 4).map(Number);
+  const backdrop = (element) => {
+    for (let at = element; at; at = at.parentElement) {
+      const [r, g, b, a = 1] = rgb(getComputedStyle(at).backgroundColor);
+      if (a > 0) return [r, g, b];
+    }
+    return [0, 0, 0];
+  };
+  const shown = (color, under, opacity) => color.slice(0, 3).map((value, index) => value * opacity + under[index] * (1 - opacity));
+  const luminance = (color) => color.map((value) => value / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)).reduce((sum, v, index) => sum + v * [0.2126, 0.7152, 0.0722][index], 0);
+  const opacity = Number(getComputedStyle(field ?? input).opacity);
+  const behind = backdrop((field ?? input).parentElement);
+  const well = shown(backdrop(field ?? input), behind, opacity);
+  const ink = shown(rgb(getComputedStyle(input).color), well, opacity);
+  const [light, dark] = [luminance(ink), luminance(well)].sort((a, b) => b - a);
+  const rect = input.getBoundingClientRect();
+  const button = (text) => [...sheet.querySelectorAll("button")].some((candidate) => candidate.textContent.trim() === text);
+  return {
+    value: input.value,
+    disabled: input.disabled,
+    focused: document.activeElement === input,
+    inputMode: input.inputMode,
+    name: input.getAttribute("aria-label"),
+    hudField: Boolean(field),
+    contrast: Math.round(((light + 0.05) / (dark + 0.05)) * 100) / 100,
+    fontPx: Number.parseFloat(getComputedStyle(input).fontSize),
+    offset: [Math.round(rect.left + rect.width / 2 - innerWidth / 2), Math.round(rect.top + rect.height / 2 - innerHeight / 2)],
+    viewport: { width: Math.round(visualViewport.width), height: Math.round(visualViewport.height) },
+    deposit: button("Deposit LORDS"),
+    edit: button("Edit or cancel deposit"),
+    retry: button("Retry payment"),
+    uncertain: [...sheet.querySelectorAll('[role="status"]')].some((line) => line.textContent.startsWith("Payment status is uncertain")),
+  };
+})())`;
+
+/** WCAG's least contrast for text: the editable amount must read at least this well against its well. */
+const AMOUNT_LEAST_CONTRAST = 4.5;
+
+function judgeDepositField(played, { value, locked }) {
+  if (!played?.hudField) return failed("The amount is not in the HUD's field", played);
+  if (played.name !== "Whole LORDS to deposit" || played.inputMode !== "numeric")
+    return failed("The amount lost its accessible name or numeric keyboard", played);
+  if (played.value !== value) return failed(`The amount reads ${played.value}, not ${value}`, played);
+  if (played.disabled !== locked)
+    return failed(locked ? "The begun amount can still be edited" : "The amount is locked", played);
+  if (!locked && played.contrast < AMOUNT_LEAST_CONTRAST)
+    return failed(`The amount's contrast ${played.contrast} is under ${AMOUNT_LEAST_CONTRAST}`, played);
+  return completed(played);
+}
+
 async function readPurchasedPurse(browser) {
   if (browser.read(SHEET_NAME) !== null) browser.press("Escape");
   const purse = browser.read(buttonLabelled("^LORDS "));
@@ -5136,6 +5282,7 @@ export const STEP_SETS = {
     game: labSpireGame("spend-lords"),
     steps: purchasedRefillSteps(),
   },
+  "lab-deposit-amount": { game: labSpireGame("spend-lords"), steps: DEPOSIT_AMOUNT_STEPS },
   "lab-actions-army": { game: labSpireGame("upkeep"), steps: ARMY_ACTION_STEPS },
   "lab-actions-demolish": { game: labSpireGame("upkeep"), steps: DEMOLISH_ACTION_STEPS },
   "lab-actions-chest": { game: labSpireGame("upkeep"), steps: CHEST_ACTION_STEPS },

@@ -3,6 +3,7 @@ import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-
 import { RESOURCE_PRECISION, ResourcesIds, TickIds, TileOccupier } from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { L2_CHAIN, L2_LEDGER } from "@/runtime/l2-rpc";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
 
 import { actionsScenario } from "./actions-scenario";
@@ -51,7 +52,11 @@ export const upkeepScenario = (): LabScenario => {
   };
 };
 
-/** The same refill path with fifty purchased LORDS held separately from the five hundred earned. */
+/**
+ * The same refill path with fifty purchased LORDS held separately from the five hundred earned, its deposit source on
+ * this build's own L2 ledger so the purse offers Deposit: the tab answers its pause read; its token read goes to the
+ * ledger.
+ */
 export const spendLordsScenario = (): LabScenario => {
   const scenario = upkeepScenario();
   const store = chainOf(scenario);
@@ -60,7 +65,7 @@ export const spendLordsScenario = (): LabScenario => {
     {
       model: "DepositSource",
       key: "0xd001",
-      value: { game_id: 1, chain: "0x534e5f4d41494e", ledger: "0x1", signer: "0x1", epoch: "0" },
+      value: { game_id: 1, chain: L2_CHAIN.id, ledger: L2_LEDGER, signer: "0x1", epoch: "0" },
     },
     {
       model: "SpendLords",

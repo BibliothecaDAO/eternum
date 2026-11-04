@@ -50,6 +50,20 @@ test("a raw select is refused outright, and the sheet's select is not", () =>
     [{ path: "x.tsx", line: 1, rule: "raw <select>: use HudSelect", match: "<select", refused: true }],
   ));
 
+test("a raw input is counted, and the sheet's fields are not", () =>
+  assert.deepEqual(
+    findViolations(
+      `<input aria-label="Whole LORDS to deposit" inputMode="numeric" value={amount} />
+<HudField aria-label="Whole LORDS to deposit" inputMode="numeric" value={amount} onChange={setAmount} />
+<AmountInput label="LORDS" value={amount} max={held} onChange={onAmount} />
+<label className="ui-field" />`,
+      "x.tsx",
+      COLORS,
+      STEPS,
+    ),
+    [{ path: "x.tsx", line: 1, rule: "raw <input>: use HudField", match: "<input", refused: false }],
+  ));
+
 test("the ratchet fails a file past its count, a file below it, and a new file holding any", () => {
   const counts = new Map([
     ["a.tsx", 3],

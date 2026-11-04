@@ -103,6 +103,8 @@ it("writes exact held balances and deposit history through the shared number for
 });
 it("confirms one payment, resets the form and sends a second deposit with a fresh identity", async () => {
   const view = await render();
+  expect(amount(view.host).inputMode).toBe("numeric");
+  expect(amount(view.host).value).toBe("10");
   await act(async () => view.button("Deposit LORDS").click());
   const first = wallet.props!.calls[1].calldata.at(-1);
   expect(amount(view.host).disabled).toBe(true);

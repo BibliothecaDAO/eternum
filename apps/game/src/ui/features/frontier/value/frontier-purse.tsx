@@ -14,7 +14,7 @@ import { requireActiveGame } from "@/runtime/world/store";
 import { L2_CHAIN, L2_BLOCK_MS } from "@/runtime/l2-rpc";
 import { environmentLedger } from "@/shell/value/ledger";
 import { useLedgerPaused } from "@/shell/value/use-ledger-paused";
-import { HudButton, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudField, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import { useRealmLords } from "./use-realm-lords";
 import { useSpendLords } from "./use-spend-lords";
 import { useLinkWallet } from "./link-wallet";
@@ -143,16 +143,14 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
         </HudButton>
       ) : (
         <>
-          <label>
-            Whole LORDS to deposit
-            <input
-              aria-label="Whole LORDS to deposit"
-              inputMode="numeric"
-              value={payment?.amount ?? amount}
-              disabled={!!payment}
-              onChange={(event) => setAmount(event.target.value)}
-            />
-          </label>
+          <HudField
+            icon="lords"
+            aria-label="Whole LORDS to deposit"
+            inputMode="numeric"
+            value={payment?.amount ?? amount}
+            disabled={!!payment}
+            onChange={setAmount}
+          />
           <p>1 wallet LORDS = 1 spend-only LORDS. Your wallet also pays the Starknet network fee in STRK.</p>
           {error && <p role="alert">{error}</p>}
           {!payment && (
