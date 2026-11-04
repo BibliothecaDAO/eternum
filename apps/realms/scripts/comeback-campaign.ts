@@ -22,35 +22,43 @@ export interface Account {
   optedOut: boolean;
 }
 
+/** A player who came back within this long before the send is not emailed. */
+const AWAY_SECONDS = 24 * 60 * 60;
+
 /**
- * Whether the player has stayed away since `activeSince` (24 hours before the send). Coming back means opening the
- * game: the identity service writes user.lastSeenAt when the app reads its session, at most once per
- * VISIT_RECORD_SECONDS, and keeps it when the player signs out. So a visit since `activeSince` leaves a record no older
- * than VISIT_RECORD_SECONDS before it. Before that record began (`visitsSince`, when migration 0026 ran) a visit is
- * unknown, so nobody counts as away over a window reaching back that far. A confirmed action counts too, for a player
- * who acts without the app reading the session again (a tab kept open, a bot device).
+ * Since when a player must have stayed away to get the email, at the send's moment `now`: 24 hours before it, or the
+ * first moment the visit record sees every visit, if that is later. Coming back means opening the game: the identity
+ * service writes user.lastSeenAt when the app reads its session, at most once per VISIT_RECORD_SECONDS, and keeps it
+ * when the player signs out. The record began at `visitsSince` (when migration 0026 ran), so every visit from
+ * visitsSince + VISIT_RECORD_SECONDS on is in it. null while no such moment has passed: then nobody counts as away.
  */
-export function isAway(
-  account: Pick<Account, "lastAction" | "lastVisit">,
-  activeSince: number,
-  visitsSince: number | null,
-): boolean {
-  const window = activeSince - VISIT_RECORD_SECONDS;
-  if (visitsSince === null || visitsSince > window) return false;
-  return account.lastVisit < window && account.lastAction < activeSince;
+export function awaySince(now: number, visitsSince: number | null): number | null {
+  if (visitsSince === null) return null;
+  const since = Math.max(now - AWAY_SECONDS, visitsSince + VISIT_RECORD_SECONDS);
+  return since <= now ? since : null;
 }
 
 /**
- * Whether an account still fits its variant, from its latest signals. N asks for a realm not yet founded: signing up
- * opened the game, and so may a later visit, but neither founds it, so N holds until a confirmed action (founding is
- * one). D and P are for players who stayed away (`isAway`).
+ * Whether the player has stayed away since `awaySince`: no recorded visit since then (a visit leaves a record no older
+ * than VISIT_RECORD_SECONDS before it) and no confirmed action, for a player who acts without the app reading the
+ * session again (a tab kept open, a bot device).
+ */
+export function isAway(account: Pick<Account, "lastAction" | "lastVisit">, now: number, visitsSince: number | null) {
+  const since = awaySince(now, visitsSince);
+  return since !== null && account.lastVisit < since - VISIT_RECORD_SECONDS && account.lastAction < since;
+}
+
+/**
+ * Whether an account still fits its variant at `now`, from its latest signals. N asks for a realm not yet founded:
+ * signing up opened the game, and so may a later visit, but neither founds it, so N holds until a confirmed action
+ * (founding is one). D and P are for players who stayed away (`isAway`).
  */
 export const stillFits = (
   variant: VariantKey,
   account: Pick<Account, "lastAction" | "lastVisit">,
-  activeSince: number,
+  now: number,
   visitsSince: number | null,
-): boolean => (variant === "N" ? account.lastAction < activeSince : isAway(account, activeSince, visitsSince));
+): boolean => (variant === "N" ? account.lastAction < now - AWAY_SECONDS : isAway(account, now, visitsSince));
 
 /**
  * Each account in at most one variant, D before N before P; none for an account that stopped news emails or no longer
@@ -59,10 +67,10 @@ export const stillFits = (
  * - N: holds a Devcon ticket, never founded.
  * - P: owns an address on the playtest's final board, holds no ticket.
  */
-export function variantOf(account: Account, activeSince: number, visitsSince: number | null): VariantKey | null {
+export function variantOf(account: Account, now: number, visitsSince: number | null): VariantKey | null {
   if (account.optedOut) return null;
   const variant: VariantKey | null = account.ticket ? (account.inSeason ? "D" : "N") : account.playtester ? "P" : null;
-  return variant && stillFits(variant, account, activeSince, visitsSince) ? variant : null;
+  return variant && stillFits(variant, account, now, visitsSince) ? variant : null;
 }
 
 /** The visit record's reads (migration 0026): when it began, and one account's last visit, both in seconds. */

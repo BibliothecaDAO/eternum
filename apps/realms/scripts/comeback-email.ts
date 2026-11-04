@@ -21,6 +21,7 @@ import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
   Activity,
+  awaySince,
   isAway,
   sendCampaign,
   stillFits,
@@ -525,13 +526,14 @@ function figures(s: Season) {
   };
 }
 
-/** Players who acted in the last 24 hours, as of this moment, have come back: the email is not for them. */
-const activeSince = () => Math.floor(Date.now() / 1000) - 24 * 60 * 60;
+/** This moment, in seconds: who has come back is decided against it (`awaySince`). */
+const now = () => Math.floor(Date.now() / 1000);
 
 async function dryRun(target: Target) {
   const season = await readSeason();
-  const since = activeSince();
+  const at = now();
   const visitsSince = visitsSinceOf(target);
+  const since = awaySince(at, visitsSince);
   const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`);
   const reserved = new Set(record.map((row) => row.realmsId));
   /** Reserved by a run that never marked them sent: check them against Resend's log before anything else. */
@@ -551,12 +553,12 @@ async function dryRun(target: Target) {
   let optedOut = 0;
   for (const account of readAccounts(target, season, false, visitsSince !== null)) {
     if (account.optedOut) optedOut++;
-    const key = variantOf(account, since, visitsSince);
-    // Who the email would be for with no visit or action and a record covering the window: the players it now leaves
-    // out, and why.
-    const candidate = variantOf({ ...account, lastAction: 0, lastVisit: 0 }, since, 0);
+    const key = variantOf(account, at, visitsSince);
+    // Who the email would be for with no visit or action and a record long begun: the players it now leaves out, and
+    // why.
+    const candidate = variantOf({ ...account, lastAction: 0, lastVisit: 0 }, at, 0);
     if (!key) {
-      if (candidate) counts[candidate]!.leftOut[leftOutBy(account, since, visitsSince)]++;
+      if (candidate) counts[candidate]!.leftOut[leftOutBy(account, at, visitsSince)]++;
       continue;
     }
     if (reserved.has(account.realmsId)) counts[key]!.alreadyReserved++;
@@ -567,7 +569,7 @@ async function dryRun(target: Target) {
     JSON.stringify(
       {
         readAt: new Date().toISOString(),
-        activeSinceUtc: new Date(since * 1000).toISOString(),
+        awaySinceUtc: since === null ? null : new Date(since * 1000).toISOString(),
         confirmedBlock: season.confirmedBlock,
         historyBlock: season.activity.heldBlock,
         visitsRecordedSince: visitsSince === null ? null : new Date(visitsSince * 1000).toISOString(),
@@ -583,9 +585,9 @@ async function dryRun(target: Target) {
 }
 
 /** Why a player who would get the email is left out: a recorded visit, a confirmed action alone, or no record yet. */
-function leftOutBy(account: Account, since: number, visitsSince: number | null) {
-  if (!isAway({ lastAction: 0, lastVisit: 0 }, since, visitsSince)) return "visitsUnknown" as const;
-  return isAway({ ...account, lastAction: 0 }, since, visitsSince) ? ("actedOnly" as const) : ("visited" as const);
+function leftOutBy(account: Account, at: number, visitsSince: number | null) {
+  if (!isAway({ lastAction: 0, lastVisit: 0 }, at, visitsSince)) return "visitsUnknown" as const;
+  return isAway({ ...account, lastAction: 0 }, at, visitsSince) ? ("actedOnly" as const) : ("visited" as const);
 }
 
 async function render(dir: string) {
@@ -657,7 +659,7 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
   const visitsSince = visitsSinceOf(target);
   const deliveries = (readAccounts(target, season, true, visitsSince !== null) as Recipient[]).flatMap((account) => {
-    const variant = variantOf(account, activeSince(), visitsSince);
+    const variant = variantOf(account, now(), visitsSince);
     return variant && variants.includes(variant) && (withDiscord || !account.discord) ? [{ ...account, variant }] : [];
   });
   const counts = await sendCampaign({
@@ -670,7 +672,7 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
           lastAction: season.activity.latestOf(delivery.addresses),
           lastVisit: visitRecord.seconds(d1(target, visitRecord.lastVisit(delivery.realmsId))[0]?.lastSeenAt),
         },
-        activeSince(),
+        now(),
         visitsSince,
       );
     },
