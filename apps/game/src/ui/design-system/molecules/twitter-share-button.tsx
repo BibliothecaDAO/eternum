@@ -1,4 +1,5 @@
 import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { openXPost } from "@/utils/x-post";
 
 /**
  * Shares a line on X: the sheet's secondary button, opening X's compose page in a new tab, so the game stays where it
@@ -12,17 +13,7 @@ const TwitterShareButton = ({
   text: () => string;
   callToActionText?: string;
 }) => (
-  <HudButton
-    kind="secondary"
-    icon="twitter"
-    onClick={() =>
-      window.open(
-        `https://twitter.com/intent/tweet?text=${encodeURIComponent(text())}`,
-        "_blank",
-        "noopener,noreferrer",
-      )
-    }
-  >
+  <HudButton kind="secondary" icon="twitter" onClick={() => openXPost(text())}>
     {callToActionText}
   </HudButton>
 );

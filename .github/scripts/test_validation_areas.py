@@ -110,6 +110,16 @@ class CiFileOwnership(unittest.TestCase):
 
 
 class WorkflowCommands(unittest.TestCase):
+    def test_a_how_to_play_guide_selects_the_client_area_that_checks_its_link(self):
+        for page in (
+            "apps/game-docs/docs/pages/index.mdx",
+            "apps/game-docs/docs/pages/frontier/index.mdx",
+            "apps/game-docs/docs/pages/blitz/index.mdx",
+            "apps/game-docs/docs/pages/eternum/key-concepts.mdx",
+        ):
+            with self.subTest(page=page):
+                self.assertIn("client", areas_run_by(page))
+
     def test_a_change_to_a_client_checker_alone_selects_the_client_area(self):
         for path in (
             "scripts/words/check.mjs",

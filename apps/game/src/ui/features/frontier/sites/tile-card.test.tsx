@@ -170,7 +170,7 @@ describe("the tile card", () => {
     try {
       const card = host.querySelector(`section[aria-label="${siteName(SITE)}"]`);
       expect(card).not.toBeNull();
-      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP");
+      expect(card!.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
       expect(host.querySelector('header [aria-label="Troll 1,100"]')).not.toBeNull();
       expect(button("Attack")).toBeUndefined();
 
@@ -192,7 +192,7 @@ describe("the tile card", () => {
       const card = host.querySelector('section[aria-label="North Watch"]')!;
       expect(card).not.toBeNull();
       expect(card.textContent?.match(/North Watch/g)).toHaveLength(1);
-      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP");
+      expect(card.querySelector(".ui-frame__body header")?.textContent).toBe("1,100Troll+825+123 XP+1 site");
       expect(card.textContent?.match(/Troll/g)).toHaveLength(1);
       expect(card.textContent).not.toMatch(/\bcamp\b/i);
     } finally {
@@ -234,7 +234,7 @@ describe("the tile card", () => {
     // Owner, 31 October 2026: "I should still have the projection even if I'm too far I think". The attack its army
     // would send from beside the site, and its headline; only Attack waits for the army to get there.
     expect(fightSides(host)).toEqual(FORECAST);
-    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+825+123 XP");
+    expect(host.querySelector(".ui-frame__body header")?.textContent).toBe("The guard holds+825+123 XP+1 site");
     expect(button("Attack")?.disabled).toBe(true);
     expect(button("Move")).toBeUndefined();
     expect(host.querySelector('[role="status"]')?.textContent).toBe("Too far from the Troll");

@@ -43,7 +43,9 @@ import { ageOf } from "../play/ages";
 import { seasonEnded, seasonTitle } from "../season";
 import { FailureLine } from "../sign-in/failure-line";
 import { resultsHref } from "./results-link";
-import { canCopyCard, copySeasonCard, shareSeasonCard, type SharedCard } from "./share-card";
+import { openXPost } from "@/utils/x-post";
+
+import { canCopyCard, copySeasonCard, saveSeasonCard } from "./share-card";
 
 type Entry = HeraldFrontierLeaderboardEntry;
 
@@ -61,11 +63,11 @@ type CardName = (typeof CARDS)[number];
 /**
  * A Frontier season's end, wherever it is read (the owner's pick B, 1 November 2026: "four cards wrapped style"): the
  * season and how it ended, the player's four cards (their place, the podium, their sites, their haul), and the page's own
- * steps with Share my season last. The deck is one node, at the size it is shared: a desktop shows it whole, the cards
- * flipping in one after another; a phone steps through it a card at a time, as a story over that same node. Share sends
- * the deck as it is drawn, so the screen and the image are one drawing. In the game it covers the HUD (`cover`); on
- * Results it stands in the page. A reader with no realm on the board sees the season and its podium, and nothing to
- * share.
+ * steps with sharing last (Copy image, then Post on X). The deck is one node, at the size it is shared: a desktop shows
+ * it whole, the cards flipping in one after another; a phone steps through it a card at a time, as a story over that
+ * same node. The image copied is the deck as it is drawn, so the screen and the image are one drawing. In the game it
+ * covers the HUD (`cover`); on Results it stands in the page. A reader with no realm on the board sees the season and
+ * its podium, and nothing to share.
  */
 export const SeasonRecap = ({
   gameRef,
@@ -84,7 +86,7 @@ export const SeasonRecap = ({
   board: HeraldFrontierLeaderboard | undefined;
   viewer: string | null;
   ending: keyof typeof SEASON_ENDINGS;
-  /** The page's steps, before Share my season. */
+  /** The page's steps, before sharing. */
   actions: ReactNode;
   /** The realm's LORDS still to withdraw, where the recap covers the way to them. */
   withdraw?: ReactNode;
@@ -133,6 +135,9 @@ export const SeasonRecap = ({
           ))}
         <footer className="season-recap__foot">
           {cut === "tall" && withdraw}
+          {board && own && (
+            <p className="season-recap__hint">{canCopyCard() ? RECAP_WORDS.copyHint : RECAP_WORDS.saveHint}</p>
+          )}
           <span className="season-recap__steps">
             {actions}
             {board && own && (
@@ -149,7 +154,7 @@ export const SeasonRecap = ({
 };
 
 /** The LORDS a player's place on the podium pays, once a pool is published: the ledger's award, else the place held. */
-const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
+export const prizeOf = (board: HeraldFrontierLeaderboard, entry: Entry): number | undefined =>
   seasonPodium(board)?.find(
     ({ holder }) => typeof holder === "object" && isSameStarknetAddress(holder.address, entry.address),
   )?.lords;
@@ -497,10 +502,9 @@ const Tile = ({ icon, value, label }: { icon: IconMeaning; value: string; label:
 );
 
 /**
- * Share my season: the deck made into an image at its own size, on the press that asks for it, then handed to the
- * device's share sheet with the season's line and its Results (a phone), else saved (a desktop). Beside it on a desktop
- * whose clipboard takes a PNG, Copy image puts the same image there to paste (the owner, 1 November 2026). A sheet the
- * player closes is no failure; an image that cannot be made says so, under either.
+ * Sharing the season, the owner's flow (4 November 2026): 1, Copy image puts the deck's image on the clipboard (Save
+ * image saves it, where the clipboard takes no PNG); 2, Post on X opens a post with the season's line and its Results,
+ * where the player pastes the image. The image is made on the press that asks for it; one that cannot be made says so.
  */
 const ShareSeason = ({
   card,
@@ -513,34 +517,47 @@ const ShareSeason = ({
   line: string;
   gameRef: GameRef;
 }) => {
-  const [state, setState] = useState<"idle" | "making" | "copying" | SharedCard | "copied" | "failed">("idle");
-  const send = async (making: "making" | "copying", sent: (node: HTMLElement) => Promise<typeof state>) => {
+  const [state, setState] = useState<"idle" | "making" | "taken" | "failed">("idle");
+  const copies = canCopyCard();
+  const take = async () => {
     if (!card.current) return;
-    setState(making);
-    setState(await sent(card.current).catch(() => "failed" as const));
+    setState("making");
+    const taken = copies ? copySeasonCard(card.current, CUTS[cut]) : saveSeasonCard(card.current, CUTS[cut]);
+    setState(
+      await taken.then(
+        () => "taken" as const,
+        () => "failed" as const,
+      ),
+    );
   };
   const url = new URL(resultsHref(gameRef), window.location.origin).href;
   return (
     <>
-      {cut === "wide" && canCopyCard() && (
-        <AppButton
-          kind="quiet"
-          icon="copy"
-          busy={state === "copying" ? RECAP_WORDS.making : undefined}
-          onClick={() => void send("copying", (node) => copySeasonCard(node, CUTS[cut]).then(() => "copied" as const))}
-        >
-          {state === "copied" ? RECAP_WORDS.copied : RECAP_WORDS.copy}
-        </AppButton>
-      )}
+      {/* A phone's row has room for the numbers alone; a desktop's buttons wear their icons too. */}
       <AppButton
-        kind="primary"
-        icon="share"
+        kind="secondary"
+        icon={cut === "wide" ? "copy" : undefined}
         busy={state === "making" ? RECAP_WORDS.making : undefined}
-        onClick={() => void send("making", (node) => shareSeasonCard(node, { ...CUTS[cut], line, url }))}
+        onClick={() => void take()}
       >
-        {state === "saved" ? RECAP_WORDS.saved : RECAP_WORDS.share}
+        <StepNumber number={1} />
+        {takeWord(copies, state === "taken")}
+      </AppButton>
+      <AppButton kind="primary" icon={cut === "wide" ? "twitter" : undefined} onClick={() => openXPost(line, url)}>
+        <StepNumber number={2} />
+        {RECAP_WORDS.post}
       </AppButton>
       {state === "failed" && <FailureLine line={RECAP_WORDS.failed} />}
     </>
   );
 };
+
+/** The first step's word: copy or save, then copied or saved once done. */
+const takeWord = (copies: boolean, taken: boolean) =>
+  copies ? (taken ? RECAP_WORDS.copied : RECAP_WORDS.copy) : taken ? RECAP_WORDS.saved : RECAP_WORDS.save;
+
+const StepNumber = ({ number }: { number: number }) => (
+  <b className="season-recap__step-number" aria-hidden>
+    {number}
+  </b>
+);

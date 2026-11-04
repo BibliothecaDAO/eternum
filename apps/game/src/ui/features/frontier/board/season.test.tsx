@@ -34,6 +34,31 @@ const button = (host: HTMLElement, word: string) =>
   [...host.querySelectorAll("button")].find((candidate) => candidate.textContent === word)!;
 
 describe("the season list", () => {
+  it("says how to climb, with each site kind's painting and name, while the player is off the podium or has cleared none", () => {
+    const climb = (rows: SeasonListRow[]) => {
+      const { host, unmount } = render(
+        <SeasonList rank={null} rows={rows} state="ready" onRetry={vi.fn()} onOpen={vi.fn()} onClose={vi.fn()} />,
+      );
+      const line = host.querySelector("[data-climb]")?.textContent ?? null;
+      unmount();
+      return line;
+    };
+    const said = `Clear sites with your armies to climb${["Camp", "Rift", "Ruin", "Beasts"]
+      .map((kind) => TARGET_MARKS[kind as keyof typeof TARGET_MARKS].word)
+      .join("")}`;
+    expect(climb([row(1), row(2), row(12, true)])).toBe(said);
+    // On the podium with sites cleared: nothing to explain. Nothing cleared yet, even first: the line.
+    expect(climb([row(1, true), row(2)])).toBeNull();
+    expect(
+      climb([
+        { ...row(1, true), sitesCleared: 0 },
+        { ...row(2), sitesCleared: 0 },
+      ]),
+    ).toBe(said);
+    // A spectator has no row to climb with.
+    expect(climb([row(1), row(2)])).toBeNull();
+  });
+
   it("names its columns, lists the realms with the player's own lit and opens a row, with no Back", () => {
     const onOpen = vi.fn();
     const { host, unmount } = render(
@@ -54,7 +79,7 @@ describe("the season list", () => {
     ]);
     expect(
       [...host.querySelectorAll(".ui-table-head > [data-tip]")].map((head) => head.getAttribute("data-tip")),
-    ).toEqual(["Sites cleared", "LORDS earned"]);
+    ).toEqual(["Ranked by sites cleared, then deepest depth", "LORDS earned"]);
     const own = host.querySelector("button[aria-current='true']")!;
     expect(own.textContent).toContain("Realm 12");
     expect(host.querySelector("[aria-label='Season #12']")).not.toBeNull();

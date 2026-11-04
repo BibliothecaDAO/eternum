@@ -33,7 +33,6 @@ import { type ReactNode, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { JOIN_WORDS, REWARD_WORDS } from "@/ui/design-system/kit/words";
-import { DEVCON } from "@/shell/join/devcon";
 
 import { Element } from "../sheet-element";
 import { Icon } from "@/ui/design-system/icon";
@@ -664,7 +663,7 @@ const TicketSection = () => {
         <div className="flex flex-wrap items-start gap-6 p-6">
           <AppTicket art={art} line={JOIN_WORDS.sealed} stub={JOIN_WORDS.stub} />
           <AppTicket art={art} face="opened" line={JOIN_WORDS.realm} stub={JOIN_WORDS.stub} />
-          <AppTicket art={art} face="golden" line={JOIN_WORDS.goldenLine} stub={JOIN_WORDS.goldenStub(DEVCON.golden)} />
+          <AppTicket art={art} face="golden" line={JOIN_WORDS.goldenLine} stub={JOIN_WORDS.goldenStub} />
         </div>
       }
     />

@@ -1,13 +1,19 @@
 import { AGE_LOCKUP } from "@/ui/design-system/icon-meaning";
 import { AGES } from "@bibliothecadao/types";
-import { IdentityRequestError, type CampaignTicket } from "@realms-world/identity";
+import { useQuery } from "@tanstack/react-query";
+import {
+  CAMPAIGNS,
+  IdentityRequestError,
+  seasonMoment,
+  type CampaignOpening,
+  type CampaignTicket,
+} from "@realms-world/identity";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 import { identityClient, useIdentitySession } from "@/hooks/context/identity-session";
 import { heldCampaignTicket, useHeldTicket, useTicketOpened } from "@/hooks/use-holdings";
-import { campaignOfPreset } from "@/services/home-claim-rules";
-import { AppButton, AppNotice, AppTicket } from "@/ui/design-system/kit/app-elements";
+import { AppButton, AppNotice, AppPortrait, AppTicket } from "@/ui/design-system/kit/app-elements";
 import {
   campaignTicketName,
   DEVCON as DEVCON_NAME,
@@ -18,14 +24,12 @@ import {
 
 import { useLayout } from "../frame/layout";
 import { PageFrame } from "../frame/page-frame";
-import { entryHref } from "../game-links";
-import { useDirectory } from "../herald";
-import { chooseSeason } from "../season";
 import { useRequestSignIn } from "../sign-in/connect";
-import { DEVCON, forgetCampaignCode, keepCampaignCode, keptCampaignCode } from "./devcon";
+import { DEVCON, forgetCampaignOpening, keepCampaignOpening, keptCampaignOpening } from "./devcon";
+import { useDevconEntry } from "./devcon-entry";
 import { DevconTicket } from "./devcon-ticket";
 
-/** A code as flyers print it; anything else in the address is not kept. */
+/** A code as flyers and referral links carry it; anything else in the address is not kept. */
 const PRINTED_CODE = /^[A-Za-z0-9]{8}$/;
 
 /** Where sign-in returns from the landing: the bare link (it serves the kept code), asking to open the ticket at once. */
@@ -48,16 +52,19 @@ const FINAL_REFUSALS = new Map<string, string>([
   ["ticket_taken", JOIN_WORDS.taken],
   ["realm_founded", JOIN_WORDS.founded],
   ["invalid_redemption", JOIN_WORDS.noTicket],
+  ["self_referral", JOIN_WORDS.selfReferral],
+  ["referral_unknown", JOIN_WORDS.referralUnknown],
 ]);
 
 /**
- * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`); `/join/devcon` serves a code already kept.
- * One sequence, one job per screen: the sealed ticket and Open (signing in first when needed, then opening at once),
- * then what it holds (its reveal, or the ticket the account already holds), then Choose your home, the Devcon game's
- * Realm step. Nothing before the opening tells a golden ticket from another.
+ * Devcon's landing, where every flyer's QR leads (`/join/devcon/<code>`), and every friend's referral link
+ * (`/join/devcon/r/<code>`, naming who sent it); `/join/devcon` serves a code already kept. One sequence, one job per
+ * screen: the sealed ticket and Open (signing in first when needed, then opening at once), then what it holds (its
+ * reveal, or the ticket the account already holds), then Choose your home, the Devcon game's Realm step. Nothing before
+ * the opening tells a golden ticket from another.
  */
 export const JoinDevconPage = () => {
-  useKeptFlyerCode();
+  const kept = useKeptOpening();
   const { session } = useIdentitySession();
   const held = useHeldTicket(session ? DEVCON.campaign : null);
   const requestSignIn = useRequestSignIn();
@@ -79,6 +86,7 @@ export const JoinDevconPage = () => {
   if (held.state === "held" && opening.kind === "sealed") return <TicketHeld tier={held.ticket.tier} entry={entry} />;
   return (
     <SealedTicket
+      referral={kept && "referral" in kept ? kept.referral : null}
       opening={opening.kind === "opening"}
       refusal={opening.kind === "refused" ? opening : null}
       onOpen={session ? open : () => requestSignIn(OPEN_ON_RETURN)}
@@ -86,12 +94,22 @@ export const JoinDevconPage = () => {
   );
 };
 
-/** The flyer's code waits in this browser, through sign-in, until the signed-in account opens its ticket. */
-const useKeptFlyerCode = () => {
-  const { code } = useParams();
+/**
+ * The flyer's code or the referral link's waits in this browser, through sign-in, until the signed-in account opens its
+ * ticket; the one in effect is the address's, or the one kept.
+ */
+const useKeptOpening = (): CampaignOpening | null => {
+  const { code, referral } = useParams();
   useEffect(() => {
-    if (code && PRINTED_CODE.test(code)) keepCampaignCode(code);
-  }, [code]);
+    const opened = openingOf(code, referral);
+    if (opened) keepCampaignOpening(opened);
+  }, [code, referral]);
+  return openingOf(code, referral) ?? keptCampaignOpening();
+};
+
+const openingOf = (code: string | undefined, referral: string | undefined): CampaignOpening | null => {
+  if (referral && PRINTED_CODE.test(referral)) return { referral };
+  return code && PRINTED_CODE.test(code) ? { code } : null;
 };
 
 /** Back from sign-in (`?open`), the ticket opens without a second press; the address loses `?open` so a reload does not. */
@@ -117,26 +135,29 @@ const openTicket = async (): Promise<Opening> => {
   try {
     const held = await heldCampaignTicket(DEVCON.campaign);
     if (held) return { kind: "held", ticket: held };
-    const ticket = await identityClient.redeemCampaignTicket(DEVCON.campaign, keptCampaignCode());
-    forgetCampaignCode();
+    const ticket = await identityClient.redeemCampaignTicket(DEVCON.campaign, keptCampaignOpening());
+    forgetCampaignOpening();
     return { kind: "revealed", ticket };
   } catch (cause) {
     const final = cause instanceof IdentityRequestError ? FINAL_REFUSALS.get(cause.code ?? "") : undefined;
     if (final === undefined) return { kind: "refused", line: JOIN_WORDS.failed, final: false };
-    forgetCampaignCode();
+    forgetCampaignOpening();
     return { kind: "refused", line: final, final: true };
   }
 };
 
 /**
- * The ticket before it opens, the same for every flyer and every visitor: its one verb is Open (a new visitor signs in,
- * or signs up, on the way). Refused for good, the way on is Play: the game is open to everyone.
+ * The ticket before it opens, the same for every flyer and every visitor, under who sent it for a referral link: its one
+ * verb is Open (a new visitor signs in, or signs up, on the way). Refused for good, the way on is Play: the game is open
+ * to everyone.
  */
 const SealedTicket = ({
+  referral,
   opening,
   refusal,
   onOpen,
 }: {
+  referral: string | null;
   opening: boolean;
   refusal: { line: string; final: boolean } | null;
   onOpen: () => void;
@@ -153,10 +174,35 @@ const SealedTicket = ({
       )
     }
   >
+    {referral && <SentBy referral={referral} />}
     <h1 className="text-app-title text-app-ink">{JOIN_WORDS.yourTicket}</h1>
     <AppTicket art={<TicketArt />} line={JOIN_WORDS.sealed} stub={JOIN_WORDS.stub} />
+    <p className="text-sm text-app-ink opacity-75">{JOIN_WORDS.openUntil(SEASON_END)}</p>
   </DevconFrame>
 );
+
+const SEASON_END = seasonMoment(
+  DEVCON.closesAt,
+  CAMPAIGNS[DEVCON.campaign].clock.timeZone,
+  CAMPAIGNS[DEVCON.campaign].clock.zone,
+);
+
+/** Who sent a referral link, by their chosen name; nothing until the identity service answers. */
+const SentBy = ({ referral }: { referral: string }) => {
+  const inviter = useQuery({
+    queryKey: ["campaign-referrer", DEVCON.campaign, referral] as const,
+    queryFn: () => identityClient.campaignReferrer(DEVCON.campaign, referral),
+    retry: false,
+    staleTime: Infinity,
+  });
+  if (inviter.data === undefined) return null;
+  return (
+    <div className="flex items-center gap-3">
+      {inviter.data && <AppPortrait name={inviter.data} size="lg" />}
+      <span className="text-left text-app-ink">{JOIN_WORDS.sentYou(inviter.data)}</span>
+    </div>
+  );
+};
 
 /** The ticket this flyer opened, turned over: gold under its rays for a golden one, and what its realm claims each day. */
 const TicketRevealed = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: string | null }) => (
@@ -172,7 +218,7 @@ const TicketRevealed = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: 
  */
 const TicketHeld = ({ tier, entry }: { tier: CampaignTicket["tier"]; entry: string | null }) => {
   useEffect(() => {
-    forgetCampaignCode();
+    forgetCampaignOpening();
   }, []);
   return (
     <DevconFrame foot={<ChooseYourHome entry={entry} />}>
@@ -195,21 +241,6 @@ const ChooseYourHome = ({ entry }: { entry: string | null }) => (
     {HOME_STEP_WORDS.title}
   </AppButton>
 );
-
-/**
- * The running Devcon season's entry; null while the directory has not answered. Play only once it has answered with no
- * Devcon game, or failed (Play says why).
- */
-const useDevconEntry = (): string | null => {
-  const directory = useDirectory();
-  if (directory.isError) return "/";
-  if (!directory.data) return null;
-  const season = chooseSeason(
-    directory.data.games.filter((game) => campaignOfPreset(game.preset_id) === DEVCON.campaign),
-    false,
-  );
-  return season ? entryHref(season, "play") : "/";
-};
 
 const ContinueToPlay = () => (
   <AppButton kind="primary" size="lg" icon="play" step to="/">

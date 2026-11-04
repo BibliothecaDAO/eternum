@@ -199,6 +199,10 @@ button.ui-panel__name[data-action]:hover {
 .ui-button[data-tone="bad"]:disabled {
   opacity: 1;
 }
+/* A button that opens an address (a guide) is a link with the button's look. */
+a.ui-button {
+  text-decoration: none;
+}
 .ui-button[data-icon-only] {
   width: var(--hud-control);
   padding: 0;
@@ -750,6 +754,11 @@ button.ui-row {
   font: inherit;
   text-align: left;
 }
+/* A row that opens an address (a guide) is a link with the row's look. */
+a.ui-row {
+  color: inherit;
+  text-decoration: none;
+}
 .ui-row:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;
   opacity: 0.45;
@@ -1052,8 +1061,8 @@ span.ui-row__choose {
 .ui-frame__body:empty {
   display: none;
 }
-/* A phone held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
-@media (orientation: landscape) and (max-height: 520px) and (max-width: 1023px) {
+/* A screen held sideways: the sheet stands in the HUD's right column, under its strip (HudBands). */
+@media (max-width: 1023px) and (orientation: landscape) {
   .ui-sheet {
     inset-inline: auto;
     right: max(env(safe-area-inset-right), theme(spacing.2));

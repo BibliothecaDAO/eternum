@@ -56,7 +56,7 @@ it("offers a signed-out reader Sign in, What's new, then How to play and Realms'
     link.target,
   ]);
   expect(away).toEqual([
-    ["How to play", "https://docs.realms.party/frontier", "_blank"],
+    ["How to play", "https://docs.realms.party/frontier/", "_blank"],
     ["Market", "https://realms.market/", "_blank"],
   ]);
   // What's new is read here, in the app: its row opens the patch notes.

@@ -8,8 +8,7 @@ import { RESEARCH_TREE } from "@/ui/design-system/kit/words";
 import { kindsHeld } from "@/ui/features/world/hud/holdings-model";
 import { buildStoryEventPresentation, frontierBeast, siteDisplayName } from "@bibliothecadao/eternum";
 import { StructureType } from "@bibliothecadao/types";
-import { frontierCoachSteps } from "../next-up/frontier-coach";
-import type { NextUpFacts } from "../next-up/next-up-facts";
+import { dayEndItems } from "../day-end/day-end";
 import { attackTargetName } from "./site-marks";
 import { SiteCardView } from "./site-card-view";
 import { SiteReceipt } from "./site-receipt";
@@ -37,7 +36,7 @@ const publicText = (view: ReactNode) => {
   return text;
 };
 
-it("names the Frontier encounter itself across the plate, cards, Events, lists and Next up, never Camp", () => {
+it("names the Frontier encounter itself across the plate, cards, Events, lists and the day's end, never Camp", () => {
   const { store, site, structure } = campBeside();
   const mode = getGameModeConfig(5);
   const beast = frontierBeast(0, StructureType.Camp);
@@ -75,18 +74,14 @@ it("names the Frontier encounter itself across the plate, cards, Events, lists a
       store,
     ),
   ];
-  const coach = frontierCoachSteps({ realm: true, barracks: true, armies: 0, camp: { x: 40, y: 12 } } as NextUpFacts, {
-    pointer: "mouse",
-    where: "map",
-    tips: true,
-  });
+  const dayEnd = dayEndItems({ claimWaiting: false, camp: { x: 40, y: 12 }, armyCanExplore: false });
   const words = {
     kindLine: publicText(<Plate plate={plate} />),
     listHeading: kindsHeld([{ category: StructureType.Camp, structure }], mode.id)[0].plural,
     selectionLabel: attackTargetName("Camp", identity),
     unknownGuard: attackTargetName("Camp"),
     scouting: RESEARCH_TREE.kinds.camp,
-    coach: coach.map(({ line, verb }) => `${line} ${verb}`).join(" "),
+    dayEnd: dayEnd.map(({ line, verb }) => `${line} ${verb}`).join(" "),
     events: events.map(({ title, description }) => `${title} ${description}`).join(" "),
     card: publicText(
       <SiteCardView

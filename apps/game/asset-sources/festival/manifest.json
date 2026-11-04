@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": "firework-gold",
+      "sheet": "firework-gold.webp",
+      "columns": 4,
+      "rows": 4,
+      "frames": 16,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "fps": 12,
+      "durationMs": 1333,
+      "posterFrame": 5,
+      "bytes": 181422,
+      "decodedRgbaBytes": 2359296,
+      "encoding": {
+        "quality": 82,
+        "alphaQuality": 75,
+        "effort": 5
+      },
+      "sha256": "269bce0b375764a8a99cade0d2f6dd55c57ab4fb0bd9c91efbe3864b8dedb0aa"
+    },
+    {
+      "id": "firework-saffron",
+      "sheet": "firework-saffron.webp",
+      "columns": 4,
+      "rows": 4,
+      "frames": 16,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "fps": 12,
+      "durationMs": 1333,
+      "posterFrame": 5,
+      "bytes": 176960,
+      "decodedRgbaBytes": 2359296,
+      "encoding": {
+        "quality": 82,
+        "alphaQuality": 75,
+        "effort": 5
+      },
+      "sha256": "6ab95dd6b7394dd2db6823ce2e2e891093a87263aed0f7b622558645458f299a"
+    },
+    {
+      "id": "firework-pink",
+      "sheet": "firework-pink.webp",
+      "columns": 4,
+      "rows": 4,
+      "frames": 16,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "fps": 12,
+      "durationMs": 1333,
+      "posterFrame": 5,
+      "bytes": 171790,
+      "decodedRgbaBytes": 2359296,
+      "encoding": {
+        "quality": 82,
+        "alphaQuality": 75,
+        "effort": 5
+      },
+      "sha256": "38a3da956502acb830fbe97571e9e2809b1c440553750dfd6392420346bf3583"
+    },
+    {
+      "id": "firework-teal",
+      "sheet": "firework-teal.webp",
+      "columns": 4,
+      "rows": 4,
+      "frames": 16,
+      "frameWidth": 192,
+      "frameHeight": 192,
+      "fps": 12,
+      "durationMs": 1333,
+      "posterFrame": 5,
+      "bytes": 190634,
+      "decodedRgbaBytes": 2359296,
+      "encoding": {
+        "quality": 82,
+        "alphaQuality": 75,
+        "effort": 5
+      },
+      "sha256": "38ea7ad55d613ff0ef3b2857f23a2decf1c39a97b29ff11b8343675565231d63"
+    },
+    {
+      "id": "diya",
+      "sheet": "diya.webp",
+      "columns": 4,
+      "rows": 4,
+      "frames": 16,
+      "frameWidth": 128,
+      "frameHeight": 128,
+      "fps": 12,
+      "durationMs": 1333,
+      "posterFrame": 3,
+      "bytes": 64244,
+      "decodedRgbaBytes": 1048576,
+      "encoding": {
+        "quality": 82,
+        "alphaQuality": 75,
+        "effort": 5
+      },
+      "sha256": "ee8b1726b91a82d41058da9794d3f8a6e26874379f3bef85fdd05ab236d4a851"
+    }
+  ]
+}
