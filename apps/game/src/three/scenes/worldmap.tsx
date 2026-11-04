@@ -83,6 +83,7 @@ import {
   dayOf,
   expeditionSpires,
   isArmyCrossing,
+  isEtherealTile,
   NEUTRAL_BIOME_CLIMATE,
   Position,
   spireEtherealView,
@@ -90,6 +91,7 @@ import {
   isViewerOwner,
   isExpeditionRealm,
   readExpeditionRules,
+  type ExpeditionRules,
   spawnRing,
   structureMapPosition,
 } from "@bibliothecadao/eternum";
@@ -1110,6 +1112,7 @@ export default class WorldmapScene extends WarpTravel {
   private spireManager!: SpireManager;
   /** The block second the veil's nearness was last asked at. */
   private veilCheckedAt = -1;
+  private expeditionGridOf: { gameId: number; rules: ExpeditionRules | null } | null = null;
   private mapSiteManager!: MapSiteManager;
   private spireLabelsGroup!: Group;
 
@@ -2595,13 +2598,13 @@ export default class WorldmapScene extends WarpTravel {
     return standing ? { kind: "structure", category: standing.base.category } : { kind: "other" };
   }
 
-  /** Frontier's lit spire on a hex (normalized), with its realm. */
+  /** Frontier's lit spire on a hex (normalized), with its realm; a game without expeditions lights none. */
   private litSpireAt(hexCoords: HexPosition) {
+    const gameId = configManager.getActiveGameId();
+    if (!readExpeditionRules(this.game.store, gameId)) return undefined;
     const { x, y } = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
     const now = getBlockTimestamp().currentBlockTimestamp;
-    return expeditionSpires(this.game.store, configManager.getActiveGameId(), now).find(
-      (spire) => spire.col === x && spire.row === y,
-    );
+    return expeditionSpires(this.game.store, gameId, now).find((spire) => spire.col === x && spire.row === y);
   }
 
   /** Whether a spire between Eternum's two layers stands on a hex (normalized). */
@@ -4446,19 +4449,30 @@ export default class WorldmapScene extends WarpTravel {
 
   /**
    * A cell's facts as the terrain presents them, from one tile read and, off a spire, one structures read: its projected
-   * biome, its surface (a spire's is ethereal) and whether terrain levels a pad under it (a structure or a spire). Every
-   * terrain path reads a cell through here; a panned page reads thousands, and each projection lookup builds a key.
+   * biome, its surface (ethereal on a spire and in the Ethereal layer, isEtherealTile) and whether terrain levels a pad
+   * under it (a structure or a spire). Every terrain path reads a cell through here; a panned page reads thousands, and
+   * each projection lookup builds a key.
    */
   private readTerrainCell(col: number, row: number): TerrainCellFacts {
     const center = FELT_CENTER();
     const hex = { alt: activeMapLayer(), col: col + center, row: row + center };
     const tile = this.worldSpatialProjection.getTileAtHex(hex);
-    const surfacePresentation = tile?.occupierType === TileOccupier.Spire ? "ethereal" : undefined;
+    const spire = tile?.occupierType === TileOccupier.Spire;
     return {
       projectedBiome: tile ? requireBiomeTypeFromId(tile.biome) : undefined,
-      surfacePresentation,
-      occupied: surfacePresentation === "ethereal" || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
+      surfacePresentation: spire || isEtherealTile(this.expeditionGrid(), hex) ? "ethereal" : undefined,
+      occupied: spire || this.worldSpatialProjection.getStructuresAtHex(hex).length > 0,
     };
+  }
+
+  /** The game's expedition grid, read once per game: the terrain asks it of every cell it draws. */
+  private expeditionGrid(): ExpeditionRules | null {
+    const gameId = configManager.getActiveGameId();
+    if (this.expeditionGridOf?.gameId === gameId) return this.expeditionGridOf.rules;
+    const rules = readExpeditionRules(this.game.store, gameId);
+    // Rules that have not arrived read as none: they are asked again until the game's slice rules are in.
+    if (rules || this.game.store.get("SliceRules", { game_id: gameId })) this.expeditionGridOf = { gameId, rules };
+    return rules;
   }
 
   protected getWarpTravelLifecycleAdapter(): WarpTravelLifecycleAdapter {

@@ -11,6 +11,7 @@ import {
   expeditionSpireTile,
   isArmyCrossing,
   isAtExpeditionSpire,
+  isEtherealTile,
   liveHomeArmies,
   structureMapPosition,
   structureLocalPosition,
@@ -188,6 +189,25 @@ describe("expedition spire", () => {
     expect(expeditionSpires(store as never, 7, dayStart(1) + 10)).toEqual([
       { col: 25, row: 46, deepest: 1, realm: realm(3) },
     ]);
+  });
+});
+
+describe("isEtherealTile", () => {
+  it("draws Ethereal I to III with the ethereal surface, and each day's surface without it", () => {
+    // Spacing 10: day 1's surface is rows 40..49, its Ethereal I to III rows 50..79, day 2's surface rows 80..89.
+    expect([45, 49, 50, 65, 79, 80].map((row) => isEtherealTile(rules, { row, alt: false }))).toEqual([
+      false,
+      false,
+      true,
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it("draws Eternum's other layer ethereal, and nothing else in a game without expeditions", () => {
+    expect(isEtherealTile(null, { row: 65, alt: true })).toBe(true);
+    expect(isEtherealTile(null, { row: 65, alt: false })).toBe(false);
   });
 });
 

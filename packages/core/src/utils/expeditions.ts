@@ -91,6 +91,13 @@ export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): n
   expeditionBand(rules, coord) % 4;
 
 /**
+ * Whether a tile lies in the Ethereal layer, which the terrain draws with its ethereal surface: Eternum's other map
+ * layer, or a Frontier depth below the day's surface (Ethereal I to III, a region down the same map).
+ */
+export const isEtherealTile = (rules: ExpeditionRules | null, hex: { row: number; alt: boolean }): boolean =>
+  hex.alt || (rules !== null && expeditionDepth(rules, { y: hex.row }) > 0);
+
+/**
  * Whether an army going from one tile to another passes through a spire instead of walking: onto the other map layer
  * (a spire's travel), or into another expedition region (a spire's portal to the Ethereal layer, which the contract
  * places a region down the same map). Regions lie a spacing apart with void between, so no walk joins two.
