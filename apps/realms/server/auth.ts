@@ -22,7 +22,7 @@ import { siws } from "./siws-plugin";
 import { defaultWallet } from "./default-wallet-plugin";
 import { identityL2Configuration, identityProvider } from "./l2";
 import { avnuSponsor, type Sponsor } from "./sponsor";
-import { readIsOwner, readNonceSpent, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
+import { readAttemptState, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
 import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 /**
@@ -42,10 +42,7 @@ type WalletChainEnv = Pick<
 type IdentityServiceEnv = WalletChainEnv & Pick<IdentityEnv, "RESEND_API_KEY" | "BASE_URL">;
 
 /** What default wallets need of the chain: its sponsor (none without a key), and reads of a wallet's state. */
-type WalletChainServices = Pick<
-  RecoveryServices,
-  "isDeployed" | "readEscape" | "isOwner" | "isNonceSpent" | "chainTime" | "succeeded"
-> & {
+type WalletChainServices = Pick<RecoveryServices, "isDeployed" | "readEscape" | "readAttemptState" | "succeeded"> & {
   sponsor: Sponsor | null;
 };
 
@@ -55,9 +52,7 @@ export const walletChainServicesOf = (env: WalletChainEnv): WalletChainServices 
     sponsor: env.AVNU_PAYMASTER_API_KEY ? avnuSponsor(env.AVNU_PAYMASTER_API_KEY) : null,
     isDeployed: async (address) => !(await isUndeployedWallet(provider(), address)),
     readEscape: (address) => readWalletEscape(provider(), address),
-    isOwner: (address, owner) => readIsOwner(provider(), address, owner),
-    isNonceSpent: (address, nonce) => readNonceSpent(provider(), address, nonce),
-    chainTime: async () => (await provider().getBlock("latest")).timestamp,
+    readAttemptState: (address, newOwner, nonce) => readAttemptState(provider(), address, newOwner, nonce),
     succeeded: async (transactionHash) =>
       (await provider().waitForTransaction(transactionHash, { retryInterval: 2_000 })).isSuccess(),
   };

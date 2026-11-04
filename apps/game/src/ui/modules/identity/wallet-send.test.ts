@@ -238,3 +238,22 @@ it("sends nothing when this browser cannot keep the record, on either path", asy
   full.mockRestore();
   execute.mockRestore();
 });
+
+it("keeps a connected wallet's send whose answer was lost, and forgets only the wallet's own refusal", async () => {
+  forgetUncertain("0x4a1");
+  const lost = { address: "0x4a1", execute: vi.fn(async () => Promise.reject(new Error("connection lost"))) };
+  await expect(
+    sendFromWallet(lost as unknown as AccountInterface, "0x4a1", CALLS, chain(1n, Promise.resolve({})), vi.fn()),
+  ).resolves.toEqual({ kind: "unconfirmed" });
+  // Accepted perhaps, its hash never known: kept, so re-entry offers no new transfer.
+  expect(uncertainSendOf("0x4a1")).toMatchObject({ via: "wallet", hash: null, calls: JSON.stringify(CALLS) });
+  forgetUncertain("0x4a1");
+  const declined = {
+    address: "0x4a1",
+    execute: vi.fn(async () => Promise.reject({ code: 113, message: "USER_REFUSED_OP" })),
+  };
+  await expect(
+    sendFromWallet(declined as unknown as AccountInterface, "0x4a1", CALLS, chain(1n, Promise.resolve({})), vi.fn()),
+  ).rejects.toMatchObject({ code: 113 });
+  expect(uncertainSendOf("0x4a1")).toBeUndefined();
+});

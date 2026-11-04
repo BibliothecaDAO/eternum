@@ -28,8 +28,6 @@ export class UncertainSendNotKeptError extends Error {}
 type SendStanding = { kind: "landed" } | { kind: "failed"; reason: string | null } | { kind: "pending" };
 
 const KEY = "realms.uncertain-sends";
-/** A connected wallet's transaction the chain has never heard of after this long was dropped. */
-const DROPPED_MS = 60 * 60 * 1000;
 
 const readAll = (): UncertainSend[] => {
   try {
@@ -75,19 +73,21 @@ const passkeyStanding = async (
   return now >= Number(message["Execute Before"]) ? { kind: "failed", reason: null } : { kind: "pending" };
 };
 
-/** A connected wallet's transaction: its receipt, or nothing heard of it for an hour (dropped, or never sent). */
+/**
+ * A connected wallet's transaction, settled only by its receipt. One the chain has not seen (no hash kept, or not
+ * found) stays pending however long ago it was sent: the player's own wallet, not a clock, says whether it went.
+ */
 const walletStanding = async (
   provider: ProviderInterface,
   send: Extract<UncertainSend, { via: "wallet" }>,
 ): Promise<SendStanding> => {
-  if (send.hash === null)
-    return Date.now() - send.at > DROPPED_MS ? { kind: "failed", reason: null } : { kind: "pending" };
+  if (send.hash === null) return { kind: "pending" };
   try {
     const receipt = await provider.getTransactionReceipt(send.hash);
     return receipt.isSuccess() ? { kind: "landed" } : { kind: "failed", reason: reasonOf(receipt) };
   } catch (error) {
-    if (!(error instanceof RpcError && error.isType("TXN_HASH_NOT_FOUND"))) throw error;
-    return Date.now() - send.at > DROPPED_MS ? { kind: "failed", reason: null } : { kind: "pending" };
+    if (error instanceof RpcError && error.isType("TXN_HASH_NOT_FOUND")) return { kind: "pending" };
+    throw error;
   }
 };
 

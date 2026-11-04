@@ -57,7 +57,8 @@ export const sendFromWallet = async (
   try {
     ({ transaction_hash: sent } = await account.execute(calls));
   } catch (error) {
-    // The wallet answered with a refusal (declined, or failed before sending): nothing went.
+    // Only the wallet's own refusal proves nothing went; a lost answer may have been sent, and stays uncertain.
+    if (!isWalletRefusal(error)) return { kind: "unconfirmed" };
     forgetUncertain(owner);
     throw error;
   }
@@ -137,6 +138,15 @@ export const submitSigned = async (
   rememberUncertain({ ...send, hash: sent });
   onSigned();
   return settled(send.owner, await landedOrRefused(provider, sent));
+};
+
+/**
+ * A wallet's own refusal, given before it sends anything: the wallet API's USER_REFUSED_OP (code 113), starknet-react's
+ * UserRejectedRequestError, or Ready's extension's "User abort". Any other failure may follow a broadcast.
+ */
+const isWalletRefusal = (error: unknown) => {
+  const { code, name, message } = (error ?? {}) as { code?: unknown; name?: unknown; message?: unknown };
+  return code === 113 || name === "UserRejectedRequestError" || message === "User abort";
 };
 
 /**

@@ -22,7 +22,8 @@ import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
 import { SponsorRefusedError, type Sponsor } from "./sponsor";
-import { finishRecoveries } from "./wallet-recovery";
+import { finishRecoveries, readAttemptState } from "./wallet-recovery";
+import { RpcError, type ProviderInterface } from "starknet";
 import type { WalletEscape } from "@realms-world/identity/wallet";
 import { SPONSORED_CALLS_PER_DAY } from "./default-wallet-plugin";
 import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@realms-world/identity/wallet";
@@ -2444,9 +2445,12 @@ describe("default wallet", () => {
         chainId: encodeChainName(environmentL2(env.ENVIRONMENT).chain),
         isDeployed: async () => true,
         readEscape: async () => chain.escape,
-        isOwner: async () => chain.owner,
-        isNonceSpent: async () => chain.nonceSpent ?? false,
-        chainTime: async () => chain.chainTime ?? 1_000,
+        readAttemptState: async () => ({
+          escape: chain.escape,
+          newOwnerOwns: chain.owner,
+          nonceSpent: chain.nonceSpent ?? false,
+          time: chain.chainTime ?? 1_000,
+        }),
         succeeded: async () => chain.succeeded ?? true,
       });
     };
@@ -2514,6 +2518,94 @@ describe("default wallet", () => {
         succeeded: false,
       });
       expect(await recoveryRow(unconfirmed.realmsId)).not.toBeNull();
+      resetSponsor();
+    });
+
+    /**
+     * A chain that answers per block: at block 100 no escape and the nonce unspent; from block 101 the start has landed
+     * (escape waiting, nonce spent). It moves to block 101 after the first read, as a real chain may between reads.
+     */
+    const advancingChain = (passkey: ReturnType<typeof makePasskey>) => {
+      let head = 100;
+      const blocks: unknown[] = [];
+      const landed = ["0x6a000000", "0x2", "0x0", guidOf(passkey), "0x4", "0x1"];
+      const before = ["0x0", "0x0", "0x1", "0x0"];
+      return {
+        blocks,
+        provider: {
+          getBlockWithTxHashes: async () => ({ block_number: head, timestamp: 1_000 }),
+          callContract: async ({ entrypoint }: { entrypoint: string }, block: unknown) => {
+            blocks.push(block);
+            const at = typeof block === "number" ? block : ++head;
+            head = 101;
+            if (entrypoint === "get_escape_and_status") return at >= 101 ? landed : before;
+            if (entrypoint === "is_owner") return ["0x0"];
+            return [at >= 101 ? "0x0" : "0x1"];
+          },
+        } as unknown as ProviderInterface,
+      };
+    };
+
+    it("reads an attempt's escape, ownership and nonce at one block, so a start landing mid-read is never a cancel", async () => {
+      const lost = makePasskey();
+      const chain = advancingChain(lost);
+      const state = await readAttemptState(
+        chain.provider,
+        "0x123",
+        { origin: ORIGIN, rpId, publicKeyX: lost.x },
+        "0xe5",
+      );
+      // Block 100 throughout: no escape and the nonce unspent, never "no escape, nonce spent".
+      expect(state).toEqual({
+        escape: { status: "none", readyAt: null, newOwner: null },
+        newOwnerOwns: false,
+        nonceSpent: false,
+        time: 1_000,
+      });
+      expect(chain.blocks).toEqual([100, 100, 100]);
+    });
+
+    it("reads a never-deployed wallet as having nothing, and a genuine read failure as a failure", async () => {
+      const notFound = new RpcError({ code: 20, message: "Contract not found" } as never, "starknet_call", {});
+      const absent = {
+        getBlockWithTxHashes: async () => ({ block_number: 7, timestamp: 2_000 }),
+        callContract: async () => {
+          throw notFound;
+        },
+      } as unknown as ProviderInterface;
+      const owner = { origin: ORIGIN, rpId, publicKeyX: "0x1" };
+      expect(await readAttemptState(absent, "0x123", owner, "0x1")).toEqual({
+        escape: { status: "none", readyAt: null, newOwner: null },
+        newOwnerOwns: false,
+        nonceSpent: false,
+        time: 2_000,
+      });
+      const down = {
+        ...absent,
+        callContract: async () => Promise.reject(new TypeError("fetch failed")),
+      } as unknown as ProviderInterface;
+      await expect(readAttemptState(down, "0x123", owner, "0x1")).rejects.toThrow("fetch failed");
+    });
+
+    it("forgets an undeployed wallet's lost start once its window closed, and lets a new one start", async () => {
+      resetSponsor();
+      const lostStart = await startedRecovery(async () => {
+        throw new TypeError("fetch failed");
+      });
+      const none = { status: "none" as const, readyAt: null, newOwner: null };
+      // The wallet was never deployed: nothing on chain, and the block is past the start's window.
+      await finishWith(lostStart.wallet.address, {
+        escape: none,
+        owner: false,
+        nonceSpent: false,
+        chainTime: 1_900_000_000,
+      });
+      expect(await recoveryRow(lostStart.realmsId)).toBeNull();
+      const next = makePasskey();
+      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(lostStart.wallet.address, next)], "0xe6") as never);
+      sponsor.execute.mockResolvedValueOnce("0xagain");
+      const again = await recover(lostStart.browser, next, await walletCode(lostStart.browser));
+      expect(await again.json()).toEqual({ transactionHash: "0xagain" });
       resetSponsor();
     });
 

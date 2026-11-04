@@ -46,12 +46,8 @@ export interface RecoveryServices {
   chainId: string;
   isDeployed(address: string): Promise<boolean>;
   readEscape(address: string): Promise<WalletEscape>;
-  /** Whether the passkey is an owner of the wallet now, on the account's own `is_owner`. */
-  isOwner(address: string, owner: ReturnType<typeof ownerOf>): Promise<boolean>;
-  /** Whether the wallet has spent an outside-execution nonce: only an execution that ran spends it. */
-  isNonceSpent(address: string, nonce: string): Promise<boolean>;
-  /** The chain's latest block time, Unix seconds. */
-  chainTime(): Promise<number>;
+  /** Everything an attempt is settled by, read at one block (readAttemptState). */
+  readAttemptState(address: string, newOwner: ReturnType<typeof ownerOf>, nonce: string): Promise<AttemptState>;
   /** Whether a submitted transaction succeeded, once it is included. */
   succeeded(transactionHash: string): Promise<boolean>;
 }
@@ -82,28 +78,49 @@ export const readWalletEscape = async (provider: ProviderInterface, address: str
   }
 };
 
-/** `is_owner(Signer::Webauthn(passkey))` on the wallet. */
-export const readIsOwner = async (provider: ProviderInterface, address: string, owner: ReturnType<typeof ownerOf>) => {
-  const [answer] = await provider.callContract({
-    contractAddress: address,
-    entrypoint: "is_owner",
-    calldata: passkeySigner(owner),
-  });
-  return answer !== undefined && BigInt(answer) === 1n;
-};
+/**
+ * What the chain says of an attempt, all at one identified block: the wallet's escape, whether the new passkey owns it,
+ * whether the attempt's nonce is spent, and the block's time. One block, so no answer is older than another: an escape
+ * landing between two reads cannot read as "no escape, nonce spent" (a cancel). A wallet the chain proves absent
+ * (never deployed) has none of these; any other read failure throws, and the attempt is kept.
+ */
+export interface AttemptState {
+  escape: WalletEscape;
+  newOwnerOwns: boolean;
+  nonceSpent: boolean;
+  /** The block's time, Unix seconds. */
+  time: number;
+}
 
-/** `is_valid_outside_execution_nonce` is false once spent; a wallet not deployed yet has spent none. */
-export const readNonceSpent = async (provider: ProviderInterface, address: string, nonce: string) => {
+export const readAttemptState = async (
+  provider: ProviderInterface,
+  address: string,
+  newOwner: ReturnType<typeof ownerOf>,
+  nonce: string,
+): Promise<AttemptState> => {
+  const block = (await provider.getBlockWithTxHashes("latest")) as { block_number: number; timestamp: number };
+  const read = (entrypoint: string, calldata: string[] = []) =>
+    provider.callContract({ contractAddress: address, entrypoint, calldata }, block.block_number);
   try {
-    const [valid] = await provider.callContract({
-      contractAddress: address,
-      entrypoint: "is_valid_outside_execution_nonce",
-      calldata: [nonce],
-    });
-    return valid !== undefined && BigInt(valid) === 0n;
+    const [escape, owns, valid] = await Promise.all([
+      read("get_escape_and_status"),
+      read("is_owner", passkeySigner(newOwner)),
+      read("is_valid_outside_execution_nonce", [nonce]),
+    ]);
+    return {
+      escape: walletEscapeOf(escape),
+      newOwnerOwns: BigInt(owns[0] ?? "0") === 1n,
+      nonceSpent: BigInt(valid[0] ?? "1") === 0n,
+      time: block.timestamp,
+    };
   } catch (error) {
-    if (error instanceof RpcError && error.isType("CONTRACT_NOT_FOUND")) return false;
-    throw error;
+    if (!(error instanceof RpcError && error.isType("CONTRACT_NOT_FOUND"))) throw error;
+    return {
+      escape: { status: "none", readyAt: null, newOwner: null },
+      newOwnerOwns: false,
+      nonceSpent: false,
+      time: block.timestamp,
+    };
   }
 };
 
@@ -115,7 +132,7 @@ export const readNonceSpent = async (provider: ProviderInterface, address: strin
  * answer keeps both, for the cron to settle from the chain.
  */
 export const startRecovery = async (
-  services: Omit<RecoveryServices, "isOwner" | "isNonceSpent" | "chainTime" | "succeeded">,
+  services: Omit<RecoveryServices, "readAttemptState" | "succeeded">,
   row: DefaultWalletRow,
   passkey: { credentialId: string; publicKeyX: string },
   email: string,
@@ -196,28 +213,29 @@ const settleAttempt = async (services: RecoveryServices, attempt: RecoveryAttemp
   }
   const newOwner = { ...ownerOf(attempt), publicKeyX: attempt.new_public_key_x };
   const adopt = { credentialId: attempt.new_credential_id, publicKeyX: attempt.new_public_key_x };
-  const escape = await services.readEscape(attempt.address);
-  if (escape.status === "waiting" || escape.status === "ready") {
-    if (escape.newOwner !== passkeySignerGuid(newOwner)) {
-      console.error("wallet_recovery_target_mismatch", { realmsId: attempt.realms_id, escapeOwner: escape.newOwner });
+  const state = await services.readAttemptState(attempt.address, newOwner, attempt.nonce);
+  if (state.escape.status === "waiting" || state.escape.status === "ready") {
+    if (state.escape.newOwner !== passkeySignerGuid(newOwner)) {
+      console.error("wallet_recovery_target_mismatch", {
+        realmsId: attempt.realms_id,
+        escapeOwner: state.escape.newOwner,
+      });
       return;
     }
-    if (escape.status === "waiting") return;
+    if (state.escape.status === "waiting") return;
     if (await services.succeeded(await finishEscape(services, attempt))) await settle(services.db, attempt, adopt);
     return;
   }
-  if (await services.isOwner(attempt.address, newOwner)) return settle(services.db, attempt, adopt);
-  if (
-    escape.status === "expired" ||
-    (await provenOver(services, attempt.address, attempt.nonce, attempt.execute_before))
-  )
-    await settle(services.db, attempt, null);
+  if (state.newOwnerOwns) return settle(services.db, attempt, adopt);
+  if (isProvenOver(state, attempt.execute_before)) await settle(services.db, attempt, null);
 };
 
-/** The attempt's execution ran (its nonce is spent, and no escape stands: canceled) or never can (its window closed). */
-const provenOver = async (services: RecoveryServices, address: string, nonce: string, executeBefore: number | null) =>
-  (await services.isNonceSpent(address, nonce)) ||
-  (executeBefore !== null && (await services.chainTime()) >= executeBefore);
+/**
+ * With no escape standing at that block, the attempt is over when its escape expired, or its execution ran (nonce
+ * spent: started, then canceled) or never can (the block is past its window, nonce unspent).
+ */
+const isProvenOver = (state: AttemptState, executeBefore: number | null) =>
+  state.escape.status === "expired" || state.nonceSpent || (executeBefore !== null && state.time >= executeBefore);
 
 /** The escape's finish: the exact call, the guardian alone, the sponsor paying. */
 const finishEscape = async (services: RecoveryServices, row: DefaultWalletRow) => {

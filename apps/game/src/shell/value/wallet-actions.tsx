@@ -153,6 +153,15 @@ const OnItsWay = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const send = uncertain.state.kind === "pending" ? uncertain.state.send : null;
+  /**
+   * The player's word, after checking their own wallet, that a connected wallet's send did not go: the one release the
+   * chain cannot give for a transaction it never saw. A default wallet's send never needs it (its nonce settles it).
+   */
+  const release = async () => {
+    if (send?.via !== "wallet") return;
+    forgetUncertain(send.owner);
+    await uncertain.check();
+  };
   const again = async () => {
     if (send?.via !== "passkey") return;
     setBusy(true);
@@ -183,6 +192,14 @@ const OnItsWay = ({
         >
           {VALUE_WORDS.sendAgain}
         </AppButton>
+      )}
+      {send?.via === "wallet" && (
+        <>
+          <span className="text-app-label text-app-muted">{VALUE_WORDS.checkWalletFirst}</span>
+          <AppButton kind="quiet" tone="bad" icon="close" onClick={() => void release()}>
+            {VALUE_WORDS.didNotGo}
+          </AppButton>
+        </>
       )}
     </div>
   );

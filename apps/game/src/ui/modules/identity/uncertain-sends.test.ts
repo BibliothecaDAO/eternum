@@ -62,22 +62,18 @@ it("says why a default wallet's send reverted", async () => {
   });
 });
 
-it("reads a connected wallet's send by its receipt, and calls it dropped after an hour unheard of", async () => {
+it("reads a connected wallet's send by its receipt only: unheard of, it stays pending however old", async () => {
   const send = (at: number): UncertainSend => ({ via: "wallet", owner: WALLET, calls: "[]", hash: "0xtx", at });
   const ran = { isSuccess: () => true };
   expect(await standingOf(chain({ receipt: ran }), send(Date.now()))).toEqual({ kind: "landed" });
   expect(await standingOf(chain({ receipt: "missing" }), send(Date.now()))).toEqual({ kind: "pending" });
-  expect(await standingOf(chain({ receipt: "missing" }), send(Date.now() - 2 * 60 * 60 * 1000))).toEqual({
-    kind: "failed",
-    reason: null,
+  expect(await standingOf(chain({ receipt: "missing" }), send(Date.now() - 48 * 60 * 60 * 1000))).toEqual({
+    kind: "pending",
   });
 });
 
-it("holds a connected wallet's send kept before its transaction existed as pending, then dropped after an hour", async () => {
+it("holds a connected wallet's send whose hash was never kept as pending, never failed by elapsed time", async () => {
   const intent = (at: number): UncertainSend => ({ via: "wallet", owner: WALLET, calls: "[]", hash: null, at });
   expect(await standingOf(chain({}), intent(Date.now()))).toEqual({ kind: "pending" });
-  expect(await standingOf(chain({}), intent(Date.now() - 2 * 60 * 60 * 1000))).toEqual({
-    kind: "failed",
-    reason: null,
-  });
+  expect(await standingOf(chain({}), intent(Date.now() - 48 * 60 * 60 * 1000))).toEqual({ kind: "pending" });
 });

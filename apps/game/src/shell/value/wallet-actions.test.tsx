@@ -257,3 +257,31 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
     vi.restoreAllMocks();
   }
 });
+
+it("on re-entry with a connected wallet's send it never heard back from, offers no new transfer until the player says it did not go", async () => {
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  const standing = vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
+  const braavos = installWallet("braavos", { account: LINKED });
+  // Accepted by the wallet a day ago, the page closed before its hash was kept.
+  uncertain.rememberUncertain({
+    via: "wallet",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    hash: null,
+    at: Date.now() - 86_400_000,
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Check your wallet's activity"));
+    expect(buttonsOf(container)).toEqual(["Check again", "It did not go through"]);
+    expect(braavos.connections()).toEqual([]);
+    standing.mockClear();
+    await press(container, "It did not go through");
+    // Released by the player's word: the wallet is opened for the send as usual.
+    await settled(() => expect(landed).toHaveBeenCalledOnce());
+    expect(braavos.transactions()).toHaveLength(1);
+    expect(uncertain.uncertainSendOf(LINKED)).toBeUndefined();
+  } finally {
+    vi.restoreAllMocks();
+  }
+});

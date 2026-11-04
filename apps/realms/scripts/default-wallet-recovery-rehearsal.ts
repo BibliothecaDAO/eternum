@@ -42,13 +42,7 @@ import { readDefaultWallet } from "../server/default-wallets";
 import type { Sponsor, SponsoredExecution } from "../server/sponsor";
 import { walletExecutionOf } from "../server/sponsor";
 import { isUndeployedWallet } from "../server/wallet-signature";
-import {
-  finishRecoveries,
-  readIsOwner,
-  readNonceSpent,
-  readWalletEscape,
-  startRecovery,
-} from "../server/wallet-recovery";
+import { finishRecoveries, readAttemptState, readWalletEscape, startRecovery } from "../server/wallet-recovery";
 
 const ORIGIN = "https://play.realms.party";
 const RP_ID = "play.realms.party";
@@ -72,9 +66,8 @@ const main = async () => {
     chainId,
     isDeployed: async (address: string) => !(await isUndeployedWallet(provider, address)),
     readEscape: (address: string) => readWalletEscape(provider, address),
-    isOwner: (address: string, owner: PasskeyOwner) => readIsOwner(provider, address, owner),
-    isNonceSpent: (address: string, nonce: string) => readNonceSpent(provider, address, nonce),
-    chainTime: async () => (await provider.getBlockWithTxHashes("latest")).timestamp,
+    readAttemptState: (address: string, newOwner: PasskeyOwner, nonce: string) =>
+      readAttemptState(provider, address, newOwner, nonce),
     succeeded: async (hash: string) => {
       const receipt = await provider.waitForTransaction(hash);
       if (!receipt.isSuccess()) console.log("reverted:", (receipt.value as { revert_reason?: string }).revert_reason);
@@ -92,6 +85,8 @@ const main = async () => {
     const b = emulatedPasskey();
     const realmsId = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(31))).toString("hex")}`;
     const wallet = defaultWalletDeployment(a.owner, await guardian.publicKey(), realmsId).address;
+    /** Whether the passkey owns the wallet now, from the same one-block read the cron settles by. */
+    const owns = async (owner: PasskeyOwner) => (await readAttemptState(provider, wallet, owner, "0x0")).newOwnerOwns;
     await d1.db
       .prepare(
         `INSERT INTO default_wallets (realms_id, address, deploy_key_x, credential_id, public_key_x, origin, rp_id, created_at)
@@ -153,7 +148,7 @@ const main = async () => {
       refused &&
         (await recoveryKept()) &&
         (await services.readEscape(wallet)).status === "waiting" &&
-        (await services.isOwner(wallet, a.owner)),
+        (await owns(a.owner)),
     );
 
     const canceled = await send(a, [{ contractAddress: wallet, entrypoint: "cancel_escape", calldata: [] }]);
@@ -163,7 +158,7 @@ const main = async () => {
       canceled &&
         (await services.readEscape(wallet)).status === "none" &&
         !(await recoveryKept()) &&
-        (await services.isOwner(wallet, a.owner)),
+        (await owns(a.owner)),
     );
 
     await services.succeeded(await recoverWithB());
@@ -175,8 +170,8 @@ const main = async () => {
     check(
       "5. after 7 days the cron finishes it: B owns the wallet, A does not, D1 adopts B, same address",
       ready.status === "ready" &&
-        (await services.isOwner(wallet, b.owner)) &&
-        !(await services.isOwner(wallet, a.owner)) &&
+        (await owns(b.owner)) &&
+        !(await owns(a.owner)) &&
         (await services.readEscape(wallet)).status === "none" &&
         adopted.credential_id === "credential-b" &&
         adopted.public_key_x === b.owner.publicKeyX &&
