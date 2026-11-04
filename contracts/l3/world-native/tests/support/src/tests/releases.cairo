@@ -63,7 +63,7 @@ pub mod ChangedSweepPrizesFixture {
         fn sweep_lords(
             ref self: ContractState, game_id: u32, structure_id: u64, context: crate::commands::ActionContext,
         ) {
-            panic_with_felt252('sweep release 2');
+            core::panic_with_felt252('sweep release 2');
         }
     }
 }
