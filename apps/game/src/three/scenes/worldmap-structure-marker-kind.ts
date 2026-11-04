@@ -1,3 +1,5 @@
+import { homeKind } from "@/ui/design-system/home-icons";
+import type { StructureInfo } from "../types";
 import { StructureType } from "@bibliothecadao/types";
 
 import type { StrategicStructureMarkerKind } from "../managers/strategic-marker-layer";
@@ -25,7 +27,12 @@ const reportedUnknownCategories = new Set<number>();
  * The far view's marker for a structure. The chain can hold a category this build was not compiled with: it is
  * reported once and drawn as the plainest marker, so one unknown structure never stops every marker on the map.
  */
-export function structureMarkerKind(structureType: StructureType): StrategicStructureMarkerKind {
+export function structureMarkerKind({
+  structureType,
+  realmSkin,
+  hasWonder,
+}: Pick<StructureInfo, "structureType" | "realmSkin" | "hasWonder">): StrategicStructureMarkerKind {
+  if (structureType === StructureType.Realm) return homeKind(realmSkin, hasWonder);
   const kind = STRUCTURE_MARKER_KIND[structureType] as StrategicStructureMarkerKind | undefined;
   if (kind !== undefined) return kind;
   if (!reportedUnknownCategories.has(structureType)) {

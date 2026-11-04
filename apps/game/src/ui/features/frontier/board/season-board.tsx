@@ -165,7 +165,12 @@ const listRow = (entry: Entry, own: boolean, names: PlayerNames): SeasonListRow 
   key: entry.address,
   rank: entry.rank,
   order: entry.order,
-  realm: { level: entry.level, depth: entry.deepest_depth, skin: realmSkinOf(entry.campaign) },
+  realm: {
+    level: entry.level,
+    depth: entry.deepest_depth,
+    skin: realmSkinOf(entry.campaign),
+    hasWonder: entry.has_wonder,
+  },
   name: (
     <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
       <PlayerSeatMark account={entry.address} name={names.text(entry.address)} />

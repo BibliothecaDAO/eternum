@@ -267,8 +267,9 @@ it("keeps a refused order in sight on a desktop, over the feed and over a panel 
 it.each([false, true])(
   "draws Season ranks, depths and campaign icons outside streamed scope (campaigns: %s)",
   async (campaigns) => {
-    // Three realms the lab's game streams none of: their Structure rows are absent from the store.
+    // Four homes the lab's game streams none of: their Structure rows are absent from the store.
     const entry = (rank: number, level: number, depth: number) => ({
+      has_wonder: rank === 4,
       address: `0x${(0xa00 + rank).toString(16)}`,
       structure_id: String(900 + rank),
       rank,
@@ -281,7 +282,11 @@ it.each([false, true])(
       campaign:
         campaigns && rank < 3 ? { campaign_id: shortString.encodeShortString("devcon-2026"), tier: rank } : null,
     });
-    const board = { game_id: "1", mode: "frontier", entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0)] };
+    const board = {
+      game_id: "1",
+      mode: "frontier",
+      entries: [entry(1, 3, 3), entry(2, 1, 2), entry(3, 0, 0), entry(4, 2, 1)],
+    };
     vi.stubGlobal(
       "fetch",
       vi.fn(async (url: string | URL) =>
@@ -301,14 +306,19 @@ it.each([false, true])(
     const badges = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
       .map((badge) => badge.getAttribute("aria-label"))
       .filter((label) => /Settlement|City|Kingdom|Empire/.test(label ?? ""));
-    expect(badges).toEqual(["Empire · Ethereal III", "City · Ethereal II", "Settlement"]);
+    expect(badges).toEqual([
+      `${campaigns ? "Devcon · " : ""}Empire · Ethereal III`,
+      `${campaigns ? "Golden Devcon · " : ""}City · Ethereal II`,
+      "Settlement",
+      "Wonder · Kingdom · Ethereal I",
+    ]);
     const paintings = [...host.querySelectorAll('section[aria-label="Season"] [role="img"]')]
       .filter((badge) => /Settlement|City|Kingdom|Empire/.test(badge.getAttribute("aria-label") ?? ""))
       .map((badge) => badge.querySelector("img")?.getAttribute("src")?.split("/").pop());
     expect(paintings).toEqual(
       campaigns
-        ? ["devcon-realm.webp", "devcon-golden-realm.webp", "realm-0.webp"]
-        : ["realm-3.webp", "realm-1.webp", "realm-0.webp"],
+        ? ["devcon-realm-3.webp", "devcon-golden-realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"]
+        : ["realm-3.webp", "realm-1.webp", "realm-0.webp", "wonder-realm-2.webp"],
     );
   },
 );

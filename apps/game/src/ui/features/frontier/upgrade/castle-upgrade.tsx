@@ -54,7 +54,7 @@ export const CastleUpgrade = ({
   if (!levelUp) return null;
   return (
     <CastleView
-      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin)}
+      now={castleSide(setup.store, realm.game_id, levelUp.currentLevel, skin, realm.metadata.has_wonder)}
       laborRate={castleLaborRate(setup.store, realm)}
       research={
         ordersAllowed &&
@@ -79,7 +79,7 @@ const upgradeOrder = (
   const held = (resource: number) => knownAmount(getBalance(realmId, resource, tick, store).balance);
   const short = levelUp.requirements.find(({ resource, amount }) => (held(resource) ?? 0) < amount);
   return {
-    next: castleSide(store, realm.game_id, levelUp.nextLevel, readRealmSkin(store, realm)),
+    next: castleSide(store, realm.game_id, levelUp.nextLevel, readRealmSkin(store, realm), realm.metadata.has_wonder),
     prices: levelUp.requirements.map(({ resource, amount }) => ({ of: castlePriceKind(resource), amount })),
     refusal:
       (short && {
@@ -105,8 +105,14 @@ const upgradeOrder = (
  * The castle at a level: the plots its ring opens, its army slots, what it stores of each store (before the Granary and
  * Storeroom) and its deploy cap, from the preset.
  */
-const castleSide = (store: NativeFactStore, gameId: number, level: number, skin?: RealmSkin): CastleSide => {
-  const art = realmMeaning(level, skin);
+const castleSide = (
+  store: NativeFactStore,
+  gameId: number,
+  level: number,
+  skin?: RealmSkin,
+  hasWonder = false,
+): CastleSide => {
+  const art = realmMeaning(level, skin, hasWonder);
   if (!art) throw new Error(`No castle art for level ${level}`);
   return {
     level,

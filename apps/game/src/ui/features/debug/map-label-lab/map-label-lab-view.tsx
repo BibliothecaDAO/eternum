@@ -415,6 +415,8 @@ const plateOf = (entity: MapLabelEntity, frontier: boolean, spectate: boolean): 
   return buildStructurePlate(
     {
       entityId: entity.entityId,
+      level: 0,
+      hasWonder: false,
       structureName: entity.name,
       structureType: STRUCTURE_TYPES[entity.kind as keyof typeof STRUCTURE_TYPES],
       mineKind: entity.kind === "rift" ? 1 : undefined,

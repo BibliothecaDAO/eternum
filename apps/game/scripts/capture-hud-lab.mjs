@@ -20,6 +20,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { parseArgs } from "node:util";
+import homeIcons from "../src/ui/design-system/home-icons.json" with { type: "json" };
 
 import { hudClearanceProblems, READ_HUD_BOXES } from "../../../scripts/hud-sheet/clearance.mjs";
 
@@ -266,6 +267,15 @@ export const SURFACES = [
     rule: buildCardProblems,
   })),
   { name: "frontier-army", path: "/lab/kit/hud/selected", mark: "frontier", sizes: CARDS },
+  {
+    name: "home-icons",
+    path: "/lab/kit/home-icons",
+    mark: "home-icons",
+    sizes: [
+      [1440, 900],
+      [390, 844],
+    ],
+  },
   { name: "frontier-season", path: "/lab/kit/hud/season", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-armyless", path: "/lab/kit/hud/site-armyless", mark: "frontier", sizes: CARDS },
   { name: "frontier-site-ruin", path: "/lab/kit/hud/site-ruin", mark: "frontier", ...FIGHT_FITS },
@@ -398,6 +408,30 @@ const main = async () => {
           if (!text.includes("20 → 45") || !text.includes("1,240 → 1,215") || !text.includes("Refill · 25 LORDS"))
             throw new Error(`${shot}: partial refill balances differ`);
           writeFileSync(join(values.out, `${shot}-interaction.json`), JSON.stringify({ amount: 25, text }, null, 2));
+        }
+        if (name === "home-icons") {
+          const cells = JSON.parse(
+            run(
+              "eval",
+              `Array.from(document.querySelectorAll('[data-home-kind]')).map(cell => ({
+            kind: cell.dataset.homeKind, level: Number(cell.dataset.homeLevel),
+            icon: cell.querySelector('img').dataset.icon,
+            decoded: Array.from(cell.querySelectorAll('img')).every(img => img.complete && img.naturalWidth > 0)
+          }))`,
+            ),
+          );
+          const expected = Object.entries(homeIcons).flatMap(([kind, levels]) =>
+            Object.entries(levels).map(([level, icon]) => ({ kind, level: Number(level), icon, decoded: true })),
+          );
+          if (
+            cells.length !== expected.length ||
+            expected.some((cell, index) =>
+              Object.entries(cell).some(([key, value]) => cells[index]?.[key] !== value),
+            ) ||
+            new Set(cells.map((cell) => cell.icon)).size !== expected.length
+          )
+            throw new Error(`${shot}: each home kind and level must have its own decoded painting`);
+          writeFileSync(join(values.out, `${shot}-icons.json`), JSON.stringify(cells, null, 2));
         }
         if (name === "frontier-season") {
           run("wait", "--text", "Top 10");

@@ -6,7 +6,7 @@ import {
   LORDS,
   rankName,
 } from "@bibliothecadao/types";
-import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
+import { homeIcon, HOME_KINDS, type HomeKind } from "@/ui/design-system/home-icons";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { HudPanel, HudRing } from "@/ui/design-system/kit/hud-elements";
 import { REALM, SHOW_MY_REALM } from "@/ui/design-system/kit/words";
@@ -44,7 +44,9 @@ export const RealmPanel = ({
   onWithdraw,
   onRealms,
   mark,
+  kind = "realm",
 }: {
+  kind?: HomeKind;
   name: string;
   level: number | undefined;
   /** The highest level a realm reaches: its rank's steps run up to it; unknown leaves them out. */
@@ -77,7 +79,7 @@ export const RealmPanel = ({
     title={
       <span className="inline-flex items-center gap-2">
         {name}
-        {level !== undefined && highest !== undefined && <RankSteps level={level} highest={highest} />}
+        {level !== undefined && highest !== undefined && <RankSteps level={level} highest={highest} kind={kind} />}
       </span>
     }
     icon={onHome ? "location" : undefined}
@@ -91,8 +93,13 @@ export const RealmPanel = ({
     <div className="flex min-h-9 flex-wrap items-center gap-x-2 gap-y-1 text-hud-strong text-hud-ink">
       {level !== undefined && (
         <span className="flex items-center gap-2">
-          {/* A campaign home's pavilion stands for its rank's icon; its campaign's name is the icon's tip. */}
-          <SemanticIcon name={mark?.icon ?? realmMeaning(level)} size={24} alt={mark?.line} data-tip={mark?.line} />
+          {/* The home's family follows its rank; the tip names its founding identity. */}
+          <SemanticIcon
+            name={homeIcon(kind, level)}
+            size={24}
+            alt={mark?.line ?? (kind === "wonder" ? HOME_KINDS[kind].label : undefined)}
+            data-tip={mark?.line ?? (kind === "wonder" ? HOME_KINDS[kind].label : undefined)}
+          />
           {rankName(level)}
         </span>
       )}

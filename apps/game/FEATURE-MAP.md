@@ -1182,3 +1182,8 @@ Skill points and the 0–V scale: the army panel shows lifetime XP, five point c
 Training construction includes I; research raises it through V. Preview `/lab/kit/hud/selected`, click **Level up**,
 choose an attribute or **Stamina**; `/lab/kit/hud/research` shows both research sides. Native command tests cover
 awarding and spending, while the browser capture records the shared controls at desktop and phone sizes.
+
+Home paintings: `/lab/kit/home-icons` (Kit → Icons → Home levels) shows the shared kind × level catalog at board size.
+`pnpm --dir apps/game capture:hud-lab --base-url <url> --only home-icons --out <evidence>` captures the desktop and
+phone grid and checks all 16 distinct images decode. Season, the in-game season board and spectator standings use the
+same home badge.

@@ -8,7 +8,8 @@ import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
-import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -2016,7 +2017,7 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
   const skin = home === "golden" ? "devcon-golden" : "devcon";
   return {
     kind: "campaign",
-    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: realmSkinIcon(skin) },
+    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: homeIcon(skin, 0) },
   };
 };
 

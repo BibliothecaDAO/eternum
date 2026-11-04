@@ -1,3 +1,4 @@
+import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
 import { describe, expect, it, vi } from "vitest";
@@ -973,11 +974,16 @@ describe("the player's Wheat store card", () => {
 });
 
 describe("Devcon delivery through the game", () => {
-  it("requires the Season to show both campaign paintings and the ordinary control", () => {
+  it("requires the Season to show both campaign paintings, the ordinary control, and the Wonder", () => {
     const verify = STEP_SETS["lab-devcon-season"].steps[0].verify;
     const seen = { panels: ["Season"] };
-    const played = [...Object.values(realmSkins).map(({ icon }) => `${icon}.webp`), "realm-3.webp"];
+    const played = [
+      ...Object.keys(realmSkins).flatMap((skin) => Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`)),
+      "realm-3.webp",
+      `${homeIcons.wonder[0]}.webp`,
+    ];
     expect(verify({ seen, played }).status).toBe("completed");
+    expect(verify({ seen, played: played.filter((icon) => !icon.startsWith("wonder-")) }).status).toBe("failed");
     expect(verify({ seen, played: ["realm-3.webp"] }).status).toBe("failed");
     expect(verify({ seen, played: played.slice(0, 2) }).status).toBe("failed");
     expect(verify({ seen: { panels: [] }, played }).status).toBe("failed");
@@ -993,8 +999,17 @@ describe("Devcon delivery through the game", () => {
   });
   it("rejects a playable screen with the wrong family or an absent HUD icon", () => {
     const verify = steps[0].verify;
-    const expected = { path: "/models/realms/devcon/regular/settlement.glb", icon: "devcon-realm", label: "Devcon" };
-    const played = { expected, assets: [expected.path], icons: ["/icons/facets/64/devcon-realm.webp"], text: "Devcon" };
+    const expected = {
+      path: "/models/realms/devcon/regular/settlement.glb",
+      icon: homeIcons.devcon[0],
+      label: "Devcon",
+    };
+    const played = {
+      expected,
+      assets: [expected.path],
+      icons: [`/icons/facets/64/${homeIcons.devcon[0]}.webp`],
+      text: "Devcon",
+    };
     expect(verify({ seen: onTheMap, played }).status).toBe("completed");
     expect(verify({ seen: onTheMap, played: { ...played, assets: [] } }).status).toBe("failed");
     expect(verify({ seen: onTheMap, played: { ...played, icons: ["/icons/facets/64/realm.webp"] } }).status).toBe(

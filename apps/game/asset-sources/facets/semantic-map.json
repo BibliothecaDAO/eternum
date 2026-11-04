@@ -1480,14 +1480,64 @@
     "label": "Dark fey",
     "family": "Beasts"
   },
-  "devcon-realm": {
-    "label": "Devcon realm",
+  "wonder-realm-0": {
+    "label": "Wonder \u00b7 Settlement",
     "family": "Structures",
-    "art": "devcon-realm"
+    "art": "wonder-realm-0"
   },
-  "devcon-golden-realm": {
-    "label": "Golden Devcon realm",
+  "wonder-realm-1": {
+    "label": "Wonder \u00b7 City",
     "family": "Structures",
-    "art": "devcon-golden-realm"
+    "art": "wonder-realm-1"
+  },
+  "wonder-realm-2": {
+    "label": "Wonder \u00b7 Kingdom",
+    "family": "Structures",
+    "art": "wonder-realm-2"
+  },
+  "wonder-realm-3": {
+    "label": "Wonder \u00b7 Empire",
+    "family": "Structures",
+    "art": "wonder-realm-3"
+  },
+  "devcon-realm-0": {
+    "label": "Devcon \u00b7 Settlement",
+    "family": "Structures",
+    "art": "devcon-realm-0"
+  },
+  "devcon-realm-1": {
+    "label": "Devcon \u00b7 City",
+    "family": "Structures",
+    "art": "devcon-realm-1"
+  },
+  "devcon-realm-2": {
+    "label": "Devcon \u00b7 Kingdom",
+    "family": "Structures",
+    "art": "devcon-realm-2"
+  },
+  "devcon-realm-3": {
+    "label": "Devcon \u00b7 Empire",
+    "family": "Structures",
+    "art": "devcon-realm-3"
+  },
+  "devcon-golden-realm-0": {
+    "label": "Golden Devcon \u00b7 Settlement",
+    "family": "Structures",
+    "art": "devcon-golden-realm-0"
+  },
+  "devcon-golden-realm-1": {
+    "label": "Golden Devcon \u00b7 City",
+    "family": "Structures",
+    "art": "devcon-golden-realm-1"
+  },
+  "devcon-golden-realm-2": {
+    "label": "Golden Devcon \u00b7 Kingdom",
+    "family": "Structures",
+    "art": "devcon-golden-realm-2"
+  },
+  "devcon-golden-realm-3": {
+    "label": "Golden Devcon \u00b7 Empire",
+    "family": "Structures",
+    "art": "devcon-golden-realm-3"
   }
 }

@@ -29,7 +29,7 @@ export const useRealmLabor = (rules: ExpeditionRules, realm: NativeRows["Structu
   const daily = homeDailyClaim(setup.store, { gameId: game_id, entityId: entity_id });
   const claimedOn = (index: number) =>
     !!setup.store.get("LaborGrant", { game_id, home: entity_id, day: BigInt(index) });
-  const mark = campaignMarkOf(readCampaignHome(setup.store, realm));
+  const mark = campaignMarkOf(readCampaignHome(setup.store, realm), realm.base.level);
   const endAt = rules.endAt;
   const claimed = claimedOn(day.index);
   return {

@@ -147,6 +147,8 @@ export interface HeraldLeaderboard {
 }
 
 export interface HeraldFrontierLeaderboardEntry {
+  /** Native founding trait; absent only in historical boards recorded before home identity was included. */
+  has_wonder?: boolean;
   address: string;
   structure_id: string;
   /** Immutable founding identity from the complete game; null explicitly identifies an ordinary home. */

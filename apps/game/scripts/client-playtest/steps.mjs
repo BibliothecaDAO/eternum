@@ -1,3 +1,4 @@
+import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
@@ -3848,11 +3849,11 @@ function reloadOn(place, scene, labScenario = null) {
 }
 
 /** Each approved family through the real map, HUD and local keep, opened through the lab game's route. */
-const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, icon, label }]) =>
+const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, label }]) =>
   realmAssets
     .filter((asset) => !asset.wonder)
     .flatMap(({ id, level }) => {
-      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon, label };
+      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon: homeIcons[skin][level], label };
       return [
         {
           name: `${skin}-${id}-map`,
@@ -3936,9 +3937,15 @@ const devconSeasonStep = {
   },
   verify: ({ seen, played }) => {
     if (!seen.panels.includes(HUD_WORDS.season)) return failed("Season did not open", played);
-    const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
-    if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
-      return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);
+    const campaigns = Object.keys(realmSkins).map((skin) =>
+      Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`),
+    );
+    if (
+      !campaigns.every((icons) => icons.some((icon) => played.includes(icon))) ||
+      !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)) ||
+      !Object.values(homeIcons.wonder).some((icon) => played.includes(`${icon}.webp`))
+    )
+      return failed("Season must distinguish both unvisited campaign homes, the ordinary home, and the Wonder", played);
     return completed(played);
   },
 };
