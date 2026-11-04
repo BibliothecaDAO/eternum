@@ -4151,6 +4151,46 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "home-found-regular": {
+    game: { ...FRONTIER, entersFromHome: true },
+    steps: [
+      {
+        name: "found-regular-campaign-home",
+        play: async ({ browser, extraScreenshot }) => {
+          const tier = await readUntil(
+            () =>
+              browser.read(
+                `JSON.stringify(document.querySelector('.home-picker__featured .home-art')?.getAttribute('data-tier') ?? null)`,
+              ),
+            Boolean,
+            PLAYABLE_WAIT_MS,
+          );
+          extraScreenshot("source-choice");
+          if (tier !== "regular") return { tier, founded: false };
+          browser.click("Found your realm");
+          return { tier, founded: true };
+        },
+        settleMs: 5_000,
+        verify: ({ played }) =>
+          played.tier === "regular" && played.founded
+            ? completed(played)
+            : failed("regular campaign source was not offered", played),
+      },
+      ...FRONTIER_MAP.opening,
+      {
+        name: "read-founded-regular-home",
+        play: async ({ browser }) => {
+          await openRealmLabor(browser);
+          return readCampaignClaim(browser);
+        },
+        settleMs: 1_000,
+        verify: ({ played }) =>
+          played.tier === "regular" && !played.claimed
+            ? completed(played)
+            : failed("founded regular home with an unpaid claim was not confirmed", played),
+      },
+    ],
+  },
   "home-upgrade": {
     game: FRONTIER,
     steps: [
