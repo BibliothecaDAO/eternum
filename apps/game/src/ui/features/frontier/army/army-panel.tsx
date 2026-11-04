@@ -20,6 +20,27 @@ import type { ArmyView, AttributeKey, AttributeView, ScoutKind } from "./army-de
 
 import { pointChoices, scoutingChoices } from "../progression-choices";
 
+/** Where an army's panel stands: its status, or its level-up choices. */
+interface ArmyStep {
+  choosing: boolean;
+  choose: (choosing: boolean) => void;
+}
+
+/**
+ * The step an army's panel stands on, held by whoever draws its frame, so the frame's head (the army's trash) and the
+ * panel read one step. It opens on the choices when asked (a phone's Level up beside the picked army), and returns to
+ * the status once the army's last point is spent.
+ */
+export const useArmyStep = (available: number, choosing = false): ArmyStep => {
+  const [open, setOpen] = useState(choosing);
+  const [held, setHeld] = useState(available);
+  if (held !== available) {
+    setHeld(available);
+    if (available === 0) setOpen(false);
+  }
+  return { choosing: open, choose: setOpen };
+};
+
 /**
  * An army's detail (the owner's picks, 20 and 22 October; its layout B', 4 November), in two steps in one place. First
  * its status, beside its portrait in two rows: its troops and what each tile explored sends home, then its stamina line,
@@ -34,23 +55,18 @@ export const ArmyDetail = ({
   army,
   refill,
   sending,
-  choosing = false,
+  step,
   onLevelUp,
 }: {
   army: ArmyView;
   /** The refill's control, at the chips' row's end over "Full in" (pay or wait); the stamina line keeps its width. */
   refill?: ReactNode;
   sending: boolean;
-  /** Opens on the choices: the picked army's Level up on a phone, and the lab's second step. */
-  choosing?: boolean;
+  /** The step it stands on, held by whoever draws its frame (useArmyStep), so the frame's head shows what fits it. */
+  step: ArmyStep;
   onLevelUp: (choice: SkillPointChoice) => unknown;
 }) => {
-  const [open, setOpen] = useState(choosing);
-  const [held, setHeld] = useState(army.available);
-  if (held !== army.available) {
-    setHeld(army.available);
-    if (army.available === 0) setOpen(false);
-  }
+  const { choosing: open, choose: setOpen } = step;
   const [chosen, setChosen] = useState<AttributeKey | "stamina">(() => firstChoice(army));
   const [kind, setKind] = useState<ScoutKind>("camp");
   const [staminaRank, setStaminaRank] = useState<SkillPointRank>(army.staminaPoints[0]?.rank ?? 1);

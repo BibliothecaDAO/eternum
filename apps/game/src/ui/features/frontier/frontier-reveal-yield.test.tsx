@@ -28,20 +28,17 @@ vi.mock("@bibliothecadao/eternum", async (original) => {
 const { buildStoryEventPresentation } = await import("@bibliothecadao/eternum");
 const { ResourcesIds } = await import("@bibliothecadao/types");
 const { useArmyRevealYield } = await import("./frontier-reveal-yield");
-const { ArmyDetail } = await import("./army/army-panel");
+const { ArmyDetail, useArmyStep } = await import("./army/army-panel");
 const { readArmyDetail } = await import("./army/army-detail");
 const { EARLY_ARMY } = await import("./research/progression-fixture");
 
-const PanelOverTheReading = () => (
-  <ArmyDetail
-    army={readArmyDetail({
-      ...EARLY_ARMY,
-      revealYield: useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never),
-    })}
-    sending={false}
-    onLevelUp={() => undefined}
-  />
-);
+const PanelOverTheReading = () => {
+  const army = readArmyDetail({
+    ...EARLY_ARMY,
+    revealYield: useArmyRevealYield({ explorerId: 7, troopsFact: {} } as never),
+  });
+  return <ArmyDetail army={army} sending={false} step={useArmyStep(army.available)} onLevelUp={() => undefined} />;
+};
 
 it("writes a reveal's fractional reward the same in the army panel and in the Log", () => {
   (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;

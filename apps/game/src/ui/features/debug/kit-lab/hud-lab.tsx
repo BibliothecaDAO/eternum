@@ -51,7 +51,7 @@ import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
 import { type ArmyDetailFacts, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
-import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
+import { ArmyDetail, useArmyStep } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { BuildingCardView, type CardMakes } from "@/ui/features/frontier/building/building-card";
@@ -1634,29 +1634,36 @@ const OWNER_ARMY: ArmyDetailFacts = {
 
 /**
  * An army's panel on the fiction (the veteran, or the owner's Army 4), with its refill where the realm's LORDS are
- * given and its Delete beside the cross, or the refill's confirm.
+ * given and its Delete after its name (on its status only), or the refill's confirm.
  */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
   const base =
     army.owner === "ready" ? { ...OWNER_ARMY, points: [0, 0, 1, 0, 0] } : army.owner ? OWNER_ARMY : VETERAN_ARMY;
   const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
+  const view = readArmyDetail({ ...base, stamina, ...(full ? { secondsToFull: 0 } : {}) });
+  const step = useArmyStep(view.available);
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (
     <HudSheet
       label={base.name}
-      beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
+      beside={
+        !step.choosing && (
+          <HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />
+        )
+      }
       onClose={noop}
     >
       <ArmyDetail
-        army={readArmyDetail({ ...base, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
+        army={view}
         refill={
           army.lords === undefined || full ? undefined : (
             <RefillPrice price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
           )
         }
         sending={false}
+        step={step}
         onLevelUp={noop}
       />
     </HudSheet>

@@ -1,6 +1,6 @@
 import { configManager, logisticsStamina, lowestFittingPoint, skillPointRefill } from "@bibliothecadao/eternum";
-import { inlineTroops, staminaAt, troopStaminaLimits } from "@bibliothecadao/eternum/troop-stamina";
-import { RESOURCE_PRECISION, ResourcesIds, TickIds, TileOccupier, TroopTier } from "@bibliothecadao/types";
+import { resolveExplorerTroops, staminaAt } from "@bibliothecadao/eternum/troop-stamina";
+import { RESOURCE_PRECISION, ResourcesIds, TickIds, TileOccupier } from "@bibliothecadao/types";
 
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
 import { SPIRE_ARMY } from "@/ui/features/frontier/spire-fixture";
@@ -33,7 +33,7 @@ export const upkeepScenario = (): LabScenario => {
   const actions = actionsScenario();
   // Its rows rewritten under the keys the chain serves them by, so a fact below changes the row it names.
   const store = chainOf(actions);
-  store.applyFacts([lordsHeld(store), staminaSpent(store, actions.startsAt), progressHeld(store)] as never);
+  store.applyFacts([lordsHeld(store), ...staminaSpent(store, actions.startsAt), progressHeld(store)] as never);
   store.applyFacts(chestBeside(store) as never);
   const answers: Record<string, (command: LabCommand, chain: NativeFactStore, now: number) => LabFact[]> = {
     RefillStamina: refill,
@@ -65,16 +65,27 @@ const lordsHeld = (store: NativeFactStore): LabFact => {
 const armyRow = (chain: NativeFactStore, explorerId: bigint) =>
   [...chain.entries("ExplorerTroops")].find(([, row]) => row.explorer_id === explorerId)!;
 
-const staminaSpent = (store: NativeFactStore, now: number): LabFact => {
+/**
+ * The army after a hard day, its bar in its home's army slot as the contract keeps a Frontier army's (army_slots.cairo:
+ * the slot the army was allocated, whose allocation made its progress), well short of its maximum.
+ */
+const staminaSpent = (store: NativeFactStore, now: number): LabFact[] => {
   const [key, army] = armyRow(store, BigInt(SPIRE_ARMY));
-  return {
-    model: "ExplorerTroops",
-    key,
-    value: wire({
-      ...army,
-      troops: { ...army.troops, stamina: { Inline: { amount: STAMINA_LEFT, settled_at: now, remainder: 0 } } },
-    }),
-  };
+  const slot = [...store.entries("ArmySlot")].find(([, row]) => row.structure_id === army.owner && row.slot === 0);
+  if (!slot) throw new Error("The upkeep army needs its home's first army slot");
+  const [slotKey, row] = slot;
+  return [
+    { model: "ExplorerTroops", key, value: wire({ ...army, troops: { ...army.troops, stamina: { Slot: 0 } } }) },
+    {
+      model: "ArmySlot",
+      key: slotKey,
+      value: wire({
+        ...row,
+        explorer_id: SPIRE_ARMY,
+        stamina: { amount: STAMINA_LEFT, settled_at: now, remainder: 0 },
+      }),
+    },
+  ];
 };
 
 /** The army's progress, every attribute common, and XP's prices (Frontier's: config/source/frontier/native.ts). */
@@ -86,30 +97,26 @@ const progressHeld = (store: NativeFactStore): LabFact => {
 const progressOf = (chain: NativeFactStore, explorerId: bigint) =>
   [...chain.entries("ArmyProgress")].find(([, row]) => BigInt(row.explorer_id) === explorerId)!;
 
-/** The army's bar now and its maximum, as the contract reads them: regenerated to the moment, its Logistics added. */
+/**
+ * The army's bar now and its maximum, through the client's one explorer bar resolver, which reads the slot as the
+ * contract does (progression.cairo's stamina_max: the troop's base, its Logistics added).
+ */
 const barOf = (chain: NativeFactStore, explorerId: bigint, now: number) => {
   const [, army] = armyRow(chain, explorerId);
+  const troops = resolveExplorerTroops(chain, army);
+  if (troops?.staminaMax === undefined) throw new Error("The upkeep army's bar needs its slot, progress and rules");
   const rules = chain.require("SliceRules", { game_id: 1 });
-  const [, progress] = progressOf(chain, explorerId);
-  const maximum =
-    troopStaminaLimits(rules.troop_stamina_config, army.troops.category, TroopTier.T1).staminaMax +
-    logisticsStamina(progress.logistics);
-  const troops = { ...inlineTroops(army.troops, rules), staminaMax: maximum };
   const tick = Number(configManager.getTick(TickIds.Armies));
-  return { now: staminaAt(troops, now, rules.troop_stamina_config, tick).amount, maximum: BigInt(maximum) };
+  return {
+    now: staminaAt(troops, now, rules.troop_stamina_config, tick).amount,
+    maximum: BigInt(troops.staminaMax),
+  };
 };
 
-/** The army's troops row with its bar set to `amount` at `now`. */
+/** The army's slot with its bar set to `amount` at `now`, as army_slots.cairo persists it. */
 const withStamina = (chain: NativeFactStore, explorerId: bigint, amount: bigint, now: number): LabFact => {
-  const [key, army] = armyRow(chain, explorerId);
-  return {
-    model: "ExplorerTroops",
-    key,
-    value: wire({
-      ...army,
-      troops: { ...army.troops, stamina: { Inline: { amount, settled_at: now, remainder: 0 } } },
-    }),
-  };
+  const [key, slot] = [...chain.entries("ArmySlot")].find(([, row]) => row.explorer_id === explorerId)!;
+  return { model: "ArmySlot", key, value: wire({ ...slot, stamina: { amount, settled_at: now, remainder: 0 } }) };
 };
 
 const refill = (command: LabCommand, chain: NativeFactStore, now: number): LabFact[] => {

@@ -167,6 +167,39 @@ it("draws no trash while the panel stands on the level-up choices", () => {
   expect(host.querySelector('[aria-label="Delete"]')).toBeNull();
 });
 
+it.each([
+  ["Level-ups", () => button(/^Level-ups$/)!],
+  ["an attribute", () => host.querySelector<HTMLButtonElement>('button[aria-label^="Battle "]')!],
+])(
+  "hides the trash on the choices reached from the status by %s, and shows it again back on the status",
+  (_, entry) => {
+    useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+    const trash = () => host.querySelector('.ui-frame__head [aria-label="Delete"]');
+    expect(trash()).not.toBeNull();
+    act(() => entry().click());
+    expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("choose");
+    expect(trash()).toBeNull();
+  },
+);
+
+it("brings the trash back with the status once the army's last point is spent", async () => {
+  game.progress.xp = 260;
+  game.progress.common_points = 1;
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  const draw = () =>
+    act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  draw();
+  act(() => button(/^Level up$/)!.click());
+  expect(host.querySelector('[aria-label="Delete"]')).toBeNull();
+  act(() => host.querySelector<HTMLButtonElement>('[data-attribute="stamina"]')!.click());
+  await act(async () => button(/^Refill$/)!.click());
+  game.progress.common_points = 0;
+  draw();
+  expect(host.querySelector("[data-army-step]")!.getAttribute("data-army-step")).toBe("stats");
+  expect(host.querySelector('.ui-frame__head [aria-label="Delete"]')).not.toBeNull();
+});
+
 it("lets an army without points see its level-ups, and holds the verb with what is missing", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));

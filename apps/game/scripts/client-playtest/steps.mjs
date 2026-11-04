@@ -889,10 +889,14 @@ async function refillTheArmy({ browser }) {
   return { ...panel, refill: refill.name, watching: true };
 }
 
-/** The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. */
+/**
+ * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
+ * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
+ */
 const panelReadsTheChainsStamina = (army) => `(() => {
   const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
-  const amount = refill?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
+  const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
   const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
   return amount !== undefined && text.includes(amount + "/" + amount);
 })()`;
