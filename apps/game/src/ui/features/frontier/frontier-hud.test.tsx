@@ -8,6 +8,7 @@ import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { shortString } from "starknet";
 import type { NativeFactStore } from "@bibliothecadao/eternum/game-client";
+import { dayOf } from "@bibliothecadao/eternum/expeditions";
 import type { HudSurface } from "./hud/frontier-nav";
 
 // The real Frontier HUD on the lab's game. Only the network, the identity and the chat pane's own drawing stand in: the
@@ -627,6 +628,13 @@ it("keeps the extended season live past its old end and reloads its final day fr
     vi.fn(async () => Response.json({ blocked: [], entries: [], games: [] })),
   );
   const approved = approvedExtension;
+  const extendedCalendar = {
+    seed: BigInt(approved.seed),
+    startMainAt: approved.start,
+    endAt: approved.end,
+    dayUnitSeconds: approved.dayUnit,
+  };
+  const dayLabel = (timestamp: number) => `Day ${dayOf(extendedCalendar, timestamp)!.index + 1}`;
   let currentTime = approved.start;
   const advance = async (now: number) =>
     act(async () => {
@@ -641,7 +649,7 @@ it("keeps the extended season live past its old end and reloads its final day fr
         <MemoryRouter>
           <QueryClientProvider client={new QueryClient()}>
             <LabGame
-              preset={5}
+              preset={approved.presetId}
               facts={(store) => {
                 useChainTimeStore.getState().anchor({ timestamp: now * 1000 });
                 currentTime = now;
@@ -681,16 +689,16 @@ it("keeps the extended season live past its old end and reloads its final day fr
   };
   viewport.set(1440);
   await boot(approved.oldEnd - 1);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 10");
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain(dayLabel(approved.oldEnd - 1));
   await advance(approved.oldEnd);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain(dayLabel(approved.oldEnd));
   expect(host.textContent).not.toContain("Game finished");
   await boot(approved.oldEnd);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 11");
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain(dayLabel(approved.oldEnd));
   expect(host.textContent).not.toContain("Game finished");
   expect(configManager.getSeasonConfig().endAt).toBe(approved.end);
   await boot(approved.end - 1);
-  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain("Day 15");
+  expect(host.querySelector('[aria-label="Day clock"]')?.textContent).toContain(dayLabel(approved.end - 1));
   expect(host.textContent).not.toContain("Game finished");
   await advance(approved.end);
   expect(host.textContent).toContain("Game finished");

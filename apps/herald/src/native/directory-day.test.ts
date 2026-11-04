@@ -97,6 +97,12 @@ it("does not require a season seed for a game without a day schedule", () => {
 
 it("folds the extension row and preserves the added days through a checkpoint reload", async () => {
   const { default: approved } = await import("../../../../config/source/frontier/extension.json");
+  const extendedCalendar = {
+    seed: BigInt(approved.seed),
+    startMainAt: approved.start,
+    endAt: approved.end,
+    dayUnitSeconds: approved.dayUnit,
+  };
   const { setup, rowEvent, receipt, seedDerivedRows, rulesEvent } = await import("./fixtures");
   const { WorldFold } = await import("../world-fold");
   const { shortString, CairoCustomEnum } = await import("starknet");
@@ -135,10 +141,16 @@ it("folds the extension row and preserves the added days through a checkpoint re
     }).games[0]!;
   expect(directory(fold, approved.oldEnd).day_index).toBeNull();
   native.applyReceipt(fold, receipt([rowEvent("GameRegistry", ["1"], { ...game, end_at: approved.end })]), 11, 0);
-  expect(directory(fold, approved.oldEnd)).toMatchObject({ day_index: 10, clock: { end_at: approved.end } });
+  expect(directory(fold, approved.oldEnd)).toMatchObject({
+    day_index: dayOf(extendedCalendar, approved.oldEnd)!.index,
+    clock: { end_at: approved.end },
+  });
   const cold = WorldFold.restore(decoder.registry, JSON.parse(JSON.stringify(fold.checkpoint())));
   expect(directory(cold, approved.oldEnd)).toEqual(directory(fold, approved.oldEnd));
-  expect(directory(cold, approved.end - 1)).toMatchObject({ day_index: 14, day_ends_at: approved.end });
+  expect(directory(cold, approved.end - 1)).toMatchObject({
+    day_index: dayOf(extendedCalendar, approved.end - 1)!.index,
+    day_ends_at: approved.end,
+  });
   expect(directory(cold, approved.end).day_index).toBeNull();
 });
 
