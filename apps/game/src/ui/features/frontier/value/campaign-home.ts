@@ -7,7 +7,8 @@ import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
 
 /**
- * A campaign home: its CampaignHome row records the attached ticket and any earned golden upgrade. Its campaign is the identity Worker's key for it (apps/realms/server/campaigns.ts) as a short string,
+ * A campaign home: a realm founded with an event's ticket (CampaignHome, written once at founding), not with a Realm
+ * its player holds. Its campaign is the identity Worker's key for it (apps/realms/server/campaigns.ts) as a short string,
  * its tier the contract's (isGoldenCampaignHome).
  */
 

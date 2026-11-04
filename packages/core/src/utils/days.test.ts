@@ -84,25 +84,3 @@ it("covers any end without gaps, extra days or an unmerged short stub", () => {
     }
   }
 });
-
-it("extends Season 0 without moving its first ten days, restoring day eleven and adding the new tail", async () => {
-  const { default: approved } = await import("../../../../config/source/frontier/extension.json");
-  const extended = {
-    seed: BigInt(approved.seed),
-    startMainAt: approved.start,
-    endAt: approved.end,
-    dayUnitSeconds: approved.dayUnit,
-  };
-  const original = { ...extended, endAt: approved.oldEnd };
-  let cursor = approved.start;
-  for (let index = 0; index < 10; index++) {
-    const before = dayOf(original, cursor)!;
-    expect(dayOf(extended, cursor)).toEqual(before);
-    expect(before.index).toBe(index);
-    cursor = before.end;
-  }
-  expect(dayOf(original, approved.oldEnd - 1)).toEqual({ index: 10, start: 1793970000, end: 1793988000 });
-  expect(dayOf(extended, approved.oldEnd)).toEqual({ index: 10, start: 1793970000, end: 1793991600 });
-  expect(dayOf(extended, approved.end - 1)).toEqual({ index: 31, start: 1794574800, end: 1794592800 });
-  expect(dayOf(extended, approved.end)).toBeNull();
-});

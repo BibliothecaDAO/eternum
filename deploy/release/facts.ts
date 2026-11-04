@@ -20,7 +20,6 @@ import { readClassArtifact } from "../../config/deployer/clean/shared/declare";
 import { registrarWorldOf } from "../../config/deployer/clean/world/native/manifest";
 import { schemaIdentity, type NativeSchema } from "../../apps/herald/src/native/schema";
 import { NATIVE_RELEASE_ID } from "./native-release";
-import approvedExtension from "../../config/source/frontier/extension.json";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const WORLD = resolve(ROOT, "contracts/l3/world-native");
@@ -45,7 +44,7 @@ function releaseFacts() {
   });
   return {
     releaseId: NATIVE_RELEASE_ID,
-    migrationClassHash: NATIVE_RELEASE_ID === approvedExtension.release ? worldClass("ReleaseMigration") : "0x0",
+    migrationClassHash: "0x0",
     schema: schema.identity,
     classes: {
       games: worldClass("Games"),

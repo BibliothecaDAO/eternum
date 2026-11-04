@@ -273,11 +273,7 @@ pub mod SettlementState {
                 if previous == entitlement {
                     return;
                 }
-                if entitlement.metadata_3 == 'devcon-upgrade' {
-                    self.upgrade_campaign_home(key, previous, entitlement);
-                } else {
-                    self.recover_registered_ticket(key, previous, entitlement);
-                }
+                self.recover_registered_ticket(key, previous, entitlement);
             } else if self.data.settlements.entries.read((key.game_id, key.owner)).is_some() {
                 self.attach_source_to_founded_home(key, entitlement);
             } else if entitlement.pass_kind == crate::settlement::HELD_REALM_KIND {
@@ -297,34 +293,6 @@ pub mod SettlementState {
                         values: values.span(),
                     },
                 );
-        }
-        fn upgrade_campaign_home(
-            ref self: ComponentState<TContractState>,
-            key: EntryKey,
-            previous: EntryEntitlement,
-            entitlement: EntryEntitlement,
-        ) {
-            self.validate_campaign_entry(key, previous);
-            assert!(
-                previous.metadata_1 == 'devcon-2026'
-                    && previous.metadata_2 == crate::settlement::CAMPAIGN_NORMAL.into()
-                    && entitlement == EntryEntitlement {
-                        metadata_2: crate::settlement::CAMPAIGN_GOLDEN.into(), metadata_3: 'devcon-upgrade', ..previous,
-                    },
-                "invalid campaign upgrade",
-            );
-            crate::game::assert_playing(crate::logic::game::game(key.game_id), starknet::get_block_timestamp());
-            assert!(self.data.settlements.entries.read((key.game_id, key.owner)).is_some(), "home is not founded");
-            let home = self.owned_open_home(key);
-            assert!(
-                self
-                    .data
-                    .settlements
-                    .campaign_homes
-                    .read((key.game_id, home)) == Some(('devcon-2026', crate::settlement::CAMPAIGN_NORMAL)),
-                "home source differs",
-            );
-            self.write_campaign_home(key, home, entitlement);
         }
         fn recover_registered_ticket(
             ref self: ComponentState<TContractState>,
@@ -446,11 +414,6 @@ pub mod SettlementState {
         ) {
             self.validate_campaign_entry(key, entitlement);
             assert!(self.data.settlements.campaign_homes.read((key.game_id, home)).is_none(), "home source is fixed");
-            self.write_campaign_home(key, home, entitlement);
-        }
-        fn write_campaign_home(
-            ref self: ComponentState<TContractState>, key: EntryKey, home: u64, entitlement: EntryEntitlement,
-        ) {
             let tier: u8 = entitlement.metadata_2.try_into().unwrap();
             self.data.settlements.campaign_homes.write((key.game_id, home), Some((entitlement.metadata_1, tier)));
             self
