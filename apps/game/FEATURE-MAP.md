@@ -1,5 +1,15 @@
 # Feature map — game client
 
+Frontier army management: select an army from the dock or map; on a phone tap its selected token for details.
+**Reinforce** opens the troop amount, normal raising cost and resulting count. It is available on the six tiles beside
+your own home on today’s surface. Reinforcement preserves the army’s regenerated stamina bar, skills and XP. **Delete**
+asks for confirmation: troops, skills, XP and carried resources are lost; the freed slot keeps its stamina. Proof: the
+standard client playtest with `--steps army-management --player <saved-test-player> --storage-state <file>` deploys ten
+troops, adds one, cancels Delete once, then confirms it and checks the army disappears.
+
+The optional `--steps army-stock` preparation builds a Barracks through the realm board when the saved home needs
+reserve troops.
+
 Relic crates on the Blitz map: select the chest's tile to focus its labelled crate and opening action. A sealed crate
 says "Three relics. Open to reveal them."; its actual relics appear on opening and stay in the tile's receipt. Open
 needs an adjacent own army (the panel otherwise says, in a plain line where Open would stand, "Move one of your armies

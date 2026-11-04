@@ -1002,3 +1002,15 @@ describe("Devcon delivery through the game", () => {
     );
   });
 });
+
+// A failed preparation must never reinforce or delete some other army left selected on the map.
+it.each(["reinforce-army", "delete-rehearsal-army"])(
+  "%s refuses to act before the rehearsal army is identified",
+  async (name) => {
+    const step = STEP_SETS["army-management"].steps.find((step) => step.name === name);
+    const browser = { observe: () => ({ selection: { army: { id: 99 } } }), tap: vi.fn(), click: vi.fn() };
+    expect(await step.play({ browser })).toEqual({ armyId: undefined, selected: false });
+    expect(browser.tap).not.toHaveBeenCalled();
+    expect(browser.click).not.toHaveBeenCalled();
+  },
+);

@@ -656,7 +656,7 @@ const DEPLOY_ACTION_STEPS = [
   clickToResultStep("deploy", "CreateExplorer", deployFromTheDock, armyDeployed),
 ];
 
-async function deployFromTheDock({ browser }) {
+async function deployFromTheDock({ browser }, amount) {
   const before = Object.keys(browser.read(ARMY_TILES));
   browser.click("Deploy");
   const sheet = await readUntil(
@@ -665,7 +665,8 @@ async function deployFromTheDock({ browser }) {
     SHEET_WAIT_MS,
   );
   if (sheet !== "Deploy") return { sheet };
-  browser.click("Max");
+  if (amount === undefined) browser.click("Max");
+  else browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops"]', String(amount)]);
   const deploy = await readUntil(() => browser.read(sheetButton("^Deploy$")), Boolean, SHEET_WAIT_MS);
   if (!deploy) return { sheet, deploy };
   browser.tap(deploy.offset);
@@ -1172,9 +1173,9 @@ const SHEET_REGION = sheetRegion('[data-kit-sheet][aria-label="Castle"]');
 /**
  * Taps down towards the castle from above, a plot at a time, until one opens the Build sheet (straight above the castle
  * the outermost open plot is the second ring's, nearer on a phone than on a desktop), then presses Build for the sheet's
- * first offer.
+ * requested building, or its first offer.
  */
-async function buildOnAnOpenPlot({ browser }) {
+async function buildOnAnOpenPlot({ browser }, building) {
   browser.press("Escape");
   const tapped = [];
   for (const offset of PLOT_CANDIDATES) {
@@ -1186,6 +1187,11 @@ async function buildOnAnOpenPlot({ browser }) {
     );
     tapped.push({ offset, sheet });
     if (sheet === "Build") {
+      if (building) {
+        const choice = browser.read(sheetButton(`^${building}`));
+        if (!choice) throw new Error(`No ${building} in the Build sheet`);
+        browser.tap(choice.offset);
+      }
       browser.click("Build");
       return { tapped, plot: offset, region: tileRegion(offset) };
     }
@@ -1194,7 +1200,7 @@ async function buildOnAnOpenPlot({ browser }) {
   return { tapped };
 }
 
-const PLOT_CANDIDATES = [-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]);
+const PLOT_CANDIDATES = [...[-230, -210, -190, -170, -150, -130].map((dy) => [0, dy]), [-60, -90], [60, -90]];
 
 /** Has the probe report the first frame `expression` holds in, under `name`. */
 function watchFor(browser, name, expression) {
@@ -3994,7 +4000,138 @@ const FAR_PLACE_STEPS = [
   { name: "leave-far-army", play: leaveTheFarVisit, settleMs: 0, verify: leftForHome },
 ];
 
+/** Deploy a small army through the normal dock, reinforce it, then confirm its permanent deletion. */
+function armyManagementSteps() {
+  let armyId;
+  const count = (browser) =>
+    browser.read(
+      `JSON.stringify(document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent ?? null)`,
+    );
+  const press = async (browser, verb) => {
+    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`)), Boolean, SHEET_WAIT_MS);
+    if (!button) throw new Error(`Army sheet has no ${verb} button`);
+    browser.tap(button.offset);
+  };
+  return [
+    ...FRONTIER_MAP.opening,
+    {
+      name: "deploy-rehearsal-army",
+      play: async ({ browser }) => {
+        armyId = undefined;
+        const before = browser.armies().map(({ label }) => label);
+        await deployFromTheDock({ browser }, 10);
+        const arrived = await readUntil(
+          () => browser.armies().find(({ label }) => !before.includes(label)),
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        if (!arrived) return { arrived: false };
+        await pickArmy(browser, arrived.label);
+        armyId = browser.observe().selection?.army?.id;
+        if (onADesktop()) return { armyId, troops: count(browser) };
+        browser.click(`${arrived.label}: details`);
+        return { armyId, troops: count(browser) };
+      },
+      settleMs: 10_000,
+      verify: ({ played }) =>
+        played.armyId && played.troops === "10"
+          ? completed(played)
+          : failed("small army not deployed and selected", played),
+    },
+    {
+      name: "reinforce-army",
+      play: async ({ browser, extraScreenshot }) => {
+        if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
+        await press(browser, "Reinforce");
+        browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops to add"]', "1"]);
+        const preview = browser.read(
+          `JSON.stringify(document.querySelector('[aria-label="Troops after reinforcement"]')?.textContent ?? null)`,
+        );
+        extraScreenshot("reinforce-preview");
+        if (preview?.trim() !== "10 → 11") return { preview };
+        await press(browser, "Reinforce");
+        const troops = await readUntil(
+          () => count(browser),
+          (value) => value === "11",
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        return { armyId, preview, troops };
+      },
+      settleMs: 10_000,
+      verify: ({ played }) =>
+        played.troops === "11" ? completed(played) : failed("reinforcement did not add exactly one troop", played),
+    },
+    {
+      name: "delete-rehearsal-army",
+      play: async ({ browser, extraScreenshot }) => {
+        if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
+        await press(browser, "Delete");
+        const loss = browser.read(
+          `JSON.stringify(document.querySelector('[role="alertdialog"]')?.textContent ?? null)`,
+        );
+        const fits = browser.read(`JSON.stringify((() => {
+          const dialog = document.querySelector('[role="alertdialog"]');
+          const sheet = dialog?.closest('[data-kit-sheet]');
+          if (!dialog || !sheet) return false;
+          const bounds = sheet.getBoundingClientRect();
+          return [dialog, ...dialog.querySelectorAll('button')].every((element) => {
+            const rect = element.getBoundingClientRect();
+            return rect.left >= Math.max(0, bounds.left) && rect.right <= Math.min(innerWidth, bounds.right);
+          });
+        })())`);
+        extraScreenshot("delete-confirmation");
+        if (!fits || !loss?.includes("troops, skills, XP and carried resources are lost")) return { loss, fits };
+        await press(browser, "Cancel");
+        const retained = count(browser) === "11";
+        if (!retained) return { armyId, loss, retained };
+        await press(browser, "Delete");
+        await press(browser, "Delete");
+        const removed = await readUntil(
+          () => count(browser) === null && !browser.observe().selection?.army,
+          Boolean,
+          ORDER_OUTCOME_WAIT_MS,
+        );
+        return { armyId, loss, fits, retained, removed };
+      },
+      settleMs: 10_000,
+      verify: ({ played }) =>
+        played.fits && played.retained && played.removed
+          ? completed(played)
+          : failed("army deletion or cancellation did not settle", played),
+    },
+  ];
+}
+
 export const STEP_SETS = {
+  "army-stock": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+      {
+        name: "build-rehearsal-barracks",
+        play: async ({ browser }) => {
+          const built = await buildOnAnOpenPlot({ browser }, "Barracks");
+          if (!built.plot) return built;
+          await readUntil(() => browser.read(SHEET_NAME) !== "Build", Boolean, ORDER_OUTCOME_WAIT_MS);
+          browser.press("Escape");
+          browser.tap(built.plot);
+          const sheet = await readUntil(
+            () => browser.read(SHEET_NAME),
+            (name) => name === "Barracks",
+            SHEET_WAIT_MS,
+          );
+          return { ...built, sheet };
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.sheet === "Barracks"
+            ? completed(played)
+            : failed("Barracks did not appear on the chosen plot", played),
+      },
+    ],
+  },
+  "army-management": { game: FRONTIER, steps: armyManagementSteps() },
   spectator: { game: FRONTIER, steps: SPECTATOR_STEPS },
   "map-frames": { game: FRONTIER, steps: MAP_FRAME_STEPS },
   "unit-assets-spectator": {

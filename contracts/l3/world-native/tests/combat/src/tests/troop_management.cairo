@@ -1,4 +1,5 @@
 pub use world_test_support::tests::troop_management::*;
+use crate::game::IGameDispatcherTrait;
 
 
 #[test]
@@ -35,6 +36,28 @@ fn recruitment_spends_troop_resources_and_updates_capacity_with_block_time_stami
     assert_eq!(count(d, home), before - 5 * RESOURCE_PRECISION);
     assert_terminal_rejection(d, recruit(home, 1, 1), 140);
     assert_eq!(guard(d, home, 1).troops.count, 0);
+}
+
+#[test]
+fn blitz_recruitment_still_caps_stamina_at_the_initial_bar() {
+    let (d, _, first, _) = setup();
+    let rules = crate::game::IGameDispatcher { contract_address: d.games }.rules(3);
+    let mut before = troop(d, first).unwrap();
+    before.troops.stamina.set_amount(rules.troop_stamina_config.stamina_initial.into() + 1);
+    before.troops.stamina.set_settled_at(140);
+    crate::tests::resource_commands::set_explorer_fixture(
+        d.games, crate::troops::ExplorerKey { game_id: 3, explorer_id: first }, before,
+    );
+    assert!(
+        execute(
+            d,
+            manage(ManageTroops::RecruitExplorer(RecruitExplorer { explorer_id: first, amount: RESOURCE_PRECISION })),
+            140,
+        ),
+    );
+    assert_eq!(
+        troop(d, first).unwrap().troops.stamina.inline().amount, rules.troop_stamina_config.stamina_initial.into(),
+    );
 }
 
 #[test]

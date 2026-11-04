@@ -14,6 +14,7 @@ import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
+import { ArmyManagement } from "./army-management";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -107,6 +108,7 @@ const ArmyPanel = ({
         choosing={choosing}
         onLevelUp={levelUp}
       />
+      {!choosing && <ArmyManagement army={army} realm={realm} onDeleted={onClose} />}
       {spire && (
         <HudWindowFoot>
           <SpireButton explorerId={army.explorerId} spire={spire} />
