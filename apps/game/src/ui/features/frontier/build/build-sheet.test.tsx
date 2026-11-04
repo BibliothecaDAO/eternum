@@ -738,3 +738,94 @@ it.each(["retained", "withdrawn", "withdrawn before render"] as const)(
     }
   },
 );
+
+it("reds only the price lines the realm holds less of, so a training building short of Essence keeps its Labor white", () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const { store, realm } = realmBoard();
+  const balance = (resource: number, amount: bigint) => ({
+    model: "ResourceBalance",
+    // The fixture's own row keys: one per resource balance of the realm.
+    key: resource === ResourcesIds.Labor ? "0x75" : "0x7638",
+    value: { game_id: 1, entity_id: 7, resource_type: resource, balance: amount * BigInt(RESOURCE_PRECISION) },
+  });
+  // The Barracks' two research purchases bought, so training buildings show their price.
+  store.applyFacts([
+    {
+      model: "RealmKnowledge",
+      key: "0x77",
+      value: { game_id: 1, structure_id: 7, learned: (1n << 14n) | (1n << 17n) },
+    },
+  ] as never);
+  const lodge = store.require("BuildingRule", { game_id: 1, category: BuildingType.ScoutsLodge });
+  store.applyFacts([
+    {
+      model: "BuildingRule",
+      key: `0x6${BuildingType.ScoutsLodge}`,
+      value: {
+        ...lodge,
+        population_cost: 0,
+        simple_cost: [
+          { resource_type: ResourcesIds.Essence, amount: 6000n * BigInt(RESOURCE_PRECISION) },
+          { resource_type: ResourcesIds.Labor, amount: 1500n * BigInt(RESOURCE_PRECISION) },
+        ],
+      },
+    },
+  ]);
+  const lines = () => {
+    const host = document.createElement("div");
+    document.body.append(host);
+    const root = createRoot(host);
+    act(() =>
+      root.render(
+        <GameProvider value={{ store } as unknown as GameClientSetup} account={{ address: "0x111" } as never}>
+          <BuildSheet realm={realm} plot={{ col: 11, row: 10 }} onClose={() => undefined} />
+        </GameProvider>,
+      ),
+    );
+    const card = [...host.querySelectorAll<HTMLButtonElement>(".ui-card__choose")].find((button) =>
+      button.textContent?.includes("Scouts"),
+    )!;
+    const line = (label: string) => {
+      const element = card.querySelector(`[aria-label="${label}"]`)!;
+      // Its own color, never the band's: a line without one would take the red band's.
+      const color = element.classList.contains("text-hud-bad")
+        ? "red"
+        : element.classList.contains("text-hud-ink")
+          ? "white"
+          : "band's";
+      return { short: element.hasAttribute("data-short"), color };
+    };
+    const state = {
+      essence: line("6,000 Essence"),
+      labor: line("1,500 Labor"),
+      band: card.querySelector(".ui-chip")!.getAttribute("data-tone"),
+    };
+    act(() => root.unmount());
+    host.remove();
+    return state;
+  };
+
+  // The owner's realm on 3 November: Labor enough, Essence not.
+  store.applyFacts([balance(ResourcesIds.Labor, 100_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
+  expect(lines()).toEqual({
+    essence: { short: true, color: "red" },
+    labor: { short: false, color: "white" },
+    band: "bad",
+  });
+
+  // Both held: every line white, and the band no longer red.
+  store.applyFacts([balance(ResourcesIds.Essence, 12_000n)] as never);
+  expect(lines()).toEqual({
+    essence: { short: false, color: "white" },
+    labor: { short: false, color: "white" },
+    band: null,
+  });
+
+  // Labor short too: both lines red.
+  store.applyFacts([balance(ResourcesIds.Labor, 1_000n), balance(ResourcesIds.Essence, 2_000n)] as never);
+  expect(lines()).toEqual({
+    essence: { short: true, color: "red" },
+    labor: { short: true, color: "red" },
+    band: "bad",
+  });
+});
