@@ -1,6 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -14,7 +15,7 @@ import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
 import { ArmyDetail } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
-import { ArmyManagement } from "./army-management";
+import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -56,6 +57,7 @@ const ArmyPanel = ({
   const sending = useInFlight("tier", army.explorerId) !== undefined;
   const revealYield = useArmyRevealYield(army);
   const spire = useArmyAtItsSpire(army.explorerId);
+  const [deleting, setDeleting] = useState(false);
   const progress = setup.store.get("ArmyProgress", { game_id: realm.game_id, explorer_id: army.explorerId });
   const rules = setup.store.get("ArmyProgressionRules", { game_id: realm.game_id });
   if (!progress || !rules || !army.stamina) return null;
@@ -100,15 +102,19 @@ const ArmyPanel = ({
   };
 
   return (
-    <HudSheet label={army.label} onClose={onClose}>
+    <HudSheet
+      label={army.label}
+      cue={!choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
+      onClose={onClose}
+    >
       <ArmyDetail
         army={readArmyDetail(facts)}
-        refill={<ArmyRefill army={army} realm={realm} look="chip" />}
+        refill={<ArmyRefill army={army} realm={realm} look="price" />}
         sending={sending}
         choosing={choosing}
         onLevelUp={levelUp}
       />
-      {!choosing && <ArmyManagement army={army} realm={realm} onDeleted={onClose} />}
+      {deleting && <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />}
       {spire && (
         <HudWindowFoot>
           <SpireButton explorerId={army.explorerId} spire={spire} />

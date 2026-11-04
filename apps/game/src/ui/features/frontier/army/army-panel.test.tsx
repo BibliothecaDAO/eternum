@@ -90,11 +90,21 @@ it("spends the selected point on Stamina, doubles its refill and prevents wastin
   );
 });
 
-it("shows empty sockets and the inventory beside a cumulative XP milestone", () => {
+it("shows empty sockets and the XP milestone, and no point while none is held", () => {
   act(() => root.render(<ArmyDetail army={readArmyDetail(EARLY_ARMY)} sending={false} onLevelUp={vi.fn()} />));
   expect(host.querySelectorAll('.ui-tier[data-tier="0"]')).toHaveLength(4);
-  expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("I0II0III0IV0V0");
+  expect(host.querySelector('[aria-label="Skill points"]')!.textContent).toBe("");
   expect(host.textContent).toContain("12 / 75 XP");
+});
+
+it("shows only the ranks of the points held, beside Level up", () => {
+  act(() => root.render(<ArmyDetail army={readArmyDetail(VETERAN_ARMY)} sending={false} onLevelUp={vi.fn()} />));
+  const points = host.querySelector('[aria-label="Skill points"]')!;
+  expect([...points.children].map((point) => point.getAttribute("aria-label"))).toEqual([
+    "I points: 1",
+    "III points: 1",
+  ]);
+  expect(points.nextElementSibling?.textContent).toBe("Level up");
 });
 
 it("says on an attribute's hover what its next rank gives, the rank as the tooltip's gem", () => {

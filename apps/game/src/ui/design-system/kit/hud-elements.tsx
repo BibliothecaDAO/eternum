@@ -1546,12 +1546,24 @@ SurfaceFrame.displayName = "SurfaceFrame";
  * 2026: layout A); the map above it stays playable. From the desktop width up it docks under the top bar or in its
  * host's SheetDock, with the stage playable beside it.
  */
-export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
+export const HudSheet = ({
+  label,
+  cue,
+  onClose,
+  children,
+}: {
+  label: string;
+  /** A quiet control beside the cross, out of the body's flow (an army's Delete). */
+  cue?: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+}) => {
   const dock = useContext(SheetDock);
   const sheet = (
     <SurfaceFrame
       role="dialog"
       label={label}
+      cue={cue}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}

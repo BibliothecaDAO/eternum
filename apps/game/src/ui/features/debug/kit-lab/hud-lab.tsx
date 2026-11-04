@@ -18,6 +18,7 @@ import { realmMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { HudIconButton, HudNotice, HudSheet } from "@/ui/design-system/kit/hud-elements";
 import {
   ARMY,
+  ARMY_MANAGEMENT,
   EVENTS_WORDS,
   LINK_WALLET_FOR_LORDS,
   OFFLINE,
@@ -49,7 +50,7 @@ import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
 import { BuildView } from "@/ui/features/frontier/build/build-view";
 import { CastleResearch, CastleView } from "@/ui/features/frontier/upgrade/castle-view";
-import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
+import { type ArmyDetailFacts, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
 import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
 import { MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
@@ -82,7 +83,7 @@ import { NextUpView } from "@/ui/features/world/hud/next-up";
 import { type ComponentProps, useEffect, useRef, useState } from "react";
 import { toast } from "@/ui/features/event-feed/notify";
 import { useEventFeedStore } from "@/ui/features/event-feed/event-feed-store";
-import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "@/ui/features/frontier/army/refill";
+import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "@/ui/features/frontier/army/refill";
 import { LordsPurse, PurseRow, RealmsChip } from "@/ui/features/frontier/value/lords-purse";
 import type { DailyClaimWaiting } from "@/ui/features/frontier/value/realm-labor";
 import { DayPill } from "@/ui/features/frontier/hud/day-pill";
@@ -423,7 +424,8 @@ const CASTLE_SIDE = (level: number, limit: number) => ({
 });
 
 /** The veteran army's panel; with `lords` its refill is offered, with `confirm` the refill's confirm is open. */
-type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number };
+/** `owner`: the owner's Army 4 (4 November, the panel he found crowded); `ready` holds a III point. */
+type LabArmySheet = { lords?: number; confirm?: boolean; stamina?: number; owner?: "crowded" | "ready" };
 
 /** A city's three stores: 18,000 a store, wheat lifted by Fields, troops by Drill. */
 const line = (overrides: Partial<StoreLine> & Pick<StoreLine, "kind">): StoreLine => ({
@@ -930,6 +932,21 @@ const STATES = {
     armies: ARMIES,
     selected: 0,
     army: { stamina: 170, lords: 1_240 },
+  },
+  // The owner's Army 4 (4 November): 0 LORDS as he met it, or 1,240 LORDS and a point to spend.
+  "army-crowded": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { lords: 0, owner: "crowded" },
+  },
+  "army-crowded-ready": {
+    clock: CLOCK,
+    stores: STORES,
+    armies: ARMIES,
+    selected: 0,
+    army: { lords: 1_240, owner: "ready" },
   },
   "army-refill-short": {
     clock: CLOCK,
@@ -1602,19 +1619,41 @@ const labPickedArmy = (lab: LabState): { army: PickedArmyView; lords: number } =
   };
 };
 
-/** The veteran army's panel on the fiction, with its refill where the realm's LORDS are given, or the refill's confirm. */
+/** The owner's Army 4 (4 November): 4.7K troops, +704 a tile, 17/140 full in 1h 22m, Battle III, Logistics I. */
+const OWNER_ARMY: ArmyDetailFacts = {
+  ...VETERAN_ARMY,
+  name: `${ARMY} 4`,
+  troops: 4_700,
+  xp: 652,
+  stamina: { current: 17, max: 140, perExplore: 20 },
+  secondsToFull: 82 * 60,
+  revealYield: 704,
+  progress: { battle: 3, logistics: 1, scouting: 0, homecoming: 0, scoutingKinds: [] },
+  points: [0, 0, 0, 0, 0],
+};
+
+/**
+ * An army's panel on the fiction (the veteran, or the owner's Army 4), with its refill where the realm's LORDS are
+ * given and its Delete beside the cross, or the refill's confirm.
+ */
 const LabArmy = ({ army }: { army: LabArmySheet }) => {
-  const stamina = { ...VETERAN_ARMY.stamina, current: army.stamina ?? VETERAN_ARMY.stamina.current };
+  const base =
+    army.owner === "ready" ? { ...OWNER_ARMY, points: [0, 0, 1, 0, 0] } : army.owner ? OWNER_ARMY : VETERAN_ARMY;
+  const stamina = { ...base.stamina, current: army.stamina ?? base.stamina.current };
   const full = stamina.current >= stamina.max;
   if (army.confirm)
     return <RefillConfirm stamina={stamina} held={army.lords} sending={false} onRefill={noop} onCancel={noop} />;
   return (
-    <HudSheet label={VETERAN_ARMY.name} onClose={noop}>
+    <HudSheet
+      label={base.name}
+      cue={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="quiet" size="sm" onClick={noop} />}
+      onClose={noop}
+    >
       <ArmyDetail
-        army={readArmyDetail({ ...VETERAN_ARMY, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
+        army={readArmyDetail({ ...base, stamina, ...(full ? { secondsToFull: 0 } : {}) })}
         refill={
           army.lords === undefined || full ? undefined : (
-            <RefillChip price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
+            <RefillPrice price={stamina.max - stamina.current} held={army.lords} onRefill={noop} />
           )
         }
         sending={false}

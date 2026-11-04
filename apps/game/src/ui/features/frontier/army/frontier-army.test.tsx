@@ -76,7 +76,6 @@ vi.mock("../deploy/use-deploy-plan", () => ({ useDeployPlan: () => ({ open: [] }
 vi.mock("../sites/well-refill", () => ({ useWellRefill: (_id: number, ratio: number) => ({ shown: ratio }) }));
 vi.mock("../hud/dock-armies", () => ({ useDockArmies: () => [army] }));
 vi.mock("./army-refill", () => ({ ArmyRefill: () => null }));
-vi.mock("./army-management", () => ({ ArmyManagement: () => null }));
 vi.mock("../frontier-reveal-yield", () => ({ useArmyRevealYield: () => 75 }));
 // The army stands away from its spire: its panel has no Spire (spire-card.test.tsx plays the spire).
 vi.mock("../spire-card", () => ({ useArmyAtItsSpire: () => null, SpireButton: () => null }));
@@ -123,7 +122,7 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   // The army's sheet stands in the kit's one frame, as every surface the HUD opens does (frontier-hud.test).
   expect(host.querySelector("section[data-kit-sheet]")?.hasAttribute("data-kit-frame")).toBe(true);
-  // Each attribute is a tile named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
+  // Each attribute is a row named by its attribute, with what it gives as its effect (the owner's pick, 22 October).
   expect(host.querySelector('button[aria-label="Battle 0% damage"]')).not.toBeNull();
   expect(host.textContent).toMatch(/\d+ max stamina/);
   expect(host.textContent).toMatch(/% come home/);
@@ -143,6 +142,25 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
     explorerId: 12,
     choice: { kind: "Scouting", value: { kind: "Rift", value: undefined } },
   });
+});
+
+it("keeps Delete as a trash beside the cross, asking before it deletes, and offers no Reinforce", () => {
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
+  const trash = host.querySelector<HTMLButtonElement>('.ui-frame__head button[aria-label="Delete"]');
+  expect(trash).not.toBeNull();
+  expect(button(/Reinforce/)).toBeUndefined();
+  expect(host.querySelector('[role="alertdialog"]')).toBeNull();
+  act(() => trash!.click());
+  expect(host.querySelector('.ui-frame__body [role="alertdialog"]')?.textContent).toContain(
+    "troops, skills, XP and carried resources are lost",
+  );
+});
+
+it("draws no trash while the panel stands on the level-up choices", () => {
+  useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
+  act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing onClose={vi.fn()} />));
+  expect(host.querySelector('[aria-label="Delete"]')).toBeNull();
 });
 
 it("lets an army without points see its level-ups, and holds the verb with what is missing", () => {

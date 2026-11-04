@@ -1,7 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, it, vi } from "vitest";
-import { RefillButton, RefillConfirm } from "./refill";
+import { RefillButton, RefillConfirm, RefillPrice } from "./refill";
 import { ArmyRefill } from "./army-refill";
 import type { DockArmy } from "../hud/dock-armies";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
@@ -30,6 +30,33 @@ const render = (node: React.ReactNode) => {
     },
   };
 };
+
+describe("the army panel's priced refill", () => {
+  it("names what a full bar costs, in LORDS, and opens the confirm", () => {
+    const onRefill = vi.fn();
+    const { host, unmount } = render(<RefillPrice price={123} held={1240} onRefill={onRefill} />);
+    const button = host.querySelector("button")!;
+    expect(button.textContent).toBe("Refill123 LORDS");
+    expect(button.getAttribute("aria-label")).toBe("Refill stamina · 123 LORDS");
+    expect(button.dataset.tone).toBeUndefined();
+    act(() => button.click());
+    expect(onRefill).toHaveBeenCalledOnce();
+    unmount();
+  });
+  it.each([
+    [0, "0"],
+    [0.9, "<1"],
+  ])("is red and out of reach with %s LORDS, saying what it needs and what the realm holds", (held, shown) => {
+    const onRefill = vi.fn();
+    const { host, unmount } = render(<RefillPrice price={123} held={held} onRefill={onRefill} />);
+    const button = host.querySelector("button")!;
+    expect(button.disabled).toBe(true);
+    expect(button.dataset.tone).toBe("bad");
+    expect(button.title).toBe(`Needs 123 LORDS, have ${shown}`);
+    expect(button.getAttribute("aria-label")).toBe(`Refill stamina · 123 LORDS · Needs 123 LORDS, have ${shown}`);
+    unmount();
+  });
+});
 
 describe("partial stamina refills", () => {
   it.each([1, 40, 1240])("opens a refill with %s LORDS even when a full refill costs more", (held) => {
@@ -97,7 +124,7 @@ describe("partial stamina refills", () => {
   });
 });
 
-it.each(["button", "chip", "stamina"] as const)(
+it.each(["button", "price", "stamina"] as const)(
   "sends a partial refill through the army's real %s control",
   async (look) => {
     calls.refill.mockClear();
