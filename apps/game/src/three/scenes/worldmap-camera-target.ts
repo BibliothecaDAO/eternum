@@ -30,7 +30,8 @@ export type CameraNavigation =
   /** The renderer's dev tools. */
   | "dev-tools"
   /**
-   * The selected army passed through a spire, and the view goes with it to where it arrived (followArmyCrossing; owner,
-   * 4 November 2026: "spire entering lmao we should just switch view like realm/world/ethereal no ?").
+   * The view switching through a spire: with the selected army, to where it arrived (followArmyCrossing; owner, 4 November
+   * 2026: "spire entering lmao we should just switch view like realm/world/ethereal no ?"), or on a double-click on the
+   * spire, into its Ethereal layer ("double clicking the spire should make me enter the ethereal layer").
    */
-  | "crossing";
+  | "spire";

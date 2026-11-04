@@ -2508,6 +2508,62 @@ function armyEnteredEtherealII({ played }) {
   return completed({ command, before: before.army, after: after.army, camera: played.camera });
 }
 
+/**
+ * A double-click goes inside only what has an inside (the lab's camp game: the spire's army beside a Troll's camp). The
+ * camp's tile leaves the map as it was, and the spire's switches the view into the Ethereal layer below it (owner,
+ * 2026-11-04: "I shouldnt be able to double click a beast", "(no local mode for beasts)", "double clicking the spire
+ * should make me enter the ethereal layer"). A desktop finds each tile by its order's hover.
+ */
+const LAB_DOUBLE_CLICK_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "pick-army", play: pickTheSpireArmy, settleMs: 1_500, verify: spireArmyPicked },
+  { name: "double-click-camp", play: doubleClickTheTileOffering("Attack"), settleMs: 0, verify: leftTheMapAsItWas },
+  {
+    name: "double-click-spire",
+    play: doubleClickTheTileOffering("Enter the Spire"),
+    settleMs: 0,
+    verify: viewWentIntoTheEtherealBelow,
+  },
+];
+
+/** Finds the tile beside the army whose hover offers `verb`, then double-clicks it, reading the camera either side. */
+function doubleClickTheTileOffering(verb) {
+  return async ({ browser }) => {
+    const army = browser.observe().selection?.army ?? null;
+    const { target, scanned } = await findOrderTile(browser, [verb], armyOnScreen(browser, army?.id) ?? [0, 0]);
+    if (!target) return { verb, tile: null, scanned };
+    const before = browser.read(MAP_CAMERA);
+    browser.doubleClick(target.offset);
+    await sleep(DOUBLE_CLICK_SETTLE_MS);
+    return { verb, tile: target.offset, army: army?.hex ?? null, before, after: browser.read(MAP_CAMERA) };
+  };
+}
+
+/** The double-clicked camp opened no view of its own: the map is still the scene, its camera where it was. */
+function leftTheMapAsItWas({ played, seen }) {
+  if (!played.tile) return failed(`no tile beside the army offers ${played.verb}`, played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return failed(`a double-click on the camp left the map: ${scene.reason}`, played);
+  if (played.after === null || hexesApart(played.after, played.before) > 1)
+    return failed("a double-click on the camp moved the camera", played);
+  return completed(played);
+}
+
+/** The double-clicked spire switched the view into Ethereal I straight below it, on the map, a region down. */
+function viewWentIntoTheEtherealBelow({ played, seen }) {
+  if (!played.tile) return failed(`no tile beside the army offers ${played.verb}`, played);
+  const scene = inScene("map")({ seen });
+  if (scene.status !== "completed") return failed(`a double-click on the spire left the map: ${scene.reason}`, played);
+  // The spire stands beside the army; Ethereal I is one region of Frontier's hundred rows below it.
+  const below = { col: played.army.col, row: played.army.row + 100 };
+  if (played.after === null || hexesApart(played.after, below) > FRAMED_WITHIN_HEXES)
+    return failed(`the camera looks at ${JSON.stringify(played.after)}, not Ethereal I below the spire`, played);
+  return completed(played);
+}
+
+/** How long a double-click's view takes to settle: a camera move, or nothing at all. */
+const DOUBLE_CLICK_SETTLE_MS = 2_000;
+
 const SPIRE_WAIT_MS = 5_000;
 
 /** The board's buildings draw within this long, after the realm's scene holds. */
@@ -4258,6 +4314,7 @@ export const STEP_SETS = {
   "lab-merge-keeps-tapped": { game: labSpireGame("merge-keeps-tapped"), steps: labMergeSteps(null) },
   "lab-actions": { game: labSpireGame("actions"), steps: ACTION_STEPS },
   "lab-actions-spire": { game: LAB_SPIRE, steps: SPIRE_ACTION_STEPS },
+  "lab-double-click": { game: { ...LAB_SPIRE, lab: "camp" }, steps: LAB_DOUBLE_CLICK_STEPS },
   "lab-actions-merge": { game: labSpireGame("merge-loses-xp"), steps: mergeActionSteps() },
   "lab-actions-transfer": { game: labSpireGame("merge-loses-xp"), steps: transferActionSteps() },
   "lab-actions-deploy": { game: labSpireGame("actions"), steps: DEPLOY_ACTION_STEPS },

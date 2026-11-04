@@ -54,7 +54,7 @@ import {
   isPendingReservedHyperstructureCreation,
   submitActiveWorldBlitzHyperstructureCreation,
 } from "@/services/blitz/blitz-hyperstructure-creation";
-import { runWorldmapDoubleClick } from "./worldmap-double-click";
+import { type DoubleClickTarget, runWorldmapDoubleClick } from "./worldmap-double-click";
 import { HEX_SIZE, WORLD_CHUNK_CONFIG } from "@/three/constants";
 import { ArmyManager } from "@/three/managers/army-manager";
 import { CombatPresentationCoordinator } from "@/three/combat/combat-presentation-coordinator";
@@ -85,6 +85,7 @@ import {
   isArmyCrossing,
   NEUTRAL_BIOME_CLIMATE,
   Position,
+  spireEtherealView,
   isOpenSpawnHex,
   isViewerOwner,
   isExpeditionRealm,
@@ -1694,7 +1695,7 @@ export default class WorldmapScene extends WarpTravel {
       isSceneActive: () => !this.isSwitchedOff,
       isCrossing: (from, to) => isArmyCrossing(this.game.store, configManager.getActiveGameId(), from, to),
       setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
-      lookAt: ({ col, row }) => this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "crossing"),
+      lookAt: ({ col, row }) => this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "spire"),
       finishMovement: (entityId) => {
         this.completePendingArmyMovementVisuals(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);
@@ -2576,11 +2577,52 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   protected onHexagonDoubleClick(hexCoords: HexPosition) {
-    runWorldmapDoubleClick(hexCoords, {
-      isReservedHyperstructureSite: (hex) => this.isReservedHyperstructureHex(hex),
-      foundHyperstructure: (hex) => void this.createReservedHyperstructureFromWorldmap(hex),
-      enterStructure: (hex) => this.enterStructureFromSelectedHex(hex),
+    runWorldmapDoubleClick(this.doubleClickTargetAt(hexCoords), {
+      throughSpire: () => this.lookThroughSpire(hexCoords),
+      enterStructure: () => this.enterStructureFromSelectedHex(hexCoords),
+      foundHyperstructure: () => void this.createReservedHyperstructureFromWorldmap(hexCoords),
     });
+  }
+
+  /** What stands on a double-clicked hex (normalized), as runWorldmapDoubleClick reads it. */
+  private doubleClickTargetAt(hexCoords: HexPosition): DoubleClickTarget {
+    if (this.litSpireAt(hexCoords) || this.isLayerSpireHex(hexCoords)) return { kind: "spire" };
+    if (this.isReservedHyperstructureHex(hexCoords)) return { kind: "reserved-hyperstructure" };
+    const { structure } = this.getHexagonEntity(hexCoords);
+    const standing =
+      structure &&
+      this.game.store.get("Structure", { game_id: configManager.getActiveGameId(), entity_id: structure.id });
+    return standing ? { kind: "structure", category: standing.base.category } : { kind: "other" };
+  }
+
+  /** Frontier's lit spire on a hex (normalized), with its realm. */
+  private litSpireAt(hexCoords: HexPosition) {
+    const { x, y } = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const now = getBlockTimestamp().currentBlockTimestamp;
+    return expeditionSpires(this.game.store, configManager.getActiveGameId(), now).find(
+      (spire) => spire.col === x && spire.row === y,
+    );
+  }
+
+  /** Whether a spire between Eternum's two layers stands on a hex (normalized). */
+  private isLayerSpireHex(hexCoords: HexPosition): boolean {
+    const { x, y } = Position.fromNormalized({ x: hexCoords.col, y: hexCoords.row }).getContract();
+    const tile = this.worldSpatialProjection.getTileAtHex({ col: x, row: y, alt: activeMapLayer() });
+    return tile?.occupierType === TileOccupier.Spire;
+  }
+
+  /**
+   * The view through a spire, as an army passing it switches it (followArmyCrossing): Eternum's other layer, or the
+   * Ethereal layer below Frontier's lit spire.
+   */
+  private lookThroughSpire(hexCoords: HexPosition): void {
+    const spire = this.litSpireAt(hexCoords);
+    if (!spire) {
+      useUIStore.getState().setMapLayer(!activeMapLayer());
+      return;
+    }
+    const view = spireEtherealView(this.game.store, spire);
+    this.moveCameraToMapPosition(Position.fromContract({ x: view.col, y: view.row }), "spire");
   }
 
   private enterStructureFromSelectedHex(hexCoords: HexPosition) {

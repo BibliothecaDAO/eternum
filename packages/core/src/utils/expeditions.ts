@@ -150,6 +150,23 @@ export const liveHomeArmies = (
   );
 };
 
+/**
+ * Where a look into a lit spire's Ethereal layer goes: its realm's army there today, else Ethereal I straight below the
+ * spire, where an army beside it lands (enter_depth keeps its column).
+ */
+export const spireEtherealView = (
+  store: Pick<NativeFactStore, "get" | "require" | "armiesAtHome" | "entityOccupancy">,
+  spire: { col: number; row: number; realm: NativeRows["Structure"] },
+): { col: number; row: number } => {
+  const gameId = spire.realm.game_id;
+  const rules = readExpeditionRules(store, gameId);
+  if (!rules) throw new Error("A spire lights only in an expedition game");
+  const inEthereal = liveHomeArmies(store, Number(spire.realm.entity_id), gameId)
+    .map((army) => entityMapPosition(store, gameId, army.explorer_id))
+    .find((at) => expeditionDepth(rules, at) > 0);
+  return inEthereal ? { col: inEthereal.x, row: inEthereal.y } : { col: spire.col, row: spire.row + rules.spacing };
+};
+
 export { entityHomeNamespace } from "./entity-home";
 
 /** A player's expedition home is a realm: its armies muster each day, and other structures are only met on the way. */

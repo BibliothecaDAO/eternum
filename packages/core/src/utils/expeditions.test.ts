@@ -16,6 +16,7 @@ import {
   structureLocalPosition,
   siteReward,
   siteClearXp,
+  spireEtherealView,
   LOCAL_VIEW_REACH,
 } from "./expeditions";
 
@@ -131,6 +132,23 @@ describe("liveHomeArmies", () => {
     const store = armiesStore({ SliceRules: { day_unit_seconds: 0 } }, [army(1, 5), army(2, 900), army(3, 7, 0n)]);
     atFloor(86400 * 9);
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
+  });
+
+  describe("a look into a spire's Ethereal layer", () => {
+    // Realm 42's spire on day 0's surface (rows 0..9); Ethereal I below is rows 10..19, Ethereal II rows 20..29.
+    const spire = { col: 24, row: 5, realm: { game_id: 7, entity_id: 42 } as never };
+
+    it("goes to the realm's army in the Ethereal layer today", () => {
+      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25)]);
+      atFloor(rules.startMainAt + 60);
+      expect(spireEtherealView(store as never, spire)).toEqual({ col: 25, row: 25 });
+    });
+
+    it("goes to Ethereal I straight below the spire while none of the realm's armies is there", () => {
+      const store = armiesStore(expeditionRules, [army(1, 6), army(2, 25, 1_000n, 99)]);
+      atFloor(rules.startMainAt + 60);
+      expect(spireEtherealView(store as never, spire)).toEqual({ col: 24, row: 15 });
+    });
   });
 });
 
