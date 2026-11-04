@@ -38,6 +38,7 @@ import { FrontierDesktop, FrontierPlaces } from "@/ui/features/frontier/hud/fron
 import type { HudSurface } from "@/ui/features/frontier/hud/frontier-nav";
 import { LabGame, useLabPlayer } from "./lab-game";
 import { useHudMode } from "@/hooks/use-hud-mode";
+import { HOW_TO_PLAY_BY_MODE } from "@/shell/community";
 import { MenuPage } from "@/ui/features/frontier/hud/menu-page";
 import { installLabRoom } from "./chat-lab";
 import { ChatPage } from "@/ui/features/frontier/hud/chat-page";
@@ -1378,6 +1379,7 @@ export const HudLab = () => {
               onSeason={noop}
               realms={lab.menuRealms ? { waiting: true, onOpen: noop } : undefined}
               onSettings={noop}
+              guide={HOW_TO_PLAY_BY_MODE.frontier}
               onExit={noop}
               onClose={noop}
             />

@@ -192,6 +192,10 @@ button.ui-panel__name[data-action]:hover {
 .ui-button[data-tone="bad"]:disabled {
   opacity: 1;
 }
+/* A button that opens an address (a guide) is a link with the button's look. */
+a.ui-button {
+  text-decoration: none;
+}
 .ui-button[data-icon-only] {
   width: var(--hud-control);
   padding: 0;
@@ -742,6 +746,11 @@ button.ui-row {
   color: inherit;
   font: inherit;
   text-align: left;
+}
+/* A row that opens an address (a guide) is a link with the row's look. */
+a.ui-row {
+  color: inherit;
+  text-decoration: none;
 }
 .ui-row:is(:disabled, [aria-disabled="true"]) {
   cursor: not-allowed;

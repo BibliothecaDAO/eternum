@@ -168,21 +168,39 @@ export const HudIconButton = forwardRef<
     label: string;
     kind?: ButtonKind;
     size?: "md" | "sm";
+    /** An address it opens in a new tab (a guide on the docs site): it is then a link with the button's look. */
+    href?: string;
   } & ButtonHTMLAttributes<HTMLButtonElement>
->(({ icon, label, kind = "secondary", size = "md", ...rest }, ref) => (
-  <button
-    ref={ref}
-    type="button"
-    aria-label={label}
-    {...rest}
-    className="ui-button"
-    data-kind={kind}
-    data-size={size}
-    data-icon-only
-  >
-    <Icon name={icon} size={size === "sm" ? 16 : 20} />
-  </button>
-));
+>(({ icon, label, kind = "secondary", size = "md", href, ...rest }, ref) =>
+  href ? (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      data-tip={label}
+      className="ui-button"
+      data-kind={kind}
+      data-size={size}
+      data-icon-only
+    >
+      <Icon name={icon} size={size === "sm" ? 16 : 20} />
+    </a>
+  ) : (
+    <button
+      ref={ref}
+      type="button"
+      aria-label={label}
+      {...rest}
+      className="ui-button"
+      data-kind={kind}
+      data-size={size}
+      data-icon-only
+    >
+      <Icon name={icon} size={size === "sm" ? 16 : 20} />
+    </button>
+  ),
+);
 HudIconButton.displayName = "HudIconButton";
 
 /** What is typed (a name, a search, an amount), in a well as wide as its container. */
@@ -1053,6 +1071,7 @@ export const HudRow = ({
   busy,
   tip,
   onClick,
+  href,
 }: {
   lead?: ReactNode;
   /** The name of the button that chooses the row, where its words say more than its name (an army's figures). */
@@ -1075,6 +1094,8 @@ export const HudRow = ({
   /** What the row stands for in full, on the app's hover (a research row's next tier). */
   tip?: string;
   onClick?: () => void;
+  /** An address the row opens in a new tab (a guide on the docs site): the row is then a link, not a button. */
+  href?: string;
 }) => {
   const face = (
     <>
@@ -1114,6 +1135,13 @@ export const HudRow = ({
       </div>
     );
   }
+  if (href)
+    return (
+      <a className="ui-row" href={href} target="_blank" rel="noopener noreferrer" data-state={state} data-tip={tip}>
+        {lead}
+        {face}
+      </a>
+    );
   return onClick ? (
     <button
       type="button"
