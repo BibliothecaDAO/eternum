@@ -421,7 +421,8 @@ describe("native live publication", () => {
         expect.objectContaining({ model: "ResourceBalance", value: expect.objectContaining({ balance: "0x50" }) }),
       ]),
     );
-    expect(depthDiffs[0].del).toContainEqual({ model: "TileOpt", key: surfaceKey });
+    // The home's surface stays streamed while the army is in a depth: Deploy still steps out beside the realm.
+    expect(depthDiffs[0].del).not.toContainEqual({ model: "TileOpt", key: surfaceKey });
     expect(messages[1]).toEqual([]);
 
     confirmed.block_number = 11;
@@ -432,9 +433,9 @@ describe("native live publication", () => {
       model: "TileOpt",
       key: depthKey,
     });
-    expect(messages[0].filter((message) => message.type === "diff").flatMap((message) => message.set)).toContainEqual(
-      expect.objectContaining({ model: "TileOpt", key: surfaceKey }),
-    );
+    expect(
+      messages[0].filter((message) => message.type === "diff").flatMap((message) => [...message.set, ...message.del]),
+    ).not.toContainEqual(expect.objectContaining({ model: "TileOpt", key: surfaceKey }));
 
     const boundary = messages[0].at(-1)!;
     messages.forEach((stream) => {

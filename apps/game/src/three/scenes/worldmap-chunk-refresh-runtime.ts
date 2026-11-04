@@ -11,6 +11,8 @@ export interface WorldmapChunkRefreshRuntimeState {
   requestToken: number;
   rerunRequested: boolean;
   running: boolean;
+  /** The map reset after this state began: a refresh still running on it settles here and schedules nothing more. */
+  retired: boolean;
   timeoutId: number | null;
   waiters: Set<{ requestToken: number; resolve: () => void }>;
 }
@@ -48,9 +50,28 @@ export function createWorldmapChunkRefreshRuntimeState(): WorldmapChunkRefreshRu
     requestToken: 0,
     rerunRequested: false,
     running: false,
+    retired: false,
     timeoutId: null,
     waiters: new Set(),
   };
+}
+
+/**
+ * The map resets its refreshes (switched off, destroyed): the state's timer is cleared, its waiters let go, and a fresh
+ * state takes over. A refresh already running finishes against the retired state, so its tokens never meet the fresh
+ * state's and it never schedules a rerun there (that rerun found no reason to run: "scheduled chunk refresh has no
+ * attributed trigger" after the Realm was opened during a refresh).
+ */
+export function renewWorldmapChunkRefreshRuntimeState(
+  state: WorldmapChunkRefreshRuntimeState,
+  clearTimeoutFn: (timeoutId: number) => void,
+): WorldmapChunkRefreshRuntimeState {
+  if (state.timeoutId !== null) clearTimeoutFn(state.timeoutId);
+  state.timeoutId = null;
+  state.deadlineAtMs = null;
+  state.retired = true;
+  cancelWorldmapChunkRefreshWaiters(state);
+  return createWorldmapChunkRefreshRuntimeState();
 }
 
 export function requestWorldmapChunkRefreshToken(state: WorldmapChunkRefreshRuntimeState): number {
@@ -95,7 +116,7 @@ export function waitForWorldmapRequestedChunkRefresh(input: WaitForWorldmapReque
   });
 }
 
-export function cancelWorldmapChunkRefreshWaiters(state: WorldmapChunkRefreshRuntimeState): void {
+function cancelWorldmapChunkRefreshWaiters(state: WorldmapChunkRefreshRuntimeState): void {
   state.waiters.forEach(({ resolve }) => resolve());
   state.waiters.clear();
 }
@@ -145,23 +166,27 @@ export async function runWorldmapChunkRefreshExecution(input: RunWorldmapChunkRe
   } finally {
     input.state.running = false;
     input.state.appliedToken = executionToken;
-
-    const completionActions = resolveRefreshCompletionActions({
-      appliedToken: input.state.appliedToken,
-      latestToken: input.state.requestToken,
-      rerunRequested: input.state.rerunRequested,
-    });
-    input.onExecutionComplete({
-      executionToken: input.state.appliedToken,
-      hasNewerRequest: completionActions.hasNewerRequest,
-      latestToken: input.state.requestToken,
-    });
-    if (completionActions.shouldClearRerunRequested) {
-      input.state.rerunRequested = false;
-    }
-    if (completionActions.shouldScheduleRerun) {
-      input.scheduleRerun();
-    }
-    resolveCompletedWorldmapChunkRefreshWaiters(input.state);
+    if (!input.state.retired) settleRefreshExecution(input);
   }
+}
+
+/** After a refresh: a newer request or a rerun asked while it ran runs next, and the waiters it served are let go. */
+function settleRefreshExecution(input: RunWorldmapChunkRefreshExecutionInput): void {
+  const completionActions = resolveRefreshCompletionActions({
+    appliedToken: input.state.appliedToken,
+    latestToken: input.state.requestToken,
+    rerunRequested: input.state.rerunRequested,
+  });
+  input.onExecutionComplete({
+    executionToken: input.state.appliedToken,
+    hasNewerRequest: completionActions.hasNewerRequest,
+    latestToken: input.state.requestToken,
+  });
+  if (completionActions.shouldClearRerunRequested) {
+    input.state.rerunRequested = false;
+  }
+  if (completionActions.shouldScheduleRerun) {
+    input.scheduleRerun();
+  }
+  resolveCompletedWorldmapChunkRefreshWaiters(input.state);
 }

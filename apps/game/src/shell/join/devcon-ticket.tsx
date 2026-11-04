@@ -19,7 +19,7 @@ export const DevconTicket = ({ tier }: { tier: CampaignTicket["tier"] }) => {
         face={golden ? "golden" : "opened"}
         art={<Icon name={homeIcon(golden ? "devcon-golden" : "devcon", 0)} size={128} />}
         line={golden ? JOIN_WORDS.goldenLine : JOIN_WORDS.realm}
-        stub={golden ? JOIN_WORDS.goldenStub(DEVCON.golden) : JOIN_WORDS.stub}
+        stub={golden ? JOIN_WORDS.goldenStub : JOIN_WORDS.stub}
       />
       <DailyClaim golden={golden} />
     </>

@@ -341,7 +341,7 @@ describe("the Menu", () => {
       onExit: vi.fn(),
       onClose: vi.fn(),
     };
-    act(() => root.render(<MenuPage rank="#12" {...handlers} />));
+    act(() => root.render(<MenuPage rank="#12" guide="https://docs.realms.party/frontier/" {...handlers} />));
     const button = (word: string) =>
       [...document.querySelectorAll<HTMLButtonElement>("section[aria-label='Menu'] button")].find((candidate) =>
         candidate.textContent?.startsWith(word),
@@ -367,11 +367,11 @@ describe("the Menu", () => {
 
   it("has no Production: each store's card opens from its own plate", () => {
     const ways = { onToday: vi.fn(), onSeason: vi.fn(), onSettings: vi.fn(), onExit: vi.fn(), onClose: vi.fn() };
-    act(() => root.render(<MenuPage rank="—" {...ways} />));
+    act(() => root.render(<MenuPage rank="—" guide="https://docs.realms.party/frontier/" {...ways} />));
     const words = [...document.querySelectorAll("section[aria-label='Menu'] nav .ui-row")].map(
       (row) => row.textContent,
     );
-    expect(words).toEqual(["Today", "Season—", "Settings"]);
+    expect(words).toEqual(["Today", "Season—", "Settings", "How to playdocs.realms.party"]);
   });
 });
 

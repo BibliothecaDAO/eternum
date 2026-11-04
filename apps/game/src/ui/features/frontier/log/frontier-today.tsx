@@ -4,7 +4,7 @@ import type { ProcessedStoryEvent } from "@/hooks/store/use-story-events-store";
 import { fightConcludedBy, oneStoryPerAction } from "@/ui/features/event-feed/event-stories";
 import type { readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeFactStore, NativeRows } from "@bibliothecadao/eternum/game-client";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 import { dayBounds, dayClock, seasonDay } from "../hud/day-clock";
 import { useDockArmies } from "../hud/dock-armies";
@@ -22,12 +22,15 @@ type ExpeditionRules = NonNullable<ReturnType<typeof readExpeditionRules>>;
 export const FrontierToday = ({
   rules,
   realm,
+  dayEnd,
   onOpenArmy,
   onClose,
 }: {
   rules: ExpeditionRules;
   /** The realm whose day this is: the player's own, or the one watched. */
   realm: NativeRows["Structure"] | null;
+  /** The player's own day end (DayEndBlock); none for a realm that is not theirs. */
+  dayEnd?: ReactNode;
   /** Opens an army's sheet, for the row of armies with a tier to buy; none for a realm that is not the player's. */
   onOpenArmy?: (explorerId: number) => void;
   onClose: () => void;
@@ -51,6 +54,7 @@ export const FrontierToday = ({
       today={day === today}
       clock={clock}
       totals={played.totals}
+      dayEnd={dayEnd}
       lines={logLines(played.stories, setup.store)}
       armiesToUpgrade={onOpenArmy && day === today ? buyers.length : undefined}
       onArmies={onOpenArmy && buyers[0] ? () => onOpenArmy(buyers[0]!.explorerId) : undefined}

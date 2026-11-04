@@ -1,4 +1,7 @@
 import { useUIStore } from "@/hooks/store/use-ui-store";
+import { useHeldTicket } from "@/hooks/use-holdings";
+import { getActiveGame } from "@/runtime/world";
+import { campaignOfPreset } from "@/services/home-claim-rules";
 import { canIssueOrders, isWatching } from "@/utils/can-issue-orders";
 import { useRealmVisit } from "@/sync/active-game-client";
 import { dropNextOrder } from "@/three/scenes/worldmap-next-order";
@@ -38,14 +41,15 @@ import { canResearchNow } from "./research/research-tree";
 import { ChatPage } from "./hud/chat-page";
 import { type DockArmy, useDockArmies } from "./hud/dock-armies";
 import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
+import { layerChoices, layerName, type MapLayers, useMapLayers } from "./hud/map-layers";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
-import { FrontierNextUp } from "./next-up/frontier-next-up";
-import { useNextUpBuilding } from "./next-up/next-up-steps";
+import { DayEndBlock, DayEndNotice, useDayEnd } from "./day-end/day-end";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
 import { MenuPage } from "./hud/menu-page";
+import { useHowToPlay } from "@/ui/modules/how-to-play";
 import { FrontierRealms } from "./value/frontier-realms";
 import { FrontierWithdraw } from "./value/frontier-withdraw";
 import { useLinkWalletPrompt, useOwedLords } from "./value/link-wallet";
@@ -77,7 +81,7 @@ type ExpeditionRules = NonNullable<ReturnType<typeof useExpeditionRules>>;
 
 /**
  * Frontier's HUD, one set of parts in two compositions (the desktop's shared regions, a phone's bands): the realm and
- * its stores, a nav page or the map, Next up, the action bar while an army is selected, the armies and the places.
+ * its stores, a nav page or the map, the action bar while an army is selected, the armies and the places.
  * Everything else opens from these as a sheet.
  */
 export const FrontierHud = ({
@@ -92,6 +96,9 @@ export const FrontierHud = ({
   useDocumentClass("frontier-hud");
   const showBlankOverlay = useUIStore((state) => state.showBlankOverlay);
   const spectating = useUIStore(isWatching);
+  // A player's ticket to this season's campaign, read as they play: the read settles what friends earned and asks for
+  // a golden upgrade earned for this home, so it lands without a visit to You.
+  useHeldTicket(spectating ? null : campaignOfPreset(getActiveGame()?.presetId ?? -1));
   const realm = useFrontierRealm();
   // The realm on the board: on a visit (a spectator's watch is one too) the visited realm, whose strip, panel and
   // armies the HUD shows; no order renders for a realm the player does not own.
@@ -106,11 +113,8 @@ export const FrontierHud = ({
   // A tap on the board names the realm the board draws, so its cards read that realm: on a visit, the visited one's.
   // A card's way to Research may name the node it opens on (the castle's own research, a building's gate).
   const [researchPick, setResearchPick] = useState<string | undefined>();
-  // An open plot's build sheet opens on the building Next up asks for.
-  const asked = useNextUpBuilding(rules, realm);
   const card = useSelectionCard({
     realm: shown,
-    asked,
     onResearch: (node) => {
       setResearchPick(node);
       setSurface("research");
@@ -124,7 +128,7 @@ export const FrontierHud = ({
   useEffect(() => {
     if (surface !== "research") setResearchPick(undefined);
   }, [surface]);
-  // Selecting one of the realm's armies opens its panel; a pick in the dock, Today or Next up goes the same way.
+  // Selecting one of the realm's armies opens its panel; a pick in the dock or Today goes the same way.
   const [armyChoosing, setArmyChoosing] = useState(false);
   const armyPanel = useArmyPanelOpens(
     visit ? null : realm,
@@ -140,7 +144,21 @@ export const FrontierHud = ({
   });
   const openArmy = armyPanel.pick;
   const pickArmy = usePickArmy();
+  // The day's end speaks to a player in their own realm: a visit or a spectator has none. Its army is picked as the
+  // dock picks one: a desktop opens the army's panel in Today's place, even for the army already selected; a phone puts
+  // Today away and shows the army in the action row, the map first.
+  const dayEnd = useDayEnd(rules, visit ? null : realm, {
+    claimWaiting: claimWaiting !== null,
+    onClaim: () => setSurface("realms"),
+    onPickArmy: desktop
+      ? openArmy
+      : (explorerId) => {
+          pickArmy(explorerId);
+          setSurface(null);
+        },
+  });
   const seasonRank = useSeasonRank();
+  const layers = useMapLayers(rules, shown);
   // The store card a ring or a plate opened, under the realm card on a desktop and under the strip on a phone.
   const [openStore, setOpenStore] = useState<CardStore | null>(null);
   if (showBlankOverlay) return null;
@@ -195,6 +213,7 @@ export const FrontierHud = ({
       <ChestLordsMoment />
       <OfflineNotice />
       <SceneFailureNotice />
+      {own && <DayEndNotice dayEnd={dayEnd} onOpen={() => setSurface("today")} />}
     </>
   );
   const action = (
@@ -222,6 +241,7 @@ export const FrontierHud = ({
         <FrontierToday
           rules={rules}
           realm={realm ?? visited}
+          dayEnd={own && <DayEndBlock dayEnd={dayEnd} />}
           onOpenArmy={realm && !visit ? openArmy : undefined}
           onClose={close}
         />
@@ -238,15 +258,11 @@ export const FrontierHud = ({
     </>
   );
 
-  // Next up speaks to a player in their own realm: a visit or a spectator has none.
-  const nextUp = realm && !visit && (
-    <FrontierNextUp rules={rules} realm={realm} onSurface={setSurface} onOpenArmy={openArmy} />
-  );
-
   return desktop ? (
     <FrontierDesktop
       season={{ rank: seasonRank, onOpen: () => setSurface("season") }}
       clock={<FrontierDayClock rules={rules} onOpenToday={() => setSurface("today")} />}
+      worldTab={layers ? { label: layerName(layers.shown), menu: layerChoices(layers) } : undefined}
       realm={
         shown && (
           <FrontierRealmPanel
@@ -260,7 +276,6 @@ export const FrontierHud = ({
         )
       }
       armies={dock}
-      nextUp={nextUp}
       page={page}
       foot={
         <>
@@ -285,13 +300,13 @@ export const FrontierHud = ({
       rules={rules}
       realm={realm}
       board={shown}
+      layers={layers}
       visiting={visit !== null}
       surface={surface}
       onSurface={setSurface}
       strip={strip}
       purse={purse}
       page={page}
-      nextUp={nextUp}
       notices={notices}
       action={action}
       dock={dock}
@@ -311,6 +326,7 @@ const FrontierPhoneHud = ({
   rules,
   realm,
   board,
+  layers,
   visiting,
   surface,
   onSurface,
@@ -324,13 +340,13 @@ const FrontierPhoneHud = ({
   realm: NativeRows["Structure"] | null;
   /** The realm the dock reads: the player's, or the one visited. */
   board: NativeRows["Structure"] | null;
+  layers: MapLayers | null;
   visiting: boolean;
   surface: HudSurface | null;
   onSurface: (surface: HudSurface | null) => void;
   strip: ReactNode;
   purse: ReactNode;
   page: ReactNode;
-  nextUp: ReactNode;
   notices: ReactNode;
   action: ReactNode;
   dock: ReactNode;
@@ -364,6 +380,7 @@ const FrontierPhoneHud = ({
             rules={rules}
             realm={realm}
             board={board}
+            layers={layers}
             surface={surface}
             onSurface={onSurface}
             events={events}
@@ -492,6 +509,7 @@ const HudMenu = ({
 }) => {
   const navigate = useNavigate();
   const rank = useSeasonRank();
+  const guide = useHowToPlay();
   return (
     <MenuPage
       rank={rank}
@@ -499,6 +517,7 @@ const HudMenu = ({
       onSeason={() => onOpen("season")}
       realms={realm ? { waiting: claimWaiting, onOpen: () => onOpen("realms") } : undefined}
       onSettings={() => onOpen("settings")}
+      guide={guide}
       onExit={() => navigate("/")}
       onClose={onClose}
     />

@@ -78,6 +78,16 @@ import { CAMERA_CONFIG } from "@/three/constants";
 import { type SceneSetupContext } from "@/three/scenes/hexagon-scene";
 import { type RenderVisualProfile } from "@/three/render-profile";
 import { WorldmapPerfSimulation } from "@/three/scenes/worldmap-perf-simulation";
+import type { CameraClaim } from "@/three/scenes/camera-moves";
+import {
+  createSpireVeil,
+  diveThroughSpire,
+  spireCrossing,
+  type SpireDive,
+  type SpireDiveStage,
+} from "@/three/scenes/worldmap-spire-dive";
+import { LAYER_VIEW_REQUEST_EVENT, type LayerViewRequest } from "@/three/scenes/worldmap-layer-request";
+import { useWorldAppearanceStore } from "@/hooks/store/use-world-appearance-store";
 import { LeftView } from "@/types";
 import {
   armyRealmSpire,
@@ -227,7 +237,7 @@ import {
   waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
-  cancelWorldmapChunkRefreshWaiters,
+  renewWorldmapChunkRefreshRuntimeState,
   createWorldmapChunkRefreshRuntimeState,
   requestWorldmapChunkRefreshToken,
   runWorldmapChunkRefreshExecution,
@@ -334,7 +344,7 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { createWorldmapZoomHardeningConfig } from "./worldmap-zoom-hardening";
 import { WorldmapCombatPresentation } from "./worldmap-combat-presentation";
 import { WorldmapHoverLabelRecovery, type HoverLabelRecoveryReason } from "./worldmap-hover-label-recovery";
 import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visibility-health-monitor";
@@ -699,6 +709,9 @@ const contractHexOf = (sceneHex: HexPosition): HexPosition => {
   return { col: contract.x, row: contract.y };
 };
 
+/** How long a dive's veil waits for the map to draw the layer it cut to. */
+const SPIRE_CUT_DRAW_MS = 1_500;
+
 export default class WorldmapScene extends WarpTravel {
   private readonly interactionDebugInstanceId = allocateWorldmapInteractionDebugInstanceId();
   private readonly terrainMetricsSceneId = `game:${configManager.getActiveGameId()}:worldmap:${this.interactionDebugInstanceId}`;
@@ -962,6 +975,16 @@ export default class WorldmapScene extends WarpTravel {
   private armySelectRequestHandler = () => {
     if (this.sceneManager.getCurrentScene() === SceneName.WorldMap) this.selectAwaitedArmy();
   };
+  private layerViewRequestHandler = (event: Event) => {
+    if (this.sceneManager.getCurrentScene() !== SceneName.WorldMap) return;
+    void this.viewThroughSpire(
+      contractHexOf(this.getCameraTargetHex()),
+      (event as CustomEvent<LayerViewRequest>).detail,
+    );
+  };
+  /** The dive under way, if any: the map's exit ends it, as does a newer writer of the camera (a newer view's dive too). */
+  private spireDive: SpireDive | null = null;
+  private readonly spireVeil = createSpireVeil();
 
   /** Shown, the map takes the army selection asked while another view was showing, and an open deploy order. */
   public override activateInputSurface(): void {
@@ -1693,12 +1716,11 @@ export default class WorldmapScene extends WarpTravel {
       isSceneActive: () => !this.isSwitchedOff,
       isCrossing: (from, to) => isArmyCrossing(this.game.store, configManager.getActiveGameId(), from, to),
       setLayer: (alt) => useUIStore.getState().setMapLayer(alt),
-      lookAt: ({ col, row }) => this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "spire"),
+      lookThrough: (from, to) => this.viewThroughSpire(from, to),
       finishMovement: (entityId) => {
         this.completePendingArmyMovementVisuals(entityId);
         this.disposePendingMovementVisualLifecycle(entityId);
       },
-      refresh: () => this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
       select: (entityId) => this.onArmySelection(entityId, this.getArmyOwnerAddress(entityId)),
     }).catch((error) => console.error("[WorldmapScene] Failed to follow army crossing", error));
   }
@@ -1945,6 +1967,7 @@ export default class WorldmapScene extends WarpTravel {
     window.addEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.addEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.addEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    window.addEventListener(LAYER_VIEW_REQUEST_EVENT, this.layerViewRequestHandler);
     window.addEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.addEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests = onChestOpenRequest(({ explorerId, hex }) => {
@@ -2619,8 +2642,66 @@ export default class WorldmapScene extends WarpTravel {
       useUIStore.getState().setMapLayer(!activeMapLayer());
       return;
     }
-    const view = spireEtherealView(this.game.store, spire);
-    this.moveCameraToMapPosition(Position.fromContract({ x: view.col, y: view.row }), "spire");
+    void this.viewThroughSpire(spire, spireEtherealView(this.game.store, spire));
+  }
+
+  /**
+   * The camera passes from one tile to another through a spire, the view left drawn there: Frontier's layers, down the
+   * same map, by a dive through the region's spire (diveThroughSpire); Eternum's other layer, which the follow has
+   * switched already, by a move onto it. Every view switch through a spire (an army's crossing, a double-click on the
+   * spire, the layer chooser) comes here. True once the view lands; false when a newer writer of the camera (a newer
+   * view's dive among them) or the map's exit cut the dive short.
+   */
+  private async viewThroughSpire(
+    from: { col: number; row: number },
+    to: { col: number; row: number },
+  ): Promise<boolean> {
+    const rules = readExpeditionRules(this.game.store, configManager.getActiveGameId());
+    if (!rules) {
+      await this.cutToMapHex(to);
+      return true;
+    }
+    const dive = diveThroughSpire(
+      this.controls,
+      (claim) => this.spireDiveStage(claim),
+      spireCrossing(rules, from, to),
+      useWorldAppearanceStore.getState().reducedMotion,
+    );
+    this.spireDive = dive;
+    try {
+      return await dive.done;
+    } finally {
+      if (this.spireDive === dive) this.spireDive = null;
+    }
+  }
+
+  /** The camera onto a map tile at once, the world drawn around it before it is shown. */
+  private async cutToMapHex({ col, row }: { col: number; row: number }): Promise<void> {
+    this.moveCameraToMapPosition(Position.fromContract({ x: col, y: row }), "spire");
+    this.notifyControlsChanged();
+    await Promise.all([
+      this.refreshVisualTerrainWindowFromCamera(),
+      this.updateVisibleChunks(true, { reason: "default", triggerReason: "spire_crossing" }),
+    ]);
+  }
+
+  /** The dive's camera, written only through its claim: once a newer writer takes the camera, the dive writes nothing. */
+  private spireDiveStage(claim: CameraClaim): SpireDiveStage {
+    return {
+      pose: () => ({ position: this.camera.position.clone(), target: this.controls.target.clone() }),
+      fly: (position, target, seconds, ease) =>
+        new Promise((resolve) => claim.move(() => this.cameraAnimate(position, target, seconds, resolve, { ease }))),
+      place: (position, target) => claim.move(() => this.placeCamera(position, target)),
+      // The map draws the cut as its own camera move, under the veil, which waits for it SPIRE_CUT_DRAW_MS at most.
+      cutTo: (hex) =>
+        Promise.race([
+          new Promise<void>((resolve, reject) => claim.move(() => this.cutToMapHex(hex).then(resolve, reject))),
+          new Promise<void>((resolve) => setTimeout(resolve, SPIRE_CUT_DRAW_MS)),
+        ]),
+      pointOf: (hex) => this.hexSpace.positionForHex(cameraHexOf(Position.fromContract({ x: hex.col, y: hex.row }))),
+      veil: this.spireVeil,
+      hold: () => this.holdCamera(),
+    };
   }
 
   private enterStructureFromSelectedHex(hexCoords: HexPosition) {
@@ -4585,10 +4666,9 @@ export default class WorldmapScene extends WarpTravel {
     if (destination) this.moveCameraToMapPosition(destination, "entry");
   }
 
-  /** The flight owns the camera: no chunk work (terrain pages, composites, refreshes) draws on its way out. */
-  public override setCameraOwnedByFlight(owned: boolean): void {
-    super.setCameraOwnedByFlight(owned);
-    this.chunkWorkQueue.setHeld(owned);
+  /** A flight holds the camera: no chunk work (terrain pages, composites, refreshes) draws on its way. */
+  protected override onCameraHeld(held: boolean): void {
+    this.chunkWorkQueue.setHeld(held);
   }
 
   private reportAmbientConvergenceError(error: unknown): void {
@@ -4738,26 +4818,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resetZoomHardeningRuntimeState(): void {
-    cancelWorldmapChunkRefreshWaiters(this.chunkRefreshRuntimeState);
-    const resetState = resetWorldmapZoomHardeningRuntimeState(
-      {
-        chunkRefreshTimeout: this.chunkRefreshTimeout,
-        chunkRefreshRequestToken: this.chunkRefreshRequestToken,
-        chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
-        chunkRefreshRunning: this.chunkRefreshRunning,
-        chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
-        pendingChunkRefreshForce: this.pendingChunkRefreshForce,
-      },
-      (timeoutId) => clearTimeout(timeoutId),
+    this.chunkRefreshRuntimeState = renewWorldmapChunkRefreshRuntimeState(this.chunkRefreshRuntimeState, (timeoutId) =>
+      clearTimeout(timeoutId),
     );
-
-    this.chunkRefreshTimeout = resetState.chunkRefreshTimeout;
-    this.chunkRefreshDeadlineAtMs = null;
-    this.chunkRefreshRequestToken = resetState.chunkRefreshRequestToken;
-    this.chunkRefreshAppliedToken = resetState.chunkRefreshAppliedToken;
-    this.chunkRefreshRunning = resetState.chunkRefreshRunning;
-    this.chunkRefreshRerunRequested = resetState.chunkRefreshRerunRequested;
-    this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
+    this.pendingChunkRefreshForce = false;
     this.pendingChunkRefreshReasons.clear();
     this.pendingChunkRefreshUiReason = "default";
     this.terrainVisibilityHealthMonitor.reset();
@@ -4831,6 +4895,8 @@ export default class WorldmapScene extends WarpTravel {
     // A reward's chest staged mid-moment ends with the map, and the moment beside it with it.
     this.chestManager.endScreenCentrePresentation();
     this.invalidateWorldmapSwitchOffTransitions();
+    // A dive through a spire ends with the map: it writes the shared camera and canvas no more.
+    this.spireDive?.cancel();
     this.clearWorldmapLoadingStateForSwitchOff();
     this.resetWorldmapInteractionForSwitchOff(nextSceneName);
     this.clearWorldmapVisibilityRuntimeForSwitchOff();
@@ -8772,6 +8838,7 @@ export default class WorldmapScene extends WarpTravel {
     window.removeEventListener("minimapCameraMove", this.minimapCameraMoveHandler as EventListener);
     window.removeEventListener("minimapZoom", this.minimapZoomHandler as EventListener);
     window.removeEventListener(ARMY_SELECT_REQUEST_EVENT, this.armySelectRequestHandler);
+    window.removeEventListener(LAYER_VIEW_REQUEST_EVENT, this.layerViewRequestHandler);
     window.removeEventListener(ORDER_REQUEST_EVENT, this.orderRequestHandler);
     window.removeEventListener(DEPLOY_ON_MAP_EVENT, this.deployOnMapHandler);
     this.stopChestOpenRequests?.();

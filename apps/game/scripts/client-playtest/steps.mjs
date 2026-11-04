@@ -1266,7 +1266,10 @@ function inScene(scene) {
 const isIn = (seen, place, scene) =>
   seen.scene === scene &&
   seen.rendered === scene &&
-  [place, PLACE_TABS[place]].some((name) => Boolean(name && seen.place?.startsWith(name)));
+  [place, PLACE_TABS[place], place === "Map" && ETHEREAL].some((name) => Boolean(name && seen.place?.startsWith(name)));
+
+/** A desktop's World tab names the Ethereal layer the map shows, once the realm has one: the map still. */
+const ETHEREAL = "Ethereal";
 
 /**
  * A place as the top bar's Realm / World names it: a desktop's HUD, every mode's, moves between the map and the realm
@@ -1275,16 +1278,25 @@ const isIn = (seen, place, scene) =>
  */
 const PLACE_TABS = { Map: "World", Realm: "Realm" };
 
-/** Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a desktop). */
+/**
+ * Presses the place bar's switch where there is one (a phone, as it names the place), else the top bar's tab (a
+ * desktop). On the map of a realm with an Ethereal layer, where the switch names the layer shown, it chooses the place
+ * from the list of views the switch opens.
+ */
 function pressPlace(browser, place) {
-  for (const press of [() => browser.click(place), () => browser.click(PLACE_TABS[place])]) {
+  const presses = [
+    () => browser.click(place),
+    () => browser.click(PLACE_TABS[place]),
+    () => browser.clickTab(PLACE_TABS[place]),
+  ];
+  for (const press of presses) {
     try {
       return press();
     } catch {
       // Not this button: the next way there.
     }
   }
-  browser.clickTab(PLACE_TABS[place]);
+  browser.chooseView(PLACE_TABS[place]);
 }
 
 /** Where the HUD's standing parts sit on the map at rest. */
@@ -2408,8 +2420,8 @@ const LAB_SPIRE_STEPS = [
 
 /**
  * The map's share of the page on an odd device (owner, 4 November: "on some weird mobile devices with weird shapes the
- * map is like 15%"), on the lab's sites game: the map at rest, the army picked, Next up opened over it, its panel, a
- * site's card beside it, Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
+ * map is like 15%"), on the lab's sites game: the map at rest, the army picked, its panel, a site's card beside it,
+ * Chat and the Menu. Each step reads the share as a player sees it (MAP_SHARE_EXPRESSION) and which HUD part takes
  * the rest, and fails under MAP_LEAST_SHARE (Chat, which fills the band, excepted); a step that could not reach its
  * state is blocked, never read as the map's. Run it at each device's size with --viewport.
  */
@@ -2420,21 +2432,6 @@ const HUD_DEVICE_STEPS = [
     play: async (context) => ({ ...(await pickTheSpireArmy(context)), ...readTheMapShare(context) }),
     settleMs: 1_500,
     verify: (context) => (context.played.army ? mapShareRead(context) : blocked("no army picked", context.played)),
-  },
-  {
-    // Left open: the step's still is taken after its play, so it shows the card open, as the share was read; the
-    // panel's step folds it first.
-    name: "next-up",
-    play: async ({ browser }) => {
-      const pill = browser.read(buttonLabelled("^Next up: "));
-      if (!pill) return { opened: false, ...readTheMapShare({ browser }) };
-      browser.tap(pill.offset);
-      await sleep(HOVER_SETTLE_MS);
-      return { opened: browser.read(buttonLabelled("^Fold Next up$")) !== null, ...readTheMapShare({ browser }) };
-    },
-    settleMs: 0,
-    verify: (context) =>
-      context.played.opened ? mapShareRead(context) : blocked("Next up did not open", context.played),
   },
   {
     name: "army-panel",
@@ -2489,16 +2486,8 @@ function mapShareReadUnheld({ played }) {
   return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 
-/**
- * The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row), Next up
- * folded first if the step before left it open (its band steps aside while it is).
- */
+/** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
 async function openThePickedArmysPanel(browser) {
-  const fold = browser.read(buttonLabelled("^Fold Next up$"));
-  if (fold) {
-    browser.tap(fold.offset);
-    await sleep(HOVER_SETTLE_MS);
-  }
   const open = browser.read(SHEET_NAME);
   if (/^Army \d+$/.test(open ?? "")) return open;
   const details = browser.read(buttonLabelled("^Army \\d+(: details)?$"));
@@ -2787,6 +2776,87 @@ function viewWentIntoTheEtherealBelow({ played, seen }) {
     return failed(`the camera looks at ${JSON.stringify(played.after)}, not Ethereal I below the spire`, played);
   return completed(played);
 }
+
+/**
+ * The map's layers as a player switches them (the lab's spire game, Ethereal I and II researched; owner, 4 November
+ * 2026, desktop design 1 and phone B): the switch that names the layer shown opens the world and each Ethereal layer (a
+ * phone's Realm too); Ethereal II takes the camera two regions down at the same spot, World back up, and from Ethereal II
+ * the list takes a phone to its realm and the World tab or switch back to the map.
+ */
+const LAB_LAYERS_STEPS = [
+  { name: "enter-on-map", settleMs: 3_000, verify: inScene("map") },
+  { name: "into-ethereal-ii", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "back-to-world", play: chooseLayer("World"), settleMs: 0, verify: cameraInLayer(0) },
+  { name: "ethereal-ii-again", play: chooseLayer("Ethereal II"), settleMs: 0, verify: cameraInLayer(2) },
+  { name: "open-realm", play: goTo("Realm", "hex"), settleMs: 3_000, verify: inScene("hex") },
+  { name: "open-map", play: goTo("Map", "map"), settleMs: 3_000, verify: inScene("map") },
+];
+
+/** Opens the list of views, reads its choices and the switch's word, chooses `word`, and reads where the camera goes. */
+function chooseLayer(word) {
+  return async ({ browser }) => {
+    const before = browser.read(MAP_CAMERA);
+    browser.openViews();
+    await sleep(LIST_SETTLE_MS);
+    const choices = browser.viewChoices();
+    browser.chooseView(word);
+    const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
+    await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
+    // The dive passes through the spire on its way: the camera counts once it has come to rest.
+    const after = await cameraAtRest(browser);
+    return { word, choices, before, after, switchWord: browser.read(VIEW_SWITCH_WORD) };
+  };
+}
+
+/** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
+async function cameraAtRest(browser) {
+  let last = browser.read(MAP_CAMERA);
+  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
+    await sleep(LIST_SETTLE_MS);
+    const now = browser.read(MAP_CAMERA);
+    if (now && last && hexesApart(now, last) === 0) return now;
+    last = now;
+  }
+  return last;
+}
+
+/** What the switch that opens the views says: the view shown. */
+const VIEW_SWITCH_WORD = `JSON.stringify(document.querySelector('nav[aria-label="Places"] [data-switch], [aria-label="Map view"] [role="tab"][aria-selected="true"]')?.textContent.trim() ?? null)`;
+
+/** The views a lab realm with Ethereal I and II lists, and the region's rows (Frontier's spacing). */
+const LAB_LAYERS = ["World", "Ethereal I", "Ethereal II"];
+const REGION_ROWS = 100;
+
+/**
+ * The camera moved by regions only, to the same spot of `layer`, and the switch names that layer; the list it opened
+ * held the world and each Ethereal layer, a phone's with its Realm first, the layer it left checked.
+ */
+function cameraInLayer(layer) {
+  return ({ played, seen }) => {
+    const scene = inScene("map")({ seen });
+    if (scene.status !== "completed") return failed(`choosing ${played.word} left the map: ${scene.reason}`, played);
+    const words = played.choices.map((choice) => choice.word);
+    const listed = words[0] === "Realm" ? words.slice(1) : words;
+    if (JSON.stringify(listed) !== JSON.stringify(LAB_LAYERS))
+      return failed(`the views listed are ${JSON.stringify(words)}, not ${JSON.stringify(LAB_LAYERS)}`, played);
+    if (played.choices.filter((choice) => choice.shown).length !== 1)
+      return failed("the list did not check exactly the view shown", played);
+    const { before, after } = played;
+    if (before === null || after === null) return failed("the camera was not read", played);
+    const rows = after.row - before.row;
+    if (after.col !== before.col || rows % REGION_ROWS !== 0 || Math.floor(after.row / REGION_ROWS) % 4 !== layer)
+      return failed(
+        `the camera went ${JSON.stringify(before)} to ${JSON.stringify(after)}, not ${played.word}'s same spot`,
+        played,
+      );
+    if (played.switchWord !== played.word)
+      return failed(`the switch says ${played.switchWord}, not ${played.word}`, played);
+    return completed(played);
+  };
+}
+
+/** A list opens, and a choice closes it, in this long. */
+const LIST_SETTLE_MS = 400;
 
 /** How long a double-click's view takes to settle: a camera move, or nothing at all. */
 const DOUBLE_CLICK_SETTLE_MS = 2_000;
@@ -4621,6 +4691,7 @@ export const STEP_SETS = {
   "lab-devcon-art": { game: { ...LAB_SPIRE, lab: "devcon-0" }, steps: devconArtSteps },
   "lab-devcon-season": { game: { ...LAB_SPIRE, lab: "devcon-season" }, steps: [devconSeasonStep] },
   "lab-spire": { game: LAB_SPIRE, steps: LAB_SPIRE_STEPS },
+  "lab-layers": { game: LAB_SPIRE, steps: LAB_LAYERS_STEPS },
   ...Object.fromEntries(
     Object.keys(depthLooks).map((depth) => [
       `lab-ethereal-${depth}`,

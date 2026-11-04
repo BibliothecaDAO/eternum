@@ -165,15 +165,22 @@ const isRevokedDevice = (db: D1Database, realmsId: string, deviceKey: string) =>
         .first()) !== null,
   );
 
-/** The session that asked for a key's approval is that device's session: removing the key ends it. */
+/**
+ * The session that asked for a key's approval is that device's session: removing the key ends it. The account keeps
+ * the key in "account_devices" after that session ends, for the referral's one-person check.
+ */
 const recordDeviceSession = (db: D1Database, realmsId: string, deviceKey: string, sessionId: string) =>
   Effect.promise(() =>
-    db
-      .prepare(
-        'INSERT INTO "device_sessions" ("realmsId", "deviceKey", "sessionId") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
-      )
-      .bind(realmsId, canonicalFelt(deviceKey), sessionId)
-      .run(),
+    db.batch([
+      db
+        .prepare(
+          'INSERT INTO "device_sessions" ("realmsId", "deviceKey", "sessionId") VALUES (?, ?, ?) ON CONFLICT DO NOTHING',
+        )
+        .bind(realmsId, canonicalFelt(deviceKey), sessionId),
+      db
+        .prepare('INSERT INTO "account_devices" ("realmsId", "deviceKey") VALUES (?, ?) ON CONFLICT DO NOTHING')
+        .bind(realmsId, canonicalFelt(deviceKey)),
+    ]),
   );
 
 /**

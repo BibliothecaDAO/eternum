@@ -90,7 +90,7 @@ export const NextUpView = ({
         </span>
       </button>
     );
-  const panel = (
+  return (
     <HudPanel
       label="Next up"
       title="Next up"
@@ -121,8 +121,6 @@ export const NextUpView = ({
       )}
     </HudPanel>
   );
-  // Unfolded on a phone, it stands over the foot's action row and dock as a sheet does, and they step aside (HudBands).
-  return compact ? <div data-next-up-open>{panel}</div> : panel;
 };
 
 /** A step's words in one line: its own line, or a level-up's realm. */
