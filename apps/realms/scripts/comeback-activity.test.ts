@@ -19,6 +19,8 @@ const CALENDAR = {
 };
 const NOW = 1793800000;
 const SINCE = NOW - 24 * 60 * 60;
+/** The visit record (user.lastSeenAt) began long before the window. */
+const RECORDED = 0;
 const hex = (value: number) => `0x${value.toString(16)}`;
 const today = dayOf(CALENDAR, NOW)!.index;
 
@@ -124,7 +126,9 @@ it("emails the players still away and leaves out one who claims between two emai
     account("0x1d", [CLAIMER]),
   ];
   const deliveries = accounts.flatMap((a) =>
-    variantOf(a, SINCE) ? [{ ...a, variant: variantOf(a, SINCE)! } as Delivery & { addresses: string[] }] : [],
+    variantOf(a, SINCE, RECORDED)
+      ? [{ ...a, variant: variantOf(a, SINCE, RECORDED)! } as Delivery & { addresses: string[] }]
+      : [],
   );
   expect(deliveries.map((d) => d.realmsId)).toEqual(["0x1a", "0x1b", "0x1c"]);
 
@@ -150,15 +154,15 @@ it("emails the players still away and leaves out one who claims between two emai
   expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
 });
 
-it("leaves out a player who only researched, by the session their visit renewed, before and between emails", async () => {
-  // Research writes no history event and no claim: only the identity session shows these players came back.
+it("leaves out a player who only researched, by their recorded visit, before and between emails", async () => {
+  // Research writes no history event and no claim: only the recorded visit (user.lastSeenAt) shows they came back.
   const activity = activityNow();
   activity.noteHistory([
     story(100, "0xa", SINCE - 7200),
     story(101, "0xb", SINCE - 7200),
     story(102, "0xc", SINCE - 7200),
   ]);
-  const sessions = new Map([
+  const visits = new Map([
     ["0x1a", SINCE - 3 * 24 * 60 * 60],
     ["0x1b", SINCE - 3 * 24 * 60 * 60],
     ["0x1c", SINCE - 3 * 24 * 60 * 60],
@@ -172,7 +176,7 @@ it("leaves out a player who only researched, by the session their visit renewed,
     playtester: false,
     inSeason: true,
     lastAction: activity.latestOf(addresses),
-    lastVisit: sessions.get(realmsId)!,
+    lastVisit: visits.get(realmsId)!,
     optedOut: false,
   });
   const accounts = [
@@ -182,20 +186,23 @@ it("leaves out a player who only researched, by the session their visit renewed,
     account("0x1d", ["0xd"]),
   ];
   const deliveries = accounts.flatMap((a) =>
-    variantOf(a, SINCE) ? [{ ...a, variant: variantOf(a, SINCE)! } as Delivery & { addresses: string[] }] : [],
+    variantOf(a, SINCE, RECORDED)
+      ? [{ ...a, variant: variantOf(a, SINCE, RECORDED)! } as Delivery & { addresses: string[] }]
+      : [],
   );
   expect(deliveries.map((d) => d.realmsId)).toEqual(["0x1a", "0x1b", "0x1c"]);
 
   const sent: string[] = [];
   const counts = await sendCampaign({
     deliveries,
-    // After the first email, 0x1b's player opens the game: the session renews, and no chain event follows.
+    // After the first email, 0x1b's player opens the game: the visit is recorded, and no chain event follows.
     stillAway: async (delivery) => {
-      if (sent.length === 1) sessions.set("0x1b", NOW);
+      if (sent.length === 1) visits.set("0x1b", NOW);
       return stillFits(
         delivery.variant,
-        { lastAction: activity.latestOf(delivery.addresses), lastVisit: sessions.get(delivery.realmsId)! },
+        { lastAction: activity.latestOf(delivery.addresses), lastVisit: visits.get(delivery.realmsId)! },
         SINCE,
+        RECORDED,
       );
     },
     reserve: async () => "reserved",
@@ -213,7 +220,7 @@ it("leaves out a player who only researched, by the session their visit renewed,
 
 it("keeps emailing a ticket holder who signed up and visited without founding, until they found", () => {
   const signedUpToday = { lastAction: 0, lastVisit: NOW - 600 };
-  expect(stillFits("N", signedUpToday, SINCE)).toBe(true);
-  expect(stillFits("N", { ...signedUpToday, lastAction: NOW - 60 }, SINCE)).toBe(false);
-  expect(stillFits("D", signedUpToday, SINCE)).toBe(false);
+  expect(stillFits("N", signedUpToday, SINCE, RECORDED)).toBe(true);
+  expect(stillFits("N", { ...signedUpToday, lastAction: NOW - 60 }, SINCE, RECORDED)).toBe(false);
+  expect(stillFits("D", signedUpToday, SINCE, RECORDED)).toBe(false);
 });

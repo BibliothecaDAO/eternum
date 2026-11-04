@@ -1,4 +1,4 @@
-import { SESSION_RENEWAL_SECONDS } from "@realms-world/identity";
+import { VISIT_RECORD_SECONDS } from "@realms-world/identity";
 import { dayOf, type SeasonCalendar } from "../../../packages/core/src/utils/days";
 
 /**
@@ -16,7 +16,7 @@ export interface Account {
   inSeason: boolean;
   /** The account's latest confirmed Season 0 action, in seconds; 0 for none. */
   lastAction: number;
-  /** When the account's newest session was created or last renewed, in seconds; 0 for none. */
+  /** When the account last opened the app (user.lastSeenAt), in seconds; 0 for none recorded. */
   lastVisit: number;
   /** The account followed a news email's stop link. */
   optedOut: boolean;
@@ -24,12 +24,21 @@ export interface Account {
 
 /**
  * Whether the player has stayed away since `activeSince` (24 hours before the send). Coming back means opening the
- * game: the identity service records it by creating or renewing the session, and renews it on the first use a day or
- * more after the last, so a visit since `activeSince` leaves a renewal no older than a day before it. A confirmed
- * action counts too, for a player who acts without opening the app again (a tab kept open, a bot device).
+ * game: the identity service writes user.lastSeenAt when the app reads its session, at most once per
+ * VISIT_RECORD_SECONDS, and keeps it when the player signs out. So a visit since `activeSince` leaves a record no older
+ * than VISIT_RECORD_SECONDS before it. Before that record began (`visitsSince`, when migration 0026 ran) a visit is
+ * unknown, so nobody counts as away over a window reaching back that far. A confirmed action counts too, for a player
+ * who acts without the app reading the session again (a tab kept open, a bot device).
  */
-export const isAway = (account: Pick<Account, "lastAction" | "lastVisit">, activeSince: number): boolean =>
-  account.lastVisit < activeSince - SESSION_RENEWAL_SECONDS && account.lastAction < activeSince;
+export function isAway(
+  account: Pick<Account, "lastAction" | "lastVisit">,
+  activeSince: number,
+  visitsSince: number | null,
+): boolean {
+  const window = activeSince - VISIT_RECORD_SECONDS;
+  if (visitsSince === null || visitsSince > window) return false;
+  return account.lastVisit < window && account.lastAction < activeSince;
+}
 
 /**
  * Whether an account still fits its variant, from its latest signals. N asks for a realm not yet founded: signing up
@@ -40,7 +49,8 @@ export const stillFits = (
   variant: VariantKey,
   account: Pick<Account, "lastAction" | "lastVisit">,
   activeSince: number,
-): boolean => (variant === "N" ? account.lastAction < activeSince : isAway(account, activeSince));
+  visitsSince: number | null,
+): boolean => (variant === "N" ? account.lastAction < activeSince : isAway(account, activeSince, visitsSince));
 
 /**
  * Each account in at most one variant, D before N before P; none for an account that stopped news emails or no longer
@@ -49,11 +59,23 @@ export const stillFits = (
  * - N: holds a Devcon ticket, never founded.
  * - P: owns an address on the playtest's final board, holds no ticket.
  */
-export function variantOf(account: Account, activeSince: number): VariantKey | null {
+export function variantOf(account: Account, activeSince: number, visitsSince: number | null): VariantKey | null {
   if (account.optedOut) return null;
   const variant: VariantKey | null = account.ticket ? (account.inSeason ? "D" : "N") : account.playtester ? "P" : null;
-  return variant && stillFits(variant, account, activeSince) ? variant : null;
+  return variant && stillFits(variant, account, activeSince, visitsSince) ? variant : null;
 }
+
+/** The visit record's reads (migration 0026): when it began, and one account's last visit, both in seconds. */
+export const visitRecord = {
+  began: `SELECT applied_at FROM d1_migrations WHERE name = '0026_last_seen.sql'`,
+  /** d1_migrations writes SQLite's CURRENT_TIMESTAMP: UTC, with no zone. */
+  beganAt: (rows: readonly { applied_at?: unknown }[]) =>
+    typeof rows[0]?.applied_at === "string"
+      ? Math.floor(Date.parse(`${rows[0].applied_at.replace(" ", "T")}Z`) / 1000)
+      : null,
+  lastVisit: (realmsId: string) => `SELECT lastSeenAt FROM "user" WHERE realmsId = '${checkedId(realmsId)}'`,
+  seconds: (lastSeenAt: unknown) => (typeof lastSeenAt === "number" ? Math.floor(lastSeenAt / 1000) : 0),
+};
 
 /** One confirmed event as Herald's history serves it (newest first). */
 export interface HistoryEvent {
@@ -234,8 +256,6 @@ export const sendRecord = {
     `UPDATE news_email_sends SET status = 'sent', resend_id = ${id !== null && /^[0-9a-f-]+$/i.test(id) ? `'${id}'` : "NULL"}, sent_at = ${now} WHERE campaign = '${campaign}' AND realmsId = '${checkedId(delivery.realmsId)}'`,
   release: (campaign: string, delivery: Delivery) =>
     `DELETE FROM news_email_sends WHERE campaign = '${campaign}' AND realmsId = '${checkedId(delivery.realmsId)}' AND status = 'reserved'`,
-  /** The id as a statement may carry it, for the sender's other reads of one account. */
-  checkedAccount: (realmsId: string) => checkedId(realmsId),
   optedOut: (delivery: Delivery) =>
     `SELECT newsEmailOptOutAt FROM "user" WHERE realmsId = '${checkedId(delivery.realmsId)}'`,
 };

@@ -10,6 +10,8 @@ import {
 
 /** 24 hours before the send: a player who acted after it has come back. */
 const SINCE = 1_000_000;
+/** The visit record began long before the window. */
+const RECORDED = 0;
 const account = (overrides: Partial<Account>): Account => ({
   realmsId: "0x1",
   discord: false,
@@ -24,22 +26,26 @@ const account = (overrides: Partial<Account>): Account => ({
 
 it("picks each account's variant, and none for an account that stopped news emails", () => {
   const idleFounder = account({ ticket: "regular", inSeason: true, lastAction: SINCE - 1 });
-  expect(variantOf(idleFounder, SINCE)).toBe("D");
-  expect(variantOf({ ...idleFounder, lastAction: SINCE + 5 }, SINCE)).toBeNull();
-  expect(variantOf(account({ ticket: "golden" }), SINCE)).toBe("N");
-  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE - 1 }), SINCE)).toBe("P");
-  expect(variantOf(account({ playtester: true }), SINCE)).toBe("P");
-  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE + 5 }), SINCE)).toBeNull();
-  expect(variantOf(account({}), SINCE)).toBeNull();
-  // A visit the session records leaves the player out, research-only or not: renewed or created within the last two
-  // days (a day's window plus the day a renewal can lag behind a visit).
-  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 }, SINCE)).toBeNull();
-  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 24 * 60 * 60 + 60 }, SINCE)).toBeNull();
-  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 24 * 60 * 60 - 60 }, SINCE)).toBe("D");
+  expect(variantOf(idleFounder, SINCE, RECORDED)).toBe("D");
+  expect(variantOf({ ...idleFounder, lastAction: SINCE + 5 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf(account({ ticket: "golden" }), SINCE, RECORDED)).toBe("N");
+  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE - 1 }), SINCE, RECORDED)).toBe("P");
+  expect(variantOf(account({ playtester: true }), SINCE, RECORDED)).toBe("P");
+  expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE + 5 }), SINCE, RECORDED)).toBeNull();
+  expect(variantOf(account({}), SINCE, RECORDED)).toBeNull();
+  // A recorded visit leaves the player out, research-only or not: within the window, or within the hour the record
+  // can lag behind a visit.
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE + 60 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 * 60 + 60 }, SINCE, RECORDED)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 * 60 - 60 }, SINCE, RECORDED)).toBe("D");
+  // Before the visit record began, a visit is unknown: nobody is away over a window reaching back that far.
+  expect(variantOf(idleFounder, SINCE, SINCE - 60)).toBeNull();
+  expect(variantOf(idleFounder, SINCE, null)).toBeNull();
+  expect(variantOf(account({ ticket: "golden" }), SINCE, null)).toBe("N");
   // N asks for a realm not yet founded: a visit since signing up does not found it.
-  expect(variantOf(account({ ticket: "golden", lastVisit: SINCE + 5 }), SINCE)).toBe("N");
+  expect(variantOf(account({ ticket: "golden", lastVisit: SINCE + 5 }), SINCE, RECORDED)).toBe("N");
   for (const stopped of [{ ...idleFounder }, account({ ticket: "golden" }), account({ playtester: true })])
-    expect(variantOf({ ...stopped, optedOut: true }, SINCE)).toBeNull();
+    expect(variantOf({ ...stopped, optedOut: true }, SINCE, RECORDED)).toBeNull();
 });
 
 /**

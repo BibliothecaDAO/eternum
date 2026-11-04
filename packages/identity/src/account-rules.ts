@@ -15,6 +15,12 @@ export const SIGN_IN_CODE_SECONDS = 10 * 60;
 export const SESSION_SECONDS = 30 * 24 * 60 * 60;
 export const SESSION_RENEWAL_SECONDS = 24 * 60 * 60;
 
+/**
+ * How often the identity service writes an account's last visit (user.lastSeenAt) when the app reads its session: at
+ * most once this long, so a visit is known to within it. Unlike a session, the record outlives signing out.
+ */
+export const VISIT_RECORD_SECONDS = 60 * 60;
+
 /** The ink portraits a player can wear, by the id their account stores. */
 export const IDENTITY_PORTRAITS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] as const;
 
