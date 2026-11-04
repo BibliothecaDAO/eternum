@@ -5,7 +5,9 @@ import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
 
-import { HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
+import type { EtherealLayer } from "@bibliothecadao/eternum";
+
+import { EtherealMark, HomecomingReturn, SlotRing, StaminaReading, xpLine, type XpGoal } from "./army-token";
 
 /**
  * One army on a desktop's list: its painting with its number; its name with its XP beside it (what it buys next on
@@ -23,12 +25,15 @@ export const ArmyRow = ({
   xp,
   xpGoal,
   canSpendSkillPoint,
+  ethereal,
   selected,
   flyTarget,
   onPick,
 }: {
   label: string;
   number: number | undefined;
+  /** The Ethereal layer it stands in; none on the surface. */
+  ethereal?: EtherealLayer;
   art: IconMeaning | undefined;
   troops: number | undefined;
   /** In the day's last hour, the troops its Homecoming sends home when the day ends; none otherwise. */
@@ -52,6 +57,7 @@ export const ArmyRow = ({
             {number}
           </span>
         )}
+        <EtherealMark layer={ethereal} />
       </span>
     }
     label={label}

@@ -16,7 +16,6 @@ import {
   configManager,
   entityMapPosition,
   expeditionDayEndsAt,
-  expeditionDepth,
   expeditionSpires,
   isAtExpeditionSpire,
   isViewerOwner,
@@ -129,7 +128,7 @@ const OwnSpire = ({ spire, onResearch }: { spire: Spire; onResearch: () => void 
       ? armies.find((army) => isAtExpeditionSpire(spire, at(army)))
       : armies.find((army) => army.explorerId === selectedId);
   const position = actor && at(actor);
-  const depthNow = position ? expeditionDepth(rules, position) : 0;
+  const depthNow = actor?.ethereal ?? 0;
   const beside = position !== undefined && depthNow === 0 && isAtExpeditionSpire(spire, position);
   const approach = useOrderAt(useApproachTile(spire, actor !== undefined && depthNow === 0 && !beside));
 

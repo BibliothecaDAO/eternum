@@ -37,6 +37,7 @@ const render = (tiers: Record<string, number>) => {
           troops: 100,
           canSpendSkillPoint: false,
           tiers: tiers as never,
+          ethereal: undefined,
         }}
         refill={null}
         onDetails={() => undefined}

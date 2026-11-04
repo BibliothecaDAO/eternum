@@ -90,6 +90,23 @@ const expeditionBand = (rules: ExpeditionRules, coord: { y: number }): number =>
 export const expeditionDepth = (rules: ExpeditionRules, coord: { y: number }): number =>
   expeditionBand(rules, coord) % 4;
 
+/** An Ethereal layer, I to III: a Frontier depth below the day's surface. */
+export type EtherealLayer = 1 | 2 | 3;
+
+/**
+ * The Ethereal layer an army stands in, by the same depth the terrain and the spire read; none on the day's surface or
+ * in a game without expeditions.
+ */
+export const armyEtherealLayer = (
+  store: Pick<NativeFactStore, "get" | "entityOccupancy">,
+  gameId: number,
+  explorerId: number | bigint,
+): EtherealLayer | undefined => {
+  const rules = readExpeditionRules(store, gameId);
+  const layer = rules ? expeditionDepth(rules, entityMapPosition(store, gameId, explorerId)) : 0;
+  return layer === 0 ? undefined : (layer as EtherealLayer);
+};
+
 /**
  * Whether a tile lies in the Ethereal layer, which the terrain draws with its ethereal surface: Eternum's other map
  * layer, or a Frontier depth below the day's surface (Ethereal I to III, a region down the same map).

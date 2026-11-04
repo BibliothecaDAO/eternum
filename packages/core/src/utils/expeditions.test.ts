@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { ResourcesIds, StructureType } from "@bibliothecadao/types";
 import * as timestamp from "./timestamp";
 import {
+  armyEtherealLayer,
   dayOf,
   entityHomeNamespace,
   seasonDay,
@@ -133,6 +134,14 @@ describe("liveHomeArmies", () => {
     const store = armiesStore({ SliceRules: { day_unit_seconds: 0 } }, [army(1, 5), army(2, 900), army(3, 7, 0n)]);
     atFloor(86400 * 9);
     expect(liveHomeArmies(store as never, 42, 7).map(({ explorer_id }) => explorer_id)).toEqual([1, 2]);
+  });
+
+  it("names the Ethereal layer each army stands in, and none on the surface or without expeditions", () => {
+    // Day 0: the surface is rows 0..9, Ethereal I rows 10..19, Ethereal III rows 30..39.
+    const store = armiesStore(expeditionRules, [army(1, 6), army(2, 15), army(3, 35)]);
+    expect([1, 2, 3].map((id) => armyEtherealLayer(store as never, 7, id))).toEqual([undefined, 1, 3]);
+    const plain = armiesStore({ SliceRules: { day_unit_seconds: 0 } }, [army(2, 15)]);
+    expect(armyEtherealLayer(plain as never, 7, 2)).toBeUndefined();
   });
 
   describe("a look into a spire's Ethereal layer", () => {
