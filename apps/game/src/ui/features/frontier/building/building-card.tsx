@@ -2,10 +2,17 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { resourceMeaning } from "@/ui/design-system/icon-meaning";
 import { Icon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudCost, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudCost, HudRanked, HudSheet, HudTier, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { costLine, type Price } from "@/ui/design-system/kit/price-faces";
 import type { Fix, Refusal } from "@/ui/design-system/kit/refusal";
-import { BUILDING_FIGURES, RESEARCH, RESEARCH_TREE, RESEARCHING, type Rank } from "@/ui/design-system/kit/words";
+import {
+  BUILDING_FIGURES,
+  RESEARCH,
+  RESEARCH_TREE,
+  RESEARCHING,
+  type Rank,
+  type RankedWords,
+} from "@/ui/design-system/kit/words";
 import { toast } from "@/ui/features/event-feed/notify";
 import { DestroyBuildingButton } from "@/ui/features/world/components/bottom-right-panel/destroy-building-button";
 import { requireActiveGameClient } from "@/sync/active-game-client";
@@ -209,7 +216,7 @@ const ResearchFoot = ({
   onResearch,
 }: {
   node: TreeNode;
-  verb: string;
+  verb: RankedWords | string;
   sending: boolean;
   fix: (need: Need) => Fix | undefined;
   onResearch: () => void;
@@ -220,7 +227,7 @@ const ResearchFoot = ({
   return (
     <HudWindowFoot note={<HudCost line={costLine(prices)} />}>
       <HudButton kind="primary" busy={sending ? RESEARCHING : undefined} onClick={onResearch}>
-        {verb}
+        <HudRanked words={verb} />
       </HudButton>
     </HudWindowFoot>
   );

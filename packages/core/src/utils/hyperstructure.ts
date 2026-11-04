@@ -1,5 +1,5 @@
 import { safeInteger } from "./safe-integer";
-import { type ID, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
+import { type ID, formatRate, ResourcesIds, StructureType, RESOURCE_PRECISION } from "@bibliothecadao/types";
 import type { NativeFactStore } from "../client/native-fact-store";
 import type { NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { configManager } from "../managers";
@@ -99,8 +99,9 @@ const stepsFrom = ({ x, y }: { x: number; y: number }, direction: number, distan
   return { x: stepped + (row + (row % 2)) / 2, y: row };
 };
 
-/** The words after a Hyperstructure's rate, the same on its map label and its panel. */
-export const hyperstructureRateUnit = (taken: boolean): string => (taken ? "points/s" : "points/s once taken");
+/** A Hyperstructure's rate in words, a minute's as every rate is: "points +120/min", or "points +120/min once taken". */
+export const hyperstructureRateWords = ({ pointsPerSecond, taken }: HyperstructureRate): string =>
+  `points ${formatRate(pointsPerSecond)}${taken ? "" : " once taken"}`;
 
 export const getHyperstructureProgress = (hyperstructureId: number, store: NativeFactStore) => {
   const game = configManager.getActiveGameId();

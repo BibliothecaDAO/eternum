@@ -37,11 +37,11 @@ export const VOICE_RULES: readonly VoiceRule[] = [
     forbidden: /\b(?:[Qq]ueued?|[Qq]ueue)\b/,
   },
   {
-    rule: "Rates per second or minute",
-    instead: "a second from one a second, a minute below (formatRate), never an hour",
-    bad: "+302 an hour · 44.6K/h",
-    good: "+5/min · +12/s",
-    forbidden: /\/\s?hr?\b|\bper hour\b|\d an hour\b/,
+    rule: "Rates per minute",
+    instead: "always a minute's (formatRate), never a second's or an hour's",
+    bad: "+1.1/s · 2 points/s · FP/sec · then per second",
+    good: "+66/min · points +120/min · FP rate · then per minute",
+    forbidden: /\/\s?hr?\b|\/\s?s(?:ec)?\b|\bper (?:hour|second)\b|\d an hour\b/,
   },
   {
     rule: "A rank by its name",

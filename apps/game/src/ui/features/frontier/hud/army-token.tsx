@@ -2,8 +2,8 @@ import { formatAmount, formatCharge, formatExact, formatGain } from "@bibliothec
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 
-import { HudStamina, type StaminaBar } from "@/ui/design-system/kit/hud-elements";
-import { comesHomeAtDayEnd, type Rank, tierNumeral, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
+import { HudStamina, type StaminaBar, rankedTip } from "@/ui/design-system/kit/hud-elements";
+import { comesHomeAtDayEnd, type RankedWords, TROOPS, XP, xpTowardTip } from "@/ui/design-system/kit/words";
 
 // A token grows past its height only for the last hour's Homecoming line. Its parts stack from the top, so every
 // token's portrait or ring, and the stamina bar under it, stand at one height along the dock.
@@ -51,10 +51,9 @@ export const GuardToken = ({
 /** The next cumulative XP milestone and the point it awards. */
 export type XpGoal = { at: number; rank: number };
 
-export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): string =>
-  goal
-    ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), tierNumeral(goal.rank as Rank))
-    : `${XP} ${formatAmount(xp)}`;
+/** An army's XP for its tooltip: what it holds against the next point's milestone, the point's rank as its gem. */
+export const xpLine = (xp: number | undefined, goal: XpGoal | undefined): RankedWords | string =>
+  goal ? xpTowardTip(formatAmount(xp), formatCharge(goal.at), goal.rank) : `${XP} ${formatAmount(xp)}`;
 
 /**
  * One army on a phone's dock: its number, the one its map plate carries; its portrait with its XP balance as the badge,
@@ -101,7 +100,7 @@ export const ArmyToken = ({
         <span
           role="img"
           aria-label={`${XP} ${formatAmount(xp)}`}
-          data-tip={xpLine(xp, xpGoal)}
+          {...rankedTip(xpLine(xp, xpGoal))}
           className="absolute -bottom-1 -right-2.5 flex h-5 min-w-5 items-center justify-center rounded-full border border-hud-line bg-hud-dark px-1 text-hud-body leading-none text-hud-gold tabular-nums"
         >
           {formatAmount(xp)}

@@ -1,3 +1,4 @@
+import { rankedText } from "@/ui/design-system/kit/words";
 import { veilIsNear, type endgameFrame } from "../effects/endgame/sequence";
 import { useChainTimeStore } from "@/hooks/store/use-chain-time-store";
 import { resolveExplorerTroops } from "@bibliothecadao/eternum/troop-stamina";
@@ -2496,7 +2497,7 @@ export default class WorldmapScene extends WarpTravel {
     // The line stands beside its tile, clear of the opened plates (the plate layer places them together).
     const at = this.mapPlates.placeOrderLine({
       at: projectHexToScreen(hexCoords, this.camera),
-      size: orderLineSize(tip.line, tip.cost),
+      size: orderLineSize(rankedText(tip.line), tip.cost && rankedText(tip.cost)),
     });
     return at && { ...tip, at };
   }
@@ -3010,7 +3011,8 @@ export default class WorldmapScene extends WarpTravel {
   private openRefusedOrderPreview(hexCoords: HexPosition): void {
     const army = this.selectedArmyId();
     const refusal = this.refusalOf(hexCoords);
-    const reason = this.nameOrderAt(hexCoords, refusal)?.line;
+    const named = this.nameOrderAt(hexCoords, refusal)?.line;
+    const reason = named && rankedText(named);
     if (army === null || !refusal || !reason) return;
     const { army: armyThere, structure, chest } = this.getHexagonEntity(hexCoords);
     const verb = refusedOrderVerb({
@@ -3038,7 +3040,11 @@ export default class WorldmapScene extends WarpTravel {
     if (this.selectedArmyId() !== shown.army) return false;
     if (shown.refused) return this.refusalOf(shown.hex)?.reason === shown.refused;
     const now = this.nameOrderAt(shown.hex);
-    return now?.line === shown.tip.line && now.cost === shown.tip.cost;
+    return (
+      now !== null &&
+      rankedText(now.line) === rankedText(shown.tip.line) &&
+      (now.cost && rankedText(now.cost)) === (shown.tip.cost && rankedText(shown.tip.cost))
+    );
   }
 
   /**

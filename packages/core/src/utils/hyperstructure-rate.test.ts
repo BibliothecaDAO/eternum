@@ -5,7 +5,7 @@ import { NativeFactStore } from "../client/native-fact-store";
 import { configManager } from "../managers/config-manager";
 import preset from "../../../../contracts/l3/world-native/tests/fixtures/current-presets/preset-3.json";
 import { nativeRuleConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
-import { getHyperstructureRates, hyperstructureRate, hyperstructureRateUnit } from "./hyperstructure";
+import { getHyperstructureRates, hyperstructureRate, hyperstructureRateWords } from "./hyperstructure";
 
 vi.stubGlobal("localStorage", { getItem: () => null });
 
@@ -30,9 +30,9 @@ describe("a Hyperstructure's one rate", () => {
     expect(hyperstructureRate(grants("flat"), untaken)?.pointsPerSecond).toBe(1);
   });
 
-  it("words the rate the same on every surface", () => {
-    expect(hyperstructureRateUnit(true)).toBe("points/s");
-    expect(hyperstructureRateUnit(false)).toBe("points/s once taken");
+  it("words the rate a minute's, as every rate", () => {
+    expect(hyperstructureRateWords({ pointsPerSecond: 2, taken: true })).toBe("points +120/min");
+    expect(hyperstructureRateWords({ pointsPerSecond: 2, taken: false })).toBe("points +120/min once taken");
   });
 });
 

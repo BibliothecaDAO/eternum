@@ -57,6 +57,8 @@ vi.mock("@bibliothecadao/eternum", async (importOriginal) => ({
 import { FeedRowLine } from "./feed-row-line";
 import { eventsReads, selectEventStories } from "./event-stories";
 import { StoryFeedRow } from "./story-feed-row";
+import { Tooltip } from "@/ui/design-system/molecules/tooltip";
+import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { buildStoryEventPresentation } from "@bibliothecadao/eternum";
 import { relicChestRelics } from "@bibliothecadao/types";
 
@@ -316,32 +318,77 @@ it("draws each story in Events and the Log by its act, as Frontier's Feed does, 
 });
 
 it.each([
-  [{ Shrine: 200 }, "Shrine used, +200 XP"],
-  [{ ShrinePoint: 3 }, "Shrine used, +1 III skill point"],
-  [{ Well: 5 }, "Well used, +5 stamina"],
-])("the Log renders site use and opens its historical tile after the army is gone (%j)", async (benefit, expected) => {
-  game.armies.clear();
-  const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
-  event.presentation = buildStoryEventPresentation({
-    storyType: event.story,
-    storyPayload: event.storyPayload,
+  [{ Shrine: 200 }, "Shrine used, +200 XP", []],
+  [{ ShrinePoint: 3 }, "Shrine used, III +1", ["III"]],
+  [{ Well: 5 }, "Well used, +5 stamina", []],
+])(
+  "the Log renders site use and opens its historical tile after the army is gone (%j)",
+  async (benefit, expected, gems) => {
+    game.armies.clear();
+    const event = story("site-use", "SiteUsed", PLAYER, { explorer_id: 9, coord: { x: 3, y: 4 }, benefit }, expected);
+    event.presentation = buildStoryEventPresentation({
+      storyType: event.story,
+      storyPayload: event.storyPayload,
+      entityId: 9,
+      ownerAddress: PLAYER,
+      viewerAddress: PLAYER,
+    } as never);
+    expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
+    expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
+    expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
+    const [row] = selectEventStories([event], "all", PLAYER, () => false);
+    const root = createRoot(host);
+    try {
+      act(() => root.render(<StoryFeedRow event={row} />));
+      expect(host.textContent).toContain(expected);
+      expect([...host.querySelectorAll(".ui-tier")].map((gem) => gem.getAttribute("aria-label"))).toEqual(gems);
+      expect(host.textContent).toContain("army");
+      await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
+      expect(game.navigate).toHaveBeenCalledOnce();
+      expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+    } finally {
+      act(() => root.unmount());
+    }
+  },
+);
+
+it("says a clipped Log row whole on hover, its ranks as gems sized to the line", async () => {
+  const payload = { explorer_id: 9, choice: "Battle", tier: 2, point_rank: 3, stamina: 40 };
+  const presentation = buildStoryEventPresentation({
+    storyType: "SkillPointSpent",
+    storyPayload: payload,
     entityId: 9,
     ownerAddress: PLAYER,
-    viewerAddress: PLAYER,
   } as never);
-  expect(eventsReads("all", PLAYER, [])).toEqual([{ limit: 350 }]);
-  expect(selectEventStories([event], "all", PLAYER, () => false)).toEqual([event]);
-  expect(selectEventStories([event], "important", PLAYER, () => false)).toEqual([]);
-  const [row] = selectEventStories([event], "all", PLAYER, () => false);
+  const event = { ...story("point", "SkillPointSpent", PLAYER, payload, presentation.title), presentation };
+  document.body.append(host);
   const root = createRoot(host);
   try {
-    act(() => root.render(<StoryFeedRow event={row} />));
-    expect(host.textContent).toContain(expected);
-    expect(host.textContent).toContain("army");
-    await act(async () => host.querySelector<HTMLButtonElement>("button")!.click());
-    expect(game.navigate).toHaveBeenCalledOnce();
-    expect(game.navigate.mock.calls[0][0].getContract()).toEqual({ x: 3, y: 4 });
+    await act(async () =>
+      root.render(
+        <>
+          <Tooltip />
+          <StoryFeedRow event={event} />
+        </>,
+      ),
+    );
+    const row = host.querySelector<HTMLElement>(".ui-event__text")!;
+    // The row's description runs past its two lines.
+    Object.defineProperty(row, "scrollHeight", { value: 60 });
+    Object.defineProperty(row, "clientHeight", { value: 30 });
+    const hover = new MouseEvent("pointerover", { bubbles: true, clientX: 10, clientY: 10 });
+    Object.defineProperty(hover, "pointerType", { value: "mouse" });
+    await act(async () => row.dispatchEvent(hover));
+    const tip = document.querySelector('[role="tooltip"]')!;
+    expect(tip.textContent).toBe(presentation.description);
+    expect(
+      [...tip.querySelectorAll(".ui-tier")].map((gem) => [
+        gem.getAttribute("aria-label"),
+        gem.getAttribute("data-size"),
+      ]),
+    ).toEqual([["III", "line"]]);
   } finally {
-    act(() => root.unmount());
+    await act(async () => root.unmount());
+    useTooltipStore.setState({ tooltip: null });
   }
 });

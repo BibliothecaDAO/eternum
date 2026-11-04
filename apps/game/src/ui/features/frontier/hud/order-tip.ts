@@ -1,4 +1,4 @@
-import { formatCharge } from "@bibliothecadao/types";
+import { asRanked, formatCharge, type RankedWords } from "@bibliothecadao/types";
 import { computeEffectiveStaminaCost } from "@/lib/army-stamina/path-cost";
 import { staminaShortfall } from "@/ui/design-system/kit/reasons";
 import { ATTACK, EXPLORE, MOVE, STAMINA, TRANSFER, UNEXPLORED, USE } from "@/ui/design-system/kit/words";
@@ -34,13 +34,13 @@ type TileOrder = {
 };
 
 export type OrderTip = {
-  /** The right-click's order ("Explore"), or why there is none. */
-  line: string;
+  /** The right-click's order ("Explore"), or why there is none, or with neither, what a site gives ("[III] +1"). */
+  line: RankedWords | string;
   /**
    * What the order costs, exactly as it is charged ("30 stamina · 100 wheat"), or for a site's Use, which costs
-   * nothing, what it gives ("III skill point"); none for a refusal or a crate.
+   * nothing, what it gives ("[III] +1"); none for a refusal or a crate.
    */
-  cost: string | null;
+  cost: RankedWords | string | null;
 };
 
 /**
@@ -80,14 +80,21 @@ const orderOf = ({ path, exploreStamina, food, site }: TileOrder): OrderTip | nu
   if (actionType === ActionType.UseSite)
     return { line, cost: site ? siteGainLine(site.kind, site.gain, site.stamina) : null };
   const stamina = computeEffectiveStaminaCost(path.slice(1), actionType, exploreStamina);
+  const gain = site ? siteGainLine(site.kind, site.gain, site.stamina) : null;
   const pieces = [
-    ...(site ? [siteGainLine(site.kind, site.gain, site.stamina)].filter(Boolean) : []),
+    ...(gain ? [gain] : []),
     ...(stamina > 0 ? [`${formatCharge(stamina)} ${STAMINA}`] : []),
     ...(food.wheat > 0 ? [`${formatCharge(food.wheat)} wheat`] : []),
     ...(food.fish > 0 ? [`${formatCharge(food.fish)} fish`] : []),
   ];
-  return { line, cost: pieces.length > 0 ? pieces.join(" · ") : null };
+  return { line, cost: pieces.length > 0 ? joinPieces(pieces) : null };
 };
+
+/** An order's pieces in one line, " · " between them: plain words, or ranked words where a rank is among them. */
+const joinPieces = (pieces: readonly (RankedWords | string)[]): RankedWords | string =>
+  pieces.every((piece) => typeof piece === "string")
+    ? pieces.join(" · ")
+    : pieces.flatMap((piece, index) => [...(index > 0 ? [" · "] : []), ...asRanked(piece)]);
 
 /**
  * The order a tile the planner refused would take, by what it holds: troops passed to the player's own army, an attack

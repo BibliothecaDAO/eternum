@@ -2,6 +2,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 
+import { skillPointGain } from "@bibliothecadao/types";
+import { Plate } from "./map-plates";
 import { Token, tokenReading, tokenSize } from "./map-plate-token";
 import type { ArmyPlate, StructurePlate } from "./map-plate-model";
 
@@ -102,5 +104,23 @@ describe("a thing's token, its plate closed (the owner's 2026-10-19 pick: tokens
     expect(tokenSize(army).height).toBe(30 - 2 + 18 + 4);
     expect(tokenSize(realm).height).toBe(30 - 2 + 18);
     expect(tokenSize({ ...realm, guards: [] })).toEqual({ width: 30, height: 30 });
+  });
+});
+
+describe("a Shrine's plate opened", () => {
+  it("draws its point as the gem filling its row, then +1", () => {
+    const shrine: StructurePlate = {
+      ...rift,
+      owner: "",
+      place: undefined,
+      name: "Shrine",
+      guards: null,
+      reward: skillPointGain(3),
+    };
+    const html = renderToStaticMarkup(<Plate plate={shrine} />);
+    // The row's gem is the kit's own size (no line or card size), named for a screen reader.
+    expect(html).toContain(
+      '<span class="mp-label mp-ranked"><span class="ui-tier" data-tier="3" role="img" aria-label="III">III</span> +1</span>',
+    );
   });
 });

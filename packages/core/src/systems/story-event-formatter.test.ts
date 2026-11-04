@@ -1,4 +1,3 @@
-import { skillPointName } from "@bibliothecadao/types";
 import { RELICS, relicChestRelics, siteName, StructureType } from "@bibliothecadao/types";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { hash } from "starknet";
@@ -276,7 +275,14 @@ it("shows the tier an Upgrade reached and the XP it cost from history", () => {
     buildStoryEventPresentation(
       story("SkillPointSpent", { explorer_id: 7, choice: "Logistics", tier: 3, point_rank: 3, stamina: 30 }),
     ),
-  ).toMatchObject({ title: "Logistics III", description: "Lord 0123's army · III point · +30 stamina" });
+  ).toMatchObject({
+    title: "Logistics III",
+    description: "Lord 0123's army · III point · +30 stamina",
+    ranked: {
+      title: ["Logistics ", { rank: 3 }],
+      description: ["Lord 0123's army · ", { rank: 3 }, " point · +30 stamina"],
+    },
+  });
 });
 
 it.each(["Beasts", "Sanctuaries"])("reads a recorded %s Scouting point", (kind) => {
@@ -290,7 +296,21 @@ it.each(["Beasts", "Sanctuaries"])("reads a recorded %s Scouting point", (kind) 
         stamina: 20,
       }),
     ),
-  ).toMatchObject({ title: "Scouting I", description: "Lord 0123's army · I point · +20 stamina" });
+  ).toMatchObject({
+    title: "Scouting I",
+    description: "Lord 0123's army · I point · +20 stamina",
+    ranked: { title: ["Scouting ", { rank: 1 }] },
+  });
+});
+
+it("words a tier bought with its rank and the XP it cost", () => {
+  expect(
+    buildStoryEventPresentation(story("TierBought", { explorer_id: 7, attribute: "Battle", tier: 2, price: 400 })),
+  ).toMatchObject({
+    title: "Battle II",
+    description: "Lord 0123's army · 400 XP",
+    ranked: { title: ["Battle ", { rank: 2 }], description: ["Lord 0123's army · 400 XP"] },
+  });
 });
 
 /** A story the viewer's own account told. */
@@ -924,7 +944,14 @@ it.each([
   ).toMatchObject({ title, description: "Lord 0123's army" });
 });
 
-it.each([1, 2, 3, 4, 5])("names the exact Shrine point at rank %s", (rank) => {
+it.each([
+  [1, "I"],
+  [3, "III"],
+  [5, "V"],
+])("names the exact Shrine point at rank %s as its gem and +1", (rank, numeral) => {
   const event = story("SiteUsed", { explorer_id: 7, coord: { x: 3, y: 4 }, benefit: { ShrinePoint: rank } });
-  expect(buildStoryEventPresentation(event).title).toBe(`Shrine used, +1 ${skillPointName(rank)}`);
+  expect(buildStoryEventPresentation(event)).toMatchObject({
+    title: `Shrine used, ${numeral} +1`,
+    ranked: { title: ["Shrine used, ", { rank }, " +1"], description: ["Lord 0123's army"] },
+  });
 });

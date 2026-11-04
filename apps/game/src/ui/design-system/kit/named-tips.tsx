@@ -1,6 +1,9 @@
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useEffect } from "react";
 
+import { HudRanked } from "./hud-elements";
+import { type RankedWords } from "./words";
+
 /**
  * What names itself: anything carrying a line of its own (`data-tip`), and every chip, icon, meter and wordless
  * button that already carries its name for a screen reader. A new chip is named by being a chip.
@@ -16,10 +19,18 @@ const LINGER_MS = 1_600;
 /** Within this much of the screen's top a name has no room above its thing. */
 const TOP_EDGE_PX = 96;
 
-type Named = { anchor: HTMLElement; line: string };
+type Named = { anchor: HTMLElement; line: RankedWords | string };
 
-/** A name on the tooltip, in the HUD sheet's tip line (the tooltip wraps it inside a phone's width). */
-export const TipLine = ({ line }: { line: string }) => <span className="ui-tip__line">{line}</span>;
+/** A name on the tooltip, in the HUD sheet's tip line (the tooltip wraps it inside a phone's width), its ranks as gems. */
+export const TipLine = ({ line }: { line: RankedWords | string }) => (
+  <span className="ui-tip__line">
+    <HudRanked words={line} />
+  </span>
+);
+
+/** A thing's own line: its ranked words where the kit's rankedTip wrote them, else its plain words. */
+const ownLine = (anchor: HTMLElement, own: string): RankedWords | string =>
+  anchor.dataset.tipRanks ? (JSON.parse(anchor.dataset.tipRanks) as RankedWords) : own;
 
 const squeezed = (words: string) => words.replace(/\s+/g, "").toLowerCase();
 
@@ -57,7 +68,8 @@ const namedAt = (target: EventTarget | null): Named | null => {
   const anchor = target instanceof Element ? target.closest<HTMLElement>(NAMED) : null;
   if (!anchor || coversScreen(anchor)) return null;
   const own = anchor.dataset.tip;
-  if (own !== undefined) return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : { anchor, line: own };
+  if (own !== undefined)
+    return own === "" || (shows(anchor, own) && !cutOff(anchor)) ? null : { anchor, line: ownLine(anchor, own) };
   const name = anchor.getAttribute("aria-label") ?? "";
   if (name === "" || shows(anchor, name)) return null;
   return { anchor, line: anchor.getAttribute("role") === "meter" ? meterLine(anchor, name) : name };

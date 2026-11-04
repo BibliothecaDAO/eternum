@@ -15,7 +15,7 @@ import { useGame } from "@/hooks/context/game-context";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useQuery } from "@/hooks/helpers/use-query";
 import { formatClockTime } from "@bibliothecadao/types";
-import { HudEventRow } from "@/ui/design-system/kit/hud-elements";
+import { HudEventRow, HudRanked } from "@/ui/design-system/kit/hud-elements";
 import { storyMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { storyPayloadId } from "@/utils/native-id";
 
@@ -92,19 +92,25 @@ export function useStoryOpener(event: ProcessedStoryEvent): (() => void) | null 
 /** A world story in the Log: what happened and its line (a fight's sides, forces and rolls), and its time. */
 export const StoryFeedRow = ({ event }: { event: ProcessedStoryEvent }) => {
   const open = useStoryOpener(event);
+  // The row's second line and its tip are the same words, ranks and all: the tip says them whole where the line is cut.
+  const description = event.presentation.ranked?.description ?? event.presentation.description;
   return (
     <HudEventRow
       time={formatClockTime(event.timestampMs / 1000)}
       icon={storyMeaning(event.story)}
-      tip={open ? event.presentation.description : "This event’s location is no longer available"}
+      tip={open ? description : "This event’s location is no longer available"}
       onOpen={open ?? undefined}
     >
       {event.story === "BattleEvent" ? (
         <BattleDetails description={event.presentation.description} />
       ) : (
         <span className="flex flex-col">
-          <span className="truncate">{event.presentation.title}</span>
-          <span className="line-clamp-2 text-hud-label text-hud-muted">{event.presentation.description}</span>
+          <span className="truncate">
+            <HudRanked words={event.presentation.ranked?.title ?? event.presentation.title} />
+          </span>
+          <span className="line-clamp-2 text-hud-label text-hud-muted">
+            <HudRanked words={description ?? ""} />
+          </span>
         </span>
       )}
     </HudEventRow>

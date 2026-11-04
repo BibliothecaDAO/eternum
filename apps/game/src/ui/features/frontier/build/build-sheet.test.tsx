@@ -389,6 +389,9 @@ describe("the build sheet", () => {
     expect(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip")).toMatch(
       /^War hall: new armies start with Battle I(, takes \d+ population)?$/,
     );
+    // The tier is the tooltip's gem, not a numeral in the words.
+    const ranks = JSON.parse(sheet.card("War hall").closest("[data-tip]")!.getAttribute("data-tip-ranks")!);
+    expect(ranks.slice(0, 3)).toEqual(["War hall: ", "new armies start with Battle ", { rank: 1 }]);
     // No Farm stands on the board yet (the fixture's wheat comes with the realm): its price is its base.
     expect(sheet.card("Farm").querySelector('[aria-label="price raised"]')).toBeNull();
     expect(document.querySelector("[data-price-raised]")).toBeNull();

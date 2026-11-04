@@ -135,8 +135,8 @@ const Numbers = () => (
       }))}
     />
     <Rule
-      head={["Value", "formatRate (a second)", "formatFigure"]}
-      rows={[12.4, 2.5, 0.5, 0.01, -0.25].map((value) => ({
+      head={["A second", "formatRate", "formatFigure"]}
+      rows={[12.4, 1.1, 0.5, 0.01, -0.25].map((value) => ({
         input: String(value),
         cells: [formatRate(value), formatFigure(value, { signed: true })],
       }))}

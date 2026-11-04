@@ -17,6 +17,7 @@ import {
   HudSheet,
   HudTier,
   HudWindowFoot,
+  rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 import {
@@ -27,6 +28,7 @@ import {
   POPULATION,
   PRICE_UP,
   type Rank,
+  type RankedWords,
 } from "@/ui/design-system/kit/words";
 
 import { PRICE_FACES, costLine, type Price } from "@/ui/design-system/kit/price-faces";
@@ -45,7 +47,8 @@ export type BuildTile = {
   icon: IconMeaning;
   name: string;
   /** What the building does, in one line, on the card's tooltip. */
-  tip: string;
+  /** Its hover line ("War hall: new armies start with Battle [I]"), a rank in it as its gem. */
+  tip: RankedWords | string;
   /** What one more gives: a production rate or population; a training building's attribute alone (its gem is the tier). */
   gives: { icon: IconMeaning; value?: ReactNode };
   /**
@@ -197,7 +200,7 @@ const RefusalNote = ({ refusal }: { refusal: Refusal }) => (
 );
 
 const TileButton = ({ tile, chosen, onChoose }: { tile: BuildTile; chosen: boolean; onChoose: () => void }) => (
-  <span data-tip={tile.tip} className="min-w-0">
+  <span {...rankedTip(tile.tip)} className="min-w-0">
     <HudCard
       size="sm"
       title={tile.name}

@@ -32,7 +32,20 @@ export const tierNumeral = (rank: number): string => {
   if (!numeral) throw new Error(`Invalid rank ${rank}`);
   return numeral;
 };
-export const skillPointName = (rank: number): string => `${tierNumeral(rank)} skill point`;
+/**
+ * Words with ranks in them ("Battle II", "III: +45% damage"): each rank stands as its own part, which a screen draws as
+ * the level gem and plain text says as its numeral (rankedText). Every rank a line names is written this way.
+ */
+export type RankedWords = readonly (string | { rank: number })[];
+/** Plain words as ranked words with no rank in them, so either joins into one line. */
+export const asRanked = (words: RankedWords | string): RankedWords => (typeof words === "string" ? [words] : words);
+/** Words with ranks in them as plain text, each rank as its numeral; untrained, 0. */
+export const rankedText = (words: RankedWords | string): string =>
+  typeof words === "string"
+    ? words
+    : words.map((part) => (typeof part === "string" ? part : part.rank === 0 ? "0" : tierNumeral(part.rank))).join("");
+/** What a skill point of a rank gives: the point itself, "[III] +1" (owner, 3 November 2026: "I like B"). */
+export const skillPointGain = (rank: number): RankedWords => [{ rank }, " +1"];
 /** Gains and purchases in both the history Log and Frontier's Today sheet. */
 export const xpGainedLine = (line: string, amount: string) => `${line}, +${amount} ${XP}`;
 export const siteUsedLine = (kind: "Shrine" | "Well", amount: string) =>

@@ -1,3 +1,4 @@
+import { rankedText, skillPointGain } from "@bibliothecadao/types";
 import { describe, expect, it } from "vitest";
 
 import { plateSize } from "./map-plate-layout";
@@ -17,6 +18,8 @@ const say = (segment: PlateSegment): string => {
       return "›";
     case "divider":
       return "|";
+    case "ranked":
+      return rankedText(segment.words);
     default:
       return segment.text;
   }
@@ -110,10 +113,10 @@ describe("what a map plate says opened (three rows at most, never an id; at rest
     ]);
   });
 
-  it("shows a Shrine's discovered point without a guard or leading divider", () => {
-    expect(
-      read({ ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: "III skill point" }),
-    ).toEqual(["Shrine", "III skill point"]);
+  it("shows a Shrine's discovered point as its gem and +1, without a guard or leading divider", () => {
+    const shrine = { ...rift, owner: "", place: undefined, name: "Shrine", guards: null, reward: skillPointGain(3) };
+    expect(read(shrine)).toEqual(["Shrine", "III +1"]);
+    expect(plateRows(shrine).at(-1)).toEqual([{ kind: "ranked", words: [{ rank: 3 }, " +1"] }]);
   });
 
   it("says Undefended in words where nothing guards it", () => {

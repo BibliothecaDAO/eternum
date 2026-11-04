@@ -14,6 +14,7 @@ import {
   type ButtonHTMLAttributes,
   createContext,
   forwardRef,
+  Fragment,
   type HTMLAttributes,
   type InputHTMLAttributes,
   type KeyboardEvent,
@@ -28,7 +29,17 @@ import {
 import { createPortal } from "react-dom";
 
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
-import { CLOSE, STAMINA, type Tier, type Rank, tierNumeral, TIER_WORDS, TRY_AGAIN } from "./words";
+import {
+  CLOSE,
+  type RankedWords,
+  rankedText,
+  STAMINA,
+  type Tier,
+  type Rank,
+  tierNumeral,
+  TIER_WORDS,
+  TRY_AGAIN,
+} from "./words";
 
 /**
  * The HUD's elements: everything the game draws over the map, each built only from the HUD scope of the token file
@@ -568,10 +579,15 @@ const TransferControls = ({
 
 /**
  * What a verb costs, rounded as every charge reads (formatCharge), as one compact line: under the order on the map's order line and the app's
- * tooltip, and beside a button, which carries its verb only (`costLine` writes it from the verb's prices). Nothing when
- * it costs nothing.
+ * tooltip, and beside a button, which carries its verb only (`costLine` writes it from the verb's prices); for a Use,
+ * which costs nothing, what it gives ("[III] +1"). Nothing when it costs nothing.
  */
-export const HudCost = ({ line }: { line: string }) => (line ? <span className="ui-cost">{line}</span> : null);
+export const HudCost = ({ line }: { line: RankedWords | string }) =>
+  line.length > 0 ? (
+    <span className="ui-cost">
+      <HudRanked words={line} />
+    </span>
+  ) : null;
 
 /**
  * The HUD's one panel, for a part of the screen (a bar, a strip, a card in a band): a header band naming it (its icon,
@@ -846,14 +862,49 @@ export const HudRarity = ({ tier }: { tier: Tier }) => (
 );
 
 /**
- * The tier a player levels something to (a building type's row, an army's attribute): a gem in the tier's rarity
- * colour with its numeral, Common I to Legendary V.
+ * The tier a player levels something to (a building type's row, an army's attribute, a skill point): a gem in the
+ * tier's rarity colour with its numeral, Common I to Legendary V. `line` fits it inside a line of words (it keeps the
+ * line's height), `lg` is a card's reward, read at a glance.
  */
-export const HudTier = ({ tier }: { tier: Rank }) => (
-  <span className="ui-tier" data-tier={tier} role="img" aria-label={tier === 0 ? "Untrained" : tierNumeral(tier)}>
+export const HudTier = ({ tier, size }: { tier: Rank; size?: "line" | "lg" }) => (
+  <span
+    className="ui-tier"
+    data-tier={tier}
+    data-size={size}
+    role="img"
+    aria-label={tier === 0 ? "Untrained" : tierNumeral(tier)}
+  >
     {tier === 0 ? null : tierNumeral(tier)}
   </span>
 );
+
+/**
+ * Words with ranks in them ("Battle II"), each rank as its gem, plain words as they are. The gem fits a line of words
+ * by default; `row` fills a map plate's row, `lg` is a card's reward.
+ */
+export const HudRanked = ({ words, gem = "line" }: { words: RankedWords | string; gem?: "line" | "row" | "lg" }) =>
+  typeof words === "string" ? (
+    <>{words}</>
+  ) : (
+    <>
+      {words.map((part, index) =>
+        typeof part === "string" ? (
+          <Fragment key={index}>{part}</Fragment>
+        ) : (
+          <HudTier key={index} tier={part.rank as Rank} size={gem === "row" ? undefined : gem} />
+        ),
+      )}
+    </>
+  );
+
+/**
+ * A thing's own line with ranks in it, as its `data-tip`: the plain words it is matched and read by, and the same words
+ * with their ranks (`data-tip-ranks`), which the one tooltip draws as gems.
+ */
+export const rankedTip = (words: RankedWords | string) =>
+  typeof words === "string"
+    ? { "data-tip": words }
+    : { "data-tip": rankedText(words), "data-tip-ranks": JSON.stringify(words) };
 
 /** A tier's next step, from the gem it holds to the next one's. */
 export const HudTierStep = ({ from, to }: { from: Rank; to: Tier }) => (
@@ -1255,7 +1306,7 @@ export const HudEventRow = ({
   time?: string;
   tone?: Tone;
   icon?: IconMeaning;
-  tip?: string;
+  tip?: RankedWords | string;
   onOpen?: () => void;
   trail?: ReactNode;
   children: ReactNode;
@@ -1268,7 +1319,7 @@ export const HudEventRow = ({
       ) : (
         <span className="ui-event__mark" aria-hidden="true" />
       )}
-      <span className="ui-event__text" data-tip={tip}>
+      <span className="ui-event__text" {...(tip === undefined ? {} : rankedTip(tip))}>
         {children}
       </span>
     </>

@@ -4,9 +4,8 @@ import {
   RESEARCH_TREE,
   SHRINE,
   STAMINA,
+  type RankedWords,
   type Tier,
-  type Rank,
-  tierNumeral,
   WELL,
 } from "@/ui/design-system/kit/words";
 import {
@@ -86,7 +85,13 @@ export type Side = SideEffect & {
  * One thing a building row's research gives: its mark and word, what it does, its figure now, and with the next tier
  * (none at the top). Every surface that shows the figure shows what it does beside it.
  */
-export type Figure = { icon: IconMark; name: string; line: string; now: string; next?: string };
+export type Figure = {
+  icon: IconMark;
+  name: string;
+  line: string;
+  now: RankedWords | string;
+  next?: RankedWords | string;
+};
 
 export interface TreeNode {
   key: string;
@@ -103,7 +108,7 @@ export interface TreeNode {
   price?: { essence: number; labor: number };
   needs: Need[];
   /** What the node does, one line, and its figure now and after the next tier. */
-  gives: { line: string; now: string; next?: string };
+  gives: { line: string; now: RankedWords | string; next?: RankedWords | string };
   /** Side upgrades with their own price, availability and command choice code. */
   sides?: Side[];
   /** The marks of bought sides; only Scouts keeps purchase order. */
@@ -383,8 +388,8 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
         "army",
         (tier) => ({
           line: gateLine,
-          now: tierShown(tier),
-          next: tier < 5 ? tierShown(tier + 1) : undefined,
+          now: [{ rank: tier }],
+          next: tier < 5 ? [{ rank: tier + 1 }] : undefined,
         }),
         {
           ...twoSides(
@@ -476,12 +481,9 @@ export const readResearchTree = (realm: RealmResearchFacts): TreeNode[] => {
   }
 };
 
-/** A research rank as text beside the gems: untrained 0, Common I to Legendary V. */
-const tierShown = (tier: number): string => tierNumeral(tier as Rank);
-
 /** A training row: the level every new army of the realm starts the attribute at, and what that level gives. */
 const trainingGives = (attribute: Attribute, word: string, tier: number): TreeNode["gives"] => {
-  const at = (level: number) => RESEARCH_TREE.at(tierShown(level), attributeEffect(attribute, level));
+  const at = (level: number) => RESEARCH_TREE.at(level, attributeEffect(attribute, level));
   return { line: RESEARCH_TREE.newArmiesStart(word), now: at(tier), next: tier < 5 ? at(tier + 1) : undefined };
 };
 

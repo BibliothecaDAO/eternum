@@ -551,6 +551,9 @@ const TROOP_PAINTING = 20;
 /** An opened army's stamina bar at its shortest, before its "x/y" (it stretches to the plate's width). */
 const STAMINA_BAR = 36;
 const CHIP_PADDING = 2 * 6 + 2;
+/** A level gem's drawn width at a row's size, and the gap beside it (hud-sheet.css .ui-tier, map-plates.css .mp-ranked). */
+const GEM = 26;
+const GEM_GAP = 4;
 
 /** A tier chip's drawn width (hud-sheet.css .ui-chip): its letters, its padding and frame. */
 export const chipWidth = (tier: 1 | 2 | 3): number => measure(`T${tier}`, "chip") + CHIP_PADDING;
@@ -581,6 +584,11 @@ const segmentWidth = (segment: PlateSegment): number => {
       return measure("›", "count") + 4;
     case "divider":
       return 1;
+    case "ranked":
+      return (
+        segment.words.reduce((sum, part) => sum + (typeof part === "string" ? measure(part, "body") : GEM), 0) +
+        GEM_GAP * (segment.words.length - 1)
+      );
   }
 };
 

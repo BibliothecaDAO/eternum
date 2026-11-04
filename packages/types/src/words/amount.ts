@@ -166,13 +166,12 @@ export const formatPercent = (fraction: number | undefined, { signed = false } =
 };
 
 /**
- * A rate, from its amount a second: a second when it is one or more ("+2.5/s"), a minute below, whole from one a minute
- * ("+30/min", "+8/min": no decimal a player has to read) and two figures under it ("+0.6/min"), signed, never an hour.
- * Nothing gained reads "0/min".
+ * A rate, from its amount a second, always written a minute's, so any two rates on screen compare at a glance (owner,
+ * 3 November 2026: "it should always be by min"): whole from one a minute ("+66/min", "+8/min": no decimal a player has
+ * to read), two figures under it ("+0.6/min"), signed. Never a second, never an hour. Nothing gained reads "0/min".
  */
 export const formatRate = (perSecond: number | undefined): string => {
   if (perSecond === undefined) return "—";
-  if (Math.abs(perSecond) >= 1) return `${formatFigure(perSecond, { signed: true })}/s`;
   const perMinute = perSecond * 60;
   return `${Math.abs(perMinute) >= 1 ? SIGN(WHOLE).format(perMinute) : formatFigure(perMinute, { signed: true })}/min`;
 };

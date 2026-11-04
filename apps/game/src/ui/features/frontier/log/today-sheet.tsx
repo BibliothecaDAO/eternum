@@ -1,5 +1,13 @@
+import type { RankedWords } from "@/ui/design-system/kit/words";
 import { formatAmount, formatClockTime } from "@bibliothecadao/types";
-import { HudEventRow, HudIconButton, HudNotice, HudRow, HudSheet } from "@/ui/design-system/kit/hud-elements";
+import {
+  HudEventRow,
+  HudIconButton,
+  HudNotice,
+  HudRanked,
+  HudRow,
+  HudSheet,
+} from "@/ui/design-system/kit/hud-elements";
 import {
   DAY,
   DAY_TOTALS_UNKNOWN,
@@ -21,7 +29,7 @@ import { type DayTotals, DayTotalsGrid } from "./day-totals";
 import type { DayHistory } from "./player-day";
 
 /** One line of the day's log: when (unix seconds) and what happened. */
-export type LogLine = { id: string; at: number; text: string };
+export type LogLine = { id: string; at: number; text: RankedWords | string };
 
 /**
  * Today (wireframe 12), a sheet from the day's dial: today's clock line (when it ends, the time left, how long tomorrow
@@ -84,7 +92,9 @@ export const TodaySheet = ({
         <ol className="flex max-h-hud-list flex-col overflow-y-auto">
           {lines.map((line) => (
             <li key={line.id}>
-              <HudEventRow time={formatClockTime(line.at)}>{line.text}</HudEventRow>
+              <HudEventRow time={formatClockTime(line.at)}>
+                <HudRanked words={line.text} />
+              </HudEventRow>
             </li>
           ))}
         </ol>

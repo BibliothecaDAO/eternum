@@ -1,3 +1,4 @@
+import { rankedText } from "@/ui/design-system/kit/words";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useTooltipStore } from "@/hooks/store/use-tooltip-store";
 import { useDocumentClass } from "@/hooks/use-document-class";
@@ -225,7 +226,7 @@ const ROLE_SAMPLES: Record<keyof typeof HUD_TYPE, string> = {
   title: "Structure Tile · Guards",
   body: "Sacred Hyperstructure of Destiny, held by The Vanguard",
   strong: "1,576 · Deploy",
-  label: "points/s · 3/4 · 13m · 0·103",
+  label: "points/min · 3/4 · 13m · 0·103",
   badge: "1.2K",
 };
 
@@ -852,7 +853,7 @@ const TooltipSection = () => (
         <LabTip line="Wheat, 1,200 held" />
         <LabTip line="Deploy an army here" />
         {ORDER_LINES.map((order) => (
-          <LabTip key={order.line} line={order.line} cost={order.cost ?? undefined} />
+          <LabTip key={rankedText(order.line)} line={order.line} cost={order.cost ?? undefined} />
         ))}
       </div>
     }

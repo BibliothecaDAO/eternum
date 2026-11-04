@@ -40,7 +40,21 @@ export const ownerDayLog = (now: number) => {
     })),
   ] as never);
   const reveal = { resource_type: ResourcesIds.Labor, amount: "78500000000" };
-  const tier = (title: string) => ({ story: "SkillPointSpent", storyPayload: {}, title });
+  // A level-up worded by the game's story formatter, its rank a part the row draws as its gem.
+  const tier = (choice: string, rank: number) => {
+    const storyPayload = { explorer_id: 201, choice, tier: rank, point_rank: rank, stamina: 30 };
+    const presentation = buildStoryEventPresentation(
+      {
+        storyType: "SkillPointSpent",
+        storyPayload,
+        entityId: 201,
+        ownerAddress: "0x111",
+        viewerAddress: "0x111",
+      } as never,
+      store,
+    );
+    return { story: "SkillPointSpent", storyPayload, title: presentation.title, presentation };
+  };
   const cleared = (site: number, title: string) => ({
     story: "SitePayout",
     storyPayload: { site_id: site, reward: null },
@@ -48,7 +62,7 @@ export const ownerDayLog = (now: number) => {
   });
   const day = [
     cleared(SITE, "Rift cleared"),
-    tier("Scouting II"),
+    tier("Scouting", 2),
     {
       story: "BattleEvent",
       storyPayload: {
@@ -58,18 +72,25 @@ export const ownerDayLog = (now: number) => {
       },
       title: "Guard holds",
     },
-    tier("Battle II"),
+    tier("Battle", 2),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[1].id, "Beasts cleared"),
     { story: "ExplorationReward", storyPayload: reveal, title: "Explored" },
     cleared(BEASTS[0].id, "Beasts cleared"),
-    tier("Logistics III"),
-    tier("Logistics II"),
+    tier("Logistics", 3),
+    tier("Logistics", 2),
   ];
-  return day.map(({ story, storyPayload, title }, index) => ({
+  return day.map((entry, index) => ({
     id: `owner-${index}`,
     at: now - index * 4 * 60,
-    text: dayLogLine({ story, storyPayload, presentation: { title } }, store),
+    text: dayLogLine(
+      {
+        story: entry.story,
+        storyPayload: entry.storyPayload,
+        presentation: "presentation" in entry ? entry.presentation : { title: entry.title },
+      },
+      store,
+    ),
   }));
 };
 

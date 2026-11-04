@@ -1,5 +1,6 @@
 import type { IconMeaning } from "@/ui/design-system/icon";
-import { HudButton, HudNotice, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudNotice, HudRanked, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
+import type { RankedWords } from "@/ui/design-system/kit/words";
 import { reasonLine } from "@/ui/design-system/kit/reasons";
 import type { Refusal } from "@/ui/design-system/kit/refusal";
 
@@ -9,7 +10,15 @@ import type { Refusal } from "@/ui/design-system/kit/refusal";
  * the realm holds is the top bar's, and the shortfall names the price that stops it, so no price line repeats them
  * (owner, 27 October: "just need x essence, have x is alright, then research x").
  */
-export const RefusedVerb = ({ word, icon, refusal }: { word: string; icon?: IconMeaning; refusal: Refusal }) => (
+export const RefusedVerb = ({
+  word,
+  icon,
+  refusal,
+}: {
+  word: RankedWords | string;
+  icon?: IconMeaning;
+  refusal: Refusal;
+}) => (
   <HudWindowFoot note={<HudNotice tone="warn" line={reasonLine(refusal.reason)} />}>
     {refusal.fix && (
       <HudButton kind="secondary" icon={refusal.fix.icon} onClick={refusal.fix.onFix}>
@@ -17,7 +26,7 @@ export const RefusedVerb = ({ word, icon, refusal }: { word: string; icon?: Icon
       </HudButton>
     )}
     <HudButton kind="primary" icon={icon} disabled>
-      {word}
+      <HudRanked words={word} />
     </HudButton>
   </HudWindowFoot>
 );

@@ -562,11 +562,6 @@ export class ClientConfigManager {
     const rule = this.facts().require("BuildingRule", { game_id: this.gameId, category: buildingType });
     return { population_cost: rule.population_cost, capacity_grant: rule.capacity_grant };
   }
-  getResourceOutputs(resourceType: number) {
-    return Number(
-      this.facts().require("ResourceRule", { game_id: this.gameId, resource_type: resourceType }).realm_rate,
-    );
-  }
   getTravelFoodCostConfig(_troopType: number) {
     const config = this.rules().troop_stamina_config;
     return {

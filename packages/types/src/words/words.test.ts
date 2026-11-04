@@ -24,7 +24,17 @@ import {
 } from "./amount";
 import { formatCount } from "./count";
 import { ageLine } from "./modes";
-import { buildingName, guardSlotName, rankName, resourceName, structureName, troopPlural } from "./nouns";
+import {
+  asRanked,
+  buildingName,
+  guardSlotName,
+  rankedText,
+  rankName,
+  resourceName,
+  skillPointGain,
+  structureName,
+  troopPlural,
+} from "./nouns";
 import { TROOP_TIERS, TROOP_TYPES, troopTierIndex } from "../types/common";
 import { BuildingType } from "../constants/structures";
 import { formatAgo, formatClockTime, formatDuration, formatGameClock, formatMoment, formatShortDuration } from "./time";
@@ -74,9 +84,12 @@ describe("numbers", () => {
     expect(formatPercent(undefined)).toBe("—");
   });
 
-  it("writes a rate a second from one a second up, a minute below, never an hour", () => {
-    expect(formatRate(2.5)).toBe("+2.5/s");
-    expect(formatRate(12.4)).toBe("+12/s");
+  it("writes every rate a minute's, never a second's or an hour's", () => {
+    // The owner's two screenshots read +1.1/s and +54/min side by side (3 November).
+    expect(formatRate(1.1)).toBe("+66/min");
+    expect(formatRate(54 / 60)).toBe("+54/min");
+    expect(formatRate(2.5)).toBe("+150/min");
+    expect(formatRate(1_000)).toBe("+60,000/min");
     expect(formatRate(0.5)).toBe("+30/min");
     // A minute's rate from one up is whole: a game, not a math demo (owner, 26 October).
     expect(formatRate(6.3 / 60)).toBe("+6/min");
@@ -187,6 +200,26 @@ describe("times", () => {
 });
 
 describe("nouns", () => {
+  it("says ranked words as plain text, each rank by its numeral and untrained as 0", () => {
+    expect(rankedText(["Battle ", { rank: 2 }])).toBe("Battle II");
+    expect(rankedText([{ rank: 0 }, " → ", { rank: 1 }])).toBe("0 → I");
+    expect(rankedText("Well used")).toBe("Well used");
+    expect(() => rankedText([{ rank: 6 }])).toThrow("Invalid rank 6");
+  });
+
+  it("joins plain words with ranked ones as ranked words", () => {
+    expect([...asRanked("Research "), ...asRanked(["War hall ", { rank: 2 }])]).toEqual([
+      "Research ",
+      "War hall ",
+      { rank: 2 },
+    ]);
+  });
+
+  it("gives a skill point as its rank and +1", () => {
+    expect(skillPointGain(3)).toEqual([{ rank: 3 }, " +1"]);
+    expect(rankedText(skillPointGain(3))).toBe("III +1");
+  });
+
   it("names a resource as a player reads it, never by its table key", () => {
     expect(resourceName(ResourcesIds.AncientFragment)).toBe("Ancient Fragment");
     expect(resourceName(ResourcesIds.KnightT2)).toBe("Knight T2");
@@ -223,6 +256,26 @@ describe("the voice rules", () => {
       expect({ rule, bad: forbidden!.test(bad) }).toEqual({ rule, bad: true });
       expect({ rule, good: forbidden!.test(good) }).toEqual({ rule, good: false });
     }
+  });
+
+  it("refuse a rate in any unit but the minute, each form on its own", () => {
+    const { forbidden } = VOICE_RULES.find((each) => each.rule === "Rates per minute")!;
+    const refused = (words: string) => ({ words, refused: forbidden!.test(words) });
+    for (const words of [
+      "+1.1/s",
+      "2 points/s",
+      "FP/s",
+      "FP/sec",
+      "Total FP / sec",
+      "then per second",
+      "44.6K/h",
+      "+302/hr",
+      "per hour",
+      "+302 an hour",
+    ])
+      expect(refused(words)).toEqual({ words, refused: true });
+    for (const words of ["+66/min", "points +120/min", "FP rate", "then per minute", "a second press", "3/4 · 13m"])
+      expect(refused(words)).toEqual({ words, refused: false });
   });
 });
 

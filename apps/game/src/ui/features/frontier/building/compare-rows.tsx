@@ -1,5 +1,7 @@
 import { cn } from "@/ui/design-system/atoms/lib/utils";
 import { IconGroup, type IconMark } from "@/ui/design-system/icon";
+import { HudRanked } from "@/ui/design-system/kit/hud-elements";
+import type { RankedWords } from "@/ui/design-system/kit/words";
 import type { ReactNode } from "react";
 
 /**
@@ -11,8 +13,9 @@ type CompareRow = {
   word: string;
   /** What the figure is of, under its word, wrapped at any width (a research side's "Wheat from every Farm"). */
   line?: string;
-  now: string;
-  next?: string;
+  /** Its figure now and next, a rank in it as its gem ("[I] · +10% damage"). */
+  now: RankedWords | string;
+  next?: RankedWords | string;
   grows: boolean;
   onPick?: () => void;
 };
@@ -66,14 +69,16 @@ export const CompareRows = ({
                 )}
               </span>
             </span>
-            <span className={cn(FIGURE, "text-hud-ink")}>{row.now}</span>
+            <span className={cn(FIGURE, "text-hud-ink")}>
+              <HudRanked words={row.now} />
+            </span>
             {next !== undefined && (
               <>
                 <span aria-hidden className={cn(ARROW, "text-hud-muted")}>
                   →
                 </span>
                 <span className={cn(FIGURE, row.grows ? "text-hud-good" : "text-hud-muted")}>
-                  {row.next ?? row.now}
+                  <HudRanked words={row.next ?? row.now} />
                 </span>
               </>
             )}

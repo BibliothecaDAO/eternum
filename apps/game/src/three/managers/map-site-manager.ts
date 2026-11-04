@@ -1,6 +1,6 @@
 import { configManager } from "@bibliothecadao/eternum";
 import { safeInteger, type NativeFactStore } from "@bibliothecadao/eternum/game-client";
-import { skillPointName } from "@bibliothecadao/types";
+import { skillPointGain } from "@bibliothecadao/types";
 import { mapSite } from "@/ui/features/frontier/sites/map-site-plan";
 import type { MapPlateInput, MapPlateScope } from "../map-plates/map-plate-layer";
 import { PLATE_CLEARANCE } from "./structure-visible-presentation";
@@ -175,7 +175,7 @@ export class MapSiteManager {
         icon: face.icon,
         guards: null,
         arrivals: [],
-        reward: skillPointName(reward.rank),
+        reward: skillPointGain(reward.rank),
       },
     };
   }

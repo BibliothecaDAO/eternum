@@ -3,7 +3,7 @@ import { heldAgainstNeed } from "@/ui/design-system/kit/words";
 
 import { useFactView } from "@/hooks/use-fact-view";
 import { playerStructuresView } from "@/sync/fact-views";
-import { formatExact, formatFigure, formatGain, resourceName, structureName } from "@bibliothecadao/types";
+import { formatExact, formatFigure, formatGain, formatRate, resourceName, structureName } from "@bibliothecadao/types";
 import { canIssueOrders } from "@/utils/can-issue-orders";
 import { InlineProduction } from "@/ui/features/settlement/production/inline-production";
 import { useCurrentDefaultTick } from "@/hooks/helpers/use-block-timestamp";
@@ -46,6 +46,7 @@ import { RealmUpgradeCompact } from "@/ui/modules/entity-details/realm/realm-det
 import { resolveRealmHasAvailableBuildingTile } from "@/ui/features/settlement/construction/realm-build-actions";
 import { requireActiveGameClient } from "@/sync/active-game-client";
 
+import { buildingOutput } from "@/ui/shared/lib/building-output";
 import { DestroyBuildingButton } from "./destroy-building-button";
 import { HexMinimap, readMinimapTiles, type MinimapTile } from "./hex-minimap";
 import { presentedMineKind } from "@bibliothecadao/eternum";
@@ -177,10 +178,11 @@ const LocalTilePanel = () => {
     return configManager.getResourceBuildingProduced(buildingCategory as BuildingType);
   }, [buildingCategory, hasBuilding]);
 
-  const producedPerTick = useMemo(() => {
-    if (producedResource === undefined) return 0;
-    return divideByPrecision(configManager.getResourceOutputs(producedResource));
-  }, [producedResource]);
+  // What this building makes on this structure, a realm's rate or a village's (the one output source).
+  const producedPerSecond = useMemo(() => {
+    if (producedResource === undefined || !liveStructure) return 0;
+    return buildingOutput(setup.store, liveStructure, buildingCategory as BuildingType, null).total;
+  }, [producedResource, liveStructure, buildingCategory, setup.store]);
 
   const producedResourceName = useMemo(() => {
     return producedResource !== undefined ? resourceName(producedResource) : null;
@@ -432,10 +434,10 @@ const LocalTilePanel = () => {
           )}
 
           {producedResource && producedResourceName && (
-            <SectionRow label="Produces / sec">
+            <SectionRow label="Produces">
               <span title={producedResourceName}>
                 <HudChip tone="good">
-                  +{producedPerTick}
+                  {formatRate(producedPerSecond)}
                   <ResourceIcon withTooltip={false} resource={producedResource} size="xs" />
                 </HudChip>
               </span>
@@ -475,12 +477,12 @@ const LocalTilePanel = () => {
           )}
 
           {ongoingCost === undefined && (
-            <SectionRow label="Consumes / sec">
+            <SectionRow label="Burns a cycle">
               <span className="text-hud-muted">—</span>
             </SectionRow>
           )}
           {ongoingCost !== undefined && ongoingCost.length > 0 && (
-            <SectionRow label="Consumes / sec">
+            <SectionRow label="Burns a cycle">
               {ongoingCost.map((entry, index) => {
                 const name = resourceName(Number(entry.resource));
                 return (

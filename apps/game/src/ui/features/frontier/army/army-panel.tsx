@@ -10,6 +10,7 @@ import {
   HudStamina,
   HudTier,
   HudTierStep,
+  rankedTip,
 } from "@/ui/design-system/kit/hud-elements";
 import { ARMY_DETAIL, tierNumeral, TROOPS, UPGRADING, XP } from "@/ui/design-system/kit/words";
 import { type ReactNode, useState } from "react";
@@ -200,11 +201,11 @@ const AttributeTile = ({ attribute, onOpen }: { attribute: AttributeView; onOpen
   <button
     type="button"
     aria-label={`${attribute.name} ${attribute.now}`}
-    data-tip={
+    {...rankedTip(
       attribute.next
-        ? `${tierNumeral(attribute.next.tier)}: ${attribute.next.change}`
-        : ARMY_DETAIL.legendary(attribute.name)
-    }
+        ? [{ rank: attribute.next.tier }, `: ${attribute.next.change}`]
+        : ARMY_DETAIL.legendary(attribute.name),
+    )}
     onClick={onOpen}
     className="flex min-w-0 flex-col items-center gap-1 rounded-md border border-hud-line bg-hud-well px-1 py-2 hover:bg-hud-hover"
   >

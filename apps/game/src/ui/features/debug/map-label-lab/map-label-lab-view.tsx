@@ -30,6 +30,7 @@ import { PRODUCTION_TERRAIN_PROP_DENSITY_MULTIPLIER } from "@/three/terrain/terr
 import { seatSide } from "@/tokens";
 import { SeatMark } from "@/ui/design-system/seat-mark";
 
+import { useHudMode } from "@/hooks/use-hud-mode";
 import { SiteUseLab } from "./site-use-lab";
 import { drawPathStudy, PATH_STUDIES, studyFocus, type PathStudy } from "./path-study";
 
@@ -65,6 +66,8 @@ export const MapLabelLabView = () => {
   const busy = params.get("busy") === "1";
   const forceWebGL = params.get("rendererMode") === "webgpu-force-webgl";
   const frontier = params.get("mode") === "frontier";
+  // A Frontier world wears Frontier's age, as the game does (world.tsx's useHudMode).
+  useHudMode(frontier ? "frontier" : "blitz");
   const sites = params.get("sites") === "1";
   // The HUD's sheet stands where the labels' panel does: the sites view leaves it the place.
   const panel = params.get("panel") !== "0" && !sites;
@@ -84,8 +87,8 @@ export const MapLabelLabView = () => {
     setCounts,
   );
   useOrderLine(world, layer, overlayRef, hovered, selected);
-  // The sites open at the map's play distance, once placed; the zoom buttons aim the camera after.
-  const aimAt = useCallback((target: Vector3) => world && aimCamera(world, target, ZOOM_DISTANCE.play), [world]);
+  // The sites open at the address's zoom, once placed; the zoom buttons aim the camera after.
+  const aimAt = useCallback((target: Vector3) => world && aimCamera(world, target, ZOOM_DISTANCE[zoom]), [world, zoom]);
   const set = (key: string, value: string | null) => {
     const next = new URLSearchParams(params);
     if (value === null) next.delete(key);

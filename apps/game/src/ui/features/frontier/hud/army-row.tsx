@@ -1,6 +1,6 @@
 import { formatAmount } from "@bibliothecadao/types";
 import { Icon as SemanticIcon, type IconMeaning } from "@/ui/design-system/icon";
-import { HudPanel, HudPortrait, HudRow } from "@/ui/design-system/kit/hud-elements";
+import { HudPanel, HudPortrait, HudRow, rankedTip } from "@/ui/design-system/kit/hud-elements";
 import { ARMIES, TROOPS, troopCount, UPGRADE, XP } from "@/ui/design-system/kit/words";
 import type { StaminaBar } from "@/ui/design-system/kit/hud-elements";
 import type { ReactNode } from "react";
@@ -58,7 +58,11 @@ export const ArmyRow = ({
     title={
       <RowLine
         words={label}
-        figure={<span data-tip={xpLine(xp, xpGoal)} className="text-hud-gold">{`${formatAmount(xp)} ${XP}`}</span>}
+        figure={
+          <span {...rankedTip(xpLine(xp, xpGoal))} className="text-hud-gold">
+            {`${formatAmount(xp)} ${XP}`}
+          </span>
+        }
       />
     }
     // The troops line is figures throughout, set as the HUD sets figures.

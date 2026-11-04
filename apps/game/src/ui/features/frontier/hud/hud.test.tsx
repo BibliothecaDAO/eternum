@@ -188,8 +188,8 @@ describe("the army token", () => {
   });
 
   it("says what the XP buys next on its badge's tooltip, and the balance alone once nothing is left to buy", () => {
-    expect(xpLine(8, { at: 100, rank: 1 })).toBe("XP 8 of 100 · next I point");
-    expect(xpLine(260, { at: 900, rank: 4 })).toBe("XP 260 of 900 · next IV point");
+    expect(xpLine(8, { at: 100, rank: 1 })).toEqual(["XP 8 of 100 · next ", { rank: 1 }, " point"]);
+    expect(xpLine(260, { at: 900, rank: 4 })).toEqual(["XP 260 of 900 · next ", { rank: 4 }, " point"]);
     expect(xpLine(2_000, undefined)).toBe("XP 2,000");
     const markup = renderToStaticMarkup(
       <ArmyToken
@@ -203,7 +203,11 @@ describe("the army token", () => {
         selected={false}
       />,
     );
+    // The tip's plain words, and its rank for the tooltip's gem.
     expect(markup).toContain('data-tip="XP 8 of 100 · next I point"');
+    expect(markup).toContain(
+      `data-tip-ranks="${JSON.stringify(["XP 8 of 100 · next ", { rank: 1 }, " point"]).replaceAll('"', "&quot;")}"`,
+    );
   });
 
   it("reads an army on a desktop's list in words: its troops, its stamina exact, its XP with what it buys next", () => {
