@@ -11,8 +11,8 @@ import { toast } from "@/ui/features/event-feed/notify";
 import type { DockArmy } from "../hud/dock-armies";
 
 /**
- * The army's Delete, a quiet trash beside the panel's cross, out of the body's flow (the owner, 4 November); none for
- * a viewer, who orders no army.
+ * The army's Delete, the kit's red trash right after the panel's name, out of the body's flow and away from its cross
+ * (the owner, 4 November); none for a viewer, who orders no army.
  */
 export const ArmyDeleteButton = ({ army, onPress }: { army: DockArmy; onPress: () => void }) => {
   const ordersAllowed = useUIStore(canIssueOrders);
@@ -22,7 +22,7 @@ export const ArmyDeleteButton = ({ army, onPress }: { army: DockArmy; onPress: (
     <HudIconButton
       icon="trash"
       label={ARMY_MANAGEMENT.remove}
-      kind="quiet"
+      kind="danger"
       size="sm"
       disabled={busy}
       onClick={onPress}

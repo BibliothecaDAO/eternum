@@ -1646,7 +1646,7 @@ const LabArmy = ({ army }: { army: LabArmySheet }) => {
   return (
     <HudSheet
       label={base.name}
-      cue={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="quiet" size="sm" onClick={noop} />}
+      beside={<HudIconButton icon="trash" label={ARMY_MANAGEMENT.remove} kind="danger" size="sm" onClick={noop} />}
       onClose={noop}
     >
       <ArmyDetail

@@ -42,6 +42,13 @@ button[class^="ui"] {
   line-height: var(--hud-leading-title);
   font-weight: var(--hud-weight-title);
 }
+/* The name with a quiet control right after it (an army's Delete), together at the band's left. */
+.ui-panel__lead {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: theme(spacing.1);
+}
 /* The panel's name: its chevron (when it folds), its icon and its title, one line. */
 .ui-panel__name {
   display: flex;

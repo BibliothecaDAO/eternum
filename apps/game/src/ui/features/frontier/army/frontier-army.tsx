@@ -104,7 +104,7 @@ const ArmyPanel = ({
   return (
     <HudSheet
       label={army.label}
-      cue={!choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
+      beside={!choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
       onClose={onClose}
     >
       <ArmyDetail

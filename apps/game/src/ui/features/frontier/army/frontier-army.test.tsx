@@ -144,11 +144,15 @@ it("shows the army's figures, then its level-ups one step on, and buys the chose
   });
 });
 
-it("keeps Delete as a trash beside the cross, asking before it deletes, and offers no Reinforce", () => {
+it("keeps Delete as a trash right after the army's name, asking before it deletes, and offers no Reinforce", () => {
   useUIStore.setState((state) => ({ entityActions: { ...state.entityActions, selectedEntityId: 12 } }));
   act(() => root.render(<FrontierArmy realm={{ game_id: 1 } as never} choosing={false} onClose={vi.fn()} />));
   const trash = host.querySelector<HTMLButtonElement>('.ui-frame__head button[aria-label="Delete"]');
-  expect(trash).not.toBeNull();
+  // At the head's left, the name's next neighbour, not beside the cross (the owner, 4 November).
+  expect(trash?.previousElementSibling?.textContent).toBe("Army 1");
+  expect(trash?.closest(".ui-panel__cue")).toBeNull();
+  // The kit's one look for what destroys: the red danger button.
+  expect(trash?.dataset.kind).toBe("danger");
   expect(button(/Reinforce/)).toBeUndefined();
   expect(host.querySelector('[role="alertdialog"]')).toBeNull();
   act(() => trash!.click());
