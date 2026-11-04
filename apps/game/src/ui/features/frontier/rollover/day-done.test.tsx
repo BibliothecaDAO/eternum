@@ -44,7 +44,8 @@ vi.mock("@/runtime/world/store", async (importOriginal) => ({
 }));
 
 /** Realm 7 as the HUD hands it to the day's end: its game and entity (a free home: the game has no Labor rules). */
-const REALM_7 = { game_id: 1, entity_id: 7n } as never;
+/** Realm 7, founded as the season opened. */
+const REALM_7 = { game_id: 1, entity_id: 7n, base: { created_at: 0 } } as never;
 
 vi.mock("@/hooks/context/game-context", () => ({ useGame: () => ({ setup: { store: facts } }) }));
 vi.mock("@/hooks/use-player-profile", () => ({
@@ -315,7 +316,7 @@ describe("a device arriving in a new day", () => {
   let lateBlockAt: number | null = null;
 
   /** Opens the game: the HUD's day end and the day's turn, on the game's clocks, with the camera's moves recorded. */
-  const openTheGameHere = async ({ visiting = false } = {}) => {
+  const openTheGameHere = async ({ visiting = false, realm = REALM_7 } = {}) => {
     stopRollover = watchDayTurn({
       store: facts as never,
       gameId: 1,
@@ -329,7 +330,7 @@ describe("a device arriving in a new day", () => {
     await act(async () =>
       root.render(
         <QueryClientProvider client={client}>
-          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={REALM_7} visiting={visiting} />
+          <DayDone rules={{ ...RULES, endAt: Number(herald.game.end_at) }} realm={realm} visiting={visiting} />
         </QueryClientProvider>,
       ),
     );
@@ -428,6 +429,17 @@ describe("a device arriving in a new day", () => {
   it("does not play a day's end again on a device that went through it, summary or none", async () => {
     window.localStorage.setItem(MARK, "2");
     await openTheGameHere();
+    expect(host.querySelector(SUMMARY)).toBeNull();
+    expect(phase()).toBe("day");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  it("plays no end of a day that closed before the realm was founded: a new player stays where they arrived", async () => {
+    herald.history = [];
+    // Founded a minute into day 3, after day 2 had ended.
+    const founded = endedDay(RULES, herald.now)!.end + 60;
+    await openTheGameHere({ realm: { game_id: 1, entity_id: 7n, base: { created_at: founded } } as never });
+    await seconds(DAY_END_TIMING.nightfall + DAY_END_TIMING.black + DAY_END_TIMING.dawn);
     expect(host.querySelector(SUMMARY)).toBeNull();
     expect(phase()).toBe("day");
     expect(navigate).not.toHaveBeenCalled();
