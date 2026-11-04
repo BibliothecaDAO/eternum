@@ -1,6 +1,7 @@
 import { useGame } from "@/hooks/context/game-context";
 import { sendOnce, useInFlight } from "@/hooks/store/use-actions-in-flight";
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
+import { useState } from "react";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { HudSheet, HudWindowFoot } from "@/ui/design-system/kit/hud-elements";
 import { toast } from "@/ui/features/event-feed/notify";
@@ -10,11 +11,11 @@ import { type NativeRows } from "@bibliothecadao/eternum/game-client";
 import { useArmyRevealYield } from "../frontier-reveal-yield";
 import { SpireButton, useArmyAtItsSpire } from "../spire-card";
 import { type DockArmy, useDockArmies } from "../hud/dock-armies";
-import { type ArmyDetailFacts, readArmyDetail } from "./army-detail";
+import { type ArmyDetailFacts, type ArmyView, readArmyDetail } from "./army-detail";
 import { SCOUTING_CHOICES } from "../progression-choices";
-import { ArmyDetail } from "./army-panel";
+import { ArmyDetail, useArmyStep } from "./army-panel";
 import { ArmyRefill } from "./army-refill";
-import { ArmyManagement } from "./army-management";
+import { ArmyDeleteButton, ArmyDeleteConfirm } from "./army-delete";
 
 const PROGRESS_MODELS = ["RealmKnowledge", "ArmyProgress", "ArmyProgressionRules"] as const;
 
@@ -101,15 +102,60 @@ const ArmyPanel = ({
   };
 
   return (
-    <HudSheet label={army.label} onClose={onClose}>
+    <ArmySheet
+      realm={realm}
+      army={army}
+      view={readArmyDetail(facts)}
+      sending={sending}
+      choosing={choosing}
+      spire={spire}
+      onLevelUp={levelUp}
+      onClose={onClose}
+    />
+  );
+};
+
+/**
+ * The army's sheet: its status or its level-up choices, one step for the panel and its head, so the trash shows on the
+ * status only; Delete's confirm in the body, and Spire in the foot while the army stands at its spire.
+ */
+const ArmySheet = ({
+  realm,
+  army,
+  view,
+  sending,
+  choosing,
+  spire,
+  onLevelUp,
+  onClose,
+}: {
+  realm: NativeRows["Structure"];
+  army: DockArmy;
+  view: ArmyView;
+  sending: boolean;
+  choosing: boolean;
+  spire: ReturnType<typeof useArmyAtItsSpire>;
+  onLevelUp: (choice: SkillPointChoice) => unknown;
+  onClose: () => void;
+}) => {
+  const step = useArmyStep(view.available, choosing);
+  const [deleting, setDeleting] = useState(false);
+  return (
+    <HudSheet
+      label={army.label}
+      beside={!step.choosing && <ArmyDeleteButton army={army} onPress={() => setDeleting(true)} />}
+      onClose={onClose}
+    >
       <ArmyDetail
-        army={readArmyDetail(facts)}
-        refill={<ArmyRefill army={army} realm={realm} look="chip" />}
+        army={view}
+        refill={<ArmyRefill army={army} realm={realm} look="price" />}
         sending={sending}
-        choosing={choosing}
-        onLevelUp={levelUp}
+        step={step}
+        onLevelUp={onLevelUp}
       />
-      {!choosing && <ArmyManagement army={army} realm={realm} onDeleted={onClose} />}
+      {deleting && !step.choosing && (
+        <ArmyDeleteConfirm army={army} onCancel={() => setDeleting(false)} onDeleted={onClose} />
+      )}
       {spire && (
         <HudWindowFoot>
           <SpireButton explorerId={army.explorerId} spire={spire} />

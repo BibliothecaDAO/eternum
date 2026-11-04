@@ -668,11 +668,14 @@ type HeadPress =
 const PanelHead = ({
   title,
   icon,
+  beside,
   cue,
   press,
 }: {
   title: ReactNode;
   icon?: IconMeaning;
+  /** A quiet control right after the name, at the band's left (an army's Delete), away from the way out. */
+  beside?: ReactNode;
   cue?: ReactNode;
   press: HeadPress | null;
 }) => {
@@ -683,25 +686,34 @@ const PanelHead = ({
       <span className="ui-panel__title">{title}</span>
     </>
   );
+  const named =
+    press?.kind === "fold" ? (
+      <button type="button" className="ui-panel__name" aria-expanded={!press.folded} onClick={press.toggle}>
+        {name}
+      </button>
+    ) : press?.kind === "action" ? (
+      <button
+        type="button"
+        className="ui-panel__name"
+        data-action
+        aria-label={press.label}
+        data-tip={press.label}
+        onClick={press.run}
+      >
+        {name}
+      </button>
+    ) : (
+      <span className="ui-panel__name">{name}</span>
+    );
   return (
     <header className="ui-panel__head">
-      {press?.kind === "fold" ? (
-        <button type="button" className="ui-panel__name" aria-expanded={!press.folded} onClick={press.toggle}>
-          {name}
-        </button>
-      ) : press?.kind === "action" ? (
-        <button
-          type="button"
-          className="ui-panel__name"
-          data-action
-          aria-label={press.label}
-          data-tip={press.label}
-          onClick={press.run}
-        >
-          {name}
-        </button>
+      {beside ? (
+        <span className="ui-panel__lead">
+          {named}
+          {beside}
+        </span>
       ) : (
-        <span className="ui-panel__name">{name}</span>
+        named
       )}
       {cue !== undefined && <span className="ui-panel__cue">{cue}</span>}
     </header>
@@ -1497,6 +1509,8 @@ type FrameParts = {
   nav?: ReactNode;
   /** What the head says or offers beside the name (a lens, the player's rank), before the way out. */
   cue?: ReactNode;
+  /** A quiet control right after the name (PanelHead's beside). */
+  beside?: ReactNode;
   onClose: () => void;
   children: ReactNode;
 };
@@ -1512,7 +1526,7 @@ type FrameParts = {
 const SurfaceFrame = forwardRef<
   HTMLElement,
   FrameParts & { bodyClassName?: string } & Omit<HTMLAttributes<HTMLElement>, "children">
->(({ label, icon, nav, cue, onClose, bodyClassName, className, children, ...rest }, ref) => {
+>(({ label, icon, nav, cue, beside, onClose, bodyClassName, className, children, ...rest }, ref) => {
   const [foot, setFoot] = useState<HTMLElement | null>(null);
   useSheetCloses(onClose);
   const drag = useDragDownCloses(onClose);
@@ -1522,6 +1536,7 @@ const SurfaceFrame = forwardRef<
         <PanelHead
           title={nav ?? label}
           icon={nav ? undefined : icon}
+          beside={beside}
           cue={
             <span className="flex items-center gap-1">
               {cue}
@@ -1546,12 +1561,24 @@ SurfaceFrame.displayName = "SurfaceFrame";
  * 2026: layout A); the map above it stays playable. From the desktop width up it docks under the top bar or in its
  * host's SheetDock, with the stage playable beside it.
  */
-export const HudSheet = ({ label, onClose, children }: { label: string; onClose: () => void; children: ReactNode }) => {
+export const HudSheet = ({
+  label,
+  beside,
+  onClose,
+  children,
+}: {
+  label: string;
+  /** A quiet control right after the sheet's name, out of the body's flow and away from the cross (an army's Delete). */
+  beside?: ReactNode;
+  onClose: () => void;
+  children: ReactNode;
+}) => {
   const dock = useContext(SheetDock);
   const sheet = (
     <SurfaceFrame
       role="dialog"
       label={label}
+      beside={beside}
       onClose={onClose}
       data-kit-sheet=""
       data-docked={dock ? "" : undefined}

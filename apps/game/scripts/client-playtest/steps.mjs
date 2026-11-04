@@ -593,9 +593,9 @@ async function mergeTheArmies({ browser }, tiles) {
  * is, scrolled into the sheet's view as a player scrolls to it (a phone's sheet runs past its screen). A button that
  * shows only a figure is named by its label ("Refill 73").
  */
-const sheetButton = (pattern) => `JSON.stringify((() => {
+const sheetButton = (pattern, within = "[data-kit-sheet]") => `JSON.stringify((() => {
   const matches = (text) => new RegExp(${JSON.stringify(pattern)}, "i").test(text ?? "");
-  const button = [...document.querySelectorAll("[data-kit-sheet] button")]
+  const button = [...document.querySelectorAll(${JSON.stringify(`${within} button`)})]
     .find((candidate) => matches(candidate.textContent.trim()) || matches(candidate.getAttribute("aria-label")));
   if (!button) return null;
   button.scrollIntoView({ block: "nearest" });
@@ -885,7 +885,8 @@ async function refillTheArmy({ browser }) {
   if (!refill) return { ...panel, refill };
   browser.tap(refill.offset);
   const confirm = await readUntil(
-    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill$")),
+    // The confirm's verb names what it buys: "Refill · 72 LORDS".
+    () => browser.read(buttonIn('[data-kit-sheet][aria-label="Refill"]', "^Refill · ")),
     Boolean,
     SHEET_WAIT_MS,
   );
@@ -895,10 +896,14 @@ async function refillTheArmy({ browser }) {
   return { ...panel, refill: refill.name, watching: true };
 }
 
-/** The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. */
+/**
+ * The army's panel reads the stamina the lab's chain refilled it to, out of the same maximum. The chain writes the bar
+ * where the contract keeps it: a Frontier army's slot (ArmySlot), or the troops' own bar for an army without one.
+ */
 const panelReadsTheChainsStamina = (army) => `(() => {
   const refill = (window.__labChain?.sent ?? []).filter(({ command }) => command.kind === "RefillStamina").at(-1);
-  const amount = refill?.answered.find(({ model }) => model === "ExplorerTroops")?.value.troops.stamina.Inline?.amount;
+  const answered = (model) => refill?.answered.find((fact) => fact.model === model)?.value;
+  const amount = answered("ArmySlot")?.stamina.amount ?? answered("ExplorerTroops")?.troops.stamina.Inline?.amount;
   const text = document.querySelector('[data-kit-sheet][aria-label="${army}"]')?.innerText ?? "";
   return amount !== undefined && text.includes(amount + "/" + amount);
 })()`;
@@ -4170,15 +4175,20 @@ const FAR_PLACE_STEPS = [
   { name: "leave-far-army", play: leaveTheFarVisit, settleMs: 0, verify: leftForHome },
 ];
 
-/** Deploy a small army through the normal dock, reinforce it, then confirm its permanent deletion. */
+/**
+ * Deploy a small army through the normal dock, then delete it from its panel's trash: Cancel keeps it, and the
+ * confirm's Delete removes it for good.
+ */
 function armyManagementSteps() {
   let armyId;
   const count = (browser) =>
     browser.read(
       `JSON.stringify(document.querySelector('.mp-at[data-key="army:${armyId}"] .mp-count')?.textContent ?? null)`,
     );
-  const press = async (browser, verb) => {
-    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`)), Boolean, SHEET_WAIT_MS);
+  /** The sheet's button named verb (the trash by its label), or the delete confirm's with `asked`. */
+  const press = async (browser, verb, asked = false) => {
+    const within = asked ? '[data-kit-sheet] [role="alertdialog"]' : "[data-kit-sheet]";
+    const button = await readUntil(() => browser.read(sheetButton(`^${verb}$`, within)), Boolean, SHEET_WAIT_MS);
     if (!button) throw new Error(`Army sheet has no ${verb} button`);
     browser.tap(button.offset);
   };
@@ -4209,29 +4219,6 @@ function armyManagementSteps() {
           : failed("small army not deployed and selected", played),
     },
     {
-      name: "reinforce-army",
-      play: async ({ browser, extraScreenshot }) => {
-        if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
-        await press(browser, "Reinforce");
-        browser.run(["fill", '[data-kit-sheet] input[aria-label="Troops to add"]', "1"]);
-        const preview = browser.read(
-          `JSON.stringify(document.querySelector('[aria-label="Troops after reinforcement"]')?.textContent ?? null)`,
-        );
-        extraScreenshot("reinforce-preview");
-        if (preview?.trim() !== "10 → 11") return { preview };
-        await press(browser, "Reinforce");
-        const troops = await readUntil(
-          () => count(browser),
-          (value) => value === "11",
-          ORDER_OUTCOME_WAIT_MS,
-        );
-        return { armyId, preview, troops };
-      },
-      settleMs: 10_000,
-      verify: ({ played }) =>
-        played.troops === "11" ? completed(played) : failed("reinforcement did not add exactly one troop", played),
-    },
-    {
       name: "delete-rehearsal-army",
       play: async ({ browser, extraScreenshot }) => {
         if (!armyId || browser.observe().selection?.army?.id !== armyId) return { armyId, selected: false };
@@ -4251,11 +4238,11 @@ function armyManagementSteps() {
         })())`);
         extraScreenshot("delete-confirmation");
         if (!fits || !loss?.includes("troops, skills, XP and carried resources are lost")) return { loss, fits };
-        await press(browser, "Cancel");
-        const retained = count(browser) === "11";
+        await press(browser, "Cancel", true);
+        const retained = count(browser) === "10";
         if (!retained) return { armyId, loss, retained };
         await press(browser, "Delete");
-        await press(browser, "Delete");
+        await press(browser, "Delete", true);
         const removed = await readUntil(
           () => count(browser) === null && !browser.observe().selection?.army,
           Boolean,

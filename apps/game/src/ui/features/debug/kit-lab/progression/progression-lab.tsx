@@ -1,7 +1,7 @@
 import { useHudMode } from "@/hooks/use-hud-mode";
 import { HudPanel, HudTabs } from "@/ui/design-system/kit/hud-elements";
-import { readArmyDetail } from "@/ui/features/frontier/army/army-detail";
-import { ArmyDetail } from "@/ui/features/frontier/army/army-panel";
+import { type ArmyView, readArmyDetail } from "@/ui/features/frontier/army/army-detail";
+import { ArmyDetail, useArmyStep } from "@/ui/features/frontier/army/army-panel";
 import { EARLY_ARMY, EARLY_REALM, MID_REALM, VETERAN_ARMY } from "@/ui/features/frontier/research/progression-fixture";
 import { ResearchPanel } from "@/ui/features/frontier/research/research-panel";
 import { readResearchTree, type RealmResearchFacts } from "@/ui/features/frontier/research/research-tree";
@@ -9,6 +9,11 @@ import { type ReactNode, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 
 const noop = () => undefined;
+
+/** The army's detail on its status, or opened on its choices (`choosing`). */
+const LabArmyDetail = ({ army, choosing }: { army: ArmyView; choosing: boolean }) => (
+  <ArmyDetail army={army} sending={false} step={useArmyStep(army.available, choosing)} onLevelUp={noop} />
+);
 
 /**
  * Dev only: Frontier's progression as the owner picked it (20 October: "Branches I believe is good for the progression.
@@ -26,7 +31,7 @@ export const ProgressionLab = () => {
   const research = <LabResearch key={String(mid)} realm={realm} />;
   const armyPanel = (choosing: boolean) => (
     <HudPanel title={army.name} icon="troops" collapsible={false} bodyClassName="px-3 pb-3">
-      <ArmyDetail key={`${army.name}-${choosing}`} army={army} sending={false} choosing={choosing} onLevelUp={noop} />
+      <LabArmyDetail key={`${army.name}-${choosing}`} army={army} choosing={choosing} />
     </HudPanel>
   );
 

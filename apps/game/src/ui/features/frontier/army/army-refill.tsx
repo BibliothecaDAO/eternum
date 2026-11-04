@@ -6,12 +6,12 @@ import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 
 import type { DockArmy } from "../hud/dock-armies";
 import { useRealmLords } from "../value/use-realm-lords";
-import { RefillButton, RefillChip, RefillConfirm, StaminaRefill } from "./refill";
+import { RefillButton, RefillConfirm, RefillPrice, StaminaRefill } from "./refill";
 
 /**
  * An army's Refill over the game's facts, priced at its missing points from the realm's LORDS: the order bar's button,
- * the army card's chip or a phone's picked army's stamina; its confirm, and refill_stamina. Nothing for a bar not known
- * yet; for a full one, only the stamina.
+ * the army panel's priced refill or a phone's picked army's stamina; its confirm, and refill_stamina. Nothing for a bar
+ * not known yet; for a full one, only the stamina.
  */
 export const ArmyRefill = ({
   army,
@@ -20,8 +20,8 @@ export const ArmyRefill = ({
 }: {
   army: DockArmy;
   realm: NativeRows["Structure"];
-  /** The order bar's button, the army card's chip, or the stamina beside a phone's picked army. */
-  look?: "button" | "chip" | "stamina";
+  /** The order bar's button, the army panel's priced refill, or the stamina beside a phone's picked army. */
+  look?: "button" | "price" | "stamina";
 }) => {
   const { setup, account } = useGame();
   const held = useRealmLords(realm);
@@ -50,7 +50,7 @@ export const ArmyRefill = ({
   return (
     <>
       {look === "stamina" && <StaminaRefill stamina={stamina} {...control} />}
-      {look === "chip" && price > 0 && <RefillChip price={price} {...control} />}
+      {look === "price" && price > 0 && <RefillPrice price={price} {...control} />}
       {look === "button" && price > 0 && <RefillButton {...control} />}
       {confirming && price > 0 && (
         <RefillConfirm
