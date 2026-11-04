@@ -2422,19 +2422,15 @@ const HUD_DEVICE_STEPS = [
     verify: (context) => (context.played.army ? mapShareRead(context) : blocked("no army picked", context.played)),
   },
   {
+    // Left open: the step's still is taken after its play, so it shows the card open, as the share was read; the
+    // panel's step folds it first.
     name: "next-up",
     play: async ({ browser }) => {
       const pill = browser.read(buttonLabelled("^Next up: "));
       if (!pill) return { opened: false, ...readTheMapShare({ browser }) };
       browser.tap(pill.offset);
       await sleep(HOVER_SETTLE_MS);
-      const shown = {
-        opened: browser.read(buttonLabelled("^Fold Next up$")) !== null,
-        ...readTheMapShare({ browser }),
-      };
-      const fold = browser.read(buttonLabelled("^Fold Next up$"));
-      if (fold) browser.tap(fold.offset);
-      return shown;
+      return { opened: browser.read(buttonLabelled("^Fold Next up$")) !== null, ...readTheMapShare({ browser }) };
     },
     settleMs: 0,
     verify: (context) =>
@@ -2493,8 +2489,16 @@ function mapShareReadUnheld({ played }) {
   return played.share?.canvas ? completed(played) : blocked("the map's canvas is not on the page", played);
 }
 
-/** The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row). */
+/**
+ * The picked army's panel: its sheet, opened by its own details button (a phone's picked army, a desktop's row), Next up
+ * folded first if the step before left it open (its band steps aside while it is).
+ */
 async function openThePickedArmysPanel(browser) {
+  const fold = browser.read(buttonLabelled("^Fold Next up$"));
+  if (fold) {
+    browser.tap(fold.offset);
+    await sleep(HOVER_SETTLE_MS);
+  }
   const open = browser.read(SHEET_NAME);
   if (/^Army \d+$/.test(open ?? "")) return open;
   const details = browser.read(buttonLabelled("^Army \\d+(: details)?$"));

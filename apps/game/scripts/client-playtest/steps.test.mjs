@@ -1057,6 +1057,33 @@ describe("lab-hud-devices", () => {
     expect(MAP_LEAST_SHARE).toBe(HUD_MAP_LEAST_SHARE);
   });
 
+  it("leaves Next up open for the step's still, and the panel's step folds it before opening the panel", async () => {
+    const taps = [];
+    const at = { "^Next up: ": [0, -300], "^Fold Next up$": [150, -250] };
+    let open = false;
+    const browser = {
+      read: (expression) => {
+        if (expression.includes("Fold Next up")) return open ? { offset: at["^Fold Next up$"] } : null;
+        if (expression.includes("Next up: ")) return open ? null : { offset: at["^Next up: "] };
+        if (expression.includes("main-canvas")) return { canvas: true, map: 56.8 };
+        return null;
+      },
+      mapShare: () => ({ canvas: true, map: 56.8 }),
+      tap: (offset) => {
+        taps.push(offset);
+        open = offset === at["^Next up: "] ? true : offset === at["^Fold Next up$"] ? false : open;
+      },
+    };
+    const nextUp = steps.find((step) => step.name === "next-up");
+    const played = await nextUp.play({ browser });
+    expect(played.opened).toBe(true);
+    expect(open).toBe(true);
+    expect(taps).toEqual([at["^Next up: "]]);
+    await steps.find((step) => step.name === "army-panel").play({ browser });
+    expect(taps[1]).toEqual(at["^Fold Next up$"]);
+    expect(open).toBe(false);
+  });
+
   it("fails a state that leaves the map under its least share, and reads Chat's without holding it", () => {
     const menu = steps.find((step) => step.name === "menu").verify;
     expect(menu(share(39.9)).status).toBe("failed");
