@@ -1034,15 +1034,15 @@
   },
   "faceted/wonder-realm-0": {
     "verdict": "equal",
-    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+    "reason": "Representative Wonder level painted from the shipped standing-stones model; silhouette and materials compared side by side, including at board size."
   },
   "faceted/wonder-realm-1": {
     "verdict": "equal",
-    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+    "reason": "Representative Wonder level painted from the shipped sun-dial model; silhouette and materials compared side by side, including at board size."
   },
   "faceted/wonder-realm-2": {
     "verdict": "equal",
-    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+    "reason": "Representative Wonder level painted from the shipped star-lantern model; silhouette and materials compared side by side, including at board size."
   },
   "faceted/devcon-golden-realm-0": {
     "verdict": "equal",
@@ -1062,6 +1062,6 @@
   },
   "faceted/wonder-realm-3": {
     "verdict": "equal",
-    "reason": "Distinct home level in the selected jade Wonder or Devcon family; compared against the shipped realm levels at board size."
+    "reason": "Representative Wonder level painted from the shipped sanctum-star model; silhouette and materials compared side by side, including at board size."
   }
 }

@@ -3285,7 +3285,7 @@
       "prompt": "prompts/wonder-realm-0.txt",
       "source": {
         "kind": "painted",
-        "sha256": "f2caa33ed016c588568b7bc42904b8a0c168acc4601294e3738784ea33cd2e5c"
+        "sha256": "938fc88c10dab9cc3b25f97ab4028b9617f79a5da0ff1c4ae315171377e15d7f"
       }
     },
     {
@@ -3295,7 +3295,7 @@
       "prompt": "prompts/wonder-realm-1.txt",
       "source": {
         "kind": "painted",
-        "sha256": "902da5ff81a191b2ed26f1a6ea086921d56f616fb1263ddf7eeb6729553096f3"
+        "sha256": "00f8e5045ef7d3fb2a6b6ea7e7b7519fb7e5ccf4f9b5d0346dc1905ff8e340c0"
       }
     },
     {
@@ -3305,7 +3305,7 @@
       "prompt": "prompts/wonder-realm-2.txt",
       "source": {
         "kind": "painted",
-        "sha256": "cc475bc0bedbef5d7cae8a36c2d9d681078f0869eddf87515ea9081a7ce6c745"
+        "sha256": "62d63205528d1b3552f099633302d1033ffcd2f5168053226eef72bc0cdce935"
       }
     },
     {
@@ -3355,7 +3355,7 @@
       "prompt": "prompts/wonder-realm-3.txt",
       "source": {
         "kind": "painted",
-        "sha256": "0842e41267731638afa52e6be4dcc22552de5bd83e0434c9e4ff74e2dae84d5f"
+        "sha256": "4ddd4478896d4031eb6effe870face5bba7c8c3cd881d0a20a48e34fb2ad21f8"
       }
     }
   ]
