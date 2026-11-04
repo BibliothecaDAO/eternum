@@ -1,5 +1,4 @@
-import { homeIcon } from "@/ui/design-system/home-icons";
-import { REALM_SKINS, type RealmSkin } from "../structures/realm-skins";
+import { HOME_KINDS, homeIcon, type HomeKind } from "@/ui/design-system/home-icons";
 import { structureMeaning } from "@/ui/design-system/domain-icon-meaning";
 import { iconUrl } from "@/ui/design-system/icon-meaning";
 import { StructureType } from "@bibliothecadao/types";
@@ -27,7 +26,7 @@ import {
   type SlotDirtyRange,
 } from "../utils/instance-update-ranges";
 
-export type StrategicStructureMarkerKind = RealmSkin | "realm" | "village" | "hyperstructure" | "bank" | "mine";
+export type StrategicStructureMarkerKind = HomeKind | keyof typeof STRUCTURE_MARKERS;
 export type StrategicArmyMarkerTier = "T1" | "T2" | "T3";
 
 export interface StrategicMarkerLayerMetrics {
@@ -55,30 +54,18 @@ export interface StrategicMarkerLayerOptions {
   loadTexture?: (path: string) => Promise<Texture>;
 }
 
-/** Each far-view pool wears its structure's own painting, as every panel and plate draws that structure. */
-const STRUCTURE_MARKER_TEXTURE_PATHS: Readonly<Record<StrategicStructureMarkerKind, string>> = {
-  bank: iconUrl(structureMeaning(StructureType.Bank)),
-  hyperstructure: iconUrl(structureMeaning(StructureType.Hyperstructure)),
-  mine: iconUrl(structureMeaning(StructureType.Mine)),
-  realm: iconUrl(structureMeaning(StructureType.Realm)),
-  village: iconUrl(structureMeaning(StructureType.Village)),
-  ...(Object.fromEntries(
-    Object.keys(REALM_SKINS).map((skin) => [skin, iconUrl(homeIcon(skin as RealmSkin, 0))]),
-  ) as Record<RealmSkin, string>),
+/** Non-home markers keep their category painting; homes come from the shared home catalog. */
+const STRUCTURE_MARKERS = {
+  bank: { capacity: 64, path: iconUrl(structureMeaning(StructureType.Bank)) },
+  hyperstructure: { capacity: 256, path: iconUrl(structureMeaning(StructureType.Hyperstructure)) },
+  mine: { capacity: 512, path: iconUrl(structureMeaning(StructureType.Mine)) },
+  village: { capacity: 2048, path: iconUrl(structureMeaning(StructureType.Village)) },
 };
 const ARMY_MARKER_TEXTURE_PATH = iconUrl("army");
 export const STRATEGIC_MARKER_HEIGHT = 0.6;
 /** World units; at the far band (distance 80, 38° fov) a 2.6-unit quad is ~35 px tall — readable like a minimap icon. */
 const STRUCTURE_MARKER_SIZE = 2.6;
 const ARMY_MARKER_SIZE = 2.0;
-const STRUCTURE_MARKER_CAPACITY: Readonly<Record<StrategicStructureMarkerKind, number>> = {
-  bank: 64,
-  hyperstructure: 256,
-  mine: 512,
-  realm: 1024,
-  ...(Object.fromEntries(Object.keys(REALM_SKINS).map((skin) => [skin, 1024])) as Record<RealmSkin, number>),
-  village: 2048,
-};
 const ARMY_MARKER_CAPACITY = 2048;
 const ARMY_MARKER_TIERS: readonly StrategicArmyMarkerTier[] = ["T1", "T2", "T3"];
 const ARMY_TIER_GLYPH: Readonly<Record<StrategicArmyMarkerTier, string>> = { T1: "I", T2: "II", T3: "III" };
@@ -112,12 +99,24 @@ export class StrategicMarkerLayer {
   constructor(options: StrategicMarkerLayerOptions = {}) {
     this.object3d.name = "strategic-markers";
     const loadTexture = options.loadTexture ?? loadTextureFromPath;
-    (Object.keys(STRUCTURE_MARKER_TEXTURE_PATHS) as StrategicStructureMarkerKind[]).forEach((kind) => {
+    // Far-view homes preserve kind while Settlement represents every current level.
+    const structures = [
+      ...Object.entries(STRUCTURE_MARKERS).map(([kind, spec]) => ({
+        kind: kind as keyof typeof STRUCTURE_MARKERS,
+        ...spec,
+      })),
+      ...(Object.keys(HOME_KINDS) as HomeKind[]).map((kind) => ({
+        kind,
+        capacity: 1024,
+        path: iconUrl(homeIcon(kind, 0)),
+      })),
+    ];
+    structures.forEach(({ kind, capacity, path }) => {
       this.structurePools.set(
         kind,
         this.createPool(`strategic-structure:${kind}`, STRUCTURE_MARKER_SIZE, {
-          capacity: STRUCTURE_MARKER_CAPACITY[kind],
-          loadTexture: () => loadTexture(STRUCTURE_MARKER_TEXTURE_PATHS[kind]),
+          capacity,
+          loadTexture: () => loadTexture(path),
         }),
       );
     });

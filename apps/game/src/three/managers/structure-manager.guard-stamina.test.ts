@@ -88,6 +88,8 @@ const managerOver = (store: ReturnType<typeof realmWithGuard>, tier: number) => 
           entityId: REALM,
           structureName: "Niziz",
           structureType: StructureType.Realm,
+          level: 0,
+          hasWonder: false,
           mineKind: undefined,
           isMine: false,
           isAlly: false,
@@ -162,6 +164,7 @@ it("presents a cleared standard from its receipt after the structure and guard a
     isMine: false,
     ownerAddress: 0n,
     structureType: StructureType.Camp,
+    hasWonder: false,
   });
   projection.dispose();
 });
