@@ -41,7 +41,7 @@ import { FrontierNav, type HudSurface } from "./hud/frontier-nav";
 import { useOnePanel, useOrderSettledReturnsToTheArmy } from "./hud/one-panel";
 import { FrontierDayClock } from "./hud/day-pill";
 import { FrontierNextUp } from "./next-up/frontier-next-up";
-import { useNextUpBuilding } from "./next-up/next-up-steps";
+import { useMarkAskedBuilding, useNextUpBuilding } from "./next-up/next-up-steps";
 import { FrontierStrip, useStoreReadings } from "./hud/frontier-strip";
 import { RealmPanel } from "./hud/realm-panel";
 import { HudBands } from "./hud/hud-bands";
@@ -108,6 +108,8 @@ export const FrontierHud = ({
   const [researchPick, setResearchPick] = useState<string | undefined>();
   // An open plot's build sheet opens on the building Next up asks for.
   const asked = useNextUpBuilding(rules, realm);
+  // The realm's board marks a plot for it: the player's own, so a visit marks none.
+  useMarkAskedBuilding(visit ? null : asked);
   const card = useSelectionCard({
     realm: shown,
     asked,

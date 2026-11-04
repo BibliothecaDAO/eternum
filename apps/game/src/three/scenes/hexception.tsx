@@ -140,6 +140,7 @@ import {
   resourceName,
 } from "@bibliothecadao/types";
 import gsap from "gsap";
+import { askedPlot } from "./hexception-asked-plot";
 import { toast } from "@/ui/features/event-feed/notify";
 import {
   AnimationClip,
@@ -211,6 +212,16 @@ const BIOME_MATRIX_KEYS = [
   "TropicalRainForest",
   "Empty",
 ] as const;
+
+/** A plot lit for a building: where it may stand, the new ring's plots, or the one Next up marks. */
+const plotHighlight = (hex: HexPosition) => ({
+  hex: { col: hex.col, row: hex.row },
+  actionType: ActionType.Build,
+  kind: "destination" as const,
+  isEndpoint: true,
+  isSharedRoute: false,
+  pathDepth: 1,
+});
 
 const emptyTerrainMatricesByBiome = (): Record<BiomeType | "Empty" | string, Matrix4[]> =>
   Object.fromEntries(BIOME_MATRIX_KEYS.map((key) => [key, []]));
@@ -384,6 +395,15 @@ export default class HexceptionScene extends HexagonScene {
         (state) => state.useSimpleCost,
         (useSimpleCost) => {
           this.state.useSimpleCost = useSimpleCost;
+        },
+      ),
+    );
+
+    this.storeUnsubscribes.push(
+      useUIStore.subscribe(
+        (state) => state.askedBuilding,
+        () => {
+          if (!this.buildingPreview?.getPreviewBuilding()) this.renderRestingHighlights();
         },
       ),
     );
@@ -566,16 +586,7 @@ export default class HexceptionScene extends HexagonScene {
     if (radius === null) return this.renderRestingHighlights();
     const center = { col: BUILDINGS_CENTER[0], row: BUILDINGS_CENTER[1] };
     this.highlightHexManager.highlightHexes(
-      this.highlights
-        .filter((hex) => getHexDistance(center, hex) === radius)
-        .map((hex) => ({
-          hex: { col: hex.col, row: hex.row },
-          actionType: ActionType.Build,
-          kind: "destination" as const,
-          isEndpoint: true,
-          isSharedRoute: false,
-          pathDepth: 1,
-        })),
+      this.highlights.filter((hex) => getHexDistance(center, hex) === radius).map(plotHighlight),
     );
     window.clearTimeout(this.newRingTimer);
     this.newRingTimer = window.setTimeout(() => {
@@ -583,8 +594,10 @@ export default class HexceptionScene extends HexagonScene {
     }, NEW_RING_LIT_MS);
   }
 
+  /** At rest the board marks one plot, for the building Next up asks the player to build here; else none. */
   private renderRestingHighlights(): void {
-    this.highlightHexManager.highlightHexes([]);
+    const plot = useUIStore.getState().askedBuilding === null ? null : askedPlot(this.highlights);
+    this.highlightHexManager.highlightHexes(plot ? [plotHighlight(plot)] : []);
   }
 
   private async loadBuildingModel(path: string): Promise<{ model: Group; animations: AnimationClip[] }> {
@@ -1298,22 +1311,16 @@ export default class HexceptionScene extends HexagonScene {
 
     if (this.buildingPreview?.getPreviewBuilding()) {
       this.renderBuildingPlacementHighlights();
+    } else {
+      // A plot taken or freed can move the resting mark.
+      this.renderRestingHighlights();
     }
   }
 
   private renderBuildingPlacementHighlights(): void {
     // A pinned ghost marks its one plot; a free one shows every plot it may stand on.
     const plots = this.pinnedPlot ? [this.pinnedPlot] : this.highlights;
-    this.highlightHexManager.highlightHexes(
-      plots.map((hex) => ({
-        hex: { col: hex.col, row: hex.row },
-        actionType: ActionType.Build,
-        kind: "destination" as const,
-        isEndpoint: true,
-        isSharedRoute: false,
-        pathDepth: 1,
-      })),
-    );
+    this.highlightHexManager.highlightHexes(plots.map(plotHighlight));
   }
 
   /**

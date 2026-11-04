@@ -38,7 +38,8 @@ vi.mock("@/shell/frame/layout", () => ({ useLayout: () => moves.layout }));
 vi.mock("@/hooks/helpers/use-query", () => ({ useQuery: () => ({ isMapView: moves.onMap }) }));
 
 const { FrontierNextUp } = await import("./frontier-next-up");
-const { useNextUpBuilding } = await import("./next-up-steps");
+const { useMarkAskedBuilding, useNextUpBuilding } = await import("./next-up-steps");
+const { useUIStore } = await import("@/hooks/store/use-ui-store");
 
 const MORNING: NextUpFacts = {
   realm: true,
@@ -129,6 +130,23 @@ it("names the building its step asks for, from the step itself: what the build s
   expect(draw({ barracks: false, populationFull: true }).asked).toBe(String(BuildingType.WorkersHut));
   // A step that names no building asks for none.
   expect(draw({}).asked).toBe("null");
+});
+
+it("tells the realm's board which building to mark a plot for, and stops once Next up asks for none or leaves", () => {
+  const Marks = () => {
+    useMarkAskedBuilding(useNextUpBuilding({} as never, { entity_id: 7 } as never));
+    return null;
+  };
+  const mark = (facts: Partial<NextUpFacts>) => {
+    moves.facts = { ...MORNING, ...facts };
+    act(() => root.render(<Marks />));
+    return useUIStore.getState().askedBuilding;
+  };
+  expect(mark({ barracks: false })).toBe(BuildingType.ResourceKnightT1);
+  expect(mark({})).toBeNull();
+  expect(mark({ barracks: false })).toBe(BuildingType.ResourceKnightT1);
+  act(() => root.render(null));
+  expect(useUIStore.getState().askedBuilding).toBeNull();
 });
 
 it("shows the day's step in the Next up panel, and its button opens the realm's Deploy", () => {

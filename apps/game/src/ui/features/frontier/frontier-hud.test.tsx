@@ -887,3 +887,17 @@ it("opens chat on Global over the game when a mention's alert is pressed, the ga
   }
   Reflect.deleteProperty(navigator, "serviceWorker");
 });
+
+it("marks a plot on the player's own board for what Next up asks, and none on a realm they visit", async () => {
+  await renderHud();
+  const own = useUIStore.getState().askedBuilding;
+  try {
+    await renderVisit();
+    expect(useUIStore.getState().askedBuilding).toBeNull();
+  } finally {
+    visiting.visit = null;
+  }
+  await renderHud();
+  expect(useUIStore.getState().askedBuilding).toBe(own);
+  expect(own).not.toBeNull();
+});

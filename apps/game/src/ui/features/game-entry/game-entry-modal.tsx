@@ -176,11 +176,14 @@ export const GameEntryModal = ({
 
   const expectedSettlementCount = SEASON_SETTLEMENT_COUNT;
   const hasEnteredGameRef = useRef(false);
+  // A Frontier realm this entry created: its player arrives in it, to build (the owner's pick F3).
+  const createdRealmRef = useRef(false);
   const entityWaitAbortControllerRef = useRef<AbortController | null>(null);
 
   const navigationEntryContext = entryContext;
   useEffect(() => {
     hasEnteredGameRef.current = false;
+    createdRealmRef.current = false;
   }, [isOpen, chainId, gameId]);
 
   const resetBootstrapDependentState = useCallback(() => {
@@ -449,6 +452,7 @@ export const GameEntryModal = ({
         structureEntityId: useUIStore.getState().structureEntityId,
         worldMapReturnPosition: useUIStore.getState().worldMapReturnPosition,
         isSpectateMode: spectate,
+        realmFirst: createdRealmRef.current,
         renderer: parseRendererOptions(new URLSearchParams(window.location.search)),
       });
 
@@ -543,6 +547,8 @@ export const GameEntryModal = ({
           selectedRealm: isEternumDevMode ? Number(devRealmNumber) : undefined,
         }),
       );
+      // Known before the indexer answers: its first read can already open the game, which then enters this realm.
+      createdRealmRef.current = isFrontierMode;
 
       setSettleStage("syncing");
       const finalSnapshot = await waitForSettlementTarget(settlementTarget);
