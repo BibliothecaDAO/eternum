@@ -9,7 +9,8 @@ import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
 import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
-import { REALM_SKINS, realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
+import { REALM_SKINS } from "@/three/structures/realm-skins";
 import { GameProvider } from "@/hooks/context/game-context";
 import { useUIStore } from "@/hooks/store/use-ui-store";
 import { transferXpArmies, TRANSFER_TAPPED } from "@/ui/features/frontier/army/transfer-fixture";
@@ -314,16 +315,25 @@ const gem = (tier: Rank): LabTile["gems"] => [{ tier }];
 const sides = (make: [LabTile["icon"], Rank], other: [LabTile["icon"], Rank]): LabTile["gems"] =>
   [make, other].map(([side, tier]) => ({ side, tier }));
 const price = (labor: number, short?: Extract<LabTile["standing"], { kind: "price" }>["short"], raised?: string) =>
-  ({ kind: "price", prices: [{ of: "labor", amount: labor }], short, raised }) as const;
+  ({ kind: "price", prices: [{ of: "labor", amount: labor, short: short?.of === "labor" }], short, raised }) as const;
 /** A training building waiting for the two Barracks research purchases. */
 const LOCKED = { kind: "locked", gate: 2, bought: 0 } as const;
 
 const trainingPrice: LabTile["standing"] = {
   kind: "price",
   prices: [
-    { of: "essence", amount: 6_000 },
-    { of: "labor", amount: 1_500 },
+    { of: "essence", amount: 6_000, short: false },
+    { of: "labor", amount: 1_500, short: false },
   ],
+};
+/** A training building's price with the Essence short and the Labor held: only the Essence line is red. */
+const essenceShortPrice: LabTile["standing"] = {
+  kind: "price",
+  prices: [
+    { of: "essence", amount: 6_000, short: true },
+    { of: "labor", amount: 1_500, short: false },
+  ],
+  short: { of: "essence", wait: undefined },
 };
 /**
  * A city's build sheet, as the owner's realm stood on 27 October: Farm and Workshop researched twice on their make
@@ -368,6 +378,17 @@ const BUILD_TILES: LabTile[] = [
   tile("lodge", "scout-lodge", TRAINING_BUILDINGS[2], { icon: "order-detection" }, gem(1), 2, trainingPrice),
   tile("hearth", "hearth", TRAINING_BUILDINGS[3], { icon: "order-enlightenment" }, gem(1), 2, { kind: "built" }),
 ];
+/**
+ * The owner's realm on 3 November: every training building's Essence short while its Labor is held, and the Hut's Labor
+ * 13 minutes short.
+ */
+const SHORT_TILES: LabTile[] = BUILD_TILES.map((card) =>
+  card.key === "hut"
+    ? { ...card, standing: price(5_100, { of: "labor", wait: 13 * 60 }) }
+    : card.key === "farm" || card.key === "workshop" || card.key === "barracks"
+      ? card
+      : { ...card, standing: essenceShortPrice },
+);
 /** A fresh realm: the training buildings locked behind the two Barracks research purchases. */
 const EARLY_TILES: LabTile[] = [
   tile("farm", "farm", "Farm", { icon: "wheat", value: "+5/min" }, sides(["fields", 0], ["granary", 0]), 1, price(800)),
@@ -506,6 +527,7 @@ const labPodium = (season: NonNullable<LabState["season"]>): SeasonPodiumPlace[]
   }));
 };
 const SEASON_COMMON_CHEST = { lords: 24 };
+/** The player's row, twelfth, then the rest of an 87-realm season: the board holds every place. */
 const OWN_ROW: SeasonListRow = {
   key: "you",
   rank: 12,
@@ -517,6 +539,27 @@ const OWN_ROW: SeasonListRow = {
   lords: 192,
   own: true,
 };
+const SEASON_FIELD: SeasonListRow[] = Array.from({ length: 75 }, (_, index) => {
+  const rank = index + 13;
+  return {
+    key: `lord-${rank}`,
+    rank,
+    order: (rank % 16) + 1,
+    realm: { level: 0, depth: 0 },
+    name: `Lord ${rank}`,
+    label: `Lord ${rank}`,
+    sitesCleared: Math.max(0, 87 - index),
+    lords: 0,
+    own: false,
+  };
+});
+const SEASON_BOARD = [...SEASON_ROWS, OWN_ROW, ...SEASON_FIELD];
+/** The same season with the player first: the eleven named realms a place lower each. */
+const SEASON_BOARD_YOU_FIRST = [
+  { ...OWN_ROW, rank: 1 },
+  ...SEASON_ROWS.map((row) => ({ ...row, rank: row.rank + 1 })),
+  ...SEASON_FIELD,
+];
 
 /**
  * What Next up reads on the lab's realm: barracks built, troops at home, the preset's numbers. Each state adds its
@@ -858,6 +901,7 @@ const STATES = {
   build: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build" },
   "build-training": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-training" },
   "build-early": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-early" },
+  "build-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "build-short" },
   castle: { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle" },
   "castle-short": { clock: CLOCK, stores: STORES, armies: ARMIES, realmView: "castle-short" },
   "building-farm": { clock: CLOCK, stores: STORES, armies: ARMIES, building: "farm" },
@@ -954,6 +998,7 @@ const STATES = {
   },
   season: { clock: CLOCK, stores: STORES, armies: ARMIES, season: "list" },
   "season-detail": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail" },
+  "season-detail-first": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "detail", seasonFirst: true },
   "season-pool-unpublished": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "unpublished" },
   // The season over, its prize's three winners posted; and one where only the leader has cleared a site.
   "season-final": { clock: CLOCK, stores: STORES, armies: ARMIES, season: "final" },
@@ -1207,6 +1252,8 @@ type LabState = {
   /** The account has no linked wallet to receive its LORDS: the purse marked, Withdraw and the season's card say so. */
   noWallet?: boolean;
   season?: "list" | "detail" | "unpublished" | "loading" | "failed" | "final" | "open";
+  /** The player first on the season's board, right under its column names. */
+  seasonFirst?: boolean;
   visiting?: boolean;
   /** A notice the client raises (a refused order), as the game's notice store holds it. */
   notice?: string;
@@ -1220,7 +1267,7 @@ type LabState = {
    * realm holding 500 LORDS.
    */
   picked?: "owner" | "rested" | "pay";
-  realmView?: "build-training" | "build" | "build-early" | "castle" | "castle-short" | "full";
+  realmView?: "build-training" | "build" | "build-early" | "build-short" | "castle" | "castle-short" | "full";
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
@@ -1355,12 +1402,11 @@ export const HudLab = () => {
               />
             ) : (
               <SeasonList
-                rank={12}
+                rank={lab.seasonFirst ? 1 : 12}
                 chest={lab.season === "unpublished" ? undefined : SEASON_COMMON_CHEST}
                 pool={lab.season === "unpublished" ? null : SEASON_POOL_FIGURES}
                 podium={labPodium(lab.season)}
-                rows={SEASON_ROWS}
-                pinned={OWN_ROW}
+                rows={lab.seasonFirst ? SEASON_BOARD_YOU_FIRST : SEASON_BOARD}
                 state={lab.season === "loading" || lab.season === "failed" ? lab.season : "ready"}
                 onRetry={noop}
                 onOpen={() => setDetailShut(false)}
@@ -1407,10 +1453,19 @@ export const HudLab = () => {
         {lab.results && <LabResults results={lab.results} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
         {lab.army && <LabArmy army={lab.army} />}
-        {(lab.realmView === "build" || lab.realmView === "build-early" || lab.realmView === "build-training") && (
+        {(lab.realmView === "build" ||
+          lab.realmView === "build-early" ||
+          lab.realmView === "build-short" ||
+          lab.realmView === "build-training") && (
           <BuildView
             population={lab.realmView === "build-early" ? { used: 0, total: 6 } : LAB_POPULATION}
-            tiles={lab.realmView === "build-early" ? EARLY_TILES : BUILD_TILES}
+            tiles={
+              lab.realmView === "build-early"
+                ? EARLY_TILES
+                : lab.realmView === "build-short"
+                  ? SHORT_TILES
+                  : BUILD_TILES
+            }
             chosen={lab.realmView === "build-training" ? 5 : lab.realmView === "build" ? 0 : 2}
             onChoose={noop}
             prices={
@@ -1982,7 +2037,7 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
   const skin = home === "golden" ? "devcon-golden" : "devcon";
   return {
     kind: "campaign",
-    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: realmSkinIcon(skin) },
+    mark: { line: REALM_SKINS[skin].label, golden: home === "golden", icon: homeIcon(skin, 0) },
   };
 };
 

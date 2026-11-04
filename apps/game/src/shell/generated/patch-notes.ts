@@ -147,13 +147,13 @@ export const patchNotes = [
         },
         {
           "kind": "new",
-          "icon": "devcon-realm",
+          "icon": "devcon-realm-0",
           "title": "The Devcon season",
           "line": "Frontier at Devcon, from Tue 3 Nov 10:30 IST to Fri 6 Nov 23:30 IST, at three times the speed: game days of 4 to 12 hours, with stamina and production three times as fast."
         },
         {
           "kind": "new",
-          "icon": "devcon-golden-realm",
+          "icon": "devcon-golden-realm-0",
           "title": "Devcon tickets",
           "line": "Each flyer founds a Devcon realm that claims 1,000 Labor and 1,000 Essence a game day; 15 golden tickets claim 2,000 and 2,000. One ticket per account, and Devcon realms have their own look."
         },

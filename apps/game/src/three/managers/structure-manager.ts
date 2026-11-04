@@ -512,6 +512,7 @@ export class StructureManager {
         ownerAddress: bigint;
         structureType: StructureType;
         realmSkin?: RealmSkin;
+        hasWonder: boolean;
       }
     | undefined {
     const structure = this.resolveStructureInfoByEntityId(entityId);
@@ -522,6 +523,7 @@ export class StructureManager {
       ownerAddress: structure.owner.address,
       structureType: structure.structureType,
       realmSkin: structure.realmSkin,
+      hasWonder: structure.hasWonder,
     };
   }
 

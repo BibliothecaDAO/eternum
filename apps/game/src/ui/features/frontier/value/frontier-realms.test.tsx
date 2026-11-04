@@ -89,7 +89,7 @@ const home = {
   game_id: 3,
   entity_id: 412n,
   owner: 0xaccn,
-  base: { created_at: 360 },
+  base: { created_at: 360, level: 0 },
   metadata: { realm_id: 711 },
 } as unknown as NativeRows["Structure"];
 const rules = { seed: 711n, dayUnitSeconds: 7200, startMainAt: 360, endAt: 360 + 21 * 20 * 7200, spacing: 50 };
@@ -207,7 +207,7 @@ it("shows each campaign tier's pavilion, its daily Labor and Essence, and claims
     facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
     await show();
     expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Golden Devcon");
-    expect(host.querySelector('.home-art[data-tier="golden"] img[src$="/devcon-golden-realm.webp"]')).not.toBeNull();
+    expect(host.querySelector('.home-art[data-tier="golden"] img[src$="/devcon-golden-realm-0.webp"]')).not.toBeNull();
     expect(amounts(host)).toEqual(["labor 2,000", "essence 2,000"]);
     expect(host.querySelector(".realm-labor__amounts")?.textContent).toContain("each day");
     expect(buttons()).toContain("Claim 2,000 Labor · 2,000 Essence");
@@ -223,7 +223,7 @@ it("shows each campaign tier's pavilion, its daily Labor and Essence, and claims
     facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
     await show();
     expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Devcon");
-    expect(host.querySelector('.home-art[data-tier="regular"] img[src$="/devcon-realm.webp"]')).not.toBeNull();
+    expect(host.querySelector('.home-art[data-tier="regular"] img[src$="/devcon-realm-0.webp"]')).not.toBeNull();
     expect(amounts(host)).toEqual(["labor 1,000", "essence 1,000"]);
     expect(buttons()).toContain("Claim 1,000 Labor · 1,000 Essence");
   } finally {
@@ -528,6 +528,38 @@ it("shows the days around today: each claimed ticked, a missed one struck, none 
     ]);
   } finally {
     (home.base as { created_at: number }).created_at = 360;
+    await act(async () => root.unmount());
+  }
+});
+
+it("shows a confirmed golden upgrade without reopening today's paid claim", async () => {
+  (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
+  const send = vi.fn();
+  vi.stubGlobal("fetch", send);
+  const host = document.createElement("div");
+  const root = createRoot(host);
+  const show = () => act(async () => root.render(<Sheet />));
+  try {
+    facts.held = false;
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 1 };
+    facts.claimedDay = 0n;
+    await show();
+    expect(amounts(host)).toEqual(["labor 1,000", "essence 1,000"]);
+    expect(todayState(host)).toBe("claimed");
+    facts.campaign = { campaign_id: DEVCON_ID, tier: 2 };
+    await show();
+    expect(host.querySelector(".realm-labor__name")?.textContent).toBe("Golden Devcon");
+    expect(amounts(host)).toEqual(["labor 2,000", "essence 2,000"]);
+    expect(todayState(host)).toBe("claimed");
+    expect([...host.querySelectorAll("button")].some((button) => button.textContent?.startsWith("Claim "))).toBe(false);
+    expect(send).not.toHaveBeenCalled();
+    facts.now = startOfDay(1);
+    await show();
+    expect(strip(host).slice(0, 2)).toEqual(["1:claimed", "2*:open"]);
+    expect(
+      [...host.querySelectorAll("button")].some((button) => button.textContent === "Claim 2,000 Labor · 2,000 Essence"),
+    ).toBe(true);
+  } finally {
     await act(async () => root.unmount());
   }
 });

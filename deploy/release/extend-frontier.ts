@@ -12,6 +12,21 @@ type Proof = Awaited<ReturnType<typeof readFrontierExtension>>;
 export function extensionCalls(proof: Proof, currentClass: string, reviewedClass: string): Call[] {
   if (proof.worldEnd !== approved.end || proof.release !== approved.release)
     throw new Error("Apply and confirm the approved world release before preparing the ledger extension");
+  return reviewedLedgerCalls(proof, currentClass, reviewedClass);
+}
+
+/** Review before cutover; executable calls stay empty until the world extension is confirmed. */
+export function extensionPlan(proof: Proof, currentClass: string, reviewedClass: string) {
+  const preparedCalls = reviewedLedgerCalls(proof, currentClass, reviewedClass);
+  const readyForSignature = proof.worldEnd === approved.end && proof.release === approved.release;
+  return {
+    readyForSignature,
+    preparedCalls,
+    calls: readyForSignature ? extensionCalls(proof, currentClass, reviewedClass) : [],
+  };
+}
+
+function reviewedLedgerCalls(proof: Proof, currentClass: string, reviewedClass: string): Call[] {
   if (!/^0x[0-9a-f]+$/i.test(reviewedClass) || BigInt(reviewedClass) === 0n)
     throw new Error("Invalid reviewed ledger class");
   if (![approved.previousLedgerClass, reviewedClass].some((expected) => BigInt(currentClass) === BigInt(expected)))
@@ -112,16 +127,16 @@ async function main() {
   );
   const reviewedClass = hash.computeSierraContractClassHash(artifact);
   const currentClass = await rpcAt(ledgerRpc).getClassHashAt(proof.ledgerAddress, proof.ledgerBlock);
-  const calls = extensionCalls(proof, currentClass, reviewedClass);
+  const plan = extensionPlan(proof, currentClass, reviewedClass);
   console.log(
     JSON.stringify(
       {
         proof,
         reviewedClass,
         currentClass,
-        calls,
+        ...plan,
         instruction:
-          "Declare the reviewed class if needed, then have the ledger admin sign these calls together. This command submits no chain transaction. Rerun after confirmation, then use --reconcile-calendar.",
+          "Review preparedCalls before cutover. After the world extension is confirmed, declare the reviewed class if needed and have the ledger admin sign calls together. This command submits no chain transaction. Rerun after confirmation, then use --reconcile-calendar.",
       },
       null,
       2,

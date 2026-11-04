@@ -1,6 +1,6 @@
 import type { HeraldFrontierLeaderboardEntry } from "@bibliothecadao/eternum/game-sync";
 import { describe, expect, it } from "vitest";
-import { boardRows, ownRank, wholeLords, earnedResource } from "./standings";
+import { findOwnEntry, ownRank, wholeLords, earnedResource } from "./standings";
 
 const entry = (rank: number, address = `0x${(0xa00 + rank).toString(16)}`): HeraldFrontierLeaderboardEntry => ({
   address,
@@ -18,18 +18,9 @@ const entry = (rank: number, address = `0x${(0xa00 + rank).toString(16)}`): Hera
 describe("the season standings", () => {
   const board = [entry(1), entry(2), entry(3, "0x0000abc"), entry(4)];
 
-  it("shows the top rows in Herald's order and adds the viewer's row when it ranks below them", () => {
-    expect(boardRows(board, "0xabc", 2).map(({ entry, own }) => `${entry.rank}${own ? "*" : ""}`)).toEqual([
-      "1",
-      "2",
-      "3*",
-    ]);
-    expect(boardRows(board, "0xabc", 3).map(({ entry, own }) => `${entry.rank}${own ? "*" : ""}`)).toEqual([
-      "1",
-      "2",
-      "3*",
-    ]);
-    expect(boardRows(board, null, 2)).toHaveLength(2);
+  it("finds the viewer's own row by canonical address, and none for a spectator", () => {
+    expect(findOwnEntry(board, "0xABC")).toBe(board[2]);
+    expect(findOwnEntry(board, null)).toBeUndefined();
   });
 
   it("reads the viewer's rank as unknown while loading and unranked without a realm row", () => {

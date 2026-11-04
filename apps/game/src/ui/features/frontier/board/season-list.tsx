@@ -40,7 +40,7 @@ export type SeasonListRow = {
   rank: number;
   order: number;
   /** The realm's rank and its depth, as the board's entry gives them. */
-  realm: { level: number; depth: number; skin?: RealmSkin };
+  realm: { level: number; depth: number; skin?: RealmSkin; hasWonder?: boolean };
   name: ReactNode;
   label: string;
   sitesCleared: number;
@@ -53,9 +53,10 @@ const SKELETON_ROWS = 8;
 
 /**
  * Season (wireframe 13), a place of its own, left by the place bar: the title with what a common chest pays today and
- * the player's rank, the season's pool on that chip's tip, then the realms by sites cleared with LORDS beside, the
- * player's own row lit in place or pinned at the foot when it ranks below the rows shown. A row opens its detail. When
- * the season did not answer, the card says so, with Try again. It closes as every panel does: its X, Escape or back.
+ * the player's rank, the season's pool on that chip's tip, then every realm by sites cleared with LORDS beside, the
+ * player's own row lit, waiting at the foot while its place is below the view (revealOwnPlace). A row opens its
+ * detail. When the season did not answer, the card says so, with Try again. It closes as every panel does: its X,
+ * Escape or back.
  * The season's end and its prizes scroll away with the board under the columns' names, which stay; on a phone the
  * prizes stand folded in one line that opens the podium (owner, 3 November 2026: "C podium scroll the prizes but also
  * fold the podium so we save space"), so the board, not the podium, has the page.
@@ -66,7 +67,6 @@ export const SeasonList = ({
   pool,
   podium,
   rows,
-  pinned,
   state,
   onRetry,
   onOpen,
@@ -82,7 +82,6 @@ export const SeasonList = ({
   /** The season's top prizes, each paid place and its LORDS; null while none is published, absent until known. */
   podium?: readonly SeasonPodiumPlace[] | null;
   rows: readonly SeasonListRow[];
-  pinned: SeasonListRow | undefined;
   state: "ready" | "loading" | "failed";
   onRetry: () => void;
   onOpen: (key: string) => void;
@@ -115,7 +114,6 @@ export const SeasonList = ({
           </>
         )}
       </div>
-      {state !== "failed" && pinned && <ListRow row={pinned} onOpen={onOpen} />}
     </HudPage>
   );
 };
@@ -140,9 +138,9 @@ const COLS = "2.25rem 1.75rem minmax(0, 1fr) 3rem 3.5rem";
 
 /** One realm on the list, a row of the sheet's table that opens its detail; the player's own carries the chosen bar. */
 const ListRow = ({ row, onOpen }: { row: SeasonListRow; onOpen: (key: string) => void }) => (
-  <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} selected={row.own} onClick={() => onOpen(row.key)}>
+  <HudTableRow cols={COLS} label={`#${row.rank} ${row.label}`} own={row.own} onClick={() => onOpen(row.key)}>
     <RankCell rank={row.rank} />
-    <RealmBadge level={row.realm.level} depth={row.realm.depth} skin={row.realm.skin} />
+    <RealmBadge level={row.realm.level} depth={row.realm.depth} skin={row.realm.skin} hasWonder={row.realm.hasWonder} />
     <span className="min-w-0 truncate">{row.name}</span>
     <span className="text-right tabular-nums">{formatAmount(row.sitesCleared)}</span>
     <span className="text-right tabular-nums">{formatAmount(row.lords)}</span>

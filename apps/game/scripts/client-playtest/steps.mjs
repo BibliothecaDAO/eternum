@@ -1,4 +1,5 @@
 import depthLooks from "../../src/three/terrain/ethereal-depths.json" with { type: "json" };
+import homeIcons from "../../src/ui/design-system/home-icons.json" with { type: "json" };
 import { existsSync, writeFileSync } from "node:fs";
 import realmAssets from "../../src/three/structures/realm-assets.json" with { type: "json" };
 import realmSkins from "../../src/three/structures/realm-skins.json" with { type: "json" };
@@ -791,7 +792,8 @@ const CLAIM_ACTION_STEPS = [
 
 const REALMS_SHEET = `[data-kit-sheet][aria-label="${HUD_WORDS.realmLabor}"]`;
 
-async function claimARealmsLabor({ browser }) {
+async function openRealmLabor(browser) {
+  if (browser.read(SHEET_NAME) === HUD_WORDS.realmLabor) return HUD_WORDS.realmLabor;
   // A desktop's purse chip opens Realm Labor (its name goes on with what waits); a phone's Menu holds it.
   if (onADesktop()) {
     const chip = await readUntil(
@@ -811,6 +813,11 @@ async function claimARealmsLabor({ browser }) {
     (name) => name === HUD_WORDS.realmLabor,
     SHEET_WAIT_MS,
   );
+  return sheet;
+}
+
+async function claimARealmsLabor({ browser }) {
+  const sheet = await openRealmLabor(browser);
   if (sheet !== HUD_WORDS.realmLabor) return { sheet };
   const claim = await readUntil(() => browser.read(sheetButton("^Claim [0-9,]+ Labor")), Boolean, SHEET_WAIT_MS);
   if (!claim) return { sheet, claim };
@@ -3999,11 +4006,11 @@ function reloadOn(place, scene, labScenario = null) {
 }
 
 /** Each approved family through the real map, HUD and local keep, opened through the lab game's route. */
-const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, icon, label }]) =>
+const devconArtSteps = Object.entries(realmSkins).flatMap(([skin, { directory, label }]) =>
   realmAssets
     .filter((asset) => !asset.wonder)
     .flatMap(({ id, level }) => {
-      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon, label };
+      const expected = { path: `/models/realms/devcon/${directory}/${id}.glb`, icon: homeIcons[skin][level], label };
       return [
         {
           name: `${skin}-${id}-map`,
@@ -4087,9 +4094,15 @@ const devconSeasonStep = {
   },
   verify: ({ seen, played }) => {
     if (!seen.panels.includes(HUD_WORDS.season)) return failed("Season did not open", played);
-    const campaigns = Object.values(realmSkins).map(({ icon }) => `${icon}.webp`);
-    if (!campaigns.every((icon) => played.includes(icon)) || !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)))
-      return failed("Season must distinguish both unvisited campaign homes and the ordinary home", played);
+    const campaigns = Object.keys(realmSkins).map((skin) =>
+      Object.values(homeIcons[skin]).map((icon) => `${icon}.webp`),
+    );
+    if (
+      !campaigns.every((icons) => icons.some((icon) => played.includes(icon))) ||
+      !played.some((icon) => /^realm-[0-3][.]webp$/.test(icon)) ||
+      !Object.values(homeIcons.wonder).some((icon) => played.includes(`${icon}.webp`))
+    )
+      return failed("Season must distinguish both unvisited campaign homes, the ordinary home, and the Wonder", played);
     return completed(played);
   },
 };
@@ -4302,6 +4315,65 @@ export const STEP_SETS = {
   "knight-spectator": { game: FRONTIER, steps: knightSteps(FRONTIER_MAP) },
   "knight-blitz-spectator": { game: BLITZ, steps: knightSteps(BLITZ_MAP) },
   player: { game: FRONTIER, steps: PLAYER_STEPS },
+  "home-upgrade": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "upgrade-campaign-home",
+        play: async ({ base, browser, owner, extraScreenshot }) => {
+          await openRealmLabor(browser);
+          const before = readCampaignClaim(browser);
+          extraScreenshot("regular");
+          if (before.tier !== "regular" || before.claimed) return { before };
+          writeFileSync(`${base}-upgrade-ready.json`, JSON.stringify({ ready: true, before }), {
+            mode: 0o600,
+            flag: "wx",
+          });
+          const applied = await waitUntil(() => {
+            owner.throwIfCancelled();
+            return existsSync(`${base}-upgrade-applied.json`);
+          }, 180_000);
+          if (!applied) throw new Error("operator upgrade deadline");
+          const upgraded = await readUntil(
+            () => readCampaignClaim(browser),
+            (state) => state.tier === "golden",
+            ORDER_OUTCOME_WAIT_MS,
+          );
+          extraScreenshot("golden");
+          if (!upgraded || upgraded.claimed) return { before, upgraded };
+          const claim = await claimFoundedHome({ browser });
+          return { before, upgraded, claimed: claim.claimed, after: readCampaignClaim(browser) };
+        },
+        settleMs: 3_000,
+        verify: ({ played }) =>
+          played.before?.tier === "regular" &&
+          played.upgraded?.tier === "golden" &&
+          played.claimed &&
+          played.after?.claimed
+            ? completed(played)
+            : failed("golden upgrade and prospective claim did not settle", played),
+      },
+    ],
+  },
+  "home-golden": {
+    game: FRONTIER,
+    steps: [
+      ...FRONTIER_MAP.opening,
+      {
+        name: "read-golden-home-after-reload",
+        play: async ({ browser }) => {
+          await openRealmLabor(browser);
+          return readCampaignClaim(browser);
+        },
+        settleMs: 1_000,
+        verify: ({ played }) =>
+          played.tier === "golden" && played.claimed
+            ? completed(played)
+            : failed("golden claim did not survive a fresh load", played),
+      },
+    ],
+  },
   "home-recovery": {
     game: { ...FRONTIER, entersFromHome: true },
     steps: [
@@ -4515,6 +4587,18 @@ async function tapTheCentre({ browser }) {
 }
 
 /** The live daily claim, verified by the same claimed-day state the player reads. */
+function readCampaignClaim(browser) {
+  return browser.read(`JSON.stringify((() => {
+    const sheet = document.querySelector(${JSON.stringify(REALMS_SHEET)});
+    return {
+      tier: sheet?.querySelector('.home-art')?.getAttribute('data-tier') ?? null,
+      claimed: sheet?.querySelector('[aria-current="date"]')?.getAttribute('data-state') === 'claimed',
+      days: sheet?.querySelectorAll('.realm-labor__days li').length ?? 0,
+      text: sheet?.innerText ?? null,
+    };
+  })())`);
+}
+
 async function claimFoundedHome({ browser }) {
   const pressed = await claimARealmsLabor({ browser });
   const claimed =

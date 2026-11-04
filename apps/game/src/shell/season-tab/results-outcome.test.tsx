@@ -88,8 +88,9 @@ it.each([390, 1440])(
     const outcome = body.querySelector(".app-panel")!;
     expect(outcome.textContent).toContain("3rd of 3");
     expect(outcome.textContent).toContain("352 points");
-    // Continue (the gold, with no chest to open), the end map and Share are the page's own.
-    const buttons = [...page.querySelectorAll('button:not([data-role="tab"])')].map((button) => [
+    // Continue (the gold, with no chest to open), the end map and Share are the page's own; the board's own row is
+    // the board's, finding the player's place.
+    const buttons = [...page.querySelectorAll('button:not([data-role="tab"], .app-board__row)')].map((button) => [
       button.textContent,
       (button as HTMLElement).dataset.kind,
     ]);
@@ -190,6 +191,33 @@ it("says the player scored no points, rather than an empty panel, in a game tied
     board.entries = null;
   }
 });
+
+it.each([
+  [390, "3"],
+  [1440, "5"],
+])(
+  "stands every place of the game on its board at %i px, %s rows tall, the reader's own in its place",
+  async (width, rowsTall) => {
+    board.entries = Array.from({ length: 20 }, (_, index) => ({
+      address: index === 14 ? "0xb7" : `0x${(0xc00 + index).toString(16)}`,
+      rank: index + 1,
+      totalPoints: 400 - index * 10,
+      activityBreakdown: breakdown(400 - index * 10),
+    }));
+    try {
+      const page = await open(width);
+      const scroll = page.querySelector<HTMLElement>(".app-board-scroll")!;
+      expect(scroll.style.getPropertyValue("--app-board-rows")).toBe(rowsTall);
+      const rows = [...scroll.querySelectorAll(".app-board__item")];
+      expect(rows.map((row) => row.querySelector(".app-rank")?.textContent)).toEqual(
+        Array.from({ length: 20 }, (_, index) => String(index + 1)),
+      );
+      expect(rows.flatMap((row, index) => (row.hasAttribute("data-own") ? [index + 1] : []))).toEqual([15]);
+    } finally {
+      board.entries = null;
+    }
+  },
+);
 
 describe("Results read by a player who had no seat in the game (qa-app-2 P3-13)", () => {
   const outsiders = () => {

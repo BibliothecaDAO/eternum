@@ -27,6 +27,7 @@ import { campaignCodeHash } from "./campaigns";
 import { CAMPAIGNS } from "@realms-world/identity";
 import { campaignTicketFor } from "./campaign-ticket-store";
 import { ORIGIN } from "./workerd-harness";
+import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
@@ -348,6 +349,78 @@ describe("identity Worker", () => {
     const browser = createBrowser(["__Secure-better-auth.session_token=another-service.c2lnbmF0dXJl"]);
     expect((await signInWithCode(browser, "shadowed@realms.test")).status).toBe(200);
     expect((await browser.session())?.user.realmsId).toBeTruthy();
+  });
+
+  it("keeps an account's last visit after it signs out, so a news email still sees that it came back", async () => {
+    const DAY = 24 * 60 * 60;
+    const now = () => Math.floor(Date.now() / 1000);
+    const lastSeen = async (realmsId: string) =>
+      visitRecord.seconds(
+        ((await proxy.env.DB.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
+          ?.lastSeenAt,
+      );
+    const setLastSeen = (realmsId: string, seconds: number) =>
+      proxy.env.DB.prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
+        .bind(seconds * 1000, realmsId)
+        .run();
+    /** The sender's own read and rule: a founded Devcon player, no confirmed action, the record long begun. */
+    const stillAway = async (realmsId: string) =>
+      stillFits("D", { lastAction: 0, lastVisit: await lastSeen(realmsId) }, now() - DAY, 0);
+
+    // A visit is the app reading its session; signing out deletes the session but not the visit.
+    const researcher = createBrowser();
+    expect((await signInWithCode(researcher, "researcher@realms.test")).status).toBe(200);
+    const { realmsId } = (await researcher.session())!.user;
+    expect(await lastSeen(realmsId)).toBeGreaterThanOrEqual(now() - 5);
+    await setLastSeen(realmsId, now() - 3 * DAY);
+    expect(await stillAway(realmsId)).toBe(true);
+    await researcher.session();
+    expect((await researcher.request("/api/auth/sign-out", { body: {} })).status).toBe(200);
+    expect(await researcher.session()).toBeNull();
+    const sessionsLeft = await proxy.env.DB.prepare(
+      'SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?',
+    )
+      .bind(realmsId)
+      .first<{ n: number }>();
+    expect(sessionsLeft?.n).toBe(0);
+    expect(await stillAway(realmsId)).toBe(false);
+
+    // Written at most once an hour: a second load within the hour leaves the time as it was.
+    const reader = createBrowser();
+    expect((await signInWithCode(reader, "reader@realms.test")).status).toBe(200);
+    const reading = (await reader.session())!.user.realmsId;
+    const halfAnHourAgo = now() - 1800;
+    await setLastSeen(reading, halfAnHourAgo);
+    await reader.session();
+    expect(await lastSeen(reading)).toBe(halfAnHourAgo);
+
+    // Between two emails: the second player opens the game and signs out; the run reads D1 again and skips them.
+    const away = [createBrowser(), createBrowser(), createBrowser()];
+    const ids: string[] = [];
+    for (const [index, browser] of away.entries()) {
+      expect((await signInWithCode(browser, `away-${index}@realms.test`)).status).toBe(200);
+      ids.push((await browser.session())!.user.realmsId);
+      await setLastSeen(ids[index]!, now() - 3 * DAY);
+    }
+    const sent: string[] = [];
+    const counts = await sendCampaign({
+      deliveries: ids.map((id) => ({ realmsId: id, variant: "D" as const })),
+      stillAway: async (delivery) => stillAway(delivery.realmsId),
+      reserve: async () => "reserved",
+      send: async (delivery) => {
+        sent.push(delivery.realmsId);
+        if (sent.length === 1) {
+          await away[1]!.session();
+          await away[1]!.request("/api/auth/sign-out", { body: {} });
+        }
+        return { kind: "accepted", id: null };
+      },
+      markSent: async () => {},
+      release: async () => {},
+      pause: async () => {},
+    });
+    expect(sent).toEqual([ids[0], ids[2]]);
+    expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
   });
 
   it("creates an account on an email's first sign-in with a code, and signs the same account in after", async () => {

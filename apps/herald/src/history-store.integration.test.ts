@@ -294,7 +294,7 @@ describe("Frontier confirmed season history", () => {
           entity_id: 1,
           owner: 10,
           base: { category: 1, level: 1 },
-          metadata: { deepest_depth: 2, order: 5 },
+          metadata: { has_wonder: false, deepest_depth: 2, order: 5 },
         },
       };
       const read = (model: string) => (values[model] ? [{ key: "1", value: { game_id: "1", ...values[model] } }] : []);

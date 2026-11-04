@@ -1,5 +1,5 @@
 import { handlePayoutIdentity } from "./payout-identity";
-import { presentsOperatorToken } from "@realms-world/identity";
+import { presentsOperatorToken, VISIT_RECORD_SECONDS } from "@realms-world/identity";
 
 import type { IdentityAuth } from "./auth";
 import { routeChat } from "./chat/routes";
@@ -19,6 +19,7 @@ import { handleBuildOrders } from "./build-orders";
 import { hasCampaignHomeSource } from "./campaign-entry";
 import { handleCampaignDraw, handleCampaignRedeem } from "./campaign-tickets";
 import { handleNotificationPreferences } from "./notification-preferences";
+import { handleNewsEmailOptOut, NEWS_EMAIL_OPT_OUT_PATH } from "./news-email-opt-out";
 import { handleProfile, handleProfiles } from "./profiles";
 import { handleRatings } from "./ratings";
 import { handleRatingTop } from "./rating-top";
@@ -35,8 +36,8 @@ interface WorkerPlatform {
 }
 
 /**
- * Every /api route: identity under /api/auth, then devices, profiles, chat, notification settings, build orders,
- * campaign tickets and the directory.
+ * Every /api route: identity under /api/auth, a news email's stop link, then devices, profiles, chat, notification
+ * settings, build orders, campaign tickets and the directory.
  */
 export const routeIdentityRequest = async (
   request: Request,
@@ -53,7 +54,7 @@ export const routeIdentityRequest = async (
     if (refusal) return refusal;
     if (sendsCode) return sendCodeWithExpiry(request, auth);
   }
-  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth);
+  if (pathname === "/api/auth/get-session" && request.method === "GET") return accountSession(request, auth, env.DB);
   if (pathname === "/api/auth/providers" && request.method === "GET")
     return json({ providers: Object.keys(socialProvidersOf(env)) });
   if (pathname === "/api/auth/sign-in/social" && request.method === "POST")
@@ -65,6 +66,9 @@ export const routeIdentityRequest = async (
     return claimDiscordHandoff(request, env);
   }
   if (pathname.startsWith("/api/auth/")) return auth.handler(request);
+  // A news email's stop link: its signature is its authority, and a mail client's one-click POST carries no Origin.
+  if (pathname === NEWS_EMAIL_OPT_OUT_PATH && (request.method === "GET" || request.method === "POST"))
+    return handleNewsEmailOptOut(request, env);
   if (requiresSameOrigin(request, pathname) && request.headers.get("origin") !== new URL(env.BASE_URL).origin) {
     return json({ error: "invalid_origin" }, 403);
   }
@@ -208,10 +212,25 @@ const sendCodeWithExpiry = async (request: Request, auth: IdentityAuth): Promise
   );
 };
 
-/** Sessions always expose the current link, with no cached eligibility state. */
-const accountSession = async (request: Request, auth: IdentityAuth): Promise<Response> => {
+/**
+ * Sessions always expose the current link, with no cached eligibility state. The app reads its session each time it
+ * opens, so this is where the account's visit is written.
+ */
+const accountSession = async (request: Request, auth: IdentityAuth, db: D1Database): Promise<Response> => {
   const response = await auth.handler(request);
+  const body = await response.text();
+  const userId = (JSON.parse(body || "null") as { user?: { id?: unknown } } | null)?.user?.id;
+  if (response.ok && typeof userId === "string") await noteVisit(db, userId, Date.now());
   const headers = new Headers(response.headers);
   headers.set("cache-control", "no-store");
-  return new Response(response.body, { status: response.status, headers });
+  return new Response(body, { status: response.status, headers });
 };
+
+/** Writes the account's last visit, at most once per VISIT_RECORD_SECONDS so a page load costs no write most times. */
+const noteVisit = (db: D1Database, userId: string, now: number) =>
+  db
+    .prepare(
+      `UPDATE "user" SET "lastSeenAt" = ?1 WHERE "id" = ?2 AND ("lastSeenAt" IS NULL OR "lastSeenAt" <= ?1 - ?3)`,
+    )
+    .bind(now, userId, VISIT_RECORD_SECONDS * 1000)
+    .run();

@@ -37,3 +37,9 @@ it("claims no error reports or analytics, which the live app does not send", () 
   expect(privacy).not.toMatch(/Sentry|analytics|error data|pages visited/i);
   expect(privacy).toContain("Your IP address and your browser's user agent, stored with each sign-in session");
 });
+
+it("says news emails may come and how to stop them, as the news email's stop link does", () => {
+  expect(textOf(<PrivacyPage />)).toContain(
+    "We may occasionally email you news about seasons you can play. Every such email has a link to stop them, and you can also ask us to stop them through the contacts below.",
+  );
+});

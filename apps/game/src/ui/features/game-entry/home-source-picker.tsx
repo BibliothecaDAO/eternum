@@ -11,7 +11,7 @@ import { campaignOfPreset, presetLaborRules } from "@/services/home-claim-rules"
 import { useLayout } from "@/shell/frame/layout";
 import { linkWalletHref } from "@/shell/profile/settings-route";
 import { returnPathOf } from "@/shell/return-path";
-import { realmSkinIcon } from "@/three/structures/realm-skins";
+import { homeIcon } from "@/ui/design-system/home-icons";
 import { HomeArt } from "@/ui/shared/components/home-art";
 import { Icon } from "@/ui/design-system/icon";
 import { mintedResourceMeaning, orderMeaning } from "@/ui/design-system/icon-meaning";
@@ -366,7 +366,7 @@ export function ChoiceButton({
 const ChoiceArt = ({ choice, eager = false }: { choice: Choice; eager?: boolean }) =>
   choice.kind === "ticket" ? (
     <HomeArt
-      icon={realmSkinIcon(choice.golden ? "devcon-golden" : "devcon")}
+      icon={homeIcon(choice.golden ? "devcon-golden" : "devcon", 0)}
       size={112}
       tier={choice.golden ? "golden" : "regular"}
     />

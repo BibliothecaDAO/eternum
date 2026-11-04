@@ -1583,13 +1583,7 @@ export default class WorldmapScene extends WarpTravel {
     if (!facts) return;
     const position = this.resolveMarkerWorldPosition(structure.hexCoords);
     const color = playerColorManager.getProfileForUnit(facts.isMine, facts.isAlly, facts.ownerAddress).primary;
-    this.strategicMarkers.setStructure(
-      structure.entityId,
-      facts.realmSkin ?? structureMarkerKind(facts.structureType),
-      position.x,
-      position.z,
-      color,
-    );
+    this.strategicMarkers.setStructure(structure.entityId, structureMarkerKind(facts), position.x, position.z, color);
   }
 
   private writeArmyMarker(army: ArmySpatialRenderable): void {

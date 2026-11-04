@@ -36,7 +36,7 @@ it("ends a read that never answers in the screen's failure line, and leaves a wr
     root.render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
-          <BlitzBoard />
+          <BlitzBoard rows={10} />
         </MemoryRouter>
       </QueryClientProvider>,
     ),

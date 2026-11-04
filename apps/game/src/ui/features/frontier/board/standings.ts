@@ -10,18 +10,6 @@ export const findOwnEntry = (entries: readonly Entry[], viewer: string | null): 
   return own ? entries.find((entry) => normalizeLeaderboardAddress(entry.address) === own) : undefined;
 };
 
-/** The board's first rows in Herald's order, with the viewer's own row after them when it ranks below. */
-export const boardRows = (
-  entries: readonly Entry[],
-  viewer: string | null,
-  length: number,
-): { entry: Entry; own: boolean }[] => {
-  const own = findOwnEntry(entries, viewer);
-  const top = entries.slice(0, length);
-  const rows = top.map((entry) => ({ entry, own: entry === own }));
-  return own && !top.includes(own) ? [...rows, { entry: own, own: true }] : rows;
-};
-
 /** The viewer's season rank: undefined while the board loads, null for a viewer without a realm on it. */
 export const ownRank = (entries: readonly Entry[] | undefined, viewer: string | null): number | null | undefined =>
   entries && (findOwnEntry(entries, viewer)?.rank ?? null);
