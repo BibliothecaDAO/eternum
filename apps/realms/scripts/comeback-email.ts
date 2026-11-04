@@ -21,7 +21,9 @@ import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
 import {
   Activity,
+  isAway,
   sendCampaign,
+  stillFits,
   sendRecord,
   type HistoryEvent,
   type LaborGrant,
@@ -70,7 +72,7 @@ interface Season {
   rules: LaborRuleAmounts;
   /** Each player's latest confirmed action (Herald's history and daily claims); caught up before each send. */
   activity: Activity;
-  /** The block the snapshot was read at: every confirmed action up to it is in `activity`. */
+  /** The block the claims were last read at (the snapshot's confirmed head when they were read). */
   confirmedBlock: number;
   seasonPlayers: Set<string>;
 }
@@ -169,6 +171,20 @@ type Recipient = Reached & { email: string };
 const hasNewsEmailSchema = (target: Target) =>
   d1(target, `SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'news_email_sends'`).length > 0;
 
+/** Each account's newest session creation or renewal: the identity service's own record of a visit. */
+const VISITS_SQL = `SELECT u.realmsId, MAX(s.updatedAt) AS lastVisit FROM session s JOIN "user" u ON u.id = s.userId GROUP BY u.realmsId`;
+
+/** One account's newest session creation or renewal, read again right before its email. */
+const lastVisitOf = (target: Target, realmsId: string) =>
+  seconds(
+    d1(
+      target,
+      `SELECT MAX(s.updatedAt) AS lastVisit FROM session s JOIN "user" u ON u.id = s.userId WHERE u.realmsId = '${sendRecord.checkedAccount(realmsId)}'`,
+    )[0]?.lastVisit,
+  );
+
+const seconds = (iso: unknown) => (typeof iso === "string" ? Math.floor(Date.parse(iso) / 1000) : 0);
+
 /** Every account with a verified email, as comeback-campaign.ts decides on them; addresses only when asked for. */
 function readAccounts(
   target: Target,
@@ -186,6 +202,7 @@ function readAccounts(
       row.tier,
     ]),
   );
+  const visits = new Map(d1(target, VISITS_SQL).map((row) => [row.realmsId, seconds(row.lastVisit)]));
   const addresses = new Map<string, string[]>();
   for (const row of d1(target, `SELECT address, realmsId FROM realms_accounts`))
     addresses.set(row.realmsId, [...(addresses.get(row.realmsId) ?? []), norm(row.address)]);
@@ -199,6 +216,7 @@ function readAccounts(
       playtester: owned.some((address) => playtesters.has(address)),
       inSeason: owned.some((address) => season.seasonPlayers.has(address)),
       lastAction: season.activity.latestOf(owned),
+      lastVisit: visits.get(user.realmsId) ?? 0,
       addresses: owned,
       optedOut: user.newsEmailOptOutAt != null,
       ...(withEmail ? { email: String(user.email) } : {}),
@@ -540,17 +558,18 @@ async function dryRun(target: Target) {
   const counts = Object.fromEntries(
     (["D", "N", "P"] as const).map((key) => [
       key,
-      { email: 0, discord: 0, golden: 0, alreadyReserved: 0, cameBack: 0 },
+      { email: 0, discord: 0, golden: 0, alreadyReserved: 0, cameBack: { visited: 0, actedOnly: 0 } },
     ]),
   );
   let optedOut = 0;
   for (const account of readAccounts(target, season, false, newsSchema)) {
     if (account.optedOut) optedOut++;
     const key = variantOf(account, since);
-    // Who the email would be for had they not acted in the last 24 hours: the players it now leaves out.
-    const away = variantOf({ ...account, lastAction: 0 }, since);
+    // Who the email would be for had they stayed away: the players it now leaves out, by a visit the session records
+    // or only by a confirmed action.
+    const away = variantOf({ ...account, lastAction: 0, lastVisit: 0 }, since);
     if (!key) {
-      if (away) counts[away]!.cameBack++;
+      if (away) counts[away]!.cameBack[isAway({ ...account, lastAction: 0 }, since) ? "actedOnly" : "visited"]++;
       continue;
     }
     if (reserved.has(account.realmsId)) counts[key]!.alreadyReserved++;
@@ -651,7 +670,11 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
     deliveries,
     stillAway: async (delivery) => {
       await catchUpActivity(season);
-      return season.activity.latestOf(delivery.addresses) < activeSince();
+      return stillFits(
+        delivery.variant,
+        { lastAction: season.activity.latestOf(delivery.addresses), lastVisit: lastVisitOf(target, delivery.realmsId) },
+        activeSince(),
+      );
     },
     reserve: async (delivery) => reserveSend(target, delivery),
     send: async (delivery): Promise<Handoff> => {

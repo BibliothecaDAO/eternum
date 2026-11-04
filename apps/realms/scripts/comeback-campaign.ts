@@ -1,3 +1,4 @@
+import { SESSION_RENEWAL_SECONDS } from "@realms-world/identity";
 import { dayOf, type SeasonCalendar } from "../../../packages/core/src/utils/days";
 
 /**
@@ -13,24 +14,45 @@ export interface Account {
   ticket: "regular" | "golden" | null;
   playtester: boolean;
   inSeason: boolean;
-  /** The account's latest Season 0 action, in seconds; 0 for none. */
+  /** The account's latest confirmed Season 0 action, in seconds; 0 for none. */
   lastAction: number;
+  /** When the account's newest session was created or last renewed, in seconds; 0 for none. */
+  lastVisit: number;
   /** The account followed a news email's stop link. */
   optedOut: boolean;
 }
 
 /**
- * Each account in at most one variant, D before N before P; none for an account that stopped news emails:
- * - D: holds a Devcon ticket, founded in Season 0, no action since `activeSince` (24 hours before the send).
+ * Whether the player has stayed away since `activeSince` (24 hours before the send). Coming back means opening the
+ * game: the identity service records it by creating or renewing the session, and renews it on the first use a day or
+ * more after the last, so a visit since `activeSince` leaves a renewal no older than a day before it. A confirmed
+ * action counts too, for a player who acts without opening the app again (a tab kept open, a bot device).
+ */
+export const isAway = (account: Pick<Account, "lastAction" | "lastVisit">, activeSince: number): boolean =>
+  account.lastVisit < activeSince - SESSION_RENEWAL_SECONDS && account.lastAction < activeSince;
+
+/**
+ * Whether an account still fits its variant, from its latest signals. N asks for a realm not yet founded: signing up
+ * opened the game, and so may a later visit, but neither founds it, so N holds until a confirmed action (founding is
+ * one). D and P are for players who stayed away (`isAway`).
+ */
+export const stillFits = (
+  variant: VariantKey,
+  account: Pick<Account, "lastAction" | "lastVisit">,
+  activeSince: number,
+): boolean => (variant === "N" ? account.lastAction < activeSince : isAway(account, activeSince));
+
+/**
+ * Each account in at most one variant, D before N before P; none for an account that stopped news emails or no longer
+ * fits (`stillFits`):
+ * - D: holds a Devcon ticket, founded in Season 0.
  * - N: holds a Devcon ticket, never founded.
- * - P: owns an address on the playtest's final board, holds no ticket, no Season 0 action since `activeSince`.
+ * - P: owns an address on the playtest's final board, holds no ticket.
  */
 export function variantOf(account: Account, activeSince: number): VariantKey | null {
   if (account.optedOut) return null;
-  if (account.ticket && account.inSeason) return account.lastAction < activeSince ? "D" : null;
-  if (account.ticket) return account.lastAction < activeSince ? "N" : null;
-  if (account.playtester && account.lastAction < activeSince) return "P";
-  return null;
+  const variant: VariantKey | null = account.ticket ? (account.inSeason ? "D" : "N") : account.playtester ? "P" : null;
+  return variant && stillFits(variant, account, activeSince) ? variant : null;
 }
 
 /** One confirmed event as Herald's history serves it (newest first). */
@@ -66,7 +88,8 @@ const address = (value: unknown) => `0x${BigInt(String(value)).toString(16)}`;
  * - an event with a timestamp: that timestamp;
  * - an event without one (a rejected command, a batch step): the earliest timestamp of any later block, else now;
  * - a claim: the end of its Frontier day, else now.
- * Research writes no event and no time anywhere confirmed, so a player whose only action was research is not seen.
+ * Research writes no event and no time anywhere confirmed; a player who researched opened the game, which `isAway`
+ * reads from the session.
  */
 export class Activity {
   private readonly latest = new Map<string, number>();
@@ -211,6 +234,8 @@ export const sendRecord = {
     `UPDATE news_email_sends SET status = 'sent', resend_id = ${id !== null && /^[0-9a-f-]+$/i.test(id) ? `'${id}'` : "NULL"}, sent_at = ${now} WHERE campaign = '${campaign}' AND realmsId = '${checkedId(delivery.realmsId)}'`,
   release: (campaign: string, delivery: Delivery) =>
     `DELETE FROM news_email_sends WHERE campaign = '${campaign}' AND realmsId = '${checkedId(delivery.realmsId)}' AND status = 'reserved'`,
+  /** The id as a statement may carry it, for the sender's other reads of one account. */
+  checkedAccount: (realmsId: string) => checkedId(realmsId),
   optedOut: (delivery: Delivery) =>
     `SELECT newsEmailOptOutAt FROM "user" WHERE realmsId = '${checkedId(delivery.realmsId)}'`,
 };

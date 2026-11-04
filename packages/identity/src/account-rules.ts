@@ -1,11 +1,19 @@
 /**
  * A Realms account's rules, shared by the identity service that enforces them and the app that shows them: the sign-in
- * code, the portraits and the display name.
+ * code, the session's life, the portraits and the display name.
  */
 
 /** A sign-in code's digits, and how long it signs in after it is sent. */
 export const SIGN_IN_CODE_LENGTH = 6;
 export const SIGN_IN_CODE_SECONDS = 10 * 60;
+
+/**
+ * A signed-in session lasts a month, renewed by the first use a day or more after its last renewal, so a phone stays
+ * signed in. A visit therefore leaves a renewal at most a day older than itself: anyone who opened the app in the last
+ * day holds a session created or renewed within the last two.
+ */
+export const SESSION_SECONDS = 30 * 24 * 60 * 60;
+export const SESSION_RENEWAL_SECONDS = 24 * 60 * 60;
 
 /** The ink portraits a player can wear, by the id their account stores. */
 export const IDENTITY_PORTRAITS = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"] as const;

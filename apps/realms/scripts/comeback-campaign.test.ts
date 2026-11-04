@@ -17,6 +17,7 @@ const account = (overrides: Partial<Account>): Account => ({
   playtester: false,
   inSeason: false,
   lastAction: 0,
+  lastVisit: 0,
   optedOut: false,
   ...overrides,
 });
@@ -30,6 +31,13 @@ it("picks each account's variant, and none for an account that stopped news emai
   expect(variantOf(account({ playtester: true }), SINCE)).toBe("P");
   expect(variantOf(account({ playtester: true, inSeason: true, lastAction: SINCE + 5 }), SINCE)).toBeNull();
   expect(variantOf(account({}), SINCE)).toBeNull();
+  // A visit the session records leaves the player out, research-only or not: renewed or created within the last two
+  // days (a day's window plus the day a renewal can lag behind a visit).
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 60 }, SINCE)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 24 * 60 * 60 + 60 }, SINCE)).toBeNull();
+  expect(variantOf({ ...idleFounder, lastVisit: SINCE - 24 * 60 * 60 - 60 }, SINCE)).toBe("D");
+  // N asks for a realm not yet founded: a visit since signing up does not found it.
+  expect(variantOf(account({ ticket: "golden", lastVisit: SINCE + 5 }), SINCE)).toBe("N");
   for (const stopped of [{ ...idleFounder }, account({ ticket: "golden" }), account({ playtester: true })])
     expect(variantOf({ ...stopped, optedOut: true }, SINCE)).toBeNull();
 });

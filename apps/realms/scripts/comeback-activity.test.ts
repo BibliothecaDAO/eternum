@@ -1,6 +1,14 @@
 import { expect, it } from "vitest";
 import { dayOf } from "../../../packages/core/src/utils/days";
-import { Activity, sendCampaign, variantOf, type Account, type Delivery, type HistoryEvent } from "./comeback-campaign";
+import {
+  Activity,
+  stillFits,
+  sendCampaign,
+  variantOf,
+  type Account,
+  type Delivery,
+  type HistoryEvent,
+} from "./comeback-campaign";
 
 // The Devcon season's own calendar (Herald's directory), and a send on its Frontier Day 5.
 const CALENDAR = {
@@ -106,6 +114,7 @@ it("emails the players still away and leaves out one who claims between two emai
     playtester: false,
     inSeason: true,
     lastAction: activity.latestOf(addresses),
+    lastVisit: 0,
     optedOut: false,
   });
   const accounts = [
@@ -139,4 +148,72 @@ it("emails the players still away and leaves out one who claims between two emai
   });
   expect(sent).toEqual(["0x1a", "0x1c"]);
   expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
+});
+
+it("leaves out a player who only researched, by the session their visit renewed, before and between emails", async () => {
+  // Research writes no history event and no claim: only the identity session shows these players came back.
+  const activity = activityNow();
+  activity.noteHistory([
+    story(100, "0xa", SINCE - 7200),
+    story(101, "0xb", SINCE - 7200),
+    story(102, "0xc", SINCE - 7200),
+  ]);
+  const sessions = new Map([
+    ["0x1a", SINCE - 3 * 24 * 60 * 60],
+    ["0x1b", SINCE - 3 * 24 * 60 * 60],
+    ["0x1c", SINCE - 3 * 24 * 60 * 60],
+    ["0x1d", NOW - 1800], // opened the game half an hour ago and researched
+  ]);
+  const account = (realmsId: string, addresses: string[]): Account & { addresses: string[] } => ({
+    realmsId,
+    addresses,
+    discord: false,
+    ticket: "regular",
+    playtester: false,
+    inSeason: true,
+    lastAction: activity.latestOf(addresses),
+    lastVisit: sessions.get(realmsId)!,
+    optedOut: false,
+  });
+  const accounts = [
+    account("0x1a", ["0xa"]),
+    account("0x1b", ["0xb"]),
+    account("0x1c", ["0xc"]),
+    account("0x1d", ["0xd"]),
+  ];
+  const deliveries = accounts.flatMap((a) =>
+    variantOf(a, SINCE) ? [{ ...a, variant: variantOf(a, SINCE)! } as Delivery & { addresses: string[] }] : [],
+  );
+  expect(deliveries.map((d) => d.realmsId)).toEqual(["0x1a", "0x1b", "0x1c"]);
+
+  const sent: string[] = [];
+  const counts = await sendCampaign({
+    deliveries,
+    // After the first email, 0x1b's player opens the game: the session renews, and no chain event follows.
+    stillAway: async (delivery) => {
+      if (sent.length === 1) sessions.set("0x1b", NOW);
+      return stillFits(
+        delivery.variant,
+        { lastAction: activity.latestOf(delivery.addresses), lastVisit: sessions.get(delivery.realmsId)! },
+        SINCE,
+      );
+    },
+    reserve: async () => "reserved",
+    send: async (delivery) => {
+      sent.push(delivery.realmsId);
+      return { kind: "accepted", id: null };
+    },
+    markSent: async () => {},
+    release: async () => {},
+    pause: async () => {},
+  });
+  expect(sent).toEqual(["0x1a", "0x1c"]);
+  expect(counts).toMatchObject({ sent: 2, cameBack: 1 });
+});
+
+it("keeps emailing a ticket holder who signed up and visited without founding, until they found", () => {
+  const signedUpToday = { lastAction: 0, lastVisit: NOW - 600 };
+  expect(stillFits("N", signedUpToday, SINCE)).toBe(true);
+  expect(stillFits("N", { ...signedUpToday, lastAction: NOW - 60 }, SINCE)).toBe(false);
+  expect(stillFits("D", signedUpToday, SINCE)).toBe(false);
 });
