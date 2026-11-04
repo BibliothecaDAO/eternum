@@ -94,13 +94,13 @@ const LinkRow = ({ code }: { code: string }) => {
 const TicketProgress = ({ counted }: { counted: number }) => (
   <div className="grid grid-cols-2 gap-2">
     <Milestone
-      icon="devcon-realm"
+      icon="devcon-realm-0"
       reached
       title={REFERRAL_WORDS.forEachFriend}
       detail={REFERRAL_WORDS.forEachFriendDetail}
     />
     <Milestone
-      icon="devcon-realm"
+      icon="devcon-realm-0"
       reached={counted > 0}
       title={REFERRAL_WORDS.yourRealm}
       detail={REFERRAL_WORDS.yourRealmDetail}
@@ -116,7 +116,7 @@ const GoldenProgress = ({ counted }: { counted: number }) => (
       return (
         <Milestone
           key={index}
-          icon={last ? "devcon-golden-realm" : "check"}
+          icon={last ? "devcon-golden-realm-0" : "check"}
           reached={index < counted}
           title={last ? REFERRAL_WORDS.goldenRealm : REFERRAL_WORDS.friendStep(index + 1)}
           detail={index < counted ? REFERRAL_WORDS.stepCounted : REFERRAL_WORDS.stepWaiting}
