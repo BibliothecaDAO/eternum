@@ -14,12 +14,22 @@ import { readFile } from "node:fs/promises";
 import { setTimeout } from "node:timers/promises";
 import sharp from "sharp";
 import { campaignHomeClaim, type LaborRuleAmounts } from "@bibliothecadao/eternum";
-import { APP_ADDRESS, DOCS_ADDRESS, STAGING_ORIGIN } from "../../game/src/config/app-address";
-import playtest from "../../game/src/shell/season-tab/archive/playtest.json";
+import environments from "../../../deploy/first/environments.json";
+import playtest from "../../../packages/core/src/sync/season-archives/playtest.json";
 import { sendEmail, type Email } from "../../../packages/notifications/src/email";
 import BRAND from "../../../packages/notifications/src/brand.gen.json";
 import { newsEmailOptOutLink } from "../server/news-email-opt-out";
-import { sendCampaign, variantOf, type Account, type VariantKey } from "./comeback-campaign";
+import {
+  sendCampaign,
+  sendRecord,
+  variantOf,
+  wranglerFailure,
+  type Account,
+  type Delivery,
+  type Handoff,
+  type Reservation,
+  type VariantKey,
+} from "./comeback-campaign";
 
 const HERALD = "https://herald.realms.party";
 const GAME = 1;
@@ -27,19 +37,22 @@ const TICKETS = "devcon-2026";
 /** This email's key in the send record (news_email_sends): an account it reached is never sent it again. */
 const NEWS_CAMPAIGN = "devcon-s0-comeback";
 
-/** Where each environment's accounts live. The season's numbers always come from production's Herald. */
+/**
+ * Where each environment's accounts live, and its app and docs origins as the deployer publishes them
+ * (deploy/first/environments.json). The season's numbers always come from production's Herald.
+ */
 const TARGETS = {
-  production: {
-    store: ".realms-production",
-    wranglerEnv: "production",
-    database: "realms-identity-production",
-    app: APP_ADDRESS,
-  },
-  dev: { store: ".realms-dev", wranglerEnv: "staging", database: "realms-identity-staging", app: STAGING_ORIGIN },
+  production: { ...addressesOf("production"), store: ".realms-production", database: "realms-identity-production" },
+  dev: { ...addressesOf("dev"), store: ".realms-dev", database: "realms-identity-staging" },
 } as const;
 type Target = (typeof TARGETS)[keyof typeof TARGETS];
 
 type Row = Record<string, any>;
+
+function addressesOf(name: keyof typeof environments) {
+  const environment = environments[name];
+  return { app: environment.origin, docs: environment.docs.origin, wranglerEnv: environment.worker };
+}
 
 // ---- What the email says, read live ---------------------------------------------------------------------------------
 
@@ -178,20 +191,18 @@ function d1(target: Target, query: string): Row[] {
       maxBuffer: 64 * 1024 * 1024,
     },
   );
-  // wrangler's own error names the missing table or column; it carries no secret and no row.
-  if (run.status !== 0) throw new Error(`wrangler exit ${run.status}: ${(run.stderr || run.stdout).slice(-300)}`);
+  if (run.status !== 0) throw new Error(wranglerFailure(run.status, `${run.stderr}\n${run.stdout}`));
   return JSON.parse(run.stdout)[0].results;
 }
 
-/** The send record's one write: the account this campaign reached, once. */
-const recordSend = (target: Target, realmsId: string, variant: VariantKey, id: string | null) => {
-  if (!/^0x[0-9a-f]+$/.test(realmsId) || (id !== null && !/^[0-9a-f-]+$/i.test(id)))
-    throw new Error("refused: unexpected id");
-  d1(
-    target,
-    `INSERT INTO news_email_sends (campaign, realmsId, variant, resend_id, sent_at) VALUES ('${NEWS_CAMPAIGN}', '${realmsId}', '${variant}', ${id === null ? "NULL" : `'${id}'`}, ${Date.now()}) ON CONFLICT DO NOTHING`,
-  );
-};
+/**
+ * Reserves the account in the send record before its email goes, in one statement that also checks the account has not
+ * stopped news emails, so an interrupted or parallel run never sends it again.
+ */
+function reserveSend(target: Target, delivery: Delivery): Reservation {
+  if (d1(target, sendRecord.reserve(NEWS_CAMPAIGN, delivery, Date.now())).length) return "reserved";
+  return d1(target, sendRecord.optedOut(delivery))[0]?.newsEmailOptOutAt != null ? "opted_out" : "taken";
+}
 
 const privateFile = <T>(target: Target, name: string): T =>
   JSON.parse(readFileSync(`${process.env.HOME}/${target.store}/${name}`, "utf8")) as T;
@@ -271,6 +282,7 @@ const HEADER_ID = "header";
 interface Reader {
   to: string;
   app: string;
+  docs: string;
   optOut: string;
   golden: boolean;
 }
@@ -278,7 +290,7 @@ interface Reader {
 function buildEmail(key: VariantKey, s: Season, reader: Reader, header: string, subjectPrefix = ""): Email {
   const variant = VARIANTS[key];
   const words = paragraphs(variant, s, reader.golden);
-  const docsUrl = `${DOCS_ADDRESS}${variant.docs.path}`;
+  const docsUrl = `${reader.docs}${variant.docs.path}`;
   const subject = `${subjectPrefix}${variant.subject(s)}`;
   const text = [
     words.opening,
@@ -475,18 +487,19 @@ const todayStart = () => Math.floor(Date.now() / 86_400_000) * 86_400;
 
 async function dryRun(target: Target) {
   const season = await readSeason();
-  const sent = new Set(
-    d1(target, `SELECT realmsId FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`).map((row) => row.realmsId),
-  );
+  const record = d1(target, `SELECT realmsId, status FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`);
+  const reserved = new Set(record.map((row) => row.realmsId));
+  /** Reserved by a run that never marked them sent: check them against Resend's log before anything else. */
+  const unresolved = record.filter((row) => row.status === "reserved").length;
   const counts = Object.fromEntries(
-    (["D", "N", "P"] as const).map((key) => [key, { email: 0, discord: 0, golden: 0, alreadySent: 0 }]),
+    (["D", "N", "P"] as const).map((key) => [key, { email: 0, discord: 0, golden: 0, alreadyReserved: 0 }]),
   );
   let optedOut = 0;
   for (const account of readAccounts(target, season, false)) {
     if (account.optedOut) optedOut++;
     const key = variantOf(account, todayStart());
     if (!key) continue;
-    if (sent.has(account.realmsId)) counts[key]!.alreadySent++;
+    if (reserved.has(account.realmsId)) counts[key]!.alreadyReserved++;
     else counts[key]![account.discord ? "discord" : "email"]++;
     if (account.ticket === "golden") counts[key]!.golden++;
   }
@@ -497,6 +510,7 @@ async function dryRun(target: Target) {
         todayStartUtc: new Date(todayStart() * 1000).toISOString(),
         figures: figures(season),
         recipients: counts,
+        unresolved,
         optedOut,
       },
       null,
@@ -509,8 +523,9 @@ async function render(dir: string) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
   const reader = {
     to: "player@example.com",
-    app: APP_ADDRESS,
-    optOut: await newsEmailOptOutLink(APP_ADDRESS, "render-only", "0x0"),
+    app: TARGETS.production.app,
+    docs: TARGETS.production.docs,
+    optOut: await newsEmailOptOutLink(TARGETS.production.app, "render-only", "0x0"),
     golden: false,
   };
   mkdirSync(dir, { recursive: true });
@@ -526,22 +541,30 @@ async function render(dir: string) {
 
 /**
  * Each variant once to one address, the subject marked "[TEST X]", with the stop link of the account that address
- * signs in to. Nothing goes once that account has stopped news emails.
+ * signs in to. Before each one it checks the account again, and nothing more goes once it has stopped news emails.
+ * It logs counts, statuses and receipts only: never the account or its stop link, which can stop its emails.
  */
 async function test(target: Target, to: string) {
   if (!/^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}$/.test(to)) throw new Error("test needs one email address");
-  const [account] = d1(target, `SELECT realmsId, newsEmailOptOutAt FROM "user" WHERE email = '${to}'`);
+  const accountOf = () => d1(target, `SELECT realmsId, newsEmailOptOutAt FROM "user" WHERE email = '${to}'`)[0];
+  const account = accountOf();
   if (!account) throw new Error("no account signs in with that address in this environment");
-  if (account.newsEmailOptOutAt != null) {
-    console.log(JSON.stringify({ realmsId: account.realmsId, sent: 0, skipped: "opted_out" }));
-    return;
-  }
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
-  const reader = { to, app: target.app, optOut: await optOutLinkOf(target, account.realmsId), golden: false };
+  const reader = {
+    to,
+    app: target.app,
+    docs: target.docs,
+    optOut: await optOutLinkOf(target, account.realmsId),
+    golden: false,
+  };
   for (const key of Object.keys(VARIANTS) as VariantKey[]) {
+    if (accountOf()?.newsEmailOptOutAt != null) {
+      console.log(JSON.stringify({ variant: key, sent: false, skipped: "opted_out" }));
+      continue;
+    }
     const response = await sendEmail(resendKey(target), buildEmail(key, season, reader, header, `[TEST ${key}] `));
     const quota = Object.fromEntries([...response.headers].filter(([name]) => /quota|ratelimit/i.test(name)));
-    const body = (await response.json()) as Row;
+    const body = (await response.json().catch(() => ({}))) as Row;
     console.log(
       JSON.stringify({
         variant: key,
@@ -551,12 +574,16 @@ async function test(target: Target, to: string) {
         quota,
       }),
     );
-    if (!response.ok) throw new Error(`Resend refused variant ${key}: ${response.status} ${body.name ?? ""}`);
+    if (!response.ok) throw new Error(`Resend refused variant ${key}: ${response.status}`);
   }
-  console.log(JSON.stringify({ realmsId: account.realmsId, optOutLink: reader.optOut, figures: figures(season) }));
+  console.log(JSON.stringify({ figures: figures(season) }));
 }
 
-/** The campaign to every account in the chosen variants that has not stopped news emails and has not had it yet. */
+/**
+ * The campaign to every account in the chosen variants that has not stopped news emails and has not had it yet. The
+ * season is read once, so every email of a run says the same figures; each account is reserved in the send record,
+ * with its opt-out checked again, before its email goes.
+ */
 async function send(target: Target, variants: readonly VariantKey[], withDiscord: boolean) {
   const [season, header] = await Promise.all([readSeason(), drawHeader()]);
   const today = todayStart();
@@ -564,30 +591,27 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
     const variant = variantOf(account, today);
     return variant && variants.includes(variant) && (withDiscord || !account.discord) ? [{ ...account, variant }] : [];
   });
-  const alreadySent = new Set(
-    d1(target, `SELECT realmsId FROM news_email_sends WHERE campaign = '${NEWS_CAMPAIGN}'`).map((row) =>
-      String(row.realmsId),
-    ),
-  );
   const counts = await sendCampaign({
-    campaign: NEWS_CAMPAIGN,
     deliveries,
-    alreadySent,
-    send: async (delivery, idempotencyKey) => {
+    reserve: async (delivery) => reserveSend(target, delivery),
+    send: async (delivery): Promise<Handoff> => {
       const reader = {
         to: delivery.email,
         app: target.app,
+        docs: target.docs,
         optOut: await optOutLinkOf(target, delivery.realmsId),
         golden: delivery.ticket === "golden",
       };
-      const response = await sendEmail(resendKey(target), {
-        ...buildEmail(delivery.variant, season, reader, header),
-        idempotencyKey,
-      });
+      const response = await sendEmail(resendKey(target), buildEmail(delivery.variant, season, reader, header)).catch(
+        () => null,
+      );
+      if (!response || response.status >= 500) return { kind: "unknown" };
+      if (!response.ok) return { kind: "refused" };
       const body = (await response.json().catch(() => ({}))) as Row;
-      return { ok: response.ok, id: typeof body.id === "string" ? body.id : null };
+      return { kind: "accepted", id: typeof body.id === "string" ? body.id : null };
     },
-    record: async (delivery, id) => recordSend(target, delivery.realmsId, delivery.variant, id),
+    markSent: async (delivery, id) => void d1(target, sendRecord.markSent(NEWS_CAMPAIGN, delivery, id, Date.now())),
+    release: async (delivery) => void d1(target, sendRecord.release(NEWS_CAMPAIGN, delivery)),
     pause: () => setTimeout(1000),
   });
   console.log(
@@ -600,7 +624,7 @@ async function send(target: Target, variants: readonly VariantKey[], withDiscord
       figures: figures(season),
     }),
   );
-  if (counts.refused) process.exitCode = 1;
+  if (counts.refused || counts.unknown) process.exitCode = 1;
 }
 
 const optOutLinkOf = (target: Target, realmsId: string) =>
