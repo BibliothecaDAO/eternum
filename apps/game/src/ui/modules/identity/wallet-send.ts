@@ -43,8 +43,7 @@ export const sendFromWallet = async (
   try {
     hash = (await account.execute(calls)).transaction_hash;
   } catch (error) {
-    if (error && typeof error === "object" && "code" in error && error.code === 4001)
-      return { kind: "refused", reason: "Payment rejected in wallet." };
+    if (isWalletRefusal(error)) return { kind: "refused", reason: "Payment rejected in wallet." };
     return { kind: "uncertain", reason: VALUE_WORDS.unconfirmed };
   }
   onSigned();
@@ -55,6 +54,15 @@ export const sendFromWallet = async (
     console.error("l2_send_unconfirmed", { hash, error: error instanceof Error ? error.message : error });
     return { kind: "uncertain", reason: VALUE_WORDS.unconfirmed };
   }
+};
+
+/**
+ * A wallet's own refusal, given before it sends anything: the wallet API's USER_REFUSED_OP (code 113), starknet-react's
+ * UserRejectedRequestError, or Ready's extension's "User abort". Any other failure may follow a broadcast.
+ */
+const isWalletRefusal = (error: unknown) => {
+  const { code, name, message } = (error ?? {}) as { code?: unknown; name?: unknown; message?: unknown };
+  return code === 113 || name === "UserRejectedRequestError" || message === "User abort";
 };
 
 /**

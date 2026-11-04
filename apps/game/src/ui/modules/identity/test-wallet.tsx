@@ -60,7 +60,7 @@ export const installWallet = (
       asked.push(call);
       if (call.type === "wallet_requestChainId") return SN_MAIN;
       if (call.type === "wallet_addInvokeTransaction") {
-        if (wallet.approves === false) throw Object.assign(new Error("User abort"), { code: 4001 });
+        if (wallet.approves === false) throw new Error("User abort");
         return { transaction_hash: "0xtx" };
       }
       if (call.type !== "wallet_requestAccounts") throw new Error(`unexpected ${call.type}`);

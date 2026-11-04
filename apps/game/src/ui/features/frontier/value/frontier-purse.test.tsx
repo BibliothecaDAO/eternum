@@ -2,10 +2,12 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { LordsDeposit } from "@realms-world/value-ledger/deposits";
+import type { AccountInterface, Call, ProviderInterface } from "starknet";
+import { sendFromWallet, type WalletSendOutcome } from "@/ui/modules/identity/wallet-send";
 import { depositStructure } from "../../../../../../value-relay/test-support/deposit-structure";
 import { FrontierPurse } from "./frontier-purse";
 const wallet = vi.hoisted(() => ({
-  props: null as null | { calls: { calldata: string[] }[]; onState: (state: unknown) => void },
+  props: null as null | { calls: (Call & { calldata: string[] })[]; onState: (state: WalletSendOutcome) => void },
   refetch: vi.fn(),
   available: 20n,
   history: [] as LordsDeposit[],
@@ -118,16 +120,90 @@ it("confirms one payment, resets the form and sends a second deposit with a fres
   expect(view.host.querySelector("[data-spend-lords]")?.getAttribute("data-spend-lords")).toBe("20");
   view.unmount();
 });
-it.each(["no-strk", "refused"])("allows editing a definitively unsent or reverted %s payment", async (kind) => {
+it.each(["no-strk", "refused"] as const)(
+  "allows editing a definitively unsent or reverted %s payment",
+  async (kind) => {
+    const view = await render();
+    await act(async () => view.button("Deposit LORDS").click());
+    act(() => wallet.props!.onState({ kind, reason: "Rejected" }));
+    act(() => view.button("Edit or cancel deposit").click());
+    expect(amount(view.host).disabled).toBe(false);
+    edit(amount(view.host), "3");
+    await act(async () => view.button("Deposit LORDS").click());
+    expect(wallet.props!.calls[1].calldata.at(-2)).toBe("3");
+    view.unmount();
+  },
+);
+
+async function answerWallet(error: unknown) {
+  const account = {
+    address: "0x33",
+    estimateInvokeFee: async () => ({ overall_fee: 1n }),
+    execute: vi.fn().mockRejectedValue(error),
+  } as unknown as AccountInterface;
+  const provider = {
+    callContract: async () => ["1", "0"],
+    waitForTransaction: vi.fn(),
+  } as unknown as ProviderInterface;
+  const props = wallet.props!;
+  const signed = vi.fn();
+  const outcome = await sendFromWallet(account, "0x33", props.calls, provider, signed);
+  act(() => props.onState(outcome));
+  expect(account.execute).toHaveBeenCalledOnce();
+  expect(account.execute).toHaveBeenCalledWith(props.calls);
+  expect(signed).not.toHaveBeenCalled();
+  expect(provider.waitForTransaction).not.toHaveBeenCalled();
+  return outcome;
+}
+
+const walletRefusals = [
+  { name: "USER_REFUSED_OP", error: { code: 113, message: "USER_REFUSED_OP" } },
+  { name: "User abort", error: new Error("User abort") },
+];
+
+it.each(walletRefusals)("allows cancelling and editing a first $name refusal", async ({ error }) => {
   const view = await render();
-  await act(async () => view.button("Deposit LORDS").click());
-  act(() => wallet.props!.onState({ kind, reason: "Rejected" }));
-  act(() => view.button("Edit or cancel deposit").click());
-  expect(amount(view.host).disabled).toBe(false);
-  edit(amount(view.host), "3");
-  await act(async () => view.button("Deposit LORDS").click());
-  expect(wallet.props!.calls[1].calldata.at(-2)).toBe("3");
-  view.unmount();
+  try {
+    edit(amount(view.host), "25");
+    await act(async () => view.button("Deposit LORDS").click());
+    const first = wallet.props!.calls;
+    expect(await answerWallet(error)).toEqual({ kind: "refused", reason: "Payment rejected in wallet." });
+    act(() => view.button("Edit or cancel deposit").click());
+    expect(localStorage.length).toBe(0);
+    expect(amount(view.host).disabled).toBe(false);
+    expect(view.button("Deposit LORDS")).toBeDefined();
+    edit(amount(view.host), "3");
+    await act(async () => view.button("Deposit LORDS").click());
+    expect(wallet.props!.calls[1].calldata.at(-2)).toBe("3");
+    expect(wallet.props!.calls[1].calldata.at(-1)).not.toBe(first[1].calldata.at(-1));
+  } finally {
+    view.unmount();
+  }
+});
+
+it.each(walletRefusals)("keeps an earlier uncertain payment after a $name retry refusal", async ({ error }) => {
+  let view = await render();
+  try {
+    edit(amount(view.host), "25");
+    await act(async () => view.button("Deposit LORDS").click());
+    const first = wallet.props!.calls;
+    expect(await answerWallet(new Error("response lost"))).toMatchObject({ kind: "uncertain" });
+    const saved = localStorage.getItem(localStorage.key(0)!);
+    view.unmount();
+    view = await render();
+    await act(async () => view.button("Retry payment").click());
+    expect(wallet.props!.calls).toEqual(first);
+    expect(await answerWallet(error)).toEqual({ kind: "refused", reason: "Payment rejected in wallet." });
+    expect(view.button("Edit or cancel deposit")).toBeUndefined();
+    expect(view.button("Deposit LORDS")).toBeUndefined();
+    expect(amount(view.host).disabled).toBe(true);
+    expect(amount(view.host).value).toBe("25");
+    expect(localStorage.length).toBe(1);
+    expect(localStorage.getItem(localStorage.key(0)!)).toBe(saved);
+    expect(view.host.textContent).toContain("Payment status is uncertain.");
+  } finally {
+    view.unmount();
+  }
 });
 it("restores the exact uncertain 25 LORDS display and signed terms across reopening and an unsent retry", async () => {
   let view = await render();

@@ -81,17 +81,38 @@ it("refuses a nonzero STRK balance below the estimated network fee", async () =>
   expect(account.estimateInvokeFee).toHaveBeenCalledWith(CALLS);
 });
 
-it("distinguishes a rejected signature from a lost submission response", async () => {
+it.each([
+  { code: 113, message: "USER_REFUSED_OP" },
+  Object.assign(new Error("User rejected"), { name: "UserRejectedRequestError" }),
+  new Error("User abort"),
+])("recognizes the supported wallet's explicit refusal: %s", async (error) => {
   const { account, execute } = wallet();
   const provider = chain(1n, Promise.resolve({ isReverted: () => false }));
-  execute.mockRejectedValueOnce(Object.assign(new Error("User rejected"), { code: 4001 }));
-  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn())).toEqual({
+  const signed = vi.fn();
+  execute.mockRejectedValueOnce(error);
+  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, signed)).toEqual({
     kind: "refused",
     reason: "Payment rejected in wallet.",
   });
-  execute.mockRejectedValueOnce(new Error("response lost"));
-  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, vi.fn())).toEqual({
+  expect(signed).not.toHaveBeenCalled();
+  expect(provider.waitForTransaction).not.toHaveBeenCalled();
+});
+
+it.each([
+  new Error("response lost"),
+  new Error("User abort: response lost"),
+  { code: 4001 },
+  { code: "113" },
+  undefined,
+])("keeps an unknown submission error uncertain: %s", async (error) => {
+  const { account, execute } = wallet();
+  const provider = chain(1n, Promise.resolve({ isReverted: () => false }));
+  const signed = vi.fn();
+  execute.mockRejectedValueOnce(error);
+  expect(await sendFromWallet(account, "0x4a1", CALLS, provider, signed)).toEqual({
     kind: "uncertain",
     reason: "The network has not confirmed it yet",
   });
+  expect(signed).not.toHaveBeenCalled();
+  expect(provider.waitForTransaction).not.toHaveBeenCalled();
 });
