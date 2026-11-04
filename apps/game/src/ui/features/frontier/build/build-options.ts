@@ -66,7 +66,7 @@ export interface BuildOption {
    * Whether it can rise now: a training building is unique on the board and opens when purchases across both
    * Barracks sides reach the board's gate (the contract's assert_board_category).
    */
-  standing: "open" | "built" | { gate: number };
+  standing: "open" | "built" | { gate: number; bought: number };
   /** What it adds to the realm's wheat an hour, and the realm's wheat an hour once it stands (unknown while that is). */
   wheat: { change: number; after: number | undefined };
 }
@@ -105,7 +105,7 @@ export const readBuildOptions = (
         : getBuildingQuantity(safeInteger(realm.entity_id), category, store) > 0
           ? "built"
           : barracksPurchases < board.training_gate_tier
-            ? { gate: board.training_gate_tier }
+            ? { gate: board.training_gate_tier, bought: barracksPurchases }
             : "open",
       wheat: { change, after: wheat === undefined ? undefined : wheat + change },
     });
