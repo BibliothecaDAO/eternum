@@ -1049,6 +1049,59 @@ it("requires a real regular-to-golden transition and confirmed claim in the upgr
   }
 });
 
+describe("live deposit prerequisites", () => {
+  it("reads the real route and raw decimal purse, then reports the missing linked wallet", async () => {
+    const chain = `0x${Buffer.from("S1_DEPOSIT_PROOF").toString("hex")}`;
+    const dom = new JSDOM('<button aria-label="LORDS 30">30</button>', {
+      url: `https://play.test/g/${chain}/7/map`,
+    });
+    const { document, location } = dom.window;
+    dom.window.HTMLElement.prototype.scrollIntoView = () => {};
+    const browser = {
+      read: (expression) =>
+        JSON.parse(
+          runInNewContext(expression, {
+            document,
+            location,
+            innerWidth: 1920,
+            innerHeight: 1080,
+          }),
+        ),
+      tap: vi.fn(() => {
+        document.body.insertAdjacentHTML(
+          "beforeend",
+          `<section data-kit-sheet aria-label="LORDS">
+          <p data-earned-lords="30">Winnings: 30 LORDS</p>
+          <p data-spend-lords="9007199254740993">Spend-only: 9007199254740993 LORDS</p>
+          <button>Link a wallet to deposit</button>
+        </section>`,
+        );
+      }),
+    };
+    const steps = STEP_SETS["s1-deposits"].steps;
+    const step = steps.find(({ name }) => name === "wallet-deposit");
+    const finalDeposit = steps.at(-1);
+    const stop = vi.fn();
+    try {
+      const played = await step.play({ browser, owner: {}, devTools: { onEvent: () => stop } });
+      expect(played.before).toMatchObject({ spend: "9007199254740993", earned: "30" });
+      expect(step.verify({ played })).toMatchObject({
+        status: "blocked",
+        reason: expect.stringContaining("no linked wallet"),
+      });
+      expect(steps.slice(-2).map(({ name }) => name)).toEqual(["live-mixed-refill", "wallet-deposit-for-sweep"]);
+      expect(finalDeposit.play).toBe(step.play);
+      const repeated = await finalDeposit.play({ browser, owner: {}, devTools: { onEvent: () => stop } });
+      expect(repeated.before).toEqual(played.before);
+      expect(finalDeposit.verify({ played: repeated })).toEqual(step.verify({ played }));
+      expect(browser.tap).toHaveBeenCalledOnce();
+      expect(stop).toHaveBeenCalledTimes(2);
+    } finally {
+      dom.window.close();
+    }
+  });
+});
+
 describe("purchased refill proof", () => {
   const steps = STEP_SETS["lab-spend-lords"].steps;
   const proof = steps.find(({ name }) => name === "purchased-refill-isolation");

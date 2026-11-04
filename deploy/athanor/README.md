@@ -266,31 +266,55 @@ and payment of every principal withdrawal. Outage or lag refuses retirement. The
 `deposit-retirement.json`; teardown preserves that evidence outside the removed directory. Keep the source and its
 co-signer routing available until the gate passes.
 
-### Isolated deposit rehearsal prerequisites
+### Deposit rehearsal on dev
 
-A different private directory does not isolate the standard dev deployment. Do not run `deploy dev`, `setup dev` or
-`teardown dev` for this rehearsal: their service and address-book targets belong to the shared stack. Use the supported
-non-matrix runner only after assigning a unique `S1_DEPOSIT_...` chain, a fresh compose project, pinned candidate
-images, unused `port_base` and dedicated HTTPS RPC/Herald routes:
+Rehearse on the existing dev test ledger, preserving its history and the running shard, including game 2 and its payout
+obligations. Start a fresh non-matrix runner named `S1_DEPOSIT_<suffix>` (measurement roles refuse a `DEV_` name), with
+the dev guardian, an unused `port_base` and HTTPS RPC and Herald routes:
 
 ```sh
-python3 deploy/athanor/scripts/operator-command.py runner /absolute/path/candidate.json /absolute/path/candidate-run
+python3 deploy/athanor/scripts/operator-command.py runner /absolute/path/s1-deposit.json /absolute/path/s1-deposit-run
 ```
 
-The runner stays PENDING. A candidate client also needs a separately listed/activated directory record and candidate
-identity/relay/monitor routing bound to its fresh test ledger. Hand the native ledger-operator role from the harness
-operator to the candidate relay after initialization. The present setup/address-book commands target only dev or
-production, so candidate central-service routing must be prepared explicitly before this command can prove a client
-payment. Host access and spare capacity alone do not satisfy these prerequisites.
+Herald needs a named HTTPS hostname on the dev tunnel: its `/games/updates` stream uses Server-Sent Events, which Quick
+Tunnels do not carry. A Quick Tunnel can serve the RPC; named hostnames for both keep their manifest identities stable.
 
-Run the co-signer in an isolated filesystem/service with its own key, configuration, loopback port and persistent
-`/var/lib/payout-cosigner/wallets.sqlite`; a second process sharing the standard state directory is not isolated. Use an
-authorized dev test wallet and test token only. Never retrieve or sign with the owner's cold key. Review any missing
-admin transactions through the preparation command above.
+After source review and the final native gate, deploy only the relay and monitor at the reviewed commit. From
+`apps/value-relay`, use the deployment's existing commands:
 
-After source review and the single native gate, reuse `apps/game`'s `playtest` command with `s1-deposits` for the real
-wallet payment and native credit, and `lab-spend-lords` for refill isolation. Capture the ledger receipt, canonical
-heads, native balances, separate season-end receipts and destination wallet deltas. Exercise interrupted delivery,
-invalid-destination refund, absent-wallet retry after reward close, and final retirement refusal/pass. Preserve proof
-output and retire only the candidate resources after all obligations resolve. No rehearsal pass is implied until those
-candidate services and actual transactions have been exercised.
+```sh
+pnpm exec wrangler deploy --tag REVISION --config monitor.wrangler.jsonc --env staging
+pnpm exec wrangler deploy --tag REVISION --config wrangler.jsonc --env staging
+```
+
+Keep their secrets and record the previous versions for rollback. Coordinate a freeze on other dev Cloudflare
+deployments until the rehearsal ends. Move the dev co-signer to the same commit through `cosigner/install.sh`, keeping
+its key and wallet database, and add the runner's loopback RPC and Herald to `shards` while retaining existing entries.
+Give the runner's ledger-operator role back to the relay account in `gameplay-contracts.json`. Create its Frontier game
+through the harness with a preset registered on the dev ledger. Activate the runner through the existing
+`directory_status(configuration, "active")` operation; this rehearsal deliberately promotes the runner beyond its
+ordinary PENDING measurement lifecycle. Schedule shared service updates and activation after game 2's sweep to leave its
+running game untouched, while keeping its settlement routing available.
+
+Fund the new game with `fund:frontier dev`. Mainnet funding, including dev funding, remains an owner operation. Submit
+the calls prepared by `pnpm deposits:operations prepare`: ledger `upgrade` and `enable_deposits` through the existing
+account helpers, then `configure_deposits` signed by the runner's operator. The additive upgrade preserves old ledger
+history, and the updated relay skips deposits on roots without the deposit ABI. This path makes no production change,
+requires no alternate ledger or central services, and does not run dev setup, deploy or teardown. While both shards are
+active, launch requests that omit their chain are refused.
+
+Reuse `apps/game`'s `playtest` with
+`--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --iterations 1 --renderer-modes webgpu-auto --headed`.
+Prepare the linked test wallet in that player's persistent browser profile, with 20 devLords plus STRK for both
+deposits. Approve each of the two existing wallet prompts within ten minutes; Ctrl-C cancels. The proof deposits ten
+LORDS, makes missing stamina through ordinary Explore controls if needed, and performs one mixed partial refill that
+consumes all purchased LORDS. Its final `wallet-deposit-for-sweep` step deposits another ten LORDS through the same flow
+and exact balance check, leaving 10 unspent LORDS for the existing season-end principal return. Both deposits retain
+their response bodies, credited receipt identities and before/after purse evidence. Earned winnings from a ruin chest
+must already be present. Missing prerequisites fail explicitly. `lab-spend-lords` remains the fixture proof.
+
+Preserve the response bodies, confirmed receipt and heads, exact native and visible balances, and stamina evidence in
+the playtest transcript. Separately capture the season-end receipts and wallet deltas; exercise interrupted delivery,
+invalid-destination refund, absent-wallet retry after reward close, and retirement refusal/pass. The existing
+`operator-command.py stop` retires only the runner after the relay's retirement check passes. Keep the dev ledger
+upgrade, existing shard and payout routes. No rehearsal pass is implied before these actual transactions are exercised.

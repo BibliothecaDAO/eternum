@@ -1223,6 +1223,23 @@ Unused deposits return to the linked wallet through the existing season-end swee
 the original paying wallet.
 
 `pnpm --dir apps/game playtest --steps lab-spend-lords --iterations 1 --out <evidence>` drives the real refill and purse
-against a native-fact fixture. On the reviewed isolated dev season, use the same command with `--steps s1-deposits`, the
-candidate HTTPS origin and an authorized test wallet. That step refuses chains outside `S1_DEPOSIT_`, records the wallet
-action and requires a new native receipt and exact purchased-balance increase without changing winnings.
+against a native-fact fixture. On the reviewed dev rehearsal season, use the existing command with
+`--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --headed --renderer-modes webgpu-auto --iterations 1`.
+Prepare the linked test wallet in the player's persistent profile with 20 devLords plus STRK for both deposits; approve
+each of the two wallet prompts within ten minutes, or cancel with Ctrl-C. A missing wallet is reported.
+
+The live steps refuse chains outside `S1_DEPOSIT_`, require ten newly credited spend-only LORDS with unchanged winnings,
+then use the army panel and refill slider to submit exactly one partial refill. The account needs earned winnings from a
+ruin chest and a deployed army; up to eight ordinary Explore actions make missing stamina if needed. The actual slider
+amount must exceed purchased LORDS, fit purchased plus earned LORDS, and leave stamina below its maximum. Unmet
+prerequisites fail with the observed balances or stamina. After the mixed refill consumes all purchased LORDS,
+`wallet-deposit-for-sweep` repeats the normal ten-LORDS deposit with the same exact purchased increase and unchanged
+winnings check. The two deposits total 20 LORDS for this account and leave 10 unspent LORDS for the existing season-end
+principal return. Each deposit retains its own response bodies, credited receipt identity and before/after purse
+evidence.
+
+The transcript retains response bodies, normal action records, the actual invocation, its confirmed successful receipt
+without `GameplayRejected`, and Herald snapshots covering its block. It checks exact purchased-first spending, consumed
+principal, earned-only pool return, unchanged swept balance and withdrawals, and native stamina plus regeneration
+against the visible army panel and purse. The live proof buys no tier. Season-end sweep and wallet-return evidence are
+separate rehearsal steps in [the runbook](../../deploy/athanor/README.md#deposit-rehearsal-on-dev).
