@@ -20,13 +20,15 @@ it("lets no route open the game before the tab answers the lab's directory, howe
   const board = await (await window.fetch(`${LAB_GAME.url}/games/${LAB_GAME.gameId}/leaderboard`)).json();
   expect(board).toEqual({ game_id: String(LAB_GAME.gameId), mode: "frontier", entries: second.board });
   expect(
-    board.entries.map((entry: { structure_id: string; campaign: { tier: number } | null }) => [
+    board.entries.map((entry: { structure_id: string; campaign: { tier: number } | null; has_wonder: boolean }) => [
       entry.structure_id,
       entry.campaign?.tier ?? null,
+      entry.has_wonder,
     ]),
   ).toEqual([
-    ["901", 1],
-    ["902", 2],
-    ["903", null],
+    ["901", 1, false],
+    ["902", 2, false],
+    ["903", null, false],
+    ["904", null, true],
   ]);
 });
