@@ -1,10 +1,24 @@
 import { mainnet } from "@starknet-react/chains";
 import { braavos, ready, StarknetConfig } from "@starknet-react/core";
 import type { ReactNode } from "react";
-import { RpcProvider } from "starknet";
-import { vi } from "vitest";
+import { RpcProvider, WalletAccount } from "starknet";
+import { afterEach, beforeEach, vi, type MockInstance } from "vitest";
 
 const SN_MAIN = "0x534e5f4d41494e";
+
+let estimate: MockInstance<WalletAccount["estimateInvokeFee"]>;
+beforeEach(() => {
+  estimate = vi.spyOn(WalletAccount.prototype, "estimateInvokeFee").mockResolvedValue({
+    overall_fee: 1n,
+    unit: "FRI",
+    resourceBounds: {
+      l1_gas: { max_amount: 1n, max_price_per_unit: 1n },
+      l1_data_gas: { max_amount: 0n, max_price_per_unit: 1n },
+      l2_gas: { max_amount: 0n, max_price_per_unit: 1n },
+    },
+  });
+});
+afterEach(() => estimate.mockRestore());
 
 // The L2 answers what a link and a send read: the wallet's class (deployed), its STRK for the fee, then the sent call's
 // receipt.
@@ -46,7 +60,7 @@ export const installWallet = (
       asked.push(call);
       if (call.type === "wallet_requestChainId") return SN_MAIN;
       if (call.type === "wallet_addInvokeTransaction") {
-        if (wallet.approves === false) throw new Error("User abort");
+        if (wallet.approves === false) throw Object.assign(new Error("User abort"), { code: 4001 });
         return { transaction_hash: "0xtx" };
       }
       if (call.type !== "wallet_requestAccounts") throw new Error(`unexpected ${call.type}`);

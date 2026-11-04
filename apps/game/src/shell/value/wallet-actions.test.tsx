@@ -113,7 +113,7 @@ it("leaves one Try again when the wallet declines, which prompts the same wallet
   vi.spyOn(console, "error").mockImplementation(() => {});
   const ready = installWallet("argentX", { account: LINKED, approves: false });
   const { container, landed } = await openSend();
-  await settled(() => expect(container.textContent).toContain("The wallet did not confirm it"));
+  await settled(() => expect(container.textContent).toContain("Payment rejected in wallet."));
   expect(ready.transactions()).toHaveLength(1);
   await press(container, "Try again");
   await settled(() => expect(ready.transactions()).toHaveLength(2));

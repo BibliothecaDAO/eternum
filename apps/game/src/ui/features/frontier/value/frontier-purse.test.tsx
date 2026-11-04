@@ -1,11 +1,14 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, expect, it, vi } from "vitest";
+import type { LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { depositStructure } from "../../../../../../value-relay/test-support/deposit-structure";
 import { FrontierPurse } from "./frontier-purse";
 const wallet = vi.hoisted(() => ({
   props: null as null | { calls: { calldata: string[] }[]; onState: (state: unknown) => void },
   refetch: vi.fn(),
+  available: 20n,
+  history: [] as LordsDeposit[],
 }));
 vi.mock("@bibliothecadao/eternum", () => ({ configManager: { getActiveGameId: () => 7 } }));
 vi.mock("@/hooks/context/identity-session", () => ({
@@ -25,7 +28,7 @@ vi.mock("./use-realm-lords", () => ({ useRealmLords: () => 90 }));
 vi.mock("./use-spend-lords", () => ({
   useSpendLords: () => ({
     source: { chain: "0x1", ledger: "0x10" },
-    balance: { available: 20n, swept: 0n },
+    balance: { available: wallet.available, swept: 0n },
     receipts: [],
   }),
 }));
@@ -33,7 +36,7 @@ vi.mock("./link-wallet", () => ({ useLinkWallet: () => () => {} }));
 vi.mock("./frontier-withdraw", () => ({ FrontierWithdraw: () => null }));
 vi.mock("@tanstack/react-query", () => ({
   useQuery: ({ queryKey }: { queryKey: string[] }) => ({
-    data: queryKey[0] === "deposit-token" ? "0x99" : [],
+    data: queryKey[0] === "deposit-token" ? "0x99" : wallet.history,
     refetch: wallet.refetch,
   }),
 }));
@@ -47,6 +50,8 @@ const realm = depositStructure("0x30");
 beforeEach(() => {
   localStorage.clear();
   wallet.props = null;
+  wallet.available = 20n;
+  wallet.history = [];
   vi.clearAllMocks();
 });
 async function render() {
@@ -71,6 +76,31 @@ const edit = (input: HTMLInputElement, value: string) =>
     Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
     input.dispatchEvent(new Event("input", { bubbles: true }));
   });
+it("writes exact held balances and deposit history through the shared number formats", async () => {
+  wallet.available = 12_345_678_901_234_567_890n;
+  wallet.history = [
+    {
+      shard: "0x2",
+      id: "1",
+      gameId: 7,
+      games: "0x10",
+      account: "0x30",
+      realmsId: "0x77",
+      home: "1",
+      payer: "0x33",
+      amount: "12345",
+      paidAt: "1000",
+      status: "pending",
+    },
+  ];
+  const view = await render();
+  expect(view.host.textContent).toContain("Spend-only: 12,345,678,901,234,567,890 LORDS");
+  expect(view.host.querySelector("[data-spend-lords]")?.getAttribute("data-spend-lords")).toBe("12345678901234567890");
+  expect(view.host.querySelector('[data-deposit-id="1"]')?.textContent).toBe(
+    "12.3K LORDS · Payment confirmed · credit pending",
+  );
+  view.unmount();
+});
 it("confirms one payment, resets the form and sends a second deposit with a fresh identity", async () => {
   const view = await render();
   await act(async () => view.button("Deposit LORDS").click());

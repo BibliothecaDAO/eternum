@@ -2,7 +2,7 @@ import { VALUE_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
 import { Icon as SemanticIcon } from "@/ui/design-system/icon";
 import { StarknetProvider } from "@/hooks/context/starknet-provider";
 import { shortAddress } from "@/ui/design-system/kit/address";
-import { AppButton } from "@/ui/design-system/kit/app-elements";
+import { HudButton } from "@/ui/design-system/kit/hud-elements";
 
 import type { SignInOptions } from "@realms-world/identity";
 import { useConnect, useDisconnect, useProvider } from "@starknet-react/core";
@@ -120,14 +120,14 @@ const OwnerSend = ({ owner, calls, onLanded, onState }: WalletSignProps) => {
           {wallet.pending !== null && !wallet.signing && (
             <span className="text-app-label text-app-muted">{WALLET_WORDS.confirmInWallet}</span>
           )}
-          <AppButton
+          <HudButton
             kind="secondary"
             icon="refresh"
             busy={confirming ? VALUE_WORDS.confirming : wallet.signing ? WALLET_WORDS.confirmInWallet : undefined}
             onClick={() => holder && void wallet.open(holder)}
           >
             {WALLET_WORDS.tryAgain}
-          </AppButton>
+          </HudButton>
         </>
       )}
     </div>

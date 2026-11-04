@@ -2,6 +2,7 @@ import { lazy, Suspense, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { configManager } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
+import { formatCharge, formatExact } from "@bibliothecadao/types";
 import type { WalletSendOutcome } from "@/ui/modules/identity/wallet-send";
 import { depositCalls, wholeLords, type LordsDeposit } from "@realms-world/value-ledger/deposits";
 import { useIdentitySession } from "@/hooks/context/identity-session";
@@ -35,12 +36,12 @@ export function FrontierPurse({ realm, onClose }: { realm: NativeRows["Structure
   if (!purchased.source || withdraw) return <FrontierWithdraw realm={realm} onClose={onClose} />;
   return (
     <HudSheet label="LORDS" onClose={onClose}>
-      <p data-earned-lords={earned}>Winnings: {earned ?? "—"} LORDS</p>
+      <p data-earned-lords={earned}>Winnings: {formatExact(earned)} LORDS</p>
       <p data-spend-lords={(purchased.balance?.available ?? 0n).toString()}>
-        Spend-only: {(purchased.balance?.available ?? 0n).toString()} LORDS
+        Spend-only: {formatExact(purchased.balance?.available ?? 0n)} LORDS
       </p>
       {purchased.balance && purchased.balance.swept > 0n && (
-        <p>{purchased.balance.swept.toString()} LORDS released for return to your linked wallet.</p>
+        <p>{formatExact(purchased.balance.swept)} LORDS released for return to your linked wallet.</p>
       )}
       <p>
         Deposits buy stamina refills. Unused deposits return to your linked wallet at season end. Undelivered deposits
@@ -209,7 +210,7 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
       )}
       {history.data?.map((receipt) => (
         <p key={receipt.id} data-deposit-id={receipt.id} role="status">
-          {receipt.amount} LORDS · {depositStatus(receipt, purchased.receipts)}
+          {formatCharge(Number(receipt.amount))} LORDS · {depositStatus(receipt, purchased.receipts)}
         </p>
       ))}
     </>
