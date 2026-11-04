@@ -2597,10 +2597,23 @@ function chooseLayer(word) {
     const choices = browser.viewChoices();
     browser.chooseView(word);
     const moved = (camera) => camera !== null && hexesApart(camera, before) > FRAMED_WITHIN_HEXES;
-    const after = await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
-    await sleep(LIST_SETTLE_MS);
+    await readUntil(() => browser.read(MAP_CAMERA), moved, SPIRE_WAIT_MS);
+    // The dive passes through the spire on its way: the camera counts once it has come to rest.
+    const after = await cameraAtRest(browser);
     return { word, choices, before, after, switchWord: browser.read(VIEW_SWITCH_WORD) };
   };
+}
+
+/** The camera's tile once two reads a dive's frame apart agree, within SPIRE_WAIT_MS. */
+async function cameraAtRest(browser) {
+  let last = browser.read(MAP_CAMERA);
+  for (const until = Date.now() + SPIRE_WAIT_MS; Date.now() < until; ) {
+    await sleep(LIST_SETTLE_MS);
+    const now = browser.read(MAP_CAMERA);
+    if (now && last && hexesApart(now, last) === 0) return now;
+    last = now;
+  }
+  return last;
 }
 
 /** What the switch that opens the views says: the view shown. */

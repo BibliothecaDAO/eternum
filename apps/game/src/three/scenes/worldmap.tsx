@@ -231,7 +231,7 @@ import {
   waitForWorldmapHydratedRefreshQueueIdle,
 } from "./worldmap-hydrated-refresh-runtime";
 import {
-  cancelWorldmapChunkRefreshWaiters,
+  renewWorldmapChunkRefreshRuntimeState,
   createWorldmapChunkRefreshRuntimeState,
   requestWorldmapChunkRefreshToken,
   runWorldmapChunkRefreshExecution,
@@ -338,7 +338,7 @@ import {
   waitForChunkTransitionToSettle,
 } from "./worldmap-chunk-transition";
 import { createWorldmapChunkPolicy } from "./worldmap-chunk-policy";
-import { createWorldmapZoomHardeningConfig, resetWorldmapZoomHardeningRuntimeState } from "./worldmap-zoom-hardening";
+import { createWorldmapZoomHardeningConfig } from "./worldmap-zoom-hardening";
 import { WorldmapCombatPresentation } from "./worldmap-combat-presentation";
 import { WorldmapHoverLabelRecovery, type HoverLabelRecoveryReason } from "./worldmap-hover-label-recovery";
 import { WorldmapTerrainVisibilityHealthMonitor } from "./worldmap-terrain-visibility-health-monitor";
@@ -4817,26 +4817,10 @@ export default class WorldmapScene extends WarpTravel {
   }
 
   private resetZoomHardeningRuntimeState(): void {
-    cancelWorldmapChunkRefreshWaiters(this.chunkRefreshRuntimeState);
-    const resetState = resetWorldmapZoomHardeningRuntimeState(
-      {
-        chunkRefreshTimeout: this.chunkRefreshTimeout,
-        chunkRefreshRequestToken: this.chunkRefreshRequestToken,
-        chunkRefreshAppliedToken: this.chunkRefreshAppliedToken,
-        chunkRefreshRunning: this.chunkRefreshRunning,
-        chunkRefreshRerunRequested: this.chunkRefreshRerunRequested,
-        pendingChunkRefreshForce: this.pendingChunkRefreshForce,
-      },
-      (timeoutId) => clearTimeout(timeoutId),
+    this.chunkRefreshRuntimeState = renewWorldmapChunkRefreshRuntimeState(this.chunkRefreshRuntimeState, (timeoutId) =>
+      clearTimeout(timeoutId),
     );
-
-    this.chunkRefreshTimeout = resetState.chunkRefreshTimeout;
-    this.chunkRefreshDeadlineAtMs = null;
-    this.chunkRefreshRequestToken = resetState.chunkRefreshRequestToken;
-    this.chunkRefreshAppliedToken = resetState.chunkRefreshAppliedToken;
-    this.chunkRefreshRunning = resetState.chunkRefreshRunning;
-    this.chunkRefreshRerunRequested = resetState.chunkRefreshRerunRequested;
-    this.pendingChunkRefreshForce = resetState.pendingChunkRefreshForce;
+    this.pendingChunkRefreshForce = false;
     this.pendingChunkRefreshReasons.clear();
     this.pendingChunkRefreshUiReason = "default";
     this.terrainVisibilityHealthMonitor.reset();

@@ -10,15 +10,6 @@ interface WorldmapZoomHardeningConfig {
   telemetry: boolean;
 }
 
-interface WorldmapZoomHardeningRuntimeStateInput {
-  chunkRefreshTimeout: number | null;
-  chunkRefreshRequestToken: number;
-  chunkRefreshAppliedToken: number;
-  chunkRefreshRunning: boolean;
-  chunkRefreshRerunRequested: boolean;
-  pendingChunkRefreshForce: boolean;
-}
-
 interface ChunkVisibilityAnomalyInput {
   isCurrentChunkVisible: boolean;
   offscreenChunkFrames: number;
@@ -39,24 +30,6 @@ export function createWorldmapZoomHardeningConfig(
     latestWinsRefresh: enabled,
     terrainSelfHeal: enabled,
     telemetry: enabled && input.telemetry === true,
-  };
-}
-
-export function resetWorldmapZoomHardeningRuntimeState(
-  input: WorldmapZoomHardeningRuntimeStateInput,
-  clearPendingTimeout: (timeoutId: number) => void,
-): WorldmapZoomHardeningRuntimeStateInput {
-  if (input.chunkRefreshTimeout !== null) {
-    clearPendingTimeout(input.chunkRefreshTimeout);
-  }
-
-  return {
-    chunkRefreshTimeout: null,
-    chunkRefreshRequestToken: 0,
-    chunkRefreshAppliedToken: 0,
-    chunkRefreshRunning: false,
-    chunkRefreshRerunRequested: false,
-    pendingChunkRefreshForce: false,
   };
 }
 
