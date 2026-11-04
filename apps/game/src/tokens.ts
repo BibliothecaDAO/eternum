@@ -401,6 +401,13 @@ export const GUTTERS = {
 } as const;
 
 /** The desktop layout's first width: Tailwind's `lg`, and the JS layout's (shell/frame/layout.ts). */
+/**
+ * The least share of a phone's screen the map keeps while a sheet or a page is open, in percent (owner, 4 November:
+ * "the map is like 15%" on odd shapes). The phone panel's cap follows it; the playtest's lab-hud-devices fails a shape
+ * under it (hud-layout.mjs's MAP_LEAST_SHARE, held to this by a test). Chat, which fills the band, is the one exception.
+ */
+export const HUD_MAP_LEAST_SHARE = 40;
+
 export const DESKTOP_MIN_PX = 1024;
 
 export const SCREENS = {
@@ -611,7 +618,12 @@ export const HUD_LAYOUT = {
   /** The phone's minimap tab. */
   "phone-minimap": "clamp(180px, 35dvh, 320px)",
   /** The most of a phone's screen a page or a sheet takes, sized to what it holds (owner, 26 October 2026: layout A). */
-  "phone-panel": "45dvh",
+  /**
+   * A phone's sheet or page: 45% of the height at most, and short enough that the map keeps HUD_MAP_LEAST_SHARE of it
+   * between the strip (--hud-phone-top) and the place bar (--hud-phone-foot), which HudBands measures; never under 12rem,
+   * and scrolling inside past it.
+   */
+  "phone-panel": `min(45dvh, max(12rem, calc(100dvh - var(--hud-phone-top, 0px) - var(--hud-phone-foot, 0px) - ${HUD_MAP_LEAST_SHARE}dvh)))`,
   "chat-width": "800px",
   "chat-height": "600px",
   /**

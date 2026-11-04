@@ -35,7 +35,8 @@ type Bands = {
  * row, the notices. Held sideways, the places stand in a rail at the left and the rest in one column at the right, the
  * map between them. A nav page (Research, the Log, Chat, the season) stands where the action row and the dock stood, and
  * the map stays clear of it; a sheet stands in the same place (`--hud-phone-foot` upright, `--hud-sheet-top` sideways,
- * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height. While either is open, the action
+ * which hud-sheet.css reads), as tall as what it holds up to the phone panel's height, which also keeps the map 40% of
+ * the screen between the strip and the place bar (`--hud-phone-top`, `--hud-phone-foot`). While either is open, the action
  * row and the dock step aside under it and the purse's row folds away, so the map keeps what they took (owner, 26 October
  * 2026: layout A); the notices stay. A page that marks itself `data-page-fills` (Chat) takes the whole band from the strip
  * to the place bar, the map hidden behind it: a page read and written in, not glanced at over the map. The page says
@@ -50,13 +51,16 @@ const UprightBands = ({ strip, purse, page, notices, action, dock, nav, children
   // A sheet stands on the place bar: its top, from the screen's bottom. The box measured holds the bar and keeps its
   // place at the band's foot while the bar steps aside for the keyboard, so a sheet then stands on the keyboard.
   const foot = useEdge(bar, (rect) => window.innerHeight - rect.top + BAND_GAP);
+  // Where the strip ends: the phone panel's cap keeps the map its least share between this and the place bar.
+  const topBand = useRef<HTMLDivElement>(null);
+  const top = useEdge(topBand, (rect) => rect.bottom + BAND_GAP);
   return (
     <div
       aria-label="Frontier HUD"
       className="pointer-events-none fixed inset-x-0 top-0 bottom-hud-keyboard z-30 flex flex-col gap-1.5 font-sans [&:has([data-kit-sheet])_[data-under-sheet]]:hidden [&:has([data-kit-sheet],[data-page])_[data-top-row]]:hidden [&:has([data-page-fills])_[data-map-band]]:hidden"
-      style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px` } as CSSProperties}
+      style={{ ...SAFE_AREA, "--hud-phone-foot": `${foot}px`, "--hud-phone-top": `${top}px` } as CSSProperties}
     >
-      <div {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
+      <div ref={topBand} {...HUD_TOP_MARK} data-keyboard-hides className="flex flex-col gap-1.5">
         <div className="relative">{strip}</div>
         <TopRow purse={purse} />
       </div>
