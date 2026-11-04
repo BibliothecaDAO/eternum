@@ -63,7 +63,7 @@ it.each(["play", "settle"] as const)(
     state.navigate.mockClear();
     state.milestone.mockClear();
     useAccountStore.setState({ account: { address: "0x111" } as never });
-    // An account with no linked wallet: the Realm step offers the free home at once.
+    // An account with no linked wallet and no ticket: nothing to choose, so its free home is created without a press.
     useIdentitySessionStore.setState({
       status: "signed-in",
       session: {
@@ -86,9 +86,10 @@ it.each(["play", "settle"] as const)(
       ),
     );
     try {
-      expect(state.navigate).not.toHaveBeenCalled();
-      const found = [...host.querySelectorAll("button")].find((button) => button.textContent === "Create your realm")!;
-      await act(async () => found.click());
+      await act(async () => vi.advanceTimersByTimeAsync(0));
+      expect([...host.querySelectorAll("button")].some((button) => button.textContent === "Create your realm")).toBe(
+        false,
+      );
       expect(state.navigate).toHaveBeenCalledTimes(1);
       expect(state.milestone.mock.calls.filter(([name]) => name === "enter-game-started")).toHaveLength(1);
     } finally {

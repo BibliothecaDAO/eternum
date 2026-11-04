@@ -8,7 +8,7 @@ import { useParams } from "react-router-dom";
 import { gamePainting } from "@/shell/game-links";
 import { Pill } from "@/ui/design-system/kit/pill";
 import { DoorwayScreen } from "@/ui/features/game-entry/doorway/doorway-screen";
-import { FoundButton } from "@/ui/features/game-entry/game-entry-modal";
+import { FoundButton, PlaysAs } from "@/ui/features/game-entry/game-entry-modal";
 import { HomeSourcePicker } from "@/ui/features/game-entry/home-source-picker";
 
 import { ClockChip } from "@/ui/design-system/kit/clock-chip";
@@ -122,6 +122,8 @@ export const LabDoorway = () => {
       onSignIn={noop}
       onSpectate={noop}
       results="/lab/app/reward-sealed/results/0x5245414c4d53-7"
+      asking={state === "home"}
+      verb={state === "home" ? <FoundButton founding={false} ready onFound={noop} /> : undefined}
     >
       {/* The entry's own chips at the realm step, as game-entry-modal passes them. */}
       {state === "waiting" && <ClockChip prefix="starts" at={now + LAB_SEASON_WAIT} now={now} />}
@@ -131,10 +133,9 @@ export const LabDoorway = () => {
   );
 };
 
-/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, then Found. */
+/** The Devcon game's Realm step over the screen's holdings, as game-entry-modal draws it: the pick, its verb pinned. */
 const LabHomeStep = () => {
   const [value, setValue] = useState("");
-  const [settled, setSettled] = useState(false);
   return (
     <>
       <HomeSourcePicker
@@ -142,10 +143,10 @@ const LabHomeStep = () => {
         registered={null}
         value={value}
         onChange={setValue}
-        onSettled={setSettled}
+        onSettled={noop}
         disabled={false}
       />
-      <FoundButton founding={false} ready={settled} onFound={noop} />
+      <PlaysAs />
     </>
   );
 };

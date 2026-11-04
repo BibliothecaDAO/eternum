@@ -24,6 +24,9 @@ vi.mock("@/hooks/context/identity-session", () => ({
       ? { status: "signed-in", session: identity.state.session }
       : { status: "signed-out", session: null },
   notificationOwnerOf: () => null,
+  // The account's chosen name, as the real reader gives it: none while the name is still the account's id.
+  identityUsername: (session: { user: { id: string; name: string } }) =>
+    session.user.name === session.user.id ? null : session.user.name,
 }));
 vi.mock("../play/play-page", () => ({ PlayPage: () => <p>Fixture home</p> }));
 vi.mock("../play/age-pages", () => ({ DominionPage: () => null, EternumPage: () => null, FrontierPage: () => null }));
