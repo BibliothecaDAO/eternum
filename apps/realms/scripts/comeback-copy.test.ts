@@ -81,7 +81,7 @@ describe("a copy folder", () => {
     ]);
   });
 
-  it.each([
+  it.each<[string, Record<string, string | null>, string]>([
     ["an unknown placeholder", { "N.txt": FILE.replace("{pool}", "{pot}") }, "copy N.txt: unknown placeholder {pot}"],
     ["a stray brace", { "P.txt": FILE.replace("{pool}", "{pool") }, "copy P.txt: stray brace"],
     ["a missing variant file", { "P.txt": null }, "copy: missing file P.txt"],
@@ -94,6 +94,13 @@ describe("a copy folder", () => {
     ["two buttons", { "D.txt": `${FILE}\n{button}\n` }, "copy D.txt: needs exactly one {button}"],
     ["a button inside a sentence", { "D.txt": `${FILE}\nPress {button}.\n` }, "unknown placeholder {button}"],
     ["an inline link", { "D.txt": `${FILE}\nSee [here](/profile).\n` }, "copy D.txt: unsupported markup"],
+    ...["/profile/{oops}", "/profile/{players}", "/profile/{oops"].map(
+      (path): [string, Record<string, string>, string] => [
+        `a placeholder or brace in a link's path (${path})`,
+        { "D.txt": FILE.replace("(/profile)", `(${path})`) },
+        `copy D.txt: a link's path takes no placeholders: ${path}`,
+      ],
+    ),
   ])("refuses %s before anything is sent", (_, files, message) => {
     expect(() => loadCopy(folder(files))).toThrow(message);
   });

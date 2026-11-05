@@ -13,7 +13,7 @@
 //   {prizes}                    the prize board
 //   > A gold callout.
 //   {button}                    the one button, worded by Action:, to the app
-//   [A link line](/profile)     a whole paragraph linking a path on the app
+//   [A link line](/profile)     a whole paragraph linking a path on the app; the path takes no placeholders
 // Paragraphs after {button} are set smaller. Lines of one paragraph join with a space. Anything else in braces, a stray
 // brace, other markup, a missing header or file, or an unknown file stops the run before any email goes.
 import { readdirSync, readFileSync } from "node:fs";
@@ -99,17 +99,25 @@ export function copyFor(folder: CopyFolder, key: VariantKey, golden: boolean): T
 
 /** The copy with every placeholder replaced by its live figure; a figure with no value stops the run. */
 export function fillCopy(template: Template, figures: Figures): Copy {
-  const fill = (text: string) =>
+  return mapWords(template, (text) =>
     text.replace(PLACEHOLDER, (_, name: string) => {
       const value = (figures as Record<string, string | undefined>)[name];
       if (value === undefined || value === "") throw new Error(`copy ${template.file}: {${name}} has no value`);
       return value;
-    });
+    }),
+  );
+}
+
+/**
+ * Every field a reader sees as words, the only places a placeholder may stand: loading checks them and filling replaces
+ * them through this one walk, so no field is checked and left unfilled. A link's path is an address, not words.
+ */
+function mapWords(copy: Copy, map: (text: string) => string): Copy {
   return {
-    subject: fill(template.subject),
-    preheader: fill(template.preheader),
-    action: fill(template.action),
-    blocks: template.blocks.map((block) => ("text" in block ? { ...block, text: fill(block.text) } : block)),
+    subject: map(copy.subject),
+    preheader: map(copy.preheader),
+    action: map(copy.action),
+    blocks: copy.blocks.map((block) => ("text" in block ? { ...block, text: map(block.text) } : block)),
   };
 }
 
@@ -123,8 +131,7 @@ function parseTemplate(file: string, source: string): Template {
   const count = (kind: Block["kind"]) => blocks.filter((block) => block.kind === kind).length;
   if (count("button") !== 1) throw new Error(`copy ${file}: needs exactly one {button}`);
   if (count("prizes") > 1) throw new Error(`copy ${file}: at most one {prizes}`);
-  for (const text of [headers.subject, headers.preheader, headers.action, ...blocks.flatMap(blockText)])
-    checkPlaceholders(file, text);
+  mapWords({ ...headers, blocks }, (text) => checkPlaceholders(file, text));
   return { file, ...headers, blocks };
 }
 
@@ -150,6 +157,7 @@ function parseBlock(file: string, paragraph: string): Block {
   if (paragraph === "{prizes}") return { kind: "prizes" };
   if (paragraph === "{button}") return { kind: "button" };
   const link = /^\[([^\]]+)\]\((\/[^\s()]*)\)$/.exec(paragraph);
+  if (link && /[{}]/.test(link[2]!)) throw new Error(`copy ${file}: a link's path takes no placeholders: ${link[2]}`);
   if (link) return { kind: "link", text: link[1]!, path: link[2]! };
   const bold = /^\*\*(.+)\*\*$/.exec(paragraph);
   const callout = /^> (.+)$/.exec(paragraph);
@@ -162,10 +170,9 @@ function parseBlock(file: string, paragraph: string): Block {
   return block;
 }
 
-const blockText = (block: Block) => ("text" in block ? [block.text] : []);
-
 function checkPlaceholders(file: string, text: string) {
   for (const [, name] of text.matchAll(PLACEHOLDER))
     if (!(FIGURES as readonly string[]).includes(name!)) throw new Error(`copy ${file}: unknown placeholder {${name}}`);
   if (/[{}]/.test(text.replace(PLACEHOLDER, ""))) throw new Error(`copy ${file}: stray brace in "${text}"`);
+  return text;
 }
