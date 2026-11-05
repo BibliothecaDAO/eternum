@@ -39,7 +39,8 @@ export const verifyWalletOnL2 =
     }
   };
 
-const isUndeployedWallet = async (provider: RpcProvider, address: string): Promise<boolean> => {
+/** Whether the environment chain holds no contract at `address`: true only on its explicit answer. */
+export const isUndeployedWallet = async (provider: RpcProvider, address: string): Promise<boolean> => {
   try {
     await provider.getClassHashAt(address);
     return false;

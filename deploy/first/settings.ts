@@ -38,6 +38,11 @@ export interface Inputs extends SeasonDates {
   /** The Discord application players sign in with: every environment offers Discord sign-in. */
   discordClientId: string;
   discordClientSecret: string;
+  /**
+   * AVNU's paymaster key, which sponsors default wallets' recovery steps. Optional: without it wallets still send and
+   * receive, and recovery is refused. Setup never asks for it; the owner adds it to inputs.json.
+   */
+  avnuPaymasterApiKey?: string;
   /** Where the status monitor emails incidents: production's only, required there and refused on dev. */
   alertEmail?: string;
   amount: string;

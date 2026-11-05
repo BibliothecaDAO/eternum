@@ -69,6 +69,7 @@ export function workerSecrets(
         WEB_PUSH_VAPID_PRIVATE_KEY: secrets.vapidPrivate,
         DISCORD_CLIENT_ID: inputs.discordClientId,
         DISCORD_CLIENT_SECRET: inputs.discordClientSecret,
+        ...(inputs.avnuPaymasterApiKey ? { AVNU_PAYMASTER_API_KEY: inputs.avnuPaymasterApiKey } : {}),
       };
     case "launch":
       return { LAUNCH_DEPLOYER_PRIVATE_KEY: keys.launcher, OPERATOR_TOKEN: secrets.operator };

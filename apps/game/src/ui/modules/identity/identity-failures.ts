@@ -1,8 +1,20 @@
 import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
+import { PasskeyUnavailableError } from "./passkey";
+import { UncertainSendNotKeptError } from "./uncertain-sends";
 
 /** What the player asked for; each names its own failure. */
-export type IdentityAction = "discord" | "handoff" | "send-code" | "code" | "link" | "unlink" | "portrait";
+export type IdentityAction =
+  | "discord"
+  | "handoff"
+  | "send-code"
+  | "code"
+  | "link"
+  | "unlink"
+  | "portrait"
+  | "wallet"
+  | "send"
+  | "recover";
 
 export class WrongNetworkError extends Error {}
 
@@ -23,6 +35,15 @@ const NAMED_REFUSALS: Record<string, string> = {
   access_denied: "Discord sign-in was cancelled. Try again.",
   please_restart_the_process: "Discord took too long. Try again.",
   HANDOFF_NOT_STARTED: "Press Discord here first, then enter the code it shows.",
+  WALLET_ALREADY_LINKED: "This account has a payout wallet already. Reload to see it.",
+  PASSKEY_INVALID: "That passkey cannot hold a wallet. Try again on this device.",
+  // Only a recovery step is sponsored; sends pay their own fee and never meet it.
+  SPONSOR_UNAVAILABLE: "Recovery opens soon. Your LORDS stay safe in your wallet.",
+  SPONSOR_CAP_REACHED: "This wallet has used today's recovery steps. Try again tomorrow.",
+  PAYMASTER_REFUSED: "The network did not take it. Check your wallet holds enough LORDS for it and its fee.",
+  RECOVERY_UNDER_WAY: "A recovery is already under way on this wallet.",
+  // Never "not sent": the paymaster's answer was lost, and it may have gone through.
+  SEND_UNCERTAIN: "The network did not answer, so it may have gone through. Open this again in a minute to see.",
 };
 
 const FALLBACK: Record<IdentityAction, string> = {
@@ -33,6 +54,9 @@ const FALLBACK: Record<IdentityAction, string> = {
   link: "The wallet was not linked. Try again.",
   unlink: "The wallet was not unlinked. Try again.",
   portrait: "The portrait was not saved. Try again.",
+  wallet: "Your wallet was not made. Try again.",
+  send: "Nothing was sent. Try again.",
+  recover: "The recovery did not start. Try again.",
 };
 
 /** One sentence per failure the player can act on; the detail goes to the console. */
@@ -41,6 +65,15 @@ export const failureSentence = (action: IdentityAction, cause: unknown): string 
   const code = cause instanceof IdentityRequestError ? cause.code : undefined;
   if (code && NAMED_REFUSALS[code]) return NAMED_REFUSALS[code];
   if (cause instanceof WrongNetworkError) return `Switch this wallet to ${L2_CHAIN.label}.`;
+  if (cause instanceof UncertainSendNotKeptError)
+    return "This browser could not keep a record of the send, so nothing was sent. Free some space, or leave private browsing.";
+  if (cause instanceof PasskeyUnavailableError)
+    return "This browser cannot use passkeys here. Open the game in your phone's or computer's main browser.";
+  // Asked to make a passkey this device already holds (a recovery's excludeCredentials).
+  if ((cause as { name?: unknown } | null)?.name === "InvalidStateError")
+    return "This device still has your passkey: nothing to recover. Use it to send or to cancel a recovery.";
+  // The browser's own refusal: the player closed the passkey sheet, or it timed out.
+  if ((cause as { name?: unknown } | null)?.name === "NotAllowedError") return "The passkey was not used. Try again.";
   return FALLBACK[action];
 };
 

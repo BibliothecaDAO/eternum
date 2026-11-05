@@ -95,6 +95,8 @@ export function validateInputs(input: Inputs, target: Target) {
   if (!input.cloudflareToken || !input.resend) throw new PublicError("Cloudflare and Resend credentials are required");
   if (!input.discordClientId || !input.discordClientSecret)
     throw new PublicError("Discord sign-in needs its client ID and secret in inputs.json");
+  if (input.avnuPaymasterApiKey !== undefined && !input.avnuPaymasterApiKey.trim())
+    throw new PublicError("Set avnuPaymasterApiKey to AVNU's paymaster key, or remove it from inputs.json");
   if (!sendsAlerts(target) && input.alertEmail !== undefined)
     throw new PublicError("Dev sends no alert email; remove alertEmail from inputs.json");
   if (sendsAlerts(target) && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(input.alertEmail ?? ""))
