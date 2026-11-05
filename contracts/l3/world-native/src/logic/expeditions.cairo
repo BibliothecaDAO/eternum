@@ -84,20 +84,109 @@ pub fn ruin_disappeared(key: crate::resources::ResourceKey) -> bool {
     let Some(chest) = state.structures.site_chests.read(storage_key) else {
         return false;
     };
-    state
-        .map_rules
-        .ruin_cleared
-        .read((key.game_id, crate::entity_ids::namespace(key.entity_id).into(), chest.reservation_day))
+    let Some(site) = state.structures.expedition_sites.read(storage_key) else {
+        return false;
+    };
+    if site.clear.is_some() {
+        return false;
+    }
+    let coord = Coord { alt: site.alt, x: site.col, y: site.row };
+    ruin_cleared_at(
+        ExpeditionDiscoveryKey { game_id: key.game_id, structure_id: key.entity_id, epoch: chest.reservation_day },
+        depth_at(key.game_id, coord),
+    )
 }
 
-pub fn close_ruins(key: ExpeditionDiscoveryKey) {
+pub fn ruin_cleared_at(key: ExpeditionDiscoveryKey, depth: u8) -> bool {
+    if per_depth_ruins(key.game_id) {
+        cleared_depths(key) & depth_bit(depth) != 0
+    } else {
+        crate::state::read().map_rules.ruin_cleared.read(ruin_key(key))
+    }
+}
+
+fn depth_bit(depth: u8) -> u8 {
+    match depth {
+        0 => 1,
+        1 => 2,
+        2 => 4,
+        3 => 8,
+        _ => panic!("invalid ruin depth"),
+    }
+}
+
+fn per_depth_ruins(game_id: u32) -> bool {
+    crate::state::read().game_releases.read(game_id) >= crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE
+}
+
+fn cleared_depths(key: ExpeditionDiscoveryKey) -> u8 {
+    let state = crate::state::read();
+    let mask = state.map_rules.cleared_ruin_depths.read(ruin_key(key));
+    assert!(mask <= 15, "invalid ruin depth mask");
+    if mask == 0 && state.map_rules.ruin_cleared.read(ruin_key(key)) {
+        legacy_cleared_depths(key)
+    } else {
+        mask
+    }
+}
+
+// Before depth limits, one clear receipt identified the depth hidden by the home's daily boolean.
+fn legacy_cleared_depths(key: ExpeditionDiscoveryKey) -> u8 {
+    let state = crate::state::read();
+    let home = crate::entity_ids::namespace(key.structure_id);
+    let allocated = state.games.home_entities.read((key.game_id, home));
+    let spacing = crate::logic::settlement::rules(key.game_id).spacing;
+    let mut mask = 0;
+    for local in 1_u64..Into::<u32, u64>::into(allocated) + 1 {
+        let entity_id = Into::<u32, u64>::into(home) * 0x100000000 + local;
+        let Some(site) = state.structures.expedition_sites.read((key.game_id, entity_id)) else {
+            continue;
+        };
+        if site.category != crate::taxonomy::RUIN_CATEGORY {
+            continue;
+        }
+        let Some(clear) = site.clear else {
+            continue;
+        };
+        let coord = Coord { alt: site.alt, x: site.col, y: site.row };
+        if crate::entity_ids::namespace(clear.home_id) != home
+            || crate::expeditions::region_day(coord, spacing) != key.epoch {
+            continue;
+        }
+        let chest = state.structures.site_chests.read((key.game_id, entity_id)).expect('missing legacy ruin chest');
+        assert!(chest.reservation_day == key.epoch, "legacy ruin day mismatch");
+        mask = mask | depth_bit(depth_at(key.game_id, coord));
+    }
+    assert!(mask != 0, "missing legacy ruin clear");
+    mask
+}
+
+pub fn close_ruins(key: ExpeditionDiscoveryKey, depth: u8) {
     let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
-    assert!(!previous.ruin_cleared, "realm already cleared a ruin today");
+    if per_depth_ruins(key.game_id) {
+        let mask = cleared_depths(key);
+        let bit = depth_bit(depth);
+        assert!(mask & bit == 0, "realm already cleared this depth today");
+        crate::state::write().map_rules.cleared_ruin_depths.write(ruin_key(key), mask | bit);
+    } else {
+        assert!(!previous.ruin_cleared, "realm already cleared a ruin today");
+    }
     write_discovery(key, ExpeditionDiscovery { ruin_cleared: true, ..previous });
+}
+
+pub fn cache_ruin_depths(key: ExpeditionDiscoveryKey) {
+    let state = crate::state::write();
+    let storage_key = ruin_key(key);
+    if per_depth_ruins(key.game_id)
+        && state.map_rules.cleared_ruin_depths.read(storage_key) == 0
+        && state.map_rules.ruin_cleared.read(storage_key) {
+        state.map_rules.cleared_ruin_depths.write(storage_key, legacy_cleared_depths(key));
+    }
 }
 
 pub fn record_discovery(key: ExpeditionDiscoveryKey, result: crate::discovery::Discovery) {
     let previous = discovery(key).unwrap_or(ExpeditionDiscovery { empty_reveals: 0, ruin_cleared: false });
+    cache_ruin_depths(key);
     let next = ExpeditionDiscovery {
         empty_reveals: if result == crate::discovery::Discovery::None {
             previous.empty_reveals + 1

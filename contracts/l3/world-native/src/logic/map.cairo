@@ -431,7 +431,10 @@ pub mod MapLogic {
                     return crate::discovery::Discovery::Chest;
                 }
             }
-            let ruin = if day.ruin_cleared {
+            let depth = crate::logic::expeditions::depth_at(
+                key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
+            );
+            let ruin = if crate::logic::expeditions::ruin_cleared_at(counter, depth) {
                 None
             } else {
                 let odds = crate::logic::expeditions::depth_rules_at(

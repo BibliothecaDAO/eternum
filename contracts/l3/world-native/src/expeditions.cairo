@@ -189,7 +189,7 @@ pub struct ExpeditionDiscoveryKey {
 #[derive(Copy, Drop, Serde, Debug, PartialEq)]
 pub struct ExpeditionDiscovery {
     pub empty_reveals: u8,
-    // Clearing one ruin closes the home's ruins across all four depths for this day.
+    // Aggregate daily history; per-depth eligibility comes from the clear receipts.
     pub ruin_cleared: bool,
 }
 #[starknet::interface]

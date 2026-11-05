@@ -84,16 +84,6 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            crate::logic::expeditions::clear_site(
-                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
-            );
-            crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
-                crate::progression::IArmyProgressionLibraryDispatcher {
-                    class_hash: self.release.classes(key.game_id).relics.read(),
-                },
-                explorer,
-                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
-            );
             if category == crate::taxonomy::RUIN_CATEGORY {
                 crate::logic::expeditions::close_ruins(
                     crate::expeditions::ExpeditionDiscoveryKey {
@@ -104,8 +94,19 @@ pub mod ResourcesLogic {
                             crate::logic::settlement::rules(key.game_id).spacing,
                         ),
                     },
+                    depth,
                 );
             }
+            crate::logic::expeditions::clear_site(
+                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
+            );
+            crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
+                crate::progression::IArmyProgressionLibraryDispatcher {
+                    class_hash: self.release.classes(key.game_id).relics.read(),
+                },
+                explorer,
+                crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
+            );
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
                 key,

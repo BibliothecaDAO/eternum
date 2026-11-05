@@ -50,7 +50,7 @@ pub fn pay_ruin(key: ResourceKey, home_id: u64, context: ExecutionContext) -> cr
         crate::entity_ids::namespace(key.entity_id) == crate::entity_ids::namespace(home_id),
         "ruin belongs to another realm",
     );
-    assert!(!crate::logic::expeditions::ruin_disappeared(key), "realm already cleared a ruin today");
+    assert!(!crate::logic::expeditions::ruin_disappeared(key), "realm already cleared this depth today");
     let chest = site_chest(key).expect('missing ruin chest');
     assert!(chest.reservation_day == today(key.game_id, context).day, "ruin belongs to another day");
     assert!(try_reserve(key.game_id, chest, context), "day's LORDS budget cannot fund this ruin");

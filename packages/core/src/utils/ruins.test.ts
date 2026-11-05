@@ -3,7 +3,8 @@ import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { NativeFactStore } from "../client/native-fact-store";
 import { WorldSpatialProjection } from "../sync/world-spatial-projection";
 import { getTileAt } from "./tile";
-import { availableRuinLords } from "./ruins";
+import { availableRuinLords, ruinDisappeared } from "./ruins";
+import { nativeReleaseConstants } from "../../../../contracts/l3/world-native/schema/client.gen";
 import { dayOf } from "./days";
 
 const home = 7n * 0x100000000n + 1n;
@@ -21,16 +22,29 @@ const site = (entity_id: bigint, row: number) => ({
   clear: null,
 });
 
+const release = (release_id = nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE) => ({
+  model: "GameRelease" as const,
+  key: "0x61",
+  value: { game_id: 1, release_id, created_release_id: 1, preset_commitment: 0n },
+});
+
 const setup = () => {
   const store = new NativeFactStore();
   store.setSnapshot({ gameId: 1, complete: true, timestamp: 350 });
   store.applyFacts([
+    release(),
     {
       model: "SettlementRules",
       key: "0x1",
       value: { game_id: 1, spacing: 100, registration_start: 0, registration_limit: 0, mode: "Single" },
     },
-    ...[site(first, 40), site(second, 140), site(otherHome + 1n, 240), site(home + 3n, 440)].flatMap((value, index) => [
+    ...[
+      site(first, 40),
+      site(second, 41),
+      site(otherHome + 1n, 240),
+      site(home + 3n, 440),
+      site(home + 5n, 140),
+    ].flatMap((value, index) => [
       { model: "ExpeditionSite", key: `0x2${index}`, value },
       {
         model: "TileOpt",
@@ -66,12 +80,12 @@ const close = (closed: boolean) => ({
   },
 });
 
-describe("a realm's daily ruin choice", () => {
-  it("removes every other ruin in the same atomic map update, keeps other homes/days, and restores on rollback", () => {
+describe("a realm's daily ruin choice per depth", () => {
+  it("removes same-depth ruins atomically, keeps other depths/homes/days, and restores on rollback", () => {
     const store = setup();
     const map = new WorldSpatialProjection({ store });
     map.start();
-    expect(map.getStructures(false)).toHaveLength(4);
+    expect(map.getStructures(false)).toHaveLength(5);
     const notifications = vi.fn();
     const unsubscribe = map.subscribeStructures(notifications);
     store.applyFacts([
@@ -96,14 +110,76 @@ describe("a realm's daily ruin choice", () => {
     expect(map.getStructure(Number(second))).toBeUndefined();
     expect(map.getStructure(Number(otherHome + 1n))).toBeDefined();
     expect(map.getStructure(Number(home + 3n))).toBeDefined();
-    expect(getTileAt(store, false, 40, 140, 1)?.occupier_id).toBe(0);
-    expect(map.getTileAtHex({ alt: false, col: 40, row: 140 })?.occupierId).toBe(0);
+    expect(getTileAt(store, false, 40, 41, 1)?.occupier_id).toBe(0);
+    expect(map.getTileAtHex({ alt: false, col: 40, row: 41 })?.occupierId).toBe(0);
     map.rebuild();
     expect(map.getStructure(Number(second))).toBeUndefined();
-    store.applyFacts([close(false)]);
+    expect(map.getStructure(Number(home + 5n))).toBeDefined();
+    store.applyFacts([close(false), { model: "ExpeditionSite", key: "0x20", value: site(first, 40) }]);
     map.flush();
     expect(map.getStructure(Number(second))).toBeDefined();
     unsubscribe();
+    map.dispose();
+  });
+
+  it.each([0, 1, 2, 3])("uses retained clear receipts at depth %i even with the legacy aggregate flag", (depth) => {
+    const store = setup();
+    const cleared = {
+      ...site(first, depth * 100 + 40),
+      clear: { explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } },
+    };
+    store.applyFacts([close(true), { model: "ExpeditionSite", key: "0x20", value: cleared }]);
+    for (const candidateDepth of [0, 1, 2, 3]) {
+      expect(ruinDisappeared(store, site(second, candidateDepth * 100 + 41))).toBe(candidateDepth === depth);
+    }
+    expect(ruinDisappeared(store, site(second, depth * 100 + 440))).toBe(false);
+    expect(ruinDisappeared(store, site(otherHome + 1n, depth * 100 + 40))).toBe(false);
+    expect(ruinDisappeared(store, cleared)).toBe(false);
+    expect(ruinDisappeared(store, { ...site(second, depth * 100 + 40), category: StructureType.Camp })).toBe(false);
+    // Snapshot recovery reads the same receipts without an ExpeditionDiscovery diff.
+    store.applyFacts([{ model: "ExpeditionDiscovery", key: "0x5", value: null }]);
+    expect(ruinDisappeared(store, site(second, depth * 100 + 41))).toBe(true);
+  });
+
+  it("reopens other depths atomically on release application and closes a second depth from its receipt", () => {
+    const store = setup();
+    const receipt = { explorer_id: home + 4n, home_id: home, reward: { resource_type: 37, amount: 500n } };
+    store.applyFacts([
+      release(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1),
+      close(true),
+      { model: "ExpeditionSite", key: "0x20", value: { ...site(first, 40), clear: receipt } },
+    ]);
+    const map = new WorldSpatialProjection({ store });
+    map.start();
+    expect(map.getStructure(Number(home + 5n))).toBeUndefined();
+    const changed = vi.fn();
+    map.subscribeStructures(changed);
+    store.applyFacts([release()]);
+    map.flush();
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(map.getStructure(Number(home + 5n))).toBeDefined();
+    expect(map.getStructure(Number(second))).toBeUndefined();
+    changed.mockClear();
+    store.applyFacts([release(nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE - 1)]);
+    map.flush();
+    expect(changed).toHaveBeenCalledTimes(1);
+    expect(map.getStructure(Number(home + 5n))).toBeUndefined();
+    store.applyFacts([release()]);
+    map.flush();
+    expect(map.getStructure(Number(home + 5n))).toBeDefined();
+    store.applyFacts([
+      {
+        model: "ExpeditionSite",
+        key: "0x62",
+        value: {
+          ...site(home + 6n, 141),
+          clear: receipt,
+        },
+      },
+    ]);
+    map.flush();
+    expect(map.getStructure(Number(home + 5n))).toBeUndefined();
+    expect(store.get("ExpeditionDiscovery", { game_id: 1, structure_id: home, epoch: 0n })?.ruin_cleared).toBe(true);
     map.dispose();
   });
 

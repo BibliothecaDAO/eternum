@@ -1,3 +1,4 @@
+use starknet::storage::{StorageMapReadAccess, StorageMapWriteAccess};
 pub use world_test_support::tests::frontier_discovery::*;
 
 
@@ -82,10 +83,10 @@ fn the_floor_draws_only_kinds_still_allowed() {
 }
 
 #[test]
-fn frontier_floor_and_ruin_are_home_day_scoped_and_only_player_discoveries_change_them() {
+fn frontier_floor_is_home_day_scoped_and_ruin_clears_preserve_it() {
     let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
     assert!(crate::logic::expeditions::discovery(key).is_none());
-    // Armies and depth are deliberately not keys: the same home/day owns the seven empties and the ruin.
+    // The empty-reveal floor is shared across armies and depths.
     for _ in 0_u8..7 {
         crate::logic::expeditions::record_discovery(key, Discovery::None);
     }
@@ -97,7 +98,7 @@ fn frontier_floor_and_ruin_are_home_day_scoped_and_only_player_discoveries_chang
     crate::logic::expeditions::record_discovery(key, Discovery::Camp);
     let row = crate::logic::expeditions::discovery(key).unwrap();
     assert_eq!((row.empty_reveals, row.ruin_cleared), (0, false));
-    crate::logic::expeditions::close_ruins(key);
+    crate::logic::expeditions::close_ruins(key, 0);
     assert!(crate::logic::expeditions::discovery(key).unwrap().ruin_cleared);
     assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { epoch: 301, ..key }).is_none());
     assert!(crate::logic::expeditions::discovery(ExpeditionDiscoveryKey { structure_id: 18, ..key }).is_none());
@@ -169,4 +170,32 @@ fn discovery_reserves_the_combined_sanctuary_increase() {
             empty_reveal_limit: 7,
         },
     );
+}
+
+#[test]
+fn depth_entitlement_isolated_by_home_game_day_and_preserves_legacy_bool() {
+    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
+    crate::state::write().game_releases.write(1, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
+    crate::state::write().game_releases.write(2, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
+    for depth in 0_u8..4 {
+        assert!(!crate::logic::expeditions::ruin_cleared_at(key, depth));
+        crate::logic::expeditions::close_ruins(key, depth);
+        assert!(crate::logic::expeditions::ruin_cleared_at(key, depth));
+        assert!(crate::state::read().map_rules.ruin_cleared.read((1, 17, 300)));
+        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { epoch: 301, ..key }, depth));
+        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { structure_id: 18, ..key }, depth));
+        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { game_id: 2, ..key }, depth));
+    }
+}
+
+#[test_case(name: "surface_twice", 0)]
+#[test_case(name: "depth_one_twice", 1)]
+#[test_case(name: "depth_two_twice", 2)]
+#[test_case(name: "depth_three_twice", 3)]
+#[should_panic(expected: "realm already cleared this depth today")]
+fn same_depth_cannot_clear_twice(depth: u8) {
+    crate::state::write().game_releases.write(1, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
+    let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
+    crate::logic::expeditions::close_ruins(key, depth);
+    crate::logic::expeditions::close_ruins(key, depth);
 }

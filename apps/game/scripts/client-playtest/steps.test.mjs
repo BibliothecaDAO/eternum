@@ -8,7 +8,7 @@ import { ARMY_PLATE_HEIGHT } from "../../src/three/constants/army-constants";
 import { ARMY_LABEL_POINT } from "./plates.mjs";
 import { MAP_LEAST_SHARE } from "./hud-layout.mjs";
 import { HUD_MAP_LEAST_SHARE } from "../../src/tokens";
-import { CHAT, CLOSE, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
+import { CHAT, CLOSE, ruinRule, EVENTS_WORDS, MENU, REALM_LABOR, SEASON } from "../../src/ui/design-system/kit/words";
 import {
   CLOSEST_CAMERA_DISTANCE,
   FARTHEST_CAMERA_DISTANCE,
@@ -33,6 +33,7 @@ describe("the HUD's words the steps press and read", () => {
       close: CLOSE,
       chat: CHAT,
       realmLabor: REALM_LABOR,
+      ruinRule: ruinRule(true),
     });
   });
 });
@@ -1064,4 +1065,15 @@ describe("lab-hud-devices", () => {
     expect(steps.find((step) => step.name === "chat").verify(share(8.6)).status).toBe("completed");
     expect(menu({ played: { share: { canvas: false, map: 0 } } }).status).toBe("blocked");
   });
+});
+
+it("the ruin fight proof refuses a legacy or missing daily rule", () => {
+  const verify = STEP_SETS["lab-ruin-fight"].steps.find((step) => step.name === "open-the-fight").verify;
+  const camera = { col: 1, row: 2 };
+  const before = { ruinToken: [0, 180], camera };
+  const after = { camera, buttons: ["Attack"], ruinRule: ruinRule(true), sheet: "Ruin" };
+  expect(verify({ played: { before, after } }).status).toBe("completed");
+  for (const rule of [ruinRule(false), null]) {
+    expect(verify({ played: { before, after: { ...after, ruinRule: rule } } }).status).toBe("failed");
+  }
 });

@@ -26,3 +26,8 @@ function unsignedConstants(source) {
     ]),
   );
 }
+
+/** Release behavior is not part of the immutable fact wire schema. */
+export async function readReleaseConstants(root) {
+  return unsignedConstants(await readFile(new URL("src/logic/release.cairo", root), "utf8"));
+}

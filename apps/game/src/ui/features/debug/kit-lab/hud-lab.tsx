@@ -248,7 +248,7 @@ const RUIN_CARD: LabSite = {
   fight: FIGHT(1_250, 1_520),
   pay: null,
   chest: { tier: 3, lords: 128 },
-  ruinChoice: { depth: "Surface" },
+  ruinChoice: { depth: "Surface", perDepth: true },
   xp: 145,
   verb: ATTACK_30,
 };

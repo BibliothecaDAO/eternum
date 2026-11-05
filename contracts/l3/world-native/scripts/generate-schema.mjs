@@ -1,6 +1,6 @@
 import { tupleTypes } from "../../../../apps/herald/src/native/serde.ts";
 import { compileCommandRoutes } from "./command-routes.mjs";
-import { readRuleConstants } from "./rule-constants.mjs";
+import { readRuleConstants, readReleaseConstants } from "./rule-constants.mjs";
 import { generateSitePreviews } from "./generate-site-previews.mjs";
 import { execFileSync } from "node:child_process";
 import { mkdtemp, rm } from "node:fs/promises";
@@ -152,6 +152,7 @@ for (const model of models) {
 }
 
 const ruleConstants = await readRuleConstants(root);
+const releaseConstants = await readReleaseConstants(root);
 await generateSitePreviews(process.argv.includes("--check"));
 
 // Research rows, tier choices and the building categories that have a row.
@@ -440,6 +441,7 @@ function storyVariants() {
 const declarations = [
   "// Generated from native fact models and contract ABIs. Run the native schema generator to update.",
   `export const nativeFactSchemaIdentity = ${JSON.stringify(schema.identity)};`,
+  `export const nativeReleaseConstants = ${JSON.stringify(releaseConstants, null, 2)} as const;`,
   `export const nativeRuleConstants = ${JSON.stringify(ruleConstants, null, 2)} as const;`,
   `export const nativeResearchConstants = ${JSON.stringify(researchConstants, null, 2)} as const;`,
   typeScriptEnum(

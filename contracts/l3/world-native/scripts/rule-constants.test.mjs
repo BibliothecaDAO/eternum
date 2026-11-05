@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 import test from "node:test";
-import { readRuleConstants } from "./rule-constants.mjs";
+import { readRuleConstants, readReleaseConstants } from "./rule-constants.mjs";
 
 const root = new URL("../", import.meta.url);
 
@@ -40,4 +40,13 @@ test("the withdrawal reporting grace is shared with the ledger and exported to c
     await realpath(new URL("src/days.cairo", root)),
     await realpath(new URL("../../l2/ledger/src/days.cairo", root)),
   );
+});
+
+test("release thresholds are generated for clients without changing the historical wire schema", async () => {
+  const constants = await readReleaseConstants(root);
+  const client = await readFile(new URL("schema/client.gen.ts", root), "utf8");
+  assert.match(client, new RegExp(`"?RUIN_DEPTH_LIMIT_RELEASE"?: ${constants.RUIN_DEPTH_LIMIT_RELEASE}`));
+  const schema = JSON.parse(await readFile(new URL("schema/schema.json", root), "utf8"));
+  assert.equal(JSON.stringify(await readRuleConstants(root)), JSON.stringify(schema.ruleConstants));
+  assert.equal(Object.hasOwn(schema.ruleConstants, "RUIN_DEPTH_LIMIT_RELEASE"), false);
 });
