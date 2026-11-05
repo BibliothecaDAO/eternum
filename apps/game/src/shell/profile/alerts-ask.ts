@@ -66,6 +66,9 @@ interface AskMemory {
   notNow: () => void;
 }
 
+/** Where this device keeps the popup's memory, shared by every tab of the game. */
+const ASK_MEMORY_KEY = "realms-alerts-ask";
+
 export const useAskMemory = create<AskMemory>()(
   persist(
     (set) => ({
@@ -75,7 +78,7 @@ export const useAskMemory = create<AskMemory>()(
       notNow: () => set((memory) => ({ notNows: memory.notNows + 1 })),
     }),
     {
-      name: "realms-alerts-ask",
+      name: ASK_MEMORY_KEY,
       // Version 0 kept each game's asked day; its Not nows still count.
       version: 1,
       migrate: (stored) => ({ notNows: (stored as { notNows?: number } | null)?.notNows ?? 0, shownAt: null }),
@@ -91,20 +94,24 @@ export type AlertsPopupAsk = { kind: "remind" | "install"; act: () => void; notN
 /**
  * The popup that asks for alerts (owner's pick A of reports/push-popup-1.md): once `clear` (the player's own map with no
  * day's end owed), it opens on a device that can be asked, at most once a week from the last time it showed, and stands
- * on its page until answered. Three Not nows end it.
+ * on its page until answered or until the map stops being clear (a day's end, another realm), which closes it as shown.
+ * Three Not nows end it. The memory is the device's: another tab's showing or Not now counts here at once.
  */
 export const useAlertsPopup = (clear: boolean): AlertsPopupAsk | null => {
   const ask = useAlertsAsk();
   const { notNows, shownAt, shown, notNow } = useAskMemory();
   const [open, setOpen] = useState(false);
+  useMemoryOfOtherTabs();
   const asking = ask !== null && ask.kind !== "on" ? ask : null;
-  const due = asking !== null && notNows < NOT_NOW_LIMIT && (shownAt === null || Date.now() - shownAt >= ASK_EVERY_MS);
+  const due = asking !== null && isDue({ notNows, shownAt });
   useEffect(() => {
-    if (!clear || !due || open) return;
+    if (open && !clear) setOpen(false);
+    // Decided on the device's memory as stored now, whatever this tab last read.
+    if (open || !clear || !due || !isDue(storedMemory())) return;
     setOpen(true);
     shown(Date.now());
   }, [clear, due, open, shown]);
-  if (!open || !asking) return null;
+  if (!open || !clear || !asking) return null;
   return {
     kind: asking.kind,
     act: () => {
@@ -112,8 +119,29 @@ export const useAlertsPopup = (clear: boolean): AlertsPopupAsk | null => {
       setOpen(false);
     },
     notNow: () => {
+      storedMemory();
       notNow();
       setOpen(false);
     },
   };
+};
+
+const isDue = ({ notNows, shownAt }: Pick<AskMemory, "notNows" | "shownAt">) =>
+  notNows < NOT_NOW_LIMIT && (shownAt === null || Date.now() - shownAt >= ASK_EVERY_MS);
+
+/** The memory as this device stores it now, read into the store first (localStorage reads at once). */
+const storedMemory = () => {
+  void useAskMemory.persist.rehydrate();
+  return useAskMemory.getState();
+};
+
+/** Another tab's write to the popup's memory reaches this one: the stored memory is read again. */
+const useMemoryOfOtherTabs = () => {
+  useEffect(() => {
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === ASK_MEMORY_KEY) storedMemory();
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, []);
 };

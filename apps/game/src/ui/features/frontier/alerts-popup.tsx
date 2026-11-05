@@ -3,7 +3,7 @@ import "./alerts-popup.css";
 import { kindsAtLevel } from "@bibliothecadao/notifications";
 import { ASKED_LEVEL, type AlertsPopupAsk, useAlertsPopup } from "@/shell/profile/alerts-ask";
 import { Icon } from "@/ui/design-system/icon";
-import { HudButton } from "@/ui/design-system/kit/hud-elements";
+import { HudButton, HudModalLayer } from "@/ui/design-system/kit/hud-elements";
 import { paintingSources } from "@/ui/design-system/kit/paintings";
 import { ADD_TO_HOME_SCREEN, ALERTS_POPUP } from "@/ui/design-system/kit/words";
 
@@ -15,18 +15,15 @@ export const AlertsPopup = ({ clear }: { clear: boolean }) => {
 
 /**
  * The popup's card over the dimmed map: a painting with the bell, what this device would get (the kinds the asked level
- * pushes, from the kinds table), then Not now and the one verb. An iPhone's browser is told to install first.
+ * pushes, from the kinds table), then Not now and the one verb. An iPhone's browser is told to install first. It opens
+ * in the HUD's modal layer (HudModalLayer), which holds the keyboard in the card and the screen inert behind it; a
+ * press beside it, Escape and the system back are its Not now.
  */
 export const AlertsPopupCard = ({ ask }: { ask: AlertsPopupAsk }) => {
   const install = ask.kind === "install";
   return (
-    <div className="ui pointer-events-auto fixed inset-0 z-50 alerts-popup">
-      <section
-        className="ui-confirm alerts-popup__card"
-        role="dialog"
-        aria-modal="true"
-        aria-label={ALERTS_POPUP.title}
-      >
+    <HudModalLayer onClose={ask.notNow}>
+      <section className="ui-confirm alerts-popup" role="dialog" aria-modal="true" aria-label={ALERTS_POPUP.title}>
         <div className="alerts-popup__art">
           <img {...paintingSources("frontier-mist")} sizes="26rem" alt="" />
           <span className="alerts-popup__medal">
@@ -47,6 +44,6 @@ export const AlertsPopupCard = ({ ask }: { ask: AlertsPopupAsk }) => {
           </HudButton>
         </footer>
       </section>
-    </div>
+    </HudModalLayer>
   );
 };

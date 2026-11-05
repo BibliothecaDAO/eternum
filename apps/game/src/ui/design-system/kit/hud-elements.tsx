@@ -29,6 +29,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 
+import { useModalLayer } from "./modal-layer";
 import { revealOwnPlace } from "./own-place";
 import { useDragDownCloses, useSheetCloses } from "./sheet-closes";
 import {
@@ -1731,6 +1732,25 @@ export const HudConfirm = ({
     </footer>
   </section>
 );
+
+/**
+ * A layer over the HUD and the map for one card the player must answer (the alerts popup): the screen dimmed behind it
+ * and inert, the keyboard held in it (useModalLayer, the app's modal behaviour), and `onClose` on a press beside the
+ * card, Escape or the system back. It is drawn where the HUD draws it, so the card keeps the HUD's age and sizes.
+ */
+export const HudModalLayer = ({ onClose, children }: { onClose: () => void; children: ReactNode }) => {
+  const layer = useRef<HTMLDivElement>(null);
+  useModalLayer(layer, onClose);
+  return (
+    <div
+      ref={layer}
+      className="ui ui-modal pointer-events-auto fixed inset-0 z-50"
+      onClick={(event) => event.target === event.currentTarget && onClose()}
+    >
+      {children}
+    </div>
+  );
+};
 
 export type MenuItem =
   | { kind: "rule" }

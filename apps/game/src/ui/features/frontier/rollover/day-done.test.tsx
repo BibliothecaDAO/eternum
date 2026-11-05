@@ -244,6 +244,20 @@ describe("the alerts popup, which waits for the day's end", () => {
     expect(useAskMemory.getState().shownAt).not.toBeNull();
   });
 
+  it("gives the screen to a day's end that begins while it stands unanswered, counting no Not now", async () => {
+    alerts.owner = "0x7";
+    day2Seen();
+    client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    await act(async () => draw());
+    await settle();
+    expect(popup()).not.toBeNull();
+    // The next day's turn: the rollover begins the moment over the map.
+    await act(async () => useDayEndStore.getState().begin("live"));
+    expect(phase()).toBe("veil");
+    expect(popup()).toBeNull();
+    expect(useAskMemory.getState()).toMatchObject({ notNows: 0, shownAt: expect.any(Number) });
+  });
+
   it("opens nothing on another player's realm", async () => {
     alerts.owner = "0x7";
     day2Seen();

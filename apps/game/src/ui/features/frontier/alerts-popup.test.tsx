@@ -37,16 +37,20 @@ beforeEach(() => {
   account.save.mockClear();
   account.install.mockClear();
   container = document.createElement("div");
+  document.body.append(container);
   root = createRoot(container);
 });
 afterEach(async () => {
   await act(async () => root.unmount());
+  container.remove();
+  window.localStorage.clear();
   vi.useRealTimers();
 });
 
 /** What the popup shows: its title, its lines and its buttons; null while it is closed. */
 const read = () => {
-  const card = container.querySelector("[role='dialog']");
+  // The kit's modal layer draws it at the body's end.
+  const card = document.body.querySelector("[role='dialog']");
   return (
     card && {
       title: card.getAttribute("aria-label"),
@@ -62,9 +66,29 @@ const open = async (clear = true) => {
   await act(async () => root.render(<AlertsPopup clear={clear} />));
   return read();
 };
+/** The same page drawn again, its map clear or not (no remount). */
+const draw = async (clear: boolean) => {
+  await act(async () => root.render(<AlertsPopup clear={clear} />));
+  return read();
+};
+const button = (label: string) =>
+  [...document.body.querySelectorAll("button")].find((candidate) => candidate.textContent === label);
 const press = async (label: string) => {
-  const button = [...container.querySelectorAll("button")].find((candidate) => candidate.textContent === label);
-  await act(async () => button!.click());
+  await act(async () => button(label)!.click());
+};
+/** Another tab of the game on this device writes the popup's memory; `announce`: the browser tells this tab. */
+const otherTabWrites = async (memory: { notNows: number; shownAt: number | null }, announce = true) => {
+  const value = JSON.stringify({ state: memory, version: 1 });
+  window.localStorage.setItem("realms-alerts-ask", value);
+  if (announce)
+    await act(async () =>
+      window.dispatchEvent(new StorageEvent("storage", { key: "realms-alerts-ask", newValue: value })),
+    );
+};
+const key = async (name: string, shiftKey = false) => {
+  await act(async () => {
+    document.activeElement!.dispatchEvent(new KeyboardEvent("keydown", { key: name, shiftKey, bubbles: true }));
+  });
 };
 const later = (days: number) => vi.setSystemTime(START + days * DAY);
 
@@ -141,4 +165,72 @@ it("keeps the Not nows of the day asks it replaced", async () => {
   );
   await act(async () => useAskMemory.persist.rehydrate());
   expect(useAskMemory.getState()).toMatchObject({ notNows: 2, shownAt: null });
+});
+
+it("asks no second time in the week when another open tab showed it, told by the browser or not", async () => {
+  // This tab is open on a map that is not clear yet; another tab shows the popup.
+  expect(await draw(false)).toBeNull();
+  await otherTabWrites({ notNows: 0, shownAt: START });
+  expect(await draw(true)).toBeNull();
+  // A write this tab was never told of is read as the popup decides.
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  useAskMemory.setState({ notNows: 0, shownAt: null });
+  await otherTabWrites({ notNows: 0, shownAt: START }, false);
+  expect(await draw(true)).toBeNull();
+});
+
+it("ends in every open tab after the third Not now in any of them, and counts on from another tab's Not nows", async () => {
+  expect(await draw(false)).toBeNull();
+  await otherTabWrites({ notNows: 3, shownAt: START - 30 * DAY });
+  expect(await draw(true)).toBeNull();
+  // Two Not nows from another tab, not announced: this tab's Not now is the third.
+  await act(async () => root.unmount());
+  root = createRoot(container);
+  useAskMemory.setState({ notNows: 0, shownAt: null });
+  await otherTabWrites({ notNows: 2, shownAt: START - 30 * DAY }, false);
+  expect(await draw(true)).not.toBeNull();
+  await press("Not now");
+  expect(useAskMemory.getState().notNows).toBe(3);
+  expect(JSON.parse(window.localStorage.getItem("realms-alerts-ask")!).state.notNows).toBe(3);
+});
+
+it("gives the screen back when the map stops being clear, counting the showing and no Not now", async () => {
+  expect(await draw(true)).not.toBeNull();
+  // A day's end takes the screen, or the player leaves their own map.
+  expect(await draw(false)).toBeNull();
+  // Clear again the same week: it was shown, so it does not come back.
+  expect(await draw(true)).toBeNull();
+  expect(useAskMemory.getState()).toMatchObject({ shownAt: START, notNows: 0 });
+});
+
+it("holds the keyboard: focus moves into it, Tab goes round its two buttons, the HUD behind is inert, and focus returns", async () => {
+  const hud = document.createElement("button");
+  hud.textContent = "Season";
+  document.body.append(hud);
+  hud.focus();
+  try {
+    await draw(true);
+    const dialog = document.body.querySelector("[role='dialog']")!;
+    expect(dialog.contains(document.activeElement)).toBe(true);
+    expect(hud.closest("[inert]")).not.toBeNull();
+    button("Turn on alerts")!.focus();
+    await key("Tab");
+    expect(document.activeElement).toBe(button("Not now"));
+    await key("Tab", true);
+    expect(document.activeElement).toBe(button("Turn on alerts"));
+    await press("Not now");
+    expect(read()).toBeNull();
+    expect(hud.closest("[inert]")).toBeNull();
+    expect(document.activeElement).toBe(hud);
+  } finally {
+    hud.remove();
+  }
+});
+
+it("takes Escape as Not now: it closes and counts", async () => {
+  await draw(true);
+  await key("Escape");
+  expect(read()).toBeNull();
+  expect(useAskMemory.getState().notNows).toBe(1);
 });

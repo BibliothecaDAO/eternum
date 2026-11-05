@@ -1,12 +1,5 @@
-/* The alerts popup (alerts-popup.tsx): the map dimmed behind one card, the painting over the words, the bell between. */
+/* The alerts popup (alerts-popup.tsx), in the HUD modal layer: one card, the painting over the words, the bell between. */
 .alerts-popup {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  background: color-mix(in srgb, var(--hud-night) 60%, transparent);
-}
-.alerts-popup__card {
   width: 25rem;
   overflow: hidden;
 }
