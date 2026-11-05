@@ -7,7 +7,7 @@ export interface ReferredFriend {
   friend: string;
   name: string | null;
   mailbox: string;
-  deviceKey: string | null;
+  browser: string | null;
   tier: TicketTier | null;
   countedAt: number | null;
 }
@@ -19,10 +19,10 @@ export interface Referrer {
   goldenLinkAt: number | null;
 }
 
-/** Who an account is to the one-person check: its mailbox, null when unknown, and its approved devices. */
+/** Who an account is to the one-person check: its mailbox, null when unknown, and every browser it was signed in on. */
 export interface Identity {
   mailbox: string | null;
-  devices: string[];
+  browsers: string[];
 }
 
 interface CampaignTicket {
@@ -32,14 +32,16 @@ interface CampaignTicket {
 }
 
 /**
- * Whether a device key, as the counting write's SQL names it, is someone else's on the link: one the inviter ever
- * approved, or a counted friend's, kept or ever approved. `f` is the friend being counted.
+ * Whether a browser, as the counting write's SQL names it, is someone else's on the link: one the inviter was ever
+ * signed in on, or a counted friend's, kept or ever signed in on. `f` is the friend being counted.
  */
-const taken = (key: string) => `(${key} IN (SELECT "deviceKey" FROM "account_devices" WHERE "realmsId" = f."referrer")
+const taken = (
+  browser: string,
+) => `(${browser} IN (SELECT "browser" FROM "account_browsers" WHERE "realmsId" = f."referrer")
   OR EXISTS (SELECT 1 FROM "campaign_referrals" AS o
              WHERE o."campaign" = f."campaign" AND o."referrer" = f."referrer" AND o."counted_at" IS NOT NULL
-               AND (o."device_key" = ${key}
-                    OR EXISTS (SELECT 1 FROM "account_devices" AS d WHERE d."realmsId" = o."friend" AND d."deviceKey" = ${key}))))`;
+               AND (o."browser" = ${browser}
+                    OR EXISTS (SELECT 1 FROM "account_browsers" AS b WHERE b."realmsId" = o."friend" AND b."browser" = ${browser}))))`;
 
 /** A new code takes another try only when it collides with another inviter's; eight letters make that rare. */
 const CODE_ATTEMPTS = 4;
@@ -104,11 +106,13 @@ export function createCampaignReferralStore(db: D1Database) {
 
   /**
    * The friend's ticket from the inviter's link, recorded for the inviter in the same batch: golden when the link has
-   * gone golden, else at the tier drawn for it. Null when the friend already held a ticket, which records nothing.
+   * gone golden, else at the tier drawn for it. Null when the friend already held a ticket, which records nothing. A
+   * friend's account is newer than their inviter's: an older account still gets its ticket, but brought no one, so two
+   * accounts never count for each other.
    */
   const giveFriendTicket = async (
     campaign: CampaignKey,
-    friend: { realmsId: string; mailbox: string; deviceKey: string | null },
+    friend: { realmsId: string; mailbox: string; browser: string | null },
     inviter: string,
     drawn: TicketTier,
     now: number,
@@ -124,10 +128,13 @@ export function createCampaignReferralStore(db: D1Database) {
         .bind(campaign, friend.realmsId, campaign, inviter, drawn, now),
       db
         .prepare(
-          `INSERT INTO "campaign_referrals" ("campaign", "friend", "referrer", "created_at", "mailbox", "device_key")
-           SELECT ?, ?, ?, ?, ?, ? WHERE changes() = 1 ON CONFLICT DO NOTHING`,
+          `INSERT INTO "campaign_referrals" ("campaign", "friend", "referrer", "created_at", "mailbox", "browser")
+           SELECT ?1, ?2, ?3, ?4, ?5, ?6 WHERE changes() = 1
+             AND julianday((SELECT "createdAt" FROM "user" WHERE "realmsId" = ?2))
+                 > julianday((SELECT "createdAt" FROM "user" WHERE "realmsId" = ?3))
+           ON CONFLICT DO NOTHING`,
         )
-        .bind(campaign, friend.realmsId, inviter, now, friend.mailbox, friend.deviceKey),
+        .bind(campaign, friend.realmsId, inviter, now, friend.mailbox, friend.browser),
     ]);
     return given?.results[0] ?? null;
   };
@@ -137,7 +144,7 @@ export function createCampaignReferralStore(db: D1Database) {
     (
       await db
         .prepare(
-          `SELECT f."friend", f."mailbox", f."device_key" AS "deviceKey", f."counted_at" AS "countedAt", t."tier",
+          `SELECT f."friend", f."mailbox", f."browser", f."counted_at" AS "countedAt", t."tier",
                   u."id", u."name", u."image"
            FROM "campaign_referrals" f
            JOIN "user" u ON u."realmsId" = f."friend"
@@ -151,76 +158,64 @@ export function createCampaignReferralStore(db: D1Database) {
       name: profileOfIdentityUser({ id, name, image }).name,
     }));
 
-  /**
-   * The account's mailbox and every device key the guardian ever approved for it, signed in or not: who it is to the
-   * one-person check.
-   */
+  /** The account's mailbox and every browser it was ever signed in on: who it is to the one-person check. */
   const identityOf = async (realmsId: string): Promise<Identity> => {
-    const [user, devices] = await db.batch<{ email?: string; deviceKey?: string }>([
+    const [user, browsers] = await db.batch<{ email?: string; browser?: string }>([
       db.prepare('SELECT "email" FROM "user" WHERE "realmsId" = ?').bind(realmsId),
-      db.prepare('SELECT "deviceKey" FROM "account_devices" WHERE "realmsId" = ? ORDER BY "deviceKey"').bind(realmsId),
+      db.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ? ORDER BY "browser"').bind(realmsId),
     ]);
     const email = user?.results[0]?.email;
     return {
       mailbox: email === undefined ? null : mailboxOf(email),
-      devices: (devices?.results ?? []).map((row) => row.deviceKey!),
+      browsers: (browsers?.results ?? []).map((row) => row.browser!),
     };
   };
 
-  /** The device a session signed in on, when the guardian approved one for it. */
-  const deviceOfSession = async (sessionId: string) =>
-    (
-      await db
-        .prepare('SELECT "deviceKey" FROM "device_sessions" WHERE "sessionId" = ? ORDER BY "deviceKey" LIMIT 1')
-        .bind(sessionId)
-        .first<{ deviceKey: string }>()
-    )?.deviceKey ?? null;
-
   /**
-   * Counts friends for their inviter, keeping the device each counted on; a friend once counted stays counted. The
-   * write itself refuses a friend who shares the inviter's mailbox or any approved device, or a counted friend's on the
-   * link: every device either account ever approved (account_devices), and each counted friend's kept one. Reads that
-   * race, each deciding from its own snapshot, still count one person once.
+   * Counts friends for their inviter, keeping the browser each counted on; a friend once counted stays counted. The
+   * write itself refuses a friend who shares the inviter's mailbox or any browser, or a counted friend's on the link:
+   * every browser either account was ever signed in on (account_browsers), and each counted friend's kept one. Reads
+   * that race, each deciding from its own snapshot, still count one person once.
    */
   const markCounted = async (
     campaign: CampaignKey,
     inviter: string,
     own: Identity,
-    friends: { friend: string; deviceKey: string }[],
+    friends: { friend: string; browser: string }[],
     now: number,
   ) => {
     if (friends.length === 0) return;
     await db.batch(
-      friends.map(({ friend, deviceKey }) =>
+      friends.map(({ friend, browser }) =>
         db
           .prepare(
-            `UPDATE "campaign_referrals" AS f SET "counted_at" = ?1, "device_key" = coalesce(f."device_key", ?2)
+            `UPDATE "campaign_referrals" AS f SET "counted_at" = ?1, "browser" = coalesce(f."browser", ?2)
              WHERE f."campaign" = ?3 AND f."friend" = ?4 AND f."referrer" = ?5 AND f."counted_at" IS NULL
                AND f."mailbox" IS NOT ?6
                AND NOT EXISTS (SELECT 1 FROM "campaign_referrals" AS o
                                WHERE o."campaign" = f."campaign" AND o."referrer" = f."referrer"
                                  AND o."counted_at" IS NOT NULL AND o."mailbox" = f."mailbox")
-               AND NOT ${taken('coalesce(f."device_key", ?2)')}
-               AND NOT EXISTS (SELECT 1 FROM "account_devices" AS mine
-                               WHERE mine."realmsId" = f."friend" AND ${taken('mine."deviceKey"')})`,
+               AND NOT ${taken('coalesce(f."browser", ?2)')}
+               AND NOT EXISTS (SELECT 1 FROM "account_browsers" AS mine
+                               WHERE mine."realmsId" = f."friend" AND ${taken('mine."browser"')})`,
           )
-          .bind(now, deviceKey, campaign, friend, inviter, own.mailbox),
+          .bind(now, browser, campaign, friend, inviter, own.mailbox),
       ),
     );
   };
 
-  /** Every device each friend on the link ever approved, by friend: the one-person check's whole relation. */
-  const devicesOfFriends = async (campaign: CampaignKey, inviter: string) => {
+  /** Every browser each friend on the link was ever signed in on, by friend: the one-person check's whole relation. */
+  const browsersOfFriends = async (campaign: CampaignKey, inviter: string) => {
     const { results } = await db
       .prepare(
-        `SELECT f."friend", d."deviceKey" FROM "campaign_referrals" AS f
-         JOIN "account_devices" AS d ON d."realmsId" = f."friend"
+        `SELECT f."friend", b."browser" FROM "campaign_referrals" AS f
+         JOIN "account_browsers" AS b ON b."realmsId" = f."friend"
          WHERE f."campaign" = ? AND f."referrer" = ?`,
       )
       .bind(campaign, inviter)
-      .all<{ friend: string; deviceKey: string }>();
+      .all<{ friend: string; browser: string }>();
     const byFriend = new Map<string, string[]>();
-    for (const { friend, deviceKey } of results) byFriend.set(friend, [...(byFriend.get(friend) ?? []), deviceKey]);
+    for (const { friend, browser } of results) byFriend.set(friend, [...(byFriend.get(friend) ?? []), browser]);
     return byFriend;
   };
 
@@ -286,9 +281,8 @@ export function createCampaignReferralStore(db: D1Database) {
     giveFriendTicket,
     friendsOf,
     identityOf,
-    deviceOfSession,
     markCounted,
-    devicesOfFriends,
+    browsersOfFriends,
     giveInviterTicket,
     promoteInviter,
     goldLink,

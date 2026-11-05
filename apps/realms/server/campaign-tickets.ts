@@ -1,6 +1,7 @@
 import { Data, Effect } from "effect";
 
 import type { IdentityAuth } from "./auth";
+import { browserOf } from "./browsers";
 import { CampaignTicketStore } from "./campaign-ticket-store";
 import { createCampaignReferralStore, mailboxOf } from "./campaign-referral-store";
 import { drawFriendTier } from "./campaign-referrals";
@@ -127,7 +128,7 @@ function redeemTicket(
       ? openFlyerTicket(realmsId, { campaign: asked.campaign, code: asked.code }, now, hasSource)
       : openReferralTicket(
           db,
-          { realmsId, email: session.user.email, sessionId: session.session.id },
+          { realmsId, email: session.user.email, browser: browserOf(request) },
           { campaign: asked.campaign, referral: asked.code },
           now,
           hasSource,
@@ -162,12 +163,12 @@ function openFlyerTicket(
 
 /**
  * A friend's ticket from their inviter's referral link, given whatever the printed codes, and recorded for the inviter
- * in the same write, with the mailbox and device the friend took it with, only when this link gave it. Refused for the
+ * in the same write, with the mailbox and browser the friend took it with, only when this link gave it. Refused for the
  * inviter's own link, and, as a flyer is, while the account already has a home source in the campaign's running game.
  */
 function openReferralTicket(
   db: D1Database,
-  friend: { realmsId: string; email: string; sessionId: string },
+  friend: { realmsId: string; email: string; browser: string | null },
   { campaign, referral }: { campaign: CampaignKey; referral: string },
   now: number,
   hasSource: CampaignHomeSource,
@@ -179,8 +180,7 @@ function openReferralTicket(
     if (inviter.referrer === friend.realmsId) return json({ error: "self_referral" }, 409);
     const refusal = yield* sourceRefusal(friend.realmsId, campaign, hasSource);
     if (refusal) return refusal;
-    const deviceKey = yield* campaignStorage(() => referrals.deviceOfSession(friend.sessionId));
-    const identity = { realmsId: friend.realmsId, mailbox: mailboxOf(friend.email), deviceKey };
+    const identity = { realmsId: friend.realmsId, mailbox: mailboxOf(friend.email), browser: friend.browser };
     const given = yield* campaignStorage(() =>
       referrals.giveFriendTicket(campaign, identity, inviter.referrer, drawFriendTier(campaign), now),
     );
