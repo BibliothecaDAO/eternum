@@ -15,7 +15,8 @@ import {
   VIEWPORT,
 } from "./client-playtest/browser-session.mjs";
 import { clickToResultTable } from "./client-playtest/click-latency.mjs";
-import { startClient } from "./client-playtest/client-server.mjs";
+import { serveClientAtOrigin } from "./client-playtest/client-at-origin.mjs";
+import { buildClient, startClient } from "./client-playtest/client-server.mjs";
 import {
   assertInTargetGame,
   buildLabGameUrl,
@@ -108,6 +109,10 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (storageState && !player) throw new Error("--storage-state requires --player");
   const passkeys = option("--passkeys", null);
   if (passkeys && !player) throw new Error("--passkeys requires --player");
+  const clientAtOrigin = argv.includes("--client-at-origin");
+  if (clientAtOrigin && !option("--base-url", null)) throw new Error("--client-at-origin requires --base-url");
+  if (clientAtOrigin && option("--model-override", null) !== null)
+    throw new Error("--client-at-origin already serves the whole client: run it without --model-override");
   const stepSet = option("--steps", player ? "player" : "spectator");
   if (!STEP_SETS[stepSet]) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
@@ -129,6 +134,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
 
   return {
     baseUrl: option("--base-url", null),
+    clientAtOrigin,
     chainId: option("--chain-id", ""),
     comparePath: option("--compare", null) && resolve(callerDir, option("--compare")),
     cpuThrottle: integer("--cpu-throttle", DEFAULTS.cpuThrottle, 1),
@@ -188,8 +194,13 @@ async function main(argv) {
     const integratedGpu = options.gpu === "low-power" ? prepareIntegratedGpu(runDir) : null;
     output.integratedGpu = integratedGpu;
     output.stage = "starting the client";
+    // A deployed origin is played as it is, or with this checkout's build answering for it in the run's page.
     const client = options.baseUrl
-      ? { baseUrl: options.baseUrl, external: true }
+      ? {
+          baseUrl: options.baseUrl,
+          external: true,
+          distDir: options.clientAtOrigin ? await buildClient({ owner, runDir }) : null,
+        }
       : await startClient({ owner, port: options.port, runDir });
     output.client = client;
     output.stage = "finding the game";
@@ -207,6 +218,7 @@ async function main(argv) {
           ...options,
           integratedGpu,
           baseUrl: client.baseUrl,
+          clientDistDir: client.distDir ?? null,
           iteration,
           owner,
           rendererMode,
@@ -321,6 +333,8 @@ async function playRun(context) {
   const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
   let releaseDevTools = () => {};
   let passkeys = null;
+  let clientAtOrigin = null;
+  let releaseClientAtOrigin = () => {};
   try {
     browser.run([
       "open",
@@ -335,6 +349,16 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    if (context.clientAtOrigin) {
+      const { cdpUrl, targetId } = devTools;
+      clientAtOrigin = await serveClientAtOrigin({
+        cdpUrl,
+        targetId,
+        distDir: context.clientDistDir,
+        origin: context.baseUrl,
+      });
+      releaseClientAtOrigin = owner.adopt(`client at origin ${label}`, () => clientAtOrigin.stop());
+    }
     if (context.passkeys) {
       passkeys = await restorePasskeys(devTools, context.passkeys);
       record.passkeys = passkeys.count;
@@ -397,6 +421,7 @@ async function playRun(context) {
   } finally {
     clearInterval(sampler);
     record.loadSamples.push(loadavg()[0]);
+    if (clientAtOrigin) record.servedFromBuild = (await clientAtOrigin.served()).length;
   }
   try {
     return writeRunEvidence({ browser, context, record });
@@ -405,6 +430,7 @@ async function playRun(context) {
       await passkeys?.save();
       if (context.storageState && record.signIn === "kept") browser.run(["state", "save", context.storageState]);
     } finally {
+      await releaseClientAtOrigin();
       await releaseDevTools();
       // A previous live game must not keep rendering during the next measurement.
       await releaseBrowser();
@@ -521,6 +547,7 @@ function writeRunEvidence({ browser, context, record }) {
     modelOverride: context.modelOverride
       ? { from: context.modelOverride, served: record.modelsServed?.() ?? [] }
       : null,
+    clientAtOrigin: context.clientAtOrigin ? { origin: context.baseUrl, served: record.servedFromBuild ?? null } : null,
     signIn: record.signIn ?? null,
     daySummary: record.daySummary ?? null,
     steps: record.steps.map(({ summary }) => summary),

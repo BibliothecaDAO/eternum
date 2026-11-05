@@ -308,15 +308,16 @@ Reuse `apps/game`'s `playtest` with
 `--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --iterations 1 --renderer-modes webgpu-auto --headed`.
 Prepare the linked test wallet in that player's persistent browser profile, with 20 devLords plus its fee funding for
 both deposits: STRK for a connected wallet, real LORDS for a Realms wallet (each send holds its full fee cap until AVNU
-refunds the rest). A Realms wallet's passkey signs only at the dev client's origin: run against it with `--base-url` and
-pass the device's saved passkeys with `--passkeys`; each deposit then writes its fee and built calls to
-`<step>-fee-shown.json` and waits for `<step>-fee-approved.json` (or `-fee-refused.json`). A connected wallet's two
-prompts are approved by hand. Each waits ten minutes; Ctrl-C cancels. The proof deposits ten LORDS, makes missing
-stamina through ordinary Explore controls if needed, and performs one mixed partial refill that consumes all purchased
-LORDS. Its final `wallet-deposit-for-sweep` step deposits another ten LORDS through the same flow and exact balance
-check, leaving 10 unspent LORDS for the existing season-end principal return. Both deposits retain their response
-bodies, credited receipt identities and before/after purse evidence. Earned winnings from a ruin chest must already be
-present. Missing prerequisites fail explicitly. `lab-spend-lords` remains the fixture proof.
+refunds the rest). A Realms wallet's passkey signs only at the dev client's origin, where the deployed client is next's:
+run with `--base-url https://play.dev-realms.party --client-at-origin`, so this checkout's build answers for that origin
+in the run's page alone, and pass the device's saved passkeys with `--passkeys`; each deposit then writes its fee and
+built calls to `<step>-fee-shown.json` and waits for `<step>-fee-approved.json` (or `-fee-refused.json`). A connected
+wallet's two prompts are approved by hand. Each waits ten minutes; Ctrl-C cancels. The proof deposits ten LORDS, makes
+missing stamina through ordinary Explore controls if needed, and performs one mixed partial refill that consumes all
+purchased LORDS. Its final `wallet-deposit-for-sweep` step deposits another ten LORDS through the same flow and exact
+balance check, leaving 10 unspent LORDS for the existing season-end principal return. Both deposits retain their
+response bodies, credited receipt identities and before/after purse evidence. Earned winnings from a ruin chest must
+already be present. Missing prerequisites fail explicitly. `lab-spend-lords` remains the fixture proof.
 
 Preserve the response bodies, confirmed receipt and heads, exact native and visible balances, and stamina evidence in
 the playtest transcript. Separately capture the season-end receipts and wallet deltas; exercise interrupted delivery,

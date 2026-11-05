@@ -94,6 +94,12 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   never copied into the evidence. A passkey works only on the origin it was made on (`--base-url`). In `s1-deposits` the
   deposit's payment then writes its fee and the paymaster's built calls to `<step>-fee-shown.json` and presses Confirm
   only once the operator writes `<step>-fee-approved.json` (`<step>-fee-refused.json` stops it unsigned).
+- **This checkout at a deployed origin.** `--client-at-origin` with `--base-url <origin>` builds this checkout and has
+  its files answer for that origin in the run's page only (DevTools interception from a worker thread, service workers
+  bypassed): a navigation gets its `index.html`, every file the build holds is served, and `/api`, other origins and
+  anything the build lacks go to the deployed origin. What is bound to the origin (a passkey, host-only cookies) works
+  as for a player, while the deployed client stays as it is. The transcript's `clientAtOrigin.served` counts the files
+  served from the build.
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a
