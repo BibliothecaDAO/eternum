@@ -1182,7 +1182,7 @@ export const WALLET_WORDS = {
   yourWallet: "Your wallet",
   realmsWallet: "Realms wallet",
   createWallet: "Create my wallet",
-  createLine: "One tap with your face, fingerprint or screen lock. No seed phrase, no fees.",
+  createLine: "One tap with your face, fingerprint or screen lock. No seed phrase.",
   confirmPasskey: "Confirm with your passkey",
   send: "Send",
   sendTo: "To",
@@ -1193,7 +1193,16 @@ export const WALLET_WORDS = {
   sendLine: (lords: string, to: string) => `Send ${lords} LORDS to ${to}`,
   sent: "Sent",
   notAnAddress: "Not a Starknet address",
-  notAnAmount: "Enter an amount up to what your wallet holds",
+  notAnAmount: "Enter an amount up to what your wallet holds, less the fee",
+  sendMax: "Max",
+  /** A default wallet's network fee, paid in LORDS: about what it takes, and the most it may (the rest comes back). */
+  networkFee: (about: string, most: string) => `Network fee about ${about} LORDS, at most ${most}`,
+  /** The wallet holds less LORDS than its fee may take. */
+  feeShort: (most: string, held: string) => `The network fee needs up to ${most} LORDS. Your wallet holds ${held}.`,
+  /** The wallet holds no LORDS to price its fee with. */
+  noFeeLords: "Sending pays a network fee in LORDS, and your wallet holds none.",
+  pricing: "Working out the fee",
+  feeRose: "The network fee went up. Check it and confirm again.",
   walletUnread: "Your Realms wallet could not be read.",
   lostPasskey: "Lost your passkey?",
   recoverTitle: "Recover your wallet",

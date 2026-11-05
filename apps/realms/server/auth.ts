@@ -21,15 +21,15 @@ import type { SendWalletNotice } from "./wallet-changes";
 import { siws } from "./siws-plugin";
 import { defaultWallet } from "./default-wallet-plugin";
 import { identityL2Configuration, identityProvider } from "./l2";
-import { avnuSponsor, type Sponsor } from "./sponsor";
+import { avnuPaymaster } from "./paymaster";
 import { readAttemptState, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
 import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
 /**
  * What the identity service reaches outside its database: the environment L2 for wallet signatures and deployments,
- * the email provider, and the sponsor of default wallets' gas.
+ * the email provider, and the paymaster of default wallets.
  */
-interface IdentityServices extends Pick<WalletChainServices, "sponsor" | "isDeployed" | "readEscape"> {
+interface IdentityServices extends Pick<WalletChainServices, "paymaster" | "isDeployed" | "readEscape"> {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
   sendWalletNotice?: SendWalletNotice;
@@ -41,15 +41,16 @@ type WalletChainEnv = Pick<
 >;
 type IdentityServiceEnv = WalletChainEnv & Pick<IdentityEnv, "RESEND_API_KEY" | "BASE_URL">;
 
-/** What default wallets need of the chain: its sponsor (none without a key), and reads of a wallet's state. */
-type WalletChainServices = Pick<RecoveryServices, "isDeployed" | "readEscape" | "readAttemptState" | "succeeded"> & {
-  sponsor: Sponsor | null;
-};
+/** What default wallets need of the chain: its paymaster (sponsoring only with our key), and reads of a wallet. */
+type WalletChainServices = Pick<
+  RecoveryServices,
+  "paymaster" | "isDeployed" | "readEscape" | "readAttemptState" | "succeeded"
+>;
 
 export const walletChainServicesOf = (env: WalletChainEnv): WalletChainServices => {
   const provider = () => identityProvider(env);
   return {
-    sponsor: env.AVNU_PAYMASTER_API_KEY ? avnuSponsor(env.AVNU_PAYMASTER_API_KEY) : null,
+    paymaster: avnuPaymaster(env.AVNU_PAYMASTER_API_KEY),
     isDeployed: async (address) => !(await isUndeployedWallet(provider(), address)),
     readEscape: (address) => readWalletEscape(provider(), address),
     readAttemptState: (address, newOwner, nonce) => readAttemptState(provider(), address, newOwner, nonce),
@@ -181,7 +182,7 @@ export const createIdentityAuth = (
         chainId: encodeChainName(identityL2Configuration(env).chainId),
         db: env.DB,
         guardian: env.GUARDIAN,
-        sponsor: services.sponsor,
+        paymaster: services.paymaster,
         isDeployed: services.isDeployed,
         readEscape: services.readEscape,
         checkCode,

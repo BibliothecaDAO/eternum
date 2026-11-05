@@ -14,7 +14,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
-import { callsMatch, type AskedCall } from "@realms-world/identity/wallet";
+import { callsMatch, WALLET_GAS_TOKEN, type AskedCall } from "@realms-world/identity/wallet";
 
 import { signWithPasskey } from "./passkey";
 import { forgetUncertain, rememberUncertain, type UncertainSend } from "./uncertain-sends";
@@ -67,28 +67,43 @@ export const sendFromWallet = async (
   return settled(owner, await landedOrRefused(provider, sent));
 };
 
-/** The sponsor built something other than these calls on this chain: nothing is signed. */
+/** The paymaster built something other than these calls on this chain, or a fee over the one shown: nothing is signed. */
 export class UnexpectedExecutionError extends Error {
   constructor() {
     super("unexpected_execution");
   }
 }
 
+/** A default wallet's network fee, in LORDS wei (WALLET_GAS_TOKEN): about `estimated`, never more than `max`. */
+export interface WalletFee {
+  estimated: bigint;
+  max: bigint;
+}
+
+/** A default wallet's execution ready for its passkey, with the fee it pays itself (none for a sponsored step). */
+export interface PreparedSend {
+  execution: TypedData;
+  fee: WalletFee | null;
+}
+
 /**
- * The same send from the account's default wallet, in two steps. Prepare: the sponsor builds the outside execution and
- * this page checks it is exactly `calls` on this chain (nothing is spent). Send, on the player's tap: their passkey
- * signs its hash and the sponsor submits it with the guardian's signature (apps/realms/server/default-wallet-plugin.ts).
- * No STRK is read: the sponsor pays. The tap opens the passkey at once, as Safari requires, with no request before it.
+ * The same send from the account's default wallet, in two steps. Prepare: the paymaster builds the outside execution
+ * and this page checks it is exactly `calls` on this chain, then at most one fee call paying no more than the max it
+ * shows (nothing is spent). Send, on the player's tap: their passkey signs its hash and the paymaster submits it with
+ * the guardian's signature (apps/realms/server/default-wallet-plugin.ts). The wallet pays its fee in LORDS, so no STRK
+ * is read. The tap opens the passkey at once, as Safari requires, with no request before it.
  */
-export const prepareDefaultWalletSend = async (calls: Call[]): Promise<TypedData> => {
+export const prepareDefaultWalletSend = async (calls: Call[]): Promise<PreparedSend> => {
   const requested = calls.map((call) => ({
     contractAddress: call.contractAddress,
     entrypoint: call.entrypoint,
     calldata: CallData.toHex(call.calldata ?? []),
   }));
-  const built = (await identityClient.buildDefaultWalletCall(requested)) as unknown as TypedData;
-  if (!buildsExactly(built, requested)) throw new UnexpectedExecutionError();
-  return built;
+  const built = await identityClient.buildDefaultWalletCall(requested);
+  const execution = built.typedData as unknown as TypedData;
+  const fee = built.fee && { estimated: BigInt(built.fee.estimated), max: BigInt(built.fee.max) };
+  if (!buildsExactly(execution, requested, fee)) throw new UnexpectedExecutionError();
+  return { execution, fee };
 };
 
 export const sendFromDefaultWallet = async (
@@ -150,11 +165,11 @@ const isWalletRefusal = (error: unknown) => {
 };
 
 /**
- * The identity Worker answered that nothing reached the chain: a refusal before the sponsor (4xx) or the sponsor's own
- * (SPONSOR_REFUSED). A lost answer, SEND_UNCERTAIN or any other failure may have been sent.
+ * The identity Worker answered that nothing reached the chain: a refusal before the paymaster (4xx) or the paymaster's
+ * own (PAYMASTER_REFUSED). A lost answer, SEND_UNCERTAIN or any other failure may have been sent.
  */
 const isProvenNotSent = (error: unknown) =>
-  error instanceof IdentityRequestError && (error.status < 500 || error.code === "SPONSOR_REFUSED");
+  error instanceof IdentityRequestError && (error.status < 500 || error.code === "PAYMASTER_REFUSED");
 
 /** A known outcome ends the uncertain send; an unconfirmed one keeps it. */
 const settled = (owner: string, outcome: WalletSendOutcome) => {
@@ -162,9 +177,12 @@ const settled = (owner: string, outcome: WalletSendOutcome) => {
   return outcome;
 };
 
-/** An outside execution (SNIP-9 v2) on this build's chain whose calls are exactly these (callsMatch, the one rule). */
-const buildsExactly = (built: TypedData, calls: AskedCall[]) => {
-  const message = built.message as { Calls?: { To: string; Selector: string; Calldata: string[] }[] };
+/**
+ * An outside execution (SNIP-9 v2) on this build's chain whose calls are exactly these, then, when the wallet pays, its
+ * fee to the execution's caller (the paymaster's forwarder) within the max shown (callsMatch, the one rule).
+ */
+const buildsExactly = (built: TypedData, calls: AskedCall[], fee: WalletFee | null) => {
+  const message = built.message as { Caller?: string; Calls?: { To: string; Selector: string; Calldata: string[] }[] };
   const domain = built.domain as { name?: string; version?: unknown; chainId?: unknown };
   const chainId = typeof domain.chainId === "string" ? domain.chainId : "";
   const onThisChain =
@@ -178,6 +196,7 @@ const buildsExactly = (built: TypedData, calls: AskedCall[]) => {
     callsMatch(
       message.Calls.map((call) => ({ to: call.To, selector: call.Selector, calldata: call.Calldata })),
       calls,
+      fee && { token: WALLET_GAS_TOKEN, payee: String(message.Caller), max: fee.max },
     )
   );
 };

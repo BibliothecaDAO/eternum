@@ -13,18 +13,9 @@ CREATE TABLE default_wallets (
   created_at INTEGER NOT NULL
 );
 
--- Each sponsored execution a default wallet sent, by its outside-execution nonce, on its UTC day: the per-account
--- daily cap counts them, and a resubmission of the same execution (same nonce) is not counted again.
-CREATE TABLE sponsored_executions (
-  realms_id TEXT NOT NULL,
-  nonce TEXT NOT NULL,
-  day TEXT NOT NULL,
-  PRIMARY KEY (realms_id, nonce)
-);
-
 -- A lost passkey's recovery, one attempt per account at a time (server/wallet-recovery.ts): reserved before anything is
 -- built, it keeps the new passkey (the chain stores only its GUID) and the escape's execution: its outside nonce and
--- window, to prove later whether it ran, and its transaction once the sponsor answers. Whether an escape stands is the
+-- window, to prove later whether it ran, and its transaction once the paymaster answers. Whether an escape stands is the
 -- wallet's own answer on chain.
 CREATE TABLE wallet_recoveries (
   realms_id TEXT PRIMARY KEY,

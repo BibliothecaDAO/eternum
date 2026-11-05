@@ -9,6 +9,7 @@ import { identityClient } from "@/hooks/context/identity-session";
 import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 import { IdentityRequestError } from "@realms-world/identity";
+import { WALLET_GAS_TOKEN } from "@realms-world/identity/wallet";
 import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError } from "./uncertain-sends";
 import {
   prepareDefaultWalletSend,
@@ -90,34 +91,63 @@ const WALLET = {
   origin: "https://realms.test",
   rpId: "realms.test",
 };
-/** The sponsor's outside execution of `calls` on `chainId`, as starknet.js builds it for execute_from_outside_v2. */
+/** AVNU's forwarder: the caller of every execution it builds, and where a wallet's fee goes. */
+const FORWARDER = "0x127021a1b5a52d3174c2ab077c2b043c80369250d29428cee956d76ee51584f";
+/** The paymaster's outside execution of `calls` on `chainId`, as starknet.js builds it for execute_from_outside_v2. */
 const built = (calls = [TRANSFER], chainId: string = L2_CHAIN.id) =>
   outsideExecution.getTypedData(
     chainId,
-    { caller: "0x414e595f43414c4c4552", execute_after: 1, execute_before: 1_900_000_000 },
+    { caller: FORWARDER, execute_after: 1, execute_before: 1_900_000_000 },
     "0x1",
     calls,
     "2",
   ) as unknown as Record<string, unknown>;
+/** The wallet's fee as AVNU's gasless mode adds it: a transfer of LORDS to its forwarder, the execution's last call. */
+const feeCall = (amount: bigint, to = FORWARDER, token = WALLET_GAS_TOKEN) => ({
+  contractAddress: token,
+  entrypoint: "transfer",
+  calldata: [to, `0x${amount.toString(16)}`, "0x0"],
+});
+const FEE = { estimated: "0x6d5e1a3a2b8c0000", max: "0x7e4a18b6f2a40000" };
+const MAX = BigInt(FEE.max);
 
-it("prepares the default wallet's send only when the sponsor built exactly the asked calls on this chain", async () => {
+it("prepares a default wallet's send only as the asked calls on this chain, then its fee in LORDS within the max shown", async () => {
   const build = vi.spyOn(identityClient, "buildDefaultWalletCall");
-  build.mockResolvedValueOnce(built());
-  await expect(prepareDefaultWalletSend([TRANSFER])).resolves.toEqual(built());
+  const paying = built([TRANSFER, feeCall(MAX)]);
+  build.mockResolvedValueOnce({ typedData: paying, fee: FEE });
+  await expect(prepareDefaultWalletSend([TRANSFER])).resolves.toEqual({
+    execution: paying,
+    fee: { estimated: BigInt(FEE.estimated), max: MAX },
+  });
   expect(build).toHaveBeenLastCalledWith([{ ...TRANSFER, calldata: ["0x5", "0x64", "0x0"] }]);
   for (const other of [
-    built([TRANSFER, { ...TRANSFER, calldata: ["0xbad", "100", "0"] }]),
-    built([{ ...TRANSFER, calldata: ["0xbad", "100", "0"] }]),
-    built([{ ...TRANSFER, entrypoint: "approve" }]),
-    built([TRANSFER], "0x534e5f5345504f4c4941"),
+    built([TRANSFER, feeCall(MAX + 1n)]),
+    built([TRANSFER, feeCall(MAX, "0xbad")]),
+    built([TRANSFER, feeCall(MAX, FORWARDER, "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d")]),
+    built([TRANSFER]),
+    built([feeCall(MAX), TRANSFER]),
+    built([TRANSFER, { ...TRANSFER, calldata: ["0xbad", "100", "0"] }, feeCall(MAX)]),
+    built([{ ...TRANSFER, calldata: ["0xbad", "100", "0"] }, feeCall(MAX)]),
+    built([{ ...TRANSFER, entrypoint: "approve" }, feeCall(MAX)]),
+    built([TRANSFER, feeCall(MAX)], "0x534e5f5345504f4c4941"),
   ]) {
-    build.mockResolvedValueOnce(other);
+    build.mockResolvedValueOnce({ typedData: other, fee: FEE });
     await expect(prepareDefaultWalletSend([TRANSFER])).rejects.toBeInstanceOf(UnexpectedExecutionError);
   }
   build.mockRestore();
 });
 
-it("signs the prepared execution's hash with the passkey, sends it through the sponsor, and holds until it lands", async () => {
+it("prepares a sponsored step (a recovery's cancel) only as its call alone, with no fee", async () => {
+  const cancel = { contractAddress: WALLET.address, entrypoint: "cancel_escape", calldata: [] };
+  const build = vi.spyOn(identityClient, "buildDefaultWalletCall");
+  build.mockResolvedValueOnce({ typedData: built([cancel]), fee: null });
+  await expect(prepareDefaultWalletSend([cancel])).resolves.toEqual({ execution: built([cancel]), fee: null });
+  build.mockResolvedValueOnce({ typedData: built([cancel, feeCall(1n)]), fee: null });
+  await expect(prepareDefaultWalletSend([cancel])).rejects.toBeInstanceOf(UnexpectedExecutionError);
+  build.mockRestore();
+});
+
+it("signs the prepared execution's hash with the passkey, sends it through the paymaster, and holds until it lands", async () => {
   const execution = built();
   const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
   const signed = vi.fn();
@@ -133,12 +163,12 @@ it("signs the prepared execution's hash with the passkey, sends it through the s
   );
   expect(execute).toHaveBeenCalledWith(execution, ["0x4", "0x9"]);
   expect(signed).toHaveBeenCalledOnce();
-  // The sponsor pays: no STRK is read.
+  // The wallet pays its fee in LORDS, inside the execution: no STRK is read.
   expect(provider.callContract).not.toHaveBeenCalled();
   expect(provider.waitForTransaction).toHaveBeenCalledWith("0xtx", expect.anything());
 });
 
-it("keeps a send whose sponsor answer was lost, and sends again only the same signed execution", async () => {
+it("keeps a send whose paymaster answer was lost, and sends again only the same signed execution", async () => {
   forgetUncertain(WALLET.address);
   const execution = built();
   passkey.sign.mockClear();
@@ -173,11 +203,11 @@ it("keeps a send whose sponsor answer was lost, and sends again only the same si
   execute.mockRestore();
 });
 
-it("forgets a send the sponsor refused, proven never sent", async () => {
+it("forgets a send the paymaster refused, proven never sent", async () => {
   forgetUncertain(WALLET.address);
   const execute = vi
     .spyOn(identityClient, "executeDefaultWalletCall")
-    .mockRejectedValueOnce(new IdentityRequestError(502, "SPONSOR_REFUSED"));
+    .mockRejectedValueOnce(new IdentityRequestError(502, "PAYMASTER_REFUSED"));
   await expect(
     sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn()),
   ).rejects.toBeInstanceOf(IdentityRequestError);

@@ -1,7 +1,16 @@
 import type { ProviderInterface } from "starknet";
 import { expect, it } from "vitest";
 
-import { ledgerReader, lordsOf, lordsTextOf, lordsWeiOf, refundCall, registerCalls, transferLordsCall } from "./ledger";
+import {
+  ledgerReader,
+  lordsCentsTextOf,
+  lordsOf,
+  lordsTextOf,
+  lordsWeiOf,
+  refundCall,
+  registerCalls,
+  transferLordsCall,
+} from "./ledger";
 
 const WEI = 10n ** 18n;
 const KEY = { shard: "0x5245414c4d53", slotId: 7 };
@@ -58,6 +67,16 @@ it("reads LORDS as a player types them, and writes them back the same way", () =
   expect(lordsTextOf(WEI / 2n)).toBe("0.5");
   expect(lordsTextOf(WEI + 1n)).toBe("1.000000000000000001");
   expect(lordsWeiOf(lordsTextOf(1_234_567_891_234_567_891n))).toBe(1_234_567_891_234_567_891n);
+});
+
+it("writes a fee to two decimals rounded up, never under what it may take, and a balance rounded down", () => {
+  const fee = 7_880_650_978_512_778_123n;
+  expect(lordsCentsTextOf(fee, "up")).toBe("7.89");
+  expect(lordsCentsTextOf(fee, "down")).toBe("7.88");
+  expect(lordsCentsTextOf(9n * WEI, "up")).toBe("9.00");
+  expect(lordsCentsTextOf(1n, "up")).toBe("0.01");
+  expect(lordsCentsTextOf(1n, "down")).toBe("0.00");
+  expect(lordsCentsTextOf(1_234n * WEI + WEI / 20n, "down")).toBe("1234.05");
 });
 
 it("sends LORDS with the token's transfer, its amount as a u256", () => {

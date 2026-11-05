@@ -14,8 +14,8 @@ import { z } from "zod";
 import { readDefaultWallet, walletDeploymentOf } from "./default-wallets";
 import type { DefaultWalletRow } from "./default-wallets";
 import type { IdentityEnv } from "./env";
-import { SponsorRefusedError, walletExecutionOf } from "./sponsor";
-import type { Sponsor, SponsoredExecution } from "./sponsor";
+import { PaymasterRefusedError, walletExecutionOf } from "./paymaster";
+import type { BuiltExecution, GasPayer, Paymaster } from "./paymaster";
 import { changeWallet, deliverWalletNotices, linkFirstWallet, spendSignInCode } from "./wallet-changes";
 import type { SendWalletNotice } from "./wallet-changes";
 import { RecoveryNotSentError, RecoveryUnderWayError, startRecovery } from "./wallet-recovery";
@@ -28,16 +28,14 @@ interface DefaultWalletOptions {
   chainId: string;
   db: D1Database;
   guardian: Pick<IdentityEnv["GUARDIAN"], "publicKey" | "signWalletExecution">;
-  /** Null while the environment has no sponsor key: sending and recovery are refused, loudly; receiving still works. */
-  sponsor: Sponsor | null;
+  /** Sends pay their own fee through it; recovery steps need its sponsor key, refused loudly without one. */
+  paymaster: Paymaster;
   isDeployed(address: string): Promise<boolean>;
   readEscape(address: string): Promise<WalletEscape>;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
   sendNotice: SendWalletNotice;
 }
 
-/** Sponsored calls a default wallet makes a UTC day: each costs about 0.8 STRK (reports/default-wallet-2.md). */
-export const SPONSORED_CALLS_PER_DAY = 3;
 /** A sign-in this recent vouches for a first payout wallet in place of a new emailed code. */
 const FRESH_SIGN_IN_MS = 10 * 60 * 1000;
 
@@ -79,10 +77,10 @@ const CANCEL_SELECTOR = BigInt(hash.getSelectorFromName(WALLET_RECOVERY.cancel))
 /**
  * The default wallet: a Ready 0.5 account owned by a passkey the player makes on this app, with the Realms guardian as
  * its guardian. Making it writes it as the account's payout wallet through the same rows a linked wallet uses. Sending
- * from it goes through the sponsor: the sponsor builds the outside execution, the passkey signs it in the browser, the
- * guardian co-signs it here, and the sponsor submits it, within a daily cap. A call to the wallet itself is refused,
- * but for a recovery's cancel, which the owner's passkey signs; a lost passkey's recovery starts here with the emailed
- * code (wallet-recovery.ts).
+ * from it goes through the paymaster: it builds the outside execution, the passkey signs it in the browser, the
+ * guardian co-signs it here, and the paymaster submits it. A send pays its own fee in LORDS; a recovery's cancel, the
+ * one call to the wallet itself allowed, is sponsored (gasPayerOf). A lost passkey's recovery starts here with the
+ * emailed code (wallet-recovery.ts), sponsored too.
  */
 export const defaultWallet = (options: DefaultWalletOptions) => {
   const { origin, hostname: rpId } = new URL(options.origin);
@@ -97,8 +95,9 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
     if (!row) throw new APIError("NOT_FOUND", { message: "NO_DEFAULT_WALLET" });
     return row;
   };
-  const requireSponsor = () => {
-    if (options.sponsor) return options.sponsor;
+  /** A sponsored step needs our key; without it the step is refused, loudly, before anything is spent. */
+  const requirePayer = (payer: GasPayer) => {
+    if (payer === "wallet" || options.paymaster.canSponsor) return;
     console.error("default_wallet_sponsor_unavailable");
     throw new APIError("SERVICE_UNAVAILABLE", { message: "SPONSOR_UNAVAILABLE" });
   };
@@ -163,12 +162,17 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
     await linkFirstWallet(options, user, address, record);
   };
 
-  /** A call to the wallet itself is refused, but a recovery's cancel alone, which the owner's passkey signs. */
-  const refuseSelfCalls = (row: DefaultWalletRow, calls: { to: string; selector: string }[]) => {
+  /**
+   * Who pays for these calls. A recovery's cancel alone, the one call to the wallet itself allowed (the owner's passkey
+   * signs it), is sponsored: the wallet takes it only as its single call, with no fee call after it. Any other call to
+   * the wallet is refused; everything else pays its own fee.
+   */
+  const gasPayerOf = (row: DefaultWalletRow, calls: { to: string; selector: string }[]): GasPayer => {
     const selfCalls = calls.filter((call) => BigInt(call.to) === BigInt(row.address));
+    if (selfCalls.length === 0) return "wallet";
     const [only] = calls;
-    const isCancel = calls.length === 1 && selfCalls.length === 1 && BigInt(only?.selector ?? 0) === CANCEL_SELECTOR;
-    if (selfCalls.length > 0 && !isCancel) throw new APIError("FORBIDDEN", { message: "WALLET_SELF_CALL" });
+    if (calls.length === 1 && BigInt(only?.selector ?? 0) === CANCEL_SELECTOR) return "sponsor";
+    throw new APIError("FORBIDDEN", { message: "WALLET_SELF_CALL" });
   };
 
   /** The account's signature: the owner's passkey, then the guardian's co-signature over the same execution. */
@@ -207,48 +211,44 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
         { method: "POST", body: BuildBody, use: [sessionMiddleware] },
         async (ctx) => {
           const row = await requireWallet(ctx);
-          const sponsor = requireSponsor();
-          refuseSelfCalls(
+          const payer = gasPayerOf(
             row,
             ctx.body.calls.map((call) => ({
               to: call.contractAddress,
               selector: hash.getSelectorFromName(call.entrypoint),
             })),
           );
-          if ((await sponsoredToday(options.db, realmsIdOf(ctx))) >= SPONSORED_CALLS_PER_DAY)
-            throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
-          return ctx.json({
-            typedData: await sponsor.build(row.address, ctx.body.calls, await pendingDeployment(row)),
-          });
+          requirePayer(payer);
+          try {
+            return ctx.json(
+              await options.paymaster.build(row.address, ctx.body.calls, await pendingDeployment(row), payer),
+            );
+          } catch (error) {
+            if (error instanceof PaymasterRefusedError) throw refused("default_wallet_build_refused", error);
+            throw error;
+          }
         },
       ),
       executeDefaultWalletCall: createAuthEndpoint(
         "/wallet/default/execute",
         { method: "POST", body: ExecuteBody, use: [sessionMiddleware] },
         async (ctx) => {
-          const realmsId = realmsIdOf(ctx);
           const row = await requireWallet(ctx);
-          const sponsor = requireSponsor();
-          const typedData = ctx.body.typedData as unknown as SponsoredExecution;
+          const typedData = ctx.body.typedData as unknown as BuiltExecution;
           const execution = walletExecutionOf(typedData, options.chainId);
           if (!execution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
-          refuseSelfCalls(row, execution.calls);
-          const reservation = await reserveExecution(options.db, realmsId, execution.nonce);
-          if (reservation === "capped") throw new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
-          // Only the request that took the call may give it back: a resubmission's refusal says nothing of the first.
-          const giveBack = () =>
-            reservation === "taken" ? releaseExecution(options.db, realmsId, execution.nonce) : Promise.resolve();
-          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch(async (error: unknown) => {
-            await giveBack();
+          const payer = gasPayerOf(row, execution.calls);
+          requirePayer(payer);
+          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch((error: unknown) => {
             throw refused("default_wallet_cosign_failed", error);
           });
           try {
+            const deployment = await pendingDeployment(row);
             return ctx.json({
-              transactionHash: await sponsor.execute(row.address, typedData, signature, await pendingDeployment(row)),
+              transactionHash: await options.paymaster.execute(row.address, typedData, signature, deployment, payer),
             });
           } catch (error) {
-            if (!(error instanceof SponsorRefusedError)) throw uncertain(error);
-            await giveBack();
+            if (!(error instanceof PaymasterRefusedError)) throw uncertain(error);
             throw refused("default_wallet_execute_refused", error);
           }
         },
@@ -258,7 +258,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
         { method: "POST", body: RecoveryBody, use: [sessionMiddleware] },
         async (ctx) => {
           const row = await requireWallet(ctx);
-          const sponsor = requireSponsor();
+          requirePayer("sponsor");
           const passkey = {
             credentialId: ctx.body.passkey.credentialId,
             publicKeyX: publicKeyXOf(ctx.body.passkey.publicKey),
@@ -266,7 +266,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
           const { user } = ctx.context.session;
           const spendCode = () => spendSignInCode(options, ctx.context, user, ctx.body.otp);
           try {
-            const transactionHash = await startRecovery({ ...options, sponsor }, row, passkey, user.email, spendCode);
+            const transactionHash = await startRecovery(options, row, passkey, user.email, spendCode);
             await Effect.runPromise(deliverWalletNotices(options.db, options.sendNotice));
             return ctx.json({ transactionHash });
           } catch (error) {
@@ -292,54 +292,17 @@ const publicKeyXOf = (spki: string): string => {
   }
 };
 
-/** Proven never sent: nothing reached the chain, and the day's call was given back. */
+/** Proven never sent: the paymaster (or the guardian) refused, so nothing reached the chain. */
 const refused = (event: string, error: unknown) => {
   console.error(event, { error: error instanceof Error ? error.message : error });
-  return new APIError("BAD_GATEWAY", { message: "SPONSOR_REFUSED" });
+  return new APIError("BAD_GATEWAY", { message: "PAYMASTER_REFUSED" });
 };
 
 /**
- * Perhaps sent: the sponsor's answer was lost. The day's call stays spent, and the caller keeps the same signed
- * execution: resubmitted, its nonce lets it run at most once, and the wallet's `is_valid_outside_execution_nonce` tells
- * whether it ran.
+ * Perhaps sent: the paymaster's answer was lost. The caller keeps the same signed execution: resubmitted, its nonce
+ * lets it run at most once, and the wallet's `is_valid_outside_execution_nonce` tells whether it ran.
  */
 const uncertain = (error: unknown) => {
   console.error("default_wallet_execute_uncertain", { error: error instanceof Error ? error.message : error });
   return new APIError("SERVICE_UNAVAILABLE", { message: "SEND_UNCERTAIN" });
 };
-
-const today = () => new Date().toISOString().slice(0, 10);
-
-const sponsoredToday = async (db: D1Database, realmsId: string) =>
-  (
-    await db
-      .prepare(`SELECT COUNT(*) AS calls FROM sponsored_executions WHERE realms_id = ? AND day = ?`)
-      .bind(realmsId, today())
-      .first<{ calls: number }>()
-  )?.calls ?? 0;
-
-/**
- * Takes one of today's sponsored calls for this execution ("taken"), or finds it already held by an earlier submission
- * of the same nonce ("held"), or none is left ("capped"). One batch, so two tabs cannot both take the last.
- */
-const reserveExecution = async (
-  db: D1Database,
-  realmsId: string,
-  nonce: string,
-): Promise<"taken" | "held" | "capped"> => {
-  const [taken, held] = await db.batch([
-    db
-      .prepare(
-        `INSERT OR IGNORE INTO sponsored_executions (realms_id, nonce, day)
-         SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM sponsored_executions WHERE realms_id = ?1 AND day = ?3) < ?4`,
-      )
-      .bind(realmsId, nonce, today(), SPONSORED_CALLS_PER_DAY),
-    db.prepare(`SELECT 1 AS held FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce),
-  ]);
-  if (taken?.meta.changes === 1) return "taken";
-  return held?.results.length === 1 ? "held" : "capped";
-};
-
-/** Gives back the call of an execution proven never sent. */
-const releaseExecution = (db: D1Database, realmsId: string, nonce: string) =>
-  db.prepare(`DELETE FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce).run();

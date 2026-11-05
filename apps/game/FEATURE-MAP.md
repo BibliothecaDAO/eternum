@@ -410,10 +410,12 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   0.5 account with the Realms guardian, and writes it as the payout wallet; a sign-in older than ten minutes is asked
   for the emailed code first. **I have a wallet** links one as before. The same two choices open from Settings, **Payout
   wallet** with none linked (`shell/profile/payout-wallet-panel.tsx`).
-- **Realms wallet** (Settings, **Payout wallet**): its LORDS and **Send** (address and amount, all of it offered;
-  **Review**, then **Confirm with your passkey**; the sponsor pays the fee, three sends a day). It stays listed with
-  Send when another wallet is linked. Every paid action whose wallet is the Realms wallet (Blitz entry, chest, prize)
-  confirms with the passkey instead of opening a wallet (`shell/value/wallet-actions.tsx`, `WalletSign`).
+- **Realms wallet** (Settings, **Payout wallet**): its LORDS and **Send** (address and amount; the network fee is priced
+  as the form opens and shown, **Max** is the balance less the most the fee may take, and a balance short of the fee
+  says how much it needs; **Review**, the send's own fee shown again, then **Confirm with your passkey**). The wallet
+  pays its fee in LORDS through AVNU's gasless mode; only a recovery step is sponsored. It stays listed with Send when
+  another wallet is linked. Every paid action whose wallet is the Realms wallet (Blitz entry, chest, prize) shows its
+  fee and confirms with the passkey instead of opening a wallet (`shell/value/wallet-actions.tsx`, `WalletSign`).
 - **Recovery** (Settings, **Payout wallet**, under the Realms wallet): **Lost your passkey?** → **Make a new passkey**
   (refused on a device that still holds the wallet's passkey) → the emailed code; the escape starts on chain and the
   account's email is told. The wallet then shows **Recovery under way** with the day the new passkey takes over, and

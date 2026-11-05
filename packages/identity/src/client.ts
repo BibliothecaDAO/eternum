@@ -117,12 +117,22 @@ export interface NewPasskey {
   credentialId: string;
   publicKey: string;
 }
-/** One call a default wallet makes, as the sponsor builds it. */
+/** One call a default wallet makes, as the paymaster builds it. */
 export interface WalletCallRequest {
   contractAddress: string;
   entrypoint: string;
   calldata: string[];
 }
+/**
+ * A default wallet's execution as the paymaster built it, SNIP-12 typed data for the passkey to sign, with the network
+ * fee it pays itself in the wallet's gas token (hex wei): about `estimated`, at most `max`. No fee: the step is
+ * sponsored (a recovery's cancel).
+ */
+const preparedWalletCallSchema = Schema.Struct({
+  typedData: Schema.Record(Schema.String, Schema.Unknown),
+  fee: Schema.NullOr(Schema.Struct({ estimated: Schema.String, max: Schema.String })),
+});
+export type PreparedWalletCall = typeof preparedWalletCallSchema.Type;
 /** An account's Blitz build orders as saved: their book is the game's to read, with its own build order reader. */
 const savedBuildOrdersSchema = Schema.Struct({ owner: Schema.String, revision: Schema.Number, book: Schema.Unknown });
 export type SavedBuildOrders = typeof savedBuildOrdersSchema.Type;
@@ -378,15 +388,13 @@ export const createIdentityClient = ({ apiUrl, fetch = globalThis.fetch }: Ident
         decode(Schema.Struct({ wallet: defaultWalletSchema })),
       )
     ).wallet;
-  /** The sponsored outside execution of these calls, as SNIP-12 typed data for the passkey to sign. */
-  const buildDefaultWalletCall = async (calls: WalletCallRequest[]): Promise<Record<string, unknown>> =>
-    (
-      await readJson(
-        await request("/auth/wallet/default/build", { method: "POST", body: JSON.stringify({ calls }) }),
-        decode(Schema.Struct({ typedData: Schema.Record(Schema.String, Schema.Unknown) })),
-      )
-    ).typedData;
-  /** Sends the signed execution through the sponsor; its transaction hash. */
+  /** The outside execution of these calls as the paymaster built it, with the fee it pays (PreparedWalletCall). */
+  const buildDefaultWalletCall = async (calls: WalletCallRequest[]): Promise<PreparedWalletCall> =>
+    readJson(
+      await request("/auth/wallet/default/build", { method: "POST", body: JSON.stringify({ calls }) }),
+      decode(preparedWalletCallSchema),
+    );
+  /** Sends the signed execution through the paymaster; its transaction hash. */
   const executeDefaultWalletCall = async (typedData: Record<string, unknown>, ownerSignature: string[]) =>
     (
       await readJson(

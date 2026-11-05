@@ -1,5 +1,6 @@
 import { p256 } from "@noble/curves/nist";
 import { sha256 } from "@noble/hashes/sha2";
+import { ChainId, LORDS } from "@realms-world/chain";
 import { keccak, poseidonHashMany } from "@scure/starknet";
 import { counterfactualAddress } from "./account";
 
@@ -13,6 +14,12 @@ import { counterfactualAddress } from "./account";
 
 /** Ready Account 0.5.0 (argent-contracts-starknet `deployments/account.txt`): the class every default wallet runs. */
 export const READY_ACCOUNT_CLASS_HASH = "0x73414441639dcd11d1846f287650a00c60c416b9d3ba45d31c651672125b2c2";
+
+/**
+ * The token a default wallet pays its own network fee in: Starknet's LORDS, through AVNU's gasless mode. Dev's ledger
+ * token is a test LORDS, which no paymaster takes, so a dev wallet pays its fee in real LORDS too.
+ */
+export const WALLET_GAS_TOKEN = LORDS[ChainId.SN_MAIN]!.address;
 
 /** A passkey as the account stores it: the page origin and relying party it was made on, and its P-256 key's x. */
 export interface PasskeyOwner {
@@ -184,11 +191,34 @@ export interface BuiltCall {
 }
 
 /**
- * The one rule that an outside execution makes exactly the asked calls, in order: same targets, selectors and calldata,
- * none more and none fewer. The page checks a send against it before the passkey signs; the identity Worker checks a
- * recovery step against it before the guardian signs, so neither signs what a sponsor substituted.
+ * The most a send's own network fee may take: `token` paid to `payee` (the execution's caller, the paymaster's
+ * forwarder, which refunds what the fee did not use), no more than `max`, the most the player was shown.
  */
-export const callsMatch = (built: readonly BuiltCall[], asked: readonly AskedCall[]): boolean =>
+export interface FeeLimit {
+  token: string;
+  payee: string;
+  max: bigint;
+}
+
+/**
+ * The one rule that an outside execution makes exactly the asked calls, in order: same targets, selectors and calldata.
+ * With a fee limit, the execution then pays its own fee in one last call and nothing more: a transfer of the limit's
+ * token to its payee, within its max. Without one (a sponsored recovery step) there is nothing after the asked calls.
+ * The page checks a send against it before the passkey signs; the identity Worker checks a recovery step against it
+ * before the guardian signs, so neither signs what a paymaster substituted.
+ */
+export const callsMatch = (built: readonly BuiltCall[], asked: readonly AskedCall[], fee: FeeLimit | null): boolean => {
+  if (fee === null) return sameCalls(built, asked);
+  const paid = built.at(-1);
+  return (
+    built.length === asked.length + 1 &&
+    paid !== undefined &&
+    sameCalls(built.slice(0, -1), asked) &&
+    paysFeeWithin(paid, fee)
+  );
+};
+
+const sameCalls = (built: readonly BuiltCall[], asked: readonly AskedCall[]) =>
   built.length === asked.length &&
   built.every((call, index) => {
     const wanted = asked[index]!;
@@ -199,6 +229,18 @@ export const callsMatch = (built: readonly BuiltCall[], asked: readonly AskedCal
       call.calldata.every((felt, at) => BigInt(felt) === BigInt(wanted.calldata[at]!))
     );
   });
+
+/** `transfer(payee, amount: u256)` on the fee token, the amount within the max. */
+const paysFeeWithin = (call: BuiltCall, fee: FeeLimit) => {
+  const [payee, low, high] = call.calldata;
+  return (
+    BigInt(call.to) === BigInt(fee.token) &&
+    BigInt(call.selector) === keccak(utf8("transfer")) &&
+    call.calldata.length === 3 &&
+    BigInt(payee!) === BigInt(fee.payee) &&
+    BigInt(low!) + (BigInt(high!) << 128n) <= fee.max
+  );
+};
 
 /** Where the wallet's owner escape stands (`EscapeStatus`): none, waiting out its 7 days, ready to finish, or expired. */
 type EscapeStatus = "none" | "waiting" | "ready" | "expired";

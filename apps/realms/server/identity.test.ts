@@ -21,11 +21,10 @@ import { deliverWalletNotices, type SendWalletNotice } from "./wallet-changes";
 import { createIdentityAuth } from "./auth";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 import { ACCOUNT_CLASS_HASH, type IdentityEnv } from "./env";
-import { SponsorRefusedError, type Sponsor } from "./sponsor";
+import { PaymasterRefusedError, type Paymaster, type WalletFee } from "./paymaster";
 import { finishRecoveries, readAttemptState } from "./wallet-recovery";
 import { RpcError, type ProviderInterface } from "starknet";
 import type { WalletEscape } from "@realms-world/identity/wallet";
-import { SPONSORED_CALLS_PER_DAY } from "./default-wallet-plugin";
 import { defaultWalletDeployment, passkeySigner, passkeySignerGuid } from "@realms-world/identity/wallet";
 import { generateKeyPairSync } from "node:crypto";
 import { realmsIdOf } from "./realms-id";
@@ -66,11 +65,14 @@ const relay = vi.fn(async (_input: RequestInfo | URL, _init?: RequestInit) =>
 let env: IdentityEnv;
 let auth: ReturnType<typeof createIdentityAuth>;
 
-/** The default wallets' sponsor, as AVNU answers: it builds what it is asked and submits what it is given. */
-const sponsor = {
-  build: vi.fn<Sponsor["build"]>(),
-  execute: vi.fn<Sponsor["execute"]>(),
+/** The default wallets' paymaster, as AVNU answers: it builds what it is asked and submits what it is given; our key lets it sponsor. */
+const paymaster = {
+  canSponsor: true,
+  build: vi.fn<Paymaster["build"]>(),
+  execute: vi.fn<Paymaster["execute"]>(),
 };
+/** What the paymaster's build answers: the execution, and the fee the wallet pays itself (none when sponsored). */
+const built = (typedData: unknown, fee: WalletFee | null = null) => ({ typedData, fee }) as never;
 /** Whether the chain holds a contract at an address; default wallets start undeployed. */
 const isDeployed = vi.fn(async (_address: string) => false);
 /** A wallet's owner escape as the chain answers; none unless a test starts one. */
@@ -161,7 +163,7 @@ beforeAll(async () => {
     verifyWalletSignature: verifyAsWallet,
     sendWalletNotice: notices,
     sendSignInCode: async (email, code) => void sentCodes.set(email, code),
-    sponsor,
+    paymaster,
     isDeployed: (address) => isDeployed(address),
     readEscape: (address) => readEscape(address),
   });
@@ -2635,13 +2637,6 @@ describe("default wallet", () => {
       calls,
       "2",
     );
-  /** The executions this account's daily cap holds today. */
-  const sponsoredToday = async (browser: ReturnType<typeof createBrowser>) =>
-    (
-      await env.DB.prepare("SELECT COUNT(*) AS calls FROM sponsored_executions WHERE realms_id = ?")
-        .bind((await browser.session())!.user.realmsId)
-        .first<{ calls: number }>()
-    )?.calls;
 
   it("is made from the player's passkey at the Ready 0.5 address and written as the payout wallet", async () => {
     notices.mockClear();
@@ -2742,13 +2737,14 @@ describe("default wallet", () => {
     expect(((await refused.json()) as { message: string }).message).toBe("PASSKEY_INVALID");
   });
 
-  it("asks the sponsor to deploy the wallet with its first call", async () => {
+  it("builds a send paid by the wallet in LORDS, deploying the wallet with its first, and answers its fee", async () => {
     const { browser, passkey, wallet } = await withWallet();
     const { user } = (await browser.session())!;
-    sponsor.build.mockResolvedValueOnce(executionFor() as never);
-    const built = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
-    expect(built.status).toBe(200);
-    expect(sponsor.build).toHaveBeenLastCalledWith(
+    const fee = { estimated: "0x6d5e1a3a2b8c0000", max: "0x7e4a18b6f2a40000" };
+    paymaster.build.mockResolvedValueOnce(built(executionFor(), fee));
+    const first = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(await first.json()).toEqual({ typedData: JSON.parse(JSON.stringify(executionFor())), fee });
+    expect(paymaster.build).toHaveBeenLastCalledWith(
       wallet.address,
       [transfer],
       defaultWalletDeployment(
@@ -2756,11 +2752,22 @@ describe("default wallet", () => {
         await env.GUARDIAN.publicKey(),
         user.realmsId,
       ),
+      "wallet",
     );
     isDeployed.mockResolvedValueOnce(true);
-    sponsor.build.mockResolvedValueOnce(executionFor() as never);
+    paymaster.build.mockResolvedValueOnce(built(executionFor(), fee));
     await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
-    expect(sponsor.build).toHaveBeenLastCalledWith(wallet.address, [transfer], null);
+    expect(paymaster.build).toHaveBeenLastCalledWith(wallet.address, [transfer], null, "wallet");
+    paymaster.build.mockReset();
+  });
+
+  it("answers a build the paymaster refuses (too little LORDS for its fee) as proven not sent", async () => {
+    const { browser } = await withWallet();
+    paymaster.build.mockRejectedValueOnce(new PaymasterRefusedError("u256_sub Overflow"));
+    const refused = await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } });
+    expect(refused.status).toBe(502);
+    expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+    paymaster.build.mockReset();
   });
 
   it("refuses to build a call to the wallet itself", async () => {
@@ -2768,20 +2775,22 @@ describe("default wallet", () => {
     const selfCall = { contractAddress: wallet.address, entrypoint: "trigger_escape_guardian", calldata: ["0x1"] };
     const refused = await browser.request("/api/auth/wallet/default/build", { body: { calls: [selfCall] } });
     expect(((await refused.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
+    expect(paymaster.build).not.toHaveBeenCalled();
   });
 
-  it("submits the passkey's signature with the guardian's over the execution's hash, within the daily cap", async () => {
+  it("submits the passkey's signature with the guardian's over the execution's hash, the wallet paying, with no daily cap", async () => {
     const { browser, wallet } = await withWallet();
     const execution = executionFor();
     const ownerSignature = ["0x4", "0x1", "0x2"];
-    sponsor.execute.mockResolvedValue("0xabc");
+    paymaster.execute.mockResolvedValue("0xabc");
     const sent = await browser.request("/api/auth/wallet/default/execute", {
       body: { typedData: execution, ownerSignature },
     });
     expect(await sent.json()).toEqual({ transactionHash: "0xabc" });
-    const [address, submitted, signature] = sponsor.execute.mock.lastCall!;
+    const [address, submitted, signature, , payer] = paymaster.execute.mock.lastCall!;
     expect(address).toBe(wallet.address);
     expect(submitted).toEqual(execution);
+    expect(payer).toBe("wallet");
     const guardian = await env.GUARDIAN.publicKey();
     expect(signature.slice(0, 6).map(BigInt)).toEqual([2n, 4n, 1n, 2n, 0n, BigInt(guardian)]);
     const digest = typedData.getMessageHash(execution, wallet.address);
@@ -2789,67 +2798,82 @@ describe("default wallet", () => {
     expect(
       ec.starkCurve.verify(new ec.starkCurve.Signature(r!, s!), digest, ec.starkCurve.getPublicKey(GUARDIAN_KEY)),
     ).toBe(true);
-    for (let call = 1; call < SPONSORED_CALLS_PER_DAY; call += 1)
-      await browser.request("/api/auth/wallet/default/execute", {
+    // The wallet pays its own fees, so nothing caps how often it sends.
+    for (let call = 1; call <= 4; call += 1) {
+      const next = await browser.request("/api/auth/wallet/default/execute", {
         body: { typedData: executionFor([transfer], `0x${(0x100 + call).toString(16)}`), ownerSignature },
       });
-    const capped = await browser.request("/api/auth/wallet/default/execute", {
-      body: { typedData: executionFor([transfer], "0x200"), ownerSignature },
-    });
-    expect(capped.status).toBe(429);
-    expect(sponsor.execute).toHaveBeenCalledTimes(SPONSORED_CALLS_PER_DAY);
-    sponsor.execute.mockReset();
+      expect(next.status).toBe(200);
+    }
+    expect(paymaster.execute).toHaveBeenCalledTimes(5);
+    paymaster.execute.mockReset();
   });
 
-  it("gives the day's call back only when the sponsor refuses, proven never sent", async () => {
+  it("answers a send the paymaster refuses as proven never sent", async () => {
     const { browser } = await withWallet();
-    sponsor.execute.mockRejectedValueOnce(new SponsorRefusedError("invalid signature"));
+    paymaster.execute.mockRejectedValueOnce(new PaymasterRefusedError("invalid signature"));
     const refused = await browser.request("/api/auth/wallet/default/execute", {
       body: { typedData: executionFor(), ownerSignature: ["0x4"] },
     });
     expect(refused.status).toBe(502);
-    expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
-    expect(await sponsoredToday(browser)).toBe(0);
-    sponsor.execute.mockReset();
+    expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+    paymaster.execute.mockReset();
   });
 
-  it("answers a lost sponsor answer as uncertain, keeps its call, and charges its resubmission nothing", async () => {
+  it("answers a lost paymaster answer as uncertain, and resubmits the same signed execution", async () => {
     const { browser } = await withWallet();
     const execution = executionFor([transfer], "0x77");
-    // The sponsor accepted the execution, then its answer was lost.
-    sponsor.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
+    // The paymaster accepted the execution, then its answer was lost.
+    paymaster.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
     const lost = await browser.request("/api/auth/wallet/default/execute", {
       body: { typedData: execution, ownerSignature: ["0x4"] },
     });
     expect(lost.status).toBe(503);
     expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
-    expect(await sponsoredToday(browser)).toBe(1);
-    // The browser sends the same signed execution again: the same nonce, so it can run once, and it is not charged twice.
-    sponsor.execute.mockResolvedValueOnce("0xsame");
+    // The browser sends the same signed execution again: the same nonce, so it can run once.
+    paymaster.execute.mockResolvedValueOnce("0xsame");
     const again = await browser.request("/api/auth/wallet/default/execute", {
       body: { typedData: execution, ownerSignature: ["0x4"] },
     });
     expect(await again.json()).toEqual({ transactionHash: "0xsame" });
-    expect(sponsor.execute.mock.calls.map(([, submitted]) => submitted)).toEqual([execution, execution]);
-    expect(await sponsoredToday(browser)).toBe(1);
-    sponsor.execute.mockReset();
+    expect(paymaster.execute.mock.calls.map(([, submitted]) => submitted)).toEqual([execution, execution]);
+    paymaster.execute.mockReset();
   });
 
-  it("keeps an uncertain execution's call when a later resubmission of it is refused", async () => {
-    const { browser } = await withWallet();
-    const execution = executionFor([transfer], "0x78");
-    sponsor.execute.mockRejectedValueOnce(new TypeError("fetch failed"));
-    await browser.request("/api/auth/wallet/default/execute", {
-      body: { typedData: execution, ownerSignature: ["0x4"] },
-    });
-    sponsor.execute.mockRejectedValueOnce(new SponsorRefusedError("duplicated outside nonce"));
-    const refused = await browser.request("/api/auth/wallet/default/execute", {
-      body: { typedData: execution, ownerSignature: ["0x4"] },
-    });
-    expect(refused.status).toBe(502);
-    // The refusal is of this request; the first may still have run.
-    expect(await sponsoredToday(browser)).toBe(1);
-    sponsor.execute.mockReset();
+  it("without the sponsor key still sends (the wallet pays), and refuses a cancel and a recovery before anything is spent", async () => {
+    const { browser, wallet } = await withWallet();
+    paymaster.canSponsor = false;
+    try {
+      paymaster.build.mockResolvedValueOnce(built(executionFor(), { estimated: "0x1", max: "0x2" }));
+      expect((await browser.request("/api/auth/wallet/default/build", { body: { calls: [transfer] } })).status).toBe(
+        200,
+      );
+      paymaster.execute.mockResolvedValueOnce("0xpaid");
+      const sent = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor(), ownerSignature: ["0x4"] },
+      });
+      expect(await sent.json()).toEqual({ transactionHash: "0xpaid" });
+      const cancel = { contractAddress: wallet.address, entrypoint: "cancel_escape", calldata: [] };
+      const cancelBuild = await browser.request("/api/auth/wallet/default/build", { body: { calls: [cancel] } });
+      expect(cancelBuild.status).toBe(503);
+      expect(((await cancelBuild.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      const cancelSend = await browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([cancel]), ownerSignature: ["0x4"] },
+      });
+      expect(((await cancelSend.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      const lost = makePasskey();
+      const recovery = await browser.request("/api/auth/wallet/default/recovery", {
+        body: { passkey: passkeyBody(lost), otp: await walletCode(browser) },
+      });
+      expect(recovery.status).toBe(503);
+      expect(((await recovery.json()) as { message: string }).message).toBe("SPONSOR_UNAVAILABLE");
+      expect(paymaster.build).toHaveBeenCalledTimes(1);
+      expect(paymaster.execute).toHaveBeenCalledTimes(1);
+    } finally {
+      paymaster.canSponsor = true;
+      paymaster.build.mockReset();
+      paymaster.execute.mockReset();
+    }
   });
 
   it("co-signs only an outside execution for this chain", async () => {
@@ -2889,36 +2913,39 @@ describe("default wallet", () => {
     const escapeFinish = (wallet: string) => ({ contractAddress: wallet, entrypoint: "escape_owner", calldata: [] });
     const guidOf = (passkey: ReturnType<typeof makePasskey>) =>
       passkeySignerGuid({ origin: ORIGIN, rpId, publicKeyX: passkey.x });
-    const resetSponsor = () => {
-      sponsor.build.mockReset();
-      sponsor.execute.mockReset();
+    const resetPaymaster = () => {
+      paymaster.build.mockReset();
+      paymaster.execute.mockReset();
       notices.mockClear();
     };
-    /** A wallet with a recovery started naming `lost`, its execution recorded; the sponsor's answer as `execute` says. */
+    /** A wallet with a recovery started naming `lost`, its execution recorded; the paymaster's answer as `execute` says. */
     const startedRecovery = async (execute: () => Promise<string> = async () => "0xescape") => {
       const { browser, passkey, wallet } = await withWallet();
       const { user } = (await browser.session())!;
       const lost = makePasskey();
-      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(wallet.address, lost)], "0xe5") as never);
-      sponsor.execute.mockImplementationOnce(execute);
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, lost)], "0xe5")));
+      paymaster.execute.mockImplementationOnce(execute);
       const answer = await recover(browser, lost, await walletCode(browser));
       return { browser, realmsId: user.realmsId, passkey, lost, wallet, answer };
     };
 
     it("starts with the emailed code: the guardian alone signs the exact escape naming the new passkey, and the email is told", async () => {
-      resetSponsor();
+      resetPaymaster();
       const { browser, passkey, wallet } = await withWallet();
       const { user } = (await browser.session())!;
       const lost = makePasskey();
       const start = executionFor([escapeStart(wallet.address, lost)], "0xe1");
-      sponsor.build.mockResolvedValueOnce(start as never);
-      sponsor.execute.mockResolvedValueOnce("0xescape");
+      paymaster.build.mockResolvedValueOnce(built(start));
+      paymaster.execute.mockResolvedValueOnce("0xescape");
       expect((await recover(browser, lost, "000000")).status).toBe(400);
-      expect(sponsor.execute).not.toHaveBeenCalled();
+      expect(paymaster.execute).not.toHaveBeenCalled();
       const started = await recover(browser, lost, await walletCode(browser));
       expect(await started.json()).toEqual({ transactionHash: "0xescape" });
-      expect(sponsor.build.mock.lastCall![1]).toEqual([escapeStart(wallet.address, lost)]);
-      const [, , signature] = sponsor.execute.mock.lastCall!;
+      expect(paymaster.build.mock.lastCall![1]).toEqual([escapeStart(wallet.address, lost)]);
+      // A recovery step is the wallet's single call, with no fee call after it: sponsored.
+      expect(paymaster.build.mock.lastCall![3]).toBe("sponsor");
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      const [, , signature] = paymaster.execute.mock.lastCall!;
       expect(signature).toHaveLength(2);
       const digest = typedData.getMessageHash(start, wallet.address);
       expect(
@@ -2936,10 +2963,10 @@ describe("default wallet", () => {
       expect(notices).toHaveBeenCalledWith(user.email, wallet.address, expect.any(String), "recovery");
       // The wallet keeps its owner until the 7 days are up.
       expect((await walletRow(user.realmsId))?.public_key_x).toBe(passkey.x);
-      resetSponsor();
+      resetPaymaster();
     });
 
-    it("signs nothing a sponsor substitutes: another new owner, target, entrypoint, or an extra call", async () => {
+    it("signs nothing a paymaster substitutes: another new owner, target, entrypoint, or an extra call", async () => {
       const { browser, wallet } = await withWallet();
       const { user } = (await browser.session())!;
       const asked = makePasskey();
@@ -2951,19 +2978,19 @@ describe("default wallet", () => {
         [asWanted, transfer],
       ];
       for (const calls of substitutes) {
-        resetSponsor();
-        sponsor.build.mockResolvedValueOnce(executionFor(calls) as never);
+        resetPaymaster();
+        paymaster.build.mockResolvedValueOnce(built(executionFor(calls)));
         const refused = await recover(browser, asked, await walletCode(browser));
-        expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
-        expect(sponsor.execute).not.toHaveBeenCalled();
+        expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+        expect(paymaster.execute).not.toHaveBeenCalled();
         expect(await recoveryRow(user.realmsId)).toBeNull();
         expect((await recoveryNotices(wallet.address)).results).toEqual([]);
       }
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("refuses a second start while the first is unsettled, even before the chain shows it, and keeps the first", async () => {
-      resetSponsor();
+      resetPaymaster();
       // The first start's answer is lost: its escape may land later.
       const first = await startedRecovery(async () => {
         throw new TypeError("fetch failed");
@@ -2971,15 +2998,15 @@ describe("default wallet", () => {
       expect(((await first.answer.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
       const kept = await recoveryRow(first.realmsId);
       expect(kept).toMatchObject({ credential_id: first.lost.credentialId, nonce: "0xe5" });
-      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(first.wallet.address, makePasskey())]) as never);
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(first.wallet.address, makePasskey())])));
       const second = await recover(first.browser, makePasskey(), await walletCode(first.browser));
       expect(((await second.json()) as { message: string }).message).toBe("RECOVERY_UNDER_WAY");
       expect(await recoveryRow(first.realmsId)).toEqual(kept);
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("keeps the warning email of a start whose answer was lost, deliverable once", async () => {
-      resetSponsor();
+      resetPaymaster();
       const lost = await startedRecovery(async () => {
         throw new TypeError("connection reset");
       });
@@ -2991,11 +3018,11 @@ describe("default wallet", () => {
       expect(
         sent.mock.calls.filter(([, address, , kind]) => address === lost.wallet.address && kind === "recovery"),
       ).toEqual([[expect.any(String), lost.wallet.address, queued[0]!.id, "recovery"]]);
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("never lets the send path start an escape, and lets the owner's passkey cancel one", async () => {
-      resetSponsor();
+      resetPaymaster();
       const { browser, wallet } = await withWallet();
       const start = { contractAddress: wallet.address, entrypoint: "trigger_escape_owner", calldata: ["0x1"] };
       const startBuild = await browser.request("/api/auth/wallet/default/build", { body: { calls: [start] } });
@@ -3005,16 +3032,19 @@ describe("default wallet", () => {
       });
       expect(((await startExecute.json()) as { message: string }).message).toBe("WALLET_SELF_CALL");
       const cancel = { contractAddress: wallet.address, entrypoint: "cancel_escape", calldata: [] };
-      sponsor.build.mockResolvedValueOnce(executionFor([cancel]) as never);
+      paymaster.build.mockResolvedValueOnce(built(executionFor([cancel])));
       expect((await browser.request("/api/auth/wallet/default/build", { body: { calls: [cancel] } })).status).toBe(200);
-      sponsor.execute.mockResolvedValueOnce("0xcancel");
+      // The wallet takes a cancel only as its single call, so it carries no fee call: sponsored.
+      expect(paymaster.build.mock.lastCall![3]).toBe("sponsor");
+      paymaster.execute.mockResolvedValueOnce("0xcancel");
       const canceled = await browser.request("/api/auth/wallet/default/execute", {
         body: { typedData: executionFor([cancel]), ownerSignature: ["0x4"] },
       });
       expect(await canceled.json()).toEqual({ transactionHash: "0xcancel" });
       // The cancel carries the owner's signature and the guardian's: two signers.
-      expect(BigInt(sponsor.execute.mock.lastCall![2][0]!)).toBe(2n);
-      resetSponsor();
+      expect(BigInt(paymaster.execute.mock.lastCall![2][0]!)).toBe(2n);
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      resetPaymaster();
     });
 
     /** The cron's pass, the chain answering as `chain` says. */
@@ -3028,11 +3058,11 @@ describe("default wallet", () => {
         chainTime?: number;
       },
     ) => {
-      sponsor.build.mockResolvedValue(executionFor([escapeFinish(wallet)], "0xf1") as never);
-      sponsor.execute.mockResolvedValue("0xfinish");
+      paymaster.build.mockResolvedValue(built(executionFor([escapeFinish(wallet)], "0xf1")));
+      paymaster.execute.mockResolvedValue("0xfinish");
       return finishRecoveries({
         db: env.DB,
-        sponsor,
+        paymaster,
         guardian: env.GUARDIAN,
         chainId: encodeChainName(environmentL2(env.ENVIRONMENT).chain),
         isDeployed: async () => true,
@@ -3048,40 +3078,40 @@ describe("default wallet", () => {
     };
 
     it("finishes a ready escape naming the saved passkey and hands the wallet to it, keeping its address", async () => {
-      resetSponsor();
+      resetPaymaster();
       const { realmsId, passkey, lost, wallet } = await startedRecovery();
-      resetSponsor();
+      resetPaymaster();
       await finishWith(wallet.address, {
         escape: { status: "ready", readyAt: 1, newOwner: guidOf(lost) },
         owner: true,
       });
-      expect(sponsor.build.mock.lastCall).toEqual([wallet.address, [escapeFinish(wallet.address)], null]);
+      expect(paymaster.build.mock.lastCall).toEqual([wallet.address, [escapeFinish(wallet.address)], null, "sponsor"]);
       expect(await walletRow(realmsId)).toEqual({
         credential_id: lost.credentialId,
         public_key_x: lost.x,
         deploy_key_x: passkey.x,
       });
       expect(await recoveryRow(realmsId)).toBeNull();
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("never finishes an escape that names another owner", async () => {
-      resetSponsor();
+      resetPaymaster();
       const { realmsId, passkey, wallet } = await startedRecovery();
-      resetSponsor();
+      resetPaymaster();
       await finishWith(wallet.address, {
         escape: { status: "ready", readyAt: 1, newOwner: guidOf(makePasskey()) },
         owner: false,
       });
-      expect(sponsor.build).not.toHaveBeenCalled();
-      expect(sponsor.execute).not.toHaveBeenCalled();
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect(paymaster.execute).not.toHaveBeenCalled();
       expect((await walletRow(realmsId))?.public_key_x).toBe(passkey.x);
       expect(await recoveryRow(realmsId)).not.toBeNull();
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("forgets an attempt only once the chain proves it over, and adopts a finish cut short", async () => {
-      resetSponsor();
+      resetPaymaster();
       const none = { status: "none" as const, readyAt: null, newOwner: null };
       const delayed = await startedRecovery();
       // Not on chain yet, its nonce unspent and its window open: it may still land.
@@ -3110,7 +3140,7 @@ describe("default wallet", () => {
         succeeded: false,
       });
       expect(await recoveryRow(unconfirmed.realmsId)).not.toBeNull();
-      resetSponsor();
+      resetPaymaster();
     });
 
     /**
@@ -3180,7 +3210,7 @@ describe("default wallet", () => {
     });
 
     it("forgets an undeployed wallet's lost start once its window closed, and lets a new one start", async () => {
-      resetSponsor();
+      resetPaymaster();
       const lostStart = await startedRecovery(async () => {
         throw new TypeError("fetch failed");
       });
@@ -3194,15 +3224,15 @@ describe("default wallet", () => {
       });
       expect(await recoveryRow(lostStart.realmsId)).toBeNull();
       const next = makePasskey();
-      sponsor.build.mockResolvedValueOnce(executionFor([escapeStart(lostStart.wallet.address, next)], "0xe6") as never);
-      sponsor.execute.mockResolvedValueOnce("0xagain");
+      paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(lostStart.wallet.address, next)], "0xe6")));
+      paymaster.execute.mockResolvedValueOnce("0xagain");
       const again = await recover(lostStart.browser, next, await walletCode(lostStart.browser));
       expect(await again.json()).toEqual({ transactionHash: "0xagain" });
-      resetSponsor();
+      resetPaymaster();
     });
 
     it("keeps a start made after an older expired escape until its own nonce or window settles it", async () => {
-      resetSponsor();
+      resetPaymaster();
       const expired = { status: "expired" as const, readyAt: 1, newOwner: "0xold" };
       // An older escape expired; this start's answer was lost, so it may still land.
       readEscape.mockResolvedValueOnce(expired);
@@ -3220,18 +3250,18 @@ describe("default wallet", () => {
         chainTime: 1_900_000_000,
       });
       expect(await recoveryRow(later.realmsId)).toBeNull();
-      resetSponsor();
+      resetPaymaster();
     });
 
-    it("forgets the passkey and its email when the sponsor refuses the start", async () => {
-      resetSponsor();
+    it("forgets the passkey and its email when the paymaster refuses the start", async () => {
+      resetPaymaster();
       const refused = await startedRecovery(async () => {
-        throw new SponsorRefusedError("refused");
+        throw new PaymasterRefusedError("refused");
       });
-      expect(((await refused.answer.json()) as { message: string }).message).toBe("SPONSOR_REFUSED");
+      expect(((await refused.answer.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
       expect(await recoveryRow(refused.realmsId)).toBeNull();
       expect((await recoveryNotices(refused.wallet.address)).results).toEqual([]);
-      resetSponsor();
+      resetPaymaster();
     });
   });
 

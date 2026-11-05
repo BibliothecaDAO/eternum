@@ -3,10 +3,12 @@
  * 0.5 class, real transactions and the account's own 7-day clock. It runs the identity Worker's recovery module
  * (startRecovery, finishRecoveries) on a local D1 holding every migration, our guardian code, passkeys signing as an
  * authenticator does, and the devnet's funded account in AVNU's place: it builds and submits outside executions as
- * AVNU does (UDC deploy first while the wallet is undeployed). Each step is checked on chain, and the run exits 1 unless
- * every check holds:
+ * AVNU does (UDC deploy first while the wallet is undeployed). A send pays its own fee as AVNU's gasless mode builds it,
+ * a transfer to the paymaster as the execution's last call, checked by the page's rule (callsMatch with the fee shown)
+ * before the passkey signs; a recovery step is sponsored, its call alone. Each step is checked on chain, and the run
+ * exits 1 unless every check holds:
  *
- *   1. passkey A's first send deploys the wallet and runs;
+ *   1. passkey A's first send deploys the wallet, runs, and pays exactly its fee to the paymaster;
  *   2. a recovery naming passkey B starts (guardian alone): the escape waits, the account's email notice is queued;
  *   3. a second recovery is refused while it waits, and the cron before the 7 days changes nothing;
  *   4. A cancels it (A and the guardian): the escape is gone, and the cron forgets the recovery;
@@ -18,7 +20,8 @@
  *   DEVNET_URL=http://127.0.0.1:5091 bun scripts/default-wallet-recovery-rehearsal.ts [out.json]
  *
  * The chain id must be SN_MAIN: the account hashes an outside execution with the chain id its transaction runs on, and
- * Katana's own would not match the signed one. The sends call STRK: Katana 1.7.1 cannot load the forked LORDS class.
+ * Katana's own would not match the signed one. The sends call and pay their fee in STRK (LORDS on mainnet): Katana 1.7.1
+ * cannot load the forked LORDS class.
  * starknet-devnet 0.6.0 cannot fork mainnet at all (its Sierra compiler panics on a forked class).
  */
 import { createHash, generateKeyPairSync, sign } from "node:crypto";
@@ -35,12 +38,13 @@ import {
   passkeyChallenge,
   passkeyOwnerSignature,
   passkeySignerGuid,
+  callsMatch,
   type PasskeyOwner,
 } from "@realms-world/identity/wallet";
 
 import { readDefaultWallet } from "../server/default-wallets";
-import type { Sponsor, SponsoredExecution } from "../server/sponsor";
-import { walletExecutionOf } from "../server/sponsor";
+import type { BuiltExecution, GasPayer, Paymaster } from "../server/paymaster";
+import { walletExecutionOf } from "../server/paymaster";
 import { isUndeployedWallet } from "../server/wallet-signature";
 import { finishRecoveries, readAttemptState, readWalletEscape, startRecovery } from "../server/wallet-recovery";
 
@@ -48,7 +52,8 @@ const ORIGIN = "https://play.realms.party";
 const RP_ID = "play.realms.party";
 const UDC = "0x041a78e741e5af2fec34b695679bc6891742439f7afb8484ecd7766661ad02bf";
 const STRK = "0x04718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d";
-const ANY_CALLER = "0x414e595f43414c4c4552";
+/** What the stand-in charges a send, in STRK wei: about one passkey send's fee on mainnet (reports/default-wallet-2.md). */
+const SEND_FEE = 9n * 10n ** 17n;
 const WEEK = 7 * 24 * 60 * 60;
 
 const main = async () => {
@@ -58,10 +63,11 @@ const main = async () => {
   const chainId = await provider.getChainId();
   const d1 = await localD1();
   const guardian = createGuardian(`0x${Buffer.from(ec.starkCurve.utils.randomPrivateKey()).toString("hex")}`);
-  const sponsor = devnetSponsor(provider, await relayerOf(nodeUrl, provider), chainId);
+  const relayer = await relayerOf(nodeUrl, provider);
+  const paymaster = devnetPaymaster(provider, relayer, chainId);
   const services = {
     db: d1.db,
-    sponsor,
+    paymaster,
     guardian,
     chainId,
     isDeployed: async (address: string) => !(await isUndeployedWallet(provider, address)),
@@ -104,25 +110,54 @@ const main = async () => {
         async () => {},
       );
     const approve: Call = { contractAddress: STRK, entrypoint: "approve", calldata: [UDC, "0", "0"] };
-    /** A send signed by `passkey` and the guardian, as the identity Worker's execute endpoint makes it. */
-    const send = async (passkey: ReturnType<typeof emulatedPasskey>, calls: Call[]) => {
+    /**
+     * A send signed by `passkey` and the guardian, as the page and the identity Worker make it: the page signs only an
+     * execution of exactly these calls and, when the wallet pays, one last fee call within the fee shown.
+     */
+    const send = async (passkey: ReturnType<typeof emulatedPasskey>, calls: Call[], payer: GasPayer = "wallet") => {
       const deployment = (await services.isDeployed(wallet))
         ? null
         : defaultWalletDeployment(a.owner, await guardian.publicKey(), realmsId);
-      const built = await sponsor.build(wallet, calls, deployment);
-      const digest = typedData.getMessageHash(built, wallet);
+      const built = await paymaster.build(wallet, calls, deployment, payer);
+      const execution = walletExecutionOf(built.typedData, chainId)!;
+      const shown = built.fee && { token: STRK, payee: execution.caller, max: BigInt(built.fee.max) };
+      const asked = calls.map((call) => ({ ...call, calldata: (call.calldata ?? []) as string[] }));
+      if (!callsMatch(execution.calls, asked, shown)) throw new Error("page_refused_the_build");
+      const digest = typedData.getMessageHash(built.typedData, wallet);
       const owner = passkeyOwnerSignature(passkey.owner, digest, passkey.sign(digest));
-      const cosigned = await guardian.signWalletExecution(chainId, wallet, walletExecutionOf(built, chainId)!);
+      const cosigned = await guardian.signWalletExecution(chainId, wallet, execution);
       const signature = defaultWalletSignature(owner, { publicKey: await guardian.publicKey(), ...cosigned });
-      return services.succeeded(await sponsor.execute(wallet, built, signature, deployment));
+      return services.succeeded(await paymaster.execute(wallet, built.typedData, signature, deployment, payer));
+    };
+    const strkOf = async (address: string) => {
+      const [low, high] = await provider.callContract({
+        contractAddress: STRK,
+        entrypoint: "balance_of",
+        calldata: [address],
+      });
+      return BigInt(low!) + (BigInt(high!) << 128n);
     };
     const recoveryKept = async () =>
       (await d1.db.prepare(`SELECT 1 AS kept FROM wallet_recoveries WHERE realms_id = ?`).bind(realmsId).first()) !==
       null;
 
+    // The payout lands before the wallet exists: STRK here, as LORDS reaches a real player's wallet.
+    await provider.waitForTransaction(
+      (
+        await relayer.execute({
+          contractAddress: STRK,
+          entrypoint: "transfer",
+          calldata: [wallet, String(10n ** 19n), "0"],
+        })
+      ).transaction_hash,
+    );
+    const paidBefore = await strkOf(relayer.address);
     check(
-      "1. A's first send deploys the wallet and runs",
-      (await send(a, [approve])) && (await services.isDeployed(wallet)),
+      "1. A's first send deploys the wallet, runs, and pays exactly its fee to the paymaster",
+      (await send(a, [approve])) &&
+        (await services.isDeployed(wallet)) &&
+        (await strkOf(wallet)) === 10n ** 19n - SEND_FEE &&
+        (await strkOf(relayer.address)) === paidBefore + SEND_FEE,
     );
 
     await services.succeeded(await recoverWithB());
@@ -151,7 +186,7 @@ const main = async () => {
         (await owns(a.owner)),
     );
 
-    const canceled = await send(a, [{ contractAddress: wallet, entrypoint: "cancel_escape", calldata: [] }]);
+    const canceled = await send(a, [{ contractAddress: wallet, entrypoint: "cancel_escape", calldata: [] }], "sponsor");
     await finishRecoveries(services, Date.now() + 2 * 60 * 60 * 1000);
     check(
       "4. A cancels it, and the cron forgets it",
@@ -195,21 +230,31 @@ const main = async () => {
 };
 
 /**
- * The devnet's funded account standing in for AVNU: it builds the SNIP-9 v2 outside execution of the calls (open to any
- * caller, valid for a day) and submits it signed, deploying the wallet first when asked.
+ * The devnet's funded account standing in for AVNU: it builds the SNIP-9 v2 outside execution of the calls (its own
+ * address the caller, as AVNU's forwarder is, valid for a day) and submits it signed, deploying the wallet first when
+ * asked. When the wallet pays, it adds the fee's transfer to itself as the last call, as AVNU's gasless mode does.
  */
-const devnetSponsor = (provider: RpcProvider, relayer: Account, chainId: string): Sponsor => ({
-  build: async (_wallet, calls) => {
+const devnetPaymaster = (provider: RpcProvider, relayer: Account, chainId: string): Paymaster => ({
+  canSponsor: true,
+  build: async (_wallet, asked, _deployment, payer) => {
+    const fee: Call = {
+      contractAddress: STRK,
+      entrypoint: "transfer",
+      calldata: [relayer.address, `0x${SEND_FEE.toString(16)}`, "0x0"],
+    };
+    const calls = payer === "wallet" ? [...asked, fee] : asked;
     // Katana's next block may be stamped by the wall clock or by the forked chain's: a day past the later of the two.
     const now = Math.max((await provider.getBlockWithTxHashes("latest")).timestamp, Math.floor(Date.now() / 1000));
     const nonce = `0x${Buffer.from(crypto.getRandomValues(new Uint8Array(16))).toString("hex")}`;
-    return outsideExecution.getTypedData(
+    const typedData = outsideExecution.getTypedData(
       chainId,
-      { caller: ANY_CALLER, execute_after: 1, execute_before: now + 24 * 60 * 60 },
+      { caller: relayer.address, execute_after: 1, execute_before: now + 24 * 60 * 60 },
       nonce,
       calls,
       "2",
-    ) as SponsoredExecution;
+    ) as BuiltExecution;
+    const charged = `0x${SEND_FEE.toString(16)}`;
+    return { typedData, fee: payer === "wallet" ? { estimated: charged, max: charged } : null };
   },
   execute: async (wallet, built, signature, deployment) => {
     const execution = walletExecutionOf(built, chainId)!;

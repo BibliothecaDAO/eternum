@@ -2,7 +2,7 @@ import { isSameStarknetAddress } from "@realms-world/identity";
 import { RpcError, type ProviderInterface, type TypedData } from "starknet";
 
 /**
- * A send whose outcome is unknown: signed and handed over, but its answer was lost (the sponsor's reply, or the receipt
+ * A send whose outcome is unknown: signed and handed over, but its answer was lost (the paymaster's reply, or the receipt
  * read). Until it is known, nothing new is sent from that wallet, so the same transfer is never paid twice: a default
  * wallet's send keeps its signed execution, which can be submitted again and runs at most once (its outside nonce); a
  * connected wallet's keeps its transaction. Kept in this browser, so it survives a closed panel or a reload.

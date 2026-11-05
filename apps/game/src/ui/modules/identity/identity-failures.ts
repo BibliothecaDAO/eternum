@@ -37,11 +37,11 @@ const NAMED_REFUSALS: Record<string, string> = {
   HANDOFF_NOT_STARTED: "Press Discord here first, then enter the code it shows.",
   WALLET_ALREADY_LINKED: "This account has a payout wallet already. Reload to see it.",
   PASSKEY_INVALID: "That passkey cannot hold a wallet. Try again on this device.",
-  SPONSOR_UNAVAILABLE: "Sending opens soon. Your LORDS stay safe in your wallet.",
-  SPONSOR_CAP_REACHED: "Today's free sends are used. Try again tomorrow.",
-  SPONSOR_REFUSED: "The network did not take it. Try again.",
+  // Only a recovery step is sponsored; sends pay their own fee and never meet it.
+  SPONSOR_UNAVAILABLE: "Recovery opens soon. Your LORDS stay safe in your wallet.",
+  PAYMASTER_REFUSED: "The network did not take it. Check your wallet holds enough LORDS for it and its fee.",
   RECOVERY_UNDER_WAY: "A recovery is already under way on this wallet.",
-  // Never "not sent": the sponsor's answer was lost, and it may have gone through.
+  // Never "not sent": the paymaster's answer was lost, and it may have gone through.
   SEND_UNCERTAIN: "The network did not answer, so it may have gone through. Open this again in a minute to see.",
 };
 

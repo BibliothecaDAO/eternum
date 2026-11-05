@@ -13,8 +13,8 @@ import type { ProviderInterface } from "starknet";
 
 import { ownerOf, walletDeploymentOf } from "./default-wallets";
 import type { DefaultWalletRow } from "./default-wallets";
-import { SponsorRefusedError, walletExecutionOf } from "./sponsor";
-import type { Sponsor } from "./sponsor";
+import { PaymasterRefusedError, walletExecutionOf } from "./paymaster";
+import type { Paymaster } from "./paymaster";
 
 /**
  * A lost passkey's recovery of a default wallet, on the Ready 0.5 account's own owner escape: the guardian starts it,
@@ -28,7 +28,7 @@ import type { Sponsor } from "./sponsor";
  * cron finishes only an escape whose new owner is that passkey.
  */
 
-/** The step was proven never sent (nothing signed, or the guardian or the sponsor refused it); its attempt is released. */
+/** The step was proven never sent (nothing signed, or the guardian or the paymaster refused it); its attempt is released. */
 export class RecoveryNotSentError extends Error {}
 
 /** A recovery is already under way on this wallet, on chain or not settled yet: another waits for it to end. */
@@ -40,7 +40,8 @@ export class RecoveryUnderWayError extends Error {
 
 export interface RecoveryServices {
   db: D1Database;
-  sponsor: Sponsor;
+  /** Every recovery step is sponsored: the wallet takes it only as its single call, so it cannot pay a fee call. */
+  paymaster: Paymaster;
   guardian: Pick<Guardian, "publicKey" | "signWalletExecution">;
   /** The environment chain's id, as a hex felt. */
   chainId: string;
@@ -126,9 +127,9 @@ export const readAttemptState = async (
 
 /**
  * Starts the recovery: once no escape stands and `spendCode` has spent the account's emailed code, one attempt is
- * reserved (a second is refused while one is unsettled), the sponsor builds the escape, which must be exactly the call
+ * reserved (a second is refused while one is unsettled), the paymaster builds the escape, which must be exactly the call
  * naming the new passkey, its execution and the account's email notice are recorded together, and only then does the
- * guardian sign it alone and the sponsor submit it. A step proven unsent releases the attempt and its notice; a lost
+ * guardian sign it alone and the paymaster submit it, sponsored. A step proven unsent releases the attempt and its notice; a lost
  * answer keeps both, for the cron to settle from the chain.
  */
 export const startRecovery = async (
@@ -160,11 +161,12 @@ export const startRecovery = async (
       throw await notSent(error);
     });
   try {
-    const transactionHash = await services.sponsor.execute(
+    const transactionHash = await services.paymaster.execute(
       row.address,
       built.typedData,
       guardianAloneSignature(signature),
       deployment,
+      "sponsor",
     );
     await services.db
       .prepare(`UPDATE wallet_recoveries SET transaction_hash = ? WHERE realms_id = ? AND attempt = ?`)
@@ -172,7 +174,7 @@ export const startRecovery = async (
       .run();
     return transactionHash;
   } catch (error) {
-    if (error instanceof SponsorRefusedError) throw await notSent(error);
+    if (error instanceof PaymasterRefusedError) throw await notSent(error);
     throw error;
   }
 };
@@ -238,12 +240,12 @@ const settleAttempt = async (services: RecoveryServices, attempt: RecoveryAttemp
 const isProvenOver = (state: AttemptState, executeBefore: number | null) =>
   state.nonceSpent || (executeBefore !== null && state.time >= executeBefore);
 
-/** The escape's finish: the exact call, the guardian alone, the sponsor paying. */
+/** The escape's finish: the exact call, the guardian alone, sponsored. */
 const finishEscape = async (services: RecoveryServices, row: DefaultWalletRow) => {
   const finish: AskedCall = { contractAddress: row.address, entrypoint: WALLET_RECOVERY.finish, calldata: [] };
   const built = await buildExactly(services, row, finish, null);
   const signature = await services.guardian.signWalletExecution(services.chainId, row.address, built.execution);
-  return services.sponsor.execute(row.address, built.typedData, guardianAloneSignature(signature), null);
+  return services.paymaster.execute(row.address, built.typedData, guardianAloneSignature(signature), null, "sponsor");
 };
 
 /** `trigger_escape_owner(Signer::Webauthn(new passkey))` on the wallet itself. */
@@ -259,22 +261,24 @@ const deploymentIfNeeded = async (
 ) => ((await services.isDeployed(row.address)) ? null : walletDeploymentOf(row, await services.guardian.publicKey()));
 
 /**
- * The sponsor's build of one recovery call, accepted only when it is that exact call (callsMatch, the rule a send is
- * checked by): the guardian, a recovery step's only signer, never signs what a sponsor substituted.
+ * The paymaster's sponsored build of one recovery call, accepted only when it is that exact call and nothing after it
+ * (callsMatch with no fee, the rule a send is checked by): the guardian, a recovery step's only signer, never signs
+ * what a paymaster substituted.
  */
 const buildExactly = async (
-  services: Pick<RecoveryServices, "sponsor" | "chainId">,
+  services: Pick<RecoveryServices, "paymaster" | "chainId">,
   row: DefaultWalletRow,
   call: AskedCall,
   deployment: ReturnType<typeof walletDeploymentOf> | null,
 ) => {
-  const typedData = await services.sponsor.build(
+  const { typedData } = await services.paymaster.build(
     row.address,
     [{ contractAddress: call.contractAddress, entrypoint: call.entrypoint, calldata: [...call.calldata] }],
     deployment,
+    "sponsor",
   );
   const execution = walletExecutionOf(typedData, services.chainId);
-  if (!execution || !callsMatch(execution.calls, [call])) throw new Error("sponsor_built_another_call");
+  if (!execution || !callsMatch(execution.calls, [call], null)) throw new Error("paymaster_built_another_call");
   return { typedData, execution };
 };
 

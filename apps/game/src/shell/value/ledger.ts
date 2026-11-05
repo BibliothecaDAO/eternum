@@ -94,6 +94,16 @@ export const lordsTextOf = (wei: bigint): string => {
   return fraction ? `${wei / LORDS_UNIT}.${fraction}` : String(wei / LORDS_UNIT);
 };
 
+/**
+ * Wei as LORDS to two decimals, for a network fee and what pays it: a fee rounded up, so the most shown is never under
+ * what it may take; a balance rounded down, so what is shown held is never more than is.
+ */
+export const lordsCentsTextOf = (wei: bigint, rounding: "up" | "down"): string => {
+  const cent = LORDS_UNIT / 100n;
+  const cents = rounding === "up" ? (wei + cent - 1n) / cent : wei / cent;
+  return `${cents / 100n}.${String(cents % 100n).padStart(2, "0")}`;
+};
+
 /** LORDS still to find, in whole units rounded up: 0.4 short is 1 more, never 0. */
 export const lordsShortOf = (wei: bigint): number => Number((wei + LORDS_UNIT - 1n) / LORDS_UNIT);
 

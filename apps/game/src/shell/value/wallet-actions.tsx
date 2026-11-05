@@ -11,9 +11,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useLatest } from "@/hooks/use-latest";
 import { useDefaultWallet } from "@/hooks/context/default-wallet";
 import { l2Provider } from "@/runtime/l2-rpc";
-import type { AccountInterface, Call, ProviderInterface, TypedData } from "starknet";
+import type { AccountInterface, Call, ProviderInterface } from "starknet";
 
 import { Loading } from "@/shell/loading";
+import { lordsCentsTextOf } from "@/shell/value/ledger";
 import { NoStrkLine } from "@/shell/value/no-strk-line";
 import { WalletUnread } from "@/shell/value/wallet-unread";
 
@@ -32,6 +33,8 @@ import {
   sendFromDefaultWallet,
   sendFromWallet,
   submitSigned,
+  type PreparedSend,
+  type WalletFee,
   type WalletSendOutcome,
   WrongWalletError,
 } from "@/ui/modules/identity/wallet-send";
@@ -71,7 +74,7 @@ const ProofRows = ({ onProof }: { onProof: (proof: SignInOptions) => void }) => 
  * Only a wallet this browser has never opened is asked for, from the rows, once. A wallet with no STRK for the fee is
  * offered the swap instead; a sent call shows Confirming until its receipt lands, then `onLanded` (the panel reads the
  * ledger again), or the ledger's reason when it reverted. When `owner` is the account's default wallet, its passkey
- * signs instead and the sponsor pays: no wallet opens and no STRK is needed.
+ * signs instead, its network fee shown and paid in LORDS: no wallet opens and no STRK is needed.
  */
 export const WalletSign = (props: { owner: string; calls: Call[]; onLanded: () => void }) => {
   const { wallet: defaultWallet, failed, retry } = useDefaultWallet();
@@ -188,12 +191,16 @@ const OnItsWay = ({
   );
 };
 
-/** A prepared send is resent once it is this old, before the sponsor's time window can close on it. */
+/** A prepared send is prepared again once it is this old, before the paymaster's time window can close on it. */
 const PREPARED_FOR_MS = 60_000;
 
+/** What the player sees before confirming: the send being prepared and priced, its fee, or why it could not be. */
+type Priced = { kind: "pricing" } | { kind: "priced"; fee: WalletFee | null } | { kind: "unpriced"; line: string };
+
 /**
- * The default wallet's send: prepared as it opens (the sponsor builds it, this page checks it), then one tap on
- * Confirm opens the passkey and sends. A press after the preparation went stale prepares again first.
+ * The default wallet's send: prepared and priced as it opens (the paymaster builds it, this page checks it), its
+ * network fee shown, then one tap on Confirm opens the passkey and sends. Nothing is signed before its fee was shown: a
+ * press after the preparation went stale prepares again, and stops to show the new fee if it is over the one shown.
  */
 const PasskeySend = ({
   wallet,
@@ -206,24 +213,38 @@ const PasskeySend = ({
   onLanded: () => void;
   onUnconfirmed: () => void;
 }) => {
-  const prepared = useRef<{ execution: Promise<TypedData>; at: number } | null>(null);
+  const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
+  const [priced, setPriced] = useState<Priced>({ kind: "pricing" });
   const [state, setState] = useState<{ kind: "ready" | "signing" | "confirming" } | { kind: "failed"; line: string }>({
     kind: "ready",
   });
   // Callers build their calls on each render; the send is prepared again only when what they ask for changes.
   const asked = JSON.stringify(calls);
   const prepare = useCallback(() => {
-    prepared.current = { execution: prepareDefaultWalletSend(JSON.parse(asked) as Call[]), at: Date.now() };
-    prepared.current.execution.catch(() => {});
+    const send = prepareDefaultWalletSend(JSON.parse(asked) as Call[]);
+    prepared.current = { send, at: Date.now() };
+    send.then(
+      ({ fee }) => prepared.current?.send === send && setPriced({ kind: "priced", fee }),
+      (cause: unknown) =>
+        prepared.current?.send === send && setPriced({ kind: "unpriced", line: failureSentence("send", cause) }),
+    );
+    return send;
   }, [asked]);
   useEffect(() => {
-    prepare();
+    void prepare().catch(() => {});
   }, [prepare]);
-  const confirm = async () => {
-    if (!prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS) prepare();
+  const priceAgain = () => {
+    setState({ kind: "ready" });
+    setPriced({ kind: "pricing" });
+    void prepare().catch(() => {});
+  };
+  const confirm = async (shown: WalletFee | null) => {
+    const stale = !prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS;
     setState({ kind: "signing" });
     try {
-      const sent = await sendFromDefaultWallet(wallet, await prepared.current!.execution, asked, l2Provider(), () =>
+      const ready = await (stale ? prepare() : prepared.current!.send);
+      if (feeRose(shown, ready.fee)) return setState({ kind: "failed", line: WALLET_WORDS.feeRose });
+      const sent = await sendFromDefaultWallet(wallet, ready.execution, asked, l2Provider(), () =>
         setState({ kind: "confirming" }),
       );
       if (sent.kind === "landed") return onLanded();
@@ -234,26 +255,49 @@ const PasskeySend = ({
     }
     prepared.current = null;
   };
+  if (priced.kind === "unpriced")
+    return (
+      <div className="flex w-full flex-col gap-2.5">
+        <span className="text-app-label text-app-bad">{priced.line}</span>
+        <AppButton kind="primary" icon="refresh" onClick={priceAgain}>
+          {WALLET_WORDS.tryAgain}
+        </AppButton>
+      </div>
+    );
   return (
     <div className="flex w-full flex-col gap-2.5">
       {state.kind === "failed" && <span className="text-app-label text-app-bad">{state.line}</span>}
+      {priced.kind === "priced" && priced.fee && <FeeLine fee={priced.fee} />}
       <AppButton
         kind="primary"
         icon="lock"
         busy={
-          state.kind === "signing"
-            ? WALLET_WORDS.confirmPasskey
-            : state.kind === "confirming"
-              ? VALUE_WORDS.confirming
-              : undefined
+          priced.kind === "pricing"
+            ? WALLET_WORDS.pricing
+            : state.kind === "signing"
+              ? WALLET_WORDS.confirmPasskey
+              : state.kind === "confirming"
+                ? VALUE_WORDS.confirming
+                : undefined
         }
-        onClick={() => void confirm()}
+        onClick={() => priced.kind === "priced" && void confirm(priced.fee)}
       >
         {WALLET_WORDS.confirmPasskey}
       </AppButton>
     </div>
   );
 };
+
+/** A fee built after the one shown that may take more than the player saw. */
+const feeRose = (shown: WalletFee | null, built: WalletFee | null) =>
+  built !== null && (shown === null || built.max > shown.max);
+
+/** The network fee the default wallet pays itself: about its estimate, never more than its max. */
+export const FeeLine = ({ fee }: { fee: WalletFee }) => (
+  <span className="text-app-label text-app-muted">
+    {WALLET_WORDS.networkFee(lordsCentsTextOf(fee.estimated, "up"), lordsCentsTextOf(fee.max, "up"))}
+  </span>
+);
 
 const OwnerSend = ({
   owner,

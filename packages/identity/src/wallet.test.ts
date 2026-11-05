@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   callsMatch,
+  WALLET_GAS_TOKEN,
   passkeySignerGuid,
   walletEscapeOf,
   READY_ACCOUNT_CLASS_HASH,
@@ -220,7 +221,7 @@ describe("calls match", () => {
   };
 
   it("holds for the same targets, selectors and calldata, whatever their felt spelling", () => {
-    expect(callsMatch([built], [asked])).toBe(true);
+    expect(callsMatch([built], [asked], null)).toBe(true);
   });
 
   it.each([
@@ -231,7 +232,43 @@ describe("calls match", () => {
     ["an extra call", [built, built]],
     ["no call", []],
   ])("fails for %s", (_, calls) => {
-    expect(callsMatch(calls, [asked])).toBe(false);
+    expect(callsMatch(calls, [asked], null)).toBe(false);
+  });
+
+  describe("with the wallet paying its own fee", () => {
+    const fee = { token: WALLET_GAS_TOKEN, payee: "0xf0", max: 9n * 10n ** 18n };
+    const feeCall = (amount: bigint, overrides: Partial<typeof built> = {}) => ({
+      to: WALLET_GAS_TOKEN,
+      selector: starknetHash.getSelectorFromName("transfer"),
+      calldata: ["0xf0", `0x${(amount & ((1n << 128n) - 1n)).toString(16)}`, `0x${(amount >> 128n).toString(16)}`],
+      ...overrides,
+    });
+
+    it("holds for the asked calls, then one transfer of the fee token to the forwarder within the max", () => {
+      expect(callsMatch([built, feeCall(fee.max)], [asked], fee)).toBe(true);
+      expect(callsMatch([built, feeCall(1n)], [asked], fee)).toBe(true);
+    });
+
+    it.each([
+      ["a fee over the max shown", [built, feeCall(fee.max + 1n)]],
+      ["a fee whose high word lifts it past the max", [built, feeCall(fee.max + (1n << 128n))]],
+      ["a fee paid to another address", [built, feeCall(1n, { calldata: ["0xf1", "0x1", "0x0"] })]],
+      [
+        "a fee in another token",
+        [built, feeCall(1n, { to: "0x4718f5a0fc34cc1af16a1cdee98ffb20c31f5cd61d6ab07201858f4287c938d" })],
+      ],
+      ["a fee by approve", [built, feeCall(1n, { selector: starknetHash.getSelectorFromName("approve") })]],
+      ["no fee call", [built]],
+      ["the fee before the asked call", [feeCall(1n), built]],
+      ["two fee calls", [built, feeCall(1n), feeCall(1n)]],
+      ["a call slipped in before the fee", [built, built, feeCall(1n)]],
+    ])("fails for %s", (_, calls) => {
+      expect(callsMatch(calls, [asked], fee)).toBe(false);
+    });
+
+    it("refuses a fee call where a sponsored step allows nothing after its call", () => {
+      expect(callsMatch([built, feeCall(1n)], [asked], null)).toBe(false);
+    });
   });
 });
 

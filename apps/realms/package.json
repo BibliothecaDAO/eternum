@@ -11,6 +11,7 @@
     "campaign-founded-homes": "tsx scripts/campaign-founded-homes.ts",
     "comeback-email": "bun scripts/comeback-email.ts",
     "default-wallet-simulation": "bun scripts/default-wallet-simulation.ts",
+    "default-wallet-gasless-probe": "bun scripts/default-wallet-gasless-probe.ts",
     "default-wallet-recovery-rehearsal": "bun scripts/default-wallet-recovery-rehearsal.ts"
   },
   "dependencies": {

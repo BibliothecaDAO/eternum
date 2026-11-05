@@ -30,12 +30,12 @@ export default {
   },
 };
 
-/** Finishes default wallets' recoveries whose 7 days are up (wallet-recovery.ts); without a sponsor none can be sent. */
+/** Finishes default wallets' recoveries whose 7 days are up (wallet-recovery.ts); without our sponsor key none can be sent. */
 const finishWalletRecoveries = async (env: IdentityEnv) => {
-  const { sponsor, ...chain } = walletChainServicesOf(env);
-  if (!sponsor) return;
+  const chain = walletChainServicesOf(env);
+  if (!chain.paymaster.canSponsor) return;
   const chainId = encodeChainName(identityL2Configuration(env).chainId);
-  await finishRecoveries({ ...chain, sponsor, db: env.DB, guardian: env.GUARDIAN, chainId });
+  await finishRecoveries({ ...chain, db: env.DB, guardian: env.GUARDIAN, chainId });
 };
 
 /** Reads completed game slot numbers from the launch Worker through its service binding. */
