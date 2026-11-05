@@ -1,0 +1,218 @@
+{
+ "background": [
+  255,
+  255,
+  255
+ ],
+ "classes": [
+  {
+   "id": 1,
+   "name": "soft",
+   "rgb": [
+    140,
+    140,
+    128
+   ],
+   "kind": "soft"
+  },
+  {
+   "id": 2,
+   "name": "torso_leather",
+   "rgb": [
+    153,
+    76,
+    38
+   ],
+   "kind": "soft"
+  },
+  {
+   "id": 3,
+   "name": "helmet",
+   "rgb": [
+    242,
+    204,
+    26
+   ],
+   "kind": "rigid",
+   "joint": "Head"
+  },
+  {
+   "id": 4,
+   "name": "chestplate",
+   "rgb": [
+    191,
+    191,
+    204
+   ],
+   "kind": "rigid",
+   "joint": "spine_03",
+   "candidates": [
+    "spine_02",
+    "spine_03"
+   ]
+  },
+  {
+   "id": 5,
+   "name": "pauldron_l",
+   "rgb": [
+    51,
+    102,
+    242
+   ],
+   "kind": "rigid",
+   "joint": "upperarm_l",
+   "candidates": [
+    "upperarm_l",
+    "clavicle_l",
+    "pauldron_l"
+   ]
+  },
+  {
+   "id": 6,
+   "name": "pauldron_r",
+   "rgb": [
+    26,
+    217,
+    217
+   ],
+   "kind": "rigid",
+   "joint": "upperarm_r",
+   "candidates": [
+    "upperarm_r",
+    "clavicle_r",
+    "pauldron_r"
+   ]
+  },
+  {
+   "id": 7,
+   "name": "bracer_l",
+   "rgb": [
+    230,
+    51,
+    230
+   ],
+   "kind": "rigid",
+   "joint": "lowerarm_l"
+  },
+  {
+   "id": 8,
+   "name": "bracer_r",
+   "rgb": [
+    255,
+    128,
+    0
+   ],
+   "kind": "rigid",
+   "joint": "lowerarm_r"
+  },
+  {
+   "id": 9,
+   "name": "thighpad_l",
+   "rgb": [
+    26,
+    178,
+    26
+   ],
+   "kind": "rigid",
+   "joint": "thigh_l"
+  },
+  {
+   "id": 10,
+   "name": "thighpad_r",
+   "rgb": [
+    128,
+    204,
+    51
+   ],
+   "kind": "rigid",
+   "joint": "thigh_r"
+  },
+  {
+   "id": 11,
+   "name": "greave_l",
+   "rgb": [
+    230,
+    26,
+    26
+   ],
+   "kind": "rigid",
+   "joint": "calf_l"
+  },
+  {
+   "id": 12,
+   "name": "greave_r",
+   "rgb": [
+    153,
+    26,
+    76
+   ],
+   "kind": "rigid",
+   "joint": "calf_r"
+  },
+  {
+   "id": 13,
+   "name": "boot_l",
+   "rgb": [
+    115,
+    64,
+    26
+   ],
+   "kind": "soft",
+   "region": "leg"
+  },
+  {
+   "id": 14,
+   "name": "boot_r",
+   "rgb": [
+    89,
+    51,
+    26
+   ],
+   "kind": "soft",
+   "region": "leg"
+  },
+  {
+   "id": 15,
+   "name": "guide",
+   "rgb": [
+    0,
+    0,
+    0
+   ],
+   "kind": "remove"
+  },
+  {
+   "id": 16,
+   "name": "head",
+   "rgb": [
+    242,
+    178,
+    153
+   ],
+   "kind": "rigid",
+   "joint": "Head"
+  },
+  {
+   "id": 17,
+   "name": "hand_l",
+   "rgb": [
+    255,
+    255,
+    255
+   ],
+   "kind": "rigid",
+   "joint": "hand_l"
+  },
+  {
+   "id": 18,
+   "name": "hand_r",
+   "rgb": [
+    76,
+    0,
+    128
+   ],
+   "kind": "rigid",
+   "joint": "hand_r"
+  }
+ ]
+}

@@ -1,0 +1,6054 @@
+{
+ "set": "knight",
+ "applies_to": "knight",
+ "version": 2,
+ "poses": [
+  {
+   "id": "idle-relaxed",
+   "name": "Relaxed idle (standing easy, kit carried)",
+   "description": "Upright, feet about hip width, weight biased slightly onto the right leg with both knees unlocked. Sword hangs from a nearly straight right arm, point forward and a little down, clear of the right shin. Shield arm is bent to roughly 70 degrees so the shield hangs against the left hip and thigh with its face turned out to the left. Head level, torso square, shoulders dropped.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.02,
+    "weight_front": 0.45,
+    "facing_yaw": 10
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": 0,
+     "roll": -2,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": -2
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 32,
+     "elev": 9,
+     "rot": 0,
+     "elbow": 15,
+     "pron": 5.0,
+     "wrist_flex": -12.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 28.0,
+     "elev": 29.0,
+     "rot": 25.0,
+     "elbow": 62.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 4,
+     "hip_rot": -4,
+     "knee": 3,
+     "ankle": 3,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 2,
+     "hip_abd": 5,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.99,
+      0.04,
+      -0.11
+     ]
+    },
+    "shield": {
+     "face": [
+      0.28,
+      0.96,
+      -0.02
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/idle-relaxed-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/idle-relaxed-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/idle-relaxed-3.jpg"
+   ],
+   "ref_notes": "idle-relaxed-1: mail-clad fighter standing with sword point down and round shield at his side. -2: helmeted reenactor, shield on left arm, weapon hanging in right hand (axe, not sword). -3: museum mannequin showing how a round shield sits on the left forearm. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-relaxed-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Batalla_vikingos-andalus%C3%ADes_05.jpg",
+     "credit": "Guillermo Fuertes <guillefuertes@gmail.com> http://www.guillermofuertes.com/",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-relaxed-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Me_in_EADAS_gear_1985-6.jpg",
+     "credit": "Chaosdruid",
+     "licence": "CC BY 3.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-relaxed-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Leidang_kriger_norr%C3%B8n_ringbrynje_hjelm_sverd_middelalder_Norse_Scandinavian_medieval_warrior_Chainmail_replica_Riveted_rings_Hauberk_11th_C._Spangen_helmet_Viking_round_shield_Leather_cuffs_Sword_Mannequin_etc_Marinemuseet_Museum_01.jpg",
+     "credit": "Wolfmann",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.4
+    },
+    "shield": {
+     "direction_error_deg": 0.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       9,
+       5.0
+      ],
+      "wrist_flex": [
+       0,
+       -12.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       22,
+       28.0
+      ],
+      "elev": [
+       13,
+       29.0
+      ],
+      "rot": [
+       19,
+       25.0
+      ],
+      "elbow": [
+       60,
+       62.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "description only",
+    "why": "The text had the point down and a little forward. A hanging arm with the fitted grip points the blade forward and a little down; the pose itself was only aimed.",
+    "authored_description": "Upright, feet about hip width, weight biased slightly onto the right leg with both knees unlocked. Sword hangs from a nearly straight right arm, point down and a little forward, clear of the right shin. Shield arm is bent to roughly 70 degrees so the shield hangs against the left hip and thigh with its face turned out to the left. Head level, torso square, shoulders dropped."
+   }
+  },
+  {
+   "id": "idle-at-ease",
+   "name": "At ease (shield lowered, waiting in line)",
+   "description": "Contrapposto rest: weight clearly on one leg, the other knee released, pelvis tilted. The shield is let down so its lower rim is near knee height or grounded, the left arm nearly straight; the sword hangs from a relaxed right arm, point forward and down. Chest relaxed, head free to look around.",
+   "support": [
+    "foot_r",
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.02,
+    "weight_front": 0.15,
+    "facing_yaw": 15
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": -5,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": -4
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 13.0,
+     "elev": 9.0,
+     "rot": -36.0,
+     "elbow": 15.0,
+     "pron": 40.0,
+     "wrist_flex": -2.0,
+     "wrist_dev": -15.0
+    },
+    "arm_l": {
+     "plane": 0,
+     "elev": 12.0,
+     "rot": 31.0,
+     "elbow": 20,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": -3,
+     "hip_rot": -4,
+     "knee": 2,
+     "ankle": 2,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 5,
+     "hip_abd": 8,
+     "hip_rot": -12,
+     "knee": 15,
+     "ankle": 2,
+     "toe": 8
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.9,
+      -0.05,
+      -0.43
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.0,
+       -0.17,
+       -0.08
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.0,
+      1.0,
+      -0.02
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/idle-at-ease-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/idle-at-ease-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/idle-at-ease-3.jpg"
+   ],
+   "ref_notes": "idle-at-ease-1 and -2: lines of fighters waiting with round shields held low at their sides. -3: legionary standing easy with the shield grounded (rectangular scutum; use for posture only). Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-at-ease-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2019_-_Vikingekamp_01.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-at-ease-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Batalla_vikingos-andalus%C3%ADes_12.jpg",
+     "credit": "Guillermo Fuertes <guillefuertes@gmail.com> http://www.guillermofuertes.com/",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/idle-at-ease-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2024_-_Romersk_kampteknik_09.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.9,
+     "authored_direction": [
+      0.36,
+      0.01,
+      -0.93
+     ],
+     "direction_changed_by_deg": 43.4,
+     "position_error_mm": 6.4
+    },
+    "shield": {
+     "direction_error_deg": 1.0
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       27,
+       13.0
+      ],
+      "elev": [
+       148,
+       9.0
+      ],
+      "rot": [
+       3,
+       -36.0
+      ],
+      "elbow": [
+       86,
+       15.0
+      ],
+      "pron": [
+       44,
+       40.0
+      ],
+      "wrist_flex": [
+       0,
+       -2.0
+      ],
+      "wrist_dev": [
+       0,
+       -15.0
+      ]
+     },
+     "arm_l": {
+      "elev": [
+       0,
+       12.0
+      ],
+      "rot": [
+       0,
+       31.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored blade pointed 69 degrees below level. The only arm that points a blade there with the fitted hammer grip holds the fist in front of the face with the blade hanging down the chest. The sword now hangs from a relaxed arm, point forward and down about 25 degrees. A point-down rest needs a different grip.",
+    "authored_description": "Contrapposto rest: weight clearly on one leg, the other knee released, pelvis tilted. The shield is let down so its lower rim is near knee height or grounded, the left arm nearly straight; the sword is rested point-down in front of the right foot or laid back on the right shoulder. Chest relaxed, head free to look around."
+   }
+  },
+  {
+   "id": "guard-middle",
+   "name": "Ready guard, sword held behind the shield (middle guard)",
+   "phase_of": "guard",
+   "description": "Left foot and left shoulder lead; the body is turned about 30 degrees so the shield side faces the opponent. Shield is held in front of the left chest with its top rim at chin-to-nose height and the elbow tucked to the ribs. Sword hilt sits near the right hip or lower ribs, blade angled forward and up, hidden behind and to the right of the shield. Knees bent, weight a touch forward, chin down, eyes just over the rim.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.55,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.92
+    },
+    "spine": {
+     "flex": 8,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 35,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 7.0,
+     "elev": 39.0,
+     "rot": 15.0,
+     "elbow": 87.0,
+     "pron": -24.0,
+     "wrist_flex": 9.0,
+     "wrist_dev": -4.0
+    },
+    "arm_l": {
+     "plane": 60.0,
+     "elev": 47.0,
+     "rot": 39,
+     "elbow": 102.0,
+     "pron": -48,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -2,
+     "hip_abd": 15,
+     "hip_rot": -16,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 10
+    },
+    "leg_l": {
+     "hip_flex": 38,
+     "hip_abd": 10,
+     "hip_rot": -24,
+     "knee": 30,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.85,
+      -0.05,
+      0.52
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.1,
+       -0.16,
+       0.05
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      1.0,
+      -0.0,
+      0.02
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/guard-middle-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-middle-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-middle-3.jpg"
+   ],
+   "ref_notes": "guard-middle-1: two duellists squared off, each with shield forward and sword held back. -2: fighter in wide stance, sword low behind a round shield. -3: front view of fighters with shields held in front of the chest. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-middle-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_15.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-middle-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_12.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-middle-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02018_0567_Wikinger_Reenactment-Gruppen_des_11.Jahrhunderts_-Trzcinica.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 7.1,
+     "authored_direction": [
+      0.8,
+      -0.0,
+      0.61
+     ],
+     "direction_changed_by_deg": 6.5,
+     "position_error_mm": 23.8
+    },
+    "shield": {
+     "direction_error_deg": 0.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       25,
+       7.0
+      ],
+      "elev": [
+       22,
+       39.0
+      ],
+      "rot": [
+       -43,
+       15.0
+      ],
+      "pron": [
+       33,
+       -24.0
+      ],
+      "wrist_flex": [
+       0,
+       9.0
+      ],
+      "wrist_dev": [
+       -12,
+       -4.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       69,
+       60.0
+      ],
+      "elev": [
+       67,
+       47.0
+      ],
+      "elbow": [
+       90,
+       102.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored arm left the hand a third of a stature out to the right and behind the hip, so the blade lay back past the shoulder. The hilt is now in front of the right hip with the blade forward and up beside the shield, as described."
+   }
+  },
+  {
+   "id": "guard-high",
+   "name": "High guard, sword cocked over the right shoulder",
+   "phase_of": "guard",
+   "description": "Same legs and shield as the middle guard, but the sword hand is raised beside or just above the right ear with the blade sloping back over the shoulder, ready for a descending cut. The shield stays forward covering the left side and centre. Right elbow points out and slightly back, not straight up.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.48,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": 6,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 5,
+     "twist": -15,
+     "side": 0
+    },
+    "head": {
+     "yaw": 40,
+     "pitch": 3,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 68.0,
+     "elev": 87.0,
+     "rot": -17.0,
+     "elbow": 100.0,
+     "pron": -74.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -14.0
+    },
+    "arm_l": {
+     "plane": 69,
+     "elev": 47,
+     "rot": 39,
+     "elbow": 90,
+     "pron": -32,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 15,
+     "hip_rot": -16,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 6
+    },
+    "leg_l": {
+     "hip_flex": 34,
+     "hip_abd": 10,
+     "hip_rot": -24,
+     "knee": 28,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.68,
+      0.0,
+      0.73
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.0,
+       -0.18,
+       0.02
+      ],
+      "frame": "root"
+     }
+    },
+    "shield": {
+     "face": [
+      1.0,
+      0.01,
+      0.03
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/guard-high-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-high-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-high-3.jpg"
+   ],
+   "ref_notes": "guard-high-1: mailed fighter with sword sloped back on the shoulder and round shield in front. -2: three fighters with shields forward and swords carried upright or on the shoulder. -3: SCA fighters seen from behind with swords cocked back over the shoulder (heater shields). Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-high-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Fanti_armati_di_spadone_e_scudo_tondo.jpg",
+     "credit": "Battlelight",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-high-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02018_0609_Wikinger_Reenactment-Gruppen_des_11.Jahrhunderts_-Trzcinica.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-high-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:A_group_of_SCA_heavy_fighters_at_Pennsic_38.jpg",
+     "credit": "Adriaan Wessels",
+     "licence": "CC BY-SA 3.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.2,
+     "authored_direction": [
+      -0.31,
+      0.15,
+      0.94
+     ],
+     "direction_changed_by_deg": 26.1,
+     "position_error_mm": 3.0
+    },
+    "shield": {
+     "direction_error_deg": 1.0
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       27,
+       68.0
+      ],
+      "elev": [
+       76,
+       87.0
+      ],
+      "rot": [
+       -53,
+       -17.0
+      ],
+      "elbow": [
+       57,
+       100.0
+      ],
+      "pron": [
+       -45,
+       -74.0
+      ],
+      "wrist_flex": [
+       0,
+       8.0
+      ],
+      "wrist_dev": [
+       -25,
+       -14.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored arm was nearly straight out to the side. The hand is now beside the right ear with the blade sloping back about 43 degrees over the shoulder."
+   }
+  },
+  {
+   "id": "guard-low",
+   "name": "Low guard, sword down, shield pushed out",
+   "phase_of": "guard",
+   "description": "A slightly deeper crouch with the shield extended further toward the opponent and the sword held low beside or behind the right thigh, point toward the ground. It invites an attack to the head, which the shield then meets. Torso stays turned shield-side forward and inclined a little.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.59,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.9
+    },
+    "spine": {
+     "flex": 10,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 40,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 12.0,
+     "elev": 20.0,
+     "rot": 25.0,
+     "elbow": 15.0,
+     "pron": 0.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -7.0
+    },
+    "arm_l": {
+     "plane": 93,
+     "elev": 54.0,
+     "rot": 65.0,
+     "elbow": 42.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 2,
+     "hip_abd": 15,
+     "hip_rot": -12,
+     "knee": 25,
+     "ankle": 20,
+     "toe": 14
+    },
+    "leg_l": {
+     "hip_flex": 45,
+     "hip_abd": 10,
+     "hip_rot": -28,
+     "knee": 35,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.82,
+      -0.06,
+      -0.57
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       -0.02,
+       -0.18,
+       -0.05
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      1.0,
+      0.01,
+      -0.03
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/guard-low-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-low-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/guard-low-3.jpg"
+   ],
+   "ref_notes": "guard-low-1: left man strides in with sword up, right man in mail waits with shield forward and sword low. -2: shield forward, weapon low. -3: arena show fight with round shields, both in low crouched guards. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-low-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:ReconstructBRivFest2010.JPG",
+     "credit": "Simonxag",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-low-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_06.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/guard-low-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Gladiator_eques_show_fight_02.jpg",
+     "credit": "User:MatthiasKabel",
+     "licence": "CC BY 2.5"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 11.9,
+     "authored_direction": [
+      0.77,
+      0.0,
+      -0.64
+     ],
+     "direction_changed_by_deg": 6.0,
+     "position_error_mm": 22.8
+    },
+    "shield": {
+     "direction_error_deg": 0.2
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       -40,
+       12.0
+      ],
+      "elev": [
+       24,
+       20.0
+      ],
+      "rot": [
+       39,
+       25.0
+      ],
+      "elbow": [
+       25,
+       15.0
+      ],
+      "wrist_flex": [
+       0,
+       8.0
+      ],
+      "wrist_dev": [
+       -25,
+       -7.0
+      ]
+     },
+     "arm_l": {
+      "elev": [
+       41,
+       54.0
+      ],
+      "rot": [
+       51,
+       65.0
+      ],
+      "elbow": [
+       60,
+       42.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored hand was behind the buttocks. It is now beside the right thigh, point forward and down."
+   }
+  },
+  {
+   "id": "walk-contact",
+   "name": "Walk / march, contact (left heel strike)",
+   "phase_of": "walk-cycle",
+   "description": "Left heel has just landed with the knee almost straight; the right foot is rolling off its toes behind. Pelvis is rotated a few degrees with the leading leg and the torso counter-rotates. The shield arm does not swing freely: it stays bent with the shield riding on the left side; the sword arm swings a little, forward as the left leg lands.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.1,
+    "length": 0.84,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -32.0,
+     "elev": 13.0,
+     "rot": -12.0,
+     "elbow": 51.0,
+     "pron": 2.0,
+     "wrist_flex": -5.0,
+     "wrist_dev": -2.0
+    },
+    "arm_l": {
+     "plane": 40.0,
+     "elev": 27.0,
+     "rot": 57.0,
+     "elbow": 60.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -16,
+     "hip_abd": 2,
+     "hip_rot": 4,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 28,
+     "hip_abd": 3,
+     "hip_rot": -4,
+     "knee": 5,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.97,
+      -0.03,
+      0.24
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.08,
+       -0.18,
+       -0.04
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.63,
+      0.77,
+      0.07
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/walk-contact-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/walk-contact-2.jpg"
+   ],
+   "ref_notes": "walk-contact-1 and -2: Battle of Hastings reenactors marching across the field with shields and spears. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/walk-contact-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Battle_of_Hastings_reenactment_2017_4.jpg",
+     "credit": "Poliphilo",
+     "licence": "CC0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/walk-contact-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Battle_of_Hastings_reenactment_2017_5.jpg",
+     "credit": "Poliphilo",
+     "licence": "CC0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.4,
+     "authored_direction": [
+      0.81,
+      -0.01,
+      0.59
+     ],
+     "direction_changed_by_deg": 22.2,
+     "position_error_mm": 2.9
+    },
+    "shield": {
+     "direction_error_deg": 8.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       61,
+       -32.0
+      ],
+      "elev": [
+       16,
+       13.0
+      ],
+      "rot": [
+       -4,
+       -12.0
+      ],
+      "elbow": [
+       30,
+       51.0
+      ],
+      "pron": [
+       -1,
+       2.0
+      ],
+      "wrist_flex": [
+       0,
+       -5.0
+      ],
+      "wrist_dev": [
+       -3,
+       -2.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       44,
+       40.0
+      ],
+      "elev": [
+       7,
+       27.0
+      ],
+      "rot": [
+       39,
+       57.0
+      ],
+      "elbow": [
+       80,
+       60.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored blade pointed 37 degrees up and crossed toward the left shoulder. The sword is now carried low, point forward and a little up, on an arm that swings."
+   }
+  },
+  {
+   "id": "walk-passing",
+   "name": "Walk / march, passing (left midstance, right leg swinging through)",
+   "phase_of": "walk-cycle",
+   "description": "The body is at its highest, stacked over the left foot; the right knee is bent about 60 degrees as the foot swings past the standing ankle. Pelvis is square and lists a few degrees down on the swing side. Both arms are near their neutral, mid-swing positions.",
+   "support": [
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.1,
+    "length": 0.09,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 4,
+     "roll": 3,
+     "height": 0.99
+    },
+    "spine": {
+     "flex": 2,
+     "twist": 0,
+     "side": 2
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -69.0,
+     "elev": 15.0,
+     "rot": -18.0,
+     "elbow": 55.0,
+     "pron": 8.0,
+     "wrist_flex": -5.0,
+     "wrist_dev": 2.0
+    },
+    "arm_l": {
+     "plane": 39,
+     "elev": 26.0,
+     "rot": 57.0,
+     "elbow": 60.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 24,
+     "hip_abd": 0,
+     "hip_rot": 0,
+     "knee": 60,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 7,
+     "hip_abd": 2,
+     "hip_rot": 0,
+     "knee": 12,
+     "ankle": 9,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.97,
+      -0.03,
+      0.22
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.03,
+       -0.18,
+       -0.05
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.63,
+      0.77,
+      0.05
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/walk-passing-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/walk-passing-2.jpg"
+   ],
+   "ref_notes": "walk-passing-1: fighters walking across the field with round shields, mid-stride. -2: column of warriors walking in a parade. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/walk-passing-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_02.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/walk-passing-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Viking-parade2.jpg",
+     "credit": "Jakub T. Jankiewicz",
+     "licence": "CC BY 3.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.2,
+     "authored_direction": [
+      0.81,
+      0.02,
+      0.59
+     ],
+     "direction_changed_by_deg": 23.5,
+     "position_error_mm": 5.4
+    },
+    "shield": {
+     "direction_error_deg": 8.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       0,
+       -69.0
+      ],
+      "elev": [
+       8,
+       15.0
+      ],
+      "rot": [
+       -4,
+       -18.0
+      ],
+      "elbow": [
+       25,
+       55.0
+      ],
+      "pron": [
+       0,
+       8.0
+      ],
+      "wrist_flex": [
+       3,
+       -5.0
+      ],
+      "wrist_dev": [
+       17,
+       2.0
+      ]
+     },
+     "arm_l": {
+      "elev": [
+       6,
+       26.0
+      ],
+      "rot": [
+       39,
+       57.0
+      ],
+      "elbow": [
+       80,
+       60.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. As walk-contact: the sword is carried low, point forward and a little up."
+   }
+  },
+  {
+   "id": "run-charge",
+   "name": "Run / charge",
+   "description": "Whole body pitched forward 15-20 degrees. The shield is pulled in front of the left chest with the upper rim at brow height; the sword is carried upright beside the right hip, leaning forward. The leading knee drives up while the rear leg extends fully behind.",
+   "support": [
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.08,
+    "length": 0.63,
+    "weight_front": 0.85,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -10,
+     "pitch": 12,
+     "roll": 0,
+     "height": 1.01
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 8,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -90.0,
+     "elev": 36.0,
+     "rot": -44.0,
+     "elbow": 121.0,
+     "pron": -34.0,
+     "wrist_flex": -2.0,
+     "wrist_dev": 10.0
+    },
+    "arm_l": {
+     "plane": 117.0,
+     "elev": 67.0,
+     "rot": 59.0,
+     "elbow": 94.0,
+     "pron": -56,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -3,
+     "hip_abd": 0,
+     "hip_rot": 8,
+     "knee": 20,
+     "ankle": 5,
+     "toe": 30
+    },
+    "leg_l": {
+     "hip_flex": 72,
+     "hip_abd": 0,
+     "hip_rot": -8,
+     "knee": 80,
+     "ankle": 10,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.4,
+      -0.22,
+      0.89
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.075,
+       -0.198,
+       0.112
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.1,
+      -0.1
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/run-charge-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/run-charge-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/run-charge-3.jpg"
+   ],
+   "ref_notes": "run-charge-1: fighters running across the field with shields. -2: charging warriors (spear and shield). -3: running lunge into contact. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_10.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02015_Das_Wikinger_Festival_in_Trzcinica_-_Die_Schlachten_der_Seekrieger_002.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Reconstruct2BRivFest2010.JPG",
+     "credit": "Simon Speed",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.7,
+     "authored_direction": [
+      -0.52,
+      -0.0,
+      0.85
+     ],
+     "direction_changed_by_deg": 56.6,
+     "position_error_mm": 7.5,
+     "place_asked": [
+      0.04,
+      -0.19,
+      0.08
+     ],
+     "place_asked_missed_by_mm": 36.2
+    },
+    "shield": {
+     "direction_error_deg": 11.9
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       -40,
+       -90.0
+      ],
+      "elev": [
+       16,
+       36.0
+      ],
+      "rot": [
+       9,
+       -44.0
+      ],
+      "elbow": [
+       132,
+       121.0
+      ],
+      "pron": [
+       3,
+       -34.0
+      ],
+      "wrist_flex": [
+       0,
+       -2.0
+      ],
+      "wrist_dev": [
+       20,
+       10.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       97,
+       117.0
+      ],
+      "elev": [
+       71,
+       67.0
+      ],
+      "rot": [
+       60,
+       59.0
+      ],
+      "elbow": [
+       100,
+       94.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored blade trailed up and back. With the fitted grip an arm carried back points a blade forward and up, not back. The sword is carried upright beside the right hip, leaning forward and a little outward, clear of the shoulder plate and helmet.",
+    "authored_description": "Whole body pitched forward 15-20 degrees. The shield is pulled in front of the left chest with the upper rim near the chin; the sword arm is carried back or cocked. The leading knee drives up while the rear leg extends fully behind."
+   }
+  },
+  {
+   "id": "cut-windup",
+   "name": "Overhead / diagonal cut, wind-up",
+   "phase_of": "cut-overhand",
+   "description": "Weight settles onto the rear (right) leg and the torso winds to the right. The sword hand goes up beside and behind the head with the blade level, pointing back behind the head. The shield lifts slightly and stays between the fighter and the opponent, covering the head and left side while the right side is open.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.28,
+    "weight_front": 0.4,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -40,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": -5,
+     "twist": -20,
+     "side": 3
+    },
+    "head": {
+     "yaw": 60,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 129.0,
+     "elev": 79.0,
+     "rot": 3.0,
+     "elbow": 117.0,
+     "pron": -42.0,
+     "wrist_flex": -4.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 68.0,
+     "elev": 59.0,
+     "rot": 25.0,
+     "elbow": 89.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 10,
+     "hip_abd": 15,
+     "hip_rot": -12,
+     "knee": 30,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 26,
+     "hip_abd": 10,
+     "hip_rot": -32,
+     "knee": 25,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.97,
+      -0.15,
+      -0.12
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       -0.05,
+       -0.16,
+       0.03
+      ],
+      "frame": "root"
+     }
+    },
+    "shield": {
+     "face": [
+      0.97,
+      0.0,
+      0.26
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/cut-windup-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-windup-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-windup-3.jpg"
+   ],
+   "ref_notes": "cut-windup-1: two fighters with swords raised overhead and shields forward. -2: sword held high and back above a round shield. -3: lunging fighter with the sword cocked back at shoulder height. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-windup-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_13.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-windup-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02018_0614_Wikinger_Reenactment-Gruppen_des_11.Jahrhunderts_-Trzcinica.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-windup-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Batalla_vikingos-andalus%C3%ADes_06.jpg",
+     "credit": "Guillermo Fuertes <guillefuertes@gmail.com> http://www.guillermofuertes.com/",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.5,
+     "authored_direction": [
+      -0.81,
+      -0.21,
+      0.54
+     ],
+     "direction_changed_by_deg": 40.2,
+     "position_error_mm": 6.8
+    },
+    "shield": {
+     "direction_error_deg": 0.2
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       108,
+       129.0
+      ],
+      "elev": [
+       73,
+       79.0
+      ],
+      "rot": [
+       -10,
+       3.0
+      ],
+      "elbow": [
+       67,
+       117.0
+      ],
+      "pron": [
+       -31,
+       -42.0
+      ],
+      "wrist_flex": [
+       -2,
+       -4.0
+      ],
+      "wrist_dev": [
+       -24,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       73,
+       68.0
+      ],
+      "elev": [
+       41,
+       59.0
+      ],
+      "rot": [
+       31,
+       25.0
+      ],
+      "elbow": [
+       90,
+       89.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored blade rose 33 degrees up and back, nearly the same picture as guard-high. The hand is now above and beside the head with the blade level, pointing back behind the head.",
+    "authored_description": "Weight settles onto the rear (right) leg and the torso winds to the right. The sword hand goes up beside and behind the head with the blade dropping back behind the shoulders. The shield lifts slightly and stays between the fighter and the opponent, covering the head and left side while the right side is open."
+   }
+  },
+  {
+   "id": "cut-mid",
+   "name": "Overhead / diagonal cut, mid-swing (impact)",
+   "phase_of": "cut-overhand",
+   "description": "Hips have unwound and weight is pouring onto the front leg. The sword arm is extending forward and down with the blade passing head-to-shoulder height on the right of the shield. The shield is drawn slightly in and left to let the blade pass. Torso inclines into the blow.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.67,
+    "weight_front": 0.65,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -10,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.91
+    },
+    "spine": {
+     "flex": 10,
+     "twist": 5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 60,
+     "elev": 72,
+     "rot": -21,
+     "elbow": 15,
+     "pron": 10.0,
+     "wrist_flex": -17.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 65,
+     "elev": 48,
+     "rot": 35,
+     "elbow": 100,
+     "pron": -32,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -6,
+     "hip_abd": 12,
+     "hip_rot": -24,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 16
+    },
+    "leg_l": {
+     "hip_flex": 45,
+     "hip_abd": 8,
+     "hip_rot": -8,
+     "knee": 35,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.82,
+      0.0,
+      0.57
+     ]
+    },
+    "shield": {
+     "face": [
+      0.78,
+      0.63,
+      -0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/cut-mid-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-mid-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-mid-3.jpg"
+   ],
+   "ref_notes": "cut-mid-1: armoured fighter landing a descending sword blow. -2: sword arm mid-swing above a shield. -3: fighter striking down onto an opponent's raised round shield. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-mid-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Live_Action_Sword_Fight_-_Age_of_Chivalry_2018.jpg",
+     "credit": "Noah Wulf",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-mid-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Buhurt_blocking.jpg",
+     "credit": "\"RiceMunk\"",
+     "licence": "CC BY 2.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-mid-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_05.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.1
+    },
+    "shield": {
+     "direction_error_deg": 0.8
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       15,
+       10.0
+      ],
+      "wrist_flex": [
+       -3,
+       -17.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "cut-followthrough",
+   "name": "Overhead / diagonal cut, follow-through",
+   "phase_of": "cut-overhand",
+   "description": "The blade has travelled through to low-left, finishing low in front with the hand forward and outside the right hip. The torso is twisted to the left and bent forward, most of the weight is on the bent front leg, and the rear heel is off the ground. The shield has lifted so its lower rim clears the sword arm.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.89,
+    "weight_front": 0.75,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 5,
+     "pitch": 15,
+     "roll": 0,
+     "height": 0.86
+    },
+    "spine": {
+     "flex": 18,
+     "twist": 12,
+     "side": 3
+    },
+    "head": {
+     "yaw": -12,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 45.0,
+     "elev": 34.0,
+     "rot": 12.0,
+     "elbow": 25.0,
+     "pron": -20.0,
+     "wrist_flex": -10.0,
+     "wrist_dev": -25.0
+    },
+    "arm_l": {
+     "plane": 74,
+     "elev": 71,
+     "rot": 59,
+     "elbow": 88,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -16,
+     "hip_abd": 10,
+     "hip_rot": -32,
+     "knee": 15,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 60,
+     "hip_abd": 5,
+     "hip_rot": 4,
+     "knee": 45,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.8,
+      0.1,
+      -0.6
+     ]
+    },
+    "shield": {
+     "face": [
+      0.71,
+      0.7,
+      0.01
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/cut-followthrough-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-followthrough-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/cut-followthrough-3.jpg"
+   ],
+   "ref_notes": "cut-followthrough-1: gladiator show fight, arm carried across the body after a cut (low resolution). -2: Royal Armouries MS I.33 fol. 27r, sword-and-buckler plate with blades ending low. -3: melee, sword finishing low and horizontal. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-followthrough-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Gladiator_combat_in_london_guildhall_sept_2000.jpg",
+     "credit": "The original uploader was Gianni1wiki at English Wikipedia.",
+     "licence": "CC BY 3.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-followthrough-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Ms_I33_fol_27r.jpg",
+     "credit": "Unknown authorUnknown author",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/cut-followthrough-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02018_0631_Wikinger_Reenactment-Gruppen_des_11.Jahrhunderts_-Trzcinica.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 6.3,
+     "authored_direction": [
+      0.77,
+      0.28,
+      -0.58
+     ],
+     "direction_changed_by_deg": 10.5
+    },
+    "shield": {
+     "direction_error_deg": 7.7
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       102,
+       45.0
+      ],
+      "elev": [
+       10,
+       34.0
+      ],
+      "rot": [
+       34,
+       12.0
+      ],
+      "elbow": [
+       15,
+       25.0
+      ],
+      "pron": [
+       -36,
+       -20.0
+      ],
+      "wrist_flex": [
+       0,
+       -10.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "right arm and sword blade direction",
+    "why": "The authored arm hung beside the right thigh (elevation 10, elbow 15); aimed on the fitted sockets, the blade ran through the thigh. The arm now finishes forward and outside the right hip with the blade low and forward. An arm brought in front of the belly, as first described, needed the forearm roll and both wrist axes at their limits to point the blade down.",
+    "authored_description": "The blade has travelled through to low-left, finishing near the left knee with the hand in front of the belly. The torso is twisted to the left and bent forward, most of the weight is on the bent front leg, and the rear heel is off the ground. The shield has lifted so its lower rim clears the sword arm."
+   }
+  },
+  {
+   "id": "thrust-chamber",
+   "name": "Thrust, chamber",
+   "phase_of": "thrust",
+   "description": "The hilt is pulled back beside the right hip or lower ribs with the elbow behind the body and the blade level, pointing at the target along the right edge of the shield. The torso is wound to the right and the weight sits slightly back. The shield stays tight in front.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.31,
+    "weight_front": 0.45,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 5,
+     "roll": 0,
+     "height": 0.94
+    },
+    "spine": {
+     "flex": 5,
+     "twist": -15,
+     "side": 0
+    },
+    "head": {
+     "yaw": 50,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -37,
+     "elev": 51,
+     "rot": -7,
+     "elbow": 92,
+     "pron": 19.0,
+     "wrist_flex": -12.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 73.0,
+     "elev": 44.0,
+     "rot": 19.0,
+     "elbow": 114.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 10,
+     "hip_abd": 15,
+     "hip_rot": -16,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 3
+    },
+    "leg_l": {
+     "hip_flex": 30,
+     "hip_abd": 10,
+     "hip_rot": -28,
+     "knee": 28,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.99,
+      -0.12,
+      0.0
+     ]
+    },
+    "shield": {
+     "face": [
+      1.0,
+      -0.0,
+      -0.01
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/thrust-chamber-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/thrust-chamber-2.jpg"
+   ],
+   "ref_notes": "thrust-chamber-1: legionary reenactor crouched behind his shield with the short sword level at the hip (scutum and gladius - same body mechanics). -2: fighter crouched with sword drawn back beside a round shield. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/thrust-chamber-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2024_-_Romersk_kampteknik_11.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/thrust-chamber-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_16.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.1
+    },
+    "shield": {
+     "direction_error_deg": 0.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       23,
+       19.0
+      ],
+      "wrist_flex": [
+       0,
+       -12.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       75,
+       73.0
+      ],
+      "elev": [
+       28,
+       44.0
+      ],
+      "rot": [
+       37,
+       19.0
+      ],
+      "elbow": [
+       95,
+       114.0
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "thrust-extension",
+   "name": "Thrust, full extension (lunge)",
+   "phase_of": "thrust",
+   "description": "A long lunge: the sword arm reaches forward from the shoulder, hand low, a forearm's length in front of the hip, blade rising a little toward the target, and the right shoulder is driven forward, the front knee is deeply bent over the ankle and the rear leg is nearly straight. The pelvis drops noticeably. The shield stays near the left chest or trails slightly as counterbalance.",
+   "support": [
+    "foot_r",
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "r",
+    "width": 0.2,
+    "length": 1.05,
+    "weight_front": 0.65,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 25,
+     "pitch": 20,
+     "roll": 0,
+     "height": 0.76
+    },
+    "spine": {
+     "flex": 10,
+     "twist": 15,
+     "side": 0
+    },
+    "head": {
+     "yaw": -35,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 82.0,
+     "elev": 34.0,
+     "rot": 1.0,
+     "elbow": 61.0,
+     "pron": -53.0,
+     "wrist_flex": 4.0,
+     "wrist_dev": -10.0
+    },
+    "arm_l": {
+     "plane": 58.0,
+     "elev": 60.0,
+     "rot": 59.0,
+     "elbow": 115.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 80,
+     "hip_abd": 5,
+     "hip_rot": -20,
+     "knee": 65,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": -15,
+     "hip_abd": 15,
+     "hip_rot": -36,
+     "knee": 30,
+     "ankle": 20,
+     "toe": 45
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.96,
+      0.0,
+      0.26
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.24,
+       -0.1,
+       0.02
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.64,
+      0.77,
+      0.1
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/thrust-extension-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/thrust-extension-2.jpg"
+   ],
+   "ref_notes": "thrust-extension-1: full-arm sword thrust past the opponent's shield with a wide lunge. -2: deep duelling lunge in a marked holmgang ring. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/thrust-extension-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_03.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/thrust-extension-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Holmgang.jpg",
+     "credit": "Birgit Fostervold",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.6,
+     "authored_direction": [
+      1.0,
+      -0.01,
+      0.09
+     ],
+     "direction_changed_by_deg": 10.0,
+     "position_error_mm": 6.7
+    },
+    "shield": {
+     "direction_error_deg": 4.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       48,
+       82.0
+      ],
+      "elev": [
+       15,
+       34.0
+      ],
+      "rot": [
+       -45,
+       1.0
+      ],
+      "elbow": [
+       15,
+       61.0
+      ],
+      "pron": [
+       -1,
+       -53.0
+      ],
+      "wrist_flex": [
+       0,
+       4.0
+      ],
+      "wrist_dev": [
+       0,
+       -10.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       38,
+       58.0
+      ],
+      "elev": [
+       40,
+       60.0
+      ],
+      "rot": [
+       69,
+       59.0
+      ],
+      "elbow": [
+       95,
+       115.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The description had the arm nearly straight at shoulder height with the blade level. The fitted grip holds the blade at least 42 degrees off the forearm, so a level blade on a level arm cannot be had. The hand is low, a forearm's length in front of the hip, and the blade rises about 15 degrees toward the target.",
+    "authored_description": "A long lunge: the sword arm is extended almost straight at shoulder height and the right shoulder is driven forward, the front knee is deeply bent over the ankle and the rear leg is nearly straight. The pelvis drops noticeably. The shield stays near the left chest or trails slightly as counterbalance."
+   }
+  },
+  {
+   "id": "shield-block-high",
+   "name": "Shield action: high block",
+   "description": "The shield is lifted above and in front of the head with the forearm roughly horizontal over the brow and the face tilted up toward the incoming blow. The body sinks under it with knees bent and back rounded slightly. The sword is held back at the hip, ready to answer.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.49,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -25,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.92
+    },
+    "spine": {
+     "flex": 10,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 25,
+     "pitch": -10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -54.0,
+     "elev": 47.0,
+     "rot": -2.0,
+     "elbow": 109.0,
+     "pron": -8.0,
+     "wrist_flex": -4.0,
+     "wrist_dev": 0.0
+    },
+    "arm_l": {
+     "plane": 118.0,
+     "elev": 123.0,
+     "rot": 52.0,
+     "elbow": 111.0,
+     "pron": -72,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 4,
+     "hip_abd": 15,
+     "hip_rot": -20,
+     "knee": 30,
+     "ankle": 20,
+     "toe": 14
+    },
+    "leg_l": {
+     "hip_flex": 38,
+     "hip_abd": 10,
+     "hip_rot": -20,
+     "knee": 35,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.9,
+      -0.1,
+      0.42
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.02,
+       -0.19,
+       0.06
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.72,
+      0.1,
+      0.69
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.1,
+       0.04,
+       0.06
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/shield-block-high-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-block-high-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-block-high-3.jpg"
+   ],
+   "ref_notes": "shield-block-high-1: knight catching a descending blow on a raised shield (kite shield). -2: armoured duel, shield raised against a sword cut. -3: fighter with round shield lifted high and out. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-block-high-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:BRF2016KnightCombat.JPG",
+     "credit": "Simon Speed",
+     "licence": "CC0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-block-high-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Live_Action_Sword_Fight_(2)_-_Age_of_Chivalry_2018.jpg",
+     "credit": "Noah Wulf",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-block-high-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_14.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.1,
+     "authored_direction": [
+      0.92,
+      -0.01,
+      0.39
+     ],
+     "direction_changed_by_deg": 5.6,
+     "position_error_mm": 0.8
+    },
+    "shield": {
+     "direction_error_deg": 11.5,
+     "authored_direction": [
+      0.81,
+      0.16,
+      0.56
+     ],
+     "direction_changed_by_deg": 9.7,
+     "position_error_mm": 11.0
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       -33,
+       -54.0
+      ],
+      "elev": [
+       31,
+       47.0
+      ],
+      "rot": [
+       13,
+       -2.0
+      ],
+      "elbow": [
+       90,
+       109.0
+      ],
+      "pron": [
+       0,
+       -8.0
+      ],
+      "wrist_flex": [
+       0,
+       -4.0
+      ],
+      "wrist_dev": [
+       -25,
+       0.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       58,
+       118.0
+      ],
+      "elev": [
+       127,
+       123.0
+      ],
+      "rot": [
+       8,
+       52.0
+      ],
+      "elbow": [
+       90,
+       111.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield and sword place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. Shield placed above and in front of the brow and the hilt at the right hip, as described; the authored arms did not put them there on the fitted sockets."
+   }
+  },
+  {
+   "id": "shield-brace-front",
+   "name": "Shield action: front block / brace",
+   "phase_of": "shield-bash",
+   "description": "A low, long stance with the left shoulder pressed into the back of the shield, which is vertical and covers chin to thigh. The torso leans in behind it, the head is tucked with eyes just over the rim, and the rear leg is braced with the heel down. The sword is kept back out of the way.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.83,
+    "weight_front": 0.6,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 18,
+     "roll": 0,
+     "height": 0.85
+    },
+    "spine": {
+     "flex": 12,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 40,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -32,
+     "elev": 18,
+     "rot": -15.0,
+     "elbow": 91,
+     "pron": 22,
+     "wrist_flex": 25.0,
+     "wrist_dev": -7.0
+    },
+    "arm_l": {
+     "plane": 77.0,
+     "elev": 57.0,
+     "rot": 18.0,
+     "elbow": 130.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -4,
+     "hip_abd": 15,
+     "hip_rot": -16,
+     "knee": 25,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 63,
+     "hip_abd": 10,
+     "hip_rot": -28,
+     "knee": 45,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.95,
+      -0.26,
+      0.15
+     ]
+    },
+    "shield": {
+     "face": [
+      1.0,
+      0.0,
+      0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/shield-brace-front-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-brace-front-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-brace-front-3.jpg"
+   ],
+   "ref_notes": "shield-brace-front-1: right-hand fighter in a deep stance behind his round shield (the left-hand figure is doubled over - see hit-react). -2: shield line with shields presented. -3: Hastings shield wall, shields overlapped and braced. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-brace-front-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_17.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-brace-front-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Batalla_vikingos-andalus%C3%ADes_01.jpg",
+     "credit": "Guillermo Fuertes <guillefuertes@gmail.com> http://www.guillermofuertes.com/",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-brace-front-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:2016_Battle_of_Hastings_Reenactment.jpg",
+     "credit": "Mjb1981",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.3,
+     "authored_direction": [
+      0.96,
+      -0.0,
+      0.3
+     ],
+     "direction_changed_by_deg": 17.2
+    },
+    "shield": {
+     "direction_error_deg": 0.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "rot": [
+       14,
+       -15.0
+      ],
+      "wrist_flex": [
+       4,
+       25.0
+      ],
+      "wrist_dev": [
+       -25,
+       -7.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       65,
+       77.0
+      ],
+      "elev": [
+       41,
+       57.0
+      ],
+      "rot": [
+       36,
+       18.0
+      ],
+      "elbow": [
+       110,
+       130.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword blade direction",
+    "why": "Aimed on the fitted sockets, the blade kept back at the right hip pointed into the rear of the shield. It gave way 17 degrees, outward and lower, to pass the shield's right edge."
+   }
+  },
+  {
+   "id": "shield-bash",
+   "name": "Shield action: bash / punch",
+   "phase_of": "shield-bash",
+   "description": "From the braced stance the rear leg extends and the left arm drives the shield forward and slightly up into the opponent. The left shoulder leads, the torso turns further shield-side forward, and most of the weight arrives on the front foot. The sword arm pulls back as a counter-movement and to set up the next strike.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.83,
+    "weight_front": 0.8,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -40,
+     "pitch": 20,
+     "roll": 0,
+     "height": 0.88
+    },
+    "spine": {
+     "flex": 10,
+     "twist": -15,
+     "side": 0
+    },
+    "head": {
+     "yaw": 50,
+     "pitch": 8,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -40,
+     "elev": 28,
+     "rot": -14.0,
+     "elbow": 90,
+     "pron": -4.0,
+     "wrist_flex": 23.0,
+     "wrist_dev": 6.0
+    },
+    "arm_l": {
+     "plane": 100,
+     "elev": 80,
+     "rot": 52,
+     "elbow": 45,
+     "pron": -24,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -10,
+     "hip_abd": 12,
+     "hip_rot": -4,
+     "knee": 10,
+     "ankle": 20,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 60,
+     "hip_abd": 8,
+     "hip_rot": -32,
+     "knee": 40,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.72,
+      -0.55,
+      0.42
+     ]
+    },
+    "shield": {
+     "face": [
+      1.0,
+      -0.02,
+      -0.02
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/shield-bash-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-bash-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-bash-3.jpg"
+   ],
+   "ref_notes": "shield-bash-1: two fighters shoving shield to shield. -2: close-quarters shield press. -3: foam-combat shield rush with a long driving stance. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-bash-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2019_-_Vikingekamp_08.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-bash-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_04.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/shield-bash-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Dagorhircombat6.jpg",
+     "credit": "Brenna of Narnia",
+     "licence": "CC0"
+    }
+   ],
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword blade direction",
+    "why": "With the pelvis turned 40 degrees shield-side forward the sword hand is behind the right hip. Aimed on the fitted sockets, a blade pointing straight forward from there ran through the fighter's own torso (about 115 mm of it inside the body, bind r68). It now points along the line the torso faces, forward and out to the right."
+   },
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.1,
+     "authored_direction": [
+      0.85,
+      -0.16,
+      0.51
+     ],
+     "direction_changed_by_deg": 24.3
+    },
+    "shield": {
+     "direction_error_deg": 9.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "rot": [
+       4,
+       -14.0
+      ],
+      "pron": [
+       12,
+       -4.0
+      ],
+      "wrist_flex": [
+       0,
+       23.0
+      ],
+      "wrist_dev": [
+       0,
+       6.0
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "hit-react",
+   "name": "Hit reaction / stagger",
+   "description": "A blow on the shield or body knocks the fighter off line. For a high hit on the shield side: head and shoulders are driven back and to the right, the weight is thrown onto the bent rear leg, the front foot is light, the shield is knocked in against the chest and the sword arm flies out for balance. For a body hit the trunk folds forward 40-50 degrees instead, as in the left-hand figure of shield-brace-front-1.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.45,
+    "weight_front": 0.15,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 10,
+     "pitch": -8,
+     "roll": 0,
+     "height": 0.91
+    },
+    "spine": {
+     "flex": -10,
+     "twist": 20,
+     "side": -15
+    },
+    "head": {
+     "yaw": -15,
+     "pitch": -10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -28.0,
+     "elev": 65.0,
+     "rot": -56.0,
+     "elbow": 64.0,
+     "pron": -80.0,
+     "wrist_flex": 3.0,
+     "wrist_dev": -20.0
+    },
+    "arm_l": {
+     "plane": 80,
+     "elev": 43.0,
+     "rot": 80,
+     "elbow": 110,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 12,
+     "hip_abd": 15,
+     "hip_rot": -32,
+     "knee": 40,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 26,
+     "hip_abd": 5,
+     "hip_rot": 8,
+     "knee": 10,
+     "ankle": -34,
+     "toe": 10
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.2,
+      -0.75,
+      0.63
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.01,
+       -0.39,
+       0.082
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.78,
+      0.33,
+      0.54
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/hit-react-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/hit-react-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/shield-brace-front-1.jpg"
+   ],
+   "ref_notes": "hit-react-1: melee with a fighter being driven down (left of frame). -2: Bayeux Tapestry scene 57, struck and falling warriors (period depiction). Also see shield-brace-front-1 (left-hand figure doubled over). Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/hit-react-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2019_-_Vikingekamp_03.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/hit-react-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Bayeux_Tapestry_scene57_Harold_death.jpg",
+     "credit": "Myrabella",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 2.0,
+     "authored_direction": [
+      0.51,
+      -0.61,
+      0.6
+     ],
+     "direction_changed_by_deg": 19.7,
+     "position_error_mm": 0.4,
+     "place_asked": [
+      0.0,
+      -0.36,
+      0.12
+     ],
+     "place_asked_missed_by_mm": 29.9
+    },
+    "shield": {
+     "direction_error_deg": 3.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       17,
+       -28.0
+      ],
+      "elev": [
+       15,
+       65.0
+      ],
+      "rot": [
+       -14,
+       -56.0
+      ],
+      "elbow": [
+       42,
+       64.0
+      ],
+      "pron": [
+       -44,
+       -80.0
+      ],
+      "wrist_flex": [
+       0,
+       3.0
+      ],
+      "wrist_dev": [
+       0,
+       -20.0
+      ]
+     },
+     "arm_l": {
+      "elev": [
+       55,
+       43.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored hand crossed to the left hip. The sword arm is now flung out to the right, hand two-fifths of a stature from the chest at waist-to-chest height, blade up and away from the head."
+   }
+  },
+  {
+   "id": "victory",
+   "name": "Victory / cheer / salute",
+   "description": "Feet planted a little wider than the hips, chest lifted and head tipped back. The sword arm is raised up and out in a wide V with the blade vertical. The shield is lowered to the left side, rim down, or punched up as well.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.35,
+    "length": 0.0,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": -3,
+     "roll": 0,
+     "height": 0.98
+    },
+    "spine": {
+     "flex": -8,
+     "twist": 0,
+     "side": 5
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -1.0,
+     "elev": 134.0,
+     "rot": -10.0,
+     "elbow": 15.0,
+     "pron": -80.0,
+     "wrist_flex": -2.0,
+     "wrist_dev": -25.0
+    },
+    "arm_l": {
+     "plane": 30.0,
+     "elev": 26.0,
+     "rot": 26.0,
+     "elbow": 31.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -3,
+     "hip_abd": 10,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": -3,
+     "hip_abd": 10,
+     "hip_rot": -12,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.05,
+      0.0,
+      1.0
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.007,
+       -0.372,
+       0.14
+      ],
+      "frame": "root"
+     }
+    },
+    "shield": {
+     "face": [
+      -0.02,
+      1.0,
+      0.01
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/victory-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/victory-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/victory-3.jpg"
+   ],
+   "ref_notes": "victory-1 and -2: Hermann monuments (New Ulm and Detmold) - sword raised overhead, left hand on a grounded shield; statues, used for the arm line. -3: gladiator reenactor (thraex) with weapon arm raised, seen from behind. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/victory-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:CLOSEUP_OF_THE_STATUE_OF_HERMANN-ARMINIUS,_GERMAN_PATRIOT_WHICH_WAS_ERECTED_IN_NEW_ULM,_MINNESOTA,_IN_1888._THE_TOWN..._-_NARA_-_558114.jpg",
+     "credit": "Flip Schulke",
+     "licence": "Public domain"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/victory-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Hermannsdenkmal_Statue.JPG",
+     "credit": "SabinePoe",
+     "licence": "CC BY-SA 3.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/victory-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Thraex_01.jpg",
+     "credit": "User:MatthiasKabel",
+     "licence": "CC BY 2.5"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 4.3,
+     "authored_direction": [
+      0.25,
+      0.01,
+      0.97
+     ],
+     "direction_changed_by_deg": 11.6,
+     "position_error_mm": 0.3,
+     "place_asked": [
+      0.0,
+      -0.28,
+      0.12
+     ],
+     "place_asked_missed_by_mm": 56.9
+    },
+    "shield": {
+     "direction_error_deg": 0.4
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       -2,
+       -1.0
+      ],
+      "elev": [
+       98,
+       134.0
+      ],
+      "rot": [
+       -66,
+       -10.0
+      ],
+      "pron": [
+       0,
+       -80.0
+      ],
+      "wrist_flex": [
+       0,
+       -2.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       18,
+       30.0
+      ],
+      "elev": [
+       6,
+       26.0
+      ],
+      "rot": [
+       -1,
+       26.0
+      ],
+      "elbow": [
+       30,
+       31.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The description had the sword straight up on a nearly straight arm. With the fitted grip a vertical blade needs the forearm at least 42 degrees off vertical. The arm is raised in a wide V and the blade is vertical.",
+    "authored_description": "Feet planted a little wider than the hips, chest lifted and head tipped back. The sword is thrust up above the head on a nearly straight arm with the blade vertical. The shield is lowered to the left side, rim down, or punched up as well."
+   }
+  },
+  {
+   "id": "kneel-behind-shield",
+   "name": "Kneel / crouch behind shield",
+   "description": "Right knee on the ground, left foot flat in front with the knee at about 90 degrees. The shield stands upright in front of the body with its lower rim at knee height and its top rim at eye level; the torso is curled in behind it. The sword is held low on the right, point forward, or planted.",
+   "support": [
+    "foot_l",
+    "knee_r",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.84,
+    "weight_front": 0.45,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -15,
+     "pitch": 12,
+     "roll": 0,
+     "height": 0.55
+    },
+    "spine": {
+     "flex": 15,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 20,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 32,
+     "elev": 18,
+     "rot": -4,
+     "elbow": 46,
+     "pron": 16.0,
+     "wrist_flex": -18.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 80.0,
+     "elev": 67.0,
+     "rot": 61.0,
+     "elbow": 92.0,
+     "pron": 8,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 17,
+     "hip_abd": 10,
+     "hip_rot": 12,
+     "knee": 105,
+     "ankle": -15,
+     "toe": 50
+    },
+    "leg_l": {
+     "hip_flex": 102,
+     "hip_abd": 10,
+     "hip_rot": -12,
+     "knee": 95,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      1.0,
+      0.0,
+      -0.05
+     ]
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.04,
+      0.1
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.15,
+       0.03,
+       -0.2
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-3.jpg"
+   ],
+   "ref_notes": "kneel-behind-shield-1: fighter down behind a round shield on the field. -2 and -3: foam-combat players kneeling/sitting behind shields. Converted from research/poses/poses.json and the g3_07 pose table (flexion/abduction -> plane of elevation/elevation; hip angles read as thigh-vs-vertical and converted to hip joint angles by adding pelvis pitch; head pitch sign flipped).",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_08.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Dagorhir-2007-06.jpg",
+     "credit": "Evan-Amos",
+     "licence": "CC0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/kneel-behind-shield-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Dagorhir-2007-01.jpg",
+     "credit": "Evan-Amos",
+     "licence": "CC0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.2
+    },
+    "shield": {
+     "direction_error_deg": 1.5,
+     "position_error_mm": 19.7
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       19,
+       16.0
+      ],
+      "wrist_flex": [
+       2,
+       -18.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       44,
+       80.0
+      ],
+      "elev": [
+       25,
+       67.0
+      ],
+      "rot": [
+       58,
+       61.0
+      ],
+      "elbow": [
+       65,
+       92.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored shield stood beside the left knee and left the torso open. It now stands in front of the body with its top rim at eye level. The shield is 0.42 of a stature across, so with its top rim at a kneeling fighter's eye level its lower rim is at the knee, not on the ground as first described.",
+    "authored_description": "Right knee on the ground, left foot flat in front with the knee at about 90 degrees. The shield stands upright in front of the body with its lower rim on or just above the ground and its top rim at eye level; the torso is curled in behind it. The sword is held low on the right, point forward, or planted."
+   }
+  },
+  {
+   "id": "backhand-cut-windup",
+   "name": "Backhand cut, wind-up",
+   "phase_of": "backhand-cut",
+   "description": "Stance first: left foot and shield side lead, weight loaded on the rear leg. Hips turn slightly right, chest wound to the left, so the sword hand is drawn across in front of the left side of the chest below the shield rim with the blade pointing steeply up beside the left shoulder. The shield stays forward and covers the head. The sword never crosses the shield arm; it passes beneath and inside it.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.29,
+    "weight_front": 0.4,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -15,
+     "pitch": 3,
+     "roll": 0,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": 5,
+     "twist": 25,
+     "side": 0
+    },
+    "head": {
+     "yaw": -5,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 91.0,
+     "elev": 70.0,
+     "rot": 80.0,
+     "elbow": 95.0,
+     "pron": -52.0,
+     "wrist_flex": -7.0,
+     "wrist_dev": -16.0
+    },
+    "arm_l": {
+     "plane": 120.0,
+     "elev": 115.0,
+     "rot": 27.0,
+     "elbow": 80.0,
+     "pron": -48,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 11,
+     "hip_abd": 12,
+     "hip_rot": -28,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 28,
+     "hip_abd": 8,
+     "hip_rot": -12,
+     "knee": 25,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.05,
+      0.35,
+      0.93
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.13,
+       0.06,
+       0.12
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.87,
+      0.49,
+      0.1
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/knight/buckler-fencing.jpg"
+   ],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. The cut direction and wind-up come from sword-and-buckler manuals; buckler-fencing.jpg shows the general guard stance only. 2026-10-05: changed so the two forearms no longer pass through each other (limb clearance check): sword arm elevation -10; shield arm elevation +40, rotation +0, plane +0.",
+   "sources": [
+    {
+     "file": "refs/knight/buckler-fencing.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Historical_fencing_with_single_sword_and_buckler.jpg",
+     "credit": "Sirjerryjp2005 at English Wikipedia",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 11.9,
+     "authored_direction": [
+      -0.15,
+      0.13,
+      0.98
+     ],
+     "direction_changed_by_deg": 14.2,
+     "position_error_mm": 22.9
+    },
+    "shield": {
+     "direction_error_deg": 9.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       87,
+       91.0
+      ],
+      "elev": [
+       56,
+       70.0
+      ],
+      "rot": [
+       66,
+       80.0
+      ],
+      "elbow": [
+       90,
+       95.0
+      ],
+      "pron": [
+       -46,
+       -52.0
+      ],
+      "wrist_flex": [
+       0,
+       -7.0
+      ],
+      "wrist_dev": [
+       -25,
+       -16.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       90,
+       120.0
+      ],
+      "elev": [
+       105,
+       115.0
+      ],
+      "rot": [
+       55,
+       27.0
+      ],
+      "elbow": [
+       95,
+       80.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The hand sat at the left waist. It is now in front of the left side of the chest below the shield's rim with the blade steeply up beside the left shoulder, 9 mm clear of the shield.",
+    "authored_description": "Stance first: left foot and shield side lead, weight loaded on the rear leg. Hips turn slightly right, chest wound to the left, so the sword hand is drawn across in front of the left collarbone below the shield rim with the blade pointing nearly straight up beside the left shoulder. The shield stays forward and covers the head. The sword never crosses the shield arm; it passes beneath and inside it."
+   }
+  },
+  {
+   "id": "backhand-cut-mid",
+   "name": "Backhand cut, mid-swing",
+   "phase_of": "backhand-cut",
+   "description": "Hips and chest unwind to the right, weight pours onto the front leg. The sword arm sweeps from left to right in front of the chest at the height of the lower ribs with the blade pointing forward and to the right and tilted up, the elbow still bent. The shield is drawn slightly in and up so the arm passes below its rim.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.62,
+    "weight_front": 0.6,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.92
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 15,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 76.0,
+     "elev": 46.0,
+     "rot": 36.0,
+     "elbow": 84.0,
+     "pron": -80.0,
+     "wrist_flex": 0.0,
+     "wrist_dev": -15.0
+    },
+    "arm_l": {
+     "plane": 76.0,
+     "elev": 67.0,
+     "rot": 23.0,
+     "elbow": 100.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -6,
+     "hip_abd": 12,
+     "hip_rot": -8,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 14
+    },
+    "leg_l": {
+     "hip_flex": 40,
+     "hip_abd": 8,
+     "hip_rot": -24,
+     "knee": 32,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.65,
+      -0.47,
+      0.6
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.196,
+       -0.014,
+       0.081
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.96,
+      0.28,
+      0.08
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. ",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 1.1,
+     "position_error_mm": 0.2,
+     "place_asked": [
+      0.2,
+      -0.03,
+      0.12
+     ],
+     "place_asked_missed_by_mm": 25.6
+    },
+    "shield": {
+     "direction_error_deg": 11.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       25,
+       76.0
+      ],
+      "elev": [
+       59,
+       46.0
+      ],
+      "rot": [
+       31,
+       36.0
+      ],
+      "elbow": [
+       104,
+       84.0
+      ],
+      "wrist_flex": [
+       -24,
+       0.0
+      ],
+      "wrist_dev": [
+       -25,
+       -15.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       85,
+       76.0
+      ],
+      "elev": [
+       40,
+       67.0
+      ],
+      "rot": [
+       45,
+       23.0
+      ],
+      "elbow": [
+       95,
+       100.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. Hand placed in front of the chest below the shield's rim. The authored arm needed the forearm roll and both wrist axes at their limits, and the blade touched the shield. Shoulder height, as first described, still needs the forearm roll at its limit, so the hand is at the height of the lower ribs.",
+    "authored_description": "Hips and chest unwind to the right, weight pours onto the front leg. The sword arm sweeps from left to right in front of the chest at shoulder height with the blade pointing forward and to the right and tilted up, the elbow still bent. The shield is drawn slightly in and up so the arm passes below its rim."
+   }
+  },
+  {
+   "id": "backhand-cut-followthrough",
+   "name": "Backhand cut, follow-through",
+   "phase_of": "backhand-cut",
+   "description": "The blade has travelled out to the right side, pointing out and up, with the sword arm extended just below shoulder height. The chest is turned right, the left shoulder leads, weight is on the bent front leg and the rear heel is lifted. The shield stays up covering the left side and head.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.81,
+    "weight_front": 0.7,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -45,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.89
+    },
+    "spine": {
+     "flex": 10,
+     "twist": -15,
+     "side": 2
+    },
+    "head": {
+     "yaw": 30,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -4,
+     "elev": 79,
+     "rot": -10,
+     "elbow": 40,
+     "pron": -48.0,
+     "wrist_flex": -25.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 80.0,
+     "elev": 93.0,
+     "rot": -16.0,
+     "elbow": 140.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -17,
+     "hip_abd": 12,
+     "hip_rot": 8,
+     "knee": 15,
+     "ankle": 20,
+     "toe": 22
+    },
+    "leg_l": {
+     "hip_flex": 48,
+     "hip_abd": 8,
+     "hip_rot": -36,
+     "knee": 38,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.4,
+      -0.8,
+      0.45
+     ]
+    },
+    "shield": {
+     "face": [
+      0.95,
+      0.26,
+      0.18
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.14,
+       0.04,
+       -0.08
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. ",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.5
+    },
+    "shield": {
+     "direction_error_deg": 0.4,
+     "position_error_mm": 23.6
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       -45,
+       -48.0
+      ],
+      "wrist_flex": [
+       0,
+       -25.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       70,
+       80.0
+      ],
+      "elev": [
+       35,
+       93.0
+      ],
+      "rot": [
+       15,
+       -16.0
+      ],
+      "elbow": [
+       100,
+       140.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield place; description",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The shield did not cover the head as described. It is now up in front of the head and left side with its top rim above the helmet's brow. The text had the sword hand at shoulder height; it is just below.",
+    "authored_description": "The blade has travelled out to the right side, pointing out and up, with the sword arm extended to shoulder height. The chest is turned right, the left shoulder leads, weight is on the bent front leg and the rear heel is lifted. The shield stays up covering the left side and head."
+   }
+  },
+  {
+   "id": "rising-cut",
+   "name": "Rising cut from low right",
+   "description": "A forehand rising cut: the sword travels from low on the right up and across toward the opponent's left shoulder. Mid-rise, hips are turning into the cut, the front knee drives and the sword hand passes the right hip, forearm sloping forward and up with the blade at about 45 degrees. The shield stays forward at chest height.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.69,
+    "weight_front": 0.6,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -25,
+     "pitch": 8,
+     "roll": 0,
+     "height": 0.91
+    },
+    "spine": {
+     "flex": 8,
+     "twist": -8,
+     "side": 0
+    },
+    "head": {
+     "yaw": 25,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 42,
+     "elev": 37,
+     "rot": 19,
+     "elbow": 45,
+     "pron": -7,
+     "wrist_flex": 12.0,
+     "wrist_dev": 20.0
+    },
+    "arm_l": {
+     "plane": 67.0,
+     "elev": 56.0,
+     "rot": 41.0,
+     "elbow": 93.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -10,
+     "hip_abd": 12,
+     "hip_rot": -16,
+     "knee": 20,
+     "ankle": 20,
+     "toe": 18
+    },
+    "leg_l": {
+     "hip_flex": 43,
+     "hip_abd": 8,
+     "hip_rot": -20,
+     "knee": 35,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.69,
+      -0.08,
+      0.72
+     ]
+    },
+    "shield": {
+     "face": [
+      0.98,
+      0.15,
+      0.12
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. ",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 11.6,
+     "authored_direction": [
+      0.69,
+      0.1,
+      0.72
+     ],
+     "direction_changed_by_deg": 10.3
+    },
+    "shield": {
+     "direction_error_deg": 0.4
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       50,
+       42
+      ],
+      "wrist_flex": [
+       0,
+       12.0
+      ],
+      "wrist_dev": [
+       0,
+       20.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       75,
+       67.0
+      ],
+      "elev": [
+       40,
+       56.0
+      ],
+      "rot": [
+       45,
+       41.0
+      ],
+      "elbow": [
+       95,
+       93.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "right arm",
+    "why": "The arm was moved 8 degrees outward so the blade's tip stands clear of the shield's rim (8 mm; it was 3)."
+   }
+  },
+  {
+   "id": "low-cut-legs",
+   "name": "Low cut at the legs",
+   "description": "A deep stance behind the shield with a forward lean. The sword arm reaches low and forward on the right, blade pointing forward and down at knee height. The shield is lifted to head height to cover the face and chest while the body is low. Weight sits on the bent front leg.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.85,
+    "weight_front": 0.65,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -35,
+     "pitch": 18,
+     "roll": 0,
+     "height": 0.82
+    },
+    "spine": {
+     "flex": 15,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 35,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 47.0,
+     "elev": 38.0,
+     "rot": 37.0,
+     "elbow": 38.0,
+     "pron": -10.0,
+     "wrist_flex": 7.0,
+     "wrist_dev": -11.0
+    },
+    "arm_l": {
+     "plane": 67.0,
+     "elev": 79.0,
+     "rot": 6.0,
+     "elbow": 127.0,
+     "pron": -24,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -4,
+     "hip_abd": 15,
+     "hip_rot": -12,
+     "knee": 30,
+     "ankle": 20,
+     "toe": 32
+    },
+    "leg_l": {
+     "hip_flex": 68,
+     "hip_abd": 10,
+     "hip_rot": -28,
+     "knee": 55,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.95,
+      -0.1,
+      -0.29
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.12,
+       -0.2,
+       -0.02
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.94,
+      0.17,
+      0.31
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.14,
+       0.05,
+       -0.12
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/skjoldborg-wall.jpg"
+   ],
+   "ref_notes": "skjoldborg-wall.jpg: reenactor in a wide forward lunge with the sword arm drawn low and back; used only for the depth of the stance and the forward lean. Sword-arm reach and shield height are designed.",
+   "sources": [
+    {
+     "file": "refs/knight/skjoldborg-wall.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Skjoldborg.jpg",
+     "credit": "Birgit Fostervold",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.6,
+     "position_error_mm": 9.7
+    },
+    "shield": {
+     "direction_error_deg": 0.7,
+     "position_error_mm": 10.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       62,
+       47.0
+      ],
+      "elev": [
+       49,
+       38.0
+      ],
+      "rot": [
+       38,
+       37.0
+      ],
+      "elbow": [
+       15,
+       38.0
+      ],
+      "pron": [
+       0,
+       -10.0
+      ],
+      "wrist_flex": [
+       0,
+       7.0
+      ],
+      "wrist_dev": [
+       -25,
+       -11.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       65,
+       67.0
+      ],
+      "elev": [
+       75,
+       79.0
+      ],
+      "rot": [
+       20,
+       6.0
+      ],
+      "elbow": [
+       105,
+       127.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield and sword place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The shield hung at chest to thigh and the sword hand was out to the side. The shield is now lifted in front of the face and chest and the sword hand reaches low and forward on the right, as described."
+   }
+  },
+  {
+   "id": "chop-overhead-raise",
+   "name": "Overhead chop, raise",
+   "phase_of": "chop-overhead",
+   "description": "First phase of a two-phase overhead chop: the sword is raised above and to the right of the head, blade pointing up and a little back. The torso straightens or arches slightly, weight sits mainly on the rear leg, and the shield is held forward at chin height to keep the head covered. The shoulder stays below the armour limit by getting the height from the elbow and spine.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.29,
+    "weight_front": 0.4,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": 0,
+     "roll": 0,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": -5,
+     "twist": -12,
+     "side": 0
+    },
+    "head": {
+     "yaw": 35,
+     "pitch": -5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 41.0,
+     "elev": 116.0,
+     "rot": -20.0,
+     "elbow": 50.0,
+     "pron": -80.0,
+     "wrist_flex": -9.0,
+     "wrist_dev": -25.0
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 45,
+     "rot": 25,
+     "elbow": 100,
+     "pron": -32,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 8,
+     "hip_abd": 12,
+     "hip_rot": -16,
+     "knee": 28,
+     "ankle": 20,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 25,
+     "hip_abd": 8,
+     "hip_rot": -24,
+     "knee": 25,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.3,
+      0.05,
+      0.95
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       -0.008,
+       -0.284,
+       0.118
+      ],
+      "frame": "root"
+     }
+    },
+    "shield": {
+     "face": [
+      0.97,
+      0.19,
+      0.15
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [
+    "refs/knight/buckler-fencing.jpg"
+   ],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. buckler-fencing.jpg shows a raised-sword guard, used for the general height of the hand only.",
+   "sources": [
+    {
+     "file": "refs/knight/buckler-fencing.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Historical_fencing_with_single_sword_and_buckler.jpg",
+     "credit": "Sirjerryjp2005 at English Wikipedia",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 2.6,
+     "authored_direction": [
+      -0.64,
+      0.05,
+      0.76
+     ],
+     "direction_changed_by_deg": 22.5,
+     "position_error_mm": 0.2,
+     "place_asked": [
+      -0.03,
+      -0.24,
+      0.12
+     ],
+     "place_asked_missed_by_mm": 29.6
+    },
+    "shield": {
+     "direction_error_deg": 1.0
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       50,
+       41.0
+      ],
+      "elev": [
+       88,
+       116.0
+      ],
+      "rot": [
+       -8,
+       -20.0
+      ],
+      "elbow": [
+       109,
+       50.0
+      ],
+      "wrist_flex": [
+       -24,
+       -9.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. A blade straight up on an upright forearm cannot be had with the fitted grip. The hand is above and to the right of the head and the blade leans back about 18 degrees.",
+    "authored_description": "First phase of a two-phase overhead chop: the sword is raised vertically above and slightly behind the right shoulder, forearm nearly upright, blade pointing up and a little back. The torso straightens or arches slightly, weight sits mainly on the rear leg, and the shield is held forward at chin height to keep the head covered. The shoulder stays below the armour limit by getting the height from the elbow and spine."
+   }
+  },
+  {
+   "id": "chop-overhead-strike",
+   "name": "Overhead chop, strike",
+   "phase_of": "chop-overhead",
+   "description": "Second phase: the front knee bends and the body drops into the blow. The torso pitches forward, the sword arm comes down and forward with the elbow still bent, hand at waist height well in front of the body, blade a little above level along the line of attack, about to land. The shield drops slightly and stays forward.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.77,
+    "weight_front": 0.65,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -20,
+     "pitch": 12,
+     "roll": 0,
+     "height": 0.88
+    },
+    "spine": {
+     "flex": 12,
+     "twist": -3,
+     "side": 0
+    },
+    "head": {
+     "yaw": 20,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 119.0,
+     "elev": 46.0,
+     "rot": -14.0,
+     "elbow": 69.0,
+     "pron": 80.0,
+     "wrist_flex": 7.0,
+     "wrist_dev": -20.0
+    },
+    "arm_l": {
+     "plane": 50.0,
+     "elev": 56.0,
+     "rot": 53.0,
+     "elbow": 95,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -10,
+     "hip_abd": 12,
+     "hip_rot": -20,
+     "knee": 18,
+     "ankle": 20,
+     "toe": 20
+    },
+    "leg_l": {
+     "hip_flex": 52,
+     "hip_abd": 8,
+     "hip_rot": -16,
+     "knee": 40,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.97,
+      0.12,
+      0.2
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.24,
+       -0.1,
+       0.04
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.14,
+      0.04
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. ",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 1.4,
+     "authored_direction": [
+      0.68,
+      0.58,
+      -0.44
+     ],
+     "direction_changed_by_deg": 49.8,
+     "position_error_mm": 17.3
+    },
+    "shield": {
+     "direction_error_deg": 0.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       49,
+       119.0
+      ],
+      "elev": [
+       50,
+       46.0
+      ],
+      "rot": [
+       -4,
+       -14.0
+      ],
+      "elbow": [
+       84,
+       69.0
+      ],
+      "wrist_flex": [
+       25,
+       7.0
+      ],
+      "wrist_dev": [
+       -25,
+       -20.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       70,
+       50.0
+      ],
+      "elev": [
+       40,
+       56.0
+      ],
+      "rot": [
+       55,
+       53.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The description had the hand near shoulder height with the blade angled forward and down. With the fitted grip that needs the forearm rolled past its limit. The hand is at waist height well in front of the body and the blade is a little above level, about to land.",
+    "authored_description": "Second phase: the front knee bends and the body drops into the blow. The torso pitches forward, the sword arm comes down and forward to near shoulder height with the elbow still bent 30 or more, blade angled forward and down across the line of attack. The shield drops slightly and stays forward."
+   }
+  },
+  {
+   "id": "lunge-thrust-over-rim",
+   "name": "Lunge thrust over the shield rim",
+   "description": "The shield foot steps forward into a long lunge. The shield is held high and forward with its top rim at chin height, and the sword is thrust forward past the shield's right edge, hand at waist height in front of the body, blade rising a little toward the target. The rear leg drives from the ball of the foot with the knee bent; the head stays behind the shield.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 1.07,
+    "weight_front": 0.7,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -25,
+     "pitch": 15,
+     "roll": 0,
+     "height": 0.76
+    },
+    "spine": {
+     "flex": 10,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 25,
+     "pitch": 5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 119.0,
+     "elev": 36.0,
+     "rot": -14.0,
+     "elbow": 81.0,
+     "pron": 79.0,
+     "wrist_flex": -4.0,
+     "wrist_dev": -10.0
+    },
+    "arm_l": {
+     "plane": 58.0,
+     "elev": 62.0,
+     "rot": 48.0,
+     "elbow": 85.0,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -16,
+     "hip_abd": 12,
+     "hip_rot": -16,
+     "knee": 40,
+     "ankle": 20,
+     "toe": 52
+    },
+    "leg_l": {
+     "hip_flex": 75,
+     "hip_abd": 8,
+     "hip_rot": -20,
+     "knee": 62,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.96,
+      0.05,
+      0.26
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.23,
+       -0.13,
+       0.03
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.08,
+      0.15
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.14,
+       0.05,
+       -0.24
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/batalla-06-lunge-over-shield.jpg"
+   ],
+   "ref_notes": "batalla-06-lunge-over-shield.jpg: reenactor lunging forward on the shield-side leg with the sword arm extended past a raised round shield; the lunge depth and the lead-leg bend are taken from it. Angles are judged by eye from a 3/4 view, so expect 10 to 15 degrees of error.",
+   "sources": [
+    {
+     "file": "refs/knight/batalla-06-lunge-over-shield.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Batalla_vikingos-andalus%C3%ADes_06.jpg",
+     "credit": "Guillermo Fuertes <guillefuertes@gmail.com>\n\nhttp://www.guillermofuertes.com/",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.4,
+     "authored_direction": [
+      0.96,
+      0.08,
+      0.25
+     ],
+     "direction_changed_by_deg": 1.8,
+     "position_error_mm": 6.8
+    },
+    "shield": {
+     "direction_error_deg": 1.1,
+     "position_error_mm": 9.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       69,
+       119.0
+      ],
+      "elev": [
+       77,
+       36.0
+      ],
+      "rot": [
+       30,
+       -14.0
+      ],
+      "elbow": [
+       15,
+       81.0
+      ],
+      "pron": [
+       0,
+       79.0
+      ],
+      "wrist_flex": [
+       0,
+       -4.0
+      ],
+      "wrist_dev": [
+       -25,
+       -10.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       60,
+       58.0
+      ],
+      "elev": [
+       70,
+       62.0
+      ],
+      "rot": [
+       35,
+       48.0
+      ],
+      "elbow": [
+       100,
+       85.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword and shield place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. A level thrust over the rim at eye height cannot be had with the fitted grip without the forearm roll at its limit. The thrust goes past the shield's right edge, hand at waist height in front of the body, blade rising about 15 degrees; the shield's top rim is at chin height. The text also had the rear leg straight; the authored leg drives from the ball of the foot with the knee bent, and the text now says so.",
+    "authored_description": "The shield foot steps forward into a long lunge. The shield is held high and forward with its top rim at eye height, and the sword is thrust straight forward over the rim on the right, arm nearly extended at shoulder height, blade level. The rear leg is straight and braced; the head stays behind the shield."
+   }
+  },
+  {
+   "id": "parry-sword",
+   "name": "Sword parry",
+   "description": "A high-line parry with the sword: the blade is held up and angled across the front of the right shoulder, point up and to the left, hand at chest height in front of the right shoulder, to catch a blow from the right. The shield stays tucked at the chest on the left and the weight rests evenly on both feet in a medium stance.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.22,
+    "length": 0.51,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": 5,
+     "roll": 0,
+     "height": 0.94
+    },
+    "spine": {
+     "flex": 5,
+     "twist": -10,
+     "side": 0
+    },
+    "head": {
+     "yaw": 30,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 121.0,
+     "elev": 45.0,
+     "rot": -3.0,
+     "elbow": 112.0,
+     "pron": 56.0,
+     "wrist_flex": 8.0,
+     "wrist_dev": -2.0
+    },
+    "arm_l": {
+     "plane": 70,
+     "elev": 40,
+     "rot": 35,
+     "elbow": 100,
+     "pron": -24,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -3,
+     "hip_abd": 12,
+     "hip_rot": -16,
+     "knee": 22,
+     "ankle": 20,
+     "toe": 10
+    },
+    "leg_l": {
+     "hip_flex": 33,
+     "hip_abd": 8,
+     "hip_rot": -24,
+     "knee": 28,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.24,
+      0.44,
+      0.86
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.2,
+       -0.1,
+       0.14
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.13,
+      0.07
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/armor-duel-parry.jpg"
+   ],
+   "ref_notes": "armor-duel-parry.jpg: two reenactors with swords crossed in front of the chest at head height, one parrying with a raised, angled blade; used for the blade angle and the height of the hand. Torso and legs are designed.",
+   "sources": [
+    {
+     "file": "refs/knight/armor-duel-parry.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Men_in_armor_engage_in_a_sword_fight_inside_a_stone_castle_during_a_historical_reenactment_event.jpg",
+     "credit": "Shixart1985",
+     "licence": "CC BY 2.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.4,
+     "position_error_mm": 5.1
+    },
+    "shield": {
+     "direction_error_deg": 8.6
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       55,
+       121.0
+      ],
+      "elev": [
+       53,
+       45.0
+      ],
+      "rot": [
+       0,
+       -3.0
+      ],
+      "elbow": [
+       88,
+       112.0
+      ],
+      "pron": [
+       -1,
+       56.0
+      ],
+      "wrist_flex": [
+       0,
+       8.0
+      ],
+      "wrist_dev": [
+       -25,
+       -2.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. Hand placed in front of the right shoulder. Shoulder height, as first described, is not reached without strain; the hand is at chest height.",
+    "authored_description": "A high-line parry with the sword: the blade is held up and angled across the front of the right shoulder, point up and to the left, hand at shoulder height in front of the right collarbone, to catch a blow from the right. The shield stays tucked at the chest on the left and the weight rests evenly on both feet in a medium stance."
+   }
+  },
+  {
+   "id": "shield-raised-overhead",
+   "name": "Shield raised overhead (arrows)",
+   "description": "The shield is lifted in front of and above the brow, as high as the arm reaches, with its face tilted up and forward to turn aside falling arrows. The body sinks under it: knees bent, back rounded. The sword hangs low at the right hip, point down and forward. (The Knight's arm cannot lay this shield flat over the helmet's crown.)",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.31,
+    "weight_front": 0.5,
+    "facing_yaw": 10
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -20,
+     "pitch": 10,
+     "roll": 0,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": 15,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 10,
+     "pitch": -5,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 40,
+     "elev": 12,
+     "rot": 2,
+     "elbow": 21,
+     "pron": 5.0,
+     "wrist_flex": -16.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 120.0,
+     "elev": 128.0,
+     "rot": 63.0,
+     "elbow": 108.0,
+     "pron": -72,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 12,
+     "hip_abd": 10,
+     "hip_rot": 0,
+     "knee": 35,
+     "ankle": 20,
+     "toe": 13
+    },
+    "leg_l": {
+     "hip_flex": 32,
+     "hip_abd": 8,
+     "hip_rot": -16,
+     "knee": 35,
+     "ankle": 13,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.92,
+      0.01,
+      -0.39
+     ]
+    },
+    "shield": {
+     "face": [
+      0.72,
+      0.1,
+      0.69
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.1,
+       0.04,
+       0.06
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. The old shield-block-high pose is the nearest relative; this one lifts the shield fully overhead.",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 9.3
+    },
+    "shield": {
+     "direction_error_deg": 11.9,
+     "authored_direction": [
+      0.45,
+      0.02,
+      0.89
+     ],
+     "direction_changed_by_deg": 19.9,
+     "position_error_mm": 15.4
+    },
+    "changed_from_version_1": {
+     "pelvis": {
+      "yaw": [
+       -10,
+       -20
+      ]
+     },
+     "head": {
+      "yaw": [
+       0,
+       10
+      ],
+      "pitch": [
+       15,
+       -5
+      ]
+     },
+     "arm_r": {
+      "pron": [
+       9,
+       5.0
+      ],
+      "wrist_flex": [
+       0,
+       -16.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       40,
+       120.0
+      ],
+      "elev": [
+       115,
+       128.0
+      ],
+      "rot": [
+       25,
+       63.0
+      ],
+      "elbow": [
+       110,
+       108.0
+      ],
+      "pron": [
+       -32,
+       -72
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield arm, head and pelvis yaw",
+    "why": "The description has the forearm level over the crown and the shield face tilted up to turn falling arrows. On the Knight the shield's centre can rise about 0.27 of stature above the shoulder joint and the helmet's top is 0.23 above it, so a shield lying over the crown passes through the helmet (303 helmet vertices inside it, 12 mm deep, measured on bind r68). The shield is held as in shield-block-high, in front of and above the brow, tilted up about 35 degrees, with the chin no longer tucked under it.",
+    "authored_description": "The shield is lifted above and slightly in front of the head with the forearm nearly horizontal over the crown and the shield face tilted up and forward to turn aside falling arrows. The body hunches under it: knees bent, back rounded, chin tucked. The sword hangs low at the right hip, point down and forward."
+   }
+  },
+  {
+   "id": "shield-wall-crouch",
+   "name": "Shield-wall crouch",
+   "description": "A low crouch behind the shield in a line formation: both feet down, knees deeply bent, the shield upright and forward with the lower rim at knee height and the top rim just above eye height, the left shoulder pressed to it. The sword is held low, point forward, beside the right hip and shield edge. The head is tucked behind the rim.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.25,
+    "length": 0.45,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -25,
+     "pitch": 18,
+     "roll": 0,
+     "height": 0.62
+    },
+    "spine": {
+     "flex": 20,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 25,
+     "pitch": 10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 61,
+     "elev": 34.0,
+     "rot": -5.0,
+     "elbow": 36,
+     "pron": 17,
+     "wrist_flex": 18.0,
+     "wrist_dev": 11.0
+    },
+    "arm_l": {
+     "plane": 74.0,
+     "elev": 60.0,
+     "rot": 20.0,
+     "elbow": 130.0,
+     "pron": -8,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 58,
+     "hip_abd": 15,
+     "hip_rot": -4,
+     "knee": 124,
+     "ankle": 20,
+     "toe": 60
+    },
+    "leg_l": {
+     "hip_flex": 93,
+     "hip_abd": 10,
+     "hip_rot": -20,
+     "knee": 95,
+     "ankle": 20,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      1.0,
+      -0.02,
+      0.01
+     ]
+    },
+    "shield": {
+     "face": [
+      1.0,
+      0.02,
+      -0.0
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/schildwall-crouch.jpg",
+    "refs/knight/skjoldborg-wall.jpg"
+   ],
+   "ref_notes": "schildwall-crouch.jpg and skjoldborg-wall.jpg: reenactors in a shield wall crouching with knees bent behind upright shields; used for the crouch depth, the upright shield and the tucked head. Leg angles are judged by eye.",
+   "sources": [
+    {
+     "file": "refs/knight/schildwall-crouch.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Schildwall.jpg",
+     "credit": "Siegbert Brey",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "refs/knight/skjoldborg-wall.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Skjoldborg.jpg",
+     "credit": "Birgit Fostervold",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 11.2
+    },
+    "shield": {
+     "direction_error_deg": 10.6
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "elev": [
+       22,
+       34.0
+      ],
+      "rot": [
+       7,
+       -5.0
+      ],
+      "wrist_flex": [
+       0,
+       18.0
+      ],
+      "wrist_dev": [
+       -12,
+       11.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       55,
+       74.0
+      ],
+      "elev": [
+       40,
+       60.0
+      ],
+      "rot": [
+       50,
+       20.0
+      ],
+      "elbow": [
+       110,
+       130.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "description only",
+    "why": "The text had the lower rim near the ground and the top rim at eye height. The shield is 0.42 of a stature across: in this crouch its top rim is just above eye height and its lower rim at the knee. The pose itself was only aimed.",
+    "authored_description": "A low crouch behind the shield in a line formation: both feet down, knees deeply bent, the shield upright and forward with the lower rim near the ground and the top rim at eye height, the left shoulder pressed to it. The sword is held low, point forward, beside the right hip and shield edge. The head is tucked behind the rim."
+   }
+  },
+  {
+   "id": "advance-behind-shield",
+   "name": "Advance behind the shield",
+   "description": "A slow advancing step with the shield held up and forward in front of the chest and chin and the sword held back and low at the right hip. The left foot has just stepped forward, heel first, with the knee soft; the torso is turned a little shield-side forward and leans slightly into the step. Head stays behind the rim.",
+   "support": [
+    "foot_l",
+    "toe_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.15,
+    "length": 0.77,
+    "weight_front": 0.55,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -20,
+     "pitch": 6,
+     "roll": 0,
+     "height": 0.93
+    },
+    "spine": {
+     "flex": 6,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 20,
+     "pitch": 4,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 55,
+     "elev": 0,
+     "rot": -27,
+     "elbow": 50,
+     "pron": 45,
+     "wrist_flex": 10.0,
+     "wrist_dev": 19.0
+    },
+    "arm_l": {
+     "plane": 83.0,
+     "elev": 46.0,
+     "rot": 37.0,
+     "elbow": 120.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -11,
+     "hip_abd": 6,
+     "hip_rot": -4,
+     "knee": 25,
+     "ankle": 20,
+     "toe": 22
+    },
+    "leg_l": {
+     "hip_flex": 34,
+     "hip_abd": 4,
+     "hip_rot": -16,
+     "knee": 15,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.95,
+      0.0,
+      0.32
+     ]
+    },
+    "shield": {
+     "face": [
+      0.99,
+      0.11,
+      0.06
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/krigshistorisk-2023-12-advance.jpg",
+    "refs/knight/krigshistorisk-2023-02-approach.jpg"
+   ],
+   "ref_notes": "krigshistorisk-2023-12-advance.jpg and -02-approach.jpg: reenactors stepping forward with round shields held up in front of the chest; used for the shield height, the shortened step and the forward lean. Sword-arm detail is designed.",
+   "sources": [
+    {
+     "file": "refs/knight/krigshistorisk-2023-12-advance.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_12.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "refs/knight/krigshistorisk-2023-02-approach.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_02.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.3
+    },
+    "shield": {
+     "direction_error_deg": 0.1
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "wrist_flex": [
+       0,
+       10.0
+      ],
+      "wrist_dev": [
+       -4,
+       19.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       65,
+       83.0
+      ],
+      "elev": [
+       30,
+       46.0
+      ],
+      "rot": [
+       55,
+       37.0
+      ],
+      "elbow": [
+       100,
+       120.0
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "retreat-step-guard",
+   "name": "Retreat step, guarding",
+   "description": "A backward step: the right foot has slid back first and the weight sits mostly on it with the left leg lightly loaded in front. The torso is upright to slightly back, the shield is held high and forward covering the head and chest, and the sword is held ready in a middle guard beside the shield rim.",
+   "support": [
+    "foot_r",
+    "foot_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.2,
+    "length": 0.67,
+    "weight_front": 0.3,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -30,
+     "pitch": -3,
+     "roll": 0,
+     "height": 0.94
+    },
+    "spine": {
+     "flex": -3,
+     "twist": -8,
+     "side": 0
+    },
+    "head": {
+     "yaw": 30,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 130.0,
+     "elev": 2.0,
+     "rot": -9.0,
+     "elbow": 80.0,
+     "pron": 46.0,
+     "wrist_flex": -7.0,
+     "wrist_dev": -14.0
+    },
+    "arm_l": {
+     "plane": 108.0,
+     "elev": 58.0,
+     "rot": 11.0,
+     "elbow": 140.0,
+     "pron": -32,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -11,
+     "hip_abd": 12,
+     "hip_rot": -12,
+     "knee": 38,
+     "ankle": 20,
+     "toe": 26
+    },
+    "leg_l": {
+     "hip_flex": 22,
+     "hip_abd": 8,
+     "hip_rot": -24,
+     "knee": 15,
+     "ankle": 2,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.85,
+      -0.08,
+      0.52
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.12,
+       -0.17,
+       0.05
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.98,
+      0.12,
+      0.16
+     ],
+     "at": {
+      "joint": "Head",
+      "offset": [
+       0.14,
+       0.04,
+       -0.1
+      ],
+      "frame": "root"
+     }
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. ",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.5,
+     "authored_direction": [
+      0.69,
+      0.28,
+      0.67
+     ],
+     "direction_changed_by_deg": 24.3,
+     "position_error_mm": 6.0
+    },
+    "shield": {
+     "direction_error_deg": 0.5,
+     "position_error_mm": 22.8
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       49,
+       130.0
+      ],
+      "elev": [
+       18,
+       2.0
+      ],
+      "rot": [
+       -13,
+       -9.0
+      ],
+      "elbow": [
+       87,
+       80.0
+      ],
+      "pron": [
+       45,
+       46.0
+      ],
+      "wrist_flex": [
+       0,
+       -7.0
+      ],
+      "wrist_dev": [
+       -25,
+       -14.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       70,
+       108.0
+      ],
+      "elev": [
+       40,
+       58.0
+      ],
+      "rot": [
+       35,
+       11.0
+      ],
+      "elbow": [
+       100,
+       140.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "shield and sword place",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The head stood clear above the shield's rim and the blade's tip met the rim. The shield now covers head and chest and the sword is in a middle guard beside it, 47 mm clear."
+   }
+  },
+  {
+   "id": "charge-sprint-flight",
+   "name": "Charge sprint, flight phase",
+   "description": "Both feet off the ground in a full sprint. The body pitches forward about 20 degrees; the shield is held forward at chest height with the rim near the chin, the sword arm is pumped back with the blade upright, leaning forward. The lead leg drives its knee up and forward while the rear leg trails with the knee bent.",
+   "support": [],
+   "targets": {
+    "pelvis": {
+     "yaw": -8,
+     "pitch": 18,
+     "roll": 0,
+     "height": 1.03
+    },
+    "spine": {
+     "flex": 8,
+     "twist": 6,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 12,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": -90.0,
+     "elev": 45.0,
+     "rot": -55.0,
+     "elbow": 121.0,
+     "pron": -36.0,
+     "wrist_flex": 14.0,
+     "wrist_dev": 20.0
+    },
+    "arm_l": {
+     "plane": 42.0,
+     "elev": 71.0,
+     "rot": 51.0,
+     "elbow": 104.0,
+     "pron": -16,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -7,
+     "hip_abd": 3,
+     "hip_rot": 6,
+     "knee": 90,
+     "ankle": -15,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 83,
+     "hip_abd": 3,
+     "hip_rot": -6,
+     "knee": 70,
+     "ankle": 5,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.4,
+      -0.08,
+      0.91
+     ],
+     "at": {
+      "joint": "pelvis",
+      "offset": [
+       0.041,
+       -0.217,
+       0.147
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.91,
+      0.34,
+      0.24
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/run-charge-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/run-charge-2.jpg",
+    "../../t1-knight-claude/research/poses/refs/run-charge-3.jpg"
+   ],
+   "ref_notes": "Old run-charge references (existing Knight research): forward pitch, shield in front of the chest, trailing sword arm. This pose is the flight phase, so both legs are off the ground (designed). The Muybridge running plate in refs/general/ was used for leg timing.",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2023_-_Vikingekamp_10.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:02015_Das_Wikinger_Festival_in_Trzcinica_-_Die_Schlachten_der_Seekrieger_002.jpg",
+     "credit": "Silar",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/run-charge-3.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Reconstruct2BRivFest2010.JPG",
+     "credit": "Simon Speed",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 2.3,
+     "authored_direction": [
+      -0.4,
+      -0.0,
+      0.92
+     ],
+     "direction_changed_by_deg": 47.4,
+     "position_error_mm": 0.4,
+     "place_asked": [
+      -0.02,
+      -0.19,
+      0.1
+     ],
+     "place_asked_missed_by_mm": 48.6
+    },
+    "shield": {
+     "direction_error_deg": 0.3
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       -30,
+       -90.0
+      ],
+      "elev": [
+       0,
+       45.0
+      ],
+      "rot": [
+       -60,
+       -55.0
+      ],
+      "elbow": [
+       94,
+       121.0
+      ],
+      "pron": [
+       -43,
+       -36.0
+      ],
+      "wrist_flex": [
+       3,
+       14.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       40,
+       42.0
+      ],
+      "elev": [
+       55,
+       71.0
+      ],
+      "rot": [
+       55,
+       51.0
+      ],
+      "elbow": [
+       100,
+       104.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. As run-charge: the sword is carried upright beside the right hip, leaning forward; a blade trailing up and back cannot be had with the fitted grip on an arm pumped back.",
+    "authored_description": "Both feet off the ground in a full sprint. The body pitches forward about 20 degrees; the shield is held forward at chest height with the rim near the chin, the sword arm is pumped back with the blade trailing up and back. The lead leg drives its knee up and forward while the rear leg trails with the knee bent."
+   }
+  },
+  {
+   "id": "sword-on-shoulder",
+   "name": "Sword resting on the shoulder",
+   "description": "A relaxed march or rest pose: the sword is carried over the right shoulder, blade sloping back and up about 30 degrees just clear of the shoulder plate, point behind the shoulder, the right hand in front of the shoulder holding the grip with a bent elbow. The shield hangs on the left forearm against the hip. Weight is even, knees soft, head level.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "none",
+    "width": 0.22,
+    "length": 0.03,
+    "weight_front": 0.5,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0,
+     "height": 1.0
+    },
+    "spine": {
+     "flex": 0,
+     "twist": 0,
+     "side": 0
+    },
+    "head": {
+     "yaw": 0,
+     "pitch": 0,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 74.0,
+     "elev": 40.0,
+     "rot": -36.0,
+     "elbow": 140.0,
+     "pron": -24.0,
+     "wrist_flex": 10.0,
+     "wrist_dev": -14.0
+    },
+    "arm_l": {
+     "plane": 9.0,
+     "elev": 20.0,
+     "rot": 36.0,
+     "elbow": 40.0,
+     "pron": 0,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 0,
+     "hip_abd": 5,
+     "hip_rot": -8,
+     "knee": 5,
+     "ankle": 5,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 2,
+     "hip_abd": 5,
+     "hip_rot": -8,
+     "knee": 5,
+     "ankle": 3,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      -0.92,
+      0.0,
+      0.39
+     ],
+     "at": {
+      "joint": "spine_03",
+      "offset": [
+       0.1,
+       -0.13,
+       0.18
+      ]
+     }
+    },
+    "shield": {
+     "face": [
+      0.17,
+      0.98,
+      0.0
+     ]
+    }
+   },
+   "confidence": "designed",
+   "refs": [],
+   "ref_notes": "Designed from the joint limits and fencing practice; no photograph was matched. This is a common marching carry in reenactment, but no photo was matched.",
+   "sources": [],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 11.3,
+     "authored_direction": [
+      -0.71,
+      0.01,
+      0.7
+     ],
+     "direction_changed_by_deg": 21.6,
+     "position_error_mm": 17.8
+    },
+    "shield": {
+     "direction_error_deg": 0.8
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "plane": [
+       45,
+       74.0
+      ],
+      "rot": [
+       6,
+       -36.0
+      ],
+      "elbow": [
+       112,
+       140.0
+      ],
+      "pron": [
+       -21,
+       -24.0
+      ],
+      "wrist_flex": [
+       0,
+       10.0
+      ],
+      "wrist_dev": [
+       0,
+       -14.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       25,
+       9.0
+      ],
+      "elev": [
+       0,
+       20.0
+      ],
+      "rot": [
+       10,
+       36.0
+      ],
+      "elbow": [
+       60,
+       40.0
+      ]
+     }
+    }
+   },
+   "corrected": {
+    "date": "2026-10-07",
+    "what": "sword place and direction",
+    "why": "Re-authored from the description as a place and a direction for the item, on the Knight's fitted sockets. The authored blade stood 45 degrees up. It now slopes back about 30 degrees over the right shoulder. It does not lie on the shoulder plate: laid flat it sinks 2.5 mm into the plate, so it is carried just clear.",
+    "authored_description": "A relaxed march or rest pose: the sword rests flat on the right shoulder, blade lying back along the collarbone with the point behind the shoulder, the right hand at chest height holding the grip with a bent elbow. The shield hangs on the left forearm against the hip. Weight is even, knees soft, head level."
+   }
+  },
+  {
+   "id": "taunt-beat-sword-on-shield",
+   "name": "Taunt, beating sword on shield",
+   "description": "A defiant display: stance wide, chest out and head back, the shield held out in front of the chest and the sword raised above it, tilted up and across the shield, ready to strike the shield face. The body leans slightly forward and rocks onto the front foot.",
+   "support": [
+    "foot_l",
+    "foot_r"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.35,
+    "length": 0.29,
+    "weight_front": 0.55,
+    "facing_yaw": 5
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -15,
+     "pitch": 2,
+     "roll": 0,
+     "height": 0.95
+    },
+    "spine": {
+     "flex": -3,
+     "twist": -5,
+     "side": 0
+    },
+    "head": {
+     "yaw": 15,
+     "pitch": -10,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 70,
+     "elev": 52,
+     "rot": -23,
+     "elbow": 95,
+     "pron": 35.0,
+     "wrist_flex": -16.0,
+     "wrist_dev": -1.0
+    },
+    "arm_l": {
+     "plane": 85,
+     "elev": 45,
+     "rot": 55,
+     "elbow": 100,
+     "pron": -40,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": -1,
+     "hip_abd": 15,
+     "hip_rot": -4,
+     "knee": 15,
+     "ankle": 18,
+     "toe": 0
+    },
+    "leg_l": {
+     "hip_flex": 17,
+     "hip_abd": 15,
+     "hip_rot": -16,
+     "knee": 15,
+     "ankle": 0,
+     "toe": 0
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.08,
+      0.65,
+      0.76
+     ]
+    },
+    "shield": {
+     "face": [
+      1.0,
+      0.03,
+      0.08
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "refs/knight/wolin-2019-25-duel-raised-sword.jpg"
+   ],
+   "ref_notes": "wolin-2019-25-duel-raised-sword.jpg: a reenactor with the sword raised high over a shield held in front of the body; used for the sword height and the shield position. The taunting posture and the wide stance are designed.",
+   "sources": [
+    {
+     "file": "refs/knight/wolin-2019-25-duel-raised-sword.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Wolin_festiwal_2019_25.jpg",
+     "credit": "Jakub T. Jankiewicz",
+     "licence": "CC BY-SA 4.0"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.3
+    },
+    "shield": {
+     "direction_error_deg": 7.2
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       39,
+       35.0
+      ],
+      "wrist_flex": [
+       0,
+       -16.0
+      ],
+      "wrist_dev": [
+       -25,
+       -1.0
+      ]
+     }
+    }
+   }
+  },
+  {
+   "id": "stumble-knocked-back",
+   "name": "Knocked-back stumble, shield up",
+   "description": "Struck on the shield: the body is driven backward with the weight thrown onto the rear leg, the front foot light and off the line. The shield is jammed up against the chin and chest by the blow, the head and chest rock back, and the sword arm flies out to the right for balance.",
+   "support": [
+    "foot_r",
+    "toe_l"
+   ],
+   "stance": {
+    "lead": "l",
+    "width": 0.3,
+    "length": 0.48,
+    "weight_front": 0.15,
+    "facing_yaw": 0
+   },
+   "targets": {
+    "pelvis": {
+     "yaw": -5,
+     "pitch": -8,
+     "roll": 0,
+     "height": 0.92
+    },
+    "spine": {
+     "flex": -12,
+     "twist": 10,
+     "side": -8
+    },
+    "head": {
+     "yaw": -10,
+     "pitch": -15,
+     "roll": 0
+    },
+    "arm_r": {
+     "plane": 17,
+     "elev": 67,
+     "rot": -50,
+     "elbow": 15,
+     "pron": -2.0,
+     "wrist_flex": -24.0,
+     "wrist_dev": -2.0
+    },
+    "arm_l": {
+     "plane": 110.0,
+     "elev": 45.0,
+     "rot": 80.0,
+     "elbow": 92.0,
+     "pron": -64,
+     "wrist_flex": 0,
+     "wrist_dev": 0
+    },
+    "leg_r": {
+     "hip_flex": 12,
+     "hip_abd": 15,
+     "hip_rot": -20,
+     "knee": 45,
+     "ankle": 20,
+     "toe": 5
+    },
+    "leg_l": {
+     "hip_flex": 27,
+     "hip_abd": 5,
+     "hip_rot": -4,
+     "knee": 12,
+     "ankle": -35,
+     "toe": 12
+    }
+   },
+   "items": {
+    "sword": {
+     "blade": [
+      0.29,
+      -0.44,
+      0.85
+     ]
+    },
+    "shield": {
+     "face": [
+      0.88,
+      0.12,
+      0.46
+     ]
+    }
+   },
+   "confidence": "estimated",
+   "refs": [
+    "../../t1-knight-claude/research/poses/refs/hit-react-1.jpg",
+    "../../t1-knight-claude/research/poses/refs/hit-react-2.jpg"
+   ],
+   "ref_notes": "Existing hit-react references (Knight research). This pose pushes the same reaction further back with the shield jammed up; the extra rock-back is designed.",
+   "sources": [
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/hit-react-1.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Krigshistorisk_Festival_2019_-_Vikingekamp_03.jpg",
+     "credit": "Leif J\u00f8rgensen",
+     "licence": "CC BY-SA 4.0"
+    },
+    {
+     "file": "../../t1-knight-claude/research/poses/refs/hit-react-2.jpg",
+     "page": "https://commons.wikimedia.org/wiki/File:Bayeux_Tapestry_scene57_Harold_death.jpg",
+     "credit": "Myrabella",
+     "licence": "Public domain"
+    }
+   ],
+   "aimed": {
+    "sword": {
+     "direction_error_deg": 0.7
+    },
+    "shield": {
+     "direction_error_deg": 1.6
+    },
+    "changed_from_version_1": {
+     "arm_r": {
+      "pron": [
+       0,
+       -2.0
+      ],
+      "wrist_flex": [
+       0,
+       -24.0
+      ],
+      "wrist_dev": [
+       -25,
+       -2.0
+      ]
+     },
+     "arm_l": {
+      "plane": [
+       90,
+       110.0
+      ],
+      "elev": [
+       65,
+       45.0
+      ],
+      "rot": [
+       50,
+       80.0
+      ],
+      "elbow": [
+       110,
+       92.0
+      ]
+     }
+    }
+   }
+  }
+ ],
+ "aimed_with": {
+  "date": "2026-10-07",
+  "sockets": "../t1-knight-claude/v4/work/gear-fit.json (sword on hand_r, shield on lowerarm_l; Knight bind r68)",
+  "previous": "poses/knight.v1.json",
+  "previous_sha256": "edf6c48fd4f06083164a7a6f0990ad733660061379315aef775ba031e695e5ca",
+  "tool": "tools/hb_item_aim.py: --fix (wrist-first aim of the authored arm), --place (whole arm from an item's stated place and direction, for poses whose items have \"at\"), --clear --hold (room made between items and body, placed items held)",
+  "note": "Version 1 was aimed at stand-in sockets: a sword at a right angle to the forearm and a shield that turned with forearm roll. The fitted sword lies 67 degrees from the forearm and the shield is rigid on the forearm. First every arm was aimed again, wrist first; a cold visual review then found that many poses no longer did what they describe (the arm had been kept where it was authored and wrung to point the item). Those poses were re-authored from their descriptions as a place and a direction for the item, and the arm solved from that. Each pose's aimed record gives the errors on the fitted sockets and what changed from version 1; corrected says why a pose's intent was changed. Descriptions that the fitted grip cannot meet (a blade in line with the forearm: straight thrusts at shoulder height, a blade straight up on a straight arm, a point-down rest) were restated to what it can do."
+ },
+ "dropped": [
+  {
+   "id": "kneel-exhausted-on-sword",
+   "date": "2026-10-07",
+   "why": "User decision on the Knight's GATE-E.md, decision 4: \"we can drop kneel-exhausted-on-sword, we don't need to animate the hand in detail and can make do with a single grip style.\" The fitted hammer grip cannot plant a blade point-down; the pose read as a kneeling man holding a sword out low. It is still in poses/knight.v1.json."
+  }
+ ]
+}
