@@ -28,7 +28,7 @@ type Board = Map<string, CampaignStanding>;
  * (held), which friends earn nothing for.
  */
 type InviterHome = "free" | "ticket" | "devcon" | "golden" | "held";
-/** A friend who shares a mailbox or device with the inviter or a counted friend is excluded: one person counts once. */
+/** A friend who shares a mailbox or browser with the inviter or a counted friend is excluded: one person counts once. */
 type FriendState = "signed" | "founded" | "counted" | "excluded";
 
 /** The tier a link draws for a friend's ticket: golden at the campaign's odds, from the Worker's own randomness. */
@@ -113,7 +113,7 @@ async function friendState(
 
 /**
  * Settles what the account's friends earned it, then the account's own golden home. Friends count once the season
- * board shows them founded with a site cleared, each with their own mailbox and device. The first counted friend gives
+ * board shows them founded with a site cleared, each with their own mailbox and browser. The first counted friend gives
  * a home with no ticket a regular one; a golden friend who counts, or the link's `goldenLinkAt`th counted friend, turns
  * the inviter golden, and the latter turns the link golden for every friend on it. A golden ticket on a founded home the
  * board still shows regular asks the relay to upgrade it, whether friends or the link earned it. Every step is safe to
@@ -141,12 +141,12 @@ export async function settleReferrals(world: ReferralWorld, campaign: CampaignKe
 }
 
 /**
- * Counts each friend the board shows with a site cleared whose mailbox and devices are their own: neither the
- * inviter's nor a counted friend's, every device the guardian ever approved for any of them counting, signed in or
- * not, on both sides of the comparison.
+ * Counts each friend the board shows with a site cleared whose mailbox and browsers are their own: neither the
+ * inviter's nor a counted friend's, every browser any of them was ever signed in on counting, signed in now or not, on
+ * both sides of the comparison.
  * Friends counted before keep their count and claim their identity first; the rest are taken oldest first. A friend
- * with no device known yet waits for one: an unknown device proves nothing. The counting write checks again, so racing
- * reads count one person once. Answers the friends excluded as someone else's.
+ * with no browser known yet waits for one: an unknown browser proves nothing. The counting write checks again, so
+ * racing reads count one person once. Answers the friends excluded as someone else's.
  */
 async function countFriends(
   world: ReferralWorld,
@@ -158,25 +158,25 @@ async function countFriends(
 ) {
   const referrals = createCampaignReferralStore(world.db);
   const own = await referrals.identityOf(inviter);
-  const approved = await referrals.devicesOfFriends(campaign, inviter);
-  const devicesOf = (friend: ReferredFriend) => [
-    ...new Set([...(friend.deviceKey === null ? [] : [friend.deviceKey]), ...(approved.get(friend.friend) ?? [])]),
+  const seen = await referrals.browsersOfFriends(campaign, inviter);
+  const browsersOf = (friend: ReferredFriend) => [
+    ...new Set([...(friend.browser === null ? [] : [friend.browser]), ...(seen.get(friend.friend) ?? [])]),
   ];
   const mailboxes = new Set<string | null>([own.mailbox, ...friends.filter(isCounted).map((friend) => friend.mailbox)]);
-  const devices = new Set<string>([...own.devices, ...friends.filter(isCounted).flatMap(devicesOf)]);
+  const browsers = new Set<string>([...own.browsers, ...friends.filter(isCounted).flatMap(browsersOf)]);
   const excluded = new Set<string>();
-  const newlyCounted: { friend: string; deviceKey: string }[] = [];
+  const newlyCounted: { friend: string; browser: string }[] = [];
   for (const friend of friends.filter((candidate) => !isCounted(candidate))) {
     if (!(await hasClearedSite(world, friend, board))) continue;
-    const friendDevices = devicesOf(friend);
-    if (friendDevices.length === 0) continue;
-    if (mailboxes.has(friend.mailbox) || friendDevices.some((device) => devices.has(device))) {
+    const friendBrowsers = browsersOf(friend);
+    if (friendBrowsers.length === 0) continue;
+    if (mailboxes.has(friend.mailbox) || friendBrowsers.some((browser) => browsers.has(browser))) {
       excluded.add(friend.friend);
       continue;
     }
     mailboxes.add(friend.mailbox);
-    friendDevices.forEach((device) => devices.add(device));
-    newlyCounted.push({ friend: friend.friend, deviceKey: friendDevices[0]! });
+    friendBrowsers.forEach((browser) => browsers.add(browser));
+    newlyCounted.push({ friend: friend.friend, browser: friendBrowsers[0]! });
   }
   await referrals.markCounted(campaign, inviter, own, newlyCounted, now);
   return excluded;

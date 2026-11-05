@@ -1485,25 +1485,27 @@ describe("identity Worker", () => {
       });
     };
 
-    let devices = 0;
+    /** A browser the app opened in before, under the id it was given there: another account signing in on it. */
+    const sameBrowserAs = (browserId: string) => createBrowser([`realms-identity.browser=${browserId}`]);
     /**
-     * A signed-in player. By default each signs in with their own mailbox and on their own device, approved by the
-     * guardian through /api/devices as the client asks; `email` and `device` make one share another's, and
-     * `device: null` approves none yet.
+     * A signed-in player, each by default with their own mailbox on their own browser, which the app opens by reading
+     * its session. `email` shares another's mailbox; `on` signs in on another player's browser; `opened: false` signs
+     * in on a browser the app has not opened in since, so no browser is known for the account yet.
      */
-    const player = async (name: string, { email, device }: { email?: string; device?: string | null } = {}) => {
-      const browser = createBrowser();
-      await signInWithCode(browser, email ?? `${name}@realms.test`);
-      const realmsId = (await browser.session())!.user.realmsId;
+    const player = async (
+      name: string,
+      { email, on, opened = true }: { email?: string; on?: string; opened?: boolean } = {},
+    ) => {
+      const address = email ?? `${name}@realms.test`;
+      const browser = on ? sameBrowserAs(on) : createBrowser();
+      await signInWithCode(browser, address);
+      const realmsId = opened
+        ? (await browser.session())!.user.realmsId
+        : (await env.DB.prepare('SELECT "realmsId" FROM "user" WHERE "email" = ?')
+            .bind(address.toLowerCase())
+            .first<{ realmsId: string }>())!.realmsId;
       await heraldsAnswerFor(realmsId, { [shard]: false });
       const account = accountKey(realmsAccountAddress(realmsId, ACCOUNT_CLASS_HASH, await env.GUARDIAN.publicKey()));
-      let counter = 0;
-      const onDevice = async (deviceKey: string) => {
-        const change = { ...deviceChangeFor(realmsId, { counter: ++counter }), chainId: "0xd5", deviceKey };
-        expect((await browser.request("/api/devices", { body: change })).status).toBe(200);
-      };
-      const own = device === undefined ? `0x${(0xd0000 + ++devices).toString(16)}` : device;
-      if (own !== null) await onDevice(own);
       const call = async (path: string, body?: unknown) => {
         await publishHeralds();
         const response = await browser.request(path, body === undefined ? {} : { body });
@@ -1512,11 +1514,24 @@ describe("identity Worker", () => {
       return {
         browser,
         realmsId,
-        device: own,
-        onDevice,
-        /** Signs out, as the client does: the session and its device rows go. */
+        /** The id of the browser this player signed in on first; null until the app opens there. */
+        browserId: async () =>
+          (
+            await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ? ORDER BY rowid LIMIT 1')
+              .bind(realmsId)
+              .first<{ browser: string }>()
+          )?.browser ?? null,
+        /** The app opens in this player's browser, reading its session. */
+        open: () => browser.session(),
+        /** Signs in on another player's browser too, where the app opens. */
+        signInOn: async (browserId: string) => {
+          const other = sameBrowserAs(browserId);
+          await signInWithCode(other, address);
+          await other.session();
+        },
+        /** Signs out, as the client does: the session goes, and the browser keeps its id. */
         signOut: async () => expect((await browser.request("/api/auth/sign-out", { body: {} })).status).toBe(200),
-        signIn: () => signInWithCode(browser, email ?? `${name}@realms.test`),
+        signIn: () => signInWithCode(browser, address),
         redeem: (body: Record<string, unknown> = {}) => call("/api/campaigns/redeem", { campaign, ...body }),
         referral: () => call(`/api/campaigns/referral?campaign=${campaign}`),
         code: async () => (await call(`/api/campaigns/referral?campaign=${campaign}`))[1].code as string,
@@ -1694,32 +1709,33 @@ describe("identity Worker", () => {
       expect(await inviter.redeem()).toEqual(ticket("regular"));
     });
 
-    it("counts one person once: a friend sharing a mailbox or device with the inviter or a counted friend is excluded", async () => {
+    it("counts one person once: a friend sharing a mailbox or browser with the inviter or a counted friend is excluded", async () => {
       const inviter = await player("ref-alts", { email: "Ref.Alts@gmail.com" });
       inviter.found("free");
       const code = await inviter.code();
-      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+      const join = async (name: string, options: { email?: string; on?: string; opened?: boolean }) => {
         const friend = await player(name, options);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         friend.found("campaign", 1);
         return friend;
       };
-      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own device: neither counts.
+      // The inviter's own inbox by Gmail's dots and +tags, and the inviter's own browser: neither counts.
       await join("ref-alts-mail", { email: "refalts+two@googlemail.com" });
-      await join("ref-alts-device", { device: inviter.device });
+      await join("ref-alts-browser", { on: (await inviter.browserId())! });
       expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded", "excluded"]));
       expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      // A friend of their own counts; another on that friend's device does not; one with no device yet waits for it.
+      // A friend of their own counts; another on that friend's browser does not; one whose browser the app has not
+      // opened in yet waits for it.
       const real = await join("ref-alts-real", {});
-      await join("ref-alts-copy", { device: real.device });
-      const later = await join("ref-alts-later", { device: null });
+      await join("ref-alts-copy", { on: (await real.browserId())! });
+      const later = await join("ref-alts-later", { opened: false });
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["excluded", "excluded", "counted", "excluded", "founded"], {
           tier: "regular",
           earned: { ticket: true },
         }),
       );
-      await later.onDevice("0xfeed");
+      await later.open();
       expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
         "excluded",
         "excluded",
@@ -1729,71 +1745,70 @@ describe("identity Worker", () => {
       ]);
     });
 
-    it("keeps excluding a friend on the inviter's device after the inviter signs out and back in", async () => {
-      const inviter = await player("ref-signout", { device: "0xa11ce" });
-      inviter.found("free");
-      const code = await inviter.code();
-      const twin = await player("ref-signout-twin", { device: "0xa11ce" });
-      expect(await twin.redeem({ referral: code })).toEqual(ticket("regular"));
-      twin.found("campaign", 1);
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
-      // Sign-out deletes the inviter's session and with it every device_sessions row; signing back in registers none.
-      await inviter.signOut();
-      await inviter.signIn();
-      const rows = await env.DB.prepare('SELECT COUNT(*) AS n FROM "device_sessions" WHERE "realmsId" = ?')
-        .bind(inviter.realmsId)
-        .first<{ n: number }>();
-      expect(rows).toEqual({ n: 0 });
-      expect((await inviter.referral())[1]).toEqual(answer("free", ["excluded"]));
-      expect(await campaignTicketFor(env.DB, inviter.realmsId, 6)).toBeNull();
-      // The same for a friend who approved a counted friend's device and signed out before counting.
-      const real = await player("ref-signout-real");
-      expect(await real.redeem({ referral: code })).toEqual(ticket("regular"));
-      real.found("campaign", 1);
-      const borrower = await player("ref-signout-borrow", { device: null });
-      expect(await borrower.redeem({ referral: code })).toEqual(ticket("regular"));
-      await borrower.onDevice(real.device!);
-      await borrower.signOut();
-      borrower.found("campaign", 1);
-      expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual([
-        "excluded",
-        "counted",
-        "excluded",
-      ]);
+    it("excludes a second account on the inviter's browser through sign-outs, and never counts two accounts for each other", async () => {
+      // The owner's test: two accounts on one browser, each taking the other's link.
+      const first = await player("ref-same-first");
+      first.found("free");
+      const firstCode = await first.code();
+      const shared = (await first.browserId())!;
+      await first.signOut();
+      const second = await player("ref-same-second", { on: shared });
+      expect(await second.redeem({ referral: firstCode })).toEqual(ticket("regular"));
+      second.found("campaign", 1);
+      // Back on its browser after signing out, the first account finds it under the same one id.
+      await first.signIn();
+      await first.open();
+      const browsers = await env.DB.prepare('SELECT "browser" FROM "account_browsers" WHERE "realmsId" = ?')
+        .bind(first.realmsId)
+        .all<{ browser: string }>();
+      expect(browsers.results).toEqual([{ browser: shared }]);
+      expect((await first.referral())[1]).toEqual(answer("free", ["excluded"]));
+      expect(await campaignTicketFor(env.DB, first.realmsId, 6)).toBeNull();
+      // The older account takes the newer one's link: it gets its ticket, but brought the newer one no friend.
+      expect(await first.redeem({ referral: await second.code() })).toEqual(ticket("regular"));
+      expect(await referralRows(first)).toEqual([]);
+      expect((await second.referral())[1].friends).toEqual([]);
+      // So does an older account on a browser of its own.
+      const elder = await player("ref-same-elder");
+      const newcomer = await player("ref-same-newcomer");
+      expect(await elder.redeem({ referral: await newcomer.code() })).toEqual(ticket("regular"));
+      expect(await referralRows(elder)).toEqual([]);
     });
 
     it("counts one person once when settlements race, each deciding from its own snapshot", async () => {
       const inviter = await player("ref-racing");
       inviter.found("free");
       const code = await inviter.code();
-      const own = { mailbox: "ref-racing@realms.test", devices: [inviter.device!] };
+      const inviterBrowser = (await inviter.browserId())!;
+      const own = { mailbox: "ref-racing@realms.test", browsers: [inviterBrowser] };
       const store = createCampaignReferralStore(env.DB);
-      const join = async (name: string, options: { email?: string; device?: string | null }) => {
+      const join = async (name: string, options: { email?: string; on?: string }) => {
         const friend = await player(name, options);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         friend.found("campaign", 1);
         return friend;
       };
-      // Shared device: an older read decided to count the later friend, a newer one the earlier; both writes land.
-      const first = await join("ref-racing-a", { device: "0xdef" });
-      const second = await join("ref-racing-b", { device: "0xdef" });
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, deviceKey: "0xdef" }], 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, deviceKey: "0xdef" }], 2);
-      // Shared mailbox: the same race between two aliases of one inbox, on their own devices.
+      // Shared browser: an older read decided to count the later friend, a newer one the earlier; both writes land.
+      const first = await join("ref-racing-a", {});
+      const shared = (await first.browserId())!;
+      const second = await join("ref-racing-b", { on: shared });
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: second.realmsId, browser: shared }], 1);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: first.realmsId, browser: shared }], 2);
+      // Shared mailbox: the same race between two aliases of one inbox, on their own browsers.
       const third = await join("ref-racing-c", { email: "racer@gmail.com" });
       const fourth = await join("ref-racing-d", { email: "ra.cer+alt@gmail.com" });
       await store.markCounted(
         campaign,
         inviter.realmsId,
         own,
-        [{ friend: fourth.realmsId, deviceKey: fourth.device! }],
+        [{ friend: fourth.realmsId, browser: (await fourth.browserId())! }],
         3,
       );
       await store.markCounted(
         campaign,
         inviter.realmsId,
         own,
-        [{ friend: third.realmsId, deviceKey: third.device! }],
+        [{ friend: third.realmsId, browser: (await third.browserId())! }],
         4,
       );
       const counted = await env.DB.prepare(
@@ -1806,46 +1821,41 @@ describe("identity Worker", () => {
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["excluded", "counted", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
       );
-      // Nor does a write for the inviter's own mailbox or device count anyone.
-      const self = await join("ref-racing-self", { device: inviter.device });
-      await store.markCounted(
-        campaign,
-        inviter.realmsId,
-        own,
-        [{ friend: self.realmsId, deviceKey: inviter.device! }],
-        5,
-      );
+      // Nor does a write for the inviter's own mailbox or browser count anyone.
+      const self = await join("ref-racing-self", { on: inviterBrowser });
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: self.realmsId, browser: inviterBrowser }], 5);
       expect((await inviter.referral())[1].link.counted).toBe(2);
     });
 
-    it("compares every device each friend ever approved, not only the one kept, in sequence and when writes race", async () => {
-      const inviter = await player("ref-alldev");
+    it("compares every browser each friend was signed in on, not only the one kept, in sequence and when writes race", async () => {
+      const inviter = await player("ref-allbrowsers");
       inviter.found("free");
       const code = await inviter.code();
-      const own = { mailbox: "ref-alldev@realms.test", devices: [inviter.device!] };
-      const join = async (name: string, devices: string[]) => {
-        const friend = await player(name, { device: devices[0]! });
-        for (const device of devices.slice(1)) await friend.onDevice(device);
+      const own = { mailbox: "ref-allbrowsers@realms.test", browsers: [(await inviter.browserId())!] };
+      const [a1, a2, c1, c2, c3] = Array.from({ length: 5 }, () => crypto.randomUUID());
+      const join = async (name: string, browsers: string[]) => {
+        const friend = await player(name, { on: browsers[0]! });
+        for (const browser of browsers.slice(1)) await friend.signInOn(browser);
         expect(await friend.redeem({ referral: code })).toEqual(ticket("regular"));
         return friend;
       };
-      // In sequence: A approved 0xa1 and 0xa2 and is kept on 0xa1; it counts. B, on 0xa2 alone, qualifies on a later read.
-      const a = await join("ref-alldev-a", ["0xa1", "0xa2"]);
+      // In sequence: A was on a1 and a2 and is kept on a1; it counts. B, on a2 alone, qualifies on a later read.
+      const a = await join("ref-allbrowsers-a", [a1!, a2!]);
       a.found("campaign", 1);
       expect((await inviter.referral())[1].friends.map(({ state }: { state: string }) => state)).toEqual(["counted"]);
-      const b = await join("ref-alldev-b", ["0xa2"]);
+      const b = await join("ref-allbrowsers-b", [a2!]);
       b.found("campaign", 1);
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["counted", "excluded"], { tier: "regular", earned: { ticket: true } }),
       );
-      // Racing writes, the shared 0xc3 neither friend's kept device: the second write counts no one.
+      // Racing writes, the shared c3 neither friend's kept browser: the second write counts no one.
       const store = createCampaignReferralStore(env.DB);
-      const c = await join("ref-alldev-c", ["0xc1", "0xc3"]);
-      const d = await join("ref-alldev-d", ["0xc2", "0xc3"]);
+      const c = await join("ref-allbrowsers-c", [c1!, c3!]);
+      const d = await join("ref-allbrowsers-d", [c2!, c3!]);
       c.found("campaign", 1);
       d.found("campaign", 1);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, deviceKey: "0xc2" }], 10);
-      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, deviceKey: "0xc1" }], 11);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: d.realmsId, browser: c2! }], 10);
+      await store.markCounted(campaign, inviter.realmsId, own, [{ friend: c.realmsId, browser: c1! }], 11);
       expect((await inviter.referral())[1]).toEqual(
         answer("ticket", ["counted", "excluded", "excluded", "counted"], { tier: "regular", earned: { ticket: true } }),
       );
