@@ -503,7 +503,10 @@ it("titles a single roaming Wraith by its species", () => {
   expect(host.querySelector("[data-kit-sheet]")?.getAttribute("aria-label")).toBe("Wraith");
 });
 
-it("explains the daily ruin choice and disables an unfunded attack", () => {
+it.each([
+  [true, "One ruin per depth a day · others here vanish"],
+  [false, "One ruin a day · the rest vanish"],
+] as const)("explains the pinned ruin rule (%s) and disables an unfunded attack", (perDepth, rule) => {
   act(() =>
     root.render(
       <SiteCardView
@@ -515,7 +518,7 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
         pay={null}
         chest={{ tier: 4, lords: 500 }}
         xp={80}
-        ruinChoice={{ depth: "Ethereal II" }}
+        ruinChoice={{ depth: "Ethereal II", perDepth }}
         verb={{ kind: "blocked", reason: "Today's LORDS budget cannot fund this ruin." }}
         onClose={() => {}}
       />,
@@ -523,7 +526,7 @@ it("explains the daily ruin choice and disables an unfunded attack", () => {
   );
   // The ruin's rule is in sight on the card, never only on a hover (owner, 30 October: "the text here could be more
   // explicit !").
-  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe("Ethereal II · One ruin a day · the rest vanish");
+  expect(host.querySelector("[data-ruin-rule]")!.textContent).toBe(`Ethereal II · ${rule}`);
   expect(host.querySelector("[data-ruin-rule] [data-tip]")).toBeNull();
   expect(host.textContent).toContain("Today's LORDS budget cannot fund this ruin.");
   const attack = [...host.querySelectorAll<HTMLButtonElement>("button")].find(

@@ -179,6 +179,7 @@ const installOnce = async (makeScenario: () => LabScenario, startedAt: number): 
     (served) => record.scopes.push(served),
   );
   answerDirectory(
+    chain,
     now,
     (url) => answerHeraldRead(url, scenario, chain, now, herald.confirmedBlock()),
     () => playerState(chain, scenario.player),
@@ -243,6 +244,7 @@ const playerState = (chain: NativeFactStore, player: string) => {
 };
 
 const answerDirectory = (
+  chain: NativeFactStore,
   now: () => number,
   read: (url: URL) => unknown,
   playerStateNow: () => ReturnType<typeof playerState>,
@@ -252,7 +254,11 @@ const answerDirectory = (
   const manifest = {
     version: 1,
     chainId: LAB_GAME.chainId,
-    releaseSchemas: { "3": nativeFactSchemaIdentity },
+    releaseSchemas: Object.fromEntries(
+      [...chain.rows("GameRelease")].flatMap((row) =>
+        [row.created_release_id, row.release_id].map((release) => [String(release), nativeFactSchemaIdentity]),
+      ),
+    ),
     rpcUrl: LAB_SHARD_RPC,
     accountClassHash: LAB_ACCOUNT_CLASS,
     contracts: { games: "0x1ab" },

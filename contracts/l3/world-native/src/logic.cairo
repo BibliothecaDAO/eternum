@@ -42,6 +42,7 @@ pub mod relics_domain;
 pub mod research;
 pub mod resources;
 pub mod resources_domain;
+pub mod ruins;
 pub mod season;
 pub mod settlement;
 pub mod settlement_domain;

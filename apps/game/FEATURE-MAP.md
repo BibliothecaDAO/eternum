@@ -31,9 +31,9 @@ Next-season research: `/lab/data?mode=frontier&view=balance` (Data → Balance &
 S2 6k / 18k / 40k / 80k bases with +50% per purchase; each production side has its own four upgrades and prices; beasts
 pay one labor per four initial guards. Training construction costs 12,000 Essence + 3,000 Labor and grants Uncommon II.
 `scripts/frontier/prove-research-balance.playwright.js` drives the local plans and captures both sizes. The ruin card
-(`/lab/kit/hud/site-ruin`) states its exact LORDS and its rule in sight, in one short line ("One ruin a day · the rest
-vanish"). `scripts/frontier/prove-research-balance.playwright.js` also captures it and `/lab/kit/hud/build-training`;
-all views use local fixtures and send no game commands.
+(`/lab/kit/hud/site-ruin`) states its exact LORDS and its rule in sight, in one short line ("One ruin per depth a day ·
+others here vanish"). `scripts/frontier/prove-research-balance.playwright.js` also captures it and
+`/lab/kit/hud/build-training`; all views use local fixtures and send no game commands.
 
 Frontier exploration has a 1/10,000 chance per newly revealed surface tile to find a funded reward chest. Select its
 labelled map tile; an adjacent own living army can Open it. The panel shows its reserved common-share LORDS amount and

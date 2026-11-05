@@ -125,7 +125,19 @@ fn credit_cancel_rotation_and_season_sweep_have_one_irreversible_outcome() {
 
 #[test]
 fn purchased_refill_changes_stamina_without_reward_issuance_or_withdrawable_resources() {
+    assert_purchased_refill_isolated(false);
+}
+
+#[test]
+fn purchased_refill_remains_isolated_with_per_depth_ruins() {
+    assert_purchased_refill_isolated(true);
+}
+
+fn assert_purchased_refill_isolated(per_depth_ruins: bool) {
     let (d, game_id, key_army) = super::registrar::setup_frontier_chests();
+    if per_depth_ruins {
+        super::registrar::apply_ruin_depth_release(d, game_id);
+    }
     let army = GameState { contract_address: d.games }.resolved_explorer(key_army).unwrap();
     let mut tired = army.troops;
     let mut bar = tired.stamina.inline();

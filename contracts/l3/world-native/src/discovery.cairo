@@ -68,7 +68,7 @@ fn hyperstructure_weight(config: MapConfig, distance: u128, hyperstructures: u32
 
 // All Scouting tiers on one kind double its base rate: reserve the largest increase among the three choices.
 pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
-    // The floor must find something on a day whose ruin is already taken.
+    // The floor must find something on a depth whose daily ruin is already taken.
     let guarded: u32 = Into::<u16, u32>::into(rules.beasts_bps) + rules.camp_bps.into() + rules.rift_bps.into();
     assert!(guarded != 0 && rules.empty_reveal_limit != 0, "empty discovery floor");
     let sanctuaries: u32 = Into::<u16, u32>::into(rules.shrine_bps) + rules.well_bps.into();
@@ -80,7 +80,8 @@ pub fn validate_frontier(rules: crate::expeditions::FrontierDiscoveryRules) {
 }
 
 // One categorical draw per reveal. After `empty_reveal_limit` empty reveals in a row the draw covers only the kinds
-// still allowed. Ruins remain eligible until the realm clears one; discovery never reserves their payout.
+// still allowed. Ruins remain eligible until the realm clears one at that depth today; discovery never reserves their
+// payout.
 pub fn frontier(
     rules: crate::expeditions::FrontierDiscoveryRules,
     camp_bonus_bps: u32,

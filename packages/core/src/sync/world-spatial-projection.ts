@@ -591,7 +591,9 @@ export class WorldSpatialProjection {
     if (
       changes.some(
         (change) =>
-          change.model === "ExpeditionDiscovery" && change.current?.ruin_cleared !== change.previous?.ruin_cleared,
+          (change.model === "ExpeditionSite" && change.current?.clear !== change.previous?.clear) ||
+          (change.model === "ExpeditionDiscovery" && change.current?.ruin_cleared !== change.previous?.ruin_cleared) ||
+          (change.model === "GameRelease" && change.current?.release_id !== change.previous?.release_id),
       )
     ) {
       for (const [key, occupancy] of this.store.entries("TileOccupancy")) {

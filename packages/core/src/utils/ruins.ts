@@ -1,20 +1,40 @@
 import { dayOf } from "./days";
 import type { NativeFactStore } from "../client/native-fact-store";
-import type { NativeKeys, NativeRows } from "../../../../contracts/l3/world-native/schema/client.gen";
+import {
+  nativeReleaseConstants,
+  type NativeKeys,
+  type NativeRows,
+} from "../../../../contracts/l3/world-native/schema/client.gen";
 import { StructureType, TileOccupier } from "@bibliothecadao/types";
 import { entityHomeNamespace } from "./entity-home";
 
 type RuinReader = Pick<NativeFactStore, "get" | "inGame">;
 
-/** A clear closes all other ruins in its home namespace and map day; stored receipts remain visible. */
+export function ruinLimitPerDepth(store: Pick<RuinReader, "get">, gameId: number): boolean {
+  const release = store.get("GameRelease", { game_id: gameId });
+  if (!release) throw new Error("A ruin requires its game release");
+  return release.release_id >= nativeReleaseConstants.RUIN_DEPTH_LIMIT_RELEASE;
+}
+
+/** A clear closes other ruins at the same depth in its home namespace and map day; stored receipts remain visible. */
 export function ruinDisappeared(store: RuinReader, site: NativeRows["ExpeditionSite"]): boolean {
   if (site.category !== StructureType.Ruin || site.clear) return false;
   const spacing = store.get("SettlementRules", { game_id: site.game_id })?.spacing;
   if (!spacing) throw new Error("A ruin requires its expedition spacing");
-  const day = Math.floor(site.row / spacing / 4);
+  const region = Math.floor(site.row / spacing);
   const home = entityHomeNamespace(site.entity_id);
-  return [...store.inGame("ExpeditionDiscovery", site.game_id)].some(
-    (row) => row.epoch === BigInt(day) && entityHomeNamespace(row.structure_id) === home && row.ruin_cleared,
+  if (!ruinLimitPerDepth(store, site.game_id)) {
+    const day = BigInt(Math.floor(region / 4));
+    return [...store.inGame("ExpeditionDiscovery", site.game_id)].some(
+      (row) => row.epoch === day && entityHomeNamespace(row.structure_id) === home && row.ruin_cleared,
+    );
+  }
+  return [...store.inGame("ExpeditionSite", site.game_id)].some(
+    (row) =>
+      row.category === StructureType.Ruin &&
+      row.clear !== null &&
+      entityHomeNamespace(row.clear.home_id) === home &&
+      Math.floor(row.row / spacing) === region,
   );
 }
 

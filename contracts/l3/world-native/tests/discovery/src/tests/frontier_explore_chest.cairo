@@ -135,9 +135,32 @@ fn no_pool_or_a_fully_reserved_pool_does_not_create_an_unfunded_chest() {
     }
 }
 
-#[test]
-fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_the_drop() {
+#[test_case(name: "legacy_global", false)]
+#[test_case(name: "per_depth_mask", true)]
+fn the_frozen_daily_price_is_shared_and_a_previous_ruin_and_floor_do_not_block_the_drop(per_depth: bool) {
     let (d, game_id, key) = super::registrar::setup_frontier_chests();
+    if per_depth {
+        super::registrar::apply_ruin_depth_release(d, game_id);
+        let army = super::registrar::strong_frontier_army(d, game_id, key);
+        let ruin = super::registrar::place_ruin(d, game_id, neighbor(army.coord, 1), super::registrar::CHEST);
+        assert!(
+            super::resource_commands::execute_in_game(
+                d,
+                game_id,
+                Command::BattleGuard(
+                    crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id },
+                ),
+                360,
+            ),
+        );
+        assert_eq!(
+            snforge_std::interact_with_state(
+                d.games, || crate::state::read().map_rules.cleared_ruin_depths.read((game_id, 1, 0)),
+            ),
+            1,
+        );
+        super::resource_commands::set_explorer_fixture(d.games, key, army);
+    }
     let coord = destination(d, key);
     snforge_std::interact_with_state(
         d.games,

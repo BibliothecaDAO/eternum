@@ -48,6 +48,11 @@ Resolve conflicts in YOUR files only If conflict is in a file you didn't modify,
 
 ## Playtest: the one command that proves client work
 
+| Rule                                                                                                                                           | Enforcement                                                                                                                 |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| An already-playing lab scenario supplies its linked wallet when onboarding is outside its proof; missing-wallet scenarios retain wallet setup. | `src/lab/game/lab-chain-wallet.test.tsx` renders the real connection window, including its portal, for both fixture states. |
+| Playing lab scenarios seed discovery facts before an action and preserve native payout units.                                                  | `src/lab/game/ruin-fight-scenario.test.ts` checks the funded card before attack and exact chest/pool/balance afterward.     |
+
 `pnpm --dir apps/game playtest --port <your port>` builds the client as players get it (`vite build` into its own
 `.context/playtest-builds/<run>` directory), serves it with `vite preview` on that port, plays the newest live game of
 its steps' mode (Frontier by default) in a browser on the machine's GPU (Vulkan; headless Chrome would otherwise render

@@ -63,7 +63,7 @@ pub mod LordsState {
             let context = crate::commands::execution_context(game_id, context);
             crate::game::assert_playing(context.game.unbox(), context.timestamp);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let maximum = crate::progression::stamina_max(
                 crate::logic::progression::require(key),

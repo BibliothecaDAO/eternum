@@ -107,6 +107,7 @@ export const HUD_WORDS = {
   close: "Close",
   chat: "Chat",
   realmLabor: "Realm Labor",
+  ruinRule: "One ruin per depth a day · others here vanish",
 };
 
 // A game's card on Play takes its step by the verb's name (`data-play-verb`, src/shell/play/play-item.tsx).
@@ -4054,6 +4055,7 @@ const FIGHT_STATE = `JSON.stringify({
   army: window.__eternumMapSelection?.army ?? null,
   sheet: document.querySelector("[data-kit-sheet]")?.getAttribute("aria-label") ?? null,
   buttons: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].map((button) => button.textContent.trim()),
+  ruinRule: document.querySelector("[data-ruin-rule] .text-hud-ink")?.textContent ?? null,
   attackHeld: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll("button") ?? [])].every((button) => !button.textContent.trim().startsWith("Attack") || button.disabled),
   sides: [...(document.querySelector("[data-kit-sheet]")?.querySelectorAll('[role="img"][aria-label*="→"]') ?? [])].map((side) => side.getAttribute("aria-label")),
   sent: (window.__labChain?.sent ?? []).map(({ command }) => command.kind),
@@ -4160,6 +4162,7 @@ function farCardForecasts({ played }) {
 
 function fightCardOpenedCameraStill({ played }) {
   const { before, after } = played;
+  if (after.ruinRule !== HUD_WORDS.ruinRule) return failed("the ruin card shows another daily rule", played);
   if (!before.ruinToken) return failed("the map draws no token for the ruin", played);
   if (!onADesktop() && !underTheCard(before.ruinToken))
     return failed("the ruin could not be panned under where its card opens", played);

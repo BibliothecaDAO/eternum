@@ -84,8 +84,8 @@ pub mod ResourcesLogic {
                 None
             };
             self.resources.destroy(key);
-            crate::logic::expeditions::clear_site(
-                key, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward },
+            crate::logic::expeditions::clear_rewarded_site(
+                key, site, crate::expeditions::SiteClear { explorer_id: explorer.explorer_id, home_id, reward }, depth,
             );
             crate::progression::IArmyProgressionDispatcherTrait::grant_army_xp(
                 crate::progression::IArmyProgressionLibraryDispatcher {
@@ -94,18 +94,6 @@ pub mod ResourcesLogic {
                 explorer,
                 crate::progression::XpAward::Clear(crate::progression::clear_xp(site.initial_guard_count, depth)),
             );
-            if category == crate::taxonomy::RUIN_CATEGORY {
-                crate::logic::expeditions::close_ruins(
-                    crate::expeditions::ExpeditionDiscoveryKey {
-                        game_id: key.game_id,
-                        structure_id: home_id,
-                        epoch: crate::expeditions::region_day(
-                            crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
-                            crate::logic::settlement::rules(key.game_id).spacing,
-                        ),
-                    },
-                );
-            }
             let actor = crate::logic::structures::structure(home).expect('missing home structure').owner;
             crate::logic::stories::emit_entity_story(
                 key,
@@ -360,8 +348,8 @@ pub mod ResourcesLogic {
             let context = crate::commands::execution_context(game_id, context);
 
             self.assert_resource_command(game_id, context.timestamp, context);
-            let explorer = crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor, context.timestamp, context,
+            let explorer = crate::logic::troops::command_explorer(
+                ExplorerKey { game_id, explorer_id: command.from_entity_id }, Some(actor), context.timestamp, context,
             );
             let structure = crate::logic::structures::structure(
                 ResourceKey { game_id, entity_id: command.to_entity_id },
@@ -469,11 +457,11 @@ pub mod ResourcesLogic {
 
             self.assert_resource_command(game_id, context.timestamp, context);
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing explorer id");
-            let from = crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.from_entity_id }, actor, context.timestamp, context,
+            let from = crate::logic::troops::command_explorer(
+                ExplorerKey { game_id, explorer_id: command.from_entity_id }, Some(actor), context.timestamp, context,
             );
-            let to = crate::logic::troops::active_explorer(
-                ExplorerKey { game_id, explorer_id: command.to_entity_id }, context.timestamp, context,
+            let to = crate::logic::troops::command_explorer(
+                ExplorerKey { game_id, explorer_id: command.to_entity_id }, None, context.timestamp, context,
             );
             assert!(to.owner != 0, "recipient explorer has no owner");
             assert!(crate::geometry::adjacent(from.coord, to.coord), "explorers are not adjacent");
@@ -493,8 +481,8 @@ pub mod ResourcesLogic {
             assert!(command.from_entity_id != 0 && command.to_entity_id != 0, "missing transfer entity");
             let from_key = ResourceKey { game_id, entity_id: command.from_entity_id };
             assert!(crate::logic::structures::owner(from_key) == actor, "actor does not own structure");
-            let to = crate::logic::troops::active_explorer(
-                ExplorerKey { game_id, explorer_id: command.to_entity_id }, context.timestamp, context,
+            let to = crate::logic::troops::command_explorer(
+                ExplorerKey { game_id, explorer_id: command.to_entity_id }, None, context.timestamp, context,
             );
             assert!(
                 crate::geometry::adjacent(crate::structures::structure_coord(from_key), to.coord),
