@@ -1,5 +1,5 @@
 import { encodeChainName, environmentL2 } from "@realms-world/chain";
-import { readdirSync, readFileSync, mkdtempSync, writeFileSync, rmSync } from "node:fs";
+import { readdirSync, readFileSync, mkdtempSync, rmSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { tmpdir } from "node:os";
@@ -13,7 +13,6 @@ import {
 import { botRealmsId, deviceChangeHash, realmsAccountAddress } from "@realms-world/identity/account";
 import { createGuardian } from "@realms-world/guardian";
 import { byteArray, CallData, ec, hash, outsideExecution, typedData, type TypedData } from "starknet";
-import { getPlatformProxy } from "wrangler";
 import { afterAll, beforeAll, describe, expect, it, onTestFinished, vi } from "vitest";
 
 import { Effect } from "effect";
@@ -35,13 +34,15 @@ import { campaignTicketFor } from "./campaign-ticket-store";
 import { createCampaignReferralStore } from "./campaign-referral-store";
 import { accountKey } from "./campaign-entry";
 import { ORIGIN } from "./workerd-harness";
+import { createTestD1 } from "./test-d1";
 import { sendCampaign, stillFits, visitRecord } from "../scripts/comeback-campaign";
 
 const GUARDIAN_KEY = "0x2dccce1da22003777062ee0870e9881b460a8b7eca276870f57c601f182136c";
 const CHAIN_ID = "0x5245414c4d535f53484152445f41";
 
-const storageDirectory = mkdtempSync(join(tmpdir(), "identity-platform-"));
-let proxy: Awaited<ReturnType<typeof getPlatformProxy<{ DB: D1Database }>>>;
+let database: ReturnType<typeof createTestD1>;
+/** A cache that keeps nothing, so every directory read in these tests is fresh. */
+const noCache = { match: async () => undefined, put: async () => undefined } as unknown as Cache;
 const OPERATOR_TOKEN = "operator-test-token";
 
 /** The Heralds this test's shards answer from, by URL; a missing entry answers 503, and STALLED never answers. */
@@ -113,17 +114,7 @@ const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, a
 });
 
 beforeAll(async () => {
-  vi.stubEnv("TMPDIR", storageDirectory);
-  const configPath = join(storageDirectory, "wrangler.json");
-  writeFileSync(
-    configPath,
-    JSON.stringify({
-      name: "identity-route-storage",
-      compatibility_date: "2026-07-30",
-      d1_databases: [{ binding: "DB", database_name: "identity", database_id: "00000000-0000-0000-0000-000000000000" }],
-    }),
-  );
-  proxy = await getPlatformProxy<{ DB: D1Database }>({ configPath, persist: false });
+  database = createTestD1();
   const migrations = new URL("../migrations/", import.meta.url);
   const statements = readdirSync(migrations)
     .sort()
@@ -133,7 +124,7 @@ beforeAll(async () => {
     .split(";")
     .map((statement) => statement.trim())
     .filter(Boolean);
-  await proxy.env.DB.batch(statements.map((statement) => proxy.env.DB.prepare(statement)));
+  await database.db.batch(statements.map((statement) => database.db.prepare(statement)));
   env = {
     ENVIRONMENT: "staging",
     BASE_URL: ORIGIN,
@@ -150,7 +141,7 @@ beforeAll(async () => {
     SHARD_NOTIFIER: {} as IdentityEnv["SHARD_NOTIFIER"],
     CHAT_ROOM: {} as IdentityEnv["CHAT_ROOM"],
     CHAT_INBOX: {} as IdentityEnv["CHAT_INBOX"],
-    DB: proxy.env.DB,
+    DB: database.db,
     GUARDIAN: createGuardian(GUARDIAN_KEY),
     LAUNCH: { fetch: vi.fn(async () => Response.json({ chains: [] })) },
     VALUE_RELAY: { fetch: relay },
@@ -169,14 +160,7 @@ beforeAll(async () => {
   });
 }, 60_000);
 
-afterAll(async () => {
-  try {
-    await proxy?.dispose();
-  } finally {
-    vi.unstubAllEnvs();
-    rmSync(storageDirectory, { recursive: true, force: true });
-  }
-});
+afterAll(() => database?.close());
 
 /** A shard manifest under our guardian and account class, the only kind our directory lists. */
 const shardManifest = (chainId: string) => ({
@@ -206,7 +190,7 @@ const createBrowser = (parentDomainCookies: string[] = []) => {
       env,
       auth,
       {
-        cache: proxy.caches.default as unknown as Cache,
+        cache: noCache,
         fetchShard,
         readLaunchDirectory: async () => launchDirectory,
       },
@@ -356,7 +340,7 @@ const handoffCodeOf = (page: string) => /class="code">(\d{6})</.exec(page)?.[1] 
 const otherCode = (code: string) => String((Number(code) + 1) % 1_000_000).padStart(6, "0");
 
 const userCount = async () =>
-  ((await proxy.env.DB.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
+  ((await database.db.prepare('SELECT count(*) AS n FROM "user"').first()) as { n: number }).n;
 
 const deviceChangeFor = (realmsId: string, overrides: Partial<{ account: string; counter: number }> = {}) => ({
   chainId: CHAIN_ID,
@@ -387,11 +371,12 @@ describe("identity Worker", () => {
     const now = () => Math.floor(Date.now() / 1000);
     const lastSeen = async (realmsId: string) =>
       visitRecord.seconds(
-        ((await proxy.env.DB.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
+        ((await database.db.prepare(visitRecord.lastVisit(realmsId)).first()) as { lastSeenAt?: unknown } | null)
           ?.lastSeenAt,
       );
     const setLastSeen = (realmsId: string, seconds: number) =>
-      proxy.env.DB.prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
+      database.db
+        .prepare('UPDATE "user" SET "lastSeenAt" = ? WHERE "realmsId" = ?')
         .bind(seconds * 1000, realmsId)
         .run();
     /** The sender's own read and rule: a founded Devcon player, no confirmed action, the record long begun. */
@@ -408,9 +393,8 @@ describe("identity Worker", () => {
     await researcher.session();
     expect((await researcher.request("/api/auth/sign-out", { body: {} })).status).toBe(200);
     expect(await researcher.session()).toBeNull();
-    const sessionsLeft = await proxy.env.DB.prepare(
-      'SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?',
-    )
+    const sessionsLeft = await database.db
+      .prepare('SELECT count(*) AS n FROM "session" s JOIN "user" u ON u.id = s."userId" WHERE u."realmsId" = ?')
       .bind(realmsId)
       .first<{ n: number }>();
     expect(sessionsLeft?.n).toBe(0);
@@ -528,7 +512,8 @@ describe("identity Worker", () => {
     expect((await signIn("wrong@realms.test", wrongCode)).status).toBe(400);
 
     await ask("late@realms.test");
-    await proxy.env.DB.prepare('UPDATE "verification" SET "expiresAt" = ? WHERE "identifier" LIKE ?')
+    await database.db
+      .prepare('UPDATE "verification" SET "expiresAt" = ? WHERE "identifier" LIKE ?')
       .bind(new Date(Date.now() - 1_000).toISOString(), "%late@realms.test")
       .run();
     expect((await signIn("late@realms.test", sentCodes.get("late@realms.test"))).status).toBe(400);
@@ -612,9 +597,8 @@ describe("identity Worker", () => {
       const owner = createBrowser();
       expect((await signInWithCode(owner, "owner@realms.test")).status).toBe(200);
       const account = (await owner.session())!.user;
-      const discordRows = await proxy.env.DB.prepare(
-        `SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`,
-      )
+      const discordRows = await database.db
+        .prepare(`SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = 'discord'`)
         .bind(account.id)
         .first<{ n: number }>();
       expect(discordRows?.n).toBe(0);
@@ -722,9 +706,8 @@ describe("identity Worker", () => {
       expect(claims.filter((claim) => claim.status === 200).length).toBeLessThanOrEqual(1);
       // Taken, or out of tries: either way no live hold is left to take, and a late try does not make one.
       await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
-      const live = await proxy.env.DB.prepare(
-        "SELECT count(*) AS n FROM discord_handoffs WHERE code_hash = ?1 AND attempts < 3",
-      )
+      const live = await database.db
+        .prepare("SELECT count(*) AS n FROM discord_handoffs WHERE code_hash = ?1 AND attempts < 3")
         .bind(createHash("sha256").update(code).digest("hex"))
         .first<{ n: number }>();
       expect(live?.n).toBe(0);
@@ -741,7 +724,8 @@ describe("identity Worker", () => {
       const profile = { id: "80351110224670006", username: "clock", email: "clock@discord.test", verified: true };
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const hold = () =>
-        proxy.env.DB.prepare("SELECT attempts, expires_at FROM discord_handoffs WHERE code_hash = ?1")
+        database.db
+          .prepare("SELECT attempts, expires_at FROM discord_handoffs WHERE code_hash = ?1")
           .bind(createHash("sha256").update(code).digest("hex"))
           .first<{ attempts: number; expires_at: number }>();
       const before = await hold();
@@ -777,7 +761,7 @@ describe("identity Worker", () => {
     await signInWithCode(browser, "unverified@realms.test");
     const user = (await browser.session())!.user;
     // An account from before Discord and email codes were the only ways in.
-    await proxy.env.DB.prepare('UPDATE "user" SET "emailVerified" = 0 WHERE "id" = ?').bind(user.id).run();
+    await database.db.prepare('UPDATE "user" SET "emailVerified" = 0 WHERE "id" = ?').bind(user.id).run();
     const refused = await browser.request("/api/devices", { body: deviceChangeFor(user.realmsId) });
     expect(refused.status).toBe(403);
     expect(await refused.json()).toEqual({ error: "account_not_secured" });
