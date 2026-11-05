@@ -39,6 +39,7 @@ const NAMED_REFUSALS: Record<string, string> = {
   PASSKEY_INVALID: "That passkey cannot hold a wallet. Try again on this device.",
   // Only a recovery step is sponsored; sends pay their own fee and never meet it.
   SPONSOR_UNAVAILABLE: "Recovery opens soon. Your LORDS stay safe in your wallet.",
+  SPONSOR_CAP_REACHED: "This wallet has used today's recovery steps. Try again tomorrow.",
   PAYMASTER_REFUSED: "The network did not take it. Check your wallet holds enough LORDS for it and its fee.",
   RECOVERY_UNDER_WAY: "A recovery is already under way on this wallet.",
   // Never "not sent": the paymaster's answer was lost, and it may have gone through.

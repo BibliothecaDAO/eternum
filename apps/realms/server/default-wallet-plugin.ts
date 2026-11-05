@@ -18,7 +18,15 @@ import { PaymasterRefusedError, walletExecutionOf } from "./paymaster";
 import type { BuiltExecution, GasPayer, Paymaster } from "./paymaster";
 import { changeWallet, deliverWalletNotices, linkFirstWallet, spendSignInCode } from "./wallet-changes";
 import type { SendWalletNotice } from "./wallet-changes";
-import { RecoveryNotSentError, RecoveryUnderWayError, startRecovery } from "./wallet-recovery";
+import {
+  freeSponsoredSteps,
+  RecoveryNotSentError,
+  RecoveryUnderWayError,
+  releaseSponsoredStep,
+  reserveSponsoredStep,
+  SponsoredStepsSpentError,
+  startRecovery,
+} from "./wallet-recovery";
 import type { WalletEscape } from "@realms-world/identity/wallet";
 
 interface DefaultWalletOptions {
@@ -78,9 +86,9 @@ const CANCEL_SELECTOR = BigInt(hash.getSelectorFromName(WALLET_RECOVERY.cancel))
  * The default wallet: a Ready 0.5 account owned by a passkey the player makes on this app, with the Realms guardian as
  * its guardian. Making it writes it as the account's payout wallet through the same rows a linked wallet uses. Sending
  * from it goes through the paymaster: it builds the outside execution, the passkey signs it in the browser, the
- * guardian co-signs it here, and the paymaster submits it. A send pays its own fee in LORDS; a recovery's cancel, the
- * one call to the wallet itself allowed, is sponsored (gasPayerOf). A lost passkey's recovery starts here with the
- * emailed code (wallet-recovery.ts), sponsored too.
+ * guardian co-signs it here, and the paymaster submits it. A send pays its own fee in LORDS, uncapped; a recovery's
+ * cancel, the one call to the wallet itself allowed, is sponsored (gasPayerOf), on one of the account's sponsored steps
+ * for the day. A lost passkey's recovery starts here with the emailed code (wallet-recovery.ts), sponsored too.
  */
 export const defaultWallet = (options: DefaultWalletOptions) => {
   const { origin, hostname: rpId } = new URL(options.origin);
@@ -219,6 +227,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
             })),
           );
           requirePayer(payer);
+          if (payer === "sponsor" && (await freeSponsoredSteps(options.db, realmsIdOf(ctx))) < 1) throw stepsSpent();
           try {
             return ctx.json(
               await options.paymaster.build(row.address, ctx.body.calls, await pendingDeployment(row), payer),
@@ -233,13 +242,22 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
         "/wallet/default/execute",
         { method: "POST", body: ExecuteBody, use: [sessionMiddleware] },
         async (ctx) => {
+          const realmsId = realmsIdOf(ctx);
           const row = await requireWallet(ctx);
           const typedData = ctx.body.typedData as unknown as BuiltExecution;
           const execution = walletExecutionOf(typedData, options.chainId);
           if (!execution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
           const payer = gasPayerOf(row, execution.calls);
           requirePayer(payer);
-          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch((error: unknown) => {
+          // A sponsored step (the cancel) takes one of the day's steps; a resubmission of the same execution holds it.
+          const step =
+            payer === "sponsor" ? await reserveSponsoredStep(options.db, realmsId, execution.nonce, 0) : null;
+          if (step === "spent") throw stepsSpent();
+          // Only the request that took the step may give it back: a resubmission's refusal says nothing of the first.
+          const giveBack = () =>
+            step === "taken" ? releaseSponsoredStep(options.db, realmsId, execution.nonce) : Promise.resolve();
+          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch(async (error: unknown) => {
+            await giveBack();
             throw refused("default_wallet_cosign_failed", error);
           });
           try {
@@ -249,6 +267,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
             });
           } catch (error) {
             if (!(error instanceof PaymasterRefusedError)) throw uncertain(error);
+            await giveBack();
             throw refused("default_wallet_execute_refused", error);
           }
         },
@@ -272,6 +291,7 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
           } catch (error) {
             if (error instanceof RecoveryUnderWayError)
               throw new APIError("CONFLICT", { message: "RECOVERY_UNDER_WAY" });
+            if (error instanceof SponsoredStepsSpentError) throw stepsSpent();
             if (error instanceof APIError) throw error;
             if (error instanceof RecoveryNotSentError) throw refused("wallet_recovery_start_refused", error);
             throw uncertain(error);
@@ -292,7 +312,10 @@ const publicKeyXOf = (spki: string): string => {
   }
 };
 
-/** Proven never sent: the paymaster (or the guardian) refused, so nothing reached the chain. */
+/** The account has used today's sponsored recovery steps (wallet-recovery.ts): the step waits for the next UTC day. */
+const stepsSpent = () => new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
+
+/** Proven never sent: the paymaster (or the guardian) refused, so nothing reached the chain; a step taken is given back. */
 const refused = (event: string, error: unknown) => {
   console.error(event, { error: error instanceof Error ? error.message : error });
   return new APIError("BAD_GATEWAY", { message: "PAYMASTER_REFUSED" });

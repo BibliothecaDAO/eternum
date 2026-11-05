@@ -3077,6 +3077,176 @@ describe("default wallet", () => {
       });
     };
 
+    /** The sponsored recovery steps an account has taken today. */
+    const sponsoredSteps = async (realmsId: string) =>
+      (
+        await env.DB.prepare("SELECT COUNT(*) AS steps FROM sponsored_executions WHERE realms_id = ? AND day = ?")
+          .bind(realmsId, new Date().toISOString().slice(0, 10))
+          .first<{ steps: number }>()
+      )?.steps;
+    /** The next UTC day for this account: today's steps become yesterday's. */
+    const nextDay = (realmsId: string) =>
+      env.DB.prepare("UPDATE sponsored_executions SET day = '2000-01-01' WHERE realms_id = ?").bind(realmsId).run();
+    const none = { status: "none", readyAt: null, newOwner: null } as const;
+    const cancelOf = (wallet: string) => ({ contractAddress: wallet, entrypoint: "cancel_escape", calldata: [] });
+    /** The owner's passkey cancels the standing escape through the send path, its paymaster answering `execute`. */
+    const cancelEscape = async (
+      browser: ReturnType<typeof createBrowser>,
+      wallet: string,
+      nonce: string,
+      execute: () => Promise<string> = async () => `0xc${nonce.slice(2)}`,
+    ) => {
+      paymaster.execute.mockImplementationOnce(execute);
+      return browser.request("/api/auth/wallet/default/execute", {
+        body: { typedData: executionFor([cancelOf(wallet)], nonce), ownerSignature: ["0x4"] },
+      });
+    };
+
+    it("bounds a start and cancel loop to the account's sponsored steps for the day, across code windows and cron cleanups", async () => {
+      resetPaymaster();
+      const { browser, wallet } = await withWallet();
+      const { user } = (await browser.session())!;
+      isDeployed.mockResolvedValue(true);
+      try {
+        const sponsored = () => paymaster.execute.mock.calls.filter((call) => call[4] === "sponsor").length;
+        // The first cycle: a start, its cancel, and the cron forgetting the canceled attempt.
+        readEscape.mockResolvedValue(none);
+        const first = makePasskey();
+        paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, first)], "0x101")));
+        paymaster.execute.mockResolvedValueOnce("0x201");
+        expect((await recover(browser, first, await walletCode(browser))).status).toBe(200);
+        expect((await cancelEscape(browser, wallet.address, "0x401")).status).toBe(200);
+        await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+        expect(await recoveryRow(user.realmsId)).toBeNull();
+        expect(await sponsoredSteps(user.realmsId)).toBe(2);
+        // Three more cycles, each in a new code window after the cron's cleanup: every start is refused for the day,
+        // before its code is spent or anything is built, signed or sponsored.
+        for (const round of [2, 3, 4]) {
+          paymaster.build.mockClear();
+          const again = makePasskey();
+          const refused = await recover(browser, again, await walletCode(browser));
+          expect(refused.status).toBe(429);
+          expect(((await refused.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+          expect(paymaster.build).not.toHaveBeenCalled();
+          expect(await recoveryRow(user.realmsId)).toBeNull();
+          await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+          expect(round).toBeGreaterThan(1);
+        }
+        expect(sponsored()).toBe(2);
+        expect(await sponsoredSteps(user.realmsId)).toBe(2);
+        // The next UTC day the account may start again.
+        await nextDay(user.realmsId);
+        resetPaymaster();
+        const later = makePasskey();
+        paymaster.build.mockResolvedValueOnce(built(executionFor([escapeStart(wallet.address, later)], "0x105")));
+        paymaster.execute.mockResolvedValueOnce("0x205");
+        expect((await recover(browser, later, await walletCode(browser))).status).toBe(200);
+        expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      } finally {
+        readEscape.mockResolvedValue(none);
+        isDeployed.mockResolvedValue(false);
+        resetPaymaster();
+      }
+    });
+
+    it("keeps a step free for the owner's cancel: a start that would leave none is refused, the cancel goes through", async () => {
+      resetPaymaster();
+      const { realmsId, wallet, browser } = await startedRecovery();
+      // The start took one step; a second sponsored step (an earlier finish, say) leaves one, for the cancel.
+      await env.DB.prepare("INSERT INTO sponsored_executions (realms_id, nonce, day) VALUES (?, '0xearlier', ?)")
+        .bind(realmsId, new Date().toISOString().slice(0, 10))
+        .run();
+      // Another start would take the last step and leave the owner no cancel: refused before its code is spent.
+      paymaster.build.mockClear();
+      const start = await recover(browser, makePasskey(), await walletCode(browser));
+      expect(((await start.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect((await cancelEscape(browser, wallet.address, "0x4c1")).status).toBe(200);
+      expect(await sponsoredSteps(realmsId)).toBe(3);
+      // All three spent: another cancel's build and send are refused before any paymaster call.
+      paymaster.build.mockClear();
+      paymaster.execute.mockClear();
+      const build = await browser.request("/api/auth/wallet/default/build", {
+        body: { calls: [cancelOf(wallet.address)] },
+      });
+      expect(build.status).toBe(429);
+      const send = await cancelEscape(browser, wallet.address, "0x4c2");
+      expect(((await send.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      resetPaymaster();
+    });
+
+    it("gives a cancel's step back only when the paymaster proves it unsent; a lost answer keeps it, and its resubmission takes no other", async () => {
+      resetPaymaster();
+      const { browser, wallet, user } = await withWallet().then(async (made) => ({
+        ...made,
+        user: (await made.browser.session())!.user,
+      }));
+      const refused = await cancelEscape(browser, wallet.address, "0x4d1", async () => {
+        throw new PaymasterRefusedError("argent/invalid-escape");
+      });
+      expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
+      expect(await sponsoredSteps(user.realmsId)).toBe(0);
+      const lost = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
+        throw new TypeError("fetch failed");
+      });
+      expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
+      expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      // The same signed cancel again: it holds its step, and a refusal of this resubmission gives nothing back.
+      const resubmitted = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
+        throw new PaymasterRefusedError("duplicated outside nonce");
+      });
+      expect(resubmitted.status).toBe(502);
+      expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      resetPaymaster();
+    });
+
+    it("counts no wallet-paid send: after many sends the account still has its sponsored steps", async () => {
+      resetPaymaster();
+      const { browser, user } = await withWallet().then(async (made) => ({
+        ...made,
+        user: (await made.browser.session())!.user,
+      }));
+      paymaster.execute.mockResolvedValue("0xpaid");
+      for (let send = 0; send < 5; send += 1) {
+        const sent = await browser.request("/api/auth/wallet/default/execute", {
+          body: { typedData: executionFor([transfer], `0x${(0x500 + send).toString(16)}`), ownerSignature: ["0x4"] },
+        });
+        expect(sent.status).toBe(200);
+      }
+      expect(await sponsoredSteps(user.realmsId)).toBe(0);
+      resetPaymaster();
+    });
+
+    it("holds a ready escape's finish while today's steps are spent, and finishes it the next day", async () => {
+      resetPaymaster();
+      const { realmsId, lost, wallet } = await startedRecovery();
+      const day = new Date().toISOString().slice(0, 10);
+      await env.DB.batch(
+        ["0xa1", "0xa2"].map((nonce) =>
+          env.DB.prepare("INSERT INTO sponsored_executions (realms_id, nonce, day) VALUES (?, ?, ?)").bind(
+            realmsId,
+            nonce,
+            day,
+          ),
+        ),
+      );
+      resetPaymaster();
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const ready = { escape: { status: "ready" as const, readyAt: 1, newOwner: guidOf(lost) }, owner: true };
+      await finishWith(wallet.address, ready);
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      expect(await recoveryRow(realmsId)).not.toBeNull();
+      await nextDay(realmsId);
+      await finishWith(wallet.address, ready);
+      expect(paymaster.execute.mock.lastCall![4]).toBe("sponsor");
+      expect(await recoveryRow(realmsId)).toBeNull();
+      expect(await sponsoredSteps(realmsId)).toBe(1);
+      vi.mocked(console.error).mockRestore();
+      resetPaymaster();
+    });
+
     it("finishes a ready escape naming the saved passkey and hands the wallet to it, keeping its address", async () => {
       resetPaymaster();
       const { realmsId, passkey, lost, wallet } = await startedRecovery();

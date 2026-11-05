@@ -421,7 +421,9 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   (refused on a device that still holds the wallet's passkey) → the emailed code; the escape starts on chain and the
   account's email is told. The wallet then shows **Recovery under way** with the day the new passkey takes over, and
   **Not you? Cancel it** (the current passkey confirms). The identity Worker's minute cron finishes it after 7 days
-  (`shell/profile/realms-wallet-recovery.tsx`; `apps/realms/server/wallet-recovery.ts`).
+  (`shell/profile/realms-wallet-recovery.tsx`; `apps/realms/server/wallet-recovery.ts`). Recovery steps are sponsored,
+  `SPONSORED_STEPS_PER_DAY` a day per account (a start needs room for its cancel); past that, a start or cancel says to
+  try again tomorrow.
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full

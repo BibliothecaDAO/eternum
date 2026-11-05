@@ -26,10 +26,20 @@ import type { Paymaster } from "./paymaster";
  * row keeps the new passkey (which the chain stores only as a GUID) and the escape's execution (nonce, time window),
  * so the cron can prove what happened to it. The guardian signs only the exact escape call naming that passkey, and the
  * cron finishes only an escape whose new owner is that passkey.
+ *
+ * Every recovery step is sponsored, our only spend on default wallets, so each takes one of the account's
+ * SPONSORED_STEPS_PER_DAY before it is submitted (reserveSponsoredStep).
  */
 
 /** The step was proven never sent (nothing signed, or the guardian or the paymaster refused it); its attempt is released. */
 export class RecoveryNotSentError extends Error {}
+
+/** The account has used today's sponsored recovery steps: the step waits for the next UTC day. */
+export class SponsoredStepsSpentError extends Error {
+  constructor() {
+    super("sponsored_steps_spent");
+  }
+}
 
 /** A recovery is already under way on this wallet, on chain or not settled yet: another waits for it to end. */
 export class RecoveryUnderWayError extends Error {
@@ -141,11 +151,16 @@ export const startRecovery = async (
 ): Promise<string> => {
   const escape = await services.readEscape(row.address);
   if (escape.status === "waiting" || escape.status === "ready") throw new RecoveryUnderWayError();
+  // A start needs its own step and room for the cancel that may answer it.
+  if ((await freeSponsoredSteps(services.db, row.realms_id)) < 1 + ROOM_FOR_A_CANCEL)
+    throw new SponsoredStepsSpentError();
   await spendCode();
   const attempt = crypto.randomUUID();
   if (!(await reserveAttempt(services.db, row.realms_id, attempt, passkey))) throw new RecoveryUnderWayError();
+  let tookStep = false;
   const notSent = async (error: unknown) => {
     await releaseAttempt(services.db, row.realms_id, attempt);
+    if (tookStep) await releaseSponsoredStep(services.db, row.realms_id, built.execution.nonce);
     return new RecoveryNotSentError(error instanceof Error ? error.message : String(error));
   };
   const deployment = await deploymentIfNeeded(services, row);
@@ -154,6 +169,12 @@ export const startRecovery = async (
       throw await notSent(error);
     },
   );
+  const step = await reserveSponsoredStep(services.db, row.realms_id, built.execution.nonce, ROOM_FOR_A_CANCEL);
+  if (step === "spent") {
+    await releaseAttempt(services.db, row.realms_id, attempt);
+    throw new SponsoredStepsSpentError();
+  }
+  tookStep = step === "taken";
   await recordExecution(services.db, row, attempt, built.execution, email);
   const signature = await services.guardian
     .signWalletExecution(services.chainId, row.address, built.execution)
@@ -240,12 +261,30 @@ const settleAttempt = async (services: RecoveryServices, attempt: RecoveryAttemp
 const isProvenOver = (state: AttemptState, executeBefore: number | null) =>
   state.nonceSpent || (executeBefore !== null && state.time >= executeBefore);
 
-/** The escape's finish: the exact call, the guardian alone, sponsored. */
+/**
+ * The escape's finish: the exact call, the guardian alone, sponsored, on one of the day's sponsored steps; with none
+ * left it waits for the next pass (the escape stays ready for 7 days). A finish proven unsent gives its step back.
+ */
 const finishEscape = async (services: RecoveryServices, row: DefaultWalletRow) => {
   const finish: AskedCall = { contractAddress: row.address, entrypoint: WALLET_RECOVERY.finish, calldata: [] };
   const built = await buildExactly(services, row, finish, null);
-  const signature = await services.guardian.signWalletExecution(services.chainId, row.address, built.execution);
-  return services.paymaster.execute(row.address, built.typedData, guardianAloneSignature(signature), null, "sponsor");
+  const step = await reserveSponsoredStep(services.db, row.realms_id, built.execution.nonce, 0);
+  if (step === "spent") throw new SponsoredStepsSpentError();
+  const giveBack = () =>
+    step === "taken" ? releaseSponsoredStep(services.db, row.realms_id, built.execution.nonce) : Promise.resolve();
+  try {
+    const signature = await services.guardian.signWalletExecution(services.chainId, row.address, built.execution);
+    return await services.paymaster.execute(
+      row.address,
+      built.typedData,
+      guardianAloneSignature(signature),
+      null,
+      "sponsor",
+    );
+  } catch (error) {
+    if (error instanceof PaymasterRefusedError) await giveBack();
+    throw error;
+  }
 };
 
 /** `trigger_escape_owner(Signer::Webauthn(new passkey))` on the wallet itself. */
@@ -281,6 +320,57 @@ const buildExactly = async (
   if (!execution || !callsMatch(execution.calls, [call], null)) throw new Error("paymaster_built_another_call");
   return { typedData, execution };
 };
+
+/**
+ * Sponsored recovery steps (start, finish, cancel) one account may submit a UTC day: our only spend on default wallets,
+ * about 1 STRK each. Three cover a recovery's start and its cancel, or its finish; a start then a cancel then a start
+ * again is refused, so a start and cancel loop costs at most this a day.
+ */
+const SPONSORED_STEPS_PER_DAY = 3;
+/** A start keeps one of the day's steps free for the cancel that may answer it, so a start never leaves the owner unable to cancel. */
+const ROOM_FOR_A_CANCEL = 1;
+
+/** One of today's sponsored steps: taken for this execution, already held by an earlier submission of it, or none left. */
+type SponsoredStep = "taken" | "held" | "spent";
+
+const today = () => new Date().toISOString().slice(0, 10);
+
+/** The account's sponsored steps still free today: a step checks there is room before anything it costs is spent. */
+export const freeSponsoredSteps = async (db: D1Database, realmsId: string) => {
+  const taken = await db
+    .prepare(`SELECT COUNT(*) AS steps FROM sponsored_executions WHERE realms_id = ? AND day = ?`)
+    .bind(realmsId, today())
+    .first<{ steps: number }>();
+  return SPONSORED_STEPS_PER_DAY - (taken?.steps ?? 0);
+};
+
+/**
+ * Takes one of today's sponsored steps for this execution (by its nonce), leaving `keepFree` of them for later steps,
+ * or finds it already held by an earlier submission of the same execution, or finds none left. One batch, so two
+ * requests cannot both take the last.
+ */
+export const reserveSponsoredStep = async (
+  db: D1Database,
+  realmsId: string,
+  nonce: string,
+  keepFree: number,
+): Promise<SponsoredStep> => {
+  const [taken, held] = await db.batch([
+    db
+      .prepare(
+        `INSERT OR IGNORE INTO sponsored_executions (realms_id, nonce, day)
+         SELECT ?1, ?2, ?3 WHERE (SELECT COUNT(*) FROM sponsored_executions WHERE realms_id = ?1 AND day = ?3) < ?4`,
+      )
+      .bind(realmsId, nonce, today(), SPONSORED_STEPS_PER_DAY - keepFree),
+    db.prepare(`SELECT 1 AS held FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce),
+  ]);
+  if (taken?.meta.changes === 1) return "taken";
+  return held?.results.length === 1 ? "held" : "spent";
+};
+
+/** Gives back the step of an execution proven never sent; only the request that took it may. */
+export const releaseSponsoredStep = (db: D1Database, realmsId: string, nonce: string) =>
+  db.prepare(`DELETE FROM sponsored_executions WHERE realms_id = ? AND nonce = ?`).bind(realmsId, nonce).run();
 
 /** One attempt per account: reserved only while none is unsettled. */
 const reserveAttempt = async (
