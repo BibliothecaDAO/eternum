@@ -3177,7 +3177,7 @@ describe("default wallet", () => {
       resetPaymaster();
     });
 
-    it("gives a cancel's step back only when the paymaster proves it unsent; a lost answer keeps it, and its resubmission takes no other", async () => {
+    it("keeps a cancel's step counted whatever the paymaster answers, once per execution", async () => {
       resetPaymaster();
       const { browser, wallet, user } = await withWallet().then(async (made) => ({
         ...made,
@@ -3187,18 +3187,56 @@ describe("default wallet", () => {
         throw new PaymasterRefusedError("argent/invalid-escape");
       });
       expect(((await refused.json()) as { message: string }).message).toBe("PAYMASTER_REFUSED");
-      expect(await sponsoredSteps(user.realmsId)).toBe(0);
+      expect(await sponsoredSteps(user.realmsId)).toBe(1);
       const lost = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
         throw new TypeError("fetch failed");
       });
       expect(((await lost.json()) as { message: string }).message).toBe("SEND_UNCERTAIN");
-      expect(await sponsoredSteps(user.realmsId)).toBe(1);
-      // The same signed cancel again: it holds its step, and a refusal of this resubmission gives nothing back.
+      expect(await sponsoredSteps(user.realmsId)).toBe(2);
+      // The same signed cancel again counts no other step, and its refusal gives none back.
       const resubmitted = await cancelEscape(browser, wallet.address, "0x4d2", async () => {
         throw new PaymasterRefusedError("duplicated outside nonce");
       });
       expect(resubmitted.status).toBe(502);
-      expect(await sponsoredSteps(user.realmsId)).toBe(1);
+      expect(await sponsoredSteps(user.realmsId)).toBe(2);
+      resetPaymaster();
+    });
+
+    it("keeps a cancel counted when its first request is refused after a duplicate of it landed, so no fourth step is accepted", async () => {
+      resetPaymaster();
+      const { browser, wallet, realmsId } = await startedRecovery();
+      // The first request reaches the paymaster and waits; a duplicate of the same signed cancel lands meanwhile; then
+      // the first is refused (the duplicate spent its nonce).
+      let arrived!: () => void;
+      const atPaymaster = new Promise<void>((resolve) => (arrived = resolve));
+      let refuse!: () => void;
+      const refusal = new Promise<void>((resolve) => (refuse = resolve));
+      const first = cancelEscape(browser, wallet.address, "0xc001", async () => {
+        arrived();
+        await refusal;
+        throw new PaymasterRefusedError("outside nonce already spent");
+      });
+      await atPaymaster;
+      const duplicate = await cancelEscape(browser, wallet.address, "0xc001", async () => "0xaccepted");
+      expect(duplicate.status).toBe(200);
+      refuse();
+      expect((await first).status).toBe(502);
+      // The start and the landed cancel both stay counted.
+      expect(await sponsoredSteps(realmsId)).toBe(2);
+      await finishWith(wallet.address, { escape: none, owner: false, nonceSpent: true });
+      expect(await recoveryRow(realmsId)).toBeNull();
+      // A new start needs room for its cancel: refused.
+      paymaster.build.mockClear();
+      const again = await recover(browser, makePasskey(), await walletCode(browser));
+      expect(((await again.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.build).not.toHaveBeenCalled();
+      // A third step may still go (another cancel); a fourth is refused before the paymaster.
+      expect((await cancelEscape(browser, wallet.address, "0xc002")).status).toBe(200);
+      paymaster.execute.mockClear();
+      const fourth = await cancelEscape(browser, wallet.address, "0xc003");
+      expect(((await fourth.json()) as { message: string }).message).toBe("SPONSOR_CAP_REACHED");
+      expect(paymaster.execute).not.toHaveBeenCalled();
+      expect(await sponsoredSteps(realmsId)).toBe(3);
       resetPaymaster();
     });
 

@@ -22,8 +22,7 @@ import {
   freeSponsoredSteps,
   RecoveryNotSentError,
   RecoveryUnderWayError,
-  releaseSponsoredStep,
-  reserveSponsoredStep,
+  countSponsoredStep,
   SponsoredStepsSpentError,
   startRecovery,
 } from "./wallet-recovery";
@@ -249,15 +248,10 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
           if (!execution) throw new APIError("BAD_REQUEST", { message: "NOT_AN_OUTSIDE_EXECUTION" });
           const payer = gasPayerOf(row, execution.calls);
           requirePayer(payer);
-          // A sponsored step (the cancel) takes one of the day's steps; a resubmission of the same execution holds it.
-          const step =
-            payer === "sponsor" ? await reserveSponsoredStep(options.db, realmsId, execution.nonce, 0) : null;
-          if (step === "spent") throw stepsSpent();
-          // Only the request that took the step may give it back: a resubmission's refusal says nothing of the first.
-          const giveBack = () =>
-            step === "taken" ? releaseSponsoredStep(options.db, realmsId, execution.nonce) : Promise.resolve();
-          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch(async (error: unknown) => {
-            await giveBack();
+          // A sponsored step (the cancel) is counted as one of the day's steps, once per execution, and kept.
+          if (payer === "sponsor" && !(await countSponsoredStep(options.db, realmsId, execution.nonce, 0)))
+            throw stepsSpent();
+          const signature = await cosigned(row, execution, ctx.body.ownerSignature).catch((error: unknown) => {
             throw refused("default_wallet_cosign_failed", error);
           });
           try {
@@ -267,7 +261,6 @@ export const defaultWallet = (options: DefaultWalletOptions) => {
             });
           } catch (error) {
             if (!(error instanceof PaymasterRefusedError)) throw uncertain(error);
-            await giveBack();
             throw refused("default_wallet_execute_refused", error);
           }
         },
@@ -315,7 +308,7 @@ const publicKeyXOf = (spki: string): string => {
 /** The account has used today's sponsored recovery steps (wallet-recovery.ts): the step waits for the next UTC day. */
 const stepsSpent = () => new APIError("TOO_MANY_REQUESTS", { message: "SPONSOR_CAP_REACHED" });
 
-/** Proven never sent: the paymaster (or the guardian) refused, so nothing reached the chain; a step taken is given back. */
+/** This request was refused by the paymaster (or the guardian), so it reached nothing; a sponsored step stays counted. */
 const refused = (event: string, error: unknown) => {
   console.error(event, { error: error instanceof Error ? error.message : error });
   return new APIError("BAD_GATEWAY", { message: "PAYMASTER_REFUSED" });
