@@ -67,8 +67,8 @@ pub mod RelicState {
 
             self.assert_command(game_id, context.timestamp, context);
             let classes = self.logic_classes(game_id);
-            let explorer = crate::logic::troops::authorized_explorer(
-                ExplorerKey { game_id, explorer_id: command.explorer_id }, actor, context.timestamp, context,
+            let explorer = crate::logic::troops::command_explorer(
+                ExplorerKey { game_id, explorer_id: command.explorer_id }, Some(actor), context.timestamp, context,
             );
             assert!(explorer.troops.count != 0, "explorer is dead");
             assert!(crate::geometry::adjacent(explorer.coord, command.coord), "explorer is not adjacent to chest");
@@ -151,7 +151,7 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             let mut progress = crate::logic::progression::require(key);
             if let SkillPointUse::Stamina(_) = command.choice {
                 let maximum = crate::progression::stamina_max(
@@ -205,7 +205,7 @@ pub mod RelicState {
             self.assert_command(game_id, context.timestamp, context);
             assert!(context.rules.unbox().day_unit_seconds != 0, "site requires expedition");
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             crate::expeditions::assert_same_region(
                 explorer.coord, command.coord, crate::logic::settlement::rules(game_id).spacing,
@@ -268,7 +268,7 @@ pub mod RelicState {
             let context = crate::commands::execution_context(game_id, context);
             self.assert_command(game_id, context.timestamp, context);
             let key = ExplorerKey { game_id, explorer_id: command.explorer_id };
-            let explorer = crate::logic::troops::authorized_explorer(key, actor, context.timestamp, context);
+            let explorer = crate::logic::troops::command_explorer(key, Some(actor), context.timestamp, context);
             assert!(explorer.troops.count != 0, "explorer is dead");
             let maximum = crate::progression::stamina_max(
                 crate::logic::progression::require(key),
@@ -408,7 +408,7 @@ pub mod RelicState {
         ) -> () {
             let context = crate::commands::execution_context(site.game_id, context);
             let explorer_key = ExplorerKey { game_id: site.game_id, explorer_id };
-            let explorer = crate::logic::troops::active_explorer(explorer_key, context.timestamp, context);
+            let explorer = crate::logic::troops::command_explorer(explorer_key, None, context.timestamp, context);
             self.refund_capture_stamina(explorer_key, explorer, context);
             if context.rules.unbox().day_unit_seconds != 0 {
                 crate::expeditions::ISiteRewardsDispatcherTrait::pay_expedition_site(
@@ -767,8 +767,8 @@ pub mod RelicState {
         ) -> u64 {
             let classes = self.logic_classes(game_id);
             if command.recipient == Recipient::Explorer {
-                let explorer = crate::logic::troops::authorized_explorer(
-                    ExplorerKey { game_id, explorer_id: command.entity_id }, actor, timestamp, game_context,
+                let explorer = crate::logic::troops::command_explorer(
+                    ExplorerKey { game_id, explorer_id: command.entity_id }, Some(actor), timestamp, game_context,
                 );
                 IRelicTroopsLibraryDispatcher { class_hash: classes.troops.read() }
                     .apply_troop_relic(

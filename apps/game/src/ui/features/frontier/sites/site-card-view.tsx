@@ -23,7 +23,7 @@ import {
   ON_ITS_WAY,
   REALM,
   REST_DID_NOT_FIT,
-  RUIN_RULE,
+  ruinRule,
   SEASON_CLIMB,
   siteTitle,
   SITES_CLEARED,
@@ -98,7 +98,7 @@ export const SiteCardView = ({
   pay: { icon: IconMeaning; amount: number; fits?: number } | null;
   /** A ruin's chest: its tier and the exact LORDS stored with it; undefined until the facts carry them. */
   chest?: { tier: Tier; lords: number };
-  ruinChoice?: { depth: string };
+  ruinChoice?: { depth: string; perDepth: boolean };
   xp: number | undefined;
   verb: SiteVerb | null;
   receipt?: ReactNode;
@@ -162,7 +162,7 @@ export const SiteCardView = ({
       {ruinChoice && (
         <p data-ruin-rule className="text-hud-label">
           <span className="text-hud-muted">{ruinChoice.depth} · </span>
-          <span className="text-hud-ink">{RUIN_RULE}</span>
+          <span className="text-hud-ink">{ruinRule(ruinChoice.perDepth)}</span>
         </p>
       )}
       {!armyless && <FightPanel army={army} guard={guard} facing={facing} beast={beast} guardIcon={guardIcon} />}

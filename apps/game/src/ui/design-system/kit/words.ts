@@ -356,11 +356,11 @@ export const xpTowardTip = (held: string, milestone: string, rank: number): Rank
 /** The sites on the map, as their cards title them, and the verbs they take. */
 export const RIFT = structureName(StructureType.Rift, undefined, "frontier");
 export const RUIN = structureName(StructureType.Ruin, undefined, "frontier");
-/**
- * A ruin's rule, on its card, as the contract keeps it (expeditions.cairo, close_ruins): a realm clears one ruin a day,
- * and that clear removes its other ruins on every depth (owner, 30 October: one short line).
- */
-export const RUIN_RULE = `One ${RUIN.toLowerCase()} a day · the rest vanish`;
+/** The daily clear closes only the ruin's own depth; cards and forecasts share this rule. */
+export const ruinRule = (perDepth: boolean): string =>
+  perDepth
+    ? `One ${RUIN.toLowerCase()} per depth a day · others here vanish`
+    : `One ${RUIN.toLowerCase()} a day · the rest vanish`;
 /** A map plate's words: a thing with no guard, the troops on their way to one. */
 export const UNDEFENDED = "Undefended";
 /**

@@ -1,3 +1,5 @@
+pub const RUIN_DEPTH_LIMIT_RELEASE: u32 = 9;
+
 pub use games_storage::release::Release;
 use starknet::storage::StoragePointerReadAccess;
 

@@ -13,7 +13,14 @@ import { toast } from "@/ui/features/event-feed/notify";
 
 import type { Tier } from "@/ui/design-system/kit/words";
 import { extractReadableErrorMessage } from "@/utils/error-message";
-import { biomeTypeOf, configManager, getStructureName, isViewerOwner, ruinDisappeared } from "@bibliothecadao/eternum";
+import {
+  biomeTypeOf,
+  configManager,
+  getStructureName,
+  isViewerOwner,
+  ruinDisappeared,
+  ruinLimitPerDepth,
+} from "@bibliothecadao/eternum";
 import {
   safeInteger,
   type GameClientSetup,
@@ -36,6 +43,7 @@ import { SiteCardView, type SiteVerb } from "./site-card-view";
 const SITE_MODELS = [
   "ExpeditionSite",
   "ExpeditionDiscovery",
+  "GameRelease",
   "LordsBudget",
   "SiteChest",
   "ExplorerTroops",
@@ -187,7 +195,11 @@ export const TileCard = ({
       fight={plan.fight}
       pay={sitePay(plan)}
       chest={plan.chest ? { tier: (plan.chest.tier + 1) as Tier, lords: plan.chest.amount } : undefined}
-      ruinChoice={plan.chest ? { depth: plan.chest.depth } : undefined}
+      ruinChoice={
+        plan.chest
+          ? { depth: plan.chest.depth, perDepth: ruinLimitPerDepth(facts.store, configManager.getActiveGameId()) }
+          : undefined
+      }
       xp={plan.xp}
       verb={verb}
       onRealm={() => {

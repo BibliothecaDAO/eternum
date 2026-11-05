@@ -1,11 +1,11 @@
-use starknet::storage::{StorageMapReadAccess, StoragePointerReadAccess};
+use starknet::storage::{StorageMapReadAccess, StoragePathEntry, StoragePointerReadAccess};
 use crate::settlement::{EntryKey, PlayerEntry, RealmGrants, SettlementRules};
 
 pub fn rules(game_id: u32) -> SettlementRules {
     let state = crate::state::read();
     let preset = crate::logic::preset_record::for_game(game_id);
     SettlementRules {
-        registration_start: state.games.overrides.read(game_id).registration_start,
+        registration_start: state.games.overrides.entry(game_id).registration_start.read(),
         registration_limit: state.registrar.roster_sizes.read(game_id).try_into().unwrap(),
         mode: preset.settlement_mode.read(),
         spacing: preset.settlement_spacing.read(),

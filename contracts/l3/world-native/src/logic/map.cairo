@@ -272,6 +272,22 @@ pub mod MapLogic {
     }
 
     #[abi(embed_v0)]
+    impl RuinEntitlements of crate::logic::ruins::IRuinEntitlements<ContractState> {
+        fn ruin_disappeared(self: @ContractState, key: crate::resources::ResourceKey) -> bool {
+            crate::logic::ruins::disappeared(key)
+        }
+        fn ruin_cleared_at(self: @ContractState, key: crate::expeditions::ExpeditionDiscoveryKey, depth: u8) -> bool {
+            crate::logic::ruins::cleared_at(key, depth)
+        }
+        fn cache_ruin_depths(ref self: ContractState, key: crate::expeditions::ExpeditionDiscoveryKey) {
+            crate::logic::ruins::cache(key);
+        }
+        fn close_ruins(ref self: ContractState, key: crate::expeditions::ExpeditionDiscoveryKey, depth: u8) {
+            crate::logic::ruins::close(key, depth);
+        }
+    }
+
+    #[abi(embed_v0)]
     impl Map of crate::map::IMapLogic<ContractState> {
         fn biome(self: @ContractState, key: TileKey, game_context: crate::commands::BiomeContext) -> u8 {
             crate::logic::map::biome(key, game_context)
@@ -431,7 +447,10 @@ pub mod MapLogic {
                     return crate::discovery::Discovery::Chest;
                 }
             }
-            let ruin = if day.ruin_cleared {
+            let depth = crate::logic::expeditions::depth_at(
+                key.game_id, Coord { alt: key.alt, x: key.col, y: key.row },
+            );
+            let ruin = if crate::logic::expeditions::ruin_cleared_at(counter, depth) {
                 None
             } else {
                 let odds = crate::logic::expeditions::depth_rules_at(
@@ -661,8 +680,8 @@ pub mod MapLogic {
             context: crate::commands::ExecutionContext,
         ) -> crate::troops::ExplorerTroops {
             crate::game::assert_playing(context.game.unbox(), context.timestamp);
-            let explorer = crate::logic::troops::authorized_explorer(
-                crate::troops::ExplorerKey { game_id, explorer_id }, actor, context.timestamp, context,
+            let explorer = crate::logic::troops::command_explorer(
+                crate::troops::ExplorerKey { game_id, explorer_id }, Some(actor), context.timestamp, context,
             );
             assert!(!explorer.coord.alt, "extraction requires surface");
             assert!(explorer.troops.count != 0, "explorer is dead");

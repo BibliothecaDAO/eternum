@@ -10,6 +10,7 @@ pub use crate::combat::TroopsTrait;
 pub use crate::commands::{Command, CreateExplorer, Explore};
 pub use crate::game::{GameStatus, IGameDispatcher, IGameDispatcherTrait, status_at};
 pub use crate::guards::{GuardKey, IGuardsDispatcher, IGuardsDispatcherTrait};
+use crate::logic::release::{IReleasesDispatcher, IReleasesDispatcherTrait};
 pub use crate::map::{IMapLogicDispatcher, IMapLogicDispatcherTrait, TileKey};
 pub use crate::presets::{
     EconomyPreset, PresetDefinition, ResourcePreset, SettlementPreset, StructurePreset, WithdrawalPreset,
@@ -1096,3 +1097,13 @@ fn create_open_frontier(preset: PresetDefinition, duration: u64) -> (super::Depl
     (d, game_id)
 }
 
+
+pub fn apply_ruin_depth_release(d: super::Deployment, game_id: u32) {
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    start_cheat_caller_address(d.games, super::authority());
+    for release_id in 2..crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE + 1 {
+        releases.register_release(release_id, releases.release(1));
+        releases.apply_release(game_id, release_id);
+    }
+    stop_cheat_caller_address(d.games);
+}
