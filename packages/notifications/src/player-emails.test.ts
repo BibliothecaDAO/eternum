@@ -70,7 +70,7 @@ describe("the payout wallet email", () => {
     });
     expect(email.html).toContain(`>${WALLET}</td>`);
     expect(email.html).toContain(`>Open Realms</a>`);
-    expect(email.html).toContain('alt="Realms: Payout wallet changed"');
+    expect(email.html).toContain('alt="Realms: Wallet changed"');
     expectSelfContained(email);
   });
 
@@ -80,7 +80,7 @@ describe("the payout wallet email", () => {
       subject: "Your Realms payout wallet was unlinked",
       text: "Your Realms payout wallet was unlinked. If you did not make this change, sign in and secure your account.",
     });
-    expect(email.html).toContain('alt="Realms: Payout wallet unlinked"');
+    expect(email.html).toContain('alt="Realms: Wallet unlinked"');
     expect(email.images![0]!.filename).toBe("wallet-unlinked.jpg");
     expectSelfContained(email);
   });
@@ -100,7 +100,7 @@ describe("the wallet recovery email", () => {
       text: `A new passkey takes over your Realms wallet ${WALLET} in 7 days. If you did not start it, open Realms, Settings, Payout wallet, and cancel it with your passkey.`,
     });
     expect(email.html).toContain(`>${WALLET}</td>`);
-    expect(email.html).toContain('alt="Realms: Wallet recovery started"');
+    expect(email.html).toContain('alt="Realms: Recovery started"');
     expectSelfContained(email);
   });
 });
