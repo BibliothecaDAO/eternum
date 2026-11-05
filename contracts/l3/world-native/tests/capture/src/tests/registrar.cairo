@@ -1849,11 +1849,12 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
 
     let mut total_paid = 0_u128;
     for offset in 0_u8..4 {
+        let timestamp = 360_u64 + Into::<u8, u64>::into(offset) * 3;
         let depth = (first_depth + offset) % 4;
         let coord = crate::geometry::neighbor(crate::expeditions::site(1024, 1, 0, depth), 0);
         super::resource_commands::set_explorer_fixture(d.games, key, crate::troops::ExplorerTroops { coord, ..army });
-        let (ruin, _) = reveal_ruin(d, key, rules, 360);
-        let (sibling, _) = reveal_ruin(d, key, rules, 361);
+        let (ruin, _) = reveal_ruin(d, key, rules, timestamp);
+        let (sibling, _) = reveal_ruin(d, key, rules, timestamp + 1);
         let chest = relics.site_chest(ruin).unwrap();
         let site = snforge_std::interact_with_state(
             d.games, || crate::logic::expeditions::expedition_site(ruin).unwrap(),
@@ -1868,7 +1869,7 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
                 Command::BattleGuard(
                     crate::commands::Battle { attacker_id: key.explorer_id, defender_id: ruin.entity_id },
                 ),
-                362,
+                timestamp + 2,
             ),
         );
         assert_site_removed(d, ruin);
@@ -1909,7 +1910,7 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
                 Command::BattleGuard(
                     crate::commands::Battle { attacker_id: key.explorer_id, defender_id: sibling.entity_id },
                 ),
-                362,
+                timestamp + 2,
             ),
         );
         assert_eq!(GameState { contract_address: d.games }.resolved_explorer(key).unwrap(), after);
