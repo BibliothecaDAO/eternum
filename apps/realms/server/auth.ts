@@ -68,8 +68,8 @@ const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
 /**
  * A new user's id is fixed here and never changes: the Realms id derives from it and places the player's account on
  * every shard. A new user starts with its id as its name, which reads as "not chosen" until they pick one, offered
- * their Discord name or their email's local part as a suggestion, and with no portrait: a sign-in provider's avatar is
- * not one of ours.
+ * their Discord name as a suggestion, and with no portrait: a sign-in provider's avatar is not one of ours. Nothing is
+ * suggested from an email: the name shows on every leaderboard, and an email's local part is often the player's own.
  *
  * An account is keyed by its email, and a later email-code sign-in for that address opens it, so no account is created
  * on an email its provider has not verified: an email code proves the address, and Discord passes its own verified flag.
@@ -77,9 +77,7 @@ const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
 const assignRealmsIdentity = async (user: Record<string, unknown>) => {
   if (user.emailVerified !== true) throw new APIError("FORBIDDEN", { message: "email_not_verified" });
   const id = crypto.randomUUID().replaceAll("-", "");
-  const providerName = typeof user.name === "string" ? user.name : "";
-  const emailName = typeof user.email === "string" ? (user.email.split("@")[0] ?? "") : "";
-  const suggestedName = suggestedNameOf(providerName) ?? suggestedNameOf(emailName);
+  const suggestedName = suggestedNameOf(typeof user.name === "string" ? user.name : "");
   return { data: { ...user, id, name: id, suggestedName, image: null, realmsId: realmsIdOf(id) } };
 };
 

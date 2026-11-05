@@ -864,8 +864,6 @@ export const PITCH = "A new land every day";
 
 /** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
 export const SIGN_IN_WORDS = {
-  /** A new account's name when its suggested one cannot be kept (too short once the name rule has its way). */
-  defaultName: "Wanderer",
   discord: "Discord",
   or: "or",
   email: "Email",
@@ -876,6 +874,8 @@ export const SIGN_IN_WORDS = {
   checking: "Checking…",
   newCode: "New code",
   yourName: "Your name",
+  /** Under an empty name field: an email sign-up is suggested nothing, and the name is what every board shows. */
+  pickName: "Pick the name other players see on the leaderboards.",
   claimName: "Claim name",
   saving: "Saving…",
   portrait: "Portrait",

@@ -2576,10 +2576,10 @@ describe("identity Worker", () => {
     expect(after.walletLinkedAt).toBe(before.walletLinkedAt);
   });
 
-  it("suggests a new player's display name from their Discord name or their email", async () => {
+  it("suggests a new player's display name from their Discord name, and nothing from their email", async () => {
     const byEmail = createBrowser();
     await signInWithCode(byEmail, "ser.galen+play@realms.test");
-    expect((await byEmail.session())?.user.suggestedName).toBe("sergalenplay");
+    expect((await byEmail.session())?.user.suggestedName).toBeNull();
 
     const discord = fakeDiscord();
     try {
@@ -2594,6 +2594,48 @@ describe("identity Worker", () => {
     } finally {
       discord.mockRestore();
     }
+  });
+
+  it("takes the email suggestion off accounts not yet named, keeping named ones and Discord names", async () => {
+    const unnamed = createBrowser();
+    await signInWithCode(unnamed, "old.unnamed@realms.test");
+    const named = createBrowser();
+    await signInWithCode(named, "old.named@realms.test");
+    expect((await named.request("/api/auth/update-user", { body: { name: "oldnamed" } })).status).toBe(200);
+    const discord = fakeDiscord();
+    try {
+      const byDiscord = createBrowser();
+      await signInWithDiscord(byDiscord, {
+        id: "80351110224678914",
+        username: "old_rook",
+        email: "rook@discord.test",
+        verified: true,
+      });
+    } finally {
+      discord.mockRestore();
+    }
+    // Accounts made before this change were suggested their email's local part.
+    await database.db
+      .prepare(`UPDATE "user" SET "suggestedName" = 'oldunnamed' WHERE "email" = 'old.unnamed@realms.test'`)
+      .run();
+    await database.db
+      .prepare(`UPDATE "user" SET "suggestedName" = 'oldnamed' WHERE "email" = 'old.named@realms.test'`)
+      .run();
+    const migration = readFileSync(new URL("../migrations/0030_no_email_name_suggestion.sql", import.meta.url), "utf8")
+      .replace(/^--.*$/gm, "")
+      .replace(/\s+/g, " ");
+    // Twice, as a rerun after a crash would.
+    await database.db.exec(migration);
+    await database.db.exec(migration);
+    const suggested = async (email: string) =>
+      (await database.db
+        .prepare(`SELECT "name" = "id" AS unnamed, "suggestedName" AS suggested FROM "user" WHERE "email" = ?1`)
+        .bind(email)
+        .first<{ unnamed: number; suggested: string | null }>())!;
+    expect(await suggested("old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
+    expect(await suggested("old.named@realms.test")).toEqual({ unnamed: 0, suggested: "oldnamed" });
+    expect(await suggested("rook@discord.test")).toEqual({ unnamed: 1, suggested: "old_rook" });
+    expect((await named.session())?.user.name).toBe("oldnamed");
   });
 
   it("offers no way in but Discord and an emailed code", async () => {

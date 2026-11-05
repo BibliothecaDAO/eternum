@@ -70,6 +70,7 @@ const labConnectStep = (step: string | undefined): { title: string; body: ReactN
       };
     case "name":
     case "name-refused":
+    case "name-email":
       return {
         title: SIGN_IN_WORDS.yourName,
         body: <ProfileStep session={LAB_NEW_ACCOUNTS[step]} onClaimed={noop} />,

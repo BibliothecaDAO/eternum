@@ -976,13 +976,14 @@ export const LAB_SEASON_PRIZES: Partial<Record<keyof typeof LAB_SCREENS, SeasonP
 };
 
 /**
- * A new account at its one step (sign-in's name and portrait): the name suggested at sign-up, which passes the rule, or
- * one too short to, so the field is drawn refused.
+ * A new account at its one step (sign-in's name and portrait): the Discord name suggested at sign-up, which passes the
+ * rule, or one too short to, so the field is drawn refused; or an email sign-up, suggested nothing.
  */
 export const LAB_NEW_ACCOUNTS = {
   name: { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Maelis" } },
   "name-refused": { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: "Ma" } },
-} as unknown as Record<"name" | "name-refused", Session>;
+  "name-email": { ...LAB_SESSION, user: { ...LAB_SESSION.user, name: null, suggestedName: null } },
+} as unknown as Record<"name" | "name-refused" | "name-email", Session>;
 
 /** The sign-in mail the code step names. */
 export const LAB_SIGN_IN_EMAIL = LAB_SESSION.user.email;

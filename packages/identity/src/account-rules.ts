@@ -40,8 +40,8 @@ export const nameRuleViolation = (name: string): string | null => {
 };
 
 /**
- * A display name to offer a new player, from their Discord name or their email's local part: disallowed characters
- * dropped, cut to the rules' length. Null when nothing valid is left; the player can always type their own.
+ * A display name to offer a new player, from their Discord name: disallowed characters dropped, cut to the rules'
+ * length. Null when nothing valid is left; the player can always type their own.
  */
 export const suggestedNameOf = (source: string): string | null => {
   const candidate = source
