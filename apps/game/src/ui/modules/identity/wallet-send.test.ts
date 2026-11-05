@@ -10,7 +10,7 @@ import { L2_CHAIN } from "@/runtime/l2-rpc";
 
 import { IdentityRequestError } from "@realms-world/identity";
 import { WALLET_GAS_TOKEN } from "@realms-world/identity/wallet";
-import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError } from "./uncertain-sends";
+import { forgetUncertain, uncertainSendOf, UncertainSendNotKeptError, type SignedPasskeySend } from "./uncertain-sends";
 import {
   prepareDefaultWalletSend,
   sendFromDefaultWallet,
@@ -175,6 +175,42 @@ it("signs the prepared execution's hash with the passkey, sends it through the p
   expect(provider.waitForTransaction).toHaveBeenCalledWith("0xtx", expect.anything());
 });
 
+it("keeps a default wallet's send from the moment its passkey is asked, and forgets it once the passkey signs nothing", async () => {
+  forgetUncertain(WALLET.address);
+  const execution = built();
+  const execute = vi.spyOn(identityClient, "executeDefaultWalletCall").mockResolvedValue("0xtx");
+  let answer!: { sign: (signature: string[]) => void; decline: (error: Error) => void };
+  passkey.sign.mockImplementationOnce(
+    () => new Promise((sign, decline) => (answer = { sign, decline })) as Promise<string[]>,
+  );
+  const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
+  const late = sendFromDefaultWallet(WALLET, execution as unknown as TypedData, '["deposit"]', provider, vi.fn());
+  // Asked, not answered: kept, so no other send from this wallet goes while this one may still be signed and sent.
+  expect(uncertainSendOf(WALLET.address)).toMatchObject({
+    via: "passkey",
+    calls: '["deposit"]',
+    execution,
+    ownerSignature: null,
+    hash: null,
+  });
+  answer.sign(["0x4", "0x9"]);
+  await expect(late).resolves.toEqual({ kind: "landed" });
+  expect(execute).toHaveBeenCalledWith(execution, ["0x4", "0x9"]);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+
+  passkey.sign.mockImplementationOnce(
+    () => new Promise((sign, decline) => (answer = { sign, decline })) as Promise<string[]>,
+  );
+  const declined = sendFromDefaultWallet(WALLET, execution as unknown as TypedData, "[]", provider, vi.fn());
+  expect(uncertainSendOf(WALLET.address)).toMatchObject({ ownerSignature: null });
+  const cause = new DOMException("The operation either timed out or was not allowed.", "NotAllowedError");
+  answer.decline(cause);
+  await expect(declined).rejects.toBe(cause);
+  expect(uncertainSendOf(WALLET.address)).toBeUndefined();
+  expect(execute).toHaveBeenCalledOnce();
+  execute.mockRestore();
+});
+
 it("keeps a send whose paymaster answer was lost, and sends again only the same signed execution", async () => {
   forgetUncertain(WALLET.address);
   const execution = built();
@@ -196,9 +232,7 @@ it("keeps a send whose paymaster answer was lost, and sends again only the same 
     hash: null,
   });
   // Re-entry sends the very same execution and signature: one nonce, so at most one transfer, and no new passkey prompt.
-  await expect(
-    submitSigned(kept as Extract<typeof kept, { via: "passkey" }>, provider, vi.fn(), "again"),
-  ).resolves.toEqual({
+  await expect(submitSigned(kept as SignedPasskeySend, provider, vi.fn(), "again")).resolves.toEqual({
     kind: "landed",
   });
   expect(execute.mock.calls).toEqual([
@@ -248,9 +282,9 @@ it("keeps an uncertain send when its resubmission is refused: that refusal says 
   const provider = chain(0n, Promise.resolve({ isReverted: () => false }));
   await sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", provider, vi.fn());
   const kept = uncertainSendOf(WALLET.address)!;
-  await expect(
-    submitSigned(kept as Extract<typeof kept, { via: "passkey" }>, provider, vi.fn(), "again"),
-  ).rejects.toBeInstanceOf(IdentityRequestError);
+  await expect(submitSigned(kept as SignedPasskeySend, provider, vi.fn(), "again")).rejects.toBeInstanceOf(
+    IdentityRequestError,
+  );
   // Still uncertain: no new transfer is offered until the chain settles the first.
   expect(uncertainSendOf(WALLET.address)).toEqual(kept);
   execute.mockRestore();
@@ -263,9 +297,11 @@ it("sends nothing when this browser cannot keep the record, on either path", asy
     throw new DOMException("quota", "QuotaExceededError");
   });
   const execute = vi.spyOn(identityClient, "executeDefaultWalletCall");
+  passkey.sign.mockClear();
   await expect(
     sendFromDefaultWallet(WALLET, built() as unknown as TypedData, "[]", chain(0n, Promise.resolve({})), vi.fn()),
   ).rejects.toBeInstanceOf(UncertainSendNotKeptError);
+  expect(passkey.sign).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
   const { account, execute: walletExecute } = wallet();
   await expect(

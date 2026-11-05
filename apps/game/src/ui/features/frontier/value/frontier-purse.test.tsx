@@ -48,18 +48,21 @@ const realm = depositStructure("0x30");
 const paid = () =>
   useDepositPaymentStore.getState().payment as null | {
     calls: (Call & { calldata: string[] })[];
+    request: string;
     onLanded: () => void;
   };
-/** The payment landed, as the dialog answers it: closed, then the purse told. */
-const land = () =>
+/** The open payment closed, as the dialog's Close does. */
+const closePayment = () => act(() => useDepositPaymentStore.getState().close(paid()!.request));
+/** A payment landed, as the dialog answers it: its own payment closed, then the purse told. */
+const landed = (payment: NonNullable<ReturnType<typeof paid>>) =>
   act(() => {
-    const payment = paid()!;
-    useDepositPaymentStore.getState().close();
+    useDepositPaymentStore.getState().close(payment.request);
     payment.onLanded();
   });
+const land = () => landed(paid()!);
 beforeEach(() => {
   localStorage.clear();
-  useDepositPaymentStore.getState().close();
+  useDepositPaymentStore.setState({ payment: null });
   wallet.available = 20n;
   wallet.history = [];
   vi.clearAllMocks();
@@ -182,9 +185,30 @@ it("offers Edit or cancel while nothing has been handed to a wallet", async () =
     const first = paid()!.calls[1].calldata.at(-1);
     // Open on the app sheet: nothing to retry until it closes.
     expect(view.button("Retry payment")).toBeUndefined();
-    act(() => useDepositPaymentStore.getState().close());
+    closePayment();
     expect(view.button("Retry payment")).toBeDefined();
     await expectEditable(view, first);
+  } finally {
+    view.unmount();
+  }
+});
+
+it("lets an earlier payment's late landing neither close nor clear newer terms", async () => {
+  const view = await render();
+  try {
+    await act(async () => view.button("Deposit LORDS").click());
+    const earlier = paid()!;
+    closePayment();
+    act(() => view.button("Edit or cancel deposit").click());
+    edit(amount(view.host), "25");
+    await act(async () => view.button("Deposit LORDS").click());
+    const newer = paid()!;
+    const saved = attempt();
+    landed(earlier);
+    expect(paid()).toBe(newer);
+    expect(attempt()).toBe(saved);
+    expect(amount(view.host).value).toBe("25");
+    expect(amount(view.host).disabled).toBe(true);
   } finally {
     view.unmount();
   }
@@ -236,7 +260,7 @@ it("holds an uncertain payment's exact terms across reopening until the chain se
     const saved = attempt();
     // The payment closed (the dialog's Close, or the page left): reopening offers the same payment again.
     view.unmount();
-    act(() => useDepositPaymentStore.getState().close());
+    closePayment();
     view = await render();
     expect(paid()).toBeNull();
     expect(amount(view.host).value).toBe("25");

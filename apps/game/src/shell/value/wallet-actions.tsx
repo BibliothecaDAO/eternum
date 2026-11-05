@@ -143,8 +143,9 @@ const useUncertainSend = (owner: string, asked: string, onLanded: () => void) =>
 };
 
 /**
- * The last send's answer was lost: Check again asks the chain; a default wallet's signed execution can be sent again
- * as it is (its nonce lets it run once), and nothing new is offered until it is settled.
+ * The last send's answer was lost, or its passkey was still asked when its panel closed: Check again asks the chain; a
+ * default wallet's signed execution can be sent again as it is (its nonce lets it run once), and nothing new is offered
+ * until it is settled.
  */
 const OnItsWay = ({
   uncertain,
@@ -156,12 +157,13 @@ const OnItsWay = ({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const send = uncertain.state.kind === "pending" ? uncertain.state.send : null;
+  const ownerSignature = send?.via === "passkey" ? send.ownerSignature : null;
   const again = async () => {
-    if (send?.via !== "passkey") return;
+    if (send?.via !== "passkey" || !ownerSignature) return;
     setBusy(true);
     setError(null);
     try {
-      const sent = await submitSigned(send, l2Provider(), () => {}, "again");
+      const sent = await submitSigned({ ...send, ownerSignature }, l2Provider(), () => {}, "again");
       if (sent.kind === "landed") return onLanded();
     } catch (cause) {
       setError(failureSentence("send", cause));
@@ -177,7 +179,7 @@ const OnItsWay = ({
       <AppButton kind="secondary" icon="refresh" disabled={busy} onClick={() => void uncertain.check()}>
         {VALUE_WORDS.checkAgain}
       </AppButton>
-      {send?.via === "passkey" && (
+      {ownerSignature && (
         <AppButton
           kind="quiet"
           icon="lock"

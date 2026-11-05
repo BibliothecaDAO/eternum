@@ -9,22 +9,24 @@ const WalletSign = lazy(() => import("./wallet-actions").then(({ WalletSign }) =
 
 /**
  * The purse's deposit, paid where every wallet send is drawn: the one wallet send (its passkey fee in LORDS, or the
- * linked wallet's prompt), over the game. Closing it leaves the payment's terms with the purse, which offers it again.
+ * linked wallet's prompt), over the game. Closing it leaves the payment's terms with the purse, which offers it again;
+ * a send already asked of the wallet goes on and is kept as uncertain (uncertain-sends.ts), so its terms stay locked.
  */
 export const DepositPaymentDialog = () => {
   const payment = useDepositPaymentStore((state) => state.payment);
   const close = useDepositPaymentStore((state) => state.close);
   if (!payment) return null;
+  const closePayment = () => close(payment.request);
   const landed = () => {
-    close();
+    closePayment();
     payment.onLanded();
   };
   return (
     <AppDialog
       title={VALUE_WORDS.depositTitle(payment.amount)}
-      onClose={close}
+      onClose={closePayment}
       actions={
-        <AppButton kind="quiet" onClick={close}>
+        <AppButton kind="quiet" onClick={closePayment}>
           {CLOSE}
         </AppButton>
       }

@@ -1276,8 +1276,9 @@ In a deposit-enabled Frontier season, open the LORDS purse in the HUD. **Deposit
 payout wallet and opens the payment over the game on the app sheet, through the one wallet send: a Realms wallet
 confirms with its passkey and pays its network fee in LORDS, shown before confirming; another linked wallet prompts and
 pays in STRK. The purse separates winnings from deposited LORDS, shows delivery/refund receipts, and allows another
-deposit after confirmation. A payment handed to a wallet whose answer was lost is kept as that wallet's uncertain send:
-its amount and request stay locked (no **Edit or cancel deposit**) until the chain settles it, and **Retry payment**
+deposit after confirmation. A payment handed to a wallet is kept as that wallet's uncertain send from the moment the
+wallet or passkey is asked, so closing the payment while it is asked, or losing its answer, leaves its amount and
+request locked (no **Edit or cancel deposit**) until the passkey declines or the chain settles it; **Retry payment**
 reopens the same payment. **Withdraw winnings** uses the existing earned-only path. Refills spend deposited LORDS first.
 Unused deposits return to the linked wallet through the existing season-end sweep; undelivered deposits are refunded to
 the original paying wallet.

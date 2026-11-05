@@ -17,7 +17,7 @@ import { L2_CHAIN } from "@/runtime/l2-rpc";
 import { callsMatch, WALLET_GAS_TOKEN, type AskedCall } from "@realms-world/identity/wallet";
 
 import { signWithPasskey } from "./passkey";
-import { forgetUncertain, rememberUncertain, type UncertainSend } from "./uncertain-sends";
+import { forgetUncertain, rememberUncertain, type SignedPasskeySend } from "./uncertain-sends";
 
 /**
  * What a wallet's send came to: landed, refused by the ledger with its reason, not sent for lack of STRK, or unconfirmed:
@@ -123,17 +123,26 @@ export const sendFromDefaultWallet = async (
   provider: ProviderInterface,
   onSigned: () => void,
 ): Promise<WalletSendOutcome> => {
-  const ownerSignature = await signWithPasskey(wallet, typedData.getMessageHash(prepared, wallet.address));
-  const send = {
+  // Kept before the passkey opens: its signature can come back after the panel closed, and is then still sent.
+  const asked = {
     via: "passkey",
     owner: wallet.address,
     calls,
     execution: prepared,
-    ownerSignature,
+    ownerSignature: null,
     hash: null,
     at: Date.now(),
   } as const;
-  return submitSigned(send, provider, onSigned, "first");
+  rememberUncertain(asked);
+  let ownerSignature: string[];
+  try {
+    ownerSignature = await signWithPasskey(wallet, typedData.getMessageHash(prepared, wallet.address));
+  } catch (error) {
+    // No signature, nothing that can be sent.
+    forgetUncertain(wallet.address);
+    throw error;
+  }
+  return submitSigned({ ...asked, ownerSignature }, provider, onSigned, "first");
 };
 
 /**
@@ -143,7 +152,7 @@ export const sendFromDefaultWallet = async (
  * of the earlier one, which may still have run, so it stays uncertain for the chain to settle.
  */
 export const submitSigned = async (
-  send: Extract<UncertainSend, { via: "passkey" }>,
+  send: SignedPasskeySend,
   provider: ProviderInterface,
   onSigned: () => void,
   submission: "first" | "again",

@@ -17,11 +17,12 @@ interface DepositPayment {
 interface DepositPaymentState {
   payment: DepositPayment | null;
   open: (payment: DepositPayment) => void;
-  close: () => void;
+  /** Closes the payment of that request only: a late answer to an earlier one never closes a newer payment. */
+  close: (request: string) => void;
 }
 
 export const useDepositPaymentStore = create<DepositPaymentState>((set) => ({
   payment: null,
   open: (payment) => set({ payment }),
-  close: () => set({ payment: null }),
+  close: (request) => set((state) => (state.payment?.request === request ? { payment: null } : state)),
 }));

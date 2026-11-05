@@ -3,10 +3,11 @@ import { useSyncExternalStore } from "react";
 import { RpcError, type ProviderInterface, type TypedData } from "starknet";
 
 /**
- * A send whose outcome is unknown: signed and handed over, but its answer was lost (the paymaster's reply, or the receipt
- * read). Until it is known, nothing new is sent from that wallet, so the same transfer is never paid twice: a default
- * wallet's send keeps its signed execution, which can be submitted again and runs at most once (its outside nonce); a
- * connected wallet's keeps its transaction. Kept in this browser, so it survives a closed panel or a reload.
+ * A send whose outcome is unknown: kept from the moment its wallet is asked, since an answer can come after the panel
+ * that asked closed, and through any answer that was lost (the paymaster's reply, or the receipt read). Until it is
+ * known, nothing new is sent from that wallet, so the same transfer is never paid twice: a default wallet's send keeps
+ * its execution, which once signed can be submitted again and runs at most once (its outside nonce); a connected
+ * wallet's keeps its transaction. Kept in this browser, so it survives a closed panel or a reload.
  */
 export type UncertainSend =
   | {
@@ -15,12 +16,16 @@ export type UncertainSend =
       /** The calls it makes, as the panel asked them (JSON), to tell a retry of the same send from another one. */
       calls: string;
       execution: TypedData;
-      ownerSignature: string[];
+      /** Null while the passkey is still asked: nothing to submit again, but it may yet be signed and sent. */
+      ownerSignature: string[] | null;
       hash: string | null;
       at: number;
     }
   /** A connected wallet's: kept before the wallet opens (no hash yet), then with the transaction it answered. */
   | { via: "wallet"; owner: string; calls: string; hash: string | null; at: number };
+
+/** A default wallet's send its passkey has signed: the one that can be submitted, again if its answer was lost. */
+export type SignedPasskeySend = Extract<UncertainSend, { via: "passkey" }> & { ownerSignature: string[] };
 
 /** This browser could not keep the record: nothing is sent, because a lost answer could then never be settled. */
 export class UncertainSendNotKeptError extends Error {}

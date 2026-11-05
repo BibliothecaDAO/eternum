@@ -66,10 +66,7 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
   const wallet = session ? payoutAddressOf(session.user) : null;
   const [amount, setAmount] = useState("10");
   const chainId = requireActiveGame().chainId;
-  const [payment, setPayment] = useState<{ amount: string; request: string } | null>(() => {
-    const saved = localStorage.getItem(attemptKey);
-    return saved ? JSON.parse(saved) : null;
-  });
+  const [payment, setPayment] = useState(() => savedAttempt(attemptKey));
   // Whether this wallet may have sent something not yet settled (uncertain-sends.ts): until the chain says, the
   // payment's terms stay as they are, and nothing new is sent from it.
   const uncertain = useHasUncertainSend(wallet);
@@ -101,8 +98,9 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
     localStorage.removeItem(attemptKey);
     setPayment(null);
   };
-  const confirmed = () => {
-    clearAttempt();
+  /** These terms' payment landed: their saved attempt ends, unless newer terms replaced it. */
+  const confirmed = (request: string) => {
+    if (savedAttempt(attemptKey)?.request === request) clearAttempt();
     setLanded(true);
     void history.refetch();
   };
@@ -126,7 +124,7 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
   /** Opens the payment of these terms from the payout wallet, on the app sheet (deposit-payment.tsx). */
   const pay = (terms: { amount: string; request: string }) => {
     const calls = callsOf(terms);
-    if (wallet && calls) openPayment({ owner: wallet, calls, ...terms, onLanded: confirmed });
+    if (wallet && calls) openPayment({ owner: wallet, calls, ...terms, onLanded: () => confirmed(terms.request) });
   };
   const begin = () => {
     try {
@@ -191,6 +189,12 @@ function DepositForm({ realm, attemptKey }: { realm: NativeRows["Structure"]; at
       ))}
     </>
   );
+}
+
+/** The deposit terms begun in this browser and not yet paid, kept across a reload. */
+function savedAttempt(attemptKey: string): { amount: string; request: string } | null {
+  const saved = localStorage.getItem(attemptKey);
+  return saved ? JSON.parse(saved) : null;
 }
 
 function depositStatus(receipt: LordsDeposit, native: readonly NativeRows["DepositReceipt"][]) {

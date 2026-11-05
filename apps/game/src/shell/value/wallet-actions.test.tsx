@@ -338,6 +338,33 @@ it("on re-entry with a send still uncertain, sends nothing new, and ends it once
   }
 });
 
+it("on re-entry with a passkey still asked when its panel closed, offers only Check again: nothing signed to send again", async () => {
+  const send = await import("@/ui/modules/identity/wallet-send");
+  const uncertain = await import("@/ui/modules/identity/uncertain-sends");
+  const { signOut } = await withRealmsWallet();
+  const prepare = vi.spyOn(send, "prepareDefaultWalletSend");
+  vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
+  uncertain.rememberUncertain({
+    via: "passkey",
+    owner: LINKED,
+    calls: JSON.stringify(CALLS),
+    execution: { message: { Nonce: "0x77", "Execute Before": 2_000 } } as never,
+    ownerSignature: null,
+    hash: null,
+    at: Date.now(),
+  });
+  try {
+    const { container, landed } = await openSend();
+    await settled(() => expect(container.textContent).toContain("Your last send is on its way"));
+    expect(buttonsOf(container)).toEqual(["Check again"]);
+    expect(prepare).not.toHaveBeenCalled();
+    expect(landed).not.toHaveBeenCalled();
+  } finally {
+    signOut();
+    vi.restoreAllMocks();
+  }
+});
+
 it("on re-entry with a connected wallet's send it never heard back from, opens no wallet and offers no new transfer", async () => {
   const uncertain = await import("@/ui/modules/identity/uncertain-sends");
   vi.spyOn(uncertain, "standingOf").mockResolvedValue({ kind: "pending" });
