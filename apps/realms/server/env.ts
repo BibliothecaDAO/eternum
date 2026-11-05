@@ -7,9 +7,9 @@ import type { Guardian } from "@realms-world/guardian";
  * The identity Worker's environment. Plain values are decoded loudly, so a misconfigured deployment fails on its first
  * request instead of answering with defaults. Secrets (`BETTER_AUTH_SECRET`, `L2_RPC_URL`,
  * `OPERATOR_TOKEN`, the `WEB_PUSH_VAPID_*` keys, `DISCORD_CLIENT_ID`, `DISCORD_CLIENT_SECRET`, `RESEND_API_KEY`) are set
- * per environment and never committed. `AVNU_PAYMASTER_API_KEY` sponsors default wallets' recovery steps; without it a
- * default wallet still receives and sends (paying its own fee in LORDS), and a recovery is refused with
- * SPONSOR_UNAVAILABLE.
+ * per environment and never committed. `AVNU_PAYMASTER_API_KEY` sponsors default wallets' recovery steps; the deploy
+ * installs it from `avnuPaymasterApiKey` in the environment's inputs.json when present. Without it a default wallet
+ * still receives and sends (paying its own fee in LORDS), and a recovery is refused with SPONSOR_UNAVAILABLE.
  */
 const IdentityVars = Schema.Struct({
   ENVIRONMENT: Schema.Literals(["staging", "production"]),
