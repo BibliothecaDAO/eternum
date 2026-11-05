@@ -63,6 +63,7 @@ const input: Inputs = {
   cosignerUrl: "https://cosigner.test",
   cosignerToken: "test-cosigner-token",
   discordClientSecret: "fake-discord-secret",
+  avnuPaymasterApiKey: "fake-avnu-key",
   amount: "1000000",
   frontierPresetId: "5",
   frontierStart: "2027-01-01T00:00:00Z",
@@ -593,6 +594,25 @@ test("every environment offers Discord sign-in: setup asks for it, requires it a
   });
 });
 
+test("the identity Worker gets AVNU's paymaster key only when inputs.json holds one, and setup never asks for it", () => {
+  for (const environment of ["dev", "production"] as const)
+    expect(setupQuestions(environments[environment]).map(([name]) => name)).not.toContain("avnuPaymasterApiKey");
+  const identity = workers.find((worker) => worker.id === "identity")!;
+  expect(workerSecrets(identity, input, secrets, keys, undefined).AVNU_PAYMASTER_API_KEY).toBe("fake-avnu-key");
+  const { avnuPaymasterApiKey: _key, ...keyless } = input;
+  expect(() => validateInputs(keyless, environments.dev)).not.toThrow();
+  expect(Object.keys(workerSecrets(identity, keyless, secrets, keys, undefined))).not.toContain(
+    "AVNU_PAYMASTER_API_KEY",
+  );
+  for (const avnuPaymasterApiKey of ["", "  "])
+    expect(() => validateInputs({ ...input, avnuPaymasterApiKey }, environments.dev)).toThrow(
+      "Set avnuPaymasterApiKey",
+    );
+  const others = workers.filter((worker) => worker.id !== "identity" && worker.id !== "admin");
+  for (const worker of others)
+    expect(Object.values(workerSecrets(worker, input, secrets, keys, undefined))).not.toContain("fake-avnu-key");
+});
+
 test("the status monitor emails incidents through the identity Worker's Resend key, to the address setup recorded", () => {
   const status = workers.find((worker) => worker.id === "status")!;
   expect(workerSecrets(status, { ...input, alertEmail: "oncall@example.test" }, secrets, keys, undefined)).toEqual({
@@ -855,6 +875,7 @@ mock.module(${JSON.stringify(join(root, "deploy/first/process.ts"))}, () => ({..
     input.rpc,
     input.resend,
     input.discordClientSecret,
+    input.avnuPaymasterApiKey!,
     secrets.auth,
     secrets.operator,
     ...Object.values(keys),

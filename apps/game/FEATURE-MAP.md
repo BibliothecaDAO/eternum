@@ -405,6 +405,25 @@ each closed by its cross, a tap outside, a swipe down or `Escape`. A right-click
   setting one of their rows (`AppPanel`, `AppSetting`, `ui/design-system/kit/app-elements.tsx`); the name is edited in
   its row, Portrait and Payout wallet open in the app's sheet, and a destructive step (sign out, remove a device) asks
   first in the sheet's dialog over the page (`AppDialog`), Keep or Escape its way out.
+- **Your wallet** (the Connect window, any page): a signed-in, named account with no payout wallet meets it, a new
+  account right after its name, an older one at each visit until it has one or closes it (closed for that visit).
+  **Create my wallet** makes a passkey (face, fingerprint or screen lock) that owns the account's Realms wallet, a Ready
+  0.5 account with the Realms guardian, and writes it as the payout wallet; a sign-in older than ten minutes is asked
+  for the emailed code first. **I have a wallet** links one as before. The same two choices open from Settings, **Payout
+  wallet** with none linked (`shell/profile/payout-wallet-panel.tsx`).
+- **Realms wallet** (Settings, **Payout wallet**): its LORDS and **Send** (address and amount; the network fee is priced
+  as the form opens and shown, **Max** is the balance less the most the fee may take, and a balance short of the fee
+  says how much it needs; **Review**, the send's own fee shown again, then **Confirm with your passkey**). The wallet
+  pays its fee in LORDS through AVNU's gasless mode; only a recovery step is sponsored. It stays listed with Send when
+  another wallet is linked. Every paid action whose wallet is the Realms wallet (Blitz entry, chest, prize) shows its
+  fee and confirms with the passkey instead of opening a wallet (`shell/value/wallet-actions.tsx`, `WalletSign`).
+- **Recovery** (Settings, **Payout wallet**, under the Realms wallet): **Lost your passkey?** → **Make a new passkey**
+  (refused on a device that still holds the wallet's passkey) → the emailed code; the escape starts on chain and the
+  account's email is told. The wallet then shows **Recovery under way** with the day the new passkey takes over, and
+  **Not you? Cancel it** (the current passkey confirms). The identity Worker's minute cron finishes it after 7 days
+  (`shell/profile/realms-wallet-recovery.tsx`; `apps/realms/server/wallet-recovery.ts`). Recovery steps are sponsored,
+  `SPONSORED_STEPS_PER_DAY` a day per account (a start needs room for its cancel); past that, a start or cancel says to
+  try again tomorrow.
 - **Notifications** (Settings, You or in game): Off, Important or All, and **This device**; under the levels, one line
   says what the chosen one brings. Important sends one push as each Frontier game day opens ("Day 2 is open / Frontier:
   claim 1,000 Labor before 20:00."), "Your armies are rested" each time the armies the player left spent are all full

@@ -20,7 +20,7 @@ vi.mock("@/shell/value/wallet-actions", () => ({
   ),
 }));
 
-import { identityClient } from "@/hooks/context/identity-session";
+import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
 import { IdentityRequestError } from "@realms-world/identity";
 
 import { PayoutWalletPanel } from "./payout-wallet-panel";
@@ -56,7 +56,7 @@ afterEach(async () => {
   vi.restoreAllMocks();
 });
 
-it("shows a linked wallet, the co-signer's hold on a replacement, and a player with none the two ways to one", async () => {
+it("shows a linked wallet, the co-signer's hold on a replacement, and a player with none the two ways to one: make or link", async () => {
   const linked = await mount("0x04a1000000000000000000000000000000000000000000000000000000009c2e");
   expect(linked.textContent).toContain("0x04a1…9c2e");
   expect(linked.textContent).toContain("Prizes go here");
@@ -65,10 +65,20 @@ it("shows a linked wallet, the co-signer's hold on a replacement, and a player w
   // The hours come from the co-signer's own constant (packages/value-ledger/src/payout-wallet.ts).
   expect(linked.textContent).toContain("Replace or relink: the new wallet's first Frontier payout waits 24 hours");
 
+  // No wallet: make one with a passkey, or link one; the old way out to Ready's sign-up is gone.
+  useIdentitySessionStore.setState({
+    status: "signed-in",
+    session: {
+      session: { id: "s", expiresAt: "2099-01-01T00:00:00.000Z", userId: "u" },
+      user: { id: "u", realmsId: "0x7", name: "Ysolde", email: "you@mail.test" },
+    },
+  });
+  vi.spyOn(identityClient, "readDefaultWallet").mockResolvedValue(null);
   const none = await mount(null);
+  expect(none.textContent).toContain("Create my wallet");
   expect(none.textContent).toContain("I have a wallet");
   expect(none.textContent).toContain("Ready · Braavos · Controller");
-  expect(none.textContent).toContain("I need one");
+  expect(none.textContent).not.toContain("I need one");
 });
 
 it("unlinks only with the emailed code, and names a wrong code", async () => {

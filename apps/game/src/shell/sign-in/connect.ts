@@ -9,15 +9,20 @@ type ConnectStore = {
   request: { next: string | null } | null;
   /** A new account's name step was closed: it opens again only when asked, or on the next visit. */
   nameDismissed: boolean;
+  /** The wallet step was closed: it opens again on the next visit, until the account has a payout wallet. */
+  walletDismissed: boolean;
   open: (next: string | null) => void;
   close: () => void;
+  dismissWallet: () => void;
 };
 
 export const useConnectStore = create<ConnectStore>()((set) => ({
   request: null,
   nameDismissed: false,
+  walletDismissed: false,
   open: (next) => set({ request: { next }, nameDismissed: false }),
   close: () => set({ request: null, nameDismissed: true }),
+  dismissWallet: () => set({ walletDismissed: true }),
 }));
 
 /** Opens Connect; once connected the player goes to `next`, or stays on the page they asked from. */

@@ -9,7 +9,7 @@ import {
   SIGN_IN_CODE_LENGTH,
 } from "@realms-world/identity";
 
-import { changeWallet } from "./wallet-changes";
+import { changeWallet, type SendWalletNotice } from "./wallet-changes";
 import { authorizeSiwsNonce, SiwsVerificationError } from "./siws-verification";
 import { WalletNotDeployedError, type VerifyWalletSignature } from "./wallet-signature";
 
@@ -20,7 +20,7 @@ interface SiwsPluginOptions {
   verifySignature: VerifyWalletSignature;
   db: D1Database;
   checkCode(context: AuthContext, email: string, otp: string): Promise<unknown>;
-  sendNotice(email: string, address: string | null, id: string): Promise<void>;
+  sendNotice: SendWalletNotice;
 }
 
 const SiwsProof = z.object({

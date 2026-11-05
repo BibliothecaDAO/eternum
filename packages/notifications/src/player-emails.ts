@@ -53,6 +53,33 @@ export const payoutWalletEmail = (options: {
   });
 };
 
+/**
+ * A recovery of the player's Realms wallet has started: a new passkey takes the wallet over in 7 days unless the
+ * passkey that holds it now cancels. Sent when it starts, so a player who did not start it has the whole week.
+ */
+export const walletRecoveryEmail = (options: {
+  to: string;
+  wallet: string;
+  appUrl: string;
+  idempotencyKey: string;
+}): Email => {
+  const cancel = "If you did not start it, open Realms, Settings, Payout wallet, and cancel it with your passkey.";
+  return playerEmail({
+    to: options.to,
+    appUrl: options.appUrl,
+    idempotencyKey: options.idempotencyKey,
+    note: cancel,
+    subject: "A recovery of your Realms wallet started",
+    preheader: "A new passkey takes over your Realms wallet in 7 days unless you cancel.",
+    art: "wallet-recovery",
+    lines: ["A new passkey takes over your Realms wallet in 7 days:"],
+    detail: options.wallet,
+    action: "Open Realms",
+    because: `Sent to ${options.to}, the email of your Realms account.`,
+    text: `A new passkey takes over your Realms wallet ${options.wallet} in 7 days. ${cancel}`,
+  });
+};
+
 interface PlayerMessage {
   to: string;
   appUrl: string;

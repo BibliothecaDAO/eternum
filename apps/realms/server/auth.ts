@@ -1,5 +1,5 @@
-import { environmentL2 } from "@realms-world/chain";
-import { betterAuth } from "better-auth";
+import { encodeChainName, environmentL2 } from "@realms-world/chain";
+import { betterAuth, type AuthContext } from "better-auth";
 import { APIError } from "better-auth/api";
 import { emailOTP } from "better-auth/plugins";
 import {
@@ -17,21 +17,52 @@ import { isNameTaken } from "./names";
 import { realmsIdOf } from "./realms-id";
 import { resendSignInCodes, type SendSignInCode } from "./sign-in-codes";
 import { resendWalletNotices } from "./wallet-notices";
+import type { SendWalletNotice } from "./wallet-changes";
 import { siws } from "./siws-plugin";
-import { verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
+import { defaultWallet } from "./default-wallet-plugin";
+import { identityL2Configuration, identityProvider } from "./l2";
+import { avnuPaymaster } from "./paymaster";
+import { readAttemptState, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
+import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
 
-/** What the identity service reaches outside its database: the environment L2 for wallet signatures, and the email provider. */
-interface IdentityServices {
+/**
+ * What the identity service reaches outside its database: the environment L2 for wallet signatures and deployments,
+ * the email provider, and the paymaster of default wallets.
+ */
+interface IdentityServices extends Pick<WalletChainServices, "paymaster" | "isDeployed" | "readEscape"> {
   verifyWalletSignature: VerifyWalletSignature;
   sendSignInCode: SendSignInCode;
-  sendWalletNotice?: (email: string, address: string | null, id: string) => Promise<void>;
+  sendWalletNotice?: SendWalletNotice;
 }
 
-const identityServicesOf = (
-  env: Pick<IdentityEnv, "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "RESEND_API_KEY" | "BASE_URL">,
-): IdentityServices => ({
+type WalletChainEnv = Pick<
+  IdentityEnv,
+  "ENVIRONMENT" | "L2_RPC_URL" | "MARKETPLACE_API_URL" | "AVNU_PAYMASTER_API_KEY"
+>;
+type IdentityServiceEnv = WalletChainEnv & Pick<IdentityEnv, "RESEND_API_KEY" | "BASE_URL">;
+
+/** What default wallets need of the chain: its paymaster (sponsoring only with our key), and reads of a wallet. */
+type WalletChainServices = Pick<
+  RecoveryServices,
+  "paymaster" | "isDeployed" | "readEscape" | "readAttemptState" | "succeeded"
+>;
+
+export const walletChainServicesOf = (env: WalletChainEnv): WalletChainServices => {
+  const provider = () => identityProvider(env);
+  return {
+    paymaster: avnuPaymaster(env.AVNU_PAYMASTER_API_KEY),
+    isDeployed: async (address) => !(await isUndeployedWallet(provider(), address)),
+    readEscape: (address) => readWalletEscape(provider(), address),
+    readAttemptState: (address, newOwner, nonce) => readAttemptState(provider(), address, newOwner, nonce),
+    succeeded: async (transactionHash) =>
+      (await provider().waitForTransaction(transactionHash, { retryInterval: 2_000 })).isSuccess(),
+  };
+};
+
+const identityServicesOf = (env: IdentityServiceEnv): IdentityServices => ({
   verifyWalletSignature: verifyWalletOnL2(env),
   sendSignInCode: resendSignInCodes(env.RESEND_API_KEY, env.BASE_URL),
+  ...walletChainServicesOf(env),
 });
 
 /**
@@ -77,9 +108,14 @@ export const createIdentityAuth = (
     | "DISCORD_CLIENT_ID"
     | "DISCORD_CLIENT_SECRET"
     | "RESEND_API_KEY"
+    | "AVNU_PAYMASTER_API_KEY"
+    | "GUARDIAN"
   >,
   services: IdentityServices = identityServicesOf(env),
 ) => {
+  const sendWalletNotice = services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL);
+  const checkCode = (context: AuthContext, email: string, otp: string) =>
+    emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } });
   const emailCodes = emailOTP({
     otpLength: SIGN_IN_CODE_LENGTH,
     expiresIn: SIGN_IN_CODE_SECONDS,
@@ -138,9 +174,19 @@ export const createIdentityAuth = (
         chainId: environmentL2(env.ENVIRONMENT).chain,
         verifySignature: services.verifyWalletSignature,
         db: env.DB,
-        checkCode: (context, email, otp) =>
-          emailCodes.endpoints.checkVerificationOTP({ context, body: { email, otp, type: "sign-in" } }),
-        sendNotice: services.sendWalletNotice ?? resendWalletNotices(env.RESEND_API_KEY, env.BASE_URL),
+        checkCode,
+        sendNotice: sendWalletNotice,
+      }),
+      defaultWallet({
+        origin: env.BASE_URL,
+        chainId: encodeChainName(identityL2Configuration(env).chainId),
+        db: env.DB,
+        guardian: env.GUARDIAN,
+        paymaster: services.paymaster,
+        isDeployed: services.isDeployed,
+        readEscape: services.readEscape,
+        checkCode,
+        sendNotice: sendWalletNotice,
       }),
     ],
   });
