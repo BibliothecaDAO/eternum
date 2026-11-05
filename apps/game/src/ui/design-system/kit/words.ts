@@ -739,14 +739,11 @@ export const REMINDER_ON = "Reminder on";
 /** The same ask on an iPhone in its browser, which sends push only to the installed app. */
 export const ADD_TO_HOME_SCREEN = "Add to Home Screen";
 export const TURNING_ALERTS_ON = "Turning on";
-/**
- * The game day's ask to turn alerts on (useDayAsk): after the day's claim for a home with one, on the day's summary for
- * a home without, so its line promises a claim only to a home that has one.
- */
-export const ALERTS_ASK = {
-  /** After the claim, in the next day's countdown's place ("Day 13 opens in 7h 14m"). */
-  claim: (opensIn: string) => `${opensIn}. Get one push when your claim is ready.`,
-  day: (day: number) => `Get one push when Day ${day} opens.`,
+/** The popup that asks for alerts (useAlertsPopup): what this device would get, then the tap. */
+export const ALERTS_POPUP = {
+  title: "Know when to come back",
+  /** The kinds the asked level pushes, as Settings names them (kindsList). */
+  brings: (kinds: readonly NotificationKind[]) => `A push for ${kindsList(kinds)}.`,
   install: "On an iPhone, alerts need Realms on your Home Screen first.",
   turnOn: "Turn on alerts",
   notNow: "Not now",
@@ -1372,14 +1369,19 @@ export const NOTIFICATION_KIND_WORDS = {
   points: "Hyperstructure points",
 } as const satisfies Record<NotificationKind, string>;
 
+/** Kinds of alert as one list, in the table's order ("fights, results and messages"). */
+const kindsList = (kinds: readonly NotificationKind[]): string => {
+  const named = kinds.map((kind) => NOTIFICATION_KIND_WORDS[kind]);
+  return named.length === 1 ? named[0]! : `${named.slice(0, -1).join(", ")} and ${named.at(-1)}`;
+};
+
 /**
  * What a level brings, in one line under the levels: the kinds it carries beyond the level below it, as the kinds table
  * gives them ("Important, plus deliveries and trades, …").
  */
 export const levelLine = (kinds: readonly NotificationKind[], below: NotificationLevel | null): string => {
   if (kinds.length === 0) return "No alerts";
-  const named = kinds.map((kind) => NOTIFICATION_KIND_WORDS[kind]);
-  const list = named.length === 1 ? named[0]! : `${named.slice(0, -1).join(", ")} and ${named.at(-1)}`;
+  const list = kindsList(kinds);
   return below === null || below === "off"
     ? `${list.charAt(0).toUpperCase()}${list.slice(1)}`
     : `${LEVEL_WORDS[below]}, plus ${list}`;

@@ -7,7 +7,7 @@ import { FeedLine } from "@/ui/features/event-feed/feed-line";
 import { MapSiteCardView } from "@/ui/features/frontier/sites/map-site-card";
 import { canonicalRealm, homeSourceClaim } from "@bibliothecadao/eternum";
 import { BuildingType } from "@bibliothecadao/types";
-import type { AlertsAsk, DayAsk } from "@/shell/profile/alerts-ask";
+import type { AlertsAsk, AlertsPopupAsk } from "@/shell/profile/alerts-ask";
 import { DEVCON_LABOR_RULES } from "@/shell/join/devcon";
 import { homeIcon } from "@/ui/design-system/home-icons";
 import { REALM_SKINS } from "@/three/structures/realm-skins";
@@ -49,6 +49,7 @@ import { OrderBar } from "@/ui/features/frontier/hud/order-bar";
 import { PickedArmy, type PickedArmyView } from "@/ui/features/frontier/hud/picked-army";
 import { DeployView } from "@/ui/features/frontier/deploy/deploy-view";
 import { SiteCardView } from "@/ui/features/frontier/sites/site-card-view";
+import { AlertsPopupCard } from "@/ui/features/frontier/alerts-popup";
 import { DayDoneCard } from "@/ui/features/frontier/rollover/day-done-card";
 import { DayEndScreen } from "@/ui/features/frontier/rollover/day-end-screen";
 import { RESTING, useDayEndStore } from "@/hooks/store/use-day-end-store";
@@ -256,15 +257,13 @@ const WALLET_ADDRESS = "0x04a1d2c3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6
 type LabWithdraw = { held: number; wallet: string | null; refusal?: string; step: WithdrawStep; amount: number };
 /**
  * The Realm Labor sheet's home and day: a golden or regular Devcon home, one founded with a held Realm, or one with no
- * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the game day's ask after
- * the claim (on this device, or an iPhone's browser), the season's last day.
+ * claim; today claimed or not, the Labor store's room left, the reminder's state once claimed, the season's last day.
  */
 type LabRealms = {
   home: "golden" | "devcon" | "held" | "none";
   claimed?: boolean;
   room?: number;
   ask?: "remind" | "install" | "on";
-  dayAsk?: "remind" | "install";
   lastDay?: boolean;
 };
 const WITHDRAW_500: LabWithdraw = { held: 1_240, wallet: WALLET_ADDRESS, step: { kind: "pick" }, amount: 500 };
@@ -630,6 +629,9 @@ const STATES = {
   "today-sites": { clock: CLOCK, stores: STORES, armies: ARMIES, results: "today-sites" },
   merge: { clock: CLOCK, stores: STORES, armies: ARMIES, merge: true },
   idle: { clock: CLOCK, stores: STORES, armies: ARMIES },
+  // The alerts popup over the map on entering (owner's pick A of reports/push-popup-1.md), and on an iPhone's browser.
+  "alerts-popup": { clock: CLOCK, stores: STORES, armies: ARMIES, alertsPopup: "remind" },
+  "alerts-popup-install": { clock: CLOCK, stores: STORES, armies: ARMIES, alertsPopup: "install" },
   "armies-open": { clock: CLOCK, stores: STORES, armies: ARMIES.slice(0, 2) },
   // Armies through the spire: each one in an Ethereal layer wears its layer's mark; its panel and a phone's pick too.
   "armies-ethereal": { clock: CLOCK, stores: STORES, armies: ETHEREAL_ARMIES },
@@ -885,13 +887,6 @@ const STATES = {
     stores: STORES,
     armies: [],
     dayDone: { ...DAY_DONE, totals: UNKNOWN_TOTALS, history: "short" as const },
-  },
-  // A home with no daily claim, asked for alerts on the day's summary (push ask B).
-  "day-done-ask": {
-    clock: NIGHT,
-    stores: STORES,
-    armies: [],
-    dayDone: { ...DAY_DONE, ask: labDayAsk("remind", DAY_DONE.endedDay + 2)! },
   },
   night: {
     clock: NIGHT,
@@ -1231,21 +1226,6 @@ const STATES = {
     purse: { lords: 1240 },
     realms: { home: "golden", claimed: true, ask: "on", lastDay: true },
   },
-  // The game day's ask right after the claim (push ask A), and the same on an iPhone's browser.
-  "realms-ask": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "remind", dayAsk: "remind" },
-  },
-  "realms-ask-install": {
-    clock: CLOCK,
-    stores: STORES,
-    armies: ARMIES,
-    purse: { lords: 1240 },
-    realms: { home: "golden", claimed: true, ask: "install", dayAsk: "install" },
-  },
 } as const;
 
 type LabState = {
@@ -1285,6 +1265,8 @@ type LabState = {
   /** A building tapped on the realm's board: its own card. */
   building?: keyof typeof LAB_BUILDINGS;
   dayDone?: Parameters<typeof DayDoneCard>[0];
+  /** The alerts popup as this device or an iPhone's browser sees it. */
+  alertsPopup?: AlertsPopupAsk["kind"];
   lastHour?: boolean;
   order?: LabOrder;
   site?: LabSite;
@@ -1472,6 +1454,7 @@ export const HudLab = () => {
           <LabResults results={lab.results} clock={lab.clock} seasonLords={lab.seasonLords} noWallet={lab.noWallet} />
         )}
         {lab.dayDone && <LabDaySummary card={lab.dayDone} />}
+        {lab.alertsPopup && <AlertsPopupCard ask={{ kind: lab.alertsPopup, act: noop, notNow: noop }} />}
         {lab.army && <LabArmy army={lab.army} />}
         {(lab.realmView === "build" ||
           lab.realmView === "build-early" ||
@@ -2017,7 +2000,6 @@ const LabRealmsSheet = ({ realms }: { realms: LabRealms }) => (
     labor={labRealmLabor(realms)}
     map={realms.home === "held" ? LAB_REALM_MAP : null}
     ask={labAlertsAsk(realms.ask)}
-    dayAsk={labDayAsk(realms.dayAsk, CLOCK.day + 1)}
     sending={false}
     onClaim={noop}
     onClose={noop}
@@ -2085,13 +2067,6 @@ const labLaborHome = (home: LabRealms["home"]): RealmLaborFacts["home"] => {
 
 const labAlertsAsk = (ask: LabRealms["ask"]): AlertsAsk =>
   ask === undefined ? null : ask === "on" ? { kind: "on" } : { kind: ask, busy: false, act: noop };
-
-/** A game day's ask on the fiction. A declaration, with its own empty taps: the rooms above build theirs at load. */
-function labDayAsk(kind: LabRealms["dayAsk"], nextDay: number): DayAsk | null {
-  return kind === undefined
-    ? null
-    : { ask: { kind, busy: false, act: () => undefined }, nextDay, offer: () => undefined, notNow: () => undefined };
-}
 
 /** The day's summary where the game draws it: over the map at the day's end, in its summary phase. */
 function LabDaySummary({ card }: { card: Parameters<typeof DayDoneCard>[0] }) {

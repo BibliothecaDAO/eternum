@@ -3,12 +3,12 @@ import { useCurrentDefaultTick, useNowSeconds } from "@/hooks/helpers/use-block-
 import { useNativeRevision } from "@/hooks/helpers/use-native-facts";
 import { useAccountStore } from "@/hooks/store/use-account-store";
 import { type DaySummary, useDayEndStore } from "@/hooks/store/use-day-end-store";
-import { configManager, homeDailyClaim, type readExpeditionRules } from "@bibliothecadao/eternum";
+import { configManager, type readExpeditionRules } from "@bibliothecadao/eternum";
 import type { NativeRows } from "@bibliothecadao/eternum/game-client";
 import { RESOURCE_PRECISION } from "@bibliothecadao/types";
-import { useDayAsk } from "@/shell/profile/alerts-ask";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { AlertsPopup } from "../alerts-popup";
 import { endedHomeArmies, homecomingAtNextDeploy } from "../frontier-home";
 import { dayClock, endedDay, nextDayOf } from "../hud/day-clock";
 import { usePlayerDay } from "../log/player-day";
@@ -33,7 +33,7 @@ const ARMY_MODELS = ["ExplorerTroops", "TileOccupancy", "ArmyProgress", "Resourc
  * no device keeps a "seen" for the account. In the game as the day ends, ExpeditionRollover begins the moment; opening the
  * game after it ended (owner, 2026-10-25: "it doesnt automatically move me to the new day area"), or once history
  * answers after the moment went on without the summary, this does. The season's end is no day's end (endedDay): the
- * season-over card tells it.
+ * season-over card tells it. Once no day's end is owed, the map is clear for the alerts popup (AlertsPopup).
  */
 export const DayDone = ({
   rules,
@@ -59,9 +59,6 @@ export const DayDone = ({
   // A day that ended before this realm was founded is none of its player's: a new realm starts on the day it was made.
   const realmsDay = ended !== null && ended.end > Number(realm.base.created_at);
   const unseen = !visiting && player !== null && ended !== null && realmsDay && (seen === null || seen < ended.day);
-  // A home with no daily claim is asked for alerts here; one with a claim is asked after its claim instead.
-  const hasClaim = homeDailyClaim(setup.store, { gameId: realm.game_id, entityId: realm.entity_id }) !== null;
-  const dayAsk = useDayAsk("summary", { hasClaim, nextDay: nextDayOf(rules, now) });
 
   const summary = (() => {
     if (!unseen || !ended || played.history === "waiting" || played.playedOn) return null;
@@ -81,12 +78,7 @@ export const DayDone = ({
         armies={gone.length}
         troopsLost={taken - (returned?.sent ?? 0)}
         returned={returned && returned.sent > 0 ? returned : undefined}
-        ask={dayAsk ?? undefined}
-        onContinue={() => {
-          // Continue passes the day's ask by: a Not now.
-          dayAsk?.notNow();
-          continueDay();
-        }}
+        onContinue={continueDay}
       />
     );
   })();
@@ -116,7 +108,15 @@ export const DayDone = ({
     if (goneThrough !== null) markSeen(goneThrough);
   }, [goneThrough, markSeen]);
 
-  return <DayEndScreen summary={summary} />;
+  // The map is the player's own and clear once no day's end is owed: then the alerts popup may open, while a next day
+  // is coming for its push.
+  const clear = !visiting && phase === "day" && !unseen && nextDayOf(rules, now) !== null;
+  return (
+    <>
+      <DayEndScreen summary={summary} />
+      <AlertsPopup clear={clear} />
+    </>
+  );
 };
 
 /** The chain time this HUD first read, once the chain clock has a time. */
