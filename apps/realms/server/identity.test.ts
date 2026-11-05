@@ -113,17 +113,56 @@ const verifyAsWallet = vi.fn<VerifyWalletSignature>(async (message, signature, a
   );
 });
 
-beforeAll(async () => {
-  database = createTestD1();
-  const migrations = new URL("../migrations/", import.meta.url);
-  const statements = readdirSync(migrations)
-    .sort()
-    .map((file) => readFileSync(new URL(file, migrations), "utf8"))
-    .join(";\n")
+const MIGRATIONS = new URL("../migrations/", import.meta.url);
+/** A migration file's statements, as the identity database runs them. */
+const migrationStatementsOf = (file: string) =>
+  readFileSync(new URL(file, MIGRATIONS), "utf8")
     .replace(/^--.*$/gm, "")
     .split(";")
     .map((statement) => statement.trim())
     .filter(Boolean);
+const D1_MIGRATIONS_TABLE =
+  "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
+/** Records migration files as applied without running them, as a database already past them has them. */
+const markMigrationsApplied = async (db: D1Database, applied: (file: string) => boolean) => {
+  await db.prepare(D1_MIGRATIONS_TABLE).run();
+  const files = readdirSync(MIGRATIONS).filter((file) => file.endsWith(".sql") && applied(file));
+  await db.batch(files.map((file) => db.prepare("INSERT OR IGNORE INTO d1_migrations (name) VALUES (?1)").bind(file)));
+};
+/**
+ * What `wrangler d1 migrations apply` does: runs the migration files d1_migrations does not name, in name order, and
+ * records each; files after `through` wait for a later deploy. Returns the files it ran.
+ */
+const applyPendingMigrations = async (db: D1Database, through?: string) => {
+  await db.prepare(D1_MIGRATIONS_TABLE).run();
+  const { results } = await db.prepare("SELECT name FROM d1_migrations").all<{ name: string }>();
+  const applied = new Set(results.map(({ name }) => name));
+  const pending = readdirSync(MIGRATIONS)
+    .filter((file) => file.endsWith(".sql") && !applied.has(file) && (through === undefined || file <= through))
+    .sort();
+  for (const file of pending) {
+    await db.batch([
+      ...migrationStatementsOf(file).map((sql) => db.prepare(sql)),
+      db.prepare("INSERT INTO d1_migrations (name) VALUES (?1)").bind(file),
+    ]);
+  }
+  return pending;
+};
+/** 0030 as staging ran it, before it was corrected in place: it spared every account with a Discord login. */
+const ORIGINAL_0030 = `update "user" set "suggestedName" = null where "name" = "id" and "suggestedName" is not null and not exists (select 1 from "account" a where a."userId" = "user"."id" and a."providerId" = 'discord')`;
+/** Whether an account is still unnamed (its name is its id), and the name the app would offer it. */
+const suggestionOf = async (db: D1Database, email: string) =>
+  (await db
+    .prepare(`SELECT "name" = "id" AS unnamed, "suggestedName" AS suggested FROM "user" WHERE "email" = ?1`)
+    .bind(email)
+    .first<{ unnamed: number; suggested: string | null }>())!;
+
+beforeAll(async () => {
+  database = createTestD1();
+  const statements = readdirSync(MIGRATIONS)
+    .filter((file) => file.endsWith(".sql"))
+    .sort()
+    .flatMap(migrationStatementsOf);
   await database.db.batch(statements.map((statement) => database.db.prepare(statement)));
   env = {
     ENVIRONMENT: "staging",
@@ -2596,7 +2635,7 @@ describe("identity Worker", () => {
     }
   });
 
-  it("takes every suggestion off accounts not yet named, an email account later linked to Discord included, and keeps named ones", async () => {
+  it("repairs through 0031 an email account linked to Discord where the original 0030 already ran, and its next sign-in has nothing to claim", async () => {
     const unnamed = createBrowser();
     await signInWithCode(unnamed, "old.unnamed@realms.test");
     const named = createBrowser();
@@ -2605,7 +2644,7 @@ describe("identity Worker", () => {
     const linked = createBrowser();
     await signInWithCode(linked, "john.private@realms.test");
     const linkedId = (await linked.session())!.user.id;
-    // Accounts made before this change were suggested their email's local part.
+    // Accounts made before email suggestions ended were suggested their email's local part.
     const suggest = (email: string, name: string) =>
       database.db.prepare(`UPDATE "user" SET "suggestedName" = ?1 WHERE "email" = ?2`).bind(name, email).run();
     await suggest("old.unnamed@realms.test", "oldunnamed");
@@ -2633,32 +2672,35 @@ describe("identity Worker", () => {
     } finally {
       discord.mockRestore();
     }
-    const discordLogins = await database.db
-      .prepare(`SELECT count(*) AS n FROM "account" WHERE "userId" = ?1 AND "providerId" = 'discord'`)
-      .bind(linkedId)
-      .first<{ n: number }>();
-    expect(discordLogins?.n).toBe(1);
 
-    const migration = readFileSync(new URL("../migrations/0030_no_email_name_suggestion.sql", import.meta.url), "utf8")
-      .replace(/^--.*$/gm, "")
-      .replace(/\s+/g, " ");
-    // Twice, as a rerun after a crash would.
-    await database.db.exec(migration);
-    await database.db.exec(migration);
-    const suggested = async (email: string) =>
-      (await database.db
-        .prepare(`SELECT "name" = "id" AS unnamed, "suggestedName" AS suggested FROM "user" WHERE "email" = ?1`)
-        .bind(email)
-        .first<{ unnamed: number; suggested: string | null }>())!;
-    expect(await suggested("old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
-    expect(await suggested("john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
-    // A Discord account not yet named cannot be told from a linked one: it picks its name too.
-    expect(await suggested("rook@discord.test")).toEqual({ unnamed: 1, suggested: null });
-    expect(await suggested("old.named@realms.test")).toEqual({ unnamed: 0, suggested: "oldnamed" });
+    // Staging's history: the schema 0001–0029 leave, then 0030 as first merged (cfd96fd4a4b), which spared any account
+    // with a Discord login, all recorded as applied.
+    await markMigrationsApplied(database.db, (file) => file <= "0030_no_email_name_suggestion.sql");
+    await database.db.exec(ORIGINAL_0030);
+    expect(await suggestionOf(database.db, "john.private@realms.test")).toEqual({
+      unnamed: 1,
+      suggested: "johnprivate",
+    });
+    // The next deploy runs only what is pending: 0031.
+    expect(await applyPendingMigrations(database.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
+    const cleared = async () => {
+      expect(await suggestionOf(database.db, "john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
+      expect(await suggestionOf(database.db, "old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
+      // A Discord account not yet named cannot be told from a linked one: it picks its name too.
+      expect(await suggestionOf(database.db, "rook@discord.test")).toEqual({ unnamed: 1, suggested: null });
+      expect(await suggestionOf(database.db, "old.named@realms.test")).toEqual({ unnamed: 0, suggested: "oldnamed" });
+    };
+    await cleared();
+    // A repeat deploy has nothing pending, and 0031 run again, as after a crash halfway, changes nothing.
+    expect(await applyPendingMigrations(database.db)).toEqual([]);
+    await database.db.batch(
+      migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => database.db.prepare(sql)),
+    );
+    await cleared();
     expect((await named.session())?.user.name).toBe("oldnamed");
 
-    // The linked account's next sign-in hands the app an unnamed account with nothing to claim by itself, so the app
-    // asks for a name (connect-flow.test.tsx) and the email's local part is never published.
+    // The linked account's next sign-in: still unnamed (nothing named it by itself), with no suggestion for the app to
+    // claim, so the app asks for a name (connect-flow.test.tsx) and the email's local part is never published.
     const again = fakeDiscord();
     try {
       const nextVisit = createBrowser();
@@ -2666,6 +2708,63 @@ describe("identity Worker", () => {
       expect((await nextVisit.session())?.user).toMatchObject({ id: linkedId, name: linkedId, suggestedName: null });
     } finally {
       again.mockRestore();
+    }
+  });
+
+  it("leaves 0031 nothing to change where the corrected 0030 ran, on a database brought up fresh, and again on a repeat", async () => {
+    const fresh = createTestD1();
+    try {
+      // Brought up from nothing by pending-only applies, as production stands (0027) before 0030 and 0031 run.
+      const upTo0029 = await applyPendingMigrations(fresh.db, "0029_referral_browsers.sql");
+      expect(upTo0029.at(-1)).toBe("0029_referral_browsers.sql");
+      const accounts: [id: string, name: string, email: string, suggested: string, discord: boolean][] = [
+        ["email", "email", "jane.private@realms.test", "janeprivate", false],
+        ["linked", "linked", "john.private@realms.test", "johnprivate", true],
+        ["discord", "discord", "rook@discord.test", "rook", true],
+        ["named", "ChosenName", "named@realms.test", "named", false],
+      ];
+      await fresh.db.batch(
+        accounts.flatMap(([id, name, email, suggested, discord]) => [
+          fresh.db
+            .prepare(
+              `INSERT INTO "user" ("id", "name", "email", "emailVerified", "createdAt", "updatedAt", "suggestedName") VALUES (?1, ?2, ?3, 1, 1, 1, ?4)`,
+            )
+            .bind(id, name, email, suggested),
+          ...(discord
+            ? [
+                fresh.db
+                  .prepare(
+                    `INSERT INTO "account" ("id", "accountId", "providerId", "userId", "createdAt", "updatedAt") VALUES (?1, ?1, 'discord', ?2, 1, 1)`,
+                  )
+                  .bind(`discord-${id}`, id),
+              ]
+            : []),
+        ]),
+      );
+      const cleared = async () => {
+        expect(await suggestionOf(fresh.db, "jane.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
+        expect(await suggestionOf(fresh.db, "john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
+        expect(await suggestionOf(fresh.db, "rook@discord.test")).toEqual({ unnamed: 1, suggested: null });
+        expect(await suggestionOf(fresh.db, "named@realms.test")).toEqual({ unnamed: 0, suggested: "named" });
+      };
+      // The corrected 0030 already clears every unnamed account, the Discord-linked one included.
+      expect(await applyPendingMigrations(fresh.db, "0030_no_email_name_suggestion.sql")).toEqual([
+        "0030_no_email_name_suggestion.sql",
+      ]);
+      await cleared();
+      const before = (await fresh.db.prepare(`SELECT "id", "name", "suggestedName" FROM "user" ORDER BY "id"`).all())
+        .results;
+      // 0031 then finds nothing to change, nor does a repeat deploy or 0031 run again.
+      expect(await applyPendingMigrations(fresh.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
+      expect(await applyPendingMigrations(fresh.db)).toEqual([]);
+      await fresh.db.batch(
+        migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => fresh.db.prepare(sql)),
+      );
+      expect(
+        (await fresh.db.prepare(`SELECT "id", "name", "suggestedName" FROM "user" ORDER BY "id"`).all()).results,
+      ).toEqual(before);
+    } finally {
+      fresh.close();
     }
   });
 

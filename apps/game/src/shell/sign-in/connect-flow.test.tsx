@@ -143,7 +143,8 @@ describe("Connect", () => {
   });
 
   it("asks an unnamed account back from Discord with its old suggestion taken off for a name, saving nothing by itself", async () => {
-    // As migration 0030 leaves an email account linked to Discord later: signed in, unnamed, suggested nothing.
+    // The session identity.test.ts reads after 0031 for an email account linked to Discord later: unnamed (its name is
+    // its id), suggested nothing.
     useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: null }) });
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
     const ui = await mount("/");
