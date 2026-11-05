@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { SOCIAL_PROVIDERS, type SocialProvider } from "../../packages/identity/src/account-rules";
+// Type only: the owner commands start from an export of deploy/first alone (entry.test.ts), so nothing outside it loads.
+import type { SocialProvider } from "../../packages/identity/src/account-rules";
 import environments from "./environments.json";
 import type { SeasonDates } from "./dates";
 import { PublicError } from "./errors";
@@ -37,16 +38,21 @@ export const ledgerAdmin = (target: Target, inputs: Pick<Inputs, "admin">, deplo
  */
 type SignInClients = { [P in SocialProvider as `${P}ClientId` | `${P}ClientSecret`]?: string };
 
+/** A provider's half of a pair in inputs.json: `googleClientId` names `google`. */
+const SIGN_IN_CLIENT_KEY = /^([a-z]+)Client(?:Id|Secret)$/;
+
 /** The providers inputs.json configures, each with its client; a pair half set or blank is refused, never skipped. */
-export const signInClientsOf = (inputs: SignInClients) =>
-  SOCIAL_PROVIDERS.flatMap((provider) => {
-    const clientId = inputs[`${provider}ClientId`];
-    const clientSecret = inputs[`${provider}ClientSecret`];
-    if (clientId === undefined && clientSecret === undefined) return [];
+export const signInClientsOf = (inputs: SignInClients) => {
+  const named: Record<string, string | undefined> = inputs;
+  const providers = new Set(Object.keys(named).flatMap((key) => SIGN_IN_CLIENT_KEY.exec(key)?.[1] ?? []));
+  return [...providers].map((provider) => {
+    const clientId = named[`${provider}ClientId`];
+    const clientSecret = named[`${provider}ClientSecret`];
     if (!clientId?.trim() || !clientSecret?.trim())
       throw new PublicError(`Set both ${provider}ClientId and ${provider}ClientSecret in inputs.json, or neither`);
-    return [{ provider, clientId, clientSecret }];
+    return { provider, clientId, clientSecret };
   });
+};
 
 export interface Inputs extends SeasonDates, SignInClients {
   cloudflareToken: string;

@@ -604,10 +604,11 @@ test("Google, Apple and X sign-in reach the identity Worker only as a pair the o
   expect(() => validateInputs(withGoogle, environments.dev)).not.toThrow();
   const installed = workerSecrets(identity, withGoogle, secrets, keys, undefined);
   expect(installed).toMatchObject({ GOOGLE_CLIENT_ID: "fake-google-id", GOOGLE_CLIENT_SECRET: "fake-google-secret" });
-  expect(Object.keys(installed).filter((name) => name.endsWith("_CLIENT_ID"))).toEqual([
-    "GOOGLE_CLIENT_ID",
-    "DISCORD_CLIENT_ID",
-  ]);
+  expect(
+    Object.keys(installed)
+      .filter((name) => name.endsWith("_CLIENT_ID"))
+      .sort(),
+  ).toEqual(["DISCORD_CLIENT_ID", "GOOGLE_CLIENT_ID"]);
   for (const half of [
     { ...input, appleClientId: "party.realms.signin" },
     { ...input, twitterClientSecret: "fake-x-secret" },
