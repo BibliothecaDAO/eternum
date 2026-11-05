@@ -4,7 +4,7 @@
  * every client and core's story text share (nouns, numbers, times, names, the voice) are @bibliothecadao/types' words.
  */
 import type { ResolvedGameMode } from "@/config/game-modes/resolved-mode";
-import type { CampaignKey } from "@realms-world/identity";
+import type { CampaignKey, SocialProvider } from "@realms-world/identity";
 import type { NotificationKind, NotificationLevel } from "@bibliothecadao/notifications";
 import {
   BuildingType,
@@ -862,9 +862,18 @@ export const LORE_LINE = "The mist forgets. Your realm remembers.";
 /** Frontier's pitch on the first visit's card. */
 export const PITCH = "A new land every day";
 
-/** The sign-in flow's words: its titles, its two ways in and the steps on its buttons. */
-export const SIGN_IN_WORDS = {
+/** The sign-in providers, as their own brand names them: the sheet's buttons, its handoff step and You's sign-in row. */
+export const SIGN_IN_PROVIDER_NAMES = {
+  google: "Google",
+  apple: "Apple",
   discord: "Discord",
+  twitter: "X",
+} as const satisfies Record<SocialProvider, string>;
+
+/** The sign-in flow's words: its titles, its ways in and the steps on its buttons. */
+export const SIGN_IN_WORDS = {
+  /** A provider's button, in the wording Google's and Apple's brand rules allow. */
+  continueWith: (provider: SocialProvider) => `Continue with ${SIGN_IN_PROVIDER_NAMES[provider]}`,
   or: "or",
   email: "Email",
   sendCode: "Send code",
@@ -881,10 +890,10 @@ export const SIGN_IN_WORDS = {
   portrait: "Portrait",
   /** Under the ways in: most visitors from a flyer are new, and their first sign-in is their sign-up. */
   firstSignIn: "New here? Your first sign-in creates your Realms account.",
-  /** After Discord, when it finished in another browser (a phone's Safari view, the Discord app's browser). */
-  handoff: "Discord finished elsewhere? Enter its code.",
-  handoffCode: "Discord code",
-  discordAgain: "Try Discord again",
+  /** After a provider, when it finished in another browser (a phone's Safari view, the provider app's browser). */
+  handoff: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} finished elsewhere? Enter its code.`,
+  handoffCode: (provider: SocialProvider) => `${SIGN_IN_PROVIDER_NAMES[provider]} code`,
+  tryAgain: (provider: SocialProvider) => `Try ${SIGN_IN_PROVIDER_NAMES[provider]} again`,
 } as const;
 
 /** Devcon's landing and its ticket: the realm it promises, the ticket opened, and what each tier gives each day. */
@@ -1160,7 +1169,6 @@ export const PROFILE_WORDS = {
   name: "Name",
   portrait: "Portrait",
   signInMethods: "Sign-in",
-  discord: "Discord",
   email: "email",
   linkWallet: "Link wallet",
   /** The You card's holding with no wallet linked: what a wallet holds and receives (owner, 31 October 2026). */

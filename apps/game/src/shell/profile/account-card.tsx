@@ -1,5 +1,5 @@
-import { KEEP, PROFILE_WORDS, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
-import { nameRuleViolation, type Session } from "@realms-world/identity";
+import { KEEP, PROFILE_WORDS, SIGN_IN_PROVIDER_NAMES, SIGN_IN_WORDS, WALLET_WORDS } from "@/ui/design-system/kit/words";
+import { nameRuleViolation, SOCIAL_PROVIDERS, type Session } from "@realms-world/identity";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -147,7 +147,7 @@ const useReturnOnceLinked = (returnTo: string | null, payout: string | null) => 
   }, [linkedOnArrival, navigate, payout, returnTo]);
 };
 
-/** How the player signs in: Discord, an email code, or both, as the identity service lists them. */
+/** How the player signs in: each provider linked to the account, and an email code, as the identity service lists them. */
 const SignInMethods = ({ session }: { session: Session }) => {
   const [providers, setProviders] = useState<string[] | null>(null);
   useEffect(() => {
@@ -165,7 +165,9 @@ const SignInMethods = ({ session }: { session: Session }) => {
   }, [session.user.id]);
   if (providers === null) return "—";
   const methods = [
-    ...(providers.includes("discord") ? [PROFILE_WORDS.discord] : []),
+    ...SOCIAL_PROVIDERS.filter((provider) => providers.includes(provider)).map(
+      (provider) => SIGN_IN_PROVIDER_NAMES[provider],
+    ),
     ...(session.user.emailVerified ? [PROFILE_WORDS.email] : []),
   ];
   return methods.join(" · ") || "—";

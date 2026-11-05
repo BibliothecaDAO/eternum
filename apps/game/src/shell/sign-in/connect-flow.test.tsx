@@ -1,4 +1,4 @@
-import { IDENTITY_PORTRAITS, IdentityRequestError, type Session } from "@realms-world/identity";
+import { IDENTITY_PORTRAITS, IdentityRequestError, type Session, type SocialProvider } from "@realms-world/identity";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { MemoryRouter, useLocation } from "react-router-dom";
@@ -19,7 +19,7 @@ import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
 import { ConnectFlow } from "./connect-flow";
-import { forgetDiscordStart, pendingDiscordStart, rememberDiscordStart } from "./discord-pending";
+import { forgetSocialStart, pendingSocialStart, rememberSocialStart } from "./social-pending";
 
 const NEXT = "/g/0x5245414c4d53/1/map?col=4&row=9&spectate=true";
 
@@ -94,7 +94,7 @@ afterEach(() => {
   vi.restoreAllMocks();
   useIdentitySessionStore.setState({ status: "anonymous", session: null });
   useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
-  forgetDiscordStart();
+  forgetSocialStart();
 });
 
 describe("Connect", () => {
@@ -427,59 +427,62 @@ describe("Your wallet", () => {
   });
 });
 
-describe("Connect with Discord", () => {
-  // Where the test's Discord sends the page: jsdom reports the navigation as not implemented and stays.
-  const DISCORD = "https://discord.test/oauth2/authorize";
+describe("Connect with a provider", () => {
+  // Where the test's provider sends the page: jsdom reports the navigation as not implemented and stays.
+  const PROVIDER = "https://accounts.google.test/o/oauth2/auth";
   const navigations = () => {
     const errors = vi.spyOn(console, "error").mockImplementation(() => {});
     return () => errors.mock.calls.filter(([error]) => String(error).includes("navigation")).length;
   };
+  const providerButtons = () =>
+    [...document.body.querySelectorAll("button")].filter((button) => button.textContent?.startsWith("Continue with"));
 
-  const pressDiscord = async (ui: Awaited<ReturnType<typeof mount>>) => {
+  const press = async (ui: Awaited<ReturnType<typeof mount>>, label: string) => {
     await ui.ask();
     await act(async () => {});
-    const discord = [...document.body.querySelectorAll("button")].find((button) => button.textContent === "Discord")!;
-    await act(async () => discord.click());
+    const button = providerButtons().find((each) => each.textContent === label)!;
+    await act(async () => button.click());
   };
 
-  it("sends Discord back to where the asker sends the player, or to this page", async () => {
+  it("sends the provider back to where the asker sends the player, or to this page", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    const start = vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "discord"]);
+    const start = vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     const left = navigations();
     const asked = await mount("/", NEXT);
     try {
-      await pressDiscord(asked);
-      expect(start).toHaveBeenLastCalledWith(NEXT);
+      await press(asked, "Continue with Google");
+      expect(start).toHaveBeenLastCalledWith("google", NEXT);
       expect(left()).toBe(1);
     } finally {
       await asked.unmount();
     }
     // Another visit, the first attempt abandoned.
     useConnectStore.setState({ request: null });
-    forgetDiscordStart();
+    forgetSocialStart();
     const here = await mount("/season?tab=frontier");
     try {
-      await pressDiscord(here);
-      expect(start).toHaveBeenLastCalledWith("/season?tab=frontier");
+      await press(here, "Continue with Discord");
+      expect(start).toHaveBeenLastCalledWith("discord", "/season?tab=frontier");
     } finally {
       await here.unmount();
     }
   });
 
-  it("signs in with the code another browser shows when Discord finished there, and says why a code is refused", async () => {
+  it("signs in with the code another browser shows when the provider finished there, and says why a code is refused", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "twitter"]);
+    vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     navigations();
     const claim = vi
-      .spyOn(identityClient, "claimDiscordHandoff")
+      .spyOn(identityClient, "claimSocialHandoff")
       .mockRejectedValueOnce(new IdentityRequestError(400, "INVALID_OTP"))
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const ui = await mount("/", NEXT);
     try {
-      await pressDiscord(ui);
-      expect(ui.container.textContent).toContain("Discord finished elsewhere? Enter its code.");
+      await press(ui, "Continue with X");
+      expect(ui.window()?.getAttribute("aria-label")).toBe("X");
+      expect(ui.container.textContent).toContain("X finished elsewhere? Enter its code.");
       await ui.type('input[autocomplete="one-time-code"]', "111111");
       await act(async () => {});
       expect(ui.container.textContent).toContain("That code is not right.");
@@ -495,59 +498,60 @@ describe("Connect with Discord", () => {
     }
   });
 
-  it("comes back on the Discord step after the page reloads while Discord is out, and the code finishes that attempt", async () => {
+  it("comes back on the provider's step after the page reloads while it is out, and the code finishes that attempt", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["discord"]);
-    const start = vi.spyOn(identityClient, "discordSignInUrl").mockResolvedValue(DISCORD);
+    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(["google", "apple"]);
+    const start = vi.spyOn(identityClient, "socialSignInUrl").mockResolvedValue(PROVIDER);
     navigations();
     const claim = vi
-      .spyOn(identityClient, "claimDiscordHandoff")
+      .spyOn(identityClient, "claimSocialHandoff")
       .mockResolvedValue(sessionOf({ name: "Ysolde", image: "04" }));
     const before = await mount("/", NEXT);
-    await pressDiscord(before);
+    await press(before, "Continue with Apple");
     await before.unmount();
     // A reload: the page and its memory are gone; only what the browser keeps is left.
     useConnectStore.setState({ request: null, nameDismissed: false, walletDismissed: false });
     const after = await mount("/");
     try {
-      expect(after.window()?.getAttribute("aria-label")).toBe("Discord");
+      expect(after.window()?.getAttribute("aria-label")).toBe("Apple");
+      expect(after.container.textContent).toContain("Try Apple again");
       await after.type('input[autocomplete="one-time-code"]', "482913");
       await act(async () => {});
       expect(claim).toHaveBeenCalledWith("482913");
       expect(start).toHaveBeenCalledTimes(1);
       expect(after.window()).toBeNull();
       expect(after.where()).toBe(NEXT);
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await after.unmount();
     }
   });
 
-  it("ends a pending Discord sign-in when it comes back failed, when Connect is closed, or once it is too old", async () => {
+  it("ends a pending provider sign-in when it comes back failed, when Connect is closed, or once it is too old", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(console, "error").mockImplementation(() => {});
-    rememberDiscordStart(NEXT);
+    rememberSocialStart("google", NEXT);
     const failed = await mount("/?error=access_denied");
     try {
       await act(async () => {});
       expect(failed.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(failed.container.textContent).toContain("Discord sign-in was cancelled.");
-      expect(pendingDiscordStart()).toBeNull();
+      expect(failed.container.textContent).toContain("Sign-in was cancelled.");
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await failed.unmount();
     }
 
-    rememberDiscordStart(NEXT);
+    rememberSocialStart("google", NEXT);
     const closed = await mount("/");
     try {
       await act(async () => closed.query<HTMLButtonElement>('button[aria-label="Close"]')!.click());
       expect(closed.window()).toBeNull();
-      expect(pendingDiscordStart()).toBeNull();
+      expect(pendingSocialStart()).toBeNull();
     } finally {
       await closed.unmount();
     }
 
-    rememberDiscordStart(NEXT, Date.now() - 11 * 60_000);
+    rememberSocialStart("google", NEXT, Date.now() - 11 * 60_000);
     const old = await mount("/");
     try {
       expect(old.window()).toBeNull();
@@ -556,38 +560,43 @@ describe("Connect with Discord", () => {
     }
   });
 
-  it("opens with Discord's refusal when a sign-in comes back failed, and takes it off the address", async () => {
+  it("opens with the provider's refusal when a sign-in comes back failed, and takes it off the address", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     vi.spyOn(console, "error").mockImplementation(() => {});
     const ui = await mount("/season?tab=frontier&error=access_denied");
     try {
       await act(async () => {});
       expect(ui.window()?.getAttribute("aria-label")).toBe("Connect");
-      expect(ui.container.textContent).toContain("Discord sign-in was cancelled.");
+      expect(ui.container.textContent).toContain("Sign-in was cancelled.");
       expect(ui.where()).toBe("/season?tab=frontier");
     } finally {
       await ui.unmount();
     }
   });
-});
 
-it.each([{ providers: [] }, { providers: ["discord"] }])(
-  "shows only configured social sign-in providers: %j",
-  async ({ providers }) => {
-    useIdentitySessionStore.setState({ status: "anonymous", session: null });
-    vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(providers);
-    const view = await mount("/");
-    try {
-      await view.ask();
-      await act(async () => {});
-      expect(
-        [...document.body.querySelectorAll("button")].some((button) => button.textContent?.includes("Discord")),
-      ).toBe(providers.includes("discord"));
-      expect(view.query('input[type="email"]')).not.toBeNull();
-      // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
-      expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
-    } finally {
-      await view.unmount();
-    }
-  },
-);
+  it.each([
+    { providers: [], buttons: [] },
+    { providers: ["discord"], buttons: ["Continue with Discord"] },
+    {
+      providers: ["google", "apple", "discord", "twitter"],
+      buttons: ["Continue with Google", "Continue with Apple", "Continue with Discord", "Continue with X"],
+    },
+  ] satisfies { providers: SocialProvider[]; buttons: string[] }[])(
+    "offers exactly the configured providers, in the sheet's order: %j",
+    async ({ providers, buttons }) => {
+      useIdentitySessionStore.setState({ status: "anonymous", session: null });
+      vi.spyOn(identityClient, "availableSignInProviders").mockResolvedValue(providers);
+      const view = await mount("/");
+      try {
+        await view.ask();
+        await act(async () => {});
+        expect(providerButtons().map((button) => button.textContent)).toEqual(buttons);
+        expect(view.query('input[type="email"]')).not.toBeNull();
+        // Most visitors from a flyer are new: the one sheet says their first sign-in is their sign-up, whichever way in.
+        expect(document.body.textContent).toContain("New here? Your first sign-in creates your Realms account.");
+      } finally {
+        await view.unmount();
+      }
+    },
+  );
+});

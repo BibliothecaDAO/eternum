@@ -133,21 +133,29 @@ it("never includes private environment values in decode failures", () => {
   }
 });
 
-it.each([
-  {},
-  { DISCORD_CLIENT_ID: "id" },
-  { DISCORD_CLIENT_SECRET: "secret" },
-  { DISCORD_CLIENT_ID: "", DISCORD_CLIENT_SECRET: "secret" },
-])("keeps Discord absent until both credentials exist: %j", (env) => {
-  expect(socialProvidersOf(env)).toEqual({});
-});
-it("offers Discord only with its configured pair", () => {
-  expect(socialProvidersOf({ DISCORD_CLIENT_ID: "id", DISCORD_CLIENT_SECRET: "secret" })).toEqual({
-    discord: { clientId: "id", clientSecret: "secret" },
+it("offers each provider whose OAuth client is configured, in the sheet's order, and no other", () => {
+  expect(socialProvidersOf({})).toEqual({});
+  const offered = socialProvidersOf({
+    TWITTER_CLIENT_ID: "x-id",
+    TWITTER_CLIENT_SECRET: "x-secret",
+    GOOGLE_CLIENT_ID: "google-id",
+    GOOGLE_CLIENT_SECRET: "google-secret",
   });
+  expect(offered).toEqual({
+    google: { clientId: "google-id", clientSecret: "google-secret" },
+    twitter: { clientId: "x-id", clientSecret: "x-secret" },
+  });
+  expect(Object.keys(offered)).toEqual(["google", "twitter"]);
 });
-
-it("requires the generated push pair but no Discord or duplicated constants", () => {
+it.each([
+  { APPLE_CLIENT_ID: "party.realms.signin" },
+  { DISCORD_CLIENT_SECRET: "secret" },
+  { GOOGLE_CLIENT_ID: "", GOOGLE_CLIENT_SECRET: "secret" },
+])("refuses a provider with only one of its two credentials, naming it without its value: %j", (credentials) => {
+  expect(() => socialProvidersOf(credentials)).toThrow(/identity_environment_invalid: [A-Z]+_CLIENT_ID and/);
+  expect(() => socialProvidersOf(credentials)).not.toThrow(/party\.realms|secret$/);
+});
+it("requires the generated push pair but no sign-in provider or duplicated constants", () => {
   const settings = {
     ...env,
     BASE_URL: "https://play.test",
@@ -167,4 +175,5 @@ it("requires the generated push pair but no Discord or duplicated constants", ()
   });
   for (const name of ["WEB_PUSH_VAPID_PUBLIC_KEY", "WEB_PUSH_VAPID_PRIVATE_KEY", "MARKETPLACE_API_URL"])
     expect(() => decodeIdentityEnv({ ...settings, [name]: undefined })).toThrow("identity_environment_invalid");
+  expect(() => decodeIdentityEnv({ ...settings, APPLE_CLIENT_SECRET: "jwt" })).toThrow("APPLE_CLIENT_ID and");
 });

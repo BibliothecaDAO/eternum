@@ -121,6 +121,8 @@ const migrationStatementsOf = (file: string) =>
     .split(";")
     .map((statement) => statement.trim())
     .filter(Boolean);
+/** The last migration the name-suggestion stories below are about; later ones wait for a later deploy there. */
+const THROUGH_0031 = "0031_clear_unnamed_name_suggestions.sql";
 const D1_MIGRATIONS_TABLE =
   "CREATE TABLE IF NOT EXISTS d1_migrations (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT UNIQUE, applied_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)";
 /** Records migration files as applied without running them, as a database already past them has them. */
@@ -172,8 +174,14 @@ beforeAll(async () => {
     MARKETPLACE_API_URL: "https://market.test/api/marketplace",
     L2_RPC_URL: "https://starknet-mainnet.g.alchemy.com/v2/test",
     OPERATOR_TOKEN: OPERATOR_TOKEN,
+    GOOGLE_CLIENT_ID: "google-client",
+    GOOGLE_CLIENT_SECRET: "google-secret",
+    APPLE_CLIENT_ID: "party.realms.signin.test",
+    APPLE_CLIENT_SECRET: "apple-jwt",
     DISCORD_CLIENT_ID: "discord-client",
     DISCORD_CLIENT_SECRET: "discord-secret",
+    TWITTER_CLIENT_ID: "x-client",
+    TWITTER_CLIENT_SECRET: "x-secret",
     RESEND_API_KEY: "unused",
     WEB_PUSH_VAPID_PUBLIC_KEY: "unused",
     WEB_PUSH_VAPID_PRIVATE_KEY: "unused",
@@ -373,6 +381,83 @@ const returnInAnotherBrowser = async (
   const state = new URL(started.url).searchParams.get("state");
   return finisher.request(`/api/auth/callback/discord?code=${code}&state=${state}`);
 };
+
+/** A Google, Apple or X account, by the authorization code its provider hands the test's browser. */
+type ProviderProfile = {
+  provider: "google" | "apple" | "twitter";
+  id: string;
+  name: string;
+  /** X returns an email only when the account has a confirmed one. */
+  email?: string;
+  verified: boolean;
+};
+const providerProfiles = new Map<string, ProviderProfile>();
+/** An ID token as these providers' user info reads it (decoded, not verified, after the code exchange). */
+const idTokenOf = (claims: Record<string, unknown>) =>
+  `${[{ alg: "none" }, claims].map((part) => Buffer.from(JSON.stringify(part)).toString("base64url")).join(".")}.sig`;
+/**
+ * Google's and Apple's token endpoints, answering with the ID token their user info decodes, and X's token and user
+ * endpoints: X's second user lookup carries the confirmed email only when the account has one.
+ */
+const fakeProviders = () => {
+  const passThrough = globalThis.fetch;
+  return vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
+    const request = new Request(input, init);
+    const url = new URL(request.url);
+    const isTokenExchange = ["oauth2.googleapis.com", "appleid.apple.com", "api.x.com"].includes(url.hostname)
+      ? /\/token$/.test(url.pathname)
+      : false;
+    if (isTokenExchange) {
+      const code = new URLSearchParams(await request.text()).get("code") ?? "";
+      const profile = providerProfiles.get(code);
+      if (!profile) return Response.json({ error: "invalid_grant" }, { status: 400 });
+      const idToken = idTokenOf({
+        sub: profile.id,
+        name: profile.name,
+        email: profile.email,
+        email_verified: profile.provider === "apple" ? String(profile.verified) : profile.verified,
+      });
+      return Response.json({
+        access_token: `token-${code}`,
+        id_token: idToken,
+        token_type: "Bearer",
+        expires_in: 3600,
+      });
+    }
+    if (url.hostname === "api.x.com" && url.pathname === "/2/users/me") {
+      const profile = providerProfiles.get(request.headers.get("authorization")?.replace("Bearer token-", "") ?? "");
+      if (!profile) return new Response("unauthorized", { status: 401 });
+      if (url.searchParams.get("user.fields") === "confirmed_email")
+        return Response.json({ data: profile.verified ? { confirmed_email: profile.email } : {} });
+      return Response.json({ data: { id: profile.id, name: profile.name, username: profile.name } });
+    }
+    return passThrough(input, init);
+  });
+};
+
+/** Starts a provider's sign-in in one browser and returns from it with this profile's code, in that browser or another. */
+const signInWithProvider = async (
+  starter: ReturnType<typeof createBrowser>,
+  profile: ProviderProfile,
+  finisher = starter,
+) => {
+  const started = (await (
+    await starter.request("/api/auth/sign-in/social", { body: { provider: profile.provider, callbackURL: "/account" } })
+  ).json()) as { url: string };
+  const code = `code-${profile.provider}-${profile.id}`;
+  providerProfiles.set(code, profile);
+  const state = new URL(started.url).searchParams.get("state");
+  return finisher.request(`/api/auth/callback/${profile.provider}?code=${code}&state=${state}`);
+};
+
+/** How many accounts of one provider a user holds. */
+const providerAccounts = async (userId: string, provider: string) =>
+  (
+    await database.db
+      .prepare(`SELECT count(*) AS n FROM "account" WHERE "userId" = ? AND "providerId" = ?`)
+      .bind(userId, provider)
+      .first<{ n: number }>()
+  )?.n;
 
 /** The six digits the other browser's page shows. */
 const handoffCodeOf = (page: string) => /class="code">(\d{6})</.exec(page)?.[1] ?? "";
@@ -700,15 +785,15 @@ describe("identity Worker", () => {
       const code = handoffCodeOf(await shown.text());
       expect(await safari.session()).toBeNull();
 
-      const notStarted = await safari.request("/api/auth/discord-handoff", { body: { code } });
+      const notStarted = await safari.request("/api/auth/social-handoff", { body: { code } });
       expect(await notStarted.json()).toEqual({ code: "HANDOFF_NOT_STARTED" });
-      const wrong = await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
+      const wrong = await app.request("/api/auth/social-handoff", { body: { code: otherCode(code) } });
       expect(await wrong.json()).toEqual({ code: "INVALID_OTP" });
       expect(await app.session()).toBeNull();
 
-      expect((await app.request("/api/auth/discord-handoff", { body: { code } })).status).toBe(200);
+      expect((await app.request("/api/auth/social-handoff", { body: { code } })).status).toBe(200);
       expect((await app.session())?.user.email).toBe(profile.email);
-      const spent = await app.request("/api/auth/discord-handoff", { body: { code } });
+      const spent = await app.request("/api/auth/social-handoff", { body: { code } });
       expect(await spent.json()).toEqual({ code: "HANDOFF_NOT_STARTED" });
     } finally {
       discord.mockRestore();
@@ -723,9 +808,9 @@ describe("identity Worker", () => {
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const tries = [];
       for (let attempt = 0; attempt < 3; attempt += 1)
-        tries.push(await (await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } })).json());
+        tries.push(await (await app.request("/api/auth/social-handoff", { body: { code: otherCode(code) } })).json());
       expect(tries).toEqual([{ code: "INVALID_OTP" }, { code: "INVALID_OTP" }, { code: "TOO_MANY_ATTEMPTS" }]);
-      const late = await app.request("/api/auth/discord-handoff", { body: { code } });
+      const late = await app.request("/api/auth/social-handoff", { body: { code } });
       expect(await late.json()).toEqual({ code: "OTP_EXPIRED" });
       expect(await app.session()).toBeNull();
     } finally {
@@ -740,7 +825,7 @@ describe("identity Worker", () => {
       const profile = { id: "80351110224670003", username: "race", email: "race@discord.test", verified: true };
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const claims = await Promise.all(
-        Array.from({ length: 4 }, () => app.request("/api/auth/discord-handoff", { body: { code } })),
+        Array.from({ length: 4 }, () => app.request("/api/auth/social-handoff", { body: { code } })),
       );
       const taken = claims.filter((claim) => claim.status === 200);
       expect(taken).toHaveLength(1);
@@ -760,12 +845,12 @@ describe("identity Worker", () => {
       const profile = { id: "80351110224670004", username: "guess", email: "guess@discord.test", verified: true };
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const wrong = await Promise.all(
-        Array.from({ length: 3 }, () => app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } })),
+        Array.from({ length: 3 }, () => app.request("/api/auth/social-handoff", { body: { code: otherCode(code) } })),
       );
       expect(
         (await Promise.all(wrong.map(async (reply) => ((await reply.json()) as { code: string }).code))).sort(),
       ).toEqual(["INVALID_OTP", "INVALID_OTP", "TOO_MANY_ATTEMPTS"]);
-      expect((await app.request("/api/auth/discord-handoff", { body: { code } })).status).toBe(400);
+      expect((await app.request("/api/auth/social-handoff", { body: { code } })).status).toBe(400);
       expect(await app.session()).toBeNull();
     } finally {
       discord.mockRestore();
@@ -780,18 +865,18 @@ describe("identity Worker", () => {
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const claims = await Promise.all(
         [code, otherCode(code), code, otherCode(code), otherCode(code), otherCode(code)].map((each) =>
-          app.request("/api/auth/discord-handoff", { body: { code: each } }),
+          app.request("/api/auth/social-handoff", { body: { code: each } }),
         ),
       );
       expect(claims.filter((claim) => claim.status === 200).length).toBeLessThanOrEqual(1);
       // Taken, or out of tries: either way no live hold is left to take, and a late try does not make one.
-      await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
+      await app.request("/api/auth/social-handoff", { body: { code: otherCode(code) } });
       const live = await database.db
-        .prepare("SELECT count(*) AS n FROM discord_handoffs WHERE code_hash = ?1 AND attempts < 3")
+        .prepare("SELECT count(*) AS n FROM social_handoffs WHERE code_hash = ?1 AND attempts < 3")
         .bind(createHash("sha256").update(code).digest("hex"))
         .first<{ n: number }>();
       expect(live?.n).toBe(0);
-      expect((await app.request("/api/auth/discord-handoff", { body: { code } })).status).toBe(400);
+      expect((await app.request("/api/auth/social-handoff", { body: { code } })).status).toBe(400);
     } finally {
       discord.mockRestore();
     }
@@ -805,11 +890,11 @@ describe("identity Worker", () => {
       const code = handoffCodeOf(await (await returnInAnotherBrowser(app, createBrowser(), profile)).text());
       const hold = () =>
         database.db
-          .prepare("SELECT attempts, expires_at FROM discord_handoffs WHERE code_hash = ?1")
+          .prepare("SELECT attempts, expires_at FROM social_handoffs WHERE code_hash = ?1")
           .bind(createHash("sha256").update(code).digest("hex"))
           .first<{ attempts: number; expires_at: number }>();
       const before = await hold();
-      await app.request("/api/auth/discord-handoff", { body: { code: otherCode(code) } });
+      await app.request("/api/auth/social-handoff", { body: { code: otherCode(code) } });
       expect(await hold()).toEqual({ attempts: 1, expires_at: before!.expires_at });
     } finally {
       discord.mockRestore();
@@ -827,8 +912,138 @@ describe("identity Worker", () => {
     const refused = await createBrowser().request(`/api/auth/callback/discord?error=access_denied&state=${state}`);
     expect(refused.status).toBe(302);
     expect(refused.headers.get("location")).toBe("/season?error=access_denied");
-    const claim = await app.request("/api/auth/discord-handoff", { body: { code: "000000" } });
+    const claim = await app.request("/api/auth/social-handoff", { body: { code: "000000" } });
     expect(await claim.json()).toEqual({ code: "OTP_EXPIRED" });
+  });
+
+  it("offers every configured provider, in the sign-in sheet's order", async () => {
+    expect(await (await createBrowser().request("/api/auth/providers")).json()).toEqual({
+      providers: ["google", "apple", "discord", "twitter"],
+    });
+  });
+
+  it("links a Google sign-in whose verified email already has an account to that account, never a second one", async () => {
+    const google = fakeProviders();
+    try {
+      const player = createBrowser();
+      expect((await signInWithCode(player, "linked@realms.test")).status).toBe(200);
+      const account = (await player.session())!.user;
+      const before = await userCount();
+
+      const phone = createBrowser();
+      const profile: ProviderProfile = {
+        provider: "google",
+        id: "google-1",
+        name: "Linked",
+        email: "Linked@Realms.test",
+        verified: true,
+      };
+      const returned = await signInWithProvider(phone, profile);
+      expect(returned.headers.get("location")).toBe("/account");
+      expect((await phone.session())?.user.id).toBe(account.id);
+      expect(await userCount()).toBe(before);
+      expect(await providerAccounts(account.id, "google")).toBe(1);
+      // The next Google sign-in opens the same account through its now-linked Google login.
+      await signInWithProvider(createBrowser(), profile);
+      expect(await providerAccounts(account.id, "google")).toBe(1);
+    } finally {
+      google.mockRestore();
+    }
+  });
+
+  it("refuses an X account without a confirmed email, and links one with a confirmed email to its account", async () => {
+    const x = fakeProviders();
+    try {
+      const before = await userCount();
+      const unconfirmed: ProviderProfile = { provider: "twitter", id: "x-1", name: "nomail", verified: false };
+      const refused = await signInWithProvider(createBrowser(), unconfirmed);
+      expect(refused.headers.get("location")).toContain("error=email_not_verified");
+      expect(await userCount()).toBe(before);
+
+      const player = createBrowser();
+      expect((await signInWithCode(player, "xplayer@realms.test")).status).toBe(200);
+      const account = (await player.session())!.user;
+      const confirmed: ProviderProfile = {
+        provider: "twitter",
+        id: "x-2",
+        name: "xp",
+        email: "xplayer@realms.test",
+        verified: true,
+      };
+      const phone = createBrowser();
+      await signInWithProvider(phone, confirmed);
+      expect((await phone.session())?.user.id).toBe(account.id);
+      expect(await providerAccounts(account.id, "twitter")).toBe(1);
+    } finally {
+      x.mockRestore();
+    }
+  });
+
+  it("holds a Google sign-in finished in another browser behind the same one-time code as every provider", async () => {
+    const google = fakeProviders();
+    try {
+      const app = createBrowser();
+      const safari = createBrowser();
+      const profile: ProviderProfile = {
+        provider: "google",
+        id: "google-2",
+        name: "Away",
+        email: "away@realms.test",
+        verified: true,
+      };
+      const shown = await signInWithProvider(app, profile, safari);
+      expect(shown.status).toBe(200);
+      expect(await safari.session()).toBeNull();
+      const code = handoffCodeOf(await shown.text());
+      expect((await app.request("/api/auth/social-handoff", { body: { code } })).status).toBe(200);
+      expect((await app.session())?.user.email).toBe("away@realms.test");
+    } finally {
+      google.mockRestore();
+    }
+  });
+
+  it("signs in the browser that started Apple when Apple posts its answer from its own origin", async () => {
+    const apple = fakeProviders();
+    try {
+      const iphone = createBrowser();
+      const started = (await (
+        await iphone.request("/api/auth/sign-in/social", { body: { provider: "apple", callbackURL: "/account" } })
+      ).json()) as { url: string };
+      const state = new URL(started.url).searchParams.get("state")!;
+      const code = "code-apple-1";
+      providerProfiles.set(code, {
+        provider: "apple",
+        id: "apple-1",
+        name: "",
+        email: "orchard@realms.test",
+        verified: true,
+      });
+      // A cross-site POST carries none of our SameSite=Lax cookies, only a SameSite=None one such as Cloudflare's.
+      const posted = await routeIdentityRequest(
+        new Request(`${ORIGIN}/api/auth/callback/apple`, {
+          method: "POST",
+          headers: {
+            origin: "https://appleid.apple.com",
+            "content-type": "application/x-www-form-urlencoded",
+            cookie: "__cf_bm=cloudflare",
+          },
+          body: new URLSearchParams({ code, state }).toString(),
+        }),
+        env,
+        auth,
+        { cache: noCache, fetchShard, readLaunchDirectory: async () => launchDirectory },
+      );
+      expect(posted.status).toBe(302);
+      const followed = new URL(posted.headers.get("location")!);
+      expect(followed.pathname).toBe("/api/auth/callback/apple");
+      // The redirect is a top-level GET in the starting browser: its own cookies, the start cookie among them, go along.
+      const returned = await iphone.request(`${followed.pathname}${followed.search}`);
+      expect(returned.status).toBe(302);
+      expect(returned.headers.get("location")).toBe("/account");
+      expect((await iphone.session())?.user.email).toBe("orchard@realms.test");
+    } finally {
+      apple.mockRestore();
+    }
   });
 
   it("refuses a device approval without a session", async () => {
@@ -2682,7 +2897,7 @@ describe("identity Worker", () => {
       suggested: "johnprivate",
     });
     // The next deploy runs only what is pending: 0031.
-    expect(await applyPendingMigrations(database.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
+    expect(await applyPendingMigrations(database.db, THROUGH_0031)).toEqual([THROUGH_0031]);
     const cleared = async () => {
       expect(await suggestionOf(database.db, "john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
       expect(await suggestionOf(database.db, "old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
@@ -2692,7 +2907,7 @@ describe("identity Worker", () => {
     };
     await cleared();
     // A repeat deploy has nothing pending, and 0031 run again, as after a crash halfway, changes nothing.
-    expect(await applyPendingMigrations(database.db)).toEqual([]);
+    expect(await applyPendingMigrations(database.db, THROUGH_0031)).toEqual([]);
     await database.db.batch(
       migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => database.db.prepare(sql)),
     );
@@ -2755,8 +2970,8 @@ describe("identity Worker", () => {
       const before = (await fresh.db.prepare(`SELECT "id", "name", "suggestedName" FROM "user" ORDER BY "id"`).all())
         .results;
       // 0031 then finds nothing to change, nor does a repeat deploy or 0031 run again.
-      expect(await applyPendingMigrations(fresh.db)).toEqual(["0031_clear_unnamed_name_suggestions.sql"]);
-      expect(await applyPendingMigrations(fresh.db)).toEqual([]);
+      expect(await applyPendingMigrations(fresh.db, THROUGH_0031)).toEqual([THROUGH_0031]);
+      expect(await applyPendingMigrations(fresh.db, THROUGH_0031)).toEqual([]);
       await fresh.db.batch(
         migrationStatementsOf("0031_clear_unnamed_name_suggestions.sql").map((sql) => fresh.db.prepare(sql)),
       );

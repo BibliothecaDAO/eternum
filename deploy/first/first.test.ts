@@ -594,6 +594,28 @@ test("every environment offers Discord sign-in: setup asks for it, requires it a
   });
 });
 
+test("Google, Apple and X sign-in reach the identity Worker only as a pair the owner added; setup never asks", () => {
+  const identity = workers.find((worker) => worker.id === "identity")!;
+  for (const environment of ["dev", "production"] as const) {
+    const asked = setupQuestions(environments[environment]).map(([name]) => name);
+    for (const provider of ["google", "apple", "twitter"]) expect(asked.join()).not.toContain(provider);
+  }
+  const withGoogle = { ...input, googleClientId: "fake-google-id", googleClientSecret: "fake-google-secret" };
+  expect(() => validateInputs(withGoogle, environments.dev)).not.toThrow();
+  const installed = workerSecrets(identity, withGoogle, secrets, keys, undefined);
+  expect(installed).toMatchObject({ GOOGLE_CLIENT_ID: "fake-google-id", GOOGLE_CLIENT_SECRET: "fake-google-secret" });
+  expect(Object.keys(installed).filter((name) => name.endsWith("_CLIENT_ID"))).toEqual([
+    "GOOGLE_CLIENT_ID",
+    "DISCORD_CLIENT_ID",
+  ]);
+  for (const half of [
+    { ...input, appleClientId: "party.realms.signin" },
+    { ...input, twitterClientSecret: "fake-x-secret" },
+    { ...input, googleClientId: " ", googleClientSecret: "fake-google-secret" },
+  ])
+    expect(() => validateInputs(half, environments.dev)).toThrow("or neither");
+});
+
 test("the identity Worker gets AVNU's paymaster key only when inputs.json holds one, and setup never asks for it", () => {
   for (const environment of ["dev", "production"] as const)
     expect(setupQuestions(environments[environment]).map(([name]) => name)).not.toContain("avnuPaymasterApiKey");

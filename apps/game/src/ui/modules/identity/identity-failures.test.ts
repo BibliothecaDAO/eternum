@@ -16,23 +16,23 @@ it.each([
   ["send-code", "too_many_codes", "Too many codes. Wait a minute."],
   ["link", "WALLET_NOT_DEPLOYED", "Deploy this wallet on Starknet mainnet first."],
   ["link", "WALLET_LINKED_ELSEWHERE", "This wallet is on another account. Link another one."],
-  ["discord", "email_not_verified", "Verify your Discord email, or sign in with an email code."],
   [
-    "discord",
-    "email_not_found",
-    "Your Discord account has no email. Add one in Discord, or sign in with an email code.",
+    "social",
+    "email_not_verified",
+    "That account's email is not verified. Verify it there, or sign in with an email code.",
   ],
-  ["discord", "account_not_linked", "This email has an account already. Sign in with an email code."],
-  ["discord", "access_denied", "Discord sign-in was cancelled. Try again."],
-  ["discord", "please_restart_the_process", "Discord took too long. Try again."],
-  ["handoff", "HANDOFF_NOT_STARTED", "Press Discord here first, then enter the code it shows."],
+  ["social", "email_not_found", "That account has no email. Add one there, or sign in with an email code."],
+  ["social", "account_not_linked", "This email has an account already. Sign in with an email code."],
+  ["social", "access_denied", "Sign-in was cancelled. Try again."],
+  ["social", "please_restart_the_process", "Sign-in took too long. Try again."],
+  ["handoff", "HANDOFF_NOT_STARTED", "Start signing in here first, then enter the code it shows."],
 ] as const)("says what to do when %s is refused with %s", (action, code, sentence) => {
   vi.spyOn(console, "error").mockImplementation(() => {});
   expect(refused(action, code)).toBe(sentence);
 });
 
 it.each([
-  ["discord", "Discord sign-in did not complete. Try again."],
+  ["social", "Sign-in did not complete. Try again."],
   ["handoff", "That code did not sign you in. Try again."],
   ["send-code", "The code was not sent. Check the address and try again."],
   ["code", "Sign-in did not complete. Try again."],

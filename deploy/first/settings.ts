@@ -1,7 +1,9 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { SOCIAL_PROVIDERS, type SocialProvider } from "../../packages/identity/src/account-rules";
 import environments from "./environments.json";
 import type { SeasonDates } from "./dates";
+import { PublicError } from "./errors";
 
 export type Environment = "dev" | "production";
 export const root = resolve(import.meta.dir, "../..");
@@ -28,7 +30,25 @@ export const WEI = 10n ** 18n;
 export const ledgerAdmin = (target: Target, inputs: Pick<Inputs, "admin">, deployer: string) =>
   target.coldAdmin ? inputs.admin! : deployer;
 
-export interface Inputs extends SeasonDates {
+/**
+ * Each sign-in provider's OAuth client in inputs.json (`googleClientId` and `googleClientSecret`, and so on), which
+ * setup's apply installs as the identity Worker's `<PROVIDER>_CLIENT_ID` and `<PROVIDER>_CLIENT_SECRET`. Setup asks only
+ * for Discord's; the owner adds the others once their OAuth apps exist, and a provider without its pair is not offered.
+ */
+type SignInClients = { [P in SocialProvider as `${P}ClientId` | `${P}ClientSecret`]?: string };
+
+/** The providers inputs.json configures, each with its client; a pair half set or blank is refused, never skipped. */
+export const signInClientsOf = (inputs: SignInClients) =>
+  SOCIAL_PROVIDERS.flatMap((provider) => {
+    const clientId = inputs[`${provider}ClientId`];
+    const clientSecret = inputs[`${provider}ClientSecret`];
+    if (clientId === undefined && clientSecret === undefined) return [];
+    if (!clientId?.trim() || !clientSecret?.trim())
+      throw new PublicError(`Set both ${provider}ClientId and ${provider}ClientSecret in inputs.json, or neither`);
+    return [{ provider, clientId, clientSecret }];
+  });
+
+export interface Inputs extends SeasonDates, SignInClients {
   cloudflareToken: string;
   rpc: string;
   cosignerPublicKey: string;
