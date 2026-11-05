@@ -1,16 +1,16 @@
 // Writes src/email-art.gen.ts: each player email's header art as an inline JPEG, from the game's own art. A painting
 // fades to night under the Realms lettered mark, and the email's title is lettered in the brand's heading face, so
-// every client shows it (Gmail and Outlook load no web fonts). Rerun after changing a painting, the
-// mark or a title:
+// every client shows it (Gmail and Outlook load no web fonts). It refuses to write while any title is too wide to fit
+// inside the margins (scripts/email-art-title.mjs). Rerun after changing a painting, the mark or a title:
 // pnpm --dir packages/notifications build:email-art
 import sharp from "sharp";
 import { readFile, writeFile } from "node:fs/promises";
-import { ART, BRAND, headingFontFile, inputsDigest, markFile, paintingFile } from "./email-art-inputs.mjs";
+import { ART, BRAND, inputsDigest, markFile, paintingFile } from "./email-art-inputs.mjs";
+import { HEADER, letterTitle, TITLE_MARGIN, titlesTooWide } from "./email-art-title.mjs";
 
 const out = new URL("../src/email-art.gen.ts", import.meta.url);
 
-const WIDTH = 1200; // drawn at 600: twice the pixels for sharp phones
-const HEIGHT = 640;
+const { width: WIDTH, height: HEIGHT } = HEADER;
 const NIGHT = BRAND.colors.ground;
 const LETTERING = BRAND.colors.gold2;
 
@@ -43,33 +43,26 @@ const lettered = async () =>
     .png()
     .toBuffer();
 
-const lettering = async (title, colour) => {
-  const fontfile = headingFontFile().pathname;
-  return sharp({
-    text: {
-      text: `<span foreground="${colour}">${title}</span>`,
-      font: `${BRAND.faces.display.family} 84`,
-      fontfile,
-      dpi: 96,
-      rgba: true,
-    },
-  })
-    .png()
-    .toBuffer({ resolveWithObject: true });
+/** Stops before drawing anything while a title would run into the right margin. */
+const refuseTitlesTooWide = async () => {
+  const tooWide = await titlesTooWide(ART);
+  if (tooWide.length === 0) return;
+  const lines = tooWide.map(({ id, title, width, room }) => `  ${id}: "${title}" is ${width} px wide, ${room} px fit`);
+  throw new Error(`Shorten these email header titles in scripts/email-art-inputs.mjs:\n${lines.join("\n")}`);
 };
 
 const header = async ({ painting: name, focus, title }, mark) => {
-  const gold = await lettering(title, LETTERING);
-  const shadow = await sharp((await lettering(title, BRAND.colors.shade)).data)
+  const gold = await letterTitle(title, LETTERING);
+  const shadow = await sharp((await letterTitle(title, BRAND.colors.shade)).data)
     .ensureAlpha(0.6)
     .blur(3)
     .toBuffer();
-  const left = 72;
+  const left = TITLE_MARGIN;
   const top = HEIGHT - 48 - gold.info.height;
   return sharp(await painting(name, focus))
     .composite([
       { input: nightfall() },
-      { input: mark, left: 72, top: 56 },
+      { input: mark, left, top: 56 },
       { input: shadow, left: left + 3, top: top + 4 },
       { input: gold.data, left, top },
     ])
@@ -77,6 +70,7 @@ const header = async ({ painting: name, focus, title }, mark) => {
     .toBuffer();
 };
 
+await refuseTitlesTooWide();
 const mark = await lettered();
 const entries = [];
 for (const [id, art] of Object.entries(ART)) {

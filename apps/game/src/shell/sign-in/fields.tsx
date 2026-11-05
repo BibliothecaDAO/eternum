@@ -4,18 +4,25 @@ import { IDENTITY_PORTRAITS, nameRuleViolation } from "@realms-world/identity";
 import { playerPortraitUrl } from "@/services/identity/player-portrait";
 import { AppField, AppPortrait } from "@/ui/design-system/kit/app-elements";
 
-/** The name, and under it what the identity service's own rule asks of it while it does not pass. */
-export const NameField = ({ name, onName }: { name: string; onName: (name: string) => void }) => (
-  <AppField
-    label={SIGN_IN_WORDS.yourName}
-    type="text"
-    value={name}
-    maxLength={20}
-    autoComplete="nickname"
-    onChange={(event) => onName(event.target.value)}
-    error={nameRuleViolation(name.trim()) ?? undefined}
-  />
-);
+/**
+ * The name, and under it what the identity service's own rule asks of it while it does not pass; empty, what to put in
+ * it.
+ */
+export const NameField = ({ name, onName }: { name: string; onName: (name: string) => void }) => {
+  const empty = name.trim() === "";
+  return (
+    <AppField
+      label={SIGN_IN_WORDS.yourName}
+      type="text"
+      value={name}
+      maxLength={20}
+      autoComplete="nickname"
+      onChange={(event) => onName(event.target.value)}
+      hint={empty ? SIGN_IN_WORDS.pickName : undefined}
+      error={empty ? undefined : (nameRuleViolation(name.trim()) ?? undefined)}
+    />
+  );
+};
 
 /** The twelve portraits, the chosen one on the accent ring. */
 export const PortraitGrid = ({ chosen, onChoose }: { chosen: string; onChoose: (portrait: string) => void }) => (

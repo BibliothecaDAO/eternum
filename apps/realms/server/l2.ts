@@ -51,6 +51,9 @@ const answersForChain = (body: unknown) => {
   return result !== undefined || (typeof error?.code === "number" && error.code > 0);
 };
 
+/** The latest block's L2 gas price, in fri: what prices a default wallet's signature check (paymaster.ts). */
+export const latestL2GasPrice = async (provider: RpcProvider) => (await provider.getGasPrices("latest")).l2GasPrice;
+
 export const verifyIdentityChain = async (provider: RpcProvider, env: L2Environment) => {
   const { chainId } = identityL2Configuration(env);
   if (BigInt(await provider.getChainId()) !== BigInt(encodeChainName(chainId)))
