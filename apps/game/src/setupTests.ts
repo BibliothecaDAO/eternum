@@ -1,6 +1,14 @@
 // Test setup bootstrap for Vitest.
 // Intentionally minimal; per-suite setup should live alongside tests.
 
+import { performance as nodePerformance } from "node:perf_hooks";
+
+// jsdom has no User Timing (performance.mark, measure and their entries), which every browser has and the scene
+// marks use: Node implements the same API.
+if (typeof window !== "undefined" && typeof window.performance.mark !== "function") {
+  Object.defineProperty(window, "performance", { value: nodePerformance, configurable: true, writable: true });
+}
+
 // jsdom has no viewport: the app's frame asks for one, so a page renders in the phone layout unless a test sets a
 // width (src/shell/frame/test-viewport.ts).
 if (typeof window !== "undefined" && !window.matchMedia) {

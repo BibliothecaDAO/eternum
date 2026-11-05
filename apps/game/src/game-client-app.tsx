@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { lazy, Suspense, useState } from "react";
 import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
@@ -85,7 +86,7 @@ const GameRouteShell = ({ backgroundImage }: { backgroundImage: string }) => {
           setup={null}
           accountError={null}
           ended={false}
-          retry={() => window.location.reload()}
+          retry={() => pageNavigation.reload()}
           currentTaskLabel=""
         />
       }

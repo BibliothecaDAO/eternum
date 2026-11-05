@@ -81,10 +81,9 @@ describe("Frontier's one panel: the one opened last stands alone", () => {
   });
 
   it("keeps a surface over a card the same press selected (the army's sheet selects the army at its spire)", () => {
-    act(() => {
-      tap("spire-depths@3,3");
-      openResearch();
-    });
+    // One press selects the spire (its card) and opens Research, so both land in the press's one render.
+    host.querySelector("button")!.addEventListener("click", () => tap("spire-depths@3,3"), { once: true });
+    act(() => openResearch());
     expect(open()).toEqual(["research"]);
 
     // The next tap opens its own card.

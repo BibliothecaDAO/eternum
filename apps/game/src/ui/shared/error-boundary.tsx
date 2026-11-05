@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import * as Sentry from "@sentry/react";
 import { HudButton, HudPanel } from "@/ui/design-system/kit/hud-elements";
 import React, { Component, ReactNode } from "react";
@@ -50,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
     if (shouldAutoReload) {
       console.warn("[ErrorBoundary] Recovering from dynamic import error via page reload.");
-      window.location.reload();
+      pageNavigation.reload();
     }
   }
 
@@ -70,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   kind="primary"
                   onClick={() => {
                     this.setState({ hasError: false, error: undefined });
-                    window.location.reload();
+                    pageNavigation.reload();
                   }}
                 >
                   {buttonLabel}

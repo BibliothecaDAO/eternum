@@ -15,6 +15,7 @@ vi.mock("@/ui/modules/identity/passkey", () => ({
 }));
 
 import { identityClient, useIdentitySessionStore } from "@/hooks/context/identity-session";
+import { pageNavigation } from "@/utils/page-navigation";
 import { setViewportWidth } from "../frame/test-viewport";
 import { useRequestSignIn, useConnectStore } from "./connect";
 import { TabBar } from "../frame/tabs";
@@ -428,12 +429,9 @@ describe("Your wallet", () => {
 });
 
 describe("Connect with Discord", () => {
-  // Where the test's Discord sends the page: jsdom reports the navigation as not implemented and stays.
+  // Where the test's Discord sends the page; the page stays, recording where it was sent.
   const DISCORD = "https://discord.test/oauth2/authorize";
-  const navigations = () => {
-    const errors = vi.spyOn(console, "error").mockImplementation(() => {});
-    return () => errors.mock.calls.filter(([error]) => String(error).includes("navigation")).length;
-  };
+  const navigations = () => vi.spyOn(pageNavigation, "open").mockImplementation(() => {});
 
   const pressDiscord = async (ui: Awaited<ReturnType<typeof mount>>) => {
     await ui.ask();
@@ -451,7 +449,7 @@ describe("Connect with Discord", () => {
     try {
       await pressDiscord(asked);
       expect(start).toHaveBeenLastCalledWith(NEXT);
-      expect(left()).toBe(1);
+      expect(left.mock.calls).toEqual([[DISCORD]]);
     } finally {
       await asked.unmount();
     }

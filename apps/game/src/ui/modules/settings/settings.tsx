@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { PROFILE_WORDS } from "@/ui/design-system/kit/words";
 import { AudioCategory, useAudio } from "@/audio";
 import {
@@ -270,7 +271,7 @@ function SessionActions() {
           Sign out
         </HudButton>
       )}
-      <HudButton kind="secondary" onClick={() => window.location.assign("/")}>
+      <HudButton kind="secondary" onClick={() => pageNavigation.open("/")}>
         Leave game
       </HudButton>
       {error && <HudNotice tone="bad" line={error} />}
