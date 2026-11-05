@@ -142,6 +142,21 @@ describe("Connect", () => {
     }
   });
 
+  it("asks an unnamed account back from Discord with its old suggestion taken off for a name, saving nothing by itself", async () => {
+    // As migration 0030 leaves an email account linked to Discord later: signed in, unnamed, suggested nothing.
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: null }) });
+    const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
+    const ui = await mount("/");
+    try {
+      await act(async () => {});
+      expect(save).not.toHaveBeenCalled();
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Your name");
+      expect(ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!.value).toBe("");
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("names a Discord sign-up by its Discord name by itself and goes straight on", async () => {
     useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: "nelly_b" }) });
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();

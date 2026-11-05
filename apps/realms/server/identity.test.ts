@@ -2596,31 +2596,49 @@ describe("identity Worker", () => {
     }
   });
 
-  it("takes the email suggestion off accounts not yet named, keeping named ones and Discord names", async () => {
+  it("takes every suggestion off accounts not yet named, an email account later linked to Discord included, and keeps named ones", async () => {
     const unnamed = createBrowser();
     await signInWithCode(unnamed, "old.unnamed@realms.test");
     const named = createBrowser();
     await signInWithCode(named, "old.named@realms.test");
     expect((await named.request("/api/auth/update-user", { body: { name: "oldnamed" } })).status).toBe(200);
+    const linked = createBrowser();
+    await signInWithCode(linked, "john.private@realms.test");
+    const linkedId = (await linked.session())!.user.id;
+    // Accounts made before this change were suggested their email's local part.
+    const suggest = (email: string, name: string) =>
+      database.db.prepare(`UPDATE "user" SET "suggestedName" = ?1 WHERE "email" = ?2`).bind(name, email).run();
+    await suggest("old.unnamed@realms.test", "oldunnamed");
+    await suggest("old.named@realms.test", "oldnamed");
+    await suggest("john.private@realms.test", "johnprivate");
+    const johnOnDiscord = {
+      id: "80351110224678915",
+      username: "jp_rook",
+      email: "john.private@realms.test",
+      verified: true,
+    };
     const discord = fakeDiscord();
     try {
-      const byDiscord = createBrowser();
-      await signInWithDiscord(byDiscord, {
+      await signInWithDiscord(createBrowser(), {
         id: "80351110224678914",
         username: "old_rook",
         email: "rook@discord.test",
         verified: true,
       });
+      // The email account signs in with Discord: the same account, now with a Discord login, still suggested its
+      // email's local part.
+      const viaDiscord = createBrowser();
+      await signInWithDiscord(viaDiscord, johnOnDiscord);
+      expect((await viaDiscord.session())?.user).toMatchObject({ id: linkedId, suggestedName: "johnprivate" });
     } finally {
       discord.mockRestore();
     }
-    // Accounts made before this change were suggested their email's local part.
-    await database.db
-      .prepare(`UPDATE "user" SET "suggestedName" = 'oldunnamed' WHERE "email" = 'old.unnamed@realms.test'`)
-      .run();
-    await database.db
-      .prepare(`UPDATE "user" SET "suggestedName" = 'oldnamed' WHERE "email" = 'old.named@realms.test'`)
-      .run();
+    const discordLogins = await database.db
+      .prepare(`SELECT count(*) AS n FROM "account" WHERE "userId" = ?1 AND "providerId" = 'discord'`)
+      .bind(linkedId)
+      .first<{ n: number }>();
+    expect(discordLogins?.n).toBe(1);
+
     const migration = readFileSync(new URL("../migrations/0030_no_email_name_suggestion.sql", import.meta.url), "utf8")
       .replace(/^--.*$/gm, "")
       .replace(/\s+/g, " ");
@@ -2633,9 +2651,22 @@ describe("identity Worker", () => {
         .bind(email)
         .first<{ unnamed: number; suggested: string | null }>())!;
     expect(await suggested("old.unnamed@realms.test")).toEqual({ unnamed: 1, suggested: null });
+    expect(await suggested("john.private@realms.test")).toEqual({ unnamed: 1, suggested: null });
+    // A Discord account not yet named cannot be told from a linked one: it picks its name too.
+    expect(await suggested("rook@discord.test")).toEqual({ unnamed: 1, suggested: null });
     expect(await suggested("old.named@realms.test")).toEqual({ unnamed: 0, suggested: "oldnamed" });
-    expect(await suggested("rook@discord.test")).toEqual({ unnamed: 1, suggested: "old_rook" });
     expect((await named.session())?.user.name).toBe("oldnamed");
+
+    // The linked account's next sign-in hands the app an unnamed account with nothing to claim by itself, so the app
+    // asks for a name (connect-flow.test.tsx) and the email's local part is never published.
+    const again = fakeDiscord();
+    try {
+      const nextVisit = createBrowser();
+      await signInWithDiscord(nextVisit, johnOnDiscord);
+      expect((await nextVisit.session())?.user).toMatchObject({ id: linkedId, name: linkedId, suggestedName: null });
+    } finally {
+      again.mockRestore();
+    }
   });
 
   it("offers no way in but Discord and an emailed code", async () => {
