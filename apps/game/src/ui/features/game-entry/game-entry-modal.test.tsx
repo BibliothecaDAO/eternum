@@ -132,10 +132,22 @@ const openEntry = async () => {
     [...host.querySelectorAll(".home-picker__strip .home-picker__choice")].map(
       (choice) => `${choice.getAttribute("aria-label")}${choice.getAttribute("aria-pressed") === "true" ? " *" : ""}`,
     );
+  /**
+   * Clicks a control once a player could: on screen and enabled. A disabled button ignores the click, and the step
+   * turns Create your realm on a render after it names the home, so a click on the first sign would do nothing.
+   */
+  const click = async (find: () => HTMLButtonElement | null | undefined) => {
+    const control = await vi.waitFor(() => {
+      const found = find();
+      expect(found?.disabled).toBe(false);
+      return found!;
+    });
+    await act(async () => control.click());
+  };
   const pick = async (label: string) =>
-    act(async () => host.querySelector<HTMLButtonElement>(`.home-picker__choice[aria-label="${label}"]`)!.click());
+    click(() => host.querySelector<HTMLButtonElement>(`.home-picker__choice[aria-label="${label}"]`));
   const press = async (text: string) =>
-    act(async () => [...host.querySelectorAll("button")].find((button) => button.textContent === text)!.click());
+    click(() => [...host.querySelectorAll("button")].find((button) => button.textContent === text));
   const close = async () => {
     await act(async () => root.unmount());
     query.clear();
@@ -229,8 +241,8 @@ it("starts a holder with no ticket on their first Realm, wonders first, and foun
     expect(entry.host.textContent).toContain("The Glowing Geyser");
     expect(entry.host.querySelector('input[aria-label="Realm number"]')).toBeNull();
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 538 }]);
-    expect(settlement.settled).toBe(true);
   } finally {
     await entry.close();
   }
@@ -254,6 +266,7 @@ it.each(["the ticket", "a Realm"])(
       // The chosen mark follows the pick, on a golden ticket's art as on a Realm's map.
       expect(entry.checked()).toEqual([chosen === "a Realm" ? realmChoice(711) : "Golden Devcon ticket"]);
       await entry.press("Create your realm");
+      await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([chosen === "a Realm" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
     } finally {
       await entry.close();
@@ -280,12 +293,12 @@ it.each(["the ticket", "712"])("lets a refused Realm claimant found with another
     await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
     await entry.pick(realmChoice(711));
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("This source cannot be attached to your home."));
     expect(settlement.calls).toEqual([]);
-    expect(entry.host.textContent).toContain("This source cannot be attached to your home.");
     await entry.pick(alternative === "712" ? realmChoice(712) : "Golden Devcon ticket");
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(sent).toEqual(alternative === "712" ? [711, 712] : [711, undefined]);
-    expect(settlement.settled).toBe(true);
   } finally {
     await entry.close();
   }
@@ -315,6 +328,7 @@ it("shows each account its own Realms in the same tab, and lets a pick of anothe
     await vi.waitFor(() => expect(entry.featured()).toBe(name(12)));
     expect(asked).toEqual(["0x456", "0x789", "0xabc"]);
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 12 }]);
   } finally {
     await entry.close();
@@ -417,8 +431,8 @@ it.each([
       await vi.waitFor(() => expect(entry.featured()).toBe(home));
       expect(entry.host.textContent).not.toContain(notice);
       await entry.press("Create your realm");
+      await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([failed === "the Realms" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]);
-      expect(settlement.settled).toBe(true);
     } finally {
       await entry.close();
     }
@@ -446,6 +460,7 @@ it("waits on an unreadable ticket: says so, founds nothing, and offers the ticke
     await vi.waitFor(() => expect(entry.featured()).toBe("Golden Devcon ticket"));
     expect(entry.strip()).toEqual(["Golden Devcon ticket *", realmChoice(711)]);
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8 }]);
   } finally {
     await entry.close();
@@ -471,6 +486,7 @@ it("waits to found until it knows what the account holds, so a holder never foun
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     expect(entry.found().disabled).toBe(false);
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
   } finally {
     await entry.close();
@@ -495,12 +511,15 @@ it("spins while the realm is founded and says so, at full strength, until the fo
   try {
     await vi.waitFor(() => expect(entry.featured()).toBe(name(711)));
     await entry.press("Create your realm");
-    const founding = [...entry.host.querySelectorAll("button")].find(
-      (button) => button.textContent === "Creating your realm…",
-    )!;
-    expect(founding.getAttribute("aria-busy")).toBe("true");
+    const founding = await vi.waitFor(() => {
+      const button = [...entry.host.querySelectorAll("button")].find(
+        (candidate) => candidate.textContent === "Creating your realm…",
+      );
+      expect(button?.getAttribute("aria-busy")).toBe("true");
+      return button!;
+    });
     expect(founding.querySelector(".ui-spinner")).not.toBeNull();
-    expect(registered).toEqual([{ gameId: 8, realmId: 711 }]);
+    await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 711 }]));
     await act(async () => answer());
     await vi.waitFor(() => expect(settlement.settled).toBe(true));
   } finally {
@@ -553,6 +572,7 @@ it.each([
       expect(entry.featured()).toBe(name(17));
       expect(grid()).toHaveLength(0);
       await entry.press("Create your realm");
+      await vi.waitFor(() => expect(settlement.settled).toBe(true));
       expect(registered).toEqual([{ gameId: 8, realmId: 17 }]);
     } finally {
       await entry.close();
@@ -575,6 +595,7 @@ it("keeps the Realm already registered for this game, shown alone and locked, wh
     await entry.askHoldingsAgain();
     expect(entry.featured()).toBe(name(711));
     await entry.press("Create your realm");
+    await vi.waitFor(() => expect(settlement.settled).toBe(true));
     expect(registered).toEqual([]);
     expect(settlement.order).toEqual(["settle"]);
   } finally {
@@ -615,8 +636,9 @@ it.each([
   try {
     await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
     if (pick) await entry.pick(realmChoice(pick));
-    const claimed = [...entry.host.querySelectorAll(".home-picker__claim li")].map((line) => line.textContent);
-    expect(claimed).toEqual(lines);
+    // The claim sits on the featured card, which names the home a render after the strip shows.
+    const claimed = () => [...entry.host.querySelectorAll(".home-picker__claim li")].map((line) => line.textContent);
+    await vi.waitFor(() => expect(claimed()).toEqual(lines));
   } finally {
     await entry.close();
   }
@@ -633,19 +655,10 @@ it.each(["ticket", "711"])(
     const registered = relay(() => held(711));
     const entry = await openEntry();
     try {
-      await vi.waitFor(() =>
-        expect(
-          [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
-            ?.disabled,
-        ).toBe(false),
-      );
+      await vi.waitFor(() => expect(entry.strip()).toHaveLength(2));
       expect(registered).toEqual([]);
       if (pick === "711") await entry.pick(realmChoice(711));
-      await act(async () =>
-        [...entry.host.querySelectorAll("button")]
-          .find((button) => button.textContent === "Add this daily claim")!
-          .click(),
-      );
+      await entry.press("Add this daily claim");
       await vi.waitFor(() =>
         expect(registered).toEqual([pick === "711" ? { gameId: 8, realmId: 711 } : { gameId: 8 }]),
       );
@@ -665,12 +678,7 @@ it("a founded home chooses one of two Realms, leaves the other free, and shows u
   const registered = relay(() => held(711, 712, 713));
   const entry = await openEntry();
   try {
-    await vi.waitFor(() =>
-      expect(
-        [...entry.host.querySelectorAll("button")].find((button) => button.textContent === "Add this daily claim")
-          ?.disabled,
-      ).toBe(false),
-    );
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Taken"));
     const taken = [...entry.host.querySelectorAll("button")].find(
       (button) => button.getAttribute("aria-label") === realmChoice(713),
     );
@@ -678,11 +686,7 @@ it("a founded home chooses one of two Realms, leaves the other free, and shows u
     expect(taken?.textContent).toContain("Taken");
     expect(registered).toEqual([]);
     await entry.pick(realmChoice(712));
-    await act(async () =>
-      [...entry.host.querySelectorAll("button")]
-        .find((button) => button.textContent === "Add this daily claim")!
-        .click(),
-    );
+    await entry.press("Add this daily claim");
     await vi.waitFor(() => expect(registered).toEqual([{ gameId: 8, realmId: 712 }]));
     expect(settlement.calls).toEqual([]);
   } finally {
@@ -705,9 +709,9 @@ it("offers only Continue for a founded home whose held Realm is already taken", 
         ?.disabled,
     ).toBe(true);
     await entry.press("Continue with my free home");
+    await vi.waitFor(() => expect(entry.host.textContent).not.toContain("Choose a daily claim"));
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
-    expect(entry.host.textContent).not.toContain("Choose a daily claim");
   } finally {
     await entry.close();
   }
@@ -722,7 +726,8 @@ it("resumes a home with an existing campaign source without offering or submitti
   const registered = relay(() => held(711));
   const entry = await openEntry();
   try {
-    await act(async () => {});
+    // The entry goes straight on to the map, never stopping on the source step.
+    await vi.waitFor(() => expect(entry.host.textContent).toContain("Loading the map"));
     expect(entry.host.textContent).not.toContain("Choose a daily claim");
     expect(registered).toEqual([]);
     expect(settlement.calls).toEqual([]);
