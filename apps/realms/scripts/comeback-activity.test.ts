@@ -126,8 +126,8 @@ it("emails the players still away and leaves out one who claims between two emai
     account("0x1d", [CLAIMER]),
   ];
   const deliveries = accounts.flatMap((a) =>
-    variantOf(a, SINCE, RECORDED)
-      ? [{ ...a, variant: variantOf(a, SINCE, RECORDED)! } as Delivery & { addresses: string[] }]
+    variantOf(a, NOW, RECORDED)
+      ? [{ ...a, variant: variantOf(a, NOW, RECORDED)! } as Delivery & { addresses: string[] }]
       : [],
   );
   expect(deliveries.map((d) => d.realmsId)).toEqual(["0x1a", "0x1b", "0x1c"]);
@@ -186,8 +186,8 @@ it("leaves out a player who only researched, by their recorded visit, before and
     account("0x1d", ["0xd"]),
   ];
   const deliveries = accounts.flatMap((a) =>
-    variantOf(a, SINCE, RECORDED)
-      ? [{ ...a, variant: variantOf(a, SINCE, RECORDED)! } as Delivery & { addresses: string[] }]
+    variantOf(a, NOW, RECORDED)
+      ? [{ ...a, variant: variantOf(a, NOW, RECORDED)! } as Delivery & { addresses: string[] }]
       : [],
   );
   expect(deliveries.map((d) => d.realmsId)).toEqual(["0x1a", "0x1b", "0x1c"]);
@@ -201,7 +201,7 @@ it("leaves out a player who only researched, by their recorded visit, before and
       return stillFits(
         delivery.variant,
         { lastAction: activity.latestOf(delivery.addresses), lastVisit: visits.get(delivery.realmsId)! },
-        SINCE,
+        NOW,
         RECORDED,
       );
     },
@@ -220,7 +220,7 @@ it("leaves out a player who only researched, by their recorded visit, before and
 
 it("keeps emailing a ticket holder who signed up and visited without founding, until they found", () => {
   const signedUpToday = { lastAction: 0, lastVisit: NOW - 600 };
-  expect(stillFits("N", signedUpToday, SINCE, RECORDED)).toBe(true);
-  expect(stillFits("N", { ...signedUpToday, lastAction: NOW - 60 }, SINCE, RECORDED)).toBe(false);
-  expect(stillFits("D", signedUpToday, SINCE, RECORDED)).toBe(false);
+  expect(stillFits("N", signedUpToday, NOW, RECORDED)).toBe(true);
+  expect(stillFits("N", { ...signedUpToday, lastAction: NOW - 60 }, NOW, RECORDED)).toBe(false);
+  expect(stillFits("D", signedUpToday, NOW, RECORDED)).toBe(false);
 });
