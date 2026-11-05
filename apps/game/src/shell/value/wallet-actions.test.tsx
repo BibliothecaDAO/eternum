@@ -215,6 +215,7 @@ it("shows the Realms wallet's fee in LORDS before its passkey confirms, and open
       JSON.stringify(CALLS),
       expect.anything(),
       expect.any(Function),
+      expect.any(AbortSignal),
     );
     expect(braavos.connections()).toEqual([]);
   } finally {
@@ -254,6 +255,7 @@ it("signs nothing whose fee rose past the one shown: a stale send is priced agai
       JSON.stringify(CALLS),
       expect.anything(),
       expect.any(Function),
+      expect.any(AbortSignal),
     );
   } finally {
     signOut();

@@ -157,6 +157,12 @@ const dialog = () =>
   document.querySelector('[role="dialog"][aria-label^="Deposit "]')?.getAttribute("aria-label") ?? null;
 const purse = () => view.host.textContent ?? "";
 const savedTerms = () => Object.keys(localStorage).filter((key) => key.startsWith("lords-deposit:"));
+const edit = (value: string) =>
+  act(() => {
+    const input = view.host.querySelector<HTMLInputElement>('input[aria-label="Whole LORDS to deposit"]')!;
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, value);
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  });
 const amountLocked = () =>
   view.host.querySelector<HTMLInputElement>('input[aria-label="Whole LORDS to deposit"]')!.disabled;
 
@@ -226,4 +232,33 @@ it("frees the deposit's terms once a passkey asked before its payment closed sig
   expect(purse()).not.toContain("Payment status is uncertain.");
   expect(chain.execute).not.toHaveBeenCalled();
   expect(uncertainSendOf("0x33")).toBeUndefined();
+});
+
+it("closed while a stale fee is priced again, opens no passkey and sends nothing once the old price comes back", async () => {
+  let now = Date.now();
+  vi.spyOn(Date, "now").mockImplementation(() => now);
+  await begin();
+  // Left open past its preparation's life: Confirm prepares it again, and that answer is held.
+  now += 120_000;
+  let release!: () => void;
+  vi.mocked(sends.prepareDefaultWalletSend).mockImplementationOnce(
+    (calls) => new Promise((resolve) => (release = () => resolve(prepared(calls)))),
+  );
+  await press("Confirm with your passkey");
+  await press("Close");
+  // Nothing was asked of the passkey yet: the terms may change.
+  await press("Edit or cancel deposit");
+  edit("25");
+  await press("Deposit LORDS");
+  await shows(() => expect(buttons()).toContain("Confirm with your passkey"));
+  expect(dialog()).toBe("Deposit 25 LORDS");
+  const terms = savedTerms().map((key) => localStorage.getItem(key));
+
+  await act(async () => release());
+  await act(async () => {});
+  expect(chain.sign).not.toHaveBeenCalled();
+  expect(chain.execute).not.toHaveBeenCalled();
+  expect(uncertainSendOf("0x33")).toBeUndefined();
+  expect(dialog()).toBe("Deposit 25 LORDS");
+  expect(savedTerms().map((key) => localStorage.getItem(key))).toEqual(terms);
 });

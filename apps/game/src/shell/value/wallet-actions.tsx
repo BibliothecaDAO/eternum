@@ -216,6 +216,7 @@ const PasskeySend = ({
   onUnconfirmed: () => void;
 }) => {
   const prepared = useRef<{ send: Promise<PreparedSend>; at: number } | null>(null);
+  const panelClosed = usePanelClosed();
   const [priced, setPriced] = useState<Priced>({ kind: "pricing" });
   const [state, setState] = useState<{ kind: "ready" | "signing" | "confirming" } | { kind: "failed"; line: string }>({
     kind: "ready",
@@ -242,13 +243,20 @@ const PasskeySend = ({
   };
   const confirm = async (shown: WalletFee | null) => {
     const stale = !prepared.current || Date.now() - prepared.current.at > PREPARED_FOR_MS;
+    const closed = panelClosed();
     setState({ kind: "signing" });
     try {
       const ready = await (stale ? prepare() : prepared.current!.send);
       if (feeRose(shown, ready.fee)) return setState({ kind: "failed", line: WALLET_WORDS.feeRose });
-      const sent = await sendFromDefaultWallet(wallet, ready.execution, asked, l2Provider(), () =>
-        setState({ kind: "confirming" }),
+      const sent = await sendFromDefaultWallet(
+        wallet,
+        ready.execution,
+        asked,
+        l2Provider(),
+        () => setState({ kind: "confirming" }),
+        closed,
       );
+      if (sent.kind === "abandoned") return;
       if (sent.kind === "landed") return onLanded();
       if (sent.kind === "unconfirmed") return onUnconfirmed();
       setState({ kind: "failed", line: sent.kind === "refused" ? sent.reason : VALUE_WORDS.refused });
@@ -290,6 +298,21 @@ const PasskeySend = ({
   );
 };
 
+/**
+ * The signal a send carries for the panel that shows it, aborted once that panel closes: a send still being priced
+ * then asks no wallet or passkey (wallet-send.ts). Made on each mount, so the development build's replayed effects
+ * leave the mounted panel's signal live.
+ */
+const usePanelClosed = () => {
+  const panel = useRef<AbortController | null>(null);
+  useEffect(() => {
+    const mounted = new AbortController();
+    panel.current = mounted;
+    return () => mounted.abort();
+  }, []);
+  return () => panel.current!.signal;
+};
+
 /** A fee built after the one shown that may take more than the player saw. */
 const feeRose = (shown: WalletFee | null, built: WalletFee | null) =>
   built !== null && (shown === null || built.max > shown.max);
@@ -316,9 +339,18 @@ const OwnerSend = ({
   const [outcome, setOutcome] = useState<Exclude<WalletSendOutcome, { kind: "landed" }> | { kind: "confirming" }>();
   /** The connector holding `owner`: undefined while it is looked for, null when this browser has never opened it. */
   const [holder, setHolder] = useState<Connector | null>();
+  const panelClosed = usePanelClosed();
   const send: OnAccount = async (account, _connectorId, provider) => {
     setOutcome(undefined);
-    const sent = await sendFromWallet(account, owner, calls, provider, () => setOutcome({ kind: "confirming" }));
+    const sent = await sendFromWallet(
+      account,
+      owner,
+      calls,
+      provider,
+      () => setOutcome({ kind: "confirming" }),
+      panelClosed(),
+    );
+    if (sent.kind === "abandoned") return;
     if (sent.kind === "landed") onLanded();
     else if (sent.kind === "unconfirmed") onUnconfirmed();
     else setOutcome(sent);

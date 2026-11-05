@@ -160,7 +160,7 @@ async function send(execute: () => Promise<unknown>, receipt: Promise<object> = 
   const calls = paid()!.calls;
   let outcome: WalletSendOutcome | undefined;
   await act(async () => {
-    outcome = await sendFromWallet(account, "0x33", calls, provider, () => {});
+    outcome = await sendFromWallet(account, "0x33", calls, provider, () => {}, new AbortController().signal);
   });
   expect(account.execute).toHaveBeenCalledWith(calls);
   return outcome;
