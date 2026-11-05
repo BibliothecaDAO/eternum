@@ -175,16 +175,14 @@ fn discovery_reserves_the_combined_sanctuary_increase() {
 #[test]
 fn depth_entitlement_isolated_by_home_game_day_and_preserves_legacy_bool() {
     let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    crate::state::write().game_releases.write(1, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
-    crate::state::write().game_releases.write(2, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
     for depth in 0_u8..4 {
-        assert!(!crate::logic::expeditions::ruin_cleared_at(key, depth));
-        crate::logic::expeditions::close_ruins(key, depth);
-        assert!(crate::logic::expeditions::ruin_cleared_at(key, depth));
+        assert!(!crate::logic::ruins::cleared_at(key, depth));
+        crate::logic::ruins::close(key, depth);
+        assert!(crate::logic::ruins::cleared_at(key, depth));
         assert!(crate::state::read().map_rules.ruin_cleared.read((1, 17, 300)));
-        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { epoch: 301, ..key }, depth));
-        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { structure_id: 18, ..key }, depth));
-        assert!(!crate::logic::expeditions::ruin_cleared_at(ExpeditionDiscoveryKey { game_id: 2, ..key }, depth));
+        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { epoch: 301, ..key }, depth));
+        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { structure_id: 18, ..key }, depth));
+        assert!(!crate::logic::ruins::cleared_at(ExpeditionDiscoveryKey { game_id: 2, ..key }, depth));
     }
 }
 
@@ -194,8 +192,7 @@ fn depth_entitlement_isolated_by_home_game_day_and_preserves_legacy_bool() {
 #[test_case(name: "depth_three_twice", 3)]
 #[should_panic(expected: "realm already cleared this depth today")]
 fn same_depth_cannot_clear_twice(depth: u8) {
-    crate::state::write().game_releases.write(1, crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE);
     let key = ExpeditionDiscoveryKey { game_id: 1, structure_id: 17, epoch: 300 };
-    crate::logic::expeditions::close_ruins(key, depth);
-    crate::logic::expeditions::close_ruins(key, depth);
+    crate::logic::ruins::close(key, depth);
+    crate::logic::ruins::close(key, depth);
 }

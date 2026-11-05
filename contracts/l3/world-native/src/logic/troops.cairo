@@ -1110,3 +1110,20 @@ pub mod troop_helpers {
         }
     }
 }
+
+// Share the existing game-pinned authorization/stamina path across command domains.
+pub fn command_explorer(
+    key: ExplorerKey, actor: Option<ContractAddress>, timestamp: u64, context: crate::commands::ExecutionContext,
+) -> ExplorerTroops {
+    let state = crate::state::read();
+    let release_id = state.game_releases.read(key.game_id);
+    assert!(release_id != 0, "game has no release");
+    crate::troops::IBattleResolutionDispatcherTrait::command_explorer(
+        crate::troops::IBattleResolutionLibraryDispatcher {
+            class_hash: state.releases.entry(release_id).classes.troops.read(),
+        },
+        key,
+        actor,
+        crate::commands::ActionContext { timestamp, ..crate::commands::action_context(context) },
+    )
+}

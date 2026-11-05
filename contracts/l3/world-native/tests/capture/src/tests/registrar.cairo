@@ -1827,11 +1827,24 @@ fn legacy_clear_survives_release_application_and_other_depths_pay(first_depth: u
     let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 };
     let releases = IReleasesDispatcher { contract_address: d.games };
     let target = crate::logic::release::RUIN_DEPTH_LIMIT_RELEASE;
+    let unrelated = super::declare_logic("LegacyRuinLimitFixture");
     start_cheat_caller_address(d.games, super::authority());
     for release_id in 2..target + 1 {
         releases.register_release(release_id, releases.release(1));
     }
+    let game_classes = releases.release(1);
+    releases
+        .register_release(
+            target + 1,
+            Release {
+                classes: games_storage::release::LogicClasses {
+                    map: unrelated, troops: unrelated, ..game_classes.classes,
+                },
+                ..game_classes,
+            },
+        );
     stop_cheat_caller_address(d.games);
+    assert_eq!(releases.current_release(), target + 1);
     assert_eq!(releases.game_release(game_id), 1);
 
     let mut total_paid = 0_u128;
@@ -2022,6 +2035,59 @@ fn later_legacy_class_cannot_add_a_clear_after_a_depth_mask_and_reupgrade_preser
             depth == 2,
         );
     }
+}
+
+#[test]
+fn legacy_pin_cleans_site_before_closing_without_new_map_selectors() {
+    let rules = ruin_discovery_rules();
+    let (d, game_id, key) = setup_frontier_chests_with_rules(Some(rules));
+    let army = strong_frontier_army(d, game_id, key);
+    let (ruin, _) = reveal_ruin(d, key, rules, 360);
+    let (sibling, _) = reveal_ruin(d, key, rules, 361);
+    let releases = IReleasesDispatcher { contract_address: d.games };
+    let first = releases.release(1);
+    let legacy = super::declare_logic("LegacyRuinLimitFixture");
+    start_cheat_caller_address(d.games, super::authority());
+    releases
+        .register_release(
+            2, Release { classes: games_storage::release::LogicClasses { map: legacy, ..first.classes }, ..first },
+        );
+    releases.apply_release(game_id, 2);
+    stop_cheat_caller_address(d.games);
+    snforge_std::interact_with_state(
+        d.games,
+        || {
+            let counter = crate::expeditions::ExpeditionDiscoveryKey { game_id, structure_id: army.owner, epoch: 0 };
+            assert!(!crate::logic::expeditions::ruin_disappeared(ruin));
+            let site = crate::logic::expeditions::expedition_site(ruin).unwrap();
+            let receipt = crate::expeditions::SiteClear {
+                explorer_id: key.explorer_id, home_id: army.owner, reward: None,
+            };
+            let depth = crate::logic::expeditions::depth_at(
+                game_id, crate::troops::Coord { alt: site.alt, x: site.col, y: site.row },
+            );
+            crate::logic::expeditions::clear_rewarded_site(ruin, site, receipt, depth);
+            crate::logic::expeditions::cache_ruin_depths(counter);
+            for depth in 0_u8..4 {
+                assert!(crate::logic::expeditions::ruin_cleared_at(counter, depth));
+            }
+            assert!(crate::logic::expeditions::ruin_disappeared(sibling));
+            let state = crate::state::read();
+            assert_eq!(state.map_rules.cleared_ruin_depths.read((game_id, 1, 0)), 0);
+            assert_eq!(state.structures.structures.read((game_id, ruin.entity_id)).base.category, 0);
+            assert_eq!(state.map.occupancy.read((game_id, site.alt, site.col, site.row)), 0);
+            assert_eq!(crate::logic::expeditions::expedition_site(ruin).unwrap().clear, Some(receipt));
+            for slot in 0_u8..4 {
+                assert_eq!(
+                    crate::logic::guards::guard(
+                        crate::guards::GuardKey { game_id, structure_id: ruin.entity_id, slot },
+                    ),
+                    Default::default(),
+                );
+            }
+            assert!(!crate::logic::expeditions::ruin_disappeared(ruin));
+        },
+    );
 }
 
 #[derive(Copy, Drop)]
