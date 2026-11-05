@@ -4,6 +4,9 @@ import wasm from "vite-plugin-wasm";
 import { defineConfig } from "vitest/config";
 import { ASSET_CHECK_FILES } from "./vitest.assets.files";
 
+/** Every client test file's setup, whatever pool runs it. */
+export const CLIENT_TEST_SETUP = "./src/setupTests.ts";
+
 function workerCap(cap: string | undefined) {
   return cap ? { maxWorkers: Number(cap), minWorkers: 1 } : {};
 }
@@ -48,7 +51,8 @@ export default defineConfig({
       ["src/three/**/__tests__/*.test.ts", "node"],
       ["scripts/**/*.test.mjs", "node"],
     ],
-    setupFiles: "./src/setupTests.ts",
+    // The vm pool's file boundary comes after the common setup, which gives jsdom its performance timeline.
+    setupFiles: [CLIENT_TEST_SETUP, "./src/test-isolation/file-boundary.setup.ts"],
     css: true,
     coverage: {
       provider: "v8",
