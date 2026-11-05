@@ -73,15 +73,19 @@ export const PayoutWalletPanel = ({
     onChanged();
   };
   const recover = () => setStep({ kind: "recover" });
+  // A recovery changes no payout wallet: it ends back on the wallet, which reads the escape it started from the chain.
+  const backToWallet = () => setStep(wallet === null ? { kind: "choose" } : { kind: "linked" });
   const body = () => {
     if (step.kind === "recover" && defaultWallet)
       return (
         <RecoverStart
           replacing={defaultWallet.credentialId}
           onPasskey={(passkey) => setStep({ kind: "code", change: { kind: "recover", passkey } })}
-          onCancel={() => setStep(wallet === null ? { kind: "choose" } : { kind: "linked" })}
+          onCancel={backToWallet}
         />
       );
+    if (step.kind === "code" && step.change.kind === "recover")
+      return <CodeStep change={step.change} email={email} onDone={backToWallet} />;
     if (step.kind === "linked" && wallet !== null)
       return (
         <Linked
