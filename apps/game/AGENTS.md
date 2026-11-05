@@ -83,6 +83,12 @@ on SwiftShader), and releases everything it started. Run it from a stopped clien
   from the map at once, so its steps are blocked there; play them with `--viewport 390x844`.
 - **Saved player state.** Pass `--storage-state /private/player-storage.json` with `--player` to restore and renew an
   existing dev identity. If that state is signed out, the run refuses before sending an email code.
+- **Saved passkeys.** Pass `--passkeys /private/passkeys.json` with `--player` to put that device's saved passkeys
+  (DevTools' virtual authenticator credentials, as the default wallet's dev test keeps them) on the run's page, so the
+  player's Realms wallet confirms without a person; the file is written back at the end with its sign counts and is
+  never copied into the evidence. A passkey works only on the origin it was made on (`--base-url`). In `s1-deposits` the
+  deposit's payment then writes its fee and the paymaster's built calls to `<step>-fee-shown.json` and presses Confirm
+  only once the operator writes `<step>-fee-approved.json` (`<step>-fee-refused.json` stops it unsigned).
 - **Signing in.** Each player keeps a profile under `.context/playtest-profiles/<email>`; agent-browser is handed it on
   every command (it relaunches on a temporary profile for a command that omits it). Each run opens the home page first:
   a signed-in player's bar shows them and the run goes on at once; a signed-out one presses Connect and signs in as a

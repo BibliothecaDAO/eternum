@@ -1356,11 +1356,11 @@ function walletDepositStep(name) {
 }
 
 /** A wallet-funded ten-LORDS purchase on an isolated S1 rehearsal chain, through the real purse and wallet. */
-async function depositTenLords({ browser, owner, devTools }) {
+async function depositTenLords({ base, browser, owner, devTools }) {
   const evidence = { responses: [] };
   const stop = watchDepositResponses(devTools, evidence);
   try {
-    Object.assign(evidence, await approveTenLords(browser, owner, evidence));
+    Object.assign(evidence, await approveTenLords({ base, browser, owner, evidence }));
   } catch (error) {
     evidence.error = error.message;
   } finally {
@@ -1369,7 +1369,7 @@ async function depositTenLords({ browser, owner, devTools }) {
   return evidence;
 }
 
-async function approveTenLords(browser, owner, evidence) {
+async function approveTenLords({ base, browser, owner, evidence }) {
   const route = browser.read("JSON.stringify(location.pathname)");
   const chain = route.match(/\/g\/(0x[0-9a-f]+)\//i)?.[1];
   if (!chain || !Buffer.from(chain.slice(2), "hex").toString().startsWith("S1_DEPOSIT_"))
@@ -1390,9 +1390,12 @@ async function approveTenLords(browser, owner, evidence) {
   if (!button || before.amount !== "10" || before.spend === null || before.earned === null)
     return { blocked: "Deposit unavailable, balances missing, or amount is not ten", before };
   browser.tap(button.offset);
-  console.error(
-    "Confirm the ten-LORDS deposit in its payment panel: the Realms wallet's passkey, or the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
-  );
+  const payment = await confirmPasskeyPayment({ base, browser, evidence, owner });
+  if (payment.blocked) return { ...payment, before };
+  if (!payment.pressed)
+    console.error(
+      "Confirm the ten-LORDS deposit in the linked wallet's prompt. Waiting up to ten minutes; Ctrl-C cancels.",
+    );
   const after = await pollProof(
     owner,
     () => (evidence.after = browser.read(DEPOSIT_BALANCES)),
@@ -1407,6 +1410,7 @@ async function approveTenLords(browser, owner, evidence) {
   return {
     before,
     after,
+    fee: payment.fee,
     credited:
       after.spend !== null &&
       BigInt(after.spend) === BigInt(before.spend) + 10n &&
@@ -1414,6 +1418,53 @@ async function approveTenLords(browser, owner, evidence) {
       after.credited.some((id) => !before.credited.includes(id)),
   };
 }
+/** The deposit's payment on the app sheet, by its title ("Deposit 10 LORDS"). */
+const DEPOSIT_PAYMENT = '[role="dialog"][aria-label^="Deposit "]';
+const PASSKEY_CONFIRM = sheetButton("^Confirm with your passkey$", DEPOSIT_PAYMENT);
+const PAYMENT_TEXT = `JSON.stringify(document.querySelector(${JSON.stringify(DEPOSIT_PAYMENT)})?.textContent ?? null)`;
+const PRICING_WAIT_MS = 60_000;
+const FEE_DECISION_MS = 10 * 60_000;
+
+/**
+ * A Realms wallet's payment, confirmed by the run once its fee and calls are on record: the fee the payment shows and
+ * the paymaster's build (the calls the passkey signs, and their fee in LORDS wei) go to `<step>-fee-shown.json`, and
+ * Confirm is pressed only after the operator writes `<step>-fee-approved.json` beside it; `<step>-fee-refused.json`
+ * stops the step unsigned (a fee cap above what the wallet holds). A linked wallet's payment offers no passkey Confirm:
+ * its own prompt is the person's.
+ */
+async function confirmPasskeyPayment({ base, browser, evidence, owner }) {
+  const shown = `${base}-fee-shown.json`;
+  const approved = `${base}-fee-approved.json`;
+  const refused = `${base}-fee-refused.json`;
+  if ([shown, approved, refused].some((file) => existsSync(file))) throw new Error("fee evidence already exists");
+  const confirm = await readUntil(() => browser.read(PASSKEY_CONFIRM), Boolean, PRICING_WAIT_MS);
+  if (!confirm) return { pressed: false };
+  const build = await readUntil(() => evidence.responses.findLast(isWalletBuild) ?? null, Boolean, 10_000);
+  const fee = feeShownIn(browser.read(PAYMENT_TEXT));
+  writeFileSync(shown, JSON.stringify({ fee, build }, null, 2), { mode: 0o600, flag: "wx" });
+  console.error(
+    `Fee and calls on record: ${shown}. Write ${approved} to confirm with the passkey, or ${refused} to stop.`,
+  );
+  const decided = await waitUntil(() => {
+    owner.throwIfCancelled();
+    return existsSync(approved) || existsSync(refused);
+  }, FEE_DECISION_MS);
+  if (!decided) return { blocked: "No fee decision within ten minutes; nothing signed", fee };
+  if (existsSync(refused)) return { blocked: "Fee refused by the operator; nothing signed", fee };
+  const ready = browser.read(PASSKEY_CONFIRM);
+  if (!ready) return { blocked: "The payment no longer offers its passkey Confirm; nothing signed", fee };
+  browser.tap(ready.offset);
+  // A preparation gone stale is priced again on the press; a fee over the one approved is shown, and nothing signed.
+  const rose = await readUntil(() => browser.read(PAYMENT_TEXT)?.includes(FEE_ROSE) ?? false, Boolean, 5_000);
+  if (rose) return { blocked: "The fee rose past the approved one; nothing signed", fee };
+  return { pressed: true, fee };
+}
+
+const FEE_ROSE = "The network fee went up.";
+const isWalletBuild = (response) => new URL(response.url).pathname.endsWith("/auth/wallet/default/build");
+/** The payment's fee line ("Network fee about 10.71 LORDS, at most 32.11"), or null when it shows none. */
+const feeShownIn = (text) => text?.match(/Network fee about [\d.,]+ LORDS, at most [\d.,]+/)?.[0] ?? null;
+
 const DEPOSIT_BALANCES = `JSON.stringify({
   spend:document.querySelector('[data-spend-lords]')?.getAttribute('data-spend-lords') ?? null,
   earned:document.querySelector('[data-earned-lords]')?.getAttribute('data-earned-lords') ?? null,

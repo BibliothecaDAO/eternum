@@ -318,7 +318,7 @@ export function visibleStaminaMatches(panel, state, from, through) {
   return false;
 }
 
-/** Preserve the wallet/relay response bodies as well as the explicit confirmed proof reads. */
+/** Preserve the wallet, paymaster and relay response bodies as well as the explicit confirmed proof reads. */
 export function watchDepositResponses(devTools, evidence) {
   const requests = new Map();
   const pending = [];
@@ -330,8 +330,15 @@ export function watchDepositResponses(devTools, evidence) {
       } catch {
         return;
       }
-      if (rpc?.startsWith("starknet_") || new URL(params.request.url).pathname === "/api/value/deposits")
+      const path = new URL(params.request.url).pathname;
+      if (rpc?.startsWith("starknet_") || path === "/api/value/deposits")
         requests.set(params.requestId, { url: params.request.url, method: rpc ?? "GET" });
+      // The Realms wallet's payment: the calls the paymaster built with their fee, and the transaction it sent. The
+      // build's request is its calls; the execute's carries the passkey's signature and is not kept.
+      if (path.endsWith("/auth/wallet/default/build"))
+        requests.set(params.requestId, { url: params.request.url, method: "POST", request: params.request.postData });
+      if (path.endsWith("/auth/wallet/default/execute"))
+        requests.set(params.requestId, { url: params.request.url, method: "POST" });
     }
     if (method !== "Network.loadingFinished" || !requests.has(params.requestId)) return;
     const request = requests.get(params.requestId);

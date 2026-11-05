@@ -15,6 +15,7 @@ import {
   newActionHashes,
   pollProof,
   visibleStaminaMatches,
+  watchDepositResponses,
 } from "./live-deposit-proof.mjs";
 
 afterEach(() => vi.unstubAllGlobals());
@@ -305,5 +306,35 @@ describe("live mixed refill evidence", () => {
     } finally {
       reads.stop();
     }
+  });
+});
+
+describe("the deposit's response record", () => {
+  it("keeps the Realms wallet's build with its calls, and its execute without the passkey's signature", async () => {
+    const listeners = [];
+    const devTools = {
+      onEvent: (listener) => (listeners.push(listener), () => listeners.splice(listeners.indexOf(listener), 1)),
+      send: async (_, { requestId }) => ({ body: `answer ${requestId}`, base64Encoded: false }),
+    };
+    const evidence = { responses: [] };
+    const stop = watchDepositResponses(devTools, evidence);
+    const request = (requestId, url, postData) => {
+      for (const listener of listeners)
+        listener({ method: "Network.requestWillBeSent", params: { requestId, request: { url, postData } } });
+      for (const listener of listeners) listener({ method: "Network.loadingFinished", params: { requestId } });
+    };
+    request("1", "https://identity.test/auth/wallet/default/build", '{"calls":[{"entrypoint":"deposit_lords"}]}');
+    request("2", "https://identity.test/auth/wallet/default/execute", '{"typedData":{},"ownerSignature":["0x4"]}');
+    request("3", "https://identity.test/auth/session", undefined);
+    await stop();
+    expect(evidence.responses).toEqual([
+      {
+        url: "https://identity.test/auth/wallet/default/build",
+        method: "POST",
+        request: '{"calls":[{"entrypoint":"deposit_lords"}]}',
+        body: "answer 1",
+      },
+      { url: "https://identity.test/auth/wallet/default/execute", method: "POST", body: "answer 2" },
+    ]);
   });
 });

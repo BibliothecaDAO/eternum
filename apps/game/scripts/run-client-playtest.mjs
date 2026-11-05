@@ -41,6 +41,7 @@ import {
   writeIntegratedGpuLauncher,
 } from "./client-playtest/integrated-gpu.mjs";
 import { continuePastTheDaySummary, enterAsPlayer, signInIfSignedOut } from "./client-playtest/player-entry.mjs";
+import { restorePasskeys } from "./client-playtest/passkeys.mjs";
 import { Cancelled, createRunOwner } from "./client-playtest/run-owner.mjs";
 import { STEP_SETS } from "./client-playtest/steps.mjs";
 
@@ -105,6 +106,8 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
   if (player !== null && !/^[^@\s]+@[^@\s]+$/.test(player)) throw new Error(`--player takes an email, not "${player}"`);
   const storageState = option("--storage-state", null);
   if (storageState && !player) throw new Error("--storage-state requires --player");
+  const passkeys = option("--passkeys", null);
+  if (passkeys && !player) throw new Error("--passkeys requires --player");
   const stepSet = option("--steps", player ? "player" : "spectator");
   if (!STEP_SETS[stepSet]) {
     throw new Error(`--steps takes ${Object.keys(STEP_SETS).join(", ")}, not "${stepSet}"`);
@@ -138,6 +141,7 @@ export function readPlaytestOptions(argv, callerDir = process.cwd()) {
     outRoot: resolve(callerDir, option("--out", join(REPO_ROOT, ".context/playtest"))),
     player,
     storageState: storageState ? resolve(callerDir, storageState) : null,
+    passkeys: passkeys ? resolve(callerDir, passkeys) : null,
     port: integer("--port", DEFAULTS.port, 1),
     rendererModes,
     stepSet,
@@ -316,6 +320,7 @@ async function playRun(context) {
   });
   const releaseBrowser = owner.adopt(`browser ${label}`, () => browser.close());
   let releaseDevTools = () => {};
+  let passkeys = null;
   try {
     browser.run([
       "open",
@@ -330,6 +335,10 @@ async function playRun(context) {
     browser.run(["set", "viewport", String(VIEWPORT.width), String(VIEWPORT.height)]);
     const devTools = await openPageDevTools(browser);
     releaseDevTools = owner.adopt(`DevTools ${label}`, () => devTools.close());
+    if (context.passkeys) {
+      passkeys = await restorePasskeys(devTools, context.passkeys);
+      record.passkeys = passkeys.count;
+    }
     // Each step's evidence is named by its place in the list, from `first` on.
     const playSteps = async (played, first) => {
       for (const [index, step] of played.entries()) {
@@ -393,6 +402,7 @@ async function playRun(context) {
     return writeRunEvidence({ browser, context, record });
   } finally {
     try {
+      await passkeys?.save();
       if (context.storageState && record.signIn === "kept") browser.run(["state", "save", context.storageState]);
     } finally {
       await releaseDevTools();

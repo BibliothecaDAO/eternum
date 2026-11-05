@@ -1295,8 +1295,10 @@ phone run is Chrome's device emulation: numeric input mode and real browser key 
 physical OS keyboard is not exercised. On the reviewed dev rehearsal season, use the existing command with
 `--steps s1-deposits --chain-id <runner-chain> --game-id <game> --player <email> --storage-state <file> --headed --renderer-modes webgpu-auto --iterations 1`.
 Prepare the payout wallet in the player's persistent profile with 20 devLords plus its fee funding for both deposits
-(real LORDS for a Realms wallet, STRK for another); confirm each of the two payments within ten minutes, or cancel with
-Ctrl-C. A missing wallet is reported.
+(real LORDS for a Realms wallet, STRK for another). A Realms wallet runs at the dev client's origin (`--base-url`) with
+the device's saved passkeys (`--passkeys <file>`): each payment writes its fee and built calls to
+`<step>-fee-shown.json` and confirms once `<step>-fee-approved.json` is written (`-fee-refused.json` stops it). Another
+wallet's two prompts are confirmed by hand. Each waits ten minutes; Ctrl-C cancels. A missing wallet is reported.
 
 The live steps refuse chains outside `S1_DEPOSIT_`, require ten newly credited spend-only LORDS with unchanged winnings,
 then use the army panel and refill slider to submit exactly one partial refill. The account needs earned winnings from a
