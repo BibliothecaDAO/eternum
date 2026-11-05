@@ -61,34 +61,6 @@ describe("the day's end", () => {
     host.remove();
   });
 
-  it("asks a home with no claim for alerts above Continue, which stays the card's one primary action", () => {
-    (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
-    const act_ = vi.fn();
-    const host = document.createElement("div");
-    const root = createRoot(host);
-    act(() =>
-      root.render(
-        <DayDoneCard
-          endedDay={12}
-          clock={{ endsAt: undefined, secondsLeft: 7 * 3_600, tomorrowSeconds: 20 * 3_600, tone: "calm" }}
-          totals={{ reveals: 1, cleared: 0, chests: 0, essence: 0, labor: 0, lords: undefined }}
-          history="whole"
-          onRetry={vi.fn()}
-          armies={0}
-          troopsLost={0}
-          ask={{ ask: { kind: "remind", busy: false, act: act_ }, nextDay: 14, offer: vi.fn(), notNow: vi.fn() }}
-          onContinue={vi.fn()}
-        />,
-      ),
-    );
-    expect(host.querySelector(".ui-notice")?.textContent).toBe("Get one push when Day 14 opens.");
-    const buttons = [...host.querySelectorAll("button")];
-    expect(buttons.map((button) => button.textContent)).toEqual(["Remind me", "Continue"]);
-    act(() => buttons[0]!.click());
-    expect(act_).toHaveBeenCalledOnce();
-    act(() => root.unmount());
-  });
-
   it("counts the armies that ended with the day beside the troops they took, never as a row of empty circles", () => {
     (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
     const host = document.createElement("div");

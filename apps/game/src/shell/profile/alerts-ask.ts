@@ -1,11 +1,14 @@
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { notificationOwnerOf, useIdentitySession } from "@/hooks/context/identity-session";
 import { useNotificationPreferences } from "@/hooks/use-notification-preferences";
 import { useInstall } from "@/pwa/install-state";
-import { getActiveGame } from "@/runtime/world/store";
+import type { NotificationLevel } from "@bibliothecadao/notifications";
 import { useThisDevice } from "./this-device";
+
+/** The level a tap on the ask lifts an Off account to: the one Settings offers for the day's push. */
+export const ASKED_LEVEL: NotificationLevel = "important";
 
 /**
  * The game's ask to turn alerts on: what its button does; "on" once this device gets the day's push; null when nothing
@@ -26,7 +29,7 @@ export const useAlertsAsk = (): AlertsAsk => {
   if (!owner || (preferences.status !== "ready" && preferences.status !== "saving")) return null;
   const levelOff = (preferences.saved?.level ?? "off") === "off";
   const raiseLevel = () => {
-    if (levelOff) void preferences.save("important");
+    if (levelOff) void preferences.save(ASKED_LEVEL);
   };
   switch (device.state) {
     case "install":
@@ -49,78 +52,68 @@ export const useAlertsAsk = (): AlertsAsk => {
   }
 };
 
-/** A game day's moment to ask: after the day's claim for a home with one, on the day's summary for a home without. */
-type AskMoment = "claim" | "summary";
+/** The popup asks a device at most once in this long, counted from the last time it was shown. */
+const ASK_EVERY_MS = 7 * 24 * 60 * 60 * 1000;
 
-/** Three Not nows on this device end the game day asks; Settings keeps the switch. */
+/** Three Not nows on this device end the popup; Settings keeps the switch. */
 const NOT_NOW_LIMIT = 3;
 
-/**
- * This device's game day asks: how many Not nows, and each game's last asked day ("0xa:1" → day 12) with the page that
- * asked it, which keeps its ask until answered (null once answered).
- */
+/** This device's popup: how many Not nows, and when it was last shown (ms), null before it ever was. */
 interface AskMemory {
   notNows: number;
-  asked: Record<string, { day: number; host: string | null }>;
-  offer: (game: string, day: number, host: string) => void;
-  notNow: (game: string, day: number) => void;
+  shownAt: number | null;
+  shown: (at: number) => void;
+  notNow: () => void;
 }
 
 export const useAskMemory = create<AskMemory>()(
   persist(
     (set) => ({
       notNows: 0,
-      asked: {},
-      // The first page to show the day's ask keeps it; drawing it again records nothing.
-      offer: (game, day, host) =>
-        set((memory) =>
-          memory.asked[game]?.day === day ? memory : { asked: { ...memory.asked, [game]: { day, host } } },
-        ),
-      notNow: (game, day) =>
-        set((memory) => ({ notNows: memory.notNows + 1, asked: { ...memory.asked, [game]: { day, host: null } } })),
+      shownAt: null,
+      shown: (at) => set({ shownAt: at }),
+      notNow: () => set((memory) => ({ notNows: memory.notNows + 1 })),
     }),
     {
       name: "realms-alerts-ask",
+      // Version 0 kept each game's asked day; its Not nows still count.
+      version: 1,
+      migrate: (stored) => ({ notNows: (stored as { notNows?: number } | null)?.notNows ?? 0, shownAt: null }),
       storage: createJSONStorage(() => localStorage),
-      partialize: ({ notNows, asked }) => ({ notNows, asked }),
+      partialize: ({ notNows, shownAt }) => ({ notNows, shownAt }),
     },
   ),
 );
 
-/**
- * The ask a game day shows, the day its push tells of, its Not now, and `offer`, which the ask calls once drawn: only a
- * shown ask spends the day.
- */
-export type DayAsk = {
-  ask: Extract<AlertsAsk, { act: () => void }>;
-  nextDay: number;
-  offer: () => void;
-  notNow: () => void;
-};
+/** The popup while it stands: what its verb does (it closes the popup too) and its Not now. */
+export type AlertsPopupAsk = { kind: "remind" | "install"; act: () => void; notNow: () => void };
 
 /**
- * The game day's one ask to turn alerts on, at `moment` (owner's pick, A and B of reports/push-ask-1.md): a home with a
- * claim is asked after it and a home without one on the day's summary, and only while a next day is coming. Each game
- * day asks once on this device, read each time against the stored day: the page that drew the ask keeps it until
- * answered, no other page, reopened sheet or moment asks that day, and the next day asks again, on a page still open
- * too. Three Not nows end the asking.
+ * The popup that asks for alerts (owner's pick A of reports/push-popup-1.md): once `clear` (the player's own map with no
+ * day's end owed), it opens on a device that can be asked, at most once a week from the last time it showed, and stands
+ * on its page until answered. Three Not nows end it.
  */
-export const useDayAsk = (moment: AskMoment, home: { hasClaim: boolean; nextDay: number | null }): DayAsk | null => {
+export const useAlertsPopup = (clear: boolean): AlertsPopupAsk | null => {
   const ask = useAlertsAsk();
-  const { notNows, asked, offer: remember, notNow: answer } = useAskMemory();
-  // This page, as the memory names the one that drew the day's ask.
-  const [host] = useState(() => crypto.randomUUID());
-  const active = getActiveGame();
-  const game = active && `${active.chainId}:${active.gameId}`;
-  const today = home.nextDay === null ? null : home.nextDay - 1;
-  const offer = useCallback(() => {
-    if (game && today !== null) remember(game, today, host);
-  }, [remember, game, today, host]);
-  if (!ask || ask.kind === "on" || momentOf(home.hasClaim) !== moment) return null;
-  if (!game || today === null || home.nextDay === null || notNows >= NOT_NOW_LIMIT) return null;
-  const last = asked[game];
-  if (last?.day === today && last.host !== host) return null;
-  return { ask, nextDay: home.nextDay, offer, notNow: () => answer(game, today) };
+  const { notNows, shownAt, shown, notNow } = useAskMemory();
+  const [open, setOpen] = useState(false);
+  const asking = ask !== null && ask.kind !== "on" ? ask : null;
+  const due = asking !== null && notNows < NOT_NOW_LIMIT && (shownAt === null || Date.now() - shownAt >= ASK_EVERY_MS);
+  useEffect(() => {
+    if (!clear || !due || open) return;
+    setOpen(true);
+    shown(Date.now());
+  }, [clear, due, open, shown]);
+  if (!open || !asking) return null;
+  return {
+    kind: asking.kind,
+    act: () => {
+      asking.act();
+      setOpen(false);
+    },
+    notNow: () => {
+      notNow();
+      setOpen(false);
+    },
+  };
 };
-
-const momentOf = (hasClaim: boolean): AskMoment => (hasClaim ? "claim" : "summary");
