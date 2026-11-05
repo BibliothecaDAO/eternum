@@ -138,7 +138,8 @@ it("recovers from the payout panel: a new passkey on this device, then the email
   await act(async () => {});
   expect(start).toHaveBeenCalledWith({ passkey: { credentialId: "new-passkey", publicKey: "spki" }, code: "123456" });
   expect(chain.wait).toHaveBeenCalledWith("0xescape", expect.anything());
-  expect(changed).toHaveBeenCalledOnce();
+  // No payout wallet changed, so the window stays open (Settings closes it on a change) and shows the recovery.
+  expect(changed).not.toHaveBeenCalled();
   expect(panel.textContent).toContain("Recovery under way");
 });
 
