@@ -8,12 +8,15 @@
  *      with the fee shown, as the page checks before the passkey signs;
  *   2. a fresh Realms wallet holding no LORDS is refused at build (PaymasterRefusedError): its fee cannot be paid.
  *
- *   bun scripts/default-wallet-gasless-probe.ts <account> [out.json]
+ *   L2_RPC_URL=<mainnet RPC> bun scripts/default-wallet-gasless-probe.ts <account> [out.json]
  */
 import { writeFileSync } from "node:fs";
 
+import { RpcProvider } from "starknet";
+
 import { callsMatch, defaultWalletDeployment, WALLET_GAS_TOKEN, type AskedCall } from "@realms-world/identity/wallet";
 
+import { latestL2GasPrice } from "../server/l2";
 import { avnuPaymaster, PaymasterRefusedError, walletExecutionOf } from "../server/paymaster";
 
 const SN_MAIN = "0x534e5f4d41494e";
@@ -26,8 +29,11 @@ const PRICED_SEND: AskedCall = {
 
 const main = async () => {
   const account = process.argv[2];
-  if (!account) throw new Error("usage: default-wallet-gasless-probe.ts <account> [out.json]");
-  const paymaster = avnuPaymaster(undefined);
+  const rpc = process.env.L2_RPC_URL;
+  if (!account || !rpc)
+    throw new Error("usage: L2_RPC_URL=<mainnet RPC> default-wallet-gasless-probe.ts <account> [out.json]");
+  const provider = new RpcProvider({ nodeUrl: rpc });
+  const paymaster = avnuPaymaster(undefined, () => latestL2GasPrice(provider));
   const checks: Record<string, boolean> = {};
   const check = (name: string, held: boolean) => {
     checks[name] = held;

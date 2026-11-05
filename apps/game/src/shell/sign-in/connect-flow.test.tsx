@@ -98,10 +98,11 @@ afterEach(() => {
 });
 
 describe("Connect", () => {
-  it("takes a new player from an emailed code straight on to where the asker sends them, named by their suggestion", async () => {
+  it("asks a new player from an emailed code for their name, suggesting nothing, then takes them where the asker sends them", async () => {
     useIdentitySessionStore.setState({ status: "anonymous", session: null });
     const sendCode = vi.spyOn(identityClient, "sendSignInCode").mockResolvedValue(sentCode(300));
-    vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({}));
+    // An email sign-up is suggested no name (the identity service suggests only a Discord name).
+    vi.spyOn(identityClient, "signInWithCode").mockResolvedValue(sessionOf({ suggestedName: null }));
     const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
     // The app's one first session load finds nobody; the refresh after the name is saved finds the named player.
     vi.spyOn(identityClient, "getSession")
@@ -119,13 +120,21 @@ describe("Connect", () => {
 
       await ui.type('input[autocomplete="one-time-code"]', "481927");
       await act(async () => {});
-      // No name step: the suggested name and a portrait are saved by themselves, and the player goes on, meeting the
-      // wallet a new account has not made yet.
+      // Nothing is saved by itself: the name step opens empty, saying what to put in it, nothing from the email.
+      expect(save).not.toHaveBeenCalled();
+      expect(ui.window()?.getAttribute("aria-label")).toBe("Your name");
+      const name = ui.query<HTMLInputElement>('input[autocomplete="nickname"]')!;
+      expect(name.value).toBe("");
+      expect(name.getAttribute("aria-invalid")).toBeNull();
+      expect(ui.window()?.textContent).toContain("Pick the name other players see on the leaderboards.");
+      expect(ui.query<HTMLButtonElement>('button[type="submit"]')!.disabled).toBe(true);
+
+      await ui.type('input[autocomplete="nickname"]', "Ysolde");
+      await act(async () => ui.query<HTMLFormElement>("form")!.requestSubmit());
       expect(save).toHaveBeenCalledTimes(1);
       const saved = save.mock.calls[0][0] as { name: string; image: string };
       expect(saved.name).toBe("Ysolde");
       expect(IDENTITY_PORTRAITS).toContain(saved.image);
-      expect(ui.query('input[autocomplete="nickname"]')).toBeNull();
       expect(ui.where()).toBe(NEXT);
       expect(ui.window()?.getAttribute("aria-label")).toBe("Your wallet");
     } finally {
@@ -133,20 +142,32 @@ describe("Connect", () => {
     }
   });
 
+  it("names a Discord sign-up by its Discord name by itself and goes straight on", async () => {
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: "nelly_b" }) });
+    const save = vi.spyOn(identityClient, "updateUser").mockResolvedValue();
+    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "nelly_b", image: "04" }));
+    const ui = await mount("/g/0x5245414c4d53/1/map");
+    try {
+      await act(async () => {});
+      expect(save).toHaveBeenCalledTimes(1);
+      expect((save.mock.calls[0][0] as { name: string }).name).toBe("nelly_b");
+      expect(ui.query('input[autocomplete="nickname"]')).toBeNull();
+    } finally {
+      await ui.unmount();
+    }
+  });
+
   it("tries the suggestion with a number after it when the name is taken", async () => {
-    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: "ys.olde+devcon" }) });
+    useIdentitySessionStore.setState({ status: "signed-in", session: sessionOf({ suggestedName: "ysolde" }) });
     const save = vi
       .spyOn(identityClient, "updateUser")
       .mockRejectedValueOnce(new Error("NAME_TAKEN"))
       .mockResolvedValue();
-    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "ysoldedevcon2", image: "04" }));
+    vi.spyOn(identityClient, "getSession").mockResolvedValue(sessionOf({ name: "ysolde2", image: "04" }));
     const ui = await mount("/g/0x5245414c4d53/1/map");
     try {
       await act(async () => {});
-      expect(save.mock.calls.map(([fields]) => (fields as { name: string }).name)).toEqual([
-        "ysoldedevcon",
-        "ysoldedevcon2",
-      ]);
+      expect(save.mock.calls.map(([fields]) => (fields as { name: string }).name)).toEqual(["ysolde", "ysolde2"]);
       expect(ui.window()).toBeNull();
     } finally {
       await ui.unmount();

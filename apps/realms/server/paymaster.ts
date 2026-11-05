@@ -57,8 +57,17 @@ export interface Paymaster {
   ): Promise<string>;
 }
 
+/**
+ * The L2 gas a default wallet's outside execution spends checking its signatures (the passkey's WebAuthn and the
+ * guardian's), measured on mainnet: the 2026-11-05 recovery cancel 0x4d2f13f3…ef0b, both signatures and one trivial
+ * call, used 51,229,840. AVNU's quote estimates the asked calls as a plain invoke, without that check (its own
+ * allowance covers Braavos passkeys only), then at submission refuses a fee cap below the real cost
+ * (MAX_AMOUNT_TOO_LOW): every passkey send was refused until its quote carried this.
+ */
+const SIGNATURE_CHECK_L2_GAS = 52_000_000n;
+
 /** AVNU: gasless for the wallet's own fees, sponsored with `apiKey` when there is one; never following a redirect. */
-export const avnuPaymaster = (apiKey: string | undefined): Paymaster => {
+export const avnuPaymaster = (apiKey: string | undefined, l2GasPrice: () => Promise<bigint>): Paymaster => {
   const gasless = new PaymasterRpc({ nodeUrl: AVNU_PAYMASTER_URL, baseFetch: fetchIdentityRpc });
   const sponsored = apiKey
     ? new PaymasterRpc({
@@ -88,7 +97,9 @@ export const avnuPaymaster = (apiKey: string | undefined): Paymaster => {
         throw error;
       }
       if (built.type === "deploy") throw new Error("paymaster_built_no_invoke");
-      return { typedData: built.typed_data, fee: payer === "wallet" ? walletFeeOf(built.fee) : null };
+      if (payer === "sponsor") return { typedData: built.typed_data, fee: null };
+      const fee = walletFeeOf(built.fee, await l2GasPrice());
+      return { typedData: withFeeCap(built.typed_data, built.fee, fee.max), fee: hexFee(fee) };
     },
     execute: async (wallet, typedData, signature, deployment, payer) => {
       const invoke = { userAddress: wallet, typedData, signature };
@@ -112,10 +123,59 @@ const parametersOf = (payer: GasPayer): ExecutionParameters => ({
   feeMode: payer === "wallet" ? { mode: "default", gasToken: WALLET_GAS_TOKEN } : { mode: "sponsored" },
 });
 
-const walletFeeOf = (fee: PreparedInvokeTransaction["fee"]): WalletFee => ({
-  estimated: `0x${BigInt(fee.estimated_fee_in_gas_token).toString(16)}`,
-  max: `0x${BigInt(fee.suggested_max_fee_in_gas_token).toString(16)}`,
+type AvnuFee = PreparedInvokeTransaction["fee"];
+
+/**
+ * The fee a wallet pays itself, in WALLET_GAS_TOKEN wei: AVNU's quote plus its signature check at this L2 gas price,
+ * priced at AVNU's own token price, the max raised by AVNU's own max-to-estimate ratio.
+ */
+const walletFeeOf = (fee: AvnuFee, l2GasPrice: bigint) => {
+  const checkInStrk = SIGNATURE_CHECK_L2_GAS * l2GasPrice;
+  const checkInToken = ceilDiv(checkInStrk * WALLET_GAS_TOKEN_UNIT, BigInt(fee.gas_token_price_in_strk));
+  const maxCheckInToken = ceilDiv(
+    checkInToken * BigInt(fee.suggested_max_fee_in_strk),
+    BigInt(fee.estimated_fee_in_strk),
+  );
+  return {
+    estimated: BigInt(fee.estimated_fee_in_gas_token) + checkInToken,
+    max: BigInt(fee.suggested_max_fee_in_gas_token) + maxCheckInToken,
+  };
+};
+
+/** LORDS has 18 decimals; AVNU prices a whole token in STRK wei. */
+const WALLET_GAS_TOKEN_UNIT = 10n ** 18n;
+
+const ceilDiv = (numerator: bigint, denominator: bigint) => (numerator + denominator - 1n) / denominator;
+
+const hexFee = (fee: { estimated: bigint; max: bigint }): WalletFee => ({
+  estimated: `0x${fee.estimated.toString(16)}`,
+  max: `0x${fee.max.toString(16)}`,
 });
+
+/**
+ * The execution with its fee's transfer (its last call, AVNU's max to the forwarder, which refunds what the fee does not
+ * use) raised to `max`. The page signs only an execution whose fee call is within the max it showed (callsMatch).
+ */
+const withFeeCap = (typedData: BuiltExecution, fee: AvnuFee, max: bigint): BuiltExecution => {
+  const { message } = typedData;
+  const feeCall = "Calls" in message ? message.Calls.at(-1) : undefined;
+  if (!("Calls" in message) || !feeCall || !isAvnuMaxFee(feeCall.Calldata, fee))
+    throw new Error("paymaster_fee_call_unexpected");
+  const [payee] = feeCall.Calldata;
+  const capped = {
+    ...feeCall,
+    Calldata: [payee!, `0x${(max & U128_MASK).toString(16)}`, `0x${(max >> 128n).toString(16)}`],
+  };
+  return { ...typedData, message: { ...message, Calls: [...message.Calls.slice(0, -1), capped] } };
+};
+
+/** `transfer(payee, amount: u256)` calldata of exactly AVNU's suggested max: the fee call AVNU built. */
+const isAvnuMaxFee = (calldata: string[], fee: AvnuFee) => {
+  const [, low, high] = calldata;
+  return calldata.length === 3 && BigInt(low!) + (BigInt(high!) << 128n) === BigInt(fee.suggested_max_fee_in_gas_token);
+};
+
+const U128_MASK = (1n << 128n) - 1n;
 
 /**
  * The outside execution a paymaster built, read field by field: only a SNIP-9 v2 execution for this chain, else null.

@@ -47,6 +47,7 @@ function standaloneSurfaces(): string[] {
     path("../../../status/public/index.html"),
     path("../../../../packages/notifications/scripts/build-email-art.mjs"),
     path("../../../../packages/notifications/scripts/email-art-inputs.mjs"),
+    path("../../../../packages/notifications/scripts/email-art-title.mjs"),
     path("../../../../packages/notifications/src/player-emails.ts"),
   ];
 }
