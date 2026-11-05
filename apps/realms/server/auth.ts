@@ -20,7 +20,7 @@ import { resendWalletNotices } from "./wallet-notices";
 import type { SendWalletNotice } from "./wallet-changes";
 import { siws } from "./siws-plugin";
 import { defaultWallet } from "./default-wallet-plugin";
-import { identityL2Configuration, identityProvider } from "./l2";
+import { identityL2Configuration, identityProvider, latestL2GasPrice } from "./l2";
 import { avnuPaymaster } from "./paymaster";
 import { readAttemptState, readWalletEscape, type RecoveryServices } from "./wallet-recovery";
 import { isUndeployedWallet, verifyWalletOnL2, type VerifyWalletSignature } from "./wallet-signature";
@@ -50,7 +50,7 @@ type WalletChainServices = Pick<
 export const walletChainServicesOf = (env: WalletChainEnv): WalletChainServices => {
   const provider = () => identityProvider(env);
   return {
-    paymaster: avnuPaymaster(env.AVNU_PAYMASTER_API_KEY),
+    paymaster: avnuPaymaster(env.AVNU_PAYMASTER_API_KEY, () => latestL2GasPrice(provider())),
     isDeployed: async (address) => !(await isUndeployedWallet(provider(), address)),
     readEscape: (address) => readWalletEscape(provider(), address),
     readAttemptState: (address, newOwner, nonce) => readAttemptState(provider(), address, newOwner, nonce),
