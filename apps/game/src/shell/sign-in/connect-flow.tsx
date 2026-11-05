@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { SIGN_IN_WORDS, WALLET_WORDS, WORDS } from "@/ui/design-system/kit/words";
 import { IdentityRequestError, type Session } from "@realms-world/identity";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -117,7 +118,7 @@ const AnonymousConnect = ({
       const url = await identityClient.discordSignInUrl(next ?? returnPathOf(location));
       rememberDiscordStart(next);
       setStep({ kind: "discord" });
-      window.location.assign(url);
+      pageNavigation.open(url);
     });
 
   const emailCode = (email: string) =>

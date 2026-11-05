@@ -1,3 +1,4 @@
+import { pageNavigation } from "@/utils/page-navigation";
 import { useEffect } from "react";
 import { create } from "zustand";
 
@@ -30,7 +31,7 @@ export const usePwaUpdate = () => {
     const { apply } = usePwaUpdateState.getState();
     if (!apply || selectHasPendingTransactions(useTransactionStore.getState())) return;
     await apply();
-    if (!selectHasPendingTransactions(useTransactionStore.getState())) window.location.reload();
+    if (!selectHasPendingTransactions(useTransactionStore.getState())) pageNavigation.reload();
   };
   return { ready, waiting: pending, update, later: () => usePwaUpdateState.setState({ apply: null }) };
 };
